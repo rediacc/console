@@ -167,11 +167,9 @@ describe('the mcp serve stdio server, driven by the SDK v2 client', () => {
   }, 120_000);
 
   it('a grand-repo write (repo_up) is refused by the child decision with a structured code', async () => {
-    const { isError, envelope } = await callTool('repo_up', { ref: 'shop' });
-    expect(isError).toBe(true);
-    const first = envelope.errors?.[0];
-    expect(first?.code, JSON.stringify(envelope)).toBe('VALIDATION_ERROR');
-    // The decision's own code leads the details (utils/command-policy.ts refusalError).
-    expect(first?.details?.[0], JSON.stringify(envelope)).toBe('AGENT_OPT_IN_MISSING');
+    const result = await client.callTool({ name: 'repo_up', arguments: { ref: 'shop' } });
+    expect(result.isError).toBe(true);
+    // The child's refusal is lifted to structuredContent (executor.ts runUnderPolicy).
+    expect(result.structuredContent?.code, JSON.stringify(result)).toBe('AGENT_OPT_IN_MISSING');
   }, 120_000);
 });

@@ -390,6 +390,7 @@ describe('an agent on a grand-guarded command', () => {
     expect((error as CliExitError).details?.[0]).toBe('CONFIRMATION_REQUIRED');
     expect((error as Error).message).toContain('errors.agent.confirmationRequired:');
     expect((error as Error).message).toContain('"value":"mail"');
+    expect((error as CliExitError).details?.[2]).toBe('--confirm-grand mail');
   });
 
   it('control: --confirm-grand naming the repo confirms it', async () => {

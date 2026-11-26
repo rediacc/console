@@ -7,6 +7,8 @@
  */
 import {
   type AuthInfo,
+  CLIENT_CAPABILITIES_META_KEY,
+  type ClientCapabilities,
   createMcpHandler,
   type McpRequestContext,
   originValidationResponse,
@@ -78,6 +80,25 @@ function callerFrom(ctx: McpRequestContext): GrantCaller {
   return caller;
 }
 
+/**
+ * Whether the client declared form elicitation: on the 2026-07-28 era in the request's own envelope, which
+ * `server.getClientCapabilities()` does not see, else the capabilities of the 2025-era `initialize`. A bare
+ * `elicitation: {}` counts as form (the rule before modes).
+ */
+export function declaresFormElicitation(
+  server: Server,
+  ctx: { mcpReq: { envelope?: unknown } }
+): boolean {
+  // The SDK types the envelope as `{}`; its keys are the reserved `io.modelcontextprotocol/*` names.
+  const envelope = ctx.mcpReq.envelope as Record<string, unknown> | undefined;
+  const caps = (envelope?.[CLIENT_CAPABILITIES_META_KEY] ?? server.getClientCapabilities()) as
+    | ClientCapabilities
+    | undefined;
+  const elicitation = caps?.elicitation as { form?: object; url?: object } | undefined;
+  if (!elicitation) return false;
+  return elicitation.form !== undefined || elicitation.url === undefined;
+}
+
 function buildServer(caller: GrantCaller, serverVersion: string, deps: CallDeps): Server {
   const server = new Server(
     { name: 'rdc', version: serverVersion },
@@ -93,7 +114,7 @@ function buildServer(caller: GrantCaller, serverVersion: string, deps: CallDeps)
   server.setRequestHandler('tools/list', () => ({ tools }));
   server.setRequestHandler('tools/call', (request, ctx) =>
     callToolStep(deps, caller, request.params.name, request.params.arguments ?? {}, {
-      elicitation: server.getClientCapabilities()?.elicitation !== undefined,
+      elicitation: declaresFormElicitation(server, ctx),
       inputResponses: ctx.mcpReq.inputResponses,
       requestState: ctx.mcpReq.requestState<string>(),
     })

@@ -420,7 +420,12 @@ function refusalError(decision: Decision, command: DecisionCommand, target: Deci
     ERROR_CODES.VALIDATION_ERROR,
     decisionMessage(decision, command, target),
     {
-      details: [code, reason, ...(next?.run ? [next.run] : [])],
+      details: [
+        code,
+        reason,
+        ...(next?.run ? [next.run] : []),
+        ...(next?.confirm ? [`${CONFIRM_GRAND_FLAG} ${next.confirm.value}`] : []),
+      ],
     }
   );
 }

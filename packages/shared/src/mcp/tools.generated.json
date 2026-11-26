@@ -350,6 +350,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["artifact-ref"],
@@ -2546,6 +2550,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["commit-or-branch-ref", "tag"],
@@ -2585,6 +2593,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref", "message"],
@@ -2671,6 +2683,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],
@@ -2761,6 +2777,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],
@@ -2804,6 +2824,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref", "cmd"],
@@ -3118,6 +3142,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref", "from"],
@@ -3182,6 +3210,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref", "to"],
@@ -3277,6 +3309,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],
@@ -3341,6 +3377,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],
@@ -3431,6 +3471,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],
@@ -3629,6 +3673,10 @@
           "background": {
             "description": "Start the job and return its job id at once instead of waiting for it.",
             "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
           }
         },
         "required": ["ref"],

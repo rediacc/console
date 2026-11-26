@@ -15,6 +15,7 @@
 
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { registerAllTools } from '../tools.js';
+import { FIRST_CALL_CTX } from './policy-ctx.js';
 
 const mockExecFile = vi.fn();
 vi.mock('node:child_process', async (importOriginal) => ({
@@ -94,12 +95,13 @@ vi.mock('../../../utils/repo-executor.js', async (importOriginal) => ({
 }));
 
 type Handler = (args: Record<string, unknown>) => Promise<{ isError: boolean }>;
+type Registered = (args: Record<string, unknown>, ctx: unknown) => Promise<{ isError: boolean }>;
 
 function handler(name: string): Handler {
   const registered = new Map<string, Handler>();
   const server = {
-    registerTool: (toolName: string, _definition: unknown, fn: Handler) => {
-      registered.set(toolName, fn);
+    registerTool: (toolName: string, _definition: unknown, fn: Registered) => {
+      registered.set(toolName, (args) => fn(args, FIRST_CALL_CTX));
     },
   };
   registerAllTools(server as never, { defaultTimeoutMs: 120_000 });

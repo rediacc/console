@@ -1,8 +1,14 @@
-import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
+import type {
+  CallToolResult,
+  InputRequiredResult,
+  McpServer,
+  ServerContext,
+} from '@modelcontextprotocol/server';
+import { getCommand } from '@rediacc/shared/cli-contract';
 import { z } from 'zod';
 import { pageOf, RESULT_PAGE_CHARS } from '../../services/serve/result-page.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
-import { type ExecutionResult, executeRdcCommand } from './executor.js';
+import { type ExecutionResult, executeRdcCommand, runUnderPolicy } from './executor.js';
 import type { McpServerOptions } from './server.js';
 import {
   buildToolsFromContract,
@@ -34,9 +40,24 @@ function withPaging(tool: ToolDef): ToolDef {
   return { ...tool, schema: { ...tool.schema, page: PAGE_FIELD }, pageable: true };
 }
 
+/** The `confirm` field of a destructive grand-guarded tool: the value a `needs_confirmation` refusal names, for a client that cannot elicit. */
+const CONFIRM_FIELD = z
+  .string()
+  .optional()
+  .describe(
+    'Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.'
+  );
+
+function withConfirm(tool: ToolDef): ToolDef {
+  if (!tool.isDestructive || getCommand(tool.commandPath)?.grandGuard !== true) return tool;
+  if ('confirm' in tool.schema)
+    throw new Error(`MCP tool ${tool.name} already has a confirm field`);
+  return { ...tool, schema: { ...tool.schema, confirm: CONFIRM_FIELD } };
+}
+
 /** Build the complete list of MCP tools (contract-derived + custom). */
 export function buildAllTools(): ToolDef[] {
-  return [...buildToolsFromContract(), ...CUSTOM_TOOLS].map(withPaging);
+  return [...buildToolsFromContract(), ...CUSTOM_TOOLS].map(withPaging).map(withConfirm);
 }
 
 /** What a polling tool returns: the last run's result, how long the call waited, and the hint when it hit the ceiling. */
@@ -83,21 +104,33 @@ async function runPolled(
  * the same child call each time.
  */
 async function executeTool(
+  server: McpServer,
   tool: ToolDef,
   args: Record<string, unknown>,
+  ctx: ServerContext,
   options: McpServerOptions
-): Promise<CallToolResult> {
+): Promise<CallToolResult | InputRequiredResult> {
   const argv = tool.command(args);
-  const run = (timeoutMs: number) =>
+  const run = (timeoutMs: number, confirm?: string) =>
     executeRdcCommand(argv, {
       ...options,
       timeoutMs,
+      ...(confirm !== undefined ? { confirm } : {}),
       ...(tool.attachWindowMs !== undefined && args.background === true
         ? { background: true }
         : {}),
     });
   const timeoutMs = tool.timeoutMs ?? options.defaultTimeoutMs;
-  const result = tool.poll ? await runPolled(tool.poll, run) : await run(timeoutMs);
+  let result: ExecutionResult | PolledResult;
+  if (tool.poll) {
+    result = await runPolled(tool.poll, run);
+  } else {
+    const outcome = await runUnderPolicy({ server, ctx, tool: tool.name, args }, (confirm) =>
+      run(timeoutMs, confirm)
+    );
+    if ('answer' in outcome) return outcome.answer;
+    result = outcome.result;
+  }
   const page = tool.pageable && typeof args.page === 'number' ? args.page : 1;
   return pageOf(JSON.stringify(result, null, 2), page, tool.pageable === true, !result.success);
 }
@@ -113,7 +146,8 @@ export function registerAllTools(server: McpServer, options: McpServerOptions): 
         inputSchema: z.object(tool.schema),
         annotations: toolAnnotations(tool),
       },
-      async (args: Record<string, unknown>) => executeTool(tool, args, options)
+      async (args: Record<string, unknown>, ctx: ServerContext) =>
+        executeTool(server, tool, args, ctx, options)
     );
   }
 }

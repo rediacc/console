@@ -8,6 +8,9 @@ import { buildAllTools, RESULT_PAGE_CHARS, registerAllTools } from '../tools.js'
 vi.mock('../executor.js', () => ({
   executeRdcCommand: vi.fn(),
   resolveRdcBinary: () => ({ command: 'node', prefixArgs: ['index.js'] }),
+  runUnderPolicy: async (_call: unknown, run: (confirm: undefined) => Promise<unknown>) => ({
+    result: await run(undefined),
+  }),
 }));
 
 type Handler = (args: Record<string, unknown>) => Promise<{

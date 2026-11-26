@@ -3,13 +3,14 @@
  */
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { isInputRequiredResult } from '@modelcontextprotocol/server';
+import { CLIENT_CAPABILITIES_META_KEY, type Server } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
 import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { type CallDeps, type CallInput, callToolStep, type GrantCaller } from '../call.js';
 import { CONFIRM_TTL_MS, createConfirmation, hashArgs } from '../confirm.js';
 import type { McpCallAnswer, McpCallForward } from '../executor.js';
 import { MemoryRateLimiter } from '../rate.js';
-import { createMcpTransport } from '../transport.js';
+import { createMcpTransport, declaresFormElicitation } from '../transport.js';
 import { activeGrant, bearerFor, resolverFor } from './helpers/grant.js';
 
 const TOOL = 'repo_delete';
@@ -288,7 +289,11 @@ describe('hashArgs', () => {
 });
 
 describe('through the SDK client and the Worker transport', () => {
-  async function connectClient(elicits: boolean, answer: 'accept' | 'decline') {
+  async function connectClient(
+    elicits: boolean,
+    answer: 'accept' | 'decline',
+    era: '2026-07-28' | 'legacy' = '2026-07-28'
+  ) {
     const s = setup();
     const grantId = 'eu_grant_sdk';
     const worker = createMcpTransport({
@@ -304,7 +309,7 @@ describe('through the SDK client and the Worker transport', () => {
     const client = new Client(
       { name: 'rw-t5', version: '0.0.0' },
       {
-        versionNegotiation: { mode: { pin: '2026-07-28' } },
+        versionNegotiation: era === 'legacy' ? { mode: 'legacy' } : { mode: { pin: era } },
         ...(elicits ? { capabilities: { elicitation: { form: {} } } } : {}),
       }
     );
@@ -339,6 +344,24 @@ describe('through the SDK client and the Worker transport', () => {
     expect(forwards.map((f) => f.args)).toEqual([ARGS, { ...ARGS, confirm: 'shop' }]);
   });
 
+  it('a 2025-era client is not asked, since the stateless legacy leg keeps no initialize-time capabilities', async () => {
+    const { client, asked, forwards } = await connectClient(true, 'accept', 'legacy');
+    const result = await client.callTool({ name: TOOL, arguments: ARGS });
+    await client.close();
+    expect(asked).toHaveLength(0);
+    expect(result.isError).toBe(true);
+    expect(result.structuredContent).toMatchObject({ confirmArgument: 'confirm' });
+    expect(forwards).toHaveLength(1);
+  });
+
+  it('a 2025-era client without elicitation gets the confirm-argument refusal', async () => {
+    const { client, forwards } = await connectClient(false, 'accept', 'legacy');
+    const result = await client.callTool({ name: TOOL, arguments: ARGS });
+    await client.close();
+    expect(result.isError).toBe(true);
+    expect(forwards).toHaveLength(1);
+  });
+
   it('a decline stops the call before the second forward', async () => {
     const { client, forwards } = await connectClient(true, 'decline');
     const result = await client.callTool({ name: TOOL, arguments: ARGS });
@@ -357,5 +380,33 @@ describe('through the SDK client and the Worker transport', () => {
       confirmArgument: 'confirm',
     });
     expect(forwards).toHaveLength(1);
+  });
+});
+
+describe('declaresFormElicitation reads both client generations', () => {
+  const serverWith = (elicitation?: object) =>
+    ({
+      getClientCapabilities: () => (elicitation ? { elicitation } : undefined),
+    }) as unknown as Server;
+  const requestWith = (elicitation?: object) => ({
+    mcpReq: {
+      envelope: elicitation ? { [CLIENT_CAPABILITIES_META_KEY]: { elicitation } } : undefined,
+    },
+  });
+
+  it('reads the per-request envelope of a 2026-07-28 client when initialize left nothing', () => {
+    expect(declaresFormElicitation(serverWith(), requestWith({ form: {} }))).toBe(true);
+  });
+
+  it('reads the initialize-time capabilities of a 2025-era client', () => {
+    expect(declaresFormElicitation(serverWith({}), requestWith())).toBe(true);
+  });
+
+  it('prefers the envelope over the initialize-time capabilities', () => {
+    expect(declaresFormElicitation(serverWith({ form: {} }), requestWith({ url: {} }))).toBe(false);
+  });
+
+  it('is false for a client that declared nothing', () => {
+    expect(declaresFormElicitation(serverWith(), requestWith())).toBe(false);
   });
 });
