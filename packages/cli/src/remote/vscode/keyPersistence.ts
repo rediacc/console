@@ -5,6 +5,7 @@
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { decodeSSHKey } from '../ssh/keyManager.js';
 import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platform.js';
 
 /**
@@ -67,7 +68,8 @@ export function persistSSHKey(
   }
 
   // Write key with proper permissions
-  writeFileSync(keyPath, privateKey, { mode: 0o600 });
+  // OpenSSH's libcrypto PEM parser rejects a key without its trailing newline or with CRLF endings, the same normalisation the ssh agent applies.
+  writeFileSync(keyPath, decodeSSHKey(privateKey), { mode: 0o600 });
 
   // Return normalized path for SSH config compatibility on Windows
   return normalizePathForSSH(keyPath);
