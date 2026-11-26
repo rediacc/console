@@ -162,7 +162,7 @@ async function acquireReadOnly(
 ): Promise<RenetAcquireResult> {
   const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     { localBinaryPath, ...(executor && { fresh: true }) },
     sftp
   );
@@ -221,7 +221,7 @@ async function confirmReplacement(
   const known = replacementAnswers.get(hostKey);
   if (known !== undefined) return known;
   const inspected = await renetProvisioner.inspect(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     { localBinaryPath },
     sftp
   );
@@ -293,7 +293,7 @@ export async function acquireRemoteRenet(
 
   const start = Date.now();
   const result = await renetProvisioner.provision(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     {
       localBinaryPath: uploadPath,
       restartServices,

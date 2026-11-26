@@ -2961,6 +2961,7 @@
       "connectingTo": "Connecting to {{title}}...",
       "fetchingDetails": "Fetching connection details...",
       "launchSuccess": "Terminal launched successfully.",
+      "externalFallback": "No external terminal could be opened ({{error}}). Continuing in this terminal with inline SSH.",
       "launchingTerminal": "Launching {{type}} terminal...",
       "testingConnectivity": "Testing connectivity to {{host}}:{{port}}..."
     },
@@ -3843,6 +3844,7 @@
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
       "launchFailed": "Failed to launch terminal: {{error}}",
+      "externalRefused": "--external was given, but no external terminal could be opened ({{error}}). Nothing was started; run again without --external for an inline session.",
       "noHostKey": "Machine '{{machine}}' does not have a host key configured in the vault",
       "noIpAddress": "Machine '{{machine}}' does not have an IP address configured",
       "noPrivateKey": "Team '{{team}}' does not have an SSH private key configured",

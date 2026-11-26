@@ -296,6 +296,17 @@ function shouldUseExternalTerminal(options: TermConnectOptions): boolean {
   return options.command ? options.external === true : (options.external ?? !isTTY);
 }
 
+/**
+ * An external terminal that did not open. With `--external` the user asked for that window, so the command refuses with the reason; otherwise the choice was a default, and the session goes inline after a warning that names the reason.
+ */
+export function reportExternalLaunchFailure(error: unknown, externalRequired: boolean): void {
+  const reason = error instanceof Error ? error.message : String(error);
+  if (externalRequired) {
+    throw new Error(t('errors.term.externalRefused', { error: reason }));
+  }
+  outputService.warn(t('commands.term.externalFallback', { error: reason }));
+}
+
 async function executeSSH(
   sshConnection: SSHConnection,
   destination: string,
@@ -305,6 +316,8 @@ async function executeSSH(
   useExternal: boolean,
   quiet: boolean,
   machineName: string,
+  /** `--external` was passed: a failed launch refuses instead of going inline. */
+  externalRequired: boolean,
   /** The inline form of a `-c` command: the same command carrying the exit trap, and its marker. */
   inline?: { remoteCommand: string; exitMarker: string }
 ): Promise<void> {
@@ -331,9 +344,7 @@ async function executeSSH(
       connectionDetails
     );
   } catch (error) {
-    debugLog(
-      `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
-    );
+    reportExternalLaunchFailure(error, externalRequired);
     await runInlineSSH(
       sshConnection,
       destination,
@@ -459,6 +470,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       shouldUseExternalTerminal(options),
       quietOutput,
       machineName,
+      options.external === true,
       inline
     );
   } catch (err) {
@@ -508,7 +520,7 @@ export async function launchExternalTerminal(
       ...splitSecretEnv(connectionDetails.environment).plain,
       ...(handoff?.agentSocketPath && { SSH_AUTH_SOCK: handoff.agentSocketPath }),
     },
-    workingDirectory: connectionDetails.workingDirectory,
+    // No workingDirectory: the repo path is REMOTE, and the launchers use it as the local terminal's cwd. The remote `cd` runs inside the ssh command (buildRemoteCommand).
   });
 
   if (!result.success) {

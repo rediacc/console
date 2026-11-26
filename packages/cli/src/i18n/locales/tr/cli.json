@@ -3312,6 +3312,7 @@
       "fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
       "launchingTerminal": "{{type}} terminali başlatılıyor...",
       "launchSuccess": "Terminal başarıyla başlatıldı.",
+      "externalFallback": "Harici terminal açılamadı ({{error}}). Bu terminalde doğrudan SSH ile devam ediliyor.",
       "testingConnectivity": "{{host}}:{{port}} adresine bağlantı sınanıyor..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "\"docker compose\" depo bağlamında izin verilmiyor.\n\nBunun yerine \"renet compose -- <args>\" kullanın; böylece depoya özel loopback IP'leri, ana bilgisayar ağ enjeksiyonu, CRIU yetenekleri ve compose doğrulaması uygulanır. \"docker compose\" komutunu doğrudan çalıştırmak bunların tümünü atlar ve dağıtımı sessizce bozar.\n\nOrkestrasyonlu dağıtımlar için tercih edin: rdc repo up <repo-ref>",
       "fileWriteDetected": "Dosya yazma algılandı ({{detected}}). Bunun yerine rdc repo sync kullanın:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync dosyaları delta sıkıştırma, sağlama toplamları ve doğru izinlerle aktarır.",
       "launchFailed": "Terminal başlatılamadı: {{error}}",
+      "externalRefused": "--external verildi ama harici terminal açılamadı ({{error}}). Hiçbir şey başlatılmadı; bu terminalde çalışmak için --external olmadan yeniden çalıştırın.",
       "noHostKey": "\"{{machine}}\" makinesinin kasada yapılandırılmış bir ana bilgisayar anahtarı yok",
       "noIpAddress": "\"{{machine}}\" makinesinin yapılandırılmış bir IP adresi yok",
       "noPrivateKey": "\"{{team}}\" takımının yapılandırılmış bir SSH özel anahtarı yok",

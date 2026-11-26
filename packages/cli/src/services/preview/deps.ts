@@ -110,7 +110,7 @@ async function withMachineSftp<T>(
   const localConfig = await configService.getLocalConfig();
   const machine = await configService.getLocalMachine(machineName);
   const key = localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  return withSharedOrPooledSftp(undefined, sftpConfigForMachine(machine, key), fn);
+  return withSharedOrPooledSftp(undefined, sftpConfigForMachine(machine, key, machineName), fn);
 }
 
 function licenceDeps(restoredCli: string, names: Map<string, string>): LicenceDeps {

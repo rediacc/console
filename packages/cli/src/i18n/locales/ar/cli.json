@@ -3312,6 +3312,7 @@
       "fetchingDetails": "جاري جلب تفاصيل الاتصال...",
       "launchingTerminal": "جاري تشغيل طرفية {{type}}...",
       "launchSuccess": "تم تشغيل الطرفية بنجاح.",
+      "externalFallback": "تعذّر فتح طرفية خارجية ({{error}}). سنتابع في هذه الطرفية عبر SSH مباشر.",
       "testingConnectivity": "جاري اختبار الاتصال بـ {{host}}:{{port}}..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "\"docker compose\" غير مسموح به في سياق المستودع.\n\nاستخدم \"renet compose -- <args>\" بدلاً من ذلك حتى يتم تطبيق عناوين IP loopback لكل مستودع، وحقن شبكة المضيف، وقدرات CRIU، والتحقق من ملف compose. تشغيل \"docker compose\" مباشرة يتجاوز كل هذا ويفسد النشر بصمت.\n\nللنشر المنسق، يفضل: rdc repo up <repo-ref>",
       "fileWriteDetected": "تم اكتشاف كتابة ملف ({{detected}}). استخدم rdc repo sync بدلاً من ذلك:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync ينقل الملفات بضغط الفرق والتحقق من المجاميع والصلاحيات الصحيحة.",
       "launchFailed": "فشل تشغيل الطرفية: {{error}}",
+      "externalRefused": "تم تمرير --external لكن تعذّر فتح طرفية خارجية ({{error}}). لم يبدأ أي شيء؛ أعد التشغيل بدون --external للحصول على جلسة داخل هذه الطرفية.",
       "noHostKey": "الآلة '{{machine}}' لا تحتوي على مفتاح مضيف مكون في الخزينة",
       "noIpAddress": "الآلة '{{machine}}' لا تحتوي على عنوان IP مكون",
       "noPrivateKey": "الفريق '{{team}}' لا يحتوي على مفتاح SSH خاص مكون",

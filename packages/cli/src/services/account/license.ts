@@ -147,7 +147,7 @@ export function issueRepoLicense(
 
   return withSharedOrPooledSftp(
     sharedSftp,
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     async (sftp) => {
       const [machineId, clientMachineId] = await Promise.all([
         readRemoteMachineId(sftp, remoteRenetPath),
@@ -342,7 +342,7 @@ export function refreshRepoLicenseIdentity(
 
   return withSharedOrPooledSftp(
     sharedSftp,
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     async (sftp) => {
       // The PRIMARY datastore for the scan below, not the repo's home: the scan command passes --all-datastores, so it walks every attached named datastore too and reports each repo tagged with its own datastorePath. That is why the scan half of this function was never the bug.
       const datastore = machine.datastore ?? DEFAULT_DATASTORE;

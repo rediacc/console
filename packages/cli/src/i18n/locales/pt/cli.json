@@ -3312,6 +3312,7 @@
       "fetchingDetails": "A obter detalhes de ligação...",
       "launchingTerminal": "A iniciar terminal {{type}}...",
       "launchSuccess": "Terminal iniciado com sucesso.",
+      "externalFallback": "Não foi possível abrir um terminal externo ({{error}}). A sessão continua neste terminal com SSH direto.",
       "testingConnectivity": "A testar conectividade para {{host}}:{{port}}..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "\"docker compose\" não é permitido no contexto de repositório.\n\nUse \"renet compose -- <args>\" para que os IPs de loopback por repositório, a injeção de rede de anfitrião, as capacidades CRIU e a validação do compose sejam aplicados. Executar \"docker compose\" diretamente ignora tudo isso e corrompe silenciosamente a implementação.\n\nPara implementações orquestradas, prefira: rdc repo up <repo-ref>",
       "fileWriteDetected": "Escrita de ficheiro detetada ({{detected}}). Use rdc repo sync em alternativa:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nO rsync transfere ficheiros com compressão delta, checksums e permissões corretas.",
       "launchFailed": "Falha ao abrir o terminal: {{error}}",
+      "externalRefused": "Foi indicado --external, mas não foi possível abrir um terminal externo ({{error}}). Nada foi iniciado; execute de novo sem --external para uma sessão neste terminal.",
       "noHostKey": "A máquina '{{machine}}' não tem uma chave de anfitrião configurada no cofre",
       "noIpAddress": "A máquina '{{machine}}' não tem um endereço IP configurado",
       "noPrivateKey": "A equipa '{{team}}' não tem uma chave privada SSH configurada",

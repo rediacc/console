@@ -209,16 +209,19 @@ export function refreshRepoLicensesBatch(
     });
   }
 
-  return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(
-      sftp,
-      machineName,
-      machine,
-      remoteRenetPath,
-      requiredGuid,
-      scanned,
-      options.adoptOrigin === true
-    )
+  return withSharedOrPooledSftp(
+    sharedSftp,
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
+    (sftp) =>
+      runRepoLicenseBatch(
+        sftp,
+        machineName,
+        machine,
+        remoteRenetPath,
+        requiredGuid,
+        scanned,
+        options.adoptOrigin === true
+      )
   );
 }
 

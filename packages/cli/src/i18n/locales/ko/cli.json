@@ -3312,6 +3312,7 @@
       "fetchingDetails": "연결 세부 정보 가져오는 중...",
       "launchingTerminal": "{{type}} 터미널 실행 중...",
       "launchSuccess": "터미널이 성공적으로 실행되었습니다.",
+      "externalFallback": "외부 터미널을 열 수 없습니다({{error}}). 이 터미널에서 SSH로 바로 이어서 진행합니다.",
       "testingConnectivity": "{{host}}:{{port}}에 대한 연결 테스트 중..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "리포지토리 컨텍스트에서 \"docker compose\"는 허용되지 않습니다.\n\n리포지토리별 루프백 IP, 호스트 네트워크 주입, CRIU 기능, 컴포즈 유효성 검사가 적용되도록 대신 \"renet compose -- <args>\"를 사용하세요. \"docker compose\"를 직접 실행하면 이 모든 것이 우회되어 배포가 자동으로 손상됩니다.\n\n오케스트레이션 배포의 경우: rdc repo up <repo-ref>",
       "fileWriteDetected": "파일 쓰기가 감지되었습니다 ({{detected}}). 대신 rdc repo sync 명령을 사용하세요:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync는 델타 압축, 체크섬, 올바른 권한으로 파일을 전송합니다.",
       "launchFailed": "터미널 실행에 실패했습니다: {{error}}",
+      "externalRefused": "--external을 지정했지만 외부 터미널을 열 수 없습니다({{error}}). 아무것도 시작되지 않았습니다. 이 터미널에서 쓰려면 --external 없이 다시 실행하세요.",
       "noHostKey": "'{{machine}}' 머신에 볼트에 구성된 호스트 키가 없습니다",
       "noIpAddress": "'{{machine}}' 머신에 IP 주소가 설정되어 있지 않습니다",
       "noPrivateKey": "'{{team}}' 팀에 SSH 개인 키가 설정되어 있지 않습니다",

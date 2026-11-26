@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "Verbindung zu {{title}} wird hergestellt...",
   "commands.term.description": "Ein SSH-Terminal zu einer Maschine oder einem Repository öffnen. Das Ziel ist ein Maschinenname oder eine Repository-Referenz, und der Repository-Kontext (DOCKER_HOST, Arbeitsverzeichnis, Umgebung) wird automatisch eingerichtet. Verwenden Sie `-c`, um einen einzelnen Befehl nicht-interaktiv auszuführen. Für Container-Logs oder einen einmaligen Befehl in einem Container verwenden Sie `repo logs` und `repo exec`. Für VS Code verwenden Sie `vscode`.",
   "commands.term.descriptionShort": "SSH-Terminal-Zugriff auf Machines und Repositories",
+  "commands.term.externalFallback": "Es ließ sich kein externes Terminal öffnen ({{error}}). Die Sitzung läuft in diesem Terminal per SSH weiter.",
   "commands.term.fetchingDetails": "Verbindungsdetails werden abgerufen...",
   "commands.term.launchingTerminal": "{{type}}-Terminal wird gestartet...",
   "commands.term.launchSuccess": "Terminal erfolgreich gestartet.",

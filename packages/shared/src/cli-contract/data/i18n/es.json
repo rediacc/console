@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "Conectando a {{title}}...",
   "commands.term.description": "Abre una terminal SSH a una máquina o a un repositorio. El destino es un nombre de máquina o una referencia de repositorio, y el contexto del repositorio (DOCKER_HOST, directorio de trabajo, entorno) se configura automáticamente. Usa `-c` para ejecutar un único comando de forma no interactiva. Para logs de contenedor o un comando puntual en un contenedor, usa `repo logs` y `repo exec`. Para VS Code, usa `vscode`.",
   "commands.term.descriptionShort": "Acceso a terminal SSH a máquinas y repositorios",
+  "commands.term.externalFallback": "No se pudo abrir un terminal externo ({{error}}). Se continúa en este terminal con SSH directo.",
   "commands.term.fetchingDetails": "Obteniendo detalles de conexión...",
   "commands.term.launchingTerminal": "Lanzando terminal {{type}}...",
   "commands.term.launchSuccess": "Terminal lanzada exitosamente.",

@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "{{title}} adresine bağlanılıyor...",
   "commands.term.description": "Bir makineye veya depoya SSH terminali açın. Hedef bir makine adı veya bir depo referansıdır ve depo bağlamı (DOCKER_HOST, çalışma dizini, ortam) otomatik olarak ayarlanır. Tek bir komutu etkileşimsiz çalıştırmak için `-c` kullanın. Konteyner günlükleri veya bir konteynerde tek seferlik bir komut için `repo logs` ve `repo exec` kullanın. VS Code için `vscode` kullanın.",
   "commands.term.descriptionShort": "Makinelere ve depolara SSH terminal erişimi",
+  "commands.term.externalFallback": "Harici terminal açılamadı ({{error}}). Bu terminalde doğrudan SSH ile devam ediliyor.",
   "commands.term.fetchingDetails": "Bağlantı ayrıntıları alınıyor...",
   "commands.term.launchingTerminal": "{{type}} terminali başlatılıyor...",
   "commands.term.launchSuccess": "Terminal başarıyla başlatıldı.",

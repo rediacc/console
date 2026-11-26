@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "Connexion à {{title}} en cours...",
   "commands.term.description": "Ouvrir un terminal SSH vers une machine ou un dépôt. La cible est un nom de machine ou une réf de dépôt, et le contexte du dépôt (DOCKER_HOST, répertoire de travail, environnement) est configuré automatiquement. Utilisez `-c` pour exécuter une commande unique de façon non interactive. Pour les journaux de conteneur ou une commande ponctuelle dans un conteneur, utilisez `repo logs` et `repo exec`. Pour VS Code, utilisez `vscode`.",
   "commands.term.descriptionShort": "Accès terminal SSH aux machines et dépôts",
+  "commands.term.externalFallback": "Impossible d'ouvrir un terminal externe ({{error}}). La session continue dans ce terminal en SSH direct.",
   "commands.term.fetchingDetails": "Récupération des détails de connexion...",
   "commands.term.launchingTerminal": "Lancement du terminal {{type}}...",
   "commands.term.launchSuccess": "Terminal lancé avec succès.",

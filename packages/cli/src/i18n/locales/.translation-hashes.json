@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3345,
-    "sourceCommit": "344a2367ae765626466fab3972c8a68582e75efb"
+    "keyCount": 3347,
+    "sourceCommit": "b9599d1a01a1b60ef4692d855d8d3e06e25017c2"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2632,6 +2632,7 @@
     "commands.term.connectingTo": "9cf068f8",
     "commands.term.description": "751aed93",
     "commands.term.descriptionShort": "67182ccf",
+    "commands.term.externalFallback": "19717405",
     "commands.term.fetchingDetails": "088301ca",
     "commands.term.launchingTerminal": "74f255f0",
     "commands.term.launchSuccess": "a8ad516d",
@@ -3060,6 +3061,7 @@
     "errors.term.blankCommand": "1fb7324a",
     "errors.term.connectivityFailed": "f87c9121",
     "errors.term.dockerComposeForbidden": "f008863a",
+    "errors.term.externalRefused": "1a575af4",
     "errors.term.fileWriteDetected": "c91548c7",
     "errors.term.launchFailed": "b3a29308",
     "errors.term.noHostKey": "0512cdf3",

@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "{{title}}-ga ühendumine...",
   "commands.term.description": "Ava SSH-terminal masinasse või hoidlasse. Sihtmärk on masina nimi või hoidla viide, ning hoidla kontekst (DOCKER_HOST, töökataloog, keskkond) seadistatakse automaatselt. Kasuta `-c`, et käivitada üks käsk mitteinteraktiivselt. Konteineri logide või ühekordse käsu jaoks konteineris kasuta `repo logs` ja `repo exec`. VS Code jaoks kasuta `vscode`.",
   "commands.term.descriptionShort": "SSH-terminali juurdepääs masinatele ja repositooriumidele",
+  "commands.term.externalFallback": "Välist terminali ei õnnestunud avada ({{error}}). Jätkan selles terminalis otse SSH-ga.",
   "commands.term.fetchingDetails": "Ühendusteavet laaditakse...",
   "commands.term.launchingTerminal": "{{type}} terminali käivitamine...",
   "commands.term.launchSuccess": "Terminal käivitati edukalt.",

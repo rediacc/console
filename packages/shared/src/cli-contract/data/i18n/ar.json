@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "جاري الاتصال بـ {{title}}...",
   "commands.term.description": "فتح طرفية SSH إلى جهاز أو مستودع. الهدف اسم جهاز أو مرجع مستودع، ويُعَدّ سياق المستودع (DOCKER_HOST، دليل العمل، البيئة) تلقائيًا. استخدم `-c` لتشغيل أمر واحد بشكل غير تفاعلي. لسجلات الحاويات أو أمر لمرة واحدة داخل حاوية، استخدم `repo logs` و`repo exec`. لـ VS Code، استخدم `vscode`.",
   "commands.term.descriptionShort": "وصول طرفية SSH إلى الآلات والمستودعات",
+  "commands.term.externalFallback": "تعذّر فتح طرفية خارجية ({{error}}). سنتابع في هذه الطرفية عبر SSH مباشر.",
   "commands.term.fetchingDetails": "جاري جلب تفاصيل الاتصال...",
   "commands.term.launchingTerminal": "جاري تشغيل طرفية {{type}}...",
   "commands.term.launchSuccess": "تم تشغيل الطرفية بنجاح.",

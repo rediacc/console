@@ -550,7 +550,7 @@ export class SFTPClient {
   /** Build the host-key mismatch message for this connection's config. */
   private hostKeyMismatchMessage(offeredKey: string): string {
     return buildHostKeyMismatchMessage({
-      machineName: this.config.machineName ?? this.config.host,
+      machineName: this.config.machineName,
       host: this.config.host,
       knownHosts: this.config.knownHosts ?? '',
       offeredKey,

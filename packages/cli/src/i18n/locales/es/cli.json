@@ -3312,6 +3312,7 @@
       "fetchingDetails": "Obteniendo detalles de conexión...",
       "launchingTerminal": "Lanzando terminal {{type}}...",
       "launchSuccess": "Terminal lanzada exitosamente.",
+      "externalFallback": "No se pudo abrir un terminal externo ({{error}}). Se continúa en este terminal con SSH directo.",
       "testingConnectivity": "Probando conectividad a {{host}}:{{port}}..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "\"docker compose\" no está permitido en el contexto del repositorio.\n\nUse \"renet compose -- <args>\" en su lugar para que se apliquen las IPs loopback por repositorio, la inyección de red del host, las capacidades CRIU y la validación del compose. Ejecutar \"docker compose\" directamente omite todo esto y corrompe silenciosamente el despliegue.\n\nPara despliegues orquestados, prefiera: rdc repo up <repo-ref>",
       "fileWriteDetected": "Escritura de archivo detectada ({{detected}}). Use rdc repo sync en su lugar:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync transfiere archivos con compresión delta, sumas de verificación y permisos correctos.",
       "launchFailed": "Falló al lanzar terminal: {{error}}",
+      "externalRefused": "Se indicó --external, pero no se pudo abrir un terminal externo ({{error}}). No se inició nada; vuelve a ejecutar sin --external para una sesión en este terminal.",
       "noHostKey": "Máquina '{{machine}}' no tiene clave de host configurada en la bóveda",
       "noIpAddress": "Máquina '{{machine}}' no tiene dirección IP configurada",
       "noPrivateKey": "Equipo '{{team}}' no tiene clave privada SSH configurada",

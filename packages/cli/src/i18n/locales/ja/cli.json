@@ -3312,6 +3312,7 @@
       "fetchingDetails": "接続詳細を取得中です...",
       "launchingTerminal": "{{type}} ターミナルを起動中です...",
       "launchSuccess": "ターミナルが正常に起動されました。",
+      "externalFallback": "外部ターミナルを開けませんでした（{{error}}）。このターミナルで SSH を直接実行して続けます。",
       "testingConnectivity": "{{host}}:{{port}} への接続をテスト中です..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up <repo-ref>",
       "fileWriteDetected": "ファイル書き込みを検出しました ({{detected}})。代わりに rdc repo sync を使用してください:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync はデルタ圧縮、チェックサム、適切なパーミッションでファイルを転送します。",
       "launchFailed": "ターミナルの起動に失敗しました: {{error}}",
+      "externalRefused": "--external が指定されましたが、外部ターミナルを開けませんでした（{{error}}）。何も開始していません。このターミナルで使うには --external を外して再実行してください。",
       "noHostKey": "マシン '{{machine}}' のボルトにホストキーが設定されていません",
       "noIpAddress": "マシン '{{machine}}' に IP アドレスが設定されていません",
       "noPrivateKey": "チーム '{{team}}' に SSH 秘密鍵が設定されていません",

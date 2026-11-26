@@ -3312,6 +3312,7 @@
       "fetchingDetails": "正在获取连接详情...",
       "launchingTerminal": "正在启动 {{type}} 终端...",
       "launchSuccess": "终端已成功启动。",
+      "externalFallback": "无法打开外部终端（{{error}}）。将在当前终端中直接使用 SSH 继续。",
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
     },
     "update": {
@@ -3852,6 +3853,7 @@
       "dockerComposeForbidden": "在仓库上下文中不允许使用 \"docker compose\"。\n\n请改用 \"renet compose -- <args>\"，这样才会应用每个仓库的回环 IP、主机网络注入、CRIU 能力和 compose 验证。直接运行 \"docker compose\" 会绕过所有这些并在不知不觉中破坏部署。\n\n对于编排部署，推荐使用：rdc repo up <repo-ref>",
       "fileWriteDetected": "检测到文件写入 ({{detected}})。请改用 rdc repo sync 命令：\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync 使用增量压缩、校验和和正确的权限传输文件。",
       "launchFailed": "无法启动终端：{{error}}",
+      "externalRefused": "已指定 --external，但无法打开外部终端（{{error}}）。未启动任何会话；如需在当前终端中使用，请去掉 --external 重新运行。",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",

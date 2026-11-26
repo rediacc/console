@@ -2624,6 +2624,7 @@
   "commands.term.connectingTo": "{{title}} に接続中です...",
   "commands.term.description": "マシンまたはリポジトリへの SSH ターミナルを開く。対象にはマシン名またはリポジトリ ref を指定でき、リポジトリコンテキスト（DOCKER_HOST、作業ディレクトリ、環境変数）は自動的に設定される。`-c` で単一コマンドを非対話的に実行できる。コンテナのログや単発コマンドの実行には `repo logs` と `repo exec` を使用する。VS Code には `vscode` を使用する",
   "commands.term.descriptionShort": "マシンとリポジトリへの SSH ターミナルアクセス",
+  "commands.term.externalFallback": "外部ターミナルを開けませんでした（{{error}}）。このターミナルで SSH を直接実行して続けます。",
   "commands.term.fetchingDetails": "接続詳細を取得中です...",
   "commands.term.launchingTerminal": "{{type}} ターミナルを起動中です...",
   "commands.term.launchSuccess": "ターミナルが正常に起動されました。",
