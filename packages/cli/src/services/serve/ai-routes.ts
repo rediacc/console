@@ -48,21 +48,14 @@
  */
 
 import { type AiConfigs, type Profile, resolveProfile } from '@rediacc/shared/ai';
-import { STEP_UP_METHODS } from '@rediacc/shared/auth';
 import { getCommand } from '@rediacc/shared/cli-contract';
-import {
-  type AiApprovalCommand,
-  type AiEvent,
-  PROXY_ROUTES,
-  type StreamLine,
-} from '@rediacc/shared/cli-contract/wire';
+import { type AiEvent, PROXY_ROUTES, type StreamLine } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { type LanguageModel } from 'ai';
 import type { Context, Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { z } from 'zod';
 import { auditJudgment, auditModeChange, auditRefusal } from '../ai/approval-audit.js';
-import type { AiApprovals } from '../ai/approvals.js';
 import { autonomyHold, effectiveMode } from '../ai/autonomy.js';
 import {
   buildJudgeInput,
@@ -79,19 +72,9 @@ import {
   type ProviderModelOptions,
   ProviderProfileError,
 } from '../ai/provider.js';
-import type { AiTranscripts, TranscriptKey, TranscriptTurn } from '../ai/recorder.js';
+import type { TranscriptTurn } from '../ai/recorder.js';
 import { runSmoke } from '../ai/smoke.js';
 import { type AiGateCall, type AiToolGate } from '../ai/tools.js';
-import {
-  AI_TRANSCRIBE_FAILED,
-  AI_TRANSCRIBE_UNSUPPORTED,
-  MAX_TRANSCRIBE_BYTES,
-  readCapped,
-  supportsTranscription,
-  TRANSCRIBE_AUDIO_TYPES,
-  TranscriptionFailed,
-  transcribeAudio,
-} from '../ai/transcribe.js';
 import { outputService } from '../core/output.js';
 import { ForensicsTicket } from '../forensics/client.js';
 import { type AgentGrantHandle } from './agent-grant-session.js';
@@ -118,13 +101,16 @@ import {
   toolRequestId,
   UNRECORDED,
 } from './ai-chat-tools.js';
+import { type ChatRequest, ChatRequestSchema, TestRequestSchema } from './ai-request-schemas.js';
 import {
-  type ChatRequest,
-  ChatRequestSchema,
-  IdSchema,
-  TestRequestSchema,
-} from './ai-request-schemas.js';
-import { type BusyCounter, createBusyCounter } from './busy.js';
+  AI_MODE_DISABLED,
+  AI_PROFILE_UNRESOLVED,
+  type AiRouteDeps,
+  ApprovalRequestSchema,
+  ModeRequestSchema,
+} from './ai-route-types.js';
+import { readRecording, transcription } from './ai-transcribe-route.js';
+import { createBusyCounter } from './busy.js';
 import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { cancelOnMachine, type JobRouteHelpers } from './job-routes.js';
 import type { SessionPrincipal } from './sessions.js';
@@ -141,164 +127,17 @@ export const AI_ROUTES = {
   transcribe: '/v1/ai/transcribe',
 } as const;
 
-/** A `?profile=` of the transcription route, as the chat body's `profile` is checked. */
-const TranscribeProfileSchema = z.string().min(1).max(128);
-
-function audioTypeOf(header: string | undefined) {
-  const type = (header ?? '').split(';')[0]?.trim().toLowerCase() ?? '';
-  return TRANSCRIBE_AUDIO_TYPES.find((known) => known === type);
-}
-
-interface Recording {
-  type: (typeof TRANSCRIBE_AUDIO_TYPES)[number];
-  profile: string | undefined;
-  audio: Uint8Array<ArrayBuffer>;
-}
-
-/** The answer to a profile the transcription guard refused or a provider refusal; anything else is rethrown. */
-function transcriptionRefusal(error: unknown): { body: Record<string, string>; status: 422 | 502 } {
-  if (error instanceof ProviderProfileError) {
-    return { status: 422, body: { error: error.message, code: AI_PROFILE_UNRESOLVED } };
-  }
-  if (!(error instanceof TranscriptionFailed)) throw error;
-  return { status: 502, body: { error: error.message, code: AI_TRANSCRIBE_FAILED } };
-}
-
-/** The recording of a transcription request, or the refusal of a malformed one. */
-async function readRecording(
-  c: Context
-): Promise<Recording | { refusal: { error: string; code?: string }; status: 413 | 415 }> {
-  const type = audioTypeOf(c.req.header('content-type'));
-  if (!type) {
-    return {
-      status: 415,
-      refusal: {
-        error: `Transcription takes ${TRANSCRIBE_AUDIO_TYPES.join(', ')}`,
-        code: AI_TRANSCRIBE_UNSUPPORTED,
-      },
-    };
-  }
-  const raw = c.req.query('profile');
-  const name = raw === undefined ? undefined : TranscribeProfileSchema.safeParse(raw);
-  if (name && !name.success) throw new BadAiRequest('Malformed AI request: profile: invalid');
-  const declared = Number(c.req.header('content-length'));
-  const audio =
-    Number.isFinite(declared) && declared > MAX_TRANSCRIBE_BYTES
-      ? undefined
-      : await readCapped(c.req.raw.body, MAX_TRANSCRIBE_BYTES);
-  if (!audio || audio.byteLength === 0) {
-    return { status: 413, refusal: { error: `A recording is 1 to ${MAX_TRANSCRIBE_BYTES} bytes` } };
-  }
-  return { type, profile: name?.data, audio };
-}
-
-const AI_MODES = ['ask', 'auto', 'skip'] as const;
-export type AiMode = (typeof AI_MODES)[number];
-
-/** Refusal codes these routes answer with. */
-export const AI_MODE_DISABLED = 'AI_MODE_DISABLED';
-
-const ModeRequestSchema = z.strictObject({
-  conversationId: IdSchema,
-  mode: z.enum(AI_MODES),
-});
-
-const ApprovedCommandSchema = z.strictObject({
-  pathKey: z.string().min(1).max(256),
-  params: z.record(z.string(), z.unknown()).default({}),
-  positionals: z.record(z.string(), z.unknown()).default({}),
-});
-
-/** What the account forwards: its own `grand` input is not among the fields, the executor decides it. */
-const ApprovalRequestSchema = z.strictObject({
-  conversationId: IdSchema,
-  toolCallId: z.string().min(1).max(256),
-  approvalToken: z.string().min(1).max(4096),
-  decision: z.enum(['approve', 'reject']),
-  command: ApprovedCommandSchema,
-  stepUpMethod: z.enum(STEP_UP_METHODS).nullable(),
-  /** Remember an exact allow rule for this argv in this conversation (a `caution` command only). */
-  remember: z.boolean().optional(),
-});
-
-type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
-
-export type { ApprovalRequest };
-
-/** Where the loop keeps each conversation's mode (D4) and exact allow rules; the autonomy gate reads both. */
-interface AiConversationModes {
-  set(principal: SessionPrincipal, conversationId: string, mode: AiMode): void;
-  get(principal: SessionPrincipal, conversationId: string): AiMode;
-  allowExact(principal: SessionPrincipal, conversationId: string, command: AiApprovalCommand): void;
-  allowsExact(
-    principal: SessionPrincipal,
-    conversationId: string,
-    command: AiApprovalCommand
-  ): boolean;
-}
-
-/** One approval answer as the executor verified it. */
-export interface AiApprovalSubmit extends Omit<ApprovalRequest, 'stepUpMethod' | 'remember'> {
-  principal: SessionPrincipal;
-  stepUpMethod: ApprovalRequest['stepUpMethod'];
-  /** The command is destructive and the run is not a preview. */
-  destructive: boolean;
-  /** The executor resolved the target to a grand repo (or an unresolved one) off the ops VMs. */
-  grand: boolean;
-}
-
-export type AiApprovalVerdict =
-  | { ok: true }
-  | { ok: false; status: 403 | 404 | 409; code: string; message: string };
-
-/** The chat host's own seams; every one has a production default. */
-export interface AiChatDeps {
-  /** The AI SDK model of a profile; `createProviderModel` when absent. Tests pass a mock model. */
-  createModel?: (profile: Profile, options?: ProviderModelOptions) => LanguageModel;
-  /**
-   * The profile sources of a request, team over shared (D3). Absent: the session's own config is the
-   * only source. The container tier lends the second config when it loads both.
-   */
-  aiConfigs?: (
-    principal: SessionPrincipal,
-    config: RdcConfig,
-    configSessionId?: string
-  ) => Promise<AiConfigs>;
-  /** Counts a running tool as a running dispatch, as `/v1/command` does. */
-  busy?: BusyCounter;
-  /** The per-turn output token cap when the profile names none; the loop's default when absent. */
-  maxOutputTokens?: number;
-  /** The Auto-mode judge of a profile; `runJudge` on the profile's judge model when absent. */
-  judge?: (profile: Profile, input: JudgeInput) => Promise<JudgeVerdict>;
-  /** Records each turn of a chat on the caller's own session; absent, no turn is recorded. */
-  recording?: AiChatRecording;
-  /** `renet job cancel` of one job, run inside the turn's config scope; `cancelOnMachine` when absent. */
-  cancelJob?: (machine: string, jobId: string) => Promise<unknown>;
-  /** The fetch provider transcription goes out through, behind the profile guard; `fetch` when absent. */
-  transcribeFetch?: typeof globalThis.fetch;
-}
-
-/** Where a chat's turns are recorded, and the session key each is sealed under. */
-export interface AiChatRecording {
-  transcripts: AiTranscripts;
-  /** The key a turn of this session is sealed under, or why the session has none. */
-  keyOf: (
-    principal: SessionPrincipal,
-    config: RdcConfig,
-    configSessionId: string | undefined
-  ) => TranscriptKey | string;
-  /** Told why a turn was not recorded. */
-  onUnrecorded?: (reason: string, conversationId: string) => void;
-}
-
-export interface AiRouteDeps {
-  modes: AiConversationModes;
-  approvals: AiApprovals;
-  chat?: AiChatDeps;
-}
-
-/** Refusal codes of the chat and test routes. */
-export const AI_PROFILE_UNRESOLVED = 'AI_PROFILE_UNRESOLVED';
+export {
+  AI_MODE_DISABLED,
+  AI_PROFILE_UNRESOLVED,
+  type AiApprovalSubmit,
+  type AiApprovalVerdict,
+  type AiChatDeps,
+  type AiChatRecording,
+  type AiMode,
+  type AiRouteDeps,
+  type ApprovalRequest,
+} from './ai-route-types.js';
 
 export function registerAiRoutes(
   app: Hono,
@@ -696,33 +535,6 @@ export function registerAiRoutes(
     }
   });
 
-  /** The provider's transcript of one recording, or the refusal that answers it. */
-  async function transcription(
-    profile: Profile,
-    recording: Recording,
-    signal: AbortSignal
-  ): Promise<{ body: Record<string, string>; status: 200 | 422 | 502 }> {
-    if (!supportsTranscription(profile)) {
-      return {
-        status: 422,
-        body: {
-          error: 'This profile has no transcription endpoint; pick an OpenAI-compatible profile.',
-          code: AI_TRANSCRIBE_UNSUPPORTED,
-        },
-      };
-    }
-    try {
-      const fetch = ai.chat?.transcribeFetch;
-      const text = await transcribeAudio(profile, recording.audio, recording.type, {
-        ...(fetch ? { fetch } : {}),
-        signal,
-      });
-      return { status: 200, body: { text } };
-    } catch (error) {
-      return transcriptionRefusal(error);
-    }
-  }
-
   app.post(AI_ROUTES.transcribe, async (c) => {
     try {
       const principal = await helpers.authenticate(c.req.header('authorization'));
@@ -734,7 +546,12 @@ export function registerAiRoutes(
       if (!resolved.ok) {
         return c.json({ error: resolved.message, code: AI_PROFILE_UNRESOLVED }, 404);
       }
-      const answer = await transcription(resolved.profile, recording, c.req.raw.signal);
+      const answer = await transcription(
+        resolved.profile,
+        recording,
+        c.req.raw.signal,
+        ai.chat?.transcribeFetch
+      );
       return c.json(answer.body, answer.status, { 'Cache-Control': 'no-store' });
     } catch (error) {
       return refusal(c, error);
