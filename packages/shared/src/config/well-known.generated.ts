@@ -4,6 +4,7 @@
 export const WK_RELEASES_ORIGIN = 'https://releases.rediacc.com';
 export const WK_SITE_ORIGIN = 'https://www.rediacc.com';
 export const WK_MEDIA_ORIGIN = 'https://media.rediacc.com';
+export const WK_PUBLIC_DATA_ORIGIN = 'https://data.rediacc.com';
 export const WK_BENCH_ORIGIN = 'https://bench-eu.rediacc.cloud';
 export const WK_BENCH_RETIRING_ORIGIN = 'https://bench.rediacc.cloud';
 export const WK_SANDBOX_ORIGIN = 'https://sandbox.rediacc.com';
@@ -25,6 +26,7 @@ export const WK_PRODUCT_DOMAIN = 'rediacc.cloud';
 export const WK_INFRA_DOMAIN = 'rediacc.io';
 export const WK_RELEASES_BUCKET = 'releases';
 export const WK_MEDIA_BUCKET = 'media';
+export const WK_PUBLIC_DATA_BUCKET = 'rediacc-public-data';
 export const WK_GH_REPO = 'rediacc/console';
 export const WK_RENET_REPO = 'rediacc/renet';
 export const WK_ACCOUNT_REPO = 'rediacc/account';

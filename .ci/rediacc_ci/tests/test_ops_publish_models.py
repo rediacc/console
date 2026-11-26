@@ -1,0 +1,210 @@
+"""`rediacc_ci.ops.publish_models`: the order, headers, sequence and refusals of a model bundle publish. No network, no bucket, no signing key: the runner and the fetcher are fakes."""
+
+from __future__ import annotations
+
+import json
+import pathlib
+
+import pytest
+
+from rediacc_ci.ops import publish_models as pm
+
+SECRETS = {
+    "MODEL_ED25519_PRIVATE_KEY": "k",
+    "R2_PUBLIC_DATA_ACCESS_KEY_ID": "id",
+    "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": "secret",
+}
+
+
+class FakeRunner:
+    """Records each command and writes the files the real pack and sign steps would."""
+
+    def __init__(self, fail_on: str = "") -> None:
+        self.calls: list[list[str]] = []
+        self.envs: list[dict[str, str]] = []
+        self.cwds: list[pathlib.Path | None] = []
+        self.fail_on = fail_on
+
+    def __call__(self, argv: list[str], env: dict[str, str], cwd: pathlib.Path | None) -> int:
+        self.calls.append(list(argv))
+        self.envs.append(dict(env))
+        self.cwds.append(cwd)
+        if self.fail_on and self.fail_on in argv:
+            return 3
+        if argv[1:3] == ["models", "pack"]:
+            out = pathlib.Path(argv[argv.index("--out") + 1])
+            version = argv[argv.index("--version") + 1]
+            (out / "objects").mkdir(parents=True, exist_ok=True)
+            (out / "manifests").mkdir(parents=True, exist_ok=True)
+            (out / "objects" / "ab12").write_bytes(b"{}")
+            (out / "manifests" / ("%s.json" % version)).write_bytes(b"{}")
+        elif "sign" in argv and argv[-2:-1] == ["sign"]:
+            pathlib.Path(argv[-1] + ".sig").write_bytes(b"s")
+        elif "pointer" in argv:
+            out = pathlib.Path(argv[argv.index("-out") + 1])
+            out.write_bytes(b"{}")
+            pathlib.Path(str(out) + ".sig").write_bytes(b"s")
+        return 0
+
+
+def fetcher(files: dict[str, bytes]):
+    def get(url: str) -> bytes | None:
+        return files.get(url)
+
+    return get
+
+
+def args(*extra: str):
+    return pm.parse_args(["--renet", "/bin/renet", *extra])
+
+
+def uploads(calls: list[list[str]]) -> list[list[str]]:
+    return [c for c in calls if c[1:3] == ["s3", "cp"]]
+
+
+def test_publish_orders_objects_manifest_then_pointer() -> None:
+    runner = FakeRunner()
+    get = fetcher({})
+    code = pm.run(
+        args("--channel", "edge", "--percent", "10", "--version", "7"),
+        SECRETS,
+        runner=runner,
+        get=get,
+    )
+    assert code == 0
+    keys = [c[4].split("/models/", 1)[1] for c in uploads(runner.calls)]
+    assert keys == [
+        "objects/ab12",
+        "manifests/7.json",
+        "manifests/7.json.sig",
+        "channels/edge.json",
+        "channels/edge.json.sig",
+    ]
+    assert runner.calls[0][1:3] == ["models", "pack"]
+
+
+def test_headers_follow_the_bundle_format() -> None:
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
+    by_key = {
+        c[4].split("/models/", 1)[1]: c[c.index("--cache-control") + 1]
+        for c in uploads(runner.calls)
+    }
+    assert by_key["objects/ab12"] == pm.IMMUTABLE
+    assert by_key["manifests/7.json"] == pm.IMMUTABLE
+    assert by_key["channels/edge.json"] == "public, max-age=60"
+    assert by_key["channels/edge.json.sig"] == "public, max-age=60"
+
+
+def test_sequence_is_one_above_the_origin_pointer() -> None:
+    runner = FakeRunner()
+    get = fetcher({pm.pointer_url("edge"): json.dumps({"seq": 41}).encode()})
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=get)
+    pointer_call = next(c for c in runner.calls if "pointer" in c)
+    assert pointer_call[pointer_call.index("-seq") + 1] == "42"
+
+
+def test_missing_pointer_starts_at_one_and_explicit_seq_wins() -> None:
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
+    first = next(c for c in runner.calls if "pointer" in c)
+    assert first[first.index("-seq") + 1] == "1"
+    runner = FakeRunner()
+    pm.run(
+        args("--channel", "edge", "--version", "7", "--seq", "9"),
+        SECRETS,
+        runner=runner,
+        get=fetcher({}),
+    )
+    again = next(c for c in runner.calls if "pointer" in c)
+    assert again[again.index("-seq") + 1] == "9"
+
+
+def test_promote_signs_stable_from_the_edge_manifest_without_repacking() -> None:
+    base = "%s/models" % pm.PUBLIC_DATA_ORIGIN
+    get = fetcher(
+        {
+            pm.pointer_url("edge"): json.dumps({"seq": 5, "version": 12}).encode(),
+            pm.pointer_url("stable"): json.dumps({"seq": 2}).encode(),
+            base + "/manifests/12.json": b"{}",
+            base + "/manifests/12.json.sig": b"s",
+        }
+    )
+    runner = FakeRunner()
+    pm.run(args("--channel", "stable", "--promote"), SECRETS, runner=runner, get=get)
+    assert not any(c[1:3] == ["models", "pack"] for c in runner.calls)
+    pointer_call = next(c for c in runner.calls if "pointer" in c)
+    assert pointer_call[pointer_call.index("-channel") + 1] == "stable"
+    assert pointer_call[pointer_call.index("-seq") + 1] == "3"
+    assert pointer_call[pointer_call.index("-percent") + 1] == "100"
+    keys = [c[4].split("/models/", 1)[1] for c in uploads(runner.calls)]
+    assert keys == ["channels/stable.json", "channels/stable.json.sig"]
+
+
+def test_promote_without_an_edge_pointer_is_refused() -> None:
+    with pytest.raises(pm.PublishError, match="no edge pointer"):
+        pm.run(
+            args("--channel", "stable", "--promote"), SECRETS, runner=FakeRunner(), get=fetcher({})
+        )
+
+
+def test_missing_secrets_are_refused_before_any_command() -> None:
+    runner = FakeRunner()
+    with pytest.raises(pm.PublishError, match="MODEL_ED25519_PRIVATE_KEY"):
+        pm.run(args("--channel", "edge", "--version", "7"), {}, runner=runner, get=fetcher({}))
+    assert runner.calls == []
+
+
+def test_signing_runs_inside_the_renet_tree() -> None:
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
+    signing = [
+        cwd
+        for call, cwd in zip(runner.calls, runner.cwds, strict=True)
+        if "./cmd/modelsign" in call
+    ]
+    assert signing
+    assert all(cwd == pm.renet_dir() for cwd in signing)
+
+
+def test_credentials_reach_the_children_under_the_aws_names() -> None:
+    runner = FakeRunner()
+    pm.run(args("--channel", "edge", "--version", "7"), SECRETS, runner=runner, get=fetcher({}))
+    assert runner.envs[0]["AWS_ACCESS_KEY_ID"] == "id"
+    assert runner.envs[0]["AWS_SECRET_ACCESS_KEY"] == "secret"
+
+
+def test_a_failed_step_stops_the_run_before_the_pointer_uploads() -> None:
+    class Failing(FakeRunner):
+        def __call__(self, argv: list[str], env: dict[str, str], cwd: pathlib.Path | None) -> int:
+            if argv[1:3] == ["s3", "cp"] and "objects/ab12" in argv[4]:
+                self.calls.append(list(argv))
+                return 1
+            return super().__call__(argv, env, cwd)
+
+    failing = Failing()
+    with pytest.raises(pm.PublishError, match="upload objects"):
+        pm.run(
+            args("--channel", "edge", "--version", "7"), SECRETS, runner=failing, get=fetcher({})
+        )
+    assert not any("channels/" in c[4] for c in uploads(failing.calls))
+
+
+def test_dry_run_runs_nothing_and_needs_no_secrets() -> None:
+    runner = FakeRunner()
+
+    def no_network(url: str) -> bytes | None:
+        raise AssertionError("dry run fetched %s" % url)
+
+    code = pm.run(args("--channel", "edge", "--dry-run"), {}, runner=runner, get=no_network)
+    assert code == 0
+    assert runner.calls == []
+
+
+def test_percent_and_promote_flags_are_validated() -> None:
+    with pytest.raises(SystemExit):
+        args("--channel", "edge", "--percent", "101")
+    with pytest.raises(SystemExit):
+        args("--channel", "edge", "--promote")
+    with pytest.raises(SystemExit):
+        args("--channel", "stable", "--promote", "--rollback")
