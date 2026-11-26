@@ -34,7 +34,7 @@ rdc machine:    add remove list status setup scan-keys health repair prune conve
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
 rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
-                cat diff logs exec tunnel health repair
+                cat diff logs exec tunnel health repair flows opens
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
                 commit branch checkout log merge gc
                 resize expand trim policy {set get}
@@ -55,12 +55,14 @@ rdc subscription: login register logout status notices retire refresh proxy-toke
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc feedback:   report list show
+rdc incident:   status export
+rdc forensics:  verify
 rdc doctor | credits | update | version | legal | completion | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-five differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-eight differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -100,6 +102,9 @@ Thirty-five differences. The first six are deliberate and each is traceable to a
 | `repo admin` with no orphan verbs | `repo admin orphan {list delete}` | Worklist #48d790e1: a repository image whose GUID left every config could not be removed, because `repo delete` resolves only config refs and `machine prune --orphaned-repos` deletes every orphan on the machine at once. `list <machine>` judges each image with the verdict `machine prune --orphaned-repos` reaches, and `delete <guid>@<machine>` removes exactly one orphan through renet `repository_delete`, refusing a GUID any readable config names. Both judge against the caller's configs, so neither is proxy-capable, and `machine prune` joins them because its `--orphaned-repos` and `--prune-unknown` flags decide at runtime. |
 | no `feedback` noun | `feedback {report list show}` | PLAN-rdc-feedback C3/C4: `report` files a redacted report of a failed command (the last one with `--last`) with the account service, and `list` and `show` read the reports the caller filed. All three talk to the account service only and reach no machine, so they are other-plane. A report is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 | no shell completion | `completion <bash\|zsh\|fish\|pwsh>` | Prints the completion script for the named shell; the script asks the hidden `__complete` entry for candidates, so names of machines, repositories and configs complete from the active config. A leaf with no noun of its own, like `version` and `legal`. Not drift: it postdates this transcript. |
+| `repo` with no forensic reads | `repo {flows opens}` | PLAN-forensics-investigation: `flows` lists a repository's recorded network flows and `opens` its recorded file opens over a time window, each with gap rows where no evidence exists. Both read the account server only (the `forensics:read` scope on a paid plan) and reach no machine. |
+| no `incident` noun | `incident {status export}` | PLAN-forensics-investigation D4, D7: incidents are declared in the web console; `status` lists them or shows one with its deadline clocks, and `export` writes the incident's window, raw chain files and their verification to a directory. An incident is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| no `forensics` noun | `forensics verify` | PLAN-forensics-investigation D5: recomputes the audit day-file chain and the signed batch chains of an evidence directory on the workstation, under machine keys from outside the directory (`--machine-key`, or the keys the account server pinned for the incident the directory names). |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
