@@ -98,10 +98,11 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_cf_ai_gateway.py` rc 0.
     (ticked) 2026-11-25T20:05:26Z by d778be9d: AC8 AI gateway config and cf_ai_gateway tool (apply, --check, --dry-run); 11 tests; landed 502a1020fc. DEPS-WAIVED: CR2 code landed, its open clause is operator-owned
-- [ ] AC9 [writer] Admin UI: a per-org AI credits panel on CustomerDetail.tsx (balance, lots, grant with credits, expiry and payment reference, refund of unused credit, org switch) and an admin AI credits page (global switch, funding entries, the latest reconcile drift), with router entries and endpoints.
+- [x] AC9 [writer] Admin UI: a per-org AI credits panel on CustomerDetail.tsx (balance, lots, grant with credits, expiry and payment reference, refund of unused credit, org switch) and an admin AI credits page (global switch, funding entries, the latest reconcile drift), with router entries and endpoints.
   Owns: private/account/web/src/pages/admin/CustomerDetail.tsx, private/account/web/src/pages/admin/AiCredits.tsx, private/account/web/src/components/ai-credits/**, private/account/web/src/router.tsx, private/account/web/src/api/endpoints.ts, private/account/web/src/pages/__tests__/ai-credits-admin.test.tsx
   Depends on: AC4.
   Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/ai-credits-admin.test.tsx)` rc 0 and `(cd private/account && npm run typecheck:web)` rc 0.
+    (ticked) 2026-11-26T03:04:22Z by d778be9d: AC9 complete: org panel, admin page, reconcile drift display with the read-error state and the sub-0.0005 USD guard; ai-credits-admin 8 tests, typecheck rc 0; landed 12abf6c201. DEPS-WAIVED: prerequisites landed
 - [x] AC10 [writer] Customer UI per D12: AiCredits.tsx, the nav entry, and `useAiCredits` returning balance, low-balance state and entitlement for the chip of PLAN-console-ai-assistant.md.
   Owns: private/account/web/src/pages/AiCredits.tsx, private/account/web/src/hooks/useAiCredits.ts, private/account/web/src/lib/nav-config.ts, private/account/web/src/pages/__tests__/ai-credits.test.tsx
   Depends on: AC4, AC9.
