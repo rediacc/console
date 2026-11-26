@@ -45,7 +45,6 @@ import {
   type ExecutorRecord,
   type ExitResult,
   executorEnv,
-  flagOom,
   forwardFailure,
   isBusyPath,
   isOomExit,
@@ -63,6 +62,7 @@ import {
   RECORD_KEY,
   RENEW_THROTTLE_MS,
   RETIRED_KEY,
+  recordOomExit,
   refusal,
   refusalResponse,
   registerEgress,
@@ -78,9 +78,6 @@ import {
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
-
-/** The size named in the out-of-memory log line when the container never reported one. */
-const UNKNOWN_SIZE = 'unknown';
 
 /** The per-org executor Durable Object. See the module comment. */
 export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
@@ -579,13 +576,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const wasSize = this.record?.size;
     this.record = undefined;
     this.draining = false;
-    if (!result.clean && isOomExit(result.error)) {
-      console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
-      await warnIfThrows(
-        () => flagOom(this.ctx.storage, wasSize),
-        'proxy: org executor exit bookkeeping failed'
-      );
-    }
+    if (!result.clean && isOomExit(result.error)) await recordOomExit(this.ctx.storage, wasSize);
     // The record is deleted whatever the OOM flags did. If this delete also fails, the stale record is harmless: `recover` finds no running container and clears it, so a dead container is never recovered as running.
     await warnIfThrows(
       () => this.ctx.storage.delete(RECORD_KEY),

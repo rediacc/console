@@ -490,3 +490,15 @@ export async function flagOom(
   await storage.put(OOM_KEY, now);
   if (size === 'heavy') await storage.put(OOM_HEAVY_KEY, now);
 }
+
+/** The size named in the out-of-memory log line when the container never reported one. */
+const UNKNOWN_SIZE = 'unknown';
+
+/** Log an out-of-memory exit and flag it for the sizing rule, never throwing: bookkeeping must not block the exit's cleanup. */
+export async function recordOomExit(
+  storage: DurableObjectStorage,
+  size: string | undefined
+): Promise<void> {
+  console.warn(`proxy: org executor out of memory on ${size ?? UNKNOWN_SIZE}`);
+  await warnIfThrows(() => flagOom(storage, size), 'proxy: org executor exit bookkeeping failed');
+}
