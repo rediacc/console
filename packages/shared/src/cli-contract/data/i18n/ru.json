@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "не установлен",
   "commands.doctor.notLoggedIn": "не выполнен вход",
   "commands.doctor.opsSkipped": "renet недоступен (пропущено)",
-  "commands.doctor.remoteSshInstallHint": "Установите командой: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "Установите расширение Remote - SSH (ms-vscode-remote.remote-ssh) в представлении расширений VS Code",
   "commands.doctor.rsyncInstallHint": "Установите rsync системным менеджером пакетов",
   "commands.doctor.rsyncInstallHintWin32": "Выполните: rdc tools install rsync (или в MSYS2: pacman -S rsync)",
   "commands.doctor.sections.configuration": "Конфигурация",

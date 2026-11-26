@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "non installato",
   "commands.doctor.notLoggedIn": "non connesso",
   "commands.doctor.opsSkipped": "renet non disponibile (saltato)",
-  "commands.doctor.remoteSshInstallHint": "Installala con: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "Installa l'estensione Remote - SSH (ms-vscode-remote.remote-ssh) dalla vista Estensioni di VS Code",
   "commands.doctor.rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema",
   "commands.doctor.rsyncInstallHintWin32": "Esegui: rdc tools install rsync (o in MSYS2: pacman -S rsync)",
   "commands.doctor.sections.configuration": "Configurazione",

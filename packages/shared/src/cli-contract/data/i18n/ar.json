@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "غير مثبّت",
   "commands.doctor.notLoggedIn": "لم يتم تسجيل الدخول",
   "commands.doctor.opsSkipped": "renet غير متاح (تم التخطي)",
-  "commands.doctor.remoteSshInstallHint": "ثبّتها بالأمر: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "ثبّت إضافة Remote - SSH ‏(ms-vscode-remote.remote-ssh) من عرض الإضافات في VS Code",
   "commands.doctor.rsyncInstallHint": "ثبّت rsync باستخدام مدير حزم النظام",
   "commands.doctor.rsyncInstallHintWin32": "شغّل: rdc tools install rsync (أو في MSYS2: pacman -S rsync)",
   "commands.doctor.sections.configuration": "الإعدادات",

@@ -1287,7 +1287,7 @@
       "notDetectedValue": "감지되지 않음",
       "rsyncInstallHintWin32": "다음을 실행하세요: rdc tools install rsync (MSYS2에서는 pacman -S rsync)",
       "vscodeInstallHint": "rdc vscode를 사용하려면 https://code.visualstudio.com/ 에서 VS Code를 설치하세요",
-      "remoteSshInstallHint": "다음 명령으로 설치하세요: code --install-extension ms-vscode-remote.remote-ssh",
+      "remoteSshInstallHint": "VS Code 확장 보기에서 Remote - SSH 확장(ms-vscode-remote.remote-ssh)을 설치하세요",
       "sshClientMissingHint": "Windows 설정 > 선택적 기능에서 OpenSSH 클라이언트를 추가하세요"
     },
     "feedback": {

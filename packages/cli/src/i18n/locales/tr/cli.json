@@ -1287,7 +1287,7 @@
       "notDetectedValue": "algılanmadı",
       "rsyncInstallHintWin32": "Çalıştırın: rdc tools install rsync (veya MSYS2'de: pacman -S rsync)",
       "vscodeInstallHint": "rdc vscode kullanmak için VS Code'u https://code.visualstudio.com/ adresinden yükleyin",
-      "remoteSshInstallHint": "Şununla yükleyin: code --install-extension ms-vscode-remote.remote-ssh",
+      "remoteSshInstallHint": "VS Code Uzantılar görünümünden Remote - SSH uzantısını (ms-vscode-remote.remote-ssh) yükleyin",
       "sshClientMissingHint": "OpenSSH İstemcisi'ni Windows Ayarları > İsteğe bağlı özellikler bölümünden ekleyin"
     },
     "feedback": {

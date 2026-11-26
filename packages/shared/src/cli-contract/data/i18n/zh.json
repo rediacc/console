@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "未安装",
   "commands.doctor.notLoggedIn": "未登录",
   "commands.doctor.opsSkipped": "renet 不可用（已跳过）",
-  "commands.doctor.remoteSshInstallHint": "使用以下命令安装：code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "请在 VS Code 的扩展视图中安装 Remote - SSH 扩展（ms-vscode-remote.remote-ssh）",
   "commands.doctor.rsyncInstallHint": "请用系统包管理器安装 rsync",
   "commands.doctor.rsyncInstallHintWin32": "请运行：rdc tools install rsync（在 MSYS2 中：pacman -S rsync）",
   "commands.doctor.sections.configuration": "配置",

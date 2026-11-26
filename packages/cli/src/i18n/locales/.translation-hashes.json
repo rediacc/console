@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 3341,
-    "sourceCommit": "fe238394a8a84998731835e2209fbcd769797e54"
+    "sourceCommit": "3ef28be1238988dd4e62df6f8015e7f8c4a0396b"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -998,7 +998,7 @@
     "commands.doctor.notInstalled": "1ea95f02",
     "commands.doctor.notLoggedIn": "8b938ea2",
     "commands.doctor.opsSkipped": "218a1699",
-    "commands.doctor.remoteSshInstallHint": "04bd391c",
+    "commands.doctor.remoteSshInstallHint": "c729631c",
     "commands.doctor.rsyncInstallHint": "9ae88122",
     "commands.doctor.rsyncInstallHintWin32": "9746d7d4",
     "commands.doctor.sections.configuration": "169cee22",

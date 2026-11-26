@@ -1287,7 +1287,7 @@
       "notDetectedValue": "tuvastamata",
       "rsyncInstallHintWin32": "Käivita: rdc tools install rsync (või MSYS2-s: pacman -S rsync)",
       "vscodeInstallHint": "Paigalda VS Code aadressilt https://code.visualstudio.com/, et kasutada käsku rdc vscode",
-      "remoteSshInstallHint": "Paigalda käsuga: code --install-extension ms-vscode-remote.remote-ssh",
+      "remoteSshInstallHint": "Paigalda laiendus Remote - SSH (ms-vscode-remote.remote-ssh) VS Code'i laienduste vaatest",
       "sshClientMissingHint": "Lisa OpenSSH-klient Windowsi sätetes valikulistest funktsioonidest"
     },
     "feedback": {

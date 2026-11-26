@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "pole installitud",
   "commands.doctor.notLoggedIn": "pole sisse logitud",
   "commands.doctor.opsSkipped": "renet pole saadaval (vahele jäetud)",
-  "commands.doctor.remoteSshInstallHint": "Paigalda käsuga: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "Paigalda laiendus Remote - SSH (ms-vscode-remote.remote-ssh) VS Code'i laienduste vaatest",
   "commands.doctor.rsyncInstallHint": "Paigalda rsync süsteemi paketihalduriga",
   "commands.doctor.rsyncInstallHintWin32": "Käivita: rdc tools install rsync (või MSYS2-s: pacman -S rsync)",
   "commands.doctor.sections.configuration": "Konfiguratsioon",

@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "yüklü değil",
   "commands.doctor.notLoggedIn": "giriş yapılmamış",
   "commands.doctor.opsSkipped": "renet mevcut değil (atlandı)",
-  "commands.doctor.remoteSshInstallHint": "Şununla yükleyin: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "VS Code Uzantılar görünümünden Remote - SSH uzantısını (ms-vscode-remote.remote-ssh) yükleyin",
   "commands.doctor.rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun",
   "commands.doctor.rsyncInstallHintWin32": "Çalıştırın: rdc tools install rsync (veya MSYS2'de: pacman -S rsync)",
   "commands.doctor.sections.configuration": "Yapılandırma",

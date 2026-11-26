@@ -990,7 +990,7 @@
   "commands.doctor.notInstalled": "未インストール",
   "commands.doctor.notLoggedIn": "未ログイン",
   "commands.doctor.opsSkipped": "renetが利用できません（スキップ）",
-  "commands.doctor.remoteSshInstallHint": "次のコマンドでインストールできます: code --install-extension ms-vscode-remote.remote-ssh",
+  "commands.doctor.remoteSshInstallHint": "VS Code の拡張機能ビューから Remote - SSH 拡張機能 (ms-vscode-remote.remote-ssh) をインストールしてください",
   "commands.doctor.rsyncInstallHint": "システムのパッケージマネージャーでrsyncをインストールしてください",
   "commands.doctor.rsyncInstallHintWin32": "次を実行してください: rdc tools install rsync (MSYS2 では pacman -S rsync)",
   "commands.doctor.sections.configuration": "設定",

@@ -1287,7 +1287,7 @@
       "notDetectedValue": "non rilevato",
       "rsyncInstallHintWin32": "Esegui: rdc tools install rsync (o in MSYS2: pacman -S rsync)",
       "vscodeInstallHint": "Installa VS Code da https://code.visualstudio.com/ per usare rdc vscode",
-      "remoteSshInstallHint": "Installala con: code --install-extension ms-vscode-remote.remote-ssh",
+      "remoteSshInstallHint": "Installa l'estensione Remote - SSH (ms-vscode-remote.remote-ssh) dalla vista Estensioni di VS Code",
       "sshClientMissingHint": "Aggiungi il client OpenSSH in Impostazioni di Windows > Funzionalità facoltative"
     },
     "feedback": {

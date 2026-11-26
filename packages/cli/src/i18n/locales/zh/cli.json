@@ -1287,7 +1287,7 @@
       "notDetectedValue": "未检测到",
       "rsyncInstallHintWin32": "请运行：rdc tools install rsync（在 MSYS2 中：pacman -S rsync）",
       "vscodeInstallHint": "要使用 rdc vscode，请从 https://code.visualstudio.com/ 安装 VS Code",
-      "remoteSshInstallHint": "使用以下命令安装：code --install-extension ms-vscode-remote.remote-ssh",
+      "remoteSshInstallHint": "请在 VS Code 的扩展视图中安装 Remote - SSH 扩展（ms-vscode-remote.remote-ssh）",
       "sshClientMissingHint": "请在 Windows 设置 > 可选功能中添加 OpenSSH 客户端"
     },
     "feedback": {

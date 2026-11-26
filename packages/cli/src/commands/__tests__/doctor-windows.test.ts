@@ -72,7 +72,7 @@ describe('doctor Tools section on Windows', () => {
     const section = await tools('win32', { ...ALL_GOOD, hasRemoteSsh: async () => false });
     const ext = section.checks.find((c) => c.name === 'Remote-SSH extension');
     expect(ext).toMatchObject({ value: 'not detected', status: 'warn' });
-    expect(ext?.hint).toContain('code --install-extension ms-vscode-remote.remote-ssh');
+    expect(ext?.hint).toContain('Remote - SSH extension (ms-vscode-remote.remote-ssh)');
   });
 
   it('warns when no OpenSSH client runs', async () => {
