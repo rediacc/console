@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PostToolUse/Bash: start a detached haiku review for every new commit, and tell the session about each review that finished (agent/plans/PLAN-per-commit-review.md section 3.1; operator ruling 2026-10-02).
 
-THREE JOBS, ALL CHEAP.
+FOUR JOBS, ALL CHEAP.
 
 1. TRIGGER. When the command ran `git commit`, `rebase`, `cherry-pick`, `merge`, `revert`, `pull` or `am` at a command position (the shell lexer's own reading, so an `echo` or a commit message quoting the words is not a commit), each repository those invocations ran in is asked `wl_review.uncovered()`: the branch's commits with no review record and no live reviewer. Up to `max_spawn_per_trigger` of them get a
    reviewer started with `wl_review.spawn_detached`, which takes the per-sha lock and detaches the child from this hook's pipes. The hook does not read `tool_response` (it carries no exit code): a failed commit made no new sha, so nothing is uncovered and nothing starts.
@@ -9,6 +9,8 @@ THREE JOBS, ALL CHEAP.
 2. SURFACE. On EVERY Bash call, the review records (ledger lines and `.md` files) that finished since this session last heard of them are reported as `additionalContext`. With the Stop hook disabled (operator, 2026-10-02) this is the channel that brings a review back to the session that made the commit, one tool call after it lands; SessionStart and the push guard are the other two.
 
 3. COMMIT LANDED. When the command ran a `git commit` that left HEAD where the session's previous Bash call recorded it with paths still staged, the commit is reported as not landed (a filtered output hides a refusal); every Bash call then records each repository's HEAD for the next call's comparison.
+
+4. LANDED FIXES. When the command ran a `git commit`, `cherry-pick` or `am` outside a lease, every `Fixes-Review: <finding id>` trailer of the commits it added marks that finding `fixed <commit>` through the `--review-mark` verb (PLAN-drain-throughput.md DT10); inside a lease the trailers are only named back to the writer.
 
 Advisory: always exits 0, never blocks the tool call that already ran, and does nothing at all inside a reviewer or a Stop-hook child (`COMMIT_REVIEW_CHILD`, `STOPHOOK_CHILD`).
 """
@@ -18,6 +20,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import sys
 import time
 
@@ -223,6 +226,91 @@ def commit_landed_lines(cmd, cwd, root, session):
     return lines
 
 
+# ---- 4. A LANDED FIX MARKS ITS FINDINGS (agent/plans/PLAN-drain-throughput.md DT10) ------------------------------
+#
+# A writer fixes a per-commit review finding in its lease and names it with a `Fixes-Review: <finding id>` trailer. `./run.sh worktree land <id> --run --me <prefix>` marks those, but the lead usually runs the printed `git cherry-pick -x` lines itself, and 186 landed fixes stayed unmarked on 1121-1 (2026-11-26). So after a command-position `git commit`, `cherry-pick` or `am` outside a lease, each commit between the HEAD recorded after the session's previous Bash call and the new HEAD (a fast-forward only, at most FIXES_SCAN_MAX commits) is read for those trailers, and each finding still open is marked `fixed <that commit>` through the `--review-mark` verb itself, so its descent and file checks hold. A refusal is printed with its reason and the manual command. Inside a lease nothing is marked (the sha is not the landed one): the trailers are named back to the writer for its report. A trailer only ever claims `fixed`; a `not-a-bug` verdict stays a human or lead decision.
+
+FIXES_SUBS = frozenset({"commit", "cherry-pick", "am"})
+FIXES_REVIEW_RE = re.compile(r"^Fixes-Review:\s*(\S+)\s*$", re.MULTILINE)
+# A landing batch is a handful of picks; a longer range after one command is a pull or a reset, not a landing.
+FIXES_SCAN_MAX = 50
+
+
+def _fixes_tops(cmd, base, root):
+    """The top levels of the repositories a `commit`, `cherry-pick` or `am` in `cmd` ran in, inside this project."""
+    trees = _bound_paths(root)
+    tops = []
+    for run in shellscan._analyse(cmd).runs:
+        if run.git_sub not in FIXES_SUBS:
+            continue
+        where = base if run.git_dir in (None, "", ".") else base / run.git_dir
+        top = R.git_out(where, "rev-parse", "--show-toplevel")
+        if top and top not in tops and commit_policy.owning_tree(top, trees) is not None:
+            tops.append(top)
+    return tops
+
+
+def _new_commits(repo, before, after):
+    """The commits `before..after`, oldest first, when `after` fast-forwards `before` by at most FIXES_SCAN_MAX; else []."""
+    if not before or not after or before == after:
+        return []
+    if R.git(repo, "merge-base", "--is-ancestor", before, after)[0] != 0:
+        return []
+    shas = R.git_out(repo, "rev-list", "--reverse", "%s..%s" % (before, after)).split()
+    return shas if len(shas) <= FIXES_SCAN_MAX else []
+
+
+def _finding_open(review_root, branch, finding_id):
+    """True when `finding_id` is an open finding of `branch`'s records, False when it is closed, None when no single record holds it."""
+    try:
+        _path, _review, finding = R.find_finding(review_root, branch, finding_id)
+    except ValueError:
+        return None
+    return finding.resolution_kind() == "open"
+
+
+def fixes_review_lines(cmd, cwd, root, session, verb=None):
+    """One line per `Fixes-Review:` trailer of a commit the command landed: marked, already closed, refused, or (in a lease) named for the writer's report."""
+    verb = verb or R.verb
+    base = pathlib.Path(cwd or root)
+    me = str(session or "")[:8]
+    lines = []
+    for top in _fixes_tops(cmd, base, root):
+        repo = pathlib.Path(top)
+        try:
+            before = _head_record(session, top).read_text(encoding="utf-8").strip()
+        except OSError:
+            continue
+        after = R.git_out(repo, "rev-parse", "HEAD")
+        lease = commit_policy.lease_root(top)
+        review_root = R.review_root(root)
+        branch = R.current_branch(review_root)
+        for sha in _new_commits(repo, before, after):
+            body = R.git_out(repo, "log", "-1", "--format=%B", sha)
+            for fid in dict.fromkeys(FIXES_REVIEW_RE.findall(body)):
+                if lease:
+                    lines.append(
+                        "Fixes-Review %s in lease commit %s: name it fixed by %s in the report; the lead's landing pick marks it (never --review-mark from a lease)"
+                        % (fid, sha[:10], sha[:10])
+                    )
+                    continue
+                state = _finding_open(review_root, branch, fid) if branch else None
+                if state is False:
+                    lines.append(
+                        "Fixes-Review %s (%s): already closed, left as it is" % (fid, sha[:10])
+                    )
+                    continue
+                rc, text = verb("--review-mark", me, [fid, "fixed", sha], review_root, dict)
+                if rc == 0:
+                    lines.append("Fixes-Review %s marked fixed %s: %s" % (fid, sha[:10], text))
+                else:
+                    lines.append(
+                        "Fixes-Review %s NOT marked by %s (%s); close it by hand: worklist.py --review-mark %s %s fixed <sha> or not-a-bug <evidence>"
+                        % (fid, sha[:10], text.strip()[:200], me, fid)
+                    )
+    return lines
+
+
 def main():
     if os.environ.get("COMMIT_REVIEW_CHILD") or os.environ.get("STOPHOOK_CHILD"):
         return 0
@@ -240,6 +328,13 @@ def main():
         except Exception as exc:
             lines.append(
                 "commit-landed check failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
+            )
+    if cmd and "git" in cmd and any(sub in cmd for sub in FIXES_SUBS):
+        try:
+            lines += fixes_review_lines(cmd, ev.field("cwd") or None, root, session)
+        except Exception as exc:
+            lines.append(
+                "Fixes-Review marking failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
             )
     if cmd and "git" in cmd and any(sub in cmd for sub in R.TRIGGER_SUBS):
         try:

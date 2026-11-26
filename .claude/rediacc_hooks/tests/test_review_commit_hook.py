@@ -812,6 +812,88 @@ def test_mark_fixed_falls_back_to_the_flat_legacy_stub_when_the_fix_tree_has_non
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def _lease_fix(world, fid, body="a = 1\nb = 2\nc = 4\n"):
+    """A fix commit naming `fid` in a `Fixes-Review:` trailer, made off the branch the way a lease makes it; the branch is checked out again."""
+    world.git("checkout", "-q", "-b", "lease-side")
+    fix = world.commit("f.py", body=body, msg="fix(x): z\n\nFixes-Review: %s\nPR-TASK: 1" % fid)
+    world.git("checkout", "-q", BRANCH)
+    return fix
+
+
+def test_a_landing_pick_marks_the_planted_high_finding_its_trailer_names(world):
+    """DT10: the lead runs the printed `git cherry-pick -x` itself, and the post-bash hook marks the finding the picked commit's `Fixes-Review:` trailer names, fixed by the LANDED sha. CONTROL: the next call, with HEAD unmoved, marks nothing again."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    assert R.parse(world.review_file(sha).read_text()).findings[0].severity == "high"
+    fix = _lease_fix(world, fid)
+    world.hook("git status")
+    world.git("cherry-pick", "-x", fix)
+    landed = world.git("rev-parse", "HEAD").stdout.strip()
+    assert landed != fix
+    _rc, out, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    text = _context(out)
+    assert "Fixes-Review %s marked fixed %s" % (fid, landed[:10]) in text, text
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % landed)
+    assert review.findings[1].resolution == "open", "a finding no trailer names was marked"
+    _rc, again, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    assert "Fixes-Review" not in _context(again)
+
+
+def test_a_trailer_naming_an_already_closed_finding_leaves_it(world):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    fix = _lease_fix(world, fid)
+    first = world.commit("f.py", body="a = 1\nb = 2\nc = 5\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [first], "deadbeef")
+    world.hook("git status")
+    world.git("cherry-pick", "-x", "--strategy-option=theirs", fix)
+    _rc, out, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    assert "Fixes-Review %s" % fid in _context(out)
+    assert "already closed" in _context(out)
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % first)
+
+
+def test_a_trailer_the_mark_refuses_is_named_with_the_manual_command(world):
+    """A trailer on a commit that does not touch the finding's file is refused by the mark's own checks, and said so."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    world.commit("other.py", body="z = 1\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "Fixes-Review %s NOT marked" % fid in text, text
+    assert "worklist.py --review-mark deadbeef %s" % fid in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+def test_a_lease_commit_names_its_trailer_for_the_report_and_marks_nothing(world):
+    """Inside a lease the commit is not the landed one: the trailer is named back to the writer (its report says fixed by that commit), and the record stays open until the landing pick."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    lease = world.repo / ".claude" / "worktrees" / "l1"
+    world.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
+    env = {"CLAUDE_PROJECT_DIR": str(lease)}
+    world.hook("git status", cwd=lease, extra_env=env)
+    (lease / "f.py").write_text("a = 1\nb = 2\nc = 4\n", encoding="utf-8")
+    world.git("commit", "-q", "-m", "fix(x): z\n\nFixes-Review: %s" % fid, "--", "f.py", repo=lease)
+    leased = world.git("rev-parse", "HEAD", repo=lease).stdout.strip()
+    _rc, out, _e, _t = world.hook("git commit -m z -- f.py", cwd=lease, extra_env=env)
+    text = _context(out)
+    want = "Fixes-Review %s in lease commit %s: name it fixed by %s in the report" % (
+        fid,
+        leased[:10],
+        leased[:10],
+    )
+    assert want in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)
