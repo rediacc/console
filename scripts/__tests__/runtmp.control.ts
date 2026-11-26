@@ -40,6 +40,9 @@ function childMain(mode: Mode, base: string): void {
   setInterval(() => undefined, 1000);
 }
 
+/** Resolves on a child's 'close', which fires after its stdio streams drain, unlike 'exit', which can precede the last stderr chunk. */
+const closedOf = new WeakMap<ChildProcess, Promise<void>>();
+
 async function startChild(
   mode: Mode,
   base: string
@@ -48,6 +51,12 @@ async function startChild(
     process.execPath,
     [...process.execArgv, import.meta.filename, 'child', mode, base],
     { stdio: ['ignore', 'pipe', 'pipe'] }
+  );
+  closedOf.set(
+    child,
+    new Promise<void>((resolve) => {
+      child.on('close', () => resolve());
+    })
   );
   let err = '';
   child.stderr?.on('data', (d: Buffer) => {
@@ -65,10 +74,7 @@ async function startChild(
 }
 
 function ended(child: ChildProcess): Promise<void> {
-  return new Promise((resolve) => {
-    if (child.exitCode !== null || child.signalCode !== null) resolve();
-    else child.on('exit', () => resolve());
-  });
+  return closedOf.get(child) ?? Promise.resolve();
 }
 
 function pyRun(code: string, ...args: string[]): string {

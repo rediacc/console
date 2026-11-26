@@ -2645,7 +2645,8 @@ async function main(): Promise<number> {
   const measuredLegFindings = (
     lane: string,
     of: number,
-    legs?: readonly { index: number; ids: readonly string[] }[]
+    // Required, not optional: a call that leaves the legs out judges a measurement taken before a lane split as today's, and the compiler refuses that spelling. A lane with no committed legs passes `undefined` on purpose.
+    legs: readonly { index: number; ids: readonly string[] }[] | undefined
   ): number => {
     const byLeg = new Map<number, JobSample[]>();
     for (const sample of samplesFor(lane)) {
@@ -2766,7 +2767,7 @@ async function main(): Promise<number> {
       const legs = contiguousLegs(ids, sizes, sizes.length);
       const worst = priceLegs(lane, job, legs, sizes.length, fixedMinutes, defaultUnitMs, parallel);
       priced.add(job);
-      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, sizes.length)));
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, sizes.length, undefined)));
       continue;
     }
     if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {

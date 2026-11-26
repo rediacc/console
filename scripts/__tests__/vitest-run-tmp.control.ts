@@ -25,6 +25,12 @@ function check(ok: boolean, what: string): void {
   if (!ok) bad += 1;
 }
 
+/** True when the config source, comments removed, has a `globalSetup: [...]` array that names the setup file. */
+function listsGlobalSetup(src: string): boolean {
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  return /globalSetup\s*:\s*\[[^\]]*scripts\/lib\/vitest-run-tmp\.ts/.test(code);
+}
+
 /** Runs the leaking fixture under a fresh outer TMPDIR; returns the entries left there and vitest's exit code. */
 function runFixture(withSetup: boolean): { left: string[]; rc: number | null; out: string } {
   const root = fs.mkdtempSync(path.join(shared('vitest-run-tmp-ctl-'), 'case-'));
@@ -79,15 +85,33 @@ function main(): void {
       .map((f) => path.join(REPO, dir, f))
       .filter((f) => fs.existsSync(f))
   );
-  // A scan that finds no config checks nothing; 10 configs on 2026-11-26 (the floor is the count, so dropping one is a red to read), so a broken walk cannot pass as a clean tree.
+  // A scan that finds no config checks nothing; 10 configs on 2026-11-26, and the floor only catches a broken walk. A config that drops its globalSetup is the per-config check below, not the count.
   const MIN_VITEST_CONFIGS = 10;
   check(
     configs.length >= MIN_VITEST_CONFIGS,
     `the config scan found ${configs.length} vitest configs (at least ${MIN_VITEST_CONFIGS})`
   );
+  const live =
+    "globalSetup: [fileURLToPath(new URL('../../scripts/lib/vitest-run-tmp.ts', import.meta.url))],";
+  check(
+    listsGlobalSetup(`export default { test: { ${live} } };`),
+    'CONTROL (scan): a live globalSetup line is accepted'
+  );
+  check(
+    !listsGlobalSetup(`export default { test: { // ${live}\n } };`),
+    'CONTROL (scan): a line-commented globalSetup is refused'
+  );
+  check(
+    !listsGlobalSetup(`export default { test: { /* ${live} */ } };`),
+    'CONTROL (scan): a block-commented globalSetup is refused'
+  );
+  check(
+    !listsGlobalSetup("const p = 'scripts/lib/vitest-run-tmp.ts';\nexport default { test: {} };"),
+    'CONTROL (scan): the path outside a globalSetup array is refused'
+  );
   for (const cfg of configs) {
     check(
-      fs.readFileSync(cfg, 'utf8').includes('scripts/lib/vitest-run-tmp.ts'),
+      listsGlobalSetup(fs.readFileSync(cfg, 'utf8')),
       `${path.relative(REPO, cfg)} lists the globalSetup`
     );
   }

@@ -73,7 +73,7 @@
       "paths": ["scripts/lib/**"],
       "home": "scripts/lib",
       "stays": true,
-      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/ci-runner/gate-spec.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob in the retired ESLint config was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
+      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/policy-paths.ts is a single-writer file (driver contract section 3), as is scripts/ci-runner/gate-spec.ts, which sits under the ci-runner domain rather than here. This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob in the retired ESLint config was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
       "id": "pins-cli",

@@ -26,6 +26,7 @@
  * ---- end gate ----
  */
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { subset } from '@rediacc/locales';
 import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
@@ -49,7 +50,7 @@ const byCodePoint = (a: string, b: string): number => Number(a > b) - Number(a <
 /**
  * Locales whose page does not carry the translated tables yet.
  *
- * BLOCKER: PLAN-rmcp-docs.md DO7 translates the tables into the 12 locales after the English rewrite (DO4) lands; until then these pages carry no tool tables of the registry's shape. Each entry is removed when its locale gains the tables, and the gate reds until it is.
+ * Empty: PLAN-rmcp-docs.md DO7 landed the tables in all 12 locales. An entry is added only while a new locale's page is being translated, and the gate reds the moment a listed locale gains its tables, so the exemption cannot outlive the gap.
  */
 export const PENDING_TABLE_TRANSLATION: readonly string[] = [];
 
@@ -492,6 +493,60 @@ function selftestCases(): ControlCase[] {
       ok: has(noEnglish, 'English page is missing'),
     },
     { name: 'planted: an empty registry is refused', ok: emptyRefused },
+    ...treeRefusalCases(),
+  ];
+}
+
+/** main() over a throwaway docs tree: a clean English-only tree passes, an empty docs tree and a locale directory without the page are each refused. */
+function treeRefusalCases(): ControlCase[] {
+  const base = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-docs-parity-'));
+  const verdicts: Record<string, number> = {};
+  const build = (name: string, withEnglish: boolean, emptyLocale: boolean): string => {
+    const root = path.join(base, name);
+    fs.mkdirSync(path.join(root, path.dirname(REGISTRY)), { recursive: true });
+    fs.copyFileSync(path.join(ROOT, REGISTRY), path.join(root, REGISTRY));
+    fs.mkdirSync(path.join(root, DOCS), { recursive: true });
+    if (withEnglish) {
+      fs.mkdirSync(path.join(root, DOCS, SOURCE_LANG), { recursive: true });
+      fs.copyFileSync(
+        path.join(ROOT, DOCS, SOURCE_LANG, PAGE),
+        path.join(root, DOCS, SOURCE_LANG, PAGE)
+      );
+    }
+    if (emptyLocale) fs.mkdirSync(path.join(root, DOCS, 'xx'));
+    return root;
+  };
+  const quietly = (root: string): number => {
+    const { log, error } = console;
+    console.log = () => undefined;
+    console.error = () => undefined;
+    try {
+      return main([], root);
+    } finally {
+      console.log = log;
+      console.error = error;
+    }
+  };
+  try {
+    verdicts.empty = quietly(build('empty', false, false));
+    verdicts.missing = quietly(build('missing', true, true));
+    verdicts.clean = quietly(build('clean', true, false));
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+  }
+  return [
+    {
+      name: 'tree: a docs tree with no page anywhere is refused as vacuous, not passed',
+      ok: verdicts.empty === 1,
+    },
+    {
+      name: 'tree: a locale directory without the page is refused (read through main)',
+      ok: verdicts.missing === 1,
+    },
+    {
+      name: 'tree: CONTROL, the same tree without the empty locale passes',
+      ok: verdicts.clean === 0,
+    },
   ];
 }
 
@@ -514,13 +569,13 @@ function readPages(root: string): { pages: PageInput[]; missing: string[] } {
   return { pages, missing };
 }
 
-function main(argv: string[]): number {
+export function main(argv: string[], root: string = ROOT): number {
   if (argv.includes('--selftest')) {
     console.log('check-mcp-docs-parity selftest');
     return summarizeControls(selftestCases());
   }
 
-  const regFile = path.join(ROOT, REGISTRY);
+  const regFile = path.join(root, REGISTRY);
   if (!fs.existsSync(regFile)) {
     console.error(
       `${RED}✗${NC} ${REGISTRY} is missing; regenerate it with npx tsx packages/cli/scripts/generate-mcp-registry.ts.`
@@ -537,7 +592,7 @@ function main(argv: string[]): number {
     return 1;
   }
 
-  const { pages, missing } = readPages(ROOT);
+  const { pages, missing } = readPages(root);
   if (pages.length === 0) {
     console.error(
       `${RED}✗${NC} VACUOUS: no ${PAGE} under ${DOCS}/<lang>/; the gate is not seeing the tree, so its green would mean nothing.`

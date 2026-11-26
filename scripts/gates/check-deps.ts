@@ -182,7 +182,9 @@ function categorizePackages(
 
     if (!current || current === 'undefined' || !latest || current === latest) continue;
     // A current AHEAD of `latest` (a pre-release of the next major, miniflare 5.x-beta while `latest` is 4.x) is not outdated: proposing `latest` would be a downgrade. Only two parsed versions are compared; an unparseable one keeps the breaking path below.
-    if (parseVersion(current) && parseVersion(latest) && compareVersions(latest, current) < 0)
+    // A STABLE current ahead of `latest` is not skipped: that is a registry or dist-tag anomaly worth reading, so only a pre-release current is.
+    const parsedCurrent = parseVersion(current);
+    if (parsedCurrent?.prerelease && parseVersion(latest) && compareVersions(latest, current) < 0)
       continue;
 
     // SCOPED ENTRIES, `<dir>:<package>`, and the reason they had to exist. private/account is under an operator freeze, so seven of its dependencies cannot be upgraded here. Blocking them by bare name was the obvious move and is WRONG: this list is keyed on the package name alone, and FOUR of those seven -- @biomejs/biome, typescript, vitest, hono -- are also console's own
@@ -2157,6 +2159,19 @@ async function selftest(): Promise<void> {
     !ahead.heldMajor.some((p) => p.name === 'miniflare') &&
       !ahead.mustUpgrade.some((p) => p.name === 'miniflare')
   );
+  const stableAhead = categorizePackages(
+    {
+      stablepkg: { current: '5.0.0', latest: '4.9.0' },
+      unparsedcur: { current: 'git+https://x/y', latest: '4.9.0' },
+      unparsedlatest: { current: '5.0.0', latest: 'next' },
+    },
+    new Map<string, BlocklistEntry>()
+  );
+  const reported = (n: string) =>
+    [...stableAhead.heldMajor, ...stableAhead.mustUpgrade].some((p) => p.name === n);
+  expect('a STABLE current ahead of latest is still reported', reported('stablepkg'));
+  expect('an unparseable current keeps the breaking path', reported('unparsedcur'));
+  expect('an unparseable latest keeps the breaking path', reported('unparsedlatest'));
   expect(
     'CONTROL: a plain minor behind latest is still must-upgrade',
     ahead.mustUpgrade.some((p) => p.name === 'wrangler')

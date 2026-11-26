@@ -100,6 +100,12 @@ try {
   if (all[0] === after[0] || all[2] === after[2]) {
     fail('the no-argument form did not rewrite every changed surface');
   }
+  // Success forms: the `=` spelling and a repeated flag both pick exactly the named surfaces.
+  const eq = parseSurfaces(['--surface=cli'], names);
+  if (eq?.join(',') !== 'cli') fail(`--surface=cli parsed as ${JSON.stringify(eq)}`);
+  const twice = parseSurfaces(['--surface', 'cli', '--surface=www'], names);
+  if (twice?.join(',') !== 'cli,www') fail(`repeated --surface parsed as ${JSON.stringify(twice)}`);
+  if (parseSurfaces([], names) !== null) fail('no --surface did not select every surface');
   // Unknown surface and malformed flags are hard errors.
   for (const bad of [['--surface', 'nope'], ['--surface'], ['--bogus']]) {
     let threw = false;

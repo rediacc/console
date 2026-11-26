@@ -353,6 +353,13 @@ function selftest(): boolean {
       !isMaxLinesExempt('node_modules/planted-f3/x.ts')
   );
   check(
+    'the account .js exemption names Go wasm_exec.js alone: it is exempt, a hand-written account .js or .jsx file is flagged',
+    isMaxLinesExempt('private/account/src/services/forensics-detect/wasm/wasm_exec.js') &&
+      !isMaxLinesExempt('private/account/src/services/handwritten.js') &&
+      !isMaxLinesExempt('private/account/src/services/forensics-detect/wasm/other.js') &&
+      !isMaxLinesExempt('private/account/web/src/widget.jsx')
+  );
+  check(
     'private/account sources are out of scope for max-lines',
     ![...scope].some((f) => f.startsWith('private/account/'))
   );
