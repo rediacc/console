@@ -9,7 +9,9 @@
  * and a disallowed English-identical value are refused, an `.id` anchor is not; (6) the
  * control: the planner scope assertion rejects the pre-dot matcher `k.startsWith(p)`;
  * (7) a {{placeholder}} set that differs from English is refused; (8) own-property
- * lookups: a key named `constructor` is stamped, not mistaken for stamped.
+ * lookups: a key named `constructor` is stamped, not mistaken for stamped; (9) --restamp
+ * rewrites a stale entry only where the locale value differs from HEAD, lists an unchanged
+ * one, and applies the normal refusals.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -141,6 +143,57 @@ try {
   }
   const mutant = Object.keys(enHashes).filter((k) => k.startsWith('legal'));
   if (scopedTo(mutant, 'legal')) fail('control: the scope assertion passes an unscoped stamp');
+
+  // (9) --restamp: re-translated stale key restamped in place, unchanged stale key listed only, placeholder mismatch refused; HEAD is injected because the fixture is no repository.
+  const enR = { r: { a: 'New A', b: 'New B', c: 'Hello {{x}}' } };
+  const deR = { r: { a: 'Neu A', b: 'Neu B', c: 'Hallo {{y}}' } };
+  const headDe: Record<string, string> = {
+    'r.a': 'Alt A',
+    'r.b': 'Neu B',
+    'r.c': 'Hallo {{x}}',
+  };
+  const root2 = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-keys-restamp-'));
+  try {
+    const put2 = (name: string, v: unknown) =>
+      fs.writeFileSync(path.join(root2, name), `${JSON.stringify(v, null, 2)}\n`);
+    put2('en.json', enR);
+    put2('de.json', deR);
+    const stale = { 'r.a': 'deadbeef', 'r.b': 'deadbeef', 'r.c': 'deadbeef' };
+    const ledger2 = path.join(root2, '.naturalized-hashes.json');
+    fs.writeFileSync(ledger2, serializeLedger({ languages: { de: { ...stale } } }));
+    const head = () => headDe;
+    const hR = flattenAndHash(enR, '');
+    const read2 = () =>
+      (JSON.parse(fs.readFileSync(ledger2, 'utf8')) as Ledger).languages?.de ?? {};
+    mute();
+    const plainRc = run(['--prefix', 'r', '--lang', 'de', '--write'], root2, head);
+    const afterPlain = read2();
+    const reRc = run(['--prefix', 'r', '--lang', 'de', '--restamp', '--write'], root2, head);
+    const afterRe = read2();
+    unmute();
+    if (plainRc !== 0 || JSON.stringify(afterPlain) !== JSON.stringify(stale)) {
+      fail('without --restamp a stale entry was rewritten');
+    }
+    if (afterRe['r.a'] !== hR['r.a']) fail('a re-translated stale key was not restamped');
+    if (afterRe['r.b'] !== 'deadbeef') fail('an unchanged stale key was restamped');
+    if (afterRe['r.c'] !== 'deadbeef' || reRc !== 1) {
+      fail(`a placeholder mismatch was not refused under --restamp (rc ${reRc})`);
+    }
+    if (JSON.stringify(Object.keys(afterRe)) !== '["r.a","r.b","r.c"]') fail('restamp reordered');
+    const listed = planStamps({
+      enValues: { 'r.b': 'New B' },
+      enHashes: { 'r.b': hR['r.b'] },
+      localeValues: { de: { 'r.b': 'Neu B' } },
+      ledger: { languages: { de: { 'r.b': 'deadbeef' } } },
+      prefixes: ['r'],
+      langs: ['de'],
+      headValues: { de: { 'r.b': 'Neu B' } },
+    }).de;
+    if (listed.unchanged.join() !== 'r.b' || listed.restamp.length)
+      fail('unchanged key not listed');
+  } finally {
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
 } catch (e) {
   unmute();
   console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);

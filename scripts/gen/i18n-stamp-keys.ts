@@ -20,6 +20,12 @@
  * trailing newline). An already-stamped key is left alone whether fresh or stale; restamping
  * a stale key would hide the very drift the naturalization gate exists to report.
  *
+ * --restamp is the one exception (PLAN-legal-wording-consistency D8): an existing entry is
+ * rewritten in place, keeping its position, only where it is stale AND the locale value
+ * differs from `git show HEAD:<locale file>` (the key was re-translated in this working
+ * tree), under the same refusals as a new stamp. A stale key whose locale value equals HEAD
+ * is listed ("unchanged") and left alone, so drift stays visible.
+ *
  * WHAT IT REFUSES, per key: a missing or empty locale value; a value byte-identical to
  * English unless the key is structural (`.id` anchors, `.slug`) or the value carries no
  * letters at all; a {{placeholder}} set that differs from English. Refused keys are listed
@@ -27,13 +33,14 @@
  * It refuses an empty prefix: there is no whole-catalog mode.
  *
  * Usage:
- *   npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--write]
+ *   npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--restamp] [--write]
  *
  * Without --write it lists what would be stamped and writes nothing.
  *
  * Exit codes: 0 every targeted key stamped or already stamped; 1 a key was refused or a file
  * could not be read; 2 usage error.
  */
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -79,6 +86,10 @@ export interface LangPlan {
   stamp: [string, string][];
   refused: { key: string; reason: string }[];
   alreadyStamped: number;
+  /** --restamp only: stale entries whose locale value changed since HEAD, rewritten in place. */
+  restamp: [string, string][];
+  /** --restamp only: stale entries whose locale value equals HEAD, listed and left alone. */
+  unchanged: string[];
 }
 
 /**
@@ -92,6 +103,8 @@ export function planStamps(input: {
   ledger: Ledger;
   prefixes: readonly string[];
   langs: readonly string[];
+  /** Flattened locale values at HEAD per language; its presence turns --restamp on. */
+  headValues?: Record<string, Record<string, string>>;
 }): Record<string, LangPlan> {
   validatePrefixes(input.prefixes);
   const keys = Object.keys(input.enHashes).filter((k) => underPrefix(k, input.prefixes));
@@ -99,14 +112,28 @@ export function planStamps(input: {
   for (const lang of input.langs) {
     const stamped = input.ledger.languages?.[lang] ?? {};
     const loc = input.localeValues[lang] ?? {};
-    const plan: LangPlan = { stamp: [], refused: [], alreadyStamped: 0 };
+    const plan: LangPlan = {
+      stamp: [],
+      refused: [],
+      alreadyStamped: 0,
+      restamp: [],
+      unchanged: [],
+    };
     for (const key of keys) {
-      if (Object.hasOwn(stamped, key)) {
-        plan.alreadyStamped++;
-        continue;
-      }
       const en = input.enValues[key];
       const tr = loc[key];
+      const exists = Object.hasOwn(stamped, key);
+      if (exists) {
+        const head = input.headValues?.[lang];
+        if (!head || stamped[key] === input.enHashes[key]) {
+          plan.alreadyStamped++;
+          continue;
+        }
+        if (Object.hasOwn(head, key) && head[key] === tr) {
+          plan.unchanged.push(key);
+          continue;
+        }
+      }
       if (typeof tr !== 'string' || !tr.trim()) {
         plan.refused.push({ key, reason: 'locale value missing or empty' });
       } else if (tr === en && !identicalAllowed(key, tr)) {
@@ -114,7 +141,7 @@ export function planStamps(input: {
       } else if (placeholders(tr) !== placeholders(en)) {
         plan.refused.push({ key, reason: 'placeholder set differs from English' });
       } else {
-        plan.stamp.push([key, input.enHashes[key]]);
+        (exists ? plan.restamp : plan.stamp).push([key, input.enHashes[key]]);
       }
     }
     plans[lang] = plan;
@@ -139,6 +166,8 @@ export function applyStamps(ledger: Ledger, plans: Record<string, LangPlan>): vo
     for (const [key, crc] of plan.stamp) {
       if (!Object.hasOwn(entries, key)) entries[key] = crc;
     }
+    // Assigning an existing key keeps its position in the object.
+    for (const [key, crc] of plan.restamp) entries[key] = crc;
   }
 }
 
@@ -148,13 +177,15 @@ interface Args {
   prefixes: string[];
   langs: string[];
   write: boolean;
+  restamp: boolean;
 }
 
 export function parseArgs(argv: readonly string[]): Args {
-  const args: Args = { prefixes: [], langs: [], write: false };
+  const args: Args = { prefixes: [], langs: [], write: false, restamp: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--write') args.write = true;
+    else if (a === '--restamp') args.restamp = true;
     else if (a === '--prefix' || a === '--lang') {
       const v = argv[++i];
       if (v === undefined) throw new Error(`${a} needs a value`);
@@ -171,7 +202,26 @@ export function parseArgs(argv: readonly string[]): Args {
   return args;
 }
 
-export function run(argv: readonly string[], dir: string): number {
+/** Flattened values of `<lang>.json` as committed at HEAD; {} when the file is new there. */
+export function gitHeadValues(dir: string, lang: string): Record<string, string> {
+  try {
+    const raw = execFileSync('git', ['show', `HEAD:./${lang}.json`], {
+      cwd: dir,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    return flattenValues(JSON.parse(raw));
+  } catch {
+    throw new Error(`cannot read HEAD:${lang}.json (git show failed); --restamp needs a git tree`);
+  }
+}
+
+export function run(
+  argv: readonly string[],
+  dir: string,
+  headReader: (dir: string, lang: string) => Record<string, string> = gitHeadValues
+): number {
   let args: Args;
   try {
     args = parseArgs(argv);
@@ -200,6 +250,15 @@ export function run(argv: readonly string[], dir: string): number {
     }
     localeValues[l] = flattenValues(read(`${l}.json`));
   }
+  let headValues: Record<string, Record<string, string>> | undefined;
+  if (args.restamp) {
+    try {
+      headValues = Object.fromEntries(args.langs.map((l) => [l, headReader(dir, l)]));
+    } catch (e) {
+      process.stderr.write(`i18n-stamp-keys: ${(e as Error).message}\n`);
+      return 1;
+    }
+  }
   const enHashes = flattenAndHash(enTree, '');
   const plans = planStamps({
     enValues: flattenValues(enTree),
@@ -208,6 +267,7 @@ export function run(argv: readonly string[], dir: string): number {
     ledger,
     prefixes: args.prefixes,
     langs: args.langs,
+    headValues,
   });
   const matched = Object.keys(enHashes).filter((k) => underPrefix(k, args.prefixes)).length;
   if (matched === 0) {
@@ -219,14 +279,19 @@ export function run(argv: readonly string[], dir: string): number {
 
   let refusedTotal = 0;
   const verb = args.write ? 'stamped' : 'would stamp';
+  const rverb = args.write ? 'restamped' : 'would restamp';
   for (const lang of args.langs) {
     const p = plans[lang];
     refusedTotal += p.refused.length;
     process.stdout.write(
       `  ${lang}: ${verb} ${p.stamp.length}, already stamped ${p.alreadyStamped}, ` +
+        (args.restamp ? `${rverb} ${p.restamp.length}, unchanged ${p.unchanged.length}, ` : '') +
         `refused ${p.refused.length}\n`
     );
     if (!args.write) for (const [k] of p.stamp) process.stdout.write(`    + ${k}\n`);
+    if (!args.write) for (const [k] of p.restamp) process.stdout.write(`    ~ ${k}\n`);
+    for (const k of p.unchanged)
+      process.stdout.write(`    = ${k}: stale, locale value unchanged since HEAD\n`);
     for (const r of p.refused) process.stdout.write(`    ! ${r.key}: ${r.reason}\n`);
   }
   if (args.write) {
