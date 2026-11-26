@@ -69,6 +69,27 @@ describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
   it('ops setup --debug leaves --debug out of the renet argv', async () => {
     Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
     await run(['setup', '--debug']);
-    expect((spawn.mock.calls[0] as [string, string[]])[1]).toEqual(['ops', 'host', 'setup']);
+    const [, argv, opts] = spawn.mock.calls[0] as [
+      string,
+      string[],
+      { env: Record<string, string> },
+    ];
+    expect(argv).toEqual(['ops', 'host', 'setup']);
+    expect(opts.env.REDIACC_DEBUG).toBe('1');
+  });
+
+  it('ops setup --debug under sudo carries REDIACC_DEBUG through env', async () => {
+    Object.defineProperty(process, 'platform', { value: 'linux', configurable: true });
+    await run(['setup', '--debug']);
+    const [cmd, argv] = spawn.mock.calls[0] as [string, string[]];
+    expect(cmd).toBe('sudo');
+    expect(argv).toEqual(['env', 'REDIACC_DEBUG=1', 'renet', 'ops', 'host', 'setup']);
+  });
+
+  it('ops setup without --debug sets no REDIACC_DEBUG', async () => {
+    Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    await run(['setup']);
+    const opts = spawn.mock.calls[0]?.[2] as { env?: Record<string, string> };
+    expect(opts.env?.REDIACC_DEBUG).toBeUndefined();
   });
 });

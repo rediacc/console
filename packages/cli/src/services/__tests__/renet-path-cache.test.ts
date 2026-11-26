@@ -1,3 +1,6 @@
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockExecSync } = vi.hoisted(() => ({ mockExecSync: vi.fn() }));
@@ -13,9 +16,9 @@ describe('resolveRenetPath PATH lookup', () => {
   beforeEach(() => mockExecSync.mockReset());
 
   it('runs where/which once per process for a binary name', () => {
-    mockExecSync.mockReturnValue('/usr/local/bin/renet-cache-a\n');
-    expect(resolveRenetPath('renet-cache-a')).toBe('/usr/local/bin/renet-cache-a');
-    expect(resolveRenetPath('renet-cache-a')).toBe('/usr/local/bin/renet-cache-a');
+    mockExecSync.mockReturnValue(`${process.execPath}\n`);
+    expect(resolveRenetPath('renet-cache-a')).toBe(process.execPath);
+    expect(resolveRenetPath('renet-cache-a')).toBe(process.execPath);
     expect(mockExecSync).toHaveBeenCalledTimes(1);
   });
 
@@ -26,6 +29,28 @@ describe('resolveRenetPath PATH lookup', () => {
     expect(() => resolveRenetPath('renet-cache-b')).toThrow(/not found at/);
     mockExecSync.mockReturnValue('/opt/renet-cache-b\n');
     expect(resolveRenetPath('renet-cache-b')).toBe('/opt/renet-cache-b');
+    expect(mockExecSync).toHaveBeenCalledTimes(2);
+  });
+
+  it('looks up again when the cached binary has gone away', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'renet-cache-'));
+    const first = path.join(dir, 'renet');
+    const second = path.join(dir, 'renet2');
+    fs.writeFileSync(first, '');
+    fs.writeFileSync(second, '');
+    mockExecSync.mockReturnValueOnce(`${first}\n`).mockReturnValueOnce(`${second}\n`);
+    expect(resolveRenetPath('renet-cache-c')).toBe(first);
+    fs.rmSync(first);
+    expect(resolveRenetPath('renet-cache-c')).toBe(second);
+    expect(mockExecSync).toHaveBeenCalledTimes(2);
+    fs.rmSync(dir, { recursive: true });
+  });
+
+  it('does not cache an empty lookup result', () => {
+    mockExecSync.mockReturnValueOnce('\n');
+    expect(() => resolveRenetPath('renet-cache-d')).toThrow(/not found at/);
+    mockExecSync.mockReturnValueOnce(`${process.execPath}\n`);
+    expect(resolveRenetPath('renet-cache-d')).toBe(process.execPath);
     expect(mockExecSync).toHaveBeenCalledTimes(2);
   });
 });

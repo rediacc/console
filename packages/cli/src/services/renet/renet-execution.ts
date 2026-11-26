@@ -62,7 +62,7 @@ export interface RenetSpawnOptions {
   skipRouterRestart?: boolean;
 }
 
-/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached. */
+/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached, and a hit is re-checked on the file before reuse. */
 const pathLookupCache = new Map<string, string>();
 
 /**
@@ -84,9 +84,19 @@ export function resolveRenetPath(configuredPath: string): string {
   const cmd = process.platform === 'win32' ? 'where' : 'which';
   const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
   const cached = pathLookupCache.get(name);
-  if (cached !== undefined) return cached;
+  if (cached !== undefined) {
+    // A binary removed or replaced since the lookup (the binary update) must not be handed out again.
+    try {
+      fsSync.accessSync(cached);
+      return cached;
+    } catch {
+      pathLookupCache.delete(name);
+    }
+  }
   try {
     const found = execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+    // `which`/`where` can exit 0 with no output; an empty answer is a miss and is never cached.
+    if (!found) throw new Error('empty PATH lookup');
     pathLookupCache.set(name, found);
     return found;
   } catch {
