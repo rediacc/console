@@ -1586,13 +1586,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 7,
+      "open": 7,
+      "done": 8,
       "open_sigs": [
         "0805d1f2",
         "2bf44646",
         "4e57d026",
-        "8b2cf989",
         "b0732c24",
         "b4de7e4f",
         "b8c60921",
@@ -1601,6 +1600,7 @@
       "done_sigs": [
         "363b4e26",
         "6d3167e4",
+        "8b2cf989",
         "923b43f0",
         "b79d5112",
         "bf06e728",
@@ -1981,15 +1981,15 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 9,
+      "open": 3,
+      "done": 10,
       "open_sigs": [
         "1778ed35",
         "2bf03b47",
-        "4438e4d1",
         "6701e5d1"
       ],
       "done_sigs": [
+        "4438e4d1",
         "5667dbee",
         "903acad2",
         "a275adb3",
@@ -2006,13 +2006,12 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 11,
+      "open": 3,
+      "done": 12,
       "open_sigs": [
         "3200a31d",
         "c0384c17",
-        "d1800584",
-        "d61c4bad"
+        "d1800584"
       ],
       "done_sigs": [
         "1e4d7024",
@@ -2024,6 +2023,7 @@
         "a46796dc",
         "b1b267e9",
         "caf53341",
+        "d61c4bad",
         "de22b940",
         "f69b8b8f"
       ]
@@ -3646,15 +3646,15 @@
       "owner": "6c87d631",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 5,
+      "open": 3,
+      "done": 6,
       "open_sigs": [
-        "26e29ac5",
         "795eb35a",
         "9ad645c3",
         "c1822dd6"
       ],
       "done_sigs": [
+        "26e29ac5",
         "3e83af32",
         "516df172",
         "99480236",
@@ -4465,16 +4465,16 @@
       "owner": "fee07197",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 6,
+      "open": 4,
+      "done": 7,
       "open_sigs": [
-        "36d35046",
         "4c29250e",
         "53e18fa0",
         "7e1402a9",
         "c288a491"
       ],
       "done_sigs": [
+        "36d35046",
         "547ffb5a",
         "622da616",
         "9c185837",
