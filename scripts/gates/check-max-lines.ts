@@ -145,9 +145,8 @@ const MAX_LINES_EXEMPT = [
   // packages.js:22-52 -- the account package's general rules (this one included) are off in eslint; Biome is account's linter for everything but the three i18n rules eslint still carries there.
   'private/account/**/*.ts',
   'private/account/**/*.tsx',
-  // The same package-wide exemption for its script files: the forensics detector ships Go's own wasm_exec.js beside its WASM build (renet build.sh detect_wasm).
-  'private/account/**/*.js',
-  'private/account/**/*.jsx',
+  // Go's own wasm_exec.js, shipped verbatim beside the forensics detector's WASM build (renet build.sh detect_wasm); generated, never hand-edited. Only this file: a hand-written account .js file stays under the budget.
+  'private/account/src/services/forensics-detect/wasm/wasm_exec.js',
   // tooling.js:46-51 -- a dedicated BLOCKER block turns `max-lines` off for this one file: it is the host-side scope analyzer standing in for `@typescript-eslint/no-unused-vars` during the Biome cutover, and it is deleted at the same cutover that deletes eslint.config itself, so its size is not worth enforcing against. Found live on this HEAD (587 code lines): `npx eslint eslint-rules/no-unused-underscore-var.js --max-warnings 0` exits 0 with `max-lines` resolving to `off` there (`calculateConfigForFile`), while this gate initially had no matching entry and turned red on it -- a real scope-parity gap, not a hypothetical one.
   'eslint-rules/no-unused-underscore-var.js',
 ];
