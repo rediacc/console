@@ -397,8 +397,8 @@ class Run:
 
     def report_pair(self) -> tuple[str, str]:
         """The incident-report signing pair (`REPORT_ED25519_*`, PKCS8 and SPKI base64): the caller's when both names are set, else a throwaway minted per start-up, so TEST_MODE report generation does not stop at REPORT_KEY_NOT_CONFIGURED. The private half goes to the backend's environment only."""
-        private = os.environ.get("REPORT_ED25519_PRIVATE_KEY") or ""
-        public = os.environ.get("REPORT_ED25519_PUBLIC_KEY") or ""
+        private = (os.environ.get("REPORT_ED25519_PRIVATE_KEY") or "").strip()
+        public = (os.environ.get("REPORT_ED25519_PUBLIC_KEY") or "").strip()
         if private and public:
             self.check_report_pair(private, public)
             return private, public

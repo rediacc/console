@@ -19,6 +19,7 @@ import time
 import pytest
 
 from rediacc_ci import xdist_groups
+from rediacc_ci.testrun import account_e2e
 from rediacc_ci.testrun import start_account as sa
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
@@ -991,7 +992,26 @@ def test_a_caller_report_pair_is_passed_on_as_given(monkeypatch: pytest.MonkeyPa
     monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", pair["edPub"])
     keys = sa.server_keys()
     assert (keys["reportPriv"], keys["reportPub"]) == (pair["edPriv"], pair["edPub"])
-    assert keys["reportPriv"] != sa.generate_keys()["reportPriv"]
+    # control: with no caller pair a throwaway is minted, so equality above is the pass-through
+    _clear_signing_env(monkeypatch)
+    assert sa.server_keys()["reportPriv"] != pair["edPriv"]
+
+
+def test_account_e2e_strips_a_whitespace_padded_caller_report_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """c097d824.1: start_account strips both halves, so account_e2e must too: a matching pair padded with a newline or space is passed on trimmed, not refused as not one pair."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"] + "\n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", " " + pair["edPub"] + "\n")
+    assert run.report_pair() == (pair["edPriv"], pair["edPub"])
+    # control: a padded public half of a different key is still refused
+    other = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", other["edPub"] + "\n")
+    with pytest.raises(account_e2e.RefusedError, match="not one pair"):
+        run.report_pair()
 
 
 def test_a_mismatched_caller_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:

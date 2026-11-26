@@ -2254,7 +2254,10 @@ def test_head_moving_on_an_unrelated_path_still_records_the_start_head(
     )
     assert record["head"] == built["head"]
     assert record["tree"] == built["tree"]
-    assert _bench_record(world.root).is_file()
+    on_disk = json.loads(_bench_record(world.root).read_text(encoding="utf-8"))
+    assert on_disk["head"] == built["head"], "the file live_proof reads names the start head"
+    assert on_disk["head"] != now["head"]
+    assert on_disk == record
 
 
 def test_a_us_bench_deploy_records_beside_the_eu_record_not_over_it(tmp_path: pathlib.Path) -> None:
