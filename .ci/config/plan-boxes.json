@@ -695,6 +695,25 @@
         "f4faea90"
       ]
     },
+    "agent/plans/PLAN-cf-token-hardening.md": {
+      "status": "draft",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "02ec9199",
+        "2c527385",
+        "5b9f392c",
+        "68c3e4cb",
+        "6f38eb52",
+        "b7f42c74",
+        "e9be8b6d",
+        "f118e1ab"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
       "status": "compacted",
       "owner": "8f55d4f0",
@@ -2403,9 +2422,9 @@
         "3a59702b",
         "6d8212ea",
         "70c35be7",
+        "750015e9",
         "76ab309a",
         "7beffdd0",
-        "a7c45a52",
         "ac42fa87",
         "f01d3a26"
       ]
