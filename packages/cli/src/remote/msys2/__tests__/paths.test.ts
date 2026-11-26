@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const state = vi.hoisted(() => ({
   platform: 'windows' as 'windows' | 'linux' | 'macos',
@@ -28,6 +28,10 @@ beforeEach(() => {
   state.managed = null;
   state.existing = new Set();
   vi.stubEnv('MSYS2_ROOT', '/sys-msys');
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
 });
 
 describe('getRsyncPath', () => {

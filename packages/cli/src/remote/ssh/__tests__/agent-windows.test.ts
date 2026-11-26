@@ -8,6 +8,7 @@
  * the command.
  */
 import { EventEmitter } from 'node:events';
+import { existsSync } from 'node:fs';
 import { PassThrough } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -93,8 +94,10 @@ describe('win32 with the ssh-agent service running', () => {
 
   it('SSHConnection uses the key file with -i and IdentitiesOnly, with no agent socket', async () => {
     const conn = new SSHConnection(KEY, KNOWN_HOSTS, { port: 22 });
+    let keyFilePath: string | undefined;
     try {
       const result = await conn.setup();
+      keyFilePath = result.keyFilePath;
       expect(result.connectionMethod).toBe('file-based');
       expect(conn.agentSocketPath).toBeUndefined();
       expect(result.keyFilePath).toBeTruthy();
@@ -105,9 +108,12 @@ describe('win32 with the ssh-agent service running', () => {
       expect(spawnedCommands()).toEqual([]);
       // No "agent setup failed" warning: the file path is the design, not a fallback.
       expect(stderr).not.toHaveBeenCalled();
+      expect(existsSync(result.keyFilePath!)).toBe(true);
     } finally {
       await conn.cleanup();
     }
+    // The temp key file is the only copy of the key on disk, so cleanup must remove it.
+    expect(existsSync(keyFilePath!)).toBe(false);
   });
 });
 
