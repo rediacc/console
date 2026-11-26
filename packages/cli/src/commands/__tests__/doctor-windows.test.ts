@@ -1,7 +1,24 @@
-import { describe, expect, it } from 'vitest';
+import { join, resolve } from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+
+const spawn = vi.hoisted(() => ({ spawnSync: vi.fn() }));
+vi.mock('node:child_process', async (orig) => ({
+  ...(await orig<typeof import('node:child_process')>()),
+  spawnSync: spawn.spawnSync,
+}));
+
 import type { PathLookupOptions } from '../../services/tools/path-lookup.js';
-import { checkEnvironment, checkTools } from '../doctor.js';
-import { parseSshAgentState, type WindowsClientDeps } from '../doctor-windows.js';
+import {
+  checkEnvironment,
+  checkTools,
+  dropDuplicateClientRows,
+  findRenetSource,
+} from '../doctor.js';
+import {
+  checkWindowsClient,
+  parseSshAgentState,
+  type WindowsClientDeps,
+} from '../doctor-windows.js';
 
 const TOFU_MISSING = async () => ({ ok: false as const, reason: 'missing' as const });
 const NO_RSYNC: PathLookupOptions = { env: { PATH: '' }, platform: 'win32' };
@@ -87,6 +104,37 @@ describe('doctor Tools section on Windows', () => {
     expect(parseSshAgentState('Running|Automatic')).toBe('running');
     expect(parseSshAgentState('Stopped|Manual')).toBe('stopped');
     expect(parseSshAgentState('Stopped|Disabled\r\n')).toBe('disabled');
+    expect(parseSshAgentState('missing\r\n')).toBe('missing');
+  });
+
+  it('reads empty or unrecognised output as unknown, not as a stopped agent', () => {
+    expect(parseSshAgentState('')).toBeNull();
+    expect(parseSshAgentState('  \r\n')).toBeNull();
+    expect(parseSshAgentState('garbage')).toBeNull();
+  });
+
+  describe('the real probe', () => {
+    const agentRow = async () =>
+      (await checkWindowsClient({ ...ALL_GOOD, sshAgentState: undefined })).find(
+        (c) => c.name === 'ssh-agent service'
+      );
+
+    it('reports a PowerShell failure that is not a missing service as unknown', async () => {
+      spawn.spawnSync.mockReturnValue({ status: 1, stdout: '', stderr: 'blocked by policy' });
+      expect(await agentRow()).toMatchObject({ value: 'unknown', status: 'warn' });
+    });
+
+    it('reports a clean exit with no output as unknown', async () => {
+      spawn.spawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '' });
+      expect(await agentRow()).toMatchObject({ value: 'unknown' });
+    });
+
+    it('reports the probe own missing marker as a missing service', async () => {
+      spawn.spawnSync.mockReturnValue({ status: 0, stdout: 'missing\r\n', stderr: '' });
+      expect(await agentRow()).toMatchObject({ value: 'service not found' });
+      const script = spawn.spawnSync.mock.calls.at(-1)?.[1].at(-1) as string;
+      expect(script).toContain('ServiceCommandException');
+    });
   });
 });
 
@@ -119,5 +167,21 @@ describe('doctor Environment section', () => {
   it('keeps the Go and Docker rows for a dev tree', () => {
     const section = checkEnvironment({ isDevTree: () => true, accountServer: () => undefined });
     expect(names(section)).toEqual(expect.arrayContaining(['Go', 'Docker']));
+  });
+});
+
+describe('doctor dev-tree and client-row helpers', () => {
+  it('finds private/renet from a subdirectory of the checkout', () => {
+    const root = resolve('/work/console');
+    const exists = (p: string) => p === join(root, 'private', 'renet');
+    expect(findRenetSource(join(root, 'packages', 'cli', 'src'), exists)).toBe(root);
+    expect(findRenetSource(root, exists)).toBe(root);
+    expect(findRenetSource(resolve('/elsewhere/deep'), exists)).toBeNull();
+  });
+
+  it('drops renet ssh row on win32 only, since Tools already reports the OpenSSH client', () => {
+    const rows = [{ name: 'qemu-img' }, { name: 'ssh' }];
+    expect(dropDuplicateClientRows(rows, 'win32')).toEqual([{ name: 'qemu-img' }]);
+    expect(dropDuplicateClientRows(rows, 'linux')).toEqual(rows);
   });
 });

@@ -41,7 +41,7 @@ import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
 import {
-  currentExitCode,
+  commandOutcome,
   currentRequestContext,
   exitProcess,
 } from './services/core/request-context.js';
@@ -425,25 +425,14 @@ export function createCli(): Command {
       const duration = ctx ? Date.now() - ctx.startTime : 0;
 
       // A command that reported failure through setExitCode() returns normally and reaches this hook, so its span takes that exit status rather than an unconditional success (inside a dispatch the code lives on the request, on a laptop on process.exitCode).
-      const exitCode = currentExitCode() ?? 0;
-      telemetryService.endCommand(
-        commandName,
-        exitCode === 0
-          ? { success: true, exitCode: 0, duration }
-          : {
-              success: false,
-              exitCode,
-              error: `The command exited with code ${exitCode}.`,
-              duration,
-            },
-        ctx?.spanKey ?? commandName
-      );
+      const outcome = commandOutcome(duration);
+      telemetryService.endCommand(commandName, outcome, ctx?.spanKey ?? commandName);
 
       // The redacted ring buffer behind `rdc feedback report --last`; a failed write never reaches the command.
-      recordCommand({ argv: process.argv.slice(2), exitCode });
+      recordCommand({ argv: process.argv.slice(2), exitCode: outcome.exitCode });
       // JSON mode carries the hint as the envelope's `next` option, so stderr stays clean for the parser.
       if (getOutputFormat() !== 'json')
-        printFeedbackHint({ argv: process.argv.slice(2), exitCode });
+        printFeedbackHint({ argv: process.argv.slice(2), exitCode: outcome.exitCode });
 
       const scope = currentRequestTelemetry();
       if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;

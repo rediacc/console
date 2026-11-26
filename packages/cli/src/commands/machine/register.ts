@@ -153,7 +153,7 @@ async function scanAllMachines(format: OutputFormat): Promise<void> {
     }
   }
   const scanned = rows.filter((r) => r.ok).length;
-  // Any machine that failed makes the run fail, after every machine was tried. Recorded before the rows print, so the JSON envelope says success:false and names each failed machine beside the rows.
+  // Any machine that failed makes the run fail, after every machine was tried. Recorded before the summary line or the JSON rows print (the rows only print in json/yaml formats; the table prints the summary and the per-machine warnings), so the JSON envelope says success:false and names each failed machine beside the rows.
   const failed = rows.filter((r) => !r.ok);
   if (failed.length > 0) {
     outputService.fail(

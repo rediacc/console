@@ -242,6 +242,20 @@ describe('config import-machine network IDs', () => {
     expect(raw(DST)).toBe(before);
   });
 
+  it('moves a counter that sits below an id the target already holds equal to the source', async () => {
+    await seed(
+      DST,
+      {},
+      {
+        repos: { mail: { latest: { networkId: 2880 } }, ops: { latest: { networkId: 2944 } } },
+        networkIds: { next: 2816 },
+      }
+    );
+    await run(['hostinger', '--from', SRC]);
+    expect(status('mail:latest', 'networkId')).toBe('equal');
+    expect((await loadState(DST)).networkIds?.next).toBe(3008);
+  });
+
   it('fills a networkId missing from an already imported tag', async () => {
     await run(['hostinger', '--from', SRC]);
     await configFileStorage.updateState(DST, (cfg) => ({ ...cfg, state: { repos: {} } }));

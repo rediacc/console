@@ -18,27 +18,40 @@ export interface WindowsClientDeps {
   sshVersion?: () => string | null;
 }
 
-/** Parse `Get-Service` output of the form `<Status>|<StartType>`. */
-export function parseSshAgentState(output: string): SshAgentState {
-  const [status = '', startType = ''] = output.trim().split('|');
-  if (startType.toLowerCase() === 'disabled') return 'disabled';
-  return status.toLowerCase() === 'running' ? 'running' : 'stopped';
+const STOPPED_STATUSES = new Set([
+  'stopped',
+  'paused',
+  'startpending',
+  'stoppending',
+  'pausepending',
+  'continuepending',
+]);
+
+/**
+ * Parse the probe's output: `<Status>|<StartType>` from `Get-Service`, or `missing` when the service does not exist.
+ * Empty or unrecognised output is null (unknown), never a guess at a stopped agent.
+ */
+export function parseSshAgentState(output: string): SshAgentState | null {
+  const text = output.trim();
+  if (text.toLowerCase() === 'missing') return 'missing';
+  const [status = '', startType = ''] = text.split('|').map((part) => part.trim().toLowerCase());
+  if (startType === 'disabled') return 'disabled';
+  if (status === 'running') return 'running';
+  return STOPPED_STATUSES.has(status) ? 'stopped' : null;
 }
+
+/** Only a service that does not exist is `missing`; a policy block or any other PowerShell error leaves the state unknown. */
+const SSH_AGENT_PROBE =
+  'try { $s = Get-Service ssh-agent -ErrorAction Stop; "$($s.Status)|$($s.StartType)" } catch [Microsoft.PowerShell.Commands.ServiceCommandException] { "missing" }';
 
 function defaultSshAgentState(): SshAgentState | null {
   try {
     const result = spawnSync(
       'powershell.exe',
-      [
-        '-NoProfile',
-        '-NonInteractive',
-        '-Command',
-        '$s = Get-Service ssh-agent -ErrorAction Stop; "$($s.Status)|$($s.StartType)"',
-      ],
+      ['-NoProfile', '-NonInteractive', '-Command', SSH_AGENT_PROBE],
       { encoding: 'utf-8', timeout: 10_000 }
     );
-    if (result.error) return null;
-    if (result.status !== 0) return 'missing';
+    if (result.error || result.status !== 0) return null;
     return parseSshAgentState(result.stdout);
   } catch {
     return null;

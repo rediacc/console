@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_DOCKER_INSTALL_DOCS, WK_GO_DL_BASE } from '@rediacc/shared/config/well-known.generated';
 import chalk from 'chalk';
@@ -89,7 +90,21 @@ export interface EnvironmentCheckDeps {
 
 /** A development install run inside a checkout that holds renet's source: the only place Go and Docker matter. */
 function defaultIsDevTree(): boolean {
-  return getInstallMethod() === 'dev' && existsSync('private/renet');
+  return getInstallMethod() === 'dev' && findRenetSource(process.cwd()) !== null;
+}
+
+/** The checkout root at or above `start` that holds `private/renet`, so `rdc doctor` run from a subdirectory still finds it. */
+export function findRenetSource(
+  start: string,
+  exists: (path: string) => boolean = existsSync
+): string | null {
+  let dir = resolve(start);
+  for (;;) {
+    if (exists(join(dir, 'private', 'renet'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
 }
 
 export function checkEnvironment(deps: EnvironmentCheckDeps = {}): CheckSection {
@@ -251,7 +266,8 @@ function pushEmbedAssetChecks(
 }
 
 function checkDevEmbedAssets(checks: CheckResult[]): void {
-  const hasEmbedAssets = existsSync('private/renet/pkg/embed/assets');
+  const root = findRenetSource(process.cwd()) ?? process.cwd();
+  const hasEmbedAssets = existsSync(join(root, 'private/renet/pkg/embed/assets'));
   pushEmbedAssetChecks(
     checks,
     hasEmbedAssets ? 'yes (dev embed assets found)' : 'no (dev embed assets missing)',
@@ -401,7 +417,17 @@ export async function checkConfiguration(deps: SecretStoreCheckDeps = {}): Promi
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 
-async function checkVirtualization(): Promise<CheckSection> {
+/** The Tools section already reports the OpenSSH client on Windows, so renet's own `ssh` row is dropped there. */
+export function dropDuplicateClientRows<T extends { name: string }>(
+  checks: T[],
+  platform: NodeJS.Platform
+): T[] {
+  return platform === 'win32' ? checks.filter((check) => check.name !== 'ssh') : checks;
+}
+
+async function checkVirtualization(
+  platform: NodeJS.Platform = process.platform
+): Promise<CheckSection> {
   const checks: CheckResult[] = [];
   const renetPath = await findRenetPath();
   if (!renetPath) {
@@ -427,7 +453,12 @@ async function checkVirtualization(): Promise<CheckSection> {
 
   try {
     const response = JSON.parse(result.output);
-    for (const check of response.checks) {
+    for (const check of dropDuplicateClientRows<{
+      name: string;
+      value: string;
+      status: CheckStatus;
+      hint?: string | null;
+    }>(response.checks, platform)) {
       checks.push({
         name: check.name,
         value: check.value,

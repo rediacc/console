@@ -164,6 +164,8 @@ class Planner {
     const ref = `${family}:${tag}`;
     const have = this.stateRepos[family]?.[tag]?.networkId;
     if (have === id) {
+      // Already held here, but the counter may sit at or below it: it moves past this id too.
+      this.importedMax = Math.max(this.importedMax, id);
       this.row('networkId', ref, 'equal');
       return;
     }

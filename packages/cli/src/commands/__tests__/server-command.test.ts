@@ -20,6 +20,7 @@ const m = vi.hoisted(() => ({
   print: vi.fn(),
   report: vi.fn(),
   machine: true,
+  setExitCode: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -36,7 +37,7 @@ vi.mock('../../services/core/output.js', () => ({
   },
 }));
 vi.mock('../../services/core/output-format.js', () => ({ isMachineReadable: () => m.machine }));
-vi.mock('../../services/core/request-context.js', () => ({ setExitCode: vi.fn() }));
+vi.mock('../../services/core/request-context.js', () => ({ setExitCode: m.setExitCode }));
 vi.mock('../../services/server/deps.js', () => ({ liveServerDeps: () => ({}) }));
 vi.mock('../../services/server/install.js', () => ({
   ServerInstall: class {
@@ -190,6 +191,24 @@ describe('rdc server', () => {
     }
     expect(errors.accountRequired).toContain('rdc subscription login');
     expect(errors.licenceFreeRefused).toContain('rdc subscription login');
+  });
+
+  it('sets exit 1 BEFORE printing an unhealthy status, so its JSON envelope says success:false', async () => {
+    m.status.mockResolvedValue({ health: 503 });
+    await program().parseAsync(['server', 'status', 'acme.example.com', '-m', 'm1'], {
+      from: 'user',
+    });
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    expect(m.setExitCode.mock.invocationCallOrder[0]).toBeLessThan(
+      m.print.mock.invocationCallOrder[0] ?? 0
+    );
+  });
+
+  it('leaves the exit code alone for a healthy status', async () => {
+    await program().parseAsync(['server', 'status', 'acme.example.com', '-m', 'm1'], {
+      from: 'user',
+    });
+    expect(m.setExitCode).not.toHaveBeenCalled();
   });
 
   it('passes the locator flags to status', async () => {

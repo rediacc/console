@@ -338,7 +338,22 @@ export function currentExitCode(): number | undefined {
   const context = storage.getStore();
   const raw = context ? context.exitCode : process.exitCode;
   const code = Number(raw ?? 0);
-  return Number.isInteger(code) && code !== 0 ? code : undefined;
+  if (code === 0) return undefined;
+  // A status that is nonzero but not an integer (fractional, NaN) is still a failure; it reports as the generic 1, never as success.
+  return Number.isInteger(code) ? code : 1;
+}
+
+/** The result a finished command's telemetry span records, following the exit status it set (currentExitCode). */
+export function commandOutcome(duration: number): {
+  success: boolean;
+  exitCode: number;
+  error?: string;
+  duration: number;
+} {
+  const exitCode = currentExitCode() ?? 0;
+  return exitCode === 0
+    ? { success: true, exitCode: 0, duration }
+    : { success: false, exitCode, error: `The command exited with code ${exitCode}.`, duration };
 }
 
 /**
