@@ -277,7 +277,7 @@ L'agent appelle `machine_health`, puis `machine_containers` et `repo_logs`, et p
 
 ## Sécurité
 
-Le serveur MCP local applique deux niveaux de protection. Les limites du serveur distant sont décrites dans [Serveur distant](#serveur-distant).
+Le serveur MCP local applique deux niveaux de protection. Les limites du serveur distant sont décrites dans [Serveur distant](#remote-server).
 
 ### Mode fork uniquement (par défaut)
 

@@ -277,7 +277,7 @@ Ajan `machine_health`, ardından `machine_containers` ve `repo_logs` araçların
 
 ## Güvenlik
 
-Yerel MCP sunucusu iki koruma katmanı uygular. Uzak sunucunun sınırları [Uzak sunucu](#uzak-sunucu) bölümündedir.
+Yerel MCP sunucusu iki koruma katmanı uygular. Uzak sunucunun sınırları [Uzak sunucu](#remote-server) bölümündedir.
 
 ### Yalnızca fork modu (varsayılan)
 

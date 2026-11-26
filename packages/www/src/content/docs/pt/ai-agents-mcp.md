@@ -277,7 +277,7 @@ O agente chama `machine_health`, depois `machine_containers` e `repo_logs`, e su
 
 ## Segurança
 
-O servidor MCP local aplica duas camadas de proteção. Os limites do servidor remoto estão em [Servidor remoto](#servidor-remoto).
+O servidor MCP local aplica duas camadas de proteção. Os limites do servidor remoto estão em [Servidor remoto](#remote-server).
 
 ### Modo apenas-fork (predefinição)
 

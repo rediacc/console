@@ -277,7 +277,7 @@ Agent kutsub `machine_health`, seejärel `machine_containers` ja `repo_logs`, ni
 
 ## Turvalisus
 
-Lokaalne MCP server rakendab kahte kaitsekihti. Kaugserveri piirangud on jaotises [Kaugserver](#kaugserver).
+Lokaalne MCP server rakendab kahte kaitsekihti. Kaugserveri piirangud on jaotises [Kaugserver](#remote-server).
 
 ### Ainult-fork-režiim (vaikimisi)
 
