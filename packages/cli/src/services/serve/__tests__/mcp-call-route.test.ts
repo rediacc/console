@@ -397,16 +397,31 @@ describe('POST /v1/mcp/call', () => {
     expect(envelope.errors[0]?.code).toBe('SSH_REFUSED');
   });
 
-  it('is not registered in daemon mode, and refuses a malformed or smuggling body', async () => {
+  it('answers in daemon mode against the grant config (box AG-OP1), and refuses a malformed or smuggling body', async () => {
     const daemon = await boot(
       [{ grantId: 'g_a', configId: 'cfg-a', machine: 'machine-a' }],
       'daemon'
     );
-    const absent = await call(daemon, daemon.grants.g_a as Grant, {
+    const { configService } = await import('../../config/config-resources.js');
+    const resolved: string[] = [];
+    daemon.setExecutor(async (options) => {
+      resolved.push((await configService.getLocalMachine(options.machineName)).ip);
+      return { success: true, exitCode: 0, durationMs: 1, stdout: 'ok' };
+    });
+    const served = await call(daemon, daemon.grants.g_a as Grant, {
       tool: 'repo_status',
       args: GRAND,
     });
-    expect(absent.status).toBe(404);
+    expect(served.status).toBe(200);
+    expect((await answerOf(served)).result?.isError).toBe(false);
+    // The daemon ran it on the grant's decrypted config, not its own enrolled one.
+    expect(resolved).toEqual(['10.9.9.9']);
+    const wrongSecret = await call(daemon, daemon.grants.g_a as Grant, {
+      tool: 'repo_status',
+      args: GRAND,
+      secret: 'not-the-secret',
+    });
+    expect(codeOf(await answerOf(wrongSecret))).toBe('REDIACC_GRANT_REVOKED');
 
     const world = await boot([{ grantId: 'g_a', configId: 'cfg-a', machine: 'machine-a' }]);
     const bad = await world.app.request('/v1/mcp/call', {

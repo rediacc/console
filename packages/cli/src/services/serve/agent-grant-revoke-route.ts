@@ -2,8 +2,7 @@
  * `POST /v1/mcp/revoke` on a DAEMON executor (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-OP1).
  *
  * On Cloudflare the proxy's `OrgExecutor.revokeGrant` posts the revocation to the container, which registers
- * the route inside the container tier (mcp-call-route.ts) with no bearer, since only the Durable Object can
- * reach it. A daemon is a network service: the account server's push arrives over HTTP through the per-org
+ * its own revoke route (mcp-call-route.ts) with no bearer, since only the Durable Object can reach it. A daemon is a network service: the account server's push arrives over HTTP through the per-org
  * executor resolver, so this route takes a bearer, asks the account server whose it is (as every other
  * daemon route does) and admits only an owner or admin of the org the sessions serve. A refused caller never
  * learns whether the grant is held.

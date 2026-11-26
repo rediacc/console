@@ -511,7 +511,7 @@ export function createServeApp(deps: ServeDeps): Hono {
     },
   });
 
-  // The hosted MCP call route, container tier only (it carries no bearer: only the proxy's `mcpCall` reaches it).
+  // The MCP call route under an agent grant: the split secret in the body is its credential, in both placements.
   registerMcpCallRoute(app, deps, { busy });
 
   return app;

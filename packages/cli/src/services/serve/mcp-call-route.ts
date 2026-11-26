@@ -4,10 +4,13 @@
  *
  * The MCP Worker forwards `{grantId, secret, tool, args, requestId, attachMs}` through the proxy's
  * `McpExecutor` RPC (workers/proxy/src/org-executor.ts `mcpCall`), and this route answers
- * `{result: CallToolResult}` or `{job: {jobId, machine}}`. It is reachable only through that RPC: the
- * Durable Object's public forward refuses the path, and it is registered in the container tier alone, so
- * the route carries no bearer of its own. The agent secret `secret` arrives in the body and is handed to
- * the grant session (agent-grant-session.ts) and nowhere else: not to a log line, an audit event or an error.
+ * `{result: CallToolResult}` or `{job: {jobId, machine}}`. In the container it is reachable only through that
+ * RPC: the Durable Object's public forward refuses the path. A daemon (Design 8 of PLAN-rmcp-agent-grants.md)
+ * has no MCP Worker in front of it, and the on-premise caller posts the same body to it directly. Neither
+ * placement takes a bearer on this route: the split secret IS the grant's credential, and the account server
+ * judges it (`POST /configs/agent-session`) before anything opens. The agent secret `secret` arrives in the
+ * body and is handed to the grant session (agent-grant-session.ts) and nowhere else: not to a log line, an
+ * audit event or an error.
  *
  * Every call takes the executor's own path, in its order, so a hosted call and the same command typed at
  * `/v1/command` get the same checks (D18):
@@ -281,16 +284,14 @@ function unservedTool(tool: string, entry: McpToolEntry | undefined): CallToolRe
   return toolError('INVALID_REQUEST', refusal);
 }
 
-/** Register `POST /v1/mcp/call`. Container tier only: see the module doc. */
+/** Register `POST /v1/mcp/call` in both placements, and the revoke route of each: see the module doc. */
 export function registerMcpCallRoute(
   app: Hono,
   deps: ServeDeps,
   options: McpCallRouteOptions
 ): void {
-  // A daemon registers only the bearer-authenticated revoke route (box AG-OP1); the call route is container tier.
-  registerAgentGrantRevokeRoute(app, deps);
   const sessions = deps.agentGrants;
-  if (deps.mode !== 'container' || !sessions) return;
+  if (!sessions) return;
 
   app.post(PROXY_ROUTES.mcpCall, async (c) => {
     const parsed = McpCallRequestSchema.safeParse(await c.req.json().catch(() => null));
@@ -310,6 +311,12 @@ export function registerMcpCallRoute(
     }
     return c.json(await answerCall({ deps, options, handle, entry, requestId, attachMs }, args));
   });
+
+  // A daemon's revoke route takes a bearer of an org owner or admin (box AG-OP1): the account server's push arrives over HTTP.
+  if (deps.mode === 'daemon') {
+    registerAgentGrantRevokeRoute(app, deps);
+    return;
+  }
 
   // A pushed revocation (box AG-S5): drop the grant's session and cached config. Only the proxy's `revokeGrant` reaches it.
   app.post(PROXY_ROUTES.mcpRevoke, async (c) => {
