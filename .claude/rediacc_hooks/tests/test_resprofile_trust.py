@@ -175,10 +175,26 @@ def test_bash_env_writes_the_loader(tmp_path):
     assert roots.splitlines() == [str(REPO)]
 
 
+def _unwritable_claude_dir(tmp_path) -> pathlib.Path:
+    """`home/.claude` made unwritable for this user: mode 0500, or, when that does not stop a write (root ignores the mode, 7900dd9d.1), a regular file in its place, which no uid can create a directory under."""
+    claude = tmp_path / "home" / ".claude"
+    claude.mkdir(parents=True)
+    claude.chmod(0o500)
+    probe = claude / "probe"
+    try:
+        probe.mkdir()
+    except OSError:
+        return claude
+    probe.rmdir()
+    claude.chmod(0o700)
+    claude.rmdir()
+    claude.write_text("not a directory\n", encoding="utf-8")
+    return claude
+
+
 def test_an_unwritable_home_prints_nothing(tmp_path):
     """bash_env.sh never prints: a write the setup cannot make fails silently and the shell's own command still runs."""
-    (tmp_path / "home" / ".claude").mkdir(parents=True)
-    (tmp_path / "home" / ".claude").chmod(0o500)
+    claude = _unwritable_claude_dir(tmp_path)
     try:
         got = subprocess.run(
             ["bash", "-c", "echo body"],
@@ -189,10 +205,12 @@ def test_an_unwritable_home_prints_nothing(tmp_path):
             check=False,
         )
     finally:
-        (tmp_path / "home" / ".claude").chmod(0o700)
+        claude.chmod(0o700)
     assert got.returncode == 0
     assert got.stdout == "body\n"
     assert got.stderr == ""
+    # The failed-open path really ran: the setup could not write its records under the home.
+    assert not (claude / "resprofile").exists()
 
 
 def test_a_directory_where_a_file_belongs_prints_nothing(tmp_path):
@@ -489,16 +507,13 @@ def test_a_python_row_carries_the_call_id_only_when_well_formed(monkeypatch):
     assert R._call_field() == {}
 
 
-def test_bash_env_exports_one_call_id_to_the_whole_tree(tmp_path):
-    """The shell and its nested shell see the same `<pid>-<ns>` id; a malformed inherited value is replaced. Skipped when no supervisor is installed (the id rides the profiled branch)."""
-    sup = pathlib.Path.home() / ".local/share/rediacc/bin/bashcov-sup"
-    if not (sup.is_file() or pathlib.Path("/usr/local/bin/bashcov-sup").is_file()):
-        pytest.skip("no bashcov-sup on this machine")
+def test_bash_env_exports_one_call_id_to_the_whole_tree(built_sup, tmp_path):
+    """The shell and its nested shell see the same `<pid>-<ns>` id; a malformed inherited value is replaced. The supervisor is the one built from the repo source (`built_sup`), so the shell-side export runs wherever gcc does, never only where an installed bashcov-sup happens to exist (ae723b97.2)."""
     env = child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh"))
     # The supervisor is found by absolute path under HOME: link it into the test's own home so its records land there.
     link = tmp_path / "home" / ".local/share/rediacc/bin/bashcov-sup"
     link.parent.mkdir(parents=True)
-    link.symlink_to(sup if sup.is_file() else "/usr/local/bin/bashcov-sup")
+    link.symlink_to(built_sup)
     env["BASHCOV_CALL"] = "junk"
     got = subprocess.run(
         ["bash", "-c", 'echo "$BASHCOV_CALL"; bash -c \'echo "$BASHCOV_CALL"\''],

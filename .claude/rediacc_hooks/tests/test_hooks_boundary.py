@@ -113,6 +113,36 @@ def fresh_tmp(tmp_path, monkeypatch):
     return reset
 
 
+def test_fresh_tmp_points_tmpdir_at_one_root_and_empties_it(fresh_tmp):
+    """a745aa77.1: the fixture's own contract, so a regression in the reset fails here rather than only as a comparison's outcome: TMPDIR names one root across resets, and each reset leaves it empty."""
+    root = fresh_tmp()
+    assert os.environ["TMPDIR"] == str(root)
+    assert root.is_dir()
+    assert list(root.iterdir()) == []
+    (root / "claude-worklist").mkdir()
+    (root / "claude-worklist" / "slug.spawnclaims").write_text("claim\n", encoding="utf-8")
+    again = fresh_tmp()
+    assert again == root
+    assert os.environ["TMPDIR"] == str(root)
+    assert list(root.iterdir()) == []
+
+
+def test_chain_witnesses_resets_before_every_probe(monkeypatch):
+    """a745aa77.2: every in-process probe runs on a reset root; the control counts probes against resets, so a probe without its reset fails here."""
+    events = []
+    monkeypatch.setattr(
+        sys.modules[__name__],
+        "chain_inprocess",
+        lambda _chain, _p: events.append("probe") or (0, "", ""),
+    )
+    chain = LIVE_CHAINS[0]
+    _deny, allow = chain_witnesses(chain, lambda: events.append("reset"))
+    assert allow is not None
+    assert "probe" in events
+    assert events[0] == "reset"
+    assert all(events[i] == "reset" for i, e in enumerate(events[1:]) if e == "probe")
+
+
 def chain_inprocess(chain, payload):
     """`dispatch.run_chain` in this process, inside the child's world and on fresh guard modules, as a `dispatch.py --chain` child would run it."""
     stems = [module.__name__.rsplit(".", 1)[-1] for module in guards.by_chain(chain)]
@@ -187,8 +217,10 @@ def test_one_real_dispatch_run_per_guard(stem, fresh_tmp):
     assert problem is None, problem
 
 
-def chain_witnesses(chain):
+def chain_witnesses(chain, reset=lambda: None):
     """`(deny payload, allow payload)` for `chain`, chosen in process; either may be None.
+
+    `reset` runs before every probe (a745aa77.2): a probe a guard admits writes state under TMPDIR (block_plan_concurrency's spawnclaims), and without the reset that state could change a later probe's verdict, so the witness picked would depend on the probes before it.
 
     Deny candidates are the chain members' static refusals, then their `EDGE_CASES` (the pre-agent guards have no static case at all). Allow candidates lead with the neutral payloads, which return before any guard does real work, then the same pool.
     """
@@ -207,14 +239,19 @@ def chain_witnesses(chain):
             edges.append(hookcases._j(spec) if isinstance(spec, dict) else builder(spec))
     pool = [hookcases.today_filled(k.payload) for k in static if k.expected == 2] + edges
     neutral = [builder(text) for text in NEUTRAL[chain]]
-    deny = next((p for p in pool if chain_inprocess(chain, p)[0] == 2), None)
-    allow = next((p for p in neutral + pool if chain_inprocess(chain, p)[0] == 0), None)
+
+    def probe(payload):
+        reset()
+        return chain_inprocess(chain, payload)[0]
+
+    deny = next((p for p in pool if probe(p) == 2), None)
+    allow = next((p for p in neutral + pool if probe(p) == 0), None)
     return deny, allow
 
 
 @pytest.mark.parametrize("chain", LIVE_CHAINS)
 def test_a_chain_denies_and_allows_the_same_in_and_out_of_process(chain, fresh_tmp):
-    deny, allow = chain_witnesses(chain)
+    deny, allow = chain_witnesses(chain, fresh_tmp)
     assert deny is not None, (
         "chain %s: no static case or neutral payload is refused by the chain; nothing to compare"
         % chain

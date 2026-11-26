@@ -145,6 +145,7 @@ In the main checkout, `block_rebase_over_foreign_dirt` refuses a rebase onto a b
 The rebase runs inside a skip-worktree window on `.claude/settings.local.json`: the bit is set just before it, stays set while the rebase is stopped, and is cleared as soon as no rebase is in progress. `git rebase --continue` refuses over the modified file exactly as the start does (measured 2026-10-20, git 2.53: rc 1, with the misleading `You must edit all merge conflicts`), and the harness can rewrite the file while a conflict waits, so clearing the bit at the first stop breaks the next `--continue`.
 
 ```bash
+# In the main checkout onto a base without the stand-down, run this block in the landing tree instead (the paragraph above).
 git update-index --skip-worktree .claude/settings.local.json
 git rebase "origin/${BASE:-main}"
 # THE RELEASE LINE: clears the bit once no rebase is in progress, a no-op while one is stopped, under either backend.

@@ -319,10 +319,11 @@ def writer_startable(text: str) -> bool:
 
 
 MERGED_PR_LIMIT = 1000
+MERGED_PR_WIDEN = 4
 
 
 def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]:
-    """([(number, plans)], "") for the repository's merged PRs (the newest MERGED_PR_LIMIT), each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer, or when the list reached MERGED_PR_LIMIT (an older PR could be cut off, so the one-PR-per-plan check refuses instead of admitting a plan unseen). One `gh pr list` call, plus one retry after a 2 s pause on a transient 5xx."""
+    """([(number, plans)], "") for every merged PR of the repository, each with the plans its body's own `Plan:` lines name; (None, why) when gh cannot answer. The first `gh pr list` asks for MERGED_PR_LIMIT; a list that fills its limit may have cut an older PR off, so the call is repeated with the limit widened MERGED_PR_WIDEN times until gh answers fewer rows than it was asked for (12e42ca1.2: a fixed cap refused every merge once the repository held that many merged PRs). Each call is retried once after a 2 s pause on a transient 5xx."""
     import json
     import subprocess
     import time
@@ -331,47 +332,55 @@ def merged_plan_prs(root: str) -> tuple[list[tuple[int, list[str]]] | None, str]
         retry = syspath.import_from_ci("rediacc_ci.core.gh_retry")
     except ImportError as exc:
         return None, "gh_retry could not be imported (%s)" % str(exc)[:120]
-    argv = [
-        "gh",
-        "pr",
-        "list",
-        "--state",
-        "merged",
-        "--limit",
-        str(MERGED_PR_LIMIT),
-        "--json",
-        "number,body",
-    ]
 
-    def once() -> subprocess.CompletedProcess:
-        return subprocess.run(
-            argv, cwd=root, capture_output=True, text=True, timeout=30, check=False
-        )
+    def fetch(limit: int) -> tuple[list | None, str]:
+        argv = [
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "merged",
+            "--limit",
+            str(limit),
+            "--json",
+            "number,body",
+        ]
 
-    try:
-        # A transient 5xx is retried once after a 2 s pause; a 4xx answers at once, and a spawn failure raises past the retry.
-        proc = retry.retry_transient(
-            once,
-            lambda done: None if done.returncode == 0 else (done.stderr or done.stdout or "failed"),
-            attempts=2,
-            sleep=lambda _scheduled: time.sleep(2),
-        )
-    except (OSError, subprocess.SubprocessError) as exc:
-        return None, "gh could not run: %s" % exc
-    if proc.returncode != 0:
-        return None, (proc.stderr or "").strip()[:200] or "gh exited %d" % proc.returncode
-    try:
-        rows = json.loads(proc.stdout or "[]")
-    except ValueError:
-        return None, "gh answered something that is not JSON"
-    if not isinstance(rows, list):
-        return None, "gh answered something that is not a list"
-    if len(rows) >= MERGED_PR_LIMIT:
-        return (
-            None,
-            "gh listed %d merged PRs, the cap, so an older PR naming a plan may be cut off"
-            % len(rows),
-        )
+        def once() -> subprocess.CompletedProcess:
+            return subprocess.run(
+                argv, cwd=root, capture_output=True, text=True, timeout=30, check=False
+            )
+
+        try:
+            # A transient 5xx is retried once after a 2 s pause; a 4xx answers at once, and a spawn failure raises past the retry.
+            proc = retry.retry_transient(
+                once,
+                lambda done: (
+                    None if done.returncode == 0 else (done.stderr or done.stdout or "failed")
+                ),
+                attempts=2,
+                sleep=lambda _scheduled: time.sleep(2),
+            )
+        except (OSError, subprocess.SubprocessError) as exc:
+            return None, "gh could not run: %s" % exc
+        if proc.returncode != 0:
+            return None, (proc.stderr or "").strip()[:200] or "gh exited %d" % proc.returncode
+        try:
+            rows = json.loads(proc.stdout or "[]")
+        except ValueError:
+            return None, "gh answered something that is not JSON"
+        if not isinstance(rows, list):
+            return None, "gh answered something that is not a list"
+        return rows, ""
+
+    limit = MERGED_PR_LIMIT
+    while True:
+        rows, why = fetch(limit)
+        if rows is None:
+            return None, why
+        if len(rows) < limit:
+            break
+        limit *= MERGED_PR_WIDEN
     return [
         (int(row.get("number") or 0), body_plans(row["body"]))
         for row in rows

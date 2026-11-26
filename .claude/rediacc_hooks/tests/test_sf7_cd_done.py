@@ -76,3 +76,9 @@ def test_a_readable_record_latches_once(tmp_path, monkeypatch):
     assert "CD DONE" in got[0]
     assert state_doc["landing"] == {"cd_done": "abc1234"}
     assert "cd-done-message" not in wl_checks.READ_FAILURES
+    # 1cd88702.6: the second stop on the same sha, with the latched state, says CD DONE no more.
+    again = wl_checks.landing_next_text(
+        types.SimpleNamespace(branch="b"), str(landing), "wl", "deadbeef", state_doc, {}, {}, []
+    )
+    assert "CD DONE" not in again[0], again
+    assert state_doc["landing"] == {"cd_done": "abc1234"}

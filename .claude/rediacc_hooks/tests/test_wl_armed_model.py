@@ -392,9 +392,11 @@ def test_covers_is_bounded_by_expiry_and_by_the_block_after_a_fire():
 
 def test_live_arm_is_inert_on_a_done_item():
     arm = arm_of(["PUSHED:head"])
+    # a4873334.3: a None arm would make the started-arm row below vacuous, so its absence fails here.
+    assert arm is not None
     assert A.live_arm({"state": " ", "arm": arm}) is arm
     assert A.live_arm({"state": "x", "arm": arm}) is None
-    assert A.live_arm({"state": " ", "arm": dict(arm or {}, started_at=at(1))}) is None
+    assert A.live_arm({"state": " ", "arm": dict(arm, started_at=at(1))}) is None
 
 
 # ---------------------------------------------------------------------------- the store: fold, latch, compaction

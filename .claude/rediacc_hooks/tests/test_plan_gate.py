@@ -956,16 +956,44 @@ def test_merged_plan_prs_refuses_when_gh_retry_cannot_be_imported(tmp_path, monk
     assert "gh_retry could not be imported" in err, err
 
 
-def test_merged_plan_prs_refuses_a_list_that_reached_the_cap(tmp_path, monkeypatch):
-    """6ad869fc.2: a list as long as the cap may have cut an older PR off, so it is unreadable rather than complete."""
-    monkeypatch.setattr(plan_gate, "MERGED_PR_LIMIT", 2)
+def _limit_stub(tmp_path, monkeypatch, total):
+    """A gh stub that answers min(--limit, total) merged PRs and logs each limit it was asked for."""
     stub = tmp_path / "bin" / "gh"
     stub.parent.mkdir()
+    log = tmp_path / "limits.log"
     stub.write_text(
-        '#!/bin/sh\necho \'[{"number":2,"body":"x"},{"number":1,"body":"y"}]\'\n', encoding="utf-8"
+        "#!/usr/bin/env python3\n"
+        "import json, sys\n"
+        "limit = int(sys.argv[sys.argv.index('--limit') + 1])\n"
+        "open(%r, 'a').write('%%d\\n' %% limit)\n"
+        "n = min(limit, %d)\n"
+        "print(json.dumps([{'number': i, 'body': 'Plan: agent/plans/PLAN-p%%d.md' %% i} for i in range(n, 0, -1)]))\n"
+        % (str(log), total),
+        encoding="utf-8",
     )
     stub.chmod(0o755)
     monkeypatch.setenv("PATH", "%s:%s" % (stub.parent, os.environ.get("PATH", "")))
+    return log
+
+
+def test_merged_plan_prs_widens_a_list_that_reached_the_limit(tmp_path, monkeypatch):
+    """12e42ca1.2 (and 6ad869fc.2): a list as long as its limit may have cut an older PR off, so the call is repeated wider until gh answers fewer rows than asked; a repository with more merged PRs than the first limit is read whole, never refused for good."""
+    monkeypatch.setattr(plan_gate, "MERGED_PR_LIMIT", 2)
+    log = _limit_stub(tmp_path, monkeypatch, total=5)
     got, err = _REAL_MERGED(str(tmp_path))
-    assert got is None, got
-    assert "the cap" in err, err
+    assert err == "", err
+    assert got is not None
+    assert [n for n, _plans in got] == [5, 4, 3, 2, 1]
+    assert got[-1][1] == ["agent/plans/PLAN-p1.md"]
+    assert log.read_text(encoding="utf-8").split() == ["2", "8"]
+
+
+def test_merged_plan_prs_asks_once_below_the_limit(tmp_path, monkeypatch):
+    """12e42ca1.2 control: a list shorter than its limit is complete after one call."""
+    monkeypatch.setattr(plan_gate, "MERGED_PR_LIMIT", 8)
+    log = _limit_stub(tmp_path, monkeypatch, total=5)
+    got, err = _REAL_MERGED(str(tmp_path))
+    assert err == "", err
+    assert got is not None
+    assert len(got) == 5
+    assert log.read_text(encoding="utf-8").split() == ["8"]

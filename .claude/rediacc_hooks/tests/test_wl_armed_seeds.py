@@ -153,10 +153,24 @@ def test_armed_seeds_are_capped_with_a_more_seed_naming_armed_list(repo):
     assert not [s for s in one if s["kind"] == "more"]
 
 
-def test_the_skill_and_the_plan_records_name_the_armed_step():
+def test_the_skill_and_the_plan_records_name_the_armed_step(wl):
     root = pathlib.Path(__file__).resolve().parents[3]
     skill = (root / ".claude" / "commands" / "writers-now.md").read_text(encoding="utf-8")
     assert "--arm-from-survey" in skill
     assert "## Armed" in skill
     docs = (root / "docs" / "agent-reference" / "plan-records.md").read_text(encoding="utf-8")
     assert "armed_seeds" in docs
+    assert hasattr(WN, "armed_seeds")
+    # c4e16535.1: the verbs the docs name answer as verbs of worklist.py, so a rename or removal fails here and not only in the prose.
+    me = wlfix.ME
+    listed = wl.cli("--armed-list", me)
+    assert listed.rc == 0, listed.err
+    # A missing survey path is refused by the armed verbs' own usage, which names the verb; a removed verb would answer "unknown verb" instead.
+    survey = wl.cli("--arm-from-survey", me)
+    assert "unknown verb" not in survey.err, survey.err
+    assert "worklist.py --arm-from-survey <me> <survey.md>" in survey.err, survey.err
+    # Control: a misspelled verb is the "unknown verb" refusal the two lines above rule out.
+    unknown = wl.cli("--armed-lisst", me)
+    assert unknown.rc != 0
+    assert "unknown verb '--armed-lisst'" in unknown.err, unknown.err
+    assert unknown.rc != 0, "control: a misspelled verb must not answer like the real one"

@@ -175,6 +175,8 @@ def test_hook_an_undeclared_shell_running_python_is_not_a_bg_orphan_block(wl):
     try:
         got = run_stop(wl, tree.env)
         assert "bg-orphan" not in keys_of(wl, got), reason(got)[:2500]
+        # f493c5be.1: the shell is not dropped, it is reported: the live-work advisory names it, so a stop that silently lost the finding fails here.
+        assert "UNOWNED LIVE WORK SHELL" in got.out, got.out[:2500]
     finally:
         tree.close()
 
@@ -185,6 +187,7 @@ def test_hook_control_an_undeclared_tail_shell_is_still_a_bg_orphan_block(wl):
     try:
         got = run_stop(wl, tree.env)
         assert "bg-orphan" in keys_of(wl, got), reason(got)[:2500]
+        assert "UNOWNED LIVE WORK SHELL" not in got.out, got.out[:2500]
     finally:
         tree.close()
 

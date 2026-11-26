@@ -5,7 +5,7 @@
 
 `--allow-shrink` is the one way a recording may lose case ids the committed golden holds (cases that no longer exist); without it the run exits 1 naming the lost ids and writes nothing for that target (finding #569a06ac). Targets run in order, so under `all` the ones before a refusal are already written.
 
-`--out-dir` writes each golden into that directory instead of over the committed one (still diffing against the committed one), so a recording can be compared without touching the tree.
+`--out-dir` writes each golden into that directory instead of over the committed one (still diffing against the committed one), so a recording can be compared without touching the tree; a lost case id is named on stderr there rather than refused, since nothing committed is written.
 
 THE SUMMARY COUNTS EVERY REWRITTEN LINE (queued item #c2a39bea). `N changed` is the records whose value moved under a key both sides hold; `L line(s) rewritten` is the diff a reviewer sees, moved, added and dropped keys included. A run that rewrote lines while no record changed value used to print "0 changed" and look like a no-op.
 
@@ -72,6 +72,16 @@ pd = importlib.import_module("rediacc_hooks.tests.test_post_bash_differential")
 sd = importlib.import_module("rediacc_hooks.tests.test_shellscan_differential")
 
 
+def _refuse_shrink(label, old_silent, old_records, silent, records, allow_shrink, out_dir):
+    """`goldenio.refuse_shrink`, except under `--out-dir`: a scratch recording touches no committed golden, so a lost case is named on stderr and the recording is still written for comparison (fa7649b7.1)."""
+    try:
+        goldenio.refuse_shrink(label, old_silent, old_records, silent, records, allow_shrink)
+    except goldenio.ShrinkRefusedError as exc:
+        if out_dir is None:
+            raise
+        sys.stderr.write("regolden: note (--out-dir, nothing committed is written): %s\n" % exc)
+
+
 def _write_path(path, out_dir):
     """Where a recording lands: the committed golden, or the same file name under `--out-dir`."""
     return path if out_dir is None else out_dir / path.name
@@ -114,7 +124,7 @@ def _record_guard(stem, reason, out_dir=None, allow_shrink=False):
         "case_count": len(cases),
         "source": "port",
     }
-    goldenio.refuse_shrink(stem, old_silent, old_records, silent, records, allow_shrink)
+    _refuse_shrink(stem, old_silent, old_records, silent, records, allow_shrink, out_dir)
     path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, silent, records)
     return path, len(cases), changed
@@ -154,7 +164,7 @@ def _record_shellscan(reason, out_dir=None, allow_shrink=False):
         "case_count": len(sd.CASES) + len(sd.JSON_CASES),
         "source": "port",
     }
-    goldenio.refuse_shrink("shellscan", old_silent, old_records, set(), records, allow_shrink)
+    _refuse_shrink("shellscan", old_silent, old_records, set(), records, allow_shrink, out_dir)
     path = _write_path(goldenio.golden_path("shellscan"), out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(sd.CASES) + len(sd.JSON_CASES), changed
@@ -187,7 +197,7 @@ def _record_post_bash(reason, out_dir=None, allow_shrink=False):
         "case_count": len(pd.CASES),
         "source": "port",
     }
-    goldenio.refuse_shrink("post-bash", old_silent, old_records, set(), records, allow_shrink)
+    _refuse_shrink("post-bash", old_silent, old_records, set(), records, allow_shrink, out_dir)
     path = _write_path(path, out_dir)
     goldenio.write_golden(path, header, set(), records)
     return path, len(pd.CASES), changed

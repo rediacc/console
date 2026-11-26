@@ -190,6 +190,8 @@ def tree():
     (BASE / "out").mkdir()
     (BASE / "out" / "l").symlink_to(BASE / "agent" / "plans" / "sub", target_is_directory=True)
     (BASE / "agent" / "plans" / "esc").symlink_to(BASE / "out", target_is_directory=True)
+    # 97a2e84b.1: a plan whose bytes are not UTF-8 (a Latin-1 e-acute in its body); `_write_rules.result_text` cannot read it, so an Edit has nothing to judge.
+    (BASE / NONUTF8).write_bytes(plan(dep="PLAN-z.md").encode("utf-8") + b"caf\xe9\n")
     return BASE
 
 
@@ -225,6 +227,7 @@ def edit(rel, old, new, replace_all=False):
 
 
 NEW = "agent/plans/PLAN-new.md"
+NONUTF8 = "agent/plans/PLAN-latin.md"
 
 # PLAN-local-first-delivery L2: an open box this edit adds that waits on GitHub (a phrase of proof-tiers.json `github_waits`) needs a `GitHub-only:` tag or a `Local-route:` correction; a box already waiting is the gate's, not the edit's.
 LP8_WAIT = "- [ ] T2 runs once the change is released\n"
@@ -359,6 +362,12 @@ CASES = [
     (
         "an Edit to a missing plan (the tool fails)",
         edit("agent/plans/PLAN-missing.md", "a", "b"),
+        False,
+    ),
+    # 97a2e84b.1: the same line deletion "an Edit deleting the line" refuses on PLAN-y (its control), against a non-UTF-8 plan: allowed with no traceback (rc 0, not a crash).
+    (
+        "97a2e84b.1: an Edit deleting the line of a non-UTF-8 plan",
+        edit(NONUTF8, "Depends-On: PLAN-z.md\n", ""),
         False,
     ),
     ("an empty payload", {}, False),

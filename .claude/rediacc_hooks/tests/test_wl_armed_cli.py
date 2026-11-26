@@ -379,3 +379,53 @@ def test_state_refuses_a_body_without_armed_while_an_arm_is_live(wl):
     body = wlfix.STATE_BODY + "\n\n## Armed\n- #%s lands L1 once HEAD is pushed\n" % rid
     got = wl.cli("--state", ME, stdin=body)
     assert got.rc == 0, got.err
+
+
+def _fired_brief_arm(wl, text="worklist.py --armed-start deadbeef {rid}\n\nland it\n"):
+    """An item armed with a brief whose arm has fired; returns (item id, brief path)."""
+    rid = add(wl)
+    brief = wl.proj / "agent" / ME / "armed" / ("%s.md" % rid)
+    brief.parent.mkdir(parents=True, exist_ok=True)
+    brief.write_text(text.format(rid=rid), encoding="utf-8")
+    rel = "agent/%s/armed/%s.md" % (ME, rid)
+    assert wl.cli("--arm", ME, rid, "--when", "PUSHED:head", "--run", rel).rc == 0
+    aid = events(wl, "arm")[0]["aid"]
+    plant(wl, ev="armfire", id=rid, aid=aid, v="fired", why="PUSHED:head: HEAD is on its upstream")
+    return rid, brief
+
+
+def test_armed_start_with_an_unchanged_brief_warns_of_nothing(wl):
+    """190c8ade.4 control: the brief as armed starts with no WARNING and names the cat line."""
+    rid, _brief = _fired_brief_arm(wl)
+    got = wl.cli("--armed-start", ME, rid)
+    assert got.rc == 0, got.err
+    assert "WARNING" not in got.err, got.err
+    assert "next: cat agent/%s/armed/%s.md" % (ME, rid) in got.out
+
+
+def test_armed_start_names_a_brief_that_cannot_be_read(wl):
+    """190c8ade.4: a brief removed after the arm still starts (the arm fired) but says it cannot be read."""
+    rid, brief = _fired_brief_arm(wl)
+    brief.unlink()
+    got = wl.cli("--armed-start", ME, rid)
+    assert got.rc == 0, got.err
+    assert "WARNING: the brief agent/%s/armed/%s.md cannot be read" % (ME, rid) in got.err, got.err
+    assert [e["id"] for e in events(wl, "armstart")] == [rid]
+
+
+def test_armed_start_names_a_brief_changed_since_the_arm(wl):
+    """190c8ade.4: a brief edited after the arm starts with the sha-changed WARNING."""
+    rid, brief = _fired_brief_arm(wl)
+    brief.write_text(
+        brief.read_text(encoding="utf-8") + "an edit after the arm\n", encoding="utf-8"
+    )
+    got = wl.cli("--armed-start", ME, rid)
+    assert got.rc == 0, got.err
+    assert "changed since the arm" in got.err, got.err
+    assert "read it before acting" in got.err, got.err
+
+
+def test_disarm_of_an_item_with_no_live_arm_is_refused(wl):
+    """190c8ade.4: `--disarm` on an unarmed item refuses and writes nothing; the control is the armed disarm in test_a_second_live_arm_is_refused_until_disarmed."""
+    rid = add(wl)
+    refused(wl, "carries no live arm to disarm", "--disarm", ME, rid, "--why", "replanned")

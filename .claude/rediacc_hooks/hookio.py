@@ -40,11 +40,13 @@ THE THREE THINGS THIS MODULE IS CAREFUL ABOUT
    process. A guard that reached for `print()` would work today and break both.
 """
 
+import contextlib
 import io
 import json
 import os
 import pathlib
 import re
+import stat
 import subprocess
 import threading
 
@@ -605,14 +607,27 @@ GOLDEN_TEMP_DIR = "/tmp"
 
 
 def golden_world(name):
-    """The fixed world directory `name` of a guard case, under the temp directory the goldens quote."""
-    return os.path.join(GOLDEN_TEMP_DIR, name)
+    """The fixed world directory `name` of a guard case, under the temp directory the goldens quote, created here (0700) and refused when it is not a real directory this user owns.
+
+    The path is predictable in a shared temp directory (0c9a169c.4), so another local user could pre-create it, or plant a symlink there, and every fixture write would follow into a place that user controls. A world that already exists is admitted only as a directory (never a symlink) owned by this uid.
+    """
+    path = os.path.join(GOLDEN_TEMP_DIR, name)
+    with contextlib.suppress(FileExistsError):
+        os.mkdir(path, 0o700)
+    st = os.lstat(path)
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+        msg = "guard world %s is not a directory this user (uid %d) owns; remove it and rerun" % (
+            path,
+            os.getuid(),
+        )
+        raise RuntimeError(msg)
+    return path
 
 
 def write_world_file(path, text):
     """Write a differential fixture file at a FIXED path without a torn read.
 
-    Several guards build their world at one `tempfile.gettempdir()` path, because the goldens quote that path literally. Every pytest process on the host shares it: xdist workers, and a second checkout's pre-push. `open(path, "w")` truncates first, so a guard run by one process between another's truncate and write read an empty record and admitted the edit (rc 0 against golden rc 2, block_compacted_plan_edit, 1006-2 pre-push 2026-10-06). Equal bytes are left alone; anything else lands whole through `os.replace`.
+    Several guards build their world at one fixed `golden_world` path under /tmp, because the goldens quote that path literally. Every pytest process on the host shares it: xdist workers, and a second checkout's pre-push. `open(path, "w")` truncates first, so a guard run by one process between another's truncate and write read an empty record and admitted the edit (rc 0 against golden rc 2, block_compacted_plan_edit, 1006-2 pre-push 2026-10-06). Equal bytes are left alone; anything else lands whole through `os.replace`.
     """
     path = pathlib.Path(path)
     try:

@@ -116,3 +116,19 @@ def test_refuse_shrink_unit():
     with pytest.raises(goldenio.ShrinkRefusedError, match="2 case"):
         goldenio.refuse_shrink("x", {"a"}, {"b": {}}, set(), {})
     goldenio.refuse_shrink("x", {"a"}, {"b": {}}, set(), {}, allow_shrink=True)
+
+
+@pytest.mark.parametrize("target", _targets())
+def test_out_dir_names_a_lost_case_and_writes_the_scratch_recording(tmp_path, target):
+    """fa7649b7.1: `--out-dir` touches no committed golden, so a lost case is named on stderr, the scratch file is written, and the committed golden keeps its bytes."""
+    path = _seed(tmp_path, target)
+    before = path.read_bytes()
+    scratch = tmp_path / "scratch"
+    got = _run(tmp_path, target, "--out-dir", str(scratch))
+    assert got.returncode == 0, (got.stdout, got.stderr)
+    assert GONE in got.stderr
+    assert "--out-dir" in got.stderr
+    assert path.read_bytes() == before
+    _header, silent, records = goldenio.read_golden(scratch / path.name)
+    assert GONE not in silent
+    assert GONE not in records
