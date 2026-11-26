@@ -871,14 +871,19 @@ def test_a_trailer_the_mark_refuses_is_named_with_the_manual_command(world):
     assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
 
 
-def test_a_lease_commit_names_its_trailer_for_the_report_and_marks_nothing(world):
-    """Inside a lease the commit is not the landed one: the trailer is named back to the writer (its report says fixed by that commit), and the record stays open until the landing pick."""
+@pytest.mark.parametrize(
+    "project_dir",
+    [lambda repo, _lease: repo, lambda _repo, lease: lease],
+    ids=["project-is-the-main-checkout", "project-is-the-lease"],
+)
+def test_a_lease_commit_names_its_trailer_for_the_report_and_marks_nothing(world, project_dir):
+    """Inside a lease the commit is not the landed one: the trailer is named back to the writer (its report says fixed by that commit), and the record stays open until the landing pick. A writer's project directory is the main checkout (measured in a round-44 lease, where the note never fired), and the lease's HEAD is recorded from the call's cwd."""
     sha = world.commit()
     world.run_child(sha)
     fid = "%s.1" % sha[:8]
     lease = world.repo / ".claude" / "worktrees" / "l1"
     world.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
-    env = {"CLAUDE_PROJECT_DIR": str(lease)}
+    env = {"CLAUDE_PROJECT_DIR": str(project_dir(world.repo, lease))}
     world.hook("git status", cwd=lease, extra_env=env)
     (lease / "f.py").write_text("a = 1\nb = 2\nc = 4\n", encoding="utf-8")
     world.git("commit", "-q", "-m", "fix(x): z\n\nFixes-Review: %s" % fid, "--", "f.py", repo=lease)

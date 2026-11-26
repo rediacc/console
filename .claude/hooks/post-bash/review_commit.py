@@ -151,9 +151,10 @@ def _head_record(session, repo):
     return d / ("%s-%s" % (str(session or "nosession")[:8], key))
 
 
-def record_heads(root, session):
-    """Write each project repository's HEAD for this session, the `before` of the next Bash call."""
-    for tree in _bound_paths(root):
+def record_heads(root, session, cwd=None):
+    """Write each project repository's HEAD for this session, the `before` of the next Bash call, and the HEAD of the lease tree `cwd` sits in (a writer's project directory is the main checkout, so its lease is no bound tree)."""
+    lease = commit_policy.lease_root(str(cwd)) if cwd else ""
+    for tree in [*_bound_paths(root), *([pathlib.Path(lease)] if lease else [])]:
         for repo in _project_repos(tree):
             head = R.git_out(pathlib.Path(repo), "rev-parse", "HEAD")
             if head:
@@ -237,7 +238,7 @@ FIXES_SCAN_MAX = 50
 
 
 def _fixes_tops(cmd, base, root):
-    """The top levels of the repositories a `commit`, `cherry-pick` or `am` in `cmd` ran in, inside this project."""
+    """The top levels of the repositories a `commit`, `cherry-pick` or `am` in `cmd` ran in: this project, its submodules, or a lease tree (named back to its writer, never marked)."""
     trees = _bound_paths(root)
     tops = []
     for run in shellscan._analyse(cmd).runs:
@@ -245,7 +246,10 @@ def _fixes_tops(cmd, base, root):
             continue
         where = base if run.git_dir in (None, "", ".") else base / run.git_dir
         top = R.git_out(where, "rev-parse", "--show-toplevel")
-        if top and top not in tops and commit_policy.owning_tree(top, trees) is not None:
+        inside = top and (
+            commit_policy.owning_tree(top, trees) is not None or commit_policy.lease_root(top)
+        )
+        if inside and top not in tops:
             tops.append(top)
     return tops
 
@@ -344,7 +348,7 @@ def main():
                 "per-commit review trigger failed (%s: %s)" % (type(exc).__name__, str(exc)[:160])
             )
     try:
-        record_heads(root, session)
+        record_heads(root, session, ev.field("cwd") or None)
     except Exception as exc:
         lines.append("HEAD record failed (%s: %s)" % (type(exc).__name__, str(exc)[:160]))
     try:
