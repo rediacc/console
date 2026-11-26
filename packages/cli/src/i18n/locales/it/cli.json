@@ -3281,10 +3281,14 @@
       "noChanges": "Nessuna modifica da sincronizzare.",
       "previewingChanges": "\nAnteprima modifiche...\n",
       "skippedMore": "{{names}} e altri {{count}}",
+      "deleted": "File eliminati: {{count}}",
+      "rsyncUnusable": "rsync è installato ma non si avvia ({{reason}}). Il trasferimento passa da SFTP (senza sincronizzazione delta).",
       "skippedNonRegular": "Avviso: collegamenti simbolici e file speciali non trasferiti, totale: {{count}} (una sincronizzazione con privilegi trasferisce solo file regolari): {{names}}",
       "status": {
         "description": "Confronto dry-run di file locali e remoti (mostra cosa verrebbe trasferito senza trasferire effettivamente)",
-        "descriptionShort": "Confronta file locali e remoti (dry-run)"
+        "descriptionShort": "Confronta file locali e remoti (dry-run)",
+        "localOnly": "Solo in locale, non sul remoto: {{count}}",
+        "localOnlyMore": "  ... e altri {{count}}"
       },
       "totalSize": "Dimensione totale: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "Il percorso --remote non deve contenere traversamenti \"..\" del percorso. Usa un percorso all'interno del repository.",
       "remoteAndRemoteFile": "Impossibile usare --remote e --remote-file insieme. Scegline uno.",
       "remoteFileLocalNotDir": "Quando --remote-file è impostato, --local deve essere una directory esistente: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file richiede esattamente un percorso --local che punti a un file."
+      "remoteFileRequiresSingleFile": "--remote-file richiede esattamente un percorso --local che punti a un file.",
+      "mirrorNeedsRsync": "--mirror richiede rsync: SFTP non può eliminare file, quindi non è stato trasferito nulla."
     },
     "term": {
       "connectivityFailed": "Impossibile raggiungere {{host}}:{{port}}. {{error}}\n\nRisoluzione dei problemi:\n  - Verifica che la macchina sia accesa e connessa alla rete\n  - Controlla che l'indirizzo IP sia corretto nel vault della macchina\n  - Assicurati che la porta {{port}} non sia bloccata da un firewall\n  - Prova a eseguire il ping della macchina: ping {{host}}",

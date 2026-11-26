@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3339,
-    "sourceCommit": "a924c47673151558ac9dfa5c5c35db0023fb77ce"
+    "keyCount": 3344,
+    "sourceCommit": "ebe45bf66a33ab70f5c5038f17a9dc7b416fe48a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2600,6 +2600,7 @@
     "commands.subscription.status.whereDeleted": "eb3b4e33",
     "commands.subscription.status.whereGone": "0c4349c4",
     "commands.sync.cancelled": "c9ec0eb4",
+    "commands.sync.deleted": "a11458ae",
     "commands.sync.description": "b88d3ac1",
     "commands.sync.download.completed": "38d1825a",
     "commands.sync.download.description": "7553c555",
@@ -2613,10 +2614,13 @@
     "commands.sync.fetchingDetails": "088301ca",
     "commands.sync.noChanges": "8c1766ae",
     "commands.sync.previewingChanges": "c7cd3581",
+    "commands.sync.rsyncUnusable": "c32f74a5",
     "commands.sync.skippedMore": "2c0d8ab9",
     "commands.sync.skippedNonRegular": "c3a5688d",
     "commands.sync.status.description": "f1abf2c0",
     "commands.sync.status.descriptionShort": "93df0e9b",
+    "commands.sync.status.localOnly": "909cd2bf",
+    "commands.sync.status.localOnlyMore": "bb300dbf",
     "commands.sync.totalSize": "69fc6d1f",
     "commands.sync.upload.completed": "8a132129",
     "commands.sync.upload.description": "d9a19fff",
@@ -3046,6 +3050,7 @@
     "errors.subscription.tokenWarning": "c348054c",
     "errors.sync.absolutePathBlocked": "0a961d95",
     "errors.sync.localPathNotFound": "714ed972",
+    "errors.sync.mirrorNeedsRsync": "502c7970",
     "errors.sync.mirrorWithFile": "cb78397d",
     "errors.sync.pathTraversalBlocked": "b252e3ff",
     "errors.sync.remoteAndRemoteFile": "90129347",

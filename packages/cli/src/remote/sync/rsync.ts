@@ -11,6 +11,7 @@ import {
   updateRsyncBytes,
   updateRsyncCount,
 } from './rsync-count.js';
+import { createDeleteCounter } from './rsync-deleted.js';
 import { createSkipLineScan, parseSkippedEntries } from './rsync-skipped.js';
 
 /**
@@ -64,6 +65,68 @@ export function getRsyncVersionText(): Promise<string> {
       throw error;
     });
   return rsyncVersionTextPromise;
+}
+
+/** An rsync exit status as shown to the user: a Windows loader failure (0xC0000135) reads as hex beside the decimal. */
+export function formatRsyncExitCode(code: number): string {
+  return code > 255 ? `${code} (0x${code.toString(16).toUpperCase()})` : String(code);
+}
+
+/** Last lines of a stderr text, for an error line that names why a process failed. */
+export function stderrTail(text: string, maxLines = 5): string {
+  return text.trim().split(/\r?\n/).slice(-maxLines).join('\n').trim();
+}
+
+const RSYNC_PROBE_TIMEOUT_MS = 5000;
+
+function probeFailureStatus(failure: NodeJS.ErrnoException & { killed?: boolean }): string {
+  if (failure.killed) return `timed out after ${RSYNC_PROBE_TIMEOUT_MS / 1000}s`;
+  if (typeof failure.code === 'number') return `exit code ${formatRsyncExitCode(failure.code)}`;
+  return String(failure.code ?? failure.message);
+}
+
+let rsyncProbePromise: Promise<string | undefined> | undefined;
+
+/**
+ * Why an installed rsync cannot start, or undefined when it runs (or is not installed at all, which getRsyncCommand reports on its own).
+ * Runs `rsync --version` once per process: a binary that exists but fails there (MSYS2 exit 0xC0000135 after a partial pacman upgrade)
+ * cannot carry a transfer, so the caller falls back to SFTP and names this reason.
+ */
+export function rsyncUnusableReason(): Promise<string | undefined> {
+  rsyncProbePromise ??= (async () => {
+    let cmd: string;
+    try {
+      cmd = await getRsyncCommand();
+    } catch {
+      return undefined;
+    }
+    return new Promise<string | undefined>((resolve) => {
+      execFile(
+        cmd,
+        ['--version'],
+        {
+          encoding: 'utf8',
+          timeout: RSYNC_PROBE_TIMEOUT_MS,
+          env: { ...process.env, ...getMsys2Environment() },
+        },
+        (err, _stdout, stderr) => {
+          if (!err) {
+            resolve(undefined);
+            return;
+          }
+          const status = probeFailureStatus(err as NodeJS.ErrnoException & { killed?: boolean });
+          const tail = stderrTail(String(stderr ?? ''));
+          resolve(tail ? `${cmd} --version: ${status}: ${tail}` : `${cmd} --version: ${status}`);
+        }
+      );
+    });
+  })();
+  return rsyncProbePromise;
+}
+
+/** Test seam: forget the cached probe. */
+export function resetRsyncProbe(): void {
+  rsyncProbePromise = undefined;
 }
 
 /**
@@ -307,7 +370,7 @@ export interface RsyncExecutorOptions {
  */
 export async function executeRsync(
   options: RsyncExecutorOptions
-): Promise<SyncResult & { skipped: string[] }> {
+): Promise<SyncResult & { skipped: string[]; deleted: number }> {
   const startTime = Date.now();
   const errors: string[] = [];
 
@@ -359,12 +422,15 @@ export async function executeRsync(
     let stderrText = '';
     // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
     const stdoutSkips = createSkipLineScan();
+    // Remote (or, on a download, local) files a --mirror run removed: rsync prints each as "deleting <name>".
+    const deletions = createDeleteCounter();
     const countState = newRsyncCountState();
     const bytesState = newRsyncBytesState();
 
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
       stdoutSkips.push(output);
+      deletions.push(output);
       options.onStdout?.(output);
 
       // Parse progress from rsync output
@@ -398,8 +464,8 @@ export async function executeRsync(
     rsync.on('close', (code) => {
       const success = code === 0;
 
-      // Add descriptive messages for common rsync exit codes
-      if (!success && code !== null) {
+      // Always name the exit status: a binary that dies before printing (a missing DLL) leaves stderr empty, and the exit code is the only reason there is.
+      if (!success) {
         const exitCodeMessages: Record<number, string> = {
           1: 'Syntax or usage error in rsync command',
           2: 'Protocol incompatibility between rsync versions',
@@ -420,10 +486,17 @@ export async function executeRsync(
           30: 'Timeout in data send/receive',
           35: 'Timeout waiting for daemon connection',
         };
-        const message = exitCodeMessages[code];
-        if (message) {
-          errors.push(`rsync exit code ${code}: ${message}`);
-        }
+        const label =
+          code === null
+            ? 'rsync ended without an exit code'
+            : `rsync exit code ${formatRsyncExitCode(code)}`;
+        const message = code === null ? undefined : exitCodeMessages[code];
+        const tail = stderrTail(stderrText);
+        errors.push(
+          [message ? `${label}: ${message}` : label, tail && `stderr: ${tail}`]
+            .filter(Boolean)
+            .join('; ')
+        );
       }
 
       resolve({
@@ -433,6 +506,7 @@ export async function executeRsync(
         errors: success ? [] : errors,
         duration: Date.now() - startTime,
         skipped: parseSkippedEntries(`${stdoutSkips.text()}\n${stderrText}`),
+        deleted: deletions.count(),
       });
     });
 
@@ -445,6 +519,7 @@ export async function executeRsync(
         errors,
         duration: Date.now() - startTime,
         skipped: [],
+        deleted: 0,
       });
     });
   });
@@ -512,7 +587,12 @@ export async function getRsyncPreview(options: RsyncExecutorOptions): Promise<Rs
       if (code === 0 || code === 24) {
         resolve(parseRsyncChanges(output));
       } else {
-        reject(new Error(`rsync dry-run failed: ${errorOutput}`));
+        const tail = stderrTail(errorOutput);
+        reject(
+          new Error(
+            `rsync dry-run failed (exit code ${code === null ? 'none' : formatRsyncExitCode(code)})${tail ? `: ${tail}` : ''}`
+          )
+        );
       }
     });
 

@@ -3281,10 +3281,14 @@
       "noChanges": "Aucune modification à synchroniser.",
       "previewingChanges": "\nAperçu des modifications...\n",
       "skippedMore": "{{names}} et {{count}} de plus",
+      "deleted": "Fichiers supprimés : {{count}}",
+      "rsyncUnusable": "rsync est installé mais ne démarre pas ({{reason}}). Le transfert passe par SFTP (sans synchronisation delta).",
       "skippedNonRegular": "Avertissement : liens symboliques et fichiers spéciaux non transférés, total : {{count}} (une synchronisation privilégiée ne transfère que les fichiers ordinaires) : {{names}}",
       "status": {
         "description": "Vérifier l'état de synchronisation et comparer les fichiers locaux/distants",
-        "descriptionShort": "Comparer les fichiers locaux et distants (à blanc)"
+        "descriptionShort": "Comparer les fichiers locaux et distants (à blanc)",
+        "localOnly": "Uniquement en local, absents du distant : {{count}}",
+        "localOnlyMore": "  ... et {{count}} de plus"
       },
       "totalSize": "Taille totale : {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "Le chemin --remote ne doit pas contenir de traversée de chemin \"..\". Utilisez un chemin à l'intérieur du dépôt.",
       "remoteAndRemoteFile": "--remote et --remote-file ne peuvent pas être utilisés ensemble. Choisissez-en un.",
       "remoteFileLocalNotDir": "Lorsque --remote-file est défini, --local doit être un répertoire existant : {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file requiert exactement un chemin --local pointant sur un fichier."
+      "remoteFileRequiresSingleFile": "--remote-file requiert exactement un chemin --local pointant sur un fichier.",
+      "mirrorNeedsRsync": "--mirror nécessite rsync : SFTP ne peut pas supprimer de fichiers, rien n'a donc été transféré."
     },
     "term": {
       "connectivityFailed": "Impossible d'atteindre {{host}}:{{port}}. {{error}}\n\nDépannage :\n  - Vérifiez que la machine est allumée et connectée au réseau\n  - Vérifiez que l'adresse IP est correcte dans le coffre de la machine\n  - Assurez-vous que le port {{port}} n'est pas bloqué par un pare-feu\n  - Essayez de faire un ping à la machine : ping {{host}}",

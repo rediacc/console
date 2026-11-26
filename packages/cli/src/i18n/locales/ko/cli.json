@@ -3281,10 +3281,14 @@
       "noChanges": "동기화할 변경 사항이 없습니다.",
       "previewingChanges": "\n변경 사항 미리 보는 중...\n",
       "skippedMore": "{{names}} 외 {{count}}개",
+      "deleted": "삭제된 파일: {{count}}",
+      "rsyncUnusable": "rsync가 설치되어 있지만 실행되지 않습니다 ({{reason}}). SFTP로 전송합니다(델타 동기화 없음).",
       "skippedNonRegular": "경고: 심볼릭 링크와 특수 파일은 전송되지 않았습니다(총 {{count}}건). 권한 상승 동기화는 일반 파일만 전송합니다: {{names}}",
       "status": {
         "description": "로컬 및 원격 파일의 드라이 런 비교 (실제 전송 없이 전송될 항목 표시)",
-        "descriptionShort": "로컬 및 원격 파일 비교 (드라이 런)"
+        "descriptionShort": "로컬 및 원격 파일 비교 (드라이 런)",
+        "localOnly": "로컬에만 있고 원격에는 없음: {{count}}",
+        "localOnlyMore": "  ... 외 {{count}}개"
       },
       "totalSize": "전체 크기: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "--remote 경로에 \"..\" 경로 순회가 포함되어서는 안 됩니다. 리포지토리 내부의 경로를 사용하세요.",
       "remoteAndRemoteFile": "--remote와 --remote-file을 함께 사용할 수 없습니다. 하나만 선택하세요.",
       "remoteFileLocalNotDir": "--remote-file이 설정된 경우 --local은 기존 디렉토리여야 합니다: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file에는 파일을 가리키는 --local 경로가 정확히 하나 필요합니다."
+      "remoteFileRequiresSingleFile": "--remote-file에는 파일을 가리키는 --local 경로가 정확히 하나 필요합니다.",
+      "mirrorNeedsRsync": "--mirror에는 rsync가 필요합니다. SFTP로는 파일을 삭제할 수 없어 아무것도 전송하지 않았습니다."
     },
     "term": {
       "connectivityFailed": "{{host}}:{{port}}에 연결할 수 없습니다. {{error}}\n\n문제 해결:\n  - 머신이 켜져 있고 네트워크에 연결되어 있는지 확인하세요\n  - 머신 볼트의 IP 주소가 올바른지 확인하세요\n  - 방화벽에서 포트 {{port}}가 차단되어 있지 않은지 확인하세요\n  - 머신에 ping을 시도해 보세요: ping {{host}}",

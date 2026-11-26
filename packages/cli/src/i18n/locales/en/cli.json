@@ -2603,6 +2603,8 @@
       "errors": "Errors:",
       "skippedNonRegular": "Warning: symlinks and special files not transferred, {{count}} in all (a privileged sync carries regular files only): {{names}}",
       "skippedMore": "{{names}}, and {{count}} more",
+      "deleted": "Files deleted: {{count}}",
+      "rsyncUnusable": "rsync is installed but cannot run ({{reason}}). Using SFTP transfer (no delta sync).",
       "upload": {
         "description": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
         "descriptionShort": "Upload files to a repository via rsync",
@@ -2621,7 +2623,9 @@
       },
       "status": {
         "description": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
-        "descriptionShort": "Compare local and remote files (dry-run)"
+        "descriptionShort": "Compare local and remote files (dry-run)",
+        "localOnly": "Only in local, not in remote: {{count}}",
+        "localOnlyMore": "  ... and {{count}} more"
       }
     },
     "subscription": {
@@ -3832,7 +3836,8 @@
       "mirrorWithFile": "Cannot use --mirror when a source is a file: it would delete sibling files in the destination directory.",
       "remoteAndRemoteFile": "Cannot use --remote and --remote-file together. Pick one.",
       "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file."
+      "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file.",
+      "mirrorNeedsRsync": "--mirror needs rsync: the SFTP transfer cannot delete files, so nothing was transferred."
     },
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",

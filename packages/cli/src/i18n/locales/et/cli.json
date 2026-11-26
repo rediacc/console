@@ -3281,10 +3281,14 @@
       "noChanges": "Muudatusi sünkroonimiseks pole.",
       "previewingChanges": "\nMuudatuste eelvaade...\n",
       "skippedMore": "{{names}} ja veel {{count}}",
+      "deleted": "Kustutatud faile: {{count}}",
+      "rsyncUnusable": "rsync on paigaldatud, aga ei käivitu ({{reason}}). Edastus käib SFTP kaudu (ilma delta-sünkroonita).",
       "skippedNonRegular": "Hoiatus: sümboolseid linke ja erifaile ei edastatud, kokku: {{count}} (privilegeeritud sünkroonimine edastab ainult tavafaile): {{names}}",
       "status": {
         "description": "Kohalike ja kaugfailide proovijooks (näitab, mida kantaks üle, ilma tegelikult üle kandmata)",
-        "descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)"
+        "descriptionShort": "Võrdleb kohalikke ja kaugfaile (proovijooks)",
+        "localOnly": "Ainult kohalikus, kaugpoolel puudub: {{count}}",
+        "localOnlyMore": "  ... ja veel {{count}}"
       },
       "totalSize": "Kogumaht: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "--remote tee ei tohi sisaldada \"..\" teekäiku. Kasuta teed repositooriumi sees.",
       "remoteAndRemoteFile": "--remote ja --remote-file ei saa koos kasutada. Vali üks.",
       "remoteFileLocalNotDir": "Kui --remote-file on seadistatud, peab --local olema olemasolev kaust: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file nõuab täpselt ühte --local teed, mis osutab failile."
+      "remoteFileRequiresSingleFile": "--remote-file nõuab täpselt ühte --local teed, mis osutab failile.",
+      "mirrorNeedsRsync": "--mirror vajab rsyncit: SFTP ei saa faile kustutada, seega ei edastatud midagi."
     },
     "term": {
       "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",

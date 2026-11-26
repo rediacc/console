@@ -3281,10 +3281,14 @@
       "noChanges": "没有要同步的更改。",
       "previewingChanges": "\n正在预览更改...\n",
       "skippedMore": "{{names}}，以及另外 {{count}} 个",
+      "deleted": "已删除文件:{{count}}",
+      "rsyncUnusable": "rsync 已安装但无法运行({{reason}})。改用 SFTP 传输(无增量同步)。",
       "skippedNonRegular": "警告：符号链接和特殊文件未传输，共计：{{count}}（特权同步仅传输常规文件）：{{names}}",
       "status": {
         "description": "检查同步状态并比较本地/远程文件",
-        "descriptionShort": "比较本地和远程文件（模拟运行）"
+        "descriptionShort": "比较本地和远程文件（模拟运行）",
+        "localOnly": "仅存在于本地、远程没有:{{count}}",
+        "localOnlyMore": "  ……另有 {{count}} 个"
       },
       "totalSize": "总大小：{{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。",
       "remoteAndRemoteFile": "--remote 和 --remote-file 不能同时使用。请选择其中一个。",
       "remoteFileLocalNotDir": "设置了 --remote-file 时，--local 必须是已存在的目录：{{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file 要求恰好一个指向文件的 --local 路径。"
+      "remoteFileRequiresSingleFile": "--remote-file 要求恰好一个指向文件的 --local 路径。",
+      "mirrorNeedsRsync": "--mirror 需要 rsync:SFTP 无法删除文件,因此未传输任何内容。"
     },
     "term": {
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",

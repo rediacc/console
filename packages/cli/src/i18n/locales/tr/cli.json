@@ -3281,10 +3281,14 @@
       "noChanges": "Senkronize edilecek değişiklik yok.",
       "previewingChanges": "\nDeğişiklikler önizleniyor...\n",
       "skippedMore": "{{names}} ve {{count}} tane daha",
+      "deleted": "Silinen dosya: {{count}}",
+      "rsyncUnusable": "rsync kurulu ama çalışmıyor ({{reason}}). Aktarım SFTP ile yapılıyor (delta senkronizasyonu yok).",
       "skippedNonRegular": "Uyarı: sembolik bağlantılar ve özel dosyalar aktarılmadı, toplam: {{count}} (ayrıcalıklı eşitleme yalnızca normal dosyaları aktarır): {{names}}",
       "status": {
         "description": "Senkronizasyon durumunu kontrol edin ve yerel/uzak dosyaları karşılaştırın",
-        "descriptionShort": "Yerel ve uzak dosyaları karşılaştır (simülasyon)"
+        "descriptionShort": "Yerel ve uzak dosyaları karşılaştır (simülasyon)",
+        "localOnly": "Yalnızca yerelde var, uzakta yok: {{count}}",
+        "localOnlyMore": "  ... ve {{count}} tane daha"
       },
       "totalSize": "Toplam boyut: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "--remote yolu \"..\" yol geçişi içermemelidir. Depo içinde bir yol kullanın.",
       "remoteAndRemoteFile": "--remote ve --remote-file birlikte kullanılamaz. Birini seçin.",
       "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file için, bir dosyaya işaret eden tam olarak bir --local yolu gerekir."
+      "remoteFileRequiresSingleFile": "--remote-file için, bir dosyaya işaret eden tam olarak bir --local yolu gerekir.",
+      "mirrorNeedsRsync": "--mirror için rsync gerekir: SFTP dosya silemez, bu yüzden hiçbir şey aktarılmadı."
     },
     "term": {
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",

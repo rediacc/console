@@ -11,6 +11,7 @@ import {
 import {
   executeRsync,
   type RsyncExecutorOptions,
+  rsyncUnusableReason,
   type SftpUploadSource,
   sftpDownloadDirectory,
   sftpDownloadFile,
@@ -63,6 +64,12 @@ async function ensureRenetProvisioned(machineName: string, access: RenetAccess):
   }
 }
 
+function writeDeletedCount(deleted: number | undefined): void {
+  if (deleted !== undefined && deleted > 0) {
+    writeStdout(`${t('commands.sync.deleted', { count: deleted })}\n`);
+  }
+}
+
 function displaySyncResult(
   result: {
     success: boolean;
@@ -71,6 +78,7 @@ function displaySyncResult(
     duration: number;
     errors: string[];
     skipped?: string[];
+    deleted?: number;
   },
   spinner: ReturnType<typeof ora>,
   mode: 'upload' | 'download'
@@ -82,6 +90,7 @@ function displaySyncResult(
         `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
       );
     }
+    writeDeletedCount(result.deleted);
     writeStdout(
       `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
     );
@@ -262,10 +271,15 @@ function buildSshOptions(knownHostsPath: string, port: number, keyFilePath: stri
 
 async function handleDryRunWithSftpFallback(
   rsyncOptions: RsyncExecutorOptions,
-  sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>
+  sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>,
+  localOnly = false
 ): Promise<void> {
   try {
-    await handleDryRun(rsyncOptions);
+    if (await warnIfRsyncUnusable()) {
+      displaySftpDryRunResult(await sftpTransfer());
+      return;
+    }
+    await handleDryRun(rsyncOptions, { localOnly });
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
     const result = await sftpTransfer();
@@ -273,7 +287,15 @@ async function handleDryRunWithSftpFallback(
   }
 }
 
-async function executeSyncWithSftpFallback(
+/** True (after warning on stderr with the reason) when rsync is installed but cannot start, so the transfer takes the SFTP path. */
+async function warnIfRsyncUnusable(): Promise<boolean> {
+  const reason = await rsyncUnusableReason();
+  if (reason === undefined) return false;
+  writeStderr(`${t('commands.sync.rsyncUnusable', { reason })}\n`);
+  return true;
+}
+
+export async function executeSyncWithSftpFallback(
   rsyncOptions: RsyncExecutorOptions,
   mode: 'upload' | 'download',
   sftpTransfer: (spinner: ReturnType<typeof ora>) => Promise<{
@@ -286,11 +308,9 @@ async function executeSyncWithSftpFallback(
   keyDiagnostic?: string,
   beforeRsync?: () => Promise<void>
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
-  try {
-    await beforeRsync?.();
-    return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
-  } catch (err: unknown) {
-    if (!isRsyncNotFoundError(err)) throw err;
+  const runSftp = async (): Promise<{ filesTransferred: number; bytesTransferred: number }> => {
+    // The SFTP path has no delete step: running it for a mirror would leave the extra files and report a clean sync.
+    if (rsyncOptions.mirror) throw new Error(t('errors.sync.mirrorNeedsRsync'));
     const spinner = ora(
       oraOptions('rsync not available, using SFTP transfer (no delta sync)...')
     ).start();
@@ -300,6 +320,14 @@ async function executeSyncWithSftpFallback(
       filesTransferred: result.filesTransferred,
       bytesTransferred: result.bytesTransferred,
     };
+  };
+  try {
+    await beforeRsync?.();
+    if (await warnIfRsyncUnusable()) return await runSftp();
+    return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
+  } catch (err: unknown) {
+    if (!isRsyncNotFoundError(err)) throw err;
+    return await runSftp();
   }
 }
 
@@ -449,7 +477,8 @@ async function syncDownload(
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
         source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
         destination,
-        mirror: options.mirror,
+        // status lists what only the local side holds, which rsync reports only as a deletion of a mirror run.
+        mirror: options.mirror === true || (options.dryRun === true && options.localOnly === true),
         verify: options.verify,
         exclude: options.exclude,
         universalUser: ctx.details.universalUser,
@@ -459,11 +488,14 @@ async function syncDownload(
       if (!shouldContinue) return;
 
       if (options.dryRun) {
-        await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpDownloadTransfer(isFileMode, ctx, localPath, {
-            verify: options.verify,
-            dryRun: true,
-          })
+        await handleDryRunWithSftpFallback(
+          rsyncOptions,
+          () =>
+            sftpDownloadTransfer(isFileMode, ctx, localPath, {
+              verify: options.verify,
+              dryRun: true,
+            }),
+          options.localOnly === true
         );
         return;
       }
@@ -580,7 +612,7 @@ ${t('help.examples')}
     .action(async (ref: string, options: SyncDownloadOptions) => {
       try {
         // Read-only: derive the machine, skip the mutating remote round-trip.
-        await syncDownload(ref, { ...options, dryRun: true }, { readOnly: true });
+        await syncDownload(ref, { ...options, dryRun: true, localOnly: true }, { readOnly: true });
       } catch (error) {
         handleError(error);
       }

@@ -17,6 +17,7 @@ export {
   getRsyncPreview,
   type RsyncChanges,
   type RsyncExecutorOptions,
+  rsyncUnusableReason,
 } from './rsync.js';
 export { warnSkippedEntries } from './rsync-skipped.js';
 export type { SftpUploadSource } from './sftp-fallback.js';

@@ -3281,10 +3281,14 @@
       "noChanges": "Sem alterações a sincronizar.",
       "previewingChanges": "\nA pré-visualizar alterações...\n",
       "skippedMore": "{{names}} e mais {{count}}",
+      "deleted": "Arquivos excluídos: {{count}}",
+      "rsyncUnusable": "O rsync está instalado, mas não consegue iniciar ({{reason}}). A transferência usa SFTP (sem sincronização delta).",
       "skippedNonRegular": "Aviso: links simbólicos e arquivos especiais não transferidos, total: {{count}} (uma sincronização privilegiada transfere apenas arquivos regulares): {{names}}",
       "status": {
         "description": "Comparação em modo de simulação de ficheiros locais e remotos (mostra o que seria transferido sem efetuar a transferência)",
-        "descriptionShort": "Comparar ficheiros locais e remotos (simulação)"
+        "descriptionShort": "Comparar ficheiros locais e remotos (simulação)",
+        "localOnly": "Apenas no local, não no remoto: {{count}}",
+        "localOnlyMore": "  ... e mais {{count}}"
       },
       "totalSize": "Tamanho total: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "O caminho --remote não pode conter traversal \"..\" de diretório. Use um caminho dentro do repositório.",
       "remoteAndRemoteFile": "Não é possível usar --remote e --remote-file em conjunto. Escolha um.",
       "remoteFileLocalNotDir": "Quando --remote-file está definido, --local tem de ser um diretório existente: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file requer exatamente um caminho --local que aponte para um ficheiro."
+      "remoteFileRequiresSingleFile": "--remote-file requer exatamente um caminho --local que aponte para um ficheiro.",
+      "mirrorNeedsRsync": "--mirror exige o rsync: o SFTP não consegue excluir arquivos, então nada foi transferido."
     },
     "term": {
       "connectivityFailed": "Não é possível alcançar {{host}}:{{port}}. {{error}}\n\nResolução de problemas:\n  - Verifique se a máquina está ligada e conectada à rede\n  - Confirme que o endereço IP está correto no cofre da máquina\n  - Certifique-se de que a porta {{port}} não está bloqueada por uma firewall\n  - Tente fazer ping à máquina: ping {{host}}",

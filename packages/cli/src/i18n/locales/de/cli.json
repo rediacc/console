@@ -3281,10 +3281,14 @@
       "noChanges": "Keine Änderungen zum Synchronisieren.",
       "previewingChanges": "\nÄnderungen werden angezeigt...\n",
       "skippedMore": "{{names}} und {{count}} weitere",
+      "deleted": "Gelöschte Dateien: {{count}}",
+      "rsyncUnusable": "rsync ist installiert, lässt sich aber nicht starten ({{reason}}). Die Übertragung läuft per SFTP (ohne Delta-Sync).",
       "skippedNonRegular": "Warnung: Symbolische Links und Spezialdateien wurden nicht übertragen, insgesamt: {{count}} (eine privilegierte Synchronisierung überträgt nur reguläre Dateien): {{names}}",
       "status": {
         "description": "Synchronisierungsstatus prüfen und lokale/Remote-Dateien vergleichen",
-        "descriptionShort": "Lokale und Remote-Dateien vergleichen (Trockenlauf)"
+        "descriptionShort": "Lokale und Remote-Dateien vergleichen (Trockenlauf)",
+        "localOnly": "Nur lokal vorhanden, nicht im Remote: {{count}}",
+        "localOnlyMore": "  ... und {{count}} weitere"
       },
       "totalSize": "Gesamtgröße: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "Der Pfad von --remote darf keine \"..\" Pfadtraversierung enthalten. Verwenden Sie einen Pfad innerhalb des Repositorys.",
       "remoteAndRemoteFile": "--remote und --remote-file können nicht zusammen verwendet werden. Wählen Sie eine Option.",
       "remoteFileLocalNotDir": "Wenn --remote-file gesetzt ist, muss --local ein vorhandenes Verzeichnis sein: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file erfordert genau einen --local Pfad, der auf eine Datei verweist."
+      "remoteFileRequiresSingleFile": "--remote-file erfordert genau einen --local Pfad, der auf eine Datei verweist.",
+      "mirrorNeedsRsync": "--mirror braucht rsync: Per SFTP lassen sich keine Dateien löschen, daher wurde nichts übertragen."
     },
     "term": {
       "connectivityFailed": "Kann {{host}}:{{port}} nicht erreichen. {{error}}\n\nFehlerbehebung:\n  - Überprüfen Sie, ob die Machine eingeschaltet ist und mit dem Netzwerk verbunden ist\n  - Überprüfen Sie, ob die IP-Adresse im Machine-Vault korrekt ist\n  - Stellen Sie sicher, dass Port {{port}} nicht durch eine Firewall blockiert ist\n  - Versuchen Sie, die Machine zu pingen: ping {{host}}",

@@ -3281,10 +3281,14 @@
       "noChanges": "لا توجد تغييرات للمزامنة.",
       "previewingChanges": "\nجاري معاينة التغييرات...\n",
       "skippedMore": "{{names}}، والمزيد: {{count}}",
+      "deleted": "الملفات المحذوفة: {{count}}",
+      "rsyncUnusable": "rsync مثبّت لكنه لا يعمل ({{reason}}). سيتم النقل عبر SFTP (دون مزامنة تفاضلية).",
       "skippedNonRegular": "تحذير: لم يتم نقل الروابط الرمزية والملفات الخاصة، العدد الإجمالي: {{count}} (المزامنة المميزة تنقل الملفات العادية فقط): {{names}}",
       "status": {
         "description": "التحقق من حالة المزامنة ومقارنة الملفات المحلية/البعيدة",
-        "descriptionShort": "مقارنة الملفات المحلية والبعيدة (تشغيل تجريبي)"
+        "descriptionShort": "مقارنة الملفات المحلية والبعيدة (تشغيل تجريبي)",
+        "localOnly": "موجود محليًا فقط وغير موجود على الجهاز البعيد: {{count}}",
+        "localOnlyMore": "  ... و{{count}} أخرى"
       },
       "totalSize": "الحجم الإجمالي: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "يجب ألا يحتوي مسار --remote على اجتياز المسار \"..\". استخدم مساراً داخل المستودع.",
       "remoteAndRemoteFile": "لا يمكن استخدام --remote و --remote-file معاً. اختر واحداً منهما.",
       "remoteFileLocalNotDir": "عند تعيين --remote-file، يجب أن يكون --local مجلداً موجوداً: {{path}}",
-      "remoteFileRequiresSingleFile": "‫يتطلب --remote-file مسار --local واحدًا بالضبط يشير إلى ملف."
+      "remoteFileRequiresSingleFile": "‫يتطلب --remote-file مسار --local واحدًا بالضبط يشير إلى ملف.",
+      "mirrorNeedsRsync": "يتطلب --mirror وجود rsync: لا يستطيع SFTP حذف الملفات، لذا لم يُنقل أي شيء."
     },
     "term": {
       "connectivityFailed": "لا يمكن الوصول إلى {{host}}:{{port}}. {{error}}\n\nاستكشاف الأخطاء:\n  - تحقق من أن الآلة مشغلة ومتصلة بالشبكة\n  - تحقق من صحة عنوان IP في خزينة الآلة\n  - تأكد من عدم حجب المنفذ {{port}} بواسطة جدار حماية\n  - جرب ping على الآلة: ping {{host}}",

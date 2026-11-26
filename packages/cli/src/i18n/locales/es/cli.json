@@ -3281,10 +3281,14 @@
       "noChanges": "No hay cambios para sincronizar.",
       "previewingChanges": "\nVista previa de cambios...\n",
       "skippedMore": "{{names}} y {{count}} más",
+      "deleted": "Archivos eliminados: {{count}}",
+      "rsyncUnusable": "rsync está instalado pero no se puede ejecutar ({{reason}}). Se usa la transferencia por SFTP (sin sincronización delta).",
       "skippedNonRegular": "Advertencia: enlaces simbólicos y archivos especiales sin transferir, en total: {{count}} (una sincronización con privilegios solo transfiere archivos regulares): {{names}}",
       "status": {
         "description": "Verificar estado de sincronización y comparar archivos locales/remotos",
-        "descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)"
+        "descriptionShort": "Comparar archivos locales y remotos (ejecución en seco)",
+        "localOnly": "Solo en local, no en remoto: {{count}}",
+        "localOnlyMore": "  ... y {{count}} más"
       },
       "totalSize": "Tamaño total: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "La ruta --remote no debe contener recorrido de ruta \"..\". Use una ruta dentro del repositorio.",
       "remoteAndRemoteFile": "--remote y --remote-file no se pueden usar juntos. Elige uno.",
       "remoteFileLocalNotDir": "Cuando se establece --remote-file, --local debe ser un directorio existente: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file requiere exactamente una ruta --local que apunte a un archivo."
+      "remoteFileRequiresSingleFile": "--remote-file requiere exactamente una ruta --local que apunte a un archivo.",
+      "mirrorNeedsRsync": "--mirror necesita rsync: SFTP no puede eliminar archivos, así que no se transfirió nada."
     },
     "term": {
       "connectivityFailed": "No se puede alcanzar {{host}}:{{port}}. {{error}}\n\nResolución de problemas:\n  - Verificar si la máquina está encendida y conectada a la red\n  - Verificar que la dirección IP sea correcta en la bóveda de máquina\n  - Asegurarse de que el puerto {{port}} no esté bloqueado por un firewall\n  - Intente hacer ping a la máquina: ping {{host}}",

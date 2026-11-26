@@ -3281,10 +3281,14 @@
       "noChanges": "同期する変更がありません。",
       "previewingChanges": "\n変更をプレビュー中です...\n",
       "skippedMore": "{{names}}、ほか {{count}} 件",
+      "deleted": "削除したファイル: {{count}}",
+      "rsyncUnusable": "rsync はインストールされていますが起動できません ({{reason}})。SFTP で転送します (差分同期なし)。",
       "skippedNonRegular": "警告: シンボリックリンクと特殊ファイルは転送されませんでした（合計: {{count}}）。特権同期では通常ファイルのみ転送されます: {{names}}",
       "status": {
         "description": "同期ステータスを確認して、ローカル/リモートファイルを比較する",
-        "descriptionShort": "ローカルとリモートのファイルを比較する（ドライラン）"
+        "descriptionShort": "ローカルとリモートのファイルを比較する（ドライラン）",
+        "localOnly": "ローカルにのみあり、リモートにないもの: {{count}}",
+        "localOnlyMore": "  ... ほか {{count}} 件"
       },
       "totalSize": "合計サイズ: {{size}}",
       "upload": {
@@ -3839,7 +3843,8 @@
       "pathTraversalBlocked": "--remote パスに \"..\" パストラバーサルを含めることはできません。リポジトリ内のパスを使用してください。",
       "remoteAndRemoteFile": "--remote と --remote-file は併用できません。どちらか一方を選択してください。",
       "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。"
+      "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。",
+      "mirrorNeedsRsync": "--mirror には rsync が必要です。SFTP ではファイルを削除できないため、何も転送されませんでした。"
     },
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",

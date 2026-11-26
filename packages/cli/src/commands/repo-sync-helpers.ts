@@ -40,6 +40,8 @@ export interface SyncDownloadOptions {
   confirm?: boolean;
   exclude?: string[];
   dryRun?: boolean;
+  /** `repo sync status`: also report the files only the local side holds. */
+  localOnly?: boolean;
   [key: string]: unknown;
 }
 
@@ -240,10 +242,44 @@ export async function handleConfirmMode(
   return true;
 }
 
-export async function handleDryRun(rsyncOptions: RsyncExecutorOptions): Promise<void> {
+const LOCAL_ONLY_SHOWN = 10;
+
+/**
+ * `repo sync status` compares in the download direction, where rsync lists a file only the local side holds solely as a
+ * deletion of a mirror run. The preview runs as a mirror, so those deletions are the local-only files: shown under their own
+ * heading, never as pending changes, and never folded into "in sync".
+ */
+export async function handleDryRun(
+  rsyncOptions: RsyncExecutorOptions,
+  opts: { localOnly?: boolean } = {}
+): Promise<void> {
   writeStdout(`${t('commands.sync.dryRunHeader')}\n`);
   const changes = await getRsyncPreview(rsyncOptions);
-  writeStdout(`${formatChangesSummary(changes)}\n`);
+  if (!opts.localOnly) {
+    writeStdout(`${formatChangesSummary(changes)}\n`);
+    return;
+  }
+  const localOnly = changes.deletedFiles;
+  const remoteChanges: RsyncChanges = { ...changes, deletedFiles: [] };
+  if (localOnly.length === 0) {
+    writeStdout(`${formatChangesSummary(remoteChanges)}\n`);
+    return;
+  }
+  const lines: string[] = [];
+  const hasRemoteChanges =
+    remoteChanges.newFiles.length +
+      remoteChanges.modifiedFiles.length +
+      remoteChanges.newDirs.length >
+    0;
+  if (hasRemoteChanges) lines.push(formatChangesSummary(remoteChanges));
+  lines.push(t('commands.sync.status.localOnly', { count: localOnly.length }));
+  for (const name of localOnly.slice(0, LOCAL_ONLY_SHOWN)) lines.push(`  ${name}`);
+  if (localOnly.length > LOCAL_ONLY_SHOWN) {
+    lines.push(
+      t('commands.sync.status.localOnlyMore', { count: localOnly.length - LOCAL_ONLY_SHOWN })
+    );
+  }
+  writeStdout(`${lines.join('\n')}\n`);
 }
 
 export interface SyncConnectionContext {
