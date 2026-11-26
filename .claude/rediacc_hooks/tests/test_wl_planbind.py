@@ -160,6 +160,30 @@ def test_citing_box_controls():
     assert run({TARGET: text, OTHER: finished}) == []
 
 
+def test_open_box_elsewhere_citing_a_done_box_does_not_bind():
+    """A citation of a box already ticked in the cited plan holds nothing open (#c033133b: R2 of PLAN-multi-region-bench cited the ticked LP-bench 89d70106 of a finished plan, which stayed bound forever)."""
+    text = plan(boxes=("[x] T1 finished work", "[ ] T2 open work here"))
+    done_sig = R.done_boxes(text)[0][3]
+    open_sig = sig_of(text)
+    for cite in (
+        "after box %s lands" % done_sig,
+        "after PLAN-x.md [%s] lands" % done_sig,
+        "after PLAN-x.md#%s lands" % done_sig,
+        "after PLAN-x.md#T1 lands",
+    ):
+        found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 %s" % cite,))})
+        assert "citing-box" not in kinds(found), cite
+    # CONTROL: the same forms naming the plan's open box still bind.
+    for cite in (
+        "after box %s lands" % open_sig,
+        "after PLAN-x.md [%s] lands" % open_sig,
+        "after PLAN-x.md#T2 lands",
+        "after box %s and box %s land" % (done_sig, open_sig),
+    ):
+        found = run({TARGET: text, OTHER: other_plan(boxes=("[ ] Q1 %s" % cite,))})
+        assert "citing-box" in kinds(found), cite
+
+
 def test_own_open_box_binds_without_ruling():
     found = run({TARGET: plan(boxes=("[ ] T1 open work here",))})
     assert kinds(found) == ["box"]

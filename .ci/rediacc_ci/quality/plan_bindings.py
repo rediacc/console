@@ -302,6 +302,38 @@ def selftest() -> int:
         ),
         {DONE_X: ["dependent"]},
     )
+    # #c033133b: a live plan's open box citing a box the closed plan already ticked holds nothing open.
+    tally.check(
+        "control: a live open box citing a ticked box of the _done plan does not bind",
+        _verdict(
+            dict(
+                _clean(),
+                **{
+                    LIVE_Y: _plan(
+                        "PLAN-y",
+                        status="in-progress",
+                        boxes=("[ ] T1 run box %s on bench" % R.box_sig("T1 finished work"),),
+                    )
+                },
+            )
+        ),
+        {},
+    )
+    reopened = _plan("PLAN-x", boxes=("[x] T1 finished work", "[ ] T2 orphaned work"))
+    tally.check(
+        "B1 planted: a live open box citing an OPEN box of the _done plan binds",
+        _verdict(
+            {
+                DONE_X: reopened,
+                LIVE_Y: _plan(
+                    "PLAN-y",
+                    status="in-progress",
+                    boxes=("[ ] T1 run box %s on bench" % R.box_sig("T2 orphaned work"),),
+                ),
+            }
+        ),
+        {DONE_X: ["box", "citing-box"]},
+    )
     tally.raises(
         "B0 planted: zero plans read is CANNOT RUN, never green",
         CannotRunError,

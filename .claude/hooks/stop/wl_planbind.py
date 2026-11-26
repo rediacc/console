@@ -117,8 +117,35 @@ def _sig_re(sigs) -> re.Pattern[str] | None:
 
 
 def _cite_box_re(base: str) -> re.Pattern[str]:
-    """`PLAN-x.md#<ref>` or `PLAN-x.md [<sig>]`: a reference to a box of the plan, not to the plan alone."""
-    return re.compile(r"(?<![A-Za-z0-9._-])%s(?:#[A-Za-z0-9]|\s*\[[0-9a-f]{8}\])" % re.escape(base))
+    """`PLAN-x.md#<ref>` or `PLAN-x.md [<sig>]`: a reference to a box of the plan, not to the plan alone. Group 1 is the `#` ref, group 2 the bracketed signature."""
+    return re.compile(
+        r"(?<![A-Za-z0-9._-])%s(?:#([A-Za-z0-9][A-Za-z0-9_-]*)|\s*\[([0-9a-f]{8})\])"
+        % re.escape(base)
+    )
+
+
+def _box_label(body: str) -> str:
+    """A box's label, the first word of its body (`T1`, `LP-bench`)."""
+    words = body.split()
+    return words[0] if words else ""
+
+
+def _cites_open_box(
+    body: str, cite: re.Pattern[str], sig_pat, open_sigs, done_sigs, done_labels, open_labels
+) -> bool:
+    """True when `body` cites a box of the judged plan that is not done there.
+
+    A citation of a box already ticked in the cited plan holds nothing open, so it does not bind (#c033133b: R2 of PLAN-multi-region-bench cited the ticked LP-bench 89d70106 of a finished plan, which stayed bound forever). A ref that resolves to no done box (an open box, an unknown label or signature) still binds."""
+    for m in cite.finditer(body):
+        ref = m.group(1) or m.group(2)
+        if ref in open_sigs or ref in open_labels:
+            return True
+        if ref in done_sigs or ref in done_labels:
+            continue
+        return True
+    if sig_pat is not None:
+        return any(hit in open_sigs for hit in sig_pat.findall(body))
+    return False
 
 
 @functools.lru_cache(maxsize=1024)
@@ -292,6 +319,11 @@ def bindings(
 
     # 4. Open boxes of other unfinished plans that cite one of its boxes.
     cite = _cite_box_re(base)
+    open_sigs = {b[3] for b in opens}
+    done_list = R.done_boxes(own)
+    done_sigs = {b[3] for b in done_list} - open_sigs
+    open_labels = {_box_label(b[2]) for b in opens}
+    done_labels = {_box_label(b[2]) for b in done_list} - open_labels
     for other, text in sorted(texts.items()):
         if other == rel:
             continue
@@ -301,7 +333,7 @@ def bindings(
         if info.header.status in graph.finished() or info.header.status == D.REMOVED_STATUS:
             continue
         for index, _raw, body, sig in _open_boxes(text):
-            if cite.search(body) or (sig_pat is not None and sig_pat.search(body)):
+            if _cites_open_box(body, cite, sig_pat, open_sigs, done_sigs, done_labels, open_labels):
                 out.append(
                     Binding(
                         KIND_CITING_BOX,
