@@ -2,8 +2,11 @@
  * Confirmation on the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md RW-T5, Design 6): the executor's `NEEDS_CONFIRMATION` becomes an `input_required` result with a sealed `requestState` for a client that declared elicitation, and the `confirm` argument path for one that did not. A state that is tampered with, expired, replayed, bound to another user or grant, or minted for other arguments is refused, and nothing is forwarded.
  */
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { isInputRequiredResult } from '@modelcontextprotocol/server';
-import { CLIENT_CAPABILITIES_META_KEY, type Server } from '@modelcontextprotocol/server';
+import {
+  CLIENT_CAPABILITIES_META_KEY,
+  isInputRequiredResult,
+  type Server,
+} from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
 import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { type CallDeps, type CallInput, callToolStep, type GrantCaller } from '../call.js';
@@ -103,13 +106,7 @@ describe('confirmation by elicitation', () => {
 
   it('ignores a confirm argument the eliciting client sends itself and asks the user', async () => {
     const s = setup();
-    const result = await callToolStep(
-      s.deps,
-      s.caller(),
-      TOOL,
-      { ...ARGS, confirm: 'shop' },
-      ASKS
-    );
+    const result = await callToolStep(s.deps, s.caller(), TOOL, { ...ARGS, confirm: 'shop' }, ASKS);
     expect(isInputRequiredResult(result)).toBe(true);
     expect(s.forwards).toHaveLength(1);
     expect(s.forwards[0].args).toEqual(ARGS);

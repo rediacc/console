@@ -43,10 +43,21 @@ beforeEach(() => {
 });
 
 /** The Worker over one grant state, a recording dataset, and a `call` helper posting a `tools/call`. */
-async function workerFor(grantId: string, state: 'active' | 'revoked', withDataset = true) {
+async function workerFor(
+  grantId: string,
+  state: 'active' | 'revoked',
+  withDataset = true,
+  options: {
+    env?: Record<string, unknown>;
+    ctx?: 'waitUntil' | 'bare';
+    handler?: 'factory';
+    module?: typeof import('../handler.js');
+  } = {}
+) {
   // The handler keeps its transport for the first env it sees; a fresh module per Worker keeps two Workers of one test apart.
   vi.resetModules();
-  const { default: worker } = await import('../handler.js');
+  const module = options.module ?? (await import('../handler.js'));
+  const worker = options.handler === 'factory' ? module.createMcpHandler() : module.default;
   const points: Point[] = [];
   const dataset: MetricsDataset = { writeDataPoint: (p) => points.push(p) };
   const tag = await deriveAuthTag(SECRET_BYTES);
@@ -67,9 +78,13 @@ async function workerFor(grantId: string, state: 'active' | 'revoked', withDatas
         }),
     },
     ...(withDataset ? { MCP_METRICS: dataset } : {}),
+    ...options.env,
   };
-  const call = async (tool: string, bearer = bearerFor(grantId)): Promise<Response> => {
-    const response = await worker.fetch(
+  const kept: Promise<unknown>[] = [];
+  const waitUntil = vi.fn((p: Promise<unknown>) => void kept.push(p));
+  const ctx = (options.ctx === 'bare' ? {} : { waitUntil }) as HostExecutionContext;
+  const post = (tool: string, bearer = bearerFor(grantId)): Promise<Response> =>
+    worker.fetch(
       new Request(`https://${HOST}/g/${grantId}`, {
         method: 'POST',
         headers: {
@@ -85,11 +100,15 @@ async function workerFor(grantId: string, state: 'active' | 'revoked', withDatas
         }),
       }),
       env as never,
-      {} as HostExecutionContext
+      ctx
     );
+  const call = async (tool: string, bearer = bearerFor(grantId)): Promise<Response> => {
+    const response = await post(tool, bearer);
+    // A real isolate settles the `waitUntil` work after the answer; the helper settles it before the test reads the points.
+    await Promise.all(kept.splice(0));
     return response;
   };
-  return { call, points };
+  return { call, post, points, waitUntil };
 }
 
 function windowOf(points: Point[]): GrantWindow[] {
@@ -141,6 +160,92 @@ describe('per-grant counters', () => {
     const response = await call('repo_list');
     expect(response.status).toBe(200);
     expect(points).toHaveLength(0);
+  });
+});
+
+describe('a host without waitUntil', () => {
+  /** Makes reading any Response body through `text()` never settle: the stand-in for an open stream. */
+  function hangBodies() {
+    return vi.spyOn(Response.prototype, 'text').mockImplementation(() => new Promise(() => {}));
+  }
+  const settled = (promise: Promise<unknown>) =>
+    Promise.race([
+      promise.then(() => 'answered'),
+      new Promise((resolve) => setTimeout(() => resolve('held'), 400)),
+    ]);
+
+  it('answers while the counter is still reading the body', async () => {
+    const { post } = await workerFor('eu_bare', 'active', true, { ctx: 'bare' });
+    const spy = hangBodies();
+    try {
+      expect(await settled(post('repo_list'))).toBe('answered');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('hands the counter to waitUntil when the host has one, with the same answer', async () => {
+    const hosted = await workerFor('eu_hosted', 'active', true);
+    const spy = hangBodies();
+    try {
+      expect(await settled(hosted.post('repo_list'))).toBe('answered');
+      expect(hosted.waitUntil).toHaveBeenCalledTimes(1);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+});
+
+describe('createMcpHandler and RATE_LIMITER', () => {
+  const limiter = () => {
+    const taken: string[] = [];
+    return {
+      taken,
+      acquire: (grantId: string) => {
+        taken.push(grantId);
+        return Promise.resolve({ ok: true as const, release: () => Promise.resolve() });
+      },
+      burn: () => Promise.resolve(true),
+    };
+  };
+  const durableObjects = {
+    idFromName: () => {
+      throw new Error('the RATE namespace must not be used when RATE_LIMITER is bound');
+    },
+    get: () => {
+      throw new Error('the RATE namespace must not be used when RATE_LIMITER is bound');
+    },
+  };
+
+  it('takes its slot from RATE_LIMITER ahead of the RATE namespace', async () => {
+    const mine = limiter();
+    const { call } = await workerFor('eu_limited', 'active', true, {
+      env: { RATE_LIMITER: mine, RATE: durableObjects },
+    });
+    const response = await call('repo_list');
+    expect(response.status).toBe(200);
+    expect(mine.taken).toEqual(['eu_limited']);
+  });
+
+  it('gives each factory instance its own transport, so two hosts never share a limiter', async () => {
+    const one = limiter();
+    const two = limiter();
+    // One module for both: only the factory keeps the two instances' state apart.
+    const module = await import('../handler.js');
+    const a = await workerFor('eu_one', 'active', true, {
+      handler: 'factory',
+      module,
+      env: { RATE_LIMITER: one },
+    });
+    const b = await workerFor('eu_two', 'active', true, {
+      handler: 'factory',
+      module,
+      env: { RATE_LIMITER: two },
+    });
+    await a.call('repo_list');
+    await b.call('repo_list');
+    expect(one.taken).toEqual(['eu_one']);
+    expect(two.taken).toEqual(['eu_two']);
   });
 });
 
