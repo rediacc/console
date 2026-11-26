@@ -528,6 +528,27 @@ def test_bash_env_exports_one_call_id_to_the_whole_tree(built_sup, tmp_path):
     assert R.CALL_ID.match(first)
 
 
+def test_bash_env_replaces_a_well_formed_id_whose_pid_is_no_ancestor(built_sup, tmp_path):
+    """Finding ae723b97.1: an id inherited from outside this call's tree (pid 999999999 is nobody's ancestor) must not merge this call into the earlier one."""
+    env = child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh"))
+    link = tmp_path / "home" / ".local/share/rediacc/bin/bashcov-sup"
+    link.parent.mkdir(parents=True)
+    link.symlink_to(built_sup)
+    env["BASHCOV_CALL"] = "999999999-111"
+    got = subprocess.run(
+        ["bash", "-c", 'echo "$BASHCOV_CALL"; bash -c \'echo "$BASHCOV_CALL"\''],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    first, second = got.stdout.split()
+    assert first != "999999999-111"
+    assert first == second, "the nested shell keeps the replaced id: its pid is an ancestor"
+    assert R.CALL_ID.match(first)
+
+
 @pytest.fixture(scope="module")
 def built_sup(tmp_path_factory):
     """The supervisor built from the repo source at the flags setup uses, plus -Wextra; a warning fails the build."""

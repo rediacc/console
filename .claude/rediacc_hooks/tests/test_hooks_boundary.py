@@ -79,6 +79,26 @@ def process_run(argv_tail, payload):
     )
 
 
+FIXTURE_CWD = "/nonexistent-plan-concurrency-fixture"
+
+
+def roster_name():
+    """The munged project-directory name every guard run reads its roster from. The payload's `cwd` does not pick it: `wl_core.project_start` takes CLAUDE_PROJECT_DIR, then the hook file's own repo, and only then the event's cwd (wl_core.py `project_start`, rungs 1 to 3), so one name serves every payload, whatever its cwd (review b7812212.1, not a bug). The stop-hook modules this imports are dropped from `sys.modules` again, so a later test imports its own (review b7812212.2)."""
+    stop_dir = str(_harness.DISPATCH.parents[1] / "hooks" / "stop")
+    seen = set(sys.modules)
+    sys.path.insert(0, stop_dir)
+    try:
+        wl_core = importlib.import_module("wl_core")
+        wl_report = importlib.import_module("wl_report")
+        return wl_report._munged(wl_core.project_root(wl_core.project_start({"cwd": FIXTURE_CWD})))
+    finally:
+        sys.path.remove(stop_dir)
+        for name in set(sys.modules) - seen:
+            origin = getattr(sys.modules[name], "__file__", None) or ""
+            if origin.startswith(stop_dir):
+                del sys.modules[name]
+
+
 @pytest.fixture
 def fresh_tmp(tmp_path, monkeypatch):
     """One TMPDIR for both legs of a comparison, emptied before each leg: call the returned function before a run.
@@ -88,20 +108,8 @@ def fresh_tmp(tmp_path, monkeypatch):
     root = tmp_path / "tmp"
     monkeypatch.setenv("TMPDIR", str(root))
     # A SEEABLE ROSTER. block_plan_concurrency counts live writers from `<config dir>/projects/<munged root>` and judges nothing ("ALLOWED unchecked") when that directory is absent and no sibling claim is on disk. On a developer machine it exists; in the ci:quick clone under ~/.cache it does not, so the refusal witness chosen in process (which left a claim behind) was allowed by the real run after `reset` emptied the claims (ci:quick 2026-11-26, pre-agent). A project directory of this test's own makes both legs judge the same way everywhere.
-    stop_dir = str(_harness.DISPATCH.parents[2] / "hooks" / "stop")
-    sys.path.insert(0, stop_dir)
-    try:
-        wl_core = importlib.import_module("wl_core")
-        wl_report = importlib.import_module("wl_report")
-
-        fixture_cwd = "/nonexistent-plan-concurrency-fixture"
-        munged = wl_report._munged(
-            wl_core.project_root(wl_core.project_start({"cwd": fixture_cwd}))
-        )
-    finally:
-        sys.path.remove(stop_dir)
     config = tmp_path / "claude"
-    (config / "projects" / munged).mkdir(parents=True)
+    (config / "projects" / roster_name()).mkdir(parents=True)
     monkeypatch.setenv("CLAUDE_CONFIG_DIR", str(config))
 
     def reset():
@@ -111,6 +119,26 @@ def fresh_tmp(tmp_path, monkeypatch):
 
     reset()
     return reset
+
+
+def test_roster_name_leaves_sys_modules_and_path_as_found(monkeypatch):
+    """b7812212.2: reading the roster name imports the stop-hook modules and then drops them, so no later test inherits a cached copy. The modules already cached are set aside for the probe and put back after it."""
+    stop_dir = str(_harness.DISPATCH.parents[1] / "hooks" / "stop")
+
+    def from_stop(modules):
+        return [
+            n
+            for n, m in modules.items()
+            if (getattr(m, "__file__", None) or "").startswith(stop_dir)
+        ]
+
+    for name in from_stop(sys.modules):
+        monkeypatch.delitem(sys.modules, name)
+    before = set(sys.modules)
+    path_before = list(sys.path)
+    assert roster_name()
+    assert sys.path == path_before
+    assert from_stop({n: sys.modules[n] for n in set(sys.modules) - before}) == []
 
 
 def test_fresh_tmp_points_tmpdir_at_one_root_and_empties_it(fresh_tmp):

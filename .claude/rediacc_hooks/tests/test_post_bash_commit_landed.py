@@ -181,6 +181,26 @@ def test_a_refused_commit_repeating_an_old_heads_subject_still_gives_the_notice(
     assert "COMMIT DID NOT LAND" in ctx, ctx
 
 
+def test_a_refused_commit_repeating_a_future_dated_heads_subject_still_gives_the_notice(world):
+    """Finding f968db17.2: a HEAD dated in the future has a negative age, which is no witness."""
+    world.stage("future.py")
+    future = dict(world.env, GIT_COMMITTER_DATE="2099-01-01T00:00:00Z")
+    subprocess.run(
+        ["git", "-C", str(world.repo), "commit", "-q", "-m", "feat(x): add f"],
+        env=future,
+        check=True,
+        capture_output=True,
+    )
+    world.hook("git status")
+    world.stage()
+    hook = world.repo / ".git" / "hooks" / "pre-commit"
+    hook.write_text(REFUSAL, encoding="utf-8")
+    hook.chmod(0o755)
+    assert world.shell(FILTERED) == ""
+    ctx = world.hook(FILTERED)
+    assert "COMMIT DID NOT LAND" in ctx, ctx
+
+
 def test_a_dry_run_commit_gives_no_notice(world):
     """Finding 433dcdb5.4: a dry run leaves HEAD where it was by intent."""
     world.stage()

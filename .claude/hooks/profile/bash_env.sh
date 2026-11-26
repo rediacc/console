@@ -156,8 +156,27 @@ elif [[ $- != *i* ]] && {
     # carried nothing that groups them (grouping by parent pid gave a max of 1630,
     # not a per-call count). The first profiled shell of a call exports
     # `<pid>-<start ns>`; every descendant inherits it, so wl_resprofile's fold
-    # counts one call's processes by id. A malformed inherited value is replaced.
-    [[ ${BASHCOV_CALL:-} =~ ^[0-9]+-[0-9]+$ ]] || {
+    # counts one call's processes by id. A malformed inherited value is replaced, and so is a well-formed one whose pid is not an ancestor.
+    # A well-formed id is kept only while the pid it names is one of this shell's own
+    # ancestors (a walk up /proc/<pid>/stat, bounded, no fork): an id inherited from
+    # a shell that is not in this call's tree (a parent that exported one, a daemon
+    # started by an earlier call) would otherwise merge two calls into one count.
+    __bashcov_keep=0
+    if [[ ${BASHCOV_CALL:-} =~ ^([0-9]+)-[0-9]+$ ]]; then
+        __bashcov_p=$$
+        for __bashcov_c in {1..64}; do
+            if [[ $__bashcov_p == "${BASH_REMATCH[1]}" ]]; then
+                __bashcov_keep=1
+                break
+            fi
+            ((__bashcov_p > 1)) || break
+            read -r __bashcov_l 2>/dev/null <"/proc/$__bashcov_p/stat" || break
+            __bashcov_l=${__bashcov_l##*) }
+            __bashcov_l=($__bashcov_l)
+            __bashcov_p=${__bashcov_l[1]:-0}
+        done
+    fi
+    ((__bashcov_keep)) || {
         __bashcov_t=${EPOCHREALTIME:-0}
         export BASHCOV_CALL="$$-${__bashcov_t/./}000"
     }

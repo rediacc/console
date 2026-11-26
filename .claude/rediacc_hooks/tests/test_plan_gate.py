@@ -802,7 +802,7 @@ def test_merged_plan_prs_parses_each_body_through_the_plan_line_reader(tmp_path,
 def _main_thread_naps(monkeypatch) -> list[float]:
     """The naps this thread takes through `time.sleep`, recorded exactly: the patch is process-wide, so another thread's short naps are dropped at the source and the retry's pause sequence can be asserted whole.
 
-    `subprocess` itself naps too: `Popen._wait` with a timeout polls with a doubling 0.001 s sleep while a slow child (a loaded host) has not exited, and those naps once filled the list. They are dropped by their caller's module, so only the code under test's own pauses count."""
+    `subprocess` itself naps too: `Popen._wait` with a timeout polls with a doubling 0.001 s sleep while a slow child (a loaded host) has not exited, and those naps once filled the list. They are dropped by their caller's module (`subprocess`, the one measured), so every nap this thread's other callers take still counts: the code under test's own, and a test helper's or library's."""
     naps: list[float] = []
     main = threading.get_ident()
 
@@ -815,6 +815,19 @@ def _main_thread_naps(monkeypatch) -> list[float]:
 
     monkeypatch.setattr(time, "sleep", record)
     return naps
+
+
+def test_main_thread_naps_drops_subprocess_polling_and_keeps_other_callers(monkeypatch):
+    """bfda44df.2: the recorder's `subprocess` filter has its own control. A real child that outlives the first poll leaves the list empty (if Python moved `Popen._wait`'s polling out of the `subprocess` module, the naps would refill and this fails for that reason), a nap from a frame named `subprocess` is dropped, and one from the test's own frame is kept."""
+    naps = _main_thread_naps(monkeypatch)
+    subprocess.run([sys.executable, "-c", "import time; time.sleep(0.3)"], timeout=30, check=True)
+    assert naps == [], naps
+    ns = {"__name__": "subprocess", "time": time}
+    exec("def nap():\n    time.sleep(0.001)", ns)
+    ns["nap"]()
+    assert naps == []
+    time.sleep(7)
+    assert naps == [7], naps
 
 
 def _counting_gh(tmp_path, first_failure: str):

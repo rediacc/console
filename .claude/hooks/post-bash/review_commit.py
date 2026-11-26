@@ -131,7 +131,7 @@ def trigger_lines(cmd, cwd, root, trigger=R.trigger):
 
 # ---- 3. A COMMIT THAT DID NOT LAND (agent/plans/PLAN-stop-hook-retro-20261125.md R20261125.4) --------------------
 #
-# A `git commit ... 2>&1 | grep '^\['` hides a commit-policy refusal (its lines start `commit-policy:`) and leaves the index staged; on 2026-11-25 that cost 14 minutes and a failed cherry-pick. This hook cannot read the exit code, so it compares HEAD with the HEAD it recorded after the PREVIOUS Bash call of this session (every Bash call passes through here, so that record is the HEAD this command started from). HEAD unmoved and paths still staged is a commit that did not land. No record yet (the session's first call) says nothing, and so does a commit whose own message subject (`-m`, or a readable `-F` file) is HEAD's subject while HEAD is at most SUBJECT_WITNESS_SEC seconds old: that one landed, whatever the record says, which covers a parallel Bash call that recorded the new HEAD first. An older HEAD with the same subject (a repeated `wip`) is no witness. A `--dry-run` commit never intends to land and is skipped.
+# A `git commit ... 2>&1 | grep '^\['` hides a commit-policy refusal (its lines start `commit-policy:`) and leaves the index staged; on 2026-11-25 that cost 14 minutes and a failed cherry-pick. This hook cannot read the exit code, so it compares HEAD with the HEAD it recorded after the PREVIOUS Bash call of this session (every Bash call passes through here, so that record is the HEAD this command started from). HEAD unmoved and paths still staged is a commit that did not land. No record yet (the session's first call) says nothing, and so does a commit whose own message subject (`-m`, or a readable `-F` file) is HEAD's subject while HEAD is at most SUBJECT_WITNESS_SEC seconds old: that one landed, whatever the record says, which covers a parallel Bash call that recorded the new HEAD first. An older HEAD with the same subject (a repeated `wip`) is no witness, and neither is a HEAD dated in the future (a negative age is not "at most" SUBJECT_WITNESS_SEC). A `--dry-run` commit never intends to land and is skipped.
 
 
 # A parallel call's commit is seconds old; a HEAD older than this that merely shares the subject does not witness a landing.
@@ -214,7 +214,7 @@ def commit_landed_lines(cmd, cwd, root, session):
         subject = _message_subject(run, base)
         if subject and subject == R.git_out(repo, "log", "-1", "--format=%s", "HEAD").strip():
             stamp = R.git_out(repo, "log", "-1", "--format=%ct", "HEAD").strip()
-            if stamp.isdigit() and time.time() - int(stamp) <= SUBJECT_WITNESS_SEC:
+            if stamp.isdigit() and 0 <= time.time() - int(stamp) <= SUBJECT_WITNESS_SEC:
                 continue
         lines.append(
             "COMMIT DID NOT LAND in %s: HEAD is still %s and %d path(s) are staged; rerun the commit without the output filter to read the refusal (a commit-policy refusal starts `commit-policy:`, which a filter for git's `[branch sha]` line drops)"

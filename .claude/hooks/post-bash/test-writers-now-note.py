@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""writers_now_note: a due round at effort high is named once inside the turn, then held for NOTE_EVERY_MIN; a round inside the window, effort below high, and a short session id stay silent. The capacity refill rides the same note and throttle: every free survey cluster below the floor of 8 is named with the free slots, live writers at the floor stay silent, a clock-due note below the floor carries the free clusters, and an exhausted survey names the next round."""
+"""writers_now_note: a due round at effort high is named once inside the turn, then held for NOTE_EVERY_MIN; a round inside the window, effort below high, and a short session id stay silent. The capacity refill rides the same note and throttle: every free survey cluster below the floor of 12 is named with the free slots, live writers at the floor stay silent, a clock-due note below the floor carries the free clusters, and an exhausted survey names the next round."""
 
 import datetime
 import importlib
@@ -136,6 +136,43 @@ def refill_cases():
         check("an exhausted survey names the next round", got.startswith(want), True)
 
 
+def quiet_cases():
+    """A quiet verdict is reused for QUIET_EVERY_SEC: the store is not read again on the next call (review 7d036d68.3)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 10)
+        calls = []
+
+        def counting_items(_doc):
+            calls.append(1)
+            return []
+
+        for _ in range(3):
+            # live=12 sits at the floor and the round is inside the window, so every call is quiet
+            with mock.patch.object(note, "_items", counting_items):
+                got = run_quiet(survey, tmp)
+            check("a quiet call stays silent", got, "")
+        check("three quiet calls read the store once", len(calls), 1)
+
+
+def run_quiet(survey, tmp):
+    at = (NOW - datetime.timedelta(minutes=12)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    rows = [{"round": "feedf00d", "session": SESSION, "at": at, "survey": survey}]
+    with (
+        mock.patch.object(wl_core, "utcnow", return_value=NOW),
+        mock.patch.object(wl_core, "project_root", return_value="/repo"),
+        mock.patch.object(
+            wl_planqueue, "settings_for", return_value=(wl_planqueue.Settings(effort="high"), [])
+        ),
+        mock.patch.object(wl_writersnow, "read_rounds", return_value=rows),
+        mock.patch.object(wl_writersnow, "promoted_open", return_value=469),
+        mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
+        mock.patch.object(note, "_live_writers", return_value=12),
+        mock.patch.object(note.tempfile, "gettempdir", return_value=tmp),
+        mock.patch.object(note.time, "time", return_value=NOW.timestamp()),
+    ):
+        return note.note_for({"session_id": SESSION, "cwd": "/repo"}, now=NOW.timestamp())
+
+
 def main():
     with tempfile.TemporaryDirectory() as tmp:
         first = run(75, stamp_dir=tmp)
@@ -147,7 +184,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         got = run(31, stamp_dir=tmp)
         check(
-            "a round 31 min old is named (the 30-minute window)",
+            "a round 31 min old is named (the 20-minute window)",
             got.startswith("WRITERS-NOW DUE (last round 31 min ago"),
             True,
         )
@@ -156,6 +193,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         check("a short session id is silent", run(75, session="d77", stamp_dir=tmp), "")
     refill_cases()
+    quiet_cases()
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))
         for f in FAILURES:
