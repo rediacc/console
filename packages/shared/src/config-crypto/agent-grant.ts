@@ -207,7 +207,7 @@ export async function deriveAuthTag(secret: Uint8Array): Promise<string> {
 
 /**
  * What the account server stores and compares: base64url of SHA-256 over the 32 raw bytes of `authTag`.
- * Throws on a tag that is not base64url of 32 bytes, so a malformed request never reaches the lookup.
+ * Rejects, as an async function does, on a tag that is not base64url of 32 bytes, so a malformed request never reaches the lookup; a caller awaits the call inside its try.
  */
 export async function hashAuthTag(authTag: string): Promise<string> {
   const raw = typeof authTag === 'string' ? fromBase64Url(authTag) : null;

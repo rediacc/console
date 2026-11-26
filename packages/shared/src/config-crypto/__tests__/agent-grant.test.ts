@@ -366,5 +366,7 @@ describe('hashAuthTag', () => {
     await expect(hashAuthTag('')).rejects.toThrow();
     await expect(hashAuthTag(tag.slice(0, -2))).rejects.toThrow();
     await expect(hashAuthTag(`${tag}=`)).rejects.toThrow();
+    // The failure is a rejected promise, so a caller's try/catch around an awaited call sees it and a bare call throws nothing.
+    expect(() => hashAuthTag('').catch(() => undefined)).not.toThrow();
   });
 });

@@ -79,6 +79,23 @@ describe('policy record', () => {
     );
   });
 
+  it('reports a CEK that cannot be exported as its own failure, not as a tampered record', async () => {
+    const cek = await generateAesKey();
+    const record = await encryptPolicyRecord(policy, cek, binding);
+    const sealed = await crypto.subtle.importKey(
+      'raw',
+      (await exportAesKey(cek)) as Uint8Array<ArrayBuffer>,
+      { name: 'AES-GCM', length: 256 },
+      false,
+      ['decrypt']
+    );
+    const failure = await decryptPolicyRecord(record, sealed, pointer).catch((e: unknown) => e);
+    expect(failure).toBeInstanceOf(Error);
+    expect(failure).not.toBeInstanceOf(PolicyRecordIntegrityError);
+    // Control: the extractable twin of the same key opens the record.
+    await expect(decryptPolicyRecord(record, cek, pointer)).resolves.toEqual(policy);
+  });
+
   it('refuses a blob sealed under another CEK', async () => {
     const record = await encryptPolicyRecord(policy, await generateAesKey(), binding);
     await expect(

@@ -210,17 +210,23 @@ export async function decryptPolicyRecord(
   key: CryptoKey | PolicyKey,
   pointer: Pick<PolicyRecordBinding, 'storeId' | 'configId' | 'teamId'>
 ): Promise<unknown> {
-  let plaintext: Uint8Array;
+  let aad: Uint8Array;
   try {
     // A malformed served version or generation fails the binding check, which is a tamper signal too.
-    const aad = policyRecordAad({
+    aad = policyRecordAad({
       ...pointer,
       version: record.version,
       cekGeneration: record.cekGeneration,
     });
-    const policyKey = isPolicyKey(key)
-      ? key.key
-      : (await derivePolicyKey(key, { ...pointer, cekGeneration: record.cekGeneration })).key;
+  } catch {
+    throw new PolicyRecordIntegrityError();
+  }
+  // Deriving the key runs after the binding is proven well-formed and outside the try: a local failure (a non-extractable CEK) is the reader's own fault, not a tampered record.
+  const policyKey = isPolicyKey(key)
+    ? key.key
+    : (await derivePolicyKey(key, { ...pointer, cekGeneration: record.cekGeneration })).key;
+  let plaintext: Uint8Array;
+  try {
     plaintext = await aesDecryptFromString(policyKey, record.blob, aad);
   } catch {
     throw new PolicyRecordIntegrityError();
