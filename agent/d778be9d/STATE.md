@@ -7,7 +7,7 @@
 
 ## Delegated
 - acb875fb9f82f5f51 #957e0e50 #5f4130cf: bench runner (main checkout, no edits): export+remove the 16 proof-* enterprise companies one at a time (plan /tmp/cf-inventory/proof-removal-plan.json; acme untouched), re-list the account, then PLAN-multi-region-bench R2. Accept: no proof-* objects left; R2 receipts.
-- a3197452ac35154d7 #20609eb0: investigate rediacc-backups-eu (450 GB), rediacc-configs-eu, edge-rediacc-configs-eu, rediacc-www-media; keep/archive/delete per bucket, nothing deleted.
+- abc207b9d03c6488a: delete rediacc-configs-eu and rediacc-www-media, archive then delete edge-rediacc-configs-eu via cf_retire (dry run first). a128598c89722c0fa: rename plan L10 on backups-eu then the L11 delete command for rediacc-backups-eu (operator: delete soon).
 
 ## Operator rulings today (round log pr-babysit-1104-1.md DECISIONS)
 - 06:07Z tokens minted; 07:34Z C42 cd- exemption, rotation-admin store (DONE: project dabba09c holds the 4 keys, ./run.sh rotation list rc 0; operator switching the machine account back to read only); 08:13Z narrow five profiles (#cf7b9860: code landed df62ac3c9f; next mint 4 scoped CF tokens via rotation slugs, operator creates IAM users rediacc-bench-check and rediacc-enterprise-ses-minter); 09:17/09:19Z host temp disposal (PLAN-host-temp-disposal.md committed, Promoted #100; 2 open questions: /var/tmp per-lease TMPDIR, summary one stop later); 09:24-09:27Z Cloudflare inventory (#957e0e50: remove proof companies now; investigate 4 buckets; ci:quick red past deadline; reap command run by sessions; every delete path dry-run by default with a coded refusal list, a safeguard against AI bugs). Write agent/plans/PLAN-cf-inventory.md from agent/d778be9d/cf-inventory-findings.md.
