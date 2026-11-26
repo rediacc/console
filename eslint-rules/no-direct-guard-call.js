@@ -64,17 +64,26 @@ function calleeName(callee) {
   return undefined;
 }
 
-/** The property a member callee names: `ns.enforce` or `ns['enforce']`, never a computed variable. */
+/** The string a computed key spells statically: a Literal or a template without substitutions. */
+function staticString(node) {
+  if (node.type === 'Literal') return node.value;
+  if (node.type === 'TemplateLiteral' && node.expressions.length === 0) {
+    return node.quasis[0].value.cooked;
+  }
+  return undefined;
+}
+
+/** The property a member callee names: `ns.enforce`, `ns['enforce']` or ns[`enforce`], never a computed variable. */
 function memberName(callee) {
   if (!callee.computed && callee.property.type === 'Identifier') return callee.property.name;
-  if (callee.computed && callee.property.type === 'Literal') return callee.property.value;
+  if (callee.computed) return staticString(callee.property);
   return undefined;
 }
 
 /** The local a destructuring property binds to `enforce` (`{ enforce }`, `{ enforce: e }`, `{ 'enforce': e }`), undefined for any other property. */
 function enforceBindingOf(prop) {
   if (prop.type !== 'Property' || prop.value.type !== 'Identifier') return undefined;
-  const key = prop.computed ? undefined : (prop.key.name ?? prop.key.value);
+  const key = prop.computed ? staticString(prop.key) : (prop.key.name ?? prop.key.value);
   return key === 'enforce' ? prop.value.name : undefined;
 }
 

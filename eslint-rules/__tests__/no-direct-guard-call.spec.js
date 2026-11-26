@@ -118,6 +118,17 @@ export default async ({ sourceRuleTester, runCases }) => {
           filename: COMMAND_FILE,
           errors: [{ messageId: 'directEnforce' }],
         },
+        // A no-substitution template member, called or destructured, spells the same name.
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nexport const f = (a) => enforcement[`enforce`](a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
+        {
+          code: "import * as enforcement from '../services/policy/enforce.js';\nconst { [`enforce`]: run } = enforcement;\nexport const f = (a) => run(a);\n",
+          filename: COMMAND_FILE,
+          errors: [{ messageId: 'directEnforce' }],
+        },
         {
           code: "import * as enforcement from '../services/policy/enforce.js';\nconst { enforce: run } = enforcement;\nexport const f = (a) => run(a);\n",
           filename: COMMAND_FILE,
