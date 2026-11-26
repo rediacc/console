@@ -1520,6 +1520,17 @@ def test_an_expiry_the_log_reports_as_handled_is_no_operator_verdict():
     )
 
 
+def test_a_refused_expiry_that_advises_rotation_or_was_retried_stays_operator_only():
+    """Review a30dc02b.1 and .2: `rotate it` is advice and no handling word, and `retried` is a retry word."""
+    assert D.classify(["Error: token has expired, rotate it"]) == (
+        "operator-only",
+        "secret-expired",
+    )
+    assert D.classify(["Error: token expired, retried 3 times"])[0] != "operator-only"
+    assert D.classify(["Error: token expired, retrying in 5s"])[0] != "operator-only"
+    assert D.classify(["Error: token expired, rotated automatically"])[0] != "operator-only"
+
+
 def test_ordinary_application_text_about_balance_is_no_billing_refusal():
     """Review b74a99a2.5: an `insufficient balance` line with no failure word is application output."""
     assert (

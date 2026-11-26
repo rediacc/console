@@ -465,8 +465,15 @@ def _record_rows(common: pathlib.Path, lines: list[str], now: float) -> None:
             for line in lines:
                 seq += 1
                 fh.write(json.dumps({"seq": seq, "ts": int(now), "text": line}) + "\n")
-    except OSError:
-        return
+    except OSError as exc:
+        # The sweep already acted; a log row that cannot be written is said once instead of vanishing (review f2b58581.3).
+        print("host_temp: cannot append to %s: %s" % (path, exc), file=sys.stderr)
+
+
+def _heartbeat(common: pathlib.Path) -> None:
+    """Refresh the lock's mtime while its holder is still sweeping, so `lock_is_stale`'s age rule judges a HUNG holder (no refresh for LOCK_STALE_S) and not a slow one (review 2872d8fe.3)."""
+    with contextlib.suppress(OSError):
+        os.utime(common / RECORD_DIR / LOCK_NAME, None)
 
 
 def lock_body(pid: int, token: str = "", now: float | None = None) -> dict[str, Any]:
@@ -578,8 +585,10 @@ def sweep(
         home = home or os.path.expanduser("~")
         rows: list[str] = []
         records = common / RECORD_DIR
+        _heartbeat(common)
         for marker in sorted(records.glob("*" + MARKER_SUFFIX)) if records.is_dir() else []:
             lease_id = marker.name[: -len(MARKER_SUFFIX)]
+            _heartbeat(common)
             tree = root / ".claude" / "worktrees" / lease_id
             if not (records / (lease_id + ".json")).exists() and not os.path.lexists(tree):
                 marker.unlink(missing_ok=True)
@@ -650,6 +659,26 @@ def default_busy(root: pathlib.Path) -> BusyFn:
 _STAMPED = re.compile(r"-\d+-n\d+-")
 
 
+def _newest_mtime(path: str, young_after: float) -> float:
+    """The newest mtime of `path` and everything under it, symlinks not followed. A directory's own mtime moves only when an entry is added or removed directly in it, so a tree whose files are rewritten in place needs the walk (review f2b58581.4). The walk stops at the first entry newer than `young_after`: the caller only needs to know whether anything is young. Raises OSError when `path` itself cannot be read."""
+    newest = os.lstat(path).st_mtime
+    stack = [path]
+    while stack and newest <= young_after:
+        here = stack.pop()
+        try:
+            with os.scandir(here) as it:
+                for entry in it:
+                    try:
+                        newest = max(newest, entry.stat(follow_symlinks=False).st_mtime)
+                        if entry.is_dir(follow_symlinks=False):
+                            stack.append(entry.path)
+                    except OSError:
+                        continue
+        except OSError:
+            continue
+    return newest
+
+
 def reclaim_legacy(
     bases: list[str],
     *,
@@ -672,7 +701,7 @@ def reclaim_legacy(
             if not name.startswith(prefixes) or _STAMPED.search(name) or os.path.islink(path):
                 continue
             try:
-                age = now - os.lstat(path).st_mtime
+                age = now - _newest_mtime(path, now - LEGACY_AGE_S)
             except OSError:
                 continue
             why = ""

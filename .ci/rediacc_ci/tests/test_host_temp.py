@@ -278,7 +278,9 @@ def test_reclaim_legacy_keeps_an_open_fd_and_removes_one_without(tmp_path):
         entry.mkdir()
         (entry / "t.1").write_text("x")
     for entry in (held, free):
+        os.utime(entry / "t.1", (NOW - 7200, NOW - 7200))
         os.utime(entry, (NOW - 7200, NOW - 7200))
+    os.utime(young / "t.1", (NOW - 10, NOW - 10))
     os.utime(young, (NOW - 10, NOW - 10))
     with open(held / "t.1", encoding="utf-8") as fh:
         holder = subprocess.Popen(["sleep", "300"], stdin=fh)
@@ -346,3 +348,47 @@ def test_prefix_registry_covers_every_run_dir_prefix_in_the_tree():
     # Prefixes the runtmp unit tests make for themselves, never in a shared base, and the `run_dir('elite-')` source text test_temp_probe.py plants in its fixture repositories.
     found -= {"runtmp-ctl-", "runtmp-other-", "x-", "elite-"}
     assert sorted(found - set(ht.PREFIXES)) == []
+
+
+def test_a_sweep_refreshes_its_lock_so_a_slow_holder_is_not_taken_over(fx):
+    """Review 2872d8fe.3: the lock's age rule must judge a hung holder, not one still sweeping."""
+    assert ht.take_lock(fx.common, "slow")
+    lock = fx.records / ht.LOCK_NAME
+    old = time.time() - 2 * ht.LOCK_STALE_S
+    os.utime(lock, (old, old))
+    assert ht.lock_is_stale(lock)
+    fx.sweep()
+    assert time.time() - lock.stat().st_mtime < 60
+    assert not ht.lock_is_stale(lock)
+
+
+def test_a_record_row_that_cannot_be_written_is_said_on_stderr(fx, capsys):
+    """Review f2b58581.3: a failed append to sweeps.jsonl is no silent drop."""
+    (fx.records / ht.SWEEPS).mkdir()
+    ht._record_rows(fx.common, ["row"], NOW)
+    assert ht.SWEEPS in capsys.readouterr().err
+    # CONTROL: a writable log appends the row and says nothing.
+    (fx.records / ht.SWEEPS).rmdir()
+    ht._record_rows(fx.common, ["row"], NOW)
+    assert capsys.readouterr().err == ""
+    assert json.loads((fx.records / ht.SWEEPS).read_text())["text"] == "row"
+
+
+def test_reclaim_legacy_keeps_a_dir_whose_files_are_rewritten_in_place(tmp_path):
+    """Review f2b58581.4: the top-level directory's mtime is old, a file inside it is young."""
+    base = tmp_path / "base"
+    base.mkdir()
+    busy, idle = base / "path-trace-AAAA", base / "path-trace-BBBB"
+    for entry in (busy, idle):
+        entry.mkdir()
+        (entry / "sub").mkdir()
+        (entry / "sub" / "t.1").write_text("x")
+    for entry in (busy, idle):
+        os.utime(entry / "sub" / "t.1", (NOW - 7200, NOW - 7200))
+        os.utime(entry / "sub", (NOW - 7200, NOW - 7200))
+        os.utime(entry, (NOW - 7200, NOW - 7200))
+    os.utime(busy / "sub" / "t.1", (NOW - 10, NOW - 10))
+    rows = ht.reclaim_legacy([str(base)], write=True, now=NOW, open_scan=lambda: (set(), []))
+    assert busy.exists()
+    assert not idle.exists()
+    assert any(r.startswith("KEEP %s modified" % busy) for r in rows), rows

@@ -1138,6 +1138,43 @@ def test_a_format_constant_change_without_a_marker_refuses_before_any_call(tmp_p
     assert _calls(calls), "with the marker the deploy proceeds"
 
 
+def test_a_typed_go_format_constant_is_seen_by_the_backstop() -> None:
+    """Review 53ad5866.1: `const VaultVersion uint32 = 3` sets a format constant as `VaultVersion = 3` does."""
+    diff = (
+        "--- a/pkg/functions/vault/schema.go\n"
+        "+++ b/pkg/functions/vault/schema.go\n"
+        "-const VaultVersion uint32 = 2\n"
+        "+const VaultVersion uint32 = 3\n"
+    )
+    assert port.format_constant_changes(diff) == ["pkg/functions/vault/schema.go: VaultVersion"]
+    # CONTROL: a line that only mentions the name is no change.
+    mention = diff.replace("= 3", "// bumped VaultVersion").replace("= 2", "// was VaultVersion")
+    assert port.format_constant_changes(mention) == []
+
+
+def test_a_fork_head_word_preview_is_refused_before_any_wrangler_call(tmp_path) -> None:
+    """Review 53ad5866.2: the D1 create and migrations must not run for a fork head."""
+    root = fixture(tmp_path)
+    event = root / "event.json"
+    event.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "head": {"repo": {"full_name": "fork/console"}},
+                    "base": {"repo": {"full_name": "rediacc/console"}},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc, calls, _config = _run_live(
+        root, "new", *_word_inputs(root), PR_NUMBER="42", GITHUB_EVENT_PATH=str(event)
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "head repository is a fork" in proc.stderr
+    assert _calls(calls) == []
+
+
 def test_a_word_named_preview_without_its_manifest_or_diff_is_refused_before_any_call(
     tmp_path,
 ) -> None:

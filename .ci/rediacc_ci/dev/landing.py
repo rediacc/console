@@ -189,9 +189,11 @@ def _refuse_on_main(path):
     held = spike.out(path, "symbolic-ref", "-q", "--short", "HEAD")
     if held in ("", lease.BASE_BRANCH):
         message = (
-            "the landing tree %s sits on %s (after a merge a hotfix may run there), so it "
-            "is not refreshed: the exit is `./run.sh worktree landing --promote` from the main "
-            "checkout once the release is green" % (path, held or "a detached HEAD")
+            "the landing tree %s sits on %s, so it is not refreshed. After the PR merged "
+            "(a hotfix may run there) the exit is `./run.sh worktree landing --promote` from "
+            "the main checkout once the release is green; with the PR still open, put the "
+            "tree back on the PR's branch: git -C %s switch <the PR's branch>"
+            % (path, held or "a detached HEAD", path)
         )
         raise LandingRefusedError(message)
     return held

@@ -59,6 +59,26 @@ def test_sg_absent_uses_sudo_with_path_and_home(tmp_path: pathlib.Path) -> None:
     ]
 
 
+def test_sudo_route_keeps_the_rest_of_the_environment_as_sg_does(tmp_path: pathlib.Path) -> None:
+    """Review 0ec896a9.1: a token or REDIACC_* setting reaches the re-exec'd run on the sudo route too; an exported function or odd name is not carried."""
+    env = {
+        "PATH": _bin(tmp_path, "sudo"),
+        "HOME": "/h",
+        "SCRIPT_ENTRYPOINT": "run.sh",
+        "REDIACC_X": "1",
+        "BASH_FUNC_f%%": "() { :; }",
+        "A-B": "no",
+    }
+    argv = dockerx.group_command("run it", user="u", env=env, extra_env={"G": "1"})
+    assert argv is not None
+    carried = argv[argv.index("env") + 1 : argv.index("bash")]
+    assert "SCRIPT_ENTRYPOINT=run.sh" in carried
+    assert "REDIACC_X=1" in carried
+    assert "G=1" in carried
+    assert carried.count("PATH=%s" % env["PATH"]) == 1
+    assert not any(c.startswith(("BASH_FUNC_", "A-B")) for c in carried)
+
+
 def test_neither_route_is_none(tmp_path: pathlib.Path) -> None:
     assert dockerx.group_command("x", user="u", env={"PATH": _bin(tmp_path, "true")}) is None
 

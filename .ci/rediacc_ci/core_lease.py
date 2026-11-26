@@ -814,7 +814,9 @@ def acquire_heavy_lock(
     while True:
         with contextlib.suppress(BlockingIOError):
             fcntl.flock(fd, LOCK_FLAGS)
-            _write_json_atomic(directory / HEAVY_OWNER_NAME, {"root": root, "pid": os.getpid()})
+            # The owner file only lets a same-checkout child bypass the lock; a failed write (unwritable pool directory, full disk) must not stop a gate the free lock admits (review aed5f186.1).
+            with contextlib.suppress(OSError):
+                _write_json_atomic(directory / HEAVY_OWNER_NAME, {"root": root, "pid": os.getpid()})
             return fd
         owner = _heavy_owner(directory)
         if owner is not None and owner[0] == root:

@@ -627,6 +627,15 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
     _assert_agree(old, new, "non-ascii", old_calls, new_calls)
 
 
+def test_the_keys_with_no_plain_source_name_are_the_twelve_the_comment_lists() -> None:
+    """Review 464878df.1 and .2: nine computed values plus the three forensics values read under a constructed name have an empty third field, as the KEYS comment and the module docstring say."""
+    empty = {key for key, _var, source in port.KEYS if not source}
+    forensics = set(port.FORENSICS_PREFIXES)
+    assert len(empty) == 12
+    assert forensics <= empty
+    assert len(empty - forensics) == 9
+
+
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
     assert len(port.KEYS) == 41

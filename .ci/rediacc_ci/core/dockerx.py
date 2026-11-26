@@ -68,6 +68,7 @@ for a genuine failure has converted a red into a shrug.
 
 import json
 import os
+import re
 import shutil
 import socket
 import sys
@@ -149,7 +150,7 @@ class DockerUnreachableError(DockerError):
 class DockerPermissionDeniedError(DockerError):
     """The engine is up and this user cannot talk to it.
 
-    Its own class because the fix is neither "install docker" nor "start docker": `.ci/lib/local-common.sh:630-653` re-execs the whole run under the docker group (`group_command`) for exactly this case, and reporting it as unreachable would send the operator to restart a healthy daemon.
+    Its own class because the fix is neither "install docker" nor "start docker": `rediacc_ci/setup/machine.py` `reexec_with_docker_group` and `local_common` re-exec the whole run under the docker group (`group_command`) for exactly this case, and reporting it as unreachable would send the operator to restart a healthy daemon.
     """
 
 
@@ -413,7 +414,7 @@ _ADVICE = {
     ),
     STATE_DENIED: (
         "the docker engine is running and this user cannot talk to its socket.\n"
-        '  this run only:  sg docker -c \'<command>\'  (no `sg`: sudo -n -u $USER env PATH="$PATH" HOME="$HOME" <command>)\n'
+        "  this run only:  sg docker -c '<command>'  (no `sg`: sudo -n -u $USER env PATH=\"$PATH\" HOME=\"$HOME\" bash -c '<command>')\n"
         "  permanently:    sudo usermod -aG docker $USER, then log out and back in\n"
         "  the group is applied automatically by ./run.sh (rediacc_ci/setup/machine.py reexec_with_docker_group)."
     ),
@@ -768,6 +769,10 @@ __all__ = [
 ]
 
 
+# A name `env NAME=value` can carry; an exported bash function (`BASH_FUNC_x%%`) or a name with odd characters cannot.
+_EXPORTABLE_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*$")
+
+
 def group_command(
     command: str,
     *,
@@ -777,7 +782,7 @@ def group_command(
 ) -> list[str] | None:
     """The argv that runs shell `command` with the `docker` group active, or None where neither route exists.
 
-    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... [extra] bash -c <command>`, which starts a fresh login-group set and carries PATH, HOME and `extra_env` (the one-hop guard) across explicitly. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
+    The group a login shell was created with is stale after `usermod -aG docker`, and two routes pick the new one up from the user database. `sg docker -c` where `sg` exists; Ubuntu 26.04 ships no `sg` binary, and its sudo (sudo-rs) ignores `-E` and resets PATH, so the other route is `sudo -n -u <user> env PATH=... HOME=... [extra] bash -c <command>`, which starts a fresh login-group set and carries the whole inherited environment across explicitly (names `env` can set; `sg` keeps all of it, and the re-exec'd run must see the same tokens and REDIACC_* settings on either route), with PATH, HOME and `extra_env` (the one-hop guard) set last. `sudo -n` never prompts, so a host that would ask for a password yields a failing probe rather than a hang.
     """
     environ = os.environ if env is None else env
     path = environ.get("PATH")
@@ -786,6 +791,11 @@ def group_command(
     if not shutil.which("sudo", path=path):
         return None
     carried = {
+        **{
+            k: v
+            for k, v in environ.items()
+            if _EXPORTABLE_NAME.match(k) and not k.startswith("BASH_FUNC_")
+        },
         "PATH": environ.get("PATH", ""),
         "HOME": environ.get("HOME", ""),
         **(extra_env or {}),

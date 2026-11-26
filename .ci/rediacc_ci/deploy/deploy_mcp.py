@@ -225,7 +225,14 @@ def pick(all_targets: dict[str, Target], target: str, region: str) -> Target:
             "--target %s --region %s names no config (the configs are %s)"
             % (target, region, ", ".join(sorted(all_targets)))
         )
-    return all_targets[key]
+    found = all_targets[key]
+    # `--target stable --region bench-eu` would hit the bench config's key while the record and the token profile say stable: deploying the bench Worker under the production credential (review b8f6d723.2).
+    if found.bench != (target != STABLE_TARGET):
+        raise RefusedError(
+            "--target %s --region %s names the %s config, not a %s one"
+            % (target, region, "bench" if found.bench else "stable", target)
+        )
+    return found
 
 
 def render(template: str, target: Target) -> str:
@@ -677,10 +684,13 @@ def run_deploy(
         )
 
     try:
-        before = live_version(deployments(run, mcp_dir, env, target.config))
-        previous_known = True
+        rows = deployments(run, mcp_dir, env, target.config)
+        before = live_version(rows)
+        # A Worker with deployments but none at 100% (a split rollout) is no first deploy and has no single version to roll back to (review b8f6d723.3).
+        first_deploy = not rows
+        previous_known = before is not None or first_deploy
     except DeploymentsUnreadableError:
-        before, previous_known = None, False
+        before, previous_known, first_deploy = None, False, False
 
     if smoke_only:
         rc = smoke(target, fetch, say, sleep=sleep)
@@ -725,10 +735,12 @@ def run_deploy(
     say("Deployed %s version %s." % (target.name, version))
     if rollback_line:
         say("Rollback: %s" % rollback_line)
-    elif previous_known:
+    elif first_deploy:
         say("Rollback: none (first deploy)")
     else:
-        say("Rollback: unknown (the deployments list could not be read before this deploy)")
+        say(
+            "Rollback: unknown (the deployments list could not be read, or no deployment served 100%, before this deploy)"
+        )
 
     result["secret_names"] = ensure_secrets(run, mcp_dir, env, target.config, say)
     result["smoke_rc"] = smoke(target, fetch, say, sleep=sleep)

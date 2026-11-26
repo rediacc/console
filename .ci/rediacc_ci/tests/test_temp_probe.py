@@ -382,5 +382,13 @@ def test_owner_match_sees_a_path_glued_to_a_short_option():
     assert owned.owns(path)
     assert temp_probe._TreeWatch([f"--out={path}"]).owns(path)
     # control: glued to a word, a longer path or a long option's name it is a different entry
-    for text in (f"abc{path}", f"/base{path}", f"--out{path}", f"-ab{path}", f"{path}2"):
+    for text in (
+        f"abc{path}",
+        f"/base{path}",
+        f"--out{path}",
+        f"-ab{path}",
+        f"{path}2",
+        f"/x/-I{path}",
+        f"x.-I{path}",
+    ):
         assert not temp_probe._TreeWatch([text]).owns(path), text

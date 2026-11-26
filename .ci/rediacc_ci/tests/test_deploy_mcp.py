@@ -17,6 +17,8 @@ from rediacc_ci.well_known import MCP_EU_HOST, MCP_US_HOST
 REPO = pathlib.Path(paths.repo_root())
 VERSION = "0b6c8f2e-1111-4222-8333-944445555666"
 PREVIOUS = "7d1e2f3a-aaaa-4bbb-8ccc-ddddeeeeffff"
+# A `live` entry that answers a split rollout: two versions, none at 100%.
+SPLIT = "split"
 ENV = {"CLOUDFLARE_API_TOKEN": "cf-token", "PATH": ""}
 
 
@@ -66,6 +68,17 @@ class FakeWrangler:
             current = self.live.pop(0) if len(self.live) > 1 else self.live[0]
             if current is None:
                 return dm.Result(1, "", "[code: 10007] This Worker does not exist on your account")
+            if current == SPLIT:
+                split = [
+                    {
+                        "created_on": "2026-11-26T00:00:00Z",
+                        "versions": [
+                            {"version_id": PREVIOUS, "percentage": 50},
+                            {"version_id": VERSION, "percentage": 50},
+                        ],
+                    }
+                ]
+                return dm.Result(0, json.dumps(split), "")
             return dm.Result(0, deployments_json(current), "")
         if verb == "deploy":
             if self.deploy_rc:
@@ -234,6 +247,26 @@ def test_first_deploy_has_no_rollback(repo: pathlib.Path) -> None:
     assert result["rollback"] is None
     assert result["previous_known"] is True
     assert "Rollback: none (first deploy)" in text
+
+
+def test_a_split_rollout_before_the_deploy_is_not_a_first_deploy(repo: pathlib.Path) -> None:
+    """Review b8f6d723.3: deployments exist but none serves 100%, so the way back is unknown rather than 'none'."""
+    fake = FakeWrangler(live=[SPLIT, VERSION], secrets=list(dm.SECRET_NAMES))
+    result, text = drive(repo, fake)
+    assert result["rollback"] is None
+    assert result["previous_known"] is False
+    assert "first deploy" not in text
+    assert "Rollback: unknown" in text
+
+
+def test_pick_refuses_a_bench_region_under_the_stable_target() -> None:
+    """Review b8f6d723.2: `--target stable --region bench-eu` would resolve to the bench config under the production credential."""
+    keys = dm.targets(dm.load_regions(REPO))
+    with pytest.raises(dm.RefusedError, match="names the bench config"):
+        dm.pick(keys, "stable", "bench-eu")
+    # CONTROL: each target still picks its own config.
+    assert dm.pick(keys, "stable", "eu").bench is False
+    assert dm.pick(keys, "bench", "eu").bench is True
 
 
 def test_a_rollout_that_is_not_the_printed_version_fails(repo: pathlib.Path) -> None:

@@ -133,3 +133,15 @@ def test_a_killed_holder_frees_the_lock(tmp_path: pathlib.Path) -> None:
     after = _heavy(tmp_path, "tree-b", "after", "--timeout", "5")
     _, stderr = after.communicate(timeout=ANSWER_S)
     assert after.returncode == 0, stderr
+
+
+def test_an_unwritable_owner_file_does_not_stop_a_gate_the_free_lock_admits(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review aed5f186.1: the owner file is advisory; a failed write must not escape as a traceback."""
+    # A directory where the owner file goes makes the atomic replace raise OSError.
+    (tmp_path / core_lease.HEAVY_OWNER_NAME).mkdir()
+    fd = core_lease.acquire_heavy_lock(tmp_path, root="/tree-a", timeout=1.0)
+    assert fd is not None
+    assert fd != core_lease.HEAVY_BYPASS
+    os.close(fd)

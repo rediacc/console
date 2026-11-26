@@ -276,6 +276,19 @@ def test_reuse_on_main_after_the_merge_names_promote(repo, where):
             landing.make_landing(repo, gh=gh, seed=Seeded())
 
 
+def test_reuse_on_main_before_the_merge_does_not_claim_the_merge_is_done(repo):
+    """Review 973581b7.1 and a5584467.1: the check runs before any PR lookup, so with the PR still open the message must name the way back to its branch and not assert a merge."""
+    path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
+    git(repo, "switch", "-q", "-c", "0202-1")
+    git(path, "switch", "-q", "main")
+    with pytest.raises(landing.LandingRefusedError) as raised:
+        landing.make_landing(repo, gh=gh_for(PR), seed=Seeded())
+    text = str(raised.value)
+    assert "merge is done" not in text
+    assert "with the PR still open" in text
+    assert "switch <the PR's branch>" in text
+
+
 def test_reuse_control_off_the_pr_branch_names_the_switch(repo):
     path = pathlib.Path(landing.make_landing(repo, gh=gh_for(PR), seed=Seeded()))
     git(path, "switch", "-q", "-c", "0303-1")

@@ -361,7 +361,8 @@ def format_constant_changes(diff_text: str) -> list[str]:
             if not current.endswith(suffix):
                 continue
             for constant in names:
-                if re.search(r"\b%s\b\s*=" % constant, line[1:]):
+                # `NAME = 3`, and the typed Go form `NAME uint32 = 3` (review 53ad5866.1).
+                if re.search(r"\b%s\b(?:\s+[\w.*\[\]]+)?\s*=" % constant, line[1:]):
                     hit = "%s: %s" % (suffix, constant)
                     if hit not in found:
                         found.append(hit)
@@ -631,6 +632,12 @@ def _preview(worker_name: str, worker_dir: pathlib.Path, args: dict | None = Non
             build = word_preview_inputs(worker_name, args or {}, common.repo_root())
         except PreviewBuildError as exc:
             log.error(str(exc))
+            return 1
+    if word:
+        # A fork head is refused before the first wrangler call, as the commit and the signer's docstring say; `preview_signer.deploy` checks again (review 53ad5866.2).
+        fork = preview_signer.fork_refusal(os.environ)
+        if fork:
+            log.error("%s: %s" % (SELF, fork))
             return 1
     if is_protected(db_name):
         # UNREACHABLE (fact 1). Reproduced rather than dropped.

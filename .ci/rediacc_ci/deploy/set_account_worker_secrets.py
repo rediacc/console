@@ -6,9 +6,11 @@ Pushes forty runtime secrets into ONE regional account Worker in a single `wrang
 THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, three times over, and every decision is a place a port can be quietly wrong:
 
   1. CHANNEL. `TARGET=stable` selects the stable half of the backup plane's bucket, key pair, config server key and store KEK; anything else is the edge channel and takes the edge half.
-  2. REGION FAN-IN. Three values are read through a CONSTRUCTED name:
+  2. REGION FAN-IN. Six values are read through a CONSTRUCTED name:
      `AWS_SES_ACCESS_KEY_ID_<SUFFIX>`, `AWS_SES_SECRET_ACCESS_KEY_<SUFFIX>` and
-     `OBS_OTLP_CREDENTIALS_<SUFFIX>`, and
+     `OBS_OTLP_CREDENTIALS_<SUFFIX>`, plus the forensics triple
+     `ACCOUNT_FORENSICS_S3_{ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY}_<SUFFIX>`
+     (`FORENSICS_PREFIXES`, `forensics_triple`), and
      the suffix is DROPPED on the way into the Worker, which has no concept of
      the other region's credential. The twin resolves them with bash
      indirection (`${!var}`), so a find-and-replace cannot see these names and
@@ -203,7 +205,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
 
 # The forty `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name, the sales-digest recipient the four contact and alerts sender and recipient addresses and the three forensics store values) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
-# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the nine values this script COMPUTES rather than reads, and those nine are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
+# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the twelve values whose source is not a plain name: nine this script COMPUTES rather than reads, and the three forensics values, which it reads under a CONSTRUCTED name (`<PREFIX>_<SUFFIX>`, `forensics_triple`). Those twelve are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
     ("ACCOUNT_X25519_PRIVATE_KEY", "x25519_priv", "ACCOUNT_X25519_PRIVATE_KEY"),

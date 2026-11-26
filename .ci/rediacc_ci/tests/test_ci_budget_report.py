@@ -3575,6 +3575,19 @@ def test_today_leg_hashes_takes_a_manifestless_lane_s_leg_from_the_lock(tmp_path
     }
 
 
+def test_today_leg_hashes_gives_a_manifestless_lane_no_leg_when_the_lock_is_unreadable(tmp_path):
+    """Review e9cb3e87.2: an unreadable working-tree lock (the OSError branch) leaves the manifestless lane absent rather than raising."""
+    # A lock path that is a directory raises OSError on read_text.
+    (tmp_path / _LOCK_REL).mkdir(parents=True)
+    assert br.today_leg_hashes(tmp_path, _PLAN_PATTERNS) == {}
+    # CONTROL: the same tree with a readable lock names the lane's leg.
+    (tmp_path / _LOCK_REL).rmdir()
+    (tmp_path / _LOCK_REL).write_text(_lock(("g:a", "lane-x")), encoding="utf-8")
+    assert br.today_leg_hashes(tmp_path, _PLAN_PATTERNS) == {
+        "lane-x": (None, {1: br.leg_plan_hash(["g:a"])})
+    }
+
+
 def test_prefer_todays_leg_prices_a_split_lane_on_its_post_split_samples():
     """After a split, the unindexed name with enough samples of today's lock leg is priced on those alone; with one, it records only the pre-split hash and the gate sets it aside, which is what the 2026-11-22 hand entry did by hand."""
     today = {"lane-x": (None, {1: "after"})}

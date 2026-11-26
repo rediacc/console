@@ -622,6 +622,11 @@ def _flush() -> None:
     sys.stderr.flush()
 
 
+def _cwd_is_missing(cwd: str | None) -> bool:
+    """True when a FileNotFoundError came from a `cwd` that is no directory: the program exists, and "command not found" would hide the real error (review 5fb9ea9e.1, .2)."""
+    return cwd is not None and not os.path.isdir(cwd)
+
+
 def _run(
     argv: list[str],
     *,
@@ -644,6 +649,8 @@ def _run(
             check=False,
         ).returncode
     except FileNotFoundError:
+        if _cwd_is_missing(cwd):
+            raise
         # The shell twin answers a missing program with status 127 ("command not found"), so a probe
         # such as `docker version` on a host without docker reaches its install branch instead of crashing.
         if not quiet_err:
@@ -673,6 +680,8 @@ def _capture(
             check=False,
         )
     except FileNotFoundError:
+        if _cwd_is_missing(cwd):
+            raise
         # `$(missing)` in the shell twin yields empty output and status 127.
         if not quiet_err:
             print(f"{argv[0]}: command not found", file=sys.stderr)

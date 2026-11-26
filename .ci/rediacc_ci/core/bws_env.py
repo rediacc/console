@@ -77,7 +77,7 @@ WHAT v2 ADDED, AND WHY `cache-to` IS NOT THE EMITTER THIS MODULE REFUSES
   A name outside it is refused and NO FILE IS WRITTEN, which is the assertion that matters: an exit code alone would still leave a partial cache on disk for the next reader to trust.
 
 THE `STRIPE_WEBHOOK_SECRET` GUARD THAT PART 4 ASKED FOR IS DELIBERATELY ABSENT. Part 4 item 4 wanted "a refusal on `STRIPE_WEBHOOK_SECRET` until D3 lands", D3 being the collision where `.env`'s copy of that name was the committed E2E fixture while the store's was the real signing secret.
-D3 HAS landed, and its cause is gone: the committed fixture key and the local webhook listener were deleted with the Stripe integration, so no local file carries a name the store also holds. A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
+D3 HAS landed, and its cause is gone: the committed fixture key and the local webhook listener were deleted with the Stripe integration, so no local file carries `STRIPE_WEBHOOK_SECRET` itself (the lifecycle harness's DEFAULTS fixture sets the differently named `STRIPE_E2E_WEBHOOK_SECRET`, which the store does not hold). A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
 """
 
 import contextlib

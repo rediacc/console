@@ -3,6 +3,8 @@
 `ensure_docker_installed` probes `docker version` first; on a host without docker that probe raised FileNotFoundError and `./run.sh setup` crashed before reaching its install branch (native Ubuntu, 2026-11-25).
 """
 
+import pytest
+
 from rediacc_ci.core import local_common as lc
 
 MISSING = "rediacc-no-such-program-7f3a"
@@ -49,3 +51,15 @@ def test_docker_probe_reaches_the_install_branch_without_docker(monkeypatch):
     except FileNotFoundError as exc:  # the crash this test pins
         raise AssertionError(f"ensure_docker_installed crashed: {exc}") from exc
     assert ["docker", "version"] in calls
+
+
+def test_a_missing_cwd_raises_instead_of_reporting_the_program_missing(tmp_path, capsys):
+    """Review 5fb9ea9e.1 and .2: the program exists, the directory does not, and "command not found" would hide that."""
+    gone = str(tmp_path / "no-such-dir")
+    with pytest.raises(FileNotFoundError):
+        lc._run(["true"], cwd=gone)
+    with pytest.raises(FileNotFoundError):
+        lc._capture(["true"], cwd=gone)
+    assert "command not found" not in capsys.readouterr().err
+    # CONTROL: a real cwd with a missing program still answers 127.
+    assert lc._run([MISSING], cwd=str(tmp_path), quiet_err=True) == 127

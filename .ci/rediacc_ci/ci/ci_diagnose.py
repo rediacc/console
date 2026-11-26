@@ -115,9 +115,9 @@ SIGNATURES = (
     (
         "secret-expired",
         "operator",
-        # A line that reports the expiry as handled (`cache token is expired, refreshing`) is no refused credential: the line must carry a failure word and no refresh word.
+        # A line that reports the expiry as handled (`cache token is expired, refreshing`) is no refused credential: the line must carry a failure word and no word saying the expiry is handled (refresh, renew, rotated or rotating, any form of retry, `will expire`); the advice `rotate it` is no such word, so a refused `token has expired, rotate it` stays operator-only.
         re.compile(
-            r"(?i)^(?!.*\b(?:refresh|renew|rotat|retry|retrying|will expire)\w*)"
+            r"(?i)^(?!.*\b(?:refresh|renew|rotated|rotating|retr(?:y|ies|ied|ying)|will expire)\w*)"
             r"(?=.*\b(?:error|fail|failed|denied|refus|reject|invalid|unauthori[sz]ed|cannot|could not|unable)\w*)"
             r".*(?:"
             r"\b(?:token|secret|credential|password|api[ _-]?key|certificate)s?\b[^\n]{0,40}?"
