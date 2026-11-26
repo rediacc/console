@@ -240,7 +240,11 @@ export function findUnreachable(error: unknown): RemoteUnreachableError | undefi
   return undefined;
 }
 
-/** Error codes (Node net/undici) that mean the server was never reached. */
+/**
+ * Error codes (Node net/undici) of a server that is not answering. ECONNRESET, EPIPE and ETIMEDOUT can
+ * also end a request the server already received, so this set only picks the offline-cache read and the
+ * fail-closed write; it never decides that a request was not applied.
+ */
 const NETWORK_ERROR_CODES = new Set([
   'ECONNREFUSED',
   'ECONNRESET',
