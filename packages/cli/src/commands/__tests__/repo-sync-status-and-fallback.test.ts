@@ -129,3 +129,20 @@ describe('status local-only files', () => {
     expect(text).toContain('only-local');
   });
 });
+
+describe('sshKeyDiagnostic', () => {
+  it('prints a PEM armour header but never key material (8b24deb8.2)', async () => {
+    const { sshKeyDiagnostic } = await import('../repo-sync-display.js');
+    const secret = `b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW${'A'.repeat(200)}`;
+    // A malformed key with no newline must not print its body.
+    const flat = sshKeyDiagnostic(`-----BEGIN OPENSSH ${'PRIVATE KEY'}-----${secret}`);
+    expect(flat).not.toContain(secret.slice(0, 40));
+    expect(flat).toContain('header="<not a PEM header>"');
+    // Control: a well-formed key shows its armour line only.
+    const good = sshKeyDiagnostic(
+      `-----BEGIN OPENSSH ${'PRIVATE KEY'}-----\n${secret}\n-----END OPENSSH PRIVATE KEY-----\n`
+    );
+    expect(good).toContain(`header="-----BEGIN OPENSSH ${'PRIVATE KEY'}-----"`);
+    expect(good).not.toContain(secret.slice(0, 40));
+  });
+});
