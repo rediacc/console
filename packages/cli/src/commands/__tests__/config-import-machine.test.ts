@@ -134,10 +134,20 @@ function sourceResources(): Res {
   };
 }
 
-async function seed(name: string, resources: Res): Promise<void> {
+type State = NonNullable<Cfg['state']>;
+
+async function seed(name: string, resources: Res, state?: State): Promise<void> {
   await configFileStorage.delete(name).catch(() => undefined);
   await configFileStorage.init(name);
-  await configFileStorage.update(name, (cfg) => ({ ...cfg, resources }));
+  await configFileStorage.update(name, (cfg) => ({
+    ...cfg,
+    resources,
+    ...(state ? { state } : {}),
+  }));
+}
+
+async function loadState(name: string): Promise<State> {
+  return (await configFileStorage.loadDecrypted(name)).state ?? {};
 }
 
 function raw(name: string): string {
@@ -195,6 +205,73 @@ afterAll(() => {
   if (priorRediaccConfig === undefined) delete process.env.REDIACC_CONFIG;
   else process.env.REDIACC_CONFIG = priorRediaccConfig;
   rmSync(configHome, { recursive: true, force: true });
+});
+
+describe('config import-machine network IDs', () => {
+  const srcState: State = {
+    repos: { mail: { latest: { networkId: 2880 } }, ops: { latest: { networkId: 2944 } } },
+    networkIds: { next: 3008 },
+  };
+
+  beforeEach(async () => {
+    await seed(SRC, sourceResources(), srcState);
+  });
+
+  it('carries each imported repo networkId, leaves a repo without one bare, and moves the counter past them', async () => {
+    await seed(DST, {}, { networkIds: { next: 2816 } });
+    await run(['hostinger', '--from', SRC]);
+    const state = await loadState(DST);
+    expect(state.repos?.mail?.latest?.networkId).toBe(2880);
+    expect(state.repos?.ops?.latest?.networkId).toBe(2944);
+    // mail:pre-dms17 has no networkId in the source and gets none.
+    expect(state.repos?.mail?.['pre-dms17']).toBeUndefined();
+    expect(state.networkIds?.next).toBe(3008);
+    expect(status('mail:latest', 'networkId')).toBe('added');
+    expect(report().rows.some((r) => r.name === 'mail:pre-dms17' && r.kind === 'networkId')).toBe(
+      false
+    );
+  });
+
+  it('never lowers a counter already past the imported ids, and a rerun is a no-op', async () => {
+    await seed(DST, {}, { networkIds: { next: 9000 } });
+    await run(['hostinger', '--from', SRC]);
+    expect((await loadState(DST)).networkIds?.next).toBe(9000);
+    const before = raw(DST);
+    await run(['hostinger', '--from', SRC]);
+    expect(report().changes).toBe(0);
+    expect(raw(DST)).toBe(before);
+  });
+
+  it('fills a networkId missing from an already imported tag', async () => {
+    await run(['hostinger', '--from', SRC]);
+    await configFileStorage.updateState(DST, (cfg) => ({ ...cfg, state: { repos: {} } }));
+    await run(['hostinger', '--from', SRC]);
+    expect(status('mail:latest', 'networkId')).toBe('added');
+    expect((await loadState(DST)).repos?.mail?.latest?.networkId).toBe(2880);
+  });
+
+  it('refuses an id the target holds for another repository, naming both, and writes nothing', async () => {
+    await seed(DST, {}, { repos: { other: { latest: { networkId: 2880 } } } });
+    const before = raw(DST);
+    const err = await refusal(['hostinger', '--from', SRC]);
+    expect(err.exitCode).toBe(12);
+    expect(err.details?.join('\n')).toMatch(/mail:latest and other:latest both hold 2880/);
+    expect(raw(DST)).toBe(before);
+    expect(sync.calls).toEqual([]);
+  });
+
+  it('refuses a tag the target holds under another networkId', async () => {
+    await run(['hostinger', '--from', SRC]);
+    await configFileStorage.updateState(DST, (cfg) => ({
+      ...cfg,
+      state: {
+        ...cfg.state,
+        repos: { ...cfg.state?.repos, mail: { latest: { networkId: 4096 } } },
+      },
+    }));
+    const err = await refusal(['hostinger', '--from', SRC]);
+    expect(err.details).toContain('networkId mail:latest: network-id-differs');
+  });
 });
 
 describe('config import-machine', () => {

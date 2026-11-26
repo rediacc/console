@@ -7,17 +7,24 @@
  * placed on, and each backup strategy bound to the machine together with its binding. Nothing that
  * already exists is overwritten: an equal entry is a no-op, and a differing one is refused (a
  * same-name repository with another GUID, a machine at another address, a datastore with another
- * backend). A differing strategy is refused unless `--strategy-from-source` replaces it. Any refusal
+ * backend, a network ID another repository already holds). A differing strategy is refused unless `--strategy-from-source` replaces it. Any refusal
  * writes nothing, so a run either lands whole or not at all.
  *
  * The write goes through `updateSyncedConfig`, and the plan is computed again inside the edit from
  * the document the edit is given, so a remote config's version-conflict replay re-checks against
  * the fresh server copy. The report carries names and verdicts only, never a credential, key or
  * GUID value.
+ *
+ * Each imported repository also carries its `state.repos.<family>.<tag>.networkId`, the id of its
+ * Docker daemon on the machine, and the target's `state.networkIds.next` counter moves past it so
+ * a later allocation cannot hand it out again. A repository whose source has no networkId stays
+ * without one. An id the target holds for another repository, or for the same tag under another
+ * value, is refused: the id is a real daemon on the machine, so it is never reused or renumbered.
  */
 
 import { isDeepStrictEqual } from 'node:util';
 import { DEFAULTS } from '@rediacc/shared/config';
+import { NETWORK_ID_INCREMENT } from '@rediacc/shared/renet-contract';
 import type { Command } from 'commander';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
@@ -32,8 +39,16 @@ type Resources = NonNullable<RdcConfig['resources']>;
 type MachineEntry = NonNullable<Resources['machines']>[string];
 type RepoFamily = NonNullable<Resources['repositories']>[string];
 type DatastoreEntry = NonNullable<Resources['datastores']>[string];
+type StateRepos = NonNullable<NonNullable<RdcConfig['state']>['repos']>;
 
-type ImportKind = 'machine' | 'datastore' | 'strategy' | 'binding' | 'repository' | 'tag';
+type ImportKind =
+  | 'machine'
+  | 'datastore'
+  | 'strategy'
+  | 'binding'
+  | 'repository'
+  | 'tag'
+  | 'networkId';
 type ImportStatus = 'equal' | 'added' | 'replaced' | 'refused';
 type RefusalReason =
   | 'machine-differs'
@@ -43,7 +58,9 @@ type RefusalReason =
   | 'placement-differs'
   | 'grand-differs'
   | 'guid-differs'
-  | 'tag-differs';
+  | 'tag-differs'
+  | 'network-id-differs'
+  | 'network-id-collision';
 
 /** One verdict of the import report. `name` is a resource name (`family:tag` for a tag), never a value. */
 interface ImportRow {
@@ -59,6 +76,8 @@ interface ImportPlan {
   config: RdcConfig;
   changes: number;
   refusals: number;
+  /** Detail lines of the network ID collisions, each naming both repositories. */
+  collisions: string[];
 }
 
 interface ImportOptions {
@@ -91,12 +110,22 @@ function placedOn(
 class Planner {
   readonly rows: ImportRow[] = [];
   readonly res: Resources;
+  /** The target's state.repos with the imported networkIds applied. */
+  readonly stateRepos: StateRepos;
+  private readonly state: RdcConfig['state'];
+  private importedMax = 0;
 
   constructor(
     private readonly src: Resources,
     target: Resources,
+    private readonly srcState: StateRepos,
+    targetState: NonNullable<RdcConfig['state']> | undefined,
     private readonly opts: ImportOptions
   ) {
+    this.state = targetState;
+    this.stateRepos = Object.fromEntries(
+      Object.entries(targetState?.repos ?? {}).map(([f, tags]) => [f, { ...tags }])
+    );
     // Shallow copies of every record the plan may write; entries themselves are replaced, never mutated.
     this.res = {
       ...target,
@@ -112,6 +141,70 @@ class Planner {
     this.rows.push(reason ? { kind, name, status, reason } : { kind, name, status });
     return status !== 'refused';
   }
+
+  /** The `family:tag` that holds network ID `id` in the working state, other than `self`. */
+  private holder(id: number, self: string): string | undefined {
+    for (const [family, tags] of Object.entries(this.stateRepos)) {
+      for (const [tag, runtime] of Object.entries(tags)) {
+        const ref = `${family}:${tag}`;
+        if (runtime.networkId === id && ref !== self) return ref;
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Carry the source tag's networkId. Absent in the source: nothing to do. Equal in the target: a
+   * no-op. Missing in the target: copied. Another value, or an id held by another repository:
+   * refused, never reused or renumbered.
+   */
+  networkId(family: string, tag: string): void {
+    const id = this.srcState[family]?.[tag]?.networkId;
+    if (id === undefined) return;
+    const ref = `${family}:${tag}`;
+    const have = this.stateRepos[family]?.[tag]?.networkId;
+    if (have === id) {
+      this.row('networkId', ref, 'equal');
+      return;
+    }
+    if (have !== undefined) {
+      this.row('networkId', ref, 'refused', 'network-id-differs');
+      return;
+    }
+    const other = this.holder(id, ref);
+    if (other) {
+      this.collisions.push(
+        `networkId ${ref}: network-id-collision (${ref} and ${other} both hold ${id})`
+      );
+      this.row('networkId', ref, 'refused', 'network-id-collision');
+      return;
+    }
+    this.stateRepos[family] = {
+      ...this.stateRepos[family],
+      [tag]: { ...this.stateRepos[family]?.[tag], networkId: id },
+    };
+    this.importedMax = Math.max(this.importedMax, id);
+    this.row('networkId', ref, 'added');
+  }
+
+  /** The target's state with the imported networkIds and the counter moved past them. */
+  stateOut(): RdcConfig['state'] {
+    const next = this.state?.networkIds?.next;
+    const needed = this.importedMax + NETWORK_ID_INCREMENT;
+    // An absent counter is derived from the used ids at allocation time, which now include these.
+    const networkIds =
+      next !== undefined && this.importedMax > 0 && next < needed
+        ? { ...this.state?.networkIds, next: needed }
+        : this.state?.networkIds;
+    return {
+      ...this.state,
+      repos: this.stateRepos,
+      ...(networkIds ? { networkIds } : {}),
+    };
+  }
+
+  /** Detail lines naming both repositories of every network ID collision. */
+  readonly collisions: string[] = [];
 
   /** Copy a strategy when absent; equal is a no-op; differing is refused unless the source replaces it. */
   strategy(name: string): boolean {
@@ -183,7 +276,10 @@ class Planner {
     if (!existing) {
       this.res.repositories![name] = structuredClone(source);
       this.row('repository', name, 'added');
-      for (const tag of Object.keys(source.tags)) this.row('tag', `${name}:${tag}`, 'added');
+      for (const tag of Object.keys(source.tags)) {
+        this.row('tag', `${name}:${tag}`, 'added');
+        this.networkId(name, tag);
+      }
       return;
     }
     if (!isDeepStrictEqual(existing.placement, source.placement)) {
@@ -210,10 +306,12 @@ class Planner {
         tags[tag] = structuredClone(record);
         added = true;
         this.row('tag', ref, 'added');
+        this.networkId(name, tag);
       } else if (have.repositoryGuid !== record.repositoryGuid) {
         this.row('tag', ref, 'refused', 'guid-differs');
       } else if (isDeepStrictEqual(have, record)) {
         this.row('tag', ref, 'equal');
+        this.networkId(name, tag);
       } else {
         this.row('tag', ref, 'refused', 'tag-differs');
       }
@@ -238,7 +336,13 @@ function planMachineImport(
   if (!sourceMachine) {
     throw new ValidationError(t('commands.config.importMachine.machineMissing', { machine }));
   }
-  const planner = new Planner(src, target.resources ?? {}, opts);
+  const planner = new Planner(
+    src,
+    target.resources ?? {},
+    source.state?.repos ?? {},
+    target.state,
+    opts
+  );
 
   const boundOk = (sourceMachine.backupStrategies ?? []).filter((s) => planner.strategy(s));
   planner.machine(machine, sourceMachine, boundOk);
@@ -252,8 +356,11 @@ function planMachineImport(
     (r) => r.status === 'added' || r.status === 'replaced'
   ).length;
   const refusals = planner.rows.filter((r) => r.status === 'refused').length;
-  const config = changes > 0 && refusals === 0 ? { ...target, resources: planner.res } : target;
-  return { rows: planner.rows, config, changes, refusals };
+  const config =
+    changes > 0 && refusals === 0
+      ? { ...target, resources: planner.res, state: planner.stateOut() }
+      : target;
+  return { rows: planner.rows, config, changes, refusals, collisions: planner.collisions };
 }
 
 interface ImportMachineCliOptions {
@@ -266,7 +373,11 @@ function refusalError(plan: ImportPlan): Error {
   return stateMismatch(t('commands.config.importMachine.refused', { count: plan.refusals }), {
     details: plan.rows
       .filter((r) => r.status === 'refused')
-      .map((r) => `${r.kind} ${r.name}: ${r.reason}`),
+      .map(
+        (r) =>
+          plan.collisions.find((c) => c.startsWith(`${r.kind} ${r.name}: ${r.reason}`)) ??
+          `${r.kind} ${r.name}: ${r.reason}`
+      ),
   });
 }
 
