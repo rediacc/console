@@ -120,14 +120,6 @@
       "kind": "no-github-twin",
       "reason": "Least-privilege IAM user rediacc-ops-automation, minted 2026-11-24 to replace the account root keys (finding #5455c28d). Bound by bws_env exec --profile rotation|deploy-bench-<region>|enterprise-mint; no workflow requests it."
     },
-    "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
-      "kind": "no-github-twin",
-      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
-    },
-    "AWS_IAM_ADMIN_SECRET_ACCESS_KEY": {
-      "kind": "no-github-twin",
-      "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
-    },
     "AWS_SES_ACCESS_KEY_ID_BENCH": {
       "kind": "no-github-twin",
       "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."

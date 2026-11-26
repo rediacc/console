@@ -457,6 +457,12 @@ def evaluate_consumers(spec, vault: set[str]) -> list[str]:
         token = body.get("passes_token", False)
         if not isinstance(token, bool):
             findings.append("MALFORMED PROFILE %s: `passes_token` must be true or false." % profile)
+        token_file = body.get("token_file", "")
+        if not isinstance(token_file, str) or "/" in token_file or token_file.startswith("."):
+            findings.append(
+                "MALFORMED PROFILE %s: `token_file` must be a bare file name in the token directory."
+                % profile
+            )
         seen: dict[str, str] = {}
         total = 0
         for half in ("required", "optional"):

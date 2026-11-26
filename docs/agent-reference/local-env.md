@@ -304,7 +304,7 @@ that job's environment is readable by that human, and `cf-cd` would make one deb
 `dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.cloud`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.cloud`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies
 the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
 
-Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.
+Auth: `AWS_OPS_ACCESS_KEY_ID`/`AWS_OPS_SECRET_ACCESS_KEY` for AWS IAM and `CF_GLOBAL_API_KEY`+`CF_EMAIL` for Cloudflare, both bound by the `rotation` profile from the separate `rotation-admin` Bitwarden project through `~/.config/rediacc/bws-rotation-token` (operator-created, never by an agent), `CLOUDFLARE_API_TOKEN` as the scoped alternative, authenticated `gh` CLI for GitHub secrets.
 
 `rediacc_ci.ops.deploy_bench` runs under the `deploy-bench-eu` Bitwarden profile and runs `rotation check --for=bench` as a preflight, so a stale bench credential cannot ship a dead key.
 The check has three outcomes (0 in sync, 1 drift, 2 could not check) and the deploy refuses the secrets push on anything but 0.

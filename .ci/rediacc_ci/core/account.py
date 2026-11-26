@@ -733,16 +733,24 @@ def ci_dir(env: dict[str, str] | None = None) -> str:
     return str(pathlib.Path(__file__).resolve().parents[2])
 
 
-def bws_exec(profile: str, run_sh_args: list[str], env: dict[str, str] | None = None) -> None:
+def bws_exec(
+    profile: str,
+    run_sh_args: list[str],
+    env: dict[str, str] | None = None,
+    also: tuple[str, ...] = (),
+) -> None:
     """`account_bws_exec`, `.ci/lib/account.sh:48-56`. Returns only when PROFILE is already hydrated.
 
     Otherwise REPLACES this process with `python3 -m rediacc_ci.core.bws_env exec --profile PROFILE -- $CONSOLE_ROOT_DIR/run.sh RUN_SH_ARGS...`, exactly the twin's `exec`, so the profile's secrets reach the re-run through its ENVIRONMENT and never through a file.
     The re-run finds PROFILE in `REDIACC_BWS_PROFILES` and carries on; an absent token or store entry is `bws_env`'s refusal, with no fallback.
 
+    `also` names further profiles bound by the same exec. `rotation` takes `rotation-reads`, whose names come from the shared store while `rotation` itself reads the separate rotation-admin store with its own token file.
+
     THE RE-RUN IS `./run.sh`, NOT THIS MODULE, because that is what the twin re-executes and the twin is what `run.sh` still dispatches to. Real-run verified through `rotation()`, never differentially: it reads the live store.
     """
     environ = dict(os.environ if env is None else env)
-    if profile in environ.get(BWS_PROFILES_ENV, "").split(","):
+    hydrated = environ.get(BWS_PROFILES_ENV, "").split(",")
+    if all(p in hydrated for p in (profile, *also)):
         return
     existing = environ.get("PYTHONPATH", "")
     environ["PYTHONPATH"] = ci_dir(environ) + (":" + existing if existing else "")
@@ -751,8 +759,7 @@ def bws_exec(profile: str, run_sh_args: list[str], env: dict[str, str] | None = 
         "-m",
         "rediacc_ci.core.bws_env",
         "exec",
-        "--profile",
-        profile,
+        *[arg for p in (profile, *also) for arg in ("--profile", p)],
         "--",
         os.path.join(console_root(environ), "run.sh"),
         *run_sh_args,
@@ -775,7 +782,7 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
 
     Returns 1 where the twin's bare `check_node_version` call, or its `cd "$ACCOUNT_DIR" || exit 1`, aborts under errexit. Otherwise the dispatched subprocess's exit code, or 127 -- matching the shell's own "command not found" convention, since the twin does not swallow this one with `|| true` -- if `npx` itself is not on PATH.
     """
-    bws_exec("rotation", ["rotation", *argv], env)
+    bws_exec("rotation", ["rotation", *argv], env, also=("rotation-reads",))
     status = node_version_ok()
     if status != 0:
         return status
