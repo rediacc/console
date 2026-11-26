@@ -289,10 +289,10 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
     monkeypatch.setattr(runtmp.tempfile, "tempdir", str(deep))
     d = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
     try:
-        assert d.parent == pathlib.Path("/tmp")
+        assert d.parent == pathlib.Path(str(runtmp.shallow_root()))
     finally:
         runtmp.remove_tree(str(d))
-    shallow = pathlib.Path("/tmp")
+    shallow = pathlib.Path(str(runtmp.shallow_root()))
     monkeypatch.setattr(runtmp.tempfile, "tempdir", str(shallow))
     e = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
     try:
@@ -328,7 +328,7 @@ def test_the_deepest_kept_base_leaves_a_tsx_socket_path_under_the_kernel_limit(m
         monkeypatch.setattr(runtmp.tempfile, "tempdir", str(longer))
         rooted = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
         try:
-            assert rooted.parent == pathlib.Path("/tmp")
+            assert rooted.parent == pathlib.Path(str(runtmp.shallow_root()))
         finally:
             runtmp.remove_tree(str(rooted))
     finally:

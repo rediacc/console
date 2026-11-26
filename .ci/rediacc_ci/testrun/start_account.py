@@ -148,7 +148,7 @@ def server_keys() -> dict[str, str]:
     report_private = os.environ.get("REPORT_ED25519_PRIVATE_KEY", "").strip()
     report_public = os.environ.get("REPORT_ED25519_PUBLIC_KEY", "").strip()
     if report_private and report_public:
-        if derived_public_key("REPORT_ED25519_PRIVATE_KEY") != report_public:
+        if derived_public_key(report_private) != report_public:
             raise LegError(
                 "REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY are not one pair: the server's reports would not verify under the published key",
                 show_log=False,
@@ -157,12 +157,19 @@ def server_keys() -> dict[str, str]:
     return keys
 
 
-def derived_public_key(var: str = "ACCOUNT_ED25519_PRIVATE_KEY") -> str:
-    """The SPKI base64 public half of the PKCS8 base64 private key in environment variable `var` (ACCOUNT_ED25519_PRIVATE_KEY by default), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
+def derived_public_key(private: str | None = None) -> str:
+    """The SPKI base64 public half of the PKCS8 base64 private key `private` (the ACCOUNT_ED25519_PRIVATE_KEY environment variable when None), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
     try:
         done = subprocess.run(
             ["node", "-e", DERIVE_PUBLIC_PROGRAM],
-            env={**os.environ, "SIGNING_PRIVATE_KEY": os.environ.get(var, "").strip()},
+            env={
+                **os.environ,
+                "SIGNING_PRIVATE_KEY": (
+                    os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
+                    if private is None
+                    else private
+                ).strip(),
+            },
             capture_output=True,
             text=True,
             check=False,
@@ -174,7 +181,7 @@ def derived_public_key(var: str = "ACCOUNT_ED25519_PRIVATE_KEY") -> str:
         ) from exc
     if done.returncode != 0:
         raise LegError(
-            f"node could not derive the public half of {var}: {done.stderr.strip()}",
+            f"node could not derive the public half of the signing private key: {done.stderr.strip()}",
             show_log=False,
         )
     return done.stdout.strip()

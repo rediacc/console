@@ -7,6 +7,7 @@ import types
 import pytest
 
 from rediacc_ci.ops import bench_preflight, bench_production, reset_bench
+from rediacc_ci.ops.reset_bench import R2Credentials as RealR2Credentials
 
 SUB = "33333333-3333-4333-8333-333333333333"
 NAMES = bench_preflight.BenchNames("account-bench-us", "id-us", "configs-bench-us", "", "b", "")
@@ -105,7 +106,7 @@ def test_a_missing_wipe_pair_refuses_before_any_wipe(monkeypatch):
     asked: list[tuple] = []
     _world(monkeypatch, [], asked)
 
-    class Unbound(reset_bench.R2Credentials):
+    class Unbound(RealR2Credentials):
         def __init__(self, region: str = "eu") -> None:
             monkeypatch.delenv("BENCH_WIPE_R2_ACCESS_KEY_ID", raising=False)
             monkeypatch.delenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY", raising=False)

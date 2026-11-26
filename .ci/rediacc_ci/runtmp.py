@@ -23,6 +23,8 @@ import shutil
 import stat
 import tempfile
 
+from rediacc_ci.quality import seams
+
 __all__ = [
     "SHELL_MKTEMP",
     "SHELL_PREFIX",
@@ -147,10 +149,18 @@ def shell_mktemp(tag: str) -> str:
 DEEP_TMPDIR = 24
 
 
+def shallow_root() -> str | None:
+    """The shallow root a too-deep run is rooted at: the gate seams' system temp base (`quality.seams.system_temp_base`), so a scratch directory made here is one the seams accept as private. That base is /tmp except where /tmp is a tmpfs and a disk base (/var/tmp) exists, which is the base the seams prefer; a different root here made every gate-harness override ignored on such a host. None when no base is usable."""
+    base = seams.system_temp_base()
+    if base is not None:
+        return str(base)
+    return "/tmp" if os.path.isdir("/tmp") else None
+
+
 def _shallow_base() -> str | None:
     inherited = tempfile.gettempdir()
-    if len(inherited) > DEEP_TMPDIR and os.path.isdir("/tmp"):
-        return "/tmp"
+    if len(inherited) > DEEP_TMPDIR:
+        return shallow_root()
     return None
 
 
