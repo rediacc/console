@@ -14,14 +14,6 @@ import {
 import { ClusterPhasePendingError, clusterVerb } from './cluster-job.js';
 
 /**
- * Install Ceph on the cluster's ceph-pool members, ceph-first:
- *   1. ceph_install_prerequisites on EVERY member,
- *   2. ceph_bootstrap_cluster on the first member (monitor = its IP),
- *   3. ceph_cluster_create once from the first member (all member IPs as nodes),
- *   4. ceph_pool_create for the application pool.
- * A non-success at any step throws (via dispatchCeph) so the install fails loud.
- */
-/**
  * Reports whether a ceph mon already answers on a member (i.e. ceph was already
  * bootstrapped, e.g. by the ops provisioning phase). Non-throwing: any failure
  * (mon unreachable, no ceph.conf) means "not bootstrapped", so the caller runs
@@ -42,6 +34,14 @@ async function cephIsBootstrapped(machineName: string, debug?: boolean): Promise
   }
 }
 
+/**
+ * Install Ceph on the cluster's ceph-pool members, ceph-first:
+ *   1. ceph_install_prerequisites on EVERY member,
+ *   2. ceph_bootstrap_cluster on the first member (monitor = its IP),
+ *   3. ceph_cluster_create once from the first member (all member IPs as nodes),
+ *   4. ceph_pool_create for the application pool.
+ * A non-success at any step throws (via dispatchCeph) so the install fails loud.
+ */
 export async function installCeph(
   clusterName: string,
   cephPools: ClusterPool[],

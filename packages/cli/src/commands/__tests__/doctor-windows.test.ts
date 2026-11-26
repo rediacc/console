@@ -12,6 +12,7 @@ import type { PathLookupOptions } from '../../services/tools/path-lookup.js';
 import {
   checkEnvironment,
   checkTools,
+  defaultIsDevTree,
   dropDuplicateClientRows,
   findRenetSource,
 } from '../doctor.js';
@@ -129,6 +130,16 @@ describe('doctor dev-tree and client-row helpers', () => {
     expect(findRenetSource(join(root, 'packages', 'cli', 'src'), exists)).toBe(root);
     expect(findRenetSource(root, exists)).toBe(root);
     expect(findRenetSource(resolve('/elsewhere/deep'), exists)).toBeNull();
+  });
+
+  it('defaultIsDevTree needs both a dev install and a renet source at or above the cwd (230852f9.1)', () => {
+    const root = resolve('/work/console');
+    const exists = (p: string) => p === join(root, 'private', 'renet');
+    const sub = join(root, 'packages', 'cli');
+    expect(defaultIsDevTree('dev', sub, exists)).toBe(true);
+    expect(defaultIsDevTree('sea', sub, exists)).toBe(false);
+    expect(defaultIsDevTree('npm', root, exists)).toBe(false);
+    expect(defaultIsDevTree('dev', resolve('/elsewhere/deep'), exists)).toBe(false);
   });
 
   it('drops renet ssh row on win32 only, since Tools already reports the OpenSSH client', () => {

@@ -89,8 +89,13 @@ export interface EnvironmentCheckDeps {
 }
 
 /** A development install run inside a checkout that holds renet's source: the only place Go and Docker matter. */
-function defaultIsDevTree(): boolean {
-  return getInstallMethod() === 'dev' && findRenetSource(process.cwd()) !== null;
+export function defaultIsDevTree(
+  installMethod: string = getInstallMethod(),
+  cwd: string = process.cwd(),
+  exists: (path: string) => boolean = existsSync
+): boolean {
+  // The walk up from a subdirectory is deliberate (see findRenetSource); a non-dev install never counts, wherever it runs (230852f9.1).
+  return installMethod === 'dev' && findRenetSource(cwd, exists) !== null;
 }
 
 /** The checkout root at or above `start` that holds `private/renet`, so `rdc doctor` run from a subdirectory still finds it. */
