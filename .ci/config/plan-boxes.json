@@ -1101,12 +1101,11 @@
       "owner": "9b22c347",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 7,
+      "open": 2,
+      "done": 8,
       "open_sigs": [
         "4a23af14",
-        "4cd2161d",
-        "a1ac756b"
+        "4cd2161d"
       ],
       "done_sigs": [
         "03415e93",
@@ -1114,6 +1113,7 @@
         "83ca5876",
         "84d33d0b",
         "8a3d3128",
+        "a1ac756b",
         "a20c76b3",
         "d0b31106"
       ]

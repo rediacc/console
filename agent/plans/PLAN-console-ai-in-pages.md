@@ -70,10 +70,11 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: AX3, AX4, PLAN-console-ai-assistant.md#AI8.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/pages)` rc 0, including a test that the seeded context is an object and the user text is never prefilled from page data.
     (ticked) 2026-11-25T19:37:37Z by d778be9d: AX5 ask bar, suggestion cards and useAiSuggestions, 13 locales (account 4ef651fd); pages and hook tests 8 passed; landed 5dbdf42e05. DEPS-WAIVED: used prerequisites landed
-- [ ] AX6 [writer] Executor background tasks per D5: the detached loop recorded as an `ai.task` plan-4 run, pause on approval, the two-per-user cap, the session-expiry end, and the task routes in ai-routes.ts.
+- [x] AX6 [writer] Executor background tasks per D5: the detached loop recorded as an `ai.task` plan-4 run, pause on approval, the two-per-user cap, the session-expiry end, and the task routes in ai-routes.ts.
   Owns: packages/cli/src/services/ai/background-task.ts, packages/cli/src/services/ai/__tests__/background-task.test.ts, packages/cli/src/services/serve/ai-routes.ts
   Depends on: PLAN-console-ai-assistant.md#AI3, PLAN-console-ai-assistant.md#AI10, PLAN-console-run-index.md#RI3.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/background-task.test.ts)` rc 0, covering a client disconnect that leaves the task running, a destructive proposal that pauses it, a third task refused, and a control where a paused task runs the command turning the suite red.
+    (ticked) 2026-11-26T16:34:05Z by d778be9d: AX6 landed, cli ai and serve suites 845 passed, tsc rc 0 commit:bac5934cc6
 - [x] AX7 [writer] Task UI: the "needs approval" and running pills through plan 4's status bar, the finish toast, and the result card in the timeline, with English strings in `aiPages.json` under a `tasks` prefix.
   Owns: private/account/web/src/components/ai/tasks/**, private/account/web/src/i18n/locales/en/aiPages.json (the tasks keys only)
   Depends on: AX5, PLAN-console-ai-assistant.md#AI7.
