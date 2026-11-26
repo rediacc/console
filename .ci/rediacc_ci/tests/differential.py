@@ -970,7 +970,7 @@ def write_recorded(
 ) -> list[str]:
     """Flush `RECORDED` into the goldens. Returns one summary line per stem.
 
-    Merged through the hooks' `diff_and_mark`, so a first freeze writes no markers, an unchanged re-record is a byte-identical no-op, and a moved value carries `intentional: <reason>`. A key the old golden had and this run never asked for is a lost case: it is REFUSED (`ShrinkRefusedError`, naming the ids) unless `allow_shrink` says the case no longer exists, and then it is dropped and counted.
+    Merged through the hooks' `diff_and_mark`, so a first freeze writes no markers, an unchanged re-record is a byte-identical no-op, and a moved value carries `intentional: <reason>`. A key the old golden had and this run never asked for is a lost case: it is REFUSED (`ShrinkRefusedError`, naming the ids) unless `keep_unseen` (a selective re-record that carries the unseen records over) or `allow_shrink` (the case no longer exists, so it is dropped and counted) is set.
     """
     if not (keep_unseen or allow_shrink):
         # Checked for every stem before any golden is written, so a refusal leaves all of them as they were.

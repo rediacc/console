@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 
 import pytest
@@ -91,3 +92,4 @@ def test_regolden_exits_non_zero_naming_the_lost_ids(monkeypatch, capsys):
     assert "two" in err
     assert "--allow-shrink" in err
     assert regolden.main([*argv, "--allow-shrink"]) == 0
+    assert os.environ["REDIACC_CI_REGOLDEN"] == "port"

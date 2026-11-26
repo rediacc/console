@@ -1183,7 +1183,7 @@ def test_mismatch_count_ignores_an_extra_pinned_tool_on_the_runner(
 def test_defect_1_has_a_live_variant_on_env() -> None:
     """`--env` with no pins file: exit 0 and ZERO bytes, into $GITHUB_ENV.
 
-    FIVE live call sites: `.github/workflows/ci-quality.yml`'s `quality-static`, `quality-security`, and `quality-pytest`, which split out of quality-security in 6e713d7cc (2026-09-26) and needs the same toolchain versions loaded into its own runner, plus `quality-code` and `quality-packages`, which 38a7133ce3 gave the pins load for their pinned PyYAML install once python_gate_deps followed `python3 -m` gates. A sixth, in the bash gate-test battery's job, went with that job on 2026-10-09. Run against a COPY of the library under a fake root, so the real pins
+    FIVE jobs once reached this arm, and all five now call `pairs` instead (the body pins that): `.github/workflows/ci-quality.yml`'s `quality-static`, `quality-security`, and `quality-pytest`, which split out of quality-security in 6e713d7cc (2026-09-26) and needs the same toolchain versions loaded into its own runner, plus `quality-code` and `quality-packages`, which 38a7133ce3 gave the pins load for their pinned PyYAML install once python_gate_deps followed `python3 -m` gates. A sixth, in the bash gate-test battery's job, went with that job on 2026-10-09. Run against a COPY of the library under a fake root, so the real pins
     file is never touched.
     """
     with tempfile.TemporaryDirectory() as scratch:

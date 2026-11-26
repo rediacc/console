@@ -35,8 +35,8 @@ import ast
 
 from rediacc_ci import gitx, paths
 
-#: The real scan lists well over a thousand test and hook modules; under 200 means the listing failed, not that the tree shrank.
-CORPUS_FLOOR = 200
+#: Measured 2026-11-26: the real scan lists 1523 modules (879 under .ci/rediacc_ci/tests, 644 under .claude); under 500 means the listing failed, not that the tree shrank.
+CORPUS_FLOOR = 500
 
 # The calls that hand work to a subject process. `harness.run` is included because it is this tree's own wrapper around `subprocess.run` and forwards `timeout` straight through -- gating only the stdlib name would miss every gate test in the directory, which is most of them.
 RUNNERS = frozenset({"run", "Popen", "check_output", "call"})
@@ -384,7 +384,7 @@ def test_the_analyser_still_discriminates(gate):
 def test_every_fanout_driver_lets_its_subjects_declare_a_timeout(gate):
     """The real scan. Anti-vacuity first: an empty corpus and an empty class are both FAILURES.
 
-    THE CORPUS IS EVERY TEST MODULE, NOT THIS DIRECTORY. It was `tests/gates/*.py` while `test_twin_parity.py` lived there and was the one member; agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (bf054adcd4), and the directory then held no driver while `.claude/rediacc_hooks/tests/test_hooks_delegates.py` (`_discover_tailed` globs `test-*.py` across its `_TAILED_ROOTS` at import time and runs each one) sat outside the scan. Tracked and untracked `.py` under the two test trees, read from git so a lease tree under `.claude/worktrees/` never enters the corpus.
+    THE CORPUS IS EVERY TEST MODULE, NOT THIS DIRECTORY. It was `tests/gates/*.py` while `test_twin_parity.py` lived there and was the one member; agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (bf054adcd4), and the directory then held no driver while `.claude/rediacc_hooks/tests/test_hooks_delegates.py` (`_discover_tailed` globs `test-*.py` across its `_TAILED_ROOTS` at import time and runs each one) sat outside the scan. Tracked and untracked `.py` under `.ci/rediacc_ci/tests` and, because a git pathspec `*` crosses `/`, every `.py` anywhere under `.claude` (`is_fanout_driver` filters the extras), read from git so a lease tree under `.claude/worktrees/` never enters the corpus.
     """
     root = paths.repo_root()
     modules = gitx.ls_files(

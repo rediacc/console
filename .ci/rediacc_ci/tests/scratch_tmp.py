@@ -32,17 +32,19 @@ def install(config: pytest.Config) -> None:
     # `run_dir` first removes the scratch of every earlier run whose process is dead (a SIGKILLed one never reached its teardown), then makes this run's 0700 directory.
     scratch = runtmp.run_dir("rediacc-pytest-", str(base))
     saved = os.environ.copy()
+    saved_tempdir = tempfile.tempdir
     os.environ["TMPDIR"] = scratch
     tempfile.tempdir = None
     if config.option.basetemp is None:
         config.option.basetemp = os.path.join(scratch, "basetemp")
-    config.add_cleanup(lambda: _restore_tmpdir(saved))
+    config.add_cleanup(lambda: _restore_tmpdir(saved, saved_tempdir))
     config.add_cleanup(lambda: runtmp.remove_tree(scratch))
 
 
-def _restore_tmpdir(saved: dict[str, str]) -> None:
+def _restore_tmpdir(saved: dict[str, str], saved_tempdir: str | None) -> None:
     if "TMPDIR" in saved:
         os.environ["TMPDIR"] = saved["TMPDIR"]
     else:
         os.environ.pop("TMPDIR", None)
-    tempfile.tempdir = None
+    # Back to the cache install found, not to "recompute": a test that had primed tempfile.tempdir keeps what it primed.
+    tempfile.tempdir = saved_tempdir

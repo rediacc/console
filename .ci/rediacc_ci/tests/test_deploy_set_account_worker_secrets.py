@@ -206,7 +206,7 @@ PORT_ONLY_ADDRESSES = (
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient, the four contact and alerts addresses and the three forensics store values (the document's last eight keys, so their lines and the comma before them go)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the AI gateway logs token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient, the four contact and alerts addresses and the three forensics store values (the document's last eight keys, so their lines and the comma before them go)."""
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")

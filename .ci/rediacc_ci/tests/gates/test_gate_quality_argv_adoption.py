@@ -41,9 +41,9 @@ REFUSES_ITSELF = {
 }
 # Left out of the run on purpose, and named in the output.
 FIXED_ELSEWHERE: dict[str, str] = {}
-# Fewer than this and the scan is not seeing the tree.
-MIN_SCRIPTS = 172
-MIN_ADOPTED = 156
+# Fewer than this and the scan is not seeing the tree. Measured 2026-11-26: 173 entry scripts, 157 carrying the shared parse; a removal that lowers either count lowers the floor in the same commit, with its reason.
+MIN_SCRIPTS = 173
+MIN_ADOPTED = 157
 
 
 def everything() -> list[str]:
@@ -93,6 +93,12 @@ def test_every_script_is_adopted_or_named(gate):
     adopted_but_named = [s for s in REFUSES_ITSELF if carries_call(s)]
     gate.assert_eq(
         adopted_but_named, [], "a script that now carries the call leaves REFUSES_ITSELF"
+    )
+    adopted_but_fixed = [s for s in FIXED_ELSEWHERE if carries_call(s)]
+    gate.assert_eq(
+        adopted_but_fixed,
+        [],
+        "a script that now carries the call leaves FIXED_ELSEWHERE, or it stays out of the run",
     )
     gate.log_pass("every entry point is adopted or named, and no name is stale")
 
@@ -158,6 +164,19 @@ def test_a_headed_module_run_with_dash_m_refuses_an_unknown_flag(gate, mod):
     gate.log_pass("rediacc_ci.quality.%s refuses %s with rc 2" % (mod, BOGUS))
 
 
+def _is_dynamic_import(node: ast.Call) -> bool:
+    func = node.func
+    named = (isinstance(func, ast.Name) and func.id == "__import__") or (
+        isinstance(func, ast.Attribute) and func.attr == "import_module"
+    )
+    return (
+        named
+        and bool(node.args)
+        and isinstance(node.args[0], ast.Constant)
+        and isinstance(node.args[0].value, str)
+    )
+
+
 def runpy_entries(quality: pathlib.Path) -> list[str]:
     """Entry scripts under `quality` that run their module through `runpy`: check:ci-gate-argv cannot follow that hop to the module's parse, so such a shim reads as a bypass (CR2 batch B shipped nine and rewrote them to call `main(argv)` in 54a54fd570 and db09591e07)."""
     hits = []
@@ -169,6 +188,9 @@ def runpy_entries(quality: pathlib.Path) -> list[str]:
                 names = [a.name for a in node.names]
             elif isinstance(node, ast.ImportFrom):
                 names = [node.module or ""]
+            elif isinstance(node, ast.Call) and _is_dynamic_import(node):
+                # `__import__("runpy")` and `importlib.import_module("runpy")` reach the same hop without an import statement.
+                names = [node.args[0].value]
             if any(n == "runpy" or n.startswith("runpy.") for n in names):
                 hits.append(script.stem)
                 break
@@ -189,6 +211,27 @@ def test_no_entry_runs_its_module_through_runpy(gate, tmp_path):
     gate.assert_eq(
         runpy_entries(tmp_path), ["check_planted"], "the planted runpy shim, and only it, is found"
     )
+    # CONTROL: the two dynamic spellings of the same hop are seen too.
+    (tmp_path / "check_dunder.py").write_text(
+        '__import__("runpy").run_module("rediacc_ci.quality.x", run_name="__main__")\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "check_importlib.py").write_text(
+        'import importlib\nimportlib.import_module("runpy").run_module("rediacc_ci.quality.x")\n',
+        encoding="utf-8",
+    )
+    gate.assert_eq(
+        runpy_entries(tmp_path),
+        ["check_dunder", "check_importlib", "check_planted"],
+        "a runpy hop through __import__ or importlib is found as well",
+    )
+    # PRECONDITION: an empty or moved QUALITY directory would make the sweep below pass without scanning.
+    scanned = everything()
+    if len(scanned) < MIN_SCRIPTS:
+        gate.log_fail(
+            "the runpy sweep sees %d check_*.py under %s (floor %d): it is not scanning the tree"
+            % (len(scanned), QUALITY, MIN_SCRIPTS)
+        )
     found = runpy_entries(QUALITY)
     gate.assert_eq(found, [], "entry scripts that run their module through runpy")
     gate.log_pass("no runpy entry under .ci/scripts/quality")

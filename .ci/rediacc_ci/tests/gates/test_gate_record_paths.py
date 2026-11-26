@@ -164,7 +164,7 @@ PLAN_RECORDS = (
 #: 2026-11-24 (PLAN-tooling-code-reduction CR1-CR4 integration): 58 -> 59, the set as the derivation now reports it.
 #: Joined: the nine gates whose lock entry names `**` and that dcee36e930 declared as readers of the record set (agent-browser-exit, docker-npm-pins, go-module-sync, lint-rule-liveness, model-invocable-commands, plant-proofs, secret-supply, standalone-selftests, unverified-downloads), and check:ci-max-lines through plan-boxes.json alone.
 #: Left the derivation: dead-service-methods, git-history-depth, jq-boolean-default, merge-method-prose, no-inline-python, python-gate-deps, retired-commands, schema-call-sites and tracked-sidecars.
-#: 2026-11-24 (after the 9a66691457 re-trace): 59 -> 59. Those nine leave the six plan records' declared readers too, and check:ci-source-rules leaves both sets: its traced `names` no longer reach agent/. check:ci-pipefail-grep-q joins every record through the `names: ['**']` its traced lock entry carries. A gate that re-trace narrowed and a later re-trace widens back is named by record_paths as an UNDECLARED READER, so the drop cannot go stale silently.
+#: 2026-11-24 (after the 9a66691457 re-trace): 59 -> 59. Those nine leave the six plan records' declared readers too, and check:ci-source-rules leaves both sets: its traced `names` no longer reach agent/. check:ci-pipefail-grep-q joins every record through the `names: ['**']` its traced lock entry carries. A gate that re-trace narrowed and a later re-trace widens back is named by record_paths as an UNDECLARED READER, so the drop cannot go stale silently. check:ci-pipefail-grep-q is in the set by classification, not by measurement: its `**` is a path-trace widening the tracer does not model, so it reads no plan file itself and leaves the set the day the tracer stops widening.
 PLAN_READERS = frozenset(
     {
         "check:ci-account-env-retired",
@@ -340,17 +340,26 @@ def test_the_plan_records_have_exactly_the_measured_readers(real_derivation):
         readers |= set(derived[glob]) - set(by_glob[glob]["notReaders"])
         declared |= set(by_glob[glob]["readers"])
     assert readers == PLAN_READERS, (sorted(readers - PLAN_READERS), sorted(PLAN_READERS - readers))
+    # The dated comment above is the decision record and says 59; the literal is the set it counts.
+    assert len(PLAN_READERS) == 59, "PLAN_READERS holds %d; update the dated comments" % len(
+        PLAN_READERS
+    )
     assert declared == PLAN_READERS, sorted(declared ^ PLAN_READERS)
     missing = PLAN_FAMILY - set(derived[PLAN_RECORD])
     assert not missing, "plan gates the derivation no longer sees: %s" % sorted(missing)
     # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s, so it is never a reader of a plan record. The decision taken here (2026-11-23): since 957bf23a89 the derivation sees ONE citation in it, the `*.json` glob green_receipt_heads runs over the ci:quick receipt directories, which opens nothing under .ci/config/; that one citation is exempt by name in notReaders. Any OTHER citation, or that one without its exemption, is red here and is a new decision.
+    cited = []
     for glob in PLAN_RECORDS:
         evidence = derived[glob].get("check:ci-pytest")
         if evidence is None:
             continue
+        cited.append(glob)
         assert evidence.startswith(".ci/rediacc_ci/check_pytest.py:"), (glob, evidence)
         assert evidence.endswith("(glob) *.json"), (glob, evidence)
         assert "check:ci-pytest" in by_glob[glob]["notReaders"], glob
+    # The exemptions are keyed by name, so one whose citation is gone is stale and hides any future read: when the derivation stops seeing the citation, drop the notReaders entry with it.
+    exempt = [g for g in PLAN_RECORDS if "check:ci-pytest" in by_glob[g]["notReaders"]]
+    assert sorted(cited) == sorted(exempt), (sorted(cited), sorted(exempt))
 
 
 def test_the_plan_text_records_stay_under_review():

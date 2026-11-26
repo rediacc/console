@@ -43,7 +43,10 @@ THE `--write` IS SAFE ONLY BECAUSE A IS ASSERTED FIRST, and that ordering is loa
 import contextlib
 import hashlib
 import json
+import os
 import pathlib
+import shutil
+import subprocess
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -218,6 +221,7 @@ def test_an_untracked_file_under_a_provider_scope_is_not_drift(gate):
 
     This checkout is shared; another session's scratch files (its .ci/state/, for one) sit untracked under provider globs, and counting them made every session's verify red (5b34d5aeb2, reverted forward). A new file joins the record when it is staged, and the commit-policy hook renders against the commit's own tree, so it reports the drift then.
     """
+    require_inputs(gate)
     gate.log_test("B2. an untracked file under a provider's scope is not drift")
     probe = ROOT / ".claude" / "hooks" / "context" / "zz_untracked_probe.py"
     if probe.exists():
@@ -228,11 +232,57 @@ def test_an_untracked_file_under_a_provider_scope_is_not_drift(gate):
     finally:
         probe.unlink()
     if result.rc != 0:
-        gate.log_fail("verify read an untracked file as drift: %s" % result.err.strip())
-    gate.assertions += 1
+        gate.log_fail(
+            "verify exited %d with an untracked probe planted (drift naming the probe: %s): %s"
+            % (result.rc, probe.name in result.err, result.err.strip())
+        )
+    gate.assert_not_contains(
+        result.err, probe.name, "the untracked probe must not appear in a report"
+    )
     if probe.exists():
         gate.log_fail("the probe file was not removed")
     gate.log_pass("B2. an untracked new file under a provider's scope leaves verify green")
+
+
+def test_a_staged_file_under_a_provider_scope_is_drift(gate, tmp_path):
+    """The other half of the rule: the record IS the tracked tree, so a file once staged joins it and verify reports the drift.
+
+    The staging happens in a COPY of the index (`GIT_INDEX_FILE`), so the real index is never touched; the generator's `git ls-files` reads the copy.
+    """
+    require_inputs(gate)
+    gate.log_test("B3. a staged file under a provider's scope is reported as drift")
+    probe = ROOT / ".claude" / "hooks" / "context" / "zz_staged_probe.py"
+    if probe.exists():
+        gate.log_fail("%s already exists; the control would be about someone else's file" % probe)
+    git_dir = subprocess.run(
+        ["git", "-C", str(ROOT), "rev-parse", "--absolute-git-dir"],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    index = tmp_path / "index"
+    shutil.copy(pathlib.Path(git_dir) / "index", index)
+    env = {**os.environ, "GIT_INDEX_FILE": str(index)}
+    probe.write_text("# staged probe planted by test_gate_docs_gen\n", encoding="utf-8")
+    try:
+        subprocess.run(
+            ["git", "-C", str(ROOT), "add", "--", str(probe.relative_to(ROOT))],
+            env=env,
+            capture_output=True,
+            check=True,
+        )
+        result = gen(env={"GIT_INDEX_FILE": str(index)})
+    finally:
+        probe.unlink()
+    if result.rc == 0:
+        gate.log_fail(
+            "CONTROL DID NOT FIRE: verify passed with a staged file under a provider scope"
+        )
+    gate.assert_contains(
+        result.err, "DRIFT", "verify failed but never said DRIFT: %s" % result.err.strip()
+    )
+    gate.assert_contains(result.err, probe.name, "the drift report did not name the staged file")
+    gate.log_pass("B3. a staged file under a provider's scope is reported as drift")
 
 
 def test_two_write_runs_are_byte_identical(gate):

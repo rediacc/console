@@ -150,6 +150,14 @@ def test_later_failure_comments_instead_of_opening_another(gate, tmp_path):
     gate.log_pass("consecutive failures accumulate on one issue (%s)" % trace)
 
 
+def test_a_pull_request_wearing_the_label_is_ignored(gate, tmp_path):
+    # The issues API lists pull requests too; a PR labelled nightly-red must neither be commented on nor suppress the new issue.
+    trace = _probe_poster(gate, tmp_path).trace_of('[{"number":7,"pull_request":{}}]', "1")
+    gate.assert_not_contains(trace, "comment:7", "a pull request is never the rolling thread")
+    gate.assert_contains(trace, "create:Nightly CI is red", "the failure opens its own issue")
+    gate.log_pass("a labelled pull request is ignored (%s)" % trace)
+
+
 def test_missing_label_is_created_before_use(gate, tmp_path):
     # createIssue with an unknown label fails the whole call, so the label is ensured first.
     trace = _probe_poster(gate, tmp_path).trace_of("[]", "0")

@@ -76,9 +76,16 @@ def test_gate_green_on_the_committed_artifact(gate):
         result.combined, "every plant fired", "the selftest reported in the real run"
     )
     manifest = json.loads((REAL_ARTIFACT / "detect-wasm.json").read_text(encoding="utf-8"))
+    inputs_digest = manifest.get("renet_inputs_sha256")
+    if not isinstance(inputs_digest, str) or len(inputs_digest) < 16:
+        # The key lives in the private/account submodule: a gitlink that predates it makes this read fail on the key, not on the gate.
+        gate.log_fail(
+            "private/account's detect-wasm.json lacks renet_inputs_sha256 (got %r): "
+            "advance the private/account gitlink to the commit that records it" % (inputs_digest,)
+        )
     gate.assert_contains(
         result.combined,
-        "inputs %s" % manifest["renet_inputs_sha256"][:16],
+        "inputs %s" % inputs_digest[:16],
         "the verdict names the detector inputs digest",
     )
     gate.assert_contains(

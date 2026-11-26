@@ -82,7 +82,7 @@ def sock_dir():
     try:
         yield made
     finally:
-        shutil.rmtree(made, ignore_errors=True)
+        shutil.rmtree(made)
 
 
 def _fire_foreign_owner(tmp: pathlib.Path, detector) -> str | None:

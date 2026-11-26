@@ -167,6 +167,7 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/stop/test-judge-schema.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-plan-status-parse.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-planindex.py": ("cac5257d3f9d",),
+    # test-planrec.py was rekeyed in a66ada74b4, after c41f3aa240 changed its hop.
     ".claude/hooks/stop/test-planrec.py": ("eb9415193463", "eb9415193463"),
     ".claude/hooks/stop/test-reggate-ledger.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-teammate-idle.py": ("cac5257d3f9d",),

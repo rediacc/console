@@ -68,6 +68,17 @@ def _heavy(
     )
 
 
+def _wait_started(base: pathlib.Path, tag: str) -> None:
+    """Block until gate `tag` has logged its start, so a later gate really starts behind it (a fixed sleep lost that race on a slow interpreter start)."""
+    deadline = time.monotonic() + ANSWER_S
+    log = base / "log"
+    while time.monotonic() < deadline:
+        if log.is_file() and "start %s " % tag in log.read_text():
+            return
+        time.sleep(0.02)
+    raise AssertionError("gate %r never started within %.0f s" % (tag, ANSWER_S))
+
+
 def _events(base: pathlib.Path) -> list[tuple[str, str, float]]:
     rows = []
     for line in (base / "log").read_text().splitlines():
@@ -92,7 +103,7 @@ def test_two_trees_heavy_gates_started_together_run_one_after_the_other(
 
 def test_heavy_gates_of_one_tree_do_not_wait_on_each_other(tmp_path: pathlib.Path) -> None:
     first = _heavy(tmp_path, "tree-a", "a", hold=2.0)
-    time.sleep(0.5)
+    _wait_started(tmp_path, "a")
     second = _heavy(tmp_path, "tree-a", "b", hold=0.2)
     out = [p.communicate(timeout=ANSWER_S) for p in (first, second)]
     assert (first.returncode, second.returncode) == (0, 0), out
@@ -111,7 +122,7 @@ def test_a_single_heavy_gate_does_not_wait(tmp_path: pathlib.Path) -> None:
 
 def test_the_timeout_ends_a_wait_with_the_short_exit(tmp_path: pathlib.Path) -> None:
     holder = _heavy(tmp_path, "tree-a", "holder")
-    time.sleep(0.5)
+    _wait_started(tmp_path, "holder")
     blocked = _heavy(tmp_path, "tree-b", "late", "--timeout", "0.3")
     _, stderr = blocked.communicate(timeout=ANSWER_S)
     holder.communicate(timeout=ANSWER_S)
@@ -127,7 +138,15 @@ def test_a_killed_holder_frees_the_lock(tmp_path: pathlib.Path) -> None:
         stderr=subprocess.PIPE,
         text=True,
     )
-    time.sleep(0.5)
+    # CONTROL: the holder really holds the lock before the kill. A gate arriving behind it times out with the short exit; one that is admitted means the holder has not taken the lock yet, so ask again.
+    deadline = time.monotonic() + ANSWER_S
+    while True:
+        probe = _heavy(tmp_path, "tree-b", "probe", "--timeout", "0.3", hold=0.0)
+        probe.communicate(timeout=ANSWER_S)
+        if probe.returncode == core_lease.EXIT_SHORT:
+            break
+        assert probe.returncode == 0, probe.returncode
+        assert time.monotonic() < deadline, "the holder never held the lock"
     holder.kill()
     holder.communicate(timeout=ANSWER_S)
     after = _heavy(tmp_path, "tree-b", "after", "--timeout", "5")
