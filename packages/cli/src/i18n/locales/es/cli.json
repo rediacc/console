@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Comprueba las evidencias forenses en esta estación de trabajo con la misma verificación que ejecuta la consola web.",
+      "description": "Comprueba las evidencias forenses en esta estación de trabajo con la misma verificación que ejecuta la consola web, usando claves de máquina ajenas a las evidencias.",
       "descriptionShort": "Verificar evidencias forenses",
       "verify": {
-        "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes se verifican con las claves de máquina que lista el raw-manifest.json del directorio, tal como lo escribe rdc incident export. Con --machine-key se añade una clave o se sustituye la listada.",
+        "description": "Recalcula la cadena de hashes de los archivos diarios de auditoría y las cadenas firmadas de lotes forenses de un directorio de evidencias, e imprime cada hueco y cada edición encontrados. El directorio contiene los archivos en bruto bajo sus claves del manifiesto (audit/<org>/days/<day>.ndjson.gz y f/<subscription>/<machine>/days/<day>/...). Termina con código 1 si encuentra algún hueco o edición. Las firmas de los lotes solo se verifican con claves ajenas al directorio: una entrada --machine-key o, si no la hay, la clave que el servidor de cuentas fijó para el incidente que indica un directorio de rdc incident export. Una clave escrita en el raw-manifest.json del directorio nunca se considera de confianza, y una máquina sin clave externa falla.",
         "descriptionShort": "Verificar las cadenas de hashes de auditoría y forenses de un directorio de evidencias",
         "dirOption": "Directorio de evidencias que se va a verificar",
-        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters>, sustituye la clave que lista raw-manifest.json (repetible)"
+        "machineKeyOption": "Clave pública del spool de la máquina como <machine>=<64 hex characters>, se usa en lugar de la clave que fijó el servidor de cuentas (repetible)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "El directorio de evidencias contiene archivos de auditoría de varias organizaciones: {{orgs}}.",
     "noEvidence": "No se encontraron archivos diarios de auditoría ni cabeceras forenses en \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" no tiene el formato <machine>=<64 hex characters>.",
-    "badManifest": "No se pueden leer las claves de máquina de \"{{file}}\".",
+    "badManifest": "No se puede leer el id del incidente de \"{{file}}\".",
+    "trustedKeysUnavailable": "No se pudieron leer las claves de máquina que el servidor de cuentas fijó para el incidente {{id}} ({{reason}}). Con --machine-key <machine>=<64 hex characters> por cada máquina se verifica sin el servidor.",
     "badEvidenceKey": "El servidor de cuentas indicó un archivo de evidencias fuera del directorio de exportación: \"{{key}}\".",
     "rawFileTruncated": "El archivo de evidencias \"{{key}}\" llegó con una longitud distinta de la que indicó el servidor.",
     "verifyWindow": "Ventana de {{from}} a {{to}}",

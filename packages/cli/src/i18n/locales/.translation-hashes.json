@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3269,
-    "sourceCommit": "a686c6faabdee0adde957926cd4b0dfe5f48317c"
+    "keyCount": 3270,
+    "sourceCommit": "e92638b7dfa98e6887f5a9a673c6e99445a8f21a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1017,12 +1017,12 @@
     "commands.feedback.report.optionMessage": "44f946e8",
     "commands.feedback.show.description": "aa98d345",
     "commands.feedback.show.descriptionShort": "127243e7",
-    "commands.forensics.description": "50ea39b3",
+    "commands.forensics.description": "6dd3f190",
     "commands.forensics.descriptionShort": "0234623c",
-    "commands.forensics.verify.description": "d6f3e1c3",
+    "commands.forensics.verify.description": "6b9f820f",
     "commands.forensics.verify.descriptionShort": "3529c044",
     "commands.forensics.verify.dirOption": "d4873e1c",
-    "commands.forensics.verify.machineKeyOption": "d4796fcc",
+    "commands.forensics.verify.machineKeyOption": "7bfed659",
     "commands.incident.description": "385e3e91",
     "commands.incident.descriptionShort": "0ef77e7a",
     "commands.incident.export.description": "79cb27de",
@@ -3086,7 +3086,7 @@
     "forensics.badEvidenceKey": "01e28232",
     "forensics.badInstant": "43d11a61",
     "forensics.badMachineKey": "002041b6",
-    "forensics.badManifest": "8d389266",
+    "forensics.badManifest": "586ce891",
     "forensics.flowBytes": "4ff51386",
     "forensics.gapLine": "52a9713e",
     "forensics.noEvidence": "687f7a04",
@@ -3102,6 +3102,7 @@
     "forensics.severalOrgs": "ee5009c7",
     "forensics.sinceAfterUntil": "e9625d40",
     "forensics.timelineNeverEnds": "86d0328f",
+    "forensics.trustedKeysUnavailable": "954b1d0a",
     "forensics.unreadable": "af77fda2",
     "forensics.verifyClean": "dfa416e1",
     "forensics.verifyEdit": "56a30b2e",

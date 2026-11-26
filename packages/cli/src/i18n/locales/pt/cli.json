@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa.",
+      "description": "Verifica as evidências forenses nesta estação de trabalho com a mesma verificação que a consola web executa, usando chaves de máquina vindas de fora das evidências.",
       "descriptionShort": "Verificar evidências forenses",
       "verify": {
-        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes são verificadas com as chaves de máquina que o raw-manifest.json do diretório lista, tal como o rdc incident export o escreve; --machine-key acrescenta uma chave ou substitui a listada.",
+        "description": "Recalcula a cadeia de hashes dos ficheiros diários de auditoria e as cadeias assinadas de lotes forenses de um diretório de evidências, e imprime cada lacuna e edição encontradas. O diretório contém os ficheiros brutos sob as suas chaves do manifesto (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina com o código 1 se encontrar alguma lacuna ou edição. As assinaturas dos lotes só são verificadas com chaves externas ao diretório: uma entrada --machine-key ou, na falta dela, a chave que o servidor de contas fixou para o incidente que um diretório de rdc incident export indica. Uma chave escrita no raw-manifest.json do diretório nunca é considerada de confiança, e uma máquina sem chave externa falha.",
         "descriptionShort": "Verificar as cadeias de hashes de auditoria e forenses de um diretório de evidências",
         "dirOption": "Diretório de evidências a verificar",
-        "machineKeyOption": "Chave pública do spool da máquina como <machine>=<64 hex characters>, substitui a chave listada em raw-manifest.json (repetível)"
+        "machineKeyOption": "Chave pública do spool da máquina como <machine>=<64 hex characters>, usada em vez da chave fixada pelo servidor de contas (repetível)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "O diretório de evidências contém ficheiros de auditoria de várias organizações: {{orgs}}.",
     "noEvidence": "Não foram encontrados ficheiros diários de auditoria nem cabeçalhos forenses em \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" não tem o formato <machine>=<64 hex characters>.",
-    "badManifest": "Não é possível ler as chaves de máquina de \"{{file}}\".",
+    "badManifest": "Não é possível ler o id do incidente de \"{{file}}\".",
+    "trustedKeysUnavailable": "Não foi possível ler as chaves de máquina que o servidor de contas fixou para o incidente {{id}} ({{reason}}). Passe --machine-key <machine>=<64 hex characters> para cada máquina para verificar sem o servidor.",
     "badEvidenceKey": "O servidor de contas indicou um ficheiro de evidências fora do diretório de exportação: \"{{key}}\".",
     "rawFileTruncated": "O ficheiro de evidências \"{{key}}\" chegou com um tamanho diferente do indicado pelo servidor.",
     "verifyWindow": "Janela de {{from}} a {{to}}",

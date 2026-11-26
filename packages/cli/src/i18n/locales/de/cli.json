@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Forensische Beweise auf diesem Arbeitsplatz mit derselben Prüfung kontrollieren, die die Web-Konsole ausführt.",
+      "description": "Forensische Beweise auf diesem Arbeitsplatz mit derselben Prüfung kontrollieren, die die Web-Konsole ausführt, und zwar mit Maschinenschlüsseln von außerhalb der Beweise.",
       "descriptionShort": "Forensische Beweise prüfen",
       "verify": {
-        "description": "Berechnet die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses neu und gibt jede gefundene Lücke und Änderung aus. Das Verzeichnis enthält die Rohdateien unter ihren Manifest-Schlüsseln (audit/<org>/days/<day>.ndjson.gz und f/<subscription>/<machine>/days/<day>/...). Endet mit Exit-Code 1, sobald eine Lücke oder Änderung vorliegt. Batch-Signaturen werden mit den Maschinenschlüsseln geprüft, die die raw-manifest.json des Verzeichnisses aufführt, so wie rdc incident export sie schreibt; mit --machine-key lässt sich ein Schlüssel ergänzen oder der aufgeführte ersetzen.",
+        "description": "Berechnet die Hash-Kette der Audit-Tagesdateien und die signierten Forensik-Batch-Ketten eines Beweisverzeichnisses neu und gibt jede gefundene Lücke und Änderung aus. Das Verzeichnis enthält die Rohdateien unter ihren Manifest-Schlüsseln (audit/<org>/days/<day>.ndjson.gz und f/<subscription>/<machine>/days/<day>/...). Endet mit Exit-Code 1, sobald eine Lücke oder Änderung vorliegt. Batch-Signaturen werden nur mit Schlüsseln von außerhalb des Verzeichnisses geprüft: mit einem Eintrag für --machine-key, sonst mit dem Schlüssel, den der Kontoserver für den Vorfall hinterlegt hat, den ein per rdc incident export geschriebenes Verzeichnis nennt. Ein Schlüssel in der raw-manifest.json des Verzeichnisses gilt nie als vertrauenswürdig, und eine Maschine ohne externen Schlüssel fällt durch.",
         "descriptionShort": "Audit- und Forensik-Hash-Ketten eines Beweisverzeichnisses prüfen",
         "dirOption": "Zu prüfendes Beweisverzeichnis",
-        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters>, ersetzt den in raw-manifest.json aufgeführten Schlüssel (wiederholbar)"
+        "machineKeyOption": "Öffentlicher Spool-Schlüssel der Maschine als <machine>=<64 hex characters>, wird anstelle des vom Kontoserver hinterlegten Schlüssels verwendet (wiederholbar)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "Das Beweisverzeichnis enthält Audit-Dateien mehrerer Organisationen: {{orgs}}.",
     "noEvidence": "Unter \"{{dir}}\" wurden keine Audit-Tagesdateien oder Forensik-Header gefunden.",
     "badMachineKey": "\"{{entry}}\" hat nicht die Form <machine>=<64 hex characters>.",
-    "badManifest": "Die Maschinenschlüssel aus \"{{file}}\" lassen sich nicht lesen.",
+    "badManifest": "Die Vorfall-ID aus \"{{file}}\" lässt sich nicht lesen.",
+    "trustedKeysUnavailable": "Die Maschinenschlüssel, die der Kontoserver für Vorfall {{id}} hinterlegt hat, ließen sich nicht lesen ({{reason}}). Mit --machine-key <machine>=<64 hex characters> je Maschine lässt sich auch ohne den Server prüfen.",
     "badEvidenceKey": "Der Kontoserver hat eine Beweisdatei außerhalb des Exportverzeichnisses genannt: \"{{key}}\".",
     "rawFileTruncated": "Die Beweisdatei \"{{key}}\" ist mit einer anderen Länge eingetroffen, als der Server angegeben hat.",
     "verifyWindow": "Zeitfenster {{from}} bis {{to}}",

@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla denetler.",
+      "description": "Bu iş istasyonundaki adli kanıtları web konsolunun çalıştırdığı doğrulamayla, kanıtların dışından alınan makine anahtarlarıyla denetler.",
       "descriptionShort": "Adli kanıtları doğrula",
       "verify": {
-        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları, dizindeki raw-manifest.json dosyasının listelediği makine anahtarlarıyla doğrulanır (dosyayı rdc incident export yazar); --machine-key bir anahtar ekler ya da listelenen anahtarın yerine geçer.",
+        "description": "Bir kanıt dizinindeki denetim günlük dosyalarının karma zincirini ve imzalı adli parti zincirlerini yeniden hesaplar, bulunan her boşluğu ve değişikliği yazdırır. Dizin, ham dosyaları bildirim anahtarlarının altında tutar (audit/<org>/days/<day>.ndjson.gz ve f/<subscription>/<machine>/days/<day>/...). Herhangi bir boşluk veya değişiklik bulunursa 1 koduyla çıkar. Parti imzaları yalnızca dizinin dışından gelen anahtarlarla doğrulanır: bir --machine-key girdisiyle ya da yoksa, rdc incident export dizininin adını verdiği olay için hesap sunucusunun sabitlediği anahtarla. Dizindeki raw-manifest.json dosyasına yazılmış bir anahtara hiçbir zaman güvenilmez, dış anahtarı olmayan makine ise doğrulamadan geçemez.",
         "descriptionShort": "Bir kanıt dizininin denetim ve adli karma zincirlerini doğrula",
         "dirOption": "Doğrulanacak kanıt dizini",
-        "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; raw-manifest.json içinde listelenen anahtarın yerine geçer (tekrarlanabilir)"
+        "machineKeyOption": "Makine spool açık anahtarı, <machine>=<64 hex characters> biçiminde; hesap sunucusunun sabitlediği anahtarın yerine kullanılır (tekrarlanabilir)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "Kanıt dizininde birden fazla kuruluşun denetim dosyaları var: {{orgs}}.",
     "noEvidence": "\"{{dir}}\" altında denetim günlük dosyası veya adli başlık bulunamadı.",
     "badMachineKey": "\"{{entry}}\" <machine>=<64 hex characters> biçiminde değil.",
-    "badManifest": "\"{{file}}\" içindeki makine anahtarları okunamıyor.",
+    "badManifest": "\"{{file}}\" içindeki olay kimliği okunamıyor.",
+    "trustedKeysUnavailable": "Hesap sunucusunun {{id}} olayı için sabitlediği makine anahtarları okunamadı ({{reason}}). Sunucu olmadan doğrulamak için her makine için --machine-key <machine>=<64 hex characters> verin.",
     "badEvidenceKey": "Hesap sunucusu, dışa aktarma dizininin dışında bir kanıt dosyası bildirdi: \"{{key}}\".",
     "rawFileTruncated": "\"{{key}}\" kanıt dosyası, sunucunun bildirdiğinden farklı bir uzunlukta geldi.",
     "verifyWindow": "Pencere: {{from}} ile {{to}} arası",

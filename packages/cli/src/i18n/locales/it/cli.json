@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Controlla le evidenze forensi su questa workstation con la stessa verifica eseguita dalla console web.",
+      "description": "Controlla le evidenze forensi su questa workstation con la stessa verifica eseguita dalla console web, usando chiavi delle macchine prese da fuori delle evidenze.",
       "descriptionShort": "Verificare le evidenze forensi",
       "verify": {
-        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano con le chiavi delle macchine elencate nel raw-manifest.json della directory, come lo scrive rdc incident export. Con --machine-key si aggiunge una chiave o si sostituisce quella elencata.",
+        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano solo con chiavi esterne alla directory: una voce --machine-key oppure, in sua assenza, la chiave fissata dal server degli account per l'incidente indicato da una directory di rdc incident export. Una chiave scritta nel raw-manifest.json della directory non è mai considerata attendibile, e una macchina senza chiave esterna fallisce.",
         "descriptionShort": "Verificare le catene di hash di audit e forensi di una directory di evidenze",
         "dirOption": "Directory di evidenze da verificare",
-        "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters>, sostituisce la chiave elencata in raw-manifest.json (ripetibile)"
+        "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters>, usata al posto della chiave fissata dal server degli account (ripetibile)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "La directory di evidenze contiene file di audit di più organizzazioni: {{orgs}}.",
     "noEvidence": "Nessun file giornaliero di audit o header forense trovato in \"{{dir}}\".",
     "badMachineKey": "\"{{entry}}\" non ha la forma <machine>=<64 hex characters>.",
-    "badManifest": "Impossibile leggere le chiavi delle macchine di \"{{file}}\".",
+    "badManifest": "Impossibile leggere l'id dell'incidente di \"{{file}}\".",
+    "trustedKeysUnavailable": "Non è stato possibile leggere le chiavi delle macchine fissate dal server degli account per l'incidente {{id}} ({{reason}}). Passa --machine-key <machine>=<64 hex characters> per ogni macchina per verificare senza il server.",
     "badEvidenceKey": "Il server dell'account ha indicato un file di evidenze fuori dalla directory di esportazione: \"{{key}}\".",
     "rawFileTruncated": "Il file di evidenze \"{{key}}\" è arrivato con una lunghezza diversa da quella dichiarata dal server.",
     "verifyWindow": "Finestra da {{from}} a {{to}}",

@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。",
+      "description": "Web コンソールと同じ検証を使って、このワークステーション上のフォレンジック証拠を確認します。マシンキーは証拠の外から取得したものを使います。",
       "descriptionShort": "フォレンジック証拠を検証する",
       "verify": {
-        "description": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名は、rdc incident export が書き出すディレクトリ内の raw-manifest.json に載っているマシンキーで検証されます。--machine-key を使うと、キーを追加するか、載っているキーを置き換えられます。",
+        "description": "証拠ディレクトリに含まれる監査の日次ファイルのハッシュチェーンと、署名付きフォレンジックバッチのチェーンを再計算し、見つかったすべての欠落と改変を表示します。ディレクトリには、マニフェストのキーに対応する生ファイル（audit/<org>/days/<day>.ndjson.gz と f/<subscription>/<machine>/days/<day>/...）が入っています。欠落または改変が見つかると終了コード 1 で終了します。バッチの署名は、ディレクトリの外にあるキーでのみ検証されます。--machine-key の指定があればそれを使い、なければ rdc incident export が書き出したディレクトリが示すインシデントについて、アカウントサーバーが固定したキーを使います。ディレクトリ内の raw-manifest.json に書かれたキーは信頼されず、外部のキーがないマシンは検証に失敗します。",
         "descriptionShort": "証拠ディレクトリの監査・フォレンジックのハッシュチェーンを検証する",
         "dirOption": "検証する証拠ディレクトリ",
-        "machineKeyOption": "マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定し、raw-manifest.json に載っているキーを置き換えます（複数回指定可）"
+        "machineKeyOption": "マシンのスプール公開鍵を <machine>=<64 hex characters> の形式で指定します。アカウントサーバーが固定したキーの代わりに使われます（複数回指定可）"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "証拠ディレクトリに複数の組織の監査ファイルが含まれています: {{orgs}}。",
     "noEvidence": "\"{{dir}}\" の下に、監査の日次ファイルもフォレンジックヘッダーも見つかりません。",
     "badMachineKey": "\"{{entry}}\" は <machine>=<64 hex characters> の形式ではありません。",
-    "badManifest": "\"{{file}}\" のマシンキーを読み取れません。",
+    "badManifest": "\"{{file}}\" からインシデント ID を読み取れません。",
+    "trustedKeysUnavailable": "インシデント {{id}} についてアカウントサーバーが固定したマシンキーを読み取れませんでした（{{reason}}）。サーバーなしで検証するには、マシンごとに --machine-key <machine>=<64 hex characters> を指定してください。",
     "badEvidenceKey": "アカウントサーバーがエクスポート先ディレクトリの外にある証拠ファイルを指定しました: \"{{key}}\"",
     "rawFileTruncated": "証拠ファイル \"{{key}}\" のサイズが、サーバーが示した長さと一致しません。",
     "verifyWindow": "期間: {{from}} から {{to}}",

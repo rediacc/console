@@ -3511,13 +3511,13 @@
       }
     },
     "forensics": {
-      "description": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb.",
+      "description": "Kontrollib selles tööjaamas kohtuekspertiisi tõendeid sama kontrolliga, mida veebikonsool teeb, kasutades tõenditest väljaspool asuvaid masinavõtmeid.",
       "descriptionShort": "Kontrolli kohtuekspertiisi tõendeid",
       "verify": {
-        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse masinavõtmetega, mida kataloogi raw-manifest.json loetleb, nii nagu käsk rdc incident export selle kirjutab; valik --machine-key lisab võtme või asendab loetletud võtme.",
+        "description": "Arvutab uuesti auditi päevafailide räsiahela ja kohtuekspertiisi allkirjastatud partiiahelad tõendite kataloogis ning prindib iga leitud lünga ja muudatuse. Kataloog sisaldab toorfaile manifesti võtmete all (audit/<org>/days/<day>.ndjson.gz ja f/<subscription>/<machine>/days/<day>/...). Lõpeb koodiga 1, kui leitakse lünk või muudatus. Partii allkirju kontrollitakse ainult kataloogist väljaspool asuvate võtmetega: valiku --machine-key kirjega või muidu võtmega, mille kontoserver kinnitas intsidendi jaoks, mille nime kannab käsuga rdc incident export loodud kataloog. Kataloogi raw-manifest.json failis olevat võtit ei usaldata kunagi ja masin, millel pole välist võtit, ei läbi kontrolli.",
         "descriptionShort": "Kontrolli tõendite kataloogi auditi ja kohtuekspertiisi räsiahelaid",
         "dirOption": "Kontrollitav tõendite kataloog",
-        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, asendab failis raw-manifest.json loetletud võtme (korratav)"
+        "machineKeyOption": "Masina spuuli avalik võti kujul <machine>=<64 hex characters>, kasutatakse kontoserveri kinnitatud võtme asemel (korratav)"
       }
     }
   },
@@ -3985,7 +3985,8 @@
     "severalOrgs": "Tõendite kataloog sisaldab mitme organisatsiooni auditifaile: {{orgs}}.",
     "noEvidence": "Kataloogist \"{{dir}}\" ei leitud auditi päevafaile ega kohtuekspertiisi päiseid.",
     "badMachineKey": "\"{{entry}}\" ei ole kujul <machine>=<64 hex characters>.",
-    "badManifest": "Faili \"{{file}}\" masinavõtmeid ei saa lugeda.",
+    "badManifest": "Faili \"{{file}}\" intsidendi ID-d ei saa lugeda.",
+    "trustedKeysUnavailable": "Masinavõtmeid, mille kontoserver kinnitas intsidendi {{id}} jaoks, ei õnnestunud lugeda ({{reason}}). Valikuga --machine-key <machine>=<64 hex characters> iga masina kohta saab kontrollida ilma serverita.",
     "badEvidenceKey": "Kontoserver nimetas tõendifaili väljaspool eksportkataloogi: \"{{key}}\".",
     "rawFileTruncated": "Tõendifail \"{{key}}\" saabus pikkusega, mis erineb serveri teatatust.",
     "verifyWindow": "Ajaaken {{from}} kuni {{to}}",
