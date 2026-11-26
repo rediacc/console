@@ -726,6 +726,14 @@ def test_missing_installs_resolves_upward_scoped_and_dev_names(tmp_path):
     assert deploy_bench.missing_installs(web, root) == []
 
 
+def test_a_package_json_that_is_not_an_object_is_a_named_refusal(tmp_path):
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "package.json").write_text("[]", encoding="utf-8")
+    with pytest.raises(deploy_bench.DeployError, match="not a JSON object"):
+        deploy_bench.missing_installs(web, tmp_path)
+
+
 def test_a_package_without_node_modules_is_left_to_the_install_step(tmp_path):
     web = tmp_path / "web"
     _declare(web, "react")
@@ -870,6 +878,29 @@ def test_the_rotation_check_runs_directly_off_the_rotation_profile(monkeypatch, 
     assert seen["cwd"] == str(tmp_path / "private" / "account")
 
 
+def test_the_rotation_check_hands_its_env_to_the_child(monkeypatch, tmp_path):
+    """The bootstrap token reaches the child through env=, not only through the helper."""
+    seen = {}
+
+    class Proc:
+        returncode = 0
+        stderr = None
+
+        def __init__(self, _argv, **kw):
+            seen["env"] = kw.get("env")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setenv("BWS_ACCESS_TOKEN", "tok-for-child")
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", Proc)
+    deploy_bench._rotation_check(tmp_path)
+    assert seen["env"]["BWS_ACCESS_TOKEN"] == "tok-for-child"
+
+
 def test_the_rotation_check_gets_the_token_from_the_file_when_not_exported(monkeypatch, tmp_path):
     token_file = tmp_path / "bws-access-token"
     token_file.write_text("0.client.secret:key\n", encoding="utf-8")
@@ -880,6 +911,36 @@ def test_the_rotation_check_gets_the_token_from_the_file_when_not_exported(monke
     assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "0.client.secret:key"
     monkeypatch.setenv("BWS_ACCESS_TOKEN", "exported")
     assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "exported"
+
+
+def test_the_d1_reader_falls_back_to_the_key_pair_and_refuses_with_neither(monkeypatch):
+    for name in ("CLOUDFLARE_API_TOKEN", "CF_GLOBAL_API_KEY", "CF_EMAIL", "CF_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(deploy_bench.SeedError, match="CF_GLOBAL_API_KEY and CF_EMAIL"):
+        deploy_bench._d1_rows("SELECT 1")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": []}]'
+
+    def run(*_a, **kw):
+        seen.update(kw["env"])
+        return Done()
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    deploy_bench._d1_rows("SELECT 1")
+    assert seen["CLOUDFLARE_API_KEY"] == "k"
+    assert seen["CLOUDFLARE_EMAIL"] == "e@example.invalid"
+    assert "CLOUDFLARE_API_TOKEN" not in seen
+
+
+def test_the_payload_binds_no_stripe_secret(monkeypatch):
+    """The Worker reads no Stripe secret, so the push carries no STRIPE_ name and no stale value needs resetting."""
+    _bench_env(monkeypatch)
+    assert not [name for name in deploy_bench.secrets_payload() if name.startswith("STRIPE")]
 
 
 def test_the_d1_reader_prefers_the_bearer_token_(monkeypatch):

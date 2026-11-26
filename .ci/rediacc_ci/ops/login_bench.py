@@ -73,6 +73,8 @@ ENROLL_NAMES = (MS_ID_ENV, MS_ENV)
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
+# The store's recovery code, bound optional by the bench-login profiles for an agent minting a machine secret; no child of this tool needs it.
+RECOVERY_CODE_ENV = "BENCH_STORE_RECOVERY_CODE"
 # The CLI refusal for a config that is linked and whose device can open it (no distinct error code exists).
 # packages/cli/src/i18n/locales/en/cli.json `commands.config.remote.enable.alreadyEnabled`, with {{name}} as the quoted config name.
 ENABLE_ALREADY_OPEN = re.compile(
@@ -89,6 +91,7 @@ CHILD_SECRET_NAMES = (
     LOGIN_EMAIL_ENV,
     LOGIN_PW_ENV,
     LOGIN_TOTP_ENV,
+    RECOVERY_CODE_ENV,
 )
 # Inherited selections that would point `./rdc.sh` somewhere other than eu-bench on bench.
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")

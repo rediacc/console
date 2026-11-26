@@ -204,6 +204,17 @@ def test_an_org_keyed_table_is_scoped_by_org_id_and_is_empty_without_an_org() ->
         mod.scope_where("unknown_table", ["id", "name"], scope)
 
 
+def test_schema_modules_follow_the_db_index_imports(tmp_path: pathlib.Path) -> None:
+    """The schema modules are read from db/index.ts, so a module the router does not name (forensics-detect-schema.ts) is still mapped, and an index with none refuses."""
+    real = mod.schema_modules(ROOT / "private" / "account" / "src" / "db")
+    assert "forensics-detect-schema.ts" in real
+    (tmp_path / "index.ts").write_text("import * as x from './brand-new-schema.js';\n")
+    assert mod.schema_modules(tmp_path) == ["brand-new-schema.ts"]
+    (tmp_path / "index.ts").write_text("export const nothing = 1;\n")
+    with pytest.raises(mod.MoveError):
+        mod.schema_modules(tmp_path)
+
+
 @pytest.mark.parametrize(
     "table",
     [

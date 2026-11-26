@@ -192,12 +192,15 @@ def test_the_bucket_reader_maps_a_missing_key_to_none_and_other_errors_to_a_refu
         subprocess.CompletedProcess([], 0, b"{}", b""),
         subprocess.CompletedProcess([], 1, b"", b"An error occurred (404) when calling HeadObject"),
         subprocess.CompletedProcess([], 1, b"", b"AccessDenied"),
+        subprocess.CompletedProcess([], 1, b"", b"InternalError request id 4041 try later"),
     ]
     monkeypatch.setattr(pm.awscli, "run", lambda *_a, **_k: outcomes.pop(0))
     read = REAL_READER({}, "https://e")
     assert read("models/x") == b"{}"
     assert read("models/x") is None
     with pytest.raises(pm.PublishError, match="AccessDenied"):
+        read("models/x")
+    with pytest.raises(pm.PublishError, match="request id 4041"):
         read("models/x")
 
 

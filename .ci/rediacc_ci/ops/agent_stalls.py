@@ -7,7 +7,7 @@ Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.agent_stalls --since <ISO> --unt
 Definitions:
 - request: one assistant message id (the streamed rows of one message count once).
 - wait: seconds from the preceding user row to the first assistant row of the request; a request that does not directly follow a user row has no wait.
-- band wait: a wait of 175 to 400 seconds, a first-byte timeout plus a retry.
+- band wait: a wait of 175 to 400 seconds, a first-byte timeout plus a retry. A user row is stamped when its content is submitted (a tool_result row when the tool finished), so tool run time and human think time fall before the row and never inside a wait.
 - active time: first to last user/assistant row of a transcript, clipped to the window.
 - death: a transcript whose last row is a user row that no assistant row answered.
 - concurrent writers: writer transcripts whose active span covers the request.
@@ -75,6 +75,8 @@ def read_transcript(path: Path, role: str, since: float, until: float) -> Transc
             try:
                 row = json.loads(line)
             except ValueError:
+                continue
+            if not isinstance(row, dict):
                 continue
             kind = row.get("type")
             stamp = row.get("timestamp")

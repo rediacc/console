@@ -889,8 +889,8 @@ def _step_email(d: Deps, ev: Evidence, email: str, since_iso: str, stamp: str) -
     finally:
         d.unlink(jar)
     match = (answer.get("user") or {}).get("email") == email
-    ok = status == 200 and match
     stepped = answer.get("requiresStepUp") is True
+    ok = status == 200 and match and not stepped
     ev.add(
         5,
         "email",

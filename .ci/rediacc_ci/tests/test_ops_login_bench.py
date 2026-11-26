@@ -385,6 +385,12 @@ def test_no_child_argv_holds_a_secret():
             assert secret not in joined
 
 
+def test_the_recovery_code_never_reaches_a_child():
+    child = login_bench.base_env({"BENCH_STORE_RECOVERY_CODE": "rc", "KEEP": "1"})
+    assert "BENCH_STORE_RECOVERY_CODE" not in child
+    assert child["KEEP"] == "1"
+
+
 def test_each_child_gets_only_its_own_values_by_name():
     runner = FakeRunner()
     _login(runner)

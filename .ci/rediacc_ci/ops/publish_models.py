@@ -23,6 +23,7 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -103,6 +104,10 @@ def pointer_key(channel: str) -> str:
     return "%s/channels/%s.json" % (PREFIX, channel)
 
 
+# The aws CLI's own error line for a missing object ("An error occurred (404) when calling the HeadObject operation" or "(NoSuchKey)"); a bare "404" elsewhere in stderr, such as in a request id, is not a missing key.
+MISSING_KEY = re.compile(rb"An error occurred \((?:404|NoSuchKey|NotFound)\)")
+
+
 def bucket_reader(env: Mapping[str, str], endpoint: str) -> Fetcher:
     """A fetcher of `key` read straight from the bucket with the write credentials: the public origin caches a pointer for 60 seconds, so a sequence or an edge version read through it can be a minute stale."""
 
@@ -121,7 +126,7 @@ def bucket_reader(env: Mapping[str, str], endpoint: str) -> Fetcher:
         if done.returncode == 0:
             return bytes(done.stdout)
         err = bytes(done.stderr)
-        if b"404" in err or b"NoSuchKey" in err or b"Not Found" in err:
+        if MISSING_KEY.search(err):
             return None
         raise PublishError(
             "reading %s from the bucket failed: %s" % (key, err.decode(errors="replace").strip())

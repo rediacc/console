@@ -291,6 +291,13 @@ def test_a_failing_remote_enable_names_the_clis_own_error() -> None:
     assert said in str(err.value)
 
 
+def test_a_log_line_with_a_brace_before_the_envelope_still_names_the_error() -> None:
+    said = "the enroll token is expired"
+    envelope = json.dumps({"success": False, "errors": [{"code": "X", "message": said}]})
+    out = "-> retry {attempt 2} of 3\n" + envelope
+    assert rs.cli_error_messages(out) == [said]
+
+
 def test_control_a_non_envelope_enable_failure_carries_no_output() -> None:
     """Control: plain output (which can hold config content) never reaches the error text."""
 

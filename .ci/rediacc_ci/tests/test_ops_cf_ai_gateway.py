@@ -79,6 +79,23 @@ def make_api(monkeypatch, gateways: list[dict]) -> tuple[cf_ai_gateway.Api, Fake
     return cf_ai_gateway.Api(cf_auth.Auth(token="T"), ACCT), fake
 
 
+def test_list_follows_every_page(monkeypatch):
+    pages = {
+        None: {"success": True, "result": [{"id": "a"}], "result_info": {"total_pages": 2}},
+        "2": {"success": True, "result": [{"id": "b"}], "result_info": {"total_pages": 2}},
+    }
+    urls: list[str] = []
+
+    def paged(_method, url, *_args, **_options):
+        urls.append(url)
+        return pages[url.split("&page=")[1] if "&page=" in url else None]
+
+    monkeypatch.setattr(cf_auth, "curl_json", paged)
+    api = cf_ai_gateway.Api(cf_auth.Auth(token="T"), ACCT)
+    assert sorted(api.list()) == ["a", "b"]
+    assert len(urls) == 2
+
+
 def test_matching_gateway_is_left_alone(monkeypatch, wanted):
     api, fake = make_api(monkeypatch, [RECORDED_GATEWAY])
     out = io.StringIO()

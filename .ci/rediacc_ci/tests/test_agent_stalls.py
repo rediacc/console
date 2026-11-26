@@ -68,6 +68,14 @@ def test_band_wait_counts_as_a_stall(tmp_path: Path) -> None:
     assert total["wait_hours"] == round(190 / 3600, 2)
 
 
+def test_a_non_object_json_line_is_skipped(tmp_path: Path) -> None:
+    path = tmp_path / SESSION / "subagents" / "a.jsonl"
+    _write(path, [_user(0), _assistant(190, "m1")])
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write("[]\n1\n")
+    assert _report(tmp_path)["total"]["band_waits"] == 1
+
+
 def test_fast_turn_is_not_a_stall(tmp_path: Path) -> None:
     _writer(tmp_path, "a", [_user(0), _assistant(2, "m1"), _user(3), _assistant(5, "m2")])
     total = _report(tmp_path)["total"]

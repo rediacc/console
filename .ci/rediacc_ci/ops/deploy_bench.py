@@ -229,7 +229,7 @@ def _forensics_bucket(region: str) -> str:
 
 
 def _forensics_values() -> tuple[str, str, str]:
-    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them, and the bucket and region are then pushed empty too, so the Worker sees none of the four. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
+    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them, and the bucket and region are then pushed empty too, so the Worker sees none of the five. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
     values = (
         os.environ.get("ACCOUNT_FORENSICS_S3_ENDPOINT") or "",
         os.environ.get("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID") or "",
@@ -302,7 +302,7 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
         # The Analytics Engine read token the portal's telemetry reads use (agent/plans/PLAN-d1-scaling.md W2).
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN") or "",
-        # The AI Gateway logs-read token the nightly AI credit reconcile calls Cloudflare with (agent/plans/PLAN-console-ai-credits.md D8).
+        # The AI Gateway logs-read token the nightly AI credit reconcile calls Cloudflare with (agent/plans/PLAN-console-ai-credits.md D8). Empty refuses the whole push below, like every signing value, not only the reconcile.
         "AI_GATEWAY_LOGS_TOKEN": os.environ.get("AI_GATEWAY_LOGS_TOKEN") or "",
         # Layer 3 of the config store; the deploy-bench-<region> profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
@@ -898,6 +898,8 @@ def missing_installs(directory: pathlib.Path, root: pathlib.Path) -> list[str]:
         return []
     except (OSError, ValueError) as exc:
         raise DeployError("%s cannot be read: %s" % (directory / "package.json", exc)) from None
+    if not isinstance(doc, dict):
+        raise DeployError("%s is not a JSON object" % (directory / "package.json"))
     names = sorted({name for field in DECLARED_FIELDS for name in (doc.get(field) or {}) if name})
     top = root.resolve()
     here = directory.resolve()

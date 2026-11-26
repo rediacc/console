@@ -464,6 +464,12 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
                 _wipe_r2(r2)
                 if r2.audit_bucket:
                     _wipe_r2(r2.audit())
+                else:
+                    # The skip is by design (a config without the binding has no audit bucket), but "bench has been reset" must not read as if one was emptied.
+                    log.warn(
+                        "the %s bench config binds no AUDIT_BUCKET, so no audit bucket was wiped"
+                        % region
+                    )
         except ResetError as exc:
             log.error(str(exc))
             return 1

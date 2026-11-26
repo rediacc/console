@@ -38,10 +38,13 @@ def _world(monkeypatch, declared, asked):
         audit_bucket = "audit-bench-us"
 
         def __init__(self, region="eu"):
+            self.region = region
             asked.append(("creds", region))
 
         def audit(self):
-            return self
+            other = Creds(self.region)
+            other.bucket = self.audit_bucket
+            return other
 
         def missing(self):
             return []
@@ -50,8 +53,29 @@ def _world(monkeypatch, declared, asked):
     monkeypatch.setattr(
         reset_bench, "_wipe_d1", lambda _a, _e, region="eu": asked.append(("wipe_d1", region))
     )
-    monkeypatch.setattr(reset_bench, "_wipe_r2", lambda _c: asked.append(("wipe_r2",)))
+    monkeypatch.setattr(reset_bench, "_wipe_r2", lambda c: asked.append(("wipe_r2", c.bucket)))
     monkeypatch.setattr(reset_bench, "_rows", lambda _a, _s, _region="eu": [])
+
+
+def test_a_wipe_empties_the_config_bucket_and_the_audit_bucket(monkeypatch):
+    asked: list[tuple] = []
+    _world(monkeypatch, [], asked)
+    assert reset_bench.main(["--region", "us", "--yes"]) == 0
+    assert [step for step in asked if step[0] == "wipe_r2"] == [
+        ("wipe_r2", "configs-bench-us"),
+        ("wipe_r2", "audit-bench-us"),
+    ]
+
+
+def test_a_config_without_an_audit_binding_says_no_audit_bucket_was_wiped(monkeypatch):
+    asked: list[tuple] = []
+    _world(monkeypatch, [], asked)
+    monkeypatch.setattr(reset_bench.R2Credentials, "audit_bucket", "", raising=False)
+    warned: list[str] = []
+    monkeypatch.setattr(reset_bench.log, "warn", lambda m, *_a: warned.append(m))
+    assert reset_bench.main(["--region", "us", "--yes"]) == 0
+    assert [step for step in asked if step[0] == "wipe_r2"] == [("wipe_r2", "configs-bench-us")]
+    assert any("AUDIT_BUCKET" in m and "no audit bucket was wiped" in m for m in warned)
 
 
 def test_the_confirmation_phrase_names_every_region():

@@ -272,14 +272,19 @@ def _subprocess_capture(
 
 
 def cli_error_messages(out: str) -> list[str]:
-    """errors[].message of the CLI's `-o json` envelope in `out` (stdout with stderr merged, so the envelope starts at its first `{`); nothing when there is no envelope. Only those messages are surfaced, never the raw output, which can hold config content."""
+    """errors[].message of the CLI's `-o json` envelope in `out` (stdout with stderr merged, so a log line holding a `{` can precede the envelope: the first `{` that opens an object with an `errors` list is the envelope); nothing when there is none. Only those messages are surfaced, never the raw output, which can hold config content."""
+    decoder = json.JSONDecoder()
+    errors = None
     start = out.find("{")
-    try:
-        envelope = json.loads(out[start:]) if start >= 0 else None
-    except ValueError:
-        return []
-    errors = envelope.get("errors") if isinstance(envelope, dict) else None
-    if not isinstance(errors, list):
+    while start >= 0 and errors is None:
+        try:
+            envelope, _end = decoder.raw_decode(out, start)
+        except ValueError:
+            envelope = None
+        found = envelope.get("errors") if isinstance(envelope, dict) else None
+        errors = found if isinstance(found, list) else None
+        start = out.find("{", start + 1)
+    if errors is None:
         return []
     return [
         e["message"] for e in errors if isinstance(e, dict) and isinstance(e.get("message"), str)

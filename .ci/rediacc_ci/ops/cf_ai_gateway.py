@@ -76,10 +76,20 @@ class Api:
         return body
 
     def list(self) -> dict[str, dict]:
-        result = self._send("GET", self.base + "?per_page=100").get("result")
-        if not isinstance(result, list):
-            raise GatewayError("listing gateways returned no result list")
-        return {str(g.get("id")): g for g in result if isinstance(g, dict)}
+        gateways: dict[str, dict] = {}
+        page = 1
+        while True:
+            url = self.base + "?per_page=100" + ("&page=%d" % page if page > 1 else "")
+            body = self._send("GET", url)
+            result = body.get("result")
+            if not isinstance(result, list):
+                raise GatewayError("listing gateways returned no result list")
+            gateways.update({str(g.get("id")): g for g in result if isinstance(g, dict)})
+            info = body.get("result_info")
+            total = info.get("total_pages", 1) if isinstance(info, dict) else 1
+            if not isinstance(total, int) or page >= total:
+                return gateways
+            page += 1
 
     def create(self, gid: str, settings: dict) -> None:
         self._send("POST", self.base, {"id": gid, **settings})

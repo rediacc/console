@@ -92,6 +92,7 @@ class Fake:
         self.reopen_terms_at_handoff = False
         self.magic_jars: list[str] = []
         self.step_up = False
+        self.step_up_with_user = False
 
     def handoff_url(self):
         url = "https://bench.example/account/authorize?code=" + USER_CODE
@@ -158,7 +159,10 @@ class Fake:
             if self.reopen_terms_at_handoff:
                 self.terms_accepted = False
             if self.step_up:
-                return 200, {"requiresStepUp": True, "method": "password", "stepUpToken": "t"}
+                answer = {"requiresStepUp": True, "method": "password", "stepUpToken": "t"}
+                if self.step_up_with_user:
+                    answer["user"] = {"email": self.email}
+                return 200, answer
             return 200, {"user": {"email": self.email}}
         if tail == "/device-codes/%s/approve" % USER_CODE:
             assert jar
@@ -346,6 +350,14 @@ def test_a_verify_that_asks_for_a_step_up_fails_the_step(capsys):
     assert go(fake) == 1
     out = capsys.readouterr().out
     assert re.search(r"STEP 5 email rc=1 .*asked for a step-up", out)
+
+
+def test_a_step_up_answer_that_also_names_the_user_still_fails_the_step(capsys):
+    fake = Fake()
+    fake.step_up = True
+    fake.step_up_with_user = True
+    assert go(fake) == 1
+    assert re.search(r"STEP 5 email rc=1 .*asked for a step-up", capsys.readouterr().out)
 
 
 def test_address_pattern_and_throwaway_config():
