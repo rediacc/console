@@ -155,3 +155,25 @@ def test_a_token_file_that_is_not_a_bare_name_is_malformed(bad) -> None:
 @pytest.mark.parametrize("good", ["", "bws-rotation-token"])
 def test_a_bare_token_file_name_is_accepted(good) -> None:
     assert not any("token_file" in f for f in _supply_findings(good))
+
+
+_OPTIONAL_SPEC = {
+    "consumers": {
+        "adm-opt": {"why": "fixture", "optional": ["ADMIN_ONE"], "token_file": "bws-rotation-token"}
+    }
+}
+
+
+def test_an_empty_token_file_with_only_optional_names_refuses(tmp_path) -> None:
+    """Review 87ced219.1: a present but empty file is a broken credential, not an absent one, so it refuses like the required path."""
+    env = _tree(tmp_path, spec=_OPTIONAL_SPEC)
+    (tmp_path / "xdg" / "rediacc" / "bws-rotation-token").write_text("", encoding="utf-8")
+    with pytest.raises(bws_env.RefusalError):
+        _hydrate(["adm-opt"], env)
+
+
+def test_a_wide_mode_token_file_with_only_optional_names_refuses(tmp_path) -> None:
+    """Review 87ced219.1 control: the mode check already refuses before the optional-only branch."""
+    env = _tree(tmp_path, rotation_mode=0o644, spec=_OPTIONAL_SPEC)
+    with pytest.raises(bws_env.RefusalError):
+        _hydrate(["adm-opt"], env)

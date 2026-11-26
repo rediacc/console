@@ -1109,9 +1109,13 @@ def hydrate(
             continue
         if token_file:
             token = read_profile_token(token_file, environ)
-            if not token and not g_req:
+            if (
+                not token
+                and not g_req
+                and not os.path.exists(profile_token_path(token_file, environ))
+            ):
                 print(
-                    "rediacc_ci.core.bws_env: the token file %s is missing or empty; %d optional name(s) left unset: %s"
+                    "rediacc_ci.core.bws_env: the token file %s is missing; %d optional name(s) left unset: %s"
                     % (
                         profile_token_path(token_file, environ),
                         len(g_opt),
