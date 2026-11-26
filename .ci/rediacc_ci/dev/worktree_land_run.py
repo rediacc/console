@@ -291,13 +291,13 @@ def _land_sub(plan, run, key, sub, shas, branch):
     landed = git(sub, "rev-list", "--reverse", "%s..HEAD" % before).stdout.split()
     if len(landed) == len(shas):
         run.landed.extend(zip(shas, landed, strict=True))
-    else:
-        run.step(
-            "landed-count %s" % key,
-            1,
-            "picked %d commit(s) but %d landed; their Fixes-Review trailers are not marked"
-            % (len(shas), len(landed)),
-        )
+    elif run.step(
+        "landed-count %s" % key,
+        1,
+        "picked %d commit(s) but %d landed; no gitlink commit bumps a partial tip"
+        % (len(shas), len(landed)),
+    ):
+        return False
     return _land_gitlink(plan, run, key, landed, shas)
 
 

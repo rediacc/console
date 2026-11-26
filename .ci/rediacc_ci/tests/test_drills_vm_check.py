@@ -5571,6 +5571,10 @@ def test_a_pinned_receipt_that_cannot_be_filed_ends_the_run_not_verified(
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert "vm:check VERIFIED" not in out, out
     assert not (live / receipt_mod.CACHE_DIR / ("%s.json" % TREE)).exists()
+    # ef59d037.2: the receipt the clone keeps carries the downgrade, so it never contradicts the exit code.
+    kept = json.loads((_clone / receipt_mod.CACHE_DIR / receipt_mod.LATEST).read_text())
+    assert kept["status"] == receipt_mod.NOT_VERIFIED, kept["status"]
+    assert kept["reason"]["class"] == "pinned-receipt-not-filed", kept["reason"]
 
 
 def test_a_pinned_only_merge_files_the_receipt_in_the_main_checkout(
@@ -5588,10 +5592,14 @@ def test_a_pinned_only_merge_files_the_receipt_in_the_main_checkout(
     rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
     assert rc == vm_check.EXIT_FAILED, out
     calls.clear()
-    rc, out = run_merge(tmp_path, make_world(tmp_path), "--only", "V1.2")
+    world_merge = make_world(tmp_path)
+    rc, out = run_merge(tmp_path, world_merge, "--only", "V1.2")
     assert calls == ["publish"], calls
     # The second answer is False, so the merge's VERIFIED is downgraded.
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    # ef59d037.3: the unfiled merge leaves the FAILED receipt on disk, never the merged VERIFIED one.
+    assert archived(world_merge)["status"] == receipt_mod.FAILED
+    assert not archived(world_merge).get("merged")
     assert vm_check.VmCheck._unfiled(receipt_mod.VERIFIED, None)[0] == receipt_mod.NOT_VERIFIED
     assert vm_check.VmCheck._unfiled(receipt_mod.FAILED, None) == (receipt_mod.FAILED, None)
 

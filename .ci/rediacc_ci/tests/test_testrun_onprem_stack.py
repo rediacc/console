@@ -534,6 +534,11 @@ def test_image_run_publishes_the_loopback_port_and_names_the_host_gateway(
         ("http://[::1]:9000/bucket", "http://host.docker.internal:9000/bucket"),
         ("https://r2.example.com:443", "https://r2.example.com:443"),
         ("http://localhost.example.com:9000", "http://localhost.example.com:9000"),
+        # d2b53f71.1: userinfo survives the rename.
+        ("http://key:secret@127.0.0.1:9000", "http://key:secret@host.docker.internal:9000"),
+        # d2b53f71.2: an endpoint urllib cannot parse passes through instead of raising.
+        ("http://127.0.0.1:99999", "http://127.0.0.1:99999"),
+        ("http://[::1:9000", "http://[::1:9000"),
     ],
 )
 def test_container_endpoint_renames_only_loopback_hosts(endpoint: str, expected: str) -> None:
@@ -594,6 +599,10 @@ def test_enroll_sets_the_ssh_key_after_a_fresh_config_init(tmp_path: pathlib.Pat
     ssh = [a for a in rt.runs if "ssh" in a and "set" in a]
     assert len(ssh) == 1
     assert ssh[0][ssh[0].index("--key") + 1] == "/k/id"
+    # d2b53f71.3: the key is set after `config init`, not before it.
+    init = [i for i, a in enumerate(rt.runs) if "config" in a and "init" in a]
+    assert len(init) == 1, rt.runs
+    assert init[0] < rt.runs.index(ssh[0]), rt.runs
 
 
 def test_enroll_refuses_a_config_home_it_cannot_clear(

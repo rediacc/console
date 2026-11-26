@@ -4317,9 +4317,15 @@ class VmCheck:
             record = self._receipt(status, reason)
             path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
-            path = receipt_mod.write(self.root, self._receipt(status, reason))
+            written = self._receipt(status, reason)
+            path = receipt_mod.write(self.root, written)
             if not self._publish_pinned():
                 status, reason = self._unfiled(status, reason)
+                if status != written["status"]:
+                    # The receipt on disk must carry the downgrade, or it contradicts the exit code (review ef59d037.2).
+                    path = receipt_mod.write(
+                        self.root, {**written, "status": status, "reason": reason}
+                    )
         else:
             log.error("HEAD^{tree} or the inputs digest is unreadable, so no receipt was written")
             if status == receipt_mod.VERIFIED:
@@ -4413,6 +4419,9 @@ class VmCheck:
         path = receipt_mod.write(self.root, merged)
         if not self._publish_pinned():
             status, reason = self._unfiled(status, reason)
+            if status != merged["status"]:
+                # A NOT_VERIFIED receipt carries no merged steps, so the FAILED receipt this run started from is restored: the disk never reads VERIFIED for a run that exits NOT_VERIFIED (review ef59d037.3).
+                path = receipt_mod.write(self.root, base)
         self.say(
             "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
             % (

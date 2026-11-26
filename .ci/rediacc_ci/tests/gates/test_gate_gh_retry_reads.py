@@ -181,6 +181,27 @@ def test_unhooking_a_claude_hooks_retry_reds_exactly_its_reads(gate, tmp_path):
     gate.ok("unhooking refresh_pr_body's retry reds exactly its three reads, not its PATCH")
 
 
+def test_the_entry_refuses_an_unknown_or_unvalued_flag_and_names_every_accepted_one(gate):
+    """e88766cd.2: the entry's `switches` and `valued` lists decide which argv reaches the gate, so a flag dropped from them (or a bogus one) must be named, not silently ignored."""
+    accepted = (
+        "--selftest",
+        "--quiet-writes",
+        "--init-baseline",
+        "--write-baseline",
+        "--root <value>",
+        "--shell-root <value>",
+    )
+    bogus = _run("--bogus-flag")
+    gate.assert_exit(2, bogus, "an unknown flag")
+    gate.assert_contains(bogus.err, "unknown argument '--bogus-flag'")
+    unvalued = _run("--root")
+    gate.assert_exit(2, unvalued, "--root with no value")
+    gate.assert_contains(unvalued.err, "--root needs a value")
+    for flag in accepted:
+        gate.assert_contains(bogus.err, flag)
+    gate.ok("an unknown flag and a missing value exit 2 naming the six accepted flags")
+
+
 def test_a_scan_root_missing_from_the_tree_is_vacuous(gate, tmp_path):
     root = _copy_tree(tmp_path / "tree")
     for p in sorted((root / ".claude/hooks").rglob("*.py")):

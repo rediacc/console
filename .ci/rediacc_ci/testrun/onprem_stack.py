@@ -321,12 +321,19 @@ class Seeded:
 
 
 def container_endpoint(endpoint: str) -> str:
-    """`endpoint` with a loopback host (127.0.0.1, localhost or [::1]) renamed to the name the account container reaches the host by; any other host is left alone."""
-    parts = urllib.parse.urlsplit(endpoint)
-    if parts.hostname not in {"127.0.0.1", "localhost", "::1"}:
+    """`endpoint` with a loopback host (127.0.0.1, localhost or [::1]) renamed to the name the account container reaches the host by; any other host is left alone, and so is an endpoint urllib cannot parse (a bad port or an unbalanced bracket), which the container then rejects as the old plain rename did. Userinfo, port, path and query are kept."""
+    try:
+        parts = urllib.parse.urlsplit(endpoint)
+        host, port = parts.hostname, parts.port
+    except ValueError:
         return endpoint
-    port = "" if parts.port is None else ":%d" % parts.port
-    return urllib.parse.urlunsplit(parts._replace(netloc="host.docker.internal" + port))
+    if host not in {"127.0.0.1", "localhost", "::1"}:
+        return endpoint
+    userinfo = parts.netloc.rpartition("@")[0]
+    netloc = "host.docker.internal" + ("" if port is None else ":%d" % port)
+    return urllib.parse.urlunsplit(
+        parts._replace(netloc=(userinfo + "@" if userinfo else "") + netloc)
+    )
 
 
 class Stack:

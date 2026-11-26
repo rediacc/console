@@ -534,10 +534,12 @@ def test_a_landed_count_that_differs_from_the_picked_count_is_a_failed_step(
         return real(cwd, *args, env=env)
 
     monkeypatch.setattr(run, "git", fewer)
-    monkeypatch.setattr(run, "_land_gitlink", lambda *_a: True)
+    bumped: list[object] = []
+    monkeypatch.setattr(run, "_land_gitlink", lambda *a: bumped.append(a) or True)
     lines: list[str] = []
     plan = run.LandPlan(repo, "lease1", [("sub", sub, [sha])], [], {sha: "Fixes-Review: x.1"})
     assert run.execute(plan, emit=lines.append, me="") == 1
+    assert not bumped, "ef59d037.1: a partial landed tip must not be bumped into the console"
     assert [line for line in lines if line.startswith("step landed-count sub rc=1")], lines
 
 
