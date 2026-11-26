@@ -11,7 +11,7 @@
 - acaf40745a4a2b97c #33da8c9d CL-FI8 FI8; a2188e7ca2c05e885 #2ed225e0 CL-RWOP; ab10adaa43ce0b3db #7b942978 CL-AI13; a96ffc187e626d08f #a4372d79 CL-DO18 (all leases, land after ci:quick).
 - a9c8f478b60a05d3f #03dcaaf5 #bfc6dfbb: CL-AGD daemon grant sessions, account revoke transport, grants.py (lease). Accept: cli serve tests, account tests, pytest, max-lines.
 
-## Held lease trees (after ci:quick: ./run.sh worktree land <id> --run --me d778be9d; check; tick; gc)
+## Landed 04:55Z, ticks owed (FN12, AC7, AI12, AF4 partial, FR8 partial, AI14; AI13 specs landed, tick after the Playwright run)
 - agent-ab9d36734b36bcdda: AI14 page (remember, maxOutputTokens, review fixes); 4 en keys need 12 locales; remainder #65af148a.
 - agent-ae59b734ac6646243: FN12 alert intake; tick ce78dbac.
 - agent-a279f9097ecd5e9b5: AC7 adjustLot/lapseLot, AI_GATEWAY_LOGS_TOKEN; remainder #34d9689a.
