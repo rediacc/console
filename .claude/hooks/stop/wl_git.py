@@ -1579,13 +1579,14 @@ def selftest():
         all(v in USAGE for v in EXECUTABLE),
     )
 
+    # The editor is `sleep`, not `tail -f /dev/null`: uutils tail exits 1 at once when the host has no inotify instance left (2026-11-26).
     _ed = tempfile.mkdtemp()
     try:
         for _a in (
             ["init", "-q", "-b", "main"],
             ["config", "user.email", "s@example.invalid"],
             ["config", "user.name", "selftest"],
-            ["config", "core.editor", "tail -f /dev/null"],
+            ["config", "core.editor", "sleep 20; true"],
         ):
             subprocess.run(["git", "-C", _ed, *_a], capture_output=True, check=False)
         with open(os.path.join(_ed, "f.txt"), "w", encoding="utf-8") as _fh:
@@ -1598,7 +1599,7 @@ def selftest():
 
         _clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         _blocked = False
-        # Own process group: a timeout kills git's editor children (sh, tail) too, which subprocess.run's timeout alone leaves running forever.
+        # Own process group: a timeout kills git's editor children (sh, sleep) too, which subprocess.run's timeout alone leaves running forever.
         _proc = subprocess.Popen(
             ["git", "-C", _ed, "commit", "--amend"],
             stdin=subprocess.DEVNULL,

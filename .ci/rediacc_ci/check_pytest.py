@@ -1113,10 +1113,10 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         in verdict(corpus=MIN_TESTS, collected=MIN_TESTS, passed=0, returncode=-9, timeout_s=4321),
     )
 
-    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake.
+    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake. `sleep`, not `tail -f /dev/null`: uutils tail exits 1 at once with "OS file watch limit reached" when the host has no inotify instance left (measured 2026-11-26), so the control stopped hanging and failed.
     t0 = time.monotonic()
     blocked = proc.run(
-        ["bash", "-c", "tail -f /dev/null & echo spawned; tail -f /dev/null"],
+        ["bash", "-c", "sleep 20 & echo spawned; sleep 20"],
         timeout=3,
     )
     elapsed = time.monotonic() - t0
