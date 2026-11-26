@@ -196,6 +196,15 @@ def test_the_pr_anchor_is_end_of_string_not_end_of_line() -> None:
     assert port.PR_CHANNEL.fullmatch("pr-1\n") is None
 
 
+def test_a_pull_request_refuses_the_derived_preview_name() -> None:
+    """The staging channel must stay `pr-<n>` (PLAN-preview-signer N2).
+
+    cd-stage.yml retags the rdc and server images to the channel, and ghcr.io/rediacc/rdc answers an anonymous tag listing, so a `pv-<w>-<w>-<w>` channel would publish the secret-derived preview host. The guard refuses one.
+    """
+    assert port.main(["pull_request", "pv-amber-castle-river"]) == 1
+    assert port.main(["pull_request", "pr-42"]) == 0
+
+
 @pytest.mark.parametrize("name", FAIL_CLOSED_DELTAS)
 def test_an_unknown_event_fails_closed_where_the_twin_accepted(name: str) -> None:
     """INTENTIONAL DELTA (Rule T): the twin's `*)` arm warned and exited 0. The recording keeps that; the port refuses.

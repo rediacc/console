@@ -57,6 +57,8 @@ jobs:
             CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
             CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+      # The staging channel is `pr-<n>` by design, not the derived preview name (see "Generate channel context" in
+      # ci.yml), so the number alone finds a closed PR's objects and this job needs no PREVIEW_NAME_KEY.
       - name: Delete channel artifacts
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.delete_r2_channel
         env:

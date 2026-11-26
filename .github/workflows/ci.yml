@@ -413,6 +413,9 @@ jobs:
           # but every R2/GHCR upload step self-gates on channel != ''. Prior
           # design set dryrun-<sha> here and produced ~5 GB of orphan R2
           # bytes per nightly run (and per merge-queue check, since removed).
+          # A PR keeps the non-secret `pr-<n>` staging channel, never the derived preview name (PLAN-preview-signer N2):
+          # cd-stage.yml retags the rdc and server images to this channel, and ghcr.io/rediacc/rdc lists its tags to
+          # anonymous callers, so a name here would publish every preview host. The name stays masked, per job.
           if [[ "${{ github.event_name }}" == "push" ]]; then
             CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then

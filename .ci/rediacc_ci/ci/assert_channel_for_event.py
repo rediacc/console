@@ -42,6 +42,7 @@ from rediacc_ci import log
 # `^pr-[0-9]+$` from the twin, as a fullmatch. `[0-9]` is ASCII-only in both
 # engines (the twin runs under LC_ALL=C in CI), and fullmatch rather than
 # `re.match(... + "$")` because Python's `$` also matches before a trailing newline while bash's does not -- `pr-1\n` must fail on both sides.
+# The staging channel keeps the PR number and never takes the secret-derived preview name (`pv-<w>-<w>-<w>`, PLAN-preview-signer N2): cd-stage retags the public rdc and server images to it, and GHCR lists those tags anonymously.
 PR_CHANNEL = re.compile(r"pr-[0-9]+")
 
 # The two events that must produce NO R2 bytes at all. `workflow_dispatch` is the nightly rehearsal (ci.yml, guarded to main); the twin spells out at :44-53 why it needs an explicit arm rather than falling into `*)`.
