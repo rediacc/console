@@ -71,28 +71,35 @@ const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 
 /**
  * Repeat one tool's command until its data is final, it fails, or the next run would pass the ceiling. Each run
- * gets the time left before the ceiling, but never less than two intervals, so one slow read is not killed at once.
+ * gets the time left before the ceiling and no more, so the call never outlasts it; a run that would get less
+ * than half an interval is not started, and the latest result answers with the poll hint.
  */
 async function runPolled(
   poll: ToolPoll,
   run: (timeoutMs: number) => Promise<ExecutionResult>
 ): Promise<PolledResult> {
   const started = Date.now();
+  let last: ExecutionResult | undefined;
   for (;;) {
     const remaining = poll.ceilingMs - (Date.now() - started);
-    const result = await run(Math.max(remaining, poll.intervalMs * 2));
+    if (last && remaining < poll.intervalMs / 2) return hinted(last, poll, Date.now() - started);
+    const result = await run(remaining);
+    last = result;
     const waited = Date.now() - started;
     if (!result.success || poll.done(result.data)) return { ...result, waited_ms: waited };
-    if (waited + poll.intervalMs >= poll.ceilingMs) {
-      return {
-        ...result,
-        waited_ms: waited,
-        next: 'job_wait',
-        nextPollSeconds: poll.intervalMs / 1000,
-      };
-    }
+    if (waited + poll.intervalMs >= poll.ceilingMs) return hinted(result, poll, waited);
     await sleep(poll.intervalMs);
   }
+}
+
+/** A still-running result with the hint to call the tool again. */
+function hinted(result: ExecutionResult, poll: ToolPoll, waited: number): PolledResult {
+  return {
+    ...result,
+    waited_ms: waited,
+    next: 'job_wait',
+    nextPollSeconds: poll.intervalMs / 1000,
+  };
 }
 
 /**

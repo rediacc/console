@@ -283,4 +283,16 @@ describe('resolveRdcBinary', () => {
       '/home/user/project/src/index.ts',
     ]);
   });
+
+  it('drops a debugger port given as a separate token with its value (review 32ea940f.1)', () => {
+    Object.defineProperty(process, 'execPath', { value: '/usr/bin/node', writable: true });
+    process.argv = ['/usr/bin/node', '/home/user/project/src/index.ts'];
+    process.execArgv = ['--require', '/x/preflight.cjs', '--inspect-port', '9230', '--inspect'];
+
+    expect(resolveRdcBinary().prefixArgs).toEqual([
+      '--require',
+      '/x/preflight.cjs',
+      '/home/user/project/src/index.ts',
+    ]);
+  });
 });

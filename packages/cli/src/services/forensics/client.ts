@@ -195,7 +195,7 @@ function windowQuery(window: ForensicsWindow): string {
   return `from=${encodeURIComponent(window.from)}&to=${encodeURIComponent(window.to)}`;
 }
 
-/** A refused step-up becomes the portal pointer; every other failure passes through. */
+/** A refused step-up becomes the portal pointer, and a missing entitlement or a refused ticket a CliExitError of its own; every other failure passes through. */
 function explain(error: unknown): unknown {
   const failure = error as Partial<AccountFetchError> | null;
   if (failure?.status === 403 && failure.details?.reauthRequired === true) {

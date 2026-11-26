@@ -501,7 +501,12 @@ function storageContract(register: Register, open: () => SecureStorage): void {
 
 /** Every throwaway key out of the kernel keyring and the real Secret Service, with the tools and not the module: a run that broke `delete` must leave none behind. */
 function clearLinuxStores(): void {
-  const secretTool = onPath('secret-tool');
+  // Without a session bus `secret-tool` would autolaunch one, the path the module itself never takes (review 0159ab0f.2).
+  const runtime = process.env.XDG_RUNTIME_DIR ?? '';
+  const busPresent =
+    (process.env.DBUS_SESSION_BUS_ADDRESS ?? '') !== '' ||
+    (runtime !== '' && existsSync(join(runtime, 'bus')));
+  const secretTool = busPresent && onPath('secret-tool');
   for (const key of createdKeys) {
     unlinkFromUserKeyring(key);
     if (!secretTool) continue;

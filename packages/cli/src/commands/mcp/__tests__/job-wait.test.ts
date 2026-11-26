@@ -106,6 +106,31 @@ describe('job_wait', () => {
     );
   });
 
+  it('gives every read only the time left before the ceiling (review 1a62c834.1)', async () => {
+    const exec = await jobLasting(120_000);
+    const t0 = Date.now();
+    const reads: { at: number; timeoutMs: number }[] = [];
+    exec.mockImplementation((_argv, options) => {
+      reads.push({ at: Date.now() - t0, timeoutMs: (options as { timeoutMs: number }).timeoutMs });
+      return Promise.resolve({
+        success: true,
+        command: 'job status j-1',
+        data: { job_id: 'j-1', state: 'running' },
+        errors: null,
+        warnings: [],
+        duration_ms: 1,
+      });
+    });
+    const pending = handlerFor('job_wait')({ 'job-id': 'j-1' });
+    await vi.advanceTimersByTimeAsync(120_000);
+    await pending;
+    expect(reads.length).toBeGreaterThan(1);
+    for (const read of reads)
+      expect(read.at + read.timeoutMs).toBeLessThanOrEqual(JOB_WAIT_CEILING_MS);
+    // Control: the first read is not squeezed, it gets the whole window.
+    expect(reads[0].timeoutMs).toBe(JOB_WAIT_CEILING_MS);
+  });
+
   it('a failed status read returns at once as an error, without polling again', async () => {
     const { executeRdcCommand } = await import('../executor.js');
     vi.mocked(executeRdcCommand).mockReset();

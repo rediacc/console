@@ -84,6 +84,23 @@ interface ExecError extends Error {
 /** Node flags a child must not inherit: a debugger port the parent already holds. */
 const PARENT_ONLY_NODE_FLAG = /^--(inspect|debug)/;
 
+/** The debugger flags that take their value as the next token (`--inspect-port 9230`), which goes with them. */
+const PARENT_ONLY_VALUE_FLAG = /^--(inspect|debug)-port$/;
+
+/** The node flags the parent holds for its own debugger removed, with the separate value of a port flag. */
+function childNodeFlags(execArgv: string[]): string[] {
+  const kept: string[] = [];
+  for (let i = 0; i < execArgv.length; i++) {
+    const flag = execArgv[i];
+    if (!PARENT_ONLY_NODE_FLAG.test(flag)) {
+      kept.push(flag);
+    } else if (PARENT_ONLY_VALUE_FLAG.test(flag)) {
+      i++;
+    }
+  }
+  return kept;
+}
+
 /**
  * Resolve the rdc binary for child process execution.
  * Handles both SEA binary and development (tsx/node) modes.
@@ -98,7 +115,7 @@ export function resolveRdcBinary(): { command: string; prefixArgs: string[] } {
     return { command: process.execPath, prefixArgs: [] };
   }
   // Development or the bundle: node + its flags + script path
-  const flags = process.execArgv.filter((flag) => !PARENT_ONLY_NODE_FLAG.test(flag));
+  const flags = childNodeFlags(process.execArgv);
   return { command: process.execPath, prefixArgs: [...flags, process.argv[1]] };
 }
 
@@ -387,7 +404,7 @@ function confirmOf(call: PolicyCall): { value?: string } | { answer: CallToolRes
   }
   const { confirm } = call.args;
   if (typeof confirm !== 'string' || confirm === '') return {};
-  // A client that can elicit is always asked: the model-supplied `confirm` argument is ignored for it.
+  // For a client that can elicit the model-supplied `confirm` argument is ignored: it is asked whenever the child needs a confirmation, and a child that needs none runs without one.
   return declaresFormElicitation(call.server, call.ctx) ? {} : { value: confirm };
 }
 

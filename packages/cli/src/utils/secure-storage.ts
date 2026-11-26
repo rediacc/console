@@ -207,7 +207,15 @@ class SecretToolStorage extends Backend {
         ...QUIET,
         timeout: SECRET_TOOL_TIMEOUT_MS,
       });
-    } catch {
+    } catch (error) {
+      // A call that hit the limit (a locked keyring waiting for its password) says nothing about the item: it is not "absent", which would send the device through re-enrolment.
+      if ((error as { code?: unknown }).code === 'ETIMEDOUT') {
+        throw new ToolFailure(
+          'secret-tool',
+          false,
+          `timed out after ${SECRET_TOOL_TIMEOUT_MS} ms reading the stored key; the keyring may be locked`
+        );
+      }
       // Exit 1 is both "no such item" and "no Secret Service"; either way nothing is stored here.
       return null;
     }
