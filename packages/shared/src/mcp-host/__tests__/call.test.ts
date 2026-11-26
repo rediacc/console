@@ -250,6 +250,10 @@ describe('the 50-second window', () => {
 });
 
 describe('an ended grant with an unusable account origin', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('answers its code without a link instead of throwing', async () => {
     const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const ended = { grant: activeGrant(GRANT_ID, { state: 'expired' }), secret: SECRET };
@@ -269,7 +273,6 @@ describe('an ended grant with an unusable account origin', () => {
     expect(result.structuredContent).not.toHaveProperty('reauthUrl');
     expect(logged).toHaveBeenCalledTimes(1);
     expect(String(logged.mock.calls[0]?.[0])).toContain('account origin is misconfigured');
-    logged.mockRestore();
   });
 });
 

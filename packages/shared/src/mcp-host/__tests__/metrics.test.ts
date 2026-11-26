@@ -2,13 +2,14 @@
  * Monitoring of the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 10, RW-D3): the counters handler.ts writes through a real request, and the alert rule over them. A burst of `REDIACC_GRANT_*` refusals from one grant raises the alert and a quiet grant does not.
  */
 import './helpers/workers-shim.js';
+import { readdirSync, readFileSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import type { HostExecutionContext } from '../host-types.js';
 import {
-  ALERT_QUERY,
   ALERT_RULE,
+  alertQuery,
   evaluateAlerts,
   type GrantWindow,
   type MetricsDataset,
@@ -43,6 +44,8 @@ beforeEach(() => {
 
 /** The Worker over one grant state, a recording dataset, and a `call` helper posting a `tools/call`. */
 async function workerFor(grantId: string, state: 'active' | 'revoked', withDataset = true) {
+  // The handler keeps its transport for the first env it sees; a fresh module per Worker keeps two Workers of one test apart.
+  vi.resetModules();
   const { default: worker } = await import('../handler.js');
   const points: Point[] = [];
   const dataset: MetricsDataset = { writeDataPoint: (p) => points.push(p) };
@@ -148,6 +151,9 @@ describe('alert rule', () => {
     for (let i = 0; i < ALERT_RULE.grantRefusals; i += 1) await noisy.call('repo_list');
     await quiet.call('repo_list');
     await quiet.call('repo_list');
+    // The quiet grant really ran as active, so the noisy one's resolver is not the one answering both.
+    expect(quiet.points.map((p) => p.blobs?.[1])).toEqual(['ok', 'ok']);
+    expect(noisy.points.every((p) => p.blobs?.[1] === 'REDIACC_GRANT_REVOKED')).toBe(true);
 
     const alerts = evaluateAlerts(windowOf([...noisy.points, ...quiet.points]));
     expect(alerts).toEqual([
@@ -169,8 +175,27 @@ describe('alert rule', () => {
     ]);
   });
 
-  it('names the same thresholds in the query the ops job runs', () => {
-    expect(ALERT_QUERY).toContain(`INTERVAL '${ALERT_RULE.windowMinutes}' MINUTE`);
-    expect(ALERT_QUERY).toContain('REDIACC_GRANT_%');
+  it('names the same thresholds in the query the ops job runs, over the dataset it was given', () => {
+    const query = alertQuery('mcp_eu');
+    expect(query).toContain(`INTERVAL '${ALERT_RULE.windowMinutes}' MINUTE`);
+    expect(query).toContain('REDIACC_GRANT_%');
+    expect(query).toContain(' FROM mcp_eu WHERE ');
+    expect(query).not.toMatch(/[<@]/);
+  });
+
+  it('refuses a placeholder or malformed dataset name', () => {
+    for (const name of ['mcp_<region>', '@@DATASET@@', 'mcp_eu; DROP', 'mcp_', '', 'eu']) {
+      expect(() => alertQuery(name), name).toThrow('not an MCP metrics dataset name');
+    }
+  });
+
+  it('accepts every dataset the wrangler files bind', () => {
+    const dir = new URL('../../../../../workers/mcp/', import.meta.url).pathname;
+    const bound = readdirSync(dir)
+      .filter((file) => /^wrangler\.(?!template).*\.toml$/.test(file))
+      .map((file) => /^dataset = "([^"]+)"/m.exec(readFileSync(`${dir}${file}`, 'utf8'))?.[1]);
+    // Three regions and three bench regions today; fewer would prove nothing.
+    expect(bound.length).toBeGreaterThanOrEqual(6);
+    for (const name of bound) expect(() => alertQuery(name as string), String(name)).not.toThrow();
   });
 });

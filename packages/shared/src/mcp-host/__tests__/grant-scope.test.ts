@@ -212,7 +212,8 @@ describe('token lifetime follows the grant (D54)', () => {
     expect(late.body.error).toBe('invalid_grant');
   });
 
-  it('refuses the code exchange of a grant that expired between consent and exchange', async () => {
+  /** Consent given and the code issued; the exchange is left for the test to attempt after the account's answer changes. */
+  async function consentedCode(): Promise<{ clientId: string; verifier: string; code: string }> {
     const clientId = await registerClient();
     const verifier = randomBytes(32).toString('base64url');
     const challenge = createHash('sha256').update(verifier).digest('base64url');
@@ -235,19 +236,45 @@ describe('token lifetime follows the grant (D54)', () => {
       )
     );
     const code = new URL(done.headers.get('location') ?? '').searchParams.get('code') ?? '';
-    account.grant = { ...(account.grant as GrantContext), state: 'revoked' };
-    const token = await call(
+    return { clientId, verifier, code };
+  }
+
+  const exchange = (consented: { clientId: string; verifier: string; code: string }) =>
+    call(
       '/oauth/token',
       form({
         grant_type: 'authorization_code',
-        code,
+        code: consented.code,
         redirect_uri: CALLBACK,
-        client_id: clientId,
-        code_verifier: verifier,
+        client_id: consented.clientId,
+        code_verifier: consented.verifier,
       })
     );
+
+  it('refuses the code exchange of a grant that was revoked between consent and exchange', async () => {
+    const consented = await consentedCode();
+    account.grant = { ...(account.grant as GrantContext), state: 'revoked' };
+    const token = await exchange(consented);
     expect(token.status).toBe(400);
     expect(((await token.json()) as { error: string }).error).toBe('invalid_grant');
+  });
+
+  it('refuses the code exchange of a grant that expired between consent and exchange', async () => {
+    const consented = await consentedCode();
+    // Still active in the account's record, but its expiry has passed by the time the code is exchanged.
+    account.grant = {
+      ...(account.grant as GrantContext),
+      expiresAt: new Date(START + 60_000).toISOString(),
+    };
+    setClock(START + 120_000);
+    const token = await exchange(consented);
+    expect(token.status).toBe(400);
+    expect(((await token.json()) as { error: string }).error).toBe('invalid_grant');
+  });
+
+  it('control: the same code exchanges while the grant is active and unexpired', async () => {
+    const consented = await consentedCode();
+    expect((await exchange(consented)).status).toBe(200);
   });
 
   it('answers a failed lookup 503 and leaves the OAuth grant alive for the retry', async () => {

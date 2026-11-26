@@ -102,10 +102,16 @@ export const ALERT_RULE = {
   destructiveCalls: 5,
 } as const;
 
+/** The dataset names the Worker binds: `mcp_<region>`, `mcp_bench_<region>` on a bench (workers/mcp/wrangler.*.toml). */
+const DATASET_NAME = /^mcp_(?:bench_)?[a-z]+$/;
+
 /**
- * The Analytics Engine SQL the ops alert runs, one row per grant over the window. `index1` is the grant id, `blob2` the outcome code, `double3` the destructive flag.
+ * The Analytics Engine SQL the ops alert runs over one region's `dataset`, one row per grant over the window. `index1` is the grant id, `blob2` the outcome code, `double3` the destructive flag. A name that is not a bound dataset's shape throws, so a placeholder never reaches the query.
  */
-export const ALERT_QUERY = `SELECT index1 AS grant_id, SUM(IF(blob2 LIKE 'REDIACC_GRANT_%', _sample_interval, 0)) AS grant_refusals, SUM(double3 * _sample_interval) AS destructive_calls FROM mcp_<region> WHERE timestamp > NOW() - INTERVAL '${ALERT_RULE.windowMinutes}' MINUTE AND index1 != '${UNAUTHENTICATED_INDEX}' GROUP BY index1`;
+export function alertQuery(dataset: string): string {
+  if (!DATASET_NAME.test(dataset)) throw new Error(`not an MCP metrics dataset name: ${dataset}`);
+  return `SELECT index1 AS grant_id, SUM(IF(blob2 LIKE 'REDIACC_GRANT_%', _sample_interval, 0)) AS grant_refusals, SUM(double3 * _sample_interval) AS destructive_calls FROM ${dataset} WHERE timestamp > NOW() - INTERVAL '${ALERT_RULE.windowMinutes}' MINUTE AND index1 != '${UNAUTHENTICATED_INDEX}' GROUP BY index1`;
+}
 
 export interface GrantWindow {
   grant_id: string;

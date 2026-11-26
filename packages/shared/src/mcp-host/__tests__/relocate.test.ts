@@ -134,4 +134,67 @@ describe('EXECUTOR_RELOCATED', () => {
       vi.useRealTimers();
     }
   });
+
+  describe('the lookup spends only what is left of the window', () => {
+    const FIRST_FORWARD_MS = 40_000;
+
+    /** A first forward that takes FIRST_FORWARD_MS to answer `EXECUTOR_RELOCATED`, then a lookup the test controls. */
+    function slowFirstForward(lookup: () => Promise<ReturnType<typeof activeGrant> | null>) {
+      const routings: McpCallRouting[] = [];
+      const deps: CallDeps = {
+        executor: {
+          call: (routing) => {
+            routings.push(routing);
+            return routing.placement === 1
+              ? new Promise((resolve) => setTimeout(() => resolve(RELOCATED), FIRST_FORWARD_MS))
+              : Promise.resolve(OK);
+          },
+        },
+        reauthUrl: () => 'https://account.test/reauth',
+        refreshGrant: lookup,
+      };
+      const caller: GrantCaller = { grant: activeGrant(GRANT_ID, { placement: 1 }), secret: 's' };
+      return { deps, caller, routings };
+    }
+
+    it('gives up on a lookup when the first forward already used most of the window, not a full window later', async () => {
+      vi.useFakeTimers();
+      try {
+        const { deps, caller, routings } = slowFirstForward(() => new Promise(() => undefined));
+        let settled = false;
+        const pending = callTool(deps, caller, 'repo_list', {}).then((result) => {
+          settled = true;
+          return result;
+        });
+        await vi.advanceTimersByTimeAsync(ATTACH_WINDOW_MS - 1);
+        expect(settled).toBe(false);
+        await vi.advanceTimersByTimeAsync(1);
+        const result = await pending;
+        expect(settled).toBe(true);
+        expect(routings).toHaveLength(1);
+        expect(result.structuredContent).toMatchObject({ executorCode: 'EXECUTOR_RELOCATED' });
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it('control: a lookup that answers inside what is left still forwards to the new placement', async () => {
+      vi.useFakeTimers();
+      try {
+        const { deps, caller, routings } = slowFirstForward(
+          () =>
+            new Promise((resolve) =>
+              setTimeout(() => resolve(activeGrant(GRANT_ID, { placement: 2 })), 5_000)
+            )
+        );
+        const pending = callTool(deps, caller, 'repo_list', {});
+        await vi.advanceTimersByTimeAsync(FIRST_FORWARD_MS + 5_000);
+        const result = await pending;
+        expect(routings.map((r) => r.placement)).toEqual([1, 2]);
+        expect(result.isError).toBe(false);
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+  });
 });

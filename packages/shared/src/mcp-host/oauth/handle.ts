@@ -34,7 +34,8 @@ function base64url(bytes: Uint8Array): string {
 }
 
 function fromBase64url(text: string): Uint8Array | null {
-  if (!/^[A-Za-z0-9_-]+$/.test(text)) return null;
+  // A base64 text of 1 mod 4 characters is never a whole number of bytes, and atob throws on it (review 32ad8b14.1).
+  if (!/^[A-Za-z0-9_-]+$/.test(text) || text.length % 4 === 1) return null;
   const padded = text.replace(/-/g, '+').replace(/_/g, '/');
   return Uint8Array.from(atob(padded + '='.repeat((4 - (padded.length % 4)) % 4)), (c) =>
     c.charCodeAt(0)

@@ -27,6 +27,7 @@ vi.mock('../../../../private/account/src/entry/cloudflare.js', () => ({
 }));
 
 const { ExecutorIssuer, GrantResolver } = await import('../index.js');
+const { fencedEnv } = await import('../d1-fence.js');
 
 describe('GrantResolver.resolveGrant', () => {
   beforeEach(() => resolveAgentGrant.mockReset());
@@ -40,6 +41,25 @@ describe('GrantResolver.resolveGrant', () => {
     expect([grantId, tag]).toEqual(['eu_g1', 'tag']);
   });
 
+  it('hands the account app the fenced env, never the raw one', async () => {
+    resolveAgentGrant.mockResolvedValue(null);
+    const rawDb = { prepare: vi.fn(), batch: vi.fn() };
+    const env = { DB: rawDb };
+    await new GrantResolver({} as never, env as never).resolveGrant('eu_g1', 'tag');
+    const [passed] = resolveAgentGrant.mock.calls[0] as [{ DB: unknown }];
+    expect(passed).not.toBe(env);
+    expect(passed.DB).not.toBe(rawDb);
+    // The same fenced object a later call receives, as for every other entrypoint.
+    expect(passed).toBe(fencedEnv(env as never));
+  });
+
+  it('control: an env with no DB binding has nothing to fence and passes through as it is', async () => {
+    resolveAgentGrant.mockResolvedValue(null);
+    const env = {};
+    await new GrantResolver({} as never, env as never).resolveGrant('eu_g1', 'tag');
+    expect(resolveAgentGrant.mock.calls[0]?.[0]).toBe(env);
+  });
+
   it('returns null for a grant the account does not know', async () => {
     resolveAgentGrant.mockResolvedValue(null);
     const issuer = new GrantResolver({} as never, { DB: {} } as never);
@@ -47,10 +67,31 @@ describe('GrantResolver.resolveGrant', () => {
   });
 });
 
-const rpcMethods = (cls: { prototype: object }) =>
-  Object.getOwnPropertyNames(cls.prototype)
+/**
+ * Every function an entrypoint exposes over RPC: the prototype's methods and the function-valued own properties of an instance (an arrow-function class field is an own property, not a prototype method).
+ */
+const rpcMethods = (cls: new (ctx: never, env: never) => object) =>
+  [
+    ...Object.getOwnPropertyNames(cls.prototype),
+    ...Object.entries(new cls({} as never, {} as never))
+      .filter(([, value]) => typeof value === 'function')
+      .map(([name]) => name),
+  ]
     .filter((name) => name !== 'constructor')
-    .sort();
+    .sort((a, b) => a.localeCompare(b));
+
+describe('rpcMethods', () => {
+  it('lists an arrow-function class field as well as a prototype method', () => {
+    class Probe {
+      viaPrototype() {
+        return 1;
+      }
+      viaField = () => 2;
+      notAFunction = 3;
+    }
+    expect(rpcMethods(Probe)).toEqual(['viaField', 'viaPrototype']);
+  });
+});
 
 describe('entrypoint surfaces', () => {
   it('ExecutorIssuer exposes no resolveGrant', () => {
