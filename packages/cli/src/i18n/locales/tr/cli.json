@@ -1261,7 +1261,6 @@
         "rsync": "rsync",
         "vscode": "VS Code",
         "remoteSsh": "Remote-SSH eklentisi",
-        "sshAgent": "ssh-agent hizmeti",
         "opensshClient": "OpenSSH istemcisi"
       },
       "description": "CLI ortamını ve renet entegrasyonunu tanıla",
@@ -1286,15 +1285,9 @@
       "rsyncInstallHint": "rsync'i sistemin paket yöneticisiyle kurun",
       "installedValue": "yüklü",
       "notDetectedValue": "algılanmadı",
-      "unknownValue": "bilinmiyor",
-      "agentRunning": "çalışıyor",
-      "agentStopped": "durduruldu",
-      "agentDisabled": "devre dışı",
-      "agentMissing": "hizmet bulunamadı",
       "rsyncInstallHintWin32": "Çalıştırın: rdc tools install rsync (veya MSYS2'de: pacman -S rsync)",
       "vscodeInstallHint": "rdc vscode kullanmak için VS Code'u https://code.visualstudio.com/ adresinden yükleyin",
       "remoteSshInstallHint": "Şununla yükleyin: code --install-extension ms-vscode-remote.remote-ssh",
-      "sshAgentEnableHint": "Yönetici olarak açılmış bir PowerShell'de: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
       "sshClientMissingHint": "OpenSSH İstemcisi'ni Windows Ayarları > İsteğe bağlı özellikler bölümünden ekleyin"
     },
     "feedback": {

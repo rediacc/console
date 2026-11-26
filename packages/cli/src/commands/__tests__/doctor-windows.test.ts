@@ -7,6 +7,7 @@ vi.mock('node:child_process', async (orig) => ({
   spawnSync: spawn.spawnSync,
 }));
 
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { PathLookupOptions } from '../../services/tools/path-lookup.js';
 import {
   checkEnvironment,
@@ -14,11 +15,7 @@ import {
   dropDuplicateClientRows,
   findRenetSource,
 } from '../doctor.js';
-import {
-  checkWindowsClient,
-  parseSshAgentState,
-  type WindowsClientDeps,
-} from '../doctor-windows.js';
+import type { WindowsClientDeps } from '../doctor-windows.js';
 
 const TOFU_MISSING = async () => ({ ok: false as const, reason: 'missing' as const });
 const NO_RSYNC: PathLookupOptions = { env: { PATH: '' }, platform: 'win32' };
@@ -26,7 +23,6 @@ const NO_RSYNC: PathLookupOptions = { env: { PATH: '' }, platform: 'win32' };
 const ALL_GOOD: WindowsClientDeps = {
   findVSCode: async () => ({ path: 'C:\\Code\\Code.exe', version: '1.95.0' }),
   hasRemoteSsh: async () => true,
-  sshAgentState: () => 'running',
   sshVersion: () => 'OpenSSH_for_Windows_9.5p1, LibreSSL 3.8.2',
 };
 
@@ -54,26 +50,13 @@ describe('doctor Tools section on Windows', () => {
     expect(section.checks[1].hint).toBe('Install rsync with the system package manager');
   });
 
-  it('reports VS Code, Remote-SSH, the OpenSSH client and a running ssh-agent', async () => {
+  it('reports VS Code, Remote-SSH and the OpenSSH client', async () => {
     const section = await tools('win32');
     expect(section.checks.slice(2)).toEqual([
       { name: 'VS Code', value: '1.95.0', status: 'ok' },
       { name: 'Remote-SSH extension', value: 'installed', status: 'ok' },
       { name: 'OpenSSH client', value: 'OpenSSH_for_Windows_9.5p1', status: 'ok' },
-      { name: 'ssh-agent service', value: 'running', status: 'ok' },
     ]);
-  });
-
-  it.each([
-    ['stopped', 'stopped'],
-    ['disabled', 'disabled'],
-  ] as const)('warns with the exact enable command when ssh-agent is %s', async (state, value) => {
-    const section = await tools('win32', { ...ALL_GOOD, sshAgentState: () => state });
-    const agent = section.checks.find((c) => c.name === 'ssh-agent service');
-    expect(agent).toMatchObject({ value, status: 'warn' });
-    expect(agent?.hint).toContain(
-      'Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent'
-    );
   });
 
   it('warns when VS Code is missing and skips the extension check', async () => {
@@ -100,41 +83,10 @@ describe('doctor Tools section on Windows', () => {
     });
   });
 
-  it('parses Get-Service output', () => {
-    expect(parseSshAgentState('Running|Automatic')).toBe('running');
-    expect(parseSshAgentState('Stopped|Manual')).toBe('stopped');
-    expect(parseSshAgentState('Stopped|Disabled\r\n')).toBe('disabled');
-    expect(parseSshAgentState('missing\r\n')).toBe('missing');
-  });
-
-  it('reads empty or unrecognised output as unknown, not as a stopped agent', () => {
-    expect(parseSshAgentState('')).toBeNull();
-    expect(parseSshAgentState('  \r\n')).toBeNull();
-    expect(parseSshAgentState('garbage')).toBeNull();
-  });
-
-  describe('the real probe', () => {
-    const agentRow = async () =>
-      (await checkWindowsClient({ ...ALL_GOOD, sshAgentState: undefined })).find(
-        (c) => c.name === 'ssh-agent service'
-      );
-
-    it('reports a PowerShell failure that is not a missing service as unknown', async () => {
-      spawn.spawnSync.mockReturnValue({ status: 1, stdout: '', stderr: 'blocked by policy' });
-      expect(await agentRow()).toMatchObject({ value: 'unknown', status: 'warn' });
-    });
-
-    it('reports a clean exit with no output as unknown', async () => {
-      spawn.spawnSync.mockReturnValue({ status: 0, stdout: '', stderr: '' });
-      expect(await agentRow()).toMatchObject({ value: 'unknown' });
-    });
-
-    it('reports the probe own missing marker as a missing service', async () => {
-      spawn.spawnSync.mockReturnValue({ status: 0, stdout: 'missing\r\n', stderr: '' });
-      expect(await agentRow()).toMatchObject({ value: 'service not found' });
-      const script = spawn.spawnSync.mock.calls.at(-1)?.[1].at(-1) as string;
-      expect(script).toContain('ServiceCommandException');
-    });
+  it('has no ssh-agent row, since rdc uses a key file and never the agent service', async () => {
+    const section = await tools('win32');
+    expect(section.checks.some((c) => /ssh-agent/i.test(c.name))).toBe(false);
+    expect(spawn.spawnSync).not.toHaveBeenCalled();
   });
 });
 
@@ -149,11 +101,11 @@ describe('doctor Environment section', () => {
   it('shows the Account server row when the config names one', () => {
     const section = checkEnvironment({
       isDevTree: () => false,
-      accountServer: () => 'https://eu.rediacc.cloud',
+      accountServer: () => WK_ACCOUNT_DEFAULT_ORIGIN,
     });
     expect(section.checks).toContainEqual({
       name: 'Account server',
-      value: 'https://eu.rediacc.cloud',
+      value: WK_ACCOUNT_DEFAULT_ORIGIN,
       status: 'ok',
     });
   });

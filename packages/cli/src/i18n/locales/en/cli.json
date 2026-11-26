@@ -195,7 +195,6 @@
         "rsync": "rsync",
         "vscode": "VS Code",
         "remoteSsh": "Remote-SSH extension",
-        "sshAgent": "ssh-agent service",
         "opensshClient": "OpenSSH client"
       },
       "allPassed": "All checks passed",
@@ -210,15 +209,9 @@
       "rsyncInstallHint": "Install rsync with the system package manager",
       "installedValue": "installed",
       "notDetectedValue": "not detected",
-      "unknownValue": "unknown",
-      "agentRunning": "running",
-      "agentStopped": "stopped",
-      "agentDisabled": "disabled",
-      "agentMissing": "service not found",
       "rsyncInstallHintWin32": "Run: rdc tools install rsync (or in MSYS2: pacman -S rsync)",
       "vscodeInstallHint": "Install VS Code from https://code.visualstudio.com/ to use rdc vscode",
       "remoteSshInstallHint": "Install it with: code --install-extension ms-vscode-remote.remote-ssh",
-      "sshAgentEnableHint": "In an elevated PowerShell (administrator): Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
       "sshClientMissingHint": "Add the OpenSSH Client in Windows Settings > Optional features"
     },
     "config": {

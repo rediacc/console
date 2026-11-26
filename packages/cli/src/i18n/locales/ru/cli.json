@@ -1261,7 +1261,6 @@
         "rsync": "rsync",
         "vscode": "VS Code",
         "remoteSsh": "Расширение Remote-SSH",
-        "sshAgent": "Служба ssh-agent",
         "opensshClient": "Клиент OpenSSH"
       },
       "description": "Диагностика среды CLI и интеграции renet",
@@ -1286,15 +1285,9 @@
       "rsyncInstallHint": "Установите rsync системным менеджером пакетов",
       "installedValue": "установлено",
       "notDetectedValue": "не обнаружено",
-      "unknownValue": "неизвестно",
-      "agentRunning": "работает",
-      "agentStopped": "остановлена",
-      "agentDisabled": "отключена",
-      "agentMissing": "служба не найдена",
       "rsyncInstallHintWin32": "Выполните: rdc tools install rsync (или в MSYS2: pacman -S rsync)",
       "vscodeInstallHint": "Установите VS Code с https://code.visualstudio.com/, чтобы пользоваться rdc vscode",
       "remoteSshInstallHint": "Установите командой: code --install-extension ms-vscode-remote.remote-ssh",
-      "sshAgentEnableHint": "В PowerShell от имени администратора: Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
       "sshClientMissingHint": "Добавьте клиент OpenSSH в Параметры Windows > Дополнительные компоненты"
     },
     "feedback": {

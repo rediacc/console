@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3348,
-    "sourceCommit": "4f037bc95d047b36e0f293ff5566e8a2d44bed55"
+    "keyCount": 3341,
+    "sourceCommit": "fe238394a8a84998731835e2209fbcd769797e54"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -966,10 +966,6 @@
     "commands.datastore.snapshot.list.descriptionShort": "9adbbd29",
     "commands.datastore.status.description": "faa25da3",
     "commands.datastore.status.descriptionShort": "12de1fe3",
-    "commands.doctor.agentDisabled": "84fe6ee3",
-    "commands.doctor.agentMissing": "ad97c5b5",
-    "commands.doctor.agentRunning": "2f21896f",
-    "commands.doctor.agentStopped": "a6a648ec",
     "commands.doctor.allPassed": "20bbbc87",
     "commands.doctor.checks.activeConfig": "e2ed1d5c",
     "commands.doctor.checks.cliVersion": "099cf29b",
@@ -985,7 +981,6 @@
     "commands.doctor.checks.renetRsync": "0f34bce2",
     "commands.doctor.checks.renetVersion": "70a1ea5f",
     "commands.doctor.checks.rsync": "485f6ed4",
-    "commands.doctor.checks.sshAgent": "b68cdf80",
     "commands.doctor.checks.sshKey": "b82b9800",
     "commands.doctor.checks.subscriptionMachineSlots": "a8f10242",
     "commands.doctor.checks.subscriptionRepoLicenses": "907c805b",
@@ -1012,12 +1007,10 @@
     "commands.doctor.sections.subscription": "bbf7bf2b",
     "commands.doctor.sections.tools": "2b3bf173",
     "commands.doctor.sections.virtualization": "2653fcb0",
-    "commands.doctor.sshAgentEnableHint": "69d0b702",
     "commands.doctor.sshClientMissingHint": "441ae470",
     "commands.doctor.subscriptionUnreachable": "01ed718b",
     "commands.doctor.title": "cec7b24d",
     "commands.doctor.tofuInstallHint": "7e323568",
-    "commands.doctor.unknownValue": "ad26a7c7",
     "commands.doctor.vscodeInstallHint": "2cb5d5eb",
     "commands.feedback.description": "d25fc80e",
     "commands.feedback.descriptionShort": "c88d529a",

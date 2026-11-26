@@ -1261,7 +1261,6 @@
         "rsync": "rsync",
         "vscode": "VS Code",
         "remoteSsh": "Remote-SSH 扩展",
-        "sshAgent": "ssh-agent 服务",
         "opensshClient": "OpenSSH 客户端"
       },
       "description": "诊断CLI环境和renet集成",
@@ -1286,15 +1285,9 @@
       "rsyncInstallHint": "请用系统包管理器安装 rsync",
       "installedValue": "已安装",
       "notDetectedValue": "未检测到",
-      "unknownValue": "未知",
-      "agentRunning": "正在运行",
-      "agentStopped": "已停止",
-      "agentDisabled": "已禁用",
-      "agentMissing": "未找到服务",
       "rsyncInstallHintWin32": "请运行：rdc tools install rsync（在 MSYS2 中：pacman -S rsync）",
       "vscodeInstallHint": "要使用 rdc vscode，请从 https://code.visualstudio.com/ 安装 VS Code",
       "remoteSshInstallHint": "使用以下命令安装：code --install-extension ms-vscode-remote.remote-ssh",
-      "sshAgentEnableHint": "在管理员身份的 PowerShell 中运行：Set-Service ssh-agent -StartupType Automatic; Start-Service ssh-agent",
       "sshClientMissingHint": "请在 Windows 设置 > 可选功能中添加 OpenSSH 客户端"
     },
     "feedback": {
