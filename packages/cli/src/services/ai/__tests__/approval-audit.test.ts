@@ -73,6 +73,39 @@ describe('AI decision audit events', () => {
     ]);
   });
 
+  it('leaves out a pathKey that is too long or shaped like a parameter, never truncating it', async () => {
+    const { events, audit } = sink();
+    const base = { principal, destructive: false, requestId: 'c1:t1' };
+    const long = Array.from({ length: 40 }, (_, i) => `word${i}`).join(' ');
+    const ok = 'repo up';
+    await auditRefusal(audit, { ...base, pathKey: long });
+    await auditRefusal(audit, { ...base, pathKey: 'repo up --password hunter2' });
+    await auditRefusal(audit, { ...base, pathKey: 'repo up\nshop' });
+    await auditRefusal(audit, { ...base, pathKey: ok });
+    expect(events.map((e) => e.commandPath)).toEqual([
+      'ai refusal',
+      'ai refusal',
+      'ai refusal',
+      'ai refusal repo up',
+    ]);
+    expect(long.length + 'ai refusal '.length).toBeGreaterThan(200);
+  });
+
+  it('emits no sensitive option value in any event, however the pathKey carries it', async () => {
+    const { events, audit } = sink();
+    const secret = 'hunter2-secret';
+    const base = { principal, destructive: true, requestId: 'c1:t1' };
+    const keys = [`repo up --password ${secret}`, `repo up=${secret}`, 'repo up'];
+    for (const pathKey of keys) {
+      await auditApproval(audit, { ...base, decision: 'approve', pathKey });
+      await auditJudgeVerdict(audit, { ...base, verdict: 'allow', pathKey });
+      await auditRefusal(audit, { ...base, pathKey });
+      await auditModeChange(audit, { ...base, mode: 'ask', pathKey });
+    }
+    expect(events).toHaveLength(12);
+    expect(JSON.stringify(events)).not.toContain(secret);
+  });
+
   it('records a mode change under the new mode and ships no params', async () => {
     const { events, audit } = sink();
     await auditModeChange(audit, { principal, destructive: false, mode: 'skip' });

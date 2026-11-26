@@ -34,13 +34,20 @@ const AI_MODE_AUDIT_PREFIX = 'ai mode';
 /** The most characters of a command path the account's audit schema accepts. */
 const COMMAND_PATH_MAX = 200;
 
+/** A command path key: lowercase words joined by single spaces, never a value or a flag. */
+const COMMAND_PATH_KEY = /^[a-z][a-z0-9-]*( [a-z][a-z0-9-]*)*$/;
+
 /**
  * The path of a decision about one command: `<path> <pathKey>` when the command is known, so the
  * account side turns the record into `console.ai.approval` with the command it decided. The pathKey
- * is a command path, never a parameter.
+ * is a command path, never a parameter: a key that is not shaped like one (the approval route takes
+ * it from the client) or that would not fit the schema whole is left out, so the record names the
+ * decision only, never a truncated or parameter-bearing command.
  */
 function decisionPath(path: string, pathKey: string | undefined): string {
-  return pathKey ? `${path} ${pathKey}`.slice(0, COMMAND_PATH_MAX) : path;
+  if (!pathKey || !COMMAND_PATH_KEY.test(pathKey)) return path;
+  const full = `${path} ${pathKey}`;
+  return full.length > COMMAND_PATH_MAX ? path : full;
 }
 
 type AuditSink = ((event: ExecutorAuditEvent) => Promise<void>) | undefined;
