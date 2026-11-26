@@ -10,8 +10,9 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const launchTerminal = vi.fn();
+let terminalType = 'windows-terminal';
 vi.mock('../remote/terminal/index.js', () => ({
-  getDefaultTerminalType: () => 'windows-terminal',
+  getDefaultTerminalType: () => terminalType,
   launchTerminal: (...a: unknown[]) => launchTerminal(...a),
 }));
 vi.mock('../remote/utils/platform.js', () => ({ getPlatform: () => 'windows' }));
@@ -21,7 +22,7 @@ import { SSHConnection } from '../remote/ssh/connection.js';
 
 const details = { environment: {}, workingDirectory: undefined } as never;
 
-function fakeConnection(keyFilePath: string, knownHostsPath: string) {
+function fakeConnection(keyFilePath: string, knownHostsPath: string, agentPid?: string) {
   const conn = new SSHConnection('k', 'h', { preferAgent: false });
   Object.assign(conn, {
     setupResult: {
@@ -29,6 +30,7 @@ function fakeConnection(keyFilePath: string, knownHostsPath: string) {
       knownHostsPath,
       keyFilePath,
       connectionMethod: 'file-based',
+      ...(agentPid && { agentPid }),
     },
     isSetup: true,
   });
@@ -39,6 +41,7 @@ describe('windows external terminal handoff', () => {
   beforeEach(() => {
     launchTerminal.mockReset();
     launchTerminal.mockReturnValue({ success: true });
+    terminalType = 'windows-terminal';
   });
 
   it('hands the key and known_hosts to the launcher and the parent deletes neither', async () => {
@@ -61,6 +64,32 @@ describe('windows external terminal handoff', () => {
     launchTerminal.mockReturnValue({ success: false, error: 'nope' });
     const conn = fakeConnection('C:/t/key.pem', 'C:/t/kh');
     await expect(launchExternalTerminal(conn, 'u@h', undefined, 't', details)).rejects.toThrow();
+    expect(conn.handoffResources.keyFilePath).toBe('C:/t/key.pem');
+  });
+
+  it('the remote command reaches the launcher as base64 text with no line break', async () => {
+    const conn = fakeConnection('C:/t/key.pem', 'C:/t/kh');
+    await launchExternalTerminal(conn, 'u@h', 'cd /x\nexport A=1 && exec bash', 't', details);
+    const argv = launchTerminal.mock.calls[0][1].argv as string[];
+    expect(argv.at(-1)).toMatch(
+      /^f=\$\(mktemp\)&&echo [A-Za-z0-9+/=]+\|base64 -d\|gzip -dc>\$f&&exec bash \$f$/
+    );
+  });
+
+  it('mintty is outside the cleanup terminals: no handoff, no cleanupFiles, the parent still owns the files', async () => {
+    terminalType = 'mintty';
+    const conn = fakeConnection('C:/t/key.pem', 'C:/t/kh');
+    await launchExternalTerminal(conn, 'u@h', 'echo hi', 't', details);
+    const opts = launchTerminal.mock.calls[0][1];
+    expect(opts.cleanupFiles).toBeUndefined();
+    expect(opts.argv.at(-1)).toBe('echo hi');
+    expect(conn.handoffResources.keyFilePath).toBe('C:/t/key.pem');
+  });
+
+  it('an agent pid keeps everything with the parent, since no Windows launcher stops the agent', async () => {
+    const conn = fakeConnection('C:/t/key.pem', 'C:/t/kh', '4242');
+    await launchExternalTerminal(conn, 'u@h', undefined, 't', details);
+    expect(launchTerminal.mock.calls[0][1].cleanupFiles).toBeUndefined();
     expect(conn.handoffResources.keyFilePath).toBe('C:/t/key.pem');
   });
 });

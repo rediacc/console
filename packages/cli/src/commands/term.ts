@@ -4,6 +4,7 @@ import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
 import { exitTrapShell, newExitMarker, waitForSessionEnd } from '../remote/ssh/session-exit.js';
+import { sweepStaleTermTempFiles } from '../remote/utils/stale-temp.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
@@ -293,6 +294,7 @@ function shouldUseExternalTerminal(options: TermConnectOptions): boolean {
   const isTTY = process.stdin.isTTY && process.stdout.isTTY;
   return options.command ? options.external === true : (options.external ?? !isTTY);
 }
+
 async function executeSSH(
   sshConnection: SSHConnection,
   destination: string,
@@ -379,6 +381,7 @@ function splitTargetRoles(target: ConnectTarget): {
 async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {
   assertCommandNotBlank(options);
   const startTime = Date.now();
+  sweepStaleTermTempFiles();
 
   const target = await resolveConnectTarget(targetRef, { readOnly: true });
   await enforceTermPolicy(options, target);

@@ -1,6 +1,7 @@
 import { t } from '../i18n/index.js';
 import type { SSHConnection } from '../remote/ssh/index.js';
 import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
+import { windowsRemoteBootstrap } from '../remote/terminal/windows-launch.js';
 import { getPlatform } from '../remote/utils/platform.js';
 import { outputService } from '../services/core/output.js';
 import type { ConnectionDetails } from '../services/machine/ssh-connection.js';
@@ -33,8 +34,10 @@ function planHandoff(
   terminalType: string,
   onWindows: boolean
 ): HandoffResources | undefined {
-  // All or nothing: with an agent pid the wrapper cannot put in its script, everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
-  const eligible = !resources.agentPid || isNumericPid(resources.agentPid);
+  // All or nothing: with an agent pid the terminal cannot stop (the Windows launchers stop none, the POSIX wrapper only a numeric pid), everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
+  const eligible = onWindows
+    ? !resources.agentPid
+    : !resources.agentPid || isNumericPid(resources.agentPid);
   const terminalOk = !onWindows || WINDOWS_CLEANUP_TERMINALS.has(terminalType);
   return eligible && terminalOk ? resources : undefined;
 }
@@ -51,6 +54,20 @@ async function waitForSpawnError(result: ReturnType<typeof launchTerminal>): Pro
   });
 }
 
+/** The ssh argv of an external launch. cmd.exe and PowerShell cannot carry the remote script's line breaks and metacharacters, so those terminals get it as base64 text. */
+function buildSshArgv(
+  sshConnection: SSHConnection,
+  destination: string,
+  remoteCommand: string | undefined,
+  terminalType: string,
+  onWindows: boolean
+): string[] {
+  const argv = ['ssh', ...sshConnection.sshOptions, destination];
+  if (!remoteCommand) return argv;
+  const viaScriptFile = onWindows && WINDOWS_CLEANUP_TERMINALS.has(terminalType);
+  return [...argv, viaScriptFile ? windowsRemoteBootstrap(remoteCommand) : remoteCommand];
+}
+
 export async function launchExternalTerminal(
   sshConnection: SSHConnection,
   destination: string,
@@ -58,13 +75,10 @@ export async function launchExternalTerminal(
   title: string,
   connectionDetails: ConnectionDetails
 ): Promise<void> {
-  const sshArgv = ['ssh', ...sshConnection.sshOptions, destination];
-  if (remoteCommand) {
-    sshArgv.push(remoteCommand);
-  }
   const terminalType = getDefaultTerminalType();
-  // The external terminal's ssh outlives this process's 500 ms wait, so the credentials move to it. On POSIX it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. On Windows the cmd/PowerShell line itself deletes the key and known_hosts when ssh ends (the launcher's cleanupFiles), and the parent skips its own deletion.
   const onWindows = getPlatform() === 'windows';
+  const sshArgv = buildSshArgv(sshConnection, destination, remoteCommand, terminalType, onWindows);
+  // The external terminal's ssh outlives this process's 500 ms wait, so the credentials move to it. On POSIX it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. On Windows the launch script (.cmd or PowerShell) itself deletes the key and known_hosts when ssh ends (the launcher's cleanupFiles), and the parent skips its own deletion.
   const handoff = planHandoff(sshConnection.handoffResources, terminalType, onWindows);
   const argv = handoff && !onWindows ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
   const cleanupFiles =

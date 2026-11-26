@@ -7,9 +7,9 @@
  */
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TerminalType } from '../../types/index.js';
 
 interface Spawned {
@@ -36,16 +36,8 @@ vi.mock('../../utils/platform.js', async (importOriginal) => ({
 
 vi.mock('../detector.js', () => ({ findMSYS2Installation: () => '/msys64' }));
 
-const {
-  appleScriptString,
-  buildBashExports,
-  cmdEscape,
-  launchTerminal,
-  posixCommandLine,
-  powershellEncodedCommand,
-  windowsCommandLine,
-  windowsQuoteArg,
-} = await import('../launchers.js');
+const { appleScriptString, buildBashExports, launchTerminal, posixCommandLine, windowsQuoteArg } =
+  await import('../launchers.js');
 
 const SECRET = 'term-secret-value-3K';
 const ENV = { REDIACC_REPOSITORY: 'app', REDIACC_SECRET_TOKEN: SECRET };
@@ -69,6 +61,17 @@ const ALL = [
   'wsl',
 ] as const satisfies readonly TerminalType[];
 
+const WINDOWS_SCRIPT_TERMINALS: ReadonlySet<string> = new Set([
+  'windows-terminal',
+  'powershell',
+  'cmd',
+]);
+
+/** The cmd and PowerShell launchers refuse a double quote (the remote command ships as base64 text, see windows-launch.ts). */
+function argvFor(type: string): string[] {
+  return WINDOWS_SCRIPT_TERMINALS.has(type) ? ARGV.map((a) => a.replaceAll('"', '')) : ARGV;
+}
+
 /** Runs a POSIX command line with `printf` standing in for ssh; returns the argv it saw. */
 function argvSeenBy(commandLine: string): string[] {
   const probe = commandLine.replace(/^'ssh'/, `'printf' '%s\\0'`);
@@ -81,13 +84,23 @@ describe('terminal launchers', () => {
     wsl = true;
   });
 
+  afterEach(() => {
+    // The cmd launchers write a launch script; remove what these tests left.
+    for (const { args } of spawned) {
+      for (const arg of args) {
+        const script = /"?([^"]*rdc-term-[0-9a-f]+\.cmd)"?/.exec(arg)?.[1];
+        if (script) rmSync(script, { force: true });
+      }
+    }
+  });
+
   it('buildBashExports exports only the non-secret variables', () => {
     expect(buildBashExports(ENV)).toBe("export REDIACC_REPOSITORY='app' && ");
   });
 
   for (const type of ALL) {
     it(`${type}: no secret in the arguments or the environment it spawns with`, () => {
-      launchTerminal(type, { argv: ARGV, environmentVariables: ENV, title: 'T' });
+      launchTerminal(type, { argv: argvFor(type), environmentVariables: ENV, title: 'T' });
       expect(spawned.length).toBeGreaterThan(0);
       for (const { args, env } of spawned) {
         for (const arg of args) expect(arg).not.toContain(SECRET);
@@ -148,38 +161,6 @@ describe('terminal launchers', () => {
     expect(windowsQuoteArg('a\\"b')).toBe('"a\\\\\\"b"');
     expect(windowsQuoteArg('a b\\')).toBe('"a b\\\\"');
     expect(windowsQuoteArg(`it's a \\ "x"`)).toBe(`"it's a \\ \\"x\\""`);
-    expect(windowsCommandLine(['ssh', 'a b'])).toBe('ssh "a b"');
-  });
-
-  it('cmd.exe escaping carets every metacharacter', () => {
-    expect(cmdEscape('"a & b" | (c) %X% <d> !e! ^')).toBe(
-      '^"a ^& b^" ^| ^(c^) ^%X^% ^<d^> ^!e^! ^^'
-    );
-  });
-
-  it('cmd and windows-terminal pass the escaped line verbatim', () => {
-    launchTerminal('cmd', { argv: ARGV });
-    launchTerminal('windows-terminal', { argv: ARGV, title: 'Rediacc - m' });
-    const line = cmdEscape(windowsCommandLine(ARGV));
-    expect(spawned[0].args).toEqual(['/k', line]);
-    expect(spawned[1].args).toEqual([
-      '--title',
-      '"Rediacc - m"',
-      'cmd.exe',
-      '/k',
-      line.replaceAll(';', '\;'),
-    ]);
-  });
-
-  it('powershell runs the argv through the stop-parsing token', () => {
-    const script = Buffer.from(powershellEncodedCommand(ARGV, true), 'base64').toString('utf16le');
-    expect(script).toBe(`& 'ssh' --% ${windowsCommandLine(ARGV.slice(1))}`);
-    launchTerminal('powershell', { argv: ARGV, keepOpen: true });
-    expect(spawned[0].args).toEqual([
-      '-NoExit',
-      '-EncodedCommand',
-      powershellEncodedCommand(ARGV, true),
-    ]);
   });
 
   it('wsl inside WSL passes only a launch script path, and the script runs the argv', () => {
