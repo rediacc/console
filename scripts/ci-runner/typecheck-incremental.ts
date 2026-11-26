@@ -558,6 +558,12 @@ async function selftest(): Promise<number> {
     workerConfigs(REPO_ROOT)
   );
   const labels = real.steps.map((s) => s.label);
+  // The `tree-write: safe` pragmas cite CACHE_DIR as outside every tree; this is the assertion they lean on.
+  check(
+    CACHE_DIR.startsWith(`${os.homedir()}${path.sep}`) &&
+      path.relative(REPO_ROOT, CACHE_DIR).startsWith('..'),
+    `CACHE_DIR (${CACHE_DIR}) must sit under the home directory and outside the repository, or the tree-write pragmas are false`
+  );
   check(
     labels.includes('packages/cli/tsconfig.test.json'),
     'the real plan must include packages/cli/tsconfig.test.json, the project the 2026-10-01 TS2322 lived in'

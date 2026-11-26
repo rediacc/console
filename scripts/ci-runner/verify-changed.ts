@@ -39,6 +39,8 @@ export type Step =
 
 const TS_RE = /\.(ts|tsx|mts)$/;
 const TEST_RE = /\.test\.(ts|tsx)$/;
+/** A tsconfig or a package manifest changes how its project typechecks as surely as a source file does. */
+const PROJECT_CONFIG_RE = /(^|\/)(tsconfig[^/]*\.json|package\.json)$/;
 
 function projectOf(file: string): { dir: string; config: string } | undefined {
   return PROJECTS.find((p) => file.startsWith(`${p.dir}/`));
@@ -65,7 +67,7 @@ export function planSteps(changed: readonly string[], exists: (p: string) => boo
   for (const file of [...changed].sort((a, b) => a.localeCompare(b))) {
     if (file.endsWith('.py')) anyPy = true;
     const project = projectOf(file);
-    if (project && TS_RE.test(file)) touched.add(project.config);
+    if (project && (TS_RE.test(file) || PROJECT_CONFIG_RE.test(file))) touched.add(project.config);
     const pkg = VITEST_PACKAGES.find((p) => file.startsWith(`${p}/`));
     if (!pkg || !TS_RE.test(file) || !exists(file)) continue;
     const rel = (f: string): string => f.slice(pkg.length + 1);
@@ -115,10 +117,9 @@ export function changedFiles(base?: string): string[] {
     const main = path.dirname(
       path.resolve(REPO_ROOT, git(['rev-parse', '--git-common-dir']).trim())
     );
-    const tip = spawnSync('git', ['-C', main, 'rev-parse', 'HEAD'], {
-      encoding: 'utf8',
-    }).stdout.trim();
-    from = tip ? git(['merge-base', 'HEAD', tip]).trim() : 'HEAD';
+    // A failed read must stop the run: a silent fall back to HEAD would drop the lease's own commits from the change set.
+    const tip = git(['-C', main, 'rev-parse', 'HEAD']).trim();
+    from = git(['merge-base', 'HEAD', tip]).trim();
   }
   const set = new Set(lines(git(['diff', '--name-only', '--diff-filter=d', from ?? 'HEAD'])));
   for (const f of lines(git(['ls-files', '--others', '--exclude-standard']))) set.add(f);
@@ -130,6 +131,24 @@ interface Result {
   rc: number;
   ms: number;
   note?: string;
+  /** The step ran nothing and says so; the summary may not call that verified. */
+  skipped?: boolean;
+}
+
+/** The closing line and exit code: OK only when every step ran and passed; a skipped step makes it PARTIAL, never OK. */
+export function summarize(results: readonly Pick<Result, 'rc' | 'skipped'>[]): {
+  line: string;
+  rc: number;
+} {
+  const bad = results.filter((r) => r.rc !== 0).length;
+  const skipped = results.filter((r) => r.skipped).length;
+  if (bad > 0) return { line: `verify: FAILED (${bad} step(s))`, rc: 1 };
+  if (skipped > 0)
+    return {
+      line: `verify: PARTIAL (${skipped} step(s) skipped, nothing ran for them; name their own acceptance check)`,
+      rc: 0,
+    };
+  return { line: 'verify: OK', rc: 0 };
 }
 
 function run(cmd: string, args: string[], cwd: string, env?: NodeJS.ProcessEnv): number {
@@ -147,7 +166,11 @@ function runPytest(base?: string): Omit<Result, 'label' | 'ms'> {
   }
   const out = JSON.parse(sel.stdout) as { pytestScope: string; reason: string; files: string[] };
   if (out.pytestScope === 'full')
-    return { rc: 0, note: `SKIPPED: selector says FULL (${out.reason}); CI runs the whole suite` };
+    return {
+      rc: 0,
+      skipped: true,
+      note: `SKIPPED: selector says FULL (${out.reason}); CI runs the whole suite`,
+    };
   if (out.files.length === 0) return { rc: 0, note: 'no test file selected' };
   const rc = run('python3', ['-m', 'pytest', '-q', ...out.files], REPO_ROOT, { PYTHONPATH: '.ci' });
   return { rc, note: `${out.files.length} file(s)` };
@@ -205,9 +228,9 @@ export function main(argv: string[]): number {
     process.stdout.write(
       `verify: rc=${r.rc} ${(r.ms / 1000).toFixed(1)}s ${r.label}${r.note ? ` [${r.note}]` : ''}\n`
     );
-  const bad = results.filter((r) => r.rc !== 0).length;
-  process.stdout.write(`verify: ${bad === 0 ? 'OK' : `FAILED (${bad} step(s))`}\n`);
-  return bad === 0 ? 0 : 1;
+  const sum = summarize(results);
+  process.stdout.write(`${sum.line}\n`);
+  return sum.rc;
 }
 
 if (isEntryPoint(import.meta.filename)) process.exit(main(process.argv.slice(2)));

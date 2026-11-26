@@ -1,10 +1,11 @@
 /**
  * Controls for scripts/ci-runner/verify-changed.ts planSteps (run with `npx tsx`).
  *
- * Each case plans a change set against a fake file system, so no real file is read. The cases: a `.ts` file with a sibling test, a `.py` file, a file with no test, and a package-less file.
+ * Each case plans a change set against a fake file system, so no real file is read. The cases: a `.ts` file with a sibling test, a `.py` file, a file with no test, a package-less file, a www file, a scripts file, a tsconfig or package.json edit, and the closing summary (FAILED, PARTIAL for a skipped step, OK).
+ * Wired into `npm run check:ci-runner-selftest`, which runs this file after the runner's own selftest.
  */
 import process from 'node:process';
-import { planSteps, siblingTest } from '../verify-changed';
+import { planSteps, siblingTest, summarize } from '../verify-changed';
 
 let failed = 0;
 function check(name: string, ok: boolean): void {
@@ -13,7 +14,9 @@ function check(name: string, ok: boolean): void {
 }
 
 // The fake tree's paths are composed from real directories: written whole they read as claims about this repository to check:ci-paths-exist, which reports every one as dead.
-const CLI = 'packages/cli/src';
+const PKG_CLI = 'packages/cli';
+const SCRIPTS = 'scripts';
+const CLI = `${PKG_CLI}/src`;
 const WWW = 'packages/www/src';
 const FS = new Set([
   `${CLI}/a.ts`,
@@ -63,6 +66,30 @@ check(
   'scripts file: typecheck of scripts/tsconfig.json, no vitest',
   JSON.stringify(labels(['scripts/ci-runner/c.ts'])) ===
     JSON.stringify(['typecheck scripts/tsconfig.json'])
+);
+
+check(
+  'tsconfig edit in a project: typecheck of that project, no vitest',
+  JSON.stringify(labels([`${PKG_CLI}/tsconfig.test.json`])) ===
+    JSON.stringify(['typecheck packages/cli/tsconfig.test.json'])
+);
+
+check(
+  'package.json edit in a project: typecheck of that project',
+  JSON.stringify(labels([`${SCRIPTS}/package.json`])) ===
+    JSON.stringify(['typecheck scripts/tsconfig.json'])
+);
+
+check('summary: all ran and passed is OK rc 0', summarize([{ rc: 0 }]).line === 'verify: OK');
+check(
+  'summary: a skipped step is PARTIAL, never OK',
+  summarize([{ rc: 0 }, { rc: 0, skipped: true }]).line.startsWith('verify: PARTIAL') &&
+    summarize([{ rc: 0, skipped: true }]).rc === 0
+);
+check(
+  'summary: a failed step is FAILED rc 1 even beside a skipped one',
+  summarize([{ rc: 1 }, { rc: 0, skipped: true }]).line === 'verify: FAILED (1 step(s))' &&
+    summarize([{ rc: 1 }]).rc === 1
 );
 
 process.exit(failed === 0 ? 0 : 1);
