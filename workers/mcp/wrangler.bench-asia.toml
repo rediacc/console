@@ -19,6 +19,39 @@ MCP_HOST = "mcp.bench-asia.rediacc.cloud"
 # The region's account origin: a grant that stopped serving names its re-authorization page there (Design 5).
 ACCOUNT_URL = "https://bench-asia.rediacc.cloud"
 
+# The region's own Workers, never another region's (Design 1 and 12): the account Worker's ExecutorIssuer
+# entrypoint answers a grant (`GRANTS`), the proxy Worker's McpExecutor entrypoint runs a tool call (`EXECUTOR`).
+[[services]]
+binding = "GRANTS"
+service = "account-bench-asia"
+entrypoint = "ExecutorIssuer"
+
+[[services]]
+binding = "EXECUTOR"
+service = "proxy-bench-asia"
+entrypoint = "McpExecutor"
+
+# The OAuth provider's store, one namespace per Worker and so per region (Design 12). No id is written:
+# wrangler provisions the namespace on the first deploy and reuses it afterwards, so no namespace id
+# is committed. The Worker secrets AUTH_REQUEST_KEY and CONFIRM_KEY are set by rediacc_ci.deploy.deploy_mcp,
+# never in this file.
+[[kv_namespaces]]
+binding = "OAUTH_KV"
+
+# The per-grant rate limiter and nonce store (Design 6 and 8).
+[[durable_objects.bindings]]
+name = "RATE"
+class_name = "GrantRateObject"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["GrantRateObject"]
+
+# Per-grant call counters (Design 10): one dataset per region, `mcp_<region>` (`mcp_bench_<region>` on a bench).
+[[analytics_engine_datasets]]
+binding = "MCP_METRICS"
+dataset = "mcp_bench_asia"
+
 # Telemetry export to the region's destination pair, which the account and proxy Workers of the
 # region share; Cloudflare keeps no copy (persist = false). Invocation logs stay off, so no request
 # URL is written by the platform (Design 9, D14).

@@ -593,6 +593,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_run_verbs.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_record.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_mcp.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_proxy_configs.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_set_www_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py",

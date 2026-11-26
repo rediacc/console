@@ -662,6 +662,28 @@ jobs:
           --target "$TARGET" --region "$REGION" --smoke-only
           --record "$RUNNER_TEMP/deploy-record/proxy.json"
 
+      # The remote MCP Worker of the region (PLAN-rmcp-remote-worker.md Design 10, box RW-D2). It binds
+      # this region's account and proxy Workers, so it deploys after both and after the proxy smoke.
+      # deploy_mcp pushes AUTH_REQUEST_KEY and CONFIRM_KEY only when the Worker lacks them, smokes the
+      # OAuth metadata and an anonymous 401, and records the version and its rollback command.
+      - name: Install MCP Worker dependencies
+        if: steps.proxy_smoke.outcome == 'success'
+        run: npm ci
+        working-directory: workers/mcp
+
+      - name: Deploy MCP Worker (${{ matrix.id }})
+        id: mcp_deploy
+        if: steps.proxy_smoke.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          TARGET: stable
+          REGION: ${{ matrix.id }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_mcp
+          --target "$TARGET" --region "$REGION"
+          --record "$RUNNER_TEMP/deploy-record/mcp.json"
+
       # Ruling ASKED:2026-10-25T18:18Z "Closed until smoke passes": the region's
       # console executor opens only on this release's passing proxy smoke.
       - name: Enable console executor (${{ matrix.id }})
