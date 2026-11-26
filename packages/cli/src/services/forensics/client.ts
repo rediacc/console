@@ -213,7 +213,11 @@ function explain(error: unknown): unknown {
   return error;
 }
 
-/** Canonical padded base64, the only form `Buffer#toString('base64')` on the server writes. */
+/**
+ * Canonical padded base64, the only form `Buffer#toString('base64')` on the server writes. The shape
+ * alone admits non-canonical pad bits (`AB==` decodes to the bytes of `AA==`), so the decoded bytes
+ * must also re-encode to the exact input.
+ */
 const STRICT_BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 const PDF_MAGIC = '%PDF-';
 /** The end-of-file marker a complete PDF carries within its last 1024 bytes (ISO 32000-1, 7.5.5). */
@@ -230,9 +234,10 @@ const PDF_TAIL_BYTES = 1024;
 export function decodeReportPdf(base64: unknown, reportId: string): Uint8Array {
   if (typeof base64 === 'string' && base64.length > 0 && STRICT_BASE64.test(base64)) {
     const bytes = Buffer.from(base64, 'base64');
+    const canonical = bytes.toString('base64') === base64;
     const head = bytes.subarray(0, PDF_MAGIC.length).toString('latin1');
     const tail = bytes.subarray(-PDF_TAIL_BYTES).toString('latin1');
-    if (head === PDF_MAGIC && tail.includes(PDF_EOF)) {
+    if (canonical && head === PDF_MAGIC && tail.includes(PDF_EOF)) {
       return new Uint8Array(bytes);
     }
   }

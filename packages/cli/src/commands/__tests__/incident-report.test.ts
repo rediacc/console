@@ -39,10 +39,11 @@ import { runIncidentExport } from '../incident.js';
 
 const NOW = new Date('2026-11-25T12:00:00.000Z');
 const REPORT_ID = '0b8f3c2a-1d4e-4f6a-9b7c-5e2d1a3c4b6f';
-// Every byte value, so a text-only path would corrupt it.
+// Every byte value, so a text-only path would corrupt it, closed by the end-of-file marker `decodeReportPdf` demands.
 const PDF = Uint8Array.from([
   ...Buffer.from('%PDF-1.7\n'),
   ...Array.from({ length: 256 }, (_, i) => i),
+  ...Buffer.from('\n%%EOF\n'),
 ]);
 const REPORT = { header: { generatedAt: '2026-11-25T11:00:00.000Z' }, facts: [{ id: 'a', n: 1 }] };
 

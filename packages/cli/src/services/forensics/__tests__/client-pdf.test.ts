@@ -13,6 +13,23 @@ const PDF = Buffer.from(
 );
 const GOOD = PDF.toString('base64');
 
+/**
+ * `GOOD` with the unused low bits of its last data character set: the shape is still padded base64
+ * and `Buffer.from` decodes it to the same bytes, but it is not what any encoder writes.
+ */
+function withLooseTail(base64: string): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const pad = base64.length - base64.replace(/=+$/, '').length;
+  if (pad === 0) throw new Error('fixture control: GOOD carries no padding');
+  const at = base64.length - pad - 1;
+  const loose = alphabet[alphabet.indexOf(base64.charAt(at)) | (pad === 2 ? 0b1111 : 0b11)];
+  const out = `${base64.slice(0, at)}${loose}${base64.slice(at + 1)}`;
+  if (out === base64 || !Buffer.from(out, 'base64').equals(Buffer.from(base64, 'base64'))) {
+    throw new Error('fixture control: the loose tail must differ and decode to the same bytes');
+  }
+  return out;
+}
+
 function clientAnswering(body: unknown): ForensicsClient {
   const fetchFn = ((path: string) =>
     Promise.resolve(path.endsWith('/pdf-base64') ? body : {})) as ForensicsFetch;
@@ -35,6 +52,7 @@ describe('downloadReport pdf', () => {
     ['a cut on a 4-character boundary that drops the end-of-file marker', GOOD.slice(0, -40)],
     ['bytes that are no PDF', Buffer.from('<html>not a pdf</html>').toString('base64')],
     ['an empty string', ''],
+    ['non-canonical pad bits in the last group', withLooseTail(GOOD)],
   ])('refuses %s', async (_label, base64) => {
     await expect(download({ fileName: 'r.pdf', base64 })).rejects.toBeInstanceOf(CliExitError);
   });
