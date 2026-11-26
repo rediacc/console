@@ -37,7 +37,8 @@ async function run(args: string[]): Promise<void> {
 describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
   const realPlatform = process.platform;
   let stderrWrite: ReturnType<typeof vi.spyOn>;
-  const echoed = (): string => stderrWrite.mock.calls.map((call: unknown[]) => String(call[0])).join('');
+  const echoed = (): string =>
+    stderrWrite.mock.calls.map((call: unknown[]) => String(call[0])).join('');
   beforeEach(() => {
     spawn.mockReset();
     spawn.mockImplementation(() => child());
