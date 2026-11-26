@@ -862,3 +862,120 @@ def test_control_a_named_test_of_another_module_beside_the_new_home_is_refused(t
     )
     with pytest.raises(ValueError, match=r"does not touch workers/mcp/src/call\.ts"):
         R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", RELOCATE], ME)
+
+
+CALLER = "packages/cli/src/services/renet/renet-execution.ts"
+DEFINER = "packages/cli/src/services/preview/touch.ts"
+USER = "packages/cli/src/services/preview/slot-ops.ts"
+DEFINER_TEST = "packages/cli/src/services/preview/__tests__/touch.test.ts"
+DEFINER_BODY = (
+    "export function previewTouchOption(machine?: string) {\n"
+    "  if (!machine) throw new ValidationError('machine');\n"
+    "  return { previewTouch: { machine } };\n"
+    "}\n"
+    "export function touch(machine: string) {\n  return machine;\n}\n"
+)
+
+
+def _definer_world(tmp_path):
+    """#eff552fc: the finding is anchored on the caller of `previewTouchOption`; the symbol is defined in touch.ts, which the reviewed commit also adds."""
+    repo = _repo(tmp_path)
+    reviewed = _write(
+        repo,
+        "feat: pin the renet",
+        {
+            DEFINER: DEFINER_BODY,
+            CALLER: (
+                "import { previewTouchOption, touch } from '../preview/touch.js';\n"
+                "export function acquireRemoteRenet(machineName?: string) {\n"
+                "  touch(machineName ?? '');\n"
+                "  return { ...previewTouchOption(machineName) };\n}\n"
+            ),
+            USER: (
+                "import { previewTouchOption } from './touch.js';\n"
+                "export const slot = (m: string) => previewTouchOption(m);\n"
+            ),
+            DEFINER_TEST: "it('a', () => 1);\n",
+        },
+    )
+    return repo, reviewed
+
+
+def _definer_fix(repo, module=DEFINER, body=None):
+    body = body or DEFINER_BODY.replace("if (!machine) throw", "if (!machine && replacing) throw")
+    return _write(
+        repo,
+        "fix: refuse only at a replacement",
+        {module: body, DEFINER_TEST: "it('a', () => 1);\nit('b', () => 2);\n"},
+    )
+
+
+def _closed(repo, reviewed, fix):
+    resolution = R.read_review(R.review_path(repo, BRANCH, reviewed))[0].findings[0].resolution
+    return ("fixed %s" % fix) in resolution
+
+
+def test_a_fix_of_the_module_defining_a_claimed_symbol_closes_the_callers_finding(tmp_path):
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(
+        repo,
+        reviewed,
+        CALLER,
+        "previewTouchOption throws a ValidationError whenever machineName is undefined, on every acquireRemoteRenet call.",
+    )
+    fix = _definer_fix(repo)
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+    assert _closed(repo, reviewed, fix)
+
+
+def test_a_backtick_quoted_symbol_names_the_definition_too(tmp_path):
+    """`touch` is too plain for the bare-identifier rule (no case change, under 6 characters); quoted, the claim names it."""
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(repo, reviewed, CALLER, "`touch()` runs with an empty machine name.")
+    fix = _definer_fix(repo, body=DEFINER_BODY.replace("return machine;", "return machine || 'x';"))
+    R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+    assert _closed(repo, reviewed, fix)
+
+
+def test_control_a_claim_naming_no_symbol_the_fixed_module_defines_is_refused(tmp_path):
+    """acquireRemoteRenet is defined in the caller, not in touch.ts, so a fix of touch.ts answers nothing about it."""
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(
+        repo, reviewed, CALLER, "acquireRemoteRenet provisions before the replacement is decided."
+    )
+    fix = _definer_fix(repo)
+    with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+
+
+def test_control_a_plain_unquoted_word_names_no_definition(tmp_path):
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(repo, reviewed, CALLER, "the touch runs with an empty machine name.")
+    fix = _definer_fix(repo, body=DEFINER_BODY.replace("return machine;", "return machine || 'x';"))
+    with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+
+
+def test_control_a_module_that_only_calls_the_symbol_is_no_definition(tmp_path):
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(
+        repo, reviewed, CALLER, "previewTouchOption throws whenever machineName is unset."
+    )
+    fix = _definer_fix(
+        repo,
+        module=USER,
+        body="import { previewTouchOption } from './touch.js';\n"
+        "export const slot = (m: string) => previewTouchOption(m || 'x');\n",
+    )
+    with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix, "--test", DEFINER_TEST], ME)
+
+
+def test_control_the_definition_rule_needs_a_named_test(tmp_path):
+    repo, reviewed = _definer_world(tmp_path)
+    fid = _record(
+        repo, reviewed, CALLER, "previewTouchOption throws whenever machineName is unset."
+    )
+    fix = _definer_fix(repo)
+    with pytest.raises(ValueError, match=r"does not touch packages/cli/src/services/renet"):
+        R.mark(repo, BRANCH, fid, "fixed", [fix], ME)

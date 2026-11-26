@@ -3722,6 +3722,54 @@ def claim_exercised_by_test(repo, fix, test_path, claim):
     )
 
 
+CLAIM_QUOTED_RE = re.compile(r"`([A-Za-z_$][A-Za-z0-9_$.]*)(?:\(\))?`")
+_IDENT_SHAPE_RE = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
+# A definition of NAME across the languages here: a TS/JS function, class, interface, type, enum or binding; a Python def or class; a Go func (method receiver allowed), type, var or const; a shell function; a module-level assignment at column 0 (a Python constant).
+_DEFINITION_RE = (
+    r"(?m)(?:\b(?:function\*?|class|interface|type|enum|const|let|var|def|func)\s+(?:\([^)]*\)\s*)?%(n)s(?![A-Za-z0-9_$])"
+    r"|^\s*%(n)s\s*\(\)\s*\{"
+    r"|^%(n)s\s*(?::[^=\n]*)?=(?!=))"
+)
+
+
+def claim_symbols(claim):
+    """The symbols a claim names: its compound identifiers (`claim_identifiers`, file names dropped) and any identifier-shaped backtick-quoted name of at least 4 characters (`touch()`, `opts.retry` read as `retry`), which the bare rule would read as a plain word."""
+    names = {n for n in claim_identifiers(claim) if _IDENT_SHAPE_RE.match(n)}
+    for quoted in CLAIM_QUOTED_RE.findall(claim or ""):
+        last = quoted.rsplit(".", 1)[-1]
+        if len(last) >= 4 and _IDENT_SHAPE_RE.match(last):
+            names.add(last)
+    return names
+
+
+def defines_claimed_symbol(repo, fix, touched, claim, anchored, reviewed):
+    """Whether a non-test file the fix touched DEFINES, in the fix's tree, a symbol the claim names that the anchored file uses (#eff552fc: the claim names `previewTouchOption`, the finding is anchored on its caller renet-execution.ts, and the fix changed its defining module touch.ts).
+
+    The anchored file must name the symbol (at the reviewed commit or at the fix), so the definition is of something the anchor calls; a module that only calls the symbol is no definition. The caller pairs this with a `--test` the fix touched."""
+    names = claim_symbols(claim)
+    if not names:
+        return False
+    anchor_text = "\n".join(
+        git(repo, "show", "%s:%s" % (at, anchored))[1] for at in (reviewed, fix)
+    )
+    names = {
+        n
+        for n in names
+        if re.search(r"(?<![A-Za-z0-9_$])%s(?![A-Za-z0-9_$])" % re.escape(n), anchor_text)
+    }
+    if not names:
+        return False
+    for path in touched:
+        if path == anchored or is_test_path(path):
+            continue
+        rc, text = git(repo, "show", "%s:%s" % (fix, path))
+        if rc != 0:
+            continue
+        if any(re.search(_DEFINITION_RE % {"n": re.escape(n)}, text) for n in names):
+            return True
+    return False
+
+
 _IMPORT_LINE_RE = re.compile(
     r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE
 )
@@ -3977,6 +4025,13 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 test_path
                 and test_claim
                 and claim_exercised_by_test(repo, fix, test_path, finding.claim)
+            )
+            # A fix of the module that DEFINES a symbol the claim names, anchored on its caller, with a named test the fix touched (#eff552fc).
+            or bool(
+                test_path
+                and defines_claimed_symbol(
+                    repo, fix, touched, finding.claim, finding.file, review.sha
+                )
             )
         )
         if not followed:
