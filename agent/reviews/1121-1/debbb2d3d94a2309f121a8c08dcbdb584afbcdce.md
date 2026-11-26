@@ -22,4 +22,4 @@ Body-Sig: 75c77b0c157a3812
 Anchor: in-diff
 Claim: The unchanged comment says the vitest plugin supplies the tests and that entry points need no `entry`, but this commit adds an explicit `entry` for workers/account because its vitest plugin is off, so the comment is wrong for that worker.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 423f50045c14a11eed9089d9bb631dc76987e7ed | d778be9d 2026-11-26T15:19:35Z

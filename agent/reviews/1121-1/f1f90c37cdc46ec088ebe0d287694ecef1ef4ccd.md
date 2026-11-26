@@ -22,4 +22,4 @@ Body-Sig: aff88f17aaa1e6c4
 Anchor: in-diff
 Claim: Any English `<k>_other` key with an English `<k>` or `<k>_<cat>` sibling makes `<k>` a suffix plural group, so a language's `<k>_<cat>` key that it selects (e.g. ru `source_one` when English has a non-plural `source` and `source_other`) is no longer reported as an orphan; the gate loses that detection for any such pair.
 Class: other
-Resolution: open
+Resolution: not-a-bug | scripts/gates/check-translation-completeness.ts:657 | d778be9d 2026-11-26T15:20:49Z

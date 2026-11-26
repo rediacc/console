@@ -22,7 +22,7 @@ Body-Sig: 1d6ddd31495594b6
 Anchor: in-diff
 Claim: The new `any(a.startswith("-") ...)` test treats any dash-prefixed token in a prose line that names an entry point as a call (e.g. `# see check_x.py for details -h`), so such prose is now checked and can fail the gate; no test covers prose that contains a dash token, only prose with no flag at all.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed ac8e280b085af6ce676edbb121b8875592d980d3 | d778be9d 2026-11-26T15:18:30Z
 
 ### 8dee6a3b.2 [low] docs/ci-overhaul/07-port-brief.md:97
 Anchor: in-diff
