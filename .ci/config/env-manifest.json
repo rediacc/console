@@ -179,6 +179,8 @@
       "BENCH_STORE_RECOVERY_CODE_ASIA",
       "BENCH_STORE_RECOVERY_CODE_EU",
       "BENCH_STORE_RECOVERY_CODE_US",
+      "BENCH_WIPE_R2_ACCESS_KEY_ID",
+      "BENCH_WIPE_R2_SECRET_ACCESS_KEY",
       "BWS_ACCESS_TOKEN",
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
@@ -2451,9 +2453,9 @@
         "REDIACC_BWS_PROFILES"
       ],
       ".ci/rediacc_ci/ops/reset_bench.py": [
-        "CLOUDFLARE_R2_ACCESS_KEY_ID",
+        "BENCH_WIPE_R2_ACCESS_KEY_ID",
+        "BENCH_WIPE_R2_SECRET_ACCESS_KEY",
         "CLOUDFLARE_R2_ENDPOINT",
-        "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
         "REDIACC_BWS_PROFILES"
       ],
       ".ci/rediacc_ci/ops/root_login.py": [

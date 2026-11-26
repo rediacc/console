@@ -426,7 +426,14 @@ def test_delta_all_filtered_output_is_not_a_failure(world: h.World) -> None:
 
 def _reset_env(env: dict[str, str]) -> dict[str, str]:
     """The port's environment: already bound to its own `reset-bench-eu` profile, so it does not re-execute under `bws_env`. The twin had no profile, so its environment, and every golden key, is unchanged."""
-    return {**env, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
+    # Declared delta: the port signs the R2 wipe with the wipe-only `BENCH_WIPE_R2_*` pair; the bash twin (and every golden key) still reads the `CLOUDFLARE_R2_*` pair, so the same values are bound under both spellings only on the port side.
+    wipe = {}
+    if "CLOUDFLARE_R2_ACCESS_KEY_ID" in env:
+        wipe = {
+            "BENCH_WIPE_R2_ACCESS_KEY_ID": env["CLOUDFLARE_R2_ACCESS_KEY_ID"],
+            "BENCH_WIPE_R2_SECRET_ACCESS_KEY": env["CLOUDFLARE_R2_SECRET_ACCESS_KEY"],
+        }
+    return {**env, **wipe, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
 
 
 D1_TABLES = {
@@ -747,8 +754,8 @@ DEPLOY_ENV = {
     "AWS_SES_SECRET_ACCESS_KEY": "ses-secret",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "turn",
     "CLOUDFLARE_R2_ENDPOINT": "https://r2.example.invalid",
-    "CLOUDFLARE_R2_ACCESS_KEY_ID": "r2-id",
-    "CLOUDFLARE_R2_SECRET_ACCESS_KEY": "r2-secret",
+    "BENCH_WIPE_R2_ACCESS_KEY_ID": "r2-id",
+    "BENCH_WIPE_R2_SECRET_ACCESS_KEY": "r2-secret",
     "OBS_OTLP_CREDENTIALS": json.dumps({"user": "u", "pass": "p"}),
     "SELLER_NAME": "Seller",
     "AWS_IAM_ADMIN_ACCESS_KEY_ID": "iam",

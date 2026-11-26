@@ -10,7 +10,7 @@ PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscripti
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
-  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the reset-bench-eu profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
+  1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` and the wipe-only pair `BENCH_WIPE_R2_ACCESS_KEY_ID` / `BENCH_WIPE_R2_SECRET_ACCESS_KEY` (rotation slug `cf-r2-bench-wipe`, scoped to every bench config and audit bucket; the shared `CLOUDFLARE_R2_*` pair reaches only releases and configs-bench and answered AccessDenied on the audit buckets) (bound by the reset-bench-eu profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
   2. TABLE NAMES ARE QUOTED AS DATA. `DROP TABLE IF EXISTS "$t"` interpolated the name unescaped; an embedded double quote now doubles, as SQLite requires.
   8. THE DROP RUNS CHILDREN BEFORE PARENTS. Live against bench on 2026-10-01 the bash failed the drop every time (`no such table: main.organizations: SQLITE_ERROR`, 75 tables, nothing dropped): D1 enforces foreign keys, ignores `PRAGMA foreign_keys = OFF`, and the tables were dropped in name order. The port orders the drops by the `REFERENCES` in each table's `CREATE` text (`drop_order`) and uses `PRAGMA defer_foreign_keys = on`, D1's supported switch.
   3. A FAILED OBJECT DELETE IS NAMED, with the count already deleted (the bash loop ran `npx wrangler r2 object delete ... >/dev/null` under `set -e` and stopped with only wrangler's text).
@@ -41,7 +41,7 @@ from rediacc_ci.ops import bench_preflight, bench_production, cf_auth
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 # The database, its id and the bucket come from wrangler.bench-eu.toml (`bench_preflight.bench_names`), the one declaration a repoint changes; a literal here read a stale database id.
 CONFIRMATION = "wipe bench"
-# The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench-eu profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
+# The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 endpoint and the wipe-only key pair the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench-eu profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
 PROFILE = "reset-bench-eu"
 TABLE_QUERY = (
     "SELECT name, sql FROM sqlite_master WHERE type='table' "
@@ -231,14 +231,19 @@ XML_KEY = re.compile(r"<Key>([^<]*)</Key>")
 XML_NEXT_TOKEN = re.compile(r"<NextContinuationToken>([^<]*)</NextContinuationToken>")
 
 
+WIPE_KEY_ID_ENV = "BENCH_WIPE_R2_ACCESS_KEY_ID"
+WIPE_KEY_VALUE_ENV = "BENCH_WIPE_R2_SECRET_ACCESS_KEY"
+
+
 class R2Credentials:
     """The R2 S3-API credentials, read by name from the environment (the reset-bench-eu Bitwarden profile binds them)."""
 
     def __init__(self, region: str = bench_preflight.DEFAULT_REGION) -> None:
         self.config = bench_preflight.config_name(region)
         self.endpoint = (os.environ.get("CLOUDFLARE_R2_ENDPOINT") or "").rstrip("/")
-        self.key_id = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID") or ""
-        self.secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY") or ""
+        # The wipe-only pair (rotation slug `cf-r2-bench-wipe`): the shared CLOUDFLARE_R2_* pair is scoped to releases and configs-bench and answers AccessDenied on the audit buckets.
+        self.key_id = os.environ.get(WIPE_KEY_ID_ENV) or ""
+        self.secret = os.environ.get(WIPE_KEY_VALUE_ENV) or ""
         # The bucket and its jurisdiction are the CONFIG_BUCKET binding's; a jurisdictional bucket is only reachable through the `.<jurisdiction>.` host.
         try:
             names = bench_preflight.bench_names(region=region)
@@ -265,8 +270,8 @@ class R2Credentials:
         names = {
             "CONFIG_BUCKET in %s" % self.config: self.bucket,
             "CLOUDFLARE_R2_ENDPOINT": self.endpoint,
-            "CLOUDFLARE_R2_ACCESS_KEY_ID": self.key_id,
-            "CLOUDFLARE_R2_SECRET_ACCESS_KEY": self.secret,
+            WIPE_KEY_ID_ENV: self.key_id,
+            WIPE_KEY_VALUE_ENV: self.secret,
         }
         return [n for n, v in names.items() if not v]
 
@@ -407,7 +412,11 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
         return 1
     r2 = R2Credentials(region)
     if do_r2 and r2.missing():
-        log.error("the R2 wipe needs %s in the environment" % ", ".join(r2.missing()))
+        log.error(
+            "the R2 wipe needs %s in the environment; nothing was wiped. "
+            "The wipe-only pair is minted with `./run.sh rotation rotate cf-r2-bench-wipe`."
+            % ", ".join(r2.missing())
+        )
         return 1
     try:
         auth = cf_auth.resolve(ACCOUNT_ID)

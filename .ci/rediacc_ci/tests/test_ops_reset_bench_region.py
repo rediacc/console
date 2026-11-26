@@ -101,5 +101,26 @@ def test_an_unknown_or_missing_region_exits_2_before_anything(monkeypatch, argv)
     assert asked == []
 
 
+def test_a_missing_wipe_pair_refuses_before_any_wipe(monkeypatch):
+    asked: list[tuple] = []
+    real = reset_bench.R2Credentials
+    _world(monkeypatch, [], asked)
+
+    class Unbound(real):
+        def __init__(self, region="eu"):
+            monkeypatch.delenv("BENCH_WIPE_R2_ACCESS_KEY_ID", raising=False)
+            monkeypatch.delenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY", raising=False)
+            monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://abc.r2.cloudflarestorage.com")
+            super().__init__(region)
+            self.bucket = self.bucket or "configs-bench-us"
+
+    monkeypatch.setattr(reset_bench, "R2Credentials", Unbound)
+    messages: list[str] = []
+    monkeypatch.setattr(reset_bench.log, "error", lambda m, *_a: messages.append(m))
+    assert reset_bench.main(["--region", "us", "--yes"]) == 1
+    assert not any(step[0] in ("wipe_d1", "wipe_r2") for step in asked)
+    assert any("BENCH_WIPE_R2_ACCESS_KEY_ID" in m and "nothing was wiped" in m for m in messages)
+
+
 def test_the_help_names_the_region_flag():
     assert "--region" in reset_bench.HELP

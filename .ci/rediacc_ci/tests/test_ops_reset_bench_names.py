@@ -24,8 +24,8 @@ def _names(**over) -> bench_preflight.BenchNames:
 def _creds(monkeypatch, names, endpoint="https://abc123.r2.cloudflarestorage.com"):
     monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a, **_k: names)
     monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", endpoint)
-    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "k")
-    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "s")
+    monkeypatch.setenv("BENCH_WIPE_R2_ACCESS_KEY_ID", "k")
+    monkeypatch.setenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY", "s")
     return reset_bench.R2Credentials()
 
 
@@ -62,6 +62,27 @@ def test_the_audit_credentials_aim_at_the_audit_bucket_and_its_jurisdiction_host
     assert (audit.bucket, creds.bucket) == ("audit-bench", "config-bench")
     assert audit.host() == "https://abc123.r2.cloudflarestorage.com"
     assert creds.host() == "https://abc123.eu.r2.cloudflarestorage.com"
+
+
+def test_every_wiped_bucket_signs_with_the_wipe_pair_not_the_shared_pair(monkeypatch):
+    _creds(monkeypatch, _names())
+    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "shared-id")
+    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "shared-secret")
+    creds = reset_bench.R2Credentials()
+    for target in (creds, creds.audit()):
+        assert (target.key_id, target.secret) == ("k", "s")
+
+
+def test_a_missing_wipe_pair_is_named_and_the_shared_pair_does_not_stand_in(monkeypatch):
+    _creds(monkeypatch, _names())
+    monkeypatch.delenv("BENCH_WIPE_R2_ACCESS_KEY_ID")
+    monkeypatch.delenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY")
+    monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "shared-id")
+    monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "shared-secret")
+    assert reset_bench.R2Credentials().missing() == [
+        "BENCH_WIPE_R2_ACCESS_KEY_ID",
+        "BENCH_WIPE_R2_SECRET_ACCESS_KEY",
+    ]
 
 
 def test_the_query_targets_the_database_id_of_the_toml(monkeypatch):
