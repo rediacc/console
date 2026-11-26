@@ -41,6 +41,7 @@ import {
   checkContractInvariants,
   SUMMARY_MAX_LENGTH,
 } from '../../shared/src/cli-contract/validation.js';
+import { isMcpLayerErrorCode } from '../../shared/src/mcp/errors.js';
 import { cli } from '../src/cli.js';
 import {
   COMMAND_EXAMPLES,
@@ -498,7 +499,9 @@ if (metadataProblems.length > 0) {
 
 const languages = listLocales();
 
+// The MCP-layer codes (POLICY_DENIED and its siblings) carry an origin, since the executor's MCP routes raise them, but they are the MCP registry's own family, never the contract's: the registry refuses a code in both.
 const errorCodes: ContractErrorCode[] = listErrorCodeOrigins()
+  .filter(({ code }) => !isMcpLayerErrorCode(code))
   .map(({ code, origin }) => ({ code, origin }))
   .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
 

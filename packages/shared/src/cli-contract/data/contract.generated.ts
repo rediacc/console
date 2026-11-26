@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'cb803a8ac3c6ef0d';
+export const CLI_CONTRACT_VERSION = 'f67247b74c8a49e2';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "cb803a8ac3c6ef0d",
+  "version": "f67247b74c8a49e2",
   "languages": [
     "ar",
     "de",
@@ -18735,10 +18735,6 @@ export const CLI_CONTRACT: CliContract = {
     },
     {
       "code": "PERMISSION_DENIED",
-      "origin": "user"
-    },
-    {
-      "code": "POLICY_DENIED",
       "origin": "user"
     },
     {

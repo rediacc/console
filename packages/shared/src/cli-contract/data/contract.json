@@ -1,5 +1,5 @@
 {
-  "version": "cb803a8ac3c6ef0d",
+  "version": "f67247b74c8a49e2",
   "languages": [
     "ar",
     "de",
@@ -18727,10 +18727,6 @@
     },
     {
       "code": "PERMISSION_DENIED",
-      "origin": "user"
-    },
-    {
-      "code": "POLICY_DENIED",
       "origin": "user"
     },
     {
