@@ -17,7 +17,7 @@ THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 40
 
 THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
-THE LIVE-PROOF RECORD. A plain bench deploy (no `--var`, no `--company`) whose smoke passes writes `.ci/cache/live-deploys/proxy-bench-<region>.json` (gitignored): `worker`, `config`, `version_id` (the id the smoke passed on, lowercase), the `proof.receipt.identity` of the tree the image was built from over the `proxy` and `cli` surfaces (the image ships the CLI bundle built from that tree) and `at`. `rediacc_ci.ops.live_proof` reads it for a `bench-proxy-cache` check (proxy-ready): the record must keep the identity rules, be cut from the receipt's head, and name the version wrangler reports serving 100%. The identity is taken before the build and taken again at the record; a tree that moved in between writes no record and exits 1 (the deploy itself stands). A `--var` deploy writes none and says so, because its config is not the head's, and a failing smoke, `--smoke-only` and `--rollback` write none either: the old record then names a version no longer serving, and the recorder refuses it as not live.
+THE LIVE-PROOF RECORD. A plain bench deploy (no `--var`, no `--company`) whose smoke passes writes `.ci/cache/live-deploys/proxy-bench-<region>.json` (gitignored): `worker`, `config`, `version_id` (the id the smoke passed on, lowercase), the `proof.receipt.identity` of the tree the image was built from over the `proxy` and `cli` surfaces (the image ships the CLI bundle built from that tree) and `at`. `rediacc_ci.ops.live_proof` reads it for a `bench-proxy-cache` check (proxy-ready): the record must keep the identity rules, be cut from the receipt's head, and name the version wrangler reports serving 100%. The identity is taken before the build and taken again at the record; a build input that changed in between (the surfaces' inputs digest, their dirty state or a submodule checkout) writes no record and exits 1 (the deploy itself stands), while HEAD moving on an unrelated path does not, and the record names the head the build started from. A `--var` deploy writes none and says so, because its config is not the head's, and a failing smoke, `--smoke-only` and `--rollback` write none either: the old record then names a version no longer serving, and the recorder refuses it as not live.
 
 A DRY RUN (`--dry-run`) runs the config refusals and `wrangler deploy --dry-run --containers-rollout none` for any target, and needs no credentials, fetch or build. The `none` rollout is load-bearing: wrangler 4.152's dry run DOES build the container image (measured 2026-10-25, it failed on the unstaged `workers/proxy/stage/`), and `none` compiles the Worker without building or updating any container. The image itself is built and booted by check:ci-proxy-image-smoke.
 
@@ -84,7 +84,8 @@ def bench_version_record(region: str) -> tuple[str, ...]:
     return (*BENCH_VERSION_RECORD[:-1], "proxy-bench-%s.json" % region)
 
 
-BENCH_BUILT_KEYS = ("head", "tree", "dirty", "inputs", "submodules")
+# The identity fields that name what the image was built from: the surfaces' inputs digest, their dirty state and the submodule checkouts. `head` and `tree` are not compared: another session committing an unrelated path during the build moves them without touching an input, and the record carries the head the build started from.
+BENCH_BUILT_KEYS = ("dirty", "inputs", "submodules")
 
 # A fixed path in /tmp, as the bash original had it.
 DRY_RUN_OUTDIR = "/tmp/rediacc-proxy-dry-run"
@@ -920,7 +921,7 @@ def record_bench_version(
     *,
     region: str = BENCH_REGION,
 ) -> dict[str, object]:
-    """Write the live-proof record of a bench deploy whose smoke passed, from `built` (the identity taken before the build), and return it. RefusedError, with nothing written, when the tree moved between the build and now."""
+    """Write the live-proof record of a bench deploy whose smoke passed, from `built` (the identity taken before the build), and return it. RefusedError, with nothing written, when an input of the build (the surfaces' inputs digest, dirty state or a submodule checkout) changed between the build and now; HEAD moving on an unrelated path does not refuse, and the record names the head the build started from."""
     now = bench_identity(repo_root)
     moved = [key for key in BENCH_BUILT_KEYS if built.get(key) != now.get(key)]
     if moved:
