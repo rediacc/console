@@ -80,4 +80,26 @@ describe('SqliteKvNamespace', () => {
     expect((await kv.list({ prefix: 'a_' })).keys.map((k) => k.name)).toEqual(['a_b']);
     expect((await kv.list({ prefix: 'a%' })).keys.map((k) => k.name)).toEqual(['a%c']);
   });
+
+  it('lists by a prefix with non-BMP characters', async () => {
+    const { kv } = namespace();
+    const prefix = 'grant:\u{1F600}:';
+    await kv.put(`${prefix}1`, '1');
+    await kv.put(`${prefix}2`, '1');
+    await kv.put('grant:other:1', '1');
+    expect((await kv.list({ prefix })).keys.map((k) => k.name)).toEqual([
+      `${prefix}1`,
+      `${prefix}2`,
+    ]);
+  });
+
+  it('answers a get of malformed JSON with a rejected promise, not a throw', async () => {
+    const { kv } = namespace();
+    await kv.put('bad', '{not json');
+    let pending: Promise<unknown> | undefined;
+    expect(() => {
+      pending = kv.get('bad', 'json');
+    }).not.toThrow();
+    await expect(pending).rejects.toThrow(SyntaxError);
+  });
 });

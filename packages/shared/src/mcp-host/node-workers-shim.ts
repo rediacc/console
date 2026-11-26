@@ -17,12 +17,12 @@ const WORKERS_SHIM_SOURCE = [
 
 const WORKERS_SHIM_URL = `data:text/javascript,${encodeURIComponent(WORKERS_SHIM_SOURCE)}`;
 
-let installed = false;
+let handle: ReturnType<typeof registerHooks> | undefined;
 
 /** Installs the `cloudflare:workers` resolve hook once per process. */
 export function installCloudflareWorkersShim(): void {
-  if (installed) return;
-  registerHooks({
+  if (handle) return;
+  handle = registerHooks({
     resolve(specifier, context, nextResolve) {
       if (specifier === 'cloudflare:workers') {
         return { url: WORKERS_SHIM_URL, format: 'module', shortCircuit: true };
@@ -30,7 +30,12 @@ export function installCloudflareWorkersShim(): void {
       return nextResolve(specifier, context);
     },
   });
-  installed = true;
+}
+
+/** Removes the hook so a test that needs the real `cloudflare:workers` resolution can have it. */
+export function uninstallCloudflareWorkersShim(): void {
+  handle?.deregister();
+  handle = undefined;
 }
 
 /** The part of the Workers `ExecutionContext` a Node host has to provide. */

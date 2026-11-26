@@ -113,7 +113,12 @@ export class SqliteKvNamespace {
         | undefined
     );
     if (!row) return Promise.resolve(null);
-    return Promise.resolve(type === 'json' ? JSON.parse(row.value) : row.value);
+    if (type !== 'json') return Promise.resolve(row.value);
+    try {
+      return Promise.resolve(JSON.parse(row.value));
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   put(key: string, value: string, options: SqliteKvPutOptions = {}): Promise<void> {
@@ -156,6 +161,7 @@ export class SqliteKvNamespace {
 
   list(options: SqliteKvListOptions = {}): Promise<SqliteKvListResult> {
     const prefix = options.prefix ?? '';
+    // SQLite substr() counts characters (code points), not UTF-16 code units.
     const limit = Math.min(Math.max(options.limit ?? KV_MAX_LIST_LIMIT, 1), KV_MAX_LIST_LIMIT);
     const after = options.cursor ?? '';
     const rows = this.db
@@ -164,7 +170,7 @@ export class SqliteKvNamespace {
          WHERE substr(key, 1, ?) = ? AND key > ? AND (expires_at IS NULL OR expires_at > ?)
          ORDER BY key LIMIT ?`
       )
-      .all(prefix.length, prefix, after, this.nowSeconds(), limit + 1) as Row[];
+      .all(Array.from(prefix).length, prefix, after, this.nowSeconds(), limit + 1) as Row[];
     const page = rows.slice(0, limit);
     const keys = page.map((row) =>
       row.expires_at === null ? { name: row.key } : { name: row.key, expiration: row.expires_at }
