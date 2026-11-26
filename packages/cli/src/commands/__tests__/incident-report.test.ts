@@ -39,6 +39,11 @@ import { runIncidentExport } from '../incident.js';
 
 const NOW = new Date('2026-11-25T12:00:00.000Z');
 const REPORT_ID = '0b8f3c2a-1d4e-4f6a-9b7c-5e2d1a3c4b6f';
+// Every byte value, so a text-only path would corrupt it.
+const PDF = Uint8Array.from([
+  ...Buffer.from('%PDF-1.7\n'),
+  ...Array.from({ length: 256 }, (_, i) => i),
+]);
 const REPORT = { header: { generatedAt: '2026-11-25T11:00:00.000Z' }, facts: [{ id: 'a', n: 1 }] };
 
 const incident: IncidentRecord = {
@@ -97,6 +102,7 @@ async function server() {
     ],
     ['/json', () => REPORT],
     ['/stix', () => ({ type: 'bundle', objects: [] })],
+    ['/pdf-base64', () => ({ fileName: 'r.pdf', base64: Buffer.from(PDF).toString('base64') })],
     [
       `/reports/verify/${REPORT_ID}`,
       () => ({ id: REPORT_ID, stage: 'notification', generatedAt: '', sha256, signature, keyId }),
@@ -154,15 +160,22 @@ describe('rdc incident export --stage', () => {
     });
   });
 
-  it('refuses an unknown stage and a PDF before any report is generated', async () => {
+  it('writes the PDF bytes intact through the base64 route', async () => {
+    const { client } = await server();
+    await runIncidentExport(
+      incident.id,
+      { stage: 'final', format: 'pdf', out: dir },
+      { client, now: () => NOW }
+    );
+    expect(readFileSync(join(dir, `${REPORT_ID}.pdf`))).toEqual(Buffer.from(PDF));
+  });
+
+  it('refuses an unknown stage and format before any report is generated', async () => {
     const { client, calls } = await server();
     const deps = { client, now: () => NOW };
     await expect(
       runIncidentExport(incident.id, { stage: 'draft', out: dir }, deps)
     ).rejects.toThrow('incident.badStage');
-    await expect(
-      runIncidentExport(incident.id, { stage: 'final', format: 'pdf', out: dir }, deps)
-    ).rejects.toThrow('incident.pdfNeedsPortal');
     await expect(
       runIncidentExport(incident.id, { stage: 'final', format: 'docx', out: dir }, deps)
     ).rejects.toThrow('incident.badFormat');

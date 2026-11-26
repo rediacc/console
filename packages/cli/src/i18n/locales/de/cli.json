@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" ist keine Berichtsstufe; erlaubt sind {{stages}}.",
     "badFormat": "\"{{format}}\" ist kein Berichtsformat; erlaubt sind {{formats}}.",
     "formatNeedsStage": "--format gilt für einen Bericht: --stage early-warning, notification oder final ergänzen.",
-    "pdfNeedsPortal": "Der Bericht der Stufe {{stage}} zu Vorfall {{id}} kann als PDF nicht durch den Konto-Tunnel kommen, der nur Text befördert. Das PDF im Berichte-Bereich des Portals herunterladen oder mit --format json oder stix exportieren.",
     "reportExported": "Der Bericht der Stufe {{stage}} wurde als {{format}} nach {{file}} geschrieben.",
     "reportVerifyHint": "Prüfen mit: rdc forensics verify --report {{file}}"
   },

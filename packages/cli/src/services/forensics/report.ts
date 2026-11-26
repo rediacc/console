@@ -13,11 +13,11 @@ import { ERROR_CODES } from '../../types/errors.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import type { ForensicsClient, IncidentRecord, ReportKey, ReportRecord } from './client.js';
 
-export const REPORT_STAGES = ['early-warning', 'notification', 'final'] as const;
-export type ReportStageName = (typeof REPORT_STAGES)[number];
+const REPORT_STAGES = ['early-warning', 'notification', 'final'] as const;
+type ReportStageName = (typeof REPORT_STAGES)[number];
 
-export const REPORT_FORMATS = ['pdf', 'json', 'stix'] as const;
-export type ReportFormatName = (typeof REPORT_FORMATS)[number];
+const REPORT_FORMATS = ['pdf', 'json', 'stix'] as const;
+type ReportFormatName = (typeof REPORT_FORMATS)[number];
 
 const FILE_SUFFIX: Record<ReportFormatName, string> = {
   json: 'json',
@@ -54,7 +54,7 @@ function isFormat(value: string): value is ReportFormatName {
 }
 
 /** The validated stage and format of an export, before any request leaves the machine. */
-export function parseReportOptions(options: ExportReportOptions): {
+function parseReportOptions(options: ExportReportOptions): {
   stage: ReportStageName;
   format: ReportFormatName;
 } {
@@ -70,8 +70,9 @@ export function parseReportOptions(options: ExportReportOptions): {
   return { stage: options.stage, format };
 }
 
-/** The bytes written for a downloaded body: canonical for the signed JSON, plain JSON for STIX. */
+/** The bytes written for a downloaded body: raw for the PDF, canonical for the signed JSON, plain JSON for STIX. */
 function reportBytes(format: ReportFormatName, body: unknown): Uint8Array {
+  if (body instanceof Uint8Array) return body;
   if (format === 'json') return canonicalBytes(body as CanonicalValue);
   return new TextEncoder().encode(JSON.stringify(body));
 }
@@ -86,10 +87,6 @@ export async function exportReport(
   options: ExportReportOptions
 ): Promise<ExportedReport> {
   const { stage, format } = parseReportOptions(options);
-  if (format === 'pdf') {
-    // The account tunnel carries text only, so a PDF cannot come through it intact.
-    throw invalid(t('incident.pdfNeedsPortal', { id: incident.id, stage }));
-  }
   const report = await client.generateReport(incident.id, stage);
   const body = await client.downloadReport(incident.id, report.id, format);
   const dir = options.out ?? `incident-${incident.id}`;
@@ -116,7 +113,7 @@ export type ReportVerdictResult =
 const REPORT_FILE = /^([A-Za-z0-9][A-Za-z0-9-]{0,127})\.(?:stix\.json|json|pdf)$/;
 
 /** The report id a downloaded file name carries, or the explicit `--id`. */
-export function reportIdOf(file: string, id: string | undefined): string {
+function reportIdOf(file: string, id: string | undefined): string {
   if (id !== undefined) return id;
   const match = REPORT_FILE.exec(basename(file));
   if (!match?.[1]) throw invalid(t('forensics.reportIdUnknown', { file }));

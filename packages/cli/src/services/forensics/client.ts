@@ -305,13 +305,18 @@ export class ForensicsClient {
   }
 
   /**
-   * One stored file of a report as parsed JSON (`json` or `stix`): the account tunnel carries
-   * text, so a PDF cannot be read through it.
+   * One stored file of a report: parsed JSON for `json` and `stix`, and the PDF bytes decoded
+   * from the base64 variant of the route, since the account tunnel carries text only.
    */
-  downloadReport(id: string, reportId: string, format: 'json' | 'stix'): Promise<unknown> {
-    return this.call<unknown>(
-      `/incidents/${encodeURIComponent(id)}/reports/${encodeURIComponent(reportId)}/${format}`
-    );
+  async downloadReport(
+    id: string,
+    reportId: string,
+    format: 'json' | 'stix' | 'pdf'
+  ): Promise<unknown> {
+    const base = `/incidents/${encodeURIComponent(id)}/reports/${encodeURIComponent(reportId)}`;
+    if (format !== 'pdf') return this.call<unknown>(`${base}/${format}`);
+    const { base64 } = await this.call<{ base64: string }>(`${base}/pdf-base64`);
+    return new Uint8Array(Buffer.from(base64, 'base64'));
   }
 
   /** The public record of a report; a 404 is an unknown or malformed id alike. */

@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" n'est pas une étape de rapport ; utiliser l'une de {{stages}}.",
     "badFormat": "\"{{format}}\" n'est pas un format de rapport ; utiliser l'un de {{formats}}.",
     "formatNeedsStage": "--format s'applique à un rapport : ajouter --stage early-warning, notification ou final.",
-    "pdfNeedsPortal": "Le rapport {{stage}} de l'incident {{id}} au format PDF ne peut pas passer par le tunnel du compte, qui ne transporte que du texte. Télécharger le PDF depuis le panneau Rapports du portail, ou exporter avec --format json ou stix.",
     "reportExported": "Le rapport {{stage}} a été écrit au format {{format}} dans {{file}}.",
     "reportVerifyHint": "Le vérifier avec : rdc forensics verify --report {{file}}"
   },

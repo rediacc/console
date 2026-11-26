@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" não é uma etapa de relatório; use uma entre {{stages}}.",
     "badFormat": "\"{{format}}\" não é um formato de relatório; use um entre {{formats}}.",
     "formatNeedsStage": "--format vale para um relatório: acrescente --stage early-warning, notification ou final.",
-    "pdfNeedsPortal": "O relatório {{stage}} do incidente {{id}} em PDF não pode passar pelo túnel da conta, que só transporta texto. Baixe o PDF no painel Relatórios do portal, ou exporte com --format json ou stix.",
     "reportExported": "O relatório {{stage}} foi gravado como {{format}} em {{file}}.",
     "reportVerifyHint": "Verifique com: rdc forensics verify --report {{file}}"
   },

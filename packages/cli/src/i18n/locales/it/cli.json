@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" non è una fase del rapporto; usare una tra {{stages}}.",
     "badFormat": "\"{{format}}\" non è un formato di rapporto; usare uno tra {{formats}}.",
     "formatNeedsStage": "--format vale per un rapporto: aggiungere --stage early-warning, notification o final.",
-    "pdfNeedsPortal": "Il rapporto {{stage}} dell'incidente {{id}} in PDF non può passare dal tunnel dell'account, che trasporta solo testo. Scaricare il PDF dal pannello Rapporti del portale, oppure esportare con --format json o stix.",
     "reportExported": "Il rapporto {{stage}} è stato scritto come {{format}} in {{file}}.",
     "reportVerifyHint": "Verificarlo con: rdc forensics verify --report {{file}}"
   },

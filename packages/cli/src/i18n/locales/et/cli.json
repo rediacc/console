@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" pole aruande etapp; kasuta ühte väärtustest {{stages}}.",
     "badFormat": "\"{{format}}\" pole aruande vorming; kasuta ühte väärtustest {{formats}}.",
     "formatNeedsStage": "--format kehtib aruande kohta: lisa --stage early-warning, notification või final.",
-    "pdfNeedsPortal": "Intsidendi {{id}} etapi {{stage}} aruanne ei saa PDF-ina läbida konto tunnelit, mis edastab ainult teksti. Laadi PDF alla portaali paneelilt Aruanded või ekspordi valikuga --format json või stix.",
     "reportExported": "Etapi {{stage}} aruanne kirjutati vormingus {{format}} faili {{file}}.",
     "reportVerifyHint": "Kontrolli käsuga: rdc forensics verify --report {{file}}"
   },

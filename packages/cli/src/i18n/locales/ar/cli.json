@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" ليست مرحلة تقرير؛ استخدم إحدى القيم {{stages}}.",
     "badFormat": "\"{{format}}\" ليست صيغة تقرير؛ استخدم إحدى القيم {{formats}}.",
     "formatNeedsStage": "--format خاص بالتقرير: أضف --stage early-warning أو notification أو final.",
-    "pdfNeedsPortal": "لا يمكن أن يمرّ تقرير {{stage}} للحادثة {{id}} بصيغة PDF عبر نفق الحساب لأنه ينقل النصوص فقط. نزّل ملف PDF من لوحة التقارير في البوابة، أو صدّر باستخدام --format json أو stix.",
     "reportExported": "كُتب تقرير {{stage}} بصيغة {{format}} في {{file}}.",
     "reportVerifyHint": "تحقق منه بالأمر: rdc forensics verify --report {{file}}"
   },

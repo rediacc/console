@@ -4041,7 +4041,6 @@
     "badStage": "\"{{stage}}\" is not a report stage; use one of {{stages}}.",
     "badFormat": "\"{{format}}\" is not a report format; use one of {{formats}}.",
     "formatNeedsStage": "--format applies to a report: add --stage early-warning, notification or final.",
-    "pdfNeedsPortal": "The {{stage}} report of incident {{id}} as a PDF cannot come through the account tunnel, which carries text only. Download the PDF from the Reports panel of the portal, or export --format json or stix.",
     "reportExported": "The {{stage}} report was written as {{format}} to {{file}}.",
     "reportVerifyHint": "Check it with: rdc forensics verify --report {{file}}"
   },

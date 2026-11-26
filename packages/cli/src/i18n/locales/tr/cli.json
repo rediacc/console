@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" bir rapor aşaması değil; {{stages}} değerlerinden birini kullanın.",
     "badFormat": "\"{{format}}\" bir rapor biçimi değil; {{formats}} değerlerinden birini kullanın.",
     "formatNeedsStage": "--format bir rapor için geçerlidir: --stage early-warning, notification veya final ekleyin.",
-    "pdfNeedsPortal": "{{id}} olayının {{stage}} raporu PDF olarak yalnızca metin taşıyan hesap tüneli üzerinden geçemez. PDF'yi portalın Raporlar panelinden indirin veya --format json ya da stix ile dışa aktarın.",
     "reportExported": "{{stage}} raporu {{format}} olarak {{file}} konumuna yazıldı.",
     "reportVerifyHint": "Şununla doğrulayın: rdc forensics verify --report {{file}}"
   },

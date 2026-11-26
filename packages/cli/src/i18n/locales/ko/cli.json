@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\"은(는) 보고서 단계가 아닙니다. {{stages}} 중 하나를 사용하세요.",
     "badFormat": "\"{{format}}\"은(는) 보고서 형식이 아닙니다. {{formats}} 중 하나를 사용하세요.",
     "formatNeedsStage": "--format은 보고서에 적용됩니다. --stage early-warning, notification, final 중 하나를 추가하세요.",
-    "pdfNeedsPortal": "인시던트 {{id}}의 {{stage}} 보고서는 PDF로 계정 터널을 통과할 수 없습니다. 터널은 텍스트만 전달합니다. 포털의 보고서 패널에서 PDF를 내려받거나 --format json 또는 stix로 내보내세요.",
     "reportExported": "{{stage}} 보고서를 {{format}} 형식으로 {{file}}에 썼습니다.",
     "reportVerifyHint": "다음 명령으로 검증하세요: rdc forensics verify --report {{file}}"
   },

@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" не является этапом отчёта; допустимы {{stages}}.",
     "badFormat": "\"{{format}}\" не является форматом отчёта; допустимы {{formats}}.",
     "formatNeedsStage": "--format относится к отчёту: добавьте --stage early-warning, notification или final.",
-    "pdfNeedsPortal": "Отчёт этапа {{stage}} по инциденту {{id}} в формате PDF не может пройти через туннель аккаунта, который передаёт только текст. Скачайте PDF на панели «Отчёты» портала или экспортируйте с --format json или stix.",
     "reportExported": "Отчёт этапа {{stage}} записан как {{format}} в {{file}}.",
     "reportVerifyHint": "Проверьте командой: rdc forensics verify --report {{file}}"
   },

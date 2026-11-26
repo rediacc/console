@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" 不是报告阶段；请使用 {{stages}} 之一。",
     "badFormat": "\"{{format}}\" 不是报告格式；请使用 {{formats}} 之一。",
     "formatNeedsStage": "--format 适用于报告：请加上 --stage early-warning、notification 或 final。",
-    "pdfNeedsPortal": "事件 {{id}} 的 {{stage}} 报告无法以 PDF 形式经账户隧道传输，该隧道只传输文本。请在门户的“报告”面板下载 PDF，或使用 --format json 或 stix 导出。",
     "reportExported": "{{stage}} 报告已按 {{format}} 格式写入 {{file}}。",
     "reportVerifyHint": "用以下命令验证：rdc forensics verify --report {{file}}"
   },

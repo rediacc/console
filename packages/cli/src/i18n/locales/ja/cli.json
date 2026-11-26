@@ -4116,7 +4116,6 @@
     "badStage": "\"{{stage}}\" はレポートのステージではありません。{{stages}} のいずれかを使ってください。",
     "badFormat": "\"{{format}}\" はレポート形式ではありません。{{formats}} のいずれかを使ってください。",
     "formatNeedsStage": "--format はレポート用です。--stage early-warning、notification、final のいずれかを付けてください。",
-    "pdfNeedsPortal": "インシデント {{id}} の {{stage}} レポートを PDF として受け取ることはできません。アカウントのトンネルはテキストしか運べないためです。ポータルの「レポート」パネルから PDF をダウンロードするか、--format json または stix で書き出してください。",
     "reportExported": "{{stage}} レポートを {{format}} として {{file}} に書き出しました。",
     "reportVerifyHint": "次のコマンドで検証できます: rdc forensics verify --report {{file}}"
   },
