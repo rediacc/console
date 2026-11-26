@@ -2649,17 +2649,45 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
     return moved, refused
 
 
-def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
-    """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns (archived_lines, orphaned_lines, changed)."""
+#: A worklist item cited from plan prose: `#` and 8 to 12 hex digits, not glued to a longer word. Ids are 8 (CLI) or 12 (migrated markdown) characters.
+PLAN_ITEM_CITE_RE = re.compile(r"(?<![0-9A-Za-z_])#([0-9a-f]{8,12})(?![0-9A-Za-z_])")
+
+
+def plan_cited_item_ids(root):
+    """Every worklist item id a plan under `agent/` cites as `#<id>` (a `Ruling:` header, a `dropped by ruling #<id>` line, a box's new home). Drafts included: a citation in a plan a session is still writing must resolve as much as one in a committed plan. Unreadable files are skipped."""
+    cited = set()
+    for path in agent_plan_files(root):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        cited.update(PLAN_ITEM_CITE_RE.findall(text))
+    return cited
+
+
+def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
+    """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns (archived_lines, orphaned_lines, changed).
+
+    AN ITEM A PLAN CITES IS NEVER TOMBSTONED (#28742604). A plan's `Ruling:` and `dropped by ruling #<id>` lines resolve against the store with tombstones dropped (`wl_planfile.store_item_states`), so archiving a closed ruling item turned every box it released back into a binding: the 2026-11-26 archive of 725 dead-session items dropped `#d969cb29`, which `PLAN-ci-quick-cpu-scheduling.md` and `PLAN-stop-hook-refactor-enforcement.md` cite, and check:ci-plan-bindings went red until the ruling was re-recorded under a new id. A cited item is left in place, neither archived nor reported as orphaned. The plan scan runs only once a candidate is found, so a stop with nothing to archive reads no plan."""
     dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
     archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
     archived, orphaned, changed = [], [], False
     ages = {}
+    cited_box: list[set[str]] = []
 
     def age_of(owner):
         if owner not in ages:
             ages[owner] = owner_age_hours(owner, projects_dir)
         return ages[owner]
+
+    def cited(item_id):
+        if not cited_box:
+            try:
+                base = root if root is not None else C.project_root(C.project_start())
+                cited_box.append(plan_cited_item_ids(pathlib.Path(base)))
+            except (OSError, ValueError, TypeError):
+                cited_box.append(set())
+        return item_id in cited_box[0]
 
     # CLI-origin items: same policy, expressed as events.
     for rec in fold.items:
@@ -2668,6 +2696,8 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             continue
         age = age_of(owner)
         if age is None or age < dead_h:
+            continue
+        if cited(rec["id"]):
             continue
         if rec["state"] == "x" or age >= archive_h:
             tomb_item(
@@ -2702,6 +2732,8 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             age = age_of(owner)
             if age is None or age < dead_h:
                 continue  # unknown or alive
+            if cited(item_key(owner, line[m.end() :].strip())):
+                continue  # a plan cites it: archiving would break that citation
             bracket = raw.find(b"[")
             if bracket < 0 or raw[bracket + 1 : bracket + 2] != state.encode():
                 continue

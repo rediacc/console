@@ -471,6 +471,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/test-ci-fixing.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-ci-rerun.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-completion-evidence.py | (none) | via test_hooks_delegates.py (glob) | py |
+| .claude/hooks/stop/test-deadsession-cited.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-defer-settle.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-deflect.py | (none) | via test_hooks_delegates.py (glob) | py |
 | .claude/hooks/stop/test-depgate.py | (none) | via test_hooks_delegates.py (glob) | py |
