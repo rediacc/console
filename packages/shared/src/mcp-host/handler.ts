@@ -141,20 +141,29 @@ export function createMcpHandler() {
         const answered = await auth.fetch(request, { OAUTH_KV: env.OAUTH_KV }, ctx);
         if (answered) return answered;
       }
-      const grantId = GRANT_PATH.exec(new URL(request.url).pathname)?.[1];
-      if (!env.MCP_METRICS || grantId === undefined || request.method !== 'POST') {
-        return transportFor(env).fetch(request);
-      }
-      const startedAt = Date.now();
-      const seen = request.clone();
-      const response = await transportFor(env).fetch(request);
-      const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
-      // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
-      if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
-      else await observed;
-      return response;
+      return serveCounted(request, env, ctx);
     },
   };
+
+  /** The MCP transport's answer, with a grant's POST counted when the metrics dataset is bound. */
+  async function serveCounted(
+    request: Request,
+    env: Env,
+    ctx: HostExecutionContext
+  ): Promise<Response> {
+    const grantId = GRANT_PATH.exec(new URL(request.url).pathname)?.[1];
+    if (!env.MCP_METRICS || grantId === undefined || request.method !== 'POST') {
+      return transportFor(env).fetch(request);
+    }
+    const startedAt = Date.now();
+    const seen = request.clone();
+    const response = await transportFor(env).fetch(request);
+    const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
+    // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
+    if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
+    else await observed;
+    return response;
+  }
 }
 
 /** The handler of the Cloudflare Worker: one instance per isolate. */

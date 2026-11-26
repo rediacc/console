@@ -178,7 +178,8 @@ describe('CLI contract', () => {
     // 97 -> 96: `machine prune` judges --orphaned-repos and --prune-unknown against the caller's configs, so it is excluded from proxying.
     //
     // 96 -> 132: PLAN-rmcp-local-mcp LM10 (D57). Seven machine-plane commands left PROXY_EXCLUSIONS (`backup check`, `backup repair`, `backup toc-key sync`, `machine converge`, `machine prune`, `machine scan-keys`, `config reconcile`), because the executor holds the session config their reason named as the caller's, and 29 config and `other` plane commands joined through EXECUTOR_SERVED.
-    expect(proxyCapableCommands().length).toBe(132);
+    // 132 -> 133: `forensics level` (PLAN-forensics-investigation FI8) joined the machine plane as one forensics_level job.
+    expect(proxyCapableCommands().length).toBe(133);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -391,7 +392,8 @@ describe('CLI contract', () => {
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
     // 81 -> 82: `repo health` (one repository_health read job, its print a step). 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4). 84 -> 83: `machine prune` was not proxy-capable, so not detachable.
     // 83 -> 86: LM10 (D57) made seven machine-plane commands of the surface table proxy-capable; `machine prune`, `machine converge` and `config reconcile` run as machine jobs, and the other four are section 24 exceptions above.
-    expect(detachable).toHaveLength(86);
+    // 86 -> 87: `forensics level` (FI8), a CONVERTED single-call job of plans-repo.ts.
+    expect(detachable).toHaveLength(87);
     expect(getCommand('machine prune')?.proxyCapable).toBe(true);
     expect(getCommand('machine prune')?.detachable).toBe(true);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).

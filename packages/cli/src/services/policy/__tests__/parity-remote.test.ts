@@ -93,10 +93,11 @@ const HOST = WK_MCP_EU_HOST;
 const ACCOUNT_ORIGIN = WK_ACCOUNT_DEFAULT_ORIGIN;
 const SLOW = 60_000;
 
-// The two Workers build apart from this package, so their modules are read where the test needs them, which also keeps this package's test typecheck (tsconfig.test.json, rootDir packages/cli) from claiming files outside it.
+// The MCP transport (moved into @rediacc/shared by RW-OP1) and the proxy Worker build apart from this package, so their modules are read where the test needs them, which also keeps this package's test typecheck (tsconfig.test.json, rootDir packages/cli) from claiming files outside it.
 const WORKERS = path.resolve(CLI_ROOT, '..', '..', 'workers');
+const MCP_HOST = path.resolve(CLI_ROOT, '..', 'shared', 'src', 'mcp-host');
 const loadWorkers = async () => {
-  const mcp = (await import(path.join(WORKERS, 'mcp', 'src', 'transport.ts'))) as {
+  const mcp = (await import(path.join(MCP_HOST, 'transport.ts'))) as {
     createMcpTransport: (options: Record<string, unknown>) => {
       fetch: (request: Request) => Promise<Response>;
     };

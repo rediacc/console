@@ -19,7 +19,7 @@ import {
 } from '../services/forensics/incident.js';
 import { childMachineSteps } from '../services/forensics/machine-steps.js';
 import { ERROR_CODES } from '../types/errors.js';
-import { CliExitError } from '../utils/cli-exit-error.js';
+import { CliExitError, notFound } from '../utils/cli-exit-error.js';
 import { getOutputFormat, handleError } from '../utils/errors.js';
 
 export interface IncidentDeps {
@@ -104,9 +104,19 @@ function printExport(result: ExportResult): void {
 
 /** The repository GUID the account store keys evidence by, and the name its forks take. */
 async function configRepo(ref: string): Promise<DeclareRepo> {
-  const { resolveRepoRefLocal } = await import('../utils/repo-target.js');
+  // Config-local resolution, as repo-target's resolveRepoRefLocal does it, without that module's executor imports: incident never reaches a machine itself (its fork and level switch are child rdc processes).
+  const { parseRef } = await import('../services/addressing/ref-parser.js');
+  const { placementViewFromConfig, resolveRefLocal } = await import(
+    '../services/addressing/resolve-machine.js'
+  );
   const { configService } = await import('../services/config/config-resources.js');
-  const { name, repoKey } = await resolveRepoRefLocal(ref);
+  const parsed = parseRef(ref);
+  const config = await configService.getCurrent();
+  if (!config) {
+    throw notFound(`repository "${parsed.name}" is not in this config.`);
+  }
+  const { name } = resolveRefLocal(ref, placementViewFromConfig(config));
+  const repoKey = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
   const repo = await configService.getRepository(repoKey);
   if (!repo?.repositoryGuid) {
     throw new CliExitError(ERROR_CODES.NOT_FOUND, t('forensics.noRepoGuid', { name }));

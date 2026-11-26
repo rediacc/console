@@ -346,12 +346,9 @@ if (result.failures.length > 0) {
   process.exit(1);
 }
 
+const shimRows = Object.keys(WORKERS_RUNTIME).map((m) => `    dist/${m} -- ${WORKERS_RUNTIME[m]}`);
+const summary = `${result.attempted} built modules imported by Node, ${concreteTargets.length} concrete export targets present; 5-arm control fired`;
 console.log(
-  `✓ shared is importable as declared ` +
-    `(${result.attempted} built modules imported by Node, ` +
-    `${concreteTargets.length} concrete export targets present; 5-arm control fired)\n` +
-    `  ${needsShim.length} Workers-only module(s) imported behind ${SHIM_MODULE}:\n` +
-    Object.entries(WORKERS_RUNTIME)
-      .map(([m, why]) => `    dist/${m}: ${why.replace(/^BLOCKER: /, '')}`)
-      .join('\n')
+  `✓ shared is importable as declared (${summary})\n` +
+    `  ${needsShim.length} Workers-only module(s) imported behind ${SHIM_MODULE}:\n${shimRows.join('\n')}`
 );

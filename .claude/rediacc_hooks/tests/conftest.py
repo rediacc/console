@@ -40,3 +40,13 @@ def _no_ambient_git_config(tmp_path_factory, monkeypatch):
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(empty))
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     monkeypatch.delenv("GIT_CONFIG_COUNT", raising=False)
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_away_flag(tmp_path_factory, monkeypatch):
+    """The `/awk` flag the suite reads is an absent scratch file, never the live one.
+
+    `block_away_questions` refuses every question while the checkout's away flag stands, so an operator who ran `/awk` turned `test_hooks_boundary`'s pre-ask witnesses red (2026-11-26: "chain pre-ask: no static case or neutral payload passes the chain"). The guard's own cases pin `WL_AWAY_STATE` in their worlds and still override this."""
+    monkeypatch.setenv(
+        "WL_AWAY_STATE", str(tmp_path_factory.getbasetemp() / "away-flag-absent.json")
+    )

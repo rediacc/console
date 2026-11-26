@@ -87,8 +87,8 @@ export async function runForensicsVerify(
 }
 
 /** The capture levels of `renet forensics level` (PLAN-forensics-capture D8). */
-export const FORENSICS_LEVELS = ['basic', 'standard', 'full'] as const;
-export type ForensicsLevel = (typeof FORENSICS_LEVELS)[number];
+const FORENSICS_LEVELS = ['basic', 'standard', 'full'] as const;
+type ForensicsLevel = (typeof FORENSICS_LEVELS)[number];
 
 function isLevel(value: string): value is ForensicsLevel {
   return (FORENSICS_LEVELS as readonly string[]).includes(value);

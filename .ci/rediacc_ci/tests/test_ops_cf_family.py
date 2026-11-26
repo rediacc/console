@@ -783,6 +783,10 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["ALERTS_FROM_EMAIL"] = "alerts@example.invalid"
     bound["CONTACT_NOTIFY_EMAIL"] = "contact-inbox@example.invalid"
     bound["ALERTS_NOTIFY_EMAIL"] = "alerts-inbox@example.invalid"
+    # PLAN-forensics-shipping FS12 (464878dffc): the bench forensics store triple the port pushes; the retired bash never held it. Fake values, set as a whole (a partial triple is refused).
+    bound["ACCOUNT_FORENSICS_S3_ENDPOINT"] = "https://forensics.example.invalid"
+    bound["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] = "fake-forensics-key-id"
+    bound["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] = "fake-forensics-secret"
     return bound
 
 
@@ -800,6 +804,10 @@ PORT_ONLY_SECRETS = (
     "ALERTS_FROM_EMAIL",
     "CONTACT_NOTIFY_EMAIL",
     "ALERTS_NOTIFY_EMAIL",
+    # PLAN-forensics-shipping FS12 (464878dffc): the bench forensics store triple.
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
 )
 
 # DECLARED DELTA (Stripe removal): the account Worker takes no Stripe secret, so the port pushes none; the retired bash golden still records these two blank live names, dropped from its side of the comparison.

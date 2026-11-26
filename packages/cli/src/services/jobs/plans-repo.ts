@@ -1,5 +1,6 @@
 /** Job plans of the J4 and J16 conversion boxes: repo and backup verbs (see plans.ts). */
 
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { JobPlan } from './plans-types.js';
 
 export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
@@ -343,7 +344,7 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     lock: 'read',
     timeout: '10m',
     box: 'J16',
-    note: "overlap.go classifies forensics_level by its default rule (read): the level file it writes under /etc/rediacc/forensics touches none of the repository's data",
+    note: `overlap.go classifies forensics_level by its default rule (read): the level file it writes under ${WK_ETC_DIR}/forensics touches none of the repository's data`,
   },
   'repo policy get': {
     form: 'single',

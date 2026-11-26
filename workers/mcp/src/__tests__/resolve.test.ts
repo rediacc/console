@@ -17,7 +17,10 @@ import {
 } from '../../../../packages/shared/src/mcp-host/resolve.js';
 import { handleRevoke } from '../../../../packages/shared/src/mcp-host/revoke.js';
 import { createMcpTransport } from '../../../../packages/shared/src/mcp-host/transport.js';
-import { bearerFor, SECRET_BYTES } from '../../../../packages/shared/src/mcp-host/__tests__/helpers/grant.js';
+import {
+  bearerFor,
+  SECRET_BYTES,
+} from '../../../../packages/shared/src/mcp-host/__tests__/helpers/grant.js';
 
 const GRANT_ID = 'eu_grant_t3';
 const T0 = Date.UTC(2026, 10, 25, 12, 0, 0);

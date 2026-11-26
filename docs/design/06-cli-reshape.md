@@ -55,8 +55,8 @@ rdc subscription: login register logout status notices retire refresh proxy-toke
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc feedback:   report list show
-rdc incident:   status export
-rdc forensics:  verify
+rdc incident:   status export declare close
+rdc forensics:  verify level
 rdc doctor | credits | update | version | legal | completion | serve | mcp serve | run (hidden)
 ```
 
@@ -103,8 +103,8 @@ Thirty-eight differences. The first six are deliberate and each is traceable to 
 | no `feedback` noun | `feedback {report list show}` | PLAN-rdc-feedback C3/C4: `report` files a redacted report of a failed command (the last one with `--last`) with the account service, and `list` and `show` read the reports the caller filed. All three talk to the account service only and reach no machine, so they are other-plane. A report is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 | no shell completion | `completion <bash\|zsh\|fish\|pwsh>` | Prints the completion script for the named shell; the script asks the hidden `__complete` entry for candidates, so names of machines, repositories and configs complete from the active config. A leaf with no noun of its own, like `version` and `legal`. Not drift: it postdates this transcript. |
 | `repo` with no forensic reads | `repo {flows opens}` | PLAN-forensics-investigation: `flows` lists a repository's recorded network flows and `opens` its recorded file opens over a time window, each with gap rows where no evidence exists. Both read the account server only (the `forensics:read` scope on a paid plan) and reach no machine. |
-| no `incident` noun | `incident {status export}` | PLAN-forensics-investigation D4, D7: incidents are declared in the web console; `status` lists them or shows one with its deadline clocks, and `export` writes the incident's window, raw chain files and their verification to a directory. An incident is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
-| no `forensics` noun | `forensics verify` | PLAN-forensics-investigation D5: recomputes the audit day-file chain and the signed batch chains of an evidence directory on the workstation, under machine keys from outside the directory (`--machine-key`, or the keys the account server pinned for the incident the directory names). |
+| no `incident` noun | `incident {status export declare close}` | PLAN-forensics-investigation D4, D7: incidents are declared in the web console or by `declare` (FI8), which writes the account record and its eviction hold first, then runs the forensic fork and the switch to full capture as child rdc commands, and `close` ends the hold; `status` lists them or shows one with its deadline clocks, and `export` writes the incident's window, raw chain files and their verification to a directory. An incident is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| no `forensics` noun | `forensics {verify level}` | PLAN-forensics-investigation D5: `verify` recomputes the audit day-file chain and the signed batch chains of an evidence directory on the workstation, under machine keys from outside the directory (`--machine-key`, or the keys the account server pinned for the incident the directory names). `level` (FI8) sets a machine's capture level (basic, standard or full) as one forensics_level job on the machine plane. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

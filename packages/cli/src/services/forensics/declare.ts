@@ -32,7 +32,7 @@ export interface DeclareDeps {
   now: () => Date;
 }
 
-export interface StepOutcome {
+interface StepOutcome {
   name: MachineStepName;
   outcome: 'ok' | 'failed' | 'skipped';
   detail?: string;
@@ -46,7 +46,7 @@ export interface DeclareResult {
 }
 
 /** The fork tag of an incident: `incident-<id>`, lowercase as the tag grammar requires. */
-export function incidentForkTag(id: string): string {
+function incidentForkTag(id: string): string {
   return `incident-${id.toLowerCase()}`;
 }
 
