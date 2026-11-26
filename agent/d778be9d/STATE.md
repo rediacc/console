@@ -6,7 +6,7 @@
 - rotation-admin bws project (read only) holds AWS_OPS pair, CF global pair, parked IAM admin pair; ./run.sh rotation reads it via ~/.config/rediacc/bws-rotation-token.
 
 ## Delegated
-- acb875fb9f82f5f51 #957e0e50 #5f4130cf: remove 16 proof companies, then bench R2.
+- proof companies all removed (#957e0e50 closed). R2 blocked (#5f4130cf): needs org members+configs on bench-us/asia and a machine their proxies reach (not hostinger); this holds plan-bindings and the release.
 - a128598c89722c0fa: rename L10 on backups-eu, report the L11 delete command.
 - a532f657e09fcdc3f #66f4558b: fix cf_retire listing defects, then the bucket retire.
 - a5f14d5b05f02223a #f7128272: Cloudflare token hardening plan from official docs.
