@@ -21,20 +21,20 @@
 } 2>/dev/null
 # THE PER-LEASE TMPDIR (agent/plans/PLAN-host-temp-disposal.md D1), before anything that re-execs, so the export rides every shell and its children. A shell that STARTS with `$PWD` inside `*/.claude/worktrees/<id>` gets TMPDIR set to the lease's own directory `<base>/<first 8 characters of the id without "agent-">` (`make_lease` creates it; base is `$REDIACC_LEASE_TMP_BASE` or `/var/tmp/r<uid>`). The test runs once, at shell start, so a shell that later `cd`s into a lease keeps the TMPDIR it started with, and its children inherit that. It acts only while TMPDIR is unset or still the harness's `$CLAUDE_CODE_TMPDIR`: a TMPDIR that pytest, vitest or a gate narrowed is left alone. The base and the lease dir must each be a real directory (not a symlink) owned by this uid, the refusal `_private_dir` in worktree_lease.py applies, since `/var/tmp` is world-writable and another local user can plant either name; anything else is never exported. The mode bits are not read here (bash has no stat builtin, and a fork breaks the cost contract): `_private_dir` refuses group or other bits when the lease is made, and only the owner or root can loosen them afterwards. COST: parameter expansions and file tests, no fork, so the steady state stays free.
 case ${PWD:-} in
-*/.claude/worktrees/?*)
-    if [[ -z ${TMPDIR:-} || ${TMPDIR:-} == "${CLAUDE_CODE_TMPDIR:-}" ]]; then
-        __lt_id=${PWD#*/.claude/worktrees/}
-        __lt_id=${__lt_id%%/*}
-        __lt_id=${__lt_id#agent-}
-        __lt_base=${REDIACC_LEASE_TMP_BASE:-/var/tmp/r$UID}
-        __lt_dir=$__lt_base/${__lt_id:0:8}
-        if [[ ! -L $__lt_base && -d $__lt_base && -O $__lt_base && ! -L $__lt_dir && -d $__lt_dir && -O $__lt_dir ]]; then
-            export TMPDIR=$__lt_dir
+    */.claude/worktrees/?*)
+        if [[ -z ${TMPDIR:-} || ${TMPDIR:-} == "${CLAUDE_CODE_TMPDIR:-}" ]]; then
+            __lt_id=${PWD#*/.claude/worktrees/}
+            __lt_id=${__lt_id%%/*}
+            __lt_id=${__lt_id#agent-}
+            __lt_base=${REDIACC_LEASE_TMP_BASE:-/var/tmp/r$UID}
+            __lt_dir=$__lt_base/${__lt_id:0:8}
+            if [[ ! -L $__lt_base && -d $__lt_base && -O $__lt_base && ! -L $__lt_dir && -d $__lt_dir && -O $__lt_dir ]]; then
+                export TMPDIR=$__lt_dir
+            fi
+            unset __lt_id __lt_base __lt_dir
         fi
-        unset __lt_id __lt_base __lt_dir
-    fi
-    ;;
-*) ;;
+        ;;
+    *) ;;
 esac
 # THE .pth LOADER (agent/plans/PLAN-tooling-speed.md D6), before the supervisor: a
 # `PYTHONPATH=...` command replaces the path exported below, and a .pth file in the
