@@ -92,9 +92,11 @@ def plant(tmp, text=SURVEY, survey_age_min=12):
     return [{"round": "feedf00d", "session": ME, "at": at(survey_age_min + 2), "survey": str(path)}]
 
 
-def cap(tmp, items=(LEASED_B,), live=2, done=("c1c1c1c1",), **kw):
+def cap(tmp, items=(LEASED_B,), live=2, done=("c1c1c1c1",), head_time=lambda: None, **kw):
     rows = plant(tmp, **kw)
-    return W.capacity(rows, ME, tmp, list(items), live, lambda: set(done), now=NOW)
+    return W.capacity(
+        rows, ME, tmp, list(items), live, lambda: set(done), now=NOW, head_time=head_time
+    )
 
 
 def free_ids(facts):
@@ -175,6 +177,22 @@ def refresh_cases(tmp):
         W.assess(False, OPEN, cap(tmp, items=staffed)),
         want,
     )
+    # Cluster C staffed by an item rather than closed by a tick, so the survey is exhausted with zero ticks since it was written.
+    quiet = (*staffed, {"id": "9", "state": ">", "owner": ME, "text": "CL-C writer c1c1c1c1"})
+    still = cap(tmp, items=quiet, done=(), head_time=lambda: NOW.timestamp() - 3600)
+    check(
+        "an exhausted survey with no tick and no commit since waits for the clock",
+        W.assess(False, OPEN, still),
+        ("", ""),
+    )
+    landed = cap(tmp, items=quiet, done=(), head_time=NOW.timestamp)
+    check(
+        "a commit after the survey makes the exhausted survey due",
+        W.assess(False, OPEN, landed),
+        want,
+    )
+    unknown = cap(tmp, items=quiet, done=(), head_time=lambda: None)
+    check("an unknown HEAD time counts as moved", W.assess(False, OPEN, unknown), want)
     young = cap(tmp, items=staffed, survey_age_min=3)
     check("an exhausted survey younger than the gap waits", W.assess(False, OPEN, young), ("", ""))
     unreadable = cap(tmp, text="# survey with no cluster section\n")

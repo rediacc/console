@@ -18,6 +18,7 @@ import os
 import pathlib
 import re
 import secrets
+import subprocess
 
 import wl_core as C
 
@@ -470,7 +471,7 @@ def promoted_done_sigs(root) -> set[str]:
     return out
 
 
-def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> dict:
+def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head_time=None) -> dict:
     """The refill facts of this session's newest round.
 
     `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, and `age` is the survey file's age in minutes; `read` is False when there is no round, no survey file or no parseable cluster section.
@@ -487,6 +488,7 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
         "floor": CAPACITY_FLOOR,
         "ticked": 0,
         "age": None,
+        "moved": True,
     }
     if last is None:
         return facts
@@ -505,6 +507,9 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
     facts["age"] = (now.timestamp() - mtime) / 60.0
     # The survey's plan tables list the OPEN boxes of its round (the /writers-now survey sorts every open box), so a table sig ticked now was ticked after the survey was written, which is what WHY_TICKED and REFRESH_TICKS count (review 7d036d68.1).
     facts["ticked"] = len(table & done)
+    # Movement since the survey: a tick, or a commit newer than the survey (a landing brings review findings, which become new clusters). Unknown counts as moved.
+    landed = (head_time or (lambda: head_commit_time(root)))()
+    facts["moved"] = facts["ticked"] > 0 or landed is None or landed > mtime
     staffed = review_staffed(items, session, C.parse_stamp(last["at"]))
     review_ids = [c["id"] for c in clusters if c.get("review")]
     for cl in clusters:
@@ -516,6 +521,22 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None) -> d
         if left and not any(s in named for s in cl["sigs"]):
             facts["free"].append({**cl, "sigs": left})
     return facts
+
+
+def head_commit_time(root) -> float | None:
+    """The committer time of HEAD in `root` (epoch seconds), or None when git cannot answer."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "log", "-1", "--format=%ct", "HEAD"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    text = out.stdout.strip()
+    return float(text) if out.returncode == 0 and text.isdigit() else None
 
 
 def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
@@ -530,7 +551,7 @@ def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
     if not cap or not cap.get("read"):
         return "", ""
     if (cap.get("age") or 0) >= REFRESH_GAP_MIN:
-        if not cap["free"]:
+        if not cap["free"] and cap.get("moved", True):
             return "due", WHY_EXHAUSTED % cap["round"]
         if cap["ticked"] >= REFRESH_TICKS:
             return "due", WHY_TICKED % (cap["ticked"], cap["round"], REFRESH_TICKS)
