@@ -544,6 +544,14 @@
       "kind": "no-github-twin",
       "reason": "The asia bench config store's recovery code (the slot added 2026-11-24 before migration 0095 deleted the password slot), read by agents through the bench-login-asia profile (secret-supply.json binds it as BENCH_STORE_RECOVERY_CODE) to mint a machine secret; no workflow fetches it."
     },
+    "BENCH_WIPE_R2_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "The wipe-only R2 key id (rotation slug cf-r2-bench-wipe) that rediacc_ci.ops.reset_bench signs the bench bucket listing and deletes with, read through the reset-bench-eu profile of secret-supply.json; no workflow fetches it."
+    },
+    "BENCH_WIPE_R2_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The secret half of the wipe-only R2 pair (rotation slug cf-r2-bench-wipe), read by rediacc_ci.ops.reset_bench through the reset-bench-eu profile of secret-supply.json; no workflow fetches it."
+    },
     "MAIL_ALERTS_PASSWORD": {
       "kind": "no-github-twin",
       "reason": "The alerts mailbox password written by the mailbox setup (agent/plans/PLAN-email-sender-separation.md H1) for the operator's mail client; no workflow, profile or script reads it."
