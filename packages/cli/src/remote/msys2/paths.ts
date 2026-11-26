@@ -12,6 +12,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { findInstalledRsync } from '../../services/tools/rsync.js';
+import { StatCheckedCache } from '../../utils/stat-checked-cache.js';
 import { getPlatform } from '../utils/platform.js';
 
 /**
@@ -33,9 +34,9 @@ const SYSTEM_MSYS2_PATHS = [
 const MSYS2_BIN_SUBDIRS = ['usr\\bin', 'mingw64\\bin', 'mingw32\\bin'] as const;
 
 /**
- * Cache for resolved paths to avoid repeated filesystem checks
+ * Resolved paths already found, each re-checked on its file at every hit; a miss and the PATH fallback are never stored
  */
-const pathCache = new Map<string, string | null>();
+const pathCache = new StatCheckedCache();
 
 /**
  * Gets the path to bundled MSYS2 binaries (for Electron app)
@@ -51,9 +52,8 @@ function getBundledMsys2Path(): string | null {
   }
 
   const cacheKey = 'bundled_msys2_path';
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? null;
-  }
+  const cached = pathCache.get(cacheKey);
+  if (cached !== undefined) return cached;
 
   // Check if running in Electron with bundled resources process.resourcesPath is set by Electron to point to the app resources directory
   const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath;
@@ -79,7 +79,7 @@ function getBundledMsys2Path(): string | null {
     }
   }
 
-  pathCache.set(cacheKey, null);
+  // A miss is not cached: a bundle that appears later is found on the next call.
   return null;
 }
 
@@ -94,9 +94,8 @@ function findSystemMsys2Path(): string | null {
   }
 
   const cacheKey = 'system_msys2_path';
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? null;
-  }
+  const cached = pathCache.get(cacheKey);
+  if (cached !== undefined) return cached;
 
   for (const msys2Path of SYSTEM_MSYS2_PATHS) {
     // Check if the MSYS2 root exists and has the usr/bin directory
@@ -107,7 +106,6 @@ function findSystemMsys2Path(): string | null {
     }
   }
 
-  pathCache.set(cacheKey, null);
   return null;
 }
 
@@ -121,9 +119,8 @@ function findSystemMsys2Path(): string | null {
  * @returns Path to the binary or fallback
  */
 function findMsys2Binary(binaryName: string, cacheKey: string, fallback: string): string {
-  if (pathCache.has(cacheKey)) {
-    return pathCache.get(cacheKey) ?? fallback;
-  }
+  const cached = pathCache.get(cacheKey);
+  if (cached !== undefined) return cached;
 
   // Check bundled first
   const bundled = getBundledMsys2Path();
@@ -147,8 +144,7 @@ function findMsys2Binary(binaryName: string, cacheKey: string, fallback: string)
     }
   }
 
-  // Last resort: assume in PATH
-  pathCache.set(cacheKey, fallback);
+  // Last resort: assume in PATH. The fallback is not cached, so a binary installed later is found.
   return fallback;
 }
 
@@ -167,12 +163,8 @@ export function getRsyncPath(): string {
   if (getPlatform() !== 'windows') {
     return 'rsync';
   }
-  const cacheKey = 'rsync_path';
-  if (!pathCache.has(cacheKey)) {
-    const managed = findInstalledRsync();
-    if (managed) pathCache.set(cacheKey, managed);
-  }
-  return findMsys2Binary('rsync.exe', cacheKey, 'rsync');
+  // Asked every call (two existence checks): an `rdc tools install rsync` after an earlier answer from a system MSYS2 must win.
+  return findInstalledRsync() ?? findMsys2Binary('rsync.exe', 'rsync_path', 'rsync');
 }
 
 /** The MSYS2 root of the rdc-managed rsync (`<root>/usr/bin/rsync.exe`), or null when it is not installed. */
