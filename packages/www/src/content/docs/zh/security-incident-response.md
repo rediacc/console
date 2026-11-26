@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: zh
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 本页说明 Rediacc 自身发生安全事件时的处理方式，例如自有系统被入侵，或其产品中存在被积极利用的漏洞。客户自己仓库内的事件由客户负责调查和报告，Rediacc 为此提供取证工具。来自外部的漏洞报告适用[披露政策](/zh/docs/security-disclosure-policy)。
@@ -22,7 +22,7 @@ sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
 |------|------|------|
 | 早期预警 | 24 小时内 | 目前已知的情况，以及是否怀疑存在恶意行为 |
 | 通知 | 72 小时内 | 事件性质、初步评估和已采取的措施 |
-| 最终报告 | 一个月内 | 详细描述、根本原因，以及已采取和持续进行的措施 |
+| 最终报告 | 通知后一个月内；对于正在被积极利用的漏洞，在有纠正或缓解措施可用后 14 天内 | 详细描述、根本原因，以及已采取和持续进行的措施 |
 
 ## Art. 33(3) 字段
 

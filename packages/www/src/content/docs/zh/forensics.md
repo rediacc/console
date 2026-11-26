@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: zh
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # 取证
@@ -98,7 +98,7 @@ rdc forensics level mail full
 
 ### 模型包
 
-检测器参数以签名包的形式发布在 `data.rediacc.com/models/`：内容寻址的文件、用内置于 renet 的离线 Ed25519 模型密钥签名的清单、最低 renet 版本，以及只增不减的版本号，因此降级会被拒绝。包在安装前会经过验证，并且可以恢复到上一个包。
+检测器参数以签名包的形式分发在 `data.rediacc.com/models/` 下，由发布任务上传（目前那里还没有发布任何通道）：内容寻址的文件、用内置于 renet 的离线 Ed25519 模型密钥签名的清单、最低 renet 版本，以及只增不减的版本号，因此降级会被拒绝。包在安装前会经过验证，并且可以恢复到上一个包。
 
 ```bash
 renet models status

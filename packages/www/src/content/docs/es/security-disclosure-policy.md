@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: es
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc agradece los informes de vulnerabilidades de seguridad en sus productos y servicios. Esta política describe qué entra en el alcance, cómo informar y qué puede esperar a cambio quien lo hace. El archivo de contacto legible por máquina está en [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ Los objetivos son metas: si un informe necesita más tiempo, se explica el motiv
 
 ## Divulgación coordinada
 
-Los detalles se publican junto con la corrección, normalmente dentro de los 90 días siguientes al informe. Quien desee una publicación anterior o posterior indica la fecha en el informe, y ambas partes acuerdan una. Una vulnerabilidad que ya se explota en la práctica se trata como un incidente, según se describe en la [página de respuesta a incidentes](/es/docs/security-incident-response).
+Los detalles se publican junto con la corrección, normalmente dentro de los 90 días siguientes a la primera evaluación. Quien desee una publicación anterior o posterior indica la fecha en el informe, y ambas partes acuerdan una. Una vulnerabilidad que ya se explota en la práctica se trata como un incidente, según se describe en la [página de respuesta a incidentes](/es/docs/security-incident-response).
 
 ## Reconocimiento
 

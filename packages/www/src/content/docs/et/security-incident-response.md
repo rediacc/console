@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: et
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Leht kirjeldab, mis juhtub, kui turvaintsident tabab Rediaccit ennast, näiteks kui tema enda süsteemid satuvad kompromiteerimise ohvriks või toodetes avastatakse aktiivselt ärakasutatav haavatavus. Intsidente kliendi enda hoidlates uurib ja menetleb klient ise ning Rediacc pakub selleks tõendite kogumise tööriistu. Väljastpoolt tulevaid haavatavusteateid käsitleb [avalikustamise poliitika](/et/docs/security-disclosure-policy).
@@ -22,7 +22,7 @@ Iga intsidendi kell hakkab käima hetkest, kui Rediacc sellest teada saab. Teave
 |-------|---------|------|
 | Varajane hoiatus | 24 tunni jooksul | mis on seni teada ja kas kahtlustatakse pahatahtlikku tegevust |
 | Teavitus | 72 tunni jooksul | intsidendi laad, esmane hinnang ja võetud meetmed |
-| Lõpparuanne | ühe kuu jooksul | üksikasjalik kirjeldus, algpõhjus ning rakendatud ja käimasolevad meetmed |
+| Lõpparuanne | ühe kuu jooksul pärast teavitust; aktiivselt ärakasutatava haavatavuse korral 14 päeva pärast parandus- või leevendusmeetme kättesaadavaks muutumist | üksikasjalik kirjeldus, algpõhjus ning rakendatud ja käimasolevad meetmed |
 
 ## Art. 33(3) väljad
 

@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: et
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # SIEM-i integratsioon
@@ -98,7 +98,7 @@ Auditi torustik on alus auditilogimise nõuetele, millele Rediacc'i vastavusdoku
 - **HIPAA 45 CFR 164.312(b)**: auditikontrollid
 - **PCI DSS Req 10**: kogu juurdepääsu jälgimine ja seire
 - **NIS2 Art. 21**: auditisündmused on intsidentide käsitlemise sisend; intsidendi ajajoon, kellad ja etapiaruanded on eraldi funktsioonid
-- **DORA Art. 10**: auditisündmused on tuvastamise sisend; anomaaliadetektorid töötavad forensics'i voo kirjetel, mitte sellel torustikul
+- **DORA Art. 10**: auditisündmused on tuvastamise sisend; anomaaliadetektorid töötavad masinas ja serveris forensics'i voo kirjetel, mitte sellel torustikul
 
 ## Töökindlus
 

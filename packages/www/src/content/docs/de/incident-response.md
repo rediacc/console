@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: de
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Incident Response
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-Der Befehl endet mit Exit-Code 1, sobald eine Lücke oder Änderung gefunden wird. `--machine-key <machine>=<64 hex characters>` liefert einen Schlüssel von außerhalb des Verzeichnisses und lässt sich wiederholen. Eine Maschine ohne externen Schlüssel schlägt fehl.
+Der Befehl endet mit Exit-Code 1, sobald eine Lücke oder Änderung gefunden wird. `--machine-key <machine>=<public-key-hex>` (der Schlüssel hat 64 Hex-Zeichen) liefert einen Schlüssel von außerhalb des Verzeichnisses und lässt sich wiederholen. Eine Maschine ohne externen Schlüssel schlägt fehl.
 
 ## Einen Incident deklarieren
 

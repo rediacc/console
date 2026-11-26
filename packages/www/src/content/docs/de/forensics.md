@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: de
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Forensik
@@ -98,7 +98,7 @@ Jeder Befund trägt die Gründe pro Merkmal, die ihn ausgelöst haben, und die E
 
 ### Modellpakete
 
-Die Detektorparameter werden als signierte Pakete unter `data.rediacc.com/models/` veröffentlicht: inhaltsadressierte Dateien, ein Manifest, signiert mit einem Offline-Ed25519-Modellschlüssel, der in renet eingebaut ist, eine Mindestversion von renet und eine Version, die nur steigt, sodass ein Downgrade abgelehnt wird. Ein Paket wird vor der Installation geprüft, und das vorherige lässt sich wiederherstellen.
+Die Detektorparameter werden als signierte Pakete unter `data.rediacc.com/models/` verteilt und vom Publish-Job hochgeladen (dort ist noch kein Kanal veröffentlicht): inhaltsadressierte Dateien, ein Manifest, signiert mit einem Offline-Ed25519-Modellschlüssel, der in renet eingebaut ist, eine Mindestversion von renet und eine Version, die nur steigt, sodass ein Downgrade abgelehnt wird. Ein Paket wird vor der Installation geprüft, und das vorherige lässt sich wiederherstellen.
 
 ```bash
 renet models status

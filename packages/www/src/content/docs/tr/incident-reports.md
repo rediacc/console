@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: tr
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Olay Raporları
@@ -18,7 +18,7 @@ Bildirilmiş bir olay ([olay müdahalesi](/tr/docs/incident-response)), müşter
 
 ## Aşamalar
 
-Her aşama yalnızca gerektirdiği bölümleri listeler; aşamanın istemediği bir bölüm boş bırakılmaz, çıkarılır.
+Her aşama aşağıda listelenen bölümleri ekler ve bir önceki aşamanın bölümlerini devralır; hiçbir aşamanın istemediği bir bölüm boş bırakılmaz, çıkarılır.
 
 | Aşama | Vade | Ekler |
 |---|---|---|
@@ -26,7 +26,7 @@ Her aşama yalnızca gerektirdiği bölümleri listeler; aşamanın istemediği 
 | Bildirim | Haberdar olunduktan 72 saat sonra | İlk değerlendirme, veri etkisi (kategoriler, yaklaşık sayılar, Üye Devletler) ve ATT&CK teknikleri |
 | Nihai | Bildirimden bir takvim ayı sonra | Kök neden ve azaltma adımları |
 
-Nihai rapor bir bildirimin ardından gelir; bu yüzden önce bildirim üretilir. Her aşama bir önceki aşamanın bölümlerini içerir.
+Nihai rapor bir bildirimin ardından gelir; bu yüzden önce bildirim üretilir.
 
 Bir rapordaki her olgu nasıl bilindiğini söyler: kanıtta gözlemlendi, müşteri tarafından girildi veya çıkarıldı. Çıkarılan bir olgu bir güven düzeyi ve dedektörün gerekçesini taşır. Değerlendirme, veri kategorileri, Üye Devletler, şüphelenilen neden, alınan önlemler, irtibat noktası ve teknikler, müşterinin üretmeden önce olay sayfasında girdiği girdilerdir.
 
@@ -36,7 +36,7 @@ Bir rapordaki her olgu nasıl bilindiğini söyler: kanıtta gözlemlendi, müş
 |---|---|
 | JSON | Kanonik, doğrulanabilir biçim |
 | STIX 2.1 | Tehdit istihbaratı araçları için gösterge paketi |
-| PDF | Latin olmayan yazıları da işleyen okunabilir belge; her sayfa altbilgisinde sorumluluk reddi, QR kodu ve rapor özeti bulunur |
+| PDF | Gömülü Noto Sans (Latin, Kiril ve Türkçe) veya Noto Sans Arabic ile okunabilir belge; Japonca, Korece ve Çince raporlar yazı tipleri sabitlenene kadar reddedilir. Her sayfa altbilgisinde sorumluluk reddi, QR kodu ve rapor özeti bulunur |
 
 Olay sayfasında her aşamanın biçim başına bir indirme düğmesi vardır. Komut satırından:
 

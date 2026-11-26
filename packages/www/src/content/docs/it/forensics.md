@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: it
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Forensics
@@ -98,7 +98,7 @@ Ogni rilevamento porta i motivi per caratteristica che lo hanno prodotto, e la s
 
 ### Bundle di modelli
 
-Sono pubblicati come bundle firmati su `data.rediacc.com/models/` i parametri dei rilevatori: file indirizzati per contenuto, un manifest firmato con una chiave di modello Ed25519 offline incorporata in renet, una versione minima di renet e una versione che può solo crescere, così un downgrade viene rifiutato. Un bundle viene verificato prima dell'installazione, e il precedente può essere ripristinato.
+I parametri dei rilevatori sono distribuiti come bundle firmati sotto `data.rediacc.com/models/`, caricati dal job di pubblicazione (lì non è ancora pubblicato alcun canale): file indirizzati per contenuto, un manifest firmato con una chiave di modello Ed25519 offline incorporata in renet, una versione minima di renet e una versione che può solo crescere, così un downgrade viene rifiutato. Un bundle viene verificato prima dell'installazione, e il precedente può essere ripristinato.
 
 ```bash
 renet models status

@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: pt
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 A Rediacc recebe com satisfação relatos de vulnerabilidades de segurança em seus produtos e serviços. Esta política descreve o que está no escopo, como reportar e o que o autor do relato pode esperar em troca. O arquivo de contato legível por máquina está em [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ As metas são objetivos, e um relato que precise de mais tempo recebe uma explic
 
 ## Divulgação coordenada
 
-Os detalhes são publicados junto com a correção, normalmente em até 90 dias após o relato. Quem quiser uma publicação mais cedo ou mais tarde indica a data no relato, e as duas partes combinam uma data. Uma vulnerabilidade já explorada na prática é tratada como incidente, conforme descrito na [página de resposta a incidentes](/pt/docs/security-incident-response).
+Os detalhes são publicados junto com a correção, normalmente em até 90 dias após a primeira avaliação. Quem quiser uma publicação mais cedo ou mais tarde indica a data no relato, e as duas partes combinam uma data. Uma vulnerabilidade já explorada na prática é tratada como incidente, conforme descrito na [página de resposta a incidentes](/pt/docs/security-incident-response).
 
 ## Crédito
 

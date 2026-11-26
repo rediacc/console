@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: ko
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc는 자사 제품과 서비스의 보안 취약점 신고를 환영합니다. 이 정책은 적용 범위, 신고 방법, 신고자가 받을 수 있는 대응을 설명합니다. 기계가 읽을 수 있는 연락처 파일은 [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)(RFC 9116)에 있습니다.
@@ -67,7 +67,7 @@ Rediacc는 자사 제품과 서비스의 보안 취약점 신고를 환영합니
 
 ## 협조적 공개
 
-세부 내용은 수정과 함께 공개하며, 보통 신고일로부터 90일 이내입니다. 더 이르거나 늦은 공개를 원하는 신고자는 신고서에 날짜를 적어 주시고, 양측이 날짜를 합의합니다. 이미 실제로 악용되고 있는 취약점은 [인시던트 대응 페이지](/ko/docs/security-incident-response)에 설명된 대로 인시던트로 처리합니다.
+세부 내용은 수정과 함께 공개하며, 보통 최초 평가일로부터 90일 이내입니다. 더 이르거나 늦은 공개를 원하는 신고자는 신고서에 날짜를 적어 주시고, 양측이 날짜를 합의합니다. 이미 실제로 악용되고 있는 취약점은 [인시던트 대응 페이지](/ko/docs/security-incident-response)에 설명된 대로 인시던트로 처리합니다.
 
 ## 크레딧
 

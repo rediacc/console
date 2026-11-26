@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: pt
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Forense
@@ -98,7 +98,7 @@ Cada deteção traz os motivos por característica que a produziram, e a explica
 
 ### Pacotes de modelos
 
-Os parâmetros dos detetores são publicados como pacotes assinados em `data.rediacc.com/models/`: ficheiros endereçados por conteúdo, um manifesto assinado com uma chave de modelo Ed25519 offline incorporada no renet, uma versão mínima do renet e uma versão que só aumenta, pelo que um downgrade é recusado. Um pacote é verificado antes de ser instalado, e o anterior pode ser restaurado.
+Os parâmetros dos detetores são distribuídos como pacotes assinados em `data.rediacc.com/models/`, carregados pela tarefa de publicação (ainda não há nenhum canal publicado lá): ficheiros endereçados por conteúdo, um manifesto assinado com uma chave de modelo Ed25519 offline incorporada no renet, uma versão mínima do renet e uma versão que só aumenta, pelo que um downgrade é recusado. Um pacote é verificado antes de ser instalado, e o anterior pode ser restaurado.
 
 ```bash
 renet models status

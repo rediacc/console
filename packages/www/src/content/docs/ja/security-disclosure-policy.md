@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: ja
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediaccは、自社の製品とサービスに関するセキュリティ脆弱性の報告を歓迎します。このポリシーでは、対象範囲、報告の方法、報告者が受けられる対応を説明します。機械可読の連絡先ファイルは [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)（RFC 9116）にあります。
@@ -67,7 +67,7 @@ Rediaccは、自社の製品とサービスに関するセキュリティ脆弱�
 
 ## 協調的開示
 
-詳細は修正とあわせて公開します。通常は報告から90日以内です。公開時期を早めたい、または遅らせたい報告者は、報告の中で希望日を示してください。双方で日付に合意します。すでに実際に悪用されている脆弱性は、[インシデント対応ページ](/ja/docs/security-incident-response)に記載のとおり、インシデントとして扱います。
+詳細は修正とあわせて公開します。通常は最初の評価から90日以内です。公開時期を早めたい、または遅らせたい報告者は、報告の中で希望日を示してください。双方で日付に合意します。すでに実際に悪用されている脆弱性は、[インシデント対応ページ](/ja/docs/security-incident-response)に記載のとおり、インシデントとして扱います。
 
 ## クレジット
 

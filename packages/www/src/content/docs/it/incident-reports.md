@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: it
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Report di incidente
@@ -18,7 +18,7 @@ Un incidente dichiarato ([risposta agli incidenti](/it/docs/incident-response)) 
 
 ## Fasi
 
-Ogni fase elenca le sezioni che richiede e nessun'altra, quindi una sezione che la fase non richiede viene omessa anziché lasciata vuota.
+Ogni fase aggiunge le sezioni elencate sotto e mantiene quelle della fase precedente, quindi una sezione che nessuna fase richiede viene omessa anziché lasciata vuota.
 
 | Fase | Scadenza | Aggiunge |
 |---|---|---|
@@ -26,7 +26,7 @@ Ogni fase elenca le sezioni che richiede e nessun'altra, quindi una sezione che 
 | Notifica | 72 ore dopo la presa di conoscenza | Valutazione iniziale, impatto sui dati (categorie, numeri approssimativi, Stati membri) e tecniche ATT&CK |
 | Finale | Un mese di calendario dopo la notifica | Causa radice e misure di mitigazione |
 
-Il report finale segue una notifica, quindi la notifica viene generata per prima. Ogni fase include le sezioni della fase precedente.
+Il report finale segue una notifica, quindi la notifica viene generata per prima.
 
 Ogni fatto di un report indica come è noto: osservato nelle prove, inserito dal cliente o dedotto. Un fatto dedotto porta un livello di confidenza e il motivo del rilevatore. Valutazione, categorie di dati, Stati membri, causa sospetta, azioni intraprese, punto di contatto e tecniche sono dati che il cliente inserisce nella pagina dell'incidente prima della generazione.
 
@@ -36,7 +36,7 @@ Ogni fatto di un report indica come è noto: osservato nelle prove, inserito dal
 |---|---|
 | JSON | La forma canonica e verificabile |
 | STIX 2.1 | Un bundle di indicatori per gli strumenti di threat intelligence |
-| PDF | Un documento leggibile, che rende anche le scritture non latine, con l'avvertenza, un QR code e l'hash del report nel piè di pagina di ogni pagina |
+| PDF | Un documento leggibile con Noto Sans incorporato (latino, cirillico e turco) o Noto Sans Arabic; i report in giapponese, coreano e cinese vengono rifiutati finché i loro font non sono fissati. Con l'avvertenza, un QR code e l'hash del report nel piè di pagina di ogni pagina |
 
 Dalla pagina dell'incidente, ogni fase ha un pulsante di download per formato. Dalla riga di comando:
 

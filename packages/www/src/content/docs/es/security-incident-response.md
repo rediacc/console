@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: es
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Esta página describe lo que ocurre cuando Rediacc sufre un incidente de seguridad propio, como el compromiso de sus sistemas o una vulnerabilidad de sus productos explotada activamente. Los incidentes dentro de los repositorios de un cliente los investiga y notifica el propio cliente, y Rediacc ofrece las herramientas de evidencias para ello. Los informes de vulnerabilidades procedentes del exterior se rigen por la [política de divulgación](/es/docs/security-disclosure-policy).
@@ -22,7 +22,7 @@ Cada incidente tiene un reloj que arranca cuando Rediacc tiene conocimiento de �
 |------|-------|-----------|
 | Alerta temprana | en 24 horas | lo que se sabe hasta el momento y si se sospechan actos malintencionados |
 | Notificación | en 72 horas | la naturaleza del incidente, una evaluación inicial y las medidas adoptadas |
-| Informe final | en un mes | una descripción detallada, la causa raíz y las medidas aplicadas y en curso |
+| Informe final | en un mes desde la notificación; en una vulnerabilidad explotada activamente, 14 días después de que haya una medida correctiva o de mitigación disponible | una descripción detallada, la causa raíz y las medidas aplicadas y en curso |
 
 ## Los campos del art. 33(3)
 

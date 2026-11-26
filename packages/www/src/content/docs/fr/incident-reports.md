@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: fr
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Rapports d'incident
@@ -18,7 +18,7 @@ Un incident déclaré ([réponse aux incidents](/fr/docs/incident-response)) pro
 
 ## Étapes
 
-Chaque étape liste les sections qu'elle exige et aucune autre : une section que l'étape ne demande pas est omise plutôt que laissée vide.
+Chaque étape ajoute les sections listées ci-dessous et reprend celles de l'étape précédente : une section qu'aucune étape ne demande est omise plutôt que laissée vide.
 
 | Étape | Échéance | Ajoute |
 |---|---|---|
@@ -26,7 +26,7 @@ Chaque étape liste les sections qu'elle exige et aucune autre : une section que
 | Notification | 72 heures après la prise de connaissance | Évaluation initiale, impact sur les données (catégories, nombres approximatifs, États membres) et techniques ATT&CK |
 | Final | Un mois calendaire après la notification | Cause racine et mesures d'atténuation |
 
-Le rapport final fait suite à une notification, la notification est donc générée en premier. Chaque étape reprend les sections de l'étape précédente.
+Le rapport final fait suite à une notification, la notification est donc générée en premier.
 
 Chaque fait d'un rapport indique comment il est connu : observé dans les preuves, saisi par le client ou déduit. Un fait déduit porte un niveau de confiance et la raison du détecteur. L'évaluation, les catégories de données, les États membres, la cause présumée, les actions menées, le point de contact et les techniques sont des éléments que le client saisit sur la page de l'incident avant la génération.
 
@@ -36,7 +36,7 @@ Chaque fait d'un rapport indique comment il est connu : observé dans les preuve
 |---|---|
 | JSON | La forme canonique et vérifiable |
 | STIX 2.1 | Un lot d'indicateurs pour les outils de renseignement sur les menaces |
-| PDF | Un document lisible, qui rend les écritures non latines, avec l'avertissement, un QR code et le hash du rapport en pied de chaque page |
+| PDF | Un document lisible avec Noto Sans intégrée (latin, cyrillique et turc) ou Noto Sans Arabic ; les rapports en japonais, coréen et chinois sont refusés tant que leurs polices ne sont pas figées. Avec l'avertissement, un QR code et le hash du rapport en pied de chaque page |
 
 Depuis la page de l'incident, chaque étape dispose d'un bouton de téléchargement par format. En ligne de commande :
 

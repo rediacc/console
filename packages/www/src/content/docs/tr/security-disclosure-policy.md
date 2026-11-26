@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: tr
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc, ürün ve hizmetlerindeki güvenlik açıklarına ilişkin bildirimleri memnuniyetle karşılar. Bu politika, nelerin kapsamda olduğunu, bildirimin nasıl yapılacağını ve bildirimde bulunan kişinin karşılığında neler bekleyebileceğini anlatır. Makine tarafından okunabilir iletişim dosyası [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) adresindedir (RFC 9116).
@@ -67,7 +67,7 @@ Bu süreler hedeftir; daha fazla zaman gerektiren bir bildirime gerekçe ve yeni
 
 ## Koordineli ifşa
 
-Ayrıntılar düzeltmeyle birlikte, normalde bildirimden sonraki 90 gün içinde yayımlanır. Daha erken ya da daha geç yayımlanmasını isteyen bildirimci, tarihi raporda belirtir ve iki taraf bir tarih üzerinde anlaşır. Doğada zaten istismar edilen bir açık, [olay müdahale sayfasında](/tr/docs/security-incident-response) açıklandığı gibi bir olay olarak ele alınır.
+Ayrıntılar düzeltmeyle birlikte, normalde ilk değerlendirmeden sonraki 90 gün içinde yayımlanır. Daha erken ya da daha geç yayımlanmasını isteyen bildirimci, tarihi raporda belirtir ve iki taraf bir tarih üzerinde anlaşır. Doğada zaten istismar edilen bir açık, [olay müdahale sayfasında](/tr/docs/security-incident-response) açıklandığı gibi bir olay olarak ele alınır.
 
 ## Teşekkür
 

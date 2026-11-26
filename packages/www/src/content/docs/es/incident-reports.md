@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: es
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Informes de incidentes
@@ -18,7 +18,7 @@ Un incidente declarado ([respuesta a incidentes](/es/docs/incident-response)) ge
 
 ## Fases
 
-Cada fase lista las secciones que exige y ninguna más, así que una sección que la fase no pide se omite en lugar de quedar en blanco.
+Cada fase añade las secciones que se indican abajo y conserva las de la fase anterior, así que una sección que ninguna fase pide se omite en lugar de quedar en blanco.
 
 | Fase | Plazo | Añade |
 |---|---|---|
@@ -26,7 +26,7 @@ Cada fase lista las secciones que exige y ninguna más, así que una sección qu
 | Notificación | 72 horas después del conocimiento | Evaluación inicial, impacto en los datos (categorías, cifras aproximadas, Estados miembros) y técnicas ATT&CK |
 | Final | Un mes natural después de la notificación | Causa raíz y medidas de mitigación |
 
-El informe final sigue a una notificación, así que la notificación se genera primero. Cada fase incluye las secciones de la fase anterior.
+El informe final sigue a una notificación, así que la notificación se genera primero.
 
 Cada hecho de un informe indica cómo se conoce: observado en la evidencia, introducido por el cliente o inferido. Un hecho inferido lleva una confianza y el motivo del detector. La evaluación, las categorías de datos, los Estados miembros, la causa sospechada, las acciones realizadas, el punto de contacto y las técnicas son datos que el cliente introduce en la página del incidente antes de generar.
 
@@ -36,7 +36,7 @@ Cada hecho de un informe indica cómo se conoce: observado en la evidencia, intr
 |---|---|
 | JSON | La forma canónica y verificable |
 | STIX 2.1 | Un paquete de indicadores para herramientas de inteligencia de amenazas |
-| PDF | Un documento legible, que muestra escrituras no latinas, con el aviso legal, un código QR y el hash del informe en el pie de cada página |
+| PDF | Un documento legible con Noto Sans incrustada (latino, cirílico y turco) o Noto Sans Arabic; los informes en japonés, coreano y chino se rechazan hasta que se fijen sus fuentes. Lleva el aviso legal, un código QR y el hash del informe en el pie de cada página |
 
 Desde la página del incidente, cada fase tiene un botón de descarga por formato. Desde la línea de comandos:
 

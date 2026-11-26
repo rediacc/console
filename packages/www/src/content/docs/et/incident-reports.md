@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: et
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Intsidendiaruanded
@@ -18,7 +18,7 @@ Deklareeritud intsident ([intsidentidele reageerimine](/et/docs/incident-respons
 
 ## Etapid
 
-Iga etapp loetleb ainult need sektsioonid, mida ta nõuab, nii et sektsioon, mida etapp ei vaja, jäetakse välja, mitte tühjaks.
+Iga etapp lisab allpool loetletud sektsioonid ja kannab edasi eelmise etapi omad, nii et sektsioon, mida ükski etapp ei vaja, jäetakse välja, mitte tühjaks.
 
 | Etapp | Tähtaeg | Lisab |
 |---|---|---|
@@ -26,7 +26,7 @@ Iga etapp loetleb ainult need sektsioonid, mida ta nõuab, nii et sektsioon, mid
 | Teade | 72 tundi pärast teadasaamist | Esialgne hinnang, andmemõju (kategooriad, ligikaudsed arvud, liikmesriigid) ja ATT&CK tehnikad |
 | Lõplik | Üks kalendrikuu pärast teadet | Algpõhjus ja leevendusmeetmed |
 
-Lõpparuanne järgneb teatele, seega koostatakse teade esimesena. Iga etapp sisaldab eelmise etapi sektsioone.
+Lõpparuanne järgneb teatele, seega koostatakse teade esimesena.
 
 Iga aruande fakt ütleb, kuidas seda teatakse: tõendites täheldatud, kliendi sisestatud või tuletatud. Tuletatud fakt kannab kindlust ja detektori põhjendust. Hinnang, andmekategooriad, liikmesriigid, kahtlustatav põhjus, võetud meetmed, kontaktpunkt ja tehnikad on sisendid, mille klient sisestab intsidendi lehel enne koostamist.
 
@@ -36,7 +36,7 @@ Iga aruande fakt ütleb, kuidas seda teatakse: tõendites täheldatud, kliendi s
 |---|---|
 | JSON | Kanooniline, kontrollitav vorm |
 | STIX 2.1 | Näitajate kimp ohuteabe tööriistade jaoks |
-| PDF | Loetav dokument, mis kuvab ka mittelatiinitähestikke, koos lahtiütlusega, QR-koodi ja aruande räsiga iga lehe jaluses |
+| PDF | Loetav dokument manustatud Noto Sansiga (ladina, kirillitsa ja türgi) või Noto Sans Arabicuga; jaapani, korea ja hiina aruanded lükatakse tagasi, kuni nende fondid on kinnitatud. Iga lehe jaluses on lahtiütlus, QR-kood ja aruande räsi |
 
 Intsidendi lehel on igal etapil iga vormingu jaoks allalaadimisnupp. Käsurealt:
 

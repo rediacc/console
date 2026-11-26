@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: it
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Risposta agli incidenti
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-Il comando termina con codice 1 quando trova un vuoto o una modifica. `--machine-key <machine>=<64 hex characters>` fornisce una chiave esterna alla directory e può essere ripetuto. Una macchina senza chiave esterna fallisce.
+Il comando termina con codice 1 quando trova un vuoto o una modifica. `--machine-key <machine>=<public-key-hex>` (la chiave è di 64 caratteri esadecimali) fornisce una chiave esterna alla directory e può essere ripetuto. Una macchina senza chiave esterna fallisce.
 
 ## Dichiarare un incidente
 

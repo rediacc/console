@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: fr
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Investigation numérique
@@ -98,7 +98,7 @@ Chaque constat porte les raisons par caractéristique qui l'ont produit, et l'ex
 
 ### Bundles de modèles
 
-Les paramètres des détecteurs sont publiés sous forme de bundles signés sur `data.rediacc.com/models/` : des fichiers adressés par contenu, un manifeste signé avec une clé de modèle Ed25519 hors ligne intégrée à renet, une version minimale de renet et une version qui ne fait qu'augmenter, ce qui fait refuser un retour en arrière. Un bundle est vérifié avant son installation, et le précédent peut être rétabli.
+Les paramètres des détecteurs sont distribués sous forme de bundles signés sous `data.rediacc.com/models/`, téléversés par le job de publication (aucun canal n'y est encore publié) : des fichiers adressés par contenu, un manifeste signé avec une clé de modèle Ed25519 hors ligne intégrée à renet, une version minimale de renet et une version qui ne fait qu'augmenter, ce qui fait refuser un retour en arrière. Un bundle est vérifié avant son installation, et le précédent peut être rétabli.
 
 ```bash
 renet models status

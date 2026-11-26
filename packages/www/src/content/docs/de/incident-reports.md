@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: de
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Incident-Berichte
@@ -18,7 +18,7 @@ Ein deklarierter Incident ([Incident Response](/de/docs/incident-response)) erze
 
 ## Stufen
 
-Jede Stufe führt die Abschnitte auf, die sie verlangt, und keine weiteren. Ein Abschnitt, den eine Stufe nicht verlangt, entfällt, statt leer zu bleiben.
+Jede Stufe ergänzt die unten aufgeführten Abschnitte und übernimmt die der vorherigen Stufe, sodass ein Abschnitt, den keine Stufe verlangt, entfällt, statt leer zu bleiben.
 
 | Stufe | Fällig | Ergänzt |
 |---|---|---|
@@ -26,7 +26,7 @@ Jede Stufe führt die Abschnitte auf, die sie verlangt, und keine weiteren. Ein 
 | Meldung | 72 Stunden nach Kenntnisnahme | Erstbewertung, Datenauswirkung (Kategorien, ungefähre Anzahlen, Mitgliedstaaten) und ATT&CK-Techniken |
 | Abschluss | Ein Kalendermonat nach der Meldung | Grundursache und Abhilfemaßnahmen |
 
-Der Abschlussbericht folgt auf eine Meldung, daher wird zuerst die Meldung erzeugt. Jede Stufe enthält die Abschnitte der vorherigen Stufe.
+Der Abschlussbericht folgt auf eine Meldung, daher wird zuerst die Meldung erzeugt.
 
 Jede Tatsache in einem Bericht gibt an, woher man sie kennt: in den Beweisen beobachtet, vom Kunden eingegeben oder abgeleitet. Eine abgeleitete Tatsache trägt eine Konfidenz und die Begründung des Detektors. Bewertung, Datenkategorien, Mitgliedstaaten, vermutete Ursache, ergriffene Maßnahmen, Kontaktstelle und Techniken sind Eingaben, die der Kunde vor dem Erzeugen auf der Incident-Seite einträgt.
 
@@ -36,7 +36,7 @@ Jede Tatsache in einem Bericht gibt an, woher man sie kennt: in den Beweisen beo
 |---|---|
 | JSON | Die kanonische, verifizierbare Form |
 | STIX 2.1 | Ein Bündel von Indikatoren für Threat-Intelligence-Werkzeuge |
-| PDF | Ein lesbares Dokument, das auch nicht-lateinische Schriften darstellt, mit Haftungshinweis, QR-Code und Berichts-Hash in jeder Fußzeile |
+| PDF | Ein lesbares Dokument mit eingebetteter Noto Sans (Latein, Kyrillisch und Türkisch) oder Noto Sans Arabic; japanische, koreanische und chinesische Berichte werden abgelehnt, bis ihre Schriftarten festgelegt sind. Mit Haftungshinweis, QR-Code und Berichts-Hash in jeder Fußzeile |
 
 Auf der Incident-Seite hat jede Stufe pro Format eine Download-Schaltfläche. Auf der Kommandozeile:
 

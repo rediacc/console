@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: tr
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Olay Müdahalesi
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-Komut herhangi bir boşluk veya değişiklik bulursa 1 koduyla çıkar. `--machine-key <machine>=<64 hex characters>` dizinin dışından bir anahtar sağlar ve tekrarlanabilir. Dış anahtarı olmayan makine başarısız olur.
+Komut herhangi bir boşluk veya değişiklik bulursa 1 koduyla çıkar. `--machine-key <machine>=<public-key-hex>` (anahtar 64 onaltılık karakterdir) dizinin dışından bir anahtar sağlar ve tekrarlanabilir. Dış anahtarı olmayan makine başarısız olur.
 
 ## Olay bildirme
 

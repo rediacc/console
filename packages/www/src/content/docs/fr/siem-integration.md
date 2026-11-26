@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: fr
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Intégration SIEM
@@ -98,7 +98,7 @@ Le pipeline d'audit est le socle des exigences de journalisation d'audit mention
 - **HIPAA 45 CFR 164.312(b)** : contrôles d'audit
 - **PCI DSS Req 10** : suivre et surveiller tous les accès
 - **NIS2 Art. 21** : les événements d'audit alimentent la gestion des incidents ; la chronologie d'incident, les horloges et les rapports par étapes sont des fonctionnalités distinctes
-- **DORA Art. 10** : les événements d'audit alimentent la détection ; les détecteurs d'anomalies s'exécutent sur les enregistrements de flux forensics, pas sur ce pipeline
+- **DORA Art. 10** : les événements d'audit alimentent la détection ; les détecteurs d'anomalies s'exécutent sur la machine et sur le serveur à partir des enregistrements de flux forensics, pas sur ce pipeline
 
 ## Fiabilité
 

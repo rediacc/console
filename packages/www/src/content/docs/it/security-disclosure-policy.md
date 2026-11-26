@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: it
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc accoglie con favore le segnalazioni di vulnerabilità di sicurezza nei suoi prodotti e servizi. Questa politica descrive che cosa rientra nell'ambito, come inviare una segnalazione e che cosa può aspettarsi in cambio chi la invia. Il file di contatto leggibile dalle macchine si trova in [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ Gli obiettivi sono traguardi, non garanzie: una segnalazione che richiede più t
 
 ## Divulgazione coordinata
 
-Di norma i dettagli vengono pubblicati insieme alla correzione, entro 90 giorni dalla segnalazione. Chi desidera una pubblicazione anticipata o posticipata indica la data nella segnalazione, e le due parti concordano una data. Una vulnerabilità già sfruttata attivamente viene trattata come un incidente, come descritto nella [pagina sulla risposta agli incidenti](/it/docs/security-incident-response).
+Di norma i dettagli vengono pubblicati insieme alla correzione, entro 90 giorni dalla prima valutazione. Chi desidera una pubblicazione anticipata o posticipata indica la data nella segnalazione, e le due parti concordano una data. Una vulnerabilità già sfruttata attivamente viene trattata come un incidente, come descritto nella [pagina sulla risposta agli incidenti](/it/docs/security-incident-response).
 
 ## Riconoscimento
 

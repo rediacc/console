@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: es
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Integración con SIEM
@@ -98,7 +98,7 @@ La canalización de auditoría es la base de los requisitos de registro de audit
 - **HIPAA 45 CFR 164.312(b)**: controles de auditoría
 - **PCI DSS Req 10**: seguimiento y monitorización de todos los accesos
 - **NIS2 Art. 21**: los eventos de auditoría son una entrada para la gestión de incidentes; la línea de tiempo del incidente, los relojes y los informes por etapas son funciones aparte
-- **DORA Art. 10**: los eventos de auditoría son una entrada para la detección; los detectores de anomalías se ejecutan sobre los registros de flujo de forensics, no sobre esta canalización
+- **DORA Art. 10**: los eventos de auditoría son una entrada para la detección; los detectores de anomalías se ejecutan en la máquina y en el servidor sobre los registros de flujo de forensics, no sobre esta canalización
 
 ## Fiabilidad
 

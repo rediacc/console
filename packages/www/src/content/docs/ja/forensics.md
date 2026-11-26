@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: ja
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # フォレンジック
@@ -98,7 +98,7 @@ rdc forensics level mail full
 
 ### モデルバンドル
 
-検知器のパラメーターは、署名付きバンドルとして `data.rediacc.com/models/` で公開されます。コンテンツアドレス指定のファイル、renet に組み込まれたオフラインの Ed25519 モデルキーで署名されたマニフェスト、最小 renet バージョン、増える一方のバージョン番号で構成され、ダウングレードは拒否されます。バンドルはインストール前に検証され、直前のバンドルに戻すこともできます。
+検知器のパラメーターは、署名付きバンドルとして `data.rediacc.com/models/` 配下で配布され、公開ジョブがアップロードします（現時点では、そこに公開されているチャンネルはありません）。コンテンツアドレス指定のファイル、renet に組み込まれたオフラインの Ed25519 モデルキーで署名されたマニフェスト、最小 renet バージョン、増える一方のバージョン番号で構成され、ダウングレードは拒否されます。バンドルはインストール前に検証され、直前のバンドルに戻すこともできます。
 
 ```bash
 renet models status

@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: it
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Integrazione SIEM
@@ -98,7 +98,7 @@ La pipeline di audit è la base dei requisiti di audit logging citati nella docu
 - **HIPAA 45 CFR 164.312(b)**: controlli di audit
 - **PCI DSS Req 10**: tracciare e monitorare tutti gli accessi
 - **NIS2 Art. 21**: gli eventi di audit sono un input per la gestione degli incidenti; la timeline dell'incidente, i timer e i report a fasi sono funzionalità separate
-- **DORA Art. 10**: gli eventi di audit sono un input per il rilevamento; i rilevatori di anomalie girano sui record di flusso forensics, non su questa pipeline
+- **DORA Art. 10**: gli eventi di audit sono un input per il rilevamento; i rilevatori di anomalie girano sulla macchina e sul server sui record di flusso forensics, non su questa pipeline
 
 ## Affidabilità
 

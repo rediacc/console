@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 11
 language: pt
-sourceHash: "777d8ae1dde17294"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "d7f6e084c5c1d0d9"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Relatórios de incidentes
@@ -18,7 +18,7 @@ Um incidente declarado ([resposta a incidentes](/pt/docs/incident-response)) pro
 
 ## Fases
 
-Cada fase lista as secções que exige e nenhuma outra, por isso uma secção de que a fase não precisa é omitida em vez de ficar em branco.
+Cada fase acrescenta as secções listadas abaixo e herda as da fase anterior, por isso uma secção de que nenhuma fase precisa é omitida em vez de ficar em branco.
 
 | Fase | Prazo | Acrescenta |
 |---|---|---|
@@ -26,7 +26,7 @@ Cada fase lista as secções que exige e nenhuma outra, por isso uma secção de
 | Notificação | 72 horas após o conhecimento | Avaliação inicial, impacto nos dados (categorias, números aproximados, Estados-Membros) e técnicas ATT&CK |
 | Final | Um mês civil após a notificação | Causa raiz e medidas de mitigação |
 
-O relatório final segue-se a uma notificação, por isso a notificação é gerada primeiro. Cada fase inclui as secções da fase anterior.
+O relatório final segue-se a uma notificação, por isso a notificação é gerada primeiro.
 
 Cada facto de um relatório indica como é conhecido: observado nas evidências, introduzido pelo cliente ou inferido. Um facto inferido traz uma confiança e o motivo do detetor. A avaliação, as categorias de dados, os Estados-Membros, a causa suspeita, as ações tomadas, o ponto de contacto e as técnicas são dados que o cliente introduz na página do incidente antes de gerar.
 
@@ -36,7 +36,7 @@ Cada facto de um relatório indica como é conhecido: observado nas evidências,
 |---|---|
 | JSON | A forma canónica e verificável |
 | STIX 2.1 | Um pacote de indicadores para ferramentas de threat intelligence |
-| PDF | Um documento legível, que apresenta escritas não latinas, com o aviso legal, um código QR e o hash do relatório no rodapé de cada página |
+| PDF | Um documento legível com Noto Sans incorporada (latino, cirílico e turco) ou Noto Sans Arabic; os relatórios em japonês, coreano e chinês são recusados até que as suas fontes sejam fixadas. Traz o aviso legal, um código QR e o hash do relatório no rodapé de cada página |
 
 A partir da página do incidente, cada fase tem um botão de descarga por formato. A partir da linha de comandos:
 

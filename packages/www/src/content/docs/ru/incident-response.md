@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: ru
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Реагирование на инциденты
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-Команда завершается с кодом 1, если найден любой пробел или изменение. `--machine-key <machine>=<64 hex characters>` передаёт ключ из-за пределов каталога и может повторяться. Машина без внешнего ключа не проходит проверку.
+Команда завершается с кодом 1, если найден любой пробел или изменение. `--machine-key <machine>=<public-key-hex>` (ключ состоит из 64 шестнадцатеричных символов) передаёт ключ из-за пределов каталога и может повторяться. Машина без внешнего ключа не проходит проверку.
 
 ## Объявление инцидента
 

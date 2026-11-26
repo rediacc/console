@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: zh
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc 欢迎各方报告其产品和服务中的安全漏洞。本政策说明哪些内容在适用范围内、如何报告，以及报告者可以获得哪些回应。机器可读的联系文件位于 [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)（RFC 9116）。
@@ -67,7 +67,7 @@ Rediacc 欢迎各方报告其产品和服务中的安全漏洞。本政策说明
 
 ## 协调披露
 
-细节会与修复一同发布，通常在收到报告后 90 天内。希望提前或推迟发布的报告者可在报告中写明日期，双方协商确定一个日期。已在实际环境中被利用的漏洞按事件处理，详见[事件响应页面](/zh/docs/security-incident-response)。
+细节会与修复一同发布，通常在首次评估后 90 天内。希望提前或推迟发布的报告者可在报告中写明日期，双方协商确定一个日期。已在实际环境中被利用的漏洞按事件处理，详见[事件响应页面](/zh/docs/security-incident-response)。
 
 ## 致谢
 

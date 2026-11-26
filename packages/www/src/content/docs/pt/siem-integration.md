@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: pt
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Integração com SIEM
@@ -98,7 +98,7 @@ O pipeline de auditoria é a base dos requisitos de registo de auditoria referen
 - **HIPAA 45 CFR 164.312(b)** -- controlos de auditoria
 - **PCI DSS Req. 10** -- acompanhar e monitorizar todos os acessos
 - **NIS2 Art. 21** -- os eventos de auditoria são um contributo para o tratamento de incidentes; a cronologia do incidente, os relógios e os relatórios por fases são funcionalidades separadas
-- **DORA Art. 10** -- os eventos de auditoria são um contributo para a deteção; os detetores de anomalias correm sobre os registos de fluxo forenses, não sobre este pipeline
+- **DORA Art. 10** -- os eventos de auditoria são um contributo para a deteção; os detetores de anomalias correm na máquina e no servidor sobre os registos de fluxo forenses, não sobre este pipeline
 
 ## Fiabilidade
 

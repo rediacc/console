@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: et
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Digitaalne kriminalistika
@@ -98,7 +98,7 @@ Iga tuvastus kannab tunnuspõhiseid põhjusi, mis selle tekitasid, ja selgitus o
 
 ### Mudelipaketid
 
-Detektori parameetrid avaldatakse allkirjastatud pakettidena aadressil `data.rediacc.com/models/`: sisuaadressiga failid, manifest, mis on allkirjastatud renetisse sisseehitatud võrguühenduseta Ed25519 mudelivõtmega, renet'i minimaalne versioon ja ainult kasvav versioon, nii et versiooni langetamine lükatakse tagasi. Pakett kontrollitakse enne paigaldamist ja eelmise saab taastada.
+Detektori parameetrid jagatakse allkirjastatud pakettidena aadressi `data.rediacc.com/models/` all ja need laadib üles avaldamistöö (kanalit seal veel avaldatud ei ole): sisuaadressiga failid, manifest, mis on allkirjastatud renetisse sisseehitatud võrguühenduseta Ed25519 mudelivõtmega, renet'i minimaalne versioon ja ainult kasvav versioon, nii et versiooni langetamine lükatakse tagasi. Pakett kontrollitakse enne paigaldamist ja eelmise saab taastada.
 
 ```bash
 renet models status

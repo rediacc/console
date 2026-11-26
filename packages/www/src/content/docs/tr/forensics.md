@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: tr
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # Adli Analiz
@@ -98,7 +98,7 @@ Her bulgu, onu üreten özellik başına gerekçeleri taşır ve açıklama bu g
 
 ### Model paketleri
 
-Dedektör parametreleri `data.rediacc.com/models/` adresinde imzalı paketler olarak yayımlanır: içerik adresli dosyalar, renet'e gömülü çevrimdışı bir Ed25519 model anahtarıyla imzalanmış bir manifest, asgari bir renet sürümü ve yalnızca artan bir sürüm; böylece sürüm düşürme reddedilir. Paket kurulmadan önce doğrulanır ve bir öncekine dönülebilir.
+Dedektör parametreleri `data.rediacc.com/models/` altında imzalı paketler olarak dağıtılır ve yayın işi tarafından yüklenir (orada henüz yayımlanmış bir kanal yok): içerik adresli dosyalar, renet'e gömülü çevrimdışı bir Ed25519 model anahtarıyla imzalanmış bir manifest, asgari bir renet sürümü ve yalnızca artan bir sürüm; böylece sürüm düşürme reddedilir. Paket kurulmadan önce doğrulanır ve bir öncekine dönülebilir.
 
 ```bash
 renet models status

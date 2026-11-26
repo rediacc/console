@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 9
 language: ko
-sourceHash: "c349f479d246dee4"
-sourceCommit: "0531ce955ea0d1658b8fceefd6aa44e3c270521c"
+sourceHash: "cb8be2dcf3970c81"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # 포렌식
@@ -98,7 +98,7 @@ rdc forensics level mail full
 
 ### 모델 번들
 
-탐지기 매개변수는 `data.rediacc.com/models/`에 서명된 번들로 게시됩니다. 콘텐츠 주소 방식의 파일, renet에 내장된 오프라인 Ed25519 모델 키로 서명된 매니페스트, 최소 renet 버전, 증가만 하는 버전 번호로 구성되어 다운그레이드는 거부됩니다. 번들은 설치 전에 검증되며, 이전 번들로 복원할 수 있습니다.
+탐지기 매개변수는 `data.rediacc.com/models/` 아래에 서명된 번들로 배포되며, 게시 작업이 업로드합니다(아직 그곳에 게시된 채널은 없습니다). 콘텐츠 주소 방식의 파일, renet에 내장된 오프라인 Ed25519 모델 키로 서명된 매니페스트, 최소 renet 버전, 증가만 하는 버전 번호로 구성되어 다운그레이드는 거부됩니다. 번들은 설치 전에 검증되며, 이전 번들로 복원할 수 있습니다.
 
 ```bash
 renet models status

@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: ko
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # SIEM 연동
@@ -98,7 +98,7 @@ level: medium
 - **HIPAA 45 CFR 164.312(b)** -- 감사 제어
 - **PCI DSS 요구 사항 10** -- 모든 접근 추적 및 모니터링
 - **NIS2 제21조** -- 감사 이벤트는 사고 처리의 입력입니다. 사고 타임라인, 시계, 단계별 보고서는 별도의 기능입니다
-- **DORA 제10조** -- 감사 이벤트는 탐지의 입력입니다. 이상 탐지기는 이 파이프라인이 아니라 포렌식 플로 기록을 대상으로 동작합니다
+- **DORA 제10조** -- 감사 이벤트는 탐지의 입력입니다. 이상 탐지기는 이 파이프라인이 아니라 머신과 서버에서 포렌식 플로 기록을 대상으로 동작합니다
 
 ## 안정성
 

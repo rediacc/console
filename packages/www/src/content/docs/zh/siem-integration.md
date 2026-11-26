@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: zh
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # SIEM 集成
@@ -98,7 +98,7 @@ level: medium
 - **HIPAA 45 CFR 164.312(b)** -- 审计控制
 - **PCI DSS Req 10** -- 跟踪并监控所有访问
 - **NIS2 Art. 21** -- 审计事件是事件处理的输入；事件时间线、计时和分阶段报告是独立的功能
-- **DORA Art. 10** -- 审计事件是检测的输入；异常检测器运行在 forensics 流记录上，而不是这条管道上
+- **DORA Art. 10** -- 审计事件是检测的输入；异常检测器在机器和服务器上基于 forensics 流记录运行，而不是这条管道上
 
 ## 可靠性
 

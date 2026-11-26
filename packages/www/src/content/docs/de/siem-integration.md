@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: de
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # SIEM-Integration
@@ -98,7 +98,7 @@ Die Audit-Pipeline ist die Grundlage für die Anforderungen an die Audit-Protoko
 - **HIPAA 45 CFR 164.312(b)**: Audit-Kontrollen
 - **PCI DSS Req 10**: Alle Zugriffe nachverfolgen und überwachen
 - **NIS2 Art. 21**: Die Audit-Ereignisse sind eine Eingabe für die Vorfallsbehandlung; Vorfall-Timeline, Fristuhren und gestufte Berichte sind eigene Funktionen
-- **DORA Art. 10**: Die Audit-Ereignisse sind eine Eingabe für die Erkennung; die Anomalie-Detektoren laufen auf Forensics-Flow-Records, nicht auf dieser Pipeline
+- **DORA Art. 10**: Die Audit-Ereignisse sind eine Eingabe für die Erkennung; die Anomalie-Detektoren laufen auf der Maschine und auf dem Server über den Forensics-Flow-Records, nicht auf dieser Pipeline
 
 ## Zuverlässigkeit
 

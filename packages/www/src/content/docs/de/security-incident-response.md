@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: de
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Diese Seite beschreibt, was geschieht, wenn Rediacc selbst einen Sicherheitsvorfall hat, etwa eine Kompromittierung der eigenen Systeme oder eine aktiv ausgenutzte Schwachstelle in den Produkten. Vorfälle in den eigenen Repositories eines Kunden untersucht und meldet der Kunde selbst; Rediacc stellt dafür die Werkzeuge zur Beweissicherung bereit. Schwachstellenmeldungen von außen regelt die [Richtlinie zur Offenlegung](/de/docs/security-disclosure-policy).
@@ -22,7 +22,7 @@ Für jeden Vorfall läuft eine Frist ab dem Moment, in dem Rediacc davon erfähr
 |-------|--------|--------|
 | Frühwarnung | innerhalb von 24 Stunden | was bisher bekannt ist und ob böswillige Handlungen vermutet werden |
 | Meldung | innerhalb von 72 Stunden | die Art des Vorfalls, eine erste Bewertung und die ergriffenen Maßnahmen |
-| Abschlussbericht | innerhalb eines Monats | eine detaillierte Beschreibung, die Ursache sowie die umgesetzten und laufenden Maßnahmen |
+| Abschlussbericht | innerhalb eines Monats nach der Meldung; bei einer aktiv ausgenutzten Schwachstelle 14 Tage, nachdem eine Korrektur- oder Abhilfemaßnahme verfügbar ist | eine detaillierte Beschreibung, die Ursache sowie die umgesetzten und laufenden Maßnahmen |
 
 ## Die Angaben nach Art. 33(3)
 

@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: fr
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc accueille volontiers les signalements de vulnérabilités de sécurité touchant ses produits et services. Cette politique précise ce qui entre dans le périmètre, comment signaler une faille et ce que l'auteur du signalement peut attendre en retour. Le fichier de contact lisible par machine se trouve à l'adresse [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ Ces délais sont des objectifs : un signalement qui demande plus de temps reçoi
 
 ## Divulgation coordonnée
 
-Les détails sont publiés en même temps que le correctif, en principe dans les 90 jours suivant le signalement. L'auteur qui souhaite une publication plus tôt ou plus tard indique la date dans son signalement, et les deux parties s'accordent sur une date. Une vulnérabilité déjà exploitée dans la nature est traitée comme un incident, comme décrit sur la [page de réponse aux incidents](/fr/docs/security-incident-response).
+Les détails sont publiés en même temps que le correctif, en principe dans les 90 jours suivant la première évaluation. L'auteur qui souhaite une publication plus tôt ou plus tard indique la date dans son signalement, et les deux parties s'accordent sur une date. Une vulnérabilité déjà exploitée dans la nature est traitée comme un incident, comme décrit sur la [page de réponse aux incidents](/fr/docs/security-incident-response).
 
 ## Crédit
 

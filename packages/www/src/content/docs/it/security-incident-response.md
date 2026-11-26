@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: it
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Questa pagina descrive che cosa accade quando Rediacc stessa subisce un incidente di sicurezza, ad esempio la compromissione dei propri sistemi o una vulnerabilità attivamente sfruttata nei suoi prodotti. Gli incidenti all'interno dei repository di un cliente spettano al cliente, che li indaga e li notifica; Rediacc fornisce a questo scopo gli strumenti per raccogliere le prove. Le segnalazioni di vulnerabilità provenienti dall'esterno sono trattate nella [politica di divulgazione](/it/docs/security-disclosure-policy).
@@ -22,7 +22,7 @@ Ogni incidente ha un orologio che parte nel momento in cui Rediacc ne viene a co
 |------|----------|-----------|
 | Preallarme | entro 24 ore | ciò che si sa finora e se si sospettano atti dolosi |
 | Notifica | entro 72 ore | la natura dell'incidente, una valutazione iniziale e le misure adottate |
-| Relazione finale | entro un mese | una descrizione dettagliata, la causa all'origine e le misure applicate e in corso |
+| Relazione finale | entro un mese dalla notifica; per una vulnerabilità sfruttata attivamente, 14 giorni dopo che è disponibile una misura correttiva o di mitigazione | una descrizione dettagliata, la causa all'origine e le misure applicate e in corso |
 
 ## I campi dell'art. 33(3)
 

@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: et
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc ootab teateid oma toodete ja teenuste turvahaavatavuste kohta. Poliitika kirjeldab, mis kuulub ulatusse, kuidas teatada ja mida teataja vastutasuks eeldada võib. Masinloetav kontaktfail asub aadressil [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ Tähtajad on eesmärgid, mitte garantiid: kui teade vajab rohkem aega, saab teat
 
 ## Kooskõlastatud avalikustamine
 
-Üksikasjad avaldatakse koos paranduse väljalaskega, tavaliselt 90 päeva jooksul teate saamisest. Teataja, kes soovib varasemat või hilisemat avaldamist, nimetab kuupäeva teates ja pooled lepivad kuupäevas kokku. Juba aktiivselt ärakasutatavat haavatavust käsitletakse intsidendina, nagu on kirjeldatud [intsidentidele reageerimise lehel](/et/docs/security-incident-response).
+Üksikasjad avaldatakse koos paranduse väljalaskega, tavaliselt 90 päeva jooksul esmasest hindamisest. Teataja, kes soovib varasemat või hilisemat avaldamist, nimetab kuupäeva teates ja pooled lepivad kuupäevas kokku. Juba aktiivselt ärakasutatavat haavatavust käsitletakse intsidendina, nagu on kirjeldatud [intsidentidele reageerimise lehel](/et/docs/security-incident-response).
 
 ## Tunnustus
 

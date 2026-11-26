@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: ko
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # 인시던트 대응
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-공백이나 편집이 발견되면 명령은 종료 코드 1로 끝납니다. `--machine-key <machine>=<64 hex characters>`는 디렉터리 밖에서 키를 제공하며 반복해서 쓸 수 있습니다. 외부 키가 없는 머신은 실패합니다.
+공백이나 편집이 발견되면 명령은 종료 코드 1로 끝납니다. `--machine-key <machine>=<public-key-hex>`(키는 16진수 64자)는 디렉터리 밖에서 키를 제공하며 반복해서 쓸 수 있습니다. 외부 키가 없는 머신은 실패합니다.
 
 ## 인시던트 선언
 

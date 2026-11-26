@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 9
 language: de
-sourceHash: "49a84775c19854ee"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "612e816f7a8be282"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Rediacc freut sich über Meldungen von Sicherheitslücken in seinen Produkten und Diensten. Diese Richtlinie beschreibt, was im Geltungsbereich liegt, wie gemeldet wird und was Meldende im Gegenzug erwarten können. Die maschinenlesbare Kontaktdatei liegt unter [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
@@ -67,7 +67,7 @@ Die Zeiten sind Zielvorgaben. Braucht eine Meldung mehr Zeit, folgen eine Erklä
 
 ## Koordinierte Offenlegung
 
-Die Details werden zusammen mit dem Fix veröffentlicht, in der Regel innerhalb von 90 Tagen nach der Meldung. Wer eine frühere oder spätere Veröffentlichung wünscht, nennt den Termin in der Meldung, und beide Seiten einigen sich auf einen Termin. Eine bereits aktiv ausgenutzte Schwachstelle wird als Vorfall behandelt, wie auf der Seite zur [Reaktion auf Sicherheitsvorfälle](/de/docs/security-incident-response) beschrieben.
+Die Details werden zusammen mit dem Fix veröffentlicht, in der Regel innerhalb von 90 Tagen nach der ersten Bewertung. Wer eine frühere oder spätere Veröffentlichung wünscht, nennt den Termin in der Meldung, und beide Seiten einigen sich auf einen Termin. Eine bereits aktiv ausgenutzte Schwachstelle wird als Vorfall behandelt, wie auf der Seite zur [Reaktion auf Sicherheitsvorfälle](/de/docs/security-incident-response) beschrieben.
 
 ## Erwähnung
 

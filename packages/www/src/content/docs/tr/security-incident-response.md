@@ -8,8 +8,8 @@ tags:
 subcategory: foundations
 order: 10
 language: tr
-sourceHash: "6b9f728f093ecb0c"
-sourceCommit: "72636750e43d473936cbb242ec9c7511fd246f65"
+sourceHash: "4b237976bd64e55e"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 Bu sayfa, Rediacc'in kendisi bir güvenlik olayı yaşadığında, örneğin kendi sistemlerinin ele geçirilmesi veya ürünlerindeki aktif olarak istismar edilen bir açık durumunda neler olduğunu anlatır. Bir müşterinin kendi depoları içindeki olayları araştırmak ve bildirmek müşteriye aittir; Rediacc bunun için kanıt toplama araçlarını sağlar. Dışarıdan gelen açık bildirimleri [bildirim politikası](/tr/docs/security-disclosure-policy) kapsamındadır.
@@ -22,7 +22,7 @@ Her olayın saati, Rediacc olaydan haberdar olduğu anda başlar. Bilgiler aşam
 |-------|------|--------|
 | Erken uyarı | 24 saat içinde | şimdiye kadar bilinenler ve kötü niyetli eylemlerden şüphelenilip şüphelenilmediği |
 | Bildirim | 72 saat içinde | olayın niteliği, ilk değerlendirme ve alınan önlemler |
-| Nihai rapor | bir ay içinde | ayrıntılı açıklama, kök neden ile uygulanan ve süren önlemler |
+| Nihai rapor | bildirimden sonra bir ay içinde; aktif olarak istismar edilen bir açık için, düzeltici veya hafifletici bir önlem hazır olduktan 14 gün sonra | ayrıntılı açıklama, kök neden ile uygulanan ve süren önlemler |
 
 ## Art. 33(3) alanları
 

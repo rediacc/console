@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 10
 language: ja
-sourceHash: "07d8b9d09d0e2191"
-sourceCommit: "d93166e47a19c588a2284e21d263cca7f8a3578d"
+sourceHash: "0e7681b5366968f0"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # インシデント対応
@@ -51,7 +51,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-欠落または編集が見つかると、コマンドは終了コード 1 で終わります。`--machine-key <machine>=<64 hex characters>` はディレクトリの外から鍵を渡すもので、繰り返し指定できます。外部の鍵がないマシンは失敗します。
+欠落または編集が見つかると、コマンドは終了コード 1 で終わります。`--machine-key <machine>=<public-key-hex>`（鍵は16進数64文字） はディレクトリの外から鍵を渡すもので、繰り返し指定できます。外部の鍵がないマシンは失敗します。
 
 ## インシデントの宣言
 

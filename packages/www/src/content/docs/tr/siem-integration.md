@@ -8,8 +8,8 @@ tags:
 subcategory: operations
 order: 15
 language: tr
-sourceHash: "224ef90a952edb1c"
-sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
+sourceHash: "69ec0d3d122d13df"
+sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
 # SIEM Entegrasyonu
@@ -98,7 +98,7 @@ Denetim hattı, Rediacc'ın uyumluluk belgelerinde anılan denetim günlüğü g
 - **HIPAA 45 CFR 164.312(b)** -- denetim kontrolleri
 - **PCI DSS Req 10** -- tüm erişimi izleme ve takip etme
 - **NIS2 Art. 21** -- denetim olayları olay işlemeye girdi sağlar; olay zaman çizelgesi, sayaçlar ve aşamalı raporlar ayrı özelliklerdir
-- **DORA Art. 10** -- denetim olayları tespite girdi sağlar; anomali dedektörleri bu hat üzerinde değil, forensics akış kayıtları üzerinde çalışır
+- **DORA Art. 10** -- denetim olayları tespite girdi sağlar; anomali dedektörleri bu hat üzerinde değil, makinede ve sunucuda forensics akış kayıtları üzerinde çalışır
 
 ## Güvenilirlik
 
