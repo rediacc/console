@@ -105,7 +105,7 @@ export const EXECUTOR_SERVED: Record<string, string> = {
   'feedback list':
     'Calls the account server with the session token the executor holds for the grant.',
   'feedback report':
-    'Calls the account server with the session token the executor holds for the grant.',
+    "Calls the account server with the session token the executor holds for the grant. The --last and --command forms read the recorded command history the EXECUTOR holds, not the caller's, so a remote caller reaches that history.",
   'feedback show':
     'Calls the account server with the session token the executor holds for the grant.',
   'incident status':

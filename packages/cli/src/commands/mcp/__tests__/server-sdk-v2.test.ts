@@ -96,9 +96,13 @@ describe('the mcp serve server on SDK v2', () => {
     const client = await connect('auto');
     const outcome = await client
       .callTool({ name: 'machine_containers', arguments: {} })
-      .then((r) => ({ isError: r.isError === true }))
-      .catch(() => ({ isError: true }));
+      .then((r) => ({ isError: r.isError === true, text: JSON.stringify(r.content) }))
+      .catch((e: unknown) => ({ isError: true, text: String(e) }));
     expect(outcome.isError).toBe(true);
+    // The refusal is the schema's: a transport failure or crash would carry another message.
+    expect(outcome.text).toMatch(
+      /Input validation error: Invalid arguments for tool machine_containers: name:/
+    );
     expect(executeRdcCommand).not.toHaveBeenCalled();
   });
 });

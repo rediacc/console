@@ -255,6 +255,9 @@ describe('the child CLI the MCP server spawns', () => {
       `the child reached the machine unconfirmed: ${out}`
     ).not.toHaveBeenCalled();
     expect(code).not.toBe(0);
+    // The stop is the confirmation gate, not a crash for another reason.
+    expect(firstError(out).code).toBe('VALIDATION_ERROR');
+    expect(JSON.parse(out).errors[0].details).toContain('CONFIRMATION_REQUIRED');
   });
 
   it('control: an opt-in the agent injected itself is still refused', async () => {

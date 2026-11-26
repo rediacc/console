@@ -29,6 +29,29 @@ function hasBinary(name: string): boolean {
   return spawnSync('sh', ['-c', `command -v ${name}`], { stdio: 'ignore' }).status === 0;
 }
 
+/** Quotes and brackets balance in a generated script; `[]` when they do. A text check, no replacement for the shell's own parser. */
+function structuralProblems(shell: string, script: string): string[] {
+  const problems: string[] = [];
+  const code = script
+    .split('\n')
+    // Whole-line comments and trailing ones (a `#` that opens a word), whose text may hold an apostrophe.
+    .map((line) => line.replace(/(^|\s)#.*$/, ''))
+    // zsh `case` arms (`pattern)`) carry an unmatched closing parenthesis by design.
+    .map((line) =>
+      shell === 'zsh' ? line.replace(/^\s*(?:[^()'"]|"[^"]*"|'[^']*')*\)/, '') : line
+    )
+    .join('\n');
+  if ((code.match(/'/g) ?? []).length % 2 !== 0) problems.push('single quotes');
+  for (const [open, close] of [
+    ['{', '}'],
+    ['[', ']'],
+    ['(', ')'],
+  ]) {
+    if (code.split(open).length !== code.split(close).length) problems.push(`${open}${close}`);
+  }
+  return problems;
+}
+
 function writeScript(shell: string): string {
   const file = join(work, `rdc.${shell}`);
   writeFileSync(file, renderCompletionScript(shell as never, CLI_CONTRACT));
@@ -173,18 +196,22 @@ describe('rdc completion: shell syntax', () => {
   // still fails there, though it is no replacement for the parser.
   for (const shell of ['zsh', 'fish', 'pwsh']) {
     it(`${shell} script has balanced quotes and brackets (runs without the ${shell} binary)`, () => {
-      const code = readFileSync(writeScript(shell), 'utf-8')
-        .split('\n')
-        .filter((line) => !/^\s*#/.test(line))
-        .join('\n');
-      expect((code.match(/'/g) ?? []).length % 2, 'single quotes').toBe(0);
-      // zsh `case` arms (`*)`) carry unmatched parentheses by design.
-      const pairs = [['{', '}'], ['[', ']'], ...(shell === 'zsh' ? [] : [['(', ')']])];
-      for (const [open, close] of pairs) {
-        expect(code.split(open).length, `${open}${close}`).toBe(code.split(close).length);
-      }
+      expect(structuralProblems(shell, readFileSync(writeScript(shell), 'utf-8'))).toEqual([]);
     });
   }
+
+  describe('structuralProblems controls', () => {
+    it('catches an unbalanced parenthesis in a zsh script, past the case arms', () => {
+      const ok = 'case "$x" in\n  --*=*) y=1 ;;\n  "$h"*) z=2 ;;\nesac\n(( ${#c} )) && f\n';
+      expect(structuralProblems('zsh', ok)).toEqual([]);
+      expect(structuralProblems('zsh', `${ok}(( ${'${#c}'} && f\n`)).toEqual(['()']);
+    });
+
+    it('ignores an apostrophe in a trailing comment but still counts a real stray quote', () => {
+      expect(structuralProblems('fish', "echo 'a' # don't\n")).toEqual([]);
+      expect(structuralProblems('fish', "echo 'a # don't\n")).toEqual(['single quotes']);
+    });
+  });
 
   it('renders a script for every supported shell', () => {
     for (const shell of COMPLETION_SHELLS) {

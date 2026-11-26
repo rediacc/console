@@ -287,7 +287,8 @@ describe('the CLI on envelope v4', () => {
     expect(Object.keys(second?.envelope.commitments.removed ?? {}).length).toBeGreaterThan(0);
   });
 
-  it('refuses a pulled envelope below the version this device recorded', async () => {
+  // The v3 copy is newer by config version (5 over a highWater of 1) and is refused for its ENVELOPE version: this device recorded a v4 envelope, and v3 is below it.
+  it('refuses a pulled v3 envelope after this device recorded a v4 envelope', async () => {
     const w = await world();
     await w.adapter.pull();
     await w.storeV3(5);

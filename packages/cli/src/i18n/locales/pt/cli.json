@@ -984,7 +984,7 @@
           "machineSecretRevoked": "Este segredo de máquina foi revogado, ou a chave do armazenamento foi rotacionada desde a sua criação. Crie um novo no portal (Config Storage > Segredos de máquina) e tente de novo.",
           "machineSecretTeamForbidden": "A equipe do segredo de máquina está fora do alcance deste token de API: {{error}}",
           "machineSecretMissingScope": "O token de API em REDIACC_TOKEN não tem o escopo config:enroll. Emita um token com esse escopo no portal web e tente de novo.",
-          "machineSecretTokenNotEnrollable": "Este token de API não pode registrar uma máquina porque não está vinculado a um usuário de uma organização. Emita um token pessoal na conta que criou o segredo de máquina e tente de novo.",
+          "machineSecretTokenNotEnrollable": "Este token de API não pode registar uma máquina porque não está associado a um utilizador de uma organização. Emita um token pessoal na conta que criou o segredo de máquina e tente de novo.",
           "machineSecretForbidden": "O servidor de contas recusou o registro da máquina: {{error}}",
           "machineSecretNotFound": "O segredo de máquina {{id}} não está disponível para este token de API. Confira o id e use um token do membro que o criou. ({{error}})",
           "machineSecretWrong": "Não foi possível desbloquear a config com esse segredo de máquina. Verifique {{env}} (ou o segredo em stdin) e tente de novo."
@@ -2763,7 +2763,7 @@
         "description": "Instala o servidor de contas auto-hospedado em uma máquina existente: verifica a máquina, configura o renet quando ele não está presente, aguarda o DNS, configura o TLS, cria o repositório, gera as chaves na própria máquina, licencia, inicia o servidor e cria a conta do proprietário. Todo valor tem uma flag; em um terminal, valores ausentes são perguntados. Uma nova execução pula as etapas já concluídas.",
         "machineArgument": "Máquina configurada onde instalar (ou registre uma com --ip e --user)",
         "optionIp": "Endereço de um servidor ou dispositivo de LAN existente a registrar antes",
-        "optionUser": "Usuário SSH nessa máquina",
+        "optionUser": "Utilizador SSH nessa máquina",
         "optionPort": "Porta SSH nessa máquina (padrão: 22)",
         "optionName": "Nome com que registrar essa máquina (padrão: server-<ip>)",
         "optionDomain": "Domínio público do servidor, por exemplo accounts.example.com",
@@ -2947,7 +2947,7 @@
       "preflight": {
         "refused": "{{machine}} não está pronta:",
         "noAnswer": "{{machine}} não respondeu à verificação prévia via SSH",
-        "noSudo": "sudo -n falha em {{machine}}; o usuário SSH precisa de sudo sem senha",
+        "noSudo": "sudo -n falha em {{machine}}; o utilizador SSH precisa de sudo sem senha",
         "arch": "A arquitetura {{arch}} não é suportada (x86_64 ou aarch64)",
         "portBusy": "A porta {{port}} está ocupada por {{holder}}",
         "disk": "{{free}} GiB livres no datastore, {{need}} GiB necessários",
@@ -2961,10 +2961,10 @@
       },
       "prompts": {
         "machine": "Máquina onde instalar",
-        "machineAddExisting": "Servidor ou dispositivo de LAN existente (IP e usuário)",
+        "machineAddExisting": "Servidor ou dispositivo de LAN existente (IP e utilizador)",
         "provisionHint": "Uma VM na nuvem é criada antes com rdc machine provision.",
         "machineIp": "Endereço IP",
-        "machineUser": "Usuário SSH",
+        "machineUser": "Utilizador SSH",
         "machinePort": "Porta SSH",
         "machineName": "Nome desta máquina",
         "domain": "Domínio público do servidor",
@@ -3671,9 +3671,9 @@
       "clusterOpsDenied": "\"rdc {{command}}\" é uma operação de cluster, e a política em vigor não permite operações de cluster.",
       "confirmationRequired": "\"rdc {{command}}\" é destrutivo e alteraria \"{{name}}\", um repositório grand (produção).\n\nPeça confirmação ao utilizador e execute o mesmo comando outra vez com {{flag}} {{value}}.",
       "confirmTitle": "Confirmar",
-      "confirmDeclined": "O usuário não confirmou, então nada foi executado.",
-      "confirmStale": "Esta confirmação não corresponde mais à chamada. Chame a ferramenta de novo para que a pergunta seja feita outra vez.",
-      "confirmByArgument": "Para continuar, pergunte ao usuário e depois chame {{tool}} de novo com os mesmos argumentos e confirm definido como \"{{value}}\"."
+      "confirmDeclined": "O utilizador não confirmou, por isso nada foi executado.",
+      "confirmStale": "Esta confirmação já não corresponde à chamada. Chame a ferramenta de novo para que a pergunta seja feita outra vez.",
+      "confirmByArgument": "Para continuar, pergunte ao utilizador e depois chame {{tool}} de novo com os mesmos argumentos e confirm definido como \"{{value}}\"."
     },
     "authRequired": "Autenticação necessária. Execute: rdc subscription login",
     "cluster": {

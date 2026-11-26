@@ -43,15 +43,21 @@ if (process.argv.includes('--check')) {
   }
   process.stdout.write(`${shown} is current\n`);
 } else {
-  // tree-write: safe the one output of this generator, a committed generated file
-  fs.writeFileSync(target, serializeMcpRegistry(registry), 'utf-8');
-  const biome = path.resolve(cliRoot, '../../node_modules/.bin/biome');
-  const formatted = spawnSync(biome, ['format', '--write', target], { encoding: 'utf-8' });
-  if (formatted.status !== 0) {
+  // The format runs on stdin before anything is written, so a failing formatter leaves the committed file untouched; writing first left an unformatted registry on disk that `--check` then called current.
+  const biome =
+    process.env.REDIACC_BIOME_BIN ?? path.resolve(cliRoot, '../../node_modules/.bin/biome');
+  const formatted = spawnSync(biome, ['format', `--stdin-file-path=${target}`], {
+    encoding: 'utf-8',
+    input: serializeMcpRegistry(registry),
+    cwd: path.resolve(cliRoot, '../..'),
+  });
+  if (formatted.status !== 0 || !formatted.stdout) {
     process.stderr.write(
-      `biome format failed on ${shown} (status ${String(formatted.status)}):\n${formatted.stderr ?? ''}${formatted.error ? String(formatted.error) : ''}\n`
+      `biome format failed on ${shown} (status ${String(formatted.status)}); the file was not written:\n${formatted.stderr ?? ''}${formatted.error ? String(formatted.error) : ''}\n`
     );
     process.exit(1);
   }
+  // tree-write: safe the one output of this generator, a committed generated file
+  fs.writeFileSync(target, formatted.stdout, 'utf-8');
   process.stdout.write(`wrote ${shown}\n`);
 }

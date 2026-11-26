@@ -93,17 +93,47 @@ describe('command safety table', () => {
     ).toEqual(['repo delete']);
   });
 
-  // Review 1121-1 90db5f63.1: `server status` was drafted at caution while every sibling status command reads.
-  const statusAboveNone = (severity: Readonly<Record<string, CommandSeverity>>): string[] =>
-    Object.entries(severity)
-      .filter(([key, level]) => /(^| )status$/.test(key) && level !== 'none')
-      .map(([key]) => key);
+  // Review 1121-1 90db5f63.1 and f87608d7.1: a status command only reads, so it sits at none; walking the live commands means one with no table entry is named too.
+  const statusAboveNone = (cmds: Cmd[], severity: Sev): string[] =>
+    cmds
+      .filter((c) => /(^| )status$/.test(c.pathKey) && severity[c.pathKey] !== 'none')
+      .map((c) => c.pathKey);
 
   it('declares every status command at none, and the check names one', () => {
-    expect(statusAboveNone(COMMAND_SEVERITY)).toEqual([]);
-    expect(statusAboveNone({ ...COMMAND_SEVERITY, 'server status': 'caution' })).toEqual([
+    expect(COMMANDS.some((c) => /(^| )status$/.test(c.pathKey))).toBe(true);
+    expect(statusAboveNone(COMMANDS, COMMAND_SEVERITY)).toEqual([]);
+    expect(statusAboveNone(COMMANDS, { ...COMMAND_SEVERITY, 'server status': 'caution' })).toEqual([
       'server status',
     ]);
+    // A status command absent from the table is not at none either.
+    expect(statusAboveNone(COMMANDS, omitKey(COMMAND_SEVERITY, 'server status'))).toEqual([
+      'server status',
+    ]);
+  });
+
+  // Review 1121-1 90db5f63.2 and .3: --dry-run previews when present (opt-in), --apply executes only when present (default), so each flag fixes its polarity.
+  const POLARITY: Readonly<Record<string, CommandPreview['polarity']>> = {
+    'dry-run': 'opt-in',
+    apply: 'default',
+  };
+  const wrongPolarity = (prev: Prev): string[] =>
+    Object.entries(prev)
+      .filter(([, p]) => POLARITY[p.flag] !== p.polarity)
+      .map(([k]) => k);
+  const dryRunProblems = (cmds: Cmd[], prev: Prev): string[] =>
+    cmds
+      .filter((c) => c.longs.includes('dry-run'))
+      .filter((c) => prev[c.pathKey]?.flag !== 'dry-run' || prev[c.pathKey]?.polarity !== 'opt-in')
+      .map((c) => c.pathKey);
+
+  it('pairs every preview flag with its polarity, and the check names a mismatch', () => {
+    expect(wrongPolarity(COMMAND_PREVIEW)).toEqual([]);
+    expect(
+      wrongPolarity({ ...COMMAND_PREVIEW, 'repo list': { flag: 'apply', polarity: 'opt-in' } })
+    ).toEqual(['repo list']);
+    expect(
+      wrongPolarity({ ...COMMAND_PREVIEW, 'repo list': { flag: 'dry-run', polarity: 'default' } })
+    ).toEqual(['repo list']);
   });
 
   it('declares repo prune destructive with polarity default on --apply', () => {
@@ -116,11 +146,17 @@ describe('command safety table', () => {
 
   it('previews every --dry-run command: 22 opt-in rows plus repo gc, repo prune and subscription retire', () => {
     expect(Object.keys(COMMAND_PREVIEW).length).toBe(25);
-    const dry = COMMANDS.filter((c) => c.longs.includes('dry-run'));
-    expect(dry.length).toBe(22);
-    for (const c of dry) {
-      expect(COMMAND_PREVIEW[c.pathKey]).toEqual({ flag: 'dry-run', polarity: 'opt-in' });
-    }
+    expect(COMMANDS.filter((c) => c.longs.includes('dry-run')).length).toBe(22);
+    expect(dryRunProblems(COMMANDS, COMMAND_PREVIEW)).toEqual([]);
+    // Controls: a dropped row and a wrong-polarity row are each named.
+    const dry = COMMANDS.find((c) => c.longs.includes('dry-run'))?.pathKey ?? '';
+    expect(dryRunProblems(COMMANDS, omitKey(COMMAND_PREVIEW, dry))).toEqual([dry]);
+    expect(
+      dryRunProblems(COMMANDS, {
+        ...COMMAND_PREVIEW,
+        [dry]: { flag: 'dry-run', polarity: 'default' },
+      })
+    ).toEqual([dry]);
   });
 
   it('classifies every --dry-run/--apply command, and the check names an unclassified one', () => {

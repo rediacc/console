@@ -13,12 +13,13 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const {
   mockAccountServerFetch,
   mockConfigServerFetch,
   mockReadStdinValue,
+  mockAskPassword,
   secureMem,
   tokenMem,
   mockConfigFileStorage,
@@ -26,6 +27,7 @@ const {
   mockAccountServerFetch: vi.fn(),
   mockConfigServerFetch: vi.fn(),
   mockReadStdinValue: vi.fn(),
+  mockAskPassword: vi.fn(),
   secureMem: new Map<string, string>(),
   tokenMem: new Map<string, { token: string; wrappedCek: string }>(),
   mockConfigFileStorage: {
@@ -44,6 +46,12 @@ vi.mock('../../services/account/account-client.js', () => ({
 }));
 
 vi.mock('../../utils/stdin.js', () => ({ readStdinValue: mockReadStdinValue }));
+
+// The TTY branch asks here; stubbed so no run ever opens a real prompt.
+vi.mock('../../utils/prompt.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../utils/prompt.js')>()),
+  askPassword: mockAskPassword,
+}));
 
 vi.mock('../../services/config/config-server-client.js', () => ({
   configServerFetch: mockConfigServerFetch,
@@ -219,8 +227,19 @@ function wireConfigApi(session: unknown, config: unknown) {
 }
 
 describe('config remote enable --machine-secret', () => {
+  const realIsTTY = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+  const setTTY = (value: boolean | undefined) =>
+    Object.defineProperty(process.stdin, 'isTTY', { value, configurable: true, writable: true });
+  afterEach(() => {
+    // Restore the stream's own descriptor, or remove ours so the prototype value shows again.
+    if (realIsTTY) Object.defineProperty(process.stdin, 'isTTY', realIsTTY);
+    else Reflect.deleteProperty(process.stdin, 'isTTY');
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
+    // Pinned so the suite takes the stdin branch whether or not it runs from a terminal.
+    setTTY(false);
     secureMem.clear();
     tokenMem.clear();
     delete process.env[MACHINE_SECRET_ENV];
@@ -288,7 +307,22 @@ describe('config remote enable --machine-secret', () => {
     expect(savedPointer.remote.teamId).toBeUndefined();
   });
 
+  it('asks on the terminal when stdin is a TTY (control for the pinned non-TTY branch)', async () => {
+    const secret = generateMachineSecret();
+    const f = await provision(secret, null);
+    mockAccountServerFetch.mockResolvedValue(f.enroll);
+    wireConfigApi(f.session, f.config);
+    setTTY(true);
+    mockAskPassword.mockResolvedValue(secret);
+
+    await expect(enableMachineSecret(API_URL, CONFIG_NAME, SECRET_ID)).resolves.toBeUndefined();
+    expect(mockAskPassword).toHaveBeenCalledTimes(1);
+    expect(mockReadStdinValue).not.toHaveBeenCalled();
+  });
+
   it('refuses an empty secret before any server call', async () => {
+    // Stdin is pinned non-TTY, so the real prompt is never reached from a terminal run.
+    expect(process.stdin.isTTY).toBe(false);
     await expect(enableMachineSecret(API_URL, CONFIG_NAME, SECRET_ID)).rejects.toThrow(
       /No machine secret was given: set REDIACC_MACHINE_SECRET/
     );

@@ -136,7 +136,7 @@ const STORE_ID = '11111111-1111-4111-8111-111111111111';
 const CONFIG_ID = '22222222-2222-4222-8222-222222222222';
 const KEY_ID = 'rdc:pk:02cb65bf-0000-4000-8000-000000000001';
 // The hint targets the config the failure is about (`--config <name>`), so a user who runs it as printed unlinks that config and not the default one.
-const UNLINK = /rdc --config \S+ config remote disable --local/;
+const unlink = () => `rdc --config ${active.name} config remote disable --local`;
 
 let sequence = 0;
 
@@ -325,7 +325,7 @@ describe('config remote disable when the server path is closed for good', () => 
       server.failure = failure;
 
       const error = await refusal('disable');
-      expect(error.message).toMatch(UNLINK);
+      expect(error.message).toContain(unlink());
       expect(error.message).toContain(active.name);
       await expectUntouched(before);
     }
@@ -355,7 +355,7 @@ describe('config remote disable --local', () => {
     secureMem.clear();
     await linkedDevice();
     server.failure = gone;
-    expect((await refusal('disable')).message).toMatch(UNLINK);
+    expect((await refusal('disable')).message).toContain(unlink());
 
     await rdc('disable', '--local', '--yes');
 
