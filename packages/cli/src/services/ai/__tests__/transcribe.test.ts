@@ -293,6 +293,75 @@ describe('POST /v1/ai/transcribe', () => {
     expect(p.sent).toHaveLength(0);
   });
 
+  it('stops reading an oversized upload at the cap instead of holding it whole', async () => {
+    const p = provider();
+    const hono = app(configWith(TWO_PROFILES), p.fetch);
+    const chunk = new Uint8Array(1024 * 1024);
+    const chunks = Math.ceil(MAX_TRANSCRIBE_BYTES / chunk.byteLength) + 90;
+    let pulled = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        if (pulled >= chunks) return controller.close();
+        pulled += 1;
+        controller.enqueue(chunk);
+      },
+    });
+    const response = await hono.request(`${AI_ROUTES.transcribe}?profile=whisper`, {
+      method: 'POST',
+      headers: { 'content-type': 'audio/webm', authorization: `Bearer ${OWNER_TOKEN}` },
+      body,
+      duplex: 'half',
+    } as RequestInit);
+    expect(response.status).toBe(413);
+    // The cap is 10 chunks of 1 MiB; a small read-ahead is the stream's, never the 100 of the whole upload.
+    expect(pulled).toBeLessThan(chunks - 50);
+    expect(p.sent).toHaveLength(0);
+  });
+
+  it('refuses a declared oversized upload before reading any of it', async () => {
+    const p = provider();
+    const hono = app(configWith(TWO_PROFILES), p.fetch);
+    const response = await hono.request(`${AI_ROUTES.transcribe}?profile=whisper`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'audio/webm',
+        'content-length': String(MAX_TRANSCRIBE_BYTES + 1),
+        authorization: `Bearer ${OWNER_TOKEN}`,
+      },
+      body: AUDIO as BodyInit,
+    });
+    expect(response.status).toBe(413);
+    expect(p.sent).toHaveLength(0);
+  });
+
+  it('answers a profile that fails the guard as unresolved (404 AI_PROFILE_UNRESOLVED) and sends nothing', async () => {
+    const p = provider();
+    const config = configWith({
+      providers: { bad: openai({ baseURL: 'https://10.0.0.5/v1' }) },
+      default: 'bad',
+    });
+    const answer = await transcribe(app(config, p.fetch));
+    expect(answer.status).toBe(404);
+    expect(answer.body.code).toBe(AI_PROFILE_UNRESOLVED);
+    expect(p.sent).toHaveLength(0);
+  });
+
+  it('refuses a config session the caller does not own, as every other AI route does', async () => {
+    const p = provider();
+    const hono = app(configWith(TWO_PROFILES), p.fetch);
+    const response = await hono.request(`${AI_ROUTES.transcribe}?profile=whisper`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'audio/webm',
+        'x-config-session': 'someone-elses',
+        authorization: `Bearer ${OWNER_TOKEN}`,
+      },
+      body: AUDIO as BodyInit,
+    });
+    expect(response.status).not.toBe(200);
+    expect(p.sent).toHaveLength(0);
+  });
+
   it('refuses a caller without a token', async () => {
     const p = provider();
     const answer = await transcribe(app(configWith(TWO_PROFILES), p.fetch), {

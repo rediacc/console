@@ -9,6 +9,7 @@
  */
 
 import type { AiConfig, Profile } from '@rediacc/shared/ai';
+import { AiEventSchema } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
 import { simulateReadableStream } from 'ai';
@@ -37,7 +38,12 @@ import { AiConversationStore } from '../../ai/autonomy.js';
 import { DEFAULT_MAX_OUTPUT_TOKENS, MAX_TOOL_STEPS, STEP_LIMIT_REASON } from '../../ai/loop.js';
 import { createProviderModel, type ProviderModelOptions } from '../../ai/provider.js';
 import { AiTranscripts, createAiRecorder } from '../../ai/recorder.js';
-import { type AgentGrantHandle, AgentSessionRefused } from '../agent-grant-session.js';
+import { outputService } from '../../core/output.js';
+import {
+  type AgentGrantHandle,
+  AgentSessionRefused,
+  AgentSessionUnavailable,
+} from '../agent-grant-session.js';
 import { AI_APPROVAL_STEPUP_REQUIRED } from '../ai-approval.js';
 import { AI_GRANT_UNAVAILABLE } from '../ai-chat-tools.js';
 import {
@@ -491,7 +497,7 @@ describe('POST /v1/ai/chat', () => {
     expect(mock.doStreamCalls[0]?.abortSignal?.aborted).toBe(true);
   });
 
-  it('runs every tool call as an agent, whatever kind or grant the body asserts', async () => {
+  it('runs every tool call as the verified caller under the agent overrides, whatever kind or grant the body asserts', async () => {
     const seen: Parameters<typeof authorize>[0][] = [];
     const mock = new MockLanguageModelV4({
       doStream: [toolCallStep('repo_up', { ref: 'shop' }), textStep('Refused.')],
@@ -633,8 +639,72 @@ describe('POST /v1/ai/chat', () => {
   });
 });
 
+describe('a grant-bound chat that cannot open its grant', () => {
+  const GRANT_CHAT = { ...CHAT, grant: { grantId: 'g1', secret: 'secret' } };
+
+  it('answers 503 AI_GRANT_UNAVAILABLE when the grant session is unavailable, 400 when the executor serves none', async () => {
+    const unavailable = app(withAi('m'), {
+      agentGrants: {
+        acquire: () => Promise.reject(new AgentSessionUnavailable('the account is unreachable')),
+      } as unknown as ServeDeps['agentGrants'],
+      chat: { createModel: () => new MockLanguageModelV4({ doStream: [textStep('hi')] }) },
+    });
+    const down = await chat(unavailable, GRANT_CHAT);
+    expect(down.status).toBe(503);
+    expect(await down.json()).toMatchObject({
+      code: AI_GRANT_UNAVAILABLE,
+      error: 'the account is unreachable',
+    });
+    const none = await chat(app(withAi('m')), GRANT_CHAT);
+    expect(none.status).toBe(400);
+    expect(await none.json()).toMatchObject({ code: AI_GRANT_UNAVAILABLE });
+  });
+});
+
 describe('POST /v1/ai/chat on a Rediacc tier profile', () => {
   const TIER_CHAT = { ...CHAT, profile: 'rediacc:standard' };
+
+  it('bills the Auto-mode judge to the caller and the conversation as well', async () => {
+    const store = new AiConversationStore();
+    store.set(
+      {
+        orgId: 'org-1',
+        teamId: null,
+        userId: 'user-owner',
+        userEmail: 'owner@example.com',
+        orgRole: 'owner',
+      },
+      CHAT.conversationId,
+      'auto'
+    );
+    const built: { model: string; options: ProviderModelOptions | undefined }[] = [];
+    const judgeAnswer = new MockLanguageModelV4({
+      doGenerate: () =>
+        Promise.resolve({
+          content: [{ type: 'text', text: '{"verdict":"allow","reason":"asked for"}' }],
+          finishReason: { unified: 'stop', raw: 'stop' },
+          usage: USAGE,
+          warnings: [],
+        }),
+    });
+    const chatModel = new MockLanguageModelV4({
+      doStream: [toolCallStep('repo_up', { ref: 'shop:trial' }), textStep('Done.')],
+    });
+    const hono = app(fleetConfig({ version: 1, defaults: { commands: { allow: ['*'] } } }), {
+      modes: store,
+      approvals: new AiApprovalLedger(),
+      chat: {
+        createModel: (profile, options) => {
+          built.push({ model: profile.model, options });
+          return built.length === 1 ? chatModel : judgeAnswer;
+        },
+      },
+    });
+    await (await chat(hono, TIER_CHAT)).text();
+    const billed = { rediacc: { userId: 'user-owner', conversationId: 'conv-1' } };
+    expect(built.map((b) => b.options)).toEqual([billed, billed]);
+    expect(judgeAnswer.doGenerateCalls).toHaveLength(1);
+  });
 
   it('builds the model with the caller and the conversation as the billing ids', async () => {
     const seen: (ProviderModelOptions | undefined)[] = [];
@@ -711,6 +781,8 @@ describe('the approval token, end to end', () => {
     extra: {
       judge?: AiChatDeps['judge'];
       failApprovalAudit?: boolean;
+      /** Reject the audit record of every command path this answers true for. */
+      failAudit?: (commandPath: string) => boolean;
       chat?: Pick<AiChatDeps, 'recording' | 'cancelJob'>;
       executor?: ServeDeps['executor'];
     } = {}
@@ -725,7 +797,10 @@ describe('the approval token, end to end', () => {
         modes: store,
         ...(extra.executor ? { executor: extra.executor } : {}),
         audit: (event) => {
-          if (extra.failApprovalAudit && event.commandPath.startsWith('ai approval')) {
+          if (
+            (extra.failApprovalAudit && event.commandPath.startsWith('ai approval')) ||
+            extra.failAudit?.(event.commandPath)
+          ) {
             return Promise.reject(new Error('audit sink down'));
           }
           requestIds.set(event.commandPath, [
@@ -791,6 +866,9 @@ describe('the approval token, end to end', () => {
 
   it('issues a single-use token bound to the exact command, and the event parses on the wire', async () => {
     const { hono, started } = flow();
+    const raw = (await turnEvents(hono)).find((e) => e.type === 'approval_required');
+    const wire = AiEventSchema.parse(raw);
+    expect(wire).toMatchObject({ type: 'approval_required', command: UP_TRIAL, risk: 'caution' });
     const held = await pendingApproval(hono);
     expect(held.approvalToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(held.command).toEqual(UP_TRIAL);
@@ -958,6 +1036,97 @@ describe('the approval token, end to end', () => {
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
     expect(audited.filter((a) => a.commandPath === 'ai mode skip')).toHaveLength(1);
+  });
+
+  it('puts the mode back when its record cannot be delivered, and answers the failure', async () => {
+    const { hono, store, audited } = flow(OPEN, { failAudit: (p) => p.startsWith('ai mode') });
+    const refused = await post(hono, AI_ROUTES.mode, {
+      conversationId: CHAT.conversationId,
+      mode: 'skip',
+    });
+    expect(refused.status).toBe(500);
+    expect(store.get(OWNER_PRINCIPAL, CHAT.conversationId)).toBe('ask');
+    expect(audited).toEqual([]);
+  });
+
+  it('fails a call whose judge record cannot be delivered, and still ships the fallback to Ask', async () => {
+    const sink: { failJudge: boolean } = { failJudge: false };
+    const { hono, store, audited, started } = flow(OPEN, {
+      judge: () => Promise.resolve({ verdict: 'block', reason: 'because' }),
+      failAudit: (p) => sink.failJudge && p.startsWith('ai judge'),
+    });
+    store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'auto');
+    await turnEvents(hono);
+    await turnEvents(hono);
+    sink.failJudge = true;
+    const events = await turnEvents(hono);
+    expect(events.find((e) => e.type === 'tool_result')).toMatchObject({ ok: false });
+    expect(started()).toBe(0);
+    expect(store.get(OWNER_PRINCIPAL, CHAT.conversationId)).toBe('ask');
+    expect(audited.filter((a) => a.commandPath === 'ai mode ask')).toHaveLength(1);
+  });
+
+  it('hands a started job back as an ok result once the answer window passes', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      const { hono, store } = flow(OPEN, {
+        executor: {
+          execute: (options) =>
+            new Promise(() => {
+              options.onJobStarted?.('job-7', options.machineName);
+            }),
+        },
+      });
+      store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
+      const turn = chat(hono).then((response) => lines(response));
+      for (let i = 0; i < 40; i += 1) await vi.advanceTimersByTimeAsync(10_000);
+      const events = aiEvents(await turn);
+      expect(events.find((e) => e.type === 'tool_result')).toMatchObject({
+        ok: true,
+        output: { status: 'ok', exitCode: 0 },
+      });
+      expect(JSON.stringify(events)).toContain('job-7');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('warns when the cancel of a job cannot be recorded, and does not cancel it', async () => {
+    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+    const cancelled: string[] = [];
+    let announce: () => void = () => undefined;
+    const announced = new Promise<void>((resolve) => {
+      announce = resolve;
+    });
+    try {
+      const { hono, store } = flow(OPEN, {
+        failAudit: (p) => p === 'job cancel',
+        executor: {
+          execute: (options) =>
+            new Promise(() => {
+              options.onJobStarted?.('job-1', options.machineName);
+              announce();
+            }),
+        },
+        chat: {
+          cancelJob: (_machine, jobId) => {
+            cancelled.push(jobId);
+            return Promise.resolve();
+          },
+        },
+      });
+      store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'skip');
+      const abort = new AbortController();
+      await chat(hono, CHAT, { signal: abort.signal });
+      await announced;
+      abort.abort();
+      await vi.waitFor(() =>
+        expect(warn).toHaveBeenCalledWith(expect.stringContaining('job job-1 on m1'))
+      );
+      expect(cancelled).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('records the refusal of a destructive approval that names no step-up', async () => {

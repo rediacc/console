@@ -22,12 +22,14 @@
  * `POST /v1/ai/chat` runs one chat turn (AP7 of agent/plans/PLAN-console-ai-providers.md) and
  * answers NDJSON: `ai` lines from the loop (services/ai/loop.ts) and the renet `event` lines of each
  * tool call, tagged with its call id. The profile is resolved from the session's configs (D3), and
- * every tool call runs under an agent principal the route sets, never one the body names (D9), then
- * through the conversation's autonomy gate (services/ai/autonomy.ts), the Auto-mode judge included. A
+ * every tool call runs under the verified caller's principal (the grant's agent principal for a
+ * grant-bound chat) and the agent overrides (no grand repos, no cluster operations), all set by the
+ * route and never taken from the body (D9), then through the conversation's autonomy gate (services/ai/autonomy.ts), the Auto-mode judge included. A
  * chat bound to an agent grant (`grant` in the body) takes the grant's session: its config, its
  * opt-ins and its scope, through the same grant sessions `POST /v1/mcp/call` uses. The client
  * leaving aborts the provider stream and every running tool, and cancels each machine job a tool
- * call of the turn started (`renet job cancel`, authorized and audited as `job cancel`). A command
+ * call of the turn started (`renet job cancel`, authorized and audited as `job cancel`; a cancel that fails, its
+ * `started` record included, is warned, since nobody is left to answer). A command
  * runs in-process between its machine calls, where nothing interrupts it: a job it starts after the
  * abort is cancelled as soon as it is announced, so it may run for that moment.
  *
@@ -45,7 +47,7 @@
  * verdict as JSON; nothing is stored.
  */
 
-import { type AiConfigs, isRediaccProfile, type Profile, resolveProfile } from '@rediacc/shared/ai';
+import { type AiConfigs, type Profile, resolveProfile } from '@rediacc/shared/ai';
 import { STEP_UP_METHODS } from '@rediacc/shared/auth';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import {
@@ -84,11 +86,13 @@ import {
   AI_TRANSCRIBE_FAILED,
   AI_TRANSCRIBE_UNSUPPORTED,
   MAX_TRANSCRIBE_BYTES,
+  readCapped,
   supportsTranscription,
   TRANSCRIBE_AUDIO_TYPES,
   TranscriptionFailed,
   transcribeAudio,
 } from '../ai/transcribe.js';
+import { outputService } from '../core/output.js';
 import { ForensicsTicket } from '../forensics/client.js';
 import { type AgentGrantHandle } from './agent-grant-session.js';
 import {
@@ -177,8 +181,12 @@ async function readRecording(
   const raw = c.req.query('profile');
   const name = raw === undefined ? undefined : TranscribeProfileSchema.safeParse(raw);
   if (name && !name.success) throw new BadAiRequest('Malformed AI request: profile: invalid');
-  const audio = new Uint8Array(await c.req.arrayBuffer());
-  if (audio.byteLength === 0 || audio.byteLength > MAX_TRANSCRIBE_BYTES) {
+  const declared = Number(c.req.header('content-length'));
+  const audio =
+    Number.isFinite(declared) && declared > MAX_TRANSCRIBE_BYTES
+      ? undefined
+      : await readCapped(c.req.raw.body, MAX_TRANSCRIBE_BYTES);
+  if (!audio || audio.byteLength === 0) {
     return { status: 413, refusal: { error: `A recording is 1 to ${MAX_TRANSCRIBE_BYTES} bytes` } };
   }
   return { type, profile: name?.data, audio };
@@ -311,10 +319,14 @@ export function registerAiRoutes(
       const where = issue?.path.length ? `${issue.path.join('.')}: ` : '';
       throw new BadAiRequest(`Malformed AI request: ${where}${issue?.message ?? UNNAMED_ISSUE}`);
     }
-    const session = helpers.configSession(c.req.header('x-config-session'));
-    if (session) deps.sessions.sessionForExec(principal, session);
-    const config = await deps.loadConfig(principal, session);
-    return { principal, body: parsed.data, config, configSessionId: session };
+    return { principal, body: parsed.data, ...(await sessionOf(c, principal)) };
+  }
+
+  /** The config of the request's session, once the principal owns it (shared by every route, the transcription one included). */
+  async function sessionOf(c: Context, principal: SessionPrincipal) {
+    const configSessionId = helpers.configSession(c.req.header('x-config-session'));
+    if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
+    return { config: await deps.loadConfig(principal, configSessionId), configSessionId };
   }
 
   function refusal(c: Context, error: unknown) {
@@ -341,7 +353,13 @@ export function registerAiRoutes(
       const previous = ai.modes.get(principal, body.conversationId);
       ai.modes.set(principal, body.conversationId, body.mode);
       if (previous !== body.mode) {
-        await auditModeChange(deps.audit, { principal, destructive: false, mode: body.mode });
+        try {
+          await auditModeChange(deps.audit, { principal, destructive: false, mode: body.mode });
+        } catch (error) {
+          // No record, no change: the mode goes back to what the audit trail still says.
+          ai.modes.set(principal, body.conversationId, previous);
+          throw error;
+        }
       }
       return c.json({ conversationId: body.conversationId, mode: body.mode });
     } catch (error) {
@@ -410,7 +428,7 @@ export function registerAiRoutes(
     return (await ai.chat?.aiConfigs?.(principal, config, configSessionId)) ?? { team: config.ai };
   }
 
-  /** The ids a Rediacc tier call is billed under: the authenticated person and the chat's conversation. */
+  /** The ids a Rediacc tier call is billed under: the authenticated person and a conversation (the smoke route names the fixed `smoke-test`). */
   const rediaccOf = (
     principal: SessionPrincipal,
     conversationId: string
@@ -424,14 +442,18 @@ export function registerAiRoutes(
   /** The Auto-mode judge: the seam when given, else the profile's judge model. */
   const judgeOf = (profile: Profile, options: ProviderModelOptions) => (input: JudgeInput) => {
     if (ai.chat?.judge) return ai.chat.judge(profile, input);
-    const createModel = ai.chat?.createModel;
-    const judgeProfile = { ...profile, model: judgeModelOf(profile) };
-    if (createModel) return runJudge(profile, input, { model: createModel(judgeProfile, options) });
-    // A Rediacc tier profile carries no key and needs the ids; runJudge cannot supply them.
-    if (isRediaccProfile(profile)) {
-      return runJudge(profile, input, { model: createProviderModel(judgeProfile, options) });
+    // The same builder as the chat's, so a Rediacc tier judge is billed to the caller's ids too.
+    try {
+      return runJudge(profile, input, {
+        model: modelOf({ ...profile, model: judgeModelOf(profile) }, options),
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      return Promise.resolve<JudgeVerdict>({
+        verdict: 'block',
+        reason: `The judge could not be asked: ${detail}`.slice(0, 2000),
+      });
     }
-    return runJudge(profile, input);
   };
 
   /** The Auto-mode judge's verdict on one call the policy allowed; true for an allow. */
@@ -458,12 +480,21 @@ export function registerAiRoutes(
       tally: judgeTally,
       setAskMode: () => ai.modes.set(principal, body.conversationId, 'ask'),
     });
-    await auditJudgment(deps.audit, {
-      principal,
-      requestId: toolRequestId(body.conversationId, call.toolCallId),
-      call,
-      judgment,
-    });
+    const requestId = toolRequestId(body.conversationId, call.toolCallId);
+    try {
+      await auditJudgment(deps.audit, { principal, requestId, call, judgment });
+    } catch (error) {
+      // The judge already fell back to Ask, so the mode record is shipped on its own: the call still fails, the mode change is not left unrecorded.
+      if (judgment.fallback) {
+        await auditModeChange(deps.audit, {
+          principal,
+          requestId,
+          destructive: call.entry.severity === 'destructive',
+          mode: 'ask',
+        }).catch(() => undefined);
+      }
+      throw error;
+    }
     return judgment.verdict.verdict === 'allow';
   }
 
@@ -540,9 +571,14 @@ export function registerAiRoutes(
     conversationId,
     forward,
     gate,
-    // The client has left, so a cancel that fails has nobody to answer; its audit record carries the outcome.
+    // The client has left, so a failed cancel has nobody to answer; it is warned, and a cancel that ran carries its outcome in the audit record.
     cancelJob: (job) => {
-      cancelAudited(session.handle, job).catch(() => undefined);
+      cancelAudited(session.handle, job).catch((error: unknown) => {
+        const why = error instanceof Error ? error.message : String(error);
+        outputService.warn(
+          `AI chat aborted: job ${job.jobId} on ${job.machine} was not cancelled and may still run: ${why}`
+        );
+      });
     },
   });
 
@@ -692,9 +728,7 @@ export function registerAiRoutes(
       const principal = await helpers.authenticate(c.req.header('authorization'));
       const recording = await readRecording(c);
       if ('refusal' in recording) return c.json(recording.refusal, recording.status);
-      const configSessionId = helpers.configSession(c.req.header('x-config-session'));
-      if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
-      const config = await deps.loadConfig(principal, configSessionId);
+      const { config, configSessionId } = await sessionOf(c, principal);
       const sources = await profileSources(principal, config, configSessionId);
       const resolved = resolveProfile(sources, recording.profile);
       if (!resolved.ok) {

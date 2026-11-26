@@ -39,6 +39,34 @@ export class TranscriptionFailed extends Error {
   }
 }
 
+/** The body's bytes, or undefined once it exceeds `max`: the read stops there, so an oversized upload is never held whole. */
+export async function readCapped(
+  body: ReadableStream<Uint8Array> | null,
+  max: number
+): Promise<Uint8Array<ArrayBuffer> | undefined> {
+  if (!body) return new Uint8Array(0);
+  const reader = body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > max) {
+      await reader.cancel().catch(() => undefined);
+      return undefined;
+    }
+    chunks.push(value);
+  }
+  const audio = new Uint8Array(total);
+  let offset = 0;
+  for (const chunk of chunks) {
+    audio.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return audio;
+}
+
 /** Whether a profile can transcribe at all. */
 export function supportsTranscription(profile: Profile): boolean {
   return profile.format === 'openai-chat' && !isRediaccProfile(profile);
