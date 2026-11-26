@@ -27,7 +27,11 @@ function check(ok: boolean, what: string): void {
 
 /** True when the config source, comments removed, has a `globalSetup: [...]` array that names the setup file. */
 function listsGlobalSetup(src: string): boolean {
-  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  // Strings are matched first and kept, so a glob such as 'src/*.ts' never opens a block comment and `//` inside a URL never opens a line comment.
+  const code = src.replace(
+    /('(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`)|\/\*[\s\S]*?\*\/|\/\/[^\n]*/g,
+    (_m, str: string | undefined) => str ?? ''
+  );
   return /globalSetup\s*:\s*\[[^\]]*scripts\/lib\/vitest-run-tmp\.ts/.test(code);
 }
 
@@ -106,7 +110,13 @@ function main(): void {
     'CONTROL (scan): a block-commented globalSetup is refused'
   );
   check(
-    !listsGlobalSetup("const p = 'scripts/lib/vitest-run-tmp.ts';\nexport default { test: {} };"),
+    listsGlobalSetup(
+      `export default { test: { include: ['src/*.ts'], ${live} exclude: ['test/**/x.ts'] } };`
+    ),
+    'CONTROL (scan): globs holding a comment opener do not swallow a live globalSetup line (review 4ac9adcd.2)'
+  );
+  check(
+    !listsGlobalSetup("const p ='scripts/lib/vitest-run-tmp.ts';\nexport default { test: {} };"),
     'CONTROL (scan): the path outside a globalSetup array is refused'
   );
   for (const cfg of configs) {

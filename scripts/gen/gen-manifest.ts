@@ -499,6 +499,18 @@ function selftest(): number {
     'CONTROL: --allow-drop followed by a flag is refused, never forwarded as a step name (review 6c817142.2)'
   );
 
+  check(
+    (() => {
+      try {
+        withAllowDrops(bindLeg, ['--gates', '--write', '--allow-drop']);
+        return false;
+      } catch (e) {
+        return e instanceof Error && e.message.includes('--allow-drop needs a step name');
+      }
+    })(),
+    'CONTROL: a trailing --allow-drop with no step is refused, never silently skipped (review 225f6493.3)'
+  );
+
   const sLegs = selftestLegs([
     { label: 'a', args: ['scripts/gate-bind.ts', '--dry-run'] },
     { label: 'b', args: ['scripts/gate-bind.ts'] },
@@ -942,7 +954,7 @@ export async function runPool<T>(
 }
 
 /**
- * `--allow-drop <step>` reaches the binder's write leg and no other. Retiring a header-declared gate removes its step from a region, and gate-bind refuses an unnamed removal (a dropped step takes its `env:` and secrets with it, invisibly); without this the generator could add a gate and never retire one.
+ * `--allow-drop <step>` reaches the binder's write leg and no other, and it throws when the step is missing or is itself a flag (a silent skip would run the write without the drop the caller asked for). Retiring a header-declared gate removes its step from a region, and gate-bind refuses an unnamed removal (a dropped step takes its `env:` and secrets with it, invisibly); without this the generator could add a gate and never retire one.
  */
 export function withAllowDrops(leg: Leg, argv: readonly string[]): Leg {
   if (leg.args[0] !== 'scripts/gate-bind.ts') return leg;

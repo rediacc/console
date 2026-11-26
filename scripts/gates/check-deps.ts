@@ -181,8 +181,8 @@ function categorizePackages(
     const latest = info.latest;
 
     if (!current || current === 'undefined' || !latest || current === latest) continue;
-    // A current AHEAD of `latest` (a pre-release of the next major, miniflare 5.x-beta while `latest` is 4.x) is not outdated: proposing `latest` would be a downgrade. Only two parsed versions are compared; an unparseable one keeps the breaking path below.
-    // A STABLE current ahead of `latest` is not skipped: that is a registry or dist-tag anomaly worth reading, so only a pre-release current is.
+    // A PRE-RELEASE current AHEAD of `latest` (a pre-release of the next major, miniflare 5.x-beta while `latest` is 4.x) is not outdated: proposing `latest` would be a downgrade. Only two parsed versions are compared; an unparseable one keeps the breaking path below.
+    // A STABLE current ahead of `latest` is not skipped and falls through to the breaking path: that is a registry or dist-tag anomaly worth reading.
     const parsedCurrent = parseVersion(current);
     if (parsedCurrent?.prerelease && parseVersion(latest) && compareVersions(latest, current) < 0)
       continue;

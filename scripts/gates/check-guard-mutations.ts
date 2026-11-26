@@ -488,8 +488,8 @@ export function runVerdict(
  * A red run read as 'caught' would credit the suite for a plant that never reached an assertion, so the gate would go green on a plant the suite is blind to.
  */
 export function plantNeverRan(tail: string, guardBase?: string): boolean {
-  // The error is the traceback's own line, `SyntaxError: <msg>` at the start of a line; the word quoted inside an assertion's message is not one.
-  if (/^(?:SyntaxError|IndentationError|TabError)\b/m.test(tail)) return true;
+  // The error is the traceback's own line, `SyntaxError: <msg>` at the start of a line, behind pytest's `E ` margin when a suite is run through pytest; the word quoted inside an assertion's message is not one.
+  if (/^(?:E\s+)?(?:SyntaxError|IndentationError|TabError)\b/m.test(tail)) return true;
   if (guardBase === undefined) return false;
   const escaped = guardBase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`File "[^"]*${escaped}", line \\d+, in <module>`).test(tail);
@@ -996,6 +996,8 @@ async function hookSelftest(): Promise<Control[]> {
         redTail('Traceback:\n  File "/g/block_x.py", line 9, in <module>\nNameError: x'),
         'block_x.py'
       ) === 'broken' &&
+      runVerdict('plant', redTail('E   File "x.py", line 3\nE   SyntaxError: invalid syntax')) ===
+        'broken' &&
       runVerdict('plant', redTail('FAIL case 3: expected deny'), 'block_x.py') === 'caught' &&
       runVerdict(
         'plant',

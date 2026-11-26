@@ -660,6 +660,7 @@ function selftestCases(): ControlCase[] {
 function treeRefusalCases(): ControlCase[] {
   const base = fs.mkdtempSync(path.join(os.tmpdir(), 'mcp-docs-parity-'));
   const verdicts: Record<string, number> = {};
+  const errors: Record<string, string> = {};
   const build = (name: string, withEnglish: boolean, emptyLocale: boolean): string => {
     const root = path.join(base, name);
     fs.mkdirSync(path.join(root, path.dirname(REGISTRY)), { recursive: true });
@@ -675,21 +676,25 @@ function treeRefusalCases(): ControlCase[] {
     if (emptyLocale) fs.mkdirSync(path.join(root, DOCS, 'xx'));
     return root;
   };
-  const quietly = (root: string): number => {
+  const quietly = (name: string, root: string): number => {
     const { log, error } = console;
+    const lines: string[] = [];
     console.log = () => undefined;
-    console.error = () => undefined;
+    console.error = (...a: unknown[]) => {
+      lines.push(a.join(' '));
+    };
     try {
       return main([], root);
     } finally {
+      errors[name] = lines.join('\n');
       console.log = log;
       console.error = error;
     }
   };
   try {
-    verdicts.empty = quietly(build('empty', false, false));
-    verdicts.missing = quietly(build('missing', true, true));
-    verdicts.clean = quietly(build('clean', true, false));
+    verdicts.empty = quietly('empty', build('empty', false, false));
+    verdicts.missing = quietly('missing', build('missing', true, true));
+    verdicts.clean = quietly('clean', build('clean', true, false));
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }
@@ -700,7 +705,10 @@ function treeRefusalCases(): ControlCase[] {
     },
     {
       name: 'tree: a locale directory without the page is refused (read through main)',
-      ok: verdicts.missing === 1,
+      ok:
+        verdicts.missing === 1 &&
+        errors.missing.includes(`${DOCS}/xx/${PAGE}: missing`) &&
+        !errors.missing.includes('VACUOUS'),
     },
     {
       name: 'tree: CONTROL, the same tree without the empty locale passes',

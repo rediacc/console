@@ -108,7 +108,7 @@ const NOT_SUBJECT = /^$/;
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 /**
- * Tracked subjects that are ACTUALLY PRESENT, plus the ones that are not.
+ * Subjects (tracked, or untracked and not ignored) that are ACTUALLY PRESENT, plus the ones that are not.
  *
  * The listing is the INDEX plus untracked, unignored files (`--cached --others --exclude-standard`), and this gate then reads the WORKTREE. In a shared
  * checkout those disagree the moment another session deletes a tracked file: on
