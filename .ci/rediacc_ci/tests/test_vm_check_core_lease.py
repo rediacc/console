@@ -90,6 +90,8 @@ def test_a_full_pool_ends_the_wait_and_the_run_goes_ahead(
     hog = pool.acquire(TOKENS, TOKENS, label="hog")
     assert len(hog) == TOKENS
     monkeypatch.setattr(vm_check, "CORE_SLOT_WAIT_S", 0.3)
+    warned: list[str] = []
+    monkeypatch.setattr(vm_check.log, "warn", warned.append)
     seen: dict[str, object] = {}
     monkeypatch.setattr(vm_check, "main", probe(env, seen))
     try:
@@ -98,3 +100,5 @@ def test_a_full_pool_ends_the_wait_and_the_run_goes_ahead(
         pool.release(hog)
     assert seen["free"] == 0
     assert seen["held_env"] is None
+    assert len(warned) == 1
+    assert "going ahead without the tokens" in warned[0]
