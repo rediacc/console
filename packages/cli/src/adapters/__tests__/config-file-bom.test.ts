@@ -46,12 +46,13 @@ describe('token file with a byte order mark', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'rdc-bom-token-'));
     const storage = new RemoteTokenStorage(dir);
     await storage.set('eu', { token: 'tok', wrappedCek: 'cek' });
-    const file = readdirTokenFile(dir);
+    const file = tokenFilePath(dir);
     writeFileSync(file, `${BOM}${readFileSync(file, 'utf8').replaceAll('\n', '\r\n')}`);
     expect((await storage.get('eu'))?.token).toBe('tok');
   });
 });
 
-function readdirTokenFile(dir: string): string {
+/** The path of the token file `RemoteTokenStorage` keeps for the `eu` region under `dir`. */
+function tokenFilePath(dir: string): string {
   return path.join(dir, 'eu.json');
 }
