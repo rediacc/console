@@ -170,6 +170,12 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+/** Every lease the fork took is released, and it took at least one: a path that abandons the pool fails here. */
+function expectLeasesBalanced(): void {
+  expect(mockAcquire.mock.calls.length).toBeGreaterThan(0);
+  expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+}
+
 describe('repo fork — hard-isolate of secrets', () => {
   it('runtime: forking a parent with secrets produces a fork registration with NO secrets', async () => {
     await handleForkAction('app', 'staging', {
@@ -245,7 +251,7 @@ describe('repo fork — orchestration', () => {
     );
     expect(mockEnsureDns).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expectLeasesBalanced();
   });
 
   it('compound --up: single execute with { up, grand, repo_name }, DNS fired early', async () => {
@@ -276,7 +282,7 @@ describe('repo fork — orchestration', () => {
 
     // postRepoUpTasks runs as a success step of the fork job (PLAN-detached-jobs J4)
     expect(mockPostRepoUpTasks).toHaveBeenCalledExactlyOnceWith('app:staging', 'hostinger');
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expectLeasesBalanced();
   });
 
   it('compound --up is one job even when no up-phase step shows: a renet with jobs has fork --up', async () => {
@@ -322,7 +328,7 @@ describe('repo fork — orchestration', () => {
     expect(mockRemoveRepository).toHaveBeenCalledWith('app:staging');
     expect(mockRefreshIdentityFor).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expectLeasesBalanced();
   });
 
   it('fork failure after the key deploy removes the fork key by its GUID', async () => {
@@ -402,7 +408,7 @@ describe('repo fork: a started job keeps its registration', () => {
     expect(mockExecute).toHaveBeenCalledTimes(1);
     expect(mockRemoveRepository).not.toHaveBeenCalled();
     expect(mockRemoveRepoKey).not.toHaveBeenCalled();
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+    expectLeasesBalanced();
   });
 
   it('keeps the registration and the key when the dispatch timed out and the job state is unknown', async () => {
