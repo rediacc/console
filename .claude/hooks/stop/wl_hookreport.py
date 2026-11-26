@@ -130,14 +130,16 @@ def read_ledger(root=CHECKOUT):
             rows.extend(read_jsonl(path))
         # A rotation between the glob and the live read moves rows into an archive the glob never listed: list again and read again until the archives agree.
         if ledger_paths(root) == paths:
-            break
-    return rows
+            return rows
+    raise ReportError(
+        "the hook ledger kept rotating through 3 reads; the row set would be incomplete, try again"
+    )
 
 
 def rotate(root=CHECKOUT, max_bytes=ROTATE_BYTES, keep_days=ROTATE_KEEP_DAYS, now=None):
     """Roll the live ledger over `max_bytes` into `chains-<stamp>.jsonl` and delete archives older than `keep_days`. Returns (archive or None, [deleted]).
 
-    A RENAME, not a rewrite: dispatch opens the ledger per call with O_APPEND|O_CREAT, so an append racing the rename lands whole in the archive and the next call starts a fresh file. A rewrite in place would lose whatever a peer appended between its read and its replace. An existing archive of the same second is a refusal, never an overwrite.
+    A LINK AND UNLINK (a rename where the filesystem has no hard links), not a rewrite: dispatch opens the ledger per call with O_APPEND|O_CREAT, so an append racing the move lands whole in the archive and the next call starts a fresh file. Archives past `keep_days` are deleted, so the history window is `keep_days`. A rewrite in place would lose whatever a peer appended between its read and its replace. An existing archive of the same second is a refusal, never an overwrite.
     """
     live = pathlib.Path(root).joinpath(*LEDGER_REL)
     stamp = now or datetime.datetime.now(datetime.UTC)
@@ -149,13 +151,36 @@ def rotate(root=CHECKOUT, max_bytes=ROTATE_BYTES, keep_days=ROTATE_KEEP_DAYS, no
     if size > max_bytes:
         archive = live.with_name("chains-%s.jsonl" % stamp.strftime("%Y%m%dT%H%M%SZ"))
         # link then unlink: os.link refuses an existing name atomically, where exists() then rename lets two rotations in one second overwrite each other. An append landing between the two calls goes to the one inode both names share.
+        linked = True
         try:
             os.link(live, archive)
         except FileExistsError:
             raise ReportError(
                 "%s already exists; refusing to overwrite an archive" % archive
             ) from None
-        live.unlink()
+        except FileNotFoundError:
+            # A concurrent rotation moved the live ledger after the size check: it has been rolled already.
+            archive, linked = None, False
+        except OSError:
+            # No hard-link support on this filesystem: a rename, guarded against an existing name.
+            linked = False
+            if archive.exists():
+                raise ReportError(
+                    "%s already exists; refusing to overwrite an archive" % archive
+                ) from None
+            try:
+                os.rename(live, archive)
+            except FileNotFoundError:
+                archive = None
+        if linked and archive is not None:
+            try:
+                live.unlink()
+            except FileNotFoundError:
+                pass
+            except OSError as exc:
+                # Both names would hold the same rows and every row would read twice: undo the link.
+                archive.unlink()
+                raise ReportError("cannot remove %s after archiving (%s)" % (live, exc)) from exc
     cutoff = stamp.timestamp() - keep_days * 86400
     deleted = []
     for path in sorted(live.parent.glob(ARCHIVE_GLOB)):
@@ -314,16 +339,20 @@ def quiet_gates(receipts, costs, min_runs=GATE_MIN_RUNS):
     return sorted(out, key=lambda t: (-(t[2] or 0.0), t[0]))
 
 
-def read_receipts(root=CHECKOUT):
-    """Every ci:quick receipt under .ci/cache/receipts that parses as an object."""
+def read_receipts(root=CHECKOUT, skipped=None):
+    """Every ci:quick receipt under .ci/cache/receipts that parses as an object; the names of those that did not read or parse are appended to `skipped` when given."""
     out = []
     for path in sorted(pathlib.Path(root).joinpath(*RECEIPTS_REL).glob("*.json")):
         try:
             doc = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError):
+            if skipped is not None:
+                skipped.append(path.name)
             continue
         if isinstance(doc, dict):
             out.append(doc)
+        elif skipped is not None:
+            skipped.append(path.name)
     return out
 
 
@@ -337,7 +366,8 @@ def report(root=CHECKOUT, rows=None, trap_base=None, receipts=None, now=None):
     rows = read_ledger(root) if rows is None else rows
     inv = inventory(root)
     trap_base = trap_base or wl_trapfires.state_dir()
-    receipts = read_receipts(root) if receipts is None else receipts
+    skipped: list[str] = []
+    receipts = read_receipts(root, skipped) if receipts is None else receipts
     try:
         costs = _read_json(root.joinpath(*GATE_COSTS_REL), "gate costs")
     except ReportError:
@@ -400,6 +430,11 @@ def report(root=CHECKOUT, rows=None, trap_base=None, receipts=None, now=None):
         "  %-48s %d runs, %s CPU-s" % (g, n, "?" if c is None else c)
         for g, n, c in quiet[:ROWS_SHOWN]
     ] or ["  (none)"]
+    if skipped:
+        out.append(
+            "  NOTE: %d receipt(s) did not read or parse and are not counted, so a failure in them is not visible: %s"
+            % (len(skipped), ", ".join(skipped[:ROWS_SHOWN]))
+        )
     out.append("\nStop-check timing: " + STOP_TIMING_OWED)
     return "\n".join(out)
 

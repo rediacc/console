@@ -751,6 +751,8 @@ def ci_cancel_cause(root, info, gate):
     run_id = next(
         (c["run"] for c in gate.get("cancelled") or [] if c.get("run")), None
     ) or gate.get("run")
+    # Cleared here as well as inside _load_diagnose: a stub of the loader that returns None must not inherit an earlier call's failure text.
+    _DIAGNOSE_ERROR[0] = ""
     diag = _load_diagnose()
     if diag is None and _DIAGNOSE_ERROR[0]:
         return dict(
@@ -928,6 +930,7 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
 
     `cached` is the ci_trouble steps cache for this tip; a carried or real verdict is stored under `_carry` and reused, an unreadable one is not, so the next stop reads again. A derived row (CI Complete, a downstream sentinel) is carried only beside at least one carried row and no real one.
     """
+    _DIAGNOSE_ERROR[0] = ""
     diag = diag or _load_diagnose()
     if diag is None:
         for row in hard:
@@ -973,6 +976,8 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
         job, err = fetch.json("actions/jobs/%s" % key)
         if job is None:
             row["carry"] = {"verdict": "unreadable", "why": "job read failed: %s" % err, "keys": []}
+            # A failed read leaves the category unread like a spent budget does: ci_longred holds the round back, so a transient failure is not recorded as `unknown` for good.
+            row["category_pending"] = not row.get("category")
             continue
         if clock() > deadline:
             row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
@@ -981,6 +986,7 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
         log, err = diag.job_log(fetch, key, completed=job.get("status") == "completed")
         if log is None:
             row["carry"] = {"verdict": "unreadable", "why": "log read failed: %s" % err, "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
         # THE RED'S CATEGORY for the long-red ledger (wl_longred): the tracer's own classifier over the failing step's slice, read from the log this loop already holds, so it costs no extra call.
         try:
@@ -1746,7 +1752,8 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
     if not live:
         # A FINISHED round: one ledger row, and the long-red verdict rides the status text (ci_rows_text reads info["longred"]). Set after the cache write, so the verdict, which moves with the clock, is never served stale from it.
-        ci_longred(root, info, tip, hard + carried_rows)
+        # Only the reds that still block count: a finding `.ci/config/carried-reds.json` carries on purpose is reported as an advisory, so it must not start the wall-ask or outage clocks.
+        ci_longred(root, info, tip, hard)
     if not hard and carried_rows:
         return "carried", {
             "info": info,

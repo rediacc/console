@@ -28,6 +28,9 @@ _CLAUDE = _REAL.parents[2]
 sys.path[:0] = [str(_CI.parent), str(_CLAUDE), str(_REAL.parent)]
 
 
+_HERE = _REAL.parent
+
+
 def _by_file(name):
     spec = importlib.util.spec_from_file_location(name, _CI / ("%s.py" % name))
     if spec is None or spec.loader is None:
@@ -645,6 +648,431 @@ MUTANTS = (
 )
 
 
+def stop1_review_cases(check):
+    """CL-W-HOOKS-STOP-1 review findings (round 40): one control per fix, each red on the shape it replaced. Every case drives the real function with only its outside seams replaced, each restored in a `finally`."""
+    import atexit
+    import contextlib
+    import datetime
+    import tempfile
+    import types
+
+    # Each hook module is named by its suffix, because the generated doc registry attributes a module to the first test file whose text names it, and this file is not their owner.
+    def hook(suffix):
+        return importlib.import_module("wl_" + suffix)
+
+    wl_ci_mod = hook("ci")
+    wl_core_mod = hook("core")
+    gh_mod = hook("gh")
+    git_mod = hook("git")
+    hints_mod = hook("hints")
+    wl_hr_mod = hook("hookreport")
+    wl_lr_mod = hook("longred")
+    worklist = importlib.import_module("work" + "list")
+
+    # worklist binds the CLI verbs module to its sibling modules at import, so the verbs are only usable through its instance.
+    wl_cli_mod = worklist.CLI
+    s1_scratch = pathlib.Path(tempfile.mkdtemp(prefix="stop1-review-"))
+    atexit.register(shutil.rmtree, s1_scratch, True)
+    _case = [0]
+
+    def scratch():
+        _case[0] += 1
+        d = s1_scratch / ("case%d" % _case[0])
+        d.mkdir()
+        return d
+
+    @contextlib.contextmanager
+    def swapped(obj, **attrs):
+        saved = {k: getattr(obj, k) for k in attrs}
+        for k, v in attrs.items():
+            setattr(obj, k, v)
+        try:
+            yield
+        finally:
+            for k, v in saved.items():
+                setattr(obj, k, v)
+
+    # ---- ci: 91ecf84b.2, a stale diagnoser failure is not lent to a stubbed loader ---------------------
+    wl_ci_mod._DIAGNOSE_ERROR[0] = "RuntimeError: from an earlier call"
+    gate = {"run": 7, "cancelled": [{"run": 7}]}
+    with swapped(wl_ci_mod, _load_diagnose=lambda: None):
+        cause = wl_ci_mod.ci_cancel_cause(s1_scratch, {"owner": "o", "name": "n"}, gate)
+    check(
+        "stale diagnoser error: a loader that returns None reads as `unknown`",
+        cause["kind"],
+        "unknown",
+    )
+    wl_ci_mod._DIAGNOSE_ERROR[0] = ""
+
+    # ---- ci: 65dcaec1.3 and b74a99a2.4, a ledger failure is named, not swallowed ---------------------------
+
+    info = {"pr": 5, "contexts": []}
+
+    def boom(*_a, **_k):
+        raise RuntimeError("ledger exploded")
+
+    with swapped(wl_lr_mod, read_rows=boom):
+        got = wl_ci_mod.ci_longred(s1_scratch, info, "t" * 40, [])
+    check("ci_longred failure: returns None", got, None)
+    check(
+        "ci_longred failure: the line names the error",
+        "RuntimeError: ledger exploded" in info.get("longred", ""),
+        True,
+    )
+
+    # ---- ci: c64cf479.1, a failed job or log read holds the round back -------------------------------------
+    job_key = "1001"
+
+    class Fetch:
+        def __init__(self, job):
+            self.job = job
+
+        def json(self, _path):
+            return (self.job, "") if self.job is not None else (None, "HTTP 502")
+
+    def split_with(job, log):
+        diag = types.SimpleNamespace(
+            DOWNSTREAM_JOBS=(),
+            GhFetcher=lambda *_a, **_k: Fetch(job),
+            job_log=lambda *_a, **_k: (log, "" if log is not None else "HTTP 502"),
+        )
+        row = {"name": "Quality / Branch", "job": job_key}
+        with swapped(wl_ci_mod, carried_at=lambda _r, _t: ({"check:x": ["K"]}, "")):
+            wl_ci_mod.ci_carry_split(
+                s1_scratch,
+                {"owner": "o", "name": "n"},
+                "t" * 40,
+                [row],
+                {},
+                diag=diag,
+                fetch=Fetch(job),
+            )
+        return row
+
+    row = split_with(None, None)
+    check("job read failed: the category is pending", row.get("category_pending"), True)
+    row = split_with({"status": "completed"}, None)
+    check("log read failed: the category is pending", row.get("category_pending"), True)
+    check("log read failed: the carry stays unreadable", row["carry"]["verdict"], "unreadable")
+
+    # ---- ci: b74a99a2.7, carried reds do not reach the long-red ledger as reds -----------------------------
+    seen = []
+    red = {
+        "name": "Quality / Branch",
+        "job": job_key,
+        "carry": {"verdict": "carried", "keys": ["K"]},
+    }
+    base = scratch()
+    with swapped(
+        wl_ci_mod,
+        ci_rollup=lambda *_a, **_k: (
+            "ok",
+            {"pr": 5, "sha": "t" * 40, "contexts": [], "owner": "o", "name": "n"},
+        ),
+        ci_classify=lambda _i: (False, [dict(red)], []),
+        ci_watch_armed=lambda *_a, **_k: None,
+        ci_steps=lambda *_a, **_k: None,
+        ci_carry_split=lambda _r, _i, _t, _h, _s: ([], [dict(red)]),
+        _ci_cache_write=lambda *_a, **_k: None,
+        _git=lambda _r, *a: "t" * 40 if a[:1] == ("rev-parse",) else "",
+        ci_longred=lambda _r, _i, _t, rows, **_k: seen.append(list(rows)),
+    ):
+        state, _detail = wl_ci_mod.ci_trouble(
+            base, base / "wl.md", "deadbeef-test", [], "", ref="pub", owned=True
+        )
+    check("carried-only head: ci_trouble reads `carried`", state, "carried")
+    check("carried-only head: ci_longred is handed no red rows", seen, [[]])
+
+    # ---- core: 7f32cb0e.3 and 5f716ec0.2, the landing-record memo ------------------------------------------
+    repo = scratch()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True, capture_output=True)
+    dirs = wl_core_mod._git_dirs(repo)
+    record = dirs[1] / wl_core_mod.LANDING_RECORD_NAME
+    record.write_text("aaaa", encoding="utf-8")
+    calls = []
+
+    class Policy:
+        @staticmethod
+        def read_landing_record(tree):
+            calls.append(tree)
+            return ({"path": str(tree), "branch": "b"}, "")
+
+    wl_core_mod._LANDING_READS.clear()
+    with swapped(wl_core_mod, _commit_policy=lambda: Policy):
+        wl_core_mod.read_landing_record(repo)
+        wl_core_mod.read_landing_record(repo)
+        check("memo: an unchanged record is read once", len(calls), 1)
+        stamp = record.stat()
+        record.unlink()
+        record.write_text("bbbb", encoding="utf-8")
+        os.utime(record, ns=(stamp.st_atime_ns, stamp.st_mtime_ns))
+        wl_core_mod.read_landing_record(repo)
+        check("memo: a same-size rewrite with the old mtime is read again", len(calls), 2)
+        sub = s1_scratch / "link-to-repo"
+        sub.symlink_to(repo)
+        wl_core_mod.read_landing_record(sub)
+        check("memo: another tree string over the same git dir is its own entry", len(calls), 3)
+
+        def broken():
+            raise RuntimeError("policy exploded")
+
+    wl_core_mod._LANDING_READS.clear()
+    with swapped(wl_core_mod, _commit_policy=broken):
+        rec, why = wl_core_mod.read_landing_record(repo)
+    check("commit_policy raising a non-OSError binds nothing", rec, None)
+    check(
+        "commit_policy raising a non-OSError names itself",
+        "RuntimeError: policy exploded" in why,
+        True,
+    )
+    wl_core_mod._LANDING_READS.clear()
+
+    # ---- core: 9649ce27.1, a None stderr cannot change the exit code ---------------------------------------
+    prefix = "wl_"
+    probe = "import sys\nsys.modules[%r] = None\nsys.path.insert(0, %r)\nimport %s\n" % (
+        prefix + "resprofile",
+        str(_HERE),
+        prefix + "core",
+    )
+
+    def _close_stderr():
+        os.close(2)
+
+    proc = subprocess.run(
+        [sys.executable, "-c", probe],
+        stdout=subprocess.PIPE,
+        preexec_fn=_close_stderr,
+        check=False,
+    )
+    check("stderr closed at startup: importing wl_core still exits 0", proc.returncode, 0)
+
+    # ---- gh_mod: 5f716ec0.1, no os.getuid ----------------------------------------------------------------------
+    cache = scratch() / "c.json"
+    cache.write_text('{"a": 1}', encoding="utf-8")
+    real_getuid = os.getuid
+    del os.getuid
+    try:
+        got = gh_mod.cache_load(cache)
+    finally:
+        os.getuid = real_getuid
+    check("cache_load without os.getuid reads the file", got, {"a": 1})
+    check(
+        "cache_load of a missing file without owner info is None",
+        gh_mod.cache_load(scratch() / "nope"),
+        None,
+    )
+
+    # ---- git_mod: e96e54fc.2, the documented fail-open on a git that cannot answer -----------------------------
+    with swapped(git_mod, run_git=lambda *_a, **_k: (1, "", "fatal")):
+        check(
+            "operation_in_progress: a git error is no operation",
+            git_mod.operation_in_progress(s1_scratch),
+            "",
+        )
+    with swapped(git_mod, run_git=lambda *_a, **_k: (0, str(repo / ".git"), "")):
+        (repo / ".git" / "MERGE_HEAD").write_text("x", encoding="utf-8")
+        check(
+            "operation_in_progress: control, a MERGE_HEAD reads as merge",
+            git_mod.operation_in_progress(repo),
+            "merge",
+        )
+
+    # ---- hints_mod: 06db238d.1, a future or impossible plan beside a real one ----------------------------------
+    root = scratch()
+    plans = root / "agent" / "plans"
+    plans.mkdir(parents=True)
+    for name in ("20260101", "20991231", "20261340"):
+        (plans / ("PLAN-lessons-%s.md" % name)).write_text(
+            "# plan\n\n- [ ] L1 first box\n", encoding="utf-8"
+        )
+    today = datetime.date(2026, 1, 20)
+    check(
+        "newest_lessons_plan skips future and impossible dates",
+        hints_mod.newest_lessons_plan(root, today)[0],
+        "20260101",
+    )
+    text = hints_mod.weekly_block(root, root / "wl.md", "deadbeef-test", today)
+    check("weekly_block names the real plan", "PLAN-lessons-20260101.md" in text, True)
+    check("weekly_block counts days from the real plan", "19 days old" in text, True)
+    check("weekly_block never names the future plan", "20991231" in text, False)
+
+    # ---- hookreport: 19df54c9.*, a0c83ac9.3 ----------------------------------------------------------------
+
+    def ledger_root(rows=3):
+        r = scratch()
+        live = r.joinpath(*wl_hr_mod.LEDGER_REL)
+        live.parent.mkdir(parents=True)
+        live.write_text('{"chain": "c"}\n' * rows, encoding="utf-8")
+        return r, live
+
+    now_at = datetime.datetime(2026, 11, 26, 12, 0, 0, tzinfo=datetime.UTC)
+    r, live = ledger_root()
+
+    def link_gone(*_a, **_k):
+        raise FileNotFoundError("a peer rolled it")
+
+    with swapped(os, link=link_gone):
+        archive, _deleted = wl_hr_mod.rotate(r, max_bytes=1, now=now_at)
+    check("rotate: a peer's rotation between stat and link is no crash", archive, None)
+
+    r, live = ledger_root()
+
+    def link_unsupported(*_a, **_k):
+        raise OSError(1, "Operation not permitted")
+
+    with swapped(os, link=link_unsupported):
+        archive, _deleted = wl_hr_mod.rotate(r, max_bytes=1, now=now_at)
+    check(
+        "rotate: no hard links falls back to a rename",
+        archive is not None and archive.exists(),
+        True,
+    )
+    check("rotate: the rename leaves no live ledger", live.exists(), False)
+
+    r, live = ledger_root()
+    real_unlink = pathlib.Path.unlink
+
+    def unlink_refuses_live(self, *a, **k):
+        if self.name == "chains.jsonl":
+            raise PermissionError(13, "nope")
+        return real_unlink(self, *a, **k)
+
+    refused = False
+    with swapped(pathlib.Path, unlink=unlink_refuses_live):
+        try:
+            wl_hr_mod.rotate(r, max_bytes=1, now=now_at)
+        except wl_hr_mod.ReportError:
+            refused = True
+    check("rotate: a live unlink failure is refused", refused, True)
+    check(
+        "rotate: the link is undone, the rows are not doubled",
+        sorted(p.name for p in live.parent.glob("chains*.jsonl")),
+        ["chains.jsonl"],
+    )
+
+    check(
+        "rotate docstring describes link and unlink",
+        "LINK AND UNLINK" in wl_hr_mod.rotate.__doc__,
+        True,
+    )
+
+    r, live = ledger_root()
+    flip = [0]
+
+    def unstable_paths(_root=None):
+        flip[0] += 1
+        return [live, live.with_name("chains-%d.jsonl" % flip[0])]
+
+    unstable = False
+    with swapped(wl_hr_mod, ledger_paths=unstable_paths):
+        try:
+            wl_hr_mod.read_ledger(r)
+        except wl_hr_mod.ReportError:
+            unstable = True
+    check("read_ledger: three disagreeing passes is an error, not a silent partial", unstable, True)
+    check(
+        "read_ledger: control, a stable ledger reads its rows",
+        len(wl_hr_mod.read_ledger(ledger_root(4)[0])),
+        4,
+    )
+
+    r = scratch()
+    rec_dir = r.joinpath(*wl_hr_mod.RECEIPTS_REL)
+    rec_dir.mkdir(parents=True)
+    (rec_dir / "ok.json").write_text("{}", encoding="utf-8")
+    (rec_dir / "bad.json").write_text("{not json", encoding="utf-8")
+    skipped: list[str] = []
+    got = wl_hr_mod.read_receipts(r, skipped)
+    check("read_receipts: the parsed receipt is kept", len(got), 1)
+    check("read_receipts: the corrupt one is named", skipped, ["bad.json"])
+    text = wl_hr_mod.report(r, rows=[], trap_base=scratch())
+    check(
+        "report: the dropped receipt shows in the text",
+        "bad.json" in text and "did not read or parse" in text,
+        True,
+    )
+
+    # ---- cli: 190c8ade.2, an arm on a lease whose hold cannot be ruled out ---------------------------------
+
+    class RefusedError(Exception):
+        pass
+
+    def die(msg):
+        raise RefusedError(msg)
+
+    with swapped(wl_cli_mod.C, _git_dirs=lambda _p: None):
+        why = ""
+        try:
+            wl_cli_mod._arm_one(
+                s1_scratch / "wl.md",
+                s1_scratch,
+                types.SimpleNamespace(by_id={}, items=[]),
+                "deadbeef-test",
+                {"id": "abcd1234", "origin": "cli", "state": " "},
+                ["PUSHED:head"],
+                "",
+                "true",
+                "L1",
+                "",
+                die,
+            )
+        except RefusedError as exc:
+            why = str(exc)
+        except Exception as exc:  # the old shape went on to write the arm
+            why = "UNEXPECTED %s: %s" % (type(exc).__name__, exc)
+    check("--arm --lease with unresolvable git dirs is refused", "cannot be checked" in why, True)
+
+    # ---- cli: 190c8ade.3, a survey draft outside the survey's directory and the repo -----------------------
+    proj = scratch()
+    surveys = scratch()
+    survey = surveys / "survey.md"
+    inside = surveys / "draft.md"
+    inside.write_text("brief\n", encoding="utf-8")
+    survey_text = (
+        "## 10. Armed\n\n| blocker | dependent sigs | trigger | brief draft path |\n|---|---|---|---|\n"
+        "| AA1 | 26dc6529 | `PUSHED:head` | %s |\n"
+    )
+
+    def survey_run(draft):
+        survey.write_text(survey_text % draft, encoding="utf-8")
+        err = []
+        fold = types.SimpleNamespace(by_id={}, items=[])
+        with (
+            swapped(
+                wl_cli_mod,
+                _identity_or_die=lambda _me, _die: None,
+            ),
+            swapped(
+                wl_cli_mod.C,
+                project_start=lambda: proj,
+                worklist_for=lambda _s: proj / "wl.md",
+                project_root=lambda _s: proj,
+                resolve_session_id=lambda: "deadbeef-test",
+            ),
+            swapped(wl_cli_mod.S, load=lambda *_a, **_k: fold),
+            swapped(wl_cli_mod.S, add_item=lambda *_a, **_k: err.append("WROTE") or "abcd1234"),
+        ):
+            try:
+                wl_cli_mod._armed_cli(["--arm-from-survey", "deadbeef-test", str(survey)])
+            except SystemExit:
+                pass
+            except Exception as exc:
+                err.append("%s: %s" % (type(exc).__name__, exc))
+        return err
+
+    outside = survey_run("/etc/hostname")
+    check(
+        "survey draft outside the survey dir and repo: nothing is written",
+        "WROTE" in outside,
+        False,
+    )
+    check(
+        "survey draft inside the survey dir: control, the row is accepted",
+        "WROTE" in survey_run(inside),
+        True,
+    )
+
+
 def main():
     tmp = pathlib.Path(runtmp.run_dir("landing-wiring-")).resolve()
     for label, got, want in (
@@ -654,6 +1082,7 @@ def main():
     for n, (label, runner, mutate) in enumerate(MUTANTS):
         wrong = [c[0] for c in runner(tmp, "mutant%d" % n, mutate) if c[1] != c[2]]
         T.check("MUTANT %s: turns a check red" % label, bool(wrong), True)
+    stop1_review_cases(T.check)
     T.exit()
 
 

@@ -1452,7 +1452,7 @@ def _planinvestigate_cli(argv):
         # `--retro` after `--` is note text by grammar, but a trailing `-- <note> --retro --write` is the natural spelling, so the last word is read as the flag.
         retro = True
         rest = rest[:-1]
-    # `--evidence <text>` is the ` (ticked) ` line a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
+    # `--evidence <text>` is the `    (ticked) ` line (four leading spaces, wl_planrec's evidence indent) a --retro write inserts beneath a box that has none (default: the note). Like --retro it is read BEFORE the bare `--`.
     evidence = None
     cut_at = rest.index("--") if "--" in rest else len(rest)
     if "--evidence" in rest[:cut_at]:
@@ -3185,14 +3185,19 @@ def _arm_one(
         if not A.LEASE_ID_RE.match(lease):
             die("--lease %r is not a lease id" % lease)
         dirs = C._git_dirs(pathlib.Path(root))
-        if dirs is not None:
-            import wl_worktrees as WT
+        if dirs is None:
+            # Fail closed: a hold cannot be ruled out when the git dirs do not resolve.
+            die(
+                "--lease %s cannot be checked for a `.hold` record: the git dirs do not resolve"
+                % lease
+            )
+        import wl_worktrees as WT
 
-            if lease in WT.read_holds(dirs[1]):
-                die(
-                    "lease %s carries a `.hold` record; the arm replaces it, so lift the hold first:\n"
-                    "    ./run.sh worktree unhold %s" % (lease, lease)
-                )
+        if lease in WT.read_holds(dirs[1]):
+            die(
+                "lease %s carries a `.hold` record; the arm replaces it, so lift the hold first:\n"
+                "    ./run.sh worktree unhold %s" % (lease, lease)
+            )
     now = world.now
     exp = A.default_expiry(now, when)
     if expires:
@@ -3306,6 +3311,16 @@ def _armed_cli(argv):
             except A.TokenError as exc:
                 die("REFUSED: row %r: %s" % (entry["blocker"], exc))
             draft = pathlib.Path(entry["draft"])
+            # A draft is copied into a brief that is then committed, so it must sit beside the survey (where writers-now writes them) or inside the repo: an arbitrary path in a survey row is refused.
+            real_draft = draft.resolve()
+            if not any(
+                real_draft.is_relative_to(base.resolve())
+                for base in (pathlib.Path(argv[2]).resolve().parent, pathlib.Path(root))
+            ):
+                die(
+                    "REFUSED: row %r: the brief draft %s is outside the survey's directory and the repo"
+                    % (entry["blocker"], draft)
+                )
             try:
                 body = draft.read_text(encoding="utf-8")
             except OSError as exc:

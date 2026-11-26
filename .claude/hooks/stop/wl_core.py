@@ -398,7 +398,7 @@ def _common_main(common):
 
 
 # One validation per record version per process: commit_policy's reader asks git (the common dir, the linked-tree check), and project_root is a hot path, so its answer is kept keyed on the record file's (path, mtime_ns, size). A rewrite of the record changes the key.
-_LANDING_READS: dict[tuple[str, int, int], tuple[dict | None, str]] = {}
+_LANDING_READS: dict[tuple[str, str, int, int, int, int], tuple[dict | None, str]] = {}
 
 
 def _commit_policy():
@@ -432,7 +432,8 @@ def read_landing_record(tree):
         return None, ""
     except OSError as exc:
         return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
-    key = (str(where), st.st_mtime_ns, st.st_size)
+    # The tree is part of the key (read_landing_record validates against it) and so are the inode and ctime: a same-size rewrite inside the mtime granularity replaces the inode or moves ctime.
+    key = (str(tree), str(where), st.st_mtime_ns, st.st_ctime_ns, st.st_ino, st.st_size)
     if key not in _LANDING_READS:
         try:
             policy = _commit_policy()
@@ -1301,7 +1302,8 @@ try:
 except Exception as _profiler_exc:
     # Only Exception: SystemExit and KeyboardInterrupt are the hook's own to raise and must propagate. The failure is named once on stderr and never changes the exit code or stdout of the hook it measures.
     # A closed or broken stderr cannot carry the line; the hook's exit code stays its own.
-    with contextlib.suppress(OSError, ValueError):
+    # sys.stderr is None when fd 2 was invalid at startup, so the write raises AttributeError; that is suppressed too.
+    with contextlib.suppress(OSError, ValueError, AttributeError):
         sys.stderr.write(
             "wl_core: resprofile profiler not armed (%s: %s)\n"
             % (type(_profiler_exc).__name__, _profiler_exc)

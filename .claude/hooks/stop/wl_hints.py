@@ -342,7 +342,9 @@ def context_epoch(session_id):
 
 
 def pending_note(session_id, rows):
-    """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan). The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
+    """The advisory line for the pending proposal `rows`, naming this session's curator run, its output directory, and the source families already at D1's cluster threshold (each one box of the weekly lessons plan).
+
+    The epoch comes from the context band state; any failure reading it names epoch 0 rather than dropping the line."""
     me8 = S.agent_session_slug(session_id)
     epoch, epoch_problem = context_epoch(session_id)
     ready = clusters(rows)
