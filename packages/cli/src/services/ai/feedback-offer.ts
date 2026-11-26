@@ -19,7 +19,7 @@ import { z } from 'zod';
 import { createProviderModel, type ProviderModelOptions } from './provider.js';
 
 /** The `feedback_offer` member of the wire's `AiEventSchema`. */
-export type FeedbackOfferEvent = Extract<AiEvent, { type: 'feedback_offer' }>;
+type FeedbackOfferEvent = Extract<AiEvent, { type: 'feedback_offer' }>;
 
 /** The run row of plan 4, as far as the offer reads it: never params, the tail still sealed. */
 export interface FeedbackRunRecord {
@@ -51,7 +51,7 @@ export interface FeedbackClassification {
 }
 
 /** The two switches of D5. `undefined` means the default, which is on. */
-export interface FeedbackOfferSettings {
+interface FeedbackOfferSettings {
   /** The user's own `offerBugReports`. */
   readonly offerBugReports?: boolean;
   /** The org owner's override: true means no offers for anyone in the org. */
@@ -198,11 +198,11 @@ export function parseFeedbackClassification(text: string): FeedbackClassificatio
 }
 
 /** Parse the drafter's answer; anything but the exact shape throws, which is no offer. */
-export function parseFeedbackDraft(text: string): FeedbackDraft {
+function parseFeedbackDraft(text: string): FeedbackDraft {
   return DraftSchema.parse(JSON.parse(text));
 }
 
-export const FEEDBACK_CLASSIFY_PROMPT = [
+const FEEDBACK_CLASSIFY_PROMPT = [
   'A command run by the Rediacc CLI failed without an error code that says whose fault it is.',
   'The input is JSON: the command path, exit code, error code and the redacted end of its output.',
   'Offer a bug report only when the output points to a defect or outage on the Rediacc side: a crash, an internal error, an unhandled exception or a broken contract.',
@@ -210,7 +210,7 @@ export const FEEDBACK_CLASSIFY_PROMPT = [
   'Answer with JSON only, exactly {"offer":true|false,"reason":"<one sentence>"}, and nothing else.',
 ].join('\n');
 
-export const FEEDBACK_DRAFT_PROMPT = [
+const FEEDBACK_DRAFT_PROMPT = [
   'Write a bug report for a failed Rediacc CLI command.',
   'The input is JSON: the command path, exit code, error code and the redacted end of its output.',
   `Answer with JSON only, exactly {"message":"<what failed and what the user was likely doing, at most ${FEEDBACK_LIMITS.message} characters>","stderrTail":"<the output lines that matter, copied unchanged, at most ${FEEDBACK_LIMITS.stderrTail} characters>"}, and nothing else.`,
