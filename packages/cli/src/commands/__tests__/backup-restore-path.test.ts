@@ -458,6 +458,22 @@ describe('backup restore --path store fallback', () => {
     );
   });
 
+  it('renders the last store failure when every store is unreachable, after trying each once', async () => {
+    answers(failed('HTTP 502 bad gateway'), failed('connect ECONNREFUSED 10.0.0.1:443'));
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west', undefined]);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+    expect(mockRenderFailure.mock.calls[0][0]).toMatchObject({
+      error: 'connect ECONNREFUSED 10.0.0.1:443',
+    });
+    expect(mockInfo).not.toHaveBeenCalledWith(
+      `commands.backup.restore.storeServed ${JSON.stringify({ store: 'home' })}`
+    );
+  });
+
   it('does not fall back after a copy-out that renet rolled back, which a second store cannot cure', async () => {
     answers(failed('{"code":"ROLLED_BACK","message":"write failed: timed out (translated)"}'), ok);
 
