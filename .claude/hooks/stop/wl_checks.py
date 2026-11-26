@@ -4981,9 +4981,18 @@ def _stop_roster(ns):
     import wl_stuckshell
 
     _stuck_problems: list[str] = []
-    _stuck = wl_stuckshell.stop_rows(event, session_id, problems=_stuck_problems)
+    _stuck = wl_stuckshell.stop_rows(
+        event, session_id, problems=_stuck_problems, items=getattr(fold, "items", None)
+    )
     if _stuck_problems:
         note_read_failure("stuck-shell", RuntimeError("; ".join(_stuck_problems)))
+    # A stuck waiter whose shell does real work, or that an in-flight item is leased to, is owned work: reported once, age-free, never a TaskStop order (the wl_bgsweep live-work rule). Only a shell that just waits blocks.
+    _stuck_live = wl_stuckshell.render_live(_stuck)
+    if _stuck_live:
+        outq_add(
+            worklist, session_id, state_doc, "stuck-shell-live", _stuck_live, 1, refresh_min=24 * 60
+        )
+    _stuck = wl_stuckshell.blocking(_stuck)
     if _stuck:
         vadd(
             "stuck-shell",

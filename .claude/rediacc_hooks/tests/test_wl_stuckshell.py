@@ -303,3 +303,125 @@ def test_stuck_shell_survives_standdown_in_every_profile_set() -> None:
     std = wlfix.import_wl("wl_standdown")
     assert "stuck-shell" in std.CORE
     assert "stuck-shell-not-a-key" not in std.CORE
+
+
+# ---- live work past the bound is owned, never a TaskStop order (2026-11-26) ----------------------
+
+CF_RETIRE = (
+    "python3 -m rediacc_ci.housekeeping.cf_retire archive rediacc-www-media --to-bucket media"
+)
+
+OWNED_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_core as C, wl_store as ST, wl_stuckshell as S
+ev = json.loads(sys.stdin.read())
+busy = json.loads(sys.argv[2])
+fold = ST.load(C.worklist_for(C.project_start(ev)), sync=True)
+problems = []
+rows = S.stop_rows(ev, ev["session_id"], problems=problems, items=fold.items, work=lambda _s: busy)
+print(json.dumps({
+    "rows": rows,
+    "blocking": [a for a, _r in S.blocking(rows)],
+    "live": S.render_live(rows),
+    "render": S.render(S.blocking(rows)),
+    "problems": problems,
+}))
+"""
+
+
+def owned_view(fix, busy: dict) -> dict:
+    proc = subprocess.run(
+        [sys.executable, "-c", OWNED_SNIPPET, str(wlfix.STOP_DIR), json.dumps(busy)],
+        input=fix.event(),
+        capture_output=True,
+        text=True,
+        env=fix.stop_env(),
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-800:]
+    got = json.loads(proc.stdout)
+    assert got["problems"] == [], got["problems"]
+    return got
+
+
+def test_live_past_bound_shell_with_a_python_child_is_not_blocking(wl):
+    """Shell bxhnqm2th's shape: a 3-hour cf_retire verify under a shell past the bound is reported once, with no TaskStop."""
+    waiter(wl, age_min=46)
+    got = owned_view(wl, {"bshell01": CF_RETIRE})
+    rows = dict(got["rows"])
+    assert rows[W4]["reason"] == "runtime", rows
+    assert rows[W4]["live"] == CF_RETIRE, rows
+    assert got["blocking"] == [], got
+    assert "no TaskStop order" in got["live"], got["live"]
+    assert "agent %s waiting on shell bshell01: working: %s" % (W4, CF_RETIRE) in got["live"]
+    assert "TaskStop bshell01" not in got["live"] + got["render"], got
+
+
+def test_live_control_a_past_bound_shell_that_only_waits_still_blocks(wl):
+    waiter(wl, age_min=46)
+    got = owned_view(wl, {})
+    assert got["blocking"] == [W4], got
+    assert got["live"] == "", got["live"]
+    assert "TaskStop bshell01" in got["render"], got["render"]
+
+
+def test_live_an_item_leased_to_the_shell_owns_it(wl):
+    waiter(wl, age_min=46)
+    plant_lease(wl, "media1", "bshell01")
+    got = owned_view(wl, {})
+    assert dict(got["rows"])[W4]["leased"] == "media1", got["rows"]
+    assert got["blocking"] == [], got
+    assert "item #media1 is leased to it" in got["live"], got["live"]
+
+
+def test_live_an_item_leased_to_the_shell_does_not_block_the_stop(wl):
+    """Through the whole Stop hook: the 46-minute waiter blocks (the control below), and an item leased to its shell lifts the block."""
+    waiter(wl, age_min=46)
+    plant_lease(wl, "media1", "bshell01")
+    wl.say("working\n\n## Remaining\n- the media verify")
+    got = wl.run()
+    assert "STUCK SHELL-WAITER:" not in got.out, got.out[:3000]
+    assert "TaskStop bshell01" not in got.out, got.out[:3000]
+
+
+def test_live_control_the_same_waiter_unleased_blocks_the_stop(wl):
+    waiter(wl, age_min=46)
+    wl.say("working\n\n## Remaining\n- the media verify")
+    got = wl.run()
+    assert "STUCK SHELL-WAITER: 1 agent(s)" in got.out, got.out[:3000]
+    assert "TaskStop bshell01" in got.out, got.out[:3000]
+
+
+SHELL_WORK_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_stuckshell as S
+wrap = "bash -c source /tmp/snap.sh && eval '%s' < /dev/null && pwd -P >| /tmp/cwd"
+table = [
+    (100, 1, "claude", 9000),
+    (200, 100, wrap % "PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cf_retire archive x", 3000),
+    (201, 200, "python3 -m rediacc_ci.housekeeping.cf_retire archive x", 3000),
+    (300, 100, wrap % "until [ -s /tmp/o ]; do sleep 15; done", 3000),
+    (301, 300, "sleep 15", 5),
+    (400, 100, wrap % "PYTHONPATH=.ci python3 -m pytest -q", 3000),
+    (401, 400, "python3 -m pytest -q", 3000),
+]
+task = {200: "bxhnqm2th", 201: "bxhnqm2th", 300: "bwait0001", 301: "bwait0001",
+        400: "bother001", 401: "bother001"}
+print(json.dumps(S.shell_work({"bxhnqm2th", "bwait0001"}, table, stdout_task=task.get)))
+"""
+
+
+def test_shell_work_names_the_working_descendant_of_each_asked_shell() -> None:
+    """Controls: a wait loop whose only child is `sleep` is not live, and a working shell not asked about is not reported."""
+    proc = subprocess.run(
+        [sys.executable, "-c", SHELL_WORK_SNIPPET, str(wlfix.STOP_DIR)],
+        capture_output=True,
+        text=True,
+        env=dict(os.environ, WORKLIST_HARNESS_PID="100"),
+        check=True,
+    )
+    assert json.loads(proc.stdout) == {
+        "bxhnqm2th": "python3 -m rediacc_ci.housekeeping.cf_retire archive x"
+    }

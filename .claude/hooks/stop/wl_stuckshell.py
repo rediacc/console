@@ -9,6 +9,9 @@ STUCK means the agent waits on a shell (the `wl_roster.armed_waiters` shape: not
 
 A stuck agent is not live: `wl_roster.shell_waiters` drops it, so the roster, `wl_liveness.live_worker_ids` and the writer estimate stop counting it, and the `stuck-shell` check names the agent, the shell and the two moves.
 
+LIVE WORK IS NEVER A TaskStop ORDER (2026-11-26), the wl_bgsweep rule (ca5331e3e4) applied here. Shell bxhnqm2th ran `cf_retire archive rediacc-www-media --to-bucket media`, a 3-hour sha256 verify of 8,422 objects, past the bound, and this check ordered `TaskStop bxhnqm2th` on every stop although the lead's item was leased to that very shell (`worker:bxhnqm2th`). Each stuck row now carries `live` (the command of the first descendant of the shell doing real work, per `wl_bgsweep.live_command`: not a sleep, a poll probe, a shell layer or the wake timer) and `leased` (the id of an in-flight item whose lease names `worker:<shell>`).
+A row with either is OWNED work: `blocking` drops it, and `render_live` reports it once, age-free, under the `stuck-shell-live` advisory with no TaskStop. A shell that only waits still blocks. The roster's liveness is unchanged: a stuck agent stays not-live, since the work belongs to the shell, which the event lists running.
+
 A launch record with no readable timestamp answers nothing for (a) or (b), since a report captured before the launch belongs to an earlier turn, and a report store that cannot be read answers nothing for (a); neither makes an agent stuck. Like wl_roster this module reads no environment variable: every threshold is a literal, so no knob can keep a stuck agent live.
 """
 
@@ -127,14 +130,103 @@ def stuck_waiters(running, metas, start=None, now=None, problems=None):
     return classify(waiters, metas, report_entries(start, problems), now)
 
 
-def stop_rows(event, session_id, now=None, problems=None):
-    """The `stuck-shell` check's rows for one stop: [(agent id, row)] sorted by agent id, from the event's running tasks and the session's subagent metas."""
+def shell_work(shell_ids, table_with_age=None, anchor_table=None, stdout_task=None):
+    """{shell id: command} for each shell in `shell_ids` that a descendant process is doing real work for (`wl_bgsweep.live_command`), read from this session's own harness subtree.
+
+    A shell is found as the topmost row writing its `tasks/<id>.output` (the wl_bgsweep.findings rule). An unreadable process table or an unresolved anchor answers {}: no shell is called live, so nothing that only waits is excused."""
+    import wl_bgsweep as B
+
+    wanted = {str(s) for s in shell_ids or () if s}
+    if not wanted:
+        return {}
+    if table_with_age is None:
+        table_with_age = B.proc_table_with_age()
+    if not table_with_age:
+        return {}
+    anchor = B.resolve_anchor(
+        anchor_table
+        if anchor_table is not None
+        else [(p, pp, c) for p, pp, c, _a in table_with_age]
+    )
+    if anchor is None:
+        return {}
+    task = stdout_task or B._stdout_task
+    rows = B.descendants(anchor, table_with_age)
+    task_of = {r[0]: task(r[0]) for r in rows}
+    out = {}
+    for pid, ppid, _cmd, _age in rows:
+        sid = task_of.get(pid)
+        if sid in wanted and sid not in out and task_of.get(ppid) != sid:
+            work = B.live_command(rows, pid)
+            if work:
+                out[sid] = work
+    return out
+
+
+def leased_shells(items):
+    """{worker id: item id} for each in-flight (`>`) item, from the `worker:<id>` its lease names."""
+    out = {}
+    for rec in items or ():
+        if rec.get("state") != ">":
+            continue
+        wm = C.WORKER.search(rec.get("line") or "")
+        wid = rec.get("worker") or (wm.group(1) if wm else "")
+        if wid:
+            out.setdefault(str(wid), str(rec.get("id") or ""))
+    return out
+
+
+def stop_rows(event, session_id, now=None, problems=None, items=None, work=shell_work):
+    """The `stuck-shell` check's rows for one stop: [(agent id, row)] sorted by agent id, from the event's running tasks and the session's subagent metas.
+
+    Each row also carries `live` (the working descendant's command per `work({shell ids})`, or "") and `leased` (the id of the in-flight item in `items` leased to the shell, or ""); `blocking` keeps the rows with neither."""
     import wl_roster as R
 
     cwd = event.get("cwd") or ""
     metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
     found = stuck_waiters(R._running(event), metas, C.project_start({"cwd": cwd}), now, problems)
+    if found:
+        try:
+            busy = work({row["shell"] for row in found.values()}) or {}
+        except Exception as exc:
+            busy = {}
+            if problems is not None:
+                problems.append("shell descendants: %s: %s" % (type(exc).__name__, exc))
+        leases = leased_shells(items)
+        for row in found.values():
+            row["live"] = busy.get(row["shell"], "")
+            row["leased"] = leases.get(row["shell"], "")
     return sorted(found.items())
+
+
+def is_owned(row):
+    """True when the stuck row's shell does real work or an in-flight item is leased to it: reported, never a TaskStop order."""
+    return bool(row.get("live") or row.get("leased"))
+
+
+def blocking(rows):
+    """The rows that still order a TaskStop: the shell only waits and no item is leased to it."""
+    return [(aid, row) for aid, row in rows if not is_owned(row)]
+
+
+def render_live(rows):
+    """The once-only advisory body for the owned rows in `rows` (`is_owned`), or "". Age-free on purpose, so an unchanged set renders the same text every stop."""
+    keep = [(aid, row) for aid, row in rows if is_owned(row)]
+    if not keep:
+        return ""
+    lines = ["%d STUCK SHELL-WAITER(S) WITH LIVE WORK (no TaskStop order):" % len(keep)]
+    for aid, row in keep:
+        what = []
+        if row.get("live"):
+            what.append("working: %s" % row["live"][:160])
+        if row.get("leased"):
+            what.append("item #%s is leased to it" % row["leased"])
+        lines.append("    agent %s waiting on shell %s: %s" % (aid, row["shell"], "; ".join(what)))
+    lines.append(
+        "  Each shell does real work or holds a lease, so it is not stopped. Let it finish, "
+        "read its output when the harness notifies, then land the agent's report."
+    )
+    return "\n".join(lines) + "\n"
 
 
 def render(rows):

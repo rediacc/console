@@ -261,6 +261,9 @@
       "block": "low",
       "advise": "quiet"
     },
+    "stuck-shell-live": {
+      "advise": "low"
+    },
     "plan-adopted": {
       "block": "smart",
       "advise": "low"
