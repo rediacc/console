@@ -5,7 +5,9 @@ Measured 2026-11-10: Docker Desktop's WSL proxy bound the docker socket path and
 
 import os
 import pathlib
+import shutil
 import socket
+import tempfile
 import threading
 
 import pytest
@@ -74,9 +76,13 @@ def _net(tmp: pathlib.Path, path: str, inodes: list[str]) -> str:
 
 
 @pytest.fixture
-def sock_dir(tmp_path: pathlib.Path) -> pathlib.Path:
-    # AF_UNIX paths are short-limited; tmp_path is short enough under pytest.
-    return tmp_path
+def sock_dir():
+    """A directory directly under the run's TMPDIR. AF_UNIX keeps ~107 bytes of a path, and `tmp_path` is not short enough: under check:ci-pytest it is `<scratch>/basetemp/popen-gwN/<test name>0/`, and every bind failed `AF_UNIX path too long`. The scratch TMPDIR itself is the private per-run directory scratch_tmp.install made."""
+    made = pathlib.Path(tempfile.mkdtemp(prefix="dx-"))
+    try:
+        yield made
+    finally:
+        shutil.rmtree(made, ignore_errors=True)
 
 
 def _fire_foreign_owner(tmp: pathlib.Path, detector) -> str | None:
