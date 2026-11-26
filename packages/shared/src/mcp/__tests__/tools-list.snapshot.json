@@ -1076,7 +1076,7 @@
           "description": "Resume after this many lines (the count you already received)"
         },
         "page": {
-          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.",
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991
@@ -2398,7 +2398,7 @@
           "type": "boolean"
         },
         "page": {
-          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one.",
+          "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.",
           "type": "integer",
           "minimum": 1,
           "maximum": 9007199254740991

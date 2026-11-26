@@ -114,4 +114,13 @@ describe('MCP result paging', () => {
       .sort((a, b) => a.localeCompare(b));
     expect(paged).toEqual(['config_audit_log', 'job_logs', 'repo_logs']);
   });
+
+  it('the page argument tells a client that each page re-runs the command', () => {
+    const pageable = buildAllTools().filter((t) => 'page' in t.schema);
+    expect(pageable).toHaveLength(3);
+    for (const tool of pageable) {
+      const field = tool.schema.page as { description?: string } | undefined;
+      expect(field?.description, tool.name).toContain('re-runs the command');
+    }
+  });
 });

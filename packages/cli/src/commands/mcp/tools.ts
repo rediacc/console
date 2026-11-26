@@ -31,7 +31,7 @@ const PAGE_FIELD = z
   .min(1)
   .optional()
   .describe(
-    `Page of a result longer than ${RESULT_PAGE_CHARS} characters, from 1; pass the cursor a page returned to read the next one.`
+    `Page of a result longer than ${RESULT_PAGE_CHARS} characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.`
   );
 
 function withPaging(tool: ToolDef): ToolDef {
