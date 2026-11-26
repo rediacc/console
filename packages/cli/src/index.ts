@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { cli } from './cli.js';
+import { isMcpServeFastPath } from './commands/mcp/fast-path.js';
 import { printFeedbackHint } from './services/feedback/hint.js';
 import { installStderrTap, recordCommand } from './services/feedback/ring.js';
 import { telemetryService } from './services/telemetry/telemetry.js';
@@ -18,7 +19,7 @@ if (process.argv.includes('--warmup')) {
 }
 
 // MCP server mode, must run before normal CLI to avoid stdout pollution. The MCP protocol uses stdout for JSON-RPC, so no other CLI initialization (telemetry, i18n, update checks) can write to stdout.
-if (process.argv.includes('mcp') && process.argv.includes('serve')) {
+if (isMcpServeFastPath(process.argv)) {
   const configIdx = process.argv.indexOf('--config');
   const configName = configIdx >= 0 ? process.argv[configIdx + 1] : undefined;
   const timeoutIdx = process.argv.indexOf('--timeout');
