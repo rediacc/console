@@ -40,7 +40,7 @@ describe('AiEventSchema', () => {
   it('refuses an approval request without its token, its command or its risk', () => {
     const full = aiEvents[3];
     for (const field of ['approvalToken', 'command', 'risk'] as const) {
-      const { [field]: _dropped, ...rest } = full;
+      const rest = Object.fromEntries(Object.entries(full).filter(([key]) => key !== field));
       expect(AiEventSchema.safeParse(rest).success).toBe(false);
     }
     expect(AiEventSchema.safeParse({ ...full, risk: 'harmless' }).success).toBe(false);

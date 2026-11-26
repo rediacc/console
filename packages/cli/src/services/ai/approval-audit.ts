@@ -16,7 +16,7 @@ import type { ExecutorAuditEvent } from '../serve/deps.js';
 import type { SessionPrincipal } from '../serve/sessions.js';
 
 /** The command path an approval answer is recorded under. */
-export const AI_APPROVAL_AUDIT_PATH = 'ai approval';
+const AI_APPROVAL_AUDIT_PATH = 'ai approval';
 
 export interface ApprovalAuditInput {
   principal: SessionPrincipal;
@@ -27,7 +27,7 @@ export interface ApprovalAuditInput {
 }
 
 /** The executor audit event of one approval answer. */
-export function approvalAuditEvent(input: ApprovalAuditInput): ExecutorAuditEvent {
+function approvalAuditEvent(input: ApprovalAuditInput): ExecutorAuditEvent {
   return {
     principal: input.principal,
     commandPath: AI_APPROVAL_AUDIT_PATH,

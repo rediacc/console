@@ -73,7 +73,7 @@ export class PolicyRecordInvalidError extends Error {
  * The key that opens one pointer's records: the CEK itself, or the policy key derived for that
  * pointer (an agent grant's). A resolver that has no key for the pointer throws.
  */
-export type PolicyKeyResolver = (pointer: PolicyPointer) => Promise<CryptoKey | PolicyKey>;
+type PolicyKeyResolver = (pointer: PolicyPointer) => Promise<CryptoKey | PolicyKey>;
 
 /** The key a pointer's high-water mark is kept under. */
 export function policyPointerKey(pointer: PolicyPointer): string {

@@ -39,7 +39,7 @@ export const DEFAULT_MAX_OUTPUT_TOKENS = 8192;
 export const STEP_LIMIT_REASON = 'step-limit';
 
 /** The `error` code of a failure the provider answered with an HTTP status. */
-export const AI_PROVIDER_ERROR = 'AI_PROVIDER_ERROR';
+const AI_PROVIDER_ERROR = 'AI_PROVIDER_ERROR';
 
 const SYSTEM_PROMPT = [
   'You operate infrastructure for the user through the tools offered, which run CLI commands.',
@@ -69,7 +69,7 @@ function errorEvent(error: unknown): AiEvent {
   if (APICallError.isInstance(error)) {
     return {
       type: 'error',
-      message: `The AI provider answered ${error.statusCode ?? 'with an error'}: ${error.message}`,
+      message: `The AI provider answered ${error.statusCode ? String(error.statusCode) : 'with an error'}: ${error.message}`,
       code: AI_PROVIDER_ERROR,
     };
   }

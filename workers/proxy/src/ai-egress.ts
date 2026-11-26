@@ -43,7 +43,7 @@ export const AI_CONVERSATION_HEADER = 'x-rediacc-ai-conversation';
 const ID_RE = /^[A-Za-z0-9_.:-]{1,128}$/;
 
 /** The ledger's reserve refusal codes (workers/account/src/credit-ledger.ts `RefusalCode`). */
-export type CreditRefusalCode =
+type CreditRefusalCode =
   | 'PLAN_NOT_ENTITLED'
   | 'ORG_BLOCKED'
   | 'GLOBAL_PAUSED'
@@ -120,7 +120,7 @@ export function gatewayUrl(accountId: string, gatewayId: string): string {
 }
 
 /** The `cf-aig-metadata` value of D7: five entries, the join key of the reconcile. */
-export function aiMetadata(entries: {
+function aiMetadata(entries: {
   orgId: string;
   userId: string;
   conversationId: string;
@@ -199,7 +199,7 @@ function admitCall(text: string, method: string, url: URL): AdmittedCall | Respo
 }
 
 /** The body forwarded: output caps clamped to the reservation's, and usage reporting forced on for a stream. */
-export function clampedBody(body: Record<string, unknown>, maxTokens: number): string {
+function clampedBody(body: Record<string, unknown>, maxTokens: number): string {
   const out: Record<string, unknown> = { ...body };
   if ('max_completion_tokens' in out) out.max_completion_tokens = maxTokens;
   if ('max_tokens' in out || !('max_completion_tokens' in out)) out.max_tokens = maxTokens;
@@ -246,7 +246,7 @@ function lastStreamUsage(lines: string[], previous: CreditTokenCounts | undefine
 /**
  * The response body, byte for byte, with `settle` called exactly once when it closes, errors or is cancelled, carrying the usage read on the way (undefined when none was seen). An event stream is read line by line for the last chunk's usage; a JSON body is buffered up to MAX_USAGE_BUFFER_BYTES and read at the end.
  */
-export function meterBody(
+function meterBody(
   response: Response,
   settle: (usage: CreditTokenCounts | undefined) => void
 ): Response {

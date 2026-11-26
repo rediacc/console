@@ -31,7 +31,7 @@ export const AI_USER_HEADER = 'x-rediacc-ai-user';
 export const AI_CONVERSATION_HEADER = 'x-rediacc-ai-conversation';
 
 /** Prefix of the `error` event code of a credit refusal; the refusal code follows. */
-export const AI_CREDITS_ERROR_PREFIX = 'AI_CREDITS_';
+const AI_CREDITS_ERROR_PREFIX = 'AI_CREDITS_';
 
 const ID_RE = /^[A-Za-z0-9_.:-]{1,128}$/;
 

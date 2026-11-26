@@ -149,7 +149,7 @@ type ApprovalRequest = z.infer<typeof ApprovalRequestSchema>;
 export type { ApprovalRequest };
 
 /** Where the loop keeps each conversation's mode (D4) and exact allow rules; the autonomy gate reads both. */
-export interface AiConversationModes {
+interface AiConversationModes {
   set(principal: SessionPrincipal, conversationId: string, mode: AiMode): void;
   get(principal: SessionPrincipal, conversationId: string): AiMode;
   allowExact(principal: SessionPrincipal, conversationId: string, command: AiApprovalCommand): void;
