@@ -31,8 +31,8 @@ function hasBinary(name: string): boolean {
 
 /** The line without its comment: a `#` at a word start counts only outside single and double quotes. */
 function stripComment(line: string): string {
-  // Quoted strings and plain characters are consumed in order, so a `#` inside quotes never matches the comment alternative.
-  const token = /"[^"]*"|'[^']*'|(?:^|(?<=\s))(#.*$)|[\s\S]/gy;
+  // Quoted strings and plain characters are consumed in order, so a `#` inside quotes never matches the comment alternative. An unclosed quote runs to the end of the line, so a `#` after it is still quoted text and the stray quote stays visible to the balance check.
+  const token = /"[^"]*(?:"|$)|'[^']*(?:'|$)|(?:^|(?<=\s))(#.*$)|[\s\S]/gy;
   let kept = '';
   for (const match of line.matchAll(token)) {
     if (match[1] !== undefined) break;
@@ -40,6 +40,18 @@ function stripComment(line: string): string {
   }
   return kept;
 }
+
+describe('stripComment', () => {
+  it('drops a trailing comment and keeps a # inside quotes', () => {
+    expect(stripComment('echo hi # note')).toBe('echo hi ');
+    expect(stripComment(`echo "a # b" 'c # d'`)).toBe(`echo "a # b" 'c # d'`);
+  });
+
+  it('keeps the text after an unclosed quote, so the stray quote is still counted', () => {
+    expect(stripComment(`echo "a # b 'c`)).toBe(`echo "a # b 'c`);
+    expect(structuralProblems('bash', `echo "a # b 'c`)).toContain('single quotes');
+  });
+});
 
 /** Quotes and brackets balance in a generated script; `[]` when they do. A text check, no replacement for the shell's own parser. */
 function structuralProblems(shell: string, script: string): string[] {

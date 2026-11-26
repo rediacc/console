@@ -43,6 +43,16 @@ export interface TaskRun {
   end(outcome: TaskEnd): Promise<void>;
 }
 
+/** The command a task is paused on: what the resumed turn tells the model it approved. */
+export interface HeldCall {
+  toolCallId: string;
+  name: string;
+  input: unknown;
+}
+
+/** D5: finished tasks kept per user for the result card; the oldest finished one goes first. */
+export const MAX_FINISHED_PER_USER = 20;
+
 /** What one turn of a task is given. */
 export interface TaskStep {
   /** The task's own signal: aborted by a cancel or a session end, never by a client leaving. */
@@ -50,6 +60,8 @@ export interface TaskStep {
   emit: (event: AiEvent) => void;
   /** True for the turn that follows an approved command. */
   resumed: boolean;
+  /** The command the approval released, on a resumed turn. */
+  held?: HeldCall;
 }
 
 export interface TaskStart {
@@ -79,6 +91,8 @@ interface Task extends TaskStart {
   reason?: string;
   abort: AbortController;
   events: AiEvent[];
+  /** The command the task is paused on. */
+  held?: HeldCall;
   /** Resolves when the task's current step has ended; used by tests and shutdown. */
   settled: Promise<void>;
 }
@@ -115,6 +129,8 @@ export class BackgroundTasks {
     };
     this.tasks.set(input.taskId, task);
     this.advance(task, false);
+    // Once the new task is in: a task that ends at once is finished already, and the cap is for what stays.
+    this.pruneFinished(input.owner);
     return { ok: true, task: viewOf(task) };
   }
 
@@ -135,19 +151,19 @@ export class BackgroundTasks {
     return this.owned(owner, taskId)?.events;
   }
 
-  /** The user approved the held command: the task runs its next step. False when it was not waiting. */
-  approve(owner: string, taskId: string): boolean {
+  /** The user approved the held command: the task runs its next step. False when it was not waiting, or `toolCallId` is another call's. */
+  approve(owner: string, taskId: string, toolCallId?: string): boolean {
     const task = this.owned(owner, taskId);
-    if (task?.state !== 'needs_approval') return false;
+    if (task?.state !== 'needs_approval' || !this.holds(task, toolCallId)) return false;
     task.state = 'running';
     this.advance(task, true);
     return true;
   }
 
   /** The user rejected the held command: the task ends `cancelled` without running it. */
-  async reject(owner: string, taskId: string): Promise<boolean> {
+  async reject(owner: string, taskId: string, toolCallId?: string): Promise<boolean> {
     const task = this.owned(owner, taskId);
-    if (task?.state !== 'needs_approval') return false;
+    if (task?.state !== 'needs_approval' || !this.holds(task, toolCallId)) return false;
     await this.finish(task, 'cancelled');
     return true;
   }
@@ -177,6 +193,21 @@ export class BackgroundTasks {
     }
   }
 
+  /** True when no call is named or the task is paused on the named one. */
+  private holds(task: Task, toolCallId: string | undefined): boolean {
+    return toolCallId === undefined || task.held?.toolCallId === toolCallId;
+  }
+
+  /** Drop the owner's oldest finished tasks beyond {@link MAX_FINISHED_PER_USER}; a live task is never dropped. */
+  private pruneFinished(owner: string): void {
+    const finished = [...this.tasks.values()].filter(
+      (t) => t.owner === owner && !LIVE.includes(t.state)
+    );
+    for (const task of finished.slice(0, Math.max(0, finished.length - MAX_FINISHED_PER_USER))) {
+      this.tasks.delete(task.taskId);
+    }
+  }
+
   private owned(owner: string, taskId: string): Task | undefined {
     const task = this.tasks.get(taskId);
     return task?.owner === owner ? task : undefined;
@@ -199,26 +230,30 @@ export class BackgroundTasks {
       await this.finish(task, 'failed', SESSION_EXPIRED_REASON);
       return;
     }
-    let held = false;
-    let failure: string | undefined;
+    const seen: StepSeen = {};
+    const released = task.held;
     try {
       await task.step({
         signal: task.abort.signal,
         resumed,
-        emit: (event) => {
-          task.events.push(event);
-          if (event.type === 'approval_required') held = true;
-          if (event.type === 'error') failure = event.message;
-        },
+        ...(resumed && released ? { held: released } : {}),
+        emit: (event) => noteEvent(task, event, seen),
       });
     } catch (error) {
-      failure = error instanceof Error ? error.message : String(error);
+      seen.failure = error instanceof Error ? error.message : String(error);
     }
+    await this.settleStep(task, seen);
+  }
+
+  /** Where a task stands once a step ended: failed, paused on a held command, or done. */
+  private async settleStep(task: Task, seen: StepSeen): Promise<void> {
     if (task.state !== 'running') return;
     if (!task.sessionAlive()) await this.finish(task, 'failed', SESSION_EXPIRED_REASON);
-    else if (failure !== undefined) await this.finish(task, 'failed', failure);
-    else if (held) task.state = 'needs_approval';
-    else await this.finish(task, 'succeeded');
+    else if (seen.failure !== undefined) await this.finish(task, 'failed', seen.failure);
+    else if (seen.held) {
+      task.held = seen.held;
+      task.state = 'needs_approval';
+    } else await this.finish(task, 'succeeded');
   }
 
   private async finish(task: Task, state: TaskEnd['state'], reason?: string): Promise<void> {
@@ -229,6 +264,21 @@ export class BackgroundTasks {
       .end({ state, ...(reason ? { errorCode: 'AI_TASK_FAILED' } : {}) })
       .catch(() => undefined);
   }
+}
+
+/** What one step reported: the command it paused on, or the failure it ended with. */
+interface StepSeen {
+  held?: HeldCall;
+  failure?: string;
+}
+
+/** Keep an event of a step and note a hold or a failure it carries. */
+function noteEvent(task: Task, event: AiEvent, seen: StepSeen): void {
+  task.events.push(event);
+  if (event.type === 'approval_required') {
+    seen.held = { toolCallId: event.toolCallId, name: event.name, input: event.input };
+  }
+  if (event.type === 'error') seen.failure = event.message;
 }
 
 function viewOf(task: Task): TaskView {

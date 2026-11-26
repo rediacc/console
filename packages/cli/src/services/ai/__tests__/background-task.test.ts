@@ -8,6 +8,7 @@ import { describe, expect, it } from 'vitest';
 import {
   AI_TASK_LIMIT,
   BackgroundTasks,
+  MAX_FINISHED_PER_USER,
   MAX_TASKS_PER_USER,
   SESSION_EXPIRED_REASON,
   TASK_PATH_KEY,
@@ -81,8 +82,42 @@ function harness(): Harness {
 const NEVER = (): Promise<void> => new Promise(() => undefined);
 
 describe('background tasks', () => {
-  it('is recorded as an ai.task run', () => {
+  it('is recorded as an ai.task run, opened once per accepted start', () => {
     expect(TASK_PATH_KEY).toBe('ai.task');
+    const h = harness();
+    h.start('t1', NEVER);
+    expect(h.begun.count).toBe(1);
+  });
+
+  it('drops the oldest finished tasks past the cap, never a live one (bac5934c.5)', async () => {
+    const h = harness();
+    const done = () => Promise.resolve();
+    h.start('live', NEVER);
+    for (let i = 0; i < MAX_FINISHED_PER_USER + 5; i += 1) {
+      h.start(`t${i}`, done);
+      await h.tasks.settled(`t${i}`);
+    }
+    h.start('last', done);
+    await h.tasks.settled('last');
+    const ids = h.tasks.list('org\u0000alice').map((t) => t.taskId);
+    expect(ids).toContain('live');
+    expect(ids).toContain('last');
+    expect(ids).not.toContain('t0');
+    expect(ids.filter((id) => id.startsWith('t'))).toHaveLength(MAX_FINISHED_PER_USER);
+    // Control: another user's finished tasks are untouched.
+    h.start('bob1', done, 'org\u0000bob');
+    await h.tasks.settled('bob1');
+    expect(h.tasks.list('org\u0000bob')).toHaveLength(1);
+  });
+
+  it('answers only the call it is paused on (bac5934c.2)', async () => {
+    const h = harness();
+    h.start('t1');
+    await h.tasks.settled('t1');
+    expect(h.tasks.approve('org\u0000alice', 't1', 'call-other')).toBe(false);
+    expect(await h.tasks.reject('org\u0000alice', 't1', 'call-other')).toBe(false);
+    expect(h.tasks.get('org\u0000alice', 't1')?.state).toBe('needs_approval');
+    expect(h.tasks.approve('org\u0000alice', 't1', 'call-1')).toBe(true);
   });
 
   it('keeps running when the client that started it disconnects', async () => {

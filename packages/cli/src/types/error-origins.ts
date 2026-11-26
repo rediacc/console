@@ -58,16 +58,19 @@ export const NAMED_ERROR_ORIGINS: Record<string, ErrorOrigin> = {
   RENET_DOWNGRADE_REFUSED: 'user',
   RENET_UPLOAD_REFUSED_IN_EXECUTOR: 'environment',
   ACCESS_LOCKOUT: 'user',
-  GRAND_REPO_DENIED: 'user',
   ACCESS_KEY_CONFLICT: 'user',
   ACCESS_KEY_DUPLICATE_BLOB: 'user',
   ACCESS_FILE_CHANGED: 'environment',
+  GRAND_REPO_DENIED: 'user',
   TIMEOUT: 'environment',
   EXECUTION_ERROR: 'environment',
   POLICY_DENIED: 'user',
   // The policy decision a grand-guarded destructive call gets until the caller confirms it (LM4: elicitation or the `confirm` argument).
   CONFIRMATION_REQUIRED: 'user',
   EXECUTOR_FAILED: 'environment',
+  // Background AI tasks (services/ai/background-task.ts): a second start of one conversation, and a task whose turn failed.
+  AI_TASK_EXISTS: 'user',
+  AI_TASK_FAILED: 'environment',
 };
 
 function lookup(code: string | undefined): ErrorOrigin | undefined {

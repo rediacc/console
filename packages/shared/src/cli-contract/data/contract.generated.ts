@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'a40777136b75bc62';
+export const CLI_CONTRACT_VERSION = '4d9d8e75fbea7e5f';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "a40777136b75bc62",
+  "version": "4d9d8e75fbea7e5f",
   "languages": [
     "ar",
     "de",
@@ -18874,6 +18874,14 @@ export const CLI_CONTRACT: CliContract = {
     {
       "code": "ACCESS_LOCKOUT",
       "origin": "user"
+    },
+    {
+      "code": "AI_TASK_EXISTS",
+      "origin": "user"
+    },
+    {
+      "code": "AI_TASK_FAILED",
+      "origin": "environment"
     },
     {
       "code": "AMBIGUOUS",

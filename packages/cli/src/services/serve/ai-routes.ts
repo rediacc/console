@@ -120,7 +120,7 @@ import {
   AI_TASK_ROUTES,
   type PreparedTask,
   registerTaskRoutes,
-  TASK_RESUME_MESSAGE,
+  resumeMessageFor,
 } from './ai-task-routes.js';
 import { readRecording, transcription } from './ai-transcribe-route.js';
 import { createBusyCounter } from './busy.js';
@@ -238,7 +238,7 @@ export function registerAiRoutes(
       if (remember && body.decision === 'approve' && !destructive && !grand) {
         ai.modes.allowExact(principal, body.conversationId, body.command);
       }
-      await tasks.answer(principal, body.conversationId, body.decision === 'approve');
+      await tasks.answer(principal, body);
       return c.json(
         {
           conversationId: body.conversationId,
@@ -560,12 +560,12 @@ export function registerAiRoutes(
       principal,
       conversationId: body.conversationId,
       configSessionId,
-      step: ({ signal, emit, resumed }) =>
+      step: ({ signal, emit, resumed, held }) =>
         runTurn(turn, {
           signal,
           emit,
           forward: () => undefined,
-          ...(resumed ? { resume: TASK_RESUME_MESSAGE } : {}),
+          ...(resumed ? { resume: resumeMessageFor(held) } : {}),
         }),
     };
   }

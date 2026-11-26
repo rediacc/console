@@ -13,6 +13,7 @@ import type { Context, Hono } from 'hono';
 import {
   AI_TASK_LIMIT,
   BackgroundTasks,
+  type HeldCall,
   TASK_PATH_KEY,
   type TaskRun,
   type TaskStep,
@@ -30,6 +31,16 @@ export const AI_TASK_ROUTES = {
 /** The user message a task resumes with once its held command was approved. */
 export const TASK_RESUME_MESSAGE = 'The command you proposed was approved. Run it now.';
 
+/** The longest input of the held call a resume message repeats. */
+const MAX_HELD_INPUT_CHARS = 2000;
+
+/** The resume message, naming the call the approval released: the resumed turn starts from the request alone, so the model never saw it. */
+export function resumeMessageFor(held: HeldCall | undefined): string {
+  if (!held) return TASK_RESUME_MESSAGE;
+  const input = JSON.stringify(held.input ?? {}).slice(0, MAX_HELD_INPUT_CHARS);
+  return `The command you proposed (the ${held.name} tool with input ${input}) was approved. Run it now.`;
+}
+
 const UNKNOWN_TASK = 'AI_TASK_UNKNOWN';
 const NO_STORE = { 'Cache-Control': 'no-store' };
 
@@ -42,8 +53,11 @@ export interface PreparedTask {
 }
 
 export interface TaskRoutes {
-  /** The user's answer to the command a task holds: approve runs its next step, a rejection ends it. */
-  answer: (principal: SessionPrincipal, conversationId: string, approve: boolean) => Promise<void>;
+  /** The user's answer to the command a task holds: approve runs its next step, a rejection ends it. Only the held call's own id answers it. */
+  answer: (
+    principal: SessionPrincipal,
+    answer: { conversationId: string; toolCallId: string; decision: 'approve' | 'reject' }
+  ) => Promise<void>;
 }
 
 /** One key per user, so the cap and every task route are the caller's own. */
@@ -134,9 +148,9 @@ export function registerTaskRoutes(
   });
 
   return {
-    answer: async (principal, conversationId, approve) => {
-      if (approve) tasks.approve(ownerOf(principal), conversationId);
-      else await tasks.reject(ownerOf(principal), conversationId);
+    answer: async (principal, { conversationId, toolCallId, decision }) => {
+      if (decision === 'approve') tasks.approve(ownerOf(principal), conversationId, toolCallId);
+      else await tasks.reject(ownerOf(principal), conversationId, toolCallId);
     },
   };
 }

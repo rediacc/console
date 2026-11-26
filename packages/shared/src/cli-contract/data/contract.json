@@ -1,5 +1,5 @@
 {
-  "version": "a40777136b75bc62",
+  "version": "4d9d8e75fbea7e5f",
   "languages": [
     "ar",
     "de",
@@ -18866,6 +18866,14 @@
     {
       "code": "ACCESS_LOCKOUT",
       "origin": "user"
+    },
+    {
+      "code": "AI_TASK_EXISTS",
+      "origin": "user"
+    },
+    {
+      "code": "AI_TASK_FAILED",
+      "origin": "environment"
     },
     {
       "code": "AMBIGUOUS",
