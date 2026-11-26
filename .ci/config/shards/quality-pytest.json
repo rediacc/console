@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T10:57:01.863Z",
+  "generatedAt": "2026-11-26T13:26:34.251Z",
   "legs": [
     {
       "index": 1,
@@ -111,6 +111,7 @@
         "pytest:.ci/rediacc_ci/tests/test_plan_impl_facts.py",
         "pytest:.ci/rediacc_ci/tests/test_plan_record_index_view.py",
         "pytest:.ci/rediacc_ci/tests/test_planrec_done_commit_cost.py",
+        "pytest:.ci/rediacc_ci/tests/test_preview_delegated_licence_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_private_run_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_license_e2e.py",
@@ -532,6 +533,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_feed_stages.py",
         "pytest:.claude/rediacc_hooks/tests/test_shellscan_writes.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_armed_stop.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_bgsweep_livework.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_checklists.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_handover.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_leases.py",
@@ -638,6 +640,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_enterprise_lookup.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_free_to_registered.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_mirror_config_store.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_publish_models.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_bucket_copy.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_rebind_code.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_server_reports.py",
@@ -877,6 +880,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_githook_reference_transaction_landing.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py",
+        "pytest:.claude/rediacc_hooks/tests/test_guarded_path_edit.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_delegates.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_trapguard.py",
         "pytest:.claude/rediacc_hooks/tests/test_post_bash_commit_landed.py",
@@ -970,6 +974,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_arg_refusal.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_clone_d1.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_proxy.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_preview_account.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_purge_media_cache.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_set_account_worker_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_signer_lab.py",
