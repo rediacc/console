@@ -86,7 +86,7 @@ export function registerTaskRoutes(
         owner: ownerOf(prepared.principal),
         taskId: prepared.conversationId,
         step: prepared.step,
-        run: runOf(prepared.principal),
+        beginRun: () => runOf(prepared.principal),
         sessionAlive: aliveOf(prepared),
       });
       if (started.ok) return c.json(started.task, 202);

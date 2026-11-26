@@ -30,6 +30,8 @@ const APPROVAL: AiEvent = {
 interface Harness {
   tasks: BackgroundTasks;
   ended: TaskEnd[];
+  /** How many run records were opened: a refused start opens none. */
+  begun: { count: number };
   /** The commands the task ran: the held command runs only in a resumed step. */
   ran: string[];
   alive: { value: boolean };
@@ -43,6 +45,7 @@ interface Harness {
 function harness(): Harness {
   const tasks = new BackgroundTasks();
   const ended: Harness['ended'] = [];
+  const begun = { count: 0 };
   const ran: string[] = [];
   const alive = { value: true };
   const proposing = (input: TaskStep): Promise<void> => {
@@ -53,6 +56,7 @@ function harness(): Harness {
   return {
     tasks,
     ended,
+    begun,
     ran,
     alive,
     start: (taskId, step = proposing, owner = 'org\u0000alice') =>
@@ -60,11 +64,14 @@ function harness(): Harness {
         owner,
         taskId,
         step,
-        run: {
-          end: (outcome) => {
-            ended.push(outcome);
-            return Promise.resolve();
-          },
+        beginRun: () => {
+          begun.count += 1;
+          return {
+            end: (outcome) => {
+              ended.push(outcome);
+              return Promise.resolve();
+            },
+          };
         },
         sessionAlive: () => alive.value,
       }),
@@ -134,8 +141,13 @@ describe('background tasks', () => {
     expect(h.start('t1', NEVER).ok).toBe(true);
     expect(h.start('t2').ok).toBe(true);
     await h.tasks.settled('t2');
+    const opened = h.begun.count;
     const third = h.start('t3', NEVER);
     expect(third).toMatchObject({ ok: false, code: AI_TASK_LIMIT });
+    // A refused start opens no run record (bac5934c.1): the run index would otherwise hold a run nothing ends.
+    expect(h.begun.count).toBe(opened);
+    expect(h.start('t1', NEVER)).toMatchObject({ ok: false, code: 'AI_TASK_EXISTS' });
+    expect(h.begun.count).toBe(opened);
     // Control: the cap is per user.
     expect(h.start('t4', NEVER, 'org\u0000bob').ok).toBe(true);
     await h.tasks.cancel('org\u0000alice', 't1');

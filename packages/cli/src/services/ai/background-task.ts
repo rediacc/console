@@ -58,7 +58,8 @@ export interface TaskStart {
   taskId: string;
   /** Runs one turn; a thrown error ends the task `failed`. */
   step: (input: TaskStep) => Promise<void>;
-  run: TaskRun;
+  /** Opens the task's run record; called only once the start is accepted, so a refused start leaves no run behind. */
+  beginRun: () => TaskRun;
   /** False once the session key behind the task is gone. */
   sessionAlive: () => boolean;
 }
@@ -73,6 +74,7 @@ export interface TaskView {
 }
 
 interface Task extends TaskStart {
+  run: TaskRun;
   state: TaskState;
   reason?: string;
   abort: AbortController;
@@ -105,6 +107,7 @@ export class BackgroundTasks {
     }
     const task: Task = {
       ...input,
+      run: input.beginRun(),
       state: 'running',
       abort: new AbortController(),
       events: [],
