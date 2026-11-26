@@ -17,7 +17,7 @@ import process from 'node:process';
 
 const PREFIX_SHAPE = /^[A-Za-z][A-Za-z0-9_.-]*-$/;
 
-/** Past this many bytes of inherited TMPDIR a new run dir is rooted at /tmp (the tsx socket-path budget in runtmp.py). */
+/** Past this many bytes of inherited TMPDIR a new run dir is rooted at `shallowRoot()` (the tsx socket-path budget in runtmp.py). */
 export const DEEP_TMPDIR = 24;
 
 function pidNamespace(): string {
@@ -114,9 +114,59 @@ export function removeOwned(): void {
   SHARED.clear();
 }
 
+/** The candidates `rediacc_ci.quality.seams.SYSTEM_TEMP_CANDIDATES` names, in its order. */
+const SYSTEM_TEMP_CANDIDATES = ['/tmp', '/var/tmp', '/usr/tmp'];
+
+/** Whether the longest mount point above `dir` is tmpfs or ramfs; false when /proc/mounts cannot be read (seams `_on_ram_filesystem`). */
+function onRamFilesystem(dir: string): boolean {
+  let rows: string[][];
+  try {
+    rows = fs
+      .readFileSync('/proc/mounts', 'utf8')
+      .split('\n')
+      .map((line) => line.split(' '));
+  } catch {
+    return false;
+  }
+  let best = -1;
+  let ram = false;
+  for (const row of rows) {
+    if (row.length < 3) continue;
+    const mount = row[1].replace(/\\([0-7]{3})/g, (_m, oct: string) =>
+      String.fromCharCode(Number.parseInt(oct, 8))
+    );
+    const inside = mount === '/' || dir === mount || dir.startsWith(`${mount}/`);
+    const depth = mount === '/' ? 0 : mount.split('/').length - 1;
+    if (inside && depth > best) {
+      best = depth;
+      ram = row[2] === 'tmpfs' || row[2] === 'ramfs';
+    }
+  }
+  return ram;
+}
+
+/**
+ * The shallow root a too-deep run is rooted at, the TypeScript twin of runtmp.py `shallow_root`: the gate seams' system temp
+ * base (`seams.system_temp_base`), so both languages put a deep run dir on the same filesystem. /tmp, except where /tmp is a
+ * tmpfs and a disk candidate exists. Rooting at a bare /tmp while the Python side moved to /var/tmp put trace-honest's
+ * sparse directory on another device than the fixture it hard-links, and `cp -al` failed with EXDEV.
+ */
+export function shallowRoot(): string | undefined {
+  const usable: string[] = [];
+  for (const candidate of SYSTEM_TEMP_CANDIDATES) {
+    try {
+      fs.accessSync(candidate, fs.constants.W_OK | fs.constants.X_OK);
+      if (fs.statSync(candidate).isDirectory()) usable.push(fs.realpathSync(candidate));
+    } catch {
+      // not usable: absent, not a directory, or not writable
+    }
+  }
+  return usable.find((dir) => !onRamFilesystem(dir)) ?? usable[0];
+}
+
 function shallowBase(): string | undefined {
   const inherited = os.tmpdir();
-  if (inherited.length > DEEP_TMPDIR && fs.existsSync('/tmp')) return '/tmp';
+  if (inherited.length > DEEP_TMPDIR) return shallowRoot();
   return undefined;
 }
 

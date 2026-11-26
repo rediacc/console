@@ -389,6 +389,26 @@ def _sweep_removes_a_killed_typescript_dir(tmp_path: pathlib.Path) -> None:
     assert not dead.exists()
 
 
+def test_the_typescript_shallow_root_is_the_python_one(tmp_path: pathlib.Path) -> None:
+    """Both twins root a too-deep run dir on one filesystem: when runtmp.py moved to the seams' base (/var/tmp beside a tmpfs /tmp) and runtmp.ts kept a bare /tmp, trace-honest's sparse dir landed on another device than the fixture it hard-links and `cp -al` failed with EXDEV."""
+    script = tmp_path / "ts-shallow.mts"
+    script.write_text(
+        "import { shallowRoot } from %r;\nprocess.stdout.write(String(shallowRoot()) + '\\n');\n"
+        % str(REPO_ROOT / "scripts/lib/runtmp.ts")
+    )
+    out = subprocess.run(
+        ["npx", "tsx", str(script)],
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        cwd=str(REPO_ROOT),
+        timeout=120,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == str(runtmp.shallow_root())
+
+
 def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
     _sweep_removes_a_killed_typescript_dir(tmp_path)
 
