@@ -102,7 +102,7 @@ DEBUG_ON = "true"
 
 
 def ensure_utf8(stream) -> None:
-    """Make ONE stream UTF-8 when it can be and is not already. A no-op on Linux.
+    """Make ONE stream UTF-8 when it can be and is not already. A no-op on a UTF-8 stream, which is the usual Linux case; a stream with another encoding (a non-UTF-8 locale, the Windows console) is reconfigured on any OS.
 
     WHY HERE. Every ported entry point prints the glyphs above (`\u2192`, `\u2713`) through this module, and on Windows stdout and stderr are the console code page (cp1252), which has no arrow: the text came out as the literal escape or a replacement character (measured on a Windows 11 VM, the "Secure Storage (dpapi)" ci-quality job). One seam beats a `reconfigure` in every module, and `errors="replace"` keeps a stray unencodable character from becoming a traceback. A stream without `reconfigure` (StringIO, a mock) is left alone.
     """
@@ -119,7 +119,10 @@ def ensure_utf8(stream) -> None:
 
 
 def ensure_utf8_std() -> None:
-    """`ensure_utf8` on the process's real stdout and stderr, once, at import."""
+    """`ensure_utf8` on the process's real stdout and stderr, once, at import.
+
+    A deliberate process-wide effect: importing this module makes both streams `errors="replace"`, so an unencodable character prints as `?` instead of raising. Every importer is a CI entry point whose log line is worth more than its traceback.
+    """
     for stream in (sys.stdout, sys.stderr):
         ensure_utf8(stream)
 
@@ -196,8 +199,9 @@ class Logger:
         matters most, so the flush is not optional and there is no `flush=`
         argument to get wrong.
         """
-        # An explicit or replaced stream may never have met `ensure_utf8_std`.
-        ensure_utf8(self.stream)
+        # Only the live `sys.stderr` (which a test or a caller may have replaced since import) is ours to reconfigure; an explicit stream belongs to the caller, whose later writes must keep its encoding.
+        if self._stream is None:
+            ensure_utf8(self.stream)
         self.stream.write(self.format(level, message) + "\n")
         # A stream without flush(), or a closed one, must not turn a log line into a traceback: the place a logger is called is the place something has already gone wrong.
         with contextlib.suppress(AttributeError, ValueError):

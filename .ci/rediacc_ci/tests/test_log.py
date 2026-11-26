@@ -395,17 +395,47 @@ def test_bash_is_available_at_all():
     assert proc.stdout.strip() == "alive"
 
 
-def test_glyph_is_written_as_utf8_to_a_cp1252_stream():
-    """On Windows the console is cp1252, which has no arrow. The logger makes the stream UTF-8 first."""
+def test_glyph_is_written_as_utf8_to_a_cp1252_stream(monkeypatch):
+    """On Windows the console is cp1252, which has no arrow. The default logger makes the live stderr UTF-8 first."""
     raw = io.BytesIO()
     stream = io.TextIOWrapper(raw, encoding="cp1252", errors="strict", newline="\n")
-    log.Logger(stream=stream, colour=False).step("go")
+    monkeypatch.setattr("sys.stderr", stream)
+    log.Logger(colour=False).step("go")
     stream.flush()
     assert raw.getvalue() == "→ go\n".encode()
 
 
-def test_ensure_utf8_leaves_utf8_and_non_wrapper_streams_alone():
-    utf8 = io.TextIOWrapper(io.BytesIO(), encoding="utf-8")
-    log.ensure_utf8(utf8)
-    assert utf8.encoding == "utf-8"
+def test_explicit_stream_keeps_its_encoding():
+    """A caller's own stream is not reconfigured: its later writes keep their encoding and error mode."""
+    stream = io.TextIOWrapper(io.BytesIO(), encoding="cp1252", errors="ignore")
+    log.Logger(stream=stream, colour=False).info("plain")
+    assert stream.encoding == "cp1252"
+    assert stream.errors == "ignore"
+
+
+class _Recorder:
+    """A stream that says it is UTF-8 and records any `reconfigure` call."""
+
+    def __init__(self, encoding):
+        self.encoding = encoding
+        self.calls = []
+
+    def reconfigure(self, **kwargs):
+        self.calls.append(kwargs)
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "UTF-8", "utf_8", "utf8"])
+def test_ensure_utf8_does_not_reconfigure_a_utf8_stream(encoding):
+    stream = _Recorder(encoding)
+    log.ensure_utf8(stream)
+    assert stream.calls == []
+
+
+def test_ensure_utf8_reconfigures_a_non_utf8_stream():
+    stream = _Recorder("cp1252")
+    log.ensure_utf8(stream)
+    assert stream.calls == [{"encoding": "utf-8", "errors": "replace"}]
+
+
+def test_ensure_utf8_leaves_non_wrapper_streams_alone():
     log.ensure_utf8(io.StringIO())
