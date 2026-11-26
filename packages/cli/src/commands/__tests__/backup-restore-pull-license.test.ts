@@ -194,7 +194,7 @@ describe('backup restore (pull route) licenses the minted GUID before backup_pul
     expect(fnCalls().filter((f) => f === 'backup_pull')).toHaveLength(1);
     // Every lease is released: the route probe's, the licence context's, the size measure's and the pull job's session hold.
     expect(mockRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
-    // At least the three pre-job leases happened; the job's own hold is not pinned, so a lease change in runJob cannot fail this for a count reason.
+    // A floor on the total acquire count (the route probe, licence context and size measure make three before the job). The job's own hold is not pinned, so this does not say which lease made up the count.
     expect(mockAcquire.mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
