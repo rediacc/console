@@ -314,7 +314,8 @@ export async function runTicketSteps(
     if (options.deadline === undefined) await settleAll(session, due);
     else await settleWithin(session, due, options.deadline, deps.now ?? Date.now, report);
   } finally {
-    (await held)();
+    // Not awaited: a hold whose connect hangs must not carry the call past its deadline. It releases whenever it settles.
+    void held.then((release) => release());
   }
   return report;
 }

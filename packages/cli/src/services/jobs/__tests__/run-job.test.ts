@@ -182,6 +182,26 @@ describe('exactly once', () => {
     expect(machine.done.size).toBe(0);
     expect(store.find(JOB_ID)?.stepsDone).toEqual([]);
   });
+
+  it('returns at the deadline while the session hold is still connecting, and releases the hold when it lands', async () => {
+    const ticket = addTicket([UP()], 'succeeded');
+    const machine = fakeMachine();
+    const h = handlers(['postRepoUpTasks']);
+    const release = vi.fn();
+    let land: (r: () => void) => void = () => undefined;
+    const pending = new Promise<() => void>((resolve) => {
+      land = resolve;
+    });
+    const deps = { ...stepDeps(machine.claim, h.resolve), hold: () => pending };
+    const report = await runTicketSteps(store, ticket, { state: 'succeeded' }, deps, {
+      deadline: 0,
+    });
+    // The call came back with the hold unresolved: the hold never extends the deadline.
+    expect(report.deferred).toEqual(['postRepoUpTasks']);
+    expect(release).not.toHaveBeenCalled();
+    land(release);
+    await vi.waitFor(() => expect(release).toHaveBeenCalledTimes(1));
+  });
 });
 
 describe('step timings', () => {
