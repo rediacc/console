@@ -135,6 +135,32 @@ async function readDayHeader(
   }
 }
 
+/**
+ * A header that names a day other than the file before it. A named day after that file is a day file
+ * missing from the input (a gap); a null or earlier one is a header that was relinked (an edit), since
+ * the day it names is not missing and the file before it is present.
+ */
+function linkElsewhere(
+  prevDay: string | null,
+  previousDay: string,
+  day: string,
+  found: Findings
+): void {
+  if (prevDay !== null && prevDay > previousDay && prevDay < day) {
+    found.gaps.push({
+      source: 'audit',
+      ref: prevDay,
+      reason: `day file missing between ${previousDay} and ${day}`,
+    });
+    return;
+  }
+  found.edits.push({
+    source: 'audit',
+    ref: day,
+    reason: `header links to ${prevDay ?? GENESIS_REF} but ${previousDay} precedes it`,
+  });
+}
+
 /** Compare a day header's link with the file before it: a missing day is a gap, a changed one an edit. */
 function linkDay(
   header: DayHeader,
@@ -151,11 +177,7 @@ function linkDay(
       });
     }
   } else if (header.prevDay !== previous.day) {
-    found.gaps.push({
-      source: 'audit',
-      ref: header.prevDay ?? GENESIS_REF,
-      reason: `day file missing between ${previous.day} and ${day}`,
-    });
+    linkElsewhere(header.prevDay, previous.day, day, found);
   } else if (header.prevSha256 !== previous.sha256) {
     found.edits.push({
       source: 'audit',
@@ -165,7 +187,10 @@ function linkDay(
   }
 }
 
-/** Check the audit day files in day order. */
+/**
+ * Check the audit day files in day order. The newest file has no successor in the input, so its own
+ * bytes are attested only by the head hash this returns, which the report stamps for a later reader to compare.
+ */
 export async function verifyAuditDays(
   org: string,
   files: readonly AuditDayInput[]

@@ -69,7 +69,35 @@ describe('verifyAuditDays', () => {
     files[1] = { day: '2026-11-02', bytes: dayFile('2026-11-02', null, 3) };
     const result = await verifyAuditDays(ORG, files);
     expect(result.edits.map((e) => e.ref)).toContain('2026-11-02');
-    expect(result.edits.find((e) => e.ref === '2026-11-02')?.reason).toMatch(/changed/);
+    expect(result.edits.some((e) => e.ref === '2026-11-02' && /changed/.test(e.reason))).toBe(true);
+  });
+
+  it('reports a replaced day file that names no predecessor as an edit, not a missing day', async () => {
+    const files = await chainOfDays(['2026-11-01', '2026-11-02', '2026-11-03']);
+    files[1] = { day: '2026-11-02', bytes: dayFile('2026-11-02', null, 3) };
+    const result = await verifyAuditDays(ORG, files);
+    expect(result.gaps).toEqual([]);
+    expect(result.edits).toContainEqual({
+      source: 'audit',
+      ref: '2026-11-02',
+      reason: expect.stringContaining('links to genesis'),
+    });
+  });
+
+  it('cannot see an edit of the newest day, so the head hash stamps its bytes', async () => {
+    const files = await chainOfDays(['2026-11-01', '2026-11-02']);
+    const edited = dayFile(
+      '2026-11-02',
+      { day: '2026-11-01', sha256: await sha256Hex(files[0]?.bytes ?? new Uint8Array()) },
+      5
+    );
+    const result = await verifyAuditDays(ORG, [
+      files[0],
+      { day: '2026-11-02', bytes: edited },
+    ] as AuditDayInput[]);
+    expect(result.edits).toEqual([]);
+    expect(result.head?.sha256).toBe(await sha256Hex(edited));
+    expect(result.head?.sha256).not.toBe(await sha256Hex(files[1]?.bytes ?? new Uint8Array()));
   });
 
   it('reports a flipped byte as an edit at that day', async () => {
@@ -232,6 +260,60 @@ describe('verifyBatchChains', () => {
         ref: 'machine-1#1',
         reason: 'prev_hash does not match the previous batch',
       },
+    ]);
+  });
+
+  it('refuses a first batch at seq 0 whose prev_hash is not genesis', async () => {
+    const s = signer();
+    const forged = await makeBatch(s, 0, 'b'.repeat(64));
+    const result = await verifyBatchChains([forged.input], async () => s.key);
+    expect(result.edits).toEqual([
+      {
+        source: 'forensics',
+        ref: 'machine-1#0',
+        reason: 'first batch does not start from genesis',
+      },
+    ]);
+    const genuine = await makeBatch(s, 0, GENESIS_HASH);
+    expect((await verifyBatchChains([genuine.input], async () => s.key)).edits).toEqual([]);
+  });
+
+  it('treats an absent pii section as a redaction and an absent records section as a gap', async () => {
+    const s = signer();
+    const pii = new Uint8Array(Buffer.from('pii-bytes'));
+    const header: BatchHeader = {
+      schema: 1,
+      machine_id: 'machine-1',
+      seq: 0,
+      prev_hash: GENESIS_HASH,
+      cut_at: '2026-11-23T10:00:00Z',
+      level: 'standard',
+      sections: [
+        {
+          repo_guid: GUID,
+          kind: 'records',
+          sha256: await sha256Hex(RECORDS),
+          bytes: RECORDS.length,
+        },
+        { repo_guid: GUID, kind: 'pii', sha256: await sha256Hex(pii), bytes: pii.length },
+      ],
+    };
+    const headerBytes = encodeHeader(header);
+    const signature = s.sign(headerBytes);
+    const input = (sections: [string, Uint8Array][]): BatchInput => ({
+      headerBytes,
+      signature,
+      sections: new Map(sections),
+    });
+    const redacted = await verifyBatchChains(
+      [input([[`${GUID}/records`, RECORDS]])],
+      async () => s.key
+    );
+    expect(redacted.gaps).toEqual([]);
+    expect(redacted.edits).toEqual([]);
+    const lost = await verifyBatchChains([input([[`${GUID}/pii`, pii]])], async () => s.key);
+    expect(lost.gaps).toEqual([
+      { source: 'forensics', ref: 'machine-1#0', reason: expect.stringContaining('is absent') },
     ]);
   });
 
