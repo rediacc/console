@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: es
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Descripción general
 
-Dos servidores MCP (Model Context Protocol) exponen el mismo registro de herramientas:
+Dos servidores MCP (Model Context Protocol) toman sus herramientas de un único registro, y el servidor remoto ofrece un subconjunto:
 
 | Servidor | Transporte | Se ejecuta | Herramientas |
 |---|---|---|---|
@@ -276,7 +276,7 @@ El servidor MCP local aplica dos capas de protección. Los límites del servidor
 
 ### Modo solo-fork (predeterminado)
 
-De forma predeterminada, el servidor se ejecuta en **modo solo-fork**: las herramientas de escritura (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) solo pueden operar sobre repositorios fork. Los agentes no pueden tocar los repositorios grand (originales). Por diseño.
+De forma predeterminada, el servidor se ejecuta en **modo solo-fork**: las herramientas de escritura (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`) solo pueden operar sobre repositorios fork. Los agentes no pueden tocar los repositorios grand (originales). Por diseño.
 
 > **Los secretos por repositorio son exclusivos de la CLI por diseño.** `repo_secret_set` y `repo_secret_unset` no se exponen como herramientas MCP de manera intencional. Las escrituras requieren una precondición `--current <valor-anterior>` (o `--rotate-secret` para confirmar una rotación no verificada), y esa ceremonia necesita supervisión humana. Los agentes que necesiten sugerir una rotación de secreto deben llamar a `repo_secret_get` para confirmar el hash, y luego transmitir al usuario el comando CLI correspondiente mediante el campo `next.options[].run` del envelope de error JSON. Consulta [Seguridad de agentes IA](/en/docs/ai-agents-safety#structured-next-action-hints) para ver el patrón completo, y [Repositorios § Secretos](/en/docs/repositories#secrets) para la guía dirigida al operador.
 

@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: ja
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## 概要
 
-2つのMCP（Model Context Protocol）サーバーが、同じツールレジストリを公開します。
+2つのMCP（Model Context Protocol）サーバーは1つのレジストリからツールを取得し、リモートサーバーはその一部を提供します。
 
 | サーバー | トランスポート | 実行方法 | ツール |
 |---|---|---|---|
@@ -276,7 +276,7 @@ Workerは、PKCE（S256のみ）に対応したOAuth 2.1認可サーバーです
 
 ### フォーク限定モード（デフォルト）
 
-サーバーはデフォルトで**フォーク限定モード**で動作します。書き込みツール（`repo_up`、`repo_down`、`repo_delete`、`repo_exec`）が操作できるのはフォークのリポジトリだけです。エージェントはグランド（元）のリポジトリに触れられません。これは意図した設計です。
+サーバーはデフォルトで**フォーク限定モード**で動作します。書き込みツール（`repo_up`、`repo_down`、`repo_delete`、`repo_exec`、`repo_push`、`repo_pull`）が操作できるのはフォークのリポジトリだけです。エージェントはグランド（元）のリポジトリに触れられません。これは意図した設計です。
 
 > **リポジトリごとのシークレットは設計上CLIのみで管理します。** `repo_secret_set` と `repo_secret_unset` は意図的にMCPツールとして公開していません。書き込みには `--current <前回の値>` という事前条件（または未検証ローテーションを承認する `--rotate-secret`）が必要であり、この手順は人間が確認する必要があります。シークレットのローテーションを提案するエージェントは、`repo_secret_get` でダイジェストを確認したうえで、JSONエラーエンベロープの `next.options[].run` フィールドを通じてオペレーター向けのCLIコマンドをユーザーに伝えてください。完全なパターンについては [AIエージェントの安全性](/en/docs/ai-agents-safety#structured-next-action-hints)、ユーザー向けの手順については [リポジトリ § シークレット](/en/docs/repositories#secrets) を参照してください。
 

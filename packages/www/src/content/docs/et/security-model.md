@@ -26,7 +26,7 @@ Salvestatud konfiguratsioon on krüpteeritud kolmes kihis. SDK kihti ja organisa
 | Andmebaas ja objektisalv | Ei | Organisatsiooni paroolifraasi kiht vajab Workeri saladust ja CEK kiht pesasaladust |
 | Serveri täielik kompromiteerimine | Mitte ilma pesasaladuseta | Serverikihid kukuvad, kuid CEK jääb passkey PRF-väljundi või 160-bitise taastekomplekti taha ning ühtegi neist ei saa ära arvata |
 | Eemaldatud liikme seade | Seda, mis on juba alla tõmmatud | Hilisemad versioonid jäävad pärast CEK pööramist suletuks |
-| Lekkinud agendi URL | Üks konfiguratsioon, selle kasutajana | Vaata [Agendid ja kaug-MCP](#agents-and-remote-mcp) |
+| Lekkinud agendi URL | Üks konfiguratsioon, selle kasutajana | Vaata [Agendid ja kaug-MCP](#agendid-ja-kaug-mcp) |
 
 Server näeb siiski metaandmeid (konfiguratsioonide id-d, tiimid, versioonid, ajatemplid, blobi suurused) ning võib päringuid tagasi lükata, viivitada või kustutada. Operaator, kes serveerib pahatahtlikku portaalikoodi, saab võtmeid brauseris lugeda. Iga blob on seotud oma salve, konfiguratsiooni, tiimi ja versiooniga, nii et server ei saa ühtegi neist märkamatult vahetada ega muuta, ning CLI lükkab tagasi versiooni, mis on vanem kui juba nähtud versioon.
 

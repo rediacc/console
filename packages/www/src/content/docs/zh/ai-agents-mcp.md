@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: zh
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## 概述
 
-两个 MCP（模型上下文协议）服务器提供同一个工具注册表：
+两个 MCP（模型上下文协议）服务器从同一个注册表获取工具，远程服务器提供其中的一个子集：
 
 | 服务器 | 传输方式 | 运行方式 | 工具 |
 |---|---|---|---|
@@ -276,7 +276,7 @@ Worker 是支持 PKCE（仅 S256）的 OAuth 2.1 授权服务器。客户端通�
 
 ### 仅分叉模式（默认）
 
-服务器默认运行在**仅分叉模式**下：写入工具（`repo_up`、`repo_down`、`repo_delete`、`repo_exec`）只能操作分叉仓库。代理无法触碰 grand（原始）仓库。这是有意的设计。
+服务器默认运行在**仅分叉模式**下：写入工具（`repo_up`、`repo_down`、`repo_delete`、`repo_exec`、`repo_push`、`repo_pull`）只能操作分叉仓库。代理无法触碰 grand（原始）仓库。这是有意的设计。
 
 > **每个仓库的密钥管理仅限 CLI 操作，此为设计决策。** `repo_secret_set` 和 `repo_secret_unset` 有意**不**作为 MCP 工具暴露。写入操作需要 `--current <previous-value>` 前置条件（或使用 `--rotate-secret` 确认未经验证的轮换），该操作需要人工审核。如果代理需要建议密钥轮换，应先调用 `repo_secret_get` 确认摘要，然后通过 JSON 错误信封中 `next.options[].run` 字段的结构化输出，将面向操作人员的 CLI 命令传递给用户。完整模式请参阅 [AI 代理安全](/en/docs/ai-agents-safety#structured-next-action-hints)，用户操作指南请参阅[仓库 § 密钥](/en/docs/repositories#secrets)。
 

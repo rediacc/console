@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: tr
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Genel Bakış
 
-İki MCP (Model Context Protocol) sunucusu aynı araç kaydını sunar:
+İki MCP (Model Context Protocol) sunucusu araçlarını tek bir kayıttan alır, uzak sunucu bunların bir alt kümesini sunar:
 
 | Sunucu | Taşıma | Çalışma biçimi | Araçlar |
 |---|---|---|---|
@@ -276,7 +276,7 @@ Yerel MCP sunucusu iki koruma katmanı uygular. Uzak sunucunun sınırları [Uza
 
 ### Yalnızca fork modu (varsayılan)
 
-Sunucu varsayılan olarak **yalnızca fork modunda** çalışır: yazma araçları (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) yalnızca fork depolar üzerinde işlem yapabilir. Ajanlar grand (özgün) depolara dokunamaz. Bu bilinçli bir tasarımdır.
+Sunucu varsayılan olarak **yalnızca fork modunda** çalışır: yazma araçları (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`) yalnızca fork depolar üzerinde işlem yapabilir. Ajanlar grand (özgün) depolara dokunamaz. Bu bilinçli bir tasarımdır.
 
 > **Depo başına gizli diziler tasarım gereği yalnızca CLI ile yönetilir.** `repo_secret_set` ve `repo_secret_unset` kasıtlı olarak MCP aracı olarak **sunulmamaktadır**. Yazma işlemleri bir `--current <önceki-değer>` ön koşulu (veya doğrulanmamış bir yenilemeyi kabul etmek için `--rotate-secret`) gerektirir; bu adım insan gözetimi gerektirir. Gizli dizi yenilenmesini önermesi gereken ajanlar, özeti doğrulamak için `repo_secret_get` çağırmalı, ardından operatöre yönelik CLI komutunu JSON hata zarfının `next.options[].run` alanı üzerinden kullanıcıya iletmelidir. Tam örüntü için [Yapay Zeka Ajanı Güvenliği](/en/docs/ai-agents-safety#structured-next-action-hints) sayfasına, kullanıcıya yönelik nasıl yapılır kılavuzu için [Depolar § Gizli Diziler](/en/docs/repositories#secrets) sayfasına bakın.
 

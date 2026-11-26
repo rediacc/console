@@ -12,7 +12,7 @@ language: en
 
 ## Overview
 
-Two MCP (Model Context Protocol) servers expose the same tool registry:
+Two MCP (Model Context Protocol) servers draw their tools from one registry, and the remote server offers a subset:
 
 | Server | Transport | Runs | Tools |
 |---|---|---|---|
@@ -284,7 +284,7 @@ The local MCP server enforces two layers of protection. The remote server's limi
 
 ### Fork-only mode (default)
 
-By default, the server runs in **fork-only mode**: write tools (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) can only operate on fork repositories. Agents cannot touch grand (original) repositories. By design.
+By default, the server runs in **fork-only mode**: write tools (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`) can only operate on fork repositories. Agents cannot touch grand (original) repositories. By design.
 
 > **Per-repo secrets are CLI-only by design.** `repo_secret_set` and `repo_secret_unset` are intentionally **not** exposed as MCP tools. Writes require a `--current <previous-value>` precondition (or `--rotate-secret` to acknowledge an unverified rotation), and that ceremony needs human eyes-on. Agents that need to suggest a secret rotation should call `repo_secret_get` to confirm the digest, then relay the operator-facing CLI command to the user via the structured `next.options[].run` field in the JSON error envelope. See [AI Agent Safety](/en/docs/ai-agents-safety#structured-next-action-hints) for the full pattern, and [Repositories § Secrets](/en/docs/repositories#secrets) for the user-facing how-to.
 

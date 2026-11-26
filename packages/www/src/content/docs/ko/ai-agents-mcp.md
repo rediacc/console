@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: ko
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## 개요
 
-두 개의 MCP(Model Context Protocol) 서버가 같은 도구 레지스트리를 제공합니다.
+두 개의 MCP(Model Context Protocol) 서버는 하나의 레지스트리에서 도구를 가져오며, 원격 서버는 그중 일부만 제공합니다.
 
 | 서버 | 전송 | 실행 방식 | 도구 |
 |---|---|---|---|
@@ -276,7 +276,7 @@ Worker는 PKCE(S256만 지원)를 쓰는 OAuth 2.1 인증 서버입니다. 클�
 
 ### 포크 전용 모드 (기본값)
 
-서버는 기본적으로 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `repo_exec`)는 포크 리포지토리에서만 동작합니다. 에이전트는 그랜드(원본) 리포지토리를 건드릴 수 없습니다. 의도된 설계입니다.
+서버는 기본적으로 **포크 전용 모드**로 실행됩니다. 쓰기 도구(`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`)는 포크 리포지토리에서만 동작합니다. 에이전트는 그랜드(원본) 리포지토리를 건드릴 수 없습니다. 의도된 설계입니다.
 
 > **리포별 시크릿은 설계상 CLI 전용입니다.** `repo_secret_set`과 `repo_secret_unset`은 의도적으로 MCP 도구로 노출되지 않습니다. 쓰기에는 `--current <previous-value>` 전제조건(또는 검증되지 않은 교체를 승인하는 `--rotate-secret`)이 필요하며, 이 절차는 사람이 직접 확인해야 합니다. 시크릿 교체를 제안해야 하는 에이전트는 `repo_secret_get`을 호출하여 다이제스트를 확인한 다음, JSON 오류 엔벨로프의 `next.options[].run` 필드를 통해 운영자 대상 CLI 명령을 사용자에게 전달해야 합니다. 전체 패턴은 [AI 에이전트 안전](/en/docs/ai-agents-safety#structured-next-action-hints)을 참조하고, 사용자 대상 방법은 [리포지토리 § 시크릿](/en/docs/repositories#secrets)을 참조하세요.
 

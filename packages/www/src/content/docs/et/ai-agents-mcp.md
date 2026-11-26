@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: et
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Ülevaade
 
-Kaks MCP (Model Context Protocol) serverit pakuvad sama tööriistade registrit:
+Kaks MCP (Model Context Protocol) serverit võtavad oma tööriistad ühest registrist ning kaugserver pakub neist alamhulka:
 
 | Server | Transport | Töötab | Tööriistad |
 |---|---|---|---|
@@ -276,7 +276,7 @@ Lokaalne MCP server rakendab kahte kaitsekihti. Kaugserveri piirangud on jaotise
 
 ### Ainult-fork-režiim (vaikimisi)
 
-Vaikimisi töötab server **ainult-fork-režiimis**: kirjutustööriistad (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) saavad töötada ainult fork-repodega. Agendid ei saa grand-repodele (originaalidele) kätt külge panna. Disaini järgi.
+Vaikimisi töötab server **ainult-fork-režiimis**: kirjutustööriistad (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`) saavad töötada ainult fork-repodega. Agendid ei saa grand-repodele (originaalidele) kätt külge panna. Disaini järgi.
 
 > **Repo-saladused on disaini järgi ainult CLI kaudu.** `repo_secret_set` ja `repo_secret_unset` ei ole tahtlikult MCP tööriistadena paljastatud. Kirjutamised nõuavad eeltingimust `--current <eelmine-väärtus>` (või `--rotate-secret`, et kinnitada kontrollimata pööramine), ja see toiming vajab inimese järelevalvet. Agendid, kes peavad saladuse pööramist soovitama, peaksid kutsuma `repo_secret_get` räsi kinnitamiseks, seejärel edastama operaatori CLI-käsu kasutajale JSON-vea ümbriku välja `next.options[].run` kaudu. Täieliku mustri jaoks vaadake [AI-agendi turvalisus](/et/docs/ai-agents-safety#structured-next-action-hints) ja kasutajapoolse juhendi jaoks [Repositooriumid § Saladused](/et/docs/repositories#secrets).
 

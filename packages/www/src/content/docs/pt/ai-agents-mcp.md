@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 33
 language: pt
-sourceHash: "b30e0030351679c5"
+sourceHash: "f8172807e77b0c6d"
 sourceCommit: "456461c5724ba002dc9184dc07d51fbff3358544"
 ---
 
 ## Visão Geral
 
-Dois servidores MCP (Model Context Protocol) expõem o mesmo registo de ferramentas:
+Dois servidores MCP (Model Context Protocol) obtêm as suas ferramentas de um único registo, e o servidor remoto oferece um subconjunto:
 
 | Servidor | Transporte | Execução | Ferramentas |
 |---|---|---|---|
@@ -276,7 +276,7 @@ O servidor MCP local aplica duas camadas de proteção. Os limites do servidor r
 
 ### Modo apenas-fork (predefinição)
 
-Por predefinição, o servidor corre em **modo apenas-fork**: as ferramentas de escrita (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`) só podem atuar sobre repositórios fork. Os agentes não podem tocar nos repositórios grand (originais). Por design.
+Por predefinição, o servidor corre em **modo apenas-fork**: as ferramentas de escrita (`repo_up`, `repo_down`, `repo_delete`, `repo_exec`, `repo_push`, `repo_pull`) só podem atuar sobre repositórios fork. Os agentes não podem tocar nos repositórios grand (originais). Por design.
 
 > **Os segredos por repositório são exclusivos da CLI por design.** `repo_secret_set` e `repo_secret_unset` são intencionalmente **não** expostos como ferramentas MCP. As escritas requerem uma pré-condição `--current <previous-value>` (ou `--rotate-secret` para reconhecer uma rotação não verificada), e essa cerimónia precisa de ser acompanhada por um humano. Os agentes que precisem de sugerir uma rotação de segredo devem chamar `repo_secret_get` para confirmar o digest e depois transmitir o comando CLI orientado ao operador ao utilizador através do campo estruturado `next.options[].run` no envelope de erro JSON. Consulte [Segurança de Agentes de IA](/en/docs/ai-agents-safety#structured-next-action-hints) para o padrão completo, e [Repositórios § Segredos](/en/docs/repositories#secrets) para o procedimento orientado ao utilizador.
 
