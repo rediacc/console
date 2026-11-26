@@ -527,7 +527,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1068 | 8 | 33 | 195366 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
-| `agent/plans/PLAN-drain-throughput.md` | approved | 65 | 8 | 7 | 11199 |
+| `agent/plans/PLAN-drain-throughput.md` | approved | 66 | 7 | 8 | 11402 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 94 | 18 | 1 | 29199 |
@@ -544,8 +544,8 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-fix-tutorial-player-debug-hook-attachment.md` | compacted | 37 | 0 | 0 | 3148 |
 | `agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md` | executing | 34 | 2 | 0 | 4647 |
 | `agent/plans/PLAN-forensics-alerts-notices.md` | approved | 136 | 4 | 11 | 30283 |
-| `agent/plans/PLAN-forensics-capture.md` | approved | 129 | 4 | 9 | 20646 |
-| `agent/plans/PLAN-forensics-detection.md` | approved | 134 | 4 | 11 | 25533 |
+| `agent/plans/PLAN-forensics-capture.md` | approved | 130 | 3 | 10 | 20928 |
+| `agent/plans/PLAN-forensics-detection.md` | approved | 135 | 3 | 12 | 25726 |
 | `agent/plans/PLAN-forensics-docs-legal.md` | approved | 117 | 1 | 12 | 22075 |
 | `agent/plans/PLAN-forensics-investigation.md` | approved | 146 | 2 | 15 | 34184 |
 | `agent/plans/PLAN-forensics-reports.md` | approved | 124 | 2 | 12 | 24896 |
@@ -615,7 +615,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 137 | 4 | 15 | 32159 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
-| `agent/plans/PLAN-rmcp-decide.md` | approved | 93 | 4 | 5 | 15852 |
+| `agent/plans/PLAN-rmcp-decide.md` | approved | 94 | 3 | 6 | 16047 |
 | `agent/plans/PLAN-rmcp-docs.md` | approved | 107 | 11 | 9 | 25264 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 80 | 4 | 9 | 19753 |
@@ -658,7 +658,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48532 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
 | `agent/plans/PLAN-tick-tracking.md` | approved | 269 | 2 | 13 | 37957 |
-| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 106 | 5 | 6 | 24591 |
+| `agent/plans/PLAN-tooling-code-reduction.md` | approved | 107 | 4 | 7 | 24775 |
 | `agent/plans/PLAN-tooling-speed.md` | approved | 96 | 2 | 6 | 17321 |
 | `agent/plans/PLAN-tutorial-recorder-licence.md` | proposed | 64 | 10 | 0 | 12703 |
 | `agent/plans/PLAN-tutorial-rerecord.md` | proposed | 62 | 7 | 0 | 11254 |

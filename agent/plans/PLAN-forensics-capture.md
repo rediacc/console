@@ -103,10 +103,11 @@ D14. **Budget.** Basic and Standard cost at most 3% throughput on an iperf3 run 
   Depends on: none.
   Accept: `cd private/renet && go test ./pkg/list/` rc 0; `npm run check:ci-renet-types` rc 0.
     (ticked) 2026-11-23T18:18:14Z by ace763dd: commit:353bfd8ef7 landed; writer accept rc=0, lead re-verified on the landed tree
-- [ ] FC9 [writer] Add every new user-facing renet string (status output, errors, verb help) to the en catalog and the 12 other locales, naturalized; the translation writer runs on sonnet.
+- [x] FC9 [writer] Add every new user-facing renet string (status output, errors, verb help) to the en catalog and the 12 other locales, naturalized; the translation writer runs on sonnet.
   Owns: private/renet/pkg/i18n/locales/*.go, private/renet/pkg/i18n/locales/hashes.json
   Depends on: FC7.
   Accept: `cd private/renet && go test ./pkg/i18n/...` rc 0; `npm run check:ci-renet` rc 0.
+    (ticked) 2026-11-26T20:09:09Z by d778be9d: FC9 present: the renet i18n baseline, catalog test and extractor exist; the unconvert lint behind the old check:ci-renet rc 1 is fixed, check:ci-renet rc 0 on HEAD fileline:private/renet/cmd/renet/license_markers_alive_unix_test.go:21
 - [ ] FC10 [writer] Add the ops-VM test `TestEBPF_Netaudit*` (D14 budget measured with iperf3 and an open-close loop, results printed) in pkg/ebpf, and place pkg/netaudit and its sub-packages in the renet test map and the test-renet-go shard.
   Owns: private/renet/pkg/ebpf/netaudit_e2e_test.go, .ci/config/renet-test-map.json, .ci/config/shards/test-renet-go.json
   Depends on: FC7, PLAN-tooling-code-reduction.md#CR2.

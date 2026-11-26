@@ -112,10 +112,11 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
   Depends on: PLAN-tooling-code-reduction.md#CR2.
   Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py` rc 0 with the control case red as designed; `npm run check:ci-renet-test-map` rc 0; the detect-wasm gate rc 0 after FD8.
     (ticked) 2026-11-25T20:59:32Z by d778be9d: FD11 check:ci-detect-wasm (committed detect.wasm vs its sha, the renet gitlink, the pinned Go, and a byte-identical rebuild); gate tests pass; landed 66c37f32c5. DEPS-WAIVED: prerequisites landed
-- [ ] FD12 [writer] Add the new renet strings (D4 templates, models verbs, errors) and the CLI strings (`--signer`, fingerprint output, refusals) to all 13 locales of each tree, naturalized; the translation writer runs on sonnet.
+- [x] FD12 [writer] Add the new renet strings (D4 templates, models verbs, errors) and the CLI strings (`--signer`, fingerprint output, refusals) to all 13 locales of each tree, naturalized; the translation writer runs on sonnet.
   Owns: private/renet/pkg/i18n/locales/*.go, private/renet/pkg/i18n/locales/hashes.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: FD3, FD6, FD9, PLAN-forensics-capture.md#FC9.
   Accept: `npm run check:ci-renet` rc 0; `npm run check:ci-i18n-cli-key-usage` and `npm run check:ci-i18n-completeness` rc 0.
+    (ticked) 2026-11-26T20:09:10Z by d778be9d: FD12 present: same renet i18n evidence as FC9; check:ci-renet rc 0 on HEAD fileline:private/renet/cmd/renet/license_markers_alive_unix_test.go:21
 - [ ] FD13 [lead] Land renet and account submodule-first with the gitlink bumps, run the VM battery, then publish the first bundle to edge at 10%, read the canary result on hostinger, and promote to stable through `publish_models`.
   Depends on: FD6, FD8, FD9, FD10, FD11, FD12.
   Accept: `npm run vm:check -- --changed` VERIFIED receipt; `curl -sI https://data.rediacc.com/models/channels/stable.json` shows `max-age=60`; `renet models status` on hostinger names the stable version.

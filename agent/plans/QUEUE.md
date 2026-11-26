@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
+Promoted: 10 of 99 plans done, 1541 of 1888 boxes done (81%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -120,7 +120,7 @@ Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
 | 58 | PLAN-preview-signer.md | 24/37 | 13 open |
 | 59 | PLAN-weekly-lessons.md | 6/8 | 2 open |
 | 60 | PLAN-tooling-speed.md | 6/8 | 2 open |
-| 61 | PLAN-tooling-code-reduction.md | 6/11 | 5 open |
+| 61 | PLAN-tooling-code-reduction.md | 7/11 | 4 open |
 | 62 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 63 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
 | 64 | PLAN-console-contract-semantics.md | 11/15 | 4 open |
@@ -131,7 +131,7 @@ Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
 | 69 | PLAN-console-ia.md | 8/10 | 2 open |
 | 70 | PLAN-console-animations.md | 7/9 | 2 open |
 | 71 | PLAN-rmcp-policy-record.md | 17/26 | 9 open |
-| 72 | PLAN-rmcp-decide.md | 5/9 | 4 open |
+| 72 | PLAN-rmcp-decide.md | 6/9 | 3 open |
 | 73 | PLAN-rmcp-writeback.md | 13/17 | 4 open |
 | 74 | PLAN-rmcp-executor-hardening.md | 14/21 | 7 open |
 | 75 | PLAN-rmcp-agent-grants.md | 15/19 | 4 open |
@@ -146,9 +146,9 @@ Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
 | 84 | PLAN-rmcp-remote-worker.md | 17/27 | 10 open |
 | 85 | PLAN-rmcp-docs.md | 9/20 | 11 open |
 | 86 | PLAN-stripe-disable.md | 6/8 | 2 open |
-| 87 | PLAN-forensics-capture.md | 9/13 | 4 open |
+| 87 | PLAN-forensics-capture.md | 10/13 | 3 open |
 | 88 | PLAN-forensics-shipping.md | 12/16 | 4 open |
-| 89 | PLAN-forensics-detection.md | 11/15 | 4 open |
+| 89 | PLAN-forensics-detection.md | 12/15 | 3 open |
 | 90 | PLAN-forensics-investigation.md | 15/17 | 2 open |
 | 91 | PLAN-forensics-alerts-notices.md | 11/15 | 4 open |
 | 92 | PLAN-forensics-reports.md | 12/14 | 2 open |
@@ -156,7 +156,7 @@ Promoted: 10 of 99 plans done, 1536 of 1888 boxes done (81%).
 | 94 | PLAN-unlimited-writers.md | 4/5 | 1 open |
 | 95 | PLAN-writers-now-cadence.md | 5/5 | done |
 | 96 | PLAN-armed-actions.md | 6/6 | done |
-| 97 | PLAN-drain-throughput.md | 7/15 | 8 open |
+| 97 | PLAN-drain-throughput.md | 8/15 | 7 open |
 | 98 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
 | 99 | PLAN-host-temp-disposal.md | 16/19 | 3 open |
 <!-- queue:progress:end -->
