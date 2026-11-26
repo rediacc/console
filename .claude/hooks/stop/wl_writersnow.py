@@ -474,7 +474,7 @@ def promoted_done_sigs(root) -> set[str]:
 def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head_time=None) -> dict:
     """The refill facts of this session's newest round.
 
-    `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, and `age` is the survey file's age in minutes; `read` is False when there is no round, no survey file or no parseable cluster section.
+    `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, `age` is the survey file's age in minutes, and `moved` is True when a box was ticked or a HEAD commit is newer than the survey (or git cannot answer); `read` is False when there is no round, no survey file or no parseable cluster section.
     """
     now = now or C.utcnow()
     mine = _mine(rows, session)
@@ -542,7 +542,7 @@ def head_commit_time(root) -> float | None:
 def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
     """(kind, why) of the writers-now check: ("due", why) when a new round is due, ("refill", "") when writers start from the current survey, ("", "") otherwise.
 
-    The clock (`due`) decides first; its message carries the capacity shortfall (`short`) beside it. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left or REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than CAPACITY_FLOOR live writers and the survey still holds a free cluster (open CODE work), inside the clock's window or not. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
+    The clock (`due`) decides first; its message carries the capacity shortfall (`short`) beside it. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left and something `moved` since it was written, or once REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than CAPACITY_FLOOR live writers and the survey still holds a free cluster (open CODE work), inside the clock's window or not. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
     """
     if not clock_facts or clock_facts.get("why") or int(clock_facts.get("open") or 0) <= 0:
         return "", ""
