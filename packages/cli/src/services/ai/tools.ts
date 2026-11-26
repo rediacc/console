@@ -102,6 +102,8 @@ export interface AiToolContext {
 
 /** One call `decide()` allowed, as the autonomy gate reads it. */
 export interface AiGateCall {
+  /** The model's id of the call; joins the judge's audit record to the run (`<conversation>:<toolCallId>`). */
+  toolCallId: string;
   command: AiApprovalCommand;
   entry: ContractCommand;
   target: DecisionTarget;
@@ -306,7 +308,8 @@ function policyAnswer(
 async function decideCall(
   ctx: AiToolContext,
   prepared: PreparedCommand,
-  request: ReturnType<typeof requestOf>
+  request: ReturnType<typeof requestOf>,
+  toolCallId: string
 ): Promise<AiToolResult | null> {
   const { entry } = prepared;
   const { params, positionals } = request;
@@ -346,7 +349,7 @@ async function decideCall(
     const { code, reason, next } = decision;
     return { status: 'refused', code, reason, ...(next ? { next } : {}) };
   }
-  const hold = await ctx.gate?.hold({ command, entry, target, risk });
+  const hold = await ctx.gate?.hold({ toolCallId, command, entry, target, risk });
   if (!hold || ctx.gate?.takeGrant(command)) return null;
   return held(hold.code, hold.reason);
 }
@@ -361,7 +364,7 @@ export async function runAiTool(
   const checked = prepareCall(spec, input);
   if ('status' in checked) return checked;
   const { prepared, request } = checked;
-  const held = await decideCall(ctx, prepared, request);
+  const held = await decideCall(ctx, prepared, request, call.toolCallId);
   if (held) return held;
 
   const outcome = await ctx.run({

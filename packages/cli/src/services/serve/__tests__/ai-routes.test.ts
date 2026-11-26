@@ -700,6 +700,8 @@ describe('the approval token, end to end', () => {
     hono: Hono;
     store: AiConversationStore;
     audited: { commandPath: string; outcome?: string; success: boolean }[];
+    /** The request id each audit record carried, by command path. */
+    requestIds: Map<string, (string | undefined)[]>;
     /** Dispatches the tool calls reached: one `started` audit record per mutating run. */
     started: () => number;
   }
@@ -715,6 +717,7 @@ describe('the approval token, end to end', () => {
   ): Flow {
     const store = new AiConversationStore();
     const audited: Flow['audited'] = [];
+    const requestIds: Flow['requestIds'] = new Map();
     const hono = app(
       { ...fleetConfig(policy), ai: aiOf('m') },
       {
@@ -722,9 +725,13 @@ describe('the approval token, end to end', () => {
         modes: store,
         ...(extra.executor ? { executor: extra.executor } : {}),
         audit: (event) => {
-          if (extra.failApprovalAudit && event.commandPath === 'ai approval') {
+          if (extra.failApprovalAudit && event.commandPath.startsWith('ai approval')) {
             return Promise.reject(new Error('audit sink down'));
           }
+          requestIds.set(event.commandPath, [
+            ...(requestIds.get(event.commandPath) ?? []),
+            event.requestId,
+          ]);
           audited.push({
             commandPath: event.commandPath,
             success: event.success,
@@ -743,7 +750,7 @@ describe('the approval token, end to end', () => {
       }
     );
     const started = () => audited.filter((a) => a.outcome === 'started').length;
-    return { hono, store, audited, started };
+    return { hono, store, audited, requestIds, started };
   }
 
   /** The tool call the next chat's model makes. */
@@ -799,7 +806,7 @@ describe('the approval token, end to end', () => {
     const held = await pendingApproval(hono);
     const approved = await post(hono, AI_ROUTES.approval, answer(held));
     expect(approved.status).toBe(200);
-    expect(audited).toContainEqual({ commandPath: 'ai approval', success: true });
+    expect(audited).toContainEqual({ commandPath: 'ai approval repo up', success: true });
 
     const ran = await turnEvents(hono);
     expect(ran.map((e) => e.type)).not.toContain('approval_required');
@@ -860,7 +867,7 @@ describe('the approval token, end to end', () => {
     const held = await pendingApproval(hono);
     const rejected = await post(hono, AI_ROUTES.approval, answer(held, { decision: 'reject' }));
     expect(rejected.status).toBe(200);
-    expect(audited).toContainEqual({ commandPath: 'ai approval', success: false });
+    expect(audited).toContainEqual({ commandPath: 'ai approval repo up', success: false });
     expect((await turnEvents(hono)).map((e) => e.type)).toContain('approval_required');
     expect(started()).toBe(0);
   });
@@ -931,7 +938,7 @@ describe('the approval token, end to end', () => {
 
   it('records each judge verdict, the fallback to Ask, and the mode changes', async () => {
     let verdict: 'allow' | 'block' = 'allow';
-    const { hono, store, audited } = flow(OPEN, {
+    const { hono, store, audited, requestIds } = flow(OPEN, {
       judge: () => Promise.resolve({ verdict, reason: 'because' }),
     });
     store.set(OWNER_PRINCIPAL, CHAT.conversationId, 'auto');
@@ -939,9 +946,15 @@ describe('the approval token, end to end', () => {
     verdict = 'block';
     for (let i = 0; i < 3; i += 1) await turnEvents(hono);
     const paths = audited.map((a) => `${a.commandPath}:${a.success}`);
-    expect(paths.filter((p) => p === 'ai judge:true')).toHaveLength(1);
-    expect(paths.filter((p) => p === 'ai judge:false')).toHaveLength(3);
+    expect(paths.filter((p) => p === 'ai judge repo up:true')).toHaveLength(1);
+    expect(paths.filter((p) => p === 'ai judge repo up:false')).toHaveLength(3);
     expect(paths.filter((p) => p === 'ai mode ask:true')).toHaveLength(1);
+    // Every judge record and the fallback carry the tool call's request id, which joins them to the run.
+    for (const path of ['ai judge repo up', 'ai mode ask']) {
+      const ids = requestIds.get(path) ?? [];
+      expect(ids.length).toBeGreaterThan(0);
+      expect(ids.every((id) => /^.+:.+$/.test(id ?? ''))).toBe(true);
+    }
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
     await post(hono, AI_ROUTES.mode, { conversationId: CHAT.conversationId, mode: 'skip' });
     expect(audited.filter((a) => a.commandPath === 'ai mode skip')).toHaveLength(1);
@@ -953,7 +966,7 @@ describe('the approval token, end to end', () => {
     const held = await pendingApproval(hono);
     const refused = await post(hono, AI_ROUTES.approval, answer(held));
     expect(refused.status).toBe(403);
-    expect(audited).toContainEqual({ commandPath: 'ai refusal', success: false });
+    expect(audited).toContainEqual({ commandPath: 'ai refusal repo delete', success: false });
   });
 
   it('records the refusal of a mode the policy disabled', async () => {

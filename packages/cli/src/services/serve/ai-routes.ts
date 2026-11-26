@@ -54,7 +54,7 @@ import { type LanguageModel } from 'ai';
 import type { Context, Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { z } from 'zod';
-import { auditJudgeVerdict, auditModeChange, auditRefusal } from '../ai/approval-audit.js';
+import { auditJudgment, auditModeChange, auditRefusal } from '../ai/approval-audit.js';
 import type { AiApprovals } from '../ai/approvals.js';
 import { autonomyHold, effectiveMode } from '../ai/autonomy.js';
 import {
@@ -96,6 +96,7 @@ import {
   refusedSmoke,
   type StartedJob,
   type TurnRecord,
+  toolRequestId,
   UNRECORDED,
 } from './ai-chat-tools.js';
 import { type BusyCounter, createBusyCounter } from './busy.js';
@@ -423,9 +424,12 @@ export function registerAiRoutes(
       tally: judgeTally,
       setAskMode: () => ai.modes.set(principal, body.conversationId, 'ask'),
     });
-    const record = { principal, destructive: call.entry.severity === 'destructive' };
-    await auditJudgeVerdict(deps.audit, { ...record, verdict: judgment.verdict.verdict });
-    if (judgment.fallback) await auditModeChange(deps.audit, { ...record, mode: 'ask' });
+    await auditJudgment(deps.audit, {
+      principal,
+      requestId: toolRequestId(body.conversationId, call.toolCallId),
+      call,
+      judgment,
+    });
     return judgment.verdict.verdict === 'allow';
   }
 

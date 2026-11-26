@@ -20,6 +20,7 @@
 
 import type { ExecutorAuditEvent } from '../serve/deps.js';
 import type { SessionPrincipal } from '../serve/sessions.js';
+import type { AiGateCall } from './tools.js';
 
 /** The command path an approval answer is recorded under. */
 const AI_APPROVAL_AUDIT_PATH = 'ai approval';
@@ -30,11 +31,25 @@ const AI_REFUSAL_AUDIT_PATH = 'ai refusal';
 /** The command path of a mode change is this prefix and the new mode. */
 const AI_MODE_AUDIT_PREFIX = 'ai mode';
 
+/** The most characters of a command path the account's audit schema accepts. */
+const COMMAND_PATH_MAX = 200;
+
+/**
+ * The path of a decision about one command: `<path> <pathKey>` when the command is known, so the
+ * account side turns the record into `console.ai.approval` with the command it decided. The pathKey
+ * is a command path, never a parameter.
+ */
+function decisionPath(path: string, pathKey: string | undefined): string {
+  return pathKey ? `${path} ${pathKey}`.slice(0, COMMAND_PATH_MAX) : path;
+}
+
 type AuditSink = ((event: ExecutorAuditEvent) => Promise<void>) | undefined;
 
 export interface ApprovalAuditInput {
   principal: SessionPrincipal;
   decision: 'approve' | 'reject';
+  /** The approved command's path key. */
+  pathKey?: string;
   destructive: boolean;
   /** The request id the held tool call runs under (`<conversation>:<tool call>`). */
   requestId: string;
@@ -44,7 +59,7 @@ export interface ApprovalAuditInput {
 function approvalAuditEvent(input: ApprovalAuditInput): ExecutorAuditEvent {
   return {
     principal: input.principal,
-    commandPath: AI_APPROVAL_AUDIT_PATH,
+    commandPath: decisionPath(AI_APPROVAL_AUDIT_PATH, input.pathKey),
     params: {},
     success: input.decision === 'approve',
     exitCode: 0,
@@ -61,6 +76,8 @@ export async function auditApproval(audit: AuditSink, input: ApprovalAuditInput)
 
 export interface AiDecisionAuditInput {
   principal: SessionPrincipal;
+  /** The command the decision is about: a judge verdict and a refusal name it. */
+  pathKey?: string;
   destructive: boolean;
   requestId?: string;
 }
@@ -72,7 +89,7 @@ function decisionEvent(
 ): ExecutorAuditEvent {
   return {
     principal: input.principal,
-    commandPath: path,
+    commandPath: decisionPath(path, input.pathKey),
     params: {},
     success,
     exitCode: success ? 0 : 1,
@@ -100,5 +117,28 @@ export async function auditModeChange(
   audit: AuditSink,
   input: AiDecisionAuditInput & { mode: string }
 ): Promise<void> {
-  await audit?.(decisionEvent(`${AI_MODE_AUDIT_PREFIX} ${input.mode}`, true, input));
+  await audit?.(
+    decisionEvent(`${AI_MODE_AUDIT_PREFIX} ${input.mode}`, true, { ...input, pathKey: undefined })
+  );
+}
+
+/**
+ * Record a judge verdict and, when the judge fell back to Ask, that mode change. The tool call's
+ * request id joins both records to the run and tells the account the mode change was the judge's.
+ */
+export async function auditJudgment(
+  audit: AuditSink,
+  input: Pick<AiDecisionAuditInput, 'principal' | 'requestId'> & {
+    call: Pick<AiGateCall, 'entry' | 'command'>;
+    judgment: { verdict: { verdict: 'allow' | 'block' }; fallback?: unknown };
+  }
+): Promise<void> {
+  const { call, judgment, ...base } = input;
+  const record = { ...base, destructive: call.entry.severity === 'destructive' };
+  await auditJudgeVerdict(audit, {
+    ...record,
+    pathKey: call.command.pathKey,
+    verdict: judgment.verdict.verdict,
+  });
+  if (judgment.fallback) await auditModeChange(audit, { ...record, mode: 'ask' });
 }

@@ -433,8 +433,9 @@ describe('a needs_confirmation answer', () => {
     const { runs, run } = recorder();
     const holds: string[] = [];
     const gate = {
-      hold: (call: { risk: string }) => {
+      hold: (call: { risk: string; toolCallId: string }) => {
         holds.push(call.risk);
+        expect(call.toolCallId).toBe(CALL.toolCallId);
         return Promise.resolve(
           call.risk === 'safe' ? null : { code: 'AI_HOLD_ASK', reason: 'Ask mode.' }
         );

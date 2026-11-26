@@ -114,6 +114,7 @@ export async function recordApproval(
     await auditApproval(audit, {
       principal,
       decision: body.decision,
+      pathKey: body.command.pathKey,
       destructive: judged.destructive,
       requestId: toolRequestId(body.conversationId, body.toolCallId),
     });
@@ -132,6 +133,7 @@ export function recordRefusal(
 ): Promise<void> {
   return auditRefusal(audit, {
     principal,
+    pathKey: body.command.pathKey,
     destructive: Boolean(refusal.destructive),
     requestId: toolRequestId(body.conversationId, body.toolCallId),
   });

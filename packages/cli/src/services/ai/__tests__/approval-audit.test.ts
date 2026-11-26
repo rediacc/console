@@ -58,6 +58,21 @@ describe('AI decision audit events', () => {
     ]);
   });
 
+  it('names the decided command in the path of an approval, a judge verdict and a refusal', async () => {
+    const { events, audit } = sink();
+    const base = { principal, destructive: false, requestId: 'c1:t1', pathKey: 'repo up' };
+    await auditApproval(audit, { ...base, decision: 'approve' });
+    await auditJudgeVerdict(audit, { ...base, verdict: 'block' });
+    await auditRefusal(audit, base);
+    await auditModeChange(audit, { ...base, mode: 'ask' });
+    expect(events.map((e) => e.commandPath)).toEqual([
+      'ai approval repo up',
+      'ai judge repo up',
+      'ai refusal repo up',
+      'ai mode ask',
+    ]);
+  });
+
   it('records a mode change under the new mode and ships no params', async () => {
     const { events, audit } = sink();
     await auditModeChange(audit, { principal, destructive: false, mode: 'skip' });
