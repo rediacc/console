@@ -499,6 +499,12 @@ async function takeSlot(
     : { refused: rateLimited(slot.reason, slot.retryAfterSeconds) };
 }
 
+/** `args` without its `confirm` entry. */
+function withoutConfirm(args: Record<string, unknown>): Record<string, unknown> {
+  const { confirm: _dropped, ...rest } = args;
+  return rest;
+}
+
 /** One `tools/call` under `caller`'s grant. Never throws: every failure is an `isError` result with a code. The result is `input_required` only when `input.elicitation` is set. */
 export async function callToolStep(
   deps: CallDeps,
@@ -513,7 +519,8 @@ export async function callToolStep(
   const slot = await takeSlot(deps, grant.grantId);
   if ('refused' in slot) return slot.refused;
   try {
-    let forwardArgs = args;
+    // A client that can be asked never skips the user's yes by sending `confirm` itself: the value reaches the executor only through the sealed state.
+    let forwardArgs = input.elicitation ? withoutConfirm(args) : args;
     if (input.requestState !== undefined) {
       // After the slot, so a call over budget does not burn the state it carries.
       const opened = await openConfirmation(deps, grant, name, args, input);

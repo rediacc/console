@@ -101,6 +101,47 @@ describe('confirmation by elicitation', () => {
     expect(s.forwards[1].args).toEqual({ ...ARGS, confirm: 'shop' });
   });
 
+  it('ignores a confirm argument the eliciting client sends itself and asks the user', async () => {
+    const s = setup();
+    const result = await callToolStep(
+      s.deps,
+      s.caller(),
+      TOOL,
+      { ...ARGS, confirm: 'shop' },
+      ASKS
+    );
+    expect(isInputRequiredResult(result)).toBe(true);
+    expect(s.forwards).toHaveLength(1);
+    expect(s.forwards[0].args).toEqual(ARGS);
+  });
+
+  it('forwards the sealed value, not the client confirm, once the user accepts', async () => {
+    const s = setup();
+    const { state } = await firstRound(s);
+    const done = await callToolStep(
+      s.deps,
+      s.caller(),
+      TOOL,
+      { ...ARGS, confirm: 'other' },
+      retry(state)
+    );
+    expect(done).toMatchObject({ isError: false });
+    expect(s.forwards[1].args).toEqual({ ...ARGS, confirm: 'shop' });
+  });
+
+  it('keeps the confirm argument for a client that cannot be asked', async () => {
+    const s = setup();
+    const done = await callToolStep(
+      s.deps,
+      s.caller(),
+      TOOL,
+      { ...ARGS, confirm: 'shop' },
+      { elicitation: false }
+    );
+    expect(done).toMatchObject({ isError: false });
+    expect(s.forwards[0].args).toEqual({ ...ARGS, confirm: 'shop' });
+  });
+
   it('refuses a tampered state and forwards nothing', async () => {
     const s = setup();
     const { state } = await firstRound(s);
