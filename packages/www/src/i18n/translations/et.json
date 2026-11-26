@@ -656,7 +656,7 @@
         "title": "Küsimusi?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Andmetöötluslepe"
       },
       "meta": {
@@ -754,7 +754,7 @@
           "content": [
             "See andmetöötluslepe (\"DPA\") on osa <a href=\"terms-of-service\">teenuse kasutustingimustest</a> {{legalName}} (\"Rediacc\", \"volitatud töötleja\") ja kliendi vahel, kui klient kasutab teenuseid ettevõttena ja Rediacc töötleb kliendi isikuandmeid kliendi nimel. Teenuse kasutustingimustes määratletud mõistetel on siin sama tähendus. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
             "Kliendi isikuandmete puhul on klient vastutav töötleja (või oma vastutava töötleja nimel tegutsev volitatud töötleja) ning Rediacc on volitatud töötleja (või alltöötleja). Konto-, arveldus- ja nõustumiskirjete ning telemetria andmete puhul on Rediacc iseseisev vastutav töötleja, nagu on kirjeldatud <a href=\"privacy-policy\">privaatsuspoliitikas</a>, ning see DPA sellele töötlemisele ei kehti.",
-            "Kliendi masinatel olevaid kliendiandmeid Rediacc ei töötle. Krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse võtmetega, mida Rediaccil ei ole, seega Rediacc salvestab need andmeplokid, kuid ei saa nende sisu lugeda."
+            "Välja arvatud jaotises 4 kirjeldatud võrgukriminalistika tõendid, mida Rediacc saab ainult hoidla kohta, millel klient on kriminalistika sisse lülitanud, ei töötle Rediacc kliendi andmeid kliendi masinatel. Krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse võtmetega, mida Rediaccil ei ole, seega Rediacc salvestab need andmeplokid, kuid ei saa nende sisu lugeda."
           ],
           "id": "scope",
           "title": "1. Reguleerimisala ja rollid"
@@ -2463,7 +2463,7 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Meie privaatsuskohustus"
       },
       "meta": {
@@ -2514,9 +2514,9 @@
           "items": [
             "<strong>Teenusepakkujad (alltöötlejad)</strong>, kes majutavad ja käitavad meie platvormi, edastavad e-kirju ja töötlevad makseid ning keda seovad lepingulised kohustused teie andmeid kaitsta. Praegune nimekiri koos iga pakkuja rolli ja asukohaga on meie <a href=\"data-processing-agreement\">andmetöötlusleppes</a>",
             "<strong>Plausible Analytics</strong> küpsisevaba, anonümiseeritud veebisaidi analüütika jaoks (isikuandmeid ei jagata)",
-            "<strong>Telemetria töötlemine</strong> - anonümiseeritud toote kasutusandmed edastatakse meie enda telemetria lõpp-punkti ELis koondamiseks ja analüüsimiseks. Ühtegi telemetria andmed ei jagata kolmandate osapooltega (vt meie <a href=\"telemetry-policy\">telemetria poliitikat</a>)",
+            "<strong>Telemetria töötlemine</strong> anonümiseeritud toote kasutusandmete jaoks, mis saadetakse koondamiseks ja analüüsiks meie enda telemetria lõpp-punkti Euroopa Liidus. Lõpp-punkt töötab Hostingeri pakutavatel virtuaalserveritel, mis majutab andmeid meie eest meie volitatud töötlejana, nagu on loetletud meie <a href=\"data-processing-agreement\">andmetöötluslepingus</a>, ega kasuta neid oma eesmärkidel. Me ei müü telemetriaandmeid ega jaga neid kellegi teisega (vt meie <a href=\"telemetry-policy\">telemetria poliitikat</a>)",
             "<strong>Õiguskaitseasutused</strong>, kui seda nõuab seadus, määrus või kehtiv õiguslik menetlus",
-            "<strong>Kasutaja ühendatud mudelipakkuja</strong>, kui tehisintellekti agenti kasutatakse kaug-MCP kaudu: agendile tagastatud tööriista väljundit töötleb see pakkuja oma tingimuste alusel. Rediacc ei vali seda pakkujat ning mõned ühendused, näiteks Claude API MCP-ühendus, ei sobi nullandmesäilitusega"
+            "<strong>Teie ühendatud mudelipakkuja</strong>, teie juhiste alusel, kui kasutate tehisintellekti agenti kaug-MCP kaudu: agendile tagastatud tööriista väljund läheb sellele pakkujale, kes töötleb seda teie enda lepingu alusel temaga. See pakkuja ei ole meie volitatud töötleja ega allvolitatud töötleja, sest Rediacc ei vali teda ega anna talle juhiseid. Mõned ühendused, näiteks Claude API MCP-ühendus, ei sobi nullandmesäilitusega"
           ],
           "title": "4. Andmete jagamine ja kolmandad osapooled"
         },
@@ -9851,7 +9851,7 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 1. veebruar 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Meie telemetria tavad"
       },
       "meta": {
@@ -9952,7 +9952,7 @@
             "<strong>Krüpteerimine:</strong> Kõik andmed krüpteeritakse edastamisel TLS-i abil. Renet agent kasutab lisaks gzip-tihendamist.",
             "<strong>Säilitamine:</strong> Töötlemata telemetria jälgeid salvestatakse kuni 90 päeva silumiseks ja intsidentide uurimiseks. Koondatud mõõdikuid säilitatakse kuni 12 kuud ja seejärel kustutatakse.",
             "<strong>Juurdepääs:</strong> Telemetria andmetele pääsevad juurde ainult Rediacc inseneerimis- ja operatsioonipersonali teadmisvajaduse alusel.",
-            "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei jagata, müüda ega ole juurdepääsetavad kolmandale osapoolele.",
+            "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei müüda ega jagata kellegagi nende endi kasutuseks. Neid hoitakse Euroopa Liidus Hostingeri pakutavatel virtuaalserveritel, mis majutab neid meie eest meie volitatud töötlejana (vt meie <a href=\"data-processing-agreement\">andmetöötluslepingut</a>).",
             "<strong>Infrastruktuur:</strong> Kõiki telemetria andmeid töödeldakse ja salvestatakse Euroopa Liidus asuvatel serveritel."
           ],
           "title": "6. Andmete töötlemine ja salvestamine"

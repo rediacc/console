@@ -664,7 +664,7 @@
       },
       "hero": {
         "title": "Auftragsverarbeitungsvertrag",
-        "effectiveDate": "Gültig ab: 11. November 2026"
+        "effectiveDate": "Gültig ab: 26. November 2026"
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
@@ -676,7 +676,7 @@
           "content": [
             "Dieser Auftragsverarbeitungsvertrag („AVV“) ist Bestandteil der <a href=\"terms-of-service\">Nutzungsbedingungen</a> zwischen {{legalName}} („Rediacc“, dem „Auftragsverarbeiter“) und dem Kunden, soweit der Kunde die Dienste geschäftlich nutzt und Rediacc Personenbezogene Kundendaten im Auftrag des Kunden verarbeitet. In den Nutzungsbedingungen definierte Begriffe haben hier dieselbe Bedeutung. Dieser AVV ist in englischer Sprache verfasst; Übersetzungen dienen nur der Information, und bei Abweichungen gilt die englische Fassung.",
             "Für Personenbezogene Kundendaten ist der Kunde der Verantwortliche (oder ein Auftragsverarbeiter, der für seinen eigenen Verantwortlichen handelt) und Rediacc der Auftragsverarbeiter (oder Unterauftragsverarbeiter). Für Konto-, Abrechnungs- und Annahmedaten sowie für Telemetriedaten ist Rediacc eigenständiger Verantwortlicher, wie in der <a href=\"privacy-policy\">Datenschutzerklärung</a> beschrieben; dieser AVV gilt für diese Verarbeitung nicht.",
-            "Kundendaten auf den Maschinen des Kunden werden von Rediacc nicht verarbeitet. Verschlüsselter Konfigurationsspeicher und gehostete Backups sind mit Schlüsseln verschlüsselt, die Rediacc nicht besitzt; Rediacc speichert diese Datenblöcke daher, kann ihren Inhalt aber nicht lesen."
+            "Mit Ausnahme der in Abschnitt 4 beschriebenen Netzwerk-Forensik-Nachweise, die Rediacc nur für ein Repository erhält, für das der Kunde die Forensik einschaltet, verarbeitet Rediacc keine Kundendaten auf den Maschinen des Kunden. Verschlüsselter Konfigurationsspeicher und gehostete Backups sind mit Schlüsseln verschlüsselt, die Rediacc nicht besitzt; Rediacc speichert diese Datenblöcke daher, kann ihren Inhalt aber nicht lesen."
           ]
         },
         "definitions": {
@@ -2469,7 +2469,7 @@
         "title": "Fragen?"
       },
       "hero": {
-        "effectiveDate": "Gültig ab: 11. November 2026",
+        "effectiveDate": "Gültig ab: 26. November 2026",
         "title": "Unser Datenschutzversprechen"
       },
       "meta": {
@@ -2520,9 +2520,9 @@
           "items": [
             "<strong>Dienstleister (Unterauftragsverarbeiter)</strong>, die unsere Plattform hosten und betreiben, E-Mails zustellen und Zahlungen abwickeln und vertraglich zum Schutz Ihrer Daten verpflichtet sind. Die aktuelle Liste mit Rolle und Standort der einzelnen Anbieter finden Sie in unserem <a href=\"data-processing-agreement\">Auftragsverarbeitungsvertrag</a>",
             "<strong>Plausible Analytics</strong> für cookielose, anonymisierte Webanalytik",
-            "<strong>Telemetrieverarbeitung</strong> — anonymisierte Produktnutzungsdaten werden an unseren eigenen Telemetrie-Endpunkt innerhalb der EU zur Aggregation und Analyse übermittelt. Keine Telemetriedaten werden an Dritte weitergegeben (siehe unsere <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>)",
+            "<strong>Telemetrieverarbeitung</strong> für anonymisierte Produktnutzungsdaten, die zur Aggregation und Analyse an unseren eigenen Telemetrie-Endpunkt in der Europäischen Union gesendet werden. Der Endpunkt läuft auf virtuellen Servern von Hostinger, das die Daten als unser Auftragsverarbeiter für uns hostet, aufgeführt in unserer <a href=\"data-processing-agreement\">Datenverarbeitungsvereinbarung</a>, und sie nicht für eigene Zwecke nutzt. Wir verkaufen keine Telemetriedaten und geben sie an niemanden sonst weiter (siehe unsere <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>)",
             "<strong>Strafverfolgungsbehörden</strong>, wenn gesetzlich vorgeschrieben",
-            "<strong>Der vom Nutzer verbundene Modellanbieter</strong>, wenn ein KI-Agent über Remote-MCP arbeitet: Die an den Agenten zurückgegebene Tool-Ausgabe wird von diesem Anbieter nach dessen eigenen Bedingungen verarbeitet. Rediacc wählt diesen Anbieter nicht aus, und manche Konnektoren, etwa der MCP-Konnektor der Claude API, kommen für Zero Data Retention nicht in Frage"
+            "<strong>Der von Ihnen verbundene Modellanbieter</strong>, auf Ihre Anweisung, wenn Sie einen KI-Agenten über Remote-MCP nutzen: Die an den Agenten zurückgegebene Tool-Ausgabe geht an diesen Anbieter, der sie im Rahmen Ihrer eigenen Vereinbarung mit ihm verarbeitet. Dieser Anbieter ist weder unser Auftragsverarbeiter noch Unterauftragsverarbeiter, da Rediacc ihn weder auswählt noch anweist. Manche Konnektoren, etwa der MCP-Konnektor der Claude API, kommen für Zero Data Retention nicht in Frage"
           ],
           "title": "4. Datenweitergabe und Dritte"
         },
@@ -9850,7 +9850,7 @@
         "title": "Fragen?"
       },
       "hero": {
-        "effectiveDate": "Gültig ab: 1. Februar 2026",
+        "effectiveDate": "Gültig ab: 26. November 2026",
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
@@ -9951,7 +9951,7 @@
             "<strong>Verschlüsselung:</strong> Alle Daten werden während der Übertragung mit TLS verschlüsselt. Der Renet-Agent verwendet zusätzlich gzip-Komprimierung.",
             "<strong>Aufbewahrung:</strong> Rohe Telemetrie-Traces werden bis zu 90 Tage für Debugging und Vorfalluntersuchungen gespeichert. Aggregierte Metriken werden bis zu 12 Monate aufbewahrt und dann gelöscht.",
             "<strong>Zugriff:</strong> Telemetriedaten sind nur für Rediacc-Engineering- und Betriebspersonal auf Need-to-Know-Basis zugänglich.",
-            "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht an Dritte weitergegeben, verkauft oder zugänglich gemacht.",
+            "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht verkauft und nicht zu deren eigener Nutzung an andere weitergegeben. Sie werden auf virtuellen Servern in der Europäischen Union gespeichert, die Hostinger bereitstellt und die als unser Auftragsverarbeiter für uns hostet (siehe unsere <a href=\"data-processing-agreement\">Datenverarbeitungsvereinbarung</a>).",
             "<strong>Infrastruktur:</strong> Alle Telemetriedaten werden auf Infrastruktur innerhalb der Europäischen Union verarbeitet und gespeichert."
           ],
           "title": "6. Datenverarbeitung und -speicherung"

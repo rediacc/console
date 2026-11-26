@@ -664,7 +664,7 @@
       },
       "hero": {
         "title": "Acuerdo de encargo de tratamiento de datos",
-        "effectiveDate": "Fecha de entrada en vigor: 11 de noviembre de 2026"
+        "effectiveDate": "Fecha de entrada en vigor: 26 de noviembre de 2026"
       },
       "toc": {
         "title": "Índice"
@@ -676,7 +676,7 @@
           "content": [
             "Este Acuerdo de encargo de tratamiento de datos (\"DPA\") forma parte de las <a href=\"terms-of-service\">Condiciones del servicio</a> entre {{legalName}} (\"Rediacc\", el \"Encargado\") y el Cliente, cuando el Cliente utiliza los Servicios como empresa y Rediacc trata Datos Personales del Cliente por cuenta del Cliente. Los términos definidos en las Condiciones del servicio tienen aquí el mismo significado. Este DPA está redactado en inglés; las traducciones se ofrecen únicamente a título informativo y, en caso de discrepancia, prevalece la versión en inglés.",
             "Respecto de los Datos Personales del Cliente, el Cliente es el responsable del tratamiento (o un encargado que actúa para su propio responsable) y Rediacc es el encargado (o subencargado). Respecto de los registros de Cuenta, facturación y aceptación y de los Datos de Telemetría, Rediacc es un responsable del tratamiento independiente, según se describe en la <a href=\"privacy-policy\">Política de privacidad</a>, y este DPA no se aplica a ese tratamiento.",
-            "Rediacc no trata los Datos del Cliente que se encuentran en las Máquinas del Cliente. El almacenamiento cifrado de configuraciones y las copias de seguridad alojadas se cifran con claves que Rediacc no posee, por lo que Rediacc almacena esos bloques pero no puede leer su contenido."
+            "Salvo las pruebas forenses de red descritas en la Sección 4, que Rediacc recibe únicamente de un repositorio en el que el Cliente activa el análisis forense, Rediacc no trata los Datos del Cliente que se encuentran en las Máquinas del Cliente. El almacenamiento cifrado de configuraciones y las copias de seguridad alojadas se cifran con claves que Rediacc no posee, por lo que Rediacc almacena esos bloques pero no puede leer su contenido."
           ]
         },
         "definitions": {
@@ -2469,7 +2469,7 @@
         "title": "¿Preguntas?"
       },
       "hero": {
-        "effectiveDate": "Fecha de entrada en vigor: 11 de noviembre de 2026",
+        "effectiveDate": "Fecha de entrada en vigor: 26 de noviembre de 2026",
         "title": "Nuestro compromiso de privacidad"
       },
       "meta": {
@@ -2518,9 +2518,9 @@
           "items": [
             "<strong>Proveedores de servicios (subencargados del tratamiento)</strong> que alojan y operan nuestra plataforma, envían correo electrónico y procesan pagos, y que están obligados contractualmente a proteger sus datos. La lista actual, con la función y la ubicación de cada proveedor, figura en nuestro <a href=\"data-processing-agreement\">Acuerdo de encargo de tratamiento de datos</a>",
             "<strong>Plausible Analytics</strong> para análisis web anónimos",
-            "<strong>Procesamiento de telemetría</strong> — los datos anonimizados de uso del producto se transmiten a nuestro propio punto de telemetría dentro de la UE para su agregación y análisis. Ningún dato de telemetría se comparte con terceros (consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>)",
+            "<strong>Procesamiento de telemetría</strong> de datos anonimizados de uso del producto, que se envían a nuestro propio punto de telemetría en la Unión Europea para su agregación y análisis. El punto funciona en servidores virtuales proporcionados por Hostinger, que aloja los datos por cuenta nuestra como nuestro encargado del tratamiento, incluido en nuestro <a href=\"data-processing-agreement\">Acuerdo de Tratamiento de Datos</a>, y no los utiliza para sus propios fines. No vendemos datos de telemetría ni los compartimos con nadie más (consulte nuestra <a href=\"telemetry-policy\">Política de telemetría</a>)",
             "<strong>Autoridades legales</strong> cuando lo exija la ley",
-            "<strong>El proveedor de modelos que el usuario conecta</strong> cuando un agente de IA se usa a través de MCP remoto: la salida de las herramientas que vuelve al agente la procesa ese proveedor según sus propias condiciones. Rediacc no elige a ese proveedor, y algunos conectores, como el conector MCP de la API de Claude, no son aptos para la retención cero de datos"
+            "<strong>El proveedor de modelos que usted conecta</strong>, por indicación suya, cuando usa un agente de IA a través de MCP remoto: la salida de las herramientas que vuelve al agente va a ese proveedor, que la procesa conforme a su propio acuerdo con él. Ese proveedor no es nuestro encargado ni subencargado del tratamiento, porque Rediacc ni lo elige ni le da instrucciones. Algunos conectores, como el conector MCP de la API de Claude, no son aptos para la retención cero de datos"
           ],
           "title": "4. Intercambio de datos y terceros"
         },
@@ -9846,7 +9846,7 @@
         "title": "¿Preguntas?"
       },
       "hero": {
-        "effectiveDate": "Fecha de vigencia: 1 de febrero de 2026",
+        "effectiveDate": "Fecha de entrada en vigor: 26 de noviembre de 2026",
         "title": "Nuestras prácticas de telemetría"
       },
       "meta": {
@@ -9947,7 +9947,7 @@
             "<strong>Cifrado:</strong> Todos los datos se cifran en tránsito usando TLS. El Agente Renet además utiliza compresión gzip.",
             "<strong>Retención:</strong> Las trazas de telemetría sin procesar se almacenan durante un máximo de 90 días para depuración e investigación de incidentes. Las métricas agregadas se conservan durante un máximo de 12 meses y luego se eliminan.",
             "<strong>Acceso:</strong> Los datos de telemetría solo son accesibles para el personal de ingeniería y operaciones de Rediacc según la necesidad de conocer.",
-            "<strong>Sin compartir con terceros:</strong> Los datos de telemetría no se comparten, venden ni son accesibles para ningún tercero.",
+            "<strong>Sin compartir con terceros:</strong> Los datos de telemetría no se venden ni se comparten con nadie para su uso propio. Se almacenan en servidores virtuales en la Unión Europea proporcionados por Hostinger, que los aloja por cuenta nuestra como nuestro encargado del tratamiento (consulte nuestro <a href=\"data-processing-agreement\">Acuerdo de Tratamiento de Datos</a>).",
             "<strong>Infraestructura:</strong> Todos los datos de telemetría se procesan y almacenan en infraestructura ubicada dentro de la Unión Europea."
           ],
           "title": "6. Procesamiento y almacenamiento de datos"
