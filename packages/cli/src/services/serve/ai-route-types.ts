@@ -119,5 +119,5 @@ export interface AiRouteDeps {
   chat?: AiChatDeps;
 }
 
-/** Refusal codes of the chat and test routes. */
+/** Refusal codes of the chat, test and transcription routes. */
 export const AI_PROFILE_UNRESOLVED = 'AI_PROFILE_UNRESOLVED';

@@ -156,4 +156,16 @@ describe('argvHashOf', () => {
     expect(await ledger.submit(answer(first))).toMatchObject({ code: AI_APPROVAL_UNKNOWN });
     expect(await ledger.submit(answer(otherToken, { principal: other }))).toEqual({ ok: true });
   });
+
+  it('frees a cap slot when a pending approval is answered', async () => {
+    const ledger = new AiApprovalLedger();
+    const tokens: string[] = [];
+    for (let i = 0; i < 100; i += 1)
+      tokens.push(ledger.issue(principal, 'conv-1', `call-${i}`, DELETE_SHOP));
+    const [oldest, second] = tokens as [string, string];
+    expect(await ledger.submit(answer(second, { toolCallId: 'call-1' }))).toEqual({ ok: true });
+    ledger.issue(principal, 'conv-1', 'call-100', DELETE_SHOP);
+    // The answered slot was free, so the oldest survives the 101st issue.
+    expect(await ledger.submit(answer(oldest, { toolCallId: 'call-0' }))).toEqual({ ok: true });
+  });
 });

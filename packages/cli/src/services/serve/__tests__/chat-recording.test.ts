@@ -106,8 +106,11 @@ describe('chatRecording (the chat route production wiring)', () => {
 
   it('warns through the output service when a turn is not recorded', () => {
     const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
-    recording(new SessionStore()).onUnrecorded?.('no key', 'conv-1');
-    expect(warn).toHaveBeenCalledWith('AI conversation conv-1 is not recorded: no key');
-    warn.mockRestore();
+    try {
+      recording(new SessionStore()).onUnrecorded?.('no key', 'conv-1');
+      expect(warn).toHaveBeenCalledWith('AI conversation conv-1 is not recorded: no key');
+    } finally {
+      warn.mockRestore();
+    }
   });
 });

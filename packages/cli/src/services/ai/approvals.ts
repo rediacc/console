@@ -103,6 +103,8 @@ export interface AiApprovals {
 export class AiApprovalLedger implements AiApprovals {
   /** Pending approvals by the hex SHA-256 of their token. */
   private readonly pending = new Map<string, PendingApproval>();
+  /** Pending token hashes per principal, oldest first, so the per-principal cap needs no full scan. */
+  private readonly pendingByPrincipal = new Map<string, Set<string>>();
   /** Approved grants by (principal, conversation, argv hash), with their expiry. */
   private readonly grants = new Map<string, number>();
 
@@ -110,7 +112,7 @@ export class AiApprovalLedger implements AiApprovals {
 
   private sweep(): void {
     const now = this.now();
-    for (const [key, entry] of this.pending) if (entry.expiresAtMs <= now) this.pending.delete(key);
+    for (const [key, entry] of this.pending) if (entry.expiresAtMs <= now) this.dropPending(key);
     for (const [key, expiresAtMs] of this.grants) if (expiresAtMs <= now) this.grants.delete(key);
   }
 
@@ -122,16 +124,21 @@ export class AiApprovalLedger implements AiApprovals {
     return `${principalKeyOf(principal)}\u0000${conversationId}\u0000${argvHashOf(command)}`;
   }
 
+  private dropPending(key: string): void {
+    const entry = this.pending.get(key);
+    if (entry === undefined) return;
+    this.pending.delete(key);
+    const keys = this.pendingByPrincipal.get(entry.principalKey);
+    keys?.delete(key);
+    if (keys?.size === 0) this.pendingByPrincipal.delete(entry.principalKey);
+  }
+
   /** Make room for one more pending approval of `principalKey` under its own cap. */
   private dropOldestOf(principalKey: string): void {
-    let count = 0;
-    let oldest: string | undefined;
-    for (const [key, entry] of this.pending) {
-      if (entry.principalKey !== principalKey) continue;
-      oldest ??= key;
-      count += 1;
-    }
-    if (count >= MAX_PENDING_PER_PRINCIPAL && oldest !== undefined) this.pending.delete(oldest);
+    const keys = this.pendingByPrincipal.get(principalKey);
+    if (keys === undefined || keys.size < MAX_PENDING_PER_PRINCIPAL) return;
+    const oldest = keys.values().next().value;
+    if (oldest !== undefined) this.dropPending(oldest);
   }
 
   issue(
@@ -144,11 +151,16 @@ export class AiApprovalLedger implements AiApprovals {
     this.dropOldestOf(principalKeyOf(principal));
     if (this.pending.size >= MAX_PENDING) {
       const oldest = this.pending.keys().next().value;
-      if (oldest !== undefined) this.pending.delete(oldest);
+      if (oldest !== undefined) this.dropPending(oldest);
     }
     const token = randomBytes(TOKEN_BYTES).toString('base64url');
-    this.pending.set(sha256(token).toString('hex'), {
-      principalKey: principalKeyOf(principal),
+    const tokenKey = sha256(token).toString('hex');
+    const principalKey = principalKeyOf(principal);
+    const owned = this.pendingByPrincipal.get(principalKey) ?? new Set<string>();
+    owned.add(tokenKey);
+    this.pendingByPrincipal.set(principalKey, owned);
+    this.pending.set(tokenKey, {
+      principalKey,
       conversationId,
       toolCallId,
       argvHash: argvHashOf(command),
@@ -183,7 +195,7 @@ export class AiApprovalLedger implements AiApprovals {
         message: 'The answer names another command than the one the model asked to run.',
       });
     }
-    this.pending.delete(key);
+    this.dropPending(key);
     if (answer.decision === 'approve') {
       const grant = this.grantKey(answer.principal, answer.conversationId, answer.command);
       this.grants.set(grant, this.now() + APPROVAL_TTL_MS);

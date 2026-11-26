@@ -123,7 +123,12 @@ describe('the outcome event keeps the image-making call', () => {
     expect(names.at(-1)).not.toBe('repository_fork');
     const outcome = events.find((event) => event.outcome !== 'started' && event.functionName);
     expect(outcome?.functionName).toBe('repository_fork');
-    expect(outcome?.functionParams?.tag).toEqual(expect.any(String));
+    // The fork's own GUID param: the one the fork call was made with, a fresh GUID, neither the tag name nor the source repo's GUID.
+    const forkCall = calls.find((call) => call.functionName === 'repository_fork');
+    const madeGuid = forkCall?.params?.tag;
+    expect(madeGuid).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
+    expect(madeGuid).not.toBe('11111111-1111-4111-8111-111111111111');
+    expect(outcome?.functionParams?.tag).toBe(madeGuid);
   });
 
   it('control: a command with no image-making call reports its last call', async () => {

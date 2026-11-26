@@ -16,7 +16,18 @@ describe('mcp-call-route.ts layering', () => {
     expect(imports).toContain('./job-wait-limits.js');
   });
 
-  it('the local job_wait tool and the route share one pair of limits', () => {
+  it('the local job_wait tool and the route share one definition of the limits', () => {
+    const toolSource = readFileSync(
+      new URL('../../../commands/mcp/custom-tools.ts', import.meta.url),
+      'utf-8'
+    );
+    const fromLimits = /import \{[^}]*\} from '[^']*job-wait-limits\.js'/;
+    expect(source).toMatch(fromLimits);
+    expect(toolSource).toMatch(fromLimits);
+    // Neither file declares its own copy of either limit.
+    for (const text of [source, toolSource]) {
+      expect(text).not.toMatch(/(const|let)\s+JOB_WAIT_(CEILING|INTERVAL)_MS\b/);
+    }
     expect(JOB_WAIT_CEILING_MS).toBe(limits.JOB_WAIT_CEILING_MS);
     expect(JOB_WAIT_INTERVAL_MS).toBe(limits.JOB_WAIT_INTERVAL_MS);
   });
