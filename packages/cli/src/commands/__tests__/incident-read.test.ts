@@ -234,7 +234,8 @@ describe('incident export', () => {
   it('downloads the raw files under their keys and verifies both chains under the pinned key', async () => {
     const served = await servedFixture();
     m.format.current = 'json';
-    await runIncidentExport('inc-aaaa1111', { out }, client(served).deps);
+    const exporter = client(served).deps;
+    await runIncidentExport('inc-aaaa1111', { out }, exporter);
     for (const [key, bytes] of Object.entries(served.files)) {
       expect(readFileSync(join(out, key)).equals(bytes)).toBe(true);
     }
@@ -247,11 +248,23 @@ describe('incident export', () => {
     expect(JSON.parse(readFileSync(join(out, 'export.json'), 'utf8')).verified).toBe(true);
     expect(m.setExitCode).not.toHaveBeenCalled();
 
-    // The export directory verifies again with no --machine-key: the manifest carries the key.
+    // The export directory verifies again with no --machine-key: the server's pinned key for the
+    // incident export.json names, read again, not the copy in raw-manifest.json.
     m.print.mockClear();
-    await runForensicsVerify({ dir: out });
+    const verifier = client(served);
+    await runForensicsVerify({ dir: out }, { client: () => verifier.deps.client });
     expect(m.setExitCode).not.toHaveBeenCalled();
     expect(m.print.mock.calls[0]?.[0]).toMatchObject({ clean: true });
+    expect(verifier.calls.some((c) => c.includes('/raw?'))).toBe(true);
+  });
+
+  it('fails the export when the key the server pinned does not sign the downloaded batches', async () => {
+    const served = await servedFixture();
+    served.keys = served.keys.map((k) => ({ ...k, publicKey: 'ab'.repeat(32) }));
+    await runIncidentExport('inc-aaaa1111', { out }, client(served).deps);
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    const warned = m.warn.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(warned).toContain('signature does not verify');
   });
 
   it('exits 1 and names the batch when a served section no longer matches its signed hash', async () => {

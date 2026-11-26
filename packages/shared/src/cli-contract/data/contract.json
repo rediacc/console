@@ -1,5 +1,5 @@
 {
-  "version": "1d3291d671f7ac44",
+  "version": "911132e7f843fa15",
   "languages": [
     "ar",
     "de",
@@ -6754,7 +6754,7 @@
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.forensics.verify.description",
-      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one.",
+      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.",
       "summaryKey": "commands.forensics.verify.descriptionShort",
       "summary": "Verify audit and forensics hash chains of an evidence directory",
       "severity": "none",
@@ -6801,7 +6801,7 @@
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.forensics.verify.machineKeyOption",
-          "label": "Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable)"
+          "label": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
         }
       ],
       "positionals": [],

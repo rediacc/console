@@ -24,13 +24,18 @@ vi.mock('../../utils/errors.js', () => ({
   },
 }));
 
+vi.mock('../../services/account/account-client.js', () => ({ accountServerFetch: vi.fn() }));
+
 import {
   auditKey,
   type Fixture,
+  GUID,
+  MACHINE,
   repoKey,
   rewrite,
   writeFixture,
 } from '../../services/forensics/__tests__/evidence-fixture.js';
+import { ForensicsClient } from '../../services/forensics/client.js';
 import { runForensicsVerify } from '../forensics.js';
 
 let dir: string;
@@ -46,6 +51,48 @@ afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 const printed = () => m.print.mock.calls.map((c) => String(c[0])).join('\n');
 const key = (machine = 'machine-1') => [`${machine}=${fixture.publicKeyHex}`];
+
+const INCIDENT = {
+  id: 'inc-aaaa1111',
+  scopeKind: 'repo',
+  scopeRef: GUID,
+  windowFrom: '2026-11-01T00:00:00.000Z',
+  windowTo: '2026-11-03T00:00:00.000Z',
+};
+
+/** A client a test must never reach: a call fails the test. */
+const noServer = (): ForensicsClient => {
+  throw new Error('the server must not be called');
+};
+
+/** The account server, which pinned `publicKey` for machine-1 of the incident's scope. */
+function server(publicKey: string): ForensicsClient {
+  return new ForensicsClient(<T>(path: string) => {
+    if (path.endsWith('/incidents')) return Promise.resolve({ incidents: [INCIDENT] } as T);
+    if (path.endsWith('/investigations')) return Promise.resolve({ id: 'inv-1' } as T);
+    if (path.includes('/raw?')) {
+      return Promise.resolve({
+        files: [],
+        bytes: 0,
+        tooLarge: false,
+        machineKeys: [{ machineId: MACHINE, subscriptionId: 'sub-1', publicKey }],
+      } as T);
+    }
+    return Promise.reject(new Error(`unexpected ${path}`));
+  });
+}
+
+function writeManifest(publicKey: string): void {
+  writeFileSync(
+    join(dir, 'raw-manifest.json'),
+    JSON.stringify({
+      files: [],
+      bytes: 0,
+      tooLarge: false,
+      machineKeys: [{ machineId: MACHINE, subscriptionId: 'sub-1', publicKey }],
+    })
+  );
+}
 
 describe('forensics verify', () => {
   it('passes an intact fixture and leaves the exit code alone', async () => {
@@ -83,31 +130,56 @@ describe('forensics verify', () => {
     expect(printed()).toContain('no public key');
   });
 
-  it('takes the machine key from raw-manifest.json, and a --machine-key entry replaces it', async () => {
-    writeFileSync(
-      join(dir, 'raw-manifest.json'),
-      JSON.stringify({
-        files: [],
-        bytes: 0,
-        tooLarge: false,
-        machineKeys: [
-          { machineId: 'machine-1', subscriptionId: 'sub-1', publicKey: fixture.publicKeyHex },
-        ],
-      })
-    );
-    await runForensicsVerify({ dir });
+  it('never trusts a key the directory lists in raw-manifest.json', async () => {
+    writeManifest(fixture.publicKeyHex);
+    await runForensicsVerify({ dir }, { client: noServer });
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    expect(printed()).toContain('no public key');
+  });
+
+  it('fails a directory whose batches were re-signed under a key swapped into its manifest', async () => {
+    const pinned = fixture.publicKeyHex;
+    // The forger regenerates every file under a key of its own and writes that key into the manifest.
+    const forged = await writeFixture(dir);
+    writeManifest(forged.publicKeyHex);
+    writeFileSync(join(dir, 'export.json'), JSON.stringify({ incident: INCIDENT.id }));
+
+    await runForensicsVerify({ dir }, { client: () => server(pinned) });
+    expect(m.setExitCode).toHaveBeenCalledWith(1);
+    expect(printed()).toContain('signature does not verify');
+    expect(printed()).toContain('forensics.verifyFailed');
+  });
+
+  it('verifies an export directory under the key the server pinned for its incident', async () => {
+    writeManifest('ab'.repeat(32));
+    writeFileSync(join(dir, 'export.json'), JSON.stringify({ incident: INCIDENT.id }));
+    await runForensicsVerify({ dir }, { client: () => server(fixture.publicKeyHex) });
     expect(m.setExitCode).not.toHaveBeenCalled();
     expect(printed()).toContain('forensics.verifyClean');
 
+    // A --machine-key entry is used instead of the pinned key, with no server call.
     m.print.mockClear();
-    await runForensicsVerify({ dir, machineKey: [`machine-1=${'ab'.repeat(32)}`] });
+    await runForensicsVerify(
+      { dir, machineKey: [`machine-1=${'ab'.repeat(32)}`] },
+      { client: noServer }
+    );
     expect(m.setExitCode).toHaveBeenCalledWith(1);
     expect(printed()).toContain('signature does not verify');
   });
 
-  it('refuses a raw-manifest.json that is not JSON', async () => {
-    writeFileSync(join(dir, 'raw-manifest.json'), '{not json');
-    await expect(runForensicsVerify({ dir })).rejects.toThrow('forensics.badManifest');
+  it('names --machine-key when the pinned keys cannot be read', async () => {
+    writeFileSync(join(dir, 'incident.json'), JSON.stringify({ id: INCIDENT.id }));
+    const offline = new ForensicsClient(() => Promise.reject(new Error('offline')));
+    await expect(runForensicsVerify({ dir }, { client: () => offline })).rejects.toThrow(
+      'forensics.trustedKeysUnavailable'
+    );
+  });
+
+  it('refuses an export.json that is not JSON', async () => {
+    writeFileSync(join(dir, 'export.json'), '{not json');
+    await expect(runForensicsVerify({ dir }, { client: noServer })).rejects.toThrow(
+      'forensics.badManifest'
+    );
   });
 
   it('prints the stamped report as JSON', async () => {

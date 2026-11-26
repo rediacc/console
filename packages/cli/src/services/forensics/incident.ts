@@ -3,7 +3,8 @@
  * the incident record with its three deadline clocks, and a directory export of the incident's
  * window (record, timeline, aggregates, the raw chain manifest, the raw files under their
  * manifest keys and the verification of both chains over them). The export directory is an
- * evidence directory: `rdc forensics verify --dir <it>` repeats the check with no other input.
+ * evidence directory: `rdc forensics verify --dir <it>` repeats the check, reading the machine
+ * keys of the incident it names from the server again.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
@@ -17,7 +18,7 @@ import type { ForensicsClient, IncidentRecord, RawManifest } from './client.js';
 import {
   isChainKey,
   isSafeEvidenceKey,
-  manifestMachineKeys,
+  machineKeyMap,
   RAW_MANIFEST_FILE,
   verifyEvidenceDir,
 } from './evidence.js';
@@ -147,6 +148,35 @@ async function downloadRaw(
   return written;
 }
 
+/**
+ * The machine keys the server pinned for an incident's scope, read through a fresh investigation
+ * over the incident's window. A failure names `--machine-key` as the offline route.
+ */
+export async function pinnedMachineKeys(
+  client: ForensicsClient,
+  incidentId: string
+): Promise<Map<string, string>> {
+  try {
+    const incident = await client.findIncident(incidentId);
+    const investigationId = await client.openInvestigation({
+      kind: incident.scopeKind,
+      ref: incident.scopeRef,
+    });
+    const manifest = await client.rawManifest(investigationId, {
+      from: incident.windowFrom,
+      to: incident.windowTo,
+    });
+    return machineKeyMap(manifest.machineKeys);
+  } catch (error) {
+    const code = error instanceof CliExitError ? error.code : ERROR_CODES.NETWORK_ERROR;
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new CliExitError(
+      code,
+      t('forensics.trustedKeysUnavailable', { id: incidentId, reason })
+    );
+  }
+}
+
 /** Write the incident's window to `directory`, download the raw files and verify both chains over them. */
 export async function exportIncident(
   client: ForensicsClient,
@@ -177,7 +207,8 @@ export async function exportIncident(
   files.push(...raw);
   let verification: ExportVerification = null;
   if (raw.some(isChainKey)) {
-    verification = await verifyEvidenceDir(target, window, manifestMachineKeys(target));
+    // The keys of the server response in memory, never the manifest file just written to disk.
+    verification = await verifyEvidenceDir(target, window, machineKeyMap(manifest.machineKeys));
     files.push(writeJson(target, 'verification.json', verification));
   }
   files.push(

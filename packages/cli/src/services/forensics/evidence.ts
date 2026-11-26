@@ -9,9 +9,9 @@
  *
  * Nothing here trusts the files: a batch whose header, signature or sections were changed
  * fails the signature, the section hashes or the chain link, and a day file changed after the
- * next day recorded its hash is an edit at that day. The machine keys come from the
- * `raw-manifest.json` an `rdc incident export` writes beside the files (the keys the server
- * pinned), and a `--machine-key` entry replaces the manifest's key for that machine.
+ * next day recorded its hash is an edit at that day. The machine keys never come from the
+ * directory: a key written into its `raw-manifest.json` is as editable as the batches it would
+ * vouch for, so the caller supplies them from outside (the server's pinned keys, `--machine-key`).
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, sep } from 'node:path';
@@ -223,23 +223,47 @@ export function parseMachineKeys(entries: readonly string[]): Map<string, string
   return keys;
 }
 
-/** The pinned machine keys of the `raw-manifest.json` in `directory`; empty when there is none. */
-export function manifestMachineKeys(directory: string): Map<string, string> {
+/** The file an export stamps at the root of the evidence directory, naming its incident. */
+export const EXPORT_STAMP_FILE = 'export.json';
+const INCIDENT_FILE = 'incident.json';
+
+/** `{machineId, publicKey}` entries (the server's pinned list) as a map from machine id to 64 hex. */
+export function machineKeyMap(
+  entries: readonly { machineId?: unknown; publicKey?: unknown }[]
+): Map<string, string> {
   const keys = new Map<string, string>();
-  const file = join(directory, RAW_MANIFEST_FILE);
-  if (!existsSync(file)) return keys;
-  let manifest: { machineKeys?: { machineId?: unknown; publicKey?: unknown }[] };
-  try {
-    manifest = JSON.parse(readFileSync(file, 'utf8')) as typeof manifest;
-  } catch {
-    throw invalid(t('forensics.badManifest', { file }));
-  }
-  for (const entry of manifest.machineKeys ?? []) {
+  for (const entry of entries) {
     if (typeof entry.machineId !== 'string' || typeof entry.publicKey !== 'string') continue;
     if (HEX_KEY.test(entry.publicKey)) keys.set(entry.machineId, entry.publicKey.toLowerCase());
   }
   return keys;
 }
+
+function readIncidentField(file: string, field: 'incident' | 'id'): string | undefined {
+  if (!existsSync(file)) return undefined;
+  let parsed: Record<string, unknown>;
+  try {
+    parsed = JSON.parse(readFileSync(file, 'utf8')) as Record<string, unknown>;
+  } catch {
+    throw invalid(t('forensics.badManifest', { file }));
+  }
+  const value = parsed[field];
+  return typeof value === 'string' && value !== '' ? value : undefined;
+}
+
+/**
+ * The incident an export directory names (`export.json`, else `incident.json`); undefined when it
+ * names none. It is only a pointer: the keys for it are read from the server, never from the files.
+ */
+export function exportedIncidentId(directory: string): string | undefined {
+  return (
+    readIncidentField(join(directory, EXPORT_STAMP_FILE), 'incident') ??
+    readIncidentField(join(directory, INCIDENT_FILE), 'id')
+  );
+}
+
+/** The trusted 64 hex key of a machine; undefined when no source outside the evidence has one. */
+export type MachineKeySource = (machineId: string) => Promise<string | undefined>;
 
 function hexBytes(hex: string): Uint8Array {
   const out = new Uint8Array(hex.length / 2);
@@ -247,21 +271,25 @@ function hexBytes(hex: string): Uint8Array {
   return out;
 }
 
-/** Verify a directory of evidence for the window with the machine keys given. */
+/** Verify a directory of evidence for the window under machine keys obtained outside it. */
 export async function verifyEvidenceDir(
   directory: string,
   requested: ForensicsWindow | undefined,
-  machineKeys: ReadonlyMap<string, string>
+  machineKeys: ReadonlyMap<string, string> | MachineKeySource
 ): Promise<VerificationReport & { files: number }> {
+  const keyOf: MachineKeySource =
+    typeof machineKeys === 'function'
+      ? machineKeys
+      : (machineId) => Promise.resolve(machineKeys.get(machineId));
   const evidence = loadEvidence(directory, requested);
   const report = await verifyWindow({
     org: evidence.org,
     window: evidence.window,
     auditDays: evidence.auditDays,
     batches: evidence.batches,
-    publicKeyFor: (machineId) => {
-      const hex = machineKeys.get(machineId);
-      return Promise.resolve(hex === undefined ? null : importSpoolPublicKey(hexBytes(hex)));
+    publicKeyFor: async (machineId) => {
+      const hex = await keyOf(machineId);
+      return hex === undefined ? null : importSpoolPublicKey(hexBytes(hex));
     },
     verifier: VERIFIER,
     toolVersion: VERSION,

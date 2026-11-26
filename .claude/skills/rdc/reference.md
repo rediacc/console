@@ -2311,14 +2311,14 @@ Write the incident's window to a directory: the incident record with its clocks,
 
 ### rdc forensics verify
 
-Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify under the machine keys the directory's raw-manifest.json lists, as an rdc incident export writes it; --machine-key adds a key or replaces the listed one.
+Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails.
 
 **Options:**
 
 - `--dir <path>`: Evidence directory to verify
 - `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
 - `--until <when>`: End of the window, in the same forms (default: now)
-- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, replacing the key raw-manifest.json lists (repeatable)
+- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)
 
 > MCP excluded: Read verb of the forensics investigation; PLAN-forensics-investigation FI8 opts the reads in through the rmcp registry once PLAN-rmcp-local-mcp LM1 lands.
 
