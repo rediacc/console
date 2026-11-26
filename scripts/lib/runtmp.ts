@@ -69,7 +69,14 @@ export function sweepDead(prefix: string, base: string = os.tmpdir()): string[] 
   let names: string[];
   try {
     names = fs.readdirSync(base);
-  } catch {
+  } catch (err) {
+    // A base that does not exist holds no dead run. Any other read failure is a VACUOUS sweep: it judged nothing, so it
+    // says so on stderr rather than passing as "nothing dead", and still never throws (a cleanup must not fail its caller).
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== 'ENOENT')
+      process.stderr.write(
+        `runtmp: VACUOUS sweep of ${base}: it could not be read (${code ?? String(err)}), so no dead ${prefix} run dir was judged\n`
+      );
     return removed;
   }
   for (const name of names) {

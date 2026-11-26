@@ -55,7 +55,10 @@ function runFixture(withSetup: boolean): { left: string[]; rc: number | null; ou
 
 function main(): void {
   const guarded = runFixture(true);
-  check(guarded.rc === 0, `fixture passes under vitest run with the globalSetup (rc ${guarded.rc})`);
+  check(
+    guarded.rc === 0,
+    `fixture passes under vitest run with the globalSetup (rc ${guarded.rc})`
+  );
   if (guarded.rc !== 0) console.log(guarded.out);
   check(
     guarded.left.length === 0,
@@ -76,7 +79,12 @@ function main(): void {
       .map((f) => path.join(REPO, dir, f))
       .filter((f) => fs.existsSync(f))
   );
-  check(configs.length >= 10, `the config scan found ${configs.length} vitest configs (at least 10)`);
+  // A scan that finds no config checks nothing; 10 configs on 2026-11-26 (the floor is the count, so dropping one is a red to read), so a broken walk cannot pass as a clean tree.
+  const MIN_VITEST_CONFIGS = 10;
+  check(
+    configs.length >= MIN_VITEST_CONFIGS,
+    `the config scan found ${configs.length} vitest configs (at least ${MIN_VITEST_CONFIGS})`
+  );
   for (const cfg of configs) {
     check(
       fs.readFileSync(cfg, 'utf8').includes('scripts/lib/vitest-run-tmp.ts'),

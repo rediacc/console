@@ -27,6 +27,7 @@ function check(ok: boolean, what: string): void {
 type Mode = 'plain' | 'hooked' | 'throwing' | 'unhooked';
 
 function childMain(mode: Mode, base: string): void {
+  // tree-write: safe base is argv[4], which startChild fills with the parent's mkdtempSync under os.tmpdir(), never the tree
   const dir = runDir('rtctl-', base);
   fs.writeFileSync(path.join(dir, 'f'), 'x');
   if (mode === 'hooked') installSignalCleanup();
@@ -190,6 +191,33 @@ async function main(): Promise<void> {
     );
     const other = fs.mkdtempSync(path.join(base, 'rtctl-notstamped-'));
     check(!sweepDead('rtctl-', base).includes(other), 'a dir that is not stamped is left alone');
+
+    // 7. a sweep that cannot read its base says VACUOUS on stderr; a base that does not exist is silent
+    const notDir = path.join(base, 'rtctl-plain-file');
+    fs.writeFileSync(notDir, '');
+    const said = (fn: () => string[]): { got: string[]; err: string } => {
+      const write = process.stderr.write;
+      let err = '';
+      process.stderr.write = ((chunk: string | Uint8Array) => {
+        err += String(chunk);
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        return { got: fn(), err };
+      } finally {
+        process.stderr.write = write;
+      }
+    };
+    const unreadable = said(() => sweepDead('rtctl-', notDir));
+    check(
+      unreadable.got.length === 0 && /VACUOUS sweep of .*ENOTDIR/.test(unreadable.err),
+      `an unreadable base is reported VACUOUS, not passed as nothing dead (stderr: ${JSON.stringify(unreadable.err)})`
+    );
+    const missing = said(() => sweepDead('rtctl-', path.join(base, 'rtctl-absent')));
+    check(
+      missing.got.length === 0 && missing.err === '',
+      `CONTROL: a missing base is silent (stderr: ${JSON.stringify(missing.err)})`
+    );
   } finally {
     fs.rmSync(base, { recursive: true, force: true });
   }
