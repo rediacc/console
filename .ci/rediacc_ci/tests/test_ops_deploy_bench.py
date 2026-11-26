@@ -463,6 +463,7 @@ def _bench_env(monkeypatch, **overrides):
         "ACCOUNT_JWT_SECRET": "jw",
         "FREE_LICENSE_HMAC_KEY": "hm",
         "ACCOUNT_AE_READ_TOKEN": "ae-read",
+        "AI_GATEWAY_LOGS_TOKEN": "ai-logs",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
         "ACCOUNT_BACKUP_STORE_KEK": "kk",
         "ROOT_EMAIL": "root@example.invalid",
@@ -807,4 +808,13 @@ def test_a_half_configured_forensics_triple_refuses_the_bench_push(monkeypatch, 
         monkeypatch.delenv(name, raising=False)
     _bench_env(monkeypatch, **{k: v for k, v in FORENSICS_BENCH.items() if k != missing})
     with pytest.raises(deploy_bench.DeployError, match="half configured.*%s" % missing):
+        deploy_bench.secrets_payload()
+
+
+def test_the_payload_carries_the_ai_gateway_logs_token(monkeypatch):
+    """PLAN-console-ai-credits D8: the bench Worker gets the AI Gateway logs-read token; an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["AI_GATEWAY_LOGS_TOKEN"] == "ai-logs"
+    _bench_env(monkeypatch, AI_GATEWAY_LOGS_TOKEN="")
+    with pytest.raises(deploy_bench.DeployError, match="AI_GATEWAY_LOGS_TOKEN"):
         deploy_bench.secrets_payload()

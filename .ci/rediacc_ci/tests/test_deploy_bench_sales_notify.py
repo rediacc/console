@@ -28,6 +28,7 @@ def _seed(monkeypatch: pytest.MonkeyPatch) -> None:
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
         "ACCOUNT_AE_READ_TOKEN",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",
     ):

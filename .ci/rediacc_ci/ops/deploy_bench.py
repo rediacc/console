@@ -294,6 +294,8 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
         # The Analytics Engine read token the portal's telemetry reads use (agent/plans/PLAN-d1-scaling.md W2).
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN") or "",
+        # The AI Gateway logs-read token the nightly AI credit reconcile calls Cloudflare with (agent/plans/PLAN-console-ai-credits.md D8).
+        "AI_GATEWAY_LOGS_TOKEN": os.environ.get("AI_GATEWAY_LOGS_TOKEN") or "",
         # Layer 3 of the config store; the deploy-bench-<region> profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
         # Seals customer backup store credentials; the deploy-bench-<region> profile binds the bench-only vault entry under this name.
@@ -326,6 +328,7 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],
         "FREE_LICENSE_HMAC_KEY": signing["FREE_LICENSE_HMAC_KEY"],
         "ACCOUNT_AE_READ_TOKEN": signing["ACCOUNT_AE_READ_TOKEN"],
+        "AI_GATEWAY_LOGS_TOKEN": signing["AI_GATEWAY_LOGS_TOKEN"],
         # The account whose Analytics Engine datasets the SQL API reads; every regional Worker gets it from the pusher.
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],

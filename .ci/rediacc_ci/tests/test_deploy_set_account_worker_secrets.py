@@ -53,6 +53,7 @@ FIXTURE_ENV = {
     "ACCOUNT_JWT_SECRET": "jw",
     "FREE_LICENSE_HMAC_KEY": "hm",
     "ACCOUNT_AE_READ_TOKEN": "ae",
+    "AI_GATEWAY_LOGS_TOKEN": "ai",
     "CLOUDFLARE_ACCOUNT_ID": "acct",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
@@ -209,6 +210,7 @@ def _without_config_key(calls: str) -> str:
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
+    calls = calls.replace('  "AI_GATEWAY_LOGS_TOKEN": "ai",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
@@ -627,7 +629,7 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 40
+    assert len(port.KEYS) == 41
     assert len(www.KEYS) == 22
     assert len(preview.KEYS) == 12
     assert len(port.REQUIRED_NONEMPTY) == 23
