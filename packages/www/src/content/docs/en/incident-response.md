@@ -46,7 +46,7 @@ Evidence above 2 GiB is too large for the browser. The same module runs from the
 
 ```bash
 rdc forensics verify --dir ./incident-evidence
-rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<64 hex characters>
+rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
 The command exits 1 when any gap or edit is found. `--machine-key <machine>=<64 hex characters>` supplies a key from outside the directory and can be repeated. A machine with no outside key fails.
