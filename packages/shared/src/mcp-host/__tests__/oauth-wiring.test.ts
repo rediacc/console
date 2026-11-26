@@ -14,7 +14,6 @@ import {
   HOST,
   KEY,
   OTHER_GRANT,
-  PORTAL,
   pkce,
   Tokens,
 } from './helpers/oauth-harness.js';
@@ -78,7 +77,7 @@ describe('src/index.ts wiring', () => {
     const handle = new URL(authorize.headers.get('location')!).searchParams.get('authRequest')!;
     const done = await viaWorker(
       '/authorize/complete',
-      form({ authRequest: handle, grantId: GRANT, S: secretTextOf(GRANT) }, { origin: PORTAL })
+      form({ authRequest: handle, grantId: GRANT, S: secretTextOf(GRANT) }, { origin: ACCOUNT })
     );
     const code = new URL(done.headers.get('location')!).searchParams.get('code')!;
     const token = await viaWorker(

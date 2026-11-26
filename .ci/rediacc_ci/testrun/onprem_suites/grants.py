@@ -122,8 +122,9 @@ def _probe(ctx: Context, port: int) -> tuple[int, str | None]:
         status, _ = ctx.http_get(url)
         if status == 200:
             return pgid, None
-        if ctx.exited(pgid) is not None:
-            return pgid, "the probe daemon exited %d" % ctx.exited(pgid)
+        exited = ctx.exited(pgid)
+        if exited is not None:
+            return pgid, "the probe daemon exited %d" % exited
         ctx.sleep(0.5)
         waited += 0.5
     return pgid, "the probe daemon never answered %s" % url

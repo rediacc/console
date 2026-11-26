@@ -18,7 +18,6 @@ import {
   LOOPBACK,
   OTHER_GRANT,
   oauth,
-  PORTAL,
   pkce,
   refresh,
   registerDcr,
@@ -80,10 +79,10 @@ describe('the code flow', () => {
     );
     const handle = new URL(authorize.headers.get('location')!).searchParams.get('authRequest')!;
     const described = await call(`/authorize/request?authRequest=${encodeURIComponent(handle)}`, {
-      headers: { origin: PORTAL },
+      headers: { origin: ACCOUNT },
     });
     expect(described.status).toBe(200);
-    expect(described.headers.get('access-control-allow-origin')).toBe(PORTAL);
+    expect(described.headers.get('access-control-allow-origin')).toBe(ACCOUNT);
     expect(await described.json()).toEqual({
       clientName: 'Claude Code',
       clientDomain: 'client.example.com',
@@ -225,7 +224,7 @@ describe('/authorize/complete', () => {
   const post = (
     handle: string,
     fields: Partial<Record<'grantId' | 'S', string>> = {},
-    origin = PORTAL
+    origin = ACCOUNT
   ) =>
     call(
       '/authorize/complete',
@@ -286,12 +285,12 @@ describe('/authorize/complete', () => {
     expect(foreign.headers.get('access-control-allow-origin')).toBeNull();
     const preflight = await call('/authorize/request', {
       method: 'OPTIONS',
-      headers: { origin: PORTAL },
+      headers: { origin: ACCOUNT },
     });
     expect(preflight.status).toBe(204);
-    expect(preflight.headers.get('access-control-allow-origin')).toBe(PORTAL);
+    expect(preflight.headers.get('access-control-allow-origin')).toBe(ACCOUNT);
     expect(
-      (await call('/authorize/request?authRequest=nope', { headers: { origin: PORTAL } })).status
+      (await call('/authorize/request?authRequest=nope', { headers: { origin: ACCOUNT } })).status
     ).toBe(404);
   });
 

@@ -139,7 +139,7 @@ export default {
     const response = await transportFor(env).fetch(request);
     const observed = observeCall(env, grantId, seen, response.clone(), startedAt);
     // `waitUntil` keeps the isolate alive for the counter without delaying the answer.
-    if (typeof ctx?.waitUntil === 'function') ctx.waitUntil(observed);
+    if (typeof ctx.waitUntil === 'function') ctx.waitUntil(observed);
     else await observed;
     return response;
   },

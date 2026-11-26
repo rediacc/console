@@ -349,7 +349,7 @@ function skipForeignOrigin<T extends RemoteRepoLicenseScanEntry>(
     const vars = {
       repo: nameByGuid.get(repo.repositoryGuid) ?? repo.repositoryGuid,
       machine: machineName,
-      licenseOrigin: renewalOrigin(repo.currentRenewalUrl ?? ''),
+      licenseOrigin: renewalOrigin(repo.currentRenewalUrl),
       configOrigin,
     };
     outputService.warn(t('warnings.licenseForeignOriginSkipped', vars));

@@ -6,16 +6,21 @@ import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
 import { convertV4MiniflareOptions, Miniflare } from 'miniflare';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_MCP_EU_HOST,
+  WK_MCP_US_HOST,
+} from '../../config/well-known.generated.js';
 import { createNodeExecutionContext, installCloudflareWorkersShim } from '../node-workers-shim.js';
 import { SqliteKvNamespace } from '../sqlite-kv.js';
 
-const HOST = 'mcp.eu.rediacc.cloud';
+const HOST = WK_MCP_EU_HOST;
 const ENTRY = fileURLToPath(new URL('./fixtures/mcp-worker.ts', import.meta.url));
 const BINDINGS = {
   REGION: 'eu',
   ENVIRONMENT: 'test',
   MCP_HOST: HOST,
-  ACCOUNT_URL: 'https://eu.rediacc.cloud',
+  ACCOUNT_URL: WK_ACCOUNT_DEFAULT_ORIGIN,
   AUTH_REQUEST_KEY: 'host-suite-auth-request-key',
   INTERNAL_REVOKE_TOKEN: 'host-suite-revoke-token',
 };
@@ -140,7 +145,7 @@ describe.each(HOSTS)('shared MCP handler on %s', (_name, factory) => {
     expect(response.status).toBe(421);
     const body = (await response.json()) as { code: string; mcpUrl: string };
     expect(body.code).toBe('REDIACC_WRONG_REGION');
-    expect(body.mcpUrl).toBe('https://mcp.us.rediacc.cloud/g/us_host_suite');
+    expect(body.mcpUrl).toBe(`https://${WK_MCP_US_HOST}/g/us_host_suite`);
   });
 
   it('guards the revoke route with its bearer secret', async () => {

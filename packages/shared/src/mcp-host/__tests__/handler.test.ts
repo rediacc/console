@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import type { McpCallRouting } from '../executor.js';
+import type { HostExecutionContext } from '../host-types.js';
 import type { ResolvedGrantWire } from '../resolve.js';
 import { bearerFor, SECRET_BYTES } from './helpers/grant.js';
 
@@ -69,7 +70,7 @@ describe('mcp-host/handler.ts wiring', () => {
     const viaWorker = (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
       const request = new Request(input, init);
       request.headers.set('authorization', `Bearer ${bearerFor(GRANT_ID)}`);
-      return Promise.resolve(worker.fetch(request, env as never, {} as ExecutionContext));
+      return Promise.resolve(worker.fetch(request, env as never, {} as HostExecutionContext));
     };
     const client = new Client(
       { name: 'rw-wiring', version: '0.0.0' },

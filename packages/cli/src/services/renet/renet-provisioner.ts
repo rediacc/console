@@ -403,7 +403,7 @@ class RenetProvisionerService {
     // Best-effort: restart route server so it picks up the new binary, now or, when deferred, by the caller.
     let servicesRestarted = false;
     const routerRefreshOwed = options?.restartServices === true && installResult.currentUpdated;
-    const routerRefreshDue = routerRefreshOwed && options?.deferRouterRefresh === true;
+    const routerRefreshDue = routerRefreshOwed && options.deferRouterRefresh === true;
     if (routerRefreshOwed && !routerRefreshDue) {
       servicesRestarted = await this.refreshRouter(sftp, context.remoteInstallPath);
     }

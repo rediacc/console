@@ -5,6 +5,7 @@ import './helpers/workers-shim.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
+import type { HostExecutionContext } from '../host-types.js';
 import {
   ALERT_QUERY,
   ALERT_RULE,
@@ -81,7 +82,7 @@ async function workerFor(grantId: string, state: 'active' | 'revoked', withDatas
         }),
       }),
       env as never,
-      {} as ExecutionContext
+      {} as HostExecutionContext
     );
     return response;
   };

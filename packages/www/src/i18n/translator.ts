@@ -115,7 +115,7 @@ type MissHandler = (message: string) => void;
  */
 function strictByDefault(): boolean {
   const env = import.meta.env as { PROD?: boolean; SSR?: boolean } | undefined;
-  return Boolean(env?.PROD && env?.SSR);
+  return Boolean(env?.PROD && env.SSR);
 }
 
 function missHandler(lang: Language, strict: boolean): MissHandler {

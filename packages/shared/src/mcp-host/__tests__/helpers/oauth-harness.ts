@@ -2,13 +2,13 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
+import type { HostExecutionContext, HostKvNamespace } from '../../host-types.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../../oauth/index.js';
 import { SqliteKvNamespace } from '../../sqlite-kv.js';
 import { activeGrant, resolverFor, secretTextOf } from './grant.js';
 
 export const HOST = 'mcp.test.rediacc.cloud';
 export const ACCOUNT = 'https://account.test';
-export const PORTAL = ACCOUNT;
 export const KEY = 'k'.repeat(40);
 export const GRANT = 'eu_oauth_grant';
 export const OTHER_GRANT = 'eu_oauth_other';
@@ -21,7 +21,7 @@ export const ctx = {
   waitUntil() {},
   passThroughOnException() {},
   props: {},
-} as unknown as ExecutionContext;
+} as unknown as HostExecutionContext;
 
 export let db: DatabaseSync;
 export let env: OAuthEnv;
@@ -51,7 +51,7 @@ export function cimdDocument(overrides: Record<string, unknown> = {}): Record<st
 
 beforeEach(() => {
   db = new DatabaseSync(':memory:');
-  env = { OAUTH_KV: new SqliteKvNamespace(db) as unknown as KVNamespace };
+  env = { OAUTH_KV: new SqliteKvNamespace(db) as unknown as HostKvNamespace };
   requested = [];
   resolved = [];
   resolveGrant = resolverFor([
@@ -157,7 +157,7 @@ export async function authorizeAndComplete(flow: Flow, challenge: string): Promi
         grantId: flow.grantId ?? GRANT,
         S: flow.secret ?? secretTextOf(GRANT),
       },
-      { origin: flow.origin ?? PORTAL }
+      { origin: flow.origin ?? ACCOUNT }
     )
   );
 }

@@ -208,10 +208,6 @@
         "@radix-ui/react-slot",
         // BLOCKER: code imports react-router-dom (a thin re-export of react-router); both are declared so syncpack sameRange holds the pair to one version
         "react-router",
-        // BLOCKER: the AI chat stack of PLAN-console-ai-assistant.md D11 (operator ruling C37), added by its box AI1; no chat component imports them yet; box AI16 of that plan puts the chat on them and drops these entries
-        "@assistant-ui/react",
-        "use-stick-to-bottom",
-        "streamdown",
         // BLOCKER: the local Whisper-base microphone engine of D12 (operator ruling C38), added by AI1 for the open box AI10 (c9e75130), which imports it lazily in a worker
         "@huggingface/transformers"
       ]

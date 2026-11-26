@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import { callTool, type GrantCaller } from '../call.js';
 import type { McpCallForward } from '../executor.js';
+import type { HostExecutionContext, HostKvNamespace } from '../host-types.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
 import type { GrantContext } from '../scope.js';
 import { SqliteKvNamespace } from '../sqlite-kv.js';
@@ -26,7 +27,7 @@ const ctx = {
   waitUntil() {},
   passThroughOnException() {},
   props: {},
-} as unknown as ExecutionContext;
+} as unknown as HostExecutionContext;
 
 interface Tokens {
   access_token: string;
@@ -48,7 +49,7 @@ beforeEach(() => {
   vi.useFakeTimers({ toFake: ['Date'] });
   setClock(START);
   db = new DatabaseSync(':memory:');
-  env = { OAUTH_KV: new SqliteKvNamespace(db) as unknown as KVNamespace };
+  env = { OAUTH_KV: new SqliteKvNamespace(db) as unknown as HostKvNamespace };
   account = {
     grant: activeGrant(GRANT, {
       userId: 'user-1',
