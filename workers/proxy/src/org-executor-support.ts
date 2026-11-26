@@ -482,10 +482,7 @@ export async function pollReady(container: Container, live: () => boolean): Prom
 }
 
 /** Record an out-of-memory exit for the sizing rule: the time of any, and separately of one on the heavy size. */
-export async function flagOom(
-  storage: DurableObjectStorage,
-  size: string | undefined
-): Promise<void> {
+async function flagOom(storage: DurableObjectStorage, size: string | undefined): Promise<void> {
   const now = Date.now();
   await storage.put(OOM_KEY, now);
   if (size === 'heavy') await storage.put(OOM_HEAVY_KEY, now);
