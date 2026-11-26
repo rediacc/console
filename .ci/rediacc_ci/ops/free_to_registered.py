@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.free_to_registered [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the captured-email and cleanup queries) unless that profile is already bound.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` Bitwarden profile (it needs `CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` and `CF_EMAIL` when no token is set, for the captured-email and cleanup queries) unless that profile is already bound.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 

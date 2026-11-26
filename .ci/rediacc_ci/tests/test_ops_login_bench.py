@@ -1316,3 +1316,24 @@ def test_control_a_set_home_still_finds_its_config(tmp_path):
     env = {"HOME": str(tmp_path)}
     assert login_bench.config_file_exists("eu-bench", env) is True
     assert login_bench.linked_api_url("eu-bench", env) == "https://x"
+
+
+def test_the_d1_reader_prefers_the_bearer_token_over_the_key_pair(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": []}]'
+
+    def run(*_a, **kw):
+        seen.update(kw["env"])
+        return Done()
+
+    monkeypatch.setattr(login_bench.subprocess, "run", run)
+    login_bench._d1_rows("SELECT 1")
+    assert seen["CLOUDFLARE_API_TOKEN"] == "tok"
+    assert "CLOUDFLARE_API_KEY" not in seen
+    assert "CLOUDFLARE_EMAIL" not in seen

@@ -96,6 +96,10 @@ with open(os.environ["FAKE_LOG"], "a") as fh:
     fh.write(json.dumps({{"tool": "npx", "argv": raw, "cwd": os.path.relpath(os.getcwd(), os.environ["FAKE_ROOT"]),
                           "stdin": json.loads(stdin) if stdin else None,
                           "cf_env": sorted(k for k in os.environ if k.startswith(("CLOUDFLARE_", "CF_")))}}) + "\\n")
+# deploy_bench runs the rotation check directly through tsx, where the bash called `./run.sh rotation check`; it answers from the same FAKE_ROTATION_* variables.
+if argv[:3] == ["tsx", "scripts/rotation/index.ts", "check"]:
+    sys.stderr.write(os.environ.get("FAKE_ROTATION_STDERR", ""))
+    sys.exit(int(os.environ.get("FAKE_ROTATION_RC", "0")))
 if argv[:3] == ["wrangler", "d1", "export"] and "--remote" in argv:
     out = next(a for a in argv if a.startswith("--output="))[len("--output="):]
     if os.environ.get("FAKE_EXPORT_WRITES", "1") == "1":

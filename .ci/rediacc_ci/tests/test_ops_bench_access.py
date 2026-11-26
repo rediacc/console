@@ -921,3 +921,10 @@ def test_the_committed_tree_lists_every_regional_account_and_proxy_host():
     for region in ("us", "asia"):
         assert f"bench-{region}.rediacc.cloud" in found
         assert f"proxy.bench-{region}.rediacc.cloud" in found
+
+
+def test_a_stored_job_token_skips_the_profile_reexec(monkeypatch):
+    for name in ("CF_MANAGEMENT_TOKEN", "CF_GLOBAL_API_KEY", "CF_EMAIL", "REDIACC_BWS_PROFILES"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("CF_JOB_TOKEN", "stored")
+    assert ba._reexec_under_profile(["list"]) is None

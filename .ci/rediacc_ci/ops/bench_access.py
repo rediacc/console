@@ -651,7 +651,7 @@ VERBS = {
 def _reexec_under_profile(argv: list[str]) -> int | None:
     """This command under the bench-access profile, unless a credential is already in the environment; None when it should run here."""
     have_key = os.environ.get("CF_GLOBAL_API_KEY") and os.environ.get("CF_EMAIL")
-    if os.environ.get("CF_MANAGEMENT_TOKEN") or have_key:
+    if os.environ.get("CF_JOB_TOKEN") or os.environ.get("CF_MANAGEMENT_TOKEN") or have_key:
         return None
     if PROFILE in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","):
         return None

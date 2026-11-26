@@ -114,6 +114,8 @@ class Auth:
 
     token: str
     created: bool = False
+    # True for a long-lived token read from `CF_JOB_TOKEN`: `self_destruct` never deletes it.
+    stored: bool = False
     destroyed: bool = False
     # The policies a token minted here carries; `await_propagation` chooses its probes from them.
     policies: list[dict] = dataclasses.field(default_factory=list)
@@ -333,7 +335,10 @@ def create_scoped_token(
 def resolve_scoped(
     purpose: str, account_id: str = DEFAULT_ACCOUNT_ID, zone_id: str | None = None
 ) -> Auth:
-    """A token for one spend-guard caller: `CF_MANAGEMENT_TOKEN` as supplied, else one minted from `CF_GLOBAL_API_KEY` + `CF_EMAIL` with `SCOPED_GROUPS[purpose]` only. Never prompts: these run unattended."""
+    """A token for one spend-guard caller: the stored `CF_JOB_TOKEN` or `CF_MANAGEMENT_TOKEN` as supplied, else one minted from `CF_GLOBAL_API_KEY` + `CF_EMAIL` with `SCOPED_GROUPS[purpose]` only. Never prompts: these run unattended."""
+    job = os.environ.get("CF_JOB_TOKEN")
+    if job:
+        return Auth(token=job, created=False, stored=True)
     token = os.environ.get("CF_MANAGEMENT_TOKEN")
     if token:
         return Auth(token=token)
@@ -357,7 +362,10 @@ def _mint(global_key: str, email: str, account_id: str) -> Auth:
 
 
 def resolve(account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
-    """Resolve Cloudflare authentication from the environment, prompting when neither credential is set."""
+    """Resolve Cloudflare authentication from the environment, prompting when no credential is set. A stored `CF_JOB_TOKEN` wins and is never deleted by `self_destruct`."""
+    job = os.environ.get("CF_JOB_TOKEN")
+    if job:
+        return Auth(token=job, created=False, stored=True)
     token = os.environ.get("CF_MANAGEMENT_TOKEN")
     global_key = os.environ.get("CF_GLOBAL_API_KEY")
     email = os.environ.get("CF_EMAIL")
@@ -489,7 +497,7 @@ def require_self_destruct_capable(auth: Auth | None) -> None:
 
 
 def self_destruct(auth: Auth | None, delete_aws: bool = False) -> None:
-    """Delete the credentials this run used. Never raises: a failure is a warning, the run's exit status stands."""
+    """Delete the credentials this run used, except a stored job token (`Auth.stored`), which is never deleted. Never raises: a failure is a warning, the run's exit status stands."""
     if auth is not None and auth.destroyed:
         return
     log.step("=== Self-destruct: destroying credentials used for this run ===")
@@ -514,7 +522,7 @@ def self_destruct(auth: Auth | None, delete_aws: bool = False) -> None:
             )
         else:
             log.info("AWS admin key deleted")
-    if auth is None or not auth.token:
+    if auth is None or not auth.token or auth.stored:
         return
     auth.destroyed = True
     log.step("Deleting CF management token...")

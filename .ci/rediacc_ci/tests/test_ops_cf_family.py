@@ -848,6 +848,10 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (b8601cfde): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
         if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
             continue
+        # DECLARED DELTA: the rotation preflight runs the TypeScript check directly from private/account, off the `rotation` bws profile that `./run.sh rotation` binds; mapped back to the bash call.
+        if raw["tool"] == "npx" and raw["argv"][2:4] == ["scripts/rotation/index.ts", "check"]:
+            out.append({"tool": "run.sh", "argv": ["rotation", "check", "--for=bench"]})
+            continue
         call = dict(raw)
         # DECLARED DELTA (2026-10-28): the keyless bench portal builds into bench/dist, never into the dist a production deploy uploads; the bash built into dist/account.
         if call["tool"] == "npx" and "vite" in call["argv"]:

@@ -64,7 +64,7 @@ def credential_headers(env: dict[str, str]) -> tuple[dict[str, str], str, list[s
     else:
         raise LiveError(
             "no Cloudflare credential: set CLOUDFLARE_API_TOKEN (Workers Scripts Read, D1 Read, Workers R2 "
-            "Storage Read), e.g. `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile bench-access -- ...`"
+            "Storage Read) from a dedicated CF_TOKEN_REGION_AUDIT token, e.g. `CLOUDFLARE_API_TOKEN=$CF_TOKEN_REGION_AUDIT ...`"
         )
     account = env.get("CLOUDFLARE_ACCOUNT_ID", "")
     if not account:

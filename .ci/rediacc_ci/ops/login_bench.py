@@ -406,14 +406,20 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str, target: Target | None = None) -> list[dict]:
-    """`wrangler d1 execute` against the bench D1 with the Global API Key pair the deploy-bench-<region> profile binds; stdout is never printed (it holds live links)."""
+    """`wrangler d1 execute` against the bench D1 with the Bearer token in `CLOUDFLARE_API_TOKEN` (the Global API Key pair only when no token is set); stdout is never printed (it holds live links)."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
-    if not (key and mail):
-        raise LoginError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
     env = dict(os.environ)
-    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
-        env.pop(name, None)
-    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    if env.get("CLOUDFLARE_API_TOKEN"):
+        # The Bearer token (the resolved Auth) authenticates; the global-key names must not shadow it.
+        for name in ("CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL", "CF_API_KEY"):
+            env.pop(name, None)
+    elif key and mail:
+        env.pop("CF_API_KEY", None)
+        env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    else:
+        raise LoginError(
+            "CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY and CF_EMAIL, are required to read the captured email"
+        )
     env["CLOUDFLARE_ACCOUNT_ID"] = deploy_bench.ACCOUNT_ID
     argv = [
         *wrangler.ARGV,

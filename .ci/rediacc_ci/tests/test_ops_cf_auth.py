@@ -175,3 +175,35 @@ def test_resolve_without_a_credential_on_a_non_tty_raises_naming_the_env_vars(
     monkeypatch.setattr("sys.stdin", io.StringIO(""))
     with pytest.raises(cf_auth.CfAuthError, match="CF_MANAGEMENT_TOKEN"):
         cf_auth.resolve()
+
+
+def test_a_stored_job_token_wins_and_is_never_minted_or_deleted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake = FakeApi()
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    monkeypatch.setenv("CF_JOB_TOKEN", "stored")
+    monkeypatch.setenv("CF_MANAGEMENT_TOKEN", "other")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "gk")
+    monkeypatch.setenv("CF_EMAIL", "ops@example.invalid")
+    for auth in (cf_auth.resolve(), cf_auth.resolve_scoped("cf-notifications")):
+        assert (auth.token, auth.created) == ("stored", False)
+        cf_auth.self_destruct(auth)
+        assert not auth.destroyed
+    assert fake.calls == []
+
+
+def test_a_minted_token_is_still_deleted_by_self_destruct(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[tuple[str, str]] = []
+
+    def fake(method, url, *_a, **_o):
+        calls.append((method, url))
+        if method == "GET":
+            return {"success": True, "result": {"id": "TID"}}
+        return {"success": True}
+
+    monkeypatch.setattr(cf_auth, "curl_json", fake)
+    auth = cf_auth.Auth(token="minted", created=True)
+    cf_auth.self_destruct(auth)
+    assert auth.destroyed
+    assert ("DELETE", "%s/user/tokens/TID" % cf_auth.CF_API_BASE) in calls

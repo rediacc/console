@@ -818,3 +818,53 @@ def test_the_payload_carries_the_ai_gateway_logs_token(monkeypatch):
     _bench_env(monkeypatch, AI_GATEWAY_LOGS_TOKEN="")
     with pytest.raises(deploy_bench.DeployError, match="AI_GATEWAY_LOGS_TOKEN"):
         deploy_bench.secrets_payload()
+
+
+def test_the_rotation_check_runs_directly_off_the_rotation_profile(monkeypatch, tmp_path):
+    seen = {}
+
+    class Proc:
+        returncode = 0
+        stderr = None
+
+        def __init__(self, argv, **kw):
+            seen["argv"], seen["cwd"] = argv, kw.get("cwd")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", Proc)
+    deploy_bench._rotation_check(tmp_path)
+    assert seen["argv"] == [
+        "npx",
+        "--no-install",
+        "tsx",
+        "scripts/rotation/index.ts",
+        "check",
+        "--for=bench",
+    ]
+    assert seen["cwd"] == str(tmp_path / "private" / "account")
+
+
+def test_the_d1_reader_prefers_the_bearer_token_(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": []}]'
+
+    def run(*_a, **kw):
+        seen.update(kw["env"])
+        return Done()
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    deploy_bench._d1_rows("SELECT 1")
+    assert seen["CLOUDFLARE_API_TOKEN"] == "tok"
+    assert "CLOUDFLARE_API_KEY" not in seen
+    assert "CLOUDFLARE_EMAIL" not in seen

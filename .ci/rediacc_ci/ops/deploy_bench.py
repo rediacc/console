@@ -4,7 +4,7 @@
 
 ONE BENCH PER REGION (agent/plans/PLAN-multi-region-bench.md W3). `--region` picks the regions.json row whose `bench` object names the host, Worker, config (`wrangler.bench-eu.toml` for eu, `wrangler.bench-<region>.toml` for the others), signer and control database; `--region all` deploys every row marked `deployable`, in file order, and names each one it skips. A region marked not deployable is refused before anything runs, because its config still carries the placeholder database id. The deploy record is `.ci/cache/live-deploys/bench-<region>.json`; the signer step ensures and deploys THAT region's signer and control database only. `--region eu` is the default and behaves as it always did, with one exception: it no longer deploys `signer-bench-us` (that signer deploys with the us bench).
 
-Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench-eu.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
+Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench-eu.toml`, run `rotation check --for=bench` directly from private/account (not through the `rotation` profile), then push the worker secrets with `wrangler secret bulk`.
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
@@ -152,8 +152,8 @@ bench is IP-restricted (rediacc_ci.ops.bench_access): a 403 from bench means
 run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current first.
 
 Credentials come from the deploy-bench-<region> Bitwarden profile; see
-.ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
-CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
+.ci/config/secret-supply.json. Cloudflare auth: CF_JOB_TOKEN (stored, never
+deleted), CF_MANAGEMENT_TOKEN, or CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
 """
 )
 
@@ -552,6 +552,15 @@ def _reexec_under_profile(argv: list[str], region: str = DEFAULT_REGION) -> int 
 
 # `rotation check` exits 0 in sync, 1 on drift (a live value was read and differs), 2 when nothing drifted but a credential could not be checked (the query failed, so nothing was compared). Pinned to EXIT_COULD_NOT_CHECK in private/account/scripts/rotation/commands/check.ts.
 ROTATION_COULD_NOT_CHECK_RC = 2
+# The TypeScript check run directly from private/account with the deploy environment, as `core.account` does after its profile bind: `./run.sh rotation` would bind the `rotation` bws profile and refuse without its token file.
+ROTATION_CHECK_ARGV = [
+    "npx",
+    "--no-install",
+    "tsx",
+    "scripts/rotation/index.ts",
+    "check",
+    "--for=bench",
+]
 
 
 def _could_not_check_lines(stderr: str) -> list[str]:
@@ -574,7 +583,8 @@ def _rotation_check(root) -> None:
     # The check's progress goes to stderr; it is echoed as it arrives and kept to name what could not be checked.
     seen: list[str] = []
     with subprocess.Popen(
-        [str(root / "run.sh"), "rotation", "check", "--for=bench"],
+        ROTATION_CHECK_ARGV,
+        cwd=str(root / "private" / "account"),
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
@@ -736,14 +746,20 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str, region: str = DEFAULT_REGION) -> list[dict]:
-    """`wrangler d1 execute <the region's bench database> --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+    """`wrangler d1 execute <the region's bench database> --remote --json --command SQL` from the worker dir, authenticated with the Bearer token in `CLOUDFLARE_API_TOKEN` (the Global API Key pair only when no token is set), and the result rows. The stdout is never printed: it holds live links."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
-    if not (key and mail):
-        raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
     env = dict(os.environ)
-    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
-        env.pop(name, None)
-    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    if env.get("CLOUDFLARE_API_TOKEN"):
+        # The Bearer token (the resolved Auth) authenticates; the global-key names must not shadow it.
+        for name in ("CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL", "CF_API_KEY"):
+            env.pop(name, None)
+    elif key and mail:
+        env.pop("CF_API_KEY", None)
+        env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    else:
+        raise SeedError(
+            "CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY and CF_EMAIL, are required to read the captured email"
+        )
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
     argv = [
         *wrangler.ARGV,
