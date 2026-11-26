@@ -373,3 +373,14 @@ def test_start_compare_uses_the_file_clock_not_time_ns(tmp_path, monkeypatch):
     status, lines = temp_probe.probe(_py(code), watched=[root], base=base)
     assert status == 1
     assert any(temp_probe.IGNORED in line and "stray-8" in line for line in lines)
+
+
+def test_owner_match_sees_a_path_glued_to_a_short_option():
+    """Review 21b633e3.1: `-I/root/x` and `--out=/root/x` name the entry; a longer path or word ending in it does not."""
+    path = "/root/temp-probe-entry"
+    owned = temp_probe._TreeWatch([f"-I{path}", "x"])
+    assert owned.owns(path)
+    assert temp_probe._TreeWatch([f"--out={path}"]).owns(path)
+    # control: glued to a word, a longer path or a long option's name it is a different entry
+    for text in (f"abc{path}", f"/base{path}", f"--out{path}", f"-ab{path}", f"{path}2"):
+        assert not temp_probe._TreeWatch([text]).owns(path), text

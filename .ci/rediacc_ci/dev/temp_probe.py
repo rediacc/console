@@ -143,7 +143,10 @@ class _TreeWatch(threading.Thread):
 
     def owns(self, path):
         """True when a sampled string is `path`, sits under it, or names it."""
-        named = re.compile(r"(?<![\w./-])" + re.escape(path) + r"(?![\w.-])")
+        # A path may follow a short option glued to it (`-I/tmp/x`) or an `=`; any other word, dot, slash or hyphen before it makes it a different, longer path.
+        named = re.compile(
+            r"(?:(?<![\w./-])|(?<=(?<![\w-])-[A-Za-z]))" + re.escape(path) + r"(?![\w.-])"
+        )
         return any(
             text == path or text.startswith(path + "/") or named.search(text) for text in self.seen
         )

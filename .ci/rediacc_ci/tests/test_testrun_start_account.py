@@ -1014,6 +1014,26 @@ def test_account_e2e_strips_a_whitespace_padded_caller_report_pair(
         run.report_pair()
 
 
+def test_account_e2e_treats_a_whitespace_only_report_half_as_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review 7d609282.1: a blank REPORT_ED25519_* name is unset, as in start_account's server_keys, so a throwaway pair is minted; a real pair beside it is still checked."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", " \n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "\t ")
+    minted = run.report_pair()
+    assert minted[0].strip()
+    assert minted[1].strip()
+    # a blank half beside a real one is half a pair: ignored, never passed on
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"])
+    assert run.report_pair()[0] != pair["edPriv"]
+    # control: both halves real and matching are passed on
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", pair["edPub"])
+    assert run.report_pair() == (pair["edPriv"], pair["edPub"])
+
+
 def test_a_mismatched_caller_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
     _clear_signing_env(monkeypatch)
     first, second = sa.generate_keys(), sa.generate_keys()
