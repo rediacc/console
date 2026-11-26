@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 14
 language: de
-sourceHash: "bd31f15e75569945"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "dd01eccb85dd4e7c"
+sourceCommit: "467795d4f62f378389037e0027cac2676125b437"
 ---
 
 # Sicherheitsmodell
@@ -17,6 +17,14 @@ sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 Diese Seite beschreibt, was der Konfigurationsspeicher schützt, welcher Schlüssel was öffnet und worauf jede Art von Aufrufer zugreifen kann. Die Einrichtung steht unter [Konfigurationsspeicher](/de/docs/config-storage), Sitzungen und Token unter [Kontosicherheit & API-Schlüssel](/de/docs/account-security).
 
 ## Wer was sehen kann
+
+![Schlüsselhierarchie](/img/security-key-hierarchy.svg)
+
+*Der Server hält die Schlüssel der SDK- und der Org-Passphrase-Ebene; nur Inhaber von Schlüssel-Slots entpacken den CEK.*
+
+![Wer Konfigurationsinhalt sehen kann](/img/security-who-can-see.svg)
+
+*Was jede Art von Angreifer lesen kann.*
 
 Eine gespeicherte Konfiguration ist dreifach verschlüsselt. Die SDK-Schicht und die Schicht der Organisations-Passphrase werden vom Server verwaltet. Die mittlere Schicht ist der Content Encryption Key (CEK), den nur Inhaber eines Key-Slots entsperren können: Ein Slot-Geheimnis auf dem Gerät wirkt mit einem Geheimnis auf dem Server zusammen, und keine der beiden Hälften öffnet ihn allein.
 
@@ -32,6 +40,10 @@ Der Server sieht weiterhin Metadaten (Konfigurations-IDs, Teams, Versionen, Zeit
 
 ## Schlüsselbereiche
 
+![Schlüsselbereiche](/img/security-key-scope.svg)
+
+*Ein Speicher und ein CEK pro Organisation; Teams sind Zugriffskontrolle, keine eigenen Schlüssel.*
+
 - Ein Konfigurationsspeicher pro Organisation und ein CEK pro Speicher. Teams sind serverseitige Zugriffskontrolle, keine kryptografische Isolation: Ein Wiederherstellungs-Kit oder Key-Slot öffnet den CEK der gesamten Organisation.
 - Key-Slots sind je Speicher, Benutzer und Methode eindeutig, daher gibt es pro Benutzer und Organisation ein Wiederherstellungs-Kit. Wer in zwei Organisationen ist, hat zwei Kits, und es gibt kein Team-Kit.
 - Ein Maschinengeheimnis gilt pro Maschine und Organisation und bindet eine Headless-Maschine ein.
@@ -39,6 +51,10 @@ Der Server sieht weiterhin Metadaten (Konfigurations-IDs, Teams, Versionen, Zeit
 - Die Autorisierungsrichtlinie jeder Konfiguration ist ein eigener Datensatz unter einem Schlüssel, der aus dem CEK und dem Zeiger des Datensatzes abgeleitet wird. Wer einen Richtlinienschlüssel besitzt, öffnet nur die Datensätze dieses Zeigers.
 
 ## Agenten und Remote-MCP
+
+![Ablauf von Remote-MCP](/img/security-remote-mcp-flow.svg)
+
+*Ein Client-Aufruf läuft über den MCP-Worker zum Executor der Organisation; eine abgelaufene Freigabe schickt den Client zur erneuten Autorisierung zurück.*
 
 Eine Agent-Freigabe ist der Schlüsselinhaber-Typ hinter einer Remote-MCP-URL. Sie enthält den Inhaltsschlüssel einer Konfiguration sowie die Richtlinienschlüssel der Team-Konfiguration der Freigabe und der Konfiguration auf Organisationsebene, aber nie den CEK. Ein Agent liest also genau das, was die zugehörige Person liest.
 
@@ -55,11 +71,19 @@ Es gibt keine Cloudflare-Komponente im Pfad. Die Worker-Geheimnisse der Cloud we
 
 ## Richtlinie
 
+![Richtlinienobergrenze](/img/security-policy-ceiling.svg)
+
+*Ein Agent handelt nur dort, wo die Zustimmung des Menschen und die Schnittmenge aus Organisations- und Teamrichtlinie es erlauben.*
+
 Die Richtlinie ist ein eigener Datensatz, pro Konfigurationseintrag versiegelt, mit authentifizierten Daten, die Speicher, Konfiguration, Team, Version und Schlüsselgeneration binden. Der Server kann ihn nicht lesen, und ein wiedereingespielter oder vertauschter Datensatz scheitert an seinem Integritäts-Tag. Richtliniendatensätze der Version 1 werden abgelehnt.
 
 Die Organisationsrichtlinie schreibt nur ein Organisationsinhaber oder -admin, und die Richtlinie eines Teams nur ein Team-Admin (oder ein Inhaber oder Admin). Ein Schreibzugriff erfordert 2FA und eine erhöhte Sitzung, und einen gebundenen Passkey, wenn der Speicher Passkeys verlangt. Jedes Mitglied und jeder Executor, der es bedient, liest die Richtlinie. Ein Schlüssel, den die Organisation sperrt, wird in einer Teamrichtlinie ignoriert.
 
 ## Was sich wiederherstellen lässt
+
+![Entsperr- und Wiederherstellungswege](/img/security-unlock-recovery.svg)
+
+*Jede Entsperrmethode endet beim CEK, und das Wiederherstellungs-Kit ist Pflicht.*
 
 | Situation | Wiederherstellung |
 |---|---|

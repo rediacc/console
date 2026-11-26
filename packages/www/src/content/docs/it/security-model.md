@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 14
 language: it
-sourceHash: "bd31f15e75569945"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "dd01eccb85dd4e7c"
+sourceCommit: "467795d4f62f378389037e0027cac2676125b437"
 ---
 
 # Modello di sicurezza
@@ -17,6 +17,14 @@ sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 Questa pagina descrive cosa protegge l'archivio di configurazione, quale chiave apre cosa e a cosa può accedere ogni tipo di chiamante. Per i passaggi di configurazione vedi [Archivio di Configurazione](/it/docs/config-storage); per sessioni e token vedi [Sicurezza dell'account e API](/it/docs/account-security).
 
 ## Chi può vedere cosa
+
+![Gerarchia delle chiavi](/img/security-key-hierarchy.svg)
+
+*Il server custodisce le chiavi del livello SDK e della passphrase dell'organizzazione; solo i titolari di slot di chiave aprono la CEK.*
+
+![Chi può vedere il contenuto delle configurazioni](/img/security-who-can-see.svg)
+
+*Che cosa può leggere ogni tipo di attaccante.*
 
 Una configurazione archiviata è cifrata su tre livelli. Il livello SDK e il livello della passphrase dell'organizzazione sono gestiti dal server. Il livello intermedio è la chiave di cifratura del contenuto (CEK), che possono sbloccare solo i titolari di uno slot di chiave: un segreto di slot conservato sul dispositivo si combina con un segreto conservato dal server, e nessuna delle due metà da sola la apre.
 
@@ -32,6 +40,10 @@ Il server può ancora vedere i metadati (id di configurazione, team, versioni, t
 
 ## Ambito delle chiavi
 
+![Ambito delle chiavi](/img/security-key-scope.svg)
+
+*Un archivio e una CEK per organizzazione; i team sono controllo degli accessi, non chiavi separate.*
+
 - Un archivio di configurazione per organizzazione e una CEK per archivio. Quanto ai team, sono controllo degli accessi lato server, non isolamento crittografico: un kit di recupero o uno slot di chiave apre la CEK dell'intera organizzazione.
 - Gli slot di chiave sono unici per archivio, utente e metodo, quindi c'è un kit di recupero per utente e per organizzazione. Un utente in due organizzazioni ha due kit, e non esiste un kit di team.
 - Un segreto macchina è uno per macchina e per organizzazione e serve a registrare una macchina headless.
@@ -39,6 +51,10 @@ Il server può ancora vedere i metadati (id di configurazione, team, versioni, t
 - La policy di autorizzazione di ogni configurazione è un record separato, sotto una chiave derivata dalla CEK e dal puntatore del record. Chi possiede la chiave di una policy apre solo i record di quel puntatore.
 
 ## Agenti e MCP remoto
+
+![Flusso MCP remoto](/img/security-remote-mcp-flow.svg)
+
+*Una chiamata del client passa dal Worker MCP all'esecutore dell'organizzazione; una concessione scaduta rimanda il client a riautorizzarsi.*
 
 Una concessione agente è il tipo di titolare di chiavi che sta dietro un URL MCP remoto. Porta la chiave di contenuto di una configurazione e le chiavi di policy della configurazione di team della concessione e della configurazione a livello di organizzazione, mai la CEK, quindi un agente legge esattamente ciò che legge la sua persona.
 
@@ -55,11 +71,19 @@ Non c'è Cloudflare nel percorso. Nel cloud, i segreti Worker diventano variabil
 
 ## Policy
 
+![Tetto della policy](/img/security-policy-ceiling.svg)
+
+*Un agente agisce solo dove l'adesione umana e l'intersezione tra policy dell'organizzazione e del team lo consentono.*
+
 La policy è un record separato, sigillato per voce di configurazione con dati autenticati che legano archivio, configurazione, team, versione e generazione della chiave. Il server non può leggerlo, e un record riproposto o scambiato fallisce il proprio tag di integrità. Vengono rifiutati i record di policy di versione 1.
 
 Solo un proprietario o amministratore dell'organizzazione scrive la policy dell'organizzazione, e solo un amministratore di team (o un proprietario o amministratore) scrive la policy di quel team. Una scrittura richiede la 2FA e una sessione elevata, e un passkey associato quando l'archivio richiede i passkey. Ogni membro e ogni executor che lo serve la legge. Una chiave che l'organizzazione blocca viene ignorata nella policy di un team.
 
 ## Cosa è recuperabile
+
+![Percorsi di sblocco e recupero](/img/security-unlock-recovery.svg)
+
+*Ogni metodo di sblocco termina nella CEK, e il kit di recupero è obbligatorio.*
 
 | Situazione | Recupero |
 |---|---|

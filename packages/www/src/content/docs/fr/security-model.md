@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 14
 language: fr
-sourceHash: "bd31f15e75569945"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "dd01eccb85dd4e7c"
+sourceCommit: "467795d4f62f378389037e0027cac2676125b437"
 ---
 
 # Modèle de sécurité
@@ -17,6 +17,14 @@ sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 Cette page indique ce que protège le stockage de configuration, quelle clé ouvre quoi et ce que chaque type d'appelant peut atteindre. Pour la mise en place, voir [Stockage de configuration](/fr/docs/config-storage) ; pour les sessions et les jetons, voir [Sécurité du compte et API](/fr/docs/account-security).
 
 ## Qui peut voir quoi
+
+![Hiérarchie des clés](/img/security-key-hierarchy.svg)
+
+*Le serveur détient les clés de la couche SDK et de la phrase secrète de l'organisation ; seuls les détenteurs d'emplacements de clé déballent la CEK.*
+
+![Qui peut voir le contenu des configurations](/img/security-who-can-see.svg)
+
+*Ce que chaque type d'attaquant peut lire.*
 
 Une configuration stockée est chiffrée en trois couches. La couche du SDK et la couche de la phrase secrète de l'organisation sont gérées par le serveur. La couche intermédiaire est la clé de chiffrement du contenu (CEK), que seuls les détenteurs d'un emplacement de clé peuvent déverrouiller : un secret d'emplacement conservé sur l'appareil se combine avec un secret détenu par le serveur, et aucune des deux moitiés ne l'ouvre seule.
 
@@ -32,6 +40,10 @@ Le serveur voit encore les métadonnées (identifiants de configuration, équipe
 
 ## Portée des clés
 
+![Portée des clés](/img/security-key-scope.svg)
+
+*Un magasin et une CEK par organisation ; les équipes relèvent du contrôle d'accès, pas de clés séparées.*
+
 - Un stockage de configuration par organisation et une CEK par stockage. Les équipes relèvent du contrôle d'accès côté serveur, pas d'un isolement cryptographique : un kit de récupération ou un emplacement de clé ouvre la CEK de toute l'organisation.
 - Les emplacements de clé sont uniques par stockage, utilisateur et méthode, donc un kit de récupération par utilisateur et par organisation. Un utilisateur présent dans deux organisations détient deux kits, et il n'existe pas de kit d'équipe.
 - Un secret de machine est unique par machine et par organisation, et sert à enrôler une machine sans interface.
@@ -39,6 +51,10 @@ Le serveur voit encore les métadonnées (identifiants de configuration, équipe
 - La politique d'autorisation de chaque configuration est un enregistrement distinct, sous une clé dérivée de la CEK et du pointeur de l'enregistrement. Le détenteur d'une clé de politique n'ouvre que les enregistrements de ce pointeur.
 
 ## Agents et MCP distant
+
+![Flux MCP distant](/img/security-remote-mcp-flow.svg)
+
+*Un appel client passe par le Worker MCP jusqu'à l'exécuteur de l'organisation ; une autorisation expirée renvoie le client se réautoriser.*
 
 Une délégation d'agent est le type de détenteur de clés qui se cache derrière une URL de MCP distant. Elle porte la clé de contenu d'une configuration ainsi que les clés de politique de la configuration d'équipe de la délégation et de la configuration au niveau de l'organisation, jamais la CEK : un agent lit donc exactement ce que lit la personne qu'il représente.
 
@@ -55,11 +71,19 @@ Cloudflare n'intervient pas. Les secrets de Worker du cloud deviennent des varia
 
 ## Politique
 
+![Plafond de politique](/img/security-policy-ceiling.svg)
+
+*Un agent n'agit que là où l'accord humain et l'intersection des politiques de l'organisation et de l'équipe le permettent.*
+
 La politique est un enregistrement distinct, scellé par entrée de configuration avec des données authentifiées qui lient stockage, configuration, équipe, version et génération de clé. Le serveur ne peut pas la lire, et un enregistrement rejoué ou échangé échoue à son étiquette d'intégrité. Les enregistrements de politique en version 1 sont refusés.
 
 Seul un propriétaire ou administrateur de l'organisation écrit la politique de l'organisation, et seul un administrateur d'équipe (ou un propriétaire ou administrateur) écrit celle de son équipe. Une écriture exige la 2FA et une session élevée, ainsi qu'un passkey lié lorsque le stockage impose les passkeys. Chaque membre et chaque exécuteur qui les sert la lit. Une clé verrouillée par l'organisation est ignorée dans une politique d'équipe.
 
 ## Ce qui est récupérable
+
+![Voies de déverrouillage et de récupération](/img/security-unlock-recovery.svg)
+
+*Chaque méthode de déverrouillage aboutit à la CEK, et le kit de récupération est obligatoire.*
 
 | Situation | Récupération |
 |---|---|

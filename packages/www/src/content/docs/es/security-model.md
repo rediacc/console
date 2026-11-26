@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 14
 language: es
-sourceHash: "bd31f15e75569945"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "dd01eccb85dd4e7c"
+sourceCommit: "467795d4f62f378389037e0027cac2676125b437"
 ---
 
 # Modelo de seguridad
@@ -17,6 +17,14 @@ sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 Esta página explica qué protege el almacenamiento de configuración, qué clave abre qué y a qué puede acceder cada tipo de llamante. Para los pasos de configuración consulta [Almacenamiento de configuración](/es/docs/config-storage); para sesiones y tokens, [Seguridad de la cuenta y API](/es/docs/account-security).
 
 ## Quién puede ver qué
+
+![Jerarquía de claves](/img/security-key-hierarchy.svg)
+
+*El servidor guarda las claves de la capa SDK y de la frase de contraseña de la organización; solo los titulares de ranuras de clave desenvuelven la CEK.*
+
+![Quién puede ver el contenido de la configuración](/img/security-who-can-see.svg)
+
+*Qué puede leer cada tipo de atacante.*
 
 Una configuración almacenada se cifra en tres capas. La capa del SDK y la de la frase de contraseña de la organización las gestiona el servidor. La capa intermedia es la clave de cifrado de contenido (CEK), que solo pueden abrir los titulares de una ranura de clave: un secreto de ranura guardado en el dispositivo se combina con un secreto que guarda el servidor, y ninguna de las dos mitades la abre por sí sola.
 
@@ -32,6 +40,10 @@ El servidor sigue viendo metadatos (ids de configuración, equipos, versiones, m
 
 ## Alcance de las claves
 
+![Alcance de las claves](/img/security-key-scope.svg)
+
+*Un almacén y una CEK por organización; los equipos son control de acceso, no claves separadas.*
+
 - Un almacén de configuración por organización y una CEK por almacén. Los equipos son control de acceso en el servidor, no aislamiento criptográfico: un kit de recuperación o una ranura de clave abre la CEK de toda la organización.
 - Las ranuras de clave son únicas por almacén, usuario y método, así que hay un kit de recuperación por usuario y organización. Un usuario en dos organizaciones tiene dos kits, y no existe un kit de equipo.
 - Un secreto de máquina es uno por máquina y organización, y sirve para inscribir una máquina headless.
@@ -39,6 +51,10 @@ El servidor sigue viendo metadatos (ids de configuración, equipos, versiones, m
 - La política de autorización de cada configuración es un registro aparte, bajo una clave derivada de la CEK y del puntero del registro. Quien tiene la clave de una política solo abre los registros de ese puntero.
 
 ## Agentes y MCP remoto
+
+![Flujo de MCP remoto](/img/security-remote-mcp-flow.svg)
+
+*Una llamada del cliente pasa por el Worker de MCP hasta el ejecutor de la organización; una concesión caducada devuelve al cliente a autorizar de nuevo.*
 
 Una concesión de agente es el tipo de titular de claves que hay detrás de una URL de MCP remoto. Lleva la clave de contenido de una configuración y las claves de política de la configuración de equipo de la propia concesión y de la configuración de nivel de organización, nunca la CEK, de modo que un agente lee exactamente lo que lee su persona.
 
@@ -55,11 +71,19 @@ No hay Cloudflare en el camino. Los secretos del Worker de la nube pasan a ser v
 
 ## Política
 
+![Techo de política](/img/security-policy-ceiling.svg)
+
+*Un agente actúa solo donde lo permiten la aceptación humana y la intersección de la política de la organización y la del equipo.*
+
 La política es un registro aparte, sellado por entrada de configuración con datos autenticados que vinculan almacén, configuración, equipo, versión y generación de clave. El servidor no puede leerla, y un registro reproducido o intercambiado falla en su etiqueta de integridad. Los registros de política de versión 1 se rechazan.
 
 Solo un propietario o administrador de la organización escribe la política de la organización, y solo un administrador de equipo (o un propietario o administrador) escribe la política de ese equipo. Una escritura exige 2FA y una sesión elevada, y un passkey vinculado cuando el almacén requiere passkeys. Todos los miembros y todos los ejecutores que les sirven la leen. Una clave que la organización bloquea se ignora en la política de un equipo.
 
 ## Qué se puede recuperar
+
+![Rutas de desbloqueo y recuperación](/img/security-unlock-recovery.svg)
+
+*Todo método de desbloqueo termina en la CEK, y el kit de recuperación es obligatorio.*
 
 | Situación | Recuperación |
 |---|---|

@@ -16,6 +16,14 @@ This page states what config storage protects, which key opens what, and what ea
 
 ## Who can see what
 
+![Key hierarchy](/img/security-key-hierarchy.svg)
+
+*The server holds the SDK and org passphrase keys; only key-slot holders unwrap the CEK.*
+
+![Who can see config content](/img/security-who-can-see.svg)
+
+*What each kind of attacker can read.*
+
 A stored config is encrypted in three layers. The SDK layer and the org passphrase layer are keyed by the server. The middle layer is the content encryption key (CEK), which only key-slot holders can unwrap: a slot secret held on the device combines with a server-held secret, and neither half alone opens it.
 
 | Attacker holds | Sees config content | Why |
@@ -30,6 +38,10 @@ The server can still see metadata (config ids, teams, versions, timestamps, blob
 
 ## Key scope
 
+![Key scope](/img/security-key-scope.svg)
+
+*One store and one CEK per organization; teams are access control, not separate keys.*
+
 - One config store per organization, and one CEK per store. Teams are server-side access control, not cryptographic isolation: a recovery kit or key slot opens the whole organization's CEK.
 - Key slots are unique per store, user and method, so a recovery kit is one per user per organization. A user in two organizations holds two kits, and there is no team kit.
 - A machine secret is one per machine per organization and enrolls a headless machine.
@@ -37,6 +49,10 @@ The server can still see metadata (config ids, teams, versions, timestamps, blob
 - Each config's authorization policy is a separate record under a key derived from the CEK and the record's pointer. A holder of one policy key opens that pointer's records only.
 
 ## Agents and remote MCP
+
+![Remote MCP flow](/img/security-remote-mcp-flow.svg)
+
+*A client call passes the MCP Worker to the organization executor; an expired grant sends the client back to re-authorize.*
 
 An agent grant is the key-holder type behind a remote MCP URL. It carries one config's content key and the policy keys of the grant's own team config and of the organization-level config, never the CEK, so an agent reads exactly what its person reads.
 
@@ -53,11 +69,19 @@ There is no Cloudflare in the path. The Worker secrets of the cloud become envir
 
 ## Policy
 
+![Policy ceiling](/img/security-policy-ceiling.svg)
+
+*An agent acts only where the human opt-in and the intersected organization and team policy both allow it.*
+
 The policy is a separate record, sealed per config entry with authenticated data that binds store, config, team, version and key generation. The server cannot read it, and a replayed or swapped record fails its integrity tag. Version-1 policy records are refused.
 
 Only an organization owner or admin writes the organization policy, and only a team admin (or an owner or admin) writes that team's policy. A write needs 2FA and an elevated session, and a bound passkey when the store requires passkeys. Every member and every executor serving them reads it. A key the organization locks is ignored in a team policy.
 
 ## What is recoverable
+
+![Unlock and recovery paths](/img/security-unlock-recovery.svg)
+
+*Every unlock method ends at the CEK, and the recovery kit is mandatory.*
 
 | Situation | Recovery |
 |---|---|
