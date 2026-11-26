@@ -81,9 +81,7 @@ function callerFrom(ctx: McpRequestContext): GrantCaller {
 }
 
 /**
- * Whether the client declared form elicitation: on the 2026-07-28 era in the request's own envelope, which
- * `server.getClientCapabilities()` does not see, else the capabilities of the 2025-era `initialize`. A bare
- * `elicitation: {}` counts as form (the rule before modes).
+ * Whether the client declared form elicitation: the request's own envelope is read first, since 2026-07-28 clients declare their capabilities per request and `server.getClientCapabilities()` does not see it. The initialize-time capabilities are only a fallback, and they are empty on the stateless legacy leg (a new server per request, so no `initialize` ever reached it), so a 2025-era client is not asked and gets the confirm-argument refusal. A bare `elicitation: {}` counts as form (the rule before modes).
  */
 export function declaresFormElicitation(
   server: Server,
