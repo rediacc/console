@@ -6,8 +6,8 @@
  * the config does not know stays its 8-character form.
  */
 
-import { forensicsTimelinePath } from '@rediacc/shared/forensics/links';
 import type { RepoNameEntry } from '@rediacc/shared/config-schema';
+import { forensicsTimelinePath } from '@rediacc/shared/forensics/links';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { licenceDisplayName, readRepoNames } from '../services/account/license-retire.js';

@@ -45,8 +45,8 @@ import {
   renderRepoBatchRefreshSummary,
 } from './subscription-output.js';
 import { executeRepoLicenseRefresh } from './subscription-repo-refresh.js';
-import { renderLicenceView, renderMachineTable } from './subscription-status-view.js';
 import { renderRepoLicenseTable } from './subscription-repo-table.js';
+import { renderLicenceView, renderMachineTable } from './subscription-status-view.js';
 import { executeTokenFreeMachineRefresh } from './subscription-token-free.js';
 
 export { executeRepoLicenseRefresh };

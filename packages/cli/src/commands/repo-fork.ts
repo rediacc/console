@@ -57,13 +57,13 @@ import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
 import { type ForkKeyState, registerFork, rollbackFork } from './repo-fork-registration.js';
-import { rollbackRefusedStart } from './repo-rollback.js';
 import {
   createForkEventHandler,
   finishTimeline,
   recordTicketStepTimings,
   startIdentityRefresh,
 } from './repo-fork-timeline.js';
+import { rollbackRefusedStart } from './repo-rollback.js';
 
 const DEFAULT_VERB = 'repo fork';
 

@@ -1,6 +1,6 @@
+import { WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WK_PREVIEW_SAMPLE_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 
 const { flows, overlayState, out } = vi.hoisted(() => ({
   flows: {
