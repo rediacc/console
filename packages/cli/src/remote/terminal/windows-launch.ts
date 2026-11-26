@@ -29,10 +29,11 @@ const POWERSHELL_QUOTES = /[‘’‚‛]/;
  * The sandbox gateway points BASH_ENV at the repo's sandbox bashrc, which prints
  * the "Rediacc sandbox" banner on a tty. The inline path starts one non-interactive
  * bash (the gateway's `bash -c`); this wrapper would start a second, so the
- * script's bash runs with BASH_ENV empty and the script restores it first thing.
+ * script's bash runs with BASH_ENV empty and the script restores it first thing,
+ * or unsets it when the gateway had none, so `${BASH_ENV+set}` stays false.
  */
 export function windowsRemoteBootstrap(remoteCommand: string): string {
-  const script = `export BASH_ENV=$RDC_BASH_ENV; unset RDC_BASH_ENV; rm -f -- "$0"\n${remoteCommand}\n`;
+  const script = `if [ -n "$RDC_BASH_ENV" ]; then export BASH_ENV=$RDC_BASH_ENV; else unset BASH_ENV; fi; unset RDC_BASH_ENV; rm -f -- "$0"\n${remoteCommand}\n`;
   const payload = gzipSync(Buffer.from(script, 'utf8')).toString('base64');
   return `f=$(mktemp)&&echo ${payload}|base64 -d|gzip -dc>$f&&exec env RDC_BASH_ENV=$BASH_ENV BASH_ENV= bash $f`;
 }

@@ -86,7 +86,7 @@ describe('windowsRemoteBootstrap', () => {
     const remote = windowsRemoteBootstrap(REAL_SCRIPT);
     const payload = /echo ([A-Za-z0-9+/=]+)\|base64 -d/.exec(remote)?.[1] as string;
     expect(gunzipSync(Buffer.from(payload, 'base64')).toString('utf8')).toBe(
-      `export BASH_ENV=$RDC_BASH_ENV; unset RDC_BASH_ENV; rm -f -- "$0"\n${REAL_SCRIPT}\n`
+      `if [ -n "$RDC_BASH_ENV" ]; then export BASH_ENV=$RDC_BASH_ENV; else unset BASH_ENV; fi; unset RDC_BASH_ENV; rm -f -- "$0"\n${REAL_SCRIPT}\n`
     );
   });
 
@@ -120,6 +120,17 @@ describe('windowsRemoteBootstrap', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+describe('windowsRemoteBootstrap without a gateway BASH_ENV', () => {
+  it('leaves BASH_ENV unset for the script, not an empty string', () => {
+    const env = { ...process.env };
+    delete env.BASH_ENV;
+    const out = execFileSync('bash', ['-c', windowsRemoteBootstrap('echo "BE=${BASH_ENV+set}"')], {
+      env,
+    }).toString();
+    expect(out).toBe('BE=\n');
   });
 });
 
