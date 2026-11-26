@@ -276,6 +276,22 @@ try {
         corrupt = (e as Error).message;
       }
       if (!corrupt.includes('not readable JSON')) fail(`a corrupt file lost its cause: ${corrupt}`);
+      // CONTROL: a blob the tree names but the object store lost is an error, not {}.
+      const blob = execFileSync('git', ['rev-parse', 'HEAD:de.json'], {
+        cwd: repo,
+        encoding: 'utf8',
+      }).trim();
+      const objPath = path.join(repo, '.git', 'objects', blob.slice(0, 2), blob.slice(2));
+      fs.chmodSync(objPath, 0o644);
+      fs.rmSync(objPath);
+      let lost = '';
+      try {
+        gitHeadValues(repo, 'de');
+      } catch (e) {
+        lost = (e as Error).message;
+      }
+      if (!lost.includes('git show'))
+        fail(`a lost blob was read as absent: ${JSON.stringify(lost)}`);
     } finally {
       fs.rmSync(repo, { recursive: true, force: true });
     }

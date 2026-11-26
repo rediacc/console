@@ -418,7 +418,11 @@ const wiredHooks = (root: string): WiredHook[] => {
  * That direction is the safe one: over-admitting hides a dead file, it never invents a false
  * accusation, and this table is a record rather than an enforcement gate.
  */
-const reachability = (root: string, wired: Set<string>, files: string[]): Map<string, string> => {
+export const reachability = (
+  root: string,
+  wired: Set<string>,
+  files: string[]
+): Map<string, string> => {
   const text = new Map<string, string>();
   for (const rel of files) {
     try {

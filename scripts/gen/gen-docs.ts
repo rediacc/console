@@ -85,6 +85,7 @@ import {
   type ProviderRow,
   providerById,
   providersReading,
+  reachability,
   readGatesLock,
   readMcpRegistryTools,
   type SeamReader,
@@ -1020,6 +1021,32 @@ function selftest(): number {
       console.log(`\t\t${JSON.stringify(detail)}`);
     }
   };
+
+  // #0f094555.1: a standalone post-bash `test-*.py` is reached through test_hooks_delegates.py's glob; a non-test post-bash file nothing names is not.
+  {
+    const probeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-docs-reach-'));
+    try {
+      const testRel = '.claude/hooks/post-bash/test-x.py';
+      const plainRel = '.claude/hooks/post-bash/plain-y.py';
+      for (const rel of [testRel, plainRel]) {
+        fs.mkdirSync(path.dirname(path.join(probeRoot, rel)), { recursive: true });
+        fs.writeFileSync(path.join(probeRoot, rel), '# probe\n');
+      }
+      const reached = reachability(probeRoot, new Set<string>(), [testRel, plainRel]);
+      ck(
+        'reachability reaches a post-bash test-*.py through the delegates glob',
+        reached.get(testRel) === 'via test_hooks_delegates.py (glob)',
+        [...reached]
+      );
+      ck(
+        'CONTROL: reachability leaves a non-test post-bash file unreached',
+        !reached.has(plainRel),
+        [...reached]
+      );
+    } finally {
+      fs.rmSync(probeRoot, { recursive: true, force: true });
+    }
+  }
 
   // #4960f2e8: a per-commit review record quoting BLOCKER: is prose, not a suppression mechanism; a real allowlist still is.
   ck(

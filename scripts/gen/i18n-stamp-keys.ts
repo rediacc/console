@@ -227,11 +227,19 @@ export function gitHeadValues(dir: string, lang: string, rev = 'HEAD'): Record<s
   } catch {
     throw new Error(`cannot resolve revision ${rev} in ${dir}; --restamp needs a git tree`);
   }
+  // Only a path absent from the revision's tree reads as {}: a listing that fails, or a `show` that fails for a path the tree names (corrupt object, I/O error), throws with its own cause.
+  let listed: string;
+  try {
+    listed = git(['ls-tree', '--name-only', rev, '--', `${lang}.json`]);
+  } catch (e) {
+    throw new Error(`cannot list ${lang}.json at ${rev} in ${dir}: ${(e as Error).message}`);
+  }
+  if (listed.trim() === '') return {};
   let raw: string;
   try {
     raw = git(['show', `${rev}:./${lang}.json`]);
-  } catch {
-    return {};
+  } catch (e) {
+    throw new Error(`git show ${rev}:${lang}.json failed: ${(e as Error).message}`);
   }
   try {
     return flattenValues(JSON.parse(raw));
