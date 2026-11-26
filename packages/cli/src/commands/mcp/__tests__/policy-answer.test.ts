@@ -224,12 +224,41 @@ describe('runUnderPolicy maps the decision to MCP', () => {
 
   it('a confirm value the child still refuses is answered once, not asked again', async () => {
     const run = childConfirmedBy('foo');
-    const elicit = vi.fn(() => ({ action: 'accept' as const }));
-    const client = await connect({ run, elicit });
+    const client = await connect({ run });
     const result = await call(client, { name: 'foo', confirm: 'bar' });
     expect(result.isError).toBe(true);
-    expect(elicit).not.toHaveBeenCalled();
     expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('a client that can elicit and sends confirm on its first call is still asked, and the argument is not run', async () => {
+    const run = childConfirmedBy('foo');
+    const elicit = vi.fn(() => ({ action: 'accept' as const }));
+    const client = await connect({ run, elicit });
+    const result = await call(client, { name: 'foo', confirm: 'foo' });
+    expect(elicit).toHaveBeenCalledWith(REASON);
+    expect(run.mock.calls.map(([confirm]) => confirm)).toEqual([undefined, 'foo']);
+    expect(result.isError).not.toBe(true);
+  });
+
+  it('a client that can elicit, sends confirm and declines runs the child only unconfirmed', async () => {
+    const run = childConfirmedBy('foo');
+    const client = await connect({ run, elicit: () => ({ action: 'decline' }) });
+    const result = await call(client, { name: 'foo', confirm: 'foo' });
+    expect(result.isError).toBe(true);
+    expect(run.mock.calls.map(([confirm]) => confirm)).toEqual([undefined]);
+  });
+
+  it('control: a needs_confirmation detail without the --confirm-grand prefix is a plain refusal with no next', async () => {
+    const elicit = vi.fn(() => ({ action: 'accept' as const }));
+    childExits(refusalEnvelope(['CONFIRMATION_REQUIRED', REASON, 'foo']));
+    const lifted = await executeRdcCommand(['repo', 'down', 'foo'], baseOptions);
+    expect(lifted.decision?.verdict).toBe('needs_confirmation');
+    expect(lifted.decision?.next).toBeUndefined();
+    const client = await connect({ run: async () => lifted, elicit });
+    const result = await call(client, { name: 'foo' });
+    expect(result.isError).toBe(true);
+    expect(elicit).not.toHaveBeenCalled();
+    expect(result.structuredContent).toEqual({ code: 'CONFIRMATION_REQUIRED', reason: REASON });
   });
 
   for (const era of ['auto', 'legacy'] as const) {

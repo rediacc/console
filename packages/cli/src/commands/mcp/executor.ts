@@ -369,7 +369,7 @@ export type PolicyOutcome =
   | { result: ExecutionResult }
   | { answer: CallToolResult | InputRequiredResult };
 
-/** The confirm value of this call: the user's yes on the retry of an elicitation, else the `confirm` argument. */
+/** The confirm value of this call: the user's yes on the retry of an elicitation, else the `confirm` argument of a client that cannot elicit. */
 function confirmOf(call: PolicyCall): { value?: string } | { answer: CallToolResult } {
   const reply = inputResponse(call.ctx.mcpReq.inputResponses, CONFIRM_INPUT);
   if (reply.kind === 'elicit') {
@@ -386,7 +386,9 @@ function confirmOf(call: PolicyCall): { value?: string } | { answer: CallToolRes
     return { value: state.value };
   }
   const { confirm } = call.args;
-  return typeof confirm === 'string' && confirm !== '' ? { value: confirm } : {};
+  if (typeof confirm !== 'string' || confirm === '') return {};
+  // A client that can elicit is always asked: the model-supplied `confirm` argument is ignored for it.
+  return declaresFormElicitation(call.server, call.ctx) ? {} : { value: confirm };
 }
 
 /**
