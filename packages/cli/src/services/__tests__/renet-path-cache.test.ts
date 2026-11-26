@@ -46,6 +46,19 @@ describe('resolveRenetPath PATH lookup', () => {
     fs.rmSync(dir, { recursive: true });
   });
 
+  // 095c22c9.1: existence alone let a file replaced at the same path be handed out as the old lookup.
+  it('looks up again when a different file now sits at the cached path', () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'renet-cache-'));
+    const bin = path.join(dir, 'renet');
+    fs.writeFileSync(bin, 'old');
+    mockExecSync.mockReturnValue(`${bin}\n`);
+    expect(resolveRenetPath('renet-cache-e')).toBe(bin);
+    fs.writeFileSync(bin, 'a replacement binary of another size');
+    expect(resolveRenetPath('renet-cache-e')).toBe(bin);
+    expect(mockExecSync).toHaveBeenCalledTimes(2);
+    fs.rmSync(dir, { recursive: true });
+  });
+
   it('does not cache an empty lookup result', () => {
     mockExecSync.mockReturnValueOnce('\n');
     expect(() => resolveRenetPath('renet-cache-d')).toThrow(/not found at/);

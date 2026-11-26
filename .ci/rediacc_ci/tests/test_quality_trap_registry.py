@@ -516,6 +516,17 @@ def test_a_module_outside_ci_resolves_by_its_top_level_name_only(tmp_path: pathl
     assert not reg.run_resolves("python3 -m ctl_no_such_top_level")
 
 
+def test_a_module_with_an_empty_dotted_segment_never_resolves(tmp_path: pathlib.Path) -> None:
+    """a9f7f1b0.1: `-m a.` names no module (the interpreter refuses it), so it must not probe `.ci/a.py` through an empty segment. CONTROL: `-m a` itself resolves against the same file."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    ci_dir = reg.file_root / ".ci"
+    ci_dir.mkdir()
+    (ci_dir / "a.py").write_text("", encoding="utf-8")
+    assert reg.run_resolves("python3 -m a")
+    assert not reg.run_resolves("python3 -m a.")
+    assert not reg.run_resolves("python3 -m a..b")
+
+
 def test_importability_is_asked_of_the_running_interpreter_not_the_named_one(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -511,6 +511,9 @@ class Registry:
         if not all((self.file_root / rel).is_file() for rel in self.path_tokens(run)):
             return False
         for module in self.direct_run_modules(run):
+            # An empty dotted segment (`a.`, `a..b`) names no module: the interpreter refuses it, so it never probes a path.
+            if "" in module.split("."):
+                return False
             # Stat-only: no file under .ci is opened, so the probe is built from path
             # segments and never names the `.ci/` tree as one scan-root literal.
             base = self.file_root.joinpath(".ci", *module.split("."))

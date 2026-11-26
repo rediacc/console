@@ -62,8 +62,8 @@ export interface RenetSpawnOptions {
   skipRouterRestart?: boolean;
 }
 
-/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached, and a hit is re-checked on the file before reuse. */
-const pathLookupCache = new Map<string, string>();
+/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached, and a hit is re-checked on the file (existence, mtime and size) before reuse. */
+const pathLookupCache = new Map<string, { found: string; mtimeMs: number; size: number }>();
 
 /**
  * Resolve a renet binary path, falling back to PATH lookup if the configured
@@ -85,10 +85,11 @@ export function resolveRenetPath(configuredPath: string): string {
   const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
   const cached = pathLookupCache.get(name);
   if (cached !== undefined) {
-    // A binary removed or replaced since the lookup (the binary update) must not be handed out again.
+    // A binary removed or replaced since the lookup (the binary update) must not be handed out again: a changed mtime or size means a different file at the same path.
     try {
-      fsSync.accessSync(cached);
-      return cached;
+      const stat = fsSync.statSync(cached.found);
+      if (stat.mtimeMs === cached.mtimeMs && stat.size === cached.size) return cached.found;
+      pathLookupCache.delete(name);
     } catch {
       pathLookupCache.delete(name);
     }
@@ -97,7 +98,12 @@ export function resolveRenetPath(configuredPath: string): string {
     const found = execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
     // `which`/`where` can exit 0 with no output; an empty answer is a miss and is never cached.
     if (!found) throw new Error('empty PATH lookup');
-    pathLookupCache.set(name, found);
+    try {
+      const stat = fsSync.statSync(found);
+      pathLookupCache.set(name, { found, mtimeMs: stat.mtimeMs, size: stat.size });
+    } catch {
+      // The answer cannot be stat'ed, so it cannot be re-checked and is not cached.
+    }
     return found;
   } catch {
     throw new Error(
