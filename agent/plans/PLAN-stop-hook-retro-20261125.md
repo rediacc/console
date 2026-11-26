@@ -163,7 +163,7 @@ When the block names a finding and a live `[>]` item of this session exists, als
   - HOW: a fourth line in `mark_commands`, plus the id of a live `[>]` item of this session when one exists.
 - **D2 (friction 2).**
   - DEFAULT: message fix, and count the `## Delegated` ids as named.
-  - WHY: id-keyed freshness already exists (`wl_store.py:3236-3245`). 33 rewrites in 18.5 h came from the unnamed-signature fallback.
+  - WHY: id-keyed freshness already exists (`.claude/hooks/stop/wl_store.py:3236-3245`). 33 rewrites in 18.5 h came from the unnamed-signature fallback.
   - HOW: `_agent_state_because` takes a `keyed` flag, and `next_action_ids` reads `## Delegated` too.
 - **D3 (friction 3).**
   - DEFAULT: liveness first, timer as fallback.

@@ -571,7 +571,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
 | `agent/plans/PLAN-multi-region-bench.md` | approved | 340 | 7 | 16 | 57510 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
-| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 47 | 2 | 7 | 9841 |
+| `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 47 | 2 | 7 | 10020 |
 | `agent/plans/PLAN-nightly-green.md` | proposed | 76 | 14 | 1 | 18068 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
@@ -613,12 +613,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rmcp-agent-grants.md` | approved | 137 | 4 | 15 | 32159 |
 | `agent/plans/PLAN-rmcp-config-edit-removal.md` | approved | 66 | 9 | 0 | 12373 |
 | `agent/plans/PLAN-rmcp-decide.md` | approved | 93 | 4 | 5 | 15852 |
-| `agent/plans/PLAN-rmcp-docs.md` | approved | 107 | 11 | 9 | 25262 |
+| `agent/plans/PLAN-rmcp-docs.md` | approved | 107 | 11 | 9 | 25264 |
 | `agent/plans/PLAN-rmcp-executor-hardening.md` | approved | 108 | 7 | 14 | 27097 |
 | `agent/plans/PLAN-rmcp-local-mcp.md` | approved | 80 | 4 | 9 | 19753 |
 | `agent/plans/PLAN-rmcp-orphan-recovery.md` | approved | 56 | 4 | 4 | 9888 |
 | `agent/plans/PLAN-rmcp-policy-record.md` | approved | 164 | 9 | 17 | 39796 |
-| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 152 | 10 | 17 | 37293 |
+| `agent/plans/PLAN-rmcp-remote-worker.md` | approved | 152 | 10 | 17 | 37299 |
 | `agent/plans/PLAN-rmcp-writeback.md` | approved | 98 | 4 | 13 | 20795 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 322 | 2 | 13 | 44167 |
 | `agent/plans/PLAN-root-grants.md` | approved | 327 | 8 | 11 | 35091 |
@@ -644,7 +644,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261117.md` | ready | 218 | 9 | 0 | 26866 |
 | `agent/plans/PLAN-stop-hook-retro-20261122.md` | ready | 117 | 3 | 0 | 13903 |
 | `agent/plans/PLAN-stop-hook-retro-20261123.md` | ready | 216 | 0 | 8 | 29276 |
-| `agent/plans/PLAN-stop-hook-retro-20261125.md` | ready | 213 | 2 | 4 | 19755 |
+| `agent/plans/PLAN-stop-hook-retro-20261125.md` | ready | 213 | 2 | 4 | 19774 |
 | `agent/plans/PLAN-stop-hook-store-status.md` | approved | 207 | 3 | 6 | 26150 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-stripe-disable.md` | approved | 88 | 2 | 6 | 15224 |
