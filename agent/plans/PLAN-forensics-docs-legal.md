@@ -52,18 +52,21 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: PLAN-forensics-reports.md#FR9, PLAN-forensics-investigation.md#FI8.
   Accept: `npm run check:cli-docs` rc 0, `npm run check:ci-docs-frontmatter` rc 0 and `npm run check:ci-prose-style` rc 0.
     (ticked) 2026-11-26T11:00:21Z by d778be9d: FL1 English forensics, incident-response and incident-reports docs: check:ci-docs-frontmatter rc 0 on the merged tree, check:cli-docs rc 0 commit:0531ce955e plan:agent/plans/PLAN-forensics-docs-legal.md
-- [ ] FL2 [writer] Translate the three FL1 docs into ar, de, es and et, naturalized, writers on sonnet.
+- [x] FL2 [writer] Translate the three FL1 docs into ar, de, es and et, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/ar/forensics.md, packages/www/src/content/docs/ar/incident-*.md, packages/www/src/content/docs/de/forensics.md, packages/www/src/content/docs/de/incident-*.md, packages/www/src/content/docs/es/forensics.md, packages/www/src/content/docs/es/incident-*.md, packages/www/src/content/docs/et/forensics.md, packages/www/src/content/docs/et/incident-*.md
   Depends on: FL1.
   Accept: `npm run check:ci-i18n-docs-untranslated` rc 0; the last of FL2, FL3 and FL4 to land quotes `npm run check:ci-docs-structure-parity` rc 0.
-- [ ] FL3 [writer] Translate the three FL1 docs into fr, it, ja and ko, naturalized, writers on sonnet.
+    (ticked) 2026-11-26T11:27:50Z by d778be9d: forensics, incident-response and incident-reports guides translated into the box's locales (36 files across FL2-FL4): check:i18n rc 0, docs frontmatter and structure parity rc 0 on the merged tree commit:5e7e03051c plan:agent/plans/PLAN-forensics-docs-legal.md
+- [x] FL3 [writer] Translate the three FL1 docs into fr, it, ja and ko, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/fr/forensics.md, packages/www/src/content/docs/fr/incident-*.md, packages/www/src/content/docs/it/forensics.md, packages/www/src/content/docs/it/incident-*.md, packages/www/src/content/docs/ja/forensics.md, packages/www/src/content/docs/ja/incident-*.md, packages/www/src/content/docs/ko/forensics.md, packages/www/src/content/docs/ko/incident-*.md
   Depends on: FL1.
   Accept: `npm run check:ci-i18n-docs-untranslated` rc 0; the last of FL2, FL3 and FL4 to land quotes `npm run check:ci-docs-structure-parity` rc 0.
-- [ ] FL4 [writer] Translate the three FL1 docs into pt, ru, tr and zh, naturalized, writers on sonnet.
+    (ticked) 2026-11-26T11:27:50Z by d778be9d: forensics, incident-response and incident-reports guides translated into the box's locales (36 files across FL2-FL4): check:i18n rc 0, docs frontmatter and structure parity rc 0 on the merged tree commit:5e7e03051c plan:agent/plans/PLAN-forensics-docs-legal.md
+- [x] FL4 [writer] Translate the three FL1 docs into pt, ru, tr and zh, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/pt/forensics.md, packages/www/src/content/docs/pt/incident-*.md, packages/www/src/content/docs/ru/forensics.md, packages/www/src/content/docs/ru/incident-*.md, packages/www/src/content/docs/tr/forensics.md, packages/www/src/content/docs/tr/incident-*.md, packages/www/src/content/docs/zh/forensics.md, packages/www/src/content/docs/zh/incident-*.md
   Depends on: FL1.
   Accept: `npm run check:ci-i18n-docs-untranslated` rc 0; the last of FL2, FL3 and FL4 to land quotes `npm run check:ci-docs-structure-parity` rc 0.
+    (ticked) 2026-11-26T11:27:51Z by d778be9d: forensics, incident-response and incident-reports guides translated into the box's locales (36 files across FL2-FL4): check:i18n rc 0, docs frontmatter and structure parity rc 0 on the merged tree commit:5e7e03051c plan:agent/plans/PLAN-forensics-docs-legal.md
 - [x] FL5 [writer] English rewrites per D1 and D2: legal-nis2-dora.md rows at :25, :31 and :53, packages/www/src/content/docs/en/legal-gdpr.md:28, packages/www/src/content/docs/en/legal-hipaa.md:36, packages/www/src/content/docs/en/legal-overview.md:26, the siem-integration.md compliance list, nis2-effectiveness-without-theatre.md at :3, :22, :153 and :187, nis2-the-real-bill.md at :117 and :149, and the blog blurb at packages/www/src/i18n/translations/en.json:10005, each naming its mechanism and limit.
   Owns: packages/www/src/content/docs/en/legal-nis2-dora.md, packages/www/src/content/docs/en/legal-gdpr.md, packages/www/src/content/docs/en/legal-hipaa.md, packages/www/src/content/docs/en/legal-overview.md, packages/www/src/content/docs/en/siem-integration.md, packages/www/src/content/blog/en/nis2-effectiveness-without-theatre.md, packages/www/src/content/blog/en/nis2-the-real-bill.md, packages/www/src/i18n/translations/en.json
   Depends on: PLAN-forensics-reports.md, PLAN-forensics-alerts-notices.md, PLAN-console-audit-r2.md#AU8.
