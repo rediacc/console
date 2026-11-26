@@ -8,6 +8,7 @@ import os
 import pathlib
 import sys
 import tempfile
+import time
 from unittest import mock
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -152,9 +153,22 @@ def quiet_cases():
                 got = run_quiet(survey, tmp)
             check("a quiet call stays silent", got, "")
         check("three quiet calls read the store once", len(calls), 1)
+        # review 70612d3d.2: the quiet verdict expires; a permanent one would read the store never again
+        later = time.time() + note.QUIET_EVERY_SEC + 5
+        with mock.patch.object(note, "_items", counting_items):
+            run_quiet(survey, tmp, now=later)
+        check("a call past QUIET_EVERY_SEC reads the store again", len(calls), 2)
+        # a stamp dated in the future has a negative age, which is not "within QUIET_EVERY_SEC"
+        with mock.patch.object(note.tempfile, "gettempdir", return_value=tmp):
+            stamp = note._stamp_path(SESSION[:8], quiet=True)
+        future = time.time() + 3600
+        os.utime(stamp, (future, future))
+        with mock.patch.object(note, "_items", counting_items):
+            run_quiet(survey, tmp)
+        check("a future-dated quiet stamp does not hold the verdict", len(calls), 3)
 
 
-def run_quiet(survey, tmp):
+def run_quiet(survey, tmp, now=None):
     at = (NOW - datetime.timedelta(minutes=12)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = [{"round": "feedf00d", "session": SESSION, "at": at, "survey": survey}]
     with (
@@ -168,9 +182,8 @@ def run_quiet(survey, tmp):
         mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
         mock.patch.object(note, "_live_writers", return_value=12),
         mock.patch.object(note.tempfile, "gettempdir", return_value=tmp),
-        mock.patch.object(note.time, "time", return_value=NOW.timestamp()),
     ):
-        return note.note_for({"session_id": SESSION, "cwd": "/repo"}, now=NOW.timestamp())
+        return note.note_for({"session_id": SESSION, "cwd": "/repo"}, now=now)
 
 
 def main():
@@ -181,6 +194,20 @@ def main():
         check("the next call within NOTE_EVERY_MIN is held", run(76, stamp_dir=tmp), "")
     with tempfile.TemporaryDirectory() as tmp:
         check("a round 12 min old is silent", run(12, stamp_dir=tmp), "")
+    # review fd65e8ae.2: the window edge itself, so a window moved anywhere between 12 and 31 minutes turns a case red
+    # The round's survey is written (a missing one stops counting after SURVEY_GRACE_MIN) and the roster sits at the floor, so only the clock speaks.
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 18)
+        got = run(19, stamp_dir=tmp, survey=survey, live=12)
+        check("a round 19 min old is silent (inside the 20-minute window)", got, "")
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 19)
+        got = run(20, stamp_dir=tmp, survey=survey, live=12)
+        check(
+            "a round 20 min old is named (the 20-minute window)",
+            got.startswith("WRITERS-NOW DUE (last round 20 min ago"),
+            True,
+        )
     with tempfile.TemporaryDirectory() as tmp:
         got = run(31, stamp_dir=tmp)
         check(

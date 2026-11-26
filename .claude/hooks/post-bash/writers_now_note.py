@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PostToolUse(Bash): name a due /writers-now round inside a long turn, not only at the next stop.
 
-WHY (operator report 2026-11-25: no writers-now rounds were visible at effort high). `writers-now-due` is a Stop-hook check, so it can fire only when a turn ends. Measured on session d778be9d over 2026-11-24/25: rounds started 63 to 107 minutes apart against the then 60-minute window (30 minutes since the operator request of 2026-11-26), because the lead's turns (landings, merged-tree checks, gate repairs) ran 30 to 90 minutes and the due round waited for the turn to end. This note reads the same `wl_writersnow.due` verdict after every Bash call and, at effort `high`, adds one line of context naming the round as due, at most once per NOTE_EVERY_MIN minutes per session, so the round starts inside the turn.
+WHY (operator report 2026-11-25: no writers-now rounds were visible at effort high). `writers-now-due` is a Stop-hook check, so it can fire only when a turn ends. Measured on session d778be9d over 2026-11-24/25: rounds started 63 to 107 minutes apart against the then 60-minute window (cut to 30 and then to 20 minutes, `wl_writersnow.WINDOW_MIN`, by the operator requests of 2026-11-26), because the lead's turns (landings, merged-tree checks, gate repairs) ran 30 to 90 minutes and the due round waited for the turn to end. This note reads the same `wl_writersnow.due` verdict after every Bash call and, at effort `high`, adds one line of context naming the round as due, at most once per NOTE_EVERY_MIN minutes per session, so the round starts inside the turn.
 
 The capacity refill rides the same note and the same throttle (operator asks 2026-11-25 and 2026-11-26): whatever the clock says, `wl_writersnow.capacity` and `assess` name every unstaffed startable cluster of the newest survey while the roster's estimate counts fewer than CAPACITY_FLOOR live writers, or name a new round as due once that survey is at least REFRESH_GAP_MIN minutes old and has no free cluster left or REFRESH_TICKS of its boxes were ticked; a clock-due note below the floor names the free slots and those clusters too.
 
@@ -35,6 +35,7 @@ def _load_syspath():
 NOTE_EVERY_MIN = 5
 
 
+# A stamp dated in the future (a clock stepped back) has a negative age and holds nothing, for this throttle and the note throttle above alike.
 # Seconds a quiet verdict (nothing due) is reused before the store, QUEUE.md and the roster are read again: the throttle above is set only when a note is emitted, so without this every Bash call of a quiet turn at effort high re-read all three (review 7d036d68.3). A round that falls due inside this gap is named at most this much later.
 QUIET_EVERY_SEC = 60
 
@@ -46,7 +47,7 @@ def _stamp_path(me8, quiet=False):
 
 def _recent_quiet(me8, now):
     try:
-        return now - _stamp_path(me8, quiet=True).stat().st_mtime < QUIET_EVERY_SEC
+        return 0 <= now - _stamp_path(me8, quiet=True).stat().st_mtime < QUIET_EVERY_SEC
     except OSError:
         return False
 
@@ -59,7 +60,7 @@ def _touch_quiet(me8):
 
 def _recent(me8, now):
     try:
-        return now - _stamp_path(me8).stat().st_mtime < NOTE_EVERY_MIN * 60
+        return 0 <= now - _stamp_path(me8).stat().st_mtime < NOTE_EVERY_MIN * 60
     except OSError:
         return False
 
