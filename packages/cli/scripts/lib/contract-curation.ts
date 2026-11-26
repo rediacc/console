@@ -4,7 +4,7 @@
  * to a kind (split out of generate-cli-contract.ts to keep it within the file size budget).
  */
 
-import type { PositionalKind } from '../../../shared/src/cli-contract/types.js';
+import type { PositionalKind } from '@rediacc/shared/cli-contract';
 
 /**
  * Machine-plane commands a remote executor must never run for the caller, and
