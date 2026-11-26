@@ -328,6 +328,35 @@ describe('subscription notices', () => {
     }
   );
 
+  it.each([
+    ['repoGuid', { detectedAt: '2026-11-25T10:00:00.000Z' }, { repo: '-', date: '2026-11-25' }],
+    [
+      'detectedAt',
+      { repoGuid: 'aaaaaaaa-1111-4111-8111-111111111111' },
+      { repo: 'aaaaaaaa', date: '-' },
+    ],
+  ])(
+    'prints a "-" timeline path when a forensics_anomaly notice lacks its %s',
+    async (_missing, payload, shown) => {
+      respondWith([
+        {
+          notices: [
+            notice('a2', 1, {
+              kind: 'forensics_anomaly',
+              severity: 'warning',
+              payload: { detector: 'spike', delayed: false, ...payload },
+            }),
+          ],
+          nextCursor: null,
+        },
+      ]);
+      await executeSubscriptionNotices();
+      expect(printedRows()[0].summary).toBe(
+        `commands.subscription.notices.summary.forensicsAnomaly.live:${JSON.stringify({ detector: 'spike', ...shown, path: '-' })}`
+      );
+    }
+  );
+
   it('prints the bare kind for a security_incident notice with a stage it does not know (control)', async () => {
     respondWith([
       {

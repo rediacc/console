@@ -81,13 +81,13 @@ const RETIRE_HINT = 'rdc subscription retire --expired (lists them; --apply reti
 
 type LiveRow = { guid: string; machine: string | null };
 
-/** The hard-expired licences of repositories this config holds; null when the report lists no licence. */
+/** The hard-expired licences of repositories this config holds; null when the report lists no licence or the config is unreadable. */
 function liveExpiredRows(
   report: LicenseReport,
-  names: Map<string, RepoNameEntry>
+  names: Map<string, RepoNameEntry> | null
 ): LiveRow[] | null {
   const recent = report.repoLicenses.recent ?? [];
-  if (recent.length === 0) return null;
+  if (recent.length === 0 || names === null) return null;
   return licenceRows(recent, names).filter(
     (row) => row.freshness === 'hard_expired' && row.presence === 'config'
   );
@@ -202,12 +202,12 @@ function repoLicenseVerdict(
   return { value: `${validCount}/${totalTrackedRepos} valid`, status: 'ok' };
 }
 
-/** The active config's GUID-to-name join; an unreadable config knows no names, so every licence reads as not in it. */
-async function readNamesForDoctor(): Promise<Map<string, RepoNameEntry>> {
+/** The active config's GUID-to-name join; null when the config cannot be read, so the licences are not split and the row keeps failing. */
+async function readNamesForDoctor(): Promise<Map<string, RepoNameEntry> | null> {
   try {
     return await readRepoNames();
   } catch {
-    return new Map();
+    return null;
   }
 }
 

@@ -350,6 +350,16 @@ describe('a registered account (operator ruling 2026-11-23)', () => {
     untouched(fake);
   });
 
+  it('a login that is gone at the licence step does not claim the machine is unchanged', async () => {
+    const { result } = run({ machine: 'm1' }, { loggedIn: true, issue: { kind: 'no-login' } });
+    const error = await result.then(
+      () => undefined,
+      (e: unknown) => e as Error
+    );
+    expect(error?.message).toMatch(/licence\.noCertForUpgrade/);
+    expect(error?.message).not.toMatch(/accountRequired/);
+  });
+
   it('refuses before registering a brought machine, too', async () => {
     const { fake, result } = run(
       { ip: '192.168.111.11', user: 'ops', name: 'lab-brought' },

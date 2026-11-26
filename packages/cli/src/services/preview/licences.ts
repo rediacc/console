@@ -41,20 +41,22 @@ export function buildLicenceListCommand(root = LICENSE_ROOT): string {
   );
 }
 
-function isPreviewBlob(blob: unknown): boolean {
+/** Whether the blob's payload names a preview subscription; a payload that cannot be read is an error, never "not a preview". */
+function isPreviewBlob(blob: unknown, path: string): boolean {
   const payload = (blob as { payload?: unknown } | null)?.payload;
-  if (typeof payload !== 'string') return false;
+  if (typeof payload !== 'string') throw new Error(`licence file ${path} has no payload`);
+  let subscriptionId: unknown;
   try {
-    const decoded = JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as {
-      subscriptionId?: unknown;
-    };
-    return (
-      typeof decoded.subscriptionId === 'string' &&
-      decoded.subscriptionId.startsWith(PREVIEW_SUBSCRIPTION_PREFIX)
-    );
+    subscriptionId = (
+      JSON.parse(Buffer.from(payload, 'base64').toString('utf8')) as { subscriptionId?: unknown }
+    ).subscriptionId;
   } catch {
-    return false;
+    throw new Error(`licence file ${path} has an unreadable payload`);
   }
+  if (typeof subscriptionId !== 'string') {
+    throw new Error(`licence file ${path} names no subscription`);
+  }
+  return subscriptionId.startsWith(PREVIEW_SUBSCRIPTION_PREFIX);
 }
 
 /**
@@ -80,7 +82,7 @@ export function parseLicenceListing(output: string): LicenceFile[] {
       dir: posix.dirname(path),
       guid: match[1],
       keyId: match[2],
-      preview: isPreviewBlob(blob),
+      preview: isPreviewBlob(blob, path),
     });
   }
   return files;

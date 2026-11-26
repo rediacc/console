@@ -11,25 +11,46 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 vi.mock('../../services/account/license.js', () => ({
   fetchSubscriptionLicenseReport: async () => report.current,
 }));
-const config = vi.hoisted(() => ({ current: null as unknown }));
+const config = vi.hoisted(() => ({
+  current: null as unknown,
+  unreadable: false,
+  machineFails: false,
+}));
 vi.mock('../../services/config/config-resources.js', () => ({
-  configService: { getCurrent: async () => config.current, getLocalMachine: async () => ({}) },
+  configService: {
+    getCurrent: () =>
+      config.unreadable
+        ? Promise.reject(new Error('config unreadable'))
+        : Promise.resolve(config.current),
+    getLocalMachine: () =>
+      config.machineFails ? Promise.reject(new Error('no such machine')) : Promise.resolve({}),
+  },
 }));
 
 const expectedOrigin = vi.hoisted(() => ({ current: undefined as string | undefined }));
-const scan = vi.hoisted(() => ({ current: [] as unknown[] }));
+const scan = vi.hoisted(() => ({
+  current: [] as unknown[],
+  fails: false,
+  datastores: [] as string[],
+}));
 vi.mock('../../services/backup/backup-store-universe.js', () => ({
   expectedAccountServerOrigin: () => expectedOrigin.current,
 }));
 vi.mock('../../services/account/license-machine.js', async () => ({
   DEFAULT_DATASTORE: (await import('@rediacc/shared/config/well-known.generated'))
     .WK_DATASTORE_PATH,
-  scanRemoteRepoLicenses: async () => scan.current,
+  scanRemoteRepoLicenses: (_machine: string, datastore: string) => {
+    scan.datastores.push(datastore);
+    return scan.fails
+      ? Promise.reject(new Error('machine unreachable'))
+      : Promise.resolve(scan.current);
+  },
 }));
 
 import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_BENCH_ORIGIN,
+  WK_DATASTORE_PATH,
 } from '@rediacc/shared/config/well-known.generated';
 import { checkSubscription } from '../doctor-subscription.js';
 
@@ -155,6 +176,18 @@ describe('the doctor repo-licence check', () => {
     expect(row?.hint).toContain('rdc subscription retire --expired');
   });
 
+  it('an unreadable config keeps an expired licence failing instead of reading it as "none in this config"', async () => {
+    withLicences([{ repositoryGuid: LIVE, freshness: 'hard_expired' }]);
+    config.unreadable = true;
+    try {
+      const row = await licenceRow();
+      expect(row?.status).toBe('fail');
+      expect(row?.hint).toContain('rdc subscription refresh -m <machine>');
+    } finally {
+      config.unreadable = false;
+    }
+  });
+
   it('fails with both commands when the report carries no licence list to split', async () => {
     report.current = {
       ...base('ACTIVE'),
@@ -214,6 +247,33 @@ describe('the doctor repo-licence check across account servers', () => {
     const info = rows.find((c) => String(c.value).startsWith('info:'));
     expect(info?.value).toContain(WK_BENCH_ORIGIN);
     expect(info?.hint).toContain('--adopt-origin');
+  });
+
+  it("counts the licence as this server's when the machine scan throws", async () => {
+    scan.fails = true;
+    try {
+      const section = await checkSubscription();
+      const row = section.checks.find((c) => String(c.value).includes('expired'));
+      expect(row?.status).toBe('fail');
+      expect(section.checks.some((c) => String(c.value).startsWith('info:'))).toBe(false);
+    } finally {
+      scan.fails = false;
+    }
+  });
+
+  it('scans the default datastore when the machine cannot be read from the config', async () => {
+    config.machineFails = true;
+    scan.datastores.length = 0;
+    scan.current = [
+      { repositoryGuid: LIVE, currentRenewalUrl: `${WK_BENCH_ORIGIN}/api/license/renew` },
+    ];
+    try {
+      const section = await checkSubscription();
+      expect(scan.datastores).toEqual([WK_DATASTORE_PATH]);
+      expect(section.checks.some((c) => String(c.value).startsWith('info:'))).toBe(true);
+    } finally {
+      config.machineFails = false;
+    }
   });
 
   it('CONTROL: an expired licence this config server issued still fails', async () => {

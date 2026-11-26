@@ -115,7 +115,8 @@ function fromIssue(outcome: IssueOutcome, boxPublicKey: string): LicenceResult {
     case 'issued':
       return issued(outcome.cert, boxPublicKey);
     case 'no-login':
-      throw new ServerError(t('commands.server.errors.accountRequired'));
+      // Reached after the repo, keys and settings steps ran, so it never claims the machine is unchanged.
+      throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
     case 'other-key':
       throw new ServerError(
         t('commands.server.licence.otherKey', { certId: outcome.certId, error: outcome.message })

@@ -134,7 +134,10 @@ function cliEntry(raw: unknown): ManifestCli {
   };
 }
 
-/** The parsed manifest's checked parts: every shape and version refusal happens here, before any field is read. */
+/**
+ * The parsed manifest's checked parts: the top-level shape, schema version, arch and array fields are refused here.
+ * The string fields and the entries of `images`, `models` and `cli` are refused by `parseManifest` as it reads them.
+ */
 function checkedManifest(text: string) {
   let raw: unknown;
   try {

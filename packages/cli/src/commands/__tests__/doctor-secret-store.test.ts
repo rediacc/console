@@ -1,6 +1,15 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SecureStorage } from '../../utils/secure-storage.js';
-import { checkSecretStore } from '../doctor.js';
+
+vi.mock('../../services/config/config-resources.js', () => ({
+  configService: {
+    getCurrentName: () => 'rediacc',
+    getCurrent: async () => null,
+    getResourceState: async () => ({ getMachines: () => ({}) }),
+  },
+}));
+
+import { checkConfiguration, checkSecretStore } from '../doctor.js';
 
 function memoryStorage(type: string, lossy = false): SecureStorage {
   const map = new Map<string, string>();
@@ -52,5 +61,23 @@ describe('doctor secret-store check', () => {
     const result = await checkSecretStore({ getStorage: () => memoryStorage('keyctl', true) });
     expect(result.status).toBe('fail');
     expect(result.value).toContain('did not read back');
+  });
+
+  it('warns, naming the key, when the probe secret cannot be removed', async () => {
+    const stuck: SecureStorage = {
+      ...memoryStorage('keyctl'),
+      delete: () => Promise.reject(new Error('keyctl unlink refused')),
+    };
+    const result = await checkSecretStore({ getStorage: () => stuck });
+    expect(result.status).toBe('warn');
+    expect(result.value).toMatch(/rdc:doctor:.*could not be removed \(keyctl unlink refused\)/);
+  });
+
+  it('is a row of the configuration section', async () => {
+    delete process.env.REDIACC_SECRET_STORE;
+    const section = await checkConfiguration({ getStorage: () => memoryStorage('keyctl') });
+    expect(section.checks.at(-1)).toEqual({ name: 'Secret store', value: 'keyctl', status: 'ok' });
+    const failing = await checkConfiguration({ getStorage: () => memoryStorage('keyctl', true) });
+    expect(failing.checks.at(-1)?.status).toBe('fail');
   });
 });

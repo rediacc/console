@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   WK_ACCOUNT_DEFAULT_ORIGIN,
   WK_PREVIEW_SAMPLE_ORIGIN,
 } from '@rediacc/shared/config/well-known.generated';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../backup/backup-store-universe.js', () => ({
   expectedAccountServerOrigin: () => WK_PREVIEW_SAMPLE_ORIGIN,
@@ -87,6 +87,21 @@ describe('parseLicenceListing', () => {
       /not readable JSON/
     );
     expect(() => parseLicenceListing(`/etc/passwd\t{}`)).toThrow(/unexpected licence path/);
+  });
+
+  it('refuses a file whose payload is missing, undecodable or names no subscription', () => {
+    const file = path('g1', MASTER_KEY);
+    const notBase64Json = JSON.stringify({ payload: '!!!', signature: 's' });
+    const noSubscription = JSON.stringify({
+      payload: Buffer.from(JSON.stringify({ other: 1 })).toString('base64'),
+    });
+    expect(() => parseLicenceListing(`${file}\t{}`)).toThrow(/has no payload/);
+    expect(() => parseLicenceListing(`${file}\t${notBase64Json}`)).toThrow(/unreadable payload/);
+    expect(() => parseLicenceListing(`${file}\t${noSubscription}`)).toThrow(
+      /names no subscription/
+    );
+    // control: a readable real payload still classifies as not-preview
+    expect(parseLicenceListing(`${file}\t${realBlob()}`)[0].preview).toBe(false);
   });
 
   it('refuses to delete a path outside the licence layout', () => {

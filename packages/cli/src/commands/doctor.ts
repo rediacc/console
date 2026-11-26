@@ -323,6 +323,7 @@ export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise
     const storage = (deps.getStorage ?? getSecureStorage)();
     const key = `rdc:doctor:${process.pid}-${Date.now()}`;
     const value = `probe-${Math.random().toString(36).slice(2)}`;
+    let leftover: string | undefined;
     try {
       await storage.set(key, value);
       if ((await storage.get(key)) !== value) {
@@ -334,7 +335,17 @@ export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise
         };
       }
     } finally {
-      await storage.delete(key).catch(() => undefined);
+      await storage.delete(key).catch((error: unknown) => {
+        leftover = error instanceof Error ? error.message : String(error);
+      });
+    }
+    if (leftover !== undefined) {
+      return {
+        name,
+        value: `${storage.type}: the probe secret ${key} could not be removed (${leftover})`,
+        status: 'warn',
+        hint: 'Remove that entry from the secret store by hand',
+      };
     }
     return {
       name,
@@ -347,7 +358,7 @@ export async function checkSecretStore(deps: SecretStoreCheckDeps = {}): Promise
   }
 }
 
-async function checkConfiguration(): Promise<CheckSection> {
+export async function checkConfiguration(deps: SecretStoreCheckDeps = {}): Promise<CheckSection> {
   const checks: CheckResult[] = [];
   const contextName = configService.getCurrentName();
   const context = await configService.getCurrent();
@@ -363,7 +374,7 @@ async function checkConfiguration(): Promise<CheckSection> {
   );
   await checkMachineCount(checks);
   checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
-  checks.push(await checkSecretStore());
+  checks.push(await checkSecretStore(deps));
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 

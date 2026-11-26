@@ -46,7 +46,15 @@ async function swapIn(staged: string, target: string): Promise<void> {
   try {
     await fs.rename(staged, target);
   } catch (error) {
-    if (hadTarget) await fs.rename(oldPath, target).catch(() => undefined);
+    if (hadTarget) {
+      try {
+        await fs.rename(oldPath, target);
+      } catch (restoreError) {
+        throw new Error(
+          `the new binary could not be installed (${(error as Error).message}) and the previous one could not be put back from ${oldPath} (${(restoreError as Error).message})`
+        );
+      }
+    }
     throw error;
   }
   if (process.platform !== 'win32') await fs.chmod(target, 0o755);
