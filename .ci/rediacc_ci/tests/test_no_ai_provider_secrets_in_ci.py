@@ -195,3 +195,29 @@ def test_control_bracket_syntax_and_lowercase_names_are_seen() -> None:
 def test_names_that_only_resemble_a_provider_pass() -> None:
     for name in ("CLOUDFLARE_API_TOKEN", "BWS_ACCESS_TOKEN", "MAXAI_FLAG", "OPENAIRE"):
         assert not AI_SECRET.search(name), name
+
+
+def _job(extra: str, workflow_file: str = "ci-control.yml", job_id: str = "unit") -> list[str]:
+    text = "name: c\non: push\njobs:\n  %s:\n    runs-on: ubuntu-latest\n    steps:\n%s\n" % (
+        job_id,
+        extra,
+    )
+    return violations(workflow_file, yaml.safe_load(text), {})
+
+
+def test_control_the_bracket_and_lowercase_spellings_are_red() -> None:
+    """c4748a9f.1 and .2: `secrets['NAME']` and a lowercase name receive the key as surely as the dotted upper-case form."""
+    bracket = "      - run: echo\n        with:\n          k: ${{ secrets['ANTHROPIC_API_KEY'] }}"
+    assert _job(bracket) == ["ci-control.yml job unit receives ANTHROPIC_API_KEY"]
+    lower = "      - run: echo\n        env:\n          openai_key: x"
+    assert _job(lower) == ["ci-control.yml job unit receives openai_key"]
+    assert _job("      - run: echo\n        env:\n          PATH_KEY: x") == []
+
+
+def test_control_an_unnamed_ops_job_or_an_operational_job_running_tests_is_red() -> None:
+    """c4748a9f.3: the exemption is the named (file, job) pairs with no test command, not any ops-* workflow."""
+    step = "      - run: echo\n        env:\n          ANTHROPIC_API_KEY: x"
+    assert _job(step, "ops-new-thing.yml", "job") != []
+    assert _job(step, "ops-claude-review.yml", "review") == []
+    tested = step + "\n      - run: npx vitest run"
+    assert _job(tested, "ops-claude-review.yml", "review") != []

@@ -1376,6 +1376,17 @@ IN_FLIGHT = {
 DAY_S = 86400
 
 
+_GC_TMPS: set[pathlib.Path] = set()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _remove_gc_tmps():
+    """b5b4e569.3: `gc_env` makes its TMPDIR directly under the shared temp root, outside pytest's basetemp pruning, so the session removes what the module made once it is over."""
+    yield
+    for made in _GC_TMPS:
+        shutil.rmtree(made, ignore_errors=True)
+
+
 def gc_env(root):
     base = root.parent
     # TMPDIR right under the temp root, one per fixture: tsx opens its IPC socket under TMPDIR, and `<basetemp>/popen-gwN/<test name>/gc-tmp/tsx-<uid>/<pid>.pipe` passed the 108-byte socket path limit under xdist (listen EINVAL).
@@ -1383,6 +1394,7 @@ def gc_env(root):
         "gc-" + hashlib.sha256(str(base).encode()).hexdigest()[:10]
     )
     gc_tmp.mkdir(exist_ok=True)
+    _GC_TMPS.add(gc_tmp)
     return {
         **os.environ,
         "PYTHONPATH": str(paths.CI_DIR),

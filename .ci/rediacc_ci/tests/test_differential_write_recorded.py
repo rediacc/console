@@ -86,6 +86,8 @@ def test_regolden_exits_non_zero_naming_the_lost_ids(monkeypatch, capsys):
     monkeypatch.setattr(regolden, "modules_naming", lambda _twin: ["m"])
     monkeypatch.setattr(regolden.os, "chdir", lambda _p: None)
     monkeypatch.setattr(diff, "golden_stem", lambda _twin: STEM)
+    # regolden.main sets REDIACC_CI_REGOLDEN process-wide; setenv first so the monkeypatch undo removes it again (39f2a137.2).
+    monkeypatch.setenv("REDIACC_CI_REGOLDEN", "")
     argv = [TWIN, "--source", "port", "--reason", "r"]
     assert regolden.main(argv) == 1
     err = capsys.readouterr().err

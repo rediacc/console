@@ -146,7 +146,7 @@ TABLE_RECORD = ".ci/config/plan-boxes.json"
 
 
 def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
-    """The five gates that import the gate table, against the real policy and lock: the table still holds a record glob literal, and none of them is derived as a reader of that record. The subject was agent/worklist/** until 9a66691457 dropped check:ci-plan-bindings' declared paths, the last place the table named it; .ci/config/plan-boxes.json is a record glob the table still names (check:ci-plan-boxes' paths)."""
+    """Every gate whose closure reaches the gate table (the TABLE_IMPORTERS floor and any gate that starts importing it), against the real policy and lock: the table still holds a record glob literal, and none of them is derived as a reader of that record THROUGH the table (bb047f9d.2). The subject was agent/worklist/** until 9a66691457 dropped check:ci-plan-bindings' declared paths, the last place the table named it; .ci/config/plan-boxes.json is a record glob the table still names (check:ci-plan-boxes' paths)."""
     assert "'%s'" % TABLE_RECORD in MANIFEST.read_text(encoding="utf-8"), (
         "the control's subject moved"
     )

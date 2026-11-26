@@ -228,8 +228,24 @@ def test_an_unwritable_home_prints_nothing(tmp_path):
     assert got.returncode == 0
     assert got.stdout == "body\n"
     assert got.stderr == ""
-    # The failed-open path really ran: the setup could not write its records under the home.
-    assert not (claude / "resprofile").exists()
+    # The failed-open path really ran. `not (claude / "resprofile").exists()` cannot fail in the root fallback (a path under a regular file never exists), so the witness is a control (b9b00cb1.1): the same setup, against the same home made writable, does write its loader, so the silence above came from the unwritable home and not from a setup that never writes.
+    roots = claude / "resprofile" / "pth-roots"
+    assert not roots.exists()
+    if claude.is_file():
+        claude.unlink()
+        claude.mkdir()
+    claude.chmod(0o700)
+    again = subprocess.run(
+        ["bash", "-c", "echo body"],
+        env=child_env(tmp_path, BASH_ENV=str(PROFILE / "bash_env.sh")),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert again.returncode == 0
+    assert again.stderr == ""
+    assert roots.read_text().splitlines() == [str(REPO)]
 
 
 def test_a_directory_where_a_file_belongs_prints_nothing(tmp_path):

@@ -1095,12 +1095,25 @@ def _guard(value: object) -> str:
     return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
 
 
+_CHAIN_RE = re.compile(r"\s*(?:&&|\|\||;)\s*")
+
+
+def _after_echo(code: str) -> str:
+    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` and the rest is judged again (17f9d3d7.2)."""
+    while code.startswith(("echo ", "printf ")):
+        rest = _CHAIN_RE.split(code, 1)
+        if len(rest) < 2:
+            return ""
+        code = rest[1].strip()
+    return code
+
+
 def _executed_lines(run: str) -> str:
-    """The lines of a `run:` script that execute: comment lines, a trailing ` # comment`, and `echo`/`printf` lines dropped, so a gate named only in text does not read as run."""
+    """The lines of a `run:` script that execute: comment lines, a trailing ` # comment`, and the `echo`/`printf` part of a line dropped, so a gate named only in text does not read as run."""
     kept = []
     for line in run.splitlines():
-        code = line.split(" #", 1)[0].strip()
-        if not code or code.startswith(("#", "echo ", "printf ")):
+        code = _after_echo(line.split(" #", 1)[0].strip())
+        if not code or code.startswith("#"):
             continue
         kept.append(code)
     return "\n".join(kept)
