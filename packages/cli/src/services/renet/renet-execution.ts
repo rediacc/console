@@ -62,11 +62,14 @@ export interface RenetSpawnOptions {
   skipRouterRestart?: boolean;
 }
 
+/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached. */
+const pathLookupCache = new Map<string, string>();
+
 /**
  * Resolve a renet binary path, falling back to PATH lookup if the configured
  * path doesn't exist (e.g. stale config from another OS or worktree).
  */
-function resolveRenetPath(configuredPath: string): string {
+export function resolveRenetPath(configuredPath: string): string {
   // Absolute path, verify it exists before using it
   if (path.isAbsolute(configuredPath)) {
     try {
@@ -80,8 +83,12 @@ function resolveRenetPath(configuredPath: string): string {
   // Bare name or missing absolute, resolve via PATH (handles .exe on Windows)
   const cmd = process.platform === 'win32' ? 'where' : 'which';
   const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
+  const cached = pathLookupCache.get(name);
+  if (cached !== undefined) return cached;
   try {
-    return execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+    const found = execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+    pathLookupCache.set(name, found);
+    return found;
   } catch {
     throw new Error(
       `Renet binary not found at "${configuredPath}" and not in PATH. ` +
