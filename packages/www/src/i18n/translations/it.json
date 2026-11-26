@@ -668,7 +668,7 @@
       },
       "hero": {
         "title": "Accordo sul trattamento dei dati",
-        "effectiveDate": "Data di efficacia: 11 novembre 2026"
+        "effectiveDate": "Data di efficacia: 26 novembre 2026"
       },
       "toc": {
         "title": "Indice"
@@ -680,7 +680,7 @@
           "content": [
             "Il presente Accordo sul trattamento dei dati (\"DPA\") fa parte dei <a href=\"terms-of-service\">Termini di servizio</a> tra {{legalName}} (\"Rediacc\", il \"Responsabile del trattamento\") e il Cliente, quando il Cliente utilizza i Servizi come impresa e Rediacc tratta Dati Personali del Cliente per conto del Cliente. I termini definiti nei Termini di servizio hanno qui lo stesso significato. Il presente DPA è redatto in inglese; le traduzioni sono fornite solo per comodità e, in caso di difformità, prevale la versione inglese.",
             "Per i Dati Personali del Cliente, il Cliente è il titolare del trattamento (o un responsabile che agisce per il proprio titolare) e Rediacc è il responsabile del trattamento (o sub-responsabile). Per le registrazioni di Account, di fatturazione e di accettazione e per i Dati di Telemetria, Rediacc è titolare del trattamento autonomo, come descritto nell'<a href=\"privacy-policy\">Informativa sulla privacy</a>, e il presente DPA non si applica a tale trattamento.",
-            "I Dati del Cliente presenti sui Dispositivi del Cliente non sono trattati da Rediacc. L'archiviazione cifrata delle configurazioni e i backup ospitati sono cifrati con chiavi che Rediacc non detiene; Rediacc conserva quindi tali blocchi di dati ma non può leggerne il contenuto."
+            "Fatte salve le prove di network forensics descritte nella Sezione 4, che Rediacc riceve solo per un repository per il quale il Cliente attiva la forensics, Rediacc non tratta i Dati del Cliente presenti sui Dispositivi del Cliente. L'archiviazione cifrata delle configurazioni e i backup ospitati sono cifrati con chiavi che Rediacc non detiene; Rediacc conserva quindi tali blob ma non può leggerne il contenuto."
           ]
         },
         "definitions": {
@@ -2473,7 +2473,7 @@
         "title": "Domande?"
       },
       "hero": {
-        "effectiveDate": "Data di efficacia: 11 novembre 2026",
+        "effectiveDate": "Data di efficacia: 26 novembre 2026",
         "title": "Il Nostro Impegno per la Privacy"
       },
       "meta": {
@@ -2524,9 +2524,9 @@
           "items": [
             "<strong>Fornitori di servizi (sub-responsabili del trattamento)</strong> che ospitano e gestiscono la nostra piattaforma, recapitano le email ed elaborano i pagamenti, vincolati da obblighi contrattuali di tutela dei vostri dati. L'elenco aggiornato, con il ruolo e la sede di ciascun fornitore, è nel nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>",
             "<strong>Plausible Analytics</strong> per analisi del sito web senza cookie e anonimizzate (nessun dato personale viene condiviso)",
-            "<strong>Elaborazione della telemetria</strong>: i dati anonimi di utilizzo del prodotto vengono trasmessi al nostro endpoint di telemetria all'interno dell'UE per l'aggregazione e l'analisi. Nessun dato di telemetria viene condiviso con terzi (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
+            "<strong>Elaborazione della telemetria</strong> per i dati anonimi di utilizzo del prodotto, inviati al nostro endpoint di telemetria nell'Unione europea per l'aggregazione e l'analisi. L'endpoint è eseguito su server virtuali forniti da Hostinger, che ospita i dati per nostro conto in qualità di nostro responsabile del trattamento, indicato nel nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>, e non li utilizza per finalità proprie. Non vendiamo i dati di telemetria né li condividiamo con altri (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
             "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale",
-            "<strong>Il fornitore di modelli collegato dall'utente</strong> quando un agente IA viene usato tramite MCP remoto: l'output degli strumenti restituito all'agente è trattato da quel fornitore secondo i propri termini. Rediacc non sceglie tale fornitore, e alcuni connettori, come il connettore MCP dell'API Claude, non sono idonei alla conservazione zero dei dati"
+            "<strong>Il fornitore di modelli che collegate</strong>, su vostra indicazione, quando usate un agente IA tramite MCP remoto: l'output degli strumenti restituito all'agente viene inviato a tale fornitore, che lo tratta in base al vostro accordo con esso. Tale fornitore non è né nostro responsabile del trattamento né nostro sub-responsabile, perché Rediacc non lo sceglie e non gli impartisce istruzioni. Alcuni connettori, come il connettore MCP dell'API Claude, non sono idonei alla conservazione zero dei dati"
           ],
           "title": "4. Condivisione dei Dati e Terze Parti"
         },
@@ -9864,7 +9864,7 @@
         "title": "Domande?"
       },
       "hero": {
-        "effectiveDate": "Data di entrata in vigore: 1 febbraio 2026",
+        "effectiveDate": "Data di entrata in vigore: 26 novembre 2026",
         "title": "Le Nostre Pratiche di Telemetria"
       },
       "meta": {
@@ -9965,7 +9965,7 @@
             "<strong>Cifratura:</strong> tutti i dati vengono cifrati in transito tramite TLS. Il Renet Agent utilizza inoltre la compressione gzip.",
             "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attività di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
             "<strong>Accesso:</strong> i dati di telemetria sono accessibili solo al personale tecnico e operativo di Rediacc su base need-to-know.",
-            "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono condivisi, venduti o resi accessibili a terze parti.",
+            "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono venduti né condivisi con alcuno per uso proprio. Sono archiviati su server virtuali nell'Unione europea forniti da Hostinger, che li ospita per nostro conto in qualità di nostro responsabile del trattamento (consultate il nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>).",
             "<strong>Infrastruttura:</strong> tutti i dati di telemetria vengono elaborati e archiviati su infrastruttura situata all'interno dell'Unione Europea."
           ],
           "title": "6. Elaborazione e Archiviazione dei Dati"
