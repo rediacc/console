@@ -262,7 +262,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin.
   'backup toc-key sync': {
     mcpSurface: PROXY,
-    mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
+    mcp: { destructive: false, idempotent: true, timeout: 'write' },
   },
   'backup verify': {
     mcpSurface: PROXY,
@@ -404,7 +404,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       requiredArgs: ['ref'],
       descriptionOverride:
         'Move a repository to another machine with minimal downtime: a two-phase copy (bulk sync while running, then a short stop + delta sync + start on the destination) with DNS cutover. The repo keeps its identity and secrets. Use repo_push for a backup copy that stays on both machines.',
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
 
@@ -535,7 +535,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       descriptionOverride:
         "Record the machine's SSH host keys in the local config. Required before any command can reach it.",
-      excludeOptions: ['debug'],
     },
   },
   // ★ OPERATOR-RULED (unmapped by spec §5; ruled 2026-07-13): EXCLUDE both. `infra push` PROVISIONS CLOUD VMs AND SPENDS REAL MONEY. `infra set` is the loaded gun that `push` fires. An agent must not be able to both arm and pull.
@@ -656,7 +655,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       reason:
         "Names the config file the caller's own install selects, with its file path and token file state.",
     },
-    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Same intent as the ASKED:2026-10-28T13:29Z ruling on `machine access set|push`: the config access writers declare the keys and source ranges every machine binding installs, so they change who may log in. `list` reads them and stays callable.
   'config access add': {
@@ -876,7 +875,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
         'Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12).',
       // --accept-observed rewrites a DECLARATION (promote-class human decision);
       // an agent hitting a placement conflict should surface it, not resolve it.
-      excludeOptions: ['debug', 'accept-observed'],
+      excludeOptions: ['accept-observed'],
     },
   },
   'config import-machine': {
@@ -1128,7 +1127,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'read' as const,
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug'],
     },
   },
   'repo secret get': {
@@ -1139,7 +1137,6 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'read' as const,
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug'],
     },
   },
 
@@ -1206,7 +1203,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       requiredArgs: ['ref'],
       descriptionOverride:
         'Provision read replicas of a repository. Declarative: the replica count is the desired state, so re-running with the same count is a no-op.',
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
   'repo replicate status': {
@@ -1228,7 +1225,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
   // ★ HELD, and the reason is stated honestly rather than deferred. `refresh` re-forks every replica, which makes it the exact site of #49's back-door hole: a re-fork WITHOUT the LUKS re-open would roll the ENTIRE replica set to empty, on the one command whose whole job is to refresh data. The fix is in and unit-pinned, but the refresh path itself has never been exercised on a

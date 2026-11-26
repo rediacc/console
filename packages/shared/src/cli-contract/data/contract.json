@@ -1,5 +1,5 @@
 {
-  "version": "44babd8ce833386c",
+  "version": "568ec0711769fbe8",
   "languages": [
     "ar",
     "de",
@@ -17496,7 +17496,7 @@
       "label": "Show the health, tier, certificate and image of an installed server",
       "summaryKey": "commands.server.status.descriptionShort",
       "summary": "Show the health, tier, certificate and image of an installed server",
-      "severity": "caution",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",

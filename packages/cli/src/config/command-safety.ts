@@ -240,7 +240,7 @@ export const COMMAND_SEVERITY: Readonly<Record<string, CommandSeverity>> = {
   'server install': 'caution',
   'server licence': 'caution',
   'server licence mint': 'caution',
-  'server status': 'caution',
+  'server status': 'none',
   'server upgrade': 'destructive',
   'subscription login': 'caution',
   'subscription logout': 'destructive',

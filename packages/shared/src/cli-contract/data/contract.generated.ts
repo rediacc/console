@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '44babd8ce833386c';
+export const CLI_CONTRACT_VERSION = '568ec0711769fbe8';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "44babd8ce833386c",
+  "version": "568ec0711769fbe8",
   "languages": [
     "ar",
     "de",
@@ -17504,7 +17504,7 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Show the health, tier, certificate and image of an installed server",
       "summaryKey": "commands.server.status.descriptionShort",
       "summary": "Show the health, tier, certificate and image of an installed server",
-      "severity": "caution",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",

@@ -93,6 +93,19 @@ describe('command safety table', () => {
     ).toEqual(['repo delete']);
   });
 
+  // Review 1121-1 90db5f63.1: `server status` was drafted at caution while every sibling status command reads.
+  const statusAboveNone = (severity: Readonly<Record<string, CommandSeverity>>): string[] =>
+    Object.entries(severity)
+      .filter(([key, level]) => /(^| )status$/.test(key) && level !== 'none')
+      .map(([key]) => key);
+
+  it('declares every status command at none, and the check names one', () => {
+    expect(statusAboveNone(COMMAND_SEVERITY)).toEqual([]);
+    expect(statusAboveNone({ ...COMMAND_SEVERITY, 'server status': 'caution' })).toEqual([
+      'server status',
+    ]);
+  });
+
   it('declares repo prune destructive with polarity default on --apply', () => {
     expect(COMMAND_SEVERITY['repo prune']).toBe('destructive');
     expect(COMMAND_PREVIEW['repo prune']).toEqual({ flag: 'apply', polarity: 'default' });

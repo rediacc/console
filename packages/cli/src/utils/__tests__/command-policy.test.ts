@@ -56,8 +56,13 @@ vi.mock('../../i18n/index.js', () => ({
 }));
 
 import { RemoteUnreachableError } from '../../adapters/remote-config-errors.js';
+import {
+  ServerE2eKeyUnavailableError,
+  ServerInfoStatusError,
+} from '../../services/account/account-client.js';
 import { configService } from '../../services/config/config-resources.js';
 import { ConfigServerError } from '../../services/config/config-server-client.js';
+import { RemoteTokenRefreshError } from '../../services/config/device-token-refresh.js';
 import { auditLog } from '../../services/core/audit-log.js';
 import {
   createOutputState,
@@ -278,6 +283,17 @@ describe('a remote config, judged as the session names its member (D2)', () => {
       new RemoteUnreachableError('https://acct.example', new ConfigServerError('bad gateway', 502)),
     ],
     ['a token that will not renew', new Error('token expired')],
+    [
+      'a server-info 500 (not a closed path)',
+      new ServerE2eKeyUnavailableError('https://old.example', 'unreachable', {
+        cause: new ServerInfoStatusError(500),
+      }),
+    ],
+    [
+      'a server-info that advertises no key',
+      new ServerE2eKeyUnavailableError('https://old.example', 'no-key'),
+    ],
+    ['a renewal refused for another reason', new RemoteTokenRefreshError('token_expired', 'x')],
   ];
 
   it.each(SESSION_NOT_ANSWERED)(
@@ -294,6 +310,16 @@ describe('a remote config, judged as the session names its member (D2)', () => {
   const SERVER_PATH_CLOSED: readonly [string, Error][] = [
     ['the store holds no such config (404)', new ConfigServerError('not found', 404)],
     ['the server refuses this account (403)', new ConfigServerError('forbidden', 403)],
+    ...[401, 403, 404].map((status): [string, Error] => [
+      `the stored host's server-info answers ${status}`,
+      new ServerE2eKeyUnavailableError('https://old.example', 'unreachable', {
+        cause: new ServerInfoStatusError(status),
+      }),
+    ]),
+    ...['not_store_member', 'store_mismatch'].map((code): [string, Error] => [
+      `the renewal is refused with ${code}`,
+      new RemoteTokenRefreshError(code, 'refused'),
+    ]),
   ];
 
   it.each(SERVER_PATH_CLOSED)(
