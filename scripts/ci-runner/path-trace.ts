@@ -27,7 +27,7 @@
  *   tsx scripts/ci-runner/path-trace.ts --gate <id> [--gate <id> ...] [--write] [--replace-declared]
  *   tsx scripts/ci-runner/path-trace.ts --all-whole-tree [--jobs N] [--write] [--skip <id> ...]
  *   tsx scripts/ci-runner/path-trace.ts --selftest
- *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem)
+ *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem), --max-log-mb <n> (kill a trace whose strace logs pass n MB, default 8192; it exits 125 and is never a pass)
  */
 import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -38,6 +38,7 @@ import { pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { installSignalCleanup, removeTree, shared as runRoot } from '../lib/runtmp.js';
+import { spawnWatched } from './exec.js';
 import {
   CARRY_EXEMPT_REL,
   exemptRowsOf,
@@ -1738,6 +1739,11 @@ export function trackLiveGroup(pid: number | undefined): () => void {
   };
 }
 
+/** How many traced groups are registered right now (a selftest probe: a spawn that forgot `trackLiveGroup` reads 0 here). */
+export function liveGroupCount(): number {
+  return LIVE_GROUPS.size;
+}
+
 export function killLiveGroups(): void {
   for (const pid of LIVE_GROUPS) {
     try {
@@ -1756,6 +1762,30 @@ export interface TraceRun {
   outputTail: string;
   /** strace's OWN stderr lines (warnings, refusals), never mixed into the gate's output. */
   straceNotes: string[];
+  /** The log size limit killed the trace (exit 125): its read set is partial, so it is never a pass. */
+  capped: boolean;
+  /** Bytes the per-process logs held when the trace ended (or was capped). */
+  logBytes: number;
+}
+
+/** The default `--max-log-mb` (PLAN-host-temp-disposal D4): one traced run wrote 27 GB in an hour before the limit. */
+export const DEFAULT_MAX_LOG_MB = 8192;
+/** The strace exit status of a trace the log limit killed; 125 is timeout(1)'s own "the command could not run" slot, distinct from 124 (timeout) and 127. */
+export const CAP_EXIT = 125;
+const CAP_POLL_MS = 5000;
+
+/** Total bytes of the per-process strace logs (`t.<pid>`) in `dir`. */
+export function traceLogBytes(dir: string): number {
+  let total = 0;
+  for (const f of fs.readdirSync(dir)) {
+    if (!/^t\.\d+$/.test(f)) continue;
+    try {
+      total += fs.statSync(path.join(dir, f)).size;
+    } catch {
+      // a log removed between the listing and the stat
+    }
+  }
+  return total;
 }
 
 /**
@@ -1820,6 +1850,10 @@ export async function traceCommand(
     timeoutS?: number;
     noSeccomp?: boolean;
     straceBin?: string;
+    /** The size limit on all logs together, MB (default DEFAULT_MAX_LOG_MB). */
+    maxLogMb?: number;
+    /** How often the limit is checked, ms (default 5 s; a selftest shortens it). */
+    capPollMs?: number;
   } = {}
 ): Promise<TraceRun> {
   // Logs a caller asked to keep live outside the run dir, which the exit hook removes.
@@ -1845,6 +1879,8 @@ async function traceIn(
     timeoutS?: number;
     noSeccomp?: boolean;
     straceBin?: string;
+    maxLogMb?: number;
+    capPollMs?: number;
   }
 ): Promise<TraceRun> {
   const started = Date.now();
@@ -1853,13 +1889,26 @@ async function traceIn(
   const straceErrFile = path.join(dir, 'strace-stderr.txt');
   const straceErrFd = fs.openSync(straceErrFile, 'w');
   const env = { ...(opts.env ?? process.env), UV_USE_IO_URING: '0' };
+  let capped = false;
   const exit = await new Promise<number>((resolve) => {
-    const child = spawn(
+    // Its own group (a timeout kills the whole tree) carrying the runner-death watch: a SIGKILLed path-trace runs no handler, and strace plus its tracees would otherwise outlive it.
+    const child = spawnWatched(
       opts.straceBin ?? 'strace',
       straceArgv(path.join(dir, 't'), cmd, opts.noSeccomp),
-      { cwd, env, stdio: ['ignore', outFd, straceErrFd], detached: true }
+      { cwd, env, stdio: ['ignore', outFd, straceErrFd] }
     );
     if (child.pid !== undefined) LIVE_GROUPS.add(child.pid);
+    // THE LOG LIMIT (D4): -ff writes one log per process and nothing else bounds them. Over the limit the group is killed and the run reads as exit 125, never a pass.
+    const limitBytes = (opts.maxLogMb ?? DEFAULT_MAX_LOG_MB) * 1024 * 1024;
+    const watchdog = setInterval(() => {
+      if (traceLogBytes(dir) <= limitBytes) return;
+      capped = true;
+      try {
+        if (child.pid !== undefined) process.kill(-child.pid, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    }, opts.capPollMs ?? CAP_POLL_MS);
     // A hung gate is killed with its whole process group and reported as exit 124, the timeout(1) convention.
     let timedOut = false;
     const timer =
@@ -1876,21 +1925,33 @@ async function traceIn(
     child.on('exit', (code, signal) => {
       if (child.pid !== undefined) LIVE_GROUPS.delete(child.pid);
       if (timer !== undefined) clearTimeout(timer);
-      resolve(timedOut ? 124 : (code ?? (signal ? 128 : 1)));
+      clearInterval(watchdog);
+      // A final look: a log written in the last tick of a fast run still counts.
+      if (!capped && traceLogBytes(dir) > limitBytes) capped = true;
+      resolve(capped ? CAP_EXIT : timedOut ? 124 : (code ?? (signal ? 128 : 1)));
     });
-    child.on('error', () => resolve(127));
+    child.on('error', () => {
+      clearInterval(watchdog);
+      resolve(127);
+    });
   });
   fs.closeSync(outFd);
   fs.closeSync(straceErrFd);
   const access = emptyAccess();
   access.startedMs = started;
-  const logCount = parseStraceDir(dir, cwd, access);
+  const logBytes = traceLogBytes(dir);
+  // A capped trace is partial and never judged, so its multi-GB logs are not parsed.
+  const logCount = capped ? 0 : parseStraceDir(dir, cwd, access);
   // strace's stderr file holds strace's own `strace:` lines, plus anything the shell printed before its `exec 2>&1` (a BASH_ENV hook), which is the gate's side and goes back with its output.
   const errLines = fs
     .readFileSync(straceErrFile, 'utf8')
     .split('\n')
     .filter((l) => l.trim() !== '');
   const straceNotes = errLines.filter((l) => l.startsWith('strace: '));
+  if (capped)
+    straceNotes.push(
+      `strace logs passed ${opts.maxLogMb ?? DEFAULT_MAX_LOG_MB} MB (${Math.round(logBytes / 1048576)} MB written); the trace was killed with exit ${CAP_EXIT}`
+    );
   const preamble = errLines.filter((l) => !l.startsWith('strace: '));
   const output = [...preamble, fs.readFileSync(outFile, 'utf8')].join('\n');
   if (opts.keepLogs) process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
@@ -1901,6 +1962,8 @@ async function traceIn(
     logFiles: logCount,
     outputTail: output.split('\n').slice(-15).join('\n'),
     straceNotes,
+    capped,
+    logBytes,
   };
 }
 
@@ -2240,6 +2303,8 @@ interface Args {
   timeoutS: number;
   /** Traces without `--seccomp-bpf` (straceArgv). */
   noSeccomp: boolean;
+  /** `--max-log-mb`: the size limit on one trace's strace logs, MB (D4). */
+  maxLogMb: number;
   /** Lets `--write` and `--apply` replace a hand-declared `paths` set. */
   replaceDeclared: boolean;
 }
@@ -2257,6 +2322,7 @@ function parseArgs(argv: string[]): Args {
     selftest: false,
     timeoutS: 1800,
     noSeccomp: false,
+    maxLogMb: DEFAULT_MAX_LOG_MB,
     replaceDeclared: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -2280,7 +2346,11 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--refold') a.refold = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = Number(val());
     else if (t === '--no-seccomp') a.noSeccomp = true;
-    else if (t === '--replace-declared') a.replaceDeclared = true;
+    else if (t === '--max-log-mb') {
+      a.maxLogMb = Number(val());
+      if (!Number.isFinite(a.maxLogMb) || a.maxLogMb <= 0)
+        throw new Error('--max-log-mb takes a positive number of MB');
+    } else if (t === '--replace-declared') a.replaceDeclared = true;
     else throw new Error(`unknown argument ${t}`);
   }
   return a;
@@ -2411,6 +2481,7 @@ export async function traceGate(
     /** Every node the gate reaches through `needs`, transitively (needsClosure): the direct edges alone would miss a producer behind another producer. */
     closure: ReadonlySet<string>;
     noSeccomp?: boolean;
+    maxLogMb?: number;
     /** The gate's carry-exempt kind (F2 B7), which fold waives alone. */
     waive?: string | null;
   }
@@ -2420,6 +2491,7 @@ export async function traceGate(
     keepLogs: opts.keepLogs,
     label: entry.id,
     noSeccomp: opts.noSeccomp,
+    maxLogMb: opts.maxLogMb,
   });
   const attr = attribute(run.access, view);
   return {
@@ -2754,6 +2826,7 @@ async function main(argv: string[]): Promise<number> {
             timeoutS: args.timeoutS,
             closure: needsClosure(e.id, byId),
             noSeccomp: args.noSeccomp,
+            maxLogMb: args.maxLogMb,
             waive: exempt.get(e.id),
           })
         );
@@ -4731,6 +4804,7 @@ async function selftest(): Promise<number> {
 
   // Temp disposal: real children, a signal mid-trace and a SIGKILL.
   await tempDisposalCases(import.meta.filename, 'path-trace-', check);
+  await logCapCases(check);
   const before = fs.readdirSync(runRoot('path-trace-')).length;
   let threw = false;
   try {
@@ -4779,19 +4853,94 @@ export async function tempProbeChild(mode: string, stub: string): Promise<void> 
 }
 
 /**
+ * A stand-in for the strace binary (selftests): writes `$STUB_BYTES` bytes into the per-process log `<-o prefix>.4242`, records its pid in `$STUB_PIDFILE`, then sleeps `$STUB_SLEEP` seconds (default 15).
+ */
+export function writeStraceStub(file: string): string {
+  fs.writeFileSync(
+    file,
+    [
+      '#!/bin/sh',
+      'while [ $# -gt 0 ]; do if [ "$1" = -o ]; then o=$2; break; fi; shift; done',
+      '[ -n "$STUB_PIDFILE" ] && echo $$ > "$STUB_PIDFILE"',
+      '[ -n "$STUB_BYTES" ] && yes x | head -c "$STUB_BYTES" > "$o.4242"',
+      'exec sleep "${STUB_SLEEP:-15}"',
+      '',
+    ].join('\n'),
+    { mode: 0o755 }
+  );
+  return file;
+}
+
+/** Whether `pid` is a live process: a zombie awaiting its reaper counts as gone. */
+export function pidRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return !/^\d+ \(.*\) Z/.test(fs.readFileSync(`/proc/${pid}/stat`, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+/** Polls until `pid` is gone or `ms` pass; true when it is gone. */
+export async function waitPidGone(pid: number, ms: number): Promise<boolean> {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 50)))
+    if (!pidRunning(pid)) return true;
+  return !pidRunning(pid);
+}
+
+/**
+ * The strace log limit (D4), through a stub that writes past a 1 MB limit: exit 125 and `capped`, never a pass; the same stub under the limit passes (the control).
+ */
+export async function logCapCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  const aux = fs.mkdtempSync(path.join(fs.existsSync('/tmp') ? '/tmp' : os.tmpdir(), 'pt-cap-'));
+  try {
+    const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
+    const env = (bytes: number, sleep: number): NodeJS.ProcessEnv => ({
+      ...process.env,
+      STUB_BYTES: String(bytes),
+      STUB_SLEEP: String(sleep),
+    });
+    const over = await traceCommand('true', process.cwd(), {
+      straceBin: stub,
+      env: env(2_000_000, 30),
+      maxLogMb: 1,
+      capPollMs: 100,
+    });
+    check(
+      over.capped && over.exit === CAP_EXIT && over.logBytes > 1048576 && over.seconds < 20,
+      `log cap: a stub writing 2 MB past a 1 MB limit is killed with exit ${CAP_EXIT} and capped (exit ${over.exit}, capped ${over.capped}, ${over.logBytes} bytes, ${over.seconds}s)`
+    );
+    const under = await traceCommand('true', process.cwd(), {
+      straceBin: stub,
+      env: env(1000, 0),
+      maxLogMb: 1,
+      capPollMs: 100,
+    });
+    check(
+      !under.capped && under.exit === 0,
+      `CONTROL: the same stub writing 1000 bytes under the 1 MB limit passes (exit ${under.exit}, capped ${under.capped})`
+    );
+  } finally {
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+}
+
+/**
  * Drives `<module>.tempProbeChild` as a real child in a fresh TMPDIR: SIGTERM mid-trace leaves nothing, SIGKILL leaves exactly the one run dir (the premise), and the next run's sweep removes it. Reports one verdict per case through `check`.
  */
 export async function tempDisposalCases(
   moduleFile: string,
   prefix: string,
-  check: (ok: boolean, label: string) => void
+  check: (ok: boolean, label: string) => void,
+  /** Whether the child traces through the strace stub, which makes the death-watch case apply (trace-honest's child only builds sparse trees and has its own `runPlain` case). */
+  stubChild = true
 ): Promise<void> {
   const root = fs.existsSync('/tmp') ? '/tmp' : os.tmpdir();
   const base = fs.mkdtempSync(path.join(root, 'pt-'));
   const aux = fs.mkdtempSync(path.join(root, 'pt-aux-'));
   try {
-    const stub = path.join(aux, 'strace-stub.sh');
-    fs.writeFileSync(stub, '#!/bin/sh\nexec sleep 15\n', { mode: 0o755 });
+    const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
+    const pidFile = path.join(aux, 'stub.pid');
     const script = path.join(aux, 'child.mts');
     fs.writeFileSync(
       script,
@@ -4799,7 +4948,7 @@ export async function tempDisposalCases(
     );
     const start = async (mode: string): Promise<ChildProcess> => {
       const child = spawn(process.execPath, [...process.execArgv, script, mode, stub], {
-        env: { ...process.env, TMPDIR: base },
+        env: { ...process.env, TMPDIR: base, STUB_PIDFILE: pidFile },
         stdio: ['ignore', 'pipe', 'inherit'],
       });
       if (mode === 'noop') return child;
@@ -4833,6 +4982,23 @@ export async function tempDisposalCases(
       left().length === 1 && left()[0].startsWith(prefix),
       `temp: SIGKILL leaves exactly one ${prefix}* run dir (left ${left().length}), which only a later sweep can remove`
     );
+    // D5: SIGKILL runs no handler, so only the spawn's own death watch can end the strace group; the stub must be gone within seconds.
+    const watched = stubChild ? await start('trace') : undefined;
+    let stubPid = 0;
+    for (let i = 0; watched !== undefined && i < 40 && stubPid === 0; i++) {
+      if (fs.existsSync(pidFile)) stubPid = Number(fs.readFileSync(pidFile, 'utf8').trim()) || 0;
+      else await new Promise((r) => setTimeout(r, 50));
+    }
+    if (watched !== undefined) {
+      const aliveBefore = stubPid !== 0 && pidRunning(stubPid);
+      watched.kill('SIGKILL');
+      await ended(watched);
+      const goneAfter = stubPid !== 0 && (await waitPidGone(stubPid, 3000));
+      check(
+        aliveBefore && goneAfter,
+        `death watch: a SIGKILLed ${prefix}* run leaves no strace group (stub pid ${stubPid} alive before the kill ${aliveBefore}, gone within 3 s ${goneAfter})`
+      );
+    }
     const next = await start('noop');
     await ended(next);
     check(
