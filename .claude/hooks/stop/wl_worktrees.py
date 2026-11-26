@@ -17,11 +17,13 @@ A STOP WITH NOTHING MOVED RUNS NO STATUS. Full figures are this session's leases
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
 import pathlib
 import subprocess
+import time
 from typing import Any
 
 import wl_core as C
@@ -217,6 +219,34 @@ def read_records(common, base):
         if _lease_id(os.path.realpath(str(record.get("path") or "")), base):
             out[str(record.get("id") or path.stem)] = record
     return out
+
+
+def mark_finished(root, agent_id, transcript, interim, now=None):
+    """Write `<common>/rediacc-worktrees/agent-<agent_id>.finished` (`{"agent", "finished_at", "transcript"}`) when that agent has a lease record and this stop is final; rewritten atomically on every later final stop. Returns the marker path, or "" when nothing was written (an interim stop, an agent with no record, an unwritable directory). The sweep of host_temp.py reads it (agent/plans/PLAN-host-temp-disposal.md D6)."""
+    if interim or not agent_id:
+        return ""
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return ""
+    lease_id = "agent-%s" % agent_id
+    records = dirs[1] / RECORD_DIR
+    if not (records / (lease_id + ".json")).is_file():
+        return ""
+    marker = records / (lease_id + ".finished")
+    body = {
+        "agent": str(agent_id),
+        "finished_at": int(time.time() if now is None else now),
+        "transcript": str(transcript or ""),
+    }
+    tmp = records / ("%s.finished.%d.tmp" % (lease_id, os.getpid()))
+    try:
+        tmp.write_text(json.dumps(body), encoding="utf-8")
+        os.replace(tmp, marker)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return ""
+    return str(marker)
 
 
 def read_holds(common):

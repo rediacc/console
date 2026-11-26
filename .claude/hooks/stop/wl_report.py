@@ -1081,6 +1081,11 @@ def handle_subagent_stop(event):
     )
     me8 = str(event.get("session_id") or "")[:8]
     root = C.project_root(start)
+    with contextlib.suppress(Exception):
+        # The finished marker host_temp.py sweeps after its grace (PLAN-host-temp-disposal D6); swallowed like every follow-up here.
+        import wl_worktrees
+
+        wl_worktrees.mark_finished(root, agent_id, transcript, interim)
     queued = 0
     if me8:
         # Each follow-up is swallowed on its own, after the capture: a broken queue must not cost the report, and a broken log must not cost the queue.
