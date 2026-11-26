@@ -3707,7 +3707,7 @@ def test_private_dir_refuses_another_owner(tmp_path, monkeypatch):
 
 
 def test_lease_refuses_a_symlinked_tmp_base(repo, monkeypatch, tmp_path):
-    """End to end: a base planted as a symlink refuses the lease, leaves no tree, and nothing lands in the symlink's target."""
+    """End to end: a base planted as a symlink refuses the lease, leaves no tree (no holder dir, no record, no git worktree in the console or submodule store: review 2fe49baf.2), and nothing lands in the symlink's target."""
     theirs = tmp_path / "theirs"
     theirs.mkdir(mode=0o755)
     base = tmp_path / "base"
@@ -3720,6 +3720,7 @@ def test_lease_refuses_a_symlinked_tmp_base(repo, monkeypatch, tmp_path):
         lease.make_lease(repo.root, name="planted")
     assert list(theirs.iterdir()) == []
     assert not (repo.root / spike.HOLDER / "planted").exists()
+    leaves_nothing(repo, "planted")
 
 
 def test_gc_keeps_a_tmpdir_another_lease_shares(repo):

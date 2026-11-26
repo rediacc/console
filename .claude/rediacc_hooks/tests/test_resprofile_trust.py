@@ -638,8 +638,8 @@ def test_lease_tmpdir_symlinked_base_is_never_exported(tmp_path):
     assert out.stdout == "unset", out.stderr
 
 
-def test_lease_tmpdir_owned_by_another_uid_is_never_exported(tmp_path):
-    """The owner check without a chown: base `/` and lease id `usr` name `/usr`, a real directory root owns."""
+def test_lease_tmpdir_base_owned_by_another_uid_is_never_exported(tmp_path):
+    """The BASE owner check without a chown: base `/` is root's, so the block refuses at `-O $__lt_base` before it reaches the lease dir `/usr`."""
     if os.getuid() == 0:
         pytest.skip("root owns /usr, so the owner check cannot refuse it")
     cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-usr"
@@ -648,6 +648,43 @@ def test_lease_tmpdir_owned_by_another_uid_is_never_exported(tmp_path):
     assert not os.path.islink("/usr"), "fixture control: /usr is a symlink"
     out = run_tmpdir_shell(tmp_path, cwd, base="/")
     assert out.stdout == "unset", out.stderr
+
+
+def _sudo_works():
+    """Whether a passwordless `sudo -n` runs here, which the lease-dir owner case needs to make a root-owned dir."""
+    sudo = shutil.which("sudo")
+    if sudo is None:
+        return False
+    probe = subprocess.run([sudo, "-n", "true"], capture_output=True, timeout=30, check=False)
+    return probe.returncode == 0
+
+
+def test_lease_tmpdir_lease_dir_owned_by_another_uid_is_never_exported(tmp_path):
+    """Review 2fe49baf.1: the LEASE DIR owner check, under a base this uid owns, so only `-O $__lt_dir` can refuse; `test_lease_tmpdir_is_exported_in_a_lease_cwd` is the control with the same layout owned by this uid."""
+    if os.getuid() == 0:
+        pytest.skip("root owns the planted dir, so the owner check cannot refuse it")
+    if not _sudo_works():
+        pytest.skip("no passwordless sudo to make a root-owned lease dir")
+    cwd = tmp_path / "tree" / ".claude" / "worktrees" / "agent-0123456789abcdef"
+    cwd.mkdir(parents=True)
+    base = tmp_path / "base"
+    base.mkdir()
+    planted = base / "01234567"
+    made = subprocess.run(
+        [shutil.which("sudo") or "sudo", "-n", "mkdir", "-m", "0700", str(planted)],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert made.returncode == 0, made.stderr
+    try:
+        assert base.stat().st_uid == os.getuid(), "fixture control: the base is not this uid's"
+        assert planted.stat().st_uid == 0, "fixture control: the lease dir is not root's"
+        out = run_tmpdir_shell(tmp_path, cwd)
+        assert out.stdout == "unset", out.stderr
+    finally:
+        planted.rmdir()
 
 
 def test_lease_tmpdir_steady_state_forks_nothing(tmp_path):
