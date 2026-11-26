@@ -590,7 +590,7 @@ def selftest():
     )
     check(
         "PLANT: a loader that leaves a directory on sys.path is seen as leaking",
-        _leaks_path(lambda: sys.path.append("/nonexistent-leak")),
+        _leaks_path(lambda: paths.on_sys_path("/nonexistent-leak")),
     )
     held = {"slack": 0.2, "max": {"block_x": 100}}
     budgets = {t: dict(held) for t in hookreport.TABLES}
