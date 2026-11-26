@@ -41,7 +41,14 @@ const header = z.strictObject({
   windowFrom: instant,
   windowTo: instant,
   contactPoint: text(300).optional(),
-  disclaimers: z.array(text(300)).min(1).max(10),
+  // The fixed disclaimers are required in every stage; further customer text may follow them.
+  disclaimers: z
+    .array(text(300))
+    .min(REPORT_DISCLAIMERS.length)
+    .max(10)
+    .refine((all) => REPORT_DISCLAIMERS.every((d) => all.includes(d)), {
+      message: 'the disclaimers include every fixed disclaimer text',
+    }),
 });
 
 const timelineEntry = z.strictObject({
@@ -63,6 +70,7 @@ export const IocSchema = z.strictObject({
   evidence: fact(text(500)),
 });
 type Ioc = z.infer<typeof IocSchema>;
+
 export type { Ioc };
 
 const technique = z.strictObject({
@@ -107,4 +115,5 @@ export const IncidentReportSchema = z.discriminatedUnion('stage', [
   z.strictObject({ stage: z.literal('final'), ...final }),
 ]);
 type IncidentReport = z.infer<typeof IncidentReportSchema>;
+
 export type { IncidentReport };

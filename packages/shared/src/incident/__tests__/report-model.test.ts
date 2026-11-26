@@ -56,6 +56,16 @@ describe('IncidentReportSchema', () => {
     expect(IncidentReportSchema.safeParse(final).success).toBe(true);
   });
 
+  it('refuses a header that drops or replaces a fixed disclaimer and admits an added one', () => {
+    const withDisclaimers = (disclaimers: string[]) =>
+      IncidentReportSchema.safeParse({ ...early, header: { ...header, disclaimers } }).success;
+    expect(withDisclaimers([REPORT_DISCLAIMERS[0]])).toBe(false);
+    expect(withDisclaimers(['Something else entirely.'])).toBe(false);
+    expect(withDisclaimers([REPORT_DISCLAIMERS[0], 'Another text.'])).toBe(false);
+    expect(withDisclaimers([...REPORT_DISCLAIMERS, 'Customer note.'])).toBe(true);
+    expect(withDisclaimers([...REPORT_DISCLAIMERS])).toBe(true);
+  });
+
   it('rejects an early warning carrying a final-only section', () => {
     expect(IncidentReportSchema.safeParse({ ...early, rootCause: final.rootCause }).success).toBe(
       false

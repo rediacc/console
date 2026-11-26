@@ -6,7 +6,7 @@
  * indicator exists for every sha256 IoC and carries no observable, so a report with
  * no sha256 IoC emits none.
  */
-import { canonicalize } from './canonical.js';
+import { type CanonicalValue, canonicalize } from './canonical.js';
 import type { Ioc, IocType } from './report.js';
 
 /** Fixed namespace for the report ids; random once, never changed. */
@@ -57,8 +57,8 @@ export async function uuidV5(name: string, namespace: string = STIX_NAMESPACE): 
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
-async function stixId(type: string, content: Record<string, unknown>): Promise<string> {
-  return `${type}--${await uuidV5(`${type}:${canonicalize(content as never)}`)}`;
+async function stixId(type: string, content: { [key: string]: CanonicalValue }): Promise<string> {
+  return `${type}--${await uuidV5(`${type}:${canonicalize(content)}`)}`;
 }
 
 /** Escapes a value for a single-quoted STIX pattern string literal. */
@@ -79,7 +79,9 @@ export function iocPattern(ioc: Pick<Ioc, 'type' | 'value'>): string {
   return byType[ioc.type];
 }
 
-function observableOf(ioc: Ioc): { type: string; fields: Record<string, unknown> } | null {
+function observableOf(
+  ioc: Ioc
+): { type: string; fields: { [key: string]: CanonicalValue } } | null {
   switch (ioc.type) {
     case 'ipv4':
       return { type: 'ipv4-addr', fields: { value: ioc.value } };
@@ -115,7 +117,7 @@ function byKey(a: Ioc, b: Ioc): number {
 
 /** Whichever of two evidence facts has the smaller canonical text. */
 function firstEvidence(a: Ioc['evidence'], b: Ioc['evidence']): Ioc['evidence'] {
-  return canonicalize(b as never) < canonicalize(a as never) ? b : a;
+  return canonicalize(b) < canonicalize(a) ? b : a;
 }
 
 /** One IoC per type:value, sorted by key; a repeat widens the window, keeps the lowest asn and the evidence whose canonical text sorts first, so no field depends on input order. */
