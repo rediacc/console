@@ -2,7 +2,9 @@
  * External terminals: no launcher hands a secret to the terminal (argv or
  * environment), whatever the caller passes, and every launcher quotes the
  * session's argv for the language it hands it to, so an argument holding a
- * quote, a space and a backslash arrives intact. A fake spawn records each
+ * quote, a space and a backslash arrives intact. The cmd, Windows Terminal and
+ * PowerShell launchers instead refuse a double quote (argvFor strips it for
+ * them). A fake spawn records each
  * launch; the POSIX command lines and the WSL launch script are run for real.
  */
 

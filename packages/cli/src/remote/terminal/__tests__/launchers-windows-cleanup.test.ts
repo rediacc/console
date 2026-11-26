@@ -5,7 +5,15 @@
  * the handed-off files (and the `.cmd` itself) when ssh ends.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { gunzipSync } from 'node:zlib';
@@ -217,10 +225,23 @@ describe('Windows launchers', () => {
   });
 
   it('a failed spawn removes the script it wrote', () => {
-    spawnThrows = true;
-    const result = launchTerminal('cmd', { argv: SSH_ARGV });
-    expect(result.success).toBe(false);
-    expect(spawned).toHaveLength(0);
+    const isolated = mkdtempSync(join(tmpdir(), 'rdc-cleanup-'));
+    vi.stubEnv('TMPDIR', isolated);
+    vi.stubEnv('TEMP', isolated);
+    vi.stubEnv('TMP', isolated);
+    try {
+      launchTerminal('cmd', { argv: SSH_ARGV });
+      expect(readdirSync(isolated).filter((n) => n.startsWith('rdc-term-'))).toHaveLength(1);
+      for (const name of readdirSync(isolated)) rmSync(join(isolated, name));
+      spawnThrows = true;
+      const result = launchTerminal('cmd', { argv: SSH_ARGV });
+      expect(result.success).toBe(false);
+      expect(spawned).toHaveLength(1);
+      expect(readdirSync(isolated)).toEqual([]);
+    } finally {
+      vi.unstubAllEnvs();
+      rmSync(isolated, { recursive: true, force: true });
+    }
   });
 });
 
