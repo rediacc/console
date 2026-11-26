@@ -148,6 +148,8 @@ reports/
 !agent/reports/
 
 .ci/cache/
+# Local run state of ops tools (cf_retire archives, d1_relocate and region_smoke records): host-only, can hold R2 archives of hundreds of MB.
+.ci/state/
 
 # Git worktrees
 .worktrees/
