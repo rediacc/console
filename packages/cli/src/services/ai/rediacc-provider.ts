@@ -78,7 +78,10 @@ async function refusalOf(response: Response): Promise<RediaccRefusalError | unde
   if (response.ok) return undefined;
   try {
     const body: unknown = await response.clone().json();
-    const code = asCreditRefusalCode((body as { code?: unknown } | null)?.code);
+    const shaped = body as { code?: unknown; error?: { code?: unknown } } | null;
+    // The documented shape carries the code twice; a body with only a top-level code is the gateway's.
+    if (shaped?.error?.code !== shaped?.code) return undefined;
+    const code = asCreditRefusalCode(shaped?.code);
     return code === undefined ? undefined : new RediaccRefusalError(code, response.status);
   } catch {
     return undefined;

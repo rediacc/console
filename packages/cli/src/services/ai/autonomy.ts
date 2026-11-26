@@ -82,8 +82,14 @@ export class AiConversationStore {
   ): void {
     const key = keyOf(principal, conversationId);
     const set = this.rules.get(key) ?? new Set<string>();
-    if (set.size >= MAX_ALLOW_RULES) return;
-    set.add(argvHashOf(command));
+    const hash = argvHashOf(command);
+    if (set.has(hash)) return;
+    // At the cap the oldest rule makes room, so the approval the user just asked to remember is the one kept.
+    if (set.size >= MAX_ALLOW_RULES) {
+      const oldest = set.values().next().value;
+      if (oldest !== undefined) set.delete(oldest);
+    }
+    set.add(hash);
     this.rules.set(key, set);
   }
 

@@ -102,6 +102,16 @@ describe('rediacc tier model', () => {
     }
   });
 
+  it('passes a body with only a top-level refusal code through as the gateway answer', async () => {
+    const code = Object.keys(CREDIT_REFUSAL_MESSAGES)[0];
+    const { fetch } = recordingFetch(() => Response.json({ code }, { status: 402 }));
+    const answer = await rediaccFetch({ ...IDS, fetch })(
+      'http://ai.internal/compat/chat/completions',
+      { method: 'POST', body: '{}' }
+    );
+    expect(answer.status).toBe(402);
+  });
+
   it('passes a gateway error through untouched', async () => {
     const gateway = recordingFetch(() =>
       Response.json({ error: { message: 'upstream down' } }, { status: 502 })

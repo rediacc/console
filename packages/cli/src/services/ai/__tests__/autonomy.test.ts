@@ -138,4 +138,16 @@ describe('AiConversationStore', () => {
     expect(store.allowsExact(principal, 'conv-2', UP)).toBe(false);
     expect(store.allowsExact({ ...principal, userId: 'user-other' }, 'conv-1', UP)).toBe(false);
   });
+
+  it('remembers the newest allow rule at the cap by dropping the oldest', () => {
+    const store = new AiConversationStore();
+    const rule = (n: number) => ({ ...UP, positionals: { ref: `shop:${n}` } });
+    for (let n = 0; n < 50; n += 1) store.allowExact(principal, 'conv-1', rule(n));
+    store.allowExact(principal, 'conv-1', rule(0));
+    expect(store.allowsExact(principal, 'conv-1', rule(0))).toBe(true);
+    store.allowExact(principal, 'conv-1', rule(50));
+    expect(store.allowsExact(principal, 'conv-1', rule(50))).toBe(true);
+    expect(store.allowsExact(principal, 'conv-1', rule(0))).toBe(false);
+    expect(store.allowsExact(principal, 'conv-1', rule(1))).toBe(true);
+  });
 });

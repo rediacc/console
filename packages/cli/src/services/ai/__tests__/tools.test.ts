@@ -12,35 +12,32 @@
  */
 
 import { getCommand } from '@rediacc/shared/cli-contract';
-import { AiEventSchema } from '@rediacc/shared/cli-contract/wire';
+import { type AiEvent, AiEventSchema } from '@rediacc/shared/cli-contract/wire';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { listProxyTools } from '@rediacc/shared/mcp/registry';
 import type { PolicyDocument } from '@rediacc/shared/policy';
-import { isStepCount, simulateReadableStream, streamText } from 'ai';
+import { simulateReadableStream } from 'ai';
 import { MockLanguageModelV4 } from 'ai/test';
 import { describe, expect, it } from 'vitest';
 import { CUSTOM_TOOLS } from '../../../commands/mcp/custom-tools.js';
 import { buildArgv, type DispatchOutcome } from '../../serve/command-dispatch.js';
 import type { AgentGrantOverrides } from '../../serve/policy.js';
 import type { SessionPrincipal } from '../../serve/sessions.js';
+import { runAiTurn } from '../loop.js';
 import {
   type AiToolContext,
   type AiToolResult,
   type AiToolRun,
   type AiToolSpec,
-  approvalResultOf,
   buildAiTools,
   COMMAND_REJECTED,
   requestOf,
   runAiTool,
-  stopOnApproval,
-  toolResultEventOf,
   VIEW_SWITCHES,
 } from '../tools.js';
 import {
   fenceUntrusted,
   stripAnsi,
-  TOOL_OUTPUT_RULE,
   truncateHeadTail,
   UNTRUSTED_OUTPUT_LIMIT_BYTES,
 } from '../untrusted.js';
@@ -325,37 +322,23 @@ function textStep(text: string) {
   ]);
 }
 
-/** Run one turn of `steps` over the AI tools and collect the stream events of its tool results. */
+/** Run one turn of `steps` through the loop host (loop.ts) and collect the events of its tool results. */
 async function turn(ctx: AiToolContext, steps: ReturnType<typeof step>[]) {
   const mock = new MockLanguageModelV4({ doStream: steps });
-  const result = streamText({
+  const all: AiEvent[] = [];
+  await runAiTurn({
     model: mock,
-    system: TOOL_OUTPUT_RULE,
-    prompt: 'Go.',
     tools: buildAiTools(ctx),
-    stopWhen: [isStepCount(4), stopOnApproval],
+    messages: [{ role: 'user', content: 'Go.' }],
+    emit: (event) => all.push(event),
+    // A fixed token in place of the ledger's.
+    issueApproval: () => 'tok',
   });
-  const events = [];
-  for await (const part of result.fullStream) {
-    if (part.type === 'error') throw part.error;
-    if (part.type !== 'tool-result') continue;
-    // The loop's own mapping (loop.ts), with a fixed token in place of the ledger's.
-    const approval = approvalResultOf(part.output);
-    events.push(
-      approval
-        ? {
-            type: 'approval_required' as const,
-            toolCallId: part.toolCallId,
-            name: part.toolName,
-            input: part.input,
-            approvalToken: 'tok',
-            command: approval.command,
-            risk: approval.risk,
-            reason: approval.reason,
-          }
-        : toolResultEventOf(part)
-    );
-  }
+  const failure = all.find((event) => event.type === 'error');
+  if (failure) throw new Error(failure.message);
+  const events = all.filter(
+    (event) => event.type === 'tool_result' || event.type === 'approval_required'
+  );
   return { mock, events };
 }
 

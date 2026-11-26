@@ -144,4 +144,16 @@ describe('argvHashOf', () => {
     expect(argvHashOf(a)).not.toBe(argvHashOf({ ...a, params: { a: 1, b: 3 } }));
     expect(argvHashOf(a)).not.toBe(argvHashOf({ ...a, pathKey: 'repo down' }));
   });
+
+  it('keeps one principal from pushing out another principal pending approval', async () => {
+    const ledger = new AiApprovalLedger();
+    const other = { ...principal, userId: 'user-other' };
+    const otherToken = ledger.issue(other, 'conv-1', 'call-1', DELETE_SHOP);
+    const first = ledger.issue(principal, 'conv-1', 'call-1', DELETE_SHOP);
+    // 100 is the per-principal cap: the 101st of one principal drops that principal's own oldest.
+    for (let i = 0; i < 100; i += 1)
+      ledger.issue(principal, 'conv-1', `call-${i + 2}`, DELETE_SHOP);
+    expect(await ledger.submit(answer(first))).toMatchObject({ code: AI_APPROVAL_UNKNOWN });
+    expect(await ledger.submit(answer(otherToken, { principal: other }))).toEqual({ ok: true });
+  });
 });

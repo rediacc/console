@@ -13,8 +13,8 @@
  * The answer is strict JSON, `{"verdict":"allow"|"block","reason":"..."}`; anything else, a
  * provider failure included, is a block. The model is the profile's `judgeModel`, else its `model`.
  *
- * Three consecutive blocks, or twenty blocks since the conversation last entered Auto, switch it back
- * to Ask. Both counts start over at each fallback, so the twenty is per Auto run, not per conversation.
+ * Three consecutive blocks, or twenty blocks since the conversation's last fallback, switch it back
+ * to Ask. Both counts start over at each fallback and at no other time (a manual switch to Ask and back keeps them).
  */
 
 import type { Profile } from '@rediacc/shared/ai';
@@ -25,7 +25,7 @@ import { createProviderModel, type ProviderModelOptions } from './provider.js';
 
 /** Consecutive blocks (since the last allow or fallback) that switch the conversation back to Ask. */
 export const JUDGE_CONSECUTIVE_BLOCK_LIMIT = 3;
-/** Blocks in total since the conversation last entered Auto that switch it back to Ask; a fallback resets the count. */
+/** Blocks in total since the conversation's last fallback (or its first block) that switch it back to Ask. */
 export const JUDGE_TOTAL_BLOCK_LIMIT = 20;
 
 /** Characters of conversation text the judge reads, newest kept. */

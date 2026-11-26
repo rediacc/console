@@ -30,6 +30,9 @@ export const APPROVAL_TTL_MS = 15 * 60 * 1000;
 /** Pending approvals kept at once; the oldest is dropped beyond this. */
 const MAX_PENDING = 10_000;
 
+/** Pending approvals one principal keeps; its own oldest is dropped beyond this, so it cannot push out another's. */
+const MAX_PENDING_PER_PRINCIPAL = 100;
+
 export const AI_APPROVAL_UNKNOWN = 'AI_APPROVAL_UNKNOWN';
 export const AI_APPROVAL_COMMAND_MISMATCH = 'AI_APPROVAL_COMMAND_MISMATCH';
 
@@ -119,6 +122,18 @@ export class AiApprovalLedger implements AiApprovals {
     return `${principalKeyOf(principal)}\u0000${conversationId}\u0000${argvHashOf(command)}`;
   }
 
+  /** Make room for one more pending approval of `principalKey` under its own cap. */
+  private dropOldestOf(principalKey: string): void {
+    let count = 0;
+    let oldest: string | undefined;
+    for (const [key, entry] of this.pending) {
+      if (entry.principalKey !== principalKey) continue;
+      oldest ??= key;
+      count += 1;
+    }
+    if (count >= MAX_PENDING_PER_PRINCIPAL && oldest !== undefined) this.pending.delete(oldest);
+  }
+
   issue(
     principal: SessionPrincipal,
     conversationId: string,
@@ -126,6 +141,7 @@ export class AiApprovalLedger implements AiApprovals {
     command: AiApprovalCommand
   ): string {
     this.sweep();
+    this.dropOldestOf(principalKeyOf(principal));
     if (this.pending.size >= MAX_PENDING) {
       const oldest = this.pending.keys().next().value;
       if (oldest !== undefined) this.pending.delete(oldest);

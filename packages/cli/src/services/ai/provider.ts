@@ -11,10 +11,11 @@
  * `ANTHROPIC_API_KEY` environment variable can never send the executor's key on
  * a `byokOnly` profile that carries none.
  *
- * The D5 base URL guard runs twice: on the profile when the model is built
+ * The D5 base URL guard runs twice for a customer profile: on the profile when the model is built
  * (`validateProfile`), and on every request URL at call time, which must also
- * stay under the profile's `baseURL`. Redirects are refused, so a provider
- * answer cannot forward the key to another host.
+ * stay under the profile's `baseURL`. A Rediacc tier profile skips the build-time check (its
+ * `ai.internal` host would fail it) and has only the call-time prefix check of rediacc-provider.ts.
+ * Redirects are refused, so a provider answer cannot forward the key to another host.
  */
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
@@ -161,7 +162,8 @@ export function guardedFetch(
 /**
  * Build the AI SDK model of `profile`; a Rediacc tier profile goes to rediacc-provider.ts, which
  * skips the customer base URL guard its `ai.internal` host would fail. Throws ProviderProfileError when the
- * profile fails its shape check or the base URL guard.
+ * profile fails its shape check or the base URL guard, and a TypeError when a Rediacc tier's user or
+ * conversation id is not 1-128 safe characters.
  */
 export function createProviderModel(
   profile: Profile,
