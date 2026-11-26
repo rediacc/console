@@ -1,33 +1,29 @@
-## SESSION d778be9d 2026-11-26T08:48:47Z
+## SESSION d778be9d 2026-11-26T09:45:06Z
 
-# STATE d778be9d (2026-11-26 ~08:50Z, effort high; operator present)
+# STATE d778be9d (2026-11-26 ~10:05Z, epoch 7 hand-over; operator present)
 
 ## Big pieces
-- Production edge release of the account orgRole change (ASKED:2026-11-25T16:35Z, #58a674f6): ci:quick running in the repair agent ae9b56c0f01fa2138 on HEAD from before the rotation landing; then one more ci:quick (covers 8989f955c3 onward), vm:check --changed, push 1121-1, RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then real; record rollback ids and D1 bookmarks. Expected non-batch reds: ops-health (needs a pushed head CI run), external-links (clears with the release), review-resolutions.
+- Production edge release (ASKED:2026-11-25T16:35Z, #58a674f6): last ci:quick on 946b403eaf rc 1 (369/382). Since then fixed and committed: GrantResolver security fix c5d6826696, anchors, prose, env registry, timeouts, PR-TASK attribution gate fix 1ece75ef9d, plan rulings 62ec91a5e2. Remaining reds: plan-bindings (1 binding: PLAN-signer-bench-stop-binding-reattach held by bench box R2 0e4aa275 + item #5f4130cf; the bench runner below runs R2), bws-map-live (should pass now that rotation-admin exists; recheck), ops-health (needs a pushed-head CI run). Next: rerun ci:quick (resume repair agent ae9b56c0f01fa2138 via SendMessage), then vm:check --changed, push 1121-1, RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then real; record rollback ids and D1 bookmarks.
 
 ## Delegated
-- ae9b56c0f01fa2138 #19f13581 #58a674f6 #6735de22: ci:quick and the release chain (main checkout). Accept: ci:quick rc 0 apart from the expected reds.
-- a4e219b0318b659a1 #f5f6a1df CL-A ciquick W3.2/W3.3 (lease). Accept: trace-honest --mode both rc 0, narrow in the lease.
-- ae1ec28e130b3d045 #e5cbbdb0 bench reset wipe-only R2 key, code half (lease). Accept: reset_bench pytest, rotation-manifest tests.
+- acb875fb9f82f5f51 #957e0e50 #5f4130cf: bench runner (main checkout, no edits): export+remove the 16 proof-* enterprise companies one at a time (plan /tmp/cf-inventory/proof-removal-plan.json; acme untouched), re-list the account, then PLAN-multi-region-bench R2. Accept: no proof-* objects left; R2 receipts.
+- a3197452ac35154d7 #20609eb0: investigate rediacc-backups-eu (450 GB), rediacc-configs-eu, edge-rediacc-configs-eu, rediacc-www-media; keep/archive/delete per bucket, nothing deleted.
 
 ## Operator rulings today (round log pr-babysit-1104-1.md DECISIONS)
-- 06:07Z: session minted AI_GATEWAY_LOGS_TOKEN (done) and the detector model key (done); AG-OP1 daemon auth kept; audit-key backfill (production has no companies).
-- 07:34Z: C42 exempts cd-* deploy jobs with no tests (done); rotation admin keys move to bws project rotation-admin with ~/.config/rediacc/bws-rotation-token (code landed 8989f955c3; OPERATOR STEPS owed, #d6189df0).
-- 08:13Z: narrow the five profiles on the CF global key and AWS ops pair to scoped per-job tokens (#cf7b9860): code step landed df62ac3c9f; next the operator creates two IAM users, then mint and store four CF tokens, rebind one profile at a time.
-
-## Open for the operator
-- #d6189df0 rotation-admin project, token file, four secrets, `./run.sh rotation list`.
-- #db3362e5 publish-solutions.sh in private/growth calls deleted scripts (replacement lines on the item; door:no-write-access).
-- #cf7b9860 two narrow IAM users (rediacc-bench-check, rediacc-enterprise-ses-minter) and the final rotation of the CF global key and AWS ops key.
+- 06:07Z tokens minted; 07:34Z C42 cd- exemption, rotation-admin store (DONE: project dabba09c holds the 4 keys, ./run.sh rotation list rc 0; operator switching the machine account back to read only); 08:13Z narrow five profiles (#cf7b9860: code landed df62ac3c9f; next mint 4 scoped CF tokens via rotation slugs, operator creates IAM users rediacc-bench-check and rediacc-enterprise-ses-minter); 09:17/09:19Z host temp disposal (PLAN-host-temp-disposal.md committed, Promoted #100; 2 open questions: /var/tmp per-lease TMPDIR, summary one stop later); 09:24-09:27Z Cloudflare inventory (#957e0e50: remove proof companies now; investigate 4 buckets; ci:quick red past deadline; reap command run by sessions; every delete path dry-run by default with a coded refusal list, a safeguard against AI bugs). Write agent/plans/PLAN-cf-inventory.md from agent/d778be9d/cf-inventory-findings.md.
 
 ## Owed ticks
-- Live-owed per the box audit: PLAN-native-host-rdc-feedback c9ea2164; PLAN-preview-signer 2df4a7f5 (N2: plan-text Accept grep, C2 name-to-channel route), d2efe573, ae54f093, b11008c6, 88ac5624; and the rest the audit lists (`worklist.py --box-audit d778be9d --live-owed`).
-- Code-partial, run owed: AI13 62309d70 (Playwright run), DO19 41ac618b and DO18 c9790d6c (www build for render parity), AI16 b5180148 (lint:unused), AF4, AI14, AC7 (AI_GATEWAY_LOGS_TOKEN now minted), FN12, RW-D2, R1, LM-OP1/R-OP1, AG-OP-L1 (#9354c584).
+- Live-owed per box audit (`worklist.py --box-audit d778be9d --live-owed`): preview-signer N2 2df4a7f5 (plan text grep, C2 route), AI13 62309d70 (Playwright), DO18/DO19 (www build), AI16 b5180148 (lint:unused), AF4, AI14, AC7, FN12, RW-D2, R1, LM-OP1/R-OP1, AG-OP-L1 (#9354c584).
+- After rotation-admin is read only: mint cf-r2-bench-wipe (`./run.sh rotation rotate cf-r2-bench-wipe`), rebind reset-bench-eu to BENCH_WIPE_R2_*, empty PENDING_FIRST_ROTATE (#e5cbbdb0).
+
+## Held
+- CL-A lease agent-a4e219b0318b659a1 (e37f7939c3) held for #f5f6a1df via `./run.sh worktree hold`: gate-paths-honest hits 300 s; guard-mutations tracing decision owed; land after the release.
 
 ## Armed
 - #0f42f15e 2026-12-01 asia key delete.
 
 ## Next action
-1. On ci:quick: commit the repair agent's file list, rerun ci:quick after the rotation landing, then vm:check --changed, push, release dry run, release.
-2. Land each writer as it reports (land, check on the merged tree, mark findings, tick, gc).
-3. Writers-now round when due (latest survey /tmp/writers-now/1121-1-20261126T0816Z-r25.md).
+1. On the bench runner's report: verify the proof objects are gone, tick #957e0e50 part 1, tick R2 with receipts (clears plan-bindings).
+2. Resume the repair agent for ci:quick; then the release chain.
+3. Mint the wipe-only key and the 4 scoped CF tokens once rotation-admin is read only.
+4. Write PLAN-cf-inventory.md; ask the 2 host-temp open questions; writers-now round when due (survey r26 /tmp/writers-now/1121-1-20261126T0919Z-r26.md).
