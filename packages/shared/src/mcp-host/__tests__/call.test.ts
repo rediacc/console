@@ -6,10 +6,7 @@
 
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_MCP_EU_HOST,
-} from '../../../../packages/shared/src/config/well-known.generated.js';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import {
   ATTACH_WINDOW_MS,
   type CallDeps,

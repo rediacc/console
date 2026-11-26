@@ -2,8 +2,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, expect, vi } from 'vitest';
-import { SqliteKvNamespace } from '../../../../../packages/shared/src/mcp-host/sqlite-kv.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../../oauth/index.js';
+import { SqliteKvNamespace } from '../../sqlite-kv.js';
 import { activeGrant, resolverFor, secretTextOf } from './grant.js';
 
 export const HOST = 'mcp.test.rediacc.cloud';

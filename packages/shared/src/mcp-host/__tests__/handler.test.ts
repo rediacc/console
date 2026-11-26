@@ -1,10 +1,11 @@
 /**
- * The production wiring of src/index.ts (item 67f888f1.1): `EXECUTOR_RELOCATED` is answered through the real resolver and transport over the `GRANTS` and `EXECUTOR` bindings, with no refreshGrant injected, so a mismatch between the resolver's `fresh` and the call path's refresh hook shows here.
+ * The production wiring of mcp-host/handler.ts (item 67f888f1.1): `EXECUTOR_RELOCATED` is answered through the real resolver and transport over the `GRANTS` and `EXECUTOR` bindings, with no refreshGrant injected, so a mismatch between the resolver's `fresh` and the call path's refresh hook shows here.
  */
+import './helpers/workers-shim.js';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WK_MCP_EU_HOST } from '../../../../packages/shared/src/config/well-known.generated.js';
-import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
+import { WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
+import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import type { McpCallRouting } from '../executor.js';
 import type { ResolvedGrantWire } from '../resolve.js';
 import { bearerFor, SECRET_BYTES } from './helpers/grant.js';
@@ -33,9 +34,9 @@ beforeEach(() => {
   vi.resetModules();
 });
 
-describe('src/index.ts wiring', () => {
+describe('mcp-host/handler.ts wiring', () => {
   it('re-resolves the grant with its id and auth tag and forwards to the new placement', async () => {
-    const { default: worker } = await import('../index.js');
+    const { default: worker } = await import('../handler.js');
     const lookups: { grantId: string; authTag: string }[] = [];
     const routings: McpCallRouting[] = [];
     const tag = await deriveAuthTag(SECRET_BYTES);

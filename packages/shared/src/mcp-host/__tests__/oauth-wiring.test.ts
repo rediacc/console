@@ -1,3 +1,4 @@
+import './helpers/workers-shim.js';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { describe, expect, it, vi } from 'vitest';
 import { secretTextOf } from './helpers/grant.js';
@@ -21,10 +22,10 @@ import {
 describe('src/index.ts wiring', () => {
   it('serves OAuth routes and accepts the token it minted on the MCP route', async () => {
     vi.resetModules();
-    const { default: worker } = await import('../index.js');
-    const tag = await (
-      await import('../../../../packages/shared/src/config-crypto/agent-grant.js')
-    ).deriveAuthTag(new Uint8Array(32).map((_, i) => (i * 37 + 11) % 256));
+    const { default: worker } = await import('../handler.js');
+    const tag = await (await import('../../config-crypto/agent-grant.js')).deriveAuthTag(
+      new Uint8Array(32).map((_, i) => (i * 37 + 11) % 256)
+    );
     const workerEnv = {
       REGION: 'eu',
       ENVIRONMENT: 'test',
@@ -126,7 +127,7 @@ describe('src/index.ts wiring', () => {
 
   it('serves no OAuth route without OAUTH_KV and AUTH_REQUEST_KEY', async () => {
     vi.resetModules();
-    const { default: worker } = await import('../index.js');
+    const { default: worker } = await import('../handler.js');
     const response = await worker.fetch(
       new Request(`https://${HOST}/oauth/token`, { method: 'POST' }),
       { REGION: 'eu', ENVIRONMENT: 'test', MCP_HOST: HOST, ACCOUNT_URL: ACCOUNT } as never,

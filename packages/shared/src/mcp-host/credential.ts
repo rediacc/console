@@ -9,7 +9,7 @@ import {
   AGENT_BEARER_PREFIX,
   type AgentBearer,
   parseAgentBearer,
-} from '../../../packages/shared/src/config-crypto/agent-grant.js';
+} from '../config-crypto/agent-grant.js';
 
 /** What a request presents. */
 export type Credential =

@@ -1,3 +1,4 @@
+import './helpers/workers-shim.js';
 import { describe, expect, it } from 'vitest';
 import { createOAuth } from '../oauth/index.js';
 import { ClientUrlRefused, createClientUrlGuard } from '../oauth/ssrf.js';

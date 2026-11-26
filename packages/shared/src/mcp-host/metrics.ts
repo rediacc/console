@@ -5,7 +5,7 @@
  *
  * The ops alert reads those points back: `ALERT_QUERY` is the Analytics Engine SQL the ops job runs over `ALERT_RULE.windowMinutes`, and `evaluateAlerts` is the rule applied to its rows, so the threshold lives once. A grant raises an alert on a burst of `REDIACC_GRANT_*` refusals (a revoked or expired grant, or an out-of-scope call, repeated) or on a burst of destructive calls; a quiet grant raises none.
  */
-import { getMcpTool } from '../../../packages/shared/src/mcp/registry.js';
+import { getMcpTool } from '../mcp/registry.js';
 
 /** The Analytics Engine binding (`[[analytics_engine_datasets]]`, dataset `mcp_<region>`); the same shape as the account Worker's `TELEMETRY`. */
 export interface MetricsDataset {

@@ -4,13 +4,8 @@
 
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { describe, expect, it } from 'vitest';
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_MCP_EU_HOST,
-} from '../../../../packages/shared/src/config/well-known.generated.js';
-import snapshot from '../../../../packages/shared/src/mcp/__tests__/tools-list.snapshot.json' with {
-  type: 'json',
-};
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
+import snapshot from '../../mcp/__tests__/tools-list.snapshot.json' with { type: 'json' };
 import type { GrantScope } from '../scope.js';
 import { createMcpTransport, type McpTransport } from '../transport.js';
 import { activeGrant, bearerFor, resolverFor } from './helpers/grant.js';

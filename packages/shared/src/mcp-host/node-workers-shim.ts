@@ -19,7 +19,7 @@ const WORKERS_SHIM_URL = `data:text/javascript,${encodeURIComponent(WORKERS_SHIM
 
 let handle: ReturnType<typeof registerHooks> | undefined;
 
-/** Installs the `cloudflare:workers` resolve hook once per process. */
+/** Installs the `cloudflare:workers` resolve hook; a second call installs nothing until the hook is uninstalled. */
 export function installCloudflareWorkersShim(): void {
   if (handle) return;
   handle = registerHooks({

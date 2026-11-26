@@ -108,6 +108,10 @@
       "types": "./dist/config-schema/*.d.ts",
       "default": "./dist/config-schema/*.js"
     },
+    "./mcp-host/*": {
+      "types": "./dist/mcp-host/*.d.ts",
+      "default": "./dist/mcp-host/*.js"
+    },
     "./backup/*": {
       "types": "./dist/backup/*.d.ts",
       "default": "./dist/backup/*.js"

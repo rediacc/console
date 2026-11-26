@@ -3,15 +3,16 @@
  *
  * The OAuth library runs over the SQLite-backed KV as in oauth.test.ts; only `Date` is faked, so the library's token and grant lifetimes, the resolver's expiry and the test's clock agree.
  */
+import './helpers/workers-shim.js';
 import { createHash, randomBytes } from 'node:crypto';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
-import { SqliteKvNamespace } from '../../../../packages/shared/src/mcp-host/sqlite-kv.js';
+import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import { callTool, type GrantCaller } from '../call.js';
 import type { McpCallForward } from '../executor.js';
 import { createOAuth, type OAuth, type OAuthEnv } from '../oauth/index.js';
 import type { GrantContext } from '../scope.js';
+import { SqliteKvNamespace } from '../sqlite-kv.js';
 import { activeGrant, SECRET_BYTES, secretTextOf } from './helpers/grant.js';
 
 const HOST = 'mcp.test.rediacc.cloud';

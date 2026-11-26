@@ -1,9 +1,10 @@
 /**
  * Monitoring of the hosted Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 10, RW-D3): the counters src/index.ts writes through a real request, and the alert rule over them. A burst of `REDIACC_GRANT_*` refusals from one grant raises the alert and a quiet grant does not.
  */
+import './helpers/workers-shim.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { WK_MCP_EU_HOST } from '../../../../packages/shared/src/config/well-known.generated.js';
-import { deriveAuthTag } from '../../../../packages/shared/src/config-crypto/agent-grant.js';
+import { WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
+import { deriveAuthTag } from '../../config-crypto/agent-grant.js';
 import {
   ALERT_QUERY,
   ALERT_RULE,
@@ -41,7 +42,7 @@ beforeEach(() => {
 
 /** The Worker over one grant state, a recording dataset, and a `call` helper posting a `tools/call`. */
 async function workerFor(grantId: string, state: 'active' | 'revoked', withDataset = true) {
-  const { default: worker } = await import('../index.js');
+  const { default: worker } = await import('../handler.js');
   const points: Point[] = [];
   const dataset: MetricsDataset = { writeDataPoint: (p) => points.push(p) };
   const tag = await deriveAuthTag(SECRET_BYTES);

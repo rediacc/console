@@ -4,10 +4,7 @@
 
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { describe, expect, it } from 'vitest';
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_MCP_EU_HOST,
-} from '../../../../packages/shared/src/config/well-known.generated.js';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import type { AccessTokenCheck } from '../credential.js';
 import type { ExecutorBinding, McpCallForward } from '../executor.js';
 import type { GrantContext, GrantState } from '../scope.js';

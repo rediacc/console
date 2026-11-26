@@ -4,10 +4,7 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { isInputRequiredResult } from '@modelcontextprotocol/server';
 import { describe, expect, it } from 'vitest';
-import {
-  WK_ACCOUNT_DEFAULT_ORIGIN,
-  WK_MCP_EU_HOST,
-} from '../../../../packages/shared/src/config/well-known.generated.js';
+import { WK_ACCOUNT_DEFAULT_ORIGIN, WK_MCP_EU_HOST } from '../../config/well-known.generated.js';
 import { type CallDeps, type CallInput, callToolStep, type GrantCaller } from '../call.js';
 import { CONFIRM_TTL_MS, createConfirmation, hashArgs } from '../confirm.js';
 import type { McpCallAnswer, McpCallForward } from '../executor.js';
