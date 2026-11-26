@@ -284,25 +284,26 @@ Promoted: 11 of 100 plans done, 1491 of 1891 boxes done (78%).
 16. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, in progress (1 of 16 boxes ticked)
 17. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, in progress (1 of 9 boxes ticked)
 18. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, in progress (1 of 9 boxes ticked), dep-blocked
-19. agent/plans/PLAN-console-private.md -- P1, proposed, not started
-20. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-21. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
-22. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-23. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-24. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
-25. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
-26. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
-27. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
-28. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
-29. agent/plans/PLAN-release-notes.md -- P2, approved, not started
-30. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
-31. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
-32. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-33. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-34. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-35. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-36. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-37. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-38. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
-39. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+19. agent/plans/PLAN-cf-token-hardening.md -- P1, draft, not started
+20. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+21. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+22. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
+23. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
+24. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+25. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
+26. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
+27. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+28. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
+29. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
+30. agent/plans/PLAN-release-notes.md -- P2, approved, not started
+31. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
+32. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
+33. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+34. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+35. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+36. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+37. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+38. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+39. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+40. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
