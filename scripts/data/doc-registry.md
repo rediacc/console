@@ -522,7 +522,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_core.py | (none) | via .claude/hooks/context/ctx_budget.py | py |
 | .claude/hooks/stop/wl_defersettle.py | (none) | via .claude/hooks/stop/test-defer-settle.py | py |
 | .claude/hooks/stop/wl_deflect.py | (none) | via .claude/hooks/stop/test-deflect.py | py |
-| .claude/hooks/stop/wl_effort.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
+| .claude/hooks/stop/wl_effort.py | (none) | via .claude/hooks/stop/test-release-hold.py | py |
 | .claude/hooks/stop/wl_effort_tune.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
 | .claude/hooks/stop/wl_epic.py | (none) | via .claude/hooks/stop/test-epic-budget.py | py |
 | .claude/hooks/stop/wl_feedback_triage.py | (none) | via .claude/hooks/stop/wl_checks.py | py |

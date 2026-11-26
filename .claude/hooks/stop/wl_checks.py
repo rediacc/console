@@ -2668,10 +2668,8 @@ def check_tier(key):
     return T_HYGIENE
 
 
-def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd):
-    """v20 PLAN FIDELITY (see wl_planfid.py). Returns a degraded-note string.
-
-    Appends at most ONE violation, keyed 'plan-fidelity', in the ALWAYS tier.
+def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg):
+    """v20 PLAN FIDELITY (see wl_planfid.py). Returns `(note, violation)`: the degraded-note string, and the text of at most ONE violation ("" for none), which the `plan-fidelity` segment adds as a literal ALWAYS-tier `vadd("plan-fidelity", True, ...)`, so the registry's AST tier pin sees it (review 9c1f0e45.1: the call used to happen in here, through a forwarded `vadd`, while the segment was registered `advisory`).
 
     IT LIVES INSIDE THE BATTERY, not after it, and that placement is the whole reason it can see anything. The state it detects -- an approved plan tracked as two umbrella items -- ALWAYS coexists with open items, and open items make the battery emit long before the admission detector or the judge is reached. A plan-fidelity check placed beside those two would have run only on a
     clean board, which is precisely the board this defect never produces. Measured against the 2026-08-19 incident: the session held two open items for the whole episode, so a post-battery check would have fired zero times.
@@ -2694,7 +2692,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     if not plan_text:
         # No approved plan in this session, which is the common case and must stay free: no model call, no note, no violation.
         wl_planfid.save_state(sp, state)
-        return lost
+        return lost, ""
     tasks = wl_planfid.plan_tasks(plan_text)
     mine = [
         (r["id"], r["state"], S.brief_text(r, cap=220))
@@ -2704,11 +2702,11 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
     sig = wl_planfid.plan_sig(state["plan"], plan_text)
     if wl_planfid.is_settled(state, sig, len(mine)):
         wl_planfid.save_state(sp, state)
-        return lost
+        return lost, ""
     hits = wl_planfid.prefilter(tasks, mine)
     if not hits:
         wl_planfid.save_state(sp, state)
-        return lost
+        return lost, ""
     pf, err = wl_judge.run_planfid(plan_text, wl_planfid.render_items(mine), last_msg or "")
     wl_planfid.save_state(sp, state)
     signals = sorted({k for k, _d in hits})
@@ -2716,7 +2714,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
         wl_planfid.record_verdict(
             worklist, session_id, sig, "error", signals, len(tasks), len(mine), err[:160]
         )
-        return (M.V_PLANFID_DEGRADED % err[:160]) + lost
+        return (M.V_PLANFID_DEGRADED % err[:160]) + lost, ""
     kind, payload, detail = wl_planfid.apply_planfid_verdict(
         pf, plan_text, mine, sig, lines, me8, C.ITEM
     )
@@ -2735,7 +2733,7 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
         else {"n_umbrella": len(payload["umbrella"]), "n_missing": len(payload["missing"])},
     )
     if kind == "malformed":
-        return (M.V_PLANFID_DEGRADED % ("the judge returned %s" % payload)[:160]) + lost
+        return (M.V_PLANFID_DEGRADED % ("the judge returned %s" % payload)[:160]) + lost, ""
     if kind == "settle":
         # STICKY by plan signature, never by item set: a settled plan is not re-asked, and editing the plan reopens the question. Keying on the items instead would re-pay the call on every item a correct decomposition adds.
         state.setdefault("settled", {})[sig] = {
@@ -2746,10 +2744,8 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
             "at": C.stamp_now(),
         }
         wl_planfid.save_state(sp, state)
-        return lost
-    vadd(
-        "plan-fidelity",
-        True,
+        return lost, ""
+    return lost, (
         M.V_PLANFID
         % (
             state["plan"],
@@ -2759,9 +2755,8 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
             me8,
             me8,
             payload["token"],
-        ),
+        )
     )
-    return lost
 
 
 def _soaked_pins_report(worklist, session_id, state_doc):
@@ -3011,6 +3006,20 @@ def release_local_running(root, proc="/proc"):
 # ---- ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 4-6, wl_armed). A held item carries a trigger and a prepared action; the stop that first sees every token hold appends the latch (`armfire`), and `armed-action-due` blocks until `--armed-start` or `--disarm`. Before the fire the hold is legitimate waiting: the unlanded-lease block and an expired deferral's demand stand down for what an arm covers, and `wake-timer` makes sure a stop will come.
 
 
+def stuck_shell_advise(worklist, session_id, state_doc):
+    """The `advise(key, body)` that `wl_stuckshell.stop_check` is handed. The key is spelled as a literal in the `outq_add` call, not passed through: wl_effort.produced_keys reads the Stop hook's keys from literal outq_add/vadd arguments, and a forwarded key would leave `stuck-shell-live` in effort.json with no producer it can see. Any other key is not filed under that one: it is recorded as a read failure naming the key, so the `check-read-failed` advisory says it out loud (review c5f4daa9.1)."""
+
+    def advise(key, body):
+        if key != "stuck-shell-live":
+            note_read_failure(
+                "stuck-shell-advise", ValueError("unexpected advisory key %r" % (key,))
+            )
+            return
+        outq_add(worklist, session_id, state_doc, "stuck-shell-live", body, 1, refresh_min=24 * 60)
+
+    return advise
+
+
 def armed_blocks_now():
     """True when `armed-action-due` blocks at this stop's effort level. A fired arm covers its item and lease only while it does (Design 6), so exactly one check blocks on the held work at every level. With no level active (a direct call outside a stop) the effort reader answers BLOCK."""
     return wl_effort.verdict("armed-action-due", wl_effort.active() or "") == wl_effort.BLOCK
@@ -3182,7 +3191,7 @@ def worktree_check(
     elif got["unlanded"] and (
         staged := staged_index_paths(root) or dirty_overlap(root, got["unlanded"])
     ):
-        # `worktree land` refuses on a staged index, and the staged paths may be another agent's (unstaging them is not the lead's call), so the lease waits for the index to clear: reported, not blocked.
+        # `worktree land` refuses on a staged index, and its cherry-pick refuses a pick whose files carry unstaged edits (`dirty_overlap`); either set of paths may be another agent's (unstaging or reverting them is not the lead's call), so the lease waits for the index to clear and the overlapping edits to be committed or cleared: reported, not blocked.
         outq_add(
             worklist,
             session_id,
@@ -4989,10 +4998,7 @@ def _stop_roster(ns):
     # A stuck waiter whose shell does real work, or that an in-flight item holds a fresh lease on, is owned work: reported once, age-free, never a TaskStop order (the wl_bgsweep live-work rule). A shell that only waits blocks unless a fresh lease names it; an expired lease exempts nothing.
     wl_stuckshell.stop_check(
         _stuck,
-        # The key is spelled as a literal here, not passed through: wl_effort.produced_keys reads the Stop hook's keys from literal outq_add/vadd arguments, and a forwarded key would leave `stuck-shell-live` in effort.json with no producer it can see.
-        advise=lambda _key, body: outq_add(
-            worklist, session_id, state_doc, "stuck-shell-live", body, 1, refresh_min=24 * 60
-        ),
+        advise=stuck_shell_advise(worklist, session_id, state_doc),
         block=lambda rows: vadd(
             "stuck-shell",
             True,
@@ -7493,11 +7499,15 @@ def _stop_plan_fidelity(ns):
     # first clean one instead of vanishing. The trade is that a session which never reaches a clean stop is told late, the same trade the agent hint already makes and for the same reason.
     # Paid (a model call); its verdict would be stood down in a cap-saturated wait anyway, so it is not bought.
     if not wl_judge.disabled(_cfg) and not _in_standdown:
-        _pf_note = ""
+        _pf_note, _pf_violation = "", ""
         try:
-            _pf_note = planfid_check(worklist, session_id, event, fold, lines, me8, last_msg, vadd)
+            _pf_note, _pf_violation = planfid_check(
+                worklist, session_id, event, fold, lines, me8, last_msg
+            )
         except Exception as exc:
             _pf_note = M.V_PLANFID_DEGRADED % ("it raised %s: %s" % (type(exc).__name__, exc))[:160]
+        if _pf_violation:
+            vadd("plan-fidelity", True, _pf_violation)
         if _pf_note:
             outq_add(
                 worklist, session_id, state_doc, "planfid-degraded", _pf_note, 1, refresh_min=60

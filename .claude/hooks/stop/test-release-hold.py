@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """release_local_running: a live release:local of THIS checkout holds the unlanded-lease block; another checkout's, an absent one or an unreadable /proc do not.
 
-pinned_vm_check_cases (agent/plans/PLAN-push-decoupling.md R7): a real child process named as a vm:check run holds a real fleet lock file; a payload naming a pinned commit keeps a landing order, one with no pin (or an unreadable pin) rewrites it as before."""
+pinned_vm_check_cases (agent/plans/PLAN-push-decoupling.md R7): a real child process named as a vm:check run holds a real fleet lock file; a payload naming a pinned commit keeps a landing order, one with no pin (or an unreadable pin) rewrites it as before.
+
+The wl_checks reads beside them each have a case here too: the staged-index and dirty-overlap holds of `worktree_check`, `armed_blocks_now` with no effort level, `note_read_failure`'s head-and-tail cut and the stuck-shell advisory binding."""
 
 import importlib
 import os
@@ -45,7 +47,7 @@ def worktree_check_cases():
 
     got = {"unlanded": [{"id": "lease1"}], "cache": {}}
 
-    def drive(vm, rel, rcpt):
+    def drive(vm, rel, rcpt, staged=(), overlap=()):
         notes, blocks = [], []
 
         def queue(_wl, _sid, _state, _key, text, _prio, **_kw):
@@ -61,8 +63,8 @@ def worktree_check_cases():
             mock.patch.object(wl_checks, "vm_check_running", stub(vm)),
             mock.patch.object(wl_checks, "release_local_running", stub(rel)),
             mock.patch.object(wl_checks, "green_receipt_on_unpushed_head", stub(rcpt)),
-            mock.patch.object(wl_checks, "staged_index_paths", stub([])),
-            mock.patch.object(wl_checks, "dirty_overlap", stub([])),
+            mock.patch.object(wl_checks, "staged_index_paths", stub(list(staged))),
+            mock.patch.object(wl_checks, "dirty_overlap", stub(list(overlap))),
             mock.patch.object(wl_checks, "outq_add", queue),
         ):
             wl_checks.worktree_check(
@@ -99,6 +101,18 @@ def worktree_check_cases():
     notes, blocks = drive(False, False, False)
     check("control: with no hold the unlanded lease blocks", blocks, ["worktree-unlanded"])
     check("...and queues no hold note", notes, [])
+    # Reviews d899ef8f.1 and 06522bc4.2: a staged index, and unstaged edits a pick would overwrite, each hold the lease with the staged note; the receipt hold ranks after them and vm:check before.
+    staged_note = M.N_WORKTREE_STAGED % (1, "a.txt", "lease1")
+    notes, blocks = drive(False, False, False, staged=["a.txt"])
+    check("a staged index reports the lease and blocks nothing", blocks, [])
+    check("...with the staged note", notes, [staged_note])
+    notes, blocks = drive(False, False, False, overlap=["a.txt"])
+    check("an unstaged edit a pick would overwrite reports the lease", blocks, [])
+    check("...with the staged note too", notes, [staged_note])
+    notes, blocks = drive(False, False, True, staged=["a.txt"])
+    check("the staged hold outranks the unpushed receipt", notes, [staged_note])
+    notes, blocks = drive(True, False, False, staged=["a.txt"])
+    check("vm:check outranks the staged hold", notes, [M.N_WORKTREE_VMCHECK % "lease1"])
 
 
 # The child holds the lock the way vm_check.Lock.acquire does: an exclusive flock, then the payload written at offset 0. It prints "held" once the payload is on disk and sleeps until killed. Its file name ends in drills/vm_check.py, so wl_checks.argv_runs reads it as a vm:check run.
@@ -223,8 +237,9 @@ def pinned_vm_check_cases(tmp):
 
 
 def staged_index_cases(tmp):
-    """staged_index_paths: a real repo answers its staged path, a clean one answers [], and a path that is no repo answers [] (worktree land refuses on a staged index, so the unlanded-lease block is held while it is non-empty)."""
+    """staged_index_paths: a real repo answers its staged path, a clean one answers [], and a path that does not exist or a directory outside any repo answers [] (worktree land refuses on a staged index, so the unlanded-lease block is held while it is non-empty)."""
     import subprocess
+    from unittest import mock
 
     repo = os.path.join(tmp, "repo")
     os.makedirs(repo)
@@ -239,7 +254,14 @@ def staged_index_cases(tmp):
         f.write("x")
     run("add", "a.txt")
     check("staged path", wl_checks.staged_index_paths(repo), ["a.txt"])
-    check("not a repo", wl_checks.staged_index_paths(os.path.join(tmp, "absent")), [])
+    check(
+        "a path that does not exist", wl_checks.staged_index_paths(os.path.join(tmp, "absent")), []
+    )
+    # Review d899ef8f.3: a directory that exists outside any repository; the ceiling stops the search for one above it.
+    plain = os.path.join(tmp, "plain")
+    os.makedirs(plain)
+    with mock.patch.dict(os.environ, {"GIT_CEILING_DIRECTORIES": tmp}):
+        check("an existing directory outside any repo", wl_checks.staged_index_paths(plain), [])
 
 
 def dirty_overlap_cases(tmp):
@@ -272,6 +294,48 @@ def dirty_overlap_cases(tmp):
         f.write("other agent\n")
     check("the colliding file", wl_checks.dirty_overlap(repo, [row]), ["a.txt"])
     check("no console commit", wl_checks.dirty_overlap(repo, [{"path": repo, "commits": {}}]), [])
+
+
+def armed_blocks_now_cases():
+    """Review a4873334.1: with no effort level active the effort reader answers BLOCK, as the docstring says; `low` advises (no block) and `smart` blocks."""
+    from unittest import mock
+
+    for level, want in ((None, True), ("low", False), ("smart", True)):
+        with mock.patch.object(wl_checks.wl_effort, "active", stub(level)):
+            check("armed_blocks_now at %r" % (level,), wl_checks.armed_blocks_now(), want)
+
+
+def note_read_failure_cases():
+    """Review b5b4e569.2: a reason up to 400 characters is kept whole; a longer one keeps its head and its tail around "...", at 400 characters."""
+    short = "x" * 380
+    wl_checks.note_read_failure("t-short", ValueError(short))
+    check("a short reason is whole", wl_checks.READ_FAILURES.pop("t-short"), "ValueError: " + short)
+    long_reason = "HEAD" + "m" * 900 + "TAIL"
+    wl_checks.note_read_failure("t-long", ValueError(long_reason))
+    got = wl_checks.READ_FAILURES.pop("t-long")
+    check("a long reason is cut to 400", len(got), 400)
+    check("...keeps its head", got.startswith("ValueError: HEAD"), True)
+    check("...keeps its tail", got.endswith("TAIL"), True)
+    check("...marks the cut", "..." in got, True)
+
+
+def stuck_shell_advise_cases():
+    """Review c5f4daa9.1: the advisory `wl_stuckshell.stop_check` hands back is filed under `stuck-shell-live`; any other key is not filed under it but recorded as a read failure naming the key."""
+    from unittest import mock
+
+    queued = []
+
+    def queue(_wl, _sid, _state, key, text, _prio, **_kw):
+        queued.append((key, text))
+
+    with mock.patch.object(wl_checks, "outq_add", queue):
+        advise = wl_checks.stuck_shell_advise(None, "s", {})
+        advise("stuck-shell-live", "body")
+        check("the live key is queued", queued, [("stuck-shell-live", "body")])
+        advise("stuck-shell-other", "other body")
+        check("an unexpected key queues nothing", queued, [("stuck-shell-live", "body")])
+    got = wl_checks.READ_FAILURES.pop("stuck-shell-advise", "")
+    check("...and is named as a read failure", "stuck-shell-other" in got, True)
 
 
 def main():
@@ -314,6 +378,9 @@ def main():
         )
 
     worktree_check_cases()
+    armed_blocks_now_cases()
+    note_read_failure_cases()
+    stuck_shell_advise_cases()
     with tempfile.TemporaryDirectory() as tmp:
         pinned_vm_check_cases(tmp)
     with tempfile.TemporaryDirectory() as tmp:

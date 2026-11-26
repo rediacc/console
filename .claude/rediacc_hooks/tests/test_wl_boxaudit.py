@@ -664,3 +664,29 @@ def test_stopcheck_the_key_is_in_the_effort_table_and_off_at_quiet():
     assert effort.verdict("plan-box-owed", "quiet") == "off"
     assert effort.verdict("plan-box-owed", "low") != "block"
     assert effort.verdict("plan-box-owed", "smart") == "block"
+
+
+def test_latest_investigations_keeps_the_later_row_and_skips_unhashable_keys():
+    """Review cd51d482.1: the per-(plan, sig) index keeps the LATER row, which is `investigation_for`'s answer, and skips a row whose plan or sig cannot be a key instead of raising."""
+    rows = [
+        {"plan": REL, "sig": "aaaa0001", "verdict": "partial"},
+        {"plan": REL, "sig": "bbbb0002", "verdict": "partial"},
+        {"plan": ["not", "hashable"], "sig": "aaaa0001", "verdict": "bad"},
+        {"plan": REL, "sig": {"no": "key"}, "verdict": "bad"},
+        {"plan": REL, "sig": "aaaa0001", "verdict": "complete"},
+    ]
+    got = BA.latest_investigations(rows)
+    assert got[(REL, "aaaa0001")]["verdict"] == "complete"
+    assert got[(REL, "bbbb0002")]["verdict"] == "partial"
+    assert len(got) == 2
+    for sig in ("aaaa0001", "bbbb0002"):
+        assert got[(REL, sig)] is R.investigation_for(None, REL, sig, rows=rows)
+
+
+def test_control_latest_investigations_an_earlier_row_does_not_win():
+    """The control: reversed, the other row is the latest, so the index follows order, not the verdict."""
+    rows = [
+        {"plan": REL, "sig": "aaaa0001", "verdict": "complete"},
+        {"plan": REL, "sig": "aaaa0001", "verdict": "partial"},
+    ]
+    assert BA.latest_investigations(rows)[(REL, "aaaa0001")]["verdict"] == "partial"

@@ -68,7 +68,7 @@ REGISTRY = (
     Segment("store-freshness", "rotating"),
     Segment("store-fold", "advisory"),
     Segment("ci-waiting", "rotating"),
-    Segment("plan-fidelity", "advisory"),
+    Segment("plan-fidelity", "always"),
     Segment("trapguard", "always"),
     Segment("admit", "always"),
     Segment("effort", "verdict"),

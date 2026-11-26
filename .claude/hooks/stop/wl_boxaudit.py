@@ -358,6 +358,15 @@ def _judge(root, a, base, head, me):
     return a
 
 
+def latest_investigations(rows) -> dict[Any, Any]:
+    """{(plan, sig): the latest row} over the investigation ledger's `rows`, indexed once: `R.investigation_for` scans every row, and asking it per box cost 943 scans of the whole ledger (0.66 s a stop under the profiler, 2026-11-24, PLAN-tooling-speed.md SP8). A later row overwrites an earlier one, so this is `investigation_for`'s "latest"; a row with an unhashable plan or sig can never equal a string key and is skipped (both rules pinned by test_wl_boxaudit.py, review cd51d482.1)."""
+    out: dict[Any, Any] = {}
+    for r in rows:
+        with contextlib.suppress(TypeError):
+            out[(r.get("plan"), r.get("sig"))] = r
+    return out
+
+
 def audit(root, me, plan=None, *, reports=True):
     """[BoxAudit] for every open box (of `plan` when given), linked or not, plus `(head, base)`."""
     import wl_liveproof as LP
@@ -371,11 +380,7 @@ def audit(root, me, plan=None, *, reports=True):
     lease_shas = sorted({s for _rid, row in rep for s in row.commits})
     landed_of = PB.landed_map(root, lease_shas, rev="HEAD", since=base or None) or {}
     progress = PB.read_progress(root)
-    # The latest investigation row per (plan, sig), indexed once: `R.investigation_for` scans every row, and asking it per box cost 943 scans of the whole ledger (0.66 s a stop under the profiler, 2026-11-24, PLAN-tooling-speed.md SP8). A later row overwrites an earlier one, so this is `investigation_for`'s "latest"; a row with an unhashable plan or sig can never equal a string key and is skipped.
-    inv_last: dict[Any, Any] = {}
-    for r in R.read_investigations(root):
-        with contextlib.suppress(TypeError):
-            inv_last[(r.get("plan"), r.get("sig"))] = r
+    inv_last = latest_investigations(R.read_investigations(root))
     lp_rows = LP.verified_rows(root)
     out = []
     descends_memo: dict[tuple[str, str], bool] = {}

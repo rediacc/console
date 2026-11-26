@@ -419,6 +419,19 @@ def handover_cases(tmp, tag, mutate=None):
     )
     got = w.stop(w.fix.proj)
     out.append(("handover lease: the development stop is free of it", HO_OPEN in got.out, False))
+    # The lease landed and `worktree gc` removed its tree, so only its record stays: the hook's own `lease_landed` reads True and the landing stop is free of it, not only a unit test's injected `landed()` (review 62abd0bd.2).
+    records = w.fix.proj / ".git" / "rediacc-worktrees"
+    records.mkdir(exist_ok=True)
+    landed_record = records / "fix-ci-1.json"
+    landed_record.write_text(
+        json.dumps(
+            {"id": "fix-ci-1", "path": str(w.fix.proj / ".claude" / "worktrees" / "fix-ci-1")}
+        ),
+        encoding="utf-8",
+    )
+    got = w.stop(w.landing)
+    out.append(("handover lease landed: the landing stop is free of it", HO_LAND in got.out, False))
+    landed_record.unlink()
 
     w.fix.cli("--handover-answer", wlfix.ME, hid, "done")
     got = w.stop(w.landing)
@@ -449,6 +462,8 @@ def stack_cases(tmp, tag, mutate=None):
     w.bind()
     # The release at the merged sha still in flight: reported, never blocked on (agent/plans/PLAN-simple-two-tree-loop.md D3).
     w.release("feedface0001", ci="success")
+    # Its own level, not whatever an earlier step left: `high`, the fixture's fail-safe default, where the advisory queue delivers `landing-behind` (at `quiet` it does not, review 838eb2d2.1).
+    w.effort("high")
     got = w.stop(w.fix.proj)
     out.append(("merged landing, release pending: no block", w.blocked(got, STACK_MERGED), False))
     out.append(("merged landing, release pending: reported", STACK_PENDING in got.out, True))
@@ -481,7 +496,7 @@ def stack_cases(tmp, tag, mutate=None):
     got = w.stop(w.landing)
     out.append(
         (
-            "merged landing: the landing tree's own stop reads no stack",
+            "merged landing: the landing tree's own stop never says LANDING MERGED",
             "LANDING MERGED" in got.out,
             False,
         )
@@ -608,6 +623,17 @@ MUTANTS = (
                 CHECKS_REL,
                 "own, released=_ls_released, own_paths=_ls_own",
                 "own, released=True, own_paths=_ls_own",
+            )
+        ],
+    ),
+    (
+        "a landed lease never clears the land block",
+        handover_cases,
+        [
+            (
+                "hooks/stop/wl_handover.py",
+                "            if state is True:\n                continue\n",
+                "",
             )
         ],
     ),

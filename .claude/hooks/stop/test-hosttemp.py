@@ -11,6 +11,7 @@ import contextlib
 import importlib
 import importlib.util
 import json
+import math
 import os
 import pathlib
 import statistics
@@ -81,16 +82,15 @@ def test_marker_agent_without_record_writes_none():
 
 
 def test_marker_unwritable_records_dir_raises_nothing():
+    """A marker write that fails answers "" and leaves no temp file. The failure is planted as a non-empty directory where the marker goes, which `os.replace` refuses for root too, so the case asserts under every uid (review f2b58581.2: a 0o500 mode let root write and the case returned unasserted)."""
     wt = _mod("wl_worktrees")
     with tempfile.TemporaryDirectory() as tmp:
         root, records = _fixture(tmp)
-        os.chmod(records, 0o500)
-        try:
-            if os.access(records, os.W_OK):  # running as root: the mode cannot deny it
-                return
-            _check(wt.mark_finished(root, AGENT, "/x/agent.jsonl", "") == "")
-        finally:
-            os.chmod(records, 0o700)
+        _marker(records).mkdir()
+        (_marker(records) / "keep").write_text("x")
+        _check(wt.mark_finished(root, AGENT, "/x/agent.jsonl", "") == "")
+        _check(_marker(records).is_dir())
+        _check([p.name for p in records.iterdir() if p.suffix == ".tmp"] == [])
 
 
 def test_marker_written_by_the_subagent_stop_handler():
@@ -219,14 +219,21 @@ def test_hosttemp_assess_fifteen_leases_no_subprocess_under_150ms():
 
 
 def _p95(times):
-    """The 95th percentile of `times` (the 19th of 20 cut points)."""
-    return statistics.quantiles(times, n=20, method="inclusive")[18]
+    """The 95th percentile of `times` by nearest rank: the smallest sample at or above 95% of them, never interpolated toward the slowest. Of 20 samples that is the 19th, so one scheduler stall on a loaded runner (the top 5%) cannot fail the budget, while a slow tail of two or more still does (review 64c46214.1: the interpolated cut moved 5% of the way to the slowest sample, and a single 3 s stall added 150 ms)."""
+    ranked = sorted(times)
+    return ranked[max(math.ceil(0.95 * len(ranked)) - 1, 0)]
 
 
 def test_hosttemp_control_p95_catches_a_slow_tail_the_median_passes():
     tail = [5.0] * 17 + [400.0] * 3
     _check(statistics.median(tail) < 150.0)
     _check(_p95(tail) >= 150.0)
+    _check(_p95([5.0] * 18 + [400.0] * 2) >= 150.0)
+
+
+def test_hosttemp_control_p95_holds_through_one_stall():
+    """One stall in 20 samples is the 5% tail the budget excludes, so the p95 stays at the fast samples."""
+    _check(_p95([5.0] * 19 + [3000.0]) < 150.0)
 
 
 def test_hosttemp_a_clock_stepped_back_still_sweeps_a_ripe_lease():
@@ -371,16 +378,32 @@ def test_hosttemp_a_new_session_skips_rows_older_than_its_window():
         _check(got["print"] == ["host-temp: removed tree agent-new (1.0 GB)"])
 
 
-def test_hosttemp_lock_agrees_with_the_sweeper_module():
-    """The hook and rediacc_ci.dev.host_temp share one lock file and one record shape."""
-    # The canonical `.ci` hop: `paths.on_sys_path`, loaded by file because nothing under `.ci` is importable yet (as test-wl_worktrees.py does).
-    spec = importlib.util.spec_from_file_location(
-        "_ci_paths", REPO / ".ci" / "rediacc_ci" / "paths.py"
-    )
+def _load_ci_paths(path):
+    """The canonical `.ci` hop, `rediacc_ci/paths.py`, loaded by file because nothing under `.ci` is importable yet (as test-wl_worktrees.py does). A missing file is said by name: `spec_from_file_location` returns a spec for any `.py` path, so only an existence check reaches that message (review b7e87871.1)."""
+    if not path.is_file():
+        raise AssertionError("%s is missing" % path)
+    spec = importlib.util.spec_from_file_location("_ci_paths", path)
     if spec is None or spec.loader is None:
-        raise AssertionError(".ci/rediacc_ci/paths.py is missing")
+        raise AssertionError("%s cannot be loaded" % path)
     paths = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(paths)
+    return paths
+
+
+def test_hosttemp_control_a_missing_paths_module_is_named():
+    with tempfile.TemporaryDirectory() as tmp:
+        absent = pathlib.Path(tmp) / "rediacc_ci" / "paths.py"
+        try:
+            _load_ci_paths(absent)
+        except AssertionError as exc:
+            _check(str(absent) in str(exc) and "missing" in str(exc))
+        else:
+            raise AssertionError("a missing paths.py loaded")
+
+
+def test_hosttemp_lock_agrees_with_the_sweeper_module():
+    """The hook and rediacc_ci.dev.host_temp share one lock file and one record shape."""
+    paths = _load_ci_paths(REPO / ".ci" / "rediacc_ci" / "paths.py")
     paths.on_sys_path(REPO / ".ci")
     host_temp = importlib.import_module("rediacc_ci.dev.host_temp")
     with tempfile.TemporaryDirectory() as tmp:

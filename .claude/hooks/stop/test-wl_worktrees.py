@@ -744,11 +744,12 @@ def control_hold(tmp):
     write_hold(main, "w1", "ac6a4f6b", session=None)
     got = read(tmp, main, items=[open_item])
     check("a hold with no writer session does not hold", ids(got["unlanded"]), ["w1"])
-    # a921ed04.1: a session tag of one or two characters agrees with every owner that starts with it, so it is no tag.
-    write_hold(main, "w1", "ac6a4f6b", session="ca")
+    # a921ed04.1: a session tag of one or two characters agrees with every owner that starts with it, so it is no tag. The owner is the item's `owner` field, not its id, so the tags are spelled as prefixes of that field (review c2e8d43b).
+    owner = open_item["owner"]
+    write_hold(main, "w1", "ac6a4f6b", session=owner[:2])
     got = read(tmp, main, items=[open_item])
     check("a two-character writer tag of the owner does not hold", ids(got["unlanded"]), ["w1"])
-    write_hold(main, "w1", "ac6a4f6b", session="cafe")
+    write_hold(main, "w1", "ac6a4f6b", session=owner[:4])
     got = read(tmp, main, items=[open_item])
     check("CONTROL a four-character writer tag of the owner still holds", got["unlanded"], [])
     write_hold(main, "w1", "ac6a4f6b")
