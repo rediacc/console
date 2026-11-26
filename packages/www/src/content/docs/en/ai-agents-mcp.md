@@ -165,7 +165,7 @@ Scans: the tools in `packages/shared/src/mcp/tools.generated.json` a remote MCP 
 | `cluster_snapshot_list` | no | List the cluster's group snapshots. |
 | `cluster_status` | no | List all clusters, or pass a cluster name to show that cluster's full config. |
 | `config_access_list` | no | List the config's access keys |
-| `config_prune` | no | Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. |
+| `config_prune` | no | Remove dead weight from the local config file at ~/.config/rediacc/&lt;config&gt;.json. |
 | `config_reconcile` | no | Rebuild the local state bucket from machine truth (renet list all). |
 | `config_show` | no | Show current config details |
 | `credits` | no | Show the remaining credit balance for this account. |
@@ -173,7 +173,7 @@ Scans: the tools in `packages/shared/src/mcp/tools.generated.json` a remote MCP 
 | `datastore_snapshot_list` | no | List a datastore's snapshots. |
 | `datastore_status` | no | Show one datastore: its backend, attachment, usage, repositories and snapshots. |
 | `feedback_list` | no | List the feedback reports visible to this machine: id, short fingerprint, status and dates. |
-| `feedback_report` | no | Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. |
+| `feedback_report` | no | Build a report from the newest failed command (--last), a recorded command (--command &lt;n&gt;) or a message alone, print exactly what would be sent, and send it after confirmation. |
 | `feedback_show` | no | Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates. |
 | `incident_status` | no | List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks. |
 | `job_cancel` | yes | Cancel a running detached job |

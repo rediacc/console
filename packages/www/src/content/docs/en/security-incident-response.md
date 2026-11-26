@@ -20,7 +20,7 @@ Each incident has a clock that starts when Rediacc becomes aware of it. Informat
 |-------|-----|---------|
 | Early warning | within 24 hours | what is known so far, and whether malicious acts are suspected |
 | Notification | within 72 hours | the nature of the incident, an initial assessment, and the measures taken |
-| Final report | within one month | a detailed description, the root cause, and the applied and ongoing measures |
+| Final report | within one month of the notification; for an actively exploited vulnerability, 14 days after a corrective or mitigating measure is available | a detailed description, the root cause, and the applied and ongoing measures |
 
 ## The Art. 33(3) fields
 

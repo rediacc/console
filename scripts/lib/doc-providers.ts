@@ -2484,13 +2484,16 @@ export const mcpToolDestructive = (t: McpRegistryTool): string =>
 /** True for a tool only the local `rdc mcp serve` offers. */
 export const isLocalOnlyMcpTool = (t: McpRegistryTool): boolean => t.surface === 'local';
 
+/** A plain .md page parses `<config>` as an HTML tag and drops it, so a description's angle brackets become entities. */
+const escapeAngles = (text: string): string => text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
 /** One row per tool on one side of the remote/local split, in registry order (sorted by name). */
 const mcpToolRows = (root: string, local: boolean): ProviderRow[] =>
   readMcpRegistryTools(root)
     .filter((t) => isLocalOnlyMcpTool(t) === local)
     .map((t) => ({
       key: t.name,
-      cells: [`\`${t.name}\``, mcpToolDestructive(t), firstSentence(t.description)],
+      cells: [`\`${t.name}\``, mcpToolDestructive(t), escapeAngles(firstSentence(t.description))],
     }));
 
 /**

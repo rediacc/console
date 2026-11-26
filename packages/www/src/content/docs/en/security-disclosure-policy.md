@@ -65,7 +65,7 @@ The targets are goals, and a report that needs more time gets an explanation and
 
 ## Coordinated disclosure
 
-Details are published together with the fix, normally within 90 days of the report. A reporter who wants earlier or later publication names the date in the report, and the two sides agree on one. A vulnerability already exploited in the wild is handled as an incident, as described on the [incident response page](/en/docs/security-incident-response).
+Details are published together with the fix, normally within 90 days of the first assessment. A reporter who wants earlier or later publication names the date in the report, and the two sides agree on one. A vulnerability already exploited in the wild is handled as an incident, as described on the [incident response page](/en/docs/security-incident-response).
 
 ## Credit
 

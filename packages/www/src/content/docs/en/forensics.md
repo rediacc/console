@@ -96,7 +96,7 @@ Each finding carries the per-feature reasons that produced it, and the explanati
 
 ### Model bundles
 
-The detector parameters are published as signed bundles at `data.rediacc.com/models/`: content-addressed files, a manifest signed with an offline Ed25519 model key that is built into renet, a minimum renet version and a version that only increases, so a downgrade is refused. A bundle is verified before it installs, and the previous one can be restored.
+The detector parameters are distributed as signed bundles under `data.rediacc.com/models/`, uploaded by the publish job (no channel is published there yet): content-addressed files, a manifest signed with an offline Ed25519 model key that is built into renet, a minimum renet version and a version that only increases, so a downgrade is refused. A bundle is verified before it installs, and the previous one can be restored.
 
 ```bash
 renet models status

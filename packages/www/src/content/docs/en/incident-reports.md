@@ -16,7 +16,7 @@ A declared incident ([incident response](/en/docs/incident-response)) produces t
 
 ## Stages
 
-Each stage lists the sections it requires and no others, so a section a stage does not call for is omitted rather than left blank.
+Each stage adds the sections listed below and carries over those of the stage before it, so a section no stage calls for is omitted rather than left blank.
 
 | Stage | Due | Adds |
 |---|---|---|
@@ -24,7 +24,7 @@ Each stage lists the sections it requires and no others, so a section a stage do
 | Notification | 72 hours after awareness | Initial assessment, data impact (categories, approximate counts, Member States) and ATT&CK techniques |
 | Final | One calendar month after the notification | Root cause and mitigation steps |
 
-The final report follows a notification, so the notification is generated first. Each stage includes the sections of the stage before it.
+The final report follows a notification, so the notification is generated first.
 
 Every fact in a report says how it is known: observed in the evidence, entered by the customer, or inferred. An inferred fact carries a confidence and the detector's reason. The assessment, data categories, Member States, suspected cause, actions taken, contact point and techniques are inputs that the customer enters on the incident page before generating.
 
@@ -34,7 +34,7 @@ Every fact in a report says how it is known: observed in the evidence, entered b
 |---|---|
 | JSON | The canonical, verifiable form |
 | STIX 2.1 | A bundle of indicators for threat-intelligence tools |
-| PDF | A readable document, rendering non-Latin scripts, with the disclaimer, a QR code and the report hash on every page footer |
+| PDF | A readable document in embedded Noto Sans (Latin, Cyrillic and Turkish) or Noto Sans Arabic; Japanese, Korean and Chinese reports are refused until their fonts are pinned. Carries the disclaimer, a QR code and the report hash on every page footer |
 
 From the incident page, each stage has a download button per format. From the command line:
 

@@ -49,7 +49,7 @@ rdc forensics verify --dir ./incident-evidence
 rdc forensics verify --dir ./incident-evidence --since 7d --machine-key web-1=<public-key-hex>
 ```
 
-The command exits 1 when any gap or edit is found. `--machine-key <machine>=<64 hex characters>` supplies a key from outside the directory and can be repeated. A machine with no outside key fails.
+The command exits 1 when any gap or edit is found. `--machine-key <machine>=<public-key-hex>` (the key is 64 hex characters) supplies a key from outside the directory and can be repeated. A machine with no outside key fails.
 
 ## Declare an incident
 
