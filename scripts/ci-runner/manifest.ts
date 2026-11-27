@@ -15666,7 +15666,7 @@ export const GATES: readonly GateSpec[] = [
     slow: true, // 131.9s measured
     gate: false,
     mutex: ['www-dist'],
-    leaves: ['astro'],
+    leaves: ['.ci/rediacc_ci/release/changelog_data.py', 'astro'],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

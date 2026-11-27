@@ -16824,6 +16824,7 @@
       "www-dist"
     ],
     "leaves": [
+      ".ci/rediacc_ci/release/changelog_data.py",
       "astro"
     ],
     "ci": {
