@@ -89,6 +89,7 @@ const BUILDERS: { file: string; floor: number }[] = [
   { file: '.ci/rediacc_ci/deploy/set_account_worker_secrets.py', floor: 20 },
   { file: '.ci/rediacc_ci/deploy/set_www_worker_secrets.py', floor: 15 },
   { file: '.ci/rediacc_ci/deploy/set_preview_worker_secrets.py', floor: 10 },
+  { file: '.ci/rediacc_ci/deploy/preview_keys.py', floor: 2 },
   { file: '.ci/rediacc_ci/ops/deploy_bench.py', floor: 20 },
 ];
 
