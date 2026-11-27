@@ -84,6 +84,10 @@ describe.skipIf(!LIVE)('the mcp serve stdio server against a live config', () =>
   });
 
   it('reads, writes a fork, is refused on a grand, and is admitted with the env opt-in', async () => {
+    // The scenario refuses to run without its targets: a machineless repo_list would proceed and only fail on the list call.
+    expect(MACHINE, 'set REDIACC_LIVE_MACHINE to the machine the scenario targets').toBeTruthy();
+    expect(FORK, 'set RDC_MCP_LIVE_FORK to a name:tag fork ref').toBeTruthy();
+    expect(GRAND, 'set RDC_MCP_LIVE_GRAND to a grand repository name').toBeTruthy();
     const live = LIVE as string;
     const plain = await connect(live);
 
