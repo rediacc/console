@@ -41,6 +41,8 @@
     "5.7m / 13, security 1.8m / 18, static 4.5m / 64, wiring 0.5m / 1, www-build 3.6m / 16.",
     "quality-account (2026-11-02, split out of quality-go) 4.0m / 6: the six gates' gate_step_p90_seconds sum to 176.6 s (account-server 145.9, account-backup 28.3, four near-zero) plus about 64 s of job setup and teardown read from the steps of run 41478109601 job 125398865593, 241 s x 1000 / 6, about 40000 ms. Re-derive it with the rest.",
     "quality-renet (2026-11-22, split out of quality-go for its measured 12.6m p90, worklist #064f9dfc) 8.8m / 1: the one gate check:ci-renet at its gate_step_p90_seconds of 474.8 s, plus 52 s of job setup and teardown read from the steps of run 45029273736 job 137249302951 (Quality / Go), each step the new job keeps: Set up job 1, checkout 3, Bitwarden 1, app-token 3, the submodule checkout 12 (deep there, shallow here), setup-go 3, setup-workspace 26 (natives and package build there, defaults here), posts 2 + 0 + 1 + 0 + 0, Complete job 0. Install clang (46 s) is not in it. 526.8 s x 1000 / 1, rounded up to 527000 ms. Re-derive it with the rest.",
+    "quality-branch (2026-11-27, re-derived on a success sample; the 2026-09-28 figure came from failed jobs) 7.3m / 12: the job_p90_minutes p90 of Quality / Branch, 7.3m, measured on the committed plan hash 53ccec47661e04d7, which is the 12 quality-branch gates of commit 212cd6787 (check:ci-resprofile through check:ci-review-resolutions, traced from that commit's gates.lock.json). 7.3 x 60000 / 12 = 36500 ms. check:ci-reggate-debt is now the 13th gate and runs in under a second, so 13 x 36.5 s overstates the lane; the next budget_report --refresh over runs of the 13-gate plan measures it. Re-derive it with the rest.",
+    "quality-submodule-branches (2026-11-27, the lane gained its first lock-listed gate, check:ci-release-note-trailers) 0.8m / 1: the job_p90_minutes p90 of Quality / Submodule Branches, 0.8m, measured with the hand-written submodule-branches step alone, so the fixed cost is folded into the one unit as quality-wiring does (0.5m / 1). 0.8 x 60000 / 1 = 48000 ms. The trailer gate has no CI step sample yet; the next budget_report --refresh over runs that ran it measures it. Re-derive it with the rest.",
     "These quality figures are not refreshed by any tool yet: re-derive them by the recipe above",
     "when refreshed_at moves.",
     "quality-code has NO defaultUnitMs entry (removed 2026-10-14): gate-bind plans it on each",
@@ -1311,7 +1313,7 @@
     "pytest:.claude/rediacc_hooks/tests/test_githook_reference_transaction_landing.py": 4693.8
   },
   "defaultUnitMs": {
-    "quality-branch": 56667,
+    "quality-branch": 36500,
     "quality-content": 4000,
     "quality-account": 40000,
     "quality-go": 26824,
@@ -1321,6 +1323,7 @@
     "quality-security": 6000,
     "quality-static": 4219,
     "quality-wiring": 30000,
+    "quality-submodule-branches": 48000,
     "quality-www-build": 13500,
     "quality-pytest": 23400,
     "test-account-e2e": 24300,
