@@ -7,7 +7,7 @@
 
 WHAT IT UPLOADS, all under `third-party-src/` in the `releases` bucket:
 
-  * each component's source archive (`upstreamSourceUrl`), under the basename of the component's mirror URL (`mirrorUrl`, or `plannedMirrorUrl` until the lockfile rename lands).
+  * each component's source archive (`upstreamSourceUrl`), under the basename of the component's mirror URL (`mirrorUrl`).
   * for the binaries Rediacc compiles (CRIU, rsync), the build recipe: the Dockerfile's builder stages for that component, extracted verbatim, as `<name>-<ver>-build.txt`.
   * for the static rsync, the source packages of every statically linked library, at the exact versions the builder stage installed. The stage records them in a `dpkg-query` manifest (`--dpkg-manifest`, one `<binary-package>\\t<version>\\t<source-package>\\t<source-version>` line per package); each source package is fetched with `apt-get source --download-only` and its files are uploaded under `<name>-<ver>-libsrc/`. Without the manifest this part is skipped with a warning.
 
@@ -112,7 +112,7 @@ def fetch_debian_source(source: str, version: str, dest_dir: pathlib.Path) -> li
 
 
 def mirror_key(component: dict) -> str:
-    url = component.get("mirrorUrl") or component.get("plannedMirrorUrl") or ""
+    url = component.get("mirrorUrl") or ""
     name = url.rsplit("/", 1)[-1]
     if not name:
         raise MirrorError("%s has no mirrorUrl" % component.get("name", "?"))

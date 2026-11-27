@@ -76,7 +76,7 @@ def lock_for(bodies: dict[str, bytes]) -> dict:
                 "name": "CRIU",
                 "version": "1",
                 "upstreamSourceUrl": "https://up/criu.tar.gz",
-                "plannedMirrorUrl": "https://releases.example/third-party-src/criu-1.tar.gz",
+                "mirrorUrl": "https://releases.example/third-party-src/criu-1.tar.gz",
                 "sourceSha256": sha(bodies["https://up/criu.tar.gz"]),
             },
             "rsync": {
