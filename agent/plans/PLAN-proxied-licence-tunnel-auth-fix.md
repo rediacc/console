@@ -57,4 +57,52 @@ Live-Proof: bench -- the account routes, the proxy egress and the CLI's containe
 
 ## Outcome
 
-(filled by PL4 and PL-L1)
+PL4 inventory (every non-test file under packages/cli/src naming `accountServerFetch`, read after PL3; `proxyCapable` is the contract's field, the set the executor serves). `FATAL-unrouted` means the served command fails in a container because its call is a tunnel call the egress refuses and no executor route exists yet; these are owed a follow-on plan and are NOT fixed here (about twenty routes across backup, subscription and licence reads, beyond this plan's Owns).
+
+| File | Line(s) | Served by | Decision |
+|---|---|---|---|
+| `commands/backup-check.ts` | 113 | `backup check` (proxyCapable) | FATAL-unrouted: tunnel refused, `backup check` fails; needs an executor route |
+| `commands/backup-image-deps.ts` | 439 | `backup image` (not proxyCapable) | not reachable |
+| `commands/backup-immutability.ts` | 67, 81, 104 | `backup immutability show` and `backup undelete` (proxyCapable); `set` is not | FATAL-unrouted for show and undelete: needs an executor route |
+| `commands/backup-purge.ts` | 70, 103, 203, 262 | 70 via `repo delete --purge-backups` (proxyCapable, `purgeLineageRounds`); 103, 203, 262 serve `backup purge` (not proxyCapable) | 70 FATAL-unrouted (a refused purge fails the delete's backup step); 103, 203, 262 not reachable |
+| `commands/backup-reconcile.ts` | 160 | `backup reconcile` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-repair.ts` | 70 | `backup repair` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-restore-chunk.ts` | 56 | `backup restore` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-restore-route.ts` | 89 | `backup restore` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-restore-test.ts` | 85 | no importer, command not registered | not reachable |
+| `commands/backup-retention-commands.ts` | 101, 260, 274, 330, 416, 446 | `backup retention` and `backup retention preview` (proxyCapable); `set`/`clear` are not | FATAL-unrouted for the served reads (101, 330 and the listing reads); the write paths are not reachable |
+| `commands/backup-storage.ts` | 111, 228 | `backup usage` and `backup manifests` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-store-verify.ts` | 40 | `backup verify` and `backup repair` (proxyCapable) | FATAL-unrouted: needs an executor route |
+| `commands/backup-verification.ts` | 26 | `backup check` (proxyCapable) | FATAL-unrouted: with backup-check.ts |
+| `commands/config-remote-enable.ts` | 76 | `config remote` (not proxyCapable, interactive) | not reachable |
+| `commands/config-remote-machine-secret.ts` | 107 | `config remote` (not proxyCapable) | not reachable |
+| `commands/config-remote-relay.ts` | 140, 175, 238 | `config remote` (not proxyCapable) | not reachable |
+| `commands/legal.ts` | 67 | `legal` (not proxyCapable) | not reachable |
+| `commands/repo-delete-settle.ts` | 110 | `repo delete` (proxyCapable): the backup orphan mark | degrades: the call is caught and warns `backupsOrphanFailed`; needs an executor route or a container skip |
+| `commands/subscription-notices.ts` | 66, 239 | `subscription notices` (not proxyCapable) | not reachable |
+| `commands/subscription-proxy-token.ts` | 42 | `subscription proxy-token` (not proxyCapable) | not reachable |
+| `commands/subscription.ts` | 297 | `subscription login --token` (not proxyCapable) | not reachable |
+| `commands/version.ts` | 27 | `version` (not proxyCapable) | not reachable |
+| `config/command-planes.ts` | comments only (95, 99, 103, 106, 110) | no call | not a caller |
+| `services/account/account-client.ts` | definition (343) | the tunnel itself | not a caller |
+| `services/account/executor-principal.ts` | comment (44); the outside-a-dispatch branch of `licenceFetch` | the licence helper of PL3 | executor route (PL3): a container dispatch sends plain, outside one it is the tunnel |
+| `services/account/free-license.ts` | 246 | `repo migrate`, `repo replicate` when no token is ready (`issueFreeRepoLicense`) | not reachable: the container holds a token, so the paid path (`issueRepoLicense`) is taken, which PL3 routes |
+| `services/account/license-preflight.ts` | 58 | `cluster create`, `join`, `scale` and replicate (proxyCapable) | skipped by design: `readMachineSlotStatus` catches and returns null, so a refused tunnel only drops the pre-flight; no change |
+| `services/account/license.ts` | 58 | `subscription status` account view (proxyCapable); `doctor` uses the tolerant twin | FATAL-unrouted for `subscription status` (`fetchSubscriptionLicenseReportOrThrow` rethrows): needs an executor route |
+| `services/account/subscription-device-auth.ts` | 80, 134, 176 | `subscription login` (not proxyCapable) | not reachable |
+| `services/account/token-ip-rebind.ts` | comment (15) | no call | not a caller |
+| `services/backup/backup-replication.ts` | 148, 166 | `backup strategy set` (not proxyCapable); `list`/`show` are served but only read the local config | not reachable |
+| `services/backup/backup-retention.ts` | 191, 220 | `backup strategy set` (not proxyCapable) | not reachable |
+| `services/backup/backup-store-pick.ts` | 69, 404 | `backup restore`, `backup browse`, `backup schedule` (proxyCapable) | FATAL-unrouted: store lookup fails before the restore or schedule starts; needs an executor route |
+| `services/config/config-server-client.ts` | comment (82) | its own tunnel, not `accountServerFetch` | not a caller |
+| `services/config/device-token-refresh.ts` | 80 | remote config reads at CLI start; a container dispatch is handed its config | not reachable |
+| `services/core/audit.ts` | 166 | the audit flush of every command | skipped in a container (PL3: `hasToken` returns false inside a container dispatch; the executor audit records the command) |
+| `services/executor/repo-license-context.ts` | 341 | `backup restore` licence pre-flight (proxyCapable) | degrades: caught, warns and uses the 1 GB floor; needs an executor route or a container skip |
+| `services/feedback/list.ts` | 47 | `feedback` (not proxyCapable) | not reachable |
+| `services/feedback/send.ts` | 141 | `feedback` (not proxyCapable) | not reachable |
+| `services/forensics/client.ts` | 251 | `incident`, `forensics`, `repo flows` and `repo opens` (not proxyCapable) | not reachable |
+| `services/server/deps.ts` | 158 | `server` licence verbs (not proxyCapable) | not reachable |
+| `services/telemetry/otlp-credentials.ts` | 82 | the CLI preAction telemetry fetch | degrades by design: caught, returns null; the container initialises its own telemetry (container-telemetry.ts); no change |
+| `services/tofu/provision.ts` | 306 | `machine deprovision` (proxyCapable): the slot release | degrades: caught and warns `deactivateFailed`; needs an executor route or a container skip |
+
+(PL-L1 transcripts are added below by that box.)

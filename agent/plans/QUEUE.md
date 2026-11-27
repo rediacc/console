@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 2243 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2326 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 7 live (session d778be9d): worker:a016794b008dde1f7, worker:a86e69e96020970de, worker:aa0ea88b3d9d2d34d, worker:ab2f4f911c446b945, worker:a7c1335f99f748403, worker:ac7258efcc9c5feb7, worker:a65fffc13b3a24b6b.
-- Leased items: 8: #00b14f33 (worker:a7c1335f99f748403, d778be9d), #237d1120 (worker:a016794b008dde1f7, d778be9d), #4b394dbe (worker:ac7258efcc9c5feb7, d778be9d), #5541e997 (worker:aa0ea88b3d9d2d34d, d778be9d), #6e81debd (worker:a86e69e96020970de, d778be9d), #75d676af (worker:a86e69e96020970de, d778be9d), #8b081c8e (worker:ab2f4f911c446b945, d778be9d), #9e3cbc0c (worker:a65fffc13b3a24b6b, d778be9d).
+- Writers: 1 live (session d778be9d): worker:aa98e15c9a7e331db.
+- Leased items: 2: #3f24d3e7 (worker:btgn1y7gg, d778be9d), #fbfd849e (worker:aa98e15c9a7e331db, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 115 plans done, 1594 of 2077 boxes done (76%).
+Promoted: 11 of 116 plans done, 1600 of 2086 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -70,13 +70,13 @@ Promoted: 10 of 115 plans done, 1594 of 2077 boxes done (76%).
 | 8 | PLAN-backup-restore-path.md | 8/10 | 2 open |
 | 9 | PLAN-production-key-only.md | 15/17 | 2 open |
 | 10 | PLAN-detached-jobs.md | 33/41 | 8 open |
-| 11 | PLAN-snapshot-read-io-cap.md | 15/16 | 1 open |
+| 11 | PLAN-snapshot-read-io-cap.md | 16/16 | done |
 | 12 | PLAN-backup-local-image.md | 12/14 | 2 open |
 | 13 | PLAN-backup-plane-shared-bucket-hardening.md | 7/7 | done |
 | 14 | PLAN-jobs-backup-real-machine-tests.md | 10/11 | 1 open |
 | 15 | PLAN-backup-download-from-store.md | 9/9 | done |
 | 16 | PLAN-free-license.md | 12/13 | 1 open |
-| 17 | PLAN-backup-integrity.md | 52/56 | 4 open |
+| 17 | PLAN-backup-integrity.md | 53/56 | 3 open |
 | 18 | PLAN-backup-critical-tier.md | 49/51 | 2 open |
 | 19 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
 | 20 | PLAN-worktree-lease.md | 15/16 | 1 open |
@@ -166,15 +166,16 @@ Promoted: 10 of 115 plans done, 1594 of 2077 boxes done (76%).
 | 104 | PLAN-reggate-debt-collection.md | 7/11 | 4 open |
 | 105 | PLAN-retire-nightlies-and-mentions.md | 8/16 | 8 open |
 | 106 | PLAN-renet-i18n-baseline-drain.md | 3/16 | 13 open |
-| 107 | PLAN-datastore-migrate-correctness.md | 6/13 | 7 open |
+| 107 | PLAN-datastore-migrate-correctness.md | 7/13 | 6 open |
 | 108 | PLAN-backup-toc-exact-opt-in.md | 3/10 | 7 open |
-| 109 | PLAN-vscode-browser-exposure.md | 3/9 | 6 open |
+| 109 | PLAN-vscode-browser-exposure.md | 3/10 | 7 open |
 | 110 | PLAN-release-notes.md | 1/13 | 12 open |
 | 111 | PLAN-pr-path-ephemeral-credentials.md | 1/13 | 12 open |
 | 112 | PLAN-plan-verbs.md | 0/3 | 3 open |
-| 113 | PLAN-windows-lane.md | 0/32 | 32 open |
+| 113 | PLAN-windows-lane.md | 3/32 | 29 open |
 | 114 | PLAN-config-sealed-local.md | 0/10 | 10 open |
 | 115 | PLAN-proxied-licence-tunnel-auth-fix.md | 0/6 | 6 open |
+| 116 | PLAN-executor-account-routes.md | 0/8 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -292,6 +293,7 @@ Promoted: 10 of 115 plans done, 1594 of 2077 boxes done (76%).
 113. agent/plans/PLAN-windows-lane.md -- operator instruction relayed by console-6c 2026-11-27: promote and implement
 114. agent/plans/PLAN-config-sealed-local.md -- operator /ask ASKED:2026-11-27 (four decisions in the plan header): seal remote-enabled local configs by default
 115. agent/plans/PLAN-proxied-licence-tunnel-auth-fix.md -- finding fix from bench runner pass r89 (#4222addb): proxied repo create, fork and licence retire refused by the executor egress
+116. agent/plans/PLAN-executor-account-routes.md -- operator /ask ASKED:2026-11-27T09:21Z ("promote as approved"): one shared executor account-route table; folds PL1-PL3 licence routes in
 
 ## Generated
 

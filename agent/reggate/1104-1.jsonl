@@ -70,3 +70,45 @@
 {"kind":"debt","sig":"9c1273cbaee1","blind_spot":"Every check compared the local config with its cache on the local edit path only. None observed a read where the server rewrote a CLI-maintained key, so the server's own rewrite looked like a local edit and got pushed.","surface":"unit","artifact":"packages/cli/src/services/config/__tests__/local-edit-guard.test.ts","charged":42,"at":"2026-11-06T15:53:29Z","br":"1104-1"}
 {"kind":"charge","sig":"9c1273cbaee1","why":"capped","at":"2026-11-06T15:53:29Z","br":"1104-1"}
 {"kind":"charge","sig":"32d20edce8f5","why":"proven","at":"2026-11-06T18:16:05Z","br":"1104-1"}
+{"kind":"materialize","sig":"ac4888fbcc1c","item":"ac65af5b","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"311a58d7029a","item":"380dc673","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"83329d82149d","item":"f1784a5b","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"27add2a4355d","item":"bef86f96","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"952874cc6933","item":"82455868","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"1d0f640ec374","item":"66950df8","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"d8860bc68284","item":"fd65aa26","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"3f2d4108388b","item":"0bc9e31e","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"47397e0e0bfc","item":"bb40e34b","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"c2f751109342","item":"e340bb71","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"b97eb151b73f","item":"e3584e93","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"d2dfcb32d549","item":"1e093f5d","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"cbf2b10d6e5c","item":"414246f3","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"6a400d579cb6","item":"070a34dd","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"76f500f74902","item":"d759c82b","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"c37624cd72b2","item":"0fb6ba9e","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"c045306b3260","item":"ed5049fb","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"43315f31790c","item":"62676680","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"a5bd165567ac","item":"b0decbbf","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"f7c77b74e892","item":"aa47789d","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"fd18f3201515","item":"fb8e54c4","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"93edba58152b","item":"64dbabf8","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"02048c1db5cd","item":"9022b33e","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"1b6f508d6f1f","item":"8d7e9221","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"93595acc7fbf","item":"c0c71c8c","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"5ab8cdf442d4","item":"a7be808f","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"de00c9f3b90c","item":"2a637bbf","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"materialize","sig":"9c1273cbaee1","item":"6cdf0906","at":"2026-11-27T07:57:56Z","br":"1104-1"}
+{"kind":"discharge","sig":"ac4888fbcc1c","artifact":".ci/rediacc_ci/tests/test_ops_read_cap_seed.py","proof":"commit-date: .ci/rediacc_ci/tests/test_ops_read_cap_seed.py last committed 2026-11-16T10:55:27+01:00, after the debt (2026-11-06T01:34:09Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"83329d82149d","artifact":"packages/cli/src/commands/__tests__/term-output-mode.test.ts","proof":"commit-date: packages/cli/src/commands/__tests__/term-output-mode.test.ts last committed 2026-11-06T22:29:27+01:00, after the debt (2026-11-06T01:50:35Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"952874cc6933","artifact":".github/workflows/ci-ops-test.yml","proof":"commit-date: .github/workflows/ci-ops-test.yml last committed 2026-11-26T16:05:19+01:00, after the debt (2026-11-06T02:16:55Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"d8860bc68284","artifact":".ci/rediacc_ci/tests/test_drills_repo_resources.py","proof":"commit-date: .ci/rediacc_ci/tests/test_drills_repo_resources.py last committed 2026-11-10T22:53:00+01:00, after the debt (2026-11-06T02:48:09Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"c2f751109342","artifact":".claude/rediacc_hooks/tests/test_writer_commit_verbs.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_writer_commit_verbs.py last committed 2026-11-07T14:53:09+01:00, after the debt (2026-11-06T04:14:59Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"d2dfcb32d549","artifact":".ci/rediacc_ci/tests/test_dev_worktree_lease.py","proof":"commit-date: .ci/rediacc_ci/tests/test_dev_worktree_lease.py last committed 2026-11-26T19:51:38+01:00, after the debt (2026-11-06T06:22:54Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"cbf2b10d6e5c","artifact":".claude/rediacc_hooks/tests/test_wl_report_tick.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_report_tick.py last committed 2026-11-24T13:33:09+01:00, after the debt (2026-11-06T06:44:58Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"6a400d579cb6","artifact":".claude/rediacc_hooks/tests/test_wl_report_inbox.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_report_inbox.py last committed 2026-11-20T10:52:49+01:00, after the debt (2026-11-06T07:06:47Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:01Z","br":"1104-1"}
+{"kind":"discharge","sig":"a5bd165567ac","artifact":".ci/rediacc_ci/tests/test_drills_vm_check.py","proof":"commit-date: .ci/rediacc_ci/tests/test_drills_vm_check.py last committed 2026-11-26T19:34:02+01:00, after the debt (2026-11-06T10:13:11Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}
+{"kind":"discharge","sig":"fd18f3201515","artifact":"packages/cli/src/services/config/__tests__/local-edit-guard.test.ts","proof":"commit-date: packages/cli/src/services/config/__tests__/local-edit-guard.test.ts last committed 2026-11-25T15:49:58+01:00, after the debt (2026-11-06T13:40:15Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}
+{"kind":"discharge","sig":"02048c1db5cd","artifact":".claude/rediacc_hooks/guards/test-block_plan_concurrency.py","proof":"commit-date: .claude/rediacc_hooks/guards/test-block_plan_concurrency.py last committed 2026-11-24T11:10:14+01:00, after the debt (2026-11-06T14:42:25Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}
+{"kind":"discharge","sig":"1b6f508d6f1f","artifact":".claude/rediacc_hooks/guards/test-block_worktree_add.py","proof":"commit-date: .claude/rediacc_hooks/guards/test-block_worktree_add.py last committed 2026-11-23T18:35:30+01:00, after the debt (2026-11-06T15:14:49Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}
+{"kind":"discharge","sig":"5ab8cdf442d4","artifact":".claude/rediacc_hooks/tests/test_guards_differential.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_guards_differential.py last committed 2026-11-23T01:39:05+01:00, after the debt (2026-11-06T15:28:05Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}
+{"kind":"discharge","sig":"9c1273cbaee1","artifact":"packages/cli/src/services/config/__tests__/local-edit-guard.test.ts","proof":"commit-date: packages/cli/src/services/config/__tests__/local-edit-guard.test.ts last committed 2026-11-25T15:49:58+01:00, after the debt (2026-11-06T15:53:29Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1104-1"}

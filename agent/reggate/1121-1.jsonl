@@ -137,3 +137,60 @@
 {"kind":"charge","sig":"a73d64c8dc15","why":"proven","at":"2026-11-27T05:02:01Z","br":"1121-1"}
 {"kind":"debt","sig":"fd032cb9b936","blind_spot":"The record-paths check compares each gate's agent/ glob reads against the declared readers in record-paths.json. check:ci-pin-freshness read the agent/ globs without a declared row, and its outside-list append went to a target the scanner did not resolve, so the declaration was never compared","surface":"none","artifact":"","charged":93,"at":"2026-11-27T05:30:00Z","br":"1121-1"}
 {"kind":"charge","sig":"fd032cb9b936","why":"capped","at":"2026-11-27T05:30:00Z","br":"1121-1"}
+{"kind":"materialize","sig":"f0a3c1489ab0","item":"820b39e2","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"bddbfeb48e28","item":"eaedb70d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"259f37563283","item":"00401f83","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"2adddf2f4cc0","item":"a9fe1a8e","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"6902d4abed1e","item":"e71bf07f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"5e5e13f46205","item":"3227f1e5","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"0b18ba962601","item":"c7e567fe","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"315e71b66f4b","item":"5ea99e61","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"24ac37f47e10","item":"11a0a911","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"0e17c71058e2","item":"275a3547","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"7bf263c35ce8","item":"401a2078","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"cbee33bfa25a","item":"0e6e18cd","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"6d015c0b31f2","item":"90a6e7ab","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"96a31eca7b31","item":"9c8d06e6","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"1b172f89d003","item":"0c5b4088","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"f51c2a6cf6b5","item":"94c54a8c","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"dc6baa57c484","item":"b34a638d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"24fd251cfb8f","item":"2bf9f8b0","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"78fc4b05e9c8","item":"c6b61ac9","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"4c120dc223be","item":"2c92b7e0","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"102b1efacd99","item":"69bff718","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"e277faba3053","item":"2584b2e2","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"4fd0a63f6912","item":"10adcffd","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"5e074d33170e","item":"551eeadf","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"f3dda79a32d2","item":"681c79fb","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"890ef66d3353","item":"4bb2e54d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"2fd00f8797e9","item":"320222db","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"56ebf4b35b2c","item":"05fe6a18","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"8945701d0379","item":"7203129f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"adac6130f301","item":"95998592","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"3f7e3ca7dcdd","item":"2e840e89","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"e22205866253","item":"645b8d97","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"ab3cdc21701c","item":"8323638f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"07c68089c740","item":"482d4e6b","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"8f63360a96fb","item":"48f0cf8a","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"discharge","sig":"bddbfeb48e28","artifact":"packages/shared/src/auth/__tests__/preview-run.test.ts","proof":"commit-date: packages/shared/src/auth/__tests__/preview-run.test.ts last committed 2026-11-26T15:48:38+01:00, after the debt (2026-11-23T20:46:17Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"2adddf2f4cc0","artifact":".claude/rediacc_hooks/tests/test_wl_writersnow.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_writersnow.py last committed 2026-11-26T21:03:52+01:00, after the debt (2026-11-23T21:06:05Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"0b18ba962601","artifact":".ci/rediacc_ci/tests/test_dev_worktree_lease.py","proof":"commit-date: .ci/rediacc_ci/tests/test_dev_worktree_lease.py last committed 2026-11-26T19:51:38+01:00, after the debt (2026-11-23T22:07:52Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"315e71b66f4b","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","proof":"commit-date: packages/shared/src/audit/__tests__/console-events.test.ts last committed 2026-11-26T15:29:12+01:00, after the debt (2026-11-23T23:04:33Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"24ac37f47e10","artifact":"packages/cli/src/services/backup/__tests__/backup-schedule-stable-path.test.ts","proof":"commit-date: packages/cli/src/services/backup/__tests__/backup-schedule-stable-path.test.ts last committed 2026-11-24T08:34:33+01:00, after the debt (2026-11-24T00:12:57Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"0e17c71058e2","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","proof":"commit-date: packages/shared/src/audit/__tests__/console-events.test.ts last committed 2026-11-26T15:29:12+01:00, after the debt (2026-11-24T07:59:52Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"cbee33bfa25a","artifact":".ci/rediacc_ci/tests/test_ops_login_bench.py","proof":"commit-date: .ci/rediacc_ci/tests/test_ops_login_bench.py last committed 2026-11-26T19:00:39+01:00, after the debt (2026-11-24T16:44:04Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"96a31eca7b31","artifact":".ci/rediacc_ci/tests/test_d1_shard_move.py","proof":"commit-date: .ci/rediacc_ci/tests/test_d1_shard_move.py last committed 2026-11-26T19:00:39+01:00, after the debt (2026-11-24T22:14:12Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"1b172f89d003","artifact":".claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py last committed 2026-11-26T19:33:55+01:00, after the debt (2026-11-24T22:40:06Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"dc6baa57c484","artifact":".ci/rediacc_ci/tests/test_enterprise_lab.py","proof":"commit-date: .ci/rediacc_ci/tests/test_enterprise_lab.py last committed 2026-11-25T19:41:00+01:00, after the debt (2026-11-25T03:12:44Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"78fc4b05e9c8","artifact":".ci/rediacc_ci/tests/test_drills_vm_check.py","proof":"commit-date: .ci/rediacc_ci/tests/test_drills_vm_check.py last committed 2026-11-26T19:34:02+01:00, after the debt (2026-11-25T12:48:38Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"e277faba3053","artifact":"packages/cli/src/services/ai/__tests__/judge.test.ts","proof":"commit-date: packages/cli/src/services/ai/__tests__/judge.test.ts last committed 2026-11-26T04:58:45+01:00, after the debt (2026-11-25T17:15:23Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"5e074d33170e","artifact":".ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py","proof":"commit-date: .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py last committed 2026-11-26T04:54:55+01:00, after the debt (2026-11-26T03:51:14Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"f3dda79a32d2","artifact":".ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py","proof":"commit-date: .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py last committed 2026-11-26T19:09:31+01:00, after the debt (2026-11-26T04:46:28Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"8945701d0379","artifact":".ci/rediacc_ci/tests/test_ops_units.py","proof":"commit-date: .ci/rediacc_ci/tests/test_ops_units.py last committed 2026-11-26T12:26:44+01:00, after the debt (2026-11-26T07:46:07Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"ab3cdc21701c","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","proof":"commit-date: packages/shared/src/mcp-host/__tests__/confirm.test.ts last committed 2026-11-26T15:29:45+01:00, after the debt (2026-11-26T08:47:25Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"07c68089c740","artifact":".ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py","proof":"commit-date: .ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py last committed 2026-11-26T18:48:45+01:00, after the debt (2026-11-26T10:16:16Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"8f63360a96fb","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","proof":"commit-date: packages/shared/src/mcp-host/__tests__/confirm.test.ts last committed 2026-11-26T15:29:45+01:00, after the debt (2026-11-26T10:29:28Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"f98d1b5b7fcc","artifact":"packages/cli/src/commands/ops/__tests__/ops-backend-hyperv.test.ts","proof":"commit-date: packages/cli/src/commands/ops/__tests__/ops-backend-hyperv.test.ts last committed 2026-11-26T21:53:24+01:00, after the debt (2026-11-26T20:53:05Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"materialize","sig":"e4eb265f8f25","item":"a7015a76","at":"2026-11-27T09:01:43Z","br":"1121-1"}
+{"kind":"materialize","sig":"551b7cb3445b","item":"db75514a","at":"2026-11-27T09:10:02Z","br":"1121-1"}
+{"kind":"charge","sig":"ff42180293ac","why":"proven","at":"2026-11-27T09:12:47Z","br":"1121-1"}

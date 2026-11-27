@@ -231,12 +231,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 52,
+      "open": 3,
+      "done": 53,
       "open_sigs": [
         "06623ce1",
         "3bf5d6ea",
-        "4ad3cc4c",
         "b472cb77"
       ],
       "done_sigs": [
@@ -259,6 +258,7 @@
         "3cb155ce",
         "46930f64",
         "47bb6bd4",
+        "4ad3cc4c",
         "4f5e643e",
         "598f4ca9",
         "5d9452ba",
@@ -1509,12 +1509,11 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 6,
+      "open": 6,
+      "done": 7,
       "open_sigs": [
         "05ebb5c8",
         "18ca2b9c",
-        "68791382",
         "8a3c6a3c",
         "d2381701",
         "f704803c",
@@ -1523,6 +1522,7 @@
       "done_sigs": [
         "30858a7f",
         "5eeb48f3",
+        "68791382",
         "9a2d68ae",
         "b9a5b860",
         "c044b85f",
@@ -1814,6 +1814,25 @@
         "e79d1ae2",
         "fd19cc47"
       ]
+    },
+    "agent/plans/PLAN-executor-account-routes.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "05b5240d",
+        "184fcf5b",
+        "47eedb87",
+        "4a23af14",
+        "55b3ac8b",
+        "8700c81f",
+        "91fac951",
+        "d0439db6"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-experience-feedback.md": {
       "status": "approved",
@@ -4165,11 +4184,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 15,
-      "open_sigs": [
-        "b9daaf63"
-      ],
+      "open": 0,
+      "done": 16,
+      "open_sigs": [],
       "done_sigs": [
         "112b6afb",
         "11388dba",
@@ -4184,6 +4201,7 @@
         "9f4cc8b1",
         "a63d1aaf",
         "ae0adefa",
+        "b9daaf63",
         "e990ac90",
         "ef318b56"
       ]
@@ -4688,10 +4706,11 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
+      "open": 7,
       "done": 3,
       "open_sigs": [
         "0d88a9d8",
+        "11bdd4b0",
         "39dca1f0",
         "991eacb0",
         "a8b52076",
@@ -4803,11 +4822,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 32,
-      "done": 0,
+      "open": 29,
+      "done": 3,
       "open_sigs": [
         "0a49e9b9",
-        "13a907fb",
         "2915d4b3",
         "4cfff725",
         "4d5f4be8",
@@ -4819,7 +4837,6 @@
         "5e071621",
         "60229177",
         "66361777",
-        "698d1ff5",
         "6bc4a2c8",
         "78f178f9",
         "796f3a68",
@@ -4832,14 +4849,17 @@
         "c7dcdcf3",
         "d72e361e",
         "daf84eca",
-        "ddf76446",
         "e4b90633",
         "ed4d23ae",
         "f6c60cc4",
         "fc3a2b59",
         "fd2027df"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "13a907fb",
+        "698d1ff5",
+        "ddf76446"
+      ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {
       "status": "compacted",
