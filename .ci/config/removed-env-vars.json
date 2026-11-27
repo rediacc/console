@@ -1,5 +1,5 @@
 {
-  "$comment": "Environment variables removed with no deprecation window. check:ci-removed-env-vars (.ci/scripts/quality/check_removed_env_vars.py) fails on any tracked occurrence of a name below, in console or an initialized submodule, outside the `excluded` prefixes. Each excluded prefix must still match a tracked path. Add a name here in the commit that removes its last reader; never remove one.",
+  "$comment": "Environment variables removed with no deprecation window. check:ci-removed-env-vars (.ci/scripts/quality/check_removed_env_vars.py) fails on any tracked occurrence of a name below, in console or an initialized submodule, outside the `excluded` entries (a path prefix, or an fnmatch pattern when it holds `*`). Each entry must still match a tracked path. Add a name here in the commit that removes its last reader; never remove one.",
   "removed": [
     {
       "name": "REDIACC_ALLOW_CONFIG_EDIT",
@@ -13,6 +13,8 @@
     "agent/worklist": "the worklist store and its legacy markdown record the work items that removed the name",
     "agent/reviews/": "per-commit review records quote the diffs that removed the name",
     "agent/programs/remote-mcp/": "the program's decision record (D17) is where the removal is decided",
-    "agent/plans/": "plan files are the record of the removal; PLAN-rmcp-config-edit-removal.md names the variable in its title"
+    "agent/plans/": "plan files are the record of the removal; PLAN-rmcp-config-edit-removal.md names the variable in its title",
+    "packages/www/public/search-index": "generated from the docs and blog corpus at build time; the pages it is built from are scanned",
+    "packages/www/src/content/blog/*/remote-mcp-and-policy-changes.md": "the one post announcing the removal, in each locale (PLAN-rmcp-docs.md D17 and Design 2)"
   }
 }

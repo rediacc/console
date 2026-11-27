@@ -85,6 +85,20 @@ def test_an_excluded_prefix_is_not_scanned(tmp_path: pathlib.Path) -> None:
     assert done.returncode == 0, done.stdout
 
 
+def test_an_excluded_pattern_covers_its_file_in_every_locale_and_nothing_else(
+    tmp_path: pathlib.Path,
+) -> None:
+    files = {
+        "blog/de/post.md": NAME + "\n",
+        "blog/ja/post.md": NAME + "\n",
+        "blog/de/other.md": "uses %s\n" % NAME,
+    }
+    done = run(repo(tmp_path, files, {"blog/*/post.md": "announcement"}))
+    assert done.returncode == 1, done.stdout
+    assert "blog/de/other.md:1" in done.stdout
+    assert "post.md" not in done.stdout
+
+
 def test_a_split_spelling_passes(tmp_path: pathlib.Path) -> None:
     done = run(
         repo(tmp_path, {"src/a.test.ts": "const V = ['PLANTED', 'REMOVED', 'VAR'].join('_');\n"})
@@ -96,6 +110,11 @@ def test_a_dead_exclusion_reds(tmp_path: pathlib.Path) -> None:
     done = run(repo(tmp_path, {"docs/page.md": "clean\n"}, {"agent/gone/": "dead"}))
     assert done.returncode == 1, done.stdout
     assert "'agent/gone/' matches no tracked path" in done.stdout
+
+
+def test_a_dead_pattern_reds(tmp_path: pathlib.Path) -> None:
+    done = run(repo(tmp_path, {"docs/page.md": "clean\n"}, {"blog/*/gone.md": "dead"}))
+    assert done.returncode == 1, done.stdout
 
 
 def test_an_empty_removed_list_is_a_refusal_not_a_pass(tmp_path: pathlib.Path) -> None:

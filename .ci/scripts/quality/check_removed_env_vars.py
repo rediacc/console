@@ -7,10 +7,12 @@ THE CLAUSES.
 
   1. NO OCCURRENCE. No tracked file in console or an initialized submodule
      (`git ls-files --recurse-submodules`) contains a listed name, outside the
-     `excluded` prefixes of the JSON and this gate's own three files. Each finding
-     prints `path:line` and the name.
-  2. EACH EXCLUSION IS RE-DERIVED. An excluded prefix must still match a tracked
-     path; a prefix that matches nothing is a dead exemption and reds.
+     `excluded` entries of the JSON and this gate's own three files. An entry is a
+     path prefix, or an `fnmatch` pattern when it holds a `*` (the one announcing
+     blog post exists once per locale directory). Each finding prints `path:line`
+     and the name.
+  2. EACH EXCLUSION IS RE-DERIVED. An excluded entry must still match a tracked
+     path; an entry that matches nothing is a dead exemption and reds.
   3. ANTI-VACUITY. An empty `removed` list, or a scan that lists zero tracked
      files, is a REFUSAL: the instrument lost its input, not a clean tree.
 
@@ -20,7 +22,7 @@ A test that must name the variable spells it in pieces (`['REDIACC', 'ALLOW', ..
 
 Exit 0 clean, 1 on a finding or refusal, 2 on a failed control or bad arguments.
 
-NOT WIRED YET, ON PURPOSE. The tree still names the config-edit override in the www pages, their search indexes and a few files outside this plan, so the gate is red today; a header here would register a red gate (gen:gates reads it). The wiring commit (PLAN-rmcp-docs.md DO2, the last commit of the removal's landing) adds the header below between its `----` markers, the package.json script `check:ci-removed-env-vars` and the regenerated manifest, lock and workflow step:
+NOT WIRED YET, ON PURPOSE. The tree still names the config-edit override in the www pages and a few files outside this plan, so the gate is red today; a header here would register a red gate (gen:gates reads it). The wiring commit (PLAN-rmcp-docs.md DO2, the last commit of the removal's landing) adds the header below between its `----` markers, the package.json script `check:ci-removed-env-vars` and the regenerated manifest, lock and workflow step:
 
     step: Removed env vars stay removed
     lane: quality-static
@@ -32,6 +34,7 @@ NOT WIRED YET, ON PURPOSE. The tree still names the config-edit override in the 
 
 from __future__ import annotations
 
+import fnmatch
 import json
 import pathlib
 import subprocess
@@ -65,6 +68,13 @@ def load_config(root: pathlib.Path) -> tuple[list[str], dict[str, str]]:
     return names, dict(data.get("excluded", {}))
 
 
+def excluded_by(rel: str, entry: str) -> bool:
+    """True when `entry` (a path prefix, or an fnmatch pattern if it holds `*`) covers `rel`."""
+    if "*" in entry:
+        return fnmatch.fnmatchcase(rel, entry)
+    return rel.startswith(entry)
+
+
 def scan(
     root: pathlib.Path, files: list[str], names: list[str], excluded: dict[str, str]
 ) -> list[tuple[str, int, str]]:
@@ -72,7 +82,7 @@ def scan(
     needles = [(name, name.encode("utf-8")) for name in names]
     findings: list[tuple[str, int, str]] = []
     for rel in files:
-        if rel in SELF or any(rel.startswith(prefix) for prefix in excluded):
+        if rel in SELF or any(excluded_by(rel, entry) for entry in excluded):
             continue
         path = root / rel
         if path.is_symlink() or not path.is_file():
@@ -88,7 +98,7 @@ def scan(
 
 
 def dead_exclusions(files: list[str], excluded: dict[str, str]) -> list[str]:
-    return [prefix for prefix in excluded if not any(f.startswith(prefix) for f in files)]
+    return [entry for entry in excluded if not any(excluded_by(f, entry) for f in files)]
 
 
 def check(root: pathlib.Path) -> int:
@@ -106,7 +116,7 @@ def check(root: pathlib.Path) -> int:
     dead = dead_exclusions(files, excluded)
     for prefix in dead:
         print(
-            "✗ excluded prefix %r matches no tracked path: a dead exemption, delete it from %s"
+            "✗ excluded entry %r matches no tracked path: a dead exemption, delete it from %s"
             % (prefix, CONFIG_REL)
         )
         rc = 1
@@ -160,6 +170,18 @@ def selftest() -> int:
             {"agent/ledgers/x.jsonl": "{VAR}\n", "docs/page.md": "clean\n"},
             {"agent/ledgers/": "record"},
             0,
+        ),
+        (
+            "an occurrence matched by an excluded pattern passes",
+            {"blog/de/post.md": "{VAR}\n", "blog/de/other.md": "clean\n"},
+            {"blog/*/post.md": "announcement"},
+            0,
+        ),
+        (
+            "a pattern does not cover a sibling file",
+            {"blog/de/post.md": "clean\n", "blog/de/other.md": "{VAR}\n"},
+            {"blog/*/post.md": "announcement"},
+            1,
         ),
         (
             "a split spelling passes",
