@@ -135,16 +135,11 @@ def test_write_baseline_drains_a_fixed_finding_and_adds_nothing(tmp_path: pathli
     before = json.loads(cfg.read_text(encoding="utf-8"))["baseline"]["ids"]
     stage = root / ".github" / "workflows" / "cd-stage.yml"
     text = stage.read_text(encoding="utf-8")
-    fetch = "      - name: Fetch the step-scoped signing key(s) for the next step only\n        uses: ./.github/actions/bws-secrets\n"
+    # The fix simulated: the job-wide R2 and Cloudflare fetch, still baselined, guarded to push. (The first
+    # drain this test simulated, the signing-key fetches, landed for real with W3's `signing` input.)
+    fetch = "      - name: Fetch secrets from Bitwarden\n"
     assert text.count(fetch) == 1, "the plant site moved; re-point the cd-stage fetch anchor"
-    guarded = text.replace(
-        fetch,
-        fetch.replace("        uses:", "        if: inputs.signing == 'release'\n        uses:"),
-    )
-    guarded = guarded.replace(
-        "        if: inputs.channel != ''\n        uses: ./.github/actions/bws-secrets",
-        "        if: inputs.channel != '' && inputs.signing == 'release'\n        uses: ./.github/actions/bws-secrets",
-    )
+    guarded = text.replace(fetch, fetch + "        if: github.event_name == 'push'\n")
     stage.write_text(guarded, encoding="utf-8")
     red = _evaluate_copy(root, cfg)
     assert red.rc == 1, red.stderr
