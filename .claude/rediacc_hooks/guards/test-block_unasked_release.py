@@ -78,7 +78,7 @@ B, A = True, False
 
 # (name, command, transcript, expect_blocked, stderr needle; "!x" means x must be absent)
 CASES = [
-    # ------------------------------------------------------------- the entry: edge free, stable refused outright
+    # ------------------------------------------------------------- the entry: edge free, stable asked (its dry run too)
     ("entry: edge, no ASKED", ENTRY, None, A, "!BLOCKED"),
     ("entry: edge, dry run", ENTRY + " --dry-run", None, A, ""),
     ("entry: edge, --channel=edge", "npm run release:local -- --channel=edge", None, A, ""),
@@ -114,28 +114,63 @@ CASES = [
         "npm run release:local -- --channel stable",
         None,
         B,
-        "promoted through CI/CD only",
+        "release:local --channel stable (a promotion",
     ),
     (
         "entry: stable channel, dry run",
         "npm run release:local -- --channel stable --dry-run",
         None,
         B,
-        "promoted through CI/CD only",
+        "carries no RELEASE_ASKED",
     ),
     (
         "entry: stable channel with a proven ASKED",
         "%s npm run release:local -- --channel stable" % ASK,
         TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel, dry run with a proven ASKED",
+        "%s npm run release:local -- --channel stable --dry-run" % ASK,
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel, ASKED matching no answer",
+        "%s npm run release:local -- --channel stable" % ASK_ELSEWHERE,
+        TR,
         B,
-        "RELEASE_ASKED does not admit it",
+        "matches no AskUserQuestion answer",
+    ),
+    (
+        "entry: stable channel, ASKED with no transcript",
+        "%s npm run release:local -- --channel stable --dry-run" % ASK,
+        None,
+        B,
+        "matches no AskUserQuestion answer",
     ),
     (
         "entry: stable by module with a proven ASKED",
         "%s %s rediacc_ci.release.local --channel stable" % (ASK, PY),
         TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable by module, no ASKED",
+        "%s rediacc_ci.release.local --channel stable --dry-run" % PY,
+        None,
         B,
-        "promoted through CI/CD only",
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel before the separator",
+        "%s npm run release:local --channel stable" % ASK,
+        TR,
+        B,
+        "names no --channel edge",
     ),
     # ------------------------------------------------------------- the entry: a branch release asks, its dry run stays free
     ("entry: branch release, no ASKED", BRANCH, None, B, "carries no RELEASE_ASKED=ASKED:"),
@@ -1507,6 +1542,7 @@ MUST_FLIP = {
     "asked-always-true": "stable: ASKED matching no answer",
     "channel-before-separator": "entry: channel before the separator",
     "any-channel-admitted": "entry: stable channel",
+    "stable-entry-free": "entry: stable channel, dry run",
     "branch-release-free": "entry: branch release, no ASKED",
     "branch-release-dry-run-ignored": "entry: branch release, dry run",
     "unshared-config-unasked": "wrangler deploy on a config outside the region set, no ASKED",

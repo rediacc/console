@@ -2848,14 +2848,17 @@ def test_local_order_refuses_a_stable_row_and_a_vacuous_table() -> None:
     )
 
 
-def test_local_stable_admitted_needs_a_named_refusal() -> None:
-    class Refuses:
-        CHANNEL = "edge"
+def test_local_stable_unasked_needs_a_named_refusal(monkeypatch: pytest.MonkeyPatch) -> None:
+    ask_name = ci_workflow_invariants.LOCAL_ASK_ENV
 
+    class Refuses:
         @staticmethod
         def main(argv, root=None):
             del argv, root
-            sys.stderr.write("refused: cd-release-stable.yml\n")
+            # The probe removes the ask first, so a caller's own value cannot admit it.
+            if ask_name in dict(os.environ):
+                return 0
+            sys.stderr.write("refused: needs RELEASE_ASKED=ASKED:<minute>Z\n")
             return 2
 
     class Admits(Refuses):
@@ -2864,8 +2867,84 @@ def test_local_stable_admitted_needs_a_named_refusal() -> None:
             del argv, root
             return 0
 
-    assert ci_workflow_invariants.local_stable_admitted(Refuses) == ""
-    assert "returned 0" in ci_workflow_invariants.local_stable_admitted(Admits)
+    class Silent(Refuses):
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            return 2
+
+    class Crashes(Refuses):
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            raise SystemExit(2)
+
+    monkeypatch.setenv(ask_name, "ASKED:2026-01-01T00:00Z")
+    assert ci_workflow_invariants.local_stable_unasked(Refuses) == ""
+    # The probe restores the caller's environment.
+    assert dict(os.environ).get(ask_name) == "ASKED:2026-01-01T00:00Z"
+    assert "returned 0" in ci_workflow_invariants.local_stable_unasked(Admits)
+    assert "without naming it" in ci_workflow_invariants.local_stable_unasked(Silent)
+    assert "SystemExit" in ci_workflow_invariants.local_stable_unasked(Crashes)
+    assert "no callable main" in ci_workflow_invariants.local_stable_unasked(object())
+
+
+def _stable_table() -> list[_Row]:
+    py = ("python3", "-m")
+    retag = ("python3", ".ci/scripts/docker/retag_image.py", "--image", "renet")
+    return [
+        _Row("edge-version", (), kind="channel-version"),
+        _Row(
+            "gates",
+            (*py, "rediacc_ci.release.local_gates", "--channel", "stable", "--version", "{v}"),
+            kind="gates",
+        ),
+        _Row("rollback-labels", (), kind="rollback-labels"),
+        _Row("promote-r2", (*py, "rediacc_ci.deploy.promote_r2_to_stable")),
+        _Row("promote-renet", (*retag, "--from", "{v}", "--to", "stable")),
+        _Row("verify-stable", (*py, "rediacc_ci.deploy.verify_stable_endpoints")),
+        _Row("mark-production", (*py, "rediacc_ci.release.mark_production", "{v}")),
+    ]
+
+
+def _stable_kinds(rows: list[_Row]) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_stable_steps(rows)[0]]
+
+
+def test_local_stable_order_holds_on_a_well_formed_table() -> None:
+    findings, shape = ci_workflow_invariants.analyse_stable_steps(_stable_table())
+    assert findings == []
+    assert shape["gate"] == "gates"
+    assert shape["writes"] == ["promote-r2", "promote-renet", "mark-production"]
+
+
+def test_local_stable_order_catches_each_break() -> None:
+    rows = _stable_table()
+    # The promotion moved ahead of the gate.
+    assert _stable_kinds([rows[0], rows[3], rows[1], *rows[4:]]) == ["local-stable-before-gate"]
+    # A gate on the edge channel is no stable gate, and also names edge.
+    edge_gate = rows[1]._replace(
+        argv=("python3", "-m", "rediacc_ci.release.local_gates", "--channel", "edge")
+    )
+    assert _stable_kinds([rows[0], edge_gate, *rows[2:]]) == [
+        "local-stable-no-gate",
+        "local-stable-edge-step",
+    ]
+    # No R2 promotion at all.
+    assert _stable_kinds([r for r in rows if r.id != "promote-r2"]) == ["local-stable-no-promote"]
+    # Production marked before, or without, the verification.
+    assert _stable_kinds([*rows[:5], rows[6], rows[5]]) == ["local-stable-mark-unverified"]
+    assert _stable_kinds([r for r in rows if r.id != "verify-stable"]) == [
+        "local-stable-mark-unverified"
+    ]
+    # An edge publisher inside the promotion.
+    seal = _Row("seal", ("python3", "-m", "rediacc_ci.deploy.write_release_sentinel"))
+    deploy = _Row("www", ("python3", "-m", "rediacc_ci.deploy.deploy_www"))
+    assert _stable_kinds([*rows, seal, deploy]) == ["local-stable-edge-step"] * 2
+    # tag_submodules is not the version tag.
+    subs = _Row("subs", ("python3", "-m", "rediacc_ci.release.tag_submodules"))
+    assert _stable_kinds([*rows, subs]) == []
+    assert set(_stable_kinds([])) == {"local-stable-no-gate", "local-stable-no-promote"}
 
 
 def test_local_order_holds_on_the_real_entry() -> None:
@@ -2873,6 +2952,8 @@ def test_local_order_holds_on_the_real_entry() -> None:
     assert errors == []
     (line,) = info
     assert "tag unit tag-create, tag-record, tag-push" in line
+    assert "rows in rediacc_ci.release.local.STABLE_STEPS: gate 'gates'" in line
+    assert "an unasked --channel stable is refused" in line
 
 
 # --- the `node` step of .github/actions/setup-workspace (review findings 6359c982.2, 6359c982.3, 4c11fd21.2) ---

@@ -5,6 +5,7 @@ Nothing here publishes. The table tests read `STEPS` and `plan()` only. The dry-
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import hashlib
 import json
@@ -875,23 +876,258 @@ def test_the_dry_gates_hand_branch_release_to_the_gates(
     assert seen == [False, True]
 
 
+# --------------------------------------------------------------------------- the stable promotion (PLAN-retire-nightlies-and-mentions S7)
+
+STABLE_ASKED = "ASKED:2026-11-16T09:19Z"
+
+
+@pytest.mark.parametrize("asked", [None, "", "ASKED:2026-11-16T09:19", "yes", "ASKED:now"])
+@pytest.mark.parametrize("argv", [["--channel", "stable"], ["--channel", "stable", "--dry-run"]])
+def test_stable_without_a_release_asked_is_refused_before_anything_is_read(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    argv: list[str],
+    asked: str | None,
+) -> None:
+    if asked is None:
+        monkeypatch.delenv("RELEASE_ASKED", raising=False)
+    else:
+        monkeypatch.setenv("RELEASE_ASKED", asked)
+
+    def no_read(*_a, **_k):
+        raise AssertionError("an unasked stable run read the world")
+
+    monkeypatch.setattr(local, "base_context", no_read)
+    runner = FakeRunner(VERSION_ANSWERS)
+    rc = local.main(argv, runner=runner, gates=no_read, root=pathlib.Path("/nonexistent/x"))
+    err = capsys.readouterr().err
+    assert rc == 2
+    assert "RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z" in err
+    assert runner.calls == []
+
+
 @pytest.mark.parametrize(
     "argv",
     [
-        ["--channel", "stable"],
-        ["--channel", "stable", "--dry-run"],
-        ["--channel", "stable", "--workers-only", "--regions", "eu"],
-        ["--channel", "stable", "--workers-only", "--dry-run"],
+        ["--channel", "stable", "--workers-only"],
+        ["--channel", "stable", "--workers-only", "--regions", "eu", "--dry-run"],
+        ["--channel", "stable", "--commit", "abc123"],
     ],
 )
-def test_stable_is_refused_locally(argv: list[str], capsys: pytest.CaptureFixture[str]) -> None:
-    runner = FakeRunner(VERSION_ANSWERS)
-    rc = local.main(argv, runner=runner, gates=_gates([]))
-    err = capsys.readouterr().err
-    assert rc == 2
-    assert "cd-release-stable.yml" in err
-    assert "ASKED:2026-10-27T09:45Z" in err
+def test_stable_takes_no_edge_flag(argv: list[str], capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        local.parse(argv)
+    assert exc.value.code == 2
+    assert local.STABLE_USAGE in capsys.readouterr().err
+
+
+def _stable_version(step: local.Step, run: local.Run) -> int:
+    run.ctx[step.capture] = "9.9.9"
+    return 0
+
+
+def _stable_dry_run(
+    monkeypatch: pytest.MonkeyPatch, refusals: list[str], rollback: str = "0"
+) -> tuple[int, str, FakeRunner, list[str | None]]:
+    monkeypatch.setenv("RELEASE_ASKED", STABLE_ASKED)
+    monkeypatch.setattr(local, "prereq_refusals", lambda *_a: [])
+    monkeypatch.setattr(local, "internal_channel_version", _stable_version)
+    monkeypatch.setattr(local, "_tag_date", lambda _r, _v: "2026-11-01")
+    seen: list[str | None] = []
+
+    def gates(root, version, ctx):
+        del root
+        assert ctx["channel"] == "stable"
+        seen.append(version)
+        return local.GateResult(list(refusals), [])
+
+    runner = FakeRunner({"gh_retry": rollback})
+    rc = local.main(["--channel", "stable", "--dry-run"], runner=runner, gates=gates)
+    return rc, "", runner, seen
+
+
+def test_stable_with_a_release_asked_is_admitted_to_the_gates(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc, _out, runner, seen = _stable_dry_run(monkeypatch, [])
+    out = capsys.readouterr().out
+    assert rc == 0, out
+    # The gates judged the live edge version, the one the promotion would move.
+    assert seen == ["9.9.9"]
+    lines = out.splitlines()
+    assert lines[0].startswith("release:local --channel stable (dry run)")
+    assert "version: 9.9.9" in lines
+    assert "steps (%d):" % len(local.STABLE_STEPS) in lines
+    for step in local.STABLE_STEPS:
+        assert re.search(
+            r"^  \[%s\] %s  profile=" % (step.section, re.escape(step.id)), out, re.MULTILINE
+        ), step.id
+    assert "rediacc_ci.release.local_gates --channel stable --version 9.9.9" in out
+    assert "promote_r2_to_stable" in out
+    assert "--from 9.9.9 --to stable" in out
+    assert lines[-1].startswith(
+        "admitted: every gate passes; the run above is what "
+        "`RELEASE_ASKED=%s npm run release:local -- --channel stable` executes" % STABLE_ASKED
+    )
+    # A dry run starts only the read-only rollback-label search: nothing is promoted.
+    assert [c[2] for c in runner.calls] == ["rediacc_ci.core.gh_retry"]
+    assert "merged:>=2026-11-01 label:rollback" in runner.calls[0]
+
+
+def test_stable_dry_run_names_the_gate_refusals(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    rc, _out, _runner, _seen = _stable_dry_run(
+        monkeypatch, ["local-gates: stable: v9.9.9 has not soaked: 3 of 7 days"]
+    )
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "  local-gates: stable: v9.9.9 has not soaked: 3 of 7 days" in out
+    assert out.splitlines()[-1] == "refused: 1 refusal(s): stable"
+
+
+@pytest.mark.parametrize("answer", ["2", "not json"])
+def test_stable_dry_run_refuses_on_a_rollback_label(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], answer: str
+) -> None:
+    rc, _out, _runner, _seen = _stable_dry_run(monkeypatch, [], rollback=answer)
+    captured = capsys.readouterr()
+    assert rc == 1
+    assert "rollback-labels" in captured.out.splitlines()[-1]
+    assert "the promotion stops" in captured.err
+
+
+def test_rollback_refusal_reads_only_a_zero_count_as_clear() -> None:
+    assert local.rollback_refusal("0", "2026-11-01") == ""
+    assert "2 merged PR(s) labelled rollback" in local.rollback_refusal("2\n", "2026-11-01")
+    assert "not a count" in local.rollback_refusal("", "2026-11-01")
+    assert "not a count" in local.rollback_refusal("-1", "2026-11-01")
+
+
+def test_the_stable_table_promotes_after_the_gate_and_marks_production_last() -> None:
+    order = [s.id for s in local.STABLE_STEPS]
+    assert order == [
+        "edge-version",
+        "gates",
+        "rollback-labels",
+        "promote-r2",
+        "promote-renet",
+        "promote-rdc",
+        "verify-stable",
+        "mark-production",
+    ]
+    assert {s.section for s in local.STABLE_STEPS} <= set(local.STABLE_SECTIONS)
+    gate = local.STABLE_STEPS[order.index("gates")]
+    assert gate.argv[-4:] == ("--channel", "stable", "--version", "{version}")
+    # Every promotion row runs in this checkout: a promotion builds nothing, so no release clone is read.
+    assert all(s.cwd == "root" for s in local.STABLE_STEPS)
+    promote = local.STABLE_STEPS[order.index("promote-r2")]
+    assert ("EDGE_VERSION", "{version}") in promote.env
+    assert "GH_TOKEN" in local.STABLE_STEPS[order.index("mark-production")].gh_env
+    # The edge table still carries no stable promotion.
+    assert not any("promote_r2_to_stable" in " ".join(s.argv) for s in local.STEPS)
+
+
+def test_a_real_stable_run_executes_the_table_in_order(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setenv("RELEASE_ASKED", STABLE_ASKED)
+    monkeypatch.setattr(local, "prereq_refusals", lambda *_a: [])
+    monkeypatch.setattr(local, "_tag_date", lambda _r, _v: "2026-11-01")
+
+    class Entry:
+        @staticmethod
+        def entry_refusal(_root, _pid):
+            return ""
+
+    monkeypatch.setattr(local, "_release_run_module", lambda _r: Entry)
+    monkeypatch.setattr(local.cache_prune, "run_lock", lambda _s: contextlib.nullcontext())
+    ran: list[str] = []
+
+    def gates(step: local.Step, _run: local.Run) -> int:
+        ran.append(step.id)
+        return 0
+
+    runner = FakeRunner({"gh_retry": "0"})
+    rc = local.main(
+        ["--channel", "stable"],
+        root=_tmp_root(tmp_path),
+        runner=runner,
+        internal={"channel-version": _stable_version, "gates": gates},
+    )
+    assert rc == 0
+    assert ran == ["gates"]
+    joined = [" ".join(c) for c in runner.calls]
+    assert [
+        next(
+            m
+            for m in (
+                "gh_retry",
+                "promote_r2_to_stable",
+                "renet",
+                "rdc",
+                "verify_stable_endpoints",
+                "mark_production",
+            )
+            if m in j
+        )
+        for j in joined
+    ] == [
+        "gh_retry",
+        "promote_r2_to_stable",
+        "renet",
+        "rdc",
+        "verify_stable_endpoints",
+        "mark_production",
+    ]
+    assert joined[-1].endswith("rediacc_ci.release.mark_production 9.9.9")
+
+
+def test_a_refused_stable_gate_promotes_nothing(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    monkeypatch.setenv("RELEASE_ASKED", STABLE_ASKED)
+    monkeypatch.setattr(local, "prereq_refusals", lambda *_a: [])
+
+    class Entry:
+        @staticmethod
+        def entry_refusal(_root, _pid):
+            return ""
+
+    monkeypatch.setattr(local, "_release_run_module", lambda _r: Entry)
+    monkeypatch.setattr(local.cache_prune, "run_lock", lambda _s: contextlib.nullcontext())
+    runner = FakeRunner()
+    rc = local.main(
+        ["--channel", "stable"],
+        root=_tmp_root(tmp_path),
+        runner=runner,
+        internal={"channel-version": _stable_version, "gates": lambda _s, _r: 1},
+    )
+    assert rc == 1
     assert runner.calls == []
+
+
+def test_the_dry_stable_gates_judge_the_stable_channel_read_only(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root
+        seen["channel"] = channel
+        seen.update(kw)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    result = local.dry_stable_gates(tmp_path, "9.9.9", ctx)
+    assert seen["channel"] == "stable"
+    assert seen["version"] == "9.9.9"
+    # No credentialed reader: the record and the sentinel come through the public origin, the clone is not made, origin/main is ls-remote.
+    assert seen["record"] is not local.local_gates.live_record
+    assert seen["fetch"] is local._ls_remote_main
+    assert seen["clone"](tmp_path, "t", "h") is None
+    assert result.unjudged == 1
 
 
 @pytest.mark.parametrize("taken_at", ["lock-check-stage", "lock-check-seal"])
