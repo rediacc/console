@@ -261,7 +261,7 @@ describe('legacy blobs (per-blob PBKDF2, 100k)', () => {
         mode: 'master-password',
         encryptedFields: { '/credentials/ssh/privateKey': { data } },
       },
-    } as RdcConfig;
+    } as unknown as RdcConfig;
   }
 
   it('the legacy count stays 100k, and the password-derived count is 600k', () => {

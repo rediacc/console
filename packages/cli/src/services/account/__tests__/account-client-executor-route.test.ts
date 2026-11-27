@@ -240,9 +240,9 @@ describe('inside a container dispatch: each served backup caller', () => {
   });
 
   it('backup check posts its verdict (postVerification)', async () => {
-    await inDispatch(() => postVerification(SNAPSHOT, 'file', 'proven'));
+    await inDispatch(() => postVerification(SNAPSHOT, 'test-open', 'proven'));
     expectExecutorRequest(sent(), 'POST', `backups/snapshots/${SNAPSHOT}/verification`);
-    expect(sent().body).toEqual({ level: 'file', status: 'proven' });
+    expect(sent().body).toEqual({ level: 'test-open', status: 'proven' });
   });
 
   it('backup verify --store (runStoreVerify)', async () => {
