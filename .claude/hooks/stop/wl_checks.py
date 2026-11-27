@@ -8539,7 +8539,7 @@ def _stop_judge(ns):
                 # SPEND THE BUDGET, and only here. `proven` is the one settle that cost a real artifact and a real CI round; the cheap settles (covered/one-off/not-applicable/deferred) cost neither, and charging them would let a session farm the budget with five honest one-offs to buy a pass on the sixth, real gate. Suppressed on failure: the ledger must never raise into gating.
                 if payload == "proven":
                     with contextlib.suppress(Exception):
-                        wl_reggate.charge(C.git_branch(own), reg_sig, "proven")
+                        wl_reggate.charge(C.git_branch(own), reg_sig, "proven", root=root)
                 # STICKY: the fixset is persisted, so every later stop absorbs this verdict silently and the text never returns.
                 outq_add(
                     worklist,
@@ -8562,8 +8562,9 @@ def _stop_judge(ns):
                 capped = False
                 with contextlib.suppress(Exception):
                     br = C.git_branch(own)
-                    charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root)
-                    if not forgot and remaining <= 0:
+                    charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root, live=br)
+                    # The cap on the cap (REGGATE_MAX_DEBTS): past that many outstanding debts on this branch the demand blocks normally.
+                    if wl_reggate.cap_defers(remaining, forgot, len(_debts)):
                         rg = verdict.get("regression_gate") or {}
                         wl_reggate.append_ledger(
                             br,
@@ -8577,7 +8578,7 @@ def _stop_judge(ns):
                             },
                             root=root,
                         )
-                        wl_reggate.charge(br, reg_sig, "capped")
+                        wl_reggate.charge(br, reg_sig, "capped", root=root)
                         reg_state["fixsets"][reg_sig] = {
                             "verdict": "capped",
                             "existing_gate": "",

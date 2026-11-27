@@ -9,6 +9,7 @@ FAIL SAFE: a missing marker initialises to current HEAD and asks nothing that st
 """
 
 import contextlib
+import datetime
 import fnmatch
 import glob
 import hashlib
@@ -53,10 +54,12 @@ REGGATE_VERDICTS = (
 # SCOPE IS THE BRANCH, not the session. `reggate_path` is keyed on session id, so a per-session budget would evaporate at exactly the moment a long night makes compaction likely. A branch maps one-to-one onto one PR and one CI queue, which is where the cost actually lands; two sessions sharing a branch share the budget, correctly, because they share the queue.
 # ---------------------------------------------------------------------------
 REGGATE_CAP = max(1, int(os.environ.get("WORKLIST_REGGATE_CAP", "7")))
-# A branch may never merge, so the merge probe alone could hold a debt open
-# forever. due = min(merge_detected, at + grace): the grace clock can only make a
-# debt due SOONER, never never.
+# A debt is due when its ledger's branch is not the live one (it landed or was abandoned: the one-branch rule leaves no third case) or when the grace clock runs out, whichever comes first (debt_due). The clock is what makes a debt on the live branch, or on `main`, come back at all.
 REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_MIN", "720")))
+# THE CAP ON THE CAP (design Q4.2, agent/plans/PLAN-reggate-debt-collection.md D2). Past this many outstanding debts on the live branch the cap stops deferring and the demand blocks normally: without it the cap was a permanent hatch, and 0914-1 (29) and 1104-1 (28) both walked through it.
+REGGATE_MAX_DEBTS = max(1, int(os.environ.get("WORKLIST_REGGATE_MAX_DEBTS", "5")))
+# A retire pays a debt only with the operator minute it was ruled at (D5).
+RETIRE_ASKED_RE = re.compile(r"^ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 
 
 def debt_dir(root=None):
@@ -164,7 +167,12 @@ def read_ledger(branch, root=None):
 
     `forgot` means the ledger could not be read as written. It is reported rather than swallowed, because a budget computed from an unreadable ledger reads as a FRESH budget -- the most permissive answer possible, and exactly the shape that would let the cap silently stop capping.
     """
-    path = debt_path(branch, root)
+    return read_ledger_path(debt_path(branch, root))
+
+
+def read_ledger_path(path):
+    """(records, forgot) for one ledger file, under read_ledger's FAIL SAFE contract."""
+    path = pathlib.Path(path)
     if not path.exists():
         return [], False
     records, forgot = [], False
@@ -187,27 +195,65 @@ def read_ledger(branch, root=None):
     return records, forgot
 
 
-def branch_merged(branch, root=None):
-    """Has this branch landed on origin/main?
+def ledger_paths(root=None):
+    """Every per-branch debt ledger under debt_dir, sorted.
 
-    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone governs the debt -- making it due sooner, never never. A probe that answered True on failure would discharge every debt on any git hiccup.
+    SKIPS `*.*.jsonl`. The shape-duplication advisory writes `<branch>.shapedup-wide.jsonl` beside the ledgers, holding only `ask` records; a reader that folded those as ledgers would count a second "branch" per real one. A branch slug never carries a dot in this repo's `MMDD-N` naming, so a dotted stem is never a ledger.
     """
-    if not branch:
-        return False
-    # NOT `merge-base --is-ancestor`: it answers through its EXIT CODE and prints nothing, while C._git returns stdout and collapses every failure to "". Through that helper a merged branch and a broken git are the same empty string. `rev-list --count origin/main..HEAD` puts the answer on stdout: "0" means HEAD carries nothing origin/main lacks, i.e. it landed.
-    return C._git(root or ".", "rev-list", "--count", "origin/main..HEAD") == "0"
+    d = debt_dir(root)
+    if not d.is_dir():
+        return []
+    return sorted(p for p in d.glob("*.jsonl") if p.is_file() and "." not in p.stem)
 
 
-def budget_state(branch, root=None):
-    """(charged, remaining, debts, forgot) folded from the ledger.
+def debt_due(record, live_branch, now=None):
+    """Is this debt due? (agent/plans/PLAN-reggate-debt-collection.md D1.)
 
-    THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the counter and simultaneously makes every outstanding debt DUE. That inversion is the point: merging is what makes you pay, and there is no ordering in which a merge discharges a debt.
+    True when the debt's branch is not the live one, or when `at + REGGATE_DEBT_GRACE_MIN` has passed. `main` is never "the other branch": a `main.jsonl` debt is due by the clock alone, because main is where every branch lands rather than a branch that landed.
+
+    IT REPLACED `branch_merged`, which ignored its argument and answered `rev-list --count origin/main..HEAD == "0"` for the CURRENT HEAD. Under `gh pr merge --rebase` a landed branch's shas are rewritten, so that probe never saw a merge from the branch itself, and a fresh branch with no commits read as merged. The one-branch rule makes the question unnecessary: a ledger whose branch is not the live one has landed or been abandoned, and either way it is due.
+
+    An unparseable `at` is DUE: a debt whose clock cannot be read must not be held open forever by its own corruption.
+    """
+    br = str((record or {}).get("br") or "")
+    if br != "main" and br != str(live_branch or ""):
+        return True
+    at = C.parse_stamp(str((record or {}).get("at") or ""))
+    if at is None:
+        return True
+    now = now or C.utcnow()
+    return at + datetime.timedelta(minutes=REGGATE_DEBT_GRACE_MIN) <= now
+
+
+def cap_defers(remaining, forgot, outstanding):
+    """The cap's guard, as the wl_checks block site spells it: defer only when the ledger read cleanly, the budget is spent, and fewer than REGGATE_MAX_DEBTS debts are outstanding on the live branch. Any other answer leaves the demand to block normally."""
+    return not forgot and remaining <= 0 and outstanding < REGGATE_MAX_DEBTS
+
+
+def paid_sigs(records):
+    """Sigs one ledger has paid: a `discharge`, or a `retire` carrying its operator `ASKED:` stamp. A retire without the stamp pays nothing (D5)."""
+    out = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+    out |= {
+        r.get("sig")
+        for r in records
+        if r.get("kind") == "retire" and RETIRE_ASKED_RE.match(str(r.get("asked") or ""))
+    }
+    out.discard(None)
+    return out
+
+
+def budget_state(branch, root=None, live=None):
+    """(charged, remaining, debts, forgot) folded from the ledger; `debts` are the outstanding (unpaid) ones.
+
+    THE COUNTER RESETS WHEN THE LEDGER'S BRANCH IS NOT THE LIVE ONE; DEBTS DO NOT. A branch that landed has a counter nobody can charge again, while its outstanding debts become due (debt_due). That inversion is the point: landing is what makes a debt payable, and there is no ordering in which landing discharges one. `live` defaults to the checkout's current branch.
     """
     records, forgot = read_ledger(branch, root)
-    discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+    paid = paid_sigs(records)
     charged = sum(1 for r in records if r.get("kind") == "charge")
-    debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in discharged]
-    if branch_merged(branch, root):
+    debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in paid]
+    if live is None:
+        live = C.git_branch(root or C.project_root(C.project_start()))
+    if (branch or "") != (live or ""):
         charged = 0
     return charged, max(0, REGGATE_CAP - charged), debts, forgot
 
