@@ -5796,13 +5796,6 @@
     {
       "scanner": "literal",
       "repo": "private/renet",
-      "file": "Dockerfile",
-      "match": "both declare `go 1\\.26\\.0`",
-      "reason": "BLOCKER: the comment records the go directive measured in that release when the csi-builder base was chosen; a bump re-measures it rather than renaming the version"
-    },
-    {
-      "scanner": "literal",
-      "repo": "private/renet",
       "file": "pkg/kube/csidriver/crds.go",
       "match": "client/config/crd",
       "reason": "BLOCKER: names the external-snapshotter release the embedded VolumeSnapshot CRDs were vendored from; it moves only when the CRDs are re-vendored from the new tag, which a version bump alone does not do (PLAN-pins-command survey item 4)"

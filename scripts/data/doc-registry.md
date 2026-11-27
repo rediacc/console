@@ -1108,7 +1108,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 | .ci/config/bws-step-scoped.json | 5 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
-| .ci/config/pins.json | 21 | JSON value |
+| .ci/config/pins.json | 20 | JSON value |
 | .ci/config/prose-style-rules.json | 10 | JSON value |
 | .ci/config/retired-terms.json | 11 | JSON value |
 | .ci/config/secret-supply.json | 5 | JSON value |
