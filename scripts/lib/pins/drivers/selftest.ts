@@ -1263,7 +1263,7 @@ function fileDependentCases(): Array<{ name: string; ok: boolean; detail?: strin
       },
       {
         abs: path.join(root, 'private/account/web'),
-        manifest: pkg({ s: 'file:../../packages/other' }),
+        manifest: pkg({ s: 'file:../../packages/www' }),
       },
       { abs: path.join(root, 'private/account/e2e'), manifest: pkg({ s: '^1.0.0' }) },
       { abs: path.join(root, 'workers/proxy'), manifest: null },
