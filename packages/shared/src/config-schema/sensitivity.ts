@@ -37,7 +37,7 @@ export interface SensitivityMeta {
   redactAs?: string;
   /** Include in server-side field-commitment envelope. Default: true for non-public. */
   commit?: boolean;
-  /** Encrypt this value in the local file when encryption.mode === 'master-password'. Default: true for secret/credential. */
+  /** Seal this value in the local file whenever the config is sealed (any encryption.mode but 'plaintext'). Default: true for secret/credential. */
   encryptAtRest?: boolean;
 }
 
@@ -462,4 +462,29 @@ export const DEVICE_LOCAL_POINTERS = [
  */
 export function listSensitivityTemplates(): readonly PointerTemplate[] {
   return [...SENSITIVITY_REGISTRY.keys()];
+}
+
+/** True when `template` is `pointer` or lies under it (`/encryption` covers `/encryption/kdf/salt`). */
+function coveredBy(template: PointerTemplate, pointer: PointerTemplate): boolean {
+  return template === pointer || template.startsWith(`${pointer}/`);
+}
+
+/**
+ * Templates that are both device-local and sealed at rest (PLAN-config-sealed-local.md D7).
+ *
+ * A sealed leaf must be restorable from the store: when a device loses its seal key, the recovery
+ * re-pulls the config and drops every sealed leaf of the old file. A device-local leaf is never
+ * pulled, so sealing one would turn a lost key into lost data. The answer must stay empty;
+ * `__tests__/config-field-crypto-seal.test.ts` in the CLI holds it there. Parameters exist so a test
+ * can prove the check catches an offending fixture.
+ */
+export function deviceLocalSealedTemplates(
+  registry: ReadonlyMap<PointerTemplate, Required<SensitivityMeta>> = SENSITIVITY_REGISTRY,
+  deviceLocal: readonly PointerTemplate[] = DEVICE_LOCAL_POINTERS
+): PointerTemplate[] {
+  return [...registry.entries()]
+    .filter(
+      ([template, meta]) => meta.encryptAtRest && deviceLocal.some((p) => coveredBy(template, p))
+    )
+    .map(([template]) => template);
 }

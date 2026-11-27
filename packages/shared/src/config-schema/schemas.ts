@@ -44,12 +44,17 @@ import { StateSchema } from './state-schema.js';
 // =============================================================================
 
 /**
- * A single AES-GCM ciphertext. `data` is the base64 of salt+iv+ciphertext+tag
- * as produced by `nodeCryptoProvider.encrypt` (adapters/crypto.ts). v2 stored a
- * single compound blob under the `/resources` pointer with a broken
- * `nonce:tag:ciphertext` split; v3 stores one entry per concrete leaf pointer.
+ * A single AES-GCM ciphertext, one entry per concrete leaf pointer.
+ *
+ * - `v: 2` (PLAN-config-sealed-local.md D2): `data` is base64(iv + ciphertext + tag) under the
+ *   config's field key, with `pointer|keyringId` as additional authenticated data, so a blob moved
+ *   to another field or sealed under another key fails to open.
+ * - No `v` (legacy): `data` is base64(salt + iv + ciphertext + tag) from
+ *   `nodeCryptoProvider.encrypt`, a per-blob PBKDF2 at the legacy iteration count. Read-only: the
+ *   next write re-seals it as v2.
  */
 const EncryptedBlobSchema = z.object({
+  v: z.literal(2).optional(),
   data: z.string().min(1),
 });
 
@@ -461,9 +466,41 @@ const InfraTopSchema = z.object({
   cfDnsZoneId: z.string().optional(),
 });
 
+/**
+ * At-rest modes (PLAN-config-sealed-local.md D1). Every mode but `plaintext` seals the
+ * encrypt-at-rest leaves into `encryptedFields`:
+ * - `master-password`: field key from the master password alone;
+ * - `keyring`: field key from a random key held in the OS secure storage under `keyringId`;
+ * - `keyring+master-password`: field key from both.
+ */
+export const ENCRYPTION_MODES = [
+  'plaintext',
+  'master-password',
+  'keyring',
+  'keyring+master-password',
+] as const;
+export type EncryptionMode = (typeof ENCRYPTION_MODES)[number];
+
+/** The password KDF of a sealed config: one PBKDF2 per process, never one per blob. */
+const SealKdfSchema = z.object({
+  alg: z.literal('pbkdf2-sha256'),
+  iterations: z.number().int().positive(),
+  /** base64 of the random salt. */
+  salt: z.string().min(1),
+});
+
+/** Secure-storage key of a config's seal key: `rdc:seal:<uuid>`, inside the secure-storage key allowlist. */
+export const SEAL_KEYRING_ID = /^rdc:seal:[0-9a-f-]{36}$/;
+
 const EncryptionSchema = z.object({
-  mode: z.enum(['plaintext', 'master-password']),
+  mode: z.enum(ENCRYPTION_MODES),
   encryptedFields: z.record(z.string(), EncryptedBlobSchema).optional(),
+  /** Where the random seal key lives in secure storage; fresh per seal and per re-seal. */
+  keyringId: z.string().regex(SEAL_KEYRING_ID).optional(),
+  /** Present whenever a master password is part of the field key. */
+  kdf: SealKdfSchema.optional(),
+  /** The operator opted this config out of sealing (`rdc config seal off`). */
+  sealOptOut: z.boolean().optional(),
 });
 
 const RemoteConfigSchema = z.object({
@@ -699,6 +736,22 @@ export function hasRemoteConfig(
   config: RdcConfig | null | undefined
 ): config is RdcConfig & { remote: RemoteConfig } {
   return Boolean(config?.remote?.apiUrl && config.remote.storeId && config.remote.configId);
+}
+
+/** True when the config's encrypt-at-rest leaves are sealed on disk (any mode but `plaintext`). */
+export function isSealed(config: RdcConfig | null | undefined): boolean {
+  const mode = config?.encryption?.mode;
+  return mode !== undefined && mode !== 'plaintext';
+}
+
+/** True when the seal key includes a random key held in the OS secure storage. */
+export function usesKeyring(mode: EncryptionMode | undefined): boolean {
+  return mode === 'keyring' || mode === 'keyring+master-password';
+}
+
+/** True when the seal key includes the master password. */
+export function usesMasterPassword(mode: EncryptionMode | undefined): boolean {
+  return mode === 'master-password' || mode === 'keyring+master-password';
 }
 
 // =============================================================================
