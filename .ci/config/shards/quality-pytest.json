@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:13:27.389Z",
+  "generatedAt": "2026-11-27T10:13:49.072Z",
   "legs": [
     {
       "index": 1,
@@ -148,6 +148,7 @@
         "pytest:.ci/rediacc_ci/tests/test_scratch_tmp.py",
         "pytest:.ci/rediacc_ci/tests/test_security_shellcheck.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_account_bws.py",
+        "pytest:.ci/rediacc_ci/tests/test_setup_inotify.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_install_deps.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_tools.py",
         "pytest:.ci/rediacc_ci/tests/test_testrun_linux_packages.py",

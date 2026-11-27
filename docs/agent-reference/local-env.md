@@ -19,6 +19,8 @@ Read this before fighting the devbox, the docker group, `account db`, the SEA lo
                     private; pulling it needs a token with `read:packages`)
     4. devbox       ONE container per worktree
 
+Setup also ensures the host inotify floors (`fs.inotify.max_user_instances=1024`, `max_user_watches=524288`, persisted in `/etc/sysctl.d/60-rediacc-inotify.conf`; `rediacc_ci.setup.inotify`), and `--check` names a host below them with the `sudo sysctl -w` fix: at the kernel default of 128 instances `tail -f` fails and every `npm run ci` dies in the selftest.
+
 `./run.sh devbox up|status|stop|remove|shell|logs` drives the container directly, and `./run.sh setup --check` reports what is missing without changing anything.
 
 **The devbox exists for AI agents first; for developers it is a convenience.** Restarting or recreating it to pick up an update (a new image, a new bind, a changed entrypoint) is almost always fine and needs no operator sign-off (operator ruling, 2026-09-24). `./run.sh devbox remove && ./run.sh devbox up` recreates it; a session whose own work is running inside the container finishes or pauses that work first.

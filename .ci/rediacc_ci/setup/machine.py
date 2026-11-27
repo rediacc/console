@@ -38,7 +38,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths, proc
 from rediacc_ci.core import bws_env, devbox, dockerx
 from rediacc_ci.core import env as envfile
-from rediacc_ci.setup import bridge, githooks, host, phases
+from rediacc_ci.setup import bridge, githooks, host, inotify, phases
 from rediacc_ci.setup.ctx import Ctx
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
@@ -242,6 +242,10 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
     ctx.say(row)
     pending += hooks_pending
 
+    inotify_row, inotify_pending = inotify.check_row()
+    ctx.say(inotify_row)
+    pending += int(inotify_pending)
+
     email = host._git_global(ctx, "user.email")
     if email:
         # NOTE THE COLUMN. The bash writes `' git identity %s\n'`, two spaces narrower than every other row because the label is two characters longer. It looks like a typo and it is the existing output; changing it would be a diff in a gate's input for no reason.
@@ -366,6 +370,9 @@ def run_setup(ctx: Ctx, options: Options, _constants: dict[str, str]) -> int:
     if host.gh_cli(ctx) != 0:
         return 1
     ctx.say()
+
+    # Advisory, never fatal: the sysctl floors `npm run ci` and `wrangler dev` need.
+    inotify.ensure(ctx)
 
     # KEPT, not replaced by `system_tools`. `ensure_host_tools` also checks zstd, curl and git, which none of the installers cover, so deleting it would quietly narrow the preflight while looking like a simplification.
     if bridge.call("ensure_host_tools", ctx.root, ctx.env) != 0:
