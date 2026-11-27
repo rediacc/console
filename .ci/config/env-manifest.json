@@ -535,6 +535,7 @@
       "REGION",
       "RELEASES_BASE_URL",
       "RELEASES_BUCKET",
+      "RELEASES_ORIGIN",
       "RELEASE_BUILD",
       "RELEASE_GPG_PUBLIC_KEY_FILE",
       "RELEASE_MODE",
@@ -1355,6 +1356,7 @@
       "VM_NET_OFFSET",
       "VM_RAM_CEPH",
       "VM_RAM_WORKER",
+      "VM_WINDOWS",
       "VM_WORKERS",
       "W15_PROBE",
       "WHY_ON_EDIT_CAP",
@@ -1950,6 +1952,10 @@
       ".ci/rediacc_ci/deploy/executor_artifacts.py": [
         "ACCOUNT_ED25519_PUBLIC_KEY",
         "CLOUDFLARE_R2_ENDPOINT"
+      ],
+      ".ci/rediacc_ci/deploy/preview_keys.py": [
+        "*name",
+        "GITHUB_OUTPUT"
       ],
       ".ci/rediacc_ci/deploy/preview_signer.py": [
         "GITHUB_EVENT_PATH",
@@ -2997,6 +3003,12 @@
         "CLOUDFLARE_R2_ENDPOINT",
         "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
       ],
+      ".ci/rediacc_ci/release/changelog_data.py": [
+        "APP_VERSION",
+        "GITHUB_REPOSITORY",
+        "GITHUB_TOKEN",
+        "RELEASES_ORIGIN"
+      ],
       ".ci/rediacc_ci/release/check_edge_manifest.py": [
         "*name"
       ],
@@ -3937,6 +3949,12 @@
         "PLAN_RECORD_CENSUS_EVERY_RUN",
         "PLAN_RECORD_MIN_PLANS",
         "PLAN_RECORD_ROOT"
+      ],
+      ".ci/scripts/quality/check_release_note_trailers.py": [
+        "GITHUB_HEAD_REF",
+        "PR_BASE_REF",
+        "PR_HEAD_REF",
+        "PR_HEAD_SHA"
       ],
       ".claude/hooks/context/band-notice.py": [
         "CTX_BAND_DUMP"
