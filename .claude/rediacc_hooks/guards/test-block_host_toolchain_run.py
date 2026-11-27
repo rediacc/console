@@ -266,12 +266,19 @@ cases.append(
         "CONTROL: a gate key that is a root npm script keeps the npm route",
     )
 )
+# A present but unusable package.json keeps the npm form too (review f70b84ef.1): malformed JSON is the ValueError arm, a top-level array the AttributeError arm.
+_BAD_JSON = tempfile.mkdtemp(dir=RUN_TMP)
+pathlib.Path(_BAD_JSON, "package.json").write_text('{"scripts": {', encoding="utf-8")
+_ARRAY_JSON = tempfile.mkdtemp(dir=RUN_TMP)
+pathlib.Path(_ARRAY_JSON, "package.json").write_text("[]", encoding="utf-8")
 cases.extend(
     (want, guards.load("block_host_toolchain_run")._root_script_absent(root, name), label)
     for want, root, name, label in (
         (True, REPO, "check:ci-python-lint", "package.json: the python-lint key is gone (CR2)"),
         (False, REPO, "release:local", "CONTROL: a present root script is not absent"),
         (False, RUN_TMP, "check:ci-python-lint", "CONTROL: no package.json keeps the npm form"),
+        (False, _BAD_JSON, "check:ci-python-lint", "CONTROL: malformed package.json keeps npm"),
+        (False, _ARRAY_JSON, "check:ci-python-lint", "CONTROL: array package.json keeps npm"),
     )
 )
 
