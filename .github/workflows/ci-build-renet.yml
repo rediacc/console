@@ -161,6 +161,13 @@ jobs:
             --version "${{ inputs.next_version }}" \
             --output ./private/bin
 
+      # The Go dependency report of the module just built, at the pinned go-licenses
+      # (rediacc_ci.infra.build_renet GO_LICENSES_VERSION), renet's own packages
+      # ignored. It rides the renet-binaries artifact into private/bin/ so the six
+      # CLI SEA legs, which check out no submodule, still ship a real Go section.
+      - name: Write the Go dependency licence report
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses ./private/bin/renet-go-licenses.csv
+
       # The step above states "OTLP credentials are NOT baked at build time any
       # more". Nothing verified it: check:ci-no-otlp-creds was in `npm run ci`
       # and in no workflow, and it is the ONE gate that needs built binaries, so
@@ -214,6 +221,7 @@ jobs:
             private/bin/csiprovisioner-linux-*
             private/bin/csisnapshotter-linux-*
             private/bin/snapshotcontroller-linux-*
+            private/bin/renet-go-licenses.csv
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error

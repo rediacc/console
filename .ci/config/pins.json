@@ -1071,6 +1071,39 @@
       "literals": []
     },
     {
+      "id": "devcontainer:go-licenses",
+      "kind": "leaf",
+      "name": "go-licenses",
+      "driver": "devcontainer",
+      "source": {
+        "type": "go-list",
+        "module": "github.com/google/go-licenses"
+      },
+      "goModule": "github.com/google/go-licenses",
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/rediacc_ci/infra/build_renet.py",
+          "role": "version",
+          "match": "^GO_LICENSES_VERSION = \"(?<value>v[0-9][^\"]*)\"",
+          "label": ".ci/rediacc_ci/infra/build_renet.py GO_LICENSES_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "devcontainer:codex",
       "kind": "leaf",
       "name": "Codex CLI",

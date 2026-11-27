@@ -122,27 +122,66 @@ function componentBlock(c: Credit): string {
   return lines.join('\n');
 }
 
+/** Where the renet build writes its Go dependency report, beside the binaries (`rediacc_ci.infra.build_renet`). */
+const GO_LICENSES_CSV_REL = 'private/bin/renet-go-licenses.csv';
+
+/** The one place the go-licenses version is pinned (and registered in `.ci/config/pins.json`). */
+function pinnedGoLicensesVersion(repoRoot: string): string | null {
+  try {
+    const src = fs.readFileSync(
+      path.join(repoRoot, '.ci/rediacc_ci/infra/build_renet.py'),
+      'utf-8'
+    );
+    return /^GO_LICENSES_VERSION = "(v[0-9][^"]*)"/m.exec(src)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function goReportSection(csv: string): string {
+  const rows = csv
+    .split('\n')
+    .filter((l) => l.trim().length > 0)
+    .map((l) => {
+      const [mod, url, lic] = l.split(',');
+      noteLicenses(lic ?? 'UNKNOWN');
+      return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
+    });
+  if (rows.length === 0) return placeholderSection('go-licenses produced no rows.');
+  return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
+}
+
+/**
+ * The Go report comes from the build that compiled renet: `renet-go-licenses.csv` in private/bin,
+ * which the renet CI build uploads in its binaries artifact. A checkout that has the renet
+ * submodule and no CSV runs the same pinned go-licenses itself; neither present is a placeholder,
+ * which a release build refuses.
+ */
 function goLicensesSection(repoRoot: string): string {
+  const csvPath = path.join(repoRoot, GO_LICENSES_CSV_REL);
+  if (fs.existsSync(csvPath)) return goReportSection(fs.readFileSync(csvPath, 'utf-8'));
   const renetDir = path.join(repoRoot, 'private/renet');
   if (!fs.existsSync(path.join(renetDir, 'go.mod'))) {
-    return placeholderSection('renet is not present in this checkout (submodule not initialized).');
+    return placeholderSection(
+      `neither ${GO_LICENSES_CSV_REL} nor the renet submodule is present in this checkout.`
+    );
   }
+  const version = pinnedGoLicensesVersion(repoRoot);
+  if (!version) return placeholderSection('the pinned go-licenses version could not be read.');
   try {
     const out = execFileSync(
       'go',
-      ['run', 'github.com/google/go-licenses@latest', 'report', './...'],
+      [
+        'run',
+        `github.com/google/go-licenses@${version}`,
+        'report',
+        './...',
+        '--ignore',
+        'github.com/rediacc/renet',
+      ],
       { cwd: renetDir, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 180_000 }
     );
-    const rows = out
-      .split('\n')
-      .filter((l) => l.trim().length > 0)
-      .map((l) => {
-        const [mod, url, lic] = l.split(',');
-        noteLicenses(lic ?? 'UNKNOWN');
-        return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
-      });
-    if (rows.length === 0) return placeholderSection('go-licenses produced no rows.');
-    return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
+    return goReportSection(out);
   } catch {
     return placeholderSection(
       'go-licenses could not run (offline, or Go/network unavailable at build time).'
@@ -160,7 +199,7 @@ function placeholderSection(reason: string, what = 'Renet Go module dependencies
   if (what === 'Renet Go module dependencies') {
     lines.push(
       'Regenerate on a networked build:',
-      '  (cd private/renet && go run github.com/google/go-licenses@latest report ./...)'
+      '  PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses private/bin/renet-go-licenses.csv'
     );
   }
   return lines.join('\n');
