@@ -48,6 +48,8 @@ function treeFiles(): string[] {
     'private/renet/embed-assets.lock.json',
     'private/renet/pkg/embed/embed.go',
     'private/renet/pkg/embed/credits_data.go',
+    'private/renet/pkg/infra/docker/service.go',
+    'private/renet/pkg/infra/opsconfig/config.go',
     ...liveFiles('private/renet/pkg/kube/csidriver'),
     'docs/design/spec/09-csi-driver.md',
     'packages/cli/src/data/third-party-credits.json',
