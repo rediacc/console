@@ -113,7 +113,7 @@ process.stdout.write(JSON.stringify({
   refusals: {
     branchOver: refusal('quality-branch', laneEntries('quality-branch').length + 1),
     www5: refusal('quality-www-build', 5),
-    submodule2: refusal('quality-submodule-branches', 2),
+    secureStorage2: refusal('quality-secure-storage', 2),
     nowhere2: refusal('quality-nowhere', 2),
     code1: refusal('quality-code', 1),
     go2: refusal('quality-go', 2),
@@ -562,11 +562,11 @@ def test_the_ceiling_is_units_not_entries(gate):
 
 
 def test_a_lane_with_zero_lock_entries_refuses(gate):
-    """ANTI-VACUITY as a refusal in the planner itself. `quality-submodule-branches` is a real job in the workflow that no lock entry names, so this case is driven by the tree rather than by a fixture."""
+    """ANTI-VACUITY as a refusal in the planner itself. `quality-secure-storage` is a real job in the workflow that no lock entry names, so this case is driven by the tree rather than by a fixture."""
     gate.log_test("a lane with ZERO lock entries is a planner that cannot see the tree")
-    message = probe(gate)["refusals"]["submodule2"]
+    message = probe(gate)["refusals"]["secureStorage2"]
     gate.assert_contains(message, "ZERO entries in the lock", "an empty lane must refuse")
-    gate.log_pass("a lane with zero lock entries refuses (quality-submodule-branches is real)")
+    gate.log_pass("a lane with zero lock entries refuses (quality-secure-storage is real)")
 
 
 def test_a_lane_the_workflow_does_not_define_refuses(gate):

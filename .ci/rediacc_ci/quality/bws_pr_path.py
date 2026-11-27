@@ -50,7 +50,7 @@ from dataclasses import dataclass, field
 from rediacc_ci import paths, workflows
 from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.core import allowlist
-from rediacc_ci.quality import bws_step_scope
+from rediacc_ci.quality import bws_step_scope, shrink_only
 
 CONFIG_REL = ".ci/config/bws-pr-path.json"
 MAP_REL = ".ci/config/bws-secret-map.json"
@@ -906,8 +906,11 @@ def write_baseline(
         return CANNOT_RUN
     old = list(res.baseline)
     cur = {f.id for f in res.current}
-    added = sorted(cur - set(old))
-    if added:
+    added = shrink_only.baseline_additions(old, sorted(cur))
+    if (
+        shrink_only.write_verdict(baseline_exists=True, first_seed=False, additions=added)
+        is not None
+    ):
         print(
             "✗ --write-baseline only drains. %d finding(s) are not in the baseline (%s); fix them instead. "
             "Do not add them to the baseline." % (len(added), ", ".join(added)),
