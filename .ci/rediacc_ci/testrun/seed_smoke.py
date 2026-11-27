@@ -38,11 +38,11 @@ def sha256_hex(text: str) -> str:
 def derive(pr: str, jwt_secret: str, now: str, name: str = "") -> dict[str, str]:
     """Every id, hash and the token for one PR. Pure, so the shape is unit-testable.
 
-    With a preview `name` the subscription id is `<name>-<8 hex>` (PLAN-preview-signer D3): the preview signer certifies only a `pv-` subscription of its own name, so the smoke licence needs one. The 8 hex are a hash of the PR and the secret, so a re-seed lands on the same row.
+    With a preview `name` the subscription id is `<name>-<8 hex>` (PLAN-preview-signer D3): the preview signer certifies only a `pv-` subscription of its own name, so the smoke licence needs one. The 8 hex are a hash of the PR and the name only, never the secret: a re-seed lands on the same row even after ACCOUNT_JWT_SECRET rotates, and the seed log (which prints this id) carries nothing an offline guess of the secret could be checked against.
     """
     sub_id = f"smoke-sub-pr-{pr}"
     if name:
-        sub_id = f"{name}-{sha256_hex(f'smoke-sub:{pr}:{jwt_secret}')[:8]}"
+        sub_id = f"{name}-{sha256_hex(f'smoke-sub:{pr}:{name}')[:8]}"
     email = f"smoketest-pr{pr}@rediacc.io"
     token = f"rdt_smoke_{pr}_{sha256_hex(jwt_secret)[:32]}"
     return {

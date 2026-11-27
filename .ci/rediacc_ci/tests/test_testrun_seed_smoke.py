@@ -267,4 +267,6 @@ def test_delta_smoke_subscription_is_a_preview_subscription() -> None:
     assert d == seed_smoke.derive("12", "s3cret", "NOW", PREVIEW)
     assert seed_smoke.derive("13", "s3cret", "NOW", PREVIEW)["sub_id"] != d["sub_id"]
     assert seed_smoke.derive("12", "s3cret", "NOW")["sub_id"] == "smoke-sub-pr-12"
+    # Reviews 94c6aa36.1 and .2: a rotated secret lands on the same row, and the id is no function of the secret.
+    assert seed_smoke.derive("12", "rotated", "NOW", PREVIEW)["sub_id"] == d["sub_id"]
     assert f"'{d['sub_id']}'" in seed_smoke.seed_sql(d)
