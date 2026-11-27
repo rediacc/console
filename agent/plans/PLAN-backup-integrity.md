@@ -431,6 +431,7 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
   (corrected ASKED:2026-11-05T07:06Z) `backup schedule` runs through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
+  (ready 2026-11-27, blocked on the eu-remote rebind code, #08c7fe84) From the console root: `REDIACC_IP_REBIND_CODE=<code> ./rdc.sh --config eu-remote subscription status`; `./rdc.sh --config eu-remote backup schedule -m hostinger --dry-run` and read the units; `./rdc.sh --config eu-remote backup schedule -m hostinger`; `./rdc.sh --config eu-remote backup status -m hostinger`. The schedule output names a verify `.service` or `.timer` unit and an `OnFailure=` line.
 (moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) H4
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
   - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
