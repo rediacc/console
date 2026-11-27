@@ -75,7 +75,7 @@ const BANNED: Banned[] = [
   { token: 'loadServerConfig' },
   { token: 'saveServerConfig' },
   // The bare reserved-file literal is allowed only in the storage exclusion list.
-  { token: "'server.json'", allow: ['adapters/config-file-storage.ts'] },
+  { token: "'server.json'", allow: ['adapters/config-file-ops.ts'] },
 ];
 
 /** A locale message file: a `.json` anywhere under an `i18n/locales/` directory. */
