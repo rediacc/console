@@ -37,7 +37,8 @@ function withMasterPassword(
     };
   }
   delete credentials.masterPasswordVerifier;
-  const { kdf: _dropped, ...encryption } = config.encryption ?? { mode: 'plaintext' };
+  const encryption = { ...config.encryption };
+  delete encryption.kdf;
   return {
     ...config,
     credentials,

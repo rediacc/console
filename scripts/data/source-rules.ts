@@ -198,6 +198,7 @@ const ACCOUNT_WEB_EXTRA_UNTRANSLATED_PATTERNS = [
   '^RC1-X{8}-X{8}-X{8}-X{8}$',
   '^Passkey$',
   '^Tag$',
+  '^VS Code$',
   '^(Business|Community|Enterprise|Professional)$',
   '^Pro$',
   '^Standard$', // the same word in de, et, fr and it (forensicsLevelStandard)

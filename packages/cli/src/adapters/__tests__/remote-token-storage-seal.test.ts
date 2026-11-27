@@ -196,7 +196,8 @@ describe('re-enrollment', () => {
   it('set() keeps the whole sync record (bar cekGeneration) when the sealed file still opens', async () => {
     const { storage, secrets } = await sealedStorage();
     await storage.set('eu', { token: 'reenroll-token', wrappedCek: 'wrapped-cek-2' });
-    const { cekGeneration: _dropped, ...kept } = fullSync();
+    const kept = { ...fullSync() };
+    delete kept.cekGeneration;
     expect(await storage.get('eu')).toEqual({
       token: 'reenroll-token',
       wrappedCek: 'wrapped-cek-2',

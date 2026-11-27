@@ -198,7 +198,7 @@ interface Admitted {
 }
 
 /** The query names a route admits: `TEAM_ID` for the config pull family, else none. */
-const TEAM_ID: readonly string[] = ['teamId'];
+const TEAM_ID = ['teamId'] as const;
 
 /** Every query name is in the route's set and none repeats; a route with an empty set admits no query string at all. */
 function queryAdmitted(admitted: readonly string[], url: URL): boolean {

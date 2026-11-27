@@ -314,7 +314,8 @@ describe('a blob whose parent container is missing at rest', () => {
   it('decrypt restores the value, creating the parent, so the next save keeps it', async () => {
     const keyringId = await mintKey();
     const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
-    const { ssh: _ssh, ...credentialsWithoutSsh } = sealed.credentials ?? {};
+    const credentialsWithoutSsh = { ...sealed.credentials };
+    delete credentialsWithoutSsh.ssh;
     const parentless: RdcConfig = { ...sealed, credentials: credentialsWithoutSsh };
     const opened = await decryptConfigFields(parentless);
     expect(opened.credentials?.ssh?.privateKey).toBe(PRIVATE_KEY);

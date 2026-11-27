@@ -15,6 +15,7 @@ import {
   usesKeyring,
   usesMasterPassword,
 } from '@rediacc/shared/config-schema';
+import { CONTEXT_DEFAULTS } from '@rediacc/shared/config/defaults';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { t } from '../i18n/index.js';
@@ -136,7 +137,7 @@ function hasUnopenedBlobs(config: RdcConfig): boolean {
  */
 function sealIdentity(encryption: Encryption | undefined): string {
   return [
-    encryption?.mode ?? 'plaintext',
+    encryption?.mode ?? CONTEXT_DEFAULTS.CONFIG_KIND,
     encryption?.keyringId ?? '',
     encryption?.kdf?.salt ?? '',
   ].join('|');
@@ -297,7 +298,7 @@ export class ConfigFileStorage {
     previous: Encryption | undefined
   ): Promise<{ config: RdcConfig; minted?: string }> {
     const encryption = config.encryption;
-    const mode = encryption?.mode ?? 'plaintext';
+    const mode = encryption?.mode ?? CONTEXT_DEFAULTS.CONFIG_KIND;
     if (!hasRemoteConfig(config) || encryption?.sealOptOut) return { config };
     if (mode !== 'plaintext' && mode !== 'master-password') return { config };
     if (hasUnopenedBlobs(config)) return { config };

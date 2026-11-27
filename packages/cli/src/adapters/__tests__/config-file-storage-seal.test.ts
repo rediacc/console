@@ -63,7 +63,8 @@ function remoteFixture(encryption: RdcConfig['encryption'] = { mode: 'plaintext'
 }
 
 function localFixture(): RdcConfig {
-  const { remote: _remote, ...local } = remoteFixture();
+  const local: Partial<RdcConfig> = remoteFixture();
+  delete local.remote;
   return local as RdcConfig;
 }
 
