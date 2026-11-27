@@ -73,6 +73,22 @@ def test_expired_is_red(tmp_path: pathlib.Path) -> None:
     assert "EXPIRED 3 day(s) ago" in "\n".join(lines)
 
 
+def test_expired_hours_ago_is_not_a_full_day(tmp_path: pathlib.Path) -> None:
+    rc, lines = gate.evaluate(record(tmp_path, days=-0.25), NOW)
+    assert rc == 1
+    text = "\n".join(lines)
+    assert "EXPIRED less than a day ago" in text
+    assert "1 day(s) ago" not in text
+
+
+@pytest.mark.parametrize("bad", ["iso-string", 7, ["x"]])
+def test_non_object_input_entry_is_red_not_a_traceback(tmp_path: pathlib.Path, bad: object) -> None:
+    path = record(tmp_path, days=60, inputs={"iso": bad, "virtio": {"sha256": VIRTIO}})
+    rc, lines = gate.evaluate(path, NOW)
+    assert rc == 1
+    assert "differs from inputs.iso.sha256" in "\n".join(lines)
+
+
 def test_missing_file_is_red(tmp_path: pathlib.Path) -> None:
     rc, lines = gate.evaluate(tmp_path / "absent.json", NOW)
     assert rc == 1
@@ -135,3 +151,9 @@ def test_committed_record_is_judged() -> None:
         assert "NO WINDOWS IMAGE RECORDED" in lines[0]
     else:
         assert lines
+        # The code and the verdict line must agree: green prints OK, red prints only RED lines.
+        if rc == 0:
+            assert lines[0].startswith("OK:"), lines
+        else:
+            assert rc == 1
+            assert all(line.startswith("RED:") for line in lines), lines

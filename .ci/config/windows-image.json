@@ -2,7 +2,7 @@
   "schema": 1,
   "bucket": "windows-ci-images",
   "warn_days": 14,
-  "rebake": "PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image rebake",
+  "rebake": "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image rebake",
   "inputs": null,
   "image": null
 }

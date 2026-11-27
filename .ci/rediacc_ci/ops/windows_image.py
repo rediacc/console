@@ -347,6 +347,11 @@ def cmd_pack(ctx: Ctx) -> pathlib.Path:
     )
     out = pathlib.Path(ctx.args.out) if ctx.args.out else golden.parent / TAR_NAME
     missing = [name for name in GOLDEN_FILES if not (golden / name).exists()]
+    if missing and ctx.dry:
+        # A dry run before the first bake has no golden directory to read; print the commands it would run.
+        ctx.run(["tar", "--zstd", "-cf", str(out), "-C", str(golden.parent), golden.name], "pack")
+        ctx.say("DRY-RUN write %s.json (%s lacks %s)" % (out, golden, ", ".join(missing)))
+        return out
     if missing:
         raise ImageError("%s lacks %s" % (golden, ", ".join(missing)))
     try:
@@ -399,6 +404,10 @@ def cmd_publish(ctx: Ctx, tar: pathlib.Path | None = None) -> None:
             pathlib.Path(ctx.args.tar) if ctx.args.tar else data_dir(ctx.env) / "images" / TAR_NAME
         )
     side_path = pathlib.Path("%s.json" % tar)
+    if ctx.dry and not side_path.is_file():
+        # `pack --dry-run` writes no sidecar, so a dry rebake has nothing to read here.
+        ctx.say("DRY-RUN publish %s: no sidecar %s yet, `pack` writes it" % (tar, side_path))
+        return
     try:
         side = json.loads(side_path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -449,7 +458,11 @@ def cmd_fetch(ctx: Ctx) -> None:
     part = images / ("%s.part" % TAR_NAME)
     if not ctx.dry:
         images.mkdir(parents=True, exist_ok=True)
-    ctx.download(str(image["key"]), part)
+    try:
+        ctx.download(str(image["key"]), part)
+    except BaseException:
+        part.unlink(missing_ok=True)
+        raise
     if not ctx.dry:
         verify(part, str(image["sha256"]), str(image["key"]))
     ctx.run(["tar", "--zstd", "-xf", str(part), "-C", str(images)], "unpack")

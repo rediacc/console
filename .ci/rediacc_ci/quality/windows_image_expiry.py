@@ -70,16 +70,22 @@ def evaluate(path: pathlib.Path, now: dt.datetime) -> tuple[int, list[str]]:
     raw_inputs = doc.get("inputs")
     inputs: dict = raw_inputs if isinstance(raw_inputs, dict) else {}
     for label, field in (("iso", "iso_sha256"), ("virtio", "virtio_iso_sha256")):
-        want = (inputs.get(label) or {}).get("sha256")
+        entry = inputs.get(label)
+        want = entry.get("sha256") if isinstance(entry, dict) else None
         have = image.get(field)
         if not want or have != want:
             lines.append(
                 "RED: image.%s %s differs from inputs.%s.sha256 %s; an image names the inputs it was baked from"
                 % (field, have, label, want)
             )
-    days = (expires - now).days
+    delta = expires - now
+    days = delta.days
     if days <= warn:
-        state = "EXPIRED %d day(s) ago" % -days if days < 0 else "%d day(s) left" % days
+        if delta.total_seconds() < 0:
+            ago = (now - expires).days
+            state = "EXPIRED %d day(s) ago" % ago if ago else "EXPIRED less than a day ago"
+        else:
+            state = "%d day(s) left" % days
         lines.append(
             "RED: the Windows evaluation image %s expires at %s: %s, inside the %d-day window. Re-bake: %s, then commit %s"
             % (image.get("key", "?"), image.get("expires_at"), state, warn, rebake, RECORD_REL)

@@ -122,7 +122,10 @@ def test_committed_record_shape() -> None:
     assert doc["schema"] == 1
     assert doc["bucket"] not in wi.PUBLIC_BUCKETS
     assert doc["warn_days"] == 14
-    assert doc["rebake"] == "PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image rebake"
+    assert doc["rebake"] == (
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image"
+        " -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image rebake"
+    )
     assert "inputs" in doc
     assert "image" in doc
 
@@ -389,6 +392,35 @@ def test_fetch_sha_mismatch_refused(tmp_path: pathlib.Path, capsys) -> None:
     assert "sha256 mismatch" in capsys.readouterr().err
     assert not any(c[:3] == ["tar", "--zstd", "-xf"] for c in runner.calls)
     assert not (data / "images" / ("%s.part" % wi.TAR_NAME)).exists()
+
+
+class DroppedDownload(FakeBucket):
+    """A transfer that writes part of the file, then dies."""
+
+    def __call__(self, argv: list[str], env: Mapping[str, str]) -> int:
+        if argv[:3] == ["aws", "s3", "cp"] and argv[3].startswith("s3://"):
+            pathlib.Path(argv[4]).write_bytes(b"partial")
+            raise OSError("connection dropped")
+        return super().__call__(argv, env)
+
+
+def test_fetch_failed_download_leaves_no_part_file(tmp_path: pathlib.Path) -> None:
+    image = {"key": "images/win11/x/golden.tar.zst", "sha256": sha(b"good")}
+    data = tmp_path / "data"
+    record = write_record(tmp_path, image=image)
+    with pytest.raises(OSError, match="connection dropped"):
+        call(record, ["fetch"], {"RENET_DATA_DIR": str(data)}, DroppedDownload())
+    assert not (data / "images" / ("%s.part" % wi.TAR_NAME)).exists()
+
+
+@pytest.mark.parametrize("verb", [["rebake"], ["pack"], ["publish"]])
+def test_dry_run_before_the_first_bake_exits_zero(tmp_path: pathlib.Path, verb: list[str]) -> None:
+    """No golden directory and no sidecar yet: a dry run still prints its commands."""
+    inputs = inputs_for(b"iso-bytes", b"virtio-bytes")
+    record = write_record(tmp_path, inputs=inputs)
+    rc, out = call(record, [*verb, "--dry-run"], {"RENET_DATA_DIR": str(tmp_path / "data")})
+    assert rc == 0, out
+    assert "DRY-RUN" in out
 
 
 def test_rebake_order(tmp_path: pathlib.Path) -> None:

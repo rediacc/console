@@ -300,12 +300,12 @@ The token is bucket-scoped (Object Read & Write on `windows-ci-images` only), mi
 ### Commands
 
 ```bash
-P='PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image'
-$P probe                                  # 200 on the bucket, 403 on rediacc-public-data, anonymous GET refused
-$P upload-inputs <eval.iso> <virtio-win.iso>
-$P fetch --inputs                         # into $RENET_DATA_DIR/images/{win11-eval,virtio-win}.iso; WINDOWS_ISO / VIRTIO_ISO skip a download
-$P fetch                                  # the golden image into $RENET_DATA_DIR/images/win11-golden/
-$P rebake                                 # fetch --inputs, renet ops windows bake, pack, publish
+P() { PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image "$@"; }
+P probe                                  # 200 on the bucket, 403 on rediacc-public-data, anonymous GET refused
+P upload-inputs <eval.iso> <virtio-win.iso>
+P fetch --inputs                         # into $RENET_DATA_DIR/images/{win11-eval,virtio-win}.iso; WINDOWS_ISO / VIRTIO_ISO skip a download
+P fetch                                  # the golden image into $RENET_DATA_DIR/images/win11-golden/
+P rebake                                 # fetch --inputs, renet ops windows bake, pack, publish
 ```
 
-Every verb takes `--dry-run`, which prints the commands and touches neither the network, the bucket nor the record. Each download is verified against the record's sha256 and deleted on a mismatch. `check:ci-windows-image-expiry` reads the record's `expires_at` and goes red `warn_days` before the evaluation period ends, printing the `rebake` command.
+Every verb takes `--dry-run`, which prints the commands and touches neither the network, the bucket nor the record. Each download is verified against the record's sha256 and deleted on a mismatch. `check:ci-windows-image-expiry` reads the record's `image.expires_at` (nothing to check while `image` is `null`) and goes red `warn_days` before the evaluation period ends, printing the `rebake` command.
