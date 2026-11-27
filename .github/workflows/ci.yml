@@ -8,9 +8,8 @@ on:
   schedule:
     # WEEKLY, Sundays, since PLAN-health-checks-local D3: the scheduled run is
     # the full union and the 5-OS stock-image fleet, which costs too much to run
-    # daily. The cheap clock-based checks run daily in `CI - Drift`
-    # (.github/workflows/ci-drift.yml), and the stable promotion reads this run
-    # as its test evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
+    # daily. The stable promotion (a dispatch) reads this run as its test
+    # evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
     # The `report-schedule` job posts this run's verdict to the ops-health
     # ingest (source `ci-weekly`).
     #

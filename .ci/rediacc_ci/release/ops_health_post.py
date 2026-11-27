@@ -1,4 +1,4 @@
-"""The POST to the ops-health ingest (PLAN-health-checks-local D1, design D-drift), split out of `drift_job` so the step that only posts is not judged by the check timers of the job that runs checks.
+"""The POST to the ops-health ingest (PLAN-health-checks-local D1, design D-drift), a step of its own so a post is not judged by the timers of a job that runs checks.
 
 `--post <verdict.json> --source <name>` sends the verdict to the ops-health Worker (`POST /v1/ingest`, bearer OPS_HEALTH_INGEST_TOKEN). A missing or unreadable verdict file is posted as `red`, because the workflow runs this under `if: always()` and a job that died before it wrote anything must not read as silence. `--post-state <state> --detail <text>` posts without a file (the weekly fleet run's `report-schedule` job).
 

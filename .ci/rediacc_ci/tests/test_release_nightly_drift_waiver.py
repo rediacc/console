@@ -464,8 +464,7 @@ def soak_env(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> pathlib
     )  # long soaked, so a soak fallback WOULD promote
     monkeypatch.setenv("SOAK_DAYS", "7")
     monkeypatch.setenv("EDGE_VERSION", "1.2.3")
-    monkeypatch.setenv("PROMOTE_TRIGGER", "workflow_run")
-    monkeypatch.setenv("DRIFT_CONCLUSION", "success")
+    monkeypatch.setenv("PROMOTE_TRIGGER", "workflow_dispatch")
     monkeypatch.setenv("NIGHTLY_HEAD_SHA", "a" * 40)
     monkeypatch.setenv("NIGHTLY_CONCLUSION", "failure")
     monkeypatch.setenv("NIGHTLY_RUN_ID", "36827121342")

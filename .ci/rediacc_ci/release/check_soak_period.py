@@ -2,9 +2,9 @@
 
 Selects the edge release to promote to stable and says whether it can be promoted. Emits `ready=true|false`, `path=force|nightly|soak` (which rule decided), `version=` / `date=` (the selected release, empty when none), `blocked=r2-channel-snapshot` when the selection cannot be promoted, and human-readable lines to stdout.
 
-THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newest edge is almost always younger than `SOAK_DAYS`, so judging only the newest one starved stable from 2026-09-15 on. The candidates are the newest edge (`EDGE_VERSION`, dated by the manifest's `EDGE_DATE`) and every older release in `EDGE_RELEASES` (`list_edge_releases`' JSON) that is still newer than `STABLE_VERSION`; the selection is the NEWEST candidate that has soaked. `FORCE=true` selects the newest edge. With `PROMOTE_TRIGGER=workflow_run` the soak is waived for the newest candidate whose tagged commit `nightly_tested_edge` proves is contained in `NIGHTLY_HEAD_SHA`, the weekly run's head; every other outcome falls back to the soak rule.
+THE WALK BACK (PLAN-plan-per-pr-loop R2). With a release on every merge the newest edge is almost always younger than `SOAK_DAYS`, so judging only the newest one starved stable from 2026-09-15 on. The candidates are the newest edge (`EDGE_VERSION`, dated by the manifest's `EDGE_DATE`) and every older release in `EDGE_RELEASES` (`list_edge_releases`' JSON) that is still newer than `STABLE_VERSION`; the selection is the NEWEST candidate that has soaked. `FORCE=true` selects the newest edge. With `PROMOTE_TRIGGER=workflow_dispatch` and no force the soak is waived for the newest candidate whose tagged commit `nightly_tested_edge` proves is contained in `NIGHTLY_HEAD_SHA`, the weekly run's head; every other outcome falls back to the soak rule.
 
-THE SOAK RE-POINTED (PLAN-health-checks-local D4). A `workflow_run` promotion is triggered by a `CI - Drift` run (`DRIFT_CONCLUSION`): only `success` or `failure` qualifies (`nightly_tested_edge.drift_run_qualifies`), anything else, or a missing value, decides `ready=false` with `path=nightly`. The TEST EVIDENCE (`NIGHTLY_HEAD_SHA`, `NIGHTLY_CONCLUSION`, `NIGHTLY_RUN_ID`) is the newest completed scheduled Console CI run, now weekly, found by `nightly_tested_edge`'s `main` (conclusion `none` when no run is at most 8 days old). A `failure` reaches the waiver only when `nightly_failures_are_drift_only` accepts its jobs. Evidence that does not count (red on a non-drift step, `cancelled`, `none`, unreadable jobs) is NO WAIVER, and the ordinary soak rule decides.
+DISPATCH ONLY (PLAN-retire-nightlies-and-mentions D1). Stable promotion starts only from a `workflow_dispatch`; no schedule and no other workflow fires it. A dispatch is decided by force, then the weekly waiver, then the soak. The TEST EVIDENCE (`NIGHTLY_HEAD_SHA`, `NIGHTLY_CONCLUSION`, `NIGHTLY_RUN_ID`) is the newest completed scheduled Console CI run, now weekly, found by `nightly_tested_edge`'s `main` (conclusion `none` when no run is at most 8 days old). A `failure` reaches the waiver only when `nightly_failures_are_drift_only` accepts its jobs. Evidence that does not count (red on a non-drift step, `cancelled`, `none`, unreadable jobs) is NO WAIVER, and the ordinary soak rule decides.
 
 THE DECISION IS `select`, a pure function of the values (box W2-A of agent/plans/PLAN-local-release.md): `main` reads the environment, calls it, prints its lines and writes `$GITHUB_OUTPUT`, and `rediacc_ci.release.local_gates` calls it directly for a local stable promote.
 
@@ -134,7 +134,6 @@ def select(
     snapshots: frozenset[str] = frozenset(),
     nightly: bool = False,
     nightly_head_sha: str = "",
-    trigger_refusal: str = "",
     nightly_tested: Callable[[], tuple[bool, str]] | None = None,
     tested_by_nightly: Callable[[str, str], tuple[bool, str]] | None = None,
     epoch: Callable[[str], int | None] | None = None,
@@ -178,11 +177,6 @@ def select(
         selected, path = newest, "force"
     else:
         # The nightly waiver (operator ruling 2026-09-30): a green scheduled Console CI run releases edge to stable without the soak, but only for an edge whose tagged commit that run's head provably contains -- the newest such edge. Anything short of proof falls through to the soak rule below.
-        if nightly and trigger_refusal:
-            # The `CI - Drift` run that fired this promotion did not conclude success or failure (D-promote): no promotion at all, not even by the soak.
-            lines.append(f"Trigger: {trigger_refusal}")
-            lines.append("Decided by: the triggering drift run does not qualify, not promoting")
-            return Selection(None, "nightly", False, tuple(lines))
         if nightly:
             tested, reason = (nightly_tested or _nightly_tested)()
             lines.append(f"Test evidence: {reason}")
@@ -277,10 +271,6 @@ def main(argv: list[str]) -> int:
         print(f"{SELF}: EDGE_RELEASES is not a release list ({exc})", file=sys.stderr)
         return 1
 
-    # The trigger is a `CI - Drift` run: only a run that concluded success or failure may promote. A missing conclusion is "could not tell", and that is a no.
-    triggered, trigger_reason = nightly_tested_edge.drift_run_qualifies(
-        os.environ.get("DRIFT_CONCLUSION", "")
-    )
     try:
         verdict = select(
             edge_version=edge_version,
@@ -291,9 +281,9 @@ def main(argv: list[str]) -> int:
             stable_version=os.environ.get("STABLE_VERSION", ""),
             releases=tuple(listed),
             snapshots=snapshots,
-            nightly=os.environ.get("PROMOTE_TRIGGER", "") == "workflow_run",
+            # A dispatch reads the weekly evidence; force skips it (force wins in `select`).
+            nightly=os.environ.get("PROMOTE_TRIGGER", "") == "workflow_dispatch",
             nightly_head_sha=os.environ.get("NIGHTLY_HEAD_SHA", ""),
-            trigger_refusal="" if triggered else trigger_reason,
         )
     except SelectError as exc:
         print(str(exc), file=sys.stderr)

@@ -6,7 +6,7 @@ An edge built from anything the nightly did not contain (a later push, a hotfix 
 "COULD NOT TELL" IS NEVER A YES. A tag that does not resolve, a malformed SHA, a SHA the checkout does not hold, or any git error returns `False` with the reason, and the caller falls back to the ordinary soak rule. The waiver exists only where the ancestry was positively proven. The checkout must hold full history and tags (`fetch-depth: 0`) for the proof to be possible at all.
 
 A DRIFT-RED NIGHTLY STILL TESTED ITS COMMIT (PLAN-plan-per-pr-loop R1). The scheduled Console CI on main went red every night from 2026-09-07 on, mostly because upstream published something (an npm/OSV advisory, a newer dependency release), which says nothing about whether the tests passed on the commit. `nightly_failures_are_drift_only` reads the run's jobs and steps and accepts a `failure` run only when every failed
-step is a drift step (`drift_steps()`), no job ended in anything but a pass or such a failure, and no test lane was skipped because of the drift failure. The drift gates keep failing the run, so the nightly-red issue still opens; they only stop vetoing the waiver.
+step is a drift step (`drift_steps()`), no job ended in anything but a pass or such a failure, and no test lane was skipped because of the drift failure. The drift gates keep failing the run, so the weekly run still reds; they only stop vetoing the waiver.
 
 THE DRIFT SET IS DERIVED, NOT LISTED, AND KEYED ON THE STEP NAME ALONE. Until 2026-10-21 it was a hand list of two (job, step) pairs, so the waiver never fired: nine more steps ask upstream (`ci_workflow_invariants.UPSTREAM_GATES`), and gate-bind moves a step between `Quality / Code (n)` shards, which re-keys a pair on the job name. Now it is every step of `UPSTREAM_GATES` plus the audit (`DRIFT_GATE_IDS`), mapped to its step name through `scripts/ci-runner/gates.lock.json`, plus the two steps split out of mixed ones for this purpose (`SPLIT_DRIFT_STEPS`: govulncheck out of `Run renet quality`, the OBS upstream check out of `Run the package matrix`). A lock that cannot be read, or a drift id it does not carry as a step, refuses the waiver: could not tell is never a yes. The tests hold the set equal to the workflows' own external steps, each name unique across `.github/workflows`, and every step after one guarded by `!cancelled()`, so a drift failure can never skip a real check into a "skipped" the waiver reads as a pass.
 """
@@ -232,23 +232,14 @@ def fetch_run_jobs(repo: str, run_id: str, api: ApiJson = _api_json) -> list[dic
 
 # --- The weekly fleet run as the test evidence (PLAN-health-checks-local D4, design D-promote) ---
 #
-# promote-stable is triggered by the daily `CI - Drift` run (a drift run that concluded success or failure qualifies; every step of that job is drift by construction). What vouches for the EDGE COMMIT is the newest completed scheduled `Console CI` run on main, which is now weekly. It counts when it is at most `WEEKLY_MAX_AGE_DAYS` old and either green or red on drift steps only (`nightly_failures_are_drift_only`, applied by `check_soak_period`). Anything else is no waiver, and the ordinary 7-day soak decides.
+# Stable promotion is dispatch-only (PLAN-retire-nightlies-and-mentions D1). What vouches for the EDGE COMMIT is the newest completed scheduled `Console CI` run on main, which is now weekly. It counts when it is at most `WEEKLY_MAX_AGE_DAYS` old and either green or red on drift steps only (`nightly_failures_are_drift_only`, applied by `check_soak_period`). Anything else is no waiver, and the ordinary 7-day soak decides.
 
 WEEKLY_MAX_AGE_DAYS = 8
+# The conclusions a weekly run may carry and still be evidence: success, or failure that `nightly_failures_are_drift_only` then judges.
 DRIFT_RUN_CONCLUSIONS: frozenset[str] = frozenset({"success", "failure"})
 WEEKLY_WORKFLOW = "ci.yml"
 # The `conclusion` written when no run qualifies; `check_soak_period` reads anything but success/failure as "no waiver".
 NO_EVIDENCE = "none"
-
-
-def drift_run_qualifies(conclusion: str) -> tuple[bool, str]:
-    """Whether a `CI - Drift` run may trigger a promotion: only success or failure. `cancelled`, `startup_failure`, `timed_out` and the rest never do."""
-    if conclusion in DRIFT_RUN_CONCLUSIONS:
-        return True, f"the drift run concluded {conclusion}"
-    return (
-        False,
-        f"the drift run concluded {conclusion or 'nothing'}, which never triggers a promotion",
-    )
 
 
 def _parse_time(value: object) -> datetime | None:
