@@ -74,6 +74,14 @@ def _planted_hooks(dest: pathlib.Path) -> pathlib.Path:
     shutil.copy2(HOOKS.parent / "commit_policy.py", hooks.parent / "commit_policy.py")
     shutil.copy2(HOOKS.parent / "syspath.py", hooks.parent / "syspath.py")
     shutil.copy2(HOOKS.parent / "pr_freeze.py", hooks.parent / "pr_freeze.py")
+    # The commit-msg hook loads the release-note module by file from the checkout it lives in, with that checkout's config, so the planted tree carries both.
+    for rel in (
+        ".ci/rediacc_ci/release/release_notes.py",
+        ".ci/config/release-notes.json",
+        ".ci/policy/record-paths.json",
+    ):
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO_ROOT / rel, dest / rel)
     planted = hooks / "githooks.py"
     text = planted.read_text(encoding="utf-8")
     assert text.count(GD.PLANT_OLD) == 1, "the always-allow plant no longer applies"
