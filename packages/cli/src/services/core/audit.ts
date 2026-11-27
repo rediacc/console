@@ -18,6 +18,7 @@ import { randomUUID } from 'node:crypto';
 import { type AuditEvent, AuditEventSchema, functionNameToEventType } from '@rediacc/shared';
 import { VERSION } from '../../version.js';
 import { accountServerFetch } from '../account/account-client.js';
+import { inContainerDispatch } from '../account/executor-principal.js';
 import {
   getNamedTokenServerUrl,
   getSubscriptionTokenState,
@@ -44,7 +45,7 @@ class AuditService {
 
   private hasToken(): boolean {
     // The container executor holds a placeholder REDIACC_TOKEN, and the proxy refuses its account tunnel. A request config scope exists only there (a daemon reads its config off disk), and services/serve/audit.ts already records each command it dispatches.
-    if (currentRequestConfig() !== undefined) return false;
+    if (currentRequestConfig() !== undefined || inContainerDispatch()) return false;
     try {
       return getSubscriptionTokenState().kind === 'ready';
     } catch {

@@ -40,6 +40,7 @@ import { CommanderError } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
 import { namedFailureOf } from '../../utils/errors.js';
+import { withExecutorPrincipal } from '../account/executor-principal.js';
 import { configService } from '../config/config-resources.js';
 import {
   type CommandRequestContext,
@@ -120,6 +121,10 @@ export interface DispatchArgs {
    * refuse, since the executor's own token carries no `forensics:read`.
    */
   forensicsTicket?: ForensicsTicket;
+  /**
+   * The introspected caller's token id. A container-mode dispatch (the one that carries `config`) sends its licence calls to the executor routes on this principal's behalf (services/account/executor-principal.ts); absent, those calls fail named.
+   */
+  principalTokenId?: string;
 }
 
 export interface DispatchOutcome {
@@ -385,6 +390,12 @@ const IMAGE_MAKING_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_fork',
 ]);
 
+/** A container dispatch (the one the container tier hands a config) acts for its caller's token on licence calls. */
+function withContainerPrincipal<T>(args: DispatchArgs, fn: () => T): T {
+  if (!args.config) return fn();
+  return withExecutorPrincipal({ tokenId: args.principalTokenId }, fn);
+}
+
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
   const { argv } = args.prepared;
   const started = Date.now();
@@ -461,12 +472,14 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
       return { failed: true as const, error };
     }
   };
+  const parseInContext = () =>
+    withContainerPrincipal(args, () => runInRequestContext(context, parse));
   // The forensics reads of this dispatch see its ticket, or null so that they refuse.
   const outcome = await runWithRequestTelemetry(
     args.caller,
     () =>
       withInvocationMinter(minter, () =>
-        withForensicsTicket(args.forensicsTicket ?? null, () => runInRequestContext(context, parse))
+        withForensicsTicket(args.forensicsTicket ?? null, () => parseInContext())
       ),
     'command'
   );

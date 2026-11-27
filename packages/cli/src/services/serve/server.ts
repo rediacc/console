@@ -363,6 +363,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           prepared,
           executor: deps.executor,
           ...(requestConfig ? { config: requestConfig } : {}),
+          ...(principal.tokenId ? { principalTokenId: principal.tokenId } : {}),
           caller: {
             userId: principal.userId,
             orgId: principal.orgId,

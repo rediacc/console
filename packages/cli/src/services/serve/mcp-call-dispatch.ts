@@ -134,6 +134,7 @@ export function dispatcher(call: DispatchCall, request: ReturnType<typeof reques
         prepared: run.prepared,
         executor: deps.executor,
         config: handle.config,
+        ...(principal.tokenId ? { principalTokenId: principal.tokenId } : {}),
         caller: {
           userId: principal.userId,
           orgId: principal.orgId,
