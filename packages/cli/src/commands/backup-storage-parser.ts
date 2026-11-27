@@ -212,6 +212,12 @@ export interface CompareRecord {
   cellsRoot?: string;
   anchorCellsRoot?: string;
   differingCells?: number[];
+  /** What the copy was held to: the source's anchor file, or the inventory of the snapshot it was restored from (the anchor moved past it). Absent from an older renet, which only holds to the anchor. */
+  heldTo?: 'anchor' | 'snapshot';
+  /** The snapshot the verdict is about: the anchor's, or on the snapshot path the restored one. */
+  snapshotId?: string;
+  /** The restored snapshot's inventory root, set on the snapshot path; `cellsRoot` equals it for an identical copy. */
+  snapshotCellsRoot?: string;
 }
 
 /** The object a candidate line parses to, or undefined for anything else (a partial line, a scalar). */

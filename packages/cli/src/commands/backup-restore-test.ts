@@ -7,7 +7,8 @@
  * Three rules shape it. The copy is a fresh repository (fresh GUID, never the source's), and the
  * only delete this verb issues names that copy. The credential is the repository's own and reaches
  * renet through the vault and stdin, never argv or the step plan. And a verdict is only posted when
- * the comparison was about the snapshot restored: an anchor that moved mid-run says nothing about it.
+ * the comparison was about the snapshot restored: an anchor that moved mid-run says nothing about it, so
+ * renet then holds the copy to the restored snapshot's own inventory, which the restore root-checked.
  */
 
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -207,19 +208,42 @@ async function restoreAndCompare(args: {
     probe: true,
   });
   const verdict = parseCompareRecord(compare.stdout);
-  const passphraseCheck = record?.passphraseCheck;
   if (!verdict) {
     return {
       status: 'failed',
       reason: compare.error ?? REASON_COMPARE_UNREADABLE,
-      passphraseCheck,
+      passphraseCheck: record?.passphraseCheck,
       postFailed: false,
     };
   }
-  if (verdict.anchorSnapshotId !== snapshotId) {
+  return compareVerdict(verdict, record, snapshotId);
+}
+
+/** The verdict of a copy renet compared, held to the anchor or to the restored snapshot's inventory. */
+function compareVerdict(
+  verdict: CompareRecord,
+  record: RestoreStats | undefined,
+  snapshotId: string
+): Verdict {
+  const passphraseCheck = record?.passphraseCheck;
+  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the
+  // restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that
+  // inventory against the manifest's root.
+  const heldToSnapshot = verdict.heldTo === 'snapshot';
+  const comparedSnapshot = heldToSnapshot ? verdict.snapshotId : verdict.anchorSnapshotId;
+  if (comparedSnapshot !== snapshotId) {
     return {
       status: 'failed',
-      reason: `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test, so the copy cannot be compared; run it again`,
+      reason: `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`,
+      passphraseCheck,
+      compare: verdict,
+      postFailed: false,
+    };
+  }
+  if (heldToSnapshot && record?.cellsRoot !== 'verified') {
+    return {
+      status: 'failed',
+      reason: REASON_ROOT_NOT_VERIFIED,
       passphraseCheck,
       compare: verdict,
       postFailed: false,
@@ -237,7 +261,7 @@ async function restoreAndCompare(args: {
   if (passphraseCheck !== 'opened') {
     return {
       status: 'failed',
-      reason: 'the copy matches the anchor but the passphrase did not open it, so it is not proven',
+      reason: `the copy matches the ${heldToSnapshot ? 'snapshot' : 'anchor'} but the passphrase did not open it, so it is not proven`,
       passphraseCheck,
       compare: verdict,
       postFailed: false,
