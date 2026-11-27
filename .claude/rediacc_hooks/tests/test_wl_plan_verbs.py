@@ -112,6 +112,7 @@ def test_plan_new_refusals_write_nothing(wl):
         (NEW, plan_text(drop="Owns"), "Owns: missing"),
         (NEW, plan_text(drop="First-Seen"), "First-Seen: missing"),
         (NEW, plan_text(boxes="Prose only, no task yet.\n"), "has no box"),
+        (NEW, plan_text().replace("Priority: P2 -- fixture", "Priority: bogus"), "Priority:"),
         ("agent/PLAN-fresh.md", plan_text(), "not a plan path under agent/plans/"),
     ]
     for rel, text, needle in cases:
@@ -185,3 +186,37 @@ def test_plan_tick_investigate_refusals_leave_plan_ledger_and_jsonl_byte_identic
         assert "Nothing was written" in got.err, got.err
         assert snapshot(wl.proj, NEW, LEDGER, INV) == before, tail
     assert PR.investigation_for(str(wl.proj), NEW, sig) is None
+
+
+def test_plan_tick_investigate_present_still_runs_the_dependency_gate(wl):
+    """4aca69dc.1: the one-call form builds its own `present` row, so the plain dependency refusal does not apply to it; the plain form, with no row, still refuses the same box."""
+    seed(wl)
+    root_rel = "agent/plans/PLAN-root.md"
+    write_plan(
+        wl,
+        plan_text(boxes="- [ ] R1 the root box\n").replace("# PLAN fresh", "# PLAN root"),
+        root_rel,
+    )
+    text = plan_text().replace(
+        "Depends-On: no-dep -- a fixture plan for the plan-verbs suite",
+        "Depends-On: PLAN-root.md",
+    )
+    write_plan(wl, text)
+    for rel in (root_rel, NEW):
+        got = wl.cli("--plan-new", ME, rel, "--write")
+        assert got.rc == 0, (rel, got.out, got.err)
+    wl.git("add", "-A")
+    wl.git("commit", "-qm", "docs(plans): register the fixture plans")
+    sig = PR.open_boxes((wl.proj / NEW).read_text(encoding="utf-8"))[0][3]
+
+    plain = wl.cli("--plan-tick", ME, NEW, sig, EVIDENCE, "--write")
+    assert plain.rc == 2, (plain.rc, plain.out, plain.err)
+    assert "PLAN-root.md" in plain.err, plain.err
+    assert "- [ ] F1" in (wl.proj / NEW).read_text(encoding="utf-8")
+
+    one = wl.cli(
+        "--plan-tick", ME, NEW, sig, EVIDENCE, "--investigate", "present",
+        "fileline:base.txt:1", "plan:%s" % NEW, "--write",
+    )  # fmt: skip
+    assert one.rc == 0, (one.rc, one.out, one.err)
+    assert "- [x] F1" in (wl.proj / NEW).read_text(encoding="utf-8")

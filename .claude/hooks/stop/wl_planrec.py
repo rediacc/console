@@ -3117,7 +3117,7 @@ def clause2_falsifiable(root, row, evidence):
 def plan_tick(root, rel, selector, evidence, me, now=None, inv_row=None):
     """(new_plan_text, new_ledger_doc, note) for one tick. Raises RecordError.
 
-    Writes NOTHING. The caller writes both files, so a refusal on the second cannot leave the first half-applied.
+    Writes NOTHING. The caller writes the plan and the ledger (and, with `inv_row`, appends the investigation row first), so a refusal here cannot leave any of them half-applied.
 
     `inv_row` is an investigation row built in the same call (`--plan-tick ... --investigate present`, agent/plans/PLAN-plan-verbs.md T15) and not yet appended; given, it stands in for the ledger lookup, and the caller appends it only after this returns.
     """

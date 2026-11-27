@@ -840,7 +840,7 @@ def _plantick_cli(argv):
 def _plannew_cli(argv):
     """--plan-new <me> [<agent/plans/PLAN-x.md> [--write]] (agent/plans/PLAN-plan-verbs.md T14).
 
-    Registers a new plan in one call: stages the file (`git add`, never a commit), writes its `.ci/config/plan-boxes.json` row through `ledger_row`, and refreshes agent/INDEX.md with the QUEUE generated section. Staging comes first because the ledger scan and the index read tracked plans only (#0b93d454). Every refusal is decided before the first write. With only `<me>` it lists the plans that have no ledger row.
+    Registers a new plan in one call: stages the file (`git add`, never a commit), writes its `.ci/config/plan-boxes.json` row through `ledger_row`, and refreshes agent/INDEX.md with the QUEUE generated section. The ledger row is computed from the file on disk; staging then comes before the ledger write and the index refresh, because the index and the QUEUE section read tracked plans only (#0b93d454). Every refusal is decided before the first write. With only `<me>` it lists the plans that have no ledger row.
     """
 
     def die(msg):
