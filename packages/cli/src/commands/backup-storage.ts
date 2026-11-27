@@ -9,42 +9,31 @@
  * a control-plane call: the server re-hashes the lineage's stored chunks.
  */
 
-import { BACKUP_BROWSE_DEFAULTS } from "@rediacc/shared/config/defaults";
-import type { Command } from "commander";
-import { t } from "../i18n/index.js";
-import { accountServerFetch } from "../services/account/account-client.js";
-import { assertHostedBackupAccount } from "../services/account/free-license.js";
-import { recordBackupRun } from "../services/backup/backup-runs-state.js";
-import { outputService } from "../services/core/output.js";
-import { setExitCode, writeStderr } from "../services/core/request-context.js";
-import { planStep } from "../services/jobs/steps.js";
-import {
-  getOutputFormat,
-  handleError,
-  ValidationError,
-} from "../utils/errors.js";
-import { createGuidResolver, loadGuidMap } from "../utils/guid-resolver.js";
-import { renderLocalExecutionFailure } from "../utils/local-execution-failures.js";
-import { executeRepoFunction } from "../utils/repo-executor.js";
-import { resolveRepoRefLocal } from "../utils/repo-ref-local.js";
-import { resolveRepoRef } from "../utils/repo-target.js";
-import { registerBackupCheck } from "./backup-check.js";
-import { registerBackupChurn } from "./backup-churn.js";
-import { registerBackupImmutability } from "./backup-immutability.js";
-import { registerBackupReconcile } from "./backup-reconcile.js";
-import { registerBackupRepair } from "./backup-repair.js";
-import {
-  registerBackupRetention,
-  registerBackupSnapshots,
-} from "./backup-retention-commands.js";
-import {
-  RENET_NO_LISTING_EXIT,
-  resolveLineage,
-  runBrowseAt,
-} from "./backup-storage-browse.js";
-import { registerBackupSnapshot } from "./backup-storage-snapshot.js";
-import { runStoreVerify } from "./backup-store-verify.js";
-import { registerBackupTocKey } from "./backup-toc-key.js";
+import { BACKUP_BROWSE_DEFAULTS } from '@rediacc/shared/config/defaults';
+import type { Command } from 'commander';
+import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account/account-client.js';
+import { assertHostedBackupAccount } from '../services/account/free-license.js';
+import { recordBackupRun } from '../services/backup/backup-runs-state.js';
+import { outputService } from '../services/core/output.js';
+import { setExitCode, writeStderr } from '../services/core/request-context.js';
+import { planStep } from '../services/jobs/steps.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
+import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
+import { executeRepoFunction } from '../utils/repo-executor.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
+import { registerBackupCheck } from './backup-check.js';
+import { registerBackupChurn } from './backup-churn.js';
+import { registerBackupImmutability } from './backup-immutability.js';
+import { registerBackupReconcile } from './backup-reconcile.js';
+import { registerBackupRepair } from './backup-repair.js';
+import { registerBackupRetention, registerBackupSnapshots } from './backup-retention-commands.js';
+import { RENET_NO_LISTING_EXIT, resolveLineage, runBrowseAt } from './backup-storage-browse.js';
+import { registerBackupSnapshot } from './backup-storage-snapshot.js';
+import { runStoreVerify } from './backup-store-verify.js';
+import { registerBackupTocKey } from './backup-toc-key.js';
 
 /** GET /backups/usage, subscription aggregate + per-lineage breakdown. */
 interface BackupUsageResponse {
@@ -112,55 +101,52 @@ export interface BackupManifestsResponse {
 /** `backup usage`, quota vs stored bytes, plus per-repo (lineage) usage. */
 function registerBackupUsage(backup: Command): void {
   backup
-    .command("usage")
-    .summary(t("commands.backup.usage.descriptionShort"))
-    .description(t("commands.backup.usage.description"))
+    .command('usage')
+    .summary(t('commands.backup.usage.descriptionShort'))
+    .description(t('commands.backup.usage.description'))
     .action(async () => {
       try {
         assertHostedBackupAccount();
-        outputService.info(t("commands.backup.usage.fetching"));
+        outputService.info(t('commands.backup.usage.fetching'));
         const usage = await accountServerFetch<BackupUsageResponse>(
-          "/account/api/v1/backups/usage",
+          '/account/api/v1/backups/usage'
         );
 
         const format = getOutputFormat();
-        if (format !== "table") {
+        if (format !== 'table') {
           outputService.print(usage, format);
           return;
         }
 
-        const { formatSizeBytes } =
-          await import("@rediacc/shared/renet-contract");
+        const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
         outputService.info(
-          t("commands.backup.usage.summary", {
+          t('commands.backup.usage.summary', {
             used: formatSizeBytes(usage.usedBytes),
             quota: formatSizeBytes(usage.quotaBytes),
             live: formatSizeBytes(usage.liveBytes),
             leased: formatSizeBytes(usage.leasedBytes),
             chunks: usage.chunkCount,
-            over: usage.overLimit ? t("commands.backup.usage.overLimit") : "",
-          }),
+            over: usage.overLimit ? t('commands.backup.usage.overLimit') : '',
+          })
         );
         // Waiting storage is not charged: it is named so the stored total is not read as the bill.
         if (usage.waitingBytes > 0 || usage.waitingChunks > 0) {
           outputService.info(
-            t("commands.backup.usage.waiting", {
+            t('commands.backup.usage.waiting', {
               waiting: formatSizeBytes(usage.waitingBytes),
               chunks: usage.waitingChunks,
               cap: formatSizeBytes(usage.churnCapBytes),
-            }),
+            })
           );
         }
         if (usage.churnCapped) {
           outputService.warn(
-            t("commands.backup.usage.throttled", {
-              cap: formatSizeBytes(usage.churnCapBytes),
-            }),
+            t('commands.backup.usage.throttled', { cap: formatSizeBytes(usage.churnCapBytes) })
           );
         }
 
         if (usage.lineages.length === 0) {
-          outputService.print(t("commands.backup.usage.empty"));
+          outputService.print(t('commands.backup.usage.empty'));
           return;
         }
 
@@ -174,19 +160,19 @@ function registerBackupUsage(backup: Command): void {
             stored: formatSizeBytes(l.storedBytes),
             logical: formatSizeBytes(l.logicalBytes),
             chunks: l.chunkCount,
-            updated: l.updatedAt.replace("T", " ").replace(/\..*$/, ""),
+            updated: l.updatedAt.replace('T', ' ').replace(/\..*$/, ''),
           }))
           .sort((a, b) => a.repo.localeCompare(b.repo));
 
         const columns = [
-          { key: "repo", header: "Repo" },
-          { key: "lineage", header: "Lineage" },
-          { key: "live", header: "Live", align: "right" as const },
-          { key: "waiting", header: "Waiting", align: "right" as const },
-          { key: "stored", header: "Stored", align: "right" as const },
-          { key: "logical", header: "Logical", align: "right" as const },
-          { key: "chunks", header: "Chunks", align: "right" as const },
-          { key: "updated", header: "Updated" },
+          { key: 'repo', header: 'Repo' },
+          { key: 'lineage', header: 'Lineage' },
+          { key: 'live', header: 'Live', align: 'right' as const },
+          { key: 'waiting', header: 'Waiting', align: 'right' as const },
+          { key: 'stored', header: 'Stored', align: 'right' as const },
+          { key: 'logical', header: 'Logical', align: 'right' as const },
+          { key: 'chunks', header: 'Chunks', align: 'right' as const },
+          { key: 'updated', header: 'Updated' },
         ];
         outputService.print(outputService.format(rows, format, columns));
       } catch (error) {
@@ -207,33 +193,29 @@ function manifestsQuery(options: ManifestsOptions): string[] {
   if (options.limit !== undefined) {
     if (!/^[1-9]\d*$/.test(options.limit)) {
       throw new ValidationError(
-        t("commands.backup.manifests.limitInvalid", { value: options.limit }),
+        t('commands.backup.manifests.limitInvalid', { value: options.limit })
       );
     }
     query.push(`limit=${options.limit}`);
   }
-  if (options.before)
-    query.push(`before=${encodeURIComponent(options.before)}`);
-  if (options.includeDeleted) query.push("includeDeleted=1");
+  if (options.before) query.push(`before=${encodeURIComponent(options.before)}`);
+  if (options.includeDeleted) query.push('includeDeleted=1');
   return query;
 }
 
 /** `YYYY-MM-DD HH:MM` of an ISO instant. */
-const minuteOf = (iso: string): string => iso.replace("T", " ").slice(0, 16);
+const minuteOf = (iso: string): string => iso.replace('T', ' ').slice(0, 16);
 
 /** `backup manifests [repo-ref]`, the server snapshot index, optionally scoped. */
 function registerBackupManifests(backup: Command): void {
   backup
-    .command("manifests")
-    .argument("[repo-ref]", t("options.repoRef"))
-    .summary(t("commands.backup.manifests.descriptionShort"))
-    .description(t("commands.backup.manifests.description"))
-    .option("--limit <n>", t("commands.backup.manifests.optionLimit"))
-    .option("--before <cursor>", t("commands.backup.manifests.optionBefore"))
-    .option(
-      "--include-deleted",
-      t("commands.backup.manifests.optionIncludeDeleted"),
-    )
+    .command('manifests')
+    .argument('[repo-ref]', t('options.repoRef'))
+    .summary(t('commands.backup.manifests.descriptionShort'))
+    .description(t('commands.backup.manifests.description'))
+    .option('--limit <n>', t('commands.backup.manifests.optionLimit'))
+    .option('--before <cursor>', t('commands.backup.manifests.optionBefore'))
+    .option('--include-deleted', t('commands.backup.manifests.optionIncludeDeleted'))
     .action(async (repoRef: string | undefined, options: ManifestsOptions) => {
       try {
         const query = manifestsQuery(options);
@@ -241,10 +223,10 @@ function registerBackupManifests(backup: Command): void {
         const lineage = repoRef ? await resolveLineage(repoRef) : undefined;
 
         assertHostedBackupAccount();
-        outputService.info(t("commands.backup.manifests.fetching"));
+        outputService.info(t('commands.backup.manifests.fetching'));
         if (lineage) query.unshift(`lineage=${encodeURIComponent(lineage)}`);
         const result = await accountServerFetch<BackupManifestsResponse>(
-          `/account/api/v1/backups/manifests${query.length > 0 ? `?${query.join("&")}` : ""}`,
+          `/account/api/v1/backups/manifests${query.length > 0 ? `?${query.join('&')}` : ''}`
         );
 
         // The lineage GUID is the grand repo's GUID, and every fork of it shares that GUID, so a fork's snapshots resolve to the grand's name. An unknown lineage resolves to null (`-o json`) or its short GUID (table).
@@ -253,79 +235,64 @@ function registerBackupManifests(backup: Command): void {
           const name = resolve(lineage);
           return name === lineage ? null : name;
         };
-        const repoOf = (lineage: string): string =>
-          nameOf(lineage) ?? lineage.slice(0, 8);
+        const repoOf = (lineage: string): string => nameOf(lineage) ?? lineage.slice(0, 8);
         // Newest first, by parsed time: ISO strings with and without fractional seconds do not order correctly as text.
         // An unparseable createdAt counts as the oldest, so the comparator never returns NaN and the order stays deterministic.
-        const createdMs = (createdAt: string): number =>
-          Date.parse(createdAt) || 0;
+        const createdMs = (createdAt: string): number => Date.parse(createdAt) || 0;
         const sorted = [...result.manifests].sort(
-          (a, b) => createdMs(b.createdAt) - createdMs(a.createdAt),
+          (a, b) => createdMs(b.createdAt) - createdMs(a.createdAt)
         );
 
         const format = getOutputFormat();
-        if (format !== "table") {
+        if (format !== 'table') {
           // Every wire field stays; `repo` is the one addition.
           outputService.print(
-            {
-              ...result,
-              manifests: sorted.map((m) => ({
-                ...m,
-                repo: nameOf(m.lineageGuid),
-              })),
-            },
-            format,
+            { ...result, manifests: sorted.map((m) => ({ ...m, repo: nameOf(m.lineageGuid) })) },
+            format
           );
           return;
         }
         if (sorted.length === 0) {
-          outputService.print(t("commands.backup.manifests.empty"));
+          outputService.print(t('commands.backup.manifests.empty'));
           return;
         }
 
-        const { formatSizeBytes } =
-          await import("@rediacc/shared/renet-contract");
+        const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
         // Ids read `<timestamp>Z-<hash>`: the timestamp is the Snapshot column already, so the short form is the first 8 hash characters. Full ids stay in `-o json`.
-        const shortId = (id: string): string =>
-          (id.split("-").pop() ?? id).slice(0, 8);
+        const shortId = (id: string): string => (id.split('-').pop() ?? id).slice(0, 8);
         const rows = sorted.map((m) => ({
           repo: repoOf(m.lineageGuid),
-          snapshot: m.createdAt
-            .replace("T", " ")
-            .replace(/\..*$/, "")
-            .replace(/Z$/, ""),
+          snapshot: m.createdAt.replace('T', ' ').replace(/\..*$/, '').replace(/Z$/, ''),
           id: shortId(m.snapshotId),
-          parent: m.parentSnapshotId ? shortId(m.parentSnapshotId) : "-",
+          parent: m.parentSnapshotId ? shortId(m.parentSnapshotId) : '-',
           total: formatSizeBytes(m.totalBytes),
           added: `${formatSizeBytes(m.addedBytes)} / ${m.addedChunkCount}`,
-          index: m.hasIndex ? "yes" : "no",
-          consistency: m.consistency ?? "-",
+          index: m.hasIndex ? 'yes' : 'no',
+          consistency: m.consistency ?? '-',
           // A delayed delete still restores until it is due, so the cell says when, not "deleted".
-          state: m.deleteAfter
-            ? `deleting after ${minuteOf(m.deleteAfter)}`
-            : "-",
+          state: m.deleteAfter ? `deleting after ${minuteOf(m.deleteAfter)}` : '-',
         }));
 
         const columns = [
-          { key: "repo", header: "Repo" },
-          { key: "snapshot", header: "Snapshot" },
-          { key: "id", header: "Id" },
-          { key: "parent", header: "Parent" },
-          { key: "total", header: "Total", align: "right" as const },
-          { key: "added", header: "Added / chunks", align: "right" as const },
-          { key: "index", header: "Index" },
-          { key: "consistency", header: "Consistency" },
-          { key: "state", header: "State" },
+          { key: 'repo', header: 'Repo' },
+          { key: 'snapshot', header: 'Snapshot' },
+          { key: 'id', header: 'Id' },
+          { key: 'parent', header: 'Parent' },
+          { key: 'total', header: 'Total', align: 'right' as const },
+          { key: 'added', header: 'Added / chunks', align: 'right' as const },
+          { key: 'index', header: 'Index' },
+          { key: 'consistency', header: 'Consistency' },
+          { key: 'state', header: 'State' },
         ];
         outputService.print(outputService.format(rows, format, columns));
         // The listing is paged newest first: the cursor of the next page is named, never left to be guessed.
         if (result.nextBefore) {
           outputService.info(
-            t("commands.backup.manifests.more", {
+            t('commands.backup.manifests.more', {
               shown: sorted.length,
               total: result.total ?? sorted.length,
               before: result.nextBefore,
-            }),
+            })
           );
         }
       } catch (error) {
@@ -349,18 +316,18 @@ function registerBackupManifests(backup: Command): void {
  */
 function registerBackupBrowse(backup: Command): void {
   backup
-    .command("browse")
-    .argument("<repo-ref>", t("options.repoRef"))
+    .command('browse')
+    .argument('<repo-ref>', t('options.repoRef'))
     // .summary is the one-liner `--help` lists; .description is the long form a
     // reader sees on the command's own page. The long one carries the keyfile precondition and the chunk-store limit, which is too much for a list.
-    .summary(t("commands.backup.browse.descriptionShort"))
-    .description(t("commands.backup.browse.description"))
-    .option("--path <subdir>", t("commands.backup.browse.optionPath"))
-    .option("--depth <n>", t("commands.backup.browse.optionDepth"))
-    .option("--limit <n>", t("commands.backup.browse.optionLimit"))
-    .option("--at <time|snapshot>", t("commands.backup.browse.optionAt"))
-    .option("--from <storeId>", t("commands.backup.browse.optionFrom"))
-    .option("--debug", t("options.debug"))
+    .summary(t('commands.backup.browse.descriptionShort'))
+    .description(t('commands.backup.browse.description'))
+    .option('--path <subdir>', t('commands.backup.browse.optionPath'))
+    .option('--depth <n>', t('commands.backup.browse.optionDepth'))
+    .option('--limit <n>', t('commands.backup.browse.optionLimit'))
+    .option('--at <time|snapshot>', t('commands.backup.browse.optionAt'))
+    .option('--from <storeId>', t('commands.backup.browse.optionFrom'))
+    .option('--debug', t('options.debug'))
     .action(
       async (
         repoRef: string,
@@ -371,31 +338,26 @@ function registerBackupBrowse(backup: Command): void {
           at?: string;
           from?: string;
           debug?: boolean;
-        },
+        }
       ) => {
         try {
           if (options.from !== undefined && !options.at) {
-            throw new ValidationError(t("commands.backup.browse.fromNeedsAt"));
+            throw new ValidationError(t('commands.backup.browse.fromNeedsAt'));
           }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
-          let snapshotId = "";
+          let snapshotId = '';
           let result: Awaited<ReturnType<typeof executeRepoFunction>>;
           // The listing print is the job's step (PLAN-detached-jobs J17), so a ticket handed back early prints nothing half-done.
           const limit = options.limit ?? BACKUP_BROWSE_DEFAULTS.LIMIT;
           if (options.at) {
-            ({ result, snapshotId } = await runBrowseAt(
-              repoKey,
-              machineName,
-              options.at,
-              options,
-            ));
+            ({ result, snapshotId } = await runBrowseAt(repoKey, machineName, options.at, options));
           } else {
             result = await executeRepoFunction(
-              "backup_browse",
+              'backup_browse',
               repoKey,
               machineName,
               {
-                path: options.path ?? "",
+                path: options.path ?? '',
                 depth: options.depth ?? BACKUP_BROWSE_DEFAULTS.DEPTH,
                 limit,
               },
@@ -404,25 +366,15 @@ function registerBackupBrowse(backup: Command): void {
                 debug: options.debug,
                 captureOutput: true,
                 job: {
-                  verb: "backup browse",
-                  steps: [
-                    planStep("renderBackupBrowse", {
-                      repo: repoKey,
-                      snapshot: "",
-                      limit,
-                    }),
-                  ],
+                  verb: 'backup browse',
+                  steps: [planStep('renderBackupBrowse', { repo: repoKey, snapshot: '', limit })],
                 },
               },
               {
-                starting: t("commands.backup.browse.starting", {
-                  name: repoKey,
-                }),
-                completed: t("commands.backup.browse.completed", {
-                  name: repoKey,
-                }),
-                failed: t("commands.backup.browse.failed", { name: repoKey }),
-              },
+                starting: t('commands.backup.browse.starting', { name: repoKey }),
+                completed: t('commands.backup.browse.completed', { name: repoKey }),
+                failed: t('commands.backup.browse.failed', { name: repoKey }),
+              }
             );
           }
 
@@ -430,10 +382,7 @@ function registerBackupBrowse(backup: Command): void {
           // Exit 18: the snapshot has no stored listing (an older snapshot, or one taken without a listing). A distinct code, as with 16, so a script can tell "no listing there" from "it broke".
           if (options.at && result.exitCode === RENET_NO_LISTING_EXIT) {
             outputService.warn(
-              t("commands.backup.browse.noListing", {
-                name: repoKey,
-                snapshot: snapshotId,
-              }),
+              t('commands.backup.browse.noListing', { name: repoKey, snapshot: snapshotId })
             );
             setExitCode(RENET_NO_LISTING_EXIT);
           }
@@ -441,7 +390,7 @@ function registerBackupBrowse(backup: Command): void {
         } catch (error) {
           handleError(error);
         }
-      },
+      }
     );
 }
 
@@ -453,18 +402,15 @@ function registerBackupBrowse(backup: Command): void {
  */
 function registerBackupVerify(backup: Command): void {
   backup
-    .command("verify")
-    .argument("<repo-ref>", t("options.repoRef"))
-    .summary(t("commands.backup.verify.descriptionShort"))
-    .description(t("commands.backup.verify.description"))
-    .option("--deep", t("commands.backup.verify.optionDeep"))
-    .option("--store", t("commands.backup.verify.optionStore"))
-    .option("--restore-test", t("commands.backup.verify.optionRestoreTest"))
-    .option(
-      "--restore-to <machine>",
-      t("commands.backup.verify.optionRestoreTo"),
-    )
-    .option("--debug", t("options.debug"))
+    .command('verify')
+    .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.verify.descriptionShort'))
+    .description(t('commands.backup.verify.description'))
+    .option('--deep', t('commands.backup.verify.optionDeep'))
+    .option('--store', t('commands.backup.verify.optionStore'))
+    .option('--restore-test', t('commands.backup.verify.optionRestoreTest'))
+    .option('--restore-to <machine>', t('commands.backup.verify.optionRestoreTo'))
+    .option('--debug', t('options.debug'))
     .action(
       async (
         repoRef: string,
@@ -474,61 +420,49 @@ function registerBackupVerify(backup: Command): void {
           restoreTest?: boolean;
           restoreTo?: string;
           debug?: boolean;
-        },
+        }
       ) => {
         try {
           // A restore test is its own check, with its own verdict on the snapshot; mixing it with the anchor or store checks would blur which verdict was printed.
           if (options.restoreTo !== undefined && !options.restoreTest) {
-            throw new ValidationError(
-              t("commands.backup.verify.restoreToNeedsRestoreTest"),
-            );
+            throw new ValidationError(t('commands.backup.verify.restoreToNeedsRestoreTest'));
           }
           if (options.restoreTest) {
             if (options.deep || options.store) {
-              throw new ValidationError(
-                t("commands.backup.verify.restoreTestExclusive"),
-              );
+              throw new ValidationError(t('commands.backup.verify.restoreTestExclusive'));
             }
-            const { runRestoreTest } = await import("./backup-restore-test.js");
+            const { runRestoreTest } = await import('./backup-restore-test.js');
             await runRestoreTest(repoRef, { restoreTo: options.restoreTo });
             return;
           }
           // `--deep` re-hashes the machine's cells and `--store` re-hashes the server's chunks: two different checks, and one of them would be dropped silently.
           if (options.deep && options.store) {
-            throw new ValidationError(
-              t("commands.backup.verify.deepStoreExclusive"),
-            );
+            throw new ValidationError(t('commands.backup.verify.deepStoreExclusive'));
           }
           if (options.store) {
             const { repoKey } = await resolveRepoRefLocal(repoRef);
             const verdict = await runStoreVerify(await resolveLineage(repoRef));
             const format = getOutputFormat();
-            const clean =
-              verdict.missing.length === 0 && verdict.corrupt.length === 0;
+            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
             // An empty or unclean verdict fails the run; set before the print so the JSON envelope says success:false.
             if (verdict.checked === 0 || !clean) setExitCode(1);
-            outputService.print(verdict, format === "table" ? "json" : format);
+            outputService.print(verdict, format === 'table' ? 'json' : format);
             // A lineage with no stored chunks verified nothing: it is not recorded or reported as verified.
             if (verdict.checked === 0) {
-              outputService.warn(
-                t("commands.backup.verify.storeEmpty", { name: repoKey }),
-              );
-              await recordBackupRun(repoKey, {
-                kind: "verify",
-                status: "empty",
-              });
+              outputService.warn(t('commands.backup.verify.storeEmpty', { name: repoKey }));
+              await recordBackupRun(repoKey, { kind: 'verify', status: 'empty' });
               return;
             }
             await recordBackupRun(repoKey, {
-              kind: "verify",
-              status: clean ? "verified" : "mismatch",
+              kind: 'verify',
+              status: clean ? 'verified' : 'mismatch',
             });
             return;
           }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
-          const level = options.deep ? "full" : "spot";
+          const level = options.deep ? 'full' : 'spot';
           const result = await executeRepoFunction(
-            "backup_verify",
+            'backup_verify',
             repoKey,
             machineName,
             { level },
@@ -541,48 +475,39 @@ function registerBackupVerify(backup: Command): void {
               // The verdict print and the run record are steps on the job's ticket, so nothing says "verified" before the job has verified anything (PLAN-detached-jobs J4). The verdict is structured data, printed as structured data in every mode. On a failure executeRepoFunction renders the failure (envelope and exit code), and renet's
               // verdict rides its output tail; printing the verdict too would put a SECOND JSON document on stdout, so no failure step prints.
               job: {
-                verb: "backup verify",
+                verb: 'backup verify',
                 steps: [
-                  planStep("reportVerifyVerdict", { repo: repoKey, level }),
+                  planStep('reportVerifyVerdict', { repo: repoKey, level }),
                   // The status is read from renet's verdict on both outcomes, so a `no-backup` run never records `verified`.
-                  planStep("recordVerifyVerdict", { repo: repoKey }),
-                  planStep("recordVerifyVerdictFailed", { repo: repoKey }),
+                  planStep('recordVerifyVerdict', { repo: repoKey }),
+                  planStep('recordVerifyVerdictFailed', { repo: repoKey }),
                 ],
               },
             },
             {
-              starting: t("commands.backup.verify.starting", {
-                name: repoKey,
-                level,
-              }),
-              completed: t("commands.backup.verify.completed", {
-                name: repoKey,
-              }),
-              failed: t("commands.backup.verify.failed", { name: repoKey }),
-            },
+              starting: t('commands.backup.verify.starting', { name: repoKey, level }),
+              completed: t('commands.backup.verify.completed', { name: repoKey }),
+              failed: t('commands.backup.verify.failed', { name: repoKey }),
+            }
           );
-          if (!result.success && result.state !== "running") {
+          if (!result.success && result.state !== 'running') {
             // On stderr, so a JSON run keeps exactly one document (the failure envelope) on stdout.
             const records = result.stdout?.trim();
             if (records) writeStderr(`${records}\n`);
             renderLocalExecutionFailure(
               result,
-              result.error ??
-                t("commands.backup.verify.failed", { name: repoKey }),
+              result.error ?? t('commands.backup.verify.failed', { name: repoKey })
             );
           }
         } catch (error) {
           handleError(error);
         }
-      },
+      }
     );
 }
 
-export { snapshotUploadParams } from "./backup-storage-snapshot.js";
-export {
-  runStoreVerify,
-  type StoreVerifyVerdict,
-} from "./backup-store-verify.js";
+export { snapshotUploadParams } from './backup-storage-snapshot.js';
+export { runStoreVerify, type StoreVerifyVerdict } from './backup-store-verify.js';
 
 /** Register the chunk-store backup reads + verification under `rdc backup`. */
 export function registerBackupStorageCommands(backup: Command): void {
