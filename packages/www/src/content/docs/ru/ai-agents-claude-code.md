@@ -10,11 +10,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: ru
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code нативно работает с Rediacc через CLI `rdc`. Это руководство охватывает настройку, разрешения и типичные рабочие процессы.
+
+> **Сначала безопасность**: Прежде чем подключать агента к чему-либо, что касается секретов, прочитайте [Безопасность и ограждения AI-агентов](/ru/docs/ai-agents-safety). Claude Code, запущенный под `rdc`, определяется как агент. Для чувствительных изменений требуется `--current <previous-value>` (предусловие passwd-стиля) как для людей, так и для агентов; `--rotate-secret` (подтверждённая ротация с записью в аудит) засчитывается только человеку в терминале. `rdc config edit` (интерактивный, `--apply`, `--reveal`) отклоняется без какого-либо переопределения, а grand-репозитории и прямой SSH к машине остаются закрытыми, пока человек не даст явное согласие в рамках того, что разрешает политика. Если предусловие не выполнено, поле `errors[].next.options[].run` в JSON-конверте сообщает агенту точную команду CLI, которую стоит предложить пользователю. Передайте её дословно.
 
 ## Быстрая настройка
 
@@ -38,7 +40,7 @@ Claude Code читает `CLAUDE.md` при запуске и используе
 - Deploy: rdc repo up <repo>@<machine> --yes
 - Containers: rdc machine status <machine> --containers -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term connect <machine> [repo]
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -86,7 +88,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 

@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: tr
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Açıkçası, `rdc` tasarım gereği ajan bilinçlidir. Claude Code, Cursor, Cline: bir alt kabukta `rdc` çağıran herhangi bir AI asistanı yapılandırılmış JSON çıktısı, makine tarafından okunabilir hatalar ve otonom Rediacc altyapı yönetimi için isteyeceğiniz güvenlik koruyucularını elde eder. Entegrasyonun nasıl çalıştığına bakalım.
@@ -77,7 +77,7 @@ Hata yanıtları `retryable` ve `guidance` alanlarını içerir:
 
 ## Güvenlik ve Koruyucular
 
-CLI, ajanları terminaldeki bir kullanıcıyla aynı şekilde ele almaz. Hassas işlemlerin gerçekleştirilebilmesi için mevcut durumu önceden bildiğinizin kanıtlanması gerekir (`--current` bayrağı), etkileşimli editör akışları varsayılan olarak reddedilir ve her red işlemi denetim günlüğüne kaydedilir. [AI Ajan Güvenliği ve Koruyucular](/tr/docs/ai-agents-safety) referansı tam güvenlik duvarı tablosunu, bilgi geçidi modelini, `REDIACC_ALLOW_CONFIG_EDIT` kapsam geçersiz kılma özelliğini ve karma zincirli denetim günlüğünü kapsar.
+CLI, ajanları terminaldeki bir kullanıcıyla aynı şekilde ele almaz. Hassas işlemler mevcut durumun kanıtını gerektirir (`--current` bayrağı), yapılandırmanın tamamını düzenlemek hiçbir geçersiz kılma olmadan reddedilir ve her red işlemi denetim günlüğüne kaydedilir. [AI Ajan Güvenliği ve Koruyucular](/tr/docs/ai-agents-safety) referansı tam güvenlik duvarı tablosunu, bilgi geçidi modelini, açık onay VE ilke tavanı kuralını ve karma zincirli denetim günlüğünü kapsar.
 
 ## Sonraki Adımlar
 
