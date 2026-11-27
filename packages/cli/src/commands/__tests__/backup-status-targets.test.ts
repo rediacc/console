@@ -2,14 +2,14 @@
  * `rdc backup status` prints one row per destination store (multi-target S1).
  *
  * Each row is one unit-target: the store, its last run and outcome, its newest snapshot, its last verify and its
- * clean-up state are the destination's own (`-` when it has none). Only a store the status route did not list keeps the
- * unit's own run columns. A row without a store is `home`, and
+ * clean-up state are the destination's own (`-` when it has none). Only a store the status route did not list keeps
+ * the unit's own run columns. A row without a store is `home`, and
  * a store without a clean-up state is `enabled`.
  */
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockPrint = vi.hoisted(() => vi.fn());
-vi.mock("../../services/core/output.js", () => ({
+vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: vi.fn(),
     success: vi.fn(),
@@ -18,36 +18,31 @@ vi.mock("../../services/core/output.js", () => ({
     print: mockPrint,
   },
 }));
-vi.mock("../../utils/errors.js", async () => {
-  const actual = await vi.importActual<typeof import("../../utils/errors.js")>(
-    "../../utils/errors.js",
-  );
-  return { ...actual, getOutputFormat: () => "json" };
+vi.mock('../../utils/errors.js', async () => {
+  const actual =
+    await vi.importActual<typeof import('../../utils/errors.js')>('../../utils/errors.js');
+  return { ...actual, getOutputFormat: () => 'json' };
 });
 
-const { renderBackupScheduleStatus } =
-  await import("../../services/backup/backup-schedule.js");
-const { copyLag, expandStatusRows, summarizeStatus } =
-  await import("../../services/backup/backup-store-pick.js");
+const { renderBackupScheduleStatus } = await import('../../services/backup/backup-schedule.js');
+const { copyLag, expandStatusRows, summarizeStatus } = await import(
+  '../../services/backup/backup-store-pick.js'
+);
 
-const UNIT = {
-  unitName: "nightly",
-  strategyName: "nightly",
-  schedule: "0 3 * * *",
-};
+const UNIT = { unitName: 'nightly', strategyName: 'nightly', schedule: '0 3 * * *' };
 /** `systemctl show` for a loaded, active timer whose service last ran fine. */
 const SHOW = [
-  "Id=rediacc-backup-nightly.timer",
-  "LoadState=loaded",
-  "ActiveState=active",
-  "NextElapseUSecRealtime=Sat 2999-01-02 03:00:00 UTC",
-  "LastTriggerUSec=Sat 2999-01-01 03:00:00 UTC",
-  "",
-  "Id=rediacc-backup-nightly.service",
-  "LoadState=loaded",
-  "Result=success",
-  "ExecMainExitTimestamp=Sat 2999-01-01 03:01:00 UTC",
-].join("\n");
+  'Id=rediacc-backup-nightly.timer',
+  'LoadState=loaded',
+  'ActiveState=active',
+  'NextElapseUSecRealtime=Sat 2999-01-02 03:00:00 UTC',
+  'LastTriggerUSec=Sat 2999-01-01 03:00:00 UTC',
+  '',
+  'Id=rediacc-backup-nightly.service',
+  'LoadState=loaded',
+  'Result=success',
+  'ExecMainExitTimestamp=Sat 2999-01-01 03:01:00 UTC',
+].join('\n');
 
 const stream = (
   storeId: string | undefined,
@@ -57,14 +52,14 @@ const stream = (
     lastRunStatus: string | null;
     newestSnapshotAt: string | null;
     lastVerifyStatus: string | null;
-  }> = {},
+  }> = {}
 ) => ({
   ...(storeId === undefined ? {} : { storeId }),
-  lineageGuid: "L1",
-  lastRunAt: "2026-11-07T01:00:00Z",
-  lastRunStatus: "ok",
-  newestSnapshotAt: "2026-11-07T01:00:00Z",
-  lastVerifyStatus: "verified",
+  lineageGuid: 'L1',
+  lastRunAt: '2026-11-07T01:00:00Z',
+  lastRunStatus: 'ok',
+  newestSnapshotAt: '2026-11-07T01:00:00Z',
+  lastVerifyStatus: 'verified',
   ...extra,
 });
 
@@ -72,9 +67,9 @@ const stream = (
 const known = (extra: Record<string, unknown> = {}) => ({
   lastRunAt: null,
   lastRunStatus: null,
-  newestSnapshotAt: "2026-11-07T01:00:00Z",
-  verify: "ok" as const,
-  cleanup: "enabled",
+  newestSnapshotAt: '2026-11-07T01:00:00Z',
+  verify: 'ok' as const,
+  cleanup: 'enabled',
   ...extra,
 });
 
@@ -82,260 +77,208 @@ beforeEach(() => {
   mockPrint.mockClear();
 });
 
-describe("summarizeStatus", () => {
-  it("sums a store over streams: latest run, newest snapshot, a failed verify wins, clean-up state", () => {
+describe('summarizeStatus', () => {
+  it('sums a store over streams: latest run, newest snapshot, a failed verify wins, clean-up state', () => {
     const stores = summarizeStatus(
       {
-        stores: [
-          {
-            storeId: "eu-west",
-            cleanup: "disabled -- delete refused by the store",
-          },
-        ],
+        stores: [{ storeId: 'eu-west', cleanup: 'disabled -- delete refused by the store' }],
         streams: [
           stream(undefined),
-          stream("eu-west"),
-          stream("home", {
-            lastRunAt: "2026-11-08T00:00:00Z",
-            lastRunStatus: "failed",
-            newestSnapshotAt: "2026-11-08T00:00:00Z",
-            lastVerifyStatus: "failed",
+          stream('eu-west'),
+          stream('home', {
+            lastRunAt: '2026-11-08T00:00:00Z',
+            lastRunStatus: 'failed',
+            newestSnapshotAt: '2026-11-08T00:00:00Z',
+            lastVerifyStatus: 'failed',
           }),
-          stream("eu-west", { lastVerifyStatus: null, lineageGuid: "L-other" }),
+          stream('eu-west', { lastVerifyStatus: null, lineageGuid: 'L-other' }),
         ],
       },
-      new Set(["L1"]),
+      new Set(['L1'])
     );
     // A stream without storeId is home.
     expect(stores.home).toEqual({
-      lastRunAt: "2026-11-08T00:00:00Z",
-      lastRunStatus: "failed",
-      newestSnapshotAt: "2026-11-08T00:00:00Z",
-      verify: "failed",
-      cleanup: "enabled",
+      lastRunAt: '2026-11-08T00:00:00Z',
+      lastRunStatus: 'failed',
+      newestSnapshotAt: '2026-11-08T00:00:00Z',
+      verify: 'failed',
+      cleanup: 'enabled',
     });
-    expect(stores["eu-west"]).toEqual({
-      lastRunAt: "2026-11-07T01:00:00Z",
-      lastRunStatus: "ok",
-      newestSnapshotAt: "2026-11-07T01:00:00Z",
-      verify: "ok",
-      cleanup: "disabled -- delete refused by the store",
+    expect(stores['eu-west']).toEqual({
+      lastRunAt: '2026-11-07T01:00:00Z',
+      lastRunStatus: 'ok',
+      newestSnapshotAt: '2026-11-07T01:00:00Z',
+      verify: 'ok',
+      cleanup: 'disabled -- delete refused by the store',
     });
   });
 
-  it("ignores streams of lineages the machine does not hold", () => {
+  it('ignores streams of lineages the machine does not hold', () => {
     expect(
-      summarizeStatus(
-        { streams: [stream("home", { lineageGuid: "X" })] },
-        new Set(["L1"]),
-      ),
+      summarizeStatus({ streams: [stream('home', { lineageGuid: 'X' })] }, new Set(['L1']))
     ).toEqual({});
   });
 });
 
-describe("expandStatusRows", () => {
-  const rows = [
-    {
-      strategy: "nightly",
-      unit: "nightly",
-      status: "scheduled",
-      result: "success",
-    },
-  ];
+describe('expandStatusRows', () => {
+  const rows = [{ strategy: 'nightly', unit: 'nightly', status: 'scheduled', result: 'success' }];
 
-  it("gives a strategy with no destinations and no data one home row", () => {
+  it('gives a strategy with no destinations and no data one home row', () => {
     expect(expandStatusRows(rows)).toEqual([
       {
-        strategy: "nightly",
-        unit: "nightly",
-        store: "home",
-        status: "scheduled",
-        result: "success",
-        newestSnapshot: "-",
-        verify: "-",
-        cleanup: "enabled",
-        copyLag: "-",
+        strategy: 'nightly',
+        unit: 'nightly',
+        store: 'home',
+        status: 'scheduled',
+        result: 'success',
+        newestSnapshot: '-',
+        verify: '-',
+        cleanup: 'enabled',
+        copyLag: '-',
       },
     ]);
   });
 
-  it("gives one row per destination store, each with its own store data", () => {
+  it('gives one row per destination store, each with its own store data', () => {
     const out = expandStatusRows(rows, {
-      byStrategy: { nightly: ["home", "eu-west"] },
+      byStrategy: { nightly: ['home', 'eu-west'] },
       stores: {
         home: known(),
-        "eu-west": known({
+        'eu-west': known({
           newestSnapshotAt: null,
-          verify: "failed",
-          cleanup: "disabled -- x",
-          lastRunAt: "2026-11-06T00:00:00Z",
-          lastRunStatus: "failed",
+          verify: 'failed',
+          cleanup: 'disabled -- x',
+          lastRunAt: '2026-11-06T00:00:00Z',
+          lastRunStatus: 'failed',
         }),
       },
     });
-    expect(
-      out.map((r) => [r.store, r.newestSnapshot, r.verify, r.cleanup]),
-    ).toEqual([
-      ["home", "2026-11-07T01:00:00Z", "ok", "enabled"],
-      ["eu-west", "-", "failed", "disabled -- x"],
+    expect(out.map((r) => [r.store, r.newestSnapshot, r.verify, r.cleanup])).toEqual([
+      ['home', '2026-11-07T01:00:00Z', 'ok', 'enabled'],
+      ['eu-west', '-', 'failed', 'disabled -- x'],
     ]);
-    expect(out.every((r) => r.status === "scheduled")).toBe(true);
+    expect(out.every((r) => r.status === 'scheduled')).toBe(true);
     // Each store says its own outcome; a store the account has no run for shows '-', not the unit's.
-    expect(out.map((r) => r.result)).toEqual(["-", "failed"]);
+    expect(out.map((r) => r.result)).toEqual(['-', 'failed']);
   });
 
   it("shows each unit-target its own last run, never another target's", () => {
     const unitRows = [
       {
-        strategy: "nightly",
-        unit: "nightly",
-        status: "scheduled",
-        lastRun: "unit-run",
-        result: "success",
+        strategy: 'nightly',
+        unit: 'nightly',
+        status: 'scheduled',
+        lastRun: 'unit-run',
+        result: 'success',
       },
     ];
     const out = expandStatusRows(unitRows, {
-      byStrategy: { nightly: ["home", "eu-west", "offsite"] },
+      byStrategy: { nightly: ['home', 'eu-west', 'offsite'] },
       stores: {
-        home: known({ lastRunAt: "2026-11-07T01:00:00Z", lastRunStatus: "ok" }),
-        "eu-west": known({
-          lastRunAt: "2026-11-06T00:00:00Z",
-          lastRunStatus: "failed",
-        }),
+        home: known({ lastRunAt: '2026-11-07T01:00:00Z', lastRunStatus: 'ok' }),
+        'eu-west': known({ lastRunAt: '2026-11-06T00:00:00Z', lastRunStatus: 'failed' }),
         offsite: known(),
       },
     });
-    expect(
-      out.map((r) => [r.store, (r as { lastRun?: string }).lastRun, r.result]),
-    ).toEqual([
-      ["home", "2026-11-07T01:00:00Z", "ok"],
-      ["eu-west", "2026-11-06T00:00:00Z", "failed"],
-      ["offsite", "-", "-"],
+    expect(out.map((r) => [r.store, r.lastRun, r.result])).toEqual([
+      ['home', '2026-11-07T01:00:00Z', 'ok'],
+      ['eu-west', '2026-11-06T00:00:00Z', 'failed'],
+      ['offsite', '-', '-'],
     ]);
     // A store the status route did not list (older account server) keeps the unit's own columns.
-    const unlisted = expandStatusRows(unitRows, {
-      byStrategy: { nightly: ["home"] },
-      stores: {},
-    });
-    expect(
-      unlisted.map((r) => [(r as { lastRun?: string }).lastRun, r.result]),
-    ).toEqual([["unit-run", "success"]]);
+    const unlisted = expandStatusRows(unitRows, { byStrategy: { nightly: ['home'] }, stores: {} });
+    expect(unlisted.map((r) => [r.lastRun, r.result])).toEqual([['unit-run', 'success']]);
   });
 });
 
-describe("replicate destination copy lag", () => {
-  const rows = [
-    {
-      strategy: "nightly",
-      unit: "nightly",
-      status: "scheduled",
-      result: "success",
-    },
-  ];
+describe('replicate destination copy lag', () => {
+  const rows = [{ strategy: 'nightly', unit: 'nightly', status: 'scheduled', result: 'success' }];
   const targets = (copy: Record<string, unknown>) => ({
-    byStrategy: { nightly: ["home", "eu-west"] },
-    replicas: { nightly: { "eu-west": "home" } },
+    byStrategy: { nightly: ['home', 'eu-west'] },
+    replicas: { nightly: { 'eu-west': 'home' } },
     stores: {
-      home: known({ newestSnapshotAt: "2026-11-07T01:30:00Z" }),
-      "eu-west": known(copy),
+      home: known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }),
+      'eu-west': known(copy),
     },
   });
 
-  it("shows the source newest snapshot minus the replica newest, and only on the replica row", () => {
-    const out = expandStatusRows(
-      rows,
-      targets({ newestSnapshotAt: "2026-11-07T01:00:00Z" }),
-    );
+  it('shows the source newest snapshot minus the replica newest, and only on the replica row', () => {
+    const out = expandStatusRows(rows, targets({ newestSnapshotAt: '2026-11-07T01:00:00Z' }));
     expect(out.map((r) => [r.store, r.copyLag])).toEqual([
-      ["home", "-"],
-      ["eu-west", "30m"],
+      ['home', '-'],
+      ['eu-west', '30m'],
     ]);
   });
 
-  it("says not copied when the replica holds no snapshot yet, and 0s when level", () => {
+  it('says not copied when the replica holds no snapshot yet, and 0s when level', () => {
+    expect(expandStatusRows(rows, targets({ newestSnapshotAt: null }))[1].copyLag).toBe(
+      'not copied'
+    );
     expect(
-      expandStatusRows(rows, targets({ newestSnapshotAt: null }))[1].copyLag,
-    ).toBe("not copied");
-    expect(
-      expandStatusRows(
-        rows,
-        targets({ newestSnapshotAt: "2026-11-07T01:30:00Z" }),
-      )[1].copyLag,
-    ).toBe("0s");
+      expandStatusRows(rows, targets({ newestSnapshotAt: '2026-11-07T01:30:00Z' }))[1].copyLag
+    ).toBe('0s');
   });
 
-  it("stays - when the target store has no status entry (an unreadable listing is not a missing copy)", () => {
+  it('stays - when the target store has no status entry (an unreadable listing is not a missing copy)', () => {
     const noReplica = {
-      byStrategy: { nightly: ["home", "eu-west"] },
-      replicas: { nightly: { "eu-west": "home" } },
-      stores: { home: known({ newestSnapshotAt: "2026-11-07T01:30:00Z" }) },
+      byStrategy: { nightly: ['home', 'eu-west'] },
+      replicas: { nightly: { 'eu-west': 'home' } },
+      stores: { home: known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }) },
     };
-    expect(expandStatusRows(rows, noReplica)[1].copyLag).toBe("-");
-    expect(
-      copyLag(known({ newestSnapshotAt: "2026-11-07T01:30:00Z" }), undefined),
-    ).toBe("-");
+    expect(expandStatusRows(rows, noReplica)[1].copyLag).toBe('-');
+    expect(copyLag(known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }), undefined)).toBe('-');
     expect(
       copyLag(
-        known({ newestSnapshotAt: "2026-11-07T01:30:00Z" }),
-        known({ newestSnapshotAt: null }),
-      ),
-    ).toBe("not copied");
+        known({ newestSnapshotAt: '2026-11-07T01:30:00Z' }),
+        known({ newestSnapshotAt: null })
+      )
+    ).toBe('not copied');
   });
 
-  it("never goes negative when the replica is ahead, and is - without a source snapshot", () => {
-    expect(
-      copyLag(known({ newestSnapshotAt: "2026-11-07T01:00:00Z" }), known()),
-    ).toBe("0s");
-    expect(copyLag(undefined, known())).toBe("-");
-    expect(copyLag(known({ newestSnapshotAt: null }), known())).toBe("-");
+  it('never goes negative when the replica is ahead, and is - without a source snapshot', () => {
+    expect(copyLag(known({ newestSnapshotAt: '2026-11-07T01:00:00Z' }), known())).toBe('0s');
+    expect(copyLag(undefined, known())).toBe('-');
+    expect(copyLag(known({ newestSnapshotAt: null }), known())).toBe('-');
   });
 
-  it("reaches the printed row of renderBackupScheduleStatus", () => {
+  it('reaches the printed row of renderBackupScheduleStatus', () => {
     renderBackupScheduleStatus(
-      "m1",
+      'm1',
       [UNIT],
       SHOW,
-      targets({ newestSnapshotAt: "2026-11-07T00:30:00Z" }),
+      targets({ newestSnapshotAt: '2026-11-07T00:30:00Z' })
     );
     const printed = mockPrint.mock.calls[0][0] as Record<string, string>[];
-    expect(printed.map((r) => r.copyLag)).toEqual(["-", "1h"]);
+    expect(printed.map((r) => r.copyLag)).toEqual(['-', '1h']);
   });
 });
 
-describe("renderBackupScheduleStatus", () => {
-  it("prints one row per destination store with the unit columns kept", () => {
-    renderBackupScheduleStatus("m1", [UNIT], SHOW, {
-      byStrategy: { nightly: ["home", "offsite"] },
+describe('renderBackupScheduleStatus', () => {
+  it('prints one row per destination store with the unit columns kept', () => {
+    renderBackupScheduleStatus('m1', [UNIT], SHOW, {
+      byStrategy: { nightly: ['home', 'offsite'] },
       stores: {
-        home: known({ lastRunAt: "2026-11-07T01:00:00Z", lastRunStatus: "ok" }),
+        home: known({ lastRunAt: '2026-11-07T01:00:00Z', lastRunStatus: 'ok' }),
       },
     });
     const printed = mockPrint.mock.calls[0][0] as Record<string, string>[];
-    expect(printed.map((r) => r.store)).toEqual(["home", "offsite"]);
+    expect(printed.map((r) => r.store)).toEqual(['home', 'offsite']);
     expect(printed[0]).toMatchObject({
-      strategy: "nightly",
-      unit: "nightly",
-      status: "scheduled",
-      result: "ok",
-      newestSnapshot: "2026-11-07T01:00:00Z",
-      verify: "ok",
-      cleanup: "enabled",
+      strategy: 'nightly',
+      unit: 'nightly',
+      status: 'scheduled',
+      result: 'ok',
+      newestSnapshot: '2026-11-07T01:00:00Z',
+      verify: 'ok',
+      cleanup: 'enabled',
     });
-    expect(printed[1]).toMatchObject({
-      store: "offsite",
-      newestSnapshot: "-",
-      verify: "-",
-    });
+    expect(printed[1]).toMatchObject({ store: 'offsite', newestSnapshot: '-', verify: '-' });
   });
 
-  it("keeps one home row, plus the store column, when no target data came with the plan", () => {
-    renderBackupScheduleStatus("m1", [UNIT], SHOW);
+  it('keeps one home row, plus the store column, when no target data came with the plan', () => {
+    renderBackupScheduleStatus('m1', [UNIT], SHOW);
     const printed = mockPrint.mock.calls[0][0] as Record<string, string>[];
     expect(printed).toHaveLength(1);
-    expect(printed[0]).toMatchObject({
-      store: "home",
-      unit: "nightly",
-      result: "success",
-    });
+    expect(printed[0]).toMatchObject({ store: 'home', unit: 'nightly', result: 'success' });
   });
 });
