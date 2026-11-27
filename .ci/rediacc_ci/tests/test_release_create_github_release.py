@@ -21,11 +21,13 @@ sides, because bash sorts glob results with `strcoll` and the port sorts by code
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
 import sys
 import typing
+from typing import Any
 
 from rediacc_ci import paths
 from rediacc_ci.release import create_github_release as port
@@ -41,11 +43,32 @@ PORT = ROOT / ".ci" / "rediacc_ci" / "release" / "create_github_release.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
 FAKE_GH = """#!/usr/bin/python3
+import json
 import os
 import sys
 
+args = sys.argv[1:]
+# The read-only calls the notes need are answered from the environment and logged apart, so the mutating-call log stays the one the cases compare.
+if args[:2] == ["release", "list"] or args[:1] == ["api"]:
+    with open(os.environ["FAKE_READ_LOG"], "a") as fh:
+        fh.write("read: gh " + " ".join(args) + "\\n")
+    if args[:2] == ["release", "list"]:
+        latest = os.environ.get("FAKE_LATEST", "")
+        rows = [{"tagName": t, "isLatest": t == latest} for t in os.environ.get("FAKE_RELEASES", "").split()]
+        sys.stdout.write(json.dumps(rows))
+    elif "matching-refs" in args[-3]:
+        for tag in os.environ.get("FAKE_TAGS", "").split():
+            sys.stdout.write("refs/tags/" + tag + "\\n")
+    else:
+        sha = os.environ.get("FAKE_TAG_SHA", "")
+        if not sha:
+            sys.stderr.write("gh: Not Found (HTTP 404)\\n")
+            sys.exit(1)
+        sys.stdout.write(sha + "\\n")
+    sys.exit(0)
+
 with open(os.environ["FAKE_LOG"], "a") as fh:
-    fh.write("call: gh " + " ".join(sys.argv[1:]) + "\\n")
+    fh.write("call: gh " + " ".join(args) + "\\n")
 
 rc = int(os.environ.get("FAKE_GH_RC", "0"))
 if rc == 0:
@@ -114,6 +137,8 @@ def _run(
     assets: tuple[str, ...] = (),
     stub_gh: bool = True,
     link: tuple[str, str] | None = None,
+    args: tuple[str, ...] = (),
+    env_extra: dict[str, str] | None = None,
     **extra: str,
 ) -> tuple[int, str, str, list[str]]:
     root = _fixture(tmp_path, side, assets)
@@ -146,12 +171,14 @@ def _run(
         "PYTHONPATH": str(ROOT / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",
         "FAKE_LOG": str(call_log),
+        "FAKE_READ_LOG": str(tmp_path / ("%s-reads.log" % side)),
         # Third guard: even a call that escaped the fake cannot authenticate.
         "GH_CONFIG_DIR": str(tmp_path / "gh-config"),
         "GH_TOKEN": "fake-token-not-a-credential",
         **BASE_ENV_VARS,
     }
     env.update(extra)
+    env.update(env_extra or {})
     for key, value in list(env.items()):
         if value is None:
             del env[key]
@@ -163,7 +190,7 @@ def _run(
         subject = root / ".ci" / "rediacc_ci" / "release" / PORT.name
         runner = [sys.executable]
     proc = subprocess.run(
-        [*runner, str(subject)],
+        [*runner, str(subject), *args],
         cwd=str(tmp_path),
         capture_output=True,
         text=True,
@@ -180,6 +207,7 @@ def run_both(tmp_path: pathlib.Path, **kw) -> tuple[tuple, tuple]:
         TWIN_REL,
         [repr(sorted(kw.items()))],
         lambda: _run(tmp_path, "old", **kw),
+        port=lambda: _run(tmp_path, "port", **kw),
         work=(tmp_path,),
     )
     return old, _run(tmp_path, "new", **kw)
@@ -270,7 +298,7 @@ def test_the_full_invocation_is_byte_identical(tmp_path: pathlib.Path) -> None:
     assert old[3] == [
         (
             "call: gh release create v1.2.3 --title v1.2.3 --target "
-            "0123456789abcdef0123456789abcdef01234567 --generate-notes --latest=false --repo "
+            "0123456789abcdef0123456789abcdef01234567 --notes-file dist/release-notes.md --latest=false --repo "
             "acme/widget dist/cli/rdc-linux-x64 dist/packages/rdc.deb"
         )
     ]
@@ -518,3 +546,195 @@ def test_the_harness_actually_compared_something(tmp_path: pathlib.Path) -> None
     assert len(old[3]) == 1, "the twin never called gh"
     assert len(new[3]) == 1, "the port never called gh"
     assert len(_assets_of(old[3][0])) == 1
+
+
+# --------------------------------------------------------------------------- The body from trailers (PLAN-release-notes RN5) ---------------------------------------------------------------------------
+
+ASSET = ("dist/cli/rdc-linux-x64",)
+STATE: dict[str, Any] = {
+    "FAKE_RELEASES": "v3.0.1 v4.0.1",
+    "FAKE_LATEST": "v3.0.1",
+    "FAKE_TAGS": "v3.0.1 v4.0.0 v4.0.1 v4.0.2",
+}
+SHA = "0123456789abcdef0123456789abcdef01234567"
+
+
+def _notes(tmp_path: pathlib.Path, start: str, groups: dict | None = None) -> dict[str, Any]:
+    """A notes document for `start`, so a case does not need a git history to collect from; the collector has its own in-process case below."""
+    path = tmp_path / ("notes-%s.json" % start)
+    doc = {"version": "x", "start_tag": start, "groups": groups or {}}
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return {"RELEASE_NOTES_JSON": str(path)}
+
+
+def _go(
+    tmp_path: pathlib.Path,
+    *,
+    assets: tuple[str, ...] = (),
+    args: tuple[str, ...] = (),
+    **env: str,
+) -> tuple[int, str, str, list[str]]:
+    return _run(tmp_path, "new", assets=assets, args=args, env_extra=env)
+
+
+def _body(tmp_path: pathlib.Path, side: str = "new") -> str:
+    return (tmp_path / ("tree-%s" % side) / "dist" / "release-notes.md").read_text(encoding="utf-8")
+
+
+def _create(calls: list[str]) -> list[str]:
+    assert len(calls) == 1, calls
+    return calls[0].split(" ")
+
+
+def test_a_new_version_starts_at_the_newest_release(tmp_path: pathlib.Path) -> None:
+    rc, _out, err, calls = _go(
+        tmp_path, assets=ASSET, VERSION="4.0.2", **STATE, **_notes(tmp_path, "v4.0.1")
+    )
+    assert rc == 0, err
+    argv = _create(calls)
+    assert argv[argv.index("--notes-start-tag") + 1] == "v4.0.1"
+    assert "--generate-notes" not in argv
+    assert "--latest=false" in argv
+    body = _body(tmp_path)
+    assert "tagged but not published" not in body
+    assert "Stable: v3.0.1, marked Latest; this is an edge release." in body
+    assert "**Full Changelog**: https://github.com/acme/widget/compare/v4.0.1...v4.0.2" in body
+
+
+def test_a_replay_skips_the_orphan_and_names_it(tmp_path: pathlib.Path) -> None:
+    rc, _out, err, calls = _go(
+        tmp_path,
+        assets=ASSET,
+        VERSION="4.0.1",
+        FAKE_TAG_SHA="f" * 40,
+        **STATE,
+        **_notes(tmp_path, "v3.0.1"),
+    )
+    assert rc == 1, "the tag sits at another commit, so the replay must refuse: %s" % err
+    rc, _out, err, calls = _go(
+        tmp_path,
+        assets=ASSET,
+        VERSION="4.0.1",
+        FAKE_TAG_SHA=SHA,
+        **STATE,
+        **_notes(tmp_path, "v3.0.1"),
+    )
+    assert rc == 0, err
+    argv = _create(calls)
+    assert argv[argv.index("--notes-start-tag") + 1] == "v3.0.1"
+    assert "v4.0.0 was tagged but not published; its changes are listed here." in _body(tmp_path)
+
+
+def test_an_empty_range_says_so(tmp_path: pathlib.Path) -> None:
+    rc, _out, err, _calls = _go(
+        tmp_path, assets=ASSET, VERSION="4.0.2", **STATE, **_notes(tmp_path, "v4.0.1")
+    )
+    assert rc == 0, err
+    assert "No customer-facing changes recorded in this range." in _body(tmp_path)
+
+
+def test_a_tag_at_another_commit_refuses_before_gh_creates(tmp_path: pathlib.Path) -> None:
+    rc, out, _err, calls = _go(
+        tmp_path,
+        assets=ASSET,
+        VERSION="4.0.2",
+        FAKE_TAG_SHA="f" * 40,
+        **STATE,
+        **_notes(tmp_path, "v4.0.1"),
+    )
+    assert rc == 1
+    assert "already exists at %s" % ("f" * 40) in out
+    assert calls == [], "gh release create ran despite the tag sitting at another commit"
+
+
+def test_the_notes_file_supplies_the_groups(tmp_path: pathlib.Path) -> None:
+    notes = tmp_path / "notes.json"
+    notes.write_text(
+        json.dumps(
+            {
+                "version": "4.0.2",
+                "start_tag": "v4.0.1",
+                "groups": {"Added": ["Backups can be scheduled."], "Fixed": [], "Improved": []},
+            }
+        ),
+        encoding="utf-8",
+    )
+    rc, _out, err, _calls = _go(
+        tmp_path, assets=ASSET, VERSION="4.0.2", RELEASE_NOTES_JSON=str(notes), **STATE
+    )
+    assert rc == 0, err
+    assert "## Added\n\n- Backups can be scheduled." in _body(tmp_path)
+
+
+def test_a_notes_file_for_another_range_is_refused(tmp_path: pathlib.Path) -> None:
+    notes = tmp_path / "notes.json"
+    notes.write_text(json.dumps({"version": "4.0.2", "start_tag": "v3.0.1", "groups": {}}))
+    rc, _out, err, calls = _go(
+        tmp_path, assets=ASSET, VERSION="4.0.2", RELEASE_NOTES_JSON=str(notes), **STATE
+    )
+    assert rc == 1
+    assert "start tag" in err
+    assert calls == []
+
+
+def test_dry_run_prints_the_body_and_writes_nothing(tmp_path: pathlib.Path) -> None:
+    rc, out, err, calls = _go(
+        tmp_path,
+        assets=ASSET,
+        args=("--dry-run",),
+        VERSION="4.0.2",
+        **STATE,
+        **_notes(tmp_path, "v4.0.1"),
+    )
+    assert rc == 0, err
+    assert calls == []
+    assert "No customer-facing changes recorded in this range." in out
+    assert "--notes-start-tag v4.0.1" in out
+    assert not (tmp_path / "tree-new" / "dist" / "release-notes.md").exists()
+
+
+def test_the_orphan_warning_names_the_skipped_tag(tmp_path: pathlib.Path) -> None:
+    rc, out, err, _calls = _go(tmp_path, args=("--print-orphan-warning",), VERSION="4.0.1", **STATE)
+    assert rc == 0, err
+    assert out.startswith("::warning::v4.0.0 was tagged but not published")
+    rc, out, _err, _calls = _go(
+        tmp_path, args=("--print-orphan-warning",), VERSION="4.0.2", **STATE
+    )
+    assert rc == 0
+    assert out == ""
+
+
+def test_the_collector_feeds_the_body_when_no_file_is_given(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """In-process over a real git history: the note between v4.0.1 and the sha reaches the body, the older one does not."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@t",
+        }
+        return subprocess.run(
+            ["git", *args], cwd=repo, env=env, check=True, capture_output=True, text=True
+        ).stdout.strip()
+
+    git("init", "-q")
+    (repo / "a.txt").write_text("1")
+    git("add", "a.txt")
+    git("commit", "-q", "-m", "feat: before\n\nRelease-Note: Old thing works.")
+    git("tag", "v4.0.1")
+    (repo / "b.txt").write_text("2")
+    git("add", "b.txt")
+    git("commit", "-q", "-m", "feat: after\n\nRelease-Note: Backups can be scheduled.")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.setattr(port, "release_state", lambda _repo: (["v4.0.1"], ["v4.0.1"], "v4.0.1"))
+    monkeypatch.setattr(port, "_ROOT", str(repo))
+    doc, start = port.render_notes("4.0.2", "acme/widget", head, None)
+    assert start == "v4.0.1"
+    assert doc["groups"]["Added"] == ["Backups can be scheduled."]
+    assert doc["stable"] == "4.0.1"

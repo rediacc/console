@@ -726,6 +726,25 @@ def _table() -> tuple[Step, ...]:
             ),
             profiles=("r2-artifacts",),
         ),
+        # The notes are computed once and uploaded to the immutable cli/v<V>/ prefix before any deploy reads them (PLAN-release-notes D8); github-release renders its body from the same file.
+        Step(
+            "release-notes",
+            "publish",
+            (
+                *PY,
+                "rediacc_ci.release.create_github_release",
+                "--write-notes-json",
+                "dist/release-notes.json",
+                "--upload-notes",
+            ),
+            env=(
+                ("VERSION", "{version}"),
+                ("GITHUB_REPOSITORY", "{repo}"),
+                ("GITHUB_SHA", "{sha}"),
+            ),
+            profiles=("r2-artifacts",),
+            gh_env=("GH_TOKEN",),
+        ),
         Step(
             "promote-renet",
             "publish",
@@ -1105,7 +1124,12 @@ def _table() -> tuple[Step, ...]:
             "github-release",
             "release",
             (*PY, "rediacc_ci.release.create_github_release"),
-            env=(("VERSION", "{version}"), ("GITHUB_REPOSITORY", "{repo}")),
+            env=(
+                ("VERSION", "{version}"),
+                ("GITHUB_REPOSITORY", "{repo}"),
+                ("GITHUB_SHA", "{sha}"),
+                ("RELEASE_NOTES_JSON", "dist/release-notes.json"),
+            ),
             gh_env=("GH_TOKEN",),
         ),
         # ---- 11. the release record

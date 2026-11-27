@@ -434,6 +434,21 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.verify_artifact_attestation
 
+      # PLAN-release-notes D8: the notes of this version are computed ONCE, here, over the full history and the submodules this job checked out, and uploaded to the immutable cli/v<V>/release-notes.json BEFORE deploy-marketing-edge starts (that job needs this one, so the www build can read the file over HTTP). `tag-and-release` renders the Release body from the same file. Write-once: a replay keeps the first object.
+      - name: Render and upload the release notes
+        if: needs.init.outputs.workers_only != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.init.outputs.next_version }}
+          GITHUB_SHA: ${{ needs.init.outputs.ci_sha }}
+          RELEASES_BUCKET: ${{ env.WK_RELEASES_BUCKET }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release
+          --write-notes-json "$RUNNER_TEMP/release-notes.json" --upload-notes
+
       # The version tag is created in init (see "Create version tag"): the
       # sentinel is already sealed, so the tag must not wait on anything that
       # can fail. Submodule tags, the Homebrew formula and the GitHub Release
@@ -772,6 +787,15 @@ jobs:
           GIT_BOT_EMAIL: ${{ env.BWS_GIT_BOT_EMAIL }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.advance_contract_floor
 
+      # The body is rendered from the file `publish` uploaded (PLAN-release-notes D8), fetched from the releases origin. A missing file fails the step: a Release body built from a shallow checkout would silently drop notes.
+      - name: Fetch the release notes
+        if: steps.owed.outputs.owed == 'true'
+        env:
+          VERSION: ${{ needs.init.outputs.next_version }}
+        run: |
+          ORIGIN=$(sed -n 's/^WK_RELEASES_ORIGIN=//p' .ci/config/well-known.env)
+          curl -fsS --retry 5 --retry-all-errors -o dist/release-notes.json "${ORIGIN}/cli/v${VERSION}/release-notes.json"
+
       - name: Create GitHub Release
         if: steps.owed.outputs.owed == 'true'
         env:
@@ -781,6 +805,9 @@ jobs:
           # Release rather than a clean failure.
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           VERSION: ${{ needs.init.outputs.next_version }}
+          # The commit init tagged, not the run's own head: the tag check refuses a tag at any other commit.
+          GITHUB_SHA: ${{ needs.init.outputs.ci_sha }}
+          RELEASE_NOTES_JSON: dist/release-notes.json
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release
 
   # ============================================================================

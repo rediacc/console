@@ -18,17 +18,23 @@ both sides so the comparison measures the port rather than the locale.
 DIRECTORIES ARE FILTERED OUT AFTER THE GLOB, not during it, matching the twin's
 `for f in "${assets[@]}"; do [[ -f "$f" ]] && files+=("$f"); done`. `-f` follows
 symlinks and is true only for a regular file, which is what `os.path.isfile` does, so a symlink to a directory is dropped by both and a symlink to a file is kept by both.
+
+THE BODY COMES FROM THE AUTHOR'S `Release-Note:` TRAILERS, NOT FROM `--generate-notes` (PLAN-release-notes RN5, D5-D8). The start tag is the newest `v*` tag older than this version that HAS a GitHub Release, read through the GitHub API and never from local tags; a tag between the two with no Release is an orphan, named in the body and folded into the range. The body is rendered by `release_notes.render_markdown` from one notes document: `--notes-json` (or `RELEASE_NOTES_JSON`) names the file `--write-notes-json` rendered earlier, `publish` uploads the same file to `cli/v<V>/release-notes.json` with `--upload-notes`, and a release with no file collects the range itself. A file whose `start_tag` is not the start tag read now is refused: its groups describe another range. A tag that already exists at a commit other than `GITHUB_SHA` is refused before `gh release create` (D7, the v2.4.0 shape). `--dry-run` prints the body and the argv and writes nothing. `--print-orphan-warning` prints the `::warning::` of D7 and exits 0.
 """
 
 from __future__ import annotations
 
+import argparse
 import glob
+import json
 import os
+import re
 import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import common
+from rediacc_ci.core import awscli, common
+from rediacc_ci.release import release_notes
 
 SELF = "rediacc_ci.release.create_github_release"
 
@@ -39,6 +45,16 @@ _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."
 ASSET_PATTERNS = ("dist/cli/**/*", "dist/packages/**/*")
 
 NO_ASSETS = "::error::No release assets matched dist/{cli,packages}/**/*"
+
+# Where the rendered body is written for `--notes-file`: relative to the repo root, outside both asset patterns, and the same path on every run.
+BODY_REL = "dist/release-notes.md"
+NOTES_KEY = "cli/v%s/release-notes.json"
+IMMUTABLE = "public, max-age=31536000, immutable"
+_SEMVER = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
+
+
+class NotesError(RuntimeError):
+    """The notes cannot be built or the release cannot go ahead; the message says why."""
 
 
 def _require_cmd(name: str) -> int | None:
@@ -75,8 +91,187 @@ def release_assets(root: str = _ROOT) -> list[str]:
     return files
 
 
+def _gh(args: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(["gh", *args], cwd=_ROOT, capture_output=True, text=True, check=False)
+
+
+def _semver(tag: str) -> tuple[int, int, int] | None:
+    m = _SEMVER.match(tag)
+    return (int(m.group(1)), int(m.group(2)), int(m.group(3))) if m else None
+
+
+def release_state(repo: str) -> tuple[list[str], list[str], str | None]:
+    """(tags with a Release, every `v*` tag, the tag marked Latest), read through the GitHub API."""
+    listed = _gh(
+        ["release", "list", "--repo", repo, "--limit", "1000", "--json", "tagName,isLatest"]
+    )
+    if listed.returncode != 0:
+        msg = "could not list the Releases of %s (rc=%d): %s" % (
+            repo,
+            listed.returncode,
+            listed.stderr.strip(),
+        )
+        raise NotesError(msg)
+    try:
+        rows = json.loads(listed.stdout or "[]")
+    except ValueError as exc:
+        msg = "`gh release list` printed no JSON: %s" % exc
+        raise NotesError(msg) from exc
+    released = [str(r["tagName"]) for r in rows]
+    latest = next((str(r["tagName"]) for r in rows if r.get("isLatest")), None)
+    refs = _gh(["api", "--paginate", "repos/%s/git/matching-refs/tags/v" % repo, "--jq", ".[].ref"])
+    if refs.returncode != 0:
+        msg = "could not list the tags of %s (rc=%d): %s" % (
+            repo,
+            refs.returncode,
+            refs.stderr.strip(),
+        )
+        raise NotesError(msg)
+    tags = [line.removeprefix("refs/tags/") for line in refs.stdout.split() if line.strip()]
+    return released, tags, latest
+
+
+def start_tag(version: str, repo: str) -> tuple[str | None, list[str], str | None]:
+    """(start tag, orphan tags, stable tag) for `version` (D5, D7): the newest older tag that has a Release, the older tags after it that have none, and the Release marked Latest."""
+    released, tags, latest = release_state(repo)
+    new = _semver("v" + version.removeprefix("v"))
+    if new is None:
+        msg = "version %r is not X.Y.Z" % version
+        raise NotesError(msg)
+    older = sorted(
+        {t for t in [*tags, *released] if (v := _semver(t)) is not None and v < new},
+        key=lambda t: _semver(t) or (0, 0, 0),
+    )
+    with_release = [t for t in older if t in released]
+    start = with_release[-1] if with_release else None
+    floor = (_semver(start) if start else None) or (-1, -1, -1)
+    orphans = [t for t in older if t not in released and (_semver(t) or (0, 0, 0)) > floor]
+    return start, orphans, latest
+
+
+def render_notes(
+    version: str, repo: str, sha: str, notes_json: str | None
+) -> tuple[dict, str | None]:
+    """The notes document and the start tag it was built for."""
+    start, orphans, latest = start_tag(version, repo)
+    if notes_json:
+        with open(notes_json, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        if (doc.get("start_tag") or None) != start:
+            msg = "%s was rendered for start tag %s, but the start tag now is %s" % (
+                notes_json,
+                doc.get("start_tag"),
+                start,
+            )
+            raise NotesError(msg)
+        doc["version"] = version.removeprefix("v")
+        doc.setdefault("repo", repo)
+        doc["orphans"] = orphans
+        doc["stable"] = latest.removeprefix("v") if latest else None
+        return doc, start
+    if start is None:
+        collection = release_notes.Collection(commits=[], notes=[], none_count=0, warnings=[])
+    else:
+        collection = release_notes.collect(start, sha, _ROOT)
+        for warning in collection.warnings:
+            log.warn(warning)
+    return (
+        release_notes.document(
+            version, start or "", collection, orphans=orphans, stable=latest, repo=repo
+        ),
+        start,
+    )
+
+
+def tag_commit(repo: str, version: str) -> str | None:
+    """The commit `v<version>` resolves to, or None when the tag does not exist. Any other failure raises: an unknown is never read as absent."""
+    proc = _gh(["api", "repos/%s/commits/v%s" % (repo, version), "--jq", ".sha"])
+    if proc.returncode == 0:
+        return proc.stdout.strip() or None
+    text = proc.stderr + proc.stdout
+    if re.search(r"HTTP 404|Not Found|No commit found", text, re.IGNORECASE):
+        return None
+    msg = "could not resolve tag v%s (rc=%d): %s" % (version, proc.returncode, text.strip())
+    raise NotesError(msg)
+
+
+def upload_notes(path: str, version: str) -> None:
+    """Write `cli/v<V>/release-notes.json` to the releases bucket, write-once: an existing object is kept."""
+    endpoint = common.require_var("CLOUDFLARE_R2_ENDPOINT")
+    env = dict(
+        os.environ,
+        AWS_ACCESS_KEY_ID=common.require_var("CLOUDFLARE_R2_ACCESS_KEY_ID"),
+        AWS_SECRET_ACCESS_KEY=common.require_var("CLOUDFLARE_R2_SECRET_ACCESS_KEY"),
+        AWS_DEFAULT_REGION="auto",
+    )
+    bucket = os.environ.get("RELEASES_BUCKET", "") or "releases"
+    key = NOTES_KEY % version
+    head = awscli.run(
+        [
+            awscli.AWS,
+            "s3api",
+            "head-object",
+            "--bucket",
+            bucket,
+            "--key",
+            key,
+            "--endpoint-url",
+            endpoint,
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if head.returncode == 0:
+        log.info("%s already exists; kept (write-once)" % key)
+        return
+    if not re.search(r"404|Not Found", head.stderr, re.IGNORECASE):
+        msg = "could not tell whether %s exists: %s" % (key, head.stderr.strip())
+        raise NotesError(msg)
+    put = awscli.run(
+        [
+            awscli.AWS,
+            "s3",
+            "cp",
+            path,
+            "s3://%s/%s" % (bucket, key),
+            "--endpoint-url",
+            endpoint,
+            "--content-type",
+            "application/json",
+            "--cache-control",
+            IMMUTABLE,
+            "--no-progress",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    if put.returncode != 0:
+        msg = "upload of %s failed (rc=%d): %s" % (key, put.returncode, put.stderr.strip())
+        raise NotesError(msg)
+    log.info("uploaded %s" % key)
+
+
+def _write_notes(args: argparse.Namespace, version: str, sha: str, repo: str) -> None:
+    doc, _start = render_notes(version, repo, sha, None)
+    with open(args.write_notes_json, "w", encoding="utf-8") as fh:
+        json.dump(doc, fh, indent=2, sort_keys=True)
+        fh.write("\n")
+    if args.upload_notes:
+        upload_notes(args.write_notes_json, version.removeprefix("v"))
+
+
 def main(argv: list[str]) -> int:
-    del argv
+    parser = argparse.ArgumentParser(prog=SELF)
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--notes-json", default=os.environ.get("RELEASE_NOTES_JSON") or None)
+    parser.add_argument("--write-notes-json", default=None, metavar="PATH")
+    parser.add_argument("--upload-notes", action="store_true")
+    parser.add_argument("--print-orphan-warning", action="store_true")
+    args = parser.parse_args(argv)
+    if args.upload_notes and not args.write_notes_json:
+        parser.error("--upload-notes needs --write-notes-json")
     refusal = _require_cmd("gh")
     if refusal is not None:
         return refusal
@@ -84,31 +279,61 @@ def main(argv: list[str]) -> int:
     github_sha = _require_var("GITHUB_SHA")
     github_repository = _require_var("GITHUB_REPOSITORY")
 
-    files = release_assets()
-    if not files:
-        print(NO_ASSETS)
+    try:
+        if args.print_orphan_warning:
+            _start, orphans, _latest = start_tag(version, github_repository)
+            for tag in orphans:
+                print(
+                    "::warning::%s was tagged but not published; its changes are folded into v%s."
+                    % (tag, version.removeprefix("v"))
+                )
+            return 0
+        if args.write_notes_json:
+            _write_notes(args, version, github_sha, github_repository)
+            return 0
+        files = release_assets()
+        if not files:
+            print(NO_ASSETS)
+            return 1
+        doc, start = render_notes(version, github_repository, github_sha, args.notes_json)
+        body = release_notes.render_markdown(doc)
+        at = tag_commit(github_repository, version.removeprefix("v"))
+    except (NotesError, release_notes.ReleaseNotesError, common.RefusalError) as exc:
+        print("%s: %s" % (SELF, exc), file=sys.stderr)
+        return 1
+    if at is not None and at != github_sha:
+        print(
+            "::error::Tag v%s already exists at %s, not at %s. Refusing to release one version from two commits."
+            % (version, at, github_sha)
+        )
         return 1
 
-    proc = subprocess.run(
-        [
-            "gh",
-            "release",
-            "create",
-            "v%s" % version,
-            "--title",
-            "v%s" % version,
-            "--target",
-            github_sha,
-            "--generate-notes",
-            # Latest means production; only mark_production moves it (see the bash twin).
-            "--latest=false",
-            "--repo",
-            github_repository,
-            *files,
-        ],
-        cwd=_ROOT,
-        check=False,
-    )
+    gh_argv = [
+        "gh",
+        "release",
+        "create",
+        "v%s" % version,
+        "--title",
+        "v%s" % version,
+        "--target",
+        github_sha,
+        "--notes-file",
+        BODY_REL,
+        *(["--notes-start-tag", start] if start else []),
+        # Latest means production; only mark_production moves it.
+        "--latest=false",
+        "--repo",
+        github_repository,
+        *files,
+    ]
+    if args.dry_run:
+        print(body, end="")
+        print("+ " + " ".join(gh_argv))
+        return 0
+    os.makedirs(os.path.join(_ROOT, os.path.dirname(BODY_REL)), exist_ok=True)
+    with open(os.path.join(_ROOT, BODY_REL), "w", encoding="utf-8") as fh:
+        fh.write(body)
+    proc = subprocess.run(gh_argv, cwd=_ROOT, check=False)
     return proc.returncode
 
 
