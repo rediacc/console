@@ -5,6 +5,7 @@
  * Compares remote GUIDs against all config files to identify orphaned entries.
  */
 
+import { isSealed } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { ArchivedRepository, RdcConfig } from '../../types/index.js';
@@ -101,7 +102,7 @@ async function scanOtherConfig(
     const config = await configFileStorage.load(name);
 
     // Check if config is encrypted and repos aren't readable
-    if (config.encryption?.mode === 'master-password' && !config.resources?.repositories) {
+    if (isSealed(config) && !config.resources?.repositories) {
       unreadableConfigs.push(name);
       return;
     }
