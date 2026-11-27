@@ -37,7 +37,8 @@ import {
 } from '../services/config/policy-record.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
-import type { SecureStorage } from '../utils/secure-storage.js';
+import type { SecureStorage, SyncReadableSecureStorage } from '../utils/secure-storage.js';
+import { clearSealKeyCache, readCachedSecret } from './config-seal-key.js';
 import {
   findUnreachable,
   RemotePreconditionError,
@@ -109,6 +110,11 @@ export function sessionPrincipalOf(
   };
 }
 
+/** True for the storage `getSecureStorage()` hands out (the only one that also reads synchronously); false for an injected one. */
+function isProcessStorage(storage: SecureStorage): storage is SyncReadableSecureStorage {
+  return typeof (storage as Partial<SyncReadableSecureStorage>).getSync === 'function';
+}
+
 // ─── Adapter ────────────────────────────────────────────────────────────
 
 export class RemoteConfigAdapter {
@@ -124,13 +130,20 @@ export class RemoteConfigAdapter {
     this.http = new LeasedConfigFetch(remote, configName, transport);
   }
 
+  /** A token lease whose writes seal the token file under this config's slot secret (D9). */
+  private leased<T>(fn: (lease: TokenLease) => Promise<T>): Promise<T> {
+    return this.tokenStorage.withLease(this.configName, fn, {
+      slotKeyId: this.remote.storageKeyId,
+    });
+  }
+
   /**
    * Pull the latest config from the remote server: ONE request, under the token lease. The pull
    * response carries `server_secret`, so `/session` is not asked first (F8: every extra request
    * spends a token use).
    */
   pull(): Promise<PullResult> {
-    return this.tokenStorage.withLease(this.configName, (lease) => this.pullLeased(lease));
+    return this.leased((lease) => this.pullLeased(lease));
   }
 
   private async pullLeased(lease: TokenLease): Promise<PullResult> {
@@ -184,7 +197,7 @@ export class RemoteConfigAdapter {
    * refuses it nor moves; a restore republishes it as a NEW version through `push`.
    */
   pullVersion(version: number): Promise<PullResult> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const path = `/account/api/v1/configs/${this.remote.configId}/versions/${version}${
         this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
@@ -209,7 +222,7 @@ export class RemoteConfigAdapter {
    * first): the versions a restore can bring back. The current version is not among them.
    */
   listVersions(): Promise<RemoteVersionInfo[]> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const path = `/account/api/v1/configs/${this.remote.configId}/versions${
         this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
@@ -231,7 +244,7 @@ export class RemoteConfigAdapter {
    * offers to attach to. Needs no configId, so a pointer that has not chosen one can call it.
    */
   listConfigs(): Promise<RemoteConfigEntry[]> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const listed = await this.fetch<{ configs?: RemoteConfigEntry[] }>(
         lease,
@@ -257,7 +270,7 @@ export class RemoteConfigAdapter {
    * @throws Error when the session names no valid org role: the caller is never guessed to be an owner
    */
   policyContext(): Promise<RemotePolicyContext> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       let context: RemotePolicyContext;
       try {
@@ -280,9 +293,7 @@ export class RemoteConfigAdapter {
    * be opened (command-policy.ts SESSION_OPTIONAL_COMMANDS).
    */
   cachedPolicyContext(): Promise<RemotePolicyContext | undefined> {
-    return this.tokenStorage.withLease(this.configName, (lease) =>
-      Promise.resolve(this.syncRecord(lease)?.policyContext)
-    );
+    return this.leased((lease) => Promise.resolve(this.syncRecord(lease)?.policyContext));
   }
 
   /** The online half of `policyContext`: the session's principal and the effective policy. */
@@ -428,7 +439,7 @@ export class RemoteConfigAdapter {
   push(config: RdcConfig, currentVersion: number, options: PushOptions = {}): Promise<PushResult> {
     // Before the lease and the first request: a remote config's policy is its own record, and a push that carries one is refused without spending a token.
     if (config.policy !== undefined) return Promise.reject(new ConfigPolicyFieldError());
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
       const cek = await this.deriveCek(session.serverSecret, lease);
@@ -494,7 +505,8 @@ export class RemoteConfigAdapter {
     base: RdcConfig | undefined
   ): PushPrior | undefined {
     const seen = this.syncRecord(lease);
-    if (seen?.highWater !== currentVersion) return undefined;
+    // A record kept across a re-enrollment may lack its salt until the next pull records it again.
+    if (seen?.highWater !== currentVersion || seen.fckSalt === undefined) return undefined;
     return {
       envelopeVersion: seen.envelopeVersion,
       fckSalt: seen.fckSalt,
@@ -541,7 +553,7 @@ export class RemoteConfigAdapter {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.tokenStorage.withLease(this.configName, async (lease) => {
+      await this.leased(async (lease) => {
         this.requireToken(lease);
         await this.fetchSession(lease);
       });
@@ -556,7 +568,7 @@ export class RemoteConfigAdapter {
    * the wizard and polls it afterwards, so the CLI learns the rotation finished from the server instead of asking.
    */
   storeGeneration(): Promise<number | undefined> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       return (await this.fetchSession(lease)).cekGeneration;
     });
@@ -571,7 +583,7 @@ export class RemoteConfigAdapter {
    * Rotates the config token like any other request.
    */
   unwrapCek(): Promise<CryptoKey> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
       return this.deriveCek(session.serverSecret, lease);
@@ -640,16 +652,29 @@ export class RemoteConfigAdapter {
     }
   }
 
-  /** Derive CEK from passkey_secret + server_secret */
+  /**
+   * Derive CEK from passkey_secret + server_secret. The process's own secure storage (the one
+   * `getSecureStorage()` hands out, the only one that reads synchronously) is read through the
+   * per-process cache of config-seal-key.ts, which the token file's seal shares, so one operation
+   * reads the slot secret once (D9). A secret that fails to open the CEK is read again once,
+   * uncached: another step of this process may have replaced it since it was cached (an absence is
+   * never cached, so a missing secret needs no second read). An injected storage is read directly.
+   */
   private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
-    const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
-    return unwrapDeviceCek(
-      passkeySecretStr,
-      serverSecret,
-      lease.data?.wrappedCek,
-      this.configName,
-      () => this.enrolledHere()
-    );
+    const unwrap = (secret: string | null) =>
+      unwrapDeviceCek(secret, serverSecret, lease.data?.wrappedCek, this.configName, () =>
+        this.enrolledHere()
+      );
+    if (!isProcessStorage(this.secureStorage)) {
+      return unwrap(await this.secureStorage.get(this.remote.storageKeyId));
+    }
+    try {
+      return await unwrap(await readCachedSecret(this.remote.storageKeyId));
+    } catch (error) {
+      if (!(error instanceof RemoteStaleSlotError)) throw error;
+      clearSealKeyCache();
+      return unwrap(await readCachedSecret(this.remote.storageKeyId));
+    }
   }
 
   private fetch<T>(
