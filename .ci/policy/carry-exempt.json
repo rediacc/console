@@ -80,6 +80,11 @@
       "kind": "clock"
     },
     {
+      "id": "check:ci-windows-image-expiry",
+      "reason": "Counts the days left before the recorded Windows evaluation image's expires_at against the clock (gate_clock.now in windows_image_expiry.py), so it turns red inside the warn_days window as the calendar advances at an identical tree.",
+      "kind": "clock"
+    },
+    {
       "id": "check:deps",
       "reason": "Asks the npm registry (npm outdated and registry.npmjs.org packuments, check-deps.ts:753) for every dependency, so its verdict moves when a package is published with no tracked input changed.",
       "kind": "network"

@@ -16917,6 +16917,18 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check renet step ids against the console phase map',
     },
   },
+  {
+    id: 'check:ci-windows-image-expiry',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.windows_image_expiry',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/windows_image_expiry.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Windows evaluation image expiry',
+    },
+  },
   // <<< gen-gates
 ];
 

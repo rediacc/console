@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:11:10.642Z",
+  "generatedAt": "2026-11-27T10:11:29.421Z",
   "legs": [
     {
       "index": 1,
@@ -309,6 +309,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_renet_types.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_rubric_calibration.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_swallowed_failures.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_windows_image_expiry.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_workflows.py",
         "pytest:.ci/rediacc_ci/tests/test_regolden_reexec.py",
         "pytest:.ci/rediacc_ci/tests/test_release_advance_contract_floor.py",

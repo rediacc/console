@@ -488,6 +488,9 @@ jobs:
       - name: Vendored blocker derivation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.vendored_blocker_derivation
+      - name: Windows evaluation image expiry
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.windows_image_expiry
       - name: Worker observability budget
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.worker_observability_budget
