@@ -86,7 +86,7 @@ if [[ -n "${FAKE_NPX_WRITES:-}" ]]; then
         if [[ "$prev" == "--output" ]]; then out="$a"; fi
         prev="$a"
     done
-    [[ -n "$out" ]] && printf 'LICENSE TEXT\\n' >"$out"
+    [[ -n "$out" ]] && printf '%b' "${FAKE_NPX_CONTENT:-LICENSE TEXT\\n}" >"$out"
 fi
 exit "${FAKE_NPX_RC:-0}"
 """
@@ -652,3 +652,49 @@ def test_the_digest_of_a_file_whose_path_holds_a_backslash_carries_no_escape_mar
     digest, error = port.file_sha256(target)
     assert error is None
     assert digest == hashlib.sha256(b"asset bytes").hexdigest()
+
+
+# --release (PLAN-release-credits-compliance C1). Not differential: the retired twin has no such flag.
+_COMPLETE_NOTICE = "header\nNode.js v24.1.0\nMIT licence text\n"
+
+
+def _release_run(root: pathlib.Path, notice: str | None, *flags: str):
+    """Runs the port; the fake `npx` writes `notice`, or fails when it is None."""
+    env: dict[str, str | None] = {
+        "FAKE_NPX_CONTENT": notice or "",
+        "FAKE_NPX_RC": "0" if notice is not None else "1",
+    }
+    _reset(root)
+    proc, _calls = _run(
+        root, "new", args=("--platform", "linux", "--arch", "x64", *flags), env_overrides=env
+    )
+    return proc
+
+
+def test_release_refuses_a_placeholder_notice_and_dev_accepts_it(tmp_path) -> None:
+    root = fixture(tmp_path)
+    placeholder = "Renet Go module dependencies: NOT GENERATED IN THIS BUILD.\nNode.js v24.1.0\n"
+    refused = _release_run(root, placeholder, "--release")
+    assert refused.returncode == 1, refused.stderr
+    assert "NOT GENERATED" in refused.stderr
+    accepted = _release_run(root, placeholder)
+    assert accepted.returncode == 0, accepted.stderr
+
+
+def test_release_refuses_a_missing_licence_text_and_a_missing_node_section(tmp_path) -> None:
+    root = fixture(tmp_path)
+    url_only = _release_run(root, _COMPLETE_NOTICE + "Full license text: https://x\n", "--release")
+    assert url_only.returncode == 1
+    assert "Full license text:" in url_only.stderr
+    no_node = _release_run(root, "just a header\n", "--release")
+    assert no_node.returncode == 1
+    assert "Node.js LICENSE section" in no_node.stderr
+
+
+def test_release_refuses_a_failed_generator_and_accepts_a_complete_notice(tmp_path) -> None:
+    root = fixture(tmp_path)
+    failed = _release_run(root, None, "--release")
+    assert failed.returncode == 1
+    assert "ships no placeholder" in failed.stderr
+    ok = _release_run(root, _COMPLETE_NOTICE, "--release")
+    assert ok.returncode == 0, ok.stderr
