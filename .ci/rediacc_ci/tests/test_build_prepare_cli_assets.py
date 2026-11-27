@@ -698,3 +698,54 @@ def test_release_refuses_a_failed_generator_and_accepts_a_complete_notice(tmp_pa
     assert "ships no placeholder" in failed.stderr
     ok = _release_run(root, _COMPLETE_NOTICE, "--release")
     assert ok.returncode == 0, ok.stderr
+
+
+def _generate_notice(tmp_path: pathlib.Path, *, readable_pkg: bool) -> tuple[str, str]:
+    """Runs the real generator against a fixture whose metafile names `node_modules/ghost-pkg`."""
+    repo = tmp_path / "gen-root"
+    cli = repo / "packages" / "cli"
+    (cli / "src" / "data").mkdir(parents=True)
+    (cli / "dist").mkdir(parents=True)
+    (cli / "src" / "data" / "third-party-credits.json").write_text(
+        '{"gplWrittenOffer": "offer", "components": []}\n', encoding="utf-8"
+    )
+    meta = {"inputs": {"node_modules/ghost-pkg/index.js": {}}}
+    (cli / "dist" / "cli-bundle.meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    if readable_pkg:
+        pkg_dir = cli / "node_modules" / "ghost-pkg"
+        pkg_dir.mkdir(parents=True)
+        (pkg_dir / "package.json").write_text(
+            '{"name": "ghost-pkg", "version": "1.0.0", "license": "MIT"}', encoding="utf-8"
+        )
+    out = tmp_path / "NOTICE"
+    proc = subprocess.run(
+        [
+            str(ROOT / "node_modules/.bin/tsx"),
+            str(ROOT / port.GENERATOR_REL),
+            "--repo-root",
+            str(repo),
+            "--output",
+            str(out),
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=300,
+        cwd=ROOT,
+    )
+    assert proc.returncode == 0, proc.stderr
+    return out.read_text(encoding="utf-8"), proc.stderr
+
+
+def test_an_unreadable_bundled_package_json_is_marked_and_refused_by_release(tmp_path) -> None:
+    text, stderr = _generate_notice(tmp_path, readable_pkg=False)
+    assert "ghost-pkg  [UNRESOLVED PACKAGE" in text
+    assert "WARNING" in stderr  # a dev build still completes, with a warning
+    assert "contains 'UNRESOLVED PACKAGE'" in port.release_problems(text)
+
+
+def test_a_readable_bundled_package_json_is_listed_and_not_refused(tmp_path) -> None:
+    text, _stderr = _generate_notice(tmp_path, readable_pkg=True)
+    assert "ghost-pkg@1.0.0  [MIT]" in text
+    assert "UNRESOLVED PACKAGE" not in text
+    assert "contains 'UNRESOLVED PACKAGE'" not in port.release_problems(text)

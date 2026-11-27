@@ -104,6 +104,7 @@ LICENSES_PLACEHOLDER = (
 # `--release`: markers a shipped notice file must not carry. Each is text the generator writes in place of something it could not produce.
 RELEASE_REFUSED_MARKERS = (
     "NOT GENERATED",
+    "UNRESOLVED PACKAGE",
     "Full license text:",
     "LICENSE TEXT MISSING",
     "generation failed at build time",

@@ -205,6 +205,9 @@ function placeholderSection(reason: string, what = 'Renet Go module dependencies
   return lines.join('\n');
 }
 
+/** Printed in place of a bundled package whose package.json cannot be read; `prepare_cli_assets.py --release` refuses it. */
+const UNRESOLVED_MARKER = 'UNRESOLVED PACKAGE';
+
 interface NpmDep {
   name: string;
   version: string;
@@ -260,6 +263,7 @@ function npmDepsSection(repoRoot: string): string {
     if (dir) dirs.add(dir);
   }
   const deps = new Map<string, NpmDep>();
+  const unresolved: string[] = [];
   for (const dir of dirs) {
     const abs = path.resolve(repoRoot, 'packages/cli', dir);
     try {
@@ -271,12 +275,17 @@ function npmDepsSection(repoRoot: string): string {
       const version = pkg.version ?? '';
       deps.set(`${name}@${version}`, { name, version, license: readPkgLicense(abs) });
     } catch {
-      // an input whose package.json is unreadable is not listed; the count below still guards emptiness
+      // never dropped silently: recorded and printed with a marker the release gate refuses
+      unresolved.push(dir);
     }
   }
   const rows = [...deps.values()]
     .sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version))
     .map((d) => `  ${d.name}@${d.version}  [${d.license}]`);
+  for (const dir of unresolved.sort((a, b) => a.localeCompare(b))) {
+    console.error(`generate-third-party-licenses: WARNING ${dir}/package.json is unreadable`);
+    rows.push(`  ${dir}  [${UNRESOLVED_MARKER}: package.json unreadable]`);
+  }
   if (rows.length === 0) {
     return placeholderSection(
       'the bundle metafile lists no node_modules inputs.',
