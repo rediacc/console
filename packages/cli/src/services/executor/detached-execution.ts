@@ -18,11 +18,8 @@
  */
 
 import type { JobOverlap } from '@rediacc/shared/cli-contract/wire';
-import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
-import { ERROR_CODES } from '../../types/errors.js';
 import { EXIT_CODES } from '../../types/index.js';
-import { CliExitError } from '../../utils/cli-exit-error.js';
 import { getOutputFormat } from '../../utils/errors.js';
 import { isDevBuild } from '../../utils/platform.js';
 import { VERSION } from '../../version.js';
@@ -62,9 +59,9 @@ import {
   jobStartCommand,
   jobStatusToExecuteResult,
   overlapWarningLines,
-  type PreconditionRefusal,
   resumeHint,
 } from './job-client.js';
+import { JobOverlapRefusedError, JobPreconditionRefusedError } from './job-refusals.js';
 import {
   FollowLostError,
   followJobLogs,
@@ -84,7 +81,7 @@ import {
 } from './renet-command.js';
 import type { ExecuteOptions, ExecuteResult, RenetEvent } from './types.js';
 
-const UNKNOWN_JOB_ID = '?';
+export { JobOverlapRefusedError, JobPreconditionRefusedError };
 
 /**
  * The section 24 exemptions that stay on `renet execute`: an interactive exec
@@ -96,52 +93,6 @@ export function runsOutsideJob(options: Pick<ExecuteOptions, 'functionName' | 'p
   if (params.tty === true) return true;
   if (options.functionName === 'container_logs' && params.follow === true) return true;
   return false;
-}
-
-/** The overlap refusal (section 19): exit 15, the other jobs as structured data. */
-export class JobOverlapRefusedError extends CliExitError {
-  constructor(
-    readonly overlaps: JobOverlap[],
-    machineName: string
-  ) {
-    const refusing = overlaps.filter((o) => o.action === 'refuse');
-    const first = refusing[0];
-    const holder = first
-      ? t('errors.jobs.holderJob', { id: first.jobId ?? first.unit ?? UNKNOWN_JOB_ID })
-      : t('errors.jobs.holderOther');
-    super(ERROR_CODES.BUSY, t('errors.jobs.refused', { machine: machineName, holder }), {
-      retryable: true,
-      details: [
-        ...refusing.flatMap(overlapWarningLines),
-        ...(first?.jobId
-          ? [t('errors.jobs.orStopIt', { id: first.jobId, machine: machineName })]
-          : []),
-      ],
-    });
-    this.name = 'JobOverlapRefusedError';
-  }
-}
-
-/**
- * A start refused by its vault's `expect` (section 14): the machine's state is
- * not what the command was resolved against, and no unit was spawned. Exit 12,
- * the code the client-side presence probe this replaces refused with, and for
- * `repo_present` the same text, so the routing contradiction reads as before.
- */
-export class JobPreconditionRefusedError extends CliExitError {
-  constructor(
-    readonly refusal: PreconditionRefusal,
-    machineName: string
-  ) {
-    const machine = refusal.machine || machineName;
-    super(
-      ERROR_CODES.STATE_MISMATCH,
-      refusal.expect === 'repo_present'
-        ? `config places ${refusal.repository} on ${machine}, but ${machine} does not have its image. Run "rdc config reconcile", then retry.`
-        : refusal.message
-    );
-    this.name = 'JobPreconditionRefusedError';
-  }
 }
 
 /** The clock and pause of the start retry, seamed so a test runs the budget instantly. */
