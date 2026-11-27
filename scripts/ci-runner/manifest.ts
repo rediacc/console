@@ -6836,7 +6836,6 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dockerfile mirror resilience',
     },
   },
-  // >>> gen-manifest: region 9
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_submodule_deps',
@@ -6846,10 +6845,11 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',
-      job: 'quality-static',
+      job: 'quality-code',
       step: 'Workflow submodule deps',
     },
   },
+  // >>> gen-manifest: region 9
   {
     id: 'check:ci-python-gate-deps',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_gate_deps',

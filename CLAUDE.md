@@ -319,7 +319,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / proxy-wrangler-dev | 1 | 1 | 1 |
 | step / quality-account | 6 | 6 | 2 |
 | step / quality-branch | 13 | 13 | 5 |
-| step / quality-code | 103 | 103 | 13 |
+| step / quality-code | 104 | 104 | 14 |
 | step / quality-content | 49 | 49 | 4 |
 | step / quality-go | 16 | 16 | 4 |
 | step / quality-i18n | 39 | 38 | 3 |
@@ -327,7 +327,7 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 | step / quality-pytest | 1 | 1 | 1 |
 | step / quality-renet | 1 | 1 | 1 |
 | step / quality-security | 27 | 27 | 2 |
-| step / quality-static | 73 | 73 | 9 |
+| step / quality-static | 72 | 72 | 8 |
 | step / quality-submodule-branches | 1 | 1 | 0 |
 | step / quality-wiring | 1 | 1 | 0 |
 | step / quality-www-build | 17 | 14 | 16 |

@@ -7301,7 +7301,7 @@
     "ci": {
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-static",
+      "job": "quality-code",
       "step": "Workflow submodule deps"
     }
   },

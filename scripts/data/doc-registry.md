@@ -388,7 +388,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-workflow-env-provision | quality-static / Workflow env provision | yes | no |
 | check:ci-workflow-gates | quality-code / Workflow structural gates | yes | no |
 | check:ci-workflow-invariants | test: .ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py | yes | no |
-| check:ci-workflow-submodule-deps | quality-static / Workflow submodule deps | yes | yes |
+| check:ci-workflow-submodule-deps | quality-code / Workflow submodule deps | yes | yes |
 | check:ci-workflows | quality-code / Workflow banned patterns | yes | no |
 | check:ci-worklist-event-builders | quality-code / Worklist event builders | yes | no |
 | check:ci-worklist-path-resolution | quality-code / Worklist path resolution | yes | no |
