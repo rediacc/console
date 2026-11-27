@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import typing
 
 from rediacc_ci.testrun import seed_smoke
@@ -31,8 +32,10 @@ PREVIEW = "pv-amber-falcon-river"
 
 def as_twin_name(text: str) -> str:
     # The twin names its scratch Worker `pr-<n>`; the port names it by the derived preview name (a delta, test_delta_scratch_config_is_named_by_the_preview_name).
-    return text.replace("account-pr-", "account-db-pr-").replace(
-        f'name = "{PREVIEW}"', 'name = "pr-12"'
+    return (
+        re.sub(rf"{PREVIEW}-[0-9a-f]{{8}}", "smoke-sub-pr-12", text)
+        .replace("account-pr-", "account-db-pr-")
+        .replace(f'name = "{PREVIEW}"', 'name = "pr-12"')
     )
 
 
@@ -255,3 +258,13 @@ def test_wrangler_config_names_the_worker_it_is_given() -> None:
     text = seed_smoke.wrangler_config("rediacc-account-pr-7", "db", "uuid-1")
     assert 'name = "rediacc-account-pr-7"' in text
     assert "preview_name" not in seed_smoke.wrangler_config.__code__.co_varnames
+
+
+def test_delta_smoke_subscription_is_a_preview_subscription() -> None:
+    """T1 (PLAN-preview-signer D3): the seed's subscription id is `<name>-<8 hex>`, stable across re-seeds, so the preview signer can certify it."""
+    d = seed_smoke.derive("12", "s3cret", "NOW", PREVIEW)
+    assert re.fullmatch(rf"{PREVIEW}-[0-9a-f]{{8}}", d["sub_id"])
+    assert d == seed_smoke.derive("12", "s3cret", "NOW", PREVIEW)
+    assert seed_smoke.derive("13", "s3cret", "NOW", PREVIEW)["sub_id"] != d["sub_id"]
+    assert seed_smoke.derive("12", "s3cret", "NOW")["sub_id"] == "smoke-sub-pr-12"
+    assert f"'{d['sub_id']}'" in seed_smoke.seed_sql(d)

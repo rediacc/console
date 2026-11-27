@@ -35,8 +35,14 @@ def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def derive(pr: str, jwt_secret: str, now: str) -> dict[str, str]:
-    """Every id, hash and the token for one PR. Pure, so the shape is unit-testable."""
+def derive(pr: str, jwt_secret: str, now: str, name: str = "") -> dict[str, str]:
+    """Every id, hash and the token for one PR. Pure, so the shape is unit-testable.
+
+    With a preview `name` the subscription id is `<name>-<8 hex>` (PLAN-preview-signer D3): the preview signer certifies only a `pv-` subscription of its own name, so the smoke licence needs one. The 8 hex are a hash of the PR and the secret, so a re-seed lands on the same row.
+    """
+    sub_id = f"smoke-sub-pr-{pr}"
+    if name:
+        sub_id = f"{name}-{sha256_hex(f'smoke-sub:{pr}:{jwt_secret}')[:8]}"
     email = f"smoketest-pr{pr}@rediacc.io"
     token = f"rdt_smoke_{pr}_{sha256_hex(jwt_secret)[:32]}"
     return {
@@ -44,7 +50,7 @@ def derive(pr: str, jwt_secret: str, now: str) -> dict[str, str]:
         "now": now,
         "user_id": f"smoke-user-pr-{pr}",
         "org_id": f"smoke-org-pr-{pr}",
-        "sub_id": f"smoke-sub-pr-{pr}",
+        "sub_id": sub_id,
         "team_id": f"smoke-team-pr-{pr}",
         "token_id": f"smoke-tok-pr-{pr}",
         "membership_id": f"smoke-mem-pr-{pr}",
@@ -174,7 +180,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    d = derive(pr, jwt_secret, now)
+    d = derive(pr, jwt_secret, now, preview)
     worker_dir = paths.repo_root() / "workers" / "www"
 
     print(f"Seeding smoke test data into {d['db_name']}...")
