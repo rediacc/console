@@ -3,7 +3,7 @@
  *
  * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `OrgExecutor` routes here (`interceptOutboundHttp`, to the `AccountEgress` entrypoint). This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
  *
- *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open and the run index events) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
+ *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open, the run index events and the three executor licence calls) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the unauthenticated calls leave with no Authorization at all;
  *   - the config write-back pair, `POST configs/session` and `PUT configs/<id>`, travel like the config pull (an `X-Config-Token`, no Authorization); a push body past `MAX_CONFIG_PUSH_BODY_BYTES` is answered 413 `body-too-large` and nothing is forwarded;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
@@ -11,7 +11,7 @@
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  *
- * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The one container caller seen (bench `wrangler tail`, 2026-10-28) is the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), which the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers.
+ * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The licence activation and retire calls of a container dispatch (packages/cli/src/services/account/license.ts, license-batch.ts and license-retire.ts) are container callers too, and fatal to `repo create` and `repo fork`; they travel on three bearer pairs instead, `POST proxy/licenses/activate-repo`, `POST proxy/licenses/activate-repo-batch` and `POST proxy/licenses/repos/<uuid>/retire` (strict lower-case UUID, no query), with the principal named in the body. The other tunnel caller seen (bench `wrangler tail`, 2026-10-28), the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), is skipped in a container, since the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers it.
  *
  * One request is answered here rather than forwarded: `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor.
  */
@@ -36,7 +36,13 @@ const BEARER_ROUTES: ReadonlySet<string> = new Set([
   `POST ${API}/configs/executor-grant`,
   `POST ${API}/configs/agent-session`,
   `POST ${API}/console/runs/events`,
+  `POST ${API}/proxy/licenses/activate-repo`,
+  `POST ${API}/proxy/licenses/activate-repo-batch`,
 ]);
+
+/** The executor licence retire, `POST proxy/licenses/repos/<uuid>/retire`: the repository GUID is a lower-case UUID on the account side, so a strict pattern refuses nothing real. */
+const PROXY_LICENSE_RETIRE_RE =
+  /^\/account\/api\/v1\/proxy\/licenses\/repos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/retire$/;
 
 /** The unauthenticated calls with a fixed path, as `METHOD path`. */
 const OPEN_ROUTES: ReadonlySet<string> = new Set([
@@ -85,13 +91,21 @@ function classifyEgress(method: string, url: URL): Admitted | { refused: string 
     : { kind: route.kind, maxBody: route.maxBody };
 }
 
+/** Whether a method and path are an executor-bearer call: a fixed pair, or the executor licence retire. */
+function isBearerRoute(method: string, path: string): boolean {
+  return (
+    BEARER_ROUTES.has(`${method} ${path}`) ||
+    (method === 'POST' && PROXY_LICENSE_RETIRE_RE.test(path))
+  );
+}
+
 /** The allowlisted route a method and path are, with the query it admits. */
 function routeOf(
   method: string,
   path: string
 ): { kind: Route; query: 'none' | 'teamId'; maxBody?: number } | undefined {
   const key = `${method} ${path}`;
-  if (BEARER_ROUTES.has(key)) return { kind: 'bearer', query: 'none' };
+  if (isBearerRoute(method, path)) return { kind: 'bearer', query: 'none' };
   if (OPEN_ROUTES.has(key)) return { kind: 'open', query: 'none' };
   if (key === `GET ${CONFIG_LIST_PATH}`) return { kind: 'open', query: 'none' };
   if (method === 'GET' && CONFIG_POLICY_RE.test(path)) return { kind: 'open', query: 'teamId' };
