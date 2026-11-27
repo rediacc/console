@@ -183,6 +183,15 @@ def new_transcript(scenario: str) -> str:
     return buffer.getvalue()
 
 
+@functools.cache
+def unplanted_transcript(scenario: str) -> str:
+    """`new_transcript` for a case that plants nothing, run once per process: `up-create` is 17 `up` runs over a stub docker (about 750 spawns, 4.7 s), and four cases only read it.
+
+    A case that monkeypatches the port calls `new_transcript` itself, because a plant must be visible to the run; this one is the answer of the tree as it stands, and a plant never reaches it because only the unpatched call sites use it.
+    """
+    return new_transcript(scenario)
+
+
 def observations(out: str) -> dict[str, list[str]]:
     """The transcript grouped by step label: `{label: [the rest of each line]}`."""
     grouped: dict[str, list[str]] = {}
@@ -1095,7 +1104,7 @@ def test_up_drops_what_the_host_does_not_have(monkeypatch) -> None:
     This is also what proves the driver's pins are the ONLY way those words reach the argv: it runs on whatever host the suite is on, and the recording machine has all four.
     """
     # CONTROL: the same step as the recording host saw it carries every run, once. `_without_run` asserts that.
-    expected = _first_run(new_transcript("up-create"), "ok")
+    expected = _first_run(unplanted_transcript("up-create"), "ok")
     for words in HOST_ONLY_RUNS:
         expected = _without_run(expected, words)
     monkeypatch.setattr(driver, "GoldenHostDevbox", BareHostDevbox)
@@ -1428,7 +1437,7 @@ def test_the_run_image_is_the_pin_and_never_a_floating_tag() -> None:
     pin = _pin_text()
     assert "%s/%s@%s" % (IMAGE_REGISTRY, pin["image"], pin["digest"]) == devbox.DEVBOX_IMAGE
     assert ":latest" not in devbox.DEVBOX_IMAGE
-    obs = observations(new_transcript("image"))
+    obs = observations(unplanted_transcript("image"))
     # The run image when the base already carries the host's ids is the base itself: the pin.
     assert stdout_of(obs["run-image-match"]) == (devbox.DEVBOX_IMAGE + "\n").encode()
     # A derive builds FROM the pin.
@@ -1439,14 +1448,14 @@ def test_the_run_image_is_the_pin_and_never_a_floating_tag() -> None:
 
 
 def test_every_container_carries_the_runner_image_variable_equal_to_the_pin() -> None:
-    run = _first_run(new_transcript("up-create"), "ok")
+    run = _first_run(unplanted_transcript("up-create"), "ok")
     pairs = [run[at : at + 2] for at in range(len(run) - 1)]
     assert ["-e", "CI_RUNNER_IMAGE=%s" % devbox.DEVBOX_IMAGE] in pairs
     assert devbox.RUNNER_IMAGE_ENV == "CI_RUNNER_IMAGE"
 
 
 def test_the_quick_clone_root_is_bound_at_the_same_path() -> None:
-    run = _first_run(new_transcript("up-create"), "ok")
+    run = _first_run(unplanted_transcript("up-create"), "ok")
     binds = [run[at + 1] for at in range(len(run) - 1) if run[at] == "-v"]
     clones = [b for b in binds if b.split(":")[0].endswith("/rediacc/ci-quick-clones")]
     assert len(clones) == 1
