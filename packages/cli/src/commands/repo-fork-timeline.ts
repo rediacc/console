@@ -5,8 +5,8 @@
 
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
-import { isMachineReadable } from '../services/core/output-format.js';
-import { writeStderr, writeStdout } from '../services/core/request-context.js';
+import { writeProgress } from '../services/core/progress-output.js';
+import { writeStderr } from '../services/core/request-context.js';
 import { type ExecuteResult, type RenetEvent } from '../services/executor/executor-factory.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { CLAIM_TIMING, type StepRunReport } from '../services/jobs/run-job.js';
@@ -20,12 +20,6 @@ import {
   type TimelineStep,
 } from '../utils/timeline.js';
 import type { ForkActionOptions, ForkPlan } from './repo-fork.js';
-
-/** Progress text goes to stdout, or to stderr under -o json/yaml/csv so stdout stays the one result document. */
-function writeProgress(text: string): void {
-  if (isMachineReadable()) writeStderr(text);
-  else writeStdout(text);
-}
 
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
