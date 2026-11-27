@@ -677,7 +677,7 @@ jobs:
         if: ${{ !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: npm run check:ci-agent-session-archival
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_session_archival_gate
 
       # Hand-written for the same reason as its neighbours: quality-branch has no
       # `- id: setup` (invariant 11). A deferred per-commit review finding, an open
@@ -697,7 +697,7 @@ jobs:
       # exist, evaluate empty, and skip every gate while the job reported green.
       - name: Decision ids
         if: ${{ !cancelled() }}
-        run: npm run check:ci-decision-ids
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.decision_ids
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
@@ -2920,7 +2920,7 @@ jobs:
       # unreachable, and skipping it would hide a defect we caused ourselves.
       - name: Check Go module sync against the renet worktree
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-go-module-sync
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.go_module_sync
 
       - name: Check renet types freshness
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}

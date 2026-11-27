@@ -3014,7 +3014,7 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 2
   {
     id: 'check:ci-install-sh-config',
-    run: 'npm run check:ci-install-sh-config',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.release.install_sh_config_check',
     gate: true,
     leaves: ['.ci/rediacc_ci/release/install_sh_config_check.py'],
     ci: {
@@ -5724,7 +5724,7 @@ export const GATES: readonly GateSpec[] = [
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
     },
-    run: 'npm run check:ci-decision-ids',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.decision_ids',
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/decision_ids.py'],
     ci: {
@@ -6193,7 +6193,7 @@ export const GATES: readonly GateSpec[] = [
     env: {
       GH_TOKEN: '${{ github.token }}',
     },
-    run: 'npm run check:ci-agent-session-archival',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.agent_session_archival_gate',
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/agent_session_archival_gate.py'],
     ci: {
@@ -6560,7 +6560,7 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 7
   {
     id: 'check:ci-staging-tag-guard',
-    run: 'npm run check:ci-staging-tag-guard',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.staging_tag_guard',
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/staging_tag_guard.py'],
     ci: {
@@ -7314,7 +7314,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-i18n-value-types',
-    run: 'npm run check:ci-i18n-value-types',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.i18n_value_types',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -7876,7 +7876,7 @@ export const GATES: readonly GateSpec[] = [
   {
     id: 'check:ci-checkout-cone',
     // A step may not run a file its job never checked out. Corroborates the static claim (this job checks out X) against what the job actually RUNS.
-    run: 'npm run check:ci-checkout-cone',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.checkout_cone',
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/checkout_cone.py'],
     ci: {
@@ -12472,7 +12472,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-browser-smoke',
-    run: 'npm run check:ci-browser-smoke',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke',
     slow: true, // 20.4s measured
     // Reads packages/www/dist, which build:www rewrites under the www-dist mutex; without this edge a full local run scheduled it mid-build and it saw "zero routes" (2026-09-27). CI orders it after the build step in quality-www-build already.
     needs: ['build:www'],
@@ -13706,7 +13706,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-go-module-sync',
-    run: 'npm run check:ci-go-module-sync',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.go_module_sync',
     gate: true,
     paths: [
       '.ci/config/well-known.env',
@@ -16428,7 +16428,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // six bash enumerations answered "what a machine needs" and none compared the set installed against the set used, so a pinned tool could be required by a gate and named nowhere -- which is how the drafted table came to carry no pytest row
     id: 'check:ci-install-table',
-    run: 'npm run check:ci-install-table',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.setup.tools',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
