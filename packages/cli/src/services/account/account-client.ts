@@ -17,6 +17,11 @@ import {
 import { LEGAL_URLS } from '@rediacc/shared/legal';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import {
+  ACCOUNT_API_PREFIX,
+  executorAccountPath,
+  matchExecutorRoute,
+} from '@rediacc/shared/subscription/executor-account-routes';
+import {
   API_TOKEN_IP_REBIND_PATH,
   type ApiTokenIpRebindRequest,
   type ApiTokenIpRebindResponse,
@@ -32,6 +37,7 @@ import { updateConfigAtPointer } from '../config/synced-write.js';
 import { writeStderr } from '../core/request-context.js';
 import { resolveChannel } from '../update/updater.js';
 import { type AccountPointer, readAccountPointer } from './account-pointer.js';
+import { currentExecutorPrincipal, type ExecutorPrincipal } from './executor-principal.js';
 import {
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
@@ -344,6 +350,8 @@ export async function accountServerFetch<T = unknown>(
   path: string,
   options: AccountFetchOptions = {}
 ): Promise<T> {
+  const principal = currentExecutorPrincipal();
+  if (principal) return executorRouteFetch<T>(path, options, principal);
   // Resolve the token once, so the rebind and the retry use the SAME token as the refused request (stored, REDIACC_TOKEN, or options.token).
   const token = options.noAuth ? undefined : (options.token ?? resolveStoredToken());
   const serverUrl = options.serverUrl ?? resolveServerUrl();
@@ -455,6 +463,11 @@ async function accountServerFetchOnce<T>(
   const responseEnvelope = (await resp.json()) as E2eResponseEnvelope;
   const { status, body } = await openResponse(aesKey, responseEnvelope);
 
+  return settleInnerResponse<T>(body, status, resp.headers);
+}
+
+/** Parse an inner response and apply the rules both transports share: the 426 upgrade gate, the Terms notice, and the typed error for a failed status. */
+function settleInnerResponse<T>(body: string, status: number, headers: Headers | undefined): T {
   // Parse the decrypted response
   const parsed: T & { error?: string; code?: string } = parseInnerBody<T>(body, status);
 
@@ -468,7 +481,7 @@ async function accountServerFetchOnce<T>(
     handle426Response(parsed, getInstallMethod());
   }
 
-  warnUpcomingTerms(resp.headers?.get(TERMS_NOTICE_HEADER) ?? null);
+  warnUpcomingTerms(headers?.get(TERMS_NOTICE_HEADER) ?? null);
 
   // Check the inner HTTP status
   if (status >= 400) {
@@ -476,6 +489,67 @@ async function accountServerFetchOnce<T>(
   }
 
   return parsed;
+}
+
+/** The header naming the principal an executor-route call acts for (PLAN-executor-account-routes Design 4). */
+export const ON_BEHALF_OF_HEADER = 'X-Rediacc-On-Behalf-Of';
+
+/** The `code` of the error a call made inside a container dispatch carries when the executor route table does not list it. */
+export const EXECUTOR_ROUTE_NOT_SERVED = 'EXECUTOR_ROUTE_NOT_SERVED';
+
+/** The named refusal of an unlisted call inside a container dispatch, thrown before any network. */
+function executorRouteNotServed(method: string, path: string): ValidationError {
+  return Object.assign(
+    new ValidationError(
+      `${method} ${path} is not served in a container: the executor account route table (packages/shared/src/subscription/executor-account-routes.ts) does not list it, and the proxy egress refuses the sealed tunnel.`
+    ),
+    { code: EXECUTOR_ROUTE_NOT_SERVED, method, path }
+  );
+}
+
+/** The executor URL suffix (`<executor path>[?query]`) of a call the route table lists; throws the named error for any other call. */
+function executorRouteTarget(method: string, path: string): { url: string; pathname: string } {
+  const queryAt = path.indexOf('?');
+  const pathname = queryAt < 0 ? path : path.slice(0, queryAt);
+  const query = queryAt < 0 ? '' : path.slice(queryAt + 1);
+  const inner = pathname.startsWith(`${ACCOUNT_API_PREFIX}/`)
+    ? pathname.slice(ACCOUNT_API_PREFIX.length + 1)
+    : undefined;
+  if (inner === undefined || !matchExecutorRoute(method, inner, query)) {
+    throw executorRouteNotServed(method, path);
+  }
+  return { url: `${executorAccountPath(inner)}${query ? `?${query}` : ''}`, pathname };
+}
+
+/**
+ * One account call inside a container-mode dispatch. The proxy egress refuses the sealed tunnel, so a call the executor
+ * route table lists goes plain to `/account/api/v1/proxy/account/<inner>` with the placeholder bearer the egress swaps and
+ * the principal's token id in `X-Rediacc-On-Behalf-Of`. An unlisted call, or a principal with no token id, throws by name
+ * before any network. The response is settled exactly as a tunnel response is, so callers branch alike on both paths.
+ */
+async function executorRouteFetch<T>(
+  path: string,
+  options: AccountFetchOptions,
+  principal: ExecutorPrincipal
+): Promise<T> {
+  const method = (options.method ?? DEFAULT_HTTP_METHOD).toUpperCase();
+  const target = executorRouteTarget(method, path);
+  if (!principal.tokenId) {
+    throw new ValidationError(
+      `The caller of this command carries no token id, so the executor cannot act on its behalf for ${method} ${target.pathname}.`
+    );
+  }
+  const token = options.noAuth ? undefined : (options.token ?? resolveStoredToken());
+  const serverUrl = options.serverUrl ?? resolveServerUrl();
+  const headers = innerHeaders(token, options.body !== undefined);
+  headers[ON_BEHALF_OF_HEADER] = principal.tokenId;
+  const send = options.fetchImpl ?? fetch;
+  const resp = await send(`${serverUrl}${target.url}`, {
+    method,
+    headers,
+    ...(options.body === undefined ? {} : { body: JSON.stringify(options.body) }),
+  });
+  return settleInnerResponse<T>(await resp.text(), resp.status, resp.headers);
 }
 
 /** Throws the typed error for a failed inner response (a Terms refusal gets its own error). */

@@ -10,7 +10,7 @@ import { type RepoNameEntry, repoNamesByGuid, shortGuid } from '@rediacc/shared/
 import { t } from '../../i18n/index.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
-import { licenceFetch } from './executor-principal.js';
+import { accountServerFetch } from './account-client.js';
 import { getSubscriptionTokenState } from './subscription-auth.js';
 
 /** The server's answer to a retire: the same shape from the token route and the portal twin. */
@@ -25,9 +25,9 @@ export interface RepoLicenseRetireResult {
  */
 export function retireRepoLicense(repositoryGuid: string): Promise<RepoLicenseRetireResult> {
   const guid = encodeURIComponent(repositoryGuid);
-  return licenceFetch<RepoLicenseRetireResult>(
+  return accountServerFetch<RepoLicenseRetireResult>(
     `/account/api/v1/licenses/repos/${guid}/retire`,
-    `/account/api/v1/proxy/licenses/repos/${guid}/retire`
+    { method: 'POST' }
   );
 }
 

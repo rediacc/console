@@ -9,7 +9,6 @@ import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
 import { readLocalMachineId } from './client-machine-id.js';
-import { licenceFetch } from './executor-principal.js';
 import { freeLicensesToAdopt, reposWithForeignLicenseOrigin } from './license-batch.js';
 import {
   clusterIdFor,
@@ -156,20 +155,22 @@ export function issueRepoLicense(
       ]);
       if (!machineId || !clientMachineId) return false;
 
-      const { license } = await licenceFetch<{ license: unknown }>(
+      const { license } = await accountServerFetch<{ license: unknown }>(
         '/account/api/v1/licenses/activate-repo',
-        '/account/api/v1/proxy/licenses/activate-repo',
         {
-          machineId,
-          clientMachineId,
-          repositoryGuid: params.repositoryGuid,
-          grandGuid: params.grandGuid,
-          kind: params.kind,
-          requestedSizeGb: params.requestedSizeGb,
-          luksUuid: params.luksUuid,
-          storageFingerprint: params.storageFingerprint,
-          datastoreId: params.datastoreId,
-          clusterId: clusterIdFor(machine),
+          method: 'POST',
+          body: {
+            machineId,
+            clientMachineId,
+            repositoryGuid: params.repositoryGuid,
+            grandGuid: params.grandGuid,
+            kind: params.kind,
+            requestedSizeGb: params.requestedSizeGb,
+            luksUuid: params.luksUuid,
+            storageFingerprint: params.storageFingerprint,
+            datastoreId: params.datastoreId,
+            clusterId: clusterIdFor(machine),
+          },
         }
       );
       // The blob must land in the population renet reads for THIS datastore,

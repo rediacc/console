@@ -1,7 +1,8 @@
 /**
- * A hosted MCP tool call in container mode acts for its principal on licence calls (PLAN-proxied-licence-tunnel-auth-fix PL3):
- * `dispatcher` hands the grant's token id to the real `dispatchCommand`, whose container wrap makes `licenceFetch` send the
- * call plain to the executor route naming that token. The Commander tree is replaced by one command that makes the licence call.
+ * A hosted MCP tool call in container mode acts for its principal on account calls (PLAN-proxied-licence-tunnel-auth-fix PL3,
+ * PLAN-executor-account-routes EA4): `dispatcher` hands the grant's token id to the real `dispatchCommand`, whose container wrap
+ * makes `accountServerFetch` send the call plain to the executor route with that token in `X-Rediacc-On-Behalf-Of`. The
+ * Commander tree is replaced by one command that makes the licence call.
  */
 
 import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
@@ -23,12 +24,10 @@ vi.mock('../../../cli.js', async () => {
     },
   };
 });
-vi.mock('../../account/account-client.js', () => ({
-  accountServerFetch: vi.fn(() => Promise.reject(new Error('tunnel used'))),
-}));
-vi.mock('../../account/subscription-auth.js', async () => {
+vi.mock('../../account/subscription-auth.js', async (importOriginal) => {
   const wk = await import('@rediacc/shared/config/well-known.generated');
   return {
+    ...(await importOriginal<typeof import('../../account/subscription-auth.js')>()),
     getSubscriptionTokenState: () => ({
       kind: 'ready',
       serverUrl: `http://${wk.WK_ACCOUNT_EGRESS_HOST}`,
@@ -85,9 +84,13 @@ describe('hosted MCP call in container mode', () => {
     expect(outcome.result.success).toBe(true);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(
-      `http://${WK_ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/licenses/repos/${GUID}/retire`
+      `http://${WK_ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/account/licenses/repos/${GUID}/retire`
     );
-    expect(JSON.parse(init.body as string)).toEqual({ onBehalfOfTokenId: 'tok-mcp' });
+    expect(init.method).toBe('POST');
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer PLACEHOLDER');
+    expect(headers['X-Rediacc-On-Behalf-Of']).toBe('tok-mcp');
+    expect(init.body).toBeUndefined();
   });
 
   it('control: a principal with no token id fails the call named and sends nothing', async () => {

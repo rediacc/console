@@ -14,8 +14,8 @@ import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
+import { accountServerFetch } from './account-client.js';
 import { readLocalMachineId } from './client-machine-id.js';
-import { licenceFetch } from './executor-principal.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
@@ -500,17 +500,16 @@ async function runRepoLicenseBatch(
     );
   }
 
-  const body = await licenceFetch<{
+  const body = await accountServerFetch<{
     results: {
       repositoryGuid: string;
       status: 'issued' | 'refreshed' | 'unchanged' | 'failed';
       license?: unknown;
       error?: string;
     }[];
-  }>(
-    '/account/api/v1/licenses/activate-repo-batch',
-    '/account/api/v1/proxy/licenses/activate-repo-batch',
-    {
+  }>('/account/api/v1/licenses/activate-repo-batch', {
+    method: 'POST',
+    body: {
       machineId,
       clientMachineId,
       clusterId: clusterIdFor(machine),
@@ -531,8 +530,8 @@ async function runRepoLicenseBatch(
           currentHardExpiresAt: forceReissue ? undefined : repo.currentHardExpiresAt,
         };
       }),
-    }
-  );
+    },
+  });
 
   // Each blob goes back to the population its repo was scanned from. Two repos in a batch can legitimately carry the SAME guid on one machine (a same-node datastore fork does not remint guids), which is exactly why the store is scoped by datastore and why this map is keyed the way the server keys its results.
   const datastoreIdByGuid = new Map(
