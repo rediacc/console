@@ -5836,6 +5836,7 @@ export const GATES: readonly GateSpec[] = [
       '.claude/hooks/stop/wl_reggate.py',
       'agent/reggate/**',
     ],
+    pathsOrigin: 'declared',
     leaves: ['.ci/rediacc_ci/quality/reggate_debt.py'],
     ci: {
       kind: 'step',

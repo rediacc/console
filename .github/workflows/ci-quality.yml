@@ -500,12 +500,6 @@ jobs:
           for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
           python3 -c "import yaml; print('PyYAML', yaml.__version__)"
           PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_env_provision
-      - name: Workflow submodule deps
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: |
-          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
-          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
-          PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_submodule_deps
       - name: Write-once guard tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 .ci/rediacc_ci/deploy/write_once_guard_check.py
@@ -1333,6 +1327,12 @@ jobs:
         id: gate_check_ci_actionlint
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.security.actionlint
+      - name: Workflow submodule deps
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: |
+          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done
+          python3 -c "import yaml; print('PyYAML', yaml.__version__)"
+          PYTHONPATH=.ci python3 -m rediacc_ci.quality.workflow_submodule_deps
       - name: Worklist event builders
         id: gate_check_ci_worklist_event_builders
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
