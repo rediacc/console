@@ -51,7 +51,7 @@ export interface LockComponent {
   spdx: string;
   license: string;
   upstreamSourceUrl: string;
-  mirrorUrl: string;
+  mirrorUrl?: string;
   sourceSha256: string;
   notes?: string;
 }
@@ -68,7 +68,7 @@ export interface LockStaticLibrary {
 export interface Lockfile {
   gplWrittenOffer: string;
   components: Record<string, LockComponent>;
-  staticLibraries: LockStaticLibrary[];
+  staticLibraries?: LockStaticLibrary[];
 }
 
 /** Components in a stable, declaration-independent order. */
@@ -100,7 +100,7 @@ export function renderGo(lock: Lockfile): string {
     lines.push(`\t\tSPDX:              ${goString(c.spdx)},`);
     lines.push(`\t\tLicense:           ${goString(c.license)},`);
     lines.push(`\t\tUpstreamSourceURL: ${goString(c.upstreamSourceUrl)},`);
-    lines.push(`\t\tMirrorURL:         ${goString(c.mirrorUrl)},`);
+    lines.push(`\t\tMirrorURL:         ${goString(c.mirrorUrl ?? '')},`);
     if (c.notes) lines.push(`\t\tNotes:             ${goString(c.notes)},`);
     lines.push('\t},');
   }
@@ -108,7 +108,7 @@ export function renderGo(lock: Lockfile): string {
   lines.push('');
   lines.push('// staticLibraryCredits attributes the static libraries linked into rsync.');
   lines.push('var staticLibraryCredits = []Credit{');
-  for (const l of lock.staticLibraries) {
+  for (const l of lock.staticLibraries ?? []) {
     lines.push('\t{');
     lines.push(`\t\tName:              ${goString(l.name)},`);
     lines.push(`\t\tVersion:           ${goString(l.version)},`);
@@ -148,14 +148,14 @@ export function renderJson(lock: Lockfile): string {
       spdx: c.spdx,
       license: c.license,
       upstreamSourceUrl: c.upstreamSourceUrl,
-      mirrorUrl: c.mirrorUrl,
+      mirrorUrl: c.mirrorUrl ?? '',
       sourceSha256: c.sourceSha256,
     };
     if (c.notes) entry.notes = c.notes;
     return entry;
   });
 
-  const libraries = lock.staticLibraries.map((l) => ({
+  const libraries = (lock.staticLibraries ?? []).map((l) => ({
     kind: 'static-library',
     name: l.name,
     version: l.version,

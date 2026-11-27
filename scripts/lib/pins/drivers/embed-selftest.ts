@@ -306,6 +306,11 @@ async function build(mutant: EmbedMutant | null): Promise<ControlCase[]> {
         out.includes(`ARG ZOT_SHA256_ARM64=${hex('b')}`),
       r.refused
     );
+    add(
+      'zot bump: the plan says the lockfile sourceSha256 still digests the old archive (0fa9be43.3)',
+      !!r.plan && r.plan.changes.some((c) => c.includes('components.zot.sourceSha256 is still')),
+      r.refused ?? (r.plan?.changes ?? []).join(' | ')
+    );
     const rv = patchOf(dockerArg(df, 'RSYNC_VERSION'));
     const rs = await planOf('embed:rsync', rv, {}, mutant);
     add(

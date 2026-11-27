@@ -134,6 +134,12 @@ function main(): void {
     for (const field of ['upstreamSourceUrl', 'mirrorUrl'] as const) {
       const url = c[field];
       if (url === '') continue;
+      if (typeof url !== 'string') {
+        errors.push(
+          `${base}: ${field} is missing from the lockfile (an empty string says there is none)`
+        );
+        continue;
+      }
       if (!url.includes(c.version)) {
         errors.push(`${base}: ${field} does not name version '${c.version}' — ${url}`);
       }

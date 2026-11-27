@@ -135,6 +135,7 @@ interface LockComponent {
   version?: string;
   upstreamSourceUrl?: string;
   mirrorUrl?: string;
+  sourceSha256?: string;
   source?: {
     tag?: string;
     url?: string;
@@ -293,6 +294,11 @@ export async function upgradeComponent(
   }
   for (const entry of Object.values(comp.arches ?? {})) entry.url = swap(entry.url, pinned, latest);
   changes.push(`lockfile components.${base}: version, tag and URLs moved`);
+  // `sourceSha256` digests the mirrored source archive of the OLD version, and no listing this tool reads carries the new one. It stays until re-pinned, so say so: mirror_third_party_src refuses the new archive against the old digest rather than uploading it unpinned.
+  if (comp.sourceSha256 !== undefined)
+    changes.push(
+      `lockfile components.${base}.sourceSha256 is still the ${pinned} archive's digest: re-pin it against the ${latest} source archive before the mirror upload`
+    );
 
   // ---- Go constants and goldens ---------------------------------------------------
   const consts = { ...files.consts };
