@@ -211,7 +211,17 @@ if __name__ == "__main__":
     from rediacc_ci.quality import gate_args
 
     # `main` reads `--selftest` or two bare arguments, <workspace> and <npm script key>; a flag in either place is a typo, refused rather than run as the workspace.
-    gate_args.parse(
+    _parsed = gate_args.parse(
         "unit_tests.py", sys.argv[1:], switches=("--selftest",), positional="<workspace> <script>"
     )
+    # The shared parser takes any number of bare arguments, and `main` reads two (or none with `--selftest`) and drops the rest, so the count is checked here, as run_account and run_renet do.
+    if len(_parsed.positionals) > 2 or (
+        "--selftest" in _parsed.argv and _parsed.argv != ["--selftest"]
+    ):
+        print(
+            "unit_tests.py: expected `--selftest` alone or <workspace> <script>, got %r"
+            % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

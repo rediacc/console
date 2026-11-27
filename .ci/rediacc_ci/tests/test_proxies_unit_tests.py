@@ -297,6 +297,25 @@ def test_no_arguments_is_the_usage_refusal(tmp_path: pathlib.Path) -> None:
     assert_same(old, new)
 
 
+@pytest.mark.parametrize(
+    "args",
+    [["ws", "script", "extra"], ["--selftest", "extra"], ["--selftest", "ws"]],
+)
+def test_an_extra_bare_argument_is_refused_not_dropped(args: list[str]) -> None:
+    """Review finding ec998864.1. The shared parser takes any number of bare arguments and `main` reads two, so the port's own count check refuses the rest at exit 2 before anything runs."""
+    done = subprocess.run(
+        ["python3", "-m", PORT_MODULE, *args],
+        env={**os.environ, "PYTHONPATH": str(ROOT / ".ci")},
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 2, (done.returncode, done.stderr)
+    assert "expected `--selftest` alone or <workspace> <script>" in done.stderr
+
+
 def test_one_argument_is_also_the_usage_refusal(tmp_path: pathlib.Path) -> None:
     fixture = build_fixture(tmp_path)
     old, new = run_both(fixture, "@scratch/sample")
