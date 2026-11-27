@@ -728,6 +728,7 @@ export function selftestCases(): ControlCase[] {
           submodules: { scanned: [], unscanned: [] },
           literalExclude: [],
           ignores: [],
+          lines: {},
           entries: [],
         } as PinRegistry,
         scanTemplates(without).entries
@@ -754,6 +755,7 @@ export function selftestCases(): ControlCase[] {
     submodules: { scanned: [], unscanned: [] },
     literalExclude: [],
     ignores: [],
+    lines: {},
     entries: [
       { ...esLeaf, id: 'image:x' },
       { ...esLeaf, id: 'template:gone.x' },

@@ -1361,6 +1361,7 @@ function fixtureTree(tune: (fx: Fixture) => void = () => {}, family = false): Fx
       }),
     ],
     ignores: [],
+    lines: {},
   };
   if (family)
     reg.entries.push({

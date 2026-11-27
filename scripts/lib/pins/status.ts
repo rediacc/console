@@ -9,9 +9,12 @@
  * `status` asks and writes nothing, so it imports this module rather than the CLI, and its
  * import closure holds no writer (check:ci-gate-tree-writes reads that closure).
  *
- * THE NEWER MAJORS. Every view also carries the major lines above the pin (`majors`), each
+ * THE NEWER MAJORS. Every view also carries the version lines above the pin (`majors`), each
  * with the first instant of the line the source dates, whatever the view's state, so a held
- * pin still says which major its hold is holding back. check:ci-pin-freshness turns a line
+ * pin still says which major its hold is holding back. A line is the first `depth` parts of a
+ * version, the depth read from the `lines` table of .ci/config/pins.json (scripts/lib/pins/
+ * lines.ts), so python 3.9 below 3.10 waits on a line even though both start with 3. A move
+ * inside the pinned line is never one. check:ci-pin-freshness turns a line
  * whose first release is MAJOR_GRACE_DAYS old red (operator ruling 2026-10-14T20:56Z); the
  * grace lives in .ci/config/pin-major-grace.json and is read by getMajorGraceMs below.
  */
@@ -27,6 +30,7 @@ import {
   type Mutant,
   type Release,
 } from './driver.js';
+import { cmpLine, type Line, type LineMutant, lineDepthOf, lineOf } from './lines.js';
 import type { PinEntry, PinRegistry } from './registry.js';
 import { inRange, judge, majorOf, type Verdict } from './soak.js';
 
@@ -56,7 +60,7 @@ export function getMajorGraceMs(configFile: string): number {
 }
 
 /**
- * A release a driver dates by its major line as well as by itself. A docker tag is the case:
+ * A release a driver dates by its version line as well as by itself. A docker tag is the case:
  * Docker Hub stamps a tag with its last push, so a floating `26-bookworm-slim` rebuilt last
  * week says nothing about when node 26 first shipped, and the docker driver supplies the
  * line's first instant from the other tags of the line (scripts/lib/pins/drivers/docker.ts).
@@ -64,12 +68,10 @@ export function getMajorGraceMs(configFile: string): number {
  */
 export type LineDatedRelease = Release & { lineFirstMs?: number | null };
 
-/** One major line above the pin. */
+/** One version line above the pin (scripts/lib/pins/lines.ts). */
 export interface NewerMajor {
-  /** The line's leading number; null when a version on it carries none (it is its own line). */
-  major: number | null;
-  /** The breaking line a driver named (Release.breaking.line, e.g. Go `1.27`); absent for a line of a new leading number. */
-  line?: string;
+  /** The line: its leading parts (`3.10`), the breaking line a driver named (Release.breaking.line, e.g. Go `1.27`), or the whole label when it carries no version. */
+  line: string;
   /** The newest release on the line. */
   newest: string;
   /** The earliest instant the source dates on the line; null when it dates none. */
@@ -78,32 +80,56 @@ export interface NewerMajor {
   partial: boolean;
 }
 
-/** The leading number of a version, after a docker `<image>:` prefix and a `v`; null when there is none. */
-export function majorLineOf(v: string): number | null {
-  const tag = v.includes(':') ? v.slice(v.lastIndexOf(':') + 1) : v;
-  const m = /^v?(\d+)(?!\d)/.exec(tag);
-  return m ? Number(m[1]) : null;
+/** What newerMajors needs beside the inspection. */
+export interface LineOpts {
+  /** True for a release a plain bump cannot take (viewOf's isMajor); only those make a line. */
+  isMajor: (r: Release) => boolean;
+  /** The registry depth of the pin's source (lines.ts lineDepthOf); undefined reads the defaults. */
+  depth: number | undefined;
+  /** The selftest's breaking-unlisted mutant. */
+  ignoreBreaking?: boolean;
+  /** check:ci-pin-freshness's line mutants. */
+  lineMutant?: LineMutant;
+}
+
+/** The line of the pinned version, or null when it carries no version. Pure. */
+export function currentLineOf(
+  insp: Inspection,
+  o: Pick<LineOpts, 'depth' | 'lineMutant'>
+): Line | null {
+  return insp.current === null ? null : lineOf(insp.current, o.depth, o.lineMutant);
 }
 
 /**
- * The major lines above `insp.current`, newest first: each new leading number, and each line a
- * driver marks breaking (Release.breaking), keyed by the line it names. Pure; `ignoreBreaking`
- * is the selftest's breaking-unlisted mutant.
+ * The version lines above `insp.current`, newest first. Only a release a plain bump cannot take
+ * makes a line (a patch or an in-range minor is a STALE pin, not a waiting major); those are
+ * grouped by their line at the source's depth (lines.ts), and a release on the pinned line is no
+ * line above it, so a docker move inside its own line (nginx 1.31.9 to 1.31.10) is never aged.
+ * A line a driver marks breaking (Release.breaking) keeps the line it names. Pure.
  */
-export function newerMajors(insp: Inspection, ignoreBreaking = false): NewerMajor[] {
-  const cur = insp.current === null ? null : majorLineOf(insp.current);
-  const lines = new Map<string, NewerMajor>();
+export function newerMajors(insp: Inspection, o: LineOpts): NewerMajor[] {
+  const cur = currentLineOf(insp, o);
+  const lines = new Map<string, NewerMajor & { parts: string[] | null }>();
   for (const r of insp.releases as LineDatedRelease[]) {
-    const m = majorLineOf(r.version);
-    const brk = ignoreBreaking ? undefined : r.breaking;
-    if (!brk && cur !== null && m !== null && m <= cur) continue;
-    const key = brk ? `b:${brk.line}` : m === null ? `v:${r.version}` : `m:${m}`;
+    const brk = o.ignoreBreaking ? undefined : r.breaking;
+    let key: string;
+    let parts: string[] | null;
+    if (brk) {
+      key = brk.line;
+      parts = brk.line.split('.');
+    } else {
+      if (!o.isMajor(r)) continue;
+      const l = lineOf(r.version, o.depth, o.lineMutant);
+      if (l !== null && cur !== null && cmpLine(l, cur) <= 0) continue;
+      key = l === null ? r.version : l.key;
+      parts = l === null ? null : l.parts;
+    }
     // A null `lineFirstMs` is the driver saying the line's start is unknown, which must stay partial; only an absent one falls back to the release's own date.
     let at: number | null = r.publishedMs;
     if (r.lineFirstMs !== undefined) at = r.lineFirstMs;
     const line = lines.get(key) ?? {
-      major: m,
-      ...(brk ? { line: brk.line } : {}),
+      line: key,
+      parts,
       newest: r.version,
       firstMs: null,
       partial: false,
@@ -112,7 +138,16 @@ export function newerMajors(insp: Inspection, ignoreBreaking = false): NewerMajo
     else if (line.firstMs === null || at < line.firstMs) line.firstMs = at;
     lines.set(key, line);
   }
-  return [...lines.values()].sort((a, b) => (b.major ?? -1) - (a.major ?? -1));
+  const rank = (l: { parts: string[] | null }): Line | null =>
+    l.parts === null ? null : { key: '', parts: l.parts };
+  return [...lines.values()]
+    .sort((a, b) => {
+      const ra = rank(a);
+      const rb = rank(b);
+      if (ra === null || rb === null) return Number(ra === null) - Number(rb === null);
+      return cmpLine(rb, ra);
+    })
+    .map(({ parts: _parts, ...l }) => l);
 }
 
 /** The part of a pins run a status needs: the root, the registry, the fixture seam and the clock. */
@@ -123,6 +158,8 @@ export interface StatusWorld {
   mutant: Mutant | null;
   nowMs: number;
   windowMs: number;
+  /** check:ci-pin-freshness's line mutants (scripts/lib/pins/lines.ts); absent outside its selftest. */
+  lineMutant?: LineMutant;
 }
 
 export function contextOf(w: StatusWorld): DriverContext & { overlay: Map<string, string> } {
@@ -239,8 +276,10 @@ export interface PinView {
   deferred: (Release & { clearsAt: number | null }) | null;
   verdict: Verdict | null;
   hold: Hold | null;
-  /** The major lines above the pin, newest first, read whatever the state (empty when not compared). */
+  /** The version lines above the pin, newest first, read whatever the state (empty when not compared). */
   majors: NewerMajor[];
+  /** The line of the pinned version (`3.9`), null when not compared or when it carries no version. */
+  currentLine: string | null;
   detail: string;
   /** Set when the pin could not be compared AND it reaches a submodule absent from the checkout: the paths, so the run reports it NOT-CHECKED instead of refusing it. */
   notChecked: string[];
@@ -273,6 +312,7 @@ export async function viewOf(
     verdict: null,
     hold: null,
     majors: [],
+    currentLine: null,
     detail: '',
     notChecked: [],
   };
@@ -293,7 +333,25 @@ export async function viewOf(
     return base;
   }
   base.current = insp.current;
-  base.majors = newerMajors(insp, w.mutant === 'breaking-unlisted');
+  // A release a driver marks breaking (a Go minor line) is a major whatever its leading number.
+  const breaking = (r: Release): boolean =>
+    r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
+  const isMajor = (r: Release): boolean => {
+    if (breaking(r)) return true;
+    // The pinned version with new content is no move at all, let alone a major (2026-11-06: node:26.13.0-slim re-pushed read as major-only).
+    if (r.redigest) return false;
+    const a = insp.current === null ? null : majorOf(insp.current);
+    const b = majorOf(r.version);
+    return a === null || b === null || a !== b;
+  };
+  const lineOpts: LineOpts = {
+    isMajor,
+    depth: lineDepthOf(w.reg, entry),
+    ignoreBreaking: w.mutant === 'breaking-unlisted',
+    lineMutant: w.lineMutant,
+  };
+  base.majors = newerMajors(insp, lineOpts);
+  base.currentLine = currentLineOf(insp, lineOpts)?.key ?? null;
   base.hold = holdOf(w, entry, drv.holdKey(entry));
   if (insp.releases.length === 0) return { ...base, state: 'current', detail: 'current' };
   if (base.hold && !base.hold.expired)
@@ -314,17 +372,6 @@ export async function viewOf(
           .join(', ')}${insp.releases.length > 5 ? ', ...' : ''})`,
       };
   }
-  // A release a driver marks breaking (a Go minor line) is a major whatever its leading number.
-  const breaking = (r: Release): boolean =>
-    r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
-  const isMajor = (r: Release): boolean => {
-    if (breaking(r)) return true;
-    // The pinned version with new content is no move at all, let alone a major (2026-11-06: node:26.13.0-slim re-pushed read as major-only).
-    if (r.redigest) return false;
-    const a = insp.current === null ? null : majorOf(insp.current);
-    const b = majorOf(r.version);
-    return a === null || b === null || a !== b;
-  };
   const soak = (r: Release) => judge(entry, r, w.nowMs, w.windowMs, w.mutant === 'ignore-soak');
   base.eligibleMajors = insp.releases
     .filter((r) => isMajor(r) && soak(r).eligible)

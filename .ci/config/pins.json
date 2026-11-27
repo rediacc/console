@@ -5819,5 +5819,115 @@
       "file": "tests/fixtures/docker-compose-with-ports.yml",
       "reason": "BLOCKER: a sample compose file listed in private/renet/tests/README.md as a test fixture, which no test, build or deploy pulls (nothing in renet references the path), so its image tags are sample input rather than a deployed version"
     }
-  ]
+  ],
+  "lines": {
+    "dockerhub:alpine": {
+      "depth": 2,
+      "why": "alpine releases in 3.x branches (3.23, 3.24), each its own package set and support window"
+    },
+    "dockerhub:arangodb": {
+      "depth": 2,
+      "why": "arangodb numbers its release lines 3.x (3.11, 3.12), and a 3.x move changes the storage engine defaults"
+    },
+    "dockerhub:caddy": {
+      "depth": 1,
+      "why": "caddy 2 is semver: a 2.x minor keeps the Caddyfile and API compatible"
+    },
+    "dockerhub:cassandra": {
+      "depth": 2,
+      "why": "cassandra numbers its release lines x.y (4.0, 4.1, 5.0), each with its own sstable format and support window"
+    },
+    "dockerhub:clickhouse/clickhouse-server": {
+      "depth": 2,
+      "why": "clickhouse numbers its releases YY.M (24.3, 24.8), each a release line with its own settings changes"
+    },
+    "dockerhub:collabora/code": {
+      "depth": 2,
+      "why": "collabora numbers its releases YY.MM (25.04, 26.04), and the parts after that are builds of one release"
+    },
+    "dockerhub:couchdb": {
+      "depth": 1,
+      "why": "couchdb is semver: a 3.x minor keeps the data and HTTP API compatible"
+    },
+    "dockerhub:dpage/pgadmin4": {
+      "depth": 1,
+      "why": "pgadmin4 ships a 9.x minor every month as a routine release; only the leading number is a line"
+    },
+    "dockerhub:elasticsearch": {
+      "depth": 1,
+      "why": "elasticsearch is semver: the index format and settings change on the leading number"
+    },
+    "dockerhub:golang": {
+      "depth": 2,
+      "why": "Go numbers its release lines 1.x (1.26, 1.27), each with its own language and toolchain changes"
+    },
+    "dockerhub:influxdb": {
+      "depth": 1,
+      "why": "influxdb is semver: a 2.x minor keeps the data and API compatible"
+    },
+    "dockerhub:kibana": {
+      "depth": 1,
+      "why": "kibana is semver and moves with elasticsearch on the leading number"
+    },
+    "dockerhub:mariadb": {
+      "depth": 2,
+      "why": "mariadb numbers its release series x.y (10.11, 11.4), each run through mariadb-upgrade"
+    },
+    "dockerhub:mysql": {
+      "depth": 2,
+      "why": "mysql numbers its release lines x.y (8.0, 8.4 LTS, 9.x innovation), each upgrading the data dictionary"
+    },
+    "dockerhub:neo4j": {
+      "depth": 1,
+      "why": "neo4j numbers its lines by the leading number (5, then calendar years 2025, 2026)"
+    },
+    "dockerhub:nginx": {
+      "depth": 2,
+      "why": "nginx numbers its branches 1.x (an odd mainline, an even stable), and the leading 1 never moves"
+    },
+    "dockerhub:node": {
+      "depth": 1,
+      "why": "node numbers its release lines by the leading number (24, 26)"
+    },
+    "dockerhub:nvidia/cuda": {
+      "depth": 2,
+      "why": "CUDA numbers its toolkit releases x.y (13.0, 13.5), each with its own runtime libraries and driver floor"
+    },
+    "dockerhub:otel/opentelemetry-collector-contrib": {
+      "depth": 2,
+      "why": "the collector is 0.x, where every minor is a release that can rename or drop config keys"
+    },
+    "dockerhub:percona": {
+      "depth": 2,
+      "why": "percona server follows the mysql release lines x.y (8.0, 8.4), each upgrading the data dictionary"
+    },
+    "dockerhub:postgres": {
+      "depth": 1,
+      "why": "postgres numbers its majors by the leading number (16, 17, 18)"
+    },
+    "dockerhub:python": {
+      "depth": 2,
+      "why": "python numbers its feature releases 3.x (3.13, 3.14), each with its own C API and removals"
+    },
+    "dockerhub:rabbitmq": {
+      "depth": 2,
+      "why": "rabbitmq numbers its release series x.y (3.13, 4.0, 4.1), each with its own feature flags"
+    },
+    "dockerhub:redis": {
+      "depth": 1,
+      "why": "redis is semver: the RDB format moves on the leading number"
+    },
+    "dockerhub:solr": {
+      "depth": 1,
+      "why": "solr is semver: the index format moves on the leading number"
+    },
+    "dockerhub:traefik": {
+      "depth": 2,
+      "why": "traefik numbers its releases v3.x, and a minor adds and deprecates providers and options"
+    },
+    "dockerhub:ubuntu": {
+      "depth": 2,
+      "why": "ubuntu numbers its releases YY.MM (24.04, 26.04), each its own distribution"
+    }
+  }
 }

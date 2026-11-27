@@ -8,7 +8,9 @@
 # Write lines with `npm run pins -- hold <id> --reason "<why>" --expires YYYY-MM-DD`, never by
 # hand. A newer major whose first release is past the grace in .ci/config/pin-major-grace.json
 # turns check:ci-pin-freshness red unless the pin is bumped or held here WITH an expiry: an
-# undated hold does not excuse an aged major.
+# undated hold does not excuse an aged major. A "major" here is a newer VERSION LINE: the first
+# `depth` parts of a version, the depth named per image in the `lines` table of
+# .ci/config/pins.json (python 3.9 sits below the 3.10 line; node 26.1 and 26.2 share line 26).
 #
 # Do NOT hold a release that is merely too fresh: the release-age window in
 # .ci/config/release-age.json defers it, and the deferral clears itself.

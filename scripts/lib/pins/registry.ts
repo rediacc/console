@@ -36,6 +36,7 @@ import process from 'node:process';
 import { type ControlCase, runControls } from '../controls.js';
 import { isEntryPoint } from '../entry-point.js';
 import { envRoot } from '../repo-root.js';
+import { type LineRule, lineSubject } from './lines.js';
 
 /** The scanners of check:ci-pin-registry. An ignore names one of these, or `literal`. */
 export const SCANNERS = [
@@ -193,6 +194,12 @@ export interface PinRegistry {
   literalExclude: PinExclude[];
   entries: PinEntry[];
   ignores: PinIgnore[];
+  /**
+   * The version-line depth per source, keyed `<source.type>:<image|package|repo|module>`
+   * (scripts/lib/pins/lines.ts). Every dockerhub leaf needs a row; a key no leaf's source
+   * answers to is dead.
+   */
+  lines: Record<string, LineRule>;
 }
 
 /** The registry the readers load: the console's own, unless PINS_ROOT (a selftest fixture) moves the root. */
@@ -465,7 +472,63 @@ export function registryProblems(raw: unknown): string[] {
       const why = blockerProblem(g.reason);
       if (why) bad(`${f}.reason`, why);
     });
+
+  // THE LINES TABLE (scripts/lib/pins/lines.ts): the shape of each row. Which rows the leaves need, and which no leaf reads, is lineRowProblems below, judged by check:ci-pin-registry and check:ci-pin-freshness.
+  if (!isObj(raw.lines))
+    bad('lines', 'must be an object of `<source.type>:<name>` -> {depth, why}');
+  else
+    for (const [key, rule] of Object.entries(raw.lines)) {
+      const f = `lines[${JSON.stringify(key)}]`;
+      if (!/^[a-z][a-z-]*:\S+$/.test(key) || key.startsWith('none:'))
+        bad(f, 'the key must be `<source.type>:<image|package|repo|module>`');
+      if (!isObj(rule)) {
+        bad(f, 'must be {depth, why}');
+        continue;
+      }
+      if (
+        typeof rule.depth !== 'number' ||
+        !Number.isInteger(rule.depth) ||
+        rule.depth < 1 ||
+        rule.depth > 3
+      )
+        bad(`${f}.depth`, `must be an integer from 1 to 3, got ${JSON.stringify(rule.depth)}`);
+      if (typeof rule.why !== 'string' || rule.why.trim() === '')
+        bad(`${f}.why`, 'must say why the line is that deep');
+      for (const k of Object.keys(rule))
+        if (k !== 'depth' && k !== 'why') bad(`${f}.${k}`, 'is not a field of a line row');
+    }
   return out;
+}
+
+/**
+ * The `lines` rows a parsed registry is missing or carries dead: every dockerhub leaf needs the
+ * row of its image (a docker tag says nothing about how deep its upstream's lines go, and the
+ * default depth 1 kept python 3.9 below 3.15 un-aged, plan #ef324e18), and a row no leaf's
+ * source answers to is dead. Not part of registryProblems, so a load stays possible between
+ * `pins sync-templates --write` adding a template leaf and the row its author adds next;
+ * check:ci-pin-registry fails on both kinds and check:ci-pin-freshness on a missing row. Pure.
+ */
+export function lineRowProblems(reg: Pick<PinRegistry, 'entries' | 'lines'>): {
+  missing: string[];
+  dead: string[];
+} {
+  const subjects = new Set<string>();
+  const missing: string[] = [];
+  for (const e of reg.entries) {
+    if (e.kind !== 'leaf') continue;
+    const key = lineSubject(e.source);
+    if (key !== null) subjects.add(key);
+    if (e.source.type === 'dockerhub' && (key === null || !Object.hasOwn(reg.lines, key)))
+      missing.push(
+        `${e.id}: a dockerhub leaf needs a row ${JSON.stringify(key ?? 'dockerhub:<image>')} in the \`lines\` table of .ci/config/pins.json naming how many leading parts of its tags make a version line ({"depth": 1-3, "why": "..."}); without it the line reads depth 1`
+      );
+  }
+  const dead = Object.keys(reg.lines)
+    .filter((k) => !subjects.has(k))
+    .map(
+      (k) => `lines[${JSON.stringify(k)}]: no leaf reads this source, so the row is dead; delete it`
+    );
+  return { missing, dead };
 }
 
 /** Parse and validate registry text; throws RegistryError naming every problem. */
@@ -600,8 +663,30 @@ function validFixture(): Obj {
         derive: [],
         literals: [],
       },
+      {
+        id: 'image:py',
+        kind: 'leaf',
+        name: 'python base image',
+        driver: 'docker',
+        source: { type: 'dockerhub', image: 'python' },
+        safety: { mode: 'release-age', major: 'assisted' },
+        holds: [],
+        gates: [],
+        sites: [
+          {
+            repo: '.',
+            file: 'Dockerfile',
+            role: 'version',
+            match: '^FROM (?<value>\\S+)$',
+            expect: 1,
+          },
+        ],
+        derive: [],
+        literals: [],
+      },
     ],
     ignores: [],
+    lines: { 'dockerhub:python': { depth: 2, why: 'python numbers its lines 3.x' } },
   };
 }
 
@@ -696,6 +781,22 @@ export function selftestCases(): ControlCase[] {
       (r) => ((r.submodules as Obj).unscanned = [{ path: 'private/elite' }]),
       'unscanned[0].reason:',
     ],
+    ['lines missing', (r) => delete r.lines, 'lines:'],
+    [
+      'lines depth 0',
+      (r) => (((r.lines as Obj)['dockerhub:python'] as Obj).depth = 0),
+      'lines["dockerhub:python"].depth:',
+    ],
+    [
+      'lines depth 4',
+      (r) => (((r.lines as Obj)['dockerhub:python'] as Obj).depth = 4),
+      'lines["dockerhub:python"].depth:',
+    ],
+    [
+      'lines row without why',
+      (r) => delete ((r.lines as Obj)['dockerhub:python'] as Obj).why,
+      'lines["dockerhub:python"].why:',
+    ],
     [
       'literalExclude without reason',
       (r) => (r.literalExclude = [{ repo: '.', glob: 'notes/**' }]),
@@ -712,6 +813,36 @@ export function selftestCases(): ControlCase[] {
       detail: problems.length ? problems.join('; ') : 'no problem reported',
     });
   }
+
+  // The lines rows: a missing one and a dead one, each by name, and the valid fixture neither.
+  const rows = (mutate: (r: Obj) => void) => {
+    const r = clone();
+    mutate(r);
+    return lineRowProblems(r as unknown as PinRegistry);
+  };
+  const okRows = rows(() => {});
+  cases.push({
+    name: 'CONTROL: the valid fixture has no missing and no dead lines row',
+    ok: okRows.missing.length === 0 && okRows.dead.length === 0,
+    detail: JSON.stringify(okRows),
+  });
+  const missingRow = rows((r) => (r.lines = {}));
+  cases.push({
+    name: 'a dockerhub leaf without a lines row is named as missing',
+    ok:
+      missingRow.missing.length === 1 &&
+      missingRow.missing[0].startsWith('image:py: a dockerhub leaf needs a row "dockerhub:python"'),
+    detail: JSON.stringify(missingRow),
+  });
+  const deadRow = rows((r) => ((r.lines as Obj)['dockerhub:ruby'] = { depth: 2, why: 'x' }));
+  cases.push({
+    name: 'a lines row no leaf reads is named as dead',
+    ok:
+      deadRow.dead.length === 1 &&
+      deadRow.dead[0].startsWith('lines["dockerhub:ruby"]: no leaf reads this source') &&
+      deadRow.missing.length === 0,
+    detail: JSON.stringify(deadRow),
+  });
 
   // The loader throws with the field path; a caller that catches RegistryError sees them all.
   let thrown: unknown;
@@ -767,7 +898,7 @@ function main(): number {
     const fam = reg.entries.filter((e) => e.kind === 'family').length;
     const sites = reg.entries.reduce((n, e) => n + e.sites.length, 0);
     console.log(
-      `${path.relative(process.cwd(), file)}: ${reg.entries.length} entries (${fam} families, ${reg.entries.length - fam} leaves), ${sites} sites, ${reg.ignores.length} ignores`
+      `${path.relative(process.cwd(), file)}: ${reg.entries.length} entries (${fam} families, ${reg.entries.length - fam} leaves), ${sites} sites, ${reg.ignores.length} ignores, ${Object.keys(reg.lines).length} version-line rows`
     );
     return 0;
   } catch (err) {

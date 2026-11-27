@@ -38,6 +38,8 @@ import type { Release } from '../driver.js';
  *   docker-no-drain        a bumped pin stays in the shrink-only baseline
  *   docker-keep-digest     a bumped tag keeps the digest of the old tag beside it
  *   docker-skip-redigest   a pinned tag whose served digest moved offers no re-digest
+ *   docker-line-by-major   a version line is dated by every tag of its first number, so a young
+ *                          python 3.15 line inside a decade of 3.x tags reads old
  */
 export const T8_MUTANTS = [
   'actions-skip-sites',
@@ -51,6 +53,7 @@ export const T8_MUTANTS = [
   'docker-no-drain',
   'docker-keep-digest',
   'docker-skip-redigest',
+  'docker-line-by-major',
 ] as const;
 export type T8Mutant = (typeof T8_MUTANTS)[number];
 

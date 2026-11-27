@@ -35,9 +35,15 @@
  * Every non-current line is printed on every run, green or red.
  *
  * NEWER MAJORS (operator ruling 2026-10-14T20:56Z, "Red after a grace period (40 days)").
- * Whatever the state, every major line above a judged pin is aged from the first release on
+ * Whatever the state, every version line above a judged pin is aged from the first release on
  * that line (status.ts newerMajors, dated by the driver: a docker line by the instant its tags
- * prove it had begun by, see scripts/lib/pins/drivers/docker.ts). Under the grace in
+ * prove it had begun by, see scripts/lib/pins/drivers/docker.ts). A LINE is the first `depth`
+ * parts of a version (scripts/lib/pins/lines.ts): the `lines` table of .ci/config/pins.json
+ * names the depth per source (python 2, so 3.9 sits below the 3.10 line; node 1), a 0.x version
+ * reads at least depth 2, and a source with no row reads 1 (plan #ef324e18; keyed by the first
+ * number alone, python 3.9 below 3.15 never aged). A move inside the pinned line is no line: a
+ * `major only` leaf whose candidates all sit on its own line says `same line X, never aged`, and
+ * the summary counts those leaves. Under the grace in
  * .ci/config/pin-major-grace.json the line is printed with the instant it turns red, and
  * passes. At or past the grace it is RED, and so is a line whose first release cannot be
  * dated (fail closed), until the pin is bumped (`bump <id> --major --reason "<why>"`) or held
@@ -78,13 +84,20 @@ import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.j
 import { hubDeps } from '../lib/pins/drivers/docker.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
-import { loadRegistry, type PinEntry, type PinRegistry } from '../lib/pins/registry.js';
+import { lineSubject } from '../lib/pins/lines.js';
+import {
+  lineRowProblems,
+  loadRegistry,
+  type PinEntry,
+  type PinRegistry,
+} from '../lib/pins/registry.js';
 import { bumpRemedy } from '../lib/pins/remedy.js';
 import { iso } from '../lib/pins/soak.js';
 import {
   contextOf,
   getMajorGraceMs,
   type Hold,
+  type LineDatedRelease,
   MAJOR_GRACE_CONFIG,
   type NewerMajor,
   type StatusWorld,
@@ -124,8 +137,10 @@ interface LeafView {
   detail: string;
   /** The release the window is holding back, with the instant it clears (null when the driver's own rule holds it). */
   deferred?: { clearsAt: number | null } | null;
-  /** The major lines above the pin (status.ts newerMajors). */
+  /** The version lines above the pin (status.ts newerMajors). */
   majors?: NewerMajor[];
+  /** The line of the pinned version (status.ts currentLineOf). */
+  currentLine?: string | null;
   hold?: Hold | null;
 }
 
@@ -141,6 +156,10 @@ interface LeafView {
  *   ignore-holds        a dated hold does not excuse an aged major
  *   undated-hold-excuses an undated hold excuses an aged major
  *   no-hold-liveness    a hold line no leaf answers to passes
+ *   first-number-only   a version line is its first number alone, so python 3.9 below 3.10 is one line
+ *   zero-is-major       a 0.x version's line is its 0, so otel 0.111 below 0.166 is one line
+ *                       (both are scripts/lib/pins/lines.ts LINE_MUTANTS, passed through StatusWorld)
+ *   no-line-rows        a dockerhub leaf with no `lines` row passes, judged at depth 1
  */
 const MUTANTS = [
   'no-compare',
@@ -152,6 +171,9 @@ const MUTANTS = [
   'ignore-holds',
   'undated-hold-excuses',
   'no-hold-liveness',
+  'first-number-only',
+  'zero-is-major',
+  'no-line-rows',
 ] as const;
 type Mutant = (typeof MUTANTS)[number];
 
@@ -185,7 +207,7 @@ function majorAges(v: LeafView, nowMs: number, graceMs: number, mutant?: Mutant)
 }
 
 const describeLine = (a: MajorAge): string => {
-  const what = `${a.line.newest} (major ${a.line.major ?? '?'})`;
+  const what = `${a.line.newest} (line ${a.line.line})`;
   if (a.line.firstMs === null) return `${what}: no release on the line carries a date`;
   const first = `first released ${iso(a.line.firstMs)}, ${a.days} day(s) ago`;
   return a.line.partial
@@ -225,11 +247,13 @@ function holdFindings(
   return out;
 }
 
-/** The clock, the grace on newer majors and the hold-file findings a verdict is given. */
+/** The clock, the grace on newer majors, the hold-file findings and the missing `lines` rows a verdict is given. */
 interface Judging {
   nowMs: number;
   graceMs: number;
   holdProblems: string[];
+  /** registry.ts lineRowProblems().missing: a dockerhub leaf whose line depth nobody named. */
+  missingLines?: string[];
 }
 
 /** The verdict over every judged leaf's view. Pure. */
@@ -259,7 +283,11 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
   }
   for (const v of of('held')) out.push(`  held        ${v.id}: ${v.detail}`);
   for (const v of of('major-only')) {
-    out.push(`  major only  ${v.id}: ${v.detail}`);
+    const above = v.majors?.[0];
+    const tail = above
+      ? `; the newest line above is ${above.line}`
+      : `; same line ${v.currentLine ?? '?'}, never aged`;
+    out.push(`  major only  ${v.id}: ${v.detail}${tail}`);
     out.push(bumpRemedy(v.id, { major: true }));
   }
 
@@ -336,11 +364,26 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
     err.push(`✗ ${holdRed.length} hold line(s) or hold key(s) are wrong:`);
     for (const p of holdRed) err.push(`  ${p}`);
   }
-  if (stale.length > 0 || blind.length > 0 || majorRed.length > 0 || holdRed.length > 0)
+  // A dockerhub leaf with no `lines` row is judged at depth 1, the reading that kept python 3.9 below 3.15 un-aged: unchecked, so red.
+  const lineRed = mutant === 'no-line-rows' ? [] : (majors.missingLines ?? []);
+  if (lineRed.length > 0) {
+    err.push(
+      `✗ ${lineRed.length} docker leaf(s) have no version-line row, so their newer lines cannot be aged at the right depth:`
+    );
+    for (const p of lineRed) err.push(`  ${p}`);
+  }
+  if (
+    stale.length > 0 ||
+    blind.length > 0 ||
+    majorRed.length > 0 ||
+    holdRed.length > 0 ||
+    lineRed.length > 0
+  )
     return { rc: 1, out, err };
   const newer = seen.reduce((n, v) => n + (v.majors?.length ?? 0), 0);
+  const sameLine = of('major-only').filter((v) => (v.majors?.length ?? 0) === 0).length;
   out.push(
-    `✓ ${seen.length} of ${sel.judged.length} leaf(s) compared with upstream: ${of('current').length} current, ${of('deferred').length} deferred, ${of('major-only').length} major only, ${of('held').length} held; ${newer} newer major line(s), none past the ${graceDays}-day grace unexcused`
+    `✓ ${seen.length} of ${sel.judged.length} leaf(s) compared with upstream: ${of('current').length} current, ${of('deferred').length} deferred, ${of('major-only').length} major only (${sameLine} on their own line, never aged), ${of('held').length} held; ${newer} newer version line(s), none past the ${graceDays}-day grace unexcused`
   );
   return { rc: 0, out, err };
 }
@@ -413,10 +456,21 @@ async function check(root: string, mutant?: Mutant, nowMs: number = Date.now()):
     mutant: null,
     nowMs,
     windowMs: getMinReleaseAgeMs(path.join(root, '.ci/config/release-age.json')),
+    ...(mutant === 'first-number-only' || mutant === 'zero-is-major' ? { lineMutant: mutant } : {}),
   };
   const sel = selectLeaves(reg);
   const views = await viewsOf(world, sel.judged);
-  return verdict(sel, views, { nowMs, graceMs, holdProblems: holdProblemsOf(world, sel) }, mutant);
+  return verdict(
+    sel,
+    views,
+    {
+      nowMs,
+      graceMs,
+      holdProblems: holdProblemsOf(world, sel),
+      missingLines: lineRowProblems(reg).missing,
+    },
+    mutant
+  );
 }
 
 // ---- selftest -------------------------------------------------------------------------------
@@ -433,12 +487,28 @@ const AGED = 'toolchain:pytest';
 const HELD = 'toolchain:pytest-xdist';
 const UNDATED = 'toolchain:shfmt';
 const LAZY_HOLD = 'toolchain:shellcheck';
+/**
+ * The version-line controls (plan #ef324e18), real docker leaves whose `lines` rows the fixture
+ * carries: python (depth 2) one line below 3.10 past the grace, alpine (depth 2) one line below
+ * 3.24 under it, and node (depth 1) moving 26.1 to 26.2, on its own line, 400 days ago. ZERO is
+ * a toolchain leaf with no `lines` row answering otel-shaped labels: the 0.x rule alone makes
+ * 0.166 a line above 0.111. Its labels carry the `<image>:` prefix so the core reads them as a
+ * plain bump cannot take them, as it reads every docker candidate.
+ */
+const LINE_AGED = 'image:cloud-switch-python';
+const LINE_YOUNG = 'image:cli-alpine';
+const SAME_LINE = 'image:node-alpine';
+const ZERO = 'toolchain:actionlint';
 const HOLDS = policyPath('.pins-upgrade-blocklist', '.');
 /** The key the toolchain driver writes for a leaf: its id after the colon, as registry.ts names it. */
 const holdKeyOf = (id: string): string => id.slice(id.indexOf(':') + 1);
 
 /** A fixture root holding a registry of the named real entries, the files their sites read, the two configs, and `extra` files. */
-function fixtureRoot(ids: string[], extra: Record<string, string> = {}): string {
+function fixtureRoot(
+  ids: string[],
+  extra: Record<string, string> = {},
+  dropLines: string[] = []
+): string {
   const real = loadRegistry(path.join(REPO_ROOT, '.ci/config/pins.json'));
   const pick = (id: string): PinEntry => {
     const e = real.entries.find((x) => x.id === id);
@@ -448,12 +518,17 @@ function fixtureRoot(ids: string[], extra: Record<string, string> = {}): string 
   };
   const entries = ids.map(pick);
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'pin-freshness-'));
+  // The `lines` rows the picked leaves read, and no other: a row no leaf reads is a registry error.
+  const subjects = new Set(
+    entries.flatMap((e) => lineSubject(e.source) ?? []).filter((k) => !dropLines.includes(k))
+  );
   const reg: PinRegistry = {
     version: 1,
     submodules: { scanned: [], unscanned: [] },
     literalExclude: [],
     entries: entries.map((e) => ({ ...e, sites: e.sites.filter((s) => s.repo === '.') })),
     ignores: [],
+    lines: Object.fromEntries(Object.entries(real.lines).filter(([k]) => subjects.has(k))),
   };
   const files = new Set(reg.entries.flatMap((e) => e.sites.map((s) => s.file)));
   for (const rel of [...files, '.ci/config/release-age.json', MAJOR_GRACE_CONFIG]) {
@@ -501,11 +576,52 @@ function stubDriver(): PinDriver {
       if (entry.id === AGED || entry.id === HELD || entry.id === LAZY_HOLD)
         return major(NOW - PAST * DAY_MS);
       if (entry.id === UNDATED) return major(null);
+      if (entry.id === ZERO)
+        return Promise.resolve({
+          current: 'otel/opentelemetry-collector-contrib:0.111.0',
+          releases: [
+            {
+              version: 'otel/opentelemetry-collector-contrib:0.166.0',
+              publishedMs: NOW - PAST * DAY_MS,
+            },
+          ],
+        });
       const published = entry.id === STALE ? NOW - 30 * DAY_MS : NOW - 3_600_000;
       return Promise.resolve({
         current: '1.0.0',
         releases: [{ version: '1.0.1', publishedMs: published }],
       });
+    },
+    plan() {
+      return Promise.reject(new Error('the selftest never plans'));
+    },
+    holdKey: (e) => holdKeyOf(e.id),
+  };
+}
+
+/**
+ * A docker stub for the version-line controls: each leaf answers one candidate whose line the
+ * driver dated `ageDays` ago (as the real driver dates a line, by `lineFirstMs`), with the real
+ * driver's verdict, so the core reads it as major only. `ageDays` overrides per leaf.
+ */
+function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
+  const answer: Record<string, { current: string; next: string; days: number }> = {
+    [LINE_AGED]: { current: 'python:3.9-slim', next: 'python:3.10-slim', days: PAST },
+    [LINE_YOUNG]: { current: 'alpine:3.23', next: 'alpine:3.24', days: UNDER },
+    [SAME_LINE]: { current: 'node:26.1-alpine', next: 'node:26.2-alpine', days: 400 },
+  };
+  return {
+    name: 'docker',
+    inspect(entry) {
+      const a = answer[entry.id];
+      if (!a) return Promise.reject(new Error(`the line stub has no answer for ${entry.id}`));
+      const next: LineDatedRelease = {
+        version: a.next,
+        publishedMs: NOW - DAY_MS * 2,
+        lineFirstMs: NOW - (ageDays[entry.id] ?? a.days) * DAY_MS,
+        verdict: { eligible: true, why: 'a series move, taken only with --major --reason' },
+      };
+      return Promise.resolve({ current: a.current, releases: [next] });
     },
     plan() {
       return Promise.reject(new Error('the selftest never plans'));
@@ -598,7 +714,7 @@ async function selftest(): Promise<number> {
       `GRACE ${UNDER} days: a newer major under the grace is printed with the instant it turns red, and passes`,
       mj.out.some(
         (l) =>
-          l.startsWith(`  new major   ${YOUNG}: 2.1.0 (major 2): first released`) &&
+          l.startsWith(`  new major   ${YOUNG}: 2.1.0 (line 2): first released`) &&
           l.includes(`${UNDER} day(s) ago`) &&
           l.includes(`red from ${iso(NOW + DAY_MS)}`)
       ) && errOf(YOUNG).length === 0,
@@ -607,7 +723,7 @@ async function selftest(): Promise<number> {
     add(
       `GRACE ${PAST} days: a newer major past the grace is red, with the bump and the dated hold lines`,
       errOf(AGED).some(
-        (l) => l.includes('aged, 2.1.0 (major 2)') && l.includes(`${PAST} day(s) ago`)
+        (l) => l.includes('aged, 2.1.0 (line 2)') && l.includes(`${PAST} day(s) ago`)
       ) &&
         mj.err.includes(`  fix: npm run pins -- bump ${AGED} --major --reason "<why>"`) &&
         mj.err.some((l) =>
@@ -655,7 +771,7 @@ async function selftest(): Promise<number> {
     const mjGreen = await run(undefined, majorsRoot);
     add(
       'CONTROL: a young major and a dated hold alone are green, counting the newer lines',
-      mjGreen.rc === 0 && mjGreen.out.some((l) => l.includes('2 newer major line(s)')),
+      mjGreen.rc === 0 && mjGreen.out.some((l) => l.includes('2 newer version line(s)')),
       mjGreen.all
     );
     registerDrivers({ toolchain: stubDriver() });
@@ -774,6 +890,91 @@ async function selftest(): Promise<number> {
     const empty = verdict({ judged: [], byFamily: [], noSource: [] }, [], NO_HOLDS);
     add('VACUITY: a run that judged no leaf is red', empty.rc === 1);
 
+    // ---- version lines (plan #ef324e18): a line is the first `depth` parts, end to end through viewOf and the fixture's `lines` rows ----
+    registerDrivers({ docker: lineStub() });
+    const linesRoot = fixtureRoot([LINE_AGED, LINE_YOUNG, SAME_LINE, ZERO]);
+    roots.push(linesRoot);
+    const fixtureLines = loadRegistry(path.join(linesRoot, '.ci/config/pins.json')).lines;
+    const rowDepth = (k: string): number | undefined =>
+      Object.hasOwn(fixtureLines, k) ? fixtureLines[k].depth : undefined;
+    add(
+      'LINES fixture: the docker leaves carry their real rows (python 2, alpine 2, node 1) and the toolchain leaf none',
+      rowDepth('dockerhub:python') === 2 &&
+        rowDepth('dockerhub:alpine') === 2 &&
+        rowDepth('dockerhub:node') === 1 &&
+        Object.keys(fixtureLines).length === 3,
+      JSON.stringify(fixtureLines)
+    );
+    const ln = await run(undefined, linesRoot);
+    const lnErr = (id: string) => ln.err.filter((l) => l.startsWith(`  ${id} `));
+    add(
+      `LINES red: python 3.9 below a 3.10 line first seen ${PAST} days ago is aged, naming the line`,
+      lnErr(LINE_AGED).some(
+        (l) => l.includes('aged, python:3.10-slim (line 3.10)') && l.includes(`${PAST} day(s) ago`)
+      ),
+      ln.all
+    );
+    add(
+      'LINES red: otel 0.111 below 0.166 with no `lines` row is aged by the 0.x rule, naming the line',
+      lnErr(ZERO).some((l) => l.includes('(line 0.166)') && l.includes('aged')),
+      ln.all
+    );
+    add(
+      `LINES control: alpine 3.23 below a 3.24 line ${UNDER} days old is printed as young and passes`,
+      ln.out.some(
+        (l) =>
+          l.startsWith(`  new major   ${LINE_YOUNG}: alpine:3.24 (line 3.24)`) &&
+          l.includes('red from')
+      ) && lnErr(LINE_YOUNG).length === 0,
+      ln.all
+    );
+    add(
+      'LINES control: node 26.1 to 26.2 (depth 1) dated 400 days ago is no line, and says `same line 26, never aged`',
+      ln.out.some(
+        (l) =>
+          l.startsWith(`  major only  ${SAME_LINE}:`) && l.endsWith('; same line 26, never aged')
+      ) && lnErr(SAME_LINE).length === 0,
+      ln.all
+    );
+    add('LINES: the run with an aged 3.10 and an aged 0.166 line is red', ln.rc === 1, ln.all);
+    registerDrivers({ docker: lineStub({ [LINE_AGED]: UNDER }) });
+    registerDrivers({
+      toolchain: {
+        ...stubDriver(),
+        inspect: (e, c) =>
+          e.id === ZERO
+            ? Promise.resolve({
+                current: 'otel/opentelemetry-collector-contrib:0.166.0',
+                releases: [],
+              })
+            : stubDriver().inspect(e, c),
+      },
+    });
+    const lnGreen = await run(undefined, linesRoot);
+    add(
+      `LINES control: the same python line at ${UNDER} days and otel bumped is green, counting the never-aged leaf`,
+      lnGreen.rc === 0 &&
+        lnGreen.out.some((l) => l.includes('3 major only (1 on their own line, never aged)')) &&
+        lnGreen.out.some((l) =>
+          l.startsWith(`  new major   ${LINE_AGED}: python:3.10-slim (line 3.10)`)
+        ),
+      lnGreen.all
+    );
+    registerDrivers({ docker: lineStub(), toolchain: stubDriver() });
+
+    // A dockerhub leaf with no `lines` row is red, naming the row to add (registry.ts lineRowProblems).
+    const rowless = fixtureRoot([LINE_YOUNG], {}, ['dockerhub:alpine']);
+    roots.push(rowless);
+    const rl = await run(undefined, rowless);
+    add(
+      'LINES: a docker leaf with no `lines` row is red, naming the row "dockerhub:alpine"',
+      rl.rc === 1 &&
+        rl.err.some((l) =>
+          l.includes(`${LINE_YOUNG}: a dockerhub leaf needs a row "dockerhub:alpine"`)
+        ),
+      rl.all
+    );
+
     // Each mutant disables one property; the case that relies on it must then fail.
     const mjRun = async (m: Mutant) => run(m, majorsRoot);
     const caseFor: Record<Mutant, () => Promise<boolean>> = {
@@ -795,6 +996,16 @@ async function selftest(): Promise<number> {
         (await mjRun('undated-hold-excuses')).err.some((l) => l.startsWith(`  ${LAZY_HOLD} `)),
       'no-hold-liveness': async () =>
         (await run('no-hold-liveness', dead)).err.some((l) => l.includes('holds not-a-pin')),
+      'first-number-only': async () =>
+        (await run('first-number-only', linesRoot)).err.some((l) =>
+          l.startsWith(`  ${LINE_AGED} `)
+        ),
+      'zero-is-major': async () =>
+        (await run('zero-is-major', linesRoot)).err.some((l) => l.startsWith(`  ${ZERO} `)),
+      'no-line-rows': async () =>
+        (await run('no-line-rows', rowless)).err.some((l) =>
+          l.includes('needs a row "dockerhub:alpine"')
+        ),
     };
     for (const m of MUTANTS)
       add(

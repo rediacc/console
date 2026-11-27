@@ -81,6 +81,7 @@ import { GREEN, NC, RED, YELLOW } from '../lib/console.js';
 import { type ControlCase, runControls } from '../lib/controls.js';
 import {
   compile,
+  lineRowProblems,
   selftestCases as loaderCases,
   loadRegistry,
   type PinEntry,
@@ -392,6 +393,7 @@ export type FindingKind =
   | 'dead-ignore'
   | 'dead-scope'
   | 'dead-exclude'
+  | 'line-row'
   | 'reason'
   | 'gate-id'
   | 'missing-file'
@@ -412,6 +414,7 @@ export type Mutant =
   | 'no-ignore-liveness'
   | 'no-scope-liveness'
   | 'no-exclude-liveness'
+  | 'no-line-rows'
   | 'no-reason-check'
   | 'no-submodule-presence'
   | 'no-template-leaf-rule'
@@ -744,6 +747,13 @@ export function checkRegistry(
         );
     });
 
+  // VERSION-LINE ROWS (scripts/lib/pins/lines.ts): every dockerhub leaf has the row of its image, and no row is dead.
+  if (!m.has('no-line-rows')) {
+    const rows = lineRowProblems(reg);
+    for (const msg of rows.missing) add('line-row', msg.slice(0, msg.indexOf(':')), msg);
+    for (const msg of rows.dead) add('line-row', msg.slice(0, msg.indexOf(':')), msg);
+  }
+
   // REASONS, GATES, HOLDS
   if (!m.has('no-reason-check')) {
     const reasons: [string, string][] = [];
@@ -794,7 +804,7 @@ function describe(s: PinSite): string {
 const SHA = 'a'.repeat(40);
 
 function fixtureRegistry(): PinRegistry {
-  return {
+  const reg: PinRegistry = {
     version: 1,
     submodules: {
       scanned: ['private/renet'],
@@ -1025,7 +1035,16 @@ function fixtureRegistry(): PinRegistry {
           'BLOCKER: a dated research record naming the version that was current then, not a copy of the pin',
       },
     ],
+    lines: {},
   };
+  // Every dockerhub leaf the generated templates add needs its `lines` row (registry.ts validates it), and no other row.
+  for (const e of reg.entries)
+    if (e.kind === 'leaf' && e.source.type === 'dockerhub' && e.source.image)
+      reg.lines[`dockerhub:${e.source.image}`] = {
+        depth: 1,
+        why: 'the fixture reads every template image at the default depth',
+      };
+  return reg;
 }
 
 /** The workspace root segment, spelled through a constant so a fixture path is not read as a real path literal. */
@@ -1330,6 +1349,26 @@ const PLANTS: Plant[] = [
       }),
   },
   {
+    name: 'a dockerhub leaf with no version-line row',
+    kind: 'line-row',
+    mark: 'needs a row',
+    mutant: 'no-line-rows',
+    apply: (r) => {
+      const leaf = r.entries.find((e) => e.kind === 'leaf' && e.source.type === 'dockerhub');
+      if (!leaf) throw new Error('the fixture registry holds no dockerhub leaf');
+      delete r.lines[`dockerhub:${leaf.source.image}`];
+    },
+  },
+  {
+    name: 'a version-line row no leaf reads',
+    kind: 'line-row',
+    mark: 'dockerhub:ruby',
+    mutant: 'no-line-rows',
+    apply: (r) => {
+      r.lines['dockerhub:ruby'] = { depth: 2, why: 'ruby numbers its lines 3.x' };
+    },
+  },
+  {
     name: 'a hollow source:none reason',
     kind: 'reason',
     mark: 'os:leap',
@@ -1513,6 +1552,7 @@ function main(): number {
       'dead-ignore',
       'dead-scope',
       'dead-exclude',
+      'line-row',
       'reason',
       'gate-id',
       'missing-file',
@@ -1529,7 +1569,7 @@ function main(): number {
   }
   const fam = reg.entries.filter((e) => e.kind === 'family').length;
   console.log(
-    `${GREEN}✓ ${stats.hits} pin hit(s) across ${stats.files} tracked file(s) in ${tree.repos.length} repo(s) are all claimed by ${reg.entries.length} entries (${fam} families, ${reg.entries.length - fam} leaves); ${stats.sites} site(s) match their expected counts and agree; ${stats.literalOccurrences} literal occurrence(s) over ${stats.literalFiles} file(s) are claimed; ${reg.ignores.length} ignore(s) all live.${NC}`
+    `${GREEN}✓ ${stats.hits} pin hit(s) across ${stats.files} tracked file(s) in ${tree.repos.length} repo(s) are all claimed by ${reg.entries.length} entries (${fam} families, ${reg.entries.length - fam} leaves); ${stats.sites} site(s) match their expected counts and agree; ${stats.literalOccurrences} literal occurrence(s) over ${stats.literalFiles} file(s) are claimed; ${reg.ignores.length} ignore(s) all live; ${Object.keys(reg.lines).length} version-line row(s), each read by a leaf.${NC}`
   );
   return 0;
 }

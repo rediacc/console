@@ -23,9 +23,9 @@ import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
 import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
+import { lineOf } from '../lines.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
 import { soakClearsAt, iso as soakIso } from '../soak.js';
-import { majorLineOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
@@ -955,10 +955,44 @@ async function dockerCases(
     detail: JSON.stringify(uw),
   });
   const line26 = ui.releases.map((r) => (r as { lineFirstMs?: number | null }).lineFirstMs);
+  // ubuntu reads depth 2 (the `lines` row): 26.04 and 26.10 are two lines, each dated by its own oldest tag.
   out.push({
-    name: "docker: a re-pushed tag's line is dated by the oldest push among tags created after the line began, not by its own stamp",
-    ok: line26.length === 2 && line26.every((ms) => ms === NOW - 268 * DAY),
+    name: "docker: a re-pushed tag's line is dated by the oldest push among tags created after the line began, not by its own stamp, and 26.10 is its own line",
+    ok: line26.length === 2 && line26[0] === NOW - 26 * DAY && line26[1] === NOW - 268 * DAY,
     detail: JSON.stringify(ui.releases),
+  });
+  // A version line deeper than the first number (plan #ef324e18): python 3.15 is dated by the 3.15 tags, never by a decade of 3.x tags beside it.
+  const py = entry('image:cloud-switch-python');
+  const pyRoot = tree({
+    'packages/json/templates/networking/cloud-switch/web/Dockerfile':
+      'FROM python:3.9-slim\nCMD ["python"]\n',
+    'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+  });
+  const pyInsp = await dockerDriver(
+    () =>
+      deps({
+        json: () => ({
+          results: [
+            { name: '3.15-slim', id: 9000, last_updated: iso(NOW - 2 * DAY) },
+            { name: '3.15.0-slim', id: 9001, last_updated: iso(NOW - 20 * DAY) },
+            { name: '3.10-slim', id: 200, last_updated: iso(NOW - 3 * DAY) },
+            { name: '3.10.0-slim', id: 201, last_updated: iso(NOW - 1800 * DAY) },
+            { name: '3.9-slim', id: 100, last_updated: iso(NOW - 3 * DAY) },
+          ],
+          next: null,
+        }),
+      }).deps,
+    mutant
+  ).inspect(py, ctxOf(pyRoot));
+  const pyLine = (v: string) =>
+    (pyInsp.releases.find((r) => r.version === v) as { lineFirstMs?: number | null } | undefined)
+      ?.lineFirstMs;
+  out.push({
+    name: 'docker: a young python 3.15 line inside an old 3.x reads young (dated by its own 3.15 tags), and the 3.10 line reads old',
+    ok:
+      pyLine('python:3.15-slim') === NOW - 20 * DAY &&
+      pyLine('python:3.10-slim') === NOW - 1800 * DAY,
+    detail: JSON.stringify(pyInsp.releases),
   });
   // CONTROL, the other direction: a line that genuinely began last week reads last week.
   const fresh = await dockerDriver(
@@ -1096,7 +1130,7 @@ async function dockerCases(
       ri.releases.length === 1 &&
       redig?.verdict?.eligible === true &&
       !redig.verdict.why.includes('--major') &&
-      majorLineOf(rdLabel) === 26,
+      lineOf(rdLabel, 1)?.key === '26',
     detail: JSON.stringify(ri),
   });
   const rp = redig ? await rd.plan(pn, redig, rc).catch((e: Error) => e) : null;

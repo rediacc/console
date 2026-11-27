@@ -1942,6 +1942,7 @@ function preparePinsFixture(root: string): void {
     submodules: { scanned: ['private/account'], unscanned: [] },
     entries: real.entries.filter((e) => e.driver === 'npm'),
     ignores: [],
+    lines: {},
   };
   w('.ci/config/pins.json', `${JSON.stringify(reg, null, 2)}\n`);
   w(
