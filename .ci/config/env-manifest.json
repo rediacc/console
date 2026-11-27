@@ -1618,6 +1618,10 @@
       ".ci/rediacc_ci/build/canonicalise_gpg_key.py": [
         "RELEASE_GPG_PASSPHRASE"
       ],
+      ".ci/rediacc_ci/build/ephemeral_signing_key.py": [
+        "GITHUB_ENV",
+        "RUNNER_TEMP"
+      ],
       ".ci/rediacc_ci/build/extract_renet_from_image.py": [
         "ACCOUNT_ED25519_PUBLIC_KEY"
       ],
@@ -3420,6 +3424,12 @@
       ".ci/rediacc_ci/tests/test_build_ensure_nfpm.py": [
         "HOME",
         "PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_build_ephemeral_signing_key.py": [
+        "GNUPGHOME",
+        "NFPM_DEB_KEY_FILE",
+        "NFPM_RPM_KEY_FILE",
+        "NFPM_RPM_PASSPHRASE"
       ],
       ".ci/rediacc_ci/tests/test_build_extract_renet_from_image.py": [
         "HOME"
