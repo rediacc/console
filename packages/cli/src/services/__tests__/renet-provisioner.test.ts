@@ -20,6 +20,7 @@ const {
   getRsyncCommandMock,
   createTempSSHKeyFileMock,
   removeTempSSHKeyFileMock,
+  dialedOverride,
 } = vi.hoisted(() => ({
   readFileMock: vi.fn(),
   writeFileMock: vi.fn(),
@@ -34,6 +35,8 @@ const {
   getRsyncCommandMock: vi.fn(),
   createTempSSHKeyFileMock: vi.fn(),
   removeTempSSHKeyFileMock: vi.fn(),
+  /** When set, the mocked client reports it as the address its session reached (an IPv6 fallback). */
+  dialedOverride: { host: undefined as string | undefined },
 }));
 
 // The persistent provision-state layer has its own suite (provision-state. test.ts); here it must be inert, its real config reads would wedge inside this file's blanket node:fs/promises mock.
@@ -74,7 +77,7 @@ class MockSFTPClient {
   readonly dialedHost: string;
 
   constructor(config: { host: string }) {
-    this.dialedHost = config.host;
+    this.dialedHost = dialedOverride.host ?? config.host;
     mockInstances.push(this);
   }
 }
@@ -422,6 +425,48 @@ describe('RenetProvisionerService', () => {
       remoteRsyncPath: '/usr/bin/rsync',
     });
     expect(getMockInstance(0).writeFile).not.toHaveBeenCalled();
+  });
+
+  it('rsyncs to the address the session reached, not the configured host, after an IPv6 fallback', async () => {
+    const reached = '2001:db8::7';
+    dialedOverride.host = reached;
+    try {
+      const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+      const connectGate = Promise.withResolvers<void>();
+      connectDelegate.mockImplementation(async () => {
+        await connectGate.promise;
+      });
+      const provisionPromise = renetProvisioner.provision(
+        { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+        { localBinaryPath: '/tmp/renet' }
+      );
+      await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+      getMockInstance(0).exec.mockImplementation((command: string) =>
+        Promise.resolve(
+          ((): string => {
+            if (command === 'uname -m') return 'x86_64\n';
+            if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+            if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+            if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+            if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+            if (command.startsWith('cp -f ')) return '';
+            if (command.includes('sha256sum')) return 'local-hash\n';
+            throw new Error(`Unexpected command: ${command}`);
+          })()
+        )
+      );
+      connectGate.resolve();
+      const result = await provisionPromise;
+      expect(result.success).toBe(true);
+      expect(executeRsyncMock).toHaveBeenCalledTimes(1);
+      const destination = String(
+        (executeRsyncMock.mock.calls[0]?.[0] as { destination: string }).destination
+      );
+      expect(destination).toContain(reached);
+      expect(destination).not.toContain('hostinger');
+    } finally {
+      dialedOverride.host = undefined;
+    }
   });
 
   it('uses the current slot as delta seed even when it matches the target path', async () => {
