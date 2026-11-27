@@ -700,23 +700,34 @@ def test_release_refuses_a_failed_generator_and_accepts_a_complete_notice(tmp_pa
     assert ok.returncode == 0, ok.stderr
 
 
-def _generate_notice(tmp_path: pathlib.Path, *, readable_pkg: bool) -> tuple[str, str]:
-    """Runs the real generator against a fixture whose metafile names `node_modules/ghost-pkg`."""
+def _generate_fixture(
+    tmp_path: pathlib.Path,
+    *,
+    inputs: list[str],
+    packages: dict[str, str] | None = None,
+    csv: str | None = None,
+    texts: tuple[str, ...] = (),
+) -> tuple[str, str]:
+    """Runs the real generator against a fixture repo: `inputs` are the metafile's inputs, `packages` maps a package dir (relative to packages/cli) to its package.json text, `csv` is private/bin/renet-go-licenses.csv, `texts` the SPDX ids with a committed text."""
     repo = tmp_path / "gen-root"
     cli = repo / "packages" / "cli"
-    (cli / "src" / "data").mkdir(parents=True)
+    (cli / "src" / "data" / "third-party-licenses").mkdir(parents=True)
     (cli / "dist").mkdir(parents=True)
     (cli / "src" / "data" / "third-party-credits.json").write_text(
         '{"gplWrittenOffer": "offer", "components": []}\n', encoding="utf-8"
     )
-    meta = {"inputs": {"node_modules/ghost-pkg/index.js": {}}}
-    (cli / "dist" / "cli-bundle.meta.json").write_text(json.dumps(meta), encoding="utf-8")
-    if readable_pkg:
-        pkg_dir = cli / "node_modules" / "ghost-pkg"
-        pkg_dir.mkdir(parents=True)
-        (pkg_dir / "package.json").write_text(
-            '{"name": "ghost-pkg", "version": "1.0.0", "license": "MIT"}', encoding="utf-8"
+    for spdx in texts:
+        (cli / "src" / "data" / "third-party-licenses" / f"{spdx}.txt").write_text(
+            f"TEXT OF {spdx}\n", encoding="utf-8"
         )
+    meta = {"inputs": {path: {} for path in inputs}}
+    (cli / "dist" / "cli-bundle.meta.json").write_text(json.dumps(meta), encoding="utf-8")
+    for rel, body in (packages or {}).items():
+        (cli / rel).mkdir(parents=True)
+        (cli / rel / "package.json").write_text(body, encoding="utf-8")
+    if csv is not None:
+        (repo / "private" / "bin").mkdir(parents=True)
+        (repo / "private" / "bin" / "renet-go-licenses.csv").write_text(csv, encoding="utf-8")
     out = tmp_path / "NOTICE"
     proc = subprocess.run(
         [
@@ -737,6 +748,18 @@ def _generate_notice(tmp_path: pathlib.Path, *, readable_pkg: bool) -> tuple[str
     return out.read_text(encoding="utf-8"), proc.stderr
 
 
+def _generate_notice(tmp_path: pathlib.Path, *, readable_pkg: bool) -> tuple[str, str]:
+    """The fixture whose metafile names `node_modules/ghost-pkg`, readable or with no package.json."""
+    packages = (
+        {"node_modules/ghost-pkg": '{"name": "ghost-pkg", "version": "1.0.0", "license": "MIT"}'}
+        if readable_pkg
+        else None
+    )
+    return _generate_fixture(
+        tmp_path, inputs=["node_modules/ghost-pkg/index.js"], packages=packages, texts=("MIT",)
+    )
+
+
 def test_an_unreadable_bundled_package_json_is_marked_and_refused_by_release(tmp_path) -> None:
     text, stderr = _generate_notice(tmp_path, readable_pkg=False)
     assert "ghost-pkg  [UNRESOLVED PACKAGE" in text
@@ -749,3 +772,101 @@ def test_a_readable_bundled_package_json_is_listed_and_not_refused(tmp_path) -> 
     assert "ghost-pkg@1.0.0  [MIT]" in text
     assert "UNRESOLVED PACKAGE" not in text
     assert "contains 'UNRESOLVED PACKAGE'" not in port.release_problems(text)
+
+
+def test_a_malformed_bundled_package_json_is_marked_as_malformed(tmp_path) -> None:
+    text, stderr = _generate_fixture(
+        tmp_path,
+        inputs=["node_modules/bad-pkg/index.js"],
+        packages={"node_modules/bad-pkg": '{"name": "bad-pkg", '},
+    )
+    assert "bad-pkg  [UNRESOLVED PACKAGE: package.json unreadable or malformed]" in text
+    assert "unreadable or malformed" in stderr
+    assert "contains 'UNRESOLVED PACKAGE'" in port.release_problems(text)
+
+
+def test_scoped_and_nested_bundled_packages_resolve_to_their_own_directory(tmp_path) -> None:
+    text, _stderr = _generate_fixture(
+        tmp_path,
+        inputs=[
+            "node_modules/@scope/pkg/lib/a.js",
+            "node_modules/outer/node_modules/inner/b.js",
+            "node_modules/@scope/",
+            "src/not-a-package.js",
+        ],
+        packages={
+            "node_modules/@scope/pkg": '{"name": "@scope/pkg", "version": "2.0.0", "license": "MIT"}',
+            "node_modules/outer/node_modules/inner": '{"name": "inner", "version": "3.0.0", "license": "MIT"}',
+        },
+        texts=("MIT",),
+    )
+    assert "@scope/pkg@2.0.0  [MIT]" in text
+    assert "inner@3.0.0  [MIT]" in text
+    assert "outer@" not in text
+    assert "UNRESOLVED PACKAGE" not in text
+
+
+def test_an_npm_licence_with_no_committed_text_is_marked_missing(tmp_path) -> None:
+    text, _stderr = _generate_fixture(
+        tmp_path,
+        inputs=["node_modules/only-npm/index.js"],
+        packages={
+            "node_modules/only-npm": '{"name": "only-npm", "version": "1.0.0", "license": "(MIT OR 0BSD)"}'
+        },
+        texts=("MIT",),
+    )
+    assert "TEXT OF MIT" in text
+    assert "LICENSE TEXT MISSING for 0BSD" in text
+    assert "LICENSE TEXT MISSING for MIT:" not in text
+    assert "contains 'LICENSE TEXT MISSING'" in port.release_problems(text)
+
+
+_GO_CSV = (
+    "github.com/rediacc/renet/internal/x,https://example.test/renet,Proprietary\n"
+    "github.com/a/b,https://example.test/b,GPL-2.0\n"
+    "github.com/c/d,https://example.test/d,GPL-3.0\n"
+    "github.com/e/f,https://example.test/f,UNKNOWN\n"
+)
+
+
+def test_the_go_csv_is_embedded_without_renet_rows_and_ids_resolve_or_fail_closed(tmp_path) -> None:
+    text, stderr = _generate_fixture(
+        tmp_path,
+        inputs=["node_modules/x/index.js"],
+        packages={"node_modules/x": '{"name": "x", "version": "1", "license": "MIT"}'},
+        csv=_GO_CSV,
+        texts=("MIT", "GPL-2.0-only"),
+    )
+    assert "github.com/a/b  [GPL-2.0]" in text
+    assert "github.com/rediacc/renet/internal/x" not in text
+    assert "dropped a github.com/rediacc/renet row" in stderr
+    # the deprecated GPL-2.0 id resolves through its alias to the committed text
+    assert "TEXT OF GPL-2.0-only" in text
+    # no committed GPL-3.0 or UNKNOWN text: both stay literal and fail closed
+    assert "LICENSE TEXT MISSING for GPL-3.0:" in text
+    assert "LICENSE TEXT MISSING for UNKNOWN:" in text
+    assert "GPL-3.0-only" not in text
+
+
+def test_the_go_placeholder_without_csv_or_submodule_names_a_command_that_can_run(tmp_path) -> None:
+    text, _stderr = _generate_fixture(
+        tmp_path,
+        inputs=["node_modules/x/index.js"],
+        packages={"node_modules/x": '{"name": "x", "version": "1", "license": "MIT"}'},
+        texts=("MIT",),
+    )
+    go = text.split("RENET GO DEPENDENCIES", 1)[1].split("CLI NPM DEPENDENCIES", 1)[0]
+    assert "NOT GENERATED IN THIS BUILD" in go
+    assert "check out the renet submodule" in go
+    assert "renet-binaries CI artifact" in go
+
+
+def test_every_spdx_alias_targets_a_committed_text() -> None:
+    src = (ROOT / port.GENERATOR_REL).read_text(encoding="utf-8")
+    block = re.search(r"SPDX_ALIASES: Record<string, string> = \{(.*?)\};", src, re.DOTALL)
+    assert block is not None
+    targets = re.findall(r":\s*'([^']+)'", block.group(1))
+    assert targets
+    texts = ROOT / "packages" / "cli" / "src" / "data" / "third-party-licenses"
+    for target in targets:
+        assert (texts / f"{target}.txt").is_file(), target

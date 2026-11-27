@@ -72,11 +72,14 @@ const SUBRULE = '-'.repeat(78);
  */
 const SPDX_LICENSE_LIST_TAG = 'v3.29.0';
 
-/** Deprecated identifiers the Go report still emits, mapped to the current id that has a committed text. */
+/**
+ * Deprecated identifiers the Go report still emits, mapped to the current id that has a committed text.
+ * An alias belongs here only when its target's text is committed: `GPL-3.0` and `LGPL-2.1` have none
+ * (no `GPL-3.0-only.txt`, no `LGPL-2.1-only.txt`), so those rows stay literal and the notice marks
+ * LICENSE TEXT MISSING for them, which a release build refuses.
+ */
 const SPDX_ALIASES: Record<string, string> = {
   'GPL-2.0': 'GPL-2.0-only',
-  'GPL-3.0': 'GPL-3.0-only',
-  'LGPL-2.1': 'LGPL-2.1-only',
 };
 
 /** Every SPDX id a report row names, collected as the report sections are built. */
@@ -138,16 +141,31 @@ function pinnedGoLicensesVersion(repoRoot: string): string | null {
   }
 }
 
+/** The renet module's own packages carry no row in rdc's notice; `build_renet.py` refuses them at write time. */
+const GO_LICENSES_IGNORE = 'github.com/rediacc/renet';
+
 function goReportSection(csv: string): string {
   const rows = csv
     .split('\n')
     .filter((l) => l.trim().length > 0)
+    .filter((l) => {
+      if (!l.startsWith(GO_LICENSES_IGNORE)) return true;
+      console.error(
+        `generate-third-party-licenses: WARNING dropped a ${GO_LICENSES_IGNORE} row from the Go report`
+      );
+      return false;
+    })
     .map((l) => {
       const [mod, url, lic] = l.split(',');
       noteLicenses(lic ?? 'UNKNOWN');
       return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
     });
-  if (rows.length === 0) return placeholderSection('go-licenses produced no rows.');
+  if (rows.length === 0) {
+    return placeholderSection('go-licenses produced no rows.', 'Renet Go module dependencies', [
+      `Check the go-licenses output, then run:`,
+      `  ${GO_LICENSES_VERB}`,
+    ]);
+  }
   return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
 }
 
@@ -163,11 +181,25 @@ function goLicensesSection(repoRoot: string): string {
   const renetDir = path.join(repoRoot, 'private/renet');
   if (!fs.existsSync(path.join(renetDir, 'go.mod'))) {
     return placeholderSection(
-      `neither ${GO_LICENSES_CSV_REL} nor the renet submodule is present in this checkout.`
+      `neither ${GO_LICENSES_CSV_REL} nor the renet submodule is present in this checkout.`,
+      'Renet Go module dependencies',
+      [
+        `Provide ${GO_LICENSES_CSV_REL} (the renet-binaries CI artifact carries it), or check out the renet submodule and run:`,
+        `  ${GO_LICENSES_VERB}`,
+      ]
     );
   }
   const version = pinnedGoLicensesVersion(repoRoot);
-  if (!version) return placeholderSection('the pinned go-licenses version could not be read.');
+  if (!version) {
+    return placeholderSection(
+      'the pinned go-licenses version could not be read.',
+      'Renet Go module dependencies',
+      [
+        `Fix GO_LICENSES_VERSION in .ci/rediacc_ci/infra/build_renet.py, then run:`,
+        `  ${GO_LICENSES_VERB}`,
+      ]
+    );
+  }
   try {
     const out = execFileSync(
       'go',
@@ -184,25 +216,25 @@ function goLicensesSection(repoRoot: string): string {
     return goReportSection(out);
   } catch {
     return placeholderSection(
-      'go-licenses could not run (offline, or Go/network unavailable at build time).'
+      'go-licenses could not run (offline, or Go/network unavailable at build time).',
+      'Renet Go module dependencies',
+      ['Regenerate on a networked build:', `  ${GO_LICENSES_VERB}`]
     );
   }
 }
 
+/** The verb that writes the Go report; it needs the renet submodule checked out. */
+const GO_LICENSES_VERB =
+  'PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses private/bin/renet-go-licenses.csv';
+
 /**
- * BLOCKER: a placeholder is emitted only when go-licenses cannot run at build
- * time; the release job must regenerate with network so the shipped artifact
- * carries the real Go-dependency license report.
+ * BLOCKER: a placeholder is emitted when a section's input is unavailable at build time: go-licenses
+ * cannot run or no CSV exists (Go section), the esbuild metafile is missing or lists no inputs (CLI
+ * npm section), or the Node.js LICENSE fetch failed. `prepare_cli_assets.py --release` refuses any
+ * placeholder, so the release job must regenerate with its inputs present. `remedy` lines follow the reason.
  */
-function placeholderSection(reason: string, what = 'Renet Go module dependencies'): string {
-  const lines = [`${what}: NOT GENERATED IN THIS BUILD.`, `Reason: ${reason}`];
-  if (what === 'Renet Go module dependencies') {
-    lines.push(
-      'Regenerate on a networked build:',
-      '  PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses private/bin/renet-go-licenses.csv'
-    );
-  }
-  return lines.join('\n');
+function placeholderSection(reason: string, what: string, remedy: string[] = []): string {
+  return [`${what}: NOT GENERATED IN THIS BUILD.`, `Reason: ${reason}`, ...remedy].join('\n');
 }
 
 /** Printed in place of a bundled package whose package.json cannot be read; `prepare_cli_assets.py --release` refuses it. */
@@ -276,15 +308,21 @@ function npmDepsSection(repoRoot: string): string {
       deps.set(`${name}@${version}`, { name, version, license: readPkgLicense(abs) });
     } catch {
       // never dropped silently: recorded and printed with a marker the release gate refuses
+      // (the file is missing, unreadable or not valid JSON)
       unresolved.push(dir);
     }
   }
   const rows = [...deps.values()]
     .sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version))
-    .map((d) => `  ${d.name}@${d.version}  [${d.license}]`);
+    .map((d) => {
+      noteLicenses(d.license);
+      return `  ${d.name}@${d.version}  [${d.license}]`;
+    });
   for (const dir of unresolved.sort((a, b) => a.localeCompare(b))) {
-    console.error(`generate-third-party-licenses: WARNING ${dir}/package.json is unreadable`);
-    rows.push(`  ${dir}  [${UNRESOLVED_MARKER}: package.json unreadable]`);
+    console.error(
+      `generate-third-party-licenses: WARNING ${dir}/package.json is unreadable or malformed`
+    );
+    rows.push(`  ${dir}  [${UNRESOLVED_MARKER}: package.json unreadable or malformed]`);
   }
   if (rows.length === 0) {
     return placeholderSection(
