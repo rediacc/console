@@ -707,7 +707,8 @@ def _fake_gh(monkeypatch, runs: dict[int, tuple[str, str]], latest: str = "v3.0.
         calls.append(args)
         joined = " ".join(args)
         if args[:2] == ["run", "list"]:
-            body = json.dumps([{"databaseId": rid} for rid in runs])
+            limit = int(args[args.index("--limit") + 1]) if "--limit" in args else len(runs)
+            body = json.dumps([{"databaseId": rid} for rid in list(runs)[:limit]])
             return ghx.GhResult(args, 0, body, "")
         if "/jobs?" in joined:
             rid = int(joined.split("/runs/")[1].split("/")[0])
@@ -833,10 +834,24 @@ def test_backfill_warns_when_the_latest_release_cannot_be_read(monkeypatch, caps
 def test_backfill_warns_when_the_run_cap_is_hit(monkeypatch, capsys) -> None:
     monkeypatch.setattr(port, "BACKFILL_RUN_LIMIT", 1)
     _fake_gh(
-        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+        monkeypatch,
+        {
+            1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z"),
+            2: ("R2 promotion complete: edge v3.0.1 -> stable\n", "2026-11-04T10:00:00Z"),
+        },
     )
     assert port.main(["--backfill", "--dry-run"]) == 0
     assert "the cap" in capsys.readouterr().err
+
+
+def test_backfill_does_not_warn_when_the_listing_fills_the_cap_exactly(monkeypatch, capsys) -> None:
+    """Review finding eca3474f.1: N runs read at a cap of N, with nothing older, is a complete read."""
+    monkeypatch.setattr(port, "BACKFILL_RUN_LIMIT", 1)
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert "the cap" not in capsys.readouterr().err
 
 
 def test_backfill_does_not_warn_about_the_cap_below_it(monkeypatch, capsys) -> None:

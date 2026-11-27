@@ -159,7 +159,8 @@ def backfill_rows(repo: str) -> list[dict[str, str]]:
             "--status",
             "success",
             "--limit",
-            str(BACKFILL_RUN_LIMIT),
+            # One more than the cap: a listing that fills the cap exactly may have nothing older, and only the extra row proves there is.
+            str(BACKFILL_RUN_LIMIT + 1),
             "--json",
             "databaseId",
         ]
@@ -170,7 +171,9 @@ def backfill_rows(repo: str) -> list[dict[str, str]]:
         )
     rows: dict[str, dict[str, str]] = {}
     listed_runs = json.loads(listed.stdout_raw or "[]")
-    if len(listed_runs) >= BACKFILL_RUN_LIMIT:
+    capped = len(listed_runs) > BACKFILL_RUN_LIMIT
+    listed_runs = listed_runs[:BACKFILL_RUN_LIMIT]
+    if capped:
         log.warn(
             "%s: backfill read the newest %d successful runs, the cap; older promoted versions are not in the rows"
             % (SELF, BACKFILL_RUN_LIMIT)
