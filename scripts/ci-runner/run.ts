@@ -2069,6 +2069,17 @@ async function coreReleaseSelftest(): Promise<string[]> {
 }
 
 /**
+ * The comparison behind the busy sampler's selftest, pure so its negative controls can drive it. `avg` is the cores the probe's workers averaged in the window, measured in that window; `read` is what the sampler said for the same window. Returns the failure text, or undefined when the read fits. The read must sit within half to one and a half of the window's own average (plus 0.2), so contention that starves the workers shifts both sides; a window averaging under 0.05 cores cannot tell a reader from a dead one and fails loudly instead of passing.
+ */
+function busyReadVerdict(avg: number, read: number | undefined, what: string): string | undefined {
+  if (avg < 0.05)
+    return `busy sampler: the probe's ${what} averaged ${avg.toFixed(2)} cores in the window, too few to tell busy from idle (a machine this loaded cannot run the probe)`;
+  if (read === undefined || read < avg * 0.5 || read > avg * 1.5 + 0.2)
+    return `busy sampler: a gate running ${what} must read near its own in-window average of ${avg.toFixed(2)} cores, read ${read === undefined ? 'no window' : read.toFixed(2)}`;
+  return undefined;
+}
+
+/**
  * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads what its own `times` says it averaged (an independent instrument: RUSAGE_CHILDREN, not /proc) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
  */
 async function busySamplerSelftest(): Promise<string[]> {
@@ -2093,61 +2104,88 @@ async function busySamplerSelftest(): Promise<string[]> {
   const SETSID = 'selftest:busy-setsid';
   const sampler = startBusySampler(new Set([BUSY, IDLE, SETSID]));
   const opts = { cwd: REPO_ROOT, mergeOutput: false };
-  const t0 = Date.now();
-  const gates = Promise.all([
-    execGate(
-      syntheticSpec(
-        BUSY,
-        'yes >/dev/null & a=$!; yes >/dev/null & b=$!; sleep 2.8; kill $a $b; wait 2>/dev/null; true'
-      ),
-      opts
-    ),
+  // The expectation is measured INSIDE the window the sampler is asked about: the probe script reads its own two workers' utime+stime from /proc/<pid>/stat (a direct read, not the sampler's group walk) at both ends of a one-second window and prints `startMs ticks endMs ticks`. A busy host starves the workers in that window and in the sampler's read of it alike, so contention moves both sides (2026-11-27: whole-life times said 0.69 cores while the window's last second held 0.33, and the old comparison failed a healthy reader).
+  const probe = (prefix: string): string =>
+    `${prefix}yes >/dev/null & a=$!; ${prefix}yes >/dev/null & b=$!; sleep 1.3; ` +
+    `s1=$(date +%s%3N); x1=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); sleep 1.0; ` +
+    `s2=$(date +%s%3N); x2=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); ` +
+    `kill $a $b; wait 2>/dev/null; echo "PROBE $s1 $x1 $s2 $x2"`;
+  const [busyRun, , detachedRun] = await Promise.all([
+    execGate(syntheticSpec(BUSY, probe('')), opts),
     execGate(syntheticSpec(IDLE, 'sleep 2.8'), opts),
     // The same two workers, each moved into its own session: their CPU leaves the gate's process group but not its parent chain.
-    execGate(
-      syntheticSpec(
-        SETSID,
-        'setsid yes >/dev/null & a=$!; setsid yes >/dev/null & b=$!; sleep 2.8; kill $a $b; wait 2>/dev/null; true'
-      ),
-      opts
-    ),
+    execGate(syntheticSpec(SETSID, probe('setsid ')), opts),
   ]);
-  await new Promise((r) => setTimeout(r, Math.max(0, 2_400 - (Date.now() - t0))));
-  const now = Date.now();
-  const busy = sampler.busyCores(BUSY, now - 1_000, now);
-  const idle = sampler.busyCores(IDLE, now - 1_000, now);
-  const detached = sampler.busyCores(SETSID, now - 1_000, now);
-  const [busyRun, , detachedRun] = await gates;
   sampler.stop();
+  let clkTck = 100;
+  try {
+    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim()) || 100;
+  } catch {
+    /* 100 is the Linux default */
+  }
+  // The window the script measured, and the cores its workers averaged in it. undefined when the script did not report (it died, or /proc was unreadable).
+  const measured = (out: string): { from: number; to: number; avg: number } | undefined => {
+    const m = /PROBE (\d+) (\d+) (\d+) (\d+)/.exec(out);
+    if (m === null) return undefined;
+    const [from, x1, to, x2] = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];
+    if (to <= from) return undefined;
+    return { from, to, avg: ((x2 - x1) * 1000) / clkTck / (to - from) };
+  };
+  const rate = (id: string, w: { from: number; to: number }): number | undefined => {
+    const cores = sampler.busyCores(id, w.from, w.to);
+    return cores === undefined ? undefined : cores / (w.to - w.from);
+  };
   const failures: string[] = [];
-  // The gate's average width over its life, from `times`; the window is most of that life and `yes` does not phase, so the two agree within half.
-  const avg = (busyRun.cpuMs ?? 0) / Math.max(1, busyRun.ms);
-  const read = busy === undefined ? undefined : busy / 1_000;
-  // The floor is low on purpose: at load 67 on 24 cores the two workers averaged 0.34, and the comparison with `times` still tells a reader from a dead one well below that.
-  if (avg < 0.05)
+  const busyWin = measured(busyRun.stdout);
+  if (busyWin === undefined)
     failures.push(
-      `busy sampler: the probe's two yes workers averaged ${avg.toFixed(2)} cores by times, too few to tell busy from idle (a machine this loaded cannot run the probe)`
+      `busy sampler: the probe gate printed no PROBE line (stdout ${JSON.stringify(busyRun.stdout.slice(0, 120))}, stderr ${JSON.stringify(busyRun.stderr.slice(0, 120))})`
     );
-  else if (read === undefined || read < avg * 0.5 || read > avg * 1.5 + 0.2)
-    failures.push(
-      `busy sampler: a gate running two yes workers must read near its own times average of ${avg.toFixed(2)} cores, read ${read === undefined ? 'no window' : read.toFixed(2)}`
-    );
-  if (idle === undefined || idle / 1_000 > Math.min(0.3, avg / 3))
-    failures.push(
-      `CONTROL busy sampler: a gate running sleep must read about 0 busy cores, read ${idle === undefined ? 'no window' : (idle / 1_000).toFixed(2)}`
-    );
+  else {
+    const verdict = busyReadVerdict(busyWin.avg, rate(BUSY, busyWin), 'two yes workers');
+    if (verdict !== undefined) failures.push(verdict);
+  }
+  // Idle: read over the busy probe's window, and judged against that window's average as well, so a loaded host cannot make `sleep` look busy by a relative standard either.
+  if (busyWin !== undefined) {
+    const idleRead = rate(IDLE, busyWin);
+    if (idleRead === undefined || idleRead > Math.min(0.3, busyWin.avg / 3))
+      failures.push(
+        `CONTROL busy sampler: a gate running sleep must read about 0 busy cores, read ${idleRead === undefined ? 'no window' : idleRead.toFixed(2)}`
+      );
+  }
   // Review c428c052.1: workers that called setsid still count for their gate, or their cores would read idle and be released while they run.
-  const detachedAvg = (detachedRun.cpuMs ?? 0) / Math.max(1, detachedRun.ms);
-  const detachedRead = detached === undefined ? undefined : detached / 1_000;
-  if (detachedAvg < 0.05)
-    failures.push(
-      `busy sampler: the setsid probe's two yes workers averaged ${detachedAvg.toFixed(2)} cores by times, so it measured nothing (setsid missing, or a machine too loaded to run the probe)`
+  const detachedWin = measured(detachedRun.stdout);
+  if (detachedWin === undefined)
+    failures.push('busy sampler: the setsid probe printed no PROBE line, so it measured nothing');
+  else {
+    const verdict = busyReadVerdict(
+      detachedWin.avg,
+      rate(SETSID, detachedWin),
+      'two setsid yes workers'
     );
-  else if (detachedRead === undefined || detachedRead < detachedAvg * 0.5)
+    if (verdict !== undefined) failures.push(verdict);
+  }
+  // Negative control: the verdict must still fire for a sampler that reads zero, none, or far too much, and must not fire for a faithful read at any load. Without this the load-relative comparison could pass a dead reader.
+  if (busyReadVerdict(0.69, 0, 'control') === undefined)
     failures.push(
-      `busy sampler: a gate whose two yes workers called setsid must read near its own times average of ${detachedAvg.toFixed(2)} cores, read ${detachedRead === undefined ? 'no window' : detachedRead.toFixed(2)}`
+      'CONTROL busy sampler: a sampler reading zero beside a 0.69-core window must fail the comparison'
     );
-  if (sampler.busyCores('selftest:never-ran', now - 1_000, now) !== undefined)
+  if (busyReadVerdict(0.69, undefined, 'control') === undefined)
+    failures.push('CONTROL busy sampler: a sampler covering no window must fail the comparison');
+  if (busyReadVerdict(0.4, 2.5, 'control') === undefined)
+    failures.push(
+      'CONTROL busy sampler: a sampler reading 2.5 cores beside a 0.4-core window must fail the comparison'
+    );
+  for (const load of [1.9, 0.69, 0.33, 0.12])
+    if (busyReadVerdict(load, load, 'control') !== undefined)
+      failures.push(
+        `CONTROL busy sampler: a faithful read at ${load} cores must pass the comparison (load-insensitivity)`
+      );
+  if (busyReadVerdict(0.01, 0, 'control') === undefined)
+    failures.push(
+      'CONTROL busy sampler: a window too starved to measure must fail loudly, not pass'
+    );
+  if (sampler.busyCores('selftest:never-ran', Date.now() - 1_000, Date.now()) !== undefined)
     failures.push('CONTROL busy sampler: a gate it never saw must cover no window');
   return failures;
 }
