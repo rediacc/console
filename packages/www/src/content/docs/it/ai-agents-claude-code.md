@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: it
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code funziona nativamente con Rediacc tramite la CLI `rdc`. Questa guida illustra la configurazione, i permessi e i flussi di lavoro comuni.
 
-> **Prima di tutto la sicurezza**: Prima di connettere un agente a qualcosa che tocca i segreti, leggi [Sicurezza e guardrail per agenti AI](/en/docs/ai-agents-safety). Claude Code in esecuzione sotto `rdc` viene rilevato come agente. Le mutazioni sensibili richiedono `--current <previous-value>` (precondizione in stile passwd) oppure `--rotate-secret` (rotazione confermata, verificata). Simmetrico per umani e agenti. L'editor interattivo, `--reveal` e l'SSH diretto alla macchina vengono rifiutati per impostazione predefinita, a meno che non li si apra esplicitamente tramite `REDIACC_ALLOW_CONFIG_EDIT`. Quando una precondizione fallisce, il campo `errors[].next.options[].run` dell'envelope JSON indica all'agente l'esatto comando CLI da suggerire all'utente. Riproducilo testualmente.
+> **Prima di tutto la sicurezza**: Prima di connettere un agente a qualcosa che tocca i segreti, leggi [Sicurezza e guardrail per agenti AI](/en/docs/ai-agents-safety). Claude Code in esecuzione sotto `rdc` viene rilevato come agente. Le mutazioni sensibili richiedono `--current <previous-value>` (precondizione in stile passwd) sia per gli umani sia per gli agenti; `--rotate-secret` (rotazione confermata, verificata) vale solo per un umano su un terminale. `rdc config edit` (interattivo, `--apply`, `--reveal`) viene rifiutato senza alcun override, e i repository grand e l'SSH diretto alla macchina restano chiusi finché un umano non dà la sua adesione entro ciò che la policy consente. Quando una precondizione fallisce, il campo `errors[].next.options[].run` dell'envelope JSON indica all'agente l'esatto comando CLI da suggerire all'utente. Riproducilo testualmente.
 
 ## Configurazione rapida
 
@@ -86,7 +86,7 @@ Tu: "Perché il container nextcloud non è in salute?"
 
 Claude Code esegue: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Elenca gli stati dei container
-Claude Code esegue: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
+Claude Code esegue: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Controlla i log recenti
 ```
 

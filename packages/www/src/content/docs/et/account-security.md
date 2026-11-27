@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: et
-sourceHash: "99e2c8b45d41e3b9"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### Autentimine
@@ -119,6 +119,6 @@ rdc update --status            # Kuva praegune kanal
 
 ### CLI turvahoiak AI-agentide jaoks
 
-Koodiagendid, kes käivitavad `rdc`, on tõeline ohupind, seega käsitleme neid eraldi põhimõttena. Iga `rdc` käivitamine klassifitseeritakse käivitamisel **inimeseks** või **agendiks** keskkonnasignaalide põhjal (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) koos Linuxi `/proc` esivanemate läbimisega. Tuvastamine on parimate jõupingutuste põhine. Sihikindel ümbris saab keskkonna muutujaid võltsida, mis on põhjus, miks esivanem on oluline. Agendid saavad vähendatud lubade komplekti: tundlikud konfiguratsioonide muutmised nõuavad teadmiseväravat (`--current <vana>`), interaktiivne redaktor keeldutakse ilma esivanemate kontrollitud `REDIACC_ALLOW_CONFIG_EDIT` alistamiseta, ja `--reveal` mis tahes kuvamiskäsul on blokeeritud. Iga otsus (lubamine, keeldumine või `--reveal` andmine) kirjutab ühe räsiaheldatud JSONL-rea faili `~/.config/rediacc/audit.log.jsonl`. Käivitage `rdc config audit verify`, et kontrollida ahela terviklust.
+Koodiagendid, kes käivitavad `rdc`, on tõeline ohupind, seega käsitleme neid eraldi põhimõttena. Iga `rdc` käivitamine klassifitseeritakse käivitamisel **inimeseks** või **agendiks** keskkonnasignaalide põhjal (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) koos Linuxi `/proc` esivanemate läbimisega. Tuvastamine on parimate jõupingutuste põhine. Sihikindel ümbris saab keskkonna muutujaid võltsida, mis on põhjus, miks esivanem on oluline. Agendid saavad vähendatud lubade komplekti: tundlikud konfiguratsioonide muutmised nõuavad teadmiseväravat (`--current <vana>`), `rdc config edit` (interaktiivne, `--apply`, `--reveal`) lükatakse tagasi ilma ühegi ülekatteta ja `--reveal` mis tahes kuvamiskäsul on blokeeritud. Agent tegutseb ainult seal, kus inimese sõnaselge nõusolek ja poliitika lagi mõlemad seda lubavad ([AI agendi ohutus](/et/docs/ai-agents-safety)). Iga otsus (lubamine, keeldumine või `--reveal` andmine) kirjutab ühe räsiaheldatud JSONL-rea faili `~/.config/rediacc/audit.log.jsonl`. Käivitage `rdc config audit verify`, et kontrollida ahela terviklust.
 
 Vaadake AI-agentide täielikku maatriksit jaotisest [AI-agendi turvalisus ja kaitsemehhanismid](/et/docs/ai-agents-safety), sealhulgas teadmisevärava töönäidiseid ja ulatuse alistamise mehhanisme.

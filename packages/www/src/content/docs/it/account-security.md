@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: it
-sourceHash: "99e2c8b45d41e3b9"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### Autenticazione
@@ -119,6 +119,6 @@ rdc update --status            # Mostra il canale corrente
 
 ### Postura di sicurezza della CLI per gli agenti AI
 
-Gli agenti di programmazione che invocano `rdc` sono una superficie di minaccia reale, quindi li trattiamo come un principal separato. Ogni invocazione di `rdc` viene classificata all'avvio come **human** o **agent** in base ai segnali dell'ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) più' un'analisi della catena di antenati Linux `/proc`. Il rilevamento è best-effort. Un wrapper determinato può' falsificare le variabili d'ambiente, ecco perché' la catena di antenati è importante. Gli agenti ricevono un insieme ridotto di permessi: le mutazioni sensibili alla configurazione richiedono il knowledge-gate (`--current <old>`), l'editor interattivo viene rifiutato senza un override `REDIACC_ALLOW_CONFIG_EDIT` verificato tramite antenati, e `--reveal` su qualsiasi comando di visualizzazione è bloccato. Ogni decisione (consenti, rifiuta, o concedi `--reveal`) scrive una riga JSONL con hash in catena in `~/.config/rediacc/audit.log.jsonl`. Esegui `rdc config audit verify` per controllare l'integrita' della catena.
+Gli agenti di programmazione che invocano `rdc` sono una superficie di minaccia reale, quindi li trattiamo come un principal separato. Ogni invocazione di `rdc` viene classificata all'avvio come **human** o **agent** in base ai segnali dell'ambiente (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) più un'analisi della catena di antenati Linux `/proc`. Il rilevamento è best-effort. Un wrapper determinato può falsificare le variabili d'ambiente, ecco perché la catena di antenati è importante. Gli agenti ricevono un insieme ridotto di permessi: le mutazioni sensibili alla configurazione richiedono il knowledge-gate (`--current <old>`), `rdc config edit` (interattivo, `--apply`, `--reveal`) viene rifiutato senza alcun override, e `--reveal` su qualsiasi comando di visualizzazione è bloccato. Un agente agisce solo dove l'adesione esplicita di un umano e il limite della policy lo consentono entrambi ([Sicurezza degli agenti AI](/it/docs/ai-agents-safety)). Ogni decisione (consenti, rifiuta, o concedi `--reveal`) scrive una riga JSONL con hash in catena in `~/.config/rediacc/audit.log.jsonl`. Esegui `rdc config audit verify` per controllare l'integrità della catena.
 
 Consulta [Sicurezza e guardrail per agenti AI](/en/docs/ai-agents-safety) per la matrice completa di ciò che gli agenti possono e non possono fare, esempi pratici del knowledge-gate e la meccanica degli scope-override.
