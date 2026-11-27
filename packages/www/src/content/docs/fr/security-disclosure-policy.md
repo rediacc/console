@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc accueille volontiers les signalements de vulnérabilités de sécurité touchant ses produits et services. Cette politique précise ce qui entre dans le périmètre, comment signaler une faille et ce que l'auteur du signalement peut attendre en retour. Le fichier de contact lisible par machine se trouve à l'adresse [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc accueille volontiers les signalements de vulnérabilités de sécurité touchant ses produits et services. Cette politique précise ce qui entre dans le périmètre, comment signaler une faille et ce que l'auteur du signalement peut attendre en retour. Le fichier de contact lisible par machine se trouve à l'adresse `/.well-known/security.txt` (RFC 9116).
 
 ## Périmètre
 

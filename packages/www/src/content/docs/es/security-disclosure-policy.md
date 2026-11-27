@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc agradece los informes de vulnerabilidades de seguridad en sus productos y servicios. Esta política describe qué entra en el alcance, cómo informar y qué puede esperar a cambio quien lo hace. El archivo de contacto legible por máquina está en [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc agradece los informes de vulnerabilidades de seguridad en sus productos y servicios. Esta política describe qué entra en el alcance, cómo informar y qué puede esperar a cambio quien lo hace. El archivo de contacto legible por máquina está en `/.well-known/security.txt` (RFC 9116).
 
 ## Alcance
 

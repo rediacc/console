@@ -273,5 +273,6 @@ The upload jobs are the part still moving, so the state is read live rather than
 ```bash
 ls .ci/rediacc_ci/ops | grep -i models
 bws_env exec --profile public-data -- true
-curl -sI https://data.rediacc.com/models/channels/stable.json | grep -iE "http/|cache-control"
+DATA_HOST=data.rediacc.com
+curl -sI "https://$DATA_HOST/models/channels/stable.json" | grep -iE "http/|cache-control"
 ```

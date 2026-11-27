@@ -10,7 +10,7 @@ order: 9
 language: en
 ---
 
-Rediacc welcomes reports of security vulnerabilities in its products and services. This policy describes what is in scope, how to report, and what a reporter can expect in return. The machine-readable contact file is at [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc welcomes reports of security vulnerabilities in its products and services. This policy describes what is in scope, how to report, and what a reporter can expect in return. The machine-readable contact file is at `/.well-known/security.txt` (RFC 9116).
 
 ## Scope
 

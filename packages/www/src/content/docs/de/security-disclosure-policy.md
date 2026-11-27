@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc freut sich über Meldungen von Sicherheitslücken in seinen Produkten und Diensten. Diese Richtlinie beschreibt, was im Geltungsbereich liegt, wie gemeldet wird und was Meldende im Gegenzug erwarten können. Die maschinenlesbare Kontaktdatei liegt unter [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc freut sich über Meldungen von Sicherheitslücken in seinen Produkten und Diensten. Diese Richtlinie beschreibt, was im Geltungsbereich liegt, wie gemeldet wird und was Meldende im Gegenzug erwarten können. Die maschinenlesbare Kontaktdatei liegt unter `/.well-known/security.txt` (RFC 9116).
 
 ## Geltungsbereich
 

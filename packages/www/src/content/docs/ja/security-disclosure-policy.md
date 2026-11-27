@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediaccは、自社の製品とサービスに関するセキュリティ脆弱性の報告を歓迎します。このポリシーでは、対象範囲、報告の方法、報告者が受けられる対応を説明します。機械可読の連絡先ファイルは [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)（RFC 9116）にあります。
+Rediaccは、自社の製品とサービスに関するセキュリティ脆弱性の報告を歓迎します。このポリシーでは、対象範囲、報告の方法、報告者が受けられる対応を説明します。機械可読の連絡先ファイルは `/.well-known/security.txt`（RFC 9116）にあります。
 
 ## 対象範囲
 

@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc 欢迎各方报告其产品和服务中的安全漏洞。本政策说明哪些内容在适用范围内、如何报告，以及报告者可以获得哪些回应。机器可读的联系文件位于 [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)（RFC 9116）。
+Rediacc 欢迎各方报告其产品和服务中的安全漏洞。本政策说明哪些内容在适用范围内、如何报告，以及报告者可以获得哪些回应。机器可读的联系文件位于 `/.well-known/security.txt`（RFC 9116）。
 
 ## 适用范围
 

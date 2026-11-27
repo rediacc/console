@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-A Rediacc recebe com satisfação relatos de vulnerabilidades de segurança em seus produtos e serviços. Esta política descreve o que está no escopo, como reportar e o que o autor do relato pode esperar em troca. O arquivo de contato legível por máquina está em [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+A Rediacc recebe com satisfação relatos de vulnerabilidades de segurança em seus produtos e serviços. Esta política descreve o que está no escopo, como reportar e o que o autor do relato pode esperar em troca. O arquivo de contato legível por máquina está em `/.well-known/security.txt` (RFC 9116).
 
 ## Escopo
 

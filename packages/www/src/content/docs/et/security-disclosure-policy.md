@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc ootab teateid oma toodete ja teenuste turvahaavatavuste kohta. Poliitika kirjeldab, mis kuulub ulatusse, kuidas teatada ja mida teataja vastutasuks eeldada võib. Masinloetav kontaktfail asub aadressil [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc ootab teateid oma toodete ja teenuste turvahaavatavuste kohta. Poliitika kirjeldab, mis kuulub ulatusse, kuidas teatada ja mida teataja vastutasuks eeldada võib. Masinloetav kontaktfail asub aadressil `/.well-known/security.txt` (RFC 9116).
 
 ## Ulatus
 

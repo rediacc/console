@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc는 자사 제품과 서비스의 보안 취약점 신고를 환영합니다. 이 정책은 적용 범위, 신고 방법, 신고자가 받을 수 있는 대응을 설명합니다. 기계가 읽을 수 있는 연락처 파일은 [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt)(RFC 9116)에 있습니다.
+Rediacc는 자사 제품과 서비스의 보안 취약점 신고를 환영합니다. 이 정책은 적용 범위, 신고 방법, 신고자가 받을 수 있는 대응을 설명합니다. 기계가 읽을 수 있는 연락처 파일은 `/.well-known/security.txt`(RFC 9116)에 있습니다.
 
 ## 적용 범위
 

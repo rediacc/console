@@ -12,7 +12,7 @@ sourceHash: "612e816f7a8be282"
 sourceCommit: "f9ac63ac37dff49f6c980f00fdacb7e41099ce81"
 ---
 
-Rediacc accoglie con favore le segnalazioni di vulnerabilità di sicurezza nei suoi prodotti e servizi. Questa politica descrive che cosa rientra nell'ambito, come inviare una segnalazione e che cosa può aspettarsi in cambio chi la invia. Il file di contatto leggibile dalle macchine si trova in [`/.well-known/security.txt`](https://www.rediacc.com/.well-known/security.txt) (RFC 9116).
+Rediacc accoglie con favore le segnalazioni di vulnerabilità di sicurezza nei suoi prodotti e servizi. Questa politica descrive che cosa rientra nell'ambito, come inviare una segnalazione e che cosa può aspettarsi in cambio chi la invia. Il file di contatto leggibile dalle macchine si trova in `/.well-known/security.txt` (RFC 9116).
 
 ## Ambito
 
