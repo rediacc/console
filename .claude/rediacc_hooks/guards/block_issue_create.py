@@ -6,7 +6,7 @@ WHAT IS REFUSED, in any repository (a submodule's `--repo` included) and under `
 
   * `gh issue create`, and its gh alias `gh issue new`, with the `issue` command's own `-R/--repo` read before the verb as gh reads it;
   * `gh api` to an endpoint ending `repos/<owner>/<repo>/issues` whose method is POST: `-X POST`, `--method POST`, or a field or `--input` making it one (`shellscan.gh_api_method`, the same pflag reader `sanctioned.api_method` wraps);
-  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value as bash expands it (a `$Q` or a `${C}eIssue` this same command assigned), or in a `query=@<file>`/`--input <file>` the guard can read; when any query source is not known (an expansion the walk cannot evaluate, stdin, a file that is missing, not a regular file, or one the same command could write first), the whole command text is searched instead, together with every word of every command as bash expands it and every stdin feed, so an unknown source never admits a mutation the command spells, a `${C}eIssue` echoed into `--input -` included (review 29f470ef.1);
+  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value as bash expands it (a `$Q` or a `${C}eIssue` this same command assigned), or in a `query=@<file>`/`--input <file>` the guard can read; when any query source is not known (an expansion the walk cannot evaluate, stdin, a file that is missing, not a regular file, or one the same command could write first), the whole command text is searched instead, together with every word of every command as bash expands it, every stdin feed and every regular file a word names (the `cp`/`cat` source that fills the query file, review 4347c4c0.1), so an unknown source never admits a mutation the command spells, a `${C}eIssue` echoed into `--input -` included (review 29f470ef.1);
   * `curl` or `wget` sending a POST, or a body that makes one, to an `api.github.com/repos/<owner>/<repo>/issues` URL.
 
 WHAT IS ADMITTED: `gh issue list|view|comment|...`, every GET, `issues/<n>/comments` (the PR-comment endpoint `wl_prreview` answers reviews through, so only the CREATE endpoint is refused), and prose that merely names a command (`echo 'gh issue create'`).
@@ -45,6 +45,8 @@ _ISSUES_URL = re.compile(
 )
 
 _CREATE_ISSUE = re.compile(r"\bcreateIssue\b")
+# How much of a file a word names the unknown-source fallback reads: a query is small, and the pre-bash hook must not read a large artifact whole.
+_FILE_CAP = 1 << 20
 
 # curl flags that carry a body, and so make the request a POST unless `-G/--get` or `-X` says otherwise.
 _CURL_DATA_LONG = (
@@ -107,6 +109,21 @@ def _file_text(base, path, cmd, written, words=()):
         return None
 
 
+def _named_file_texts(base, words):
+    """The text of every regular file a word names (the word itself, or the path after an `@` or `=@`), read only for an unknown GraphQL source: the file another command copies or redirects into the query file carries the mutation the command text does not (review 4347c4c0.1)."""
+    for word in words:
+        path = word.rpartition("@")[2] if "@" in word else word
+        if path in ("", "-") or shellscan._UNRESOLVED in path:
+            continue
+        full = pathlib.Path(base) / path
+        try:
+            if stat.S_ISREG(full.stat().st_mode):
+                with full.open(encoding="utf-8", errors="replace") as handle:
+                    yield handle.read(_FILE_CAP)
+        except (OSError, ValueError):
+            continue
+
+
 def _gh_refusal(argv, cmd, base, xargv=None, written=(), words=(), fallback=None):
     """Which create shape a walked `gh` run is, or "". `xargv` is the run's argv as bash expands it (None when the walk has none), `written` every redirect target of the command, `words` every command's expanded argv, and `fallback` the text searched when a query source is unknown (the command text when None)."""
     if not argv:
@@ -125,7 +142,11 @@ def _gh_refusal(argv, cmd, base, xargv=None, written=(), words=(), fallback=None
             known = False
         unknown_text = cmd if fallback is None else fallback
         if any(_CREATE_ISSUE.search(t) for t in texts) or (
-            not known and _CREATE_ISSUE.search(unknown_text)
+            not known
+            and (
+                _CREATE_ISSUE.search(unknown_text)
+                or any(_CREATE_ISSUE.search(t) for t in _named_file_texts(base, words))
+            )
         ):
             return "a `gh api graphql` `createIssue` mutation"
         return ""

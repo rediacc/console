@@ -123,6 +123,16 @@ FIRE_SPEC = [
         False,
     ),
     (
+        "graphql query file a cp through a variable fills from a createIssue file",
+        'F=read.graphql; cp create.graphql "$F"; gh api graphql -F query=@"$F"',
+        False,
+    ),
+    (
+        "graphql query file a cat redirect fills from a createIssue file",
+        "cat create.graphql > read.graphql; gh api graphql -F query=@read.graphql",
+        False,
+    ),
+    (
         "curl -X POST",
         "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/o/r/issues -d '{\"title\":\"x\"}'",
         False,
@@ -167,6 +177,19 @@ ADMIT_SPEC = [
     (
         "graphql inline read beside a createIssue grep",
         "grep -rn createIssue .claude; gh api graphql -f query='query { viewer { login } }'",
+    ),
+    # A benign query file named in two argv words is an unknown source (another command could write it), so the fallback judges it; with no `createIssue` anywhere it reads, the read is still admitted (review 4347c4c0.2).
+    (
+        "graphql read file also read by cat",
+        "gh api graphql -F query=@read.graphql; cat read.graphql",
+    ),
+    (
+        "graphql read file through a variable also read by cat",
+        'F=read.graphql; cat "$F"; gh api graphql -F query=@"$F"',
+    ),
+    (
+        "graphql read file copied from another read file",
+        'F=read.graphql; cp read.graphql "$F.bak"; gh api graphql -F query=@"$F"',
     ),
     ("graphql query from a FIFO", "gh api graphql -F query=@query.fifo"),
     ("graphql --input from a FIFO", "gh api graphql --input query.fifo"),
