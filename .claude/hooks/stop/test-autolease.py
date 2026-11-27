@@ -188,6 +188,39 @@ check(
     "auto-lease: named by live task t1",
 )
 
+check(
+    "auto_lease_note: a re-lease by the same task keeps the real earlier note",
+    LH.auto_lease_note(
+        "t1", {"lastnote": "auto-lease: named by live task t1; previous: waiting on edge"}
+    ),
+    "auto-lease: named by live task t1; previous: waiting on edge",
+)
+check(
+    "auto_lease_note: a re-lease whose only note is the marker leaves the bare marker",
+    LH.auto_lease_note("t1", {"lastnote": "auto-lease: named by live task t1"}),
+    "auto-lease: named by live task t1",
+)
+check(
+    "auto_lease_note: another task's marker stays in the previous note",
+    LH.auto_lease_note("t1", {"lastnote": "auto-lease: named by live task t2"}),
+    "auto-lease: named by live task t1; previous: auto-lease: named by live task t2",
+)
+check(
+    "a runner-hold token after other words is never auto-leased",
+    LH.auto_lease_candidates(
+        [dict(rec(H), text="watch the edge runner-hold:prod")],
+        lambda _r: True,
+        {"t": "#%s" % H},
+        set(),
+    ),
+    [],
+)
+check(
+    "own_claims: a capitalised Runner-Hold token never claims",
+    LH.item_refs(K.own_claims("Item #%s Runner-Hold:prod -- later" % H)),
+    [],
+)
+
 # ---- review_items: an open finding named by a [>] item waits only on a VERIFIED live worker.
 F = "0228ca2d.1"
 

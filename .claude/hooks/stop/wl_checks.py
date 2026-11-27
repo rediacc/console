@@ -1784,7 +1784,7 @@ def own_claims(text):
         for line in lines
         if _OWN_WORK.match(line)
         and len(wl_leasehelp.item_refs(line)) == 1
-        and "runner-hold:" not in line
+        and "runner-hold:" not in line.lower()
     )
 
 

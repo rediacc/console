@@ -159,14 +159,19 @@ def first_prompt(jsonl):
 
 
 # A `runner-hold:<target> -- <reason>` item is a standing marker the lead keeps open; no task works it, so no task is leased it.
-RUNNER_HOLD = re.compile(r"^\s*runner-hold:", re.IGNORECASE)
+RUNNER_HOLD = re.compile(r"(?:^|\s)runner-hold:", re.IGNORECASE)
 
 
 def auto_lease_note(task_id, rec):
     """The lease note of an auto-lease: the marker, then the item's previous LATEST note when it has one, because the store replaces `lastnote` with the lease note (2026-11-27: #c045fea0 lost its last note that way)."""
     marker = "auto-lease: named by live task %s" % task_id
     prev = str((rec or {}).get("lastnote") or "").strip()
-    if not prev or marker in prev:
+    # A re-lease by the same task finds its own marker in `prev`: drop the marker (and any nested copies) and keep the real earlier note under it.
+    while prev.startswith(marker):
+        prev = prev[len(marker) :].lstrip(";").strip()
+        if prev.startswith("previous:"):
+            prev = prev[len("previous:") :].strip()
+    if not prev:
         return marker
     return "%s; previous: %s" % (marker, prev)
 
@@ -186,7 +191,7 @@ def auto_lease_candidates(items, owned, named, live_ids, graph=None):
     out = []
     for rid, tids in sorted(claims.items()):
         rec = by_id[rid]
-        if len(tids) != 1 or not owned(rec) or RUNNER_HOLD.match(rec.get("text") or ""):
+        if len(tids) != 1 or not owned(rec) or RUNNER_HOLD.search(rec.get("text") or ""):
             continue
         tid = next(iter(tids))
         deps = PD.item_deps(graph, rec.get("text") or "", items)
