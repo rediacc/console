@@ -3808,7 +3808,8 @@
       "networkIdInUse": "リポジトリ「{{repository}}」のネットワーク ID {{networkId}} は、マシン「{{machine}}」上で既に {{holder}} が使用しています。`rdc config reconcile` を実行すると、マシンに記録された ID を取り込めます。",
       "networkIdNotRecorded": "マシン \"{{machine}}\" はリポジトリ \"{{repository}}\" を保持していますが、そのネットワーク ID を記録していないため、取り込める ID がありません。マシン上でリポジトリを一度起動してから `rdc config reconcile` を実行してください。",
       "networkIdUndiscoverable": "リポジトリ「{{repository}}」にはこの設定でネットワーク ID がなく、マシン「{{machine}}」にも問い合わせできませんでした。マシンに接続できるようになってから再試行するか、`rdc config reconcile` を実行してください。",
-      "networkIdDiverged": "リポジトリ「{{repository}}」のネットワーク ID はこの設定では {{localId}} でしたが、マシン「{{machine}}」には {{machineId}} が記録されています。マシン側の ID を採用しました。"
+      "networkIdDiverged": "リポジトリ「{{repository}}」のネットワーク ID はこの設定では {{localId}} でしたが、マシン「{{machine}}」には {{machineId}} が記録されています。マシン側の ID を採用しました。",
+      "slugCollision": "リポジトリ \"{{ref}}\" は \"{{existing}}\" と衝突します。どちらもレプリカセットとデータストアのフォークで同じ名前 \"{{slug}}\" になります。別の名前かタグを選んでください。"
     },
     "repoNotDeployed": "リポジトリ \"{{repository}}\" は {{machine}} にデプロイされていません。\n\n先にデプロイしてください：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "リポジトリ \"{{name}}\" は既に \"{{machine}}\" にマウントされています。稼働中のリポジトリに対する移行はデータを破損させます。先に実行してください: rdc repo down {{name}} --unmount",

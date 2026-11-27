@@ -3808,7 +3808,8 @@
       "networkIdInUse": "\"{{repository}}\" deposunun {{networkId}} ağ kimliği, \"{{machine}}\" makinesinde zaten {{holder}} tarafından kullanılıyor. Makinenin kaydettiği kimlikleri almak için `rdc config reconcile` çalıştırın.",
       "networkIdNotRecorded": "\"{{machine}}\" makinesi \"{{repository}}\" deposunu barındırıyor ancak onun için ağ kimliği kaydetmemiş, bu yüzden devralınacak bir kimlik yok. Depoyu makinede bir kez başlatın, ardından `rdc config reconcile` çalıştırın.",
       "networkIdUndiscoverable": "\"{{repository}}\" deposunun bu yapılandırmada ağ kimliği yok ve \"{{machine}}\" makinesine sorulamadı. Makineye erişilebildiğinde yeniden deneyin ya da `rdc config reconcile` çalıştırın.",
-      "networkIdDiverged": "\"{{repository}}\" deposunun bu yapılandırmadaki ağ kimliği {{localId}} idi, ancak \"{{machine}}\" makinesi {{machineId}} kaydediyor. Artık makinenin kimliği geçerli."
+      "networkIdDiverged": "\"{{repository}}\" deposunun bu yapılandırmadaki ağ kimliği {{localId}} idi, ancak \"{{machine}}\" makinesi {{machineId}} kaydediyor. Artık makinenin kimliği geçerli.",
+      "slugCollision": "\"{{ref}}\" deposu \"{{existing}}\" ile çakışıyor: ikisi de çoğaltma kümeleri ve veri deposu fork'ları için aynı \"{{slug}}\" adını üretiyor. Başka bir ad veya etiket seç."
     },
     "repoNotDeployed": "Depo \"{{repository}}\" {{machine}} üzerinde dağıtılmamış.\n\nÖnce dağıtın:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "\"{{name}}\" deposu zaten \"{{machine}}\" üzerinde bağlı. Aktif bir depo üzerinde taşıma işlemi veri bozulmasına yol açar. Önce şunu çalıştırın: rdc repo down {{name}} --unmount",

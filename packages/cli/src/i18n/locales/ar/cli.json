@@ -3808,7 +3808,8 @@
       "networkIdInUse": "معرّف الشبكة {{networkId}} للمستودع \"{{repository}}\" محجوز بالفعل لدى {{holder}} على الجهاز \"{{machine}}\". شغّل `rdc config reconcile` لاعتماد المعرّفات المسجّلة على الجهاز.",
       "networkIdNotRecorded": "الجهاز \"{{machine}}\" يحتوي على المستودع \"{{repository}}\" لكنه لا يسجل له معرّف شبكة، لذا لا يمكن اعتماد أي معرّف. شغّل المستودع مرة واحدة على الجهاز، ثم نفّذ `rdc config reconcile`.",
       "networkIdUndiscoverable": "لا يملك المستودع \"{{repository}}\" معرّف شبكة في هذا الإعداد، وتعذّر سؤال الجهاز \"{{machine}}\" عنه. أعد المحاولة حين يصبح الجهاز متاحًا، أو شغّل `rdc config reconcile`.",
-      "networkIdDiverged": "كان معرّف الشبكة للمستودع \"{{repository}}\" في هذا الإعداد {{localId}}، لكن الجهاز \"{{machine}}\" يسجّل {{machineId}}. صار معرّف الجهاز هو المعتمد الآن."
+      "networkIdDiverged": "كان معرّف الشبكة للمستودع \"{{repository}}\" في هذا الإعداد {{localId}}، لكن الجهاز \"{{machine}}\" يسجّل {{machineId}}. صار معرّف الجهاز هو المعتمد الآن.",
+      "slugCollision": "يتعارض المستودع \"{{ref}}\" مع \"{{existing}}\": كلاهما يُحوَّل إلى الاسم \"{{slug}}\" لمجموعات النسخ المتماثلة ولنُسخ مخزن البيانات. اختر اسمًا أو وسمًا مختلفًا."
     },
     "repoNotDeployed": "المستودع \"{{repository}}\" غير منشور على {{machine}}.\n\nانشره أولاً:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "المستودع \"{{name}}\" مُركَّب بالفعل على \"{{machine}}\". ترحيل مستودع نشط سيؤدي إلى تلفه. نفّذ أولاً: rdc repo down {{name}} --unmount",

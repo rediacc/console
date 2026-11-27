@@ -3808,7 +3808,8 @@
       "networkIdInUse": "Hoidla \"{{repository}}\" võrgu-ID {{networkId}} on masinas \"{{machine}}\" juba hõivatud: {{holder}}. Masinas salvestatud ID-de ülevõtmiseks käivita `rdc config reconcile`.",
       "networkIdNotRecorded": "Masinas \"{{machine}}\" on hoidla \"{{repository}}\", kuid selle võrgu ID-d ei ole salvestatud, seega pole midagi üle võtta. Käivita hoidla masinas üks kord ja seejärel käivita `rdc config reconcile`.",
       "networkIdUndiscoverable": "Hoidlal \"{{repository}}\" pole selles konfiguratsioonis võrgu-ID-d ja masinalt \"{{machine}}\" ei õnnestunud seda küsida. Proovi uuesti, kui masin on kättesaadav, või käivita `rdc config reconcile`.",
-      "networkIdDiverged": "Hoidla \"{{repository}}\" võrgu-ID oli selles konfiguratsioonis {{localId}}, kuid masin \"{{machine}}\" hoiab {{machineId}}. Nüüd on salvestatud masina ID."
+      "networkIdDiverged": "Hoidla \"{{repository}}\" võrgu-ID oli selles konfiguratsioonis {{localId}}, kuid masin \"{{machine}}\" hoiab {{machineId}}. Nüüd on salvestatud masina ID.",
+      "slugCollision": "Hoidla \"{{ref}}\" läheb vastuollu hoidlaga \"{{existing}}\": mõlemast saab replikakomplektide ja andmehoidla forkide nimi \"{{slug}}\". Vali teine nimi või silt."
     },
     "repoNotDeployed": "Repositoorium \"{{repository}}\" ei ole masinas {{machine}} kasutusele võetud.\n\nVõta see esmalt kasutusele:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Repositoorium \"{{name}}\" on juba masinas \"{{machine}}\" ühendatud. Aktiivse repositooriumi üle migreerimine rikuks selle. Käivita esmalt: rdc repo down {{name}} --unmount",

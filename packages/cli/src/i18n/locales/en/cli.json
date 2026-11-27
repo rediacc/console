@@ -3801,7 +3801,8 @@
       "networkIdInUse": "Network ID {{networkId}} for repository \"{{repository}}\" is already held by {{holder}} on machine \"{{machine}}\". Run `rdc config reconcile` to adopt the IDs the machine records.",
       "networkIdNotRecorded": "Machine \"{{machine}}\" holds repository \"{{repository}}\" but records no network ID for it, so none can be adopted. Bring the repository up once on the machine, then run `rdc config reconcile`.",
       "networkIdUndiscoverable": "Repository \"{{repository}}\" has no network ID in this config, and machine \"{{machine}}\" could not be asked for it. Retry once the machine is reachable, or run `rdc config reconcile`.",
-      "networkIdDiverged": "Repository \"{{repository}}\" had network ID {{localId}} in this config, but machine \"{{machine}}\" records {{machineId}}. The machine's ID is now recorded."
+      "networkIdDiverged": "Repository \"{{repository}}\" had network ID {{localId}} in this config, but machine \"{{machine}}\" records {{machineId}}. The machine's ID is now recorded.",
+      "slugCollision": "Repository \"{{ref}}\" collides with \"{{existing}}\": both map to the name \"{{slug}}\" for replica sets and datastore forks. Pick a different name or tag."
     },
     "repoNotDeployed": "Repository \"{{repository}}\" is not deployed on {{machine}}.\n\nDeploy it first:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Repository \"{{name}}\" is already mounted on \"{{machine}}\". Migrating over a live repo would corrupt it. Run first: rdc repo down {{name}} --unmount",

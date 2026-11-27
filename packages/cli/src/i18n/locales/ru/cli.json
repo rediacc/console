@@ -3808,7 +3808,8 @@
       "networkIdInUse": "Сетевой ID {{networkId}} репозитория \"{{repository}}\" уже занят: {{holder}} на машине \"{{machine}}\". Выполните `rdc config reconcile`, чтобы принять ID, записанные на машине.",
       "networkIdNotRecorded": "На машине \"{{machine}}\" есть репозиторий \"{{repository}}\", но сетевой ID для него не записан, поэтому взять нечего. Один раз запустите репозиторий на машине, затем выполните `rdc config reconcile`.",
       "networkIdUndiscoverable": "У репозитория \"{{repository}}\" нет сетевого ID в этой конфигурации, а машину \"{{machine}}\" не удалось опросить. Повторите попытку, когда машина станет доступна, или выполните `rdc config reconcile`.",
-      "networkIdDiverged": "В этой конфигурации у репозитория \"{{repository}}\" был сетевой ID {{localId}}, но машина \"{{machine}}\" хранит {{machineId}}. Теперь записан ID с машины."
+      "networkIdDiverged": "В этой конфигурации у репозитория \"{{repository}}\" был сетевой ID {{localId}}, но машина \"{{machine}}\" хранит {{machineId}}. Теперь записан ID с машины.",
+      "slugCollision": "Репозиторий \"{{ref}}\" конфликтует с \"{{existing}}\": оба дают имя \"{{slug}}\" для наборов реплик и форков хранилища данных. Выберите другое имя или тег."
     },
     "repoNotDeployed": "Репозиторий \"{{repository}}\" не развёрнут на {{machine}}.\n\nСначала разверните:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Репозиторий \"{{name}}\" уже смонтирован на \"{{machine}}\". Миграция поверх активного репозитория приведёт к его повреждению. Сначала выполните: rdc repo down {{name}} --unmount",

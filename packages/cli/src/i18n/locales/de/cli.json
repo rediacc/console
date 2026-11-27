@@ -3808,7 +3808,8 @@
       "networkIdInUse": "Die Netzwerk-ID {{networkId}} des Repositorys \"{{repository}}\" ist auf der Maschine \"{{machine}}\" bereits durch {{holder}} belegt. Mit `rdc config reconcile` werden die IDs übernommen, die die Maschine kennt.",
       "networkIdNotRecorded": "Maschine \"{{machine}}\" enthält das Repository \"{{repository}}\", hat dafür aber keine Netzwerk-ID erfasst, daher lässt sich keine übernehmen. Starte das Repository einmal auf der Maschine und führe dann `rdc config reconcile` aus.",
       "networkIdUndiscoverable": "Für das Repository \"{{repository}}\" ist in dieser Konfiguration keine Netzwerk-ID hinterlegt, und die Maschine \"{{machine}}\" war nicht erreichbar, um sie abzufragen. Sobald die Maschine erreichbar ist, erneut versuchen oder `rdc config reconcile` ausführen.",
-      "networkIdDiverged": "Das Repository \"{{repository}}\" hatte in dieser Konfiguration die Netzwerk-ID {{localId}}, die Maschine \"{{machine}}\" führt jedoch {{machineId}}. Die ID der Maschine wurde übernommen."
+      "networkIdDiverged": "Das Repository \"{{repository}}\" hatte in dieser Konfiguration die Netzwerk-ID {{localId}}, die Maschine \"{{machine}}\" führt jedoch {{machineId}}. Die ID der Maschine wurde übernommen.",
+      "slugCollision": "Das Repository \"{{ref}}\" kollidiert mit \"{{existing}}\": Beide ergeben den Namen \"{{slug}}\" für Replikasätze und Datastore-Forks. Wähle einen anderen Namen oder Tag."
     },
     "repoNotDeployed": "Repository \"{{repository}}\" ist auf {{machine}} nicht bereitgestellt.\n\nZuerst bereitstellen:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Repository \"{{name}}\" ist bereits auf \"{{machine}}\" eingehängt. Eine Migration über ein aktives Repository würde es beschädigen. Führen Sie zuerst aus: rdc repo down {{name}} --unmount",

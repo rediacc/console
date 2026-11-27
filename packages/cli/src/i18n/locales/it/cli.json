@@ -3808,7 +3808,8 @@
       "networkIdInUse": "L'ID di rete {{networkId}} del repository \"{{repository}}\" è già occupato da {{holder}} sulla macchina \"{{machine}}\". Esegui `rdc config reconcile` per adottare gli ID registrati sulla macchina.",
       "networkIdNotRecorded": "La macchina \"{{machine}}\" contiene il repository \"{{repository}}\" ma non registra alcun ID di rete per esso, quindi non se ne può adottare nessuno. Avvia il repository una volta sulla macchina, poi esegui `rdc config reconcile`.",
       "networkIdUndiscoverable": "Il repository \"{{repository}}\" non ha un ID di rete in questa configurazione e non è stato possibile interrogare la macchina \"{{machine}}\". Riprova quando la macchina è raggiungibile oppure esegui `rdc config reconcile`.",
-      "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina."
+      "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina.",
+      "slugCollision": "Il repository \"{{ref}}\" è in conflitto con \"{{existing}}\": entrambi producono il nome \"{{slug}}\" per i set di repliche e i fork del datastore. Scegli un altro nome o tag."
     },
     "repoNotDeployed": "Il repository \"{{repository}}\" non è distribuito su {{machine}}.\n\nDistribuiscilo prima:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Il repository \"{{name}}\" è già montato su \"{{machine}}\". Migrare su un repo attivo lo corromperebbe. Esegui prima: rdc repo down {{name}} --unmount",

@@ -3808,7 +3808,8 @@
       "networkIdInUse": "仓库“{{repository}}”的网络 ID {{networkId}} 在机器“{{machine}}”上已被 {{holder}} 占用。运行 `rdc config reconcile` 可采用机器上记录的 ID。",
       "networkIdNotRecorded": "机器 \"{{machine}}\" 持有仓库 \"{{repository}}\"，但没有记录其网络 ID，因此无法采用。请先在该机器上启动一次该仓库，然后运行 `rdc config reconcile`。",
       "networkIdUndiscoverable": "仓库“{{repository}}”在此配置中没有网络 ID，且无法向机器“{{machine}}”查询。请在机器可访问后重试，或运行 `rdc config reconcile`。",
-      "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。"
+      "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。",
+      "slugCollision": "仓库 \"{{ref}}\" 与 \"{{existing}}\" 冲突：两者在副本集和数据存储分叉中都会变成同一个名称 \"{{slug}}\"。请换一个名称或标签。"
     },
     "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down {{name}} --unmount",
