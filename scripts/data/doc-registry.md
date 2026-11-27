@@ -1201,7 +1201,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/docker | 5 | .py 5 |
 | .ci/rediacc_ci/drills | 27 | .py 27 |
 | .ci/rediacc_ci/drills/privdrop-probe | 1 | (none) 1 |
-| .ci/rediacc_ci/drills/windows | 8 | .ps1 7, .cmd 1 |
+| .ci/rediacc_ci/drills/windows | 9 | .ps1 8, .cmd 1 |
 | .ci/rediacc_ci/enterprise | 13 | .py 13 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
 | .ci/rediacc_ci/feedback | 9 | .py 9 |

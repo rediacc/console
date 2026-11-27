@@ -1,7 +1,7 @@
 """`npm run win:check`: drive `rdc` on a Windows VM over SSH, judge the `RDC-STEP` lines its PowerShell suites print, and write a receipt (agent/plans/PLAN-windows-lane.md D7, D8).
 
     npm run win:check [-- --vm <ip>] [--user <name>] [--key <path>] [--domain <libvirt domain>]
-                      [--suite keys,guard,term,dpapi,vscode,sync] [--target fleet|hostinger --fork <repo:tag> --remote-config <name>]
+                      [--suite keys,guard,term,dpapi,vscode,sync,gotest] [--target fleet|hostinger --fork <repo:tag> --remote-config <name>]
                       [--worker <ip>] [--worker-name <name>] [--worker-user <name>] [--wait <s>] [--skip-build] [--dry-run] [--selftest]
 
 THE FLOW, in order. Everything outside this process goes through one `Host`, which the tests replace whole.
@@ -38,6 +38,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+from functools import partial
 from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.core import local_common, resource_lock
@@ -73,7 +74,7 @@ GUARD_HOST = "fleet-guard-probe"
 WIN_CLIENT_NET = "192.168.111."
 WIN_CLIENT_IDS = range(31, 40)
 
-SUITE_ORDER = ("keys", "guard", "term", "sync", "dpapi", "vscode")
+SUITE_ORDER = ("keys", "guard", "term", "sync", "dpapi", "vscode", "gotest")
 FLEET_SUITES = ("keys", "guard", "term", "dpapi", "vscode")
 SUITE_NEEDS = {"guard": ("keys",), "term": ("keys",), "vscode": ("keys",)}
 
@@ -81,10 +82,13 @@ REMOTE_ROOT = "C:/rdc"
 REMOTE_SUITES = REMOTE_ROOT + "/suites"
 REMOTE_RENET = REMOTE_ROOT + "/renet"
 REMOTE_BUNDLE = REMOTE_ROOT + "/cli-bundle.cjs"
+REMOTE_GOTEST = REMOTE_ROOT + "/gotest"
 
 BUNDLE = "packages/cli/dist/cli-bundle.cjs"
 RENET_LINUX = "private/renet/bin/renet-linux-amd64"
 RENET_EXE = "private/renet/bin/renet-windows-amd64.exe"
+# The renet packages whose tests run on Windows (the gotest suite): binary name -> package under private/renet.
+GOTEST_PKGS = {"sshexec": "./pkg/infra/sshexec"}
 
 SSH_FAILED = vm_ssh.SSH_FAILED
 TIMED_OUT = 124
@@ -343,6 +347,7 @@ def params_for(
         "runId": run_id,
         "bundle": REMOTE_BUNDLE.replace("/", "\\"),
         "renetDir": REMOTE_RENET.replace("/", "\\"),
+        "gotestDir": REMOTE_GOTEST.replace("/", "\\"),
         "config": DEFAULT_CONFIG,
         "key": profile + "\\.ssh\\fleet_rsa",
         "worker": {"ip": opts.worker, "name": opts.worker_name, "user": opts.worker_user},
@@ -353,6 +358,11 @@ def params_for(
         "remoteConfig": opts.remote_config if opts.target == "hostinger" else "",
         "remoteDir": "winspike-test",
     }
+
+
+def gotest_rel(name: str) -> str:
+    """The repo-relative path of the cross-compiled test binary for one GOTEST_PKGS entry."""
+    return "private/renet/bin/%s.test.exe" % name
 
 
 def keyscan_keys(out: str) -> list[str]:
@@ -495,6 +505,11 @@ class Check:
         ]
         return self.host.run(argv, timeout=STAGE_TIMEOUT_S)
 
+    def scp_gotest(self, name: str) -> Result:
+        return self.scp(
+            [str(self.root / gotest_rel(name))], "%s/%s.test.exe" % (REMOTE_GOTEST, name)
+        )
+
     # ---- phases
 
     def reach(self) -> None:
@@ -565,7 +580,28 @@ class Check:
                     "build-failed",
                     "the windows renet build exited %d: %s" % (res.rc, clip(res.err, 200)),
                 )
-        for rel in (BUNDLE, RENET_LINUX, RENET_EXE):
+            if "gotest" in self.suites:
+                for name, pkg in GOTEST_PKGS.items():
+                    res = self.host.run(
+                        [
+                            "bash",
+                            "-c",
+                            "set -euo pipefail; cd private/renet && go test -c -o %s %s"
+                            % ("bin/%s.test.exe" % name, pkg),
+                        ],
+                        timeout=BUILD_TIMEOUT_S,
+                        env={"GOOS": "windows", "GOARCH": "amd64", "CGO_ENABLED": "0"},
+                    )
+                    if res.rc != 0:
+                        raise NotVerifiedError(
+                            "build-failed",
+                            "the windows %s test binary build exited %d: %s"
+                            % (name, res.rc, clip(res.err, 200)),
+                        )
+        needed = [BUNDLE, RENET_LINUX, RENET_EXE]
+        if "gotest" in self.suites:
+            needed += [gotest_rel(name) for name in GOTEST_PKGS]
+        for rel in needed:
             path = self.root / rel
             if not path.is_file():
                 raise NotVerifiedError("build-failed", "%s is missing after the build" % rel)
@@ -590,8 +626,8 @@ class Check:
         ssh_dir = self.profile + "\\.ssh"
         prep = (
             "$ErrorActionPreference = 'Stop'; "
-            "foreach ($d in 'C:\\rdc\\suites', 'C:\\rdc\\work') { if (Test-Path $d) { Remove-Item -Recurse -Force $d } }; "
-            "New-Item -ItemType Directory -Force 'C:\\rdc\\renet', 'C:\\rdc\\suites', 'C:\\rdc\\work', %s | Out-Null; "
+            "foreach ($d in 'C:\\rdc\\suites', 'C:\\rdc\\work', 'C:\\rdc\\gotest') { if (Test-Path $d) { Remove-Item -Recurse -Force $d } }; "
+            "New-Item -ItemType Directory -Force 'C:\\rdc\\renet', 'C:\\rdc\\suites', 'C:\\rdc\\work', 'C:\\rdc\\gotest', %s | Out-Null; "
             "'RDC-PROBE staged=1'"
         ) % ps_quote(ssh_dir)
         acl = (
@@ -624,6 +660,10 @@ class Check:
             ("fleet key", lambda: self.scp([self.opts.fleet_key], key_dest), ""),
             ("fleet key ACL", lambda: self.ssh(encoded(acl)), "RDC-PROBE acl=0"),
         ]
+        if "gotest" in self.suites:
+            steps.extend(
+                ("%s.test.exe" % name, partial(self.scp_gotest, name), "") for name in GOTEST_PKGS
+            )
         for label, act, marker in steps:
             res = act()
             if res.rc != 0 or (marker and marker not in res.out):
@@ -780,6 +820,8 @@ def dry_run(opts: Options, say: Callable[[str], None]) -> int:
         % ("skipped" if opts.skip_build else "./rdc.sh --version, then " + RENET_EXE)
     )
     say("  stage     %s, %s, %s, %s/*" % (BUNDLE, RENET_EXE, RENET_LINUX, SUITES_DIR))
+    if "gotest" in opts.suites:
+        say("  gotest    GOOS=windows go test -c: %s" % ", ".join(sorted(GOTEST_PKGS.values())))
     say("  suites    %s" % ", ".join(opts.suites))
     say("  receipt   %s/%s; best verdict VERIFIED (exit 0)" % (CACHE_DIR, LATEST))
     return 0

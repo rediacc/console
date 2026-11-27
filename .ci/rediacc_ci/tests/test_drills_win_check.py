@@ -81,7 +81,8 @@ class FakeHost(win_check.Host):
         self.busy = False
         self.timeouts: list[float] = []
         self.waits: list[float] = []
-        for rel in (win_check.BUNDLE, win_check.RENET_LINUX, win_check.RENET_EXE):
+        gotest = [win_check.gotest_rel(n) for n in win_check.GOTEST_PKGS]
+        for rel in (win_check.BUNDLE, win_check.RENET_LINUX, win_check.RENET_EXE, *gotest):
             (root / rel).parent.mkdir(parents=True, exist_ok=True)
             (root / rel).write_bytes(rel.encode())
         suites = root / win_check.SUITES_DIR
@@ -102,7 +103,7 @@ class FakeHost(win_check.Host):
         if argv[0] == "scp":
             return "scp:" + argv[-1].split(":", 1)[1]
         if argv[0] == "bash":
-            return "renet-exe"
+            return "gotest-build" if "go test -c" in argv[-1] else "renet-exe"
         return argv[0]
 
     def run(
@@ -241,6 +242,44 @@ def test_windows_build_carries_the_key_in_the_environment(host: FakeHost) -> Non
     assert host.envs[idx]["ACCOUNT_ED25519_PUBLIC_KEY"] == "PUBKEY"
     assert host.envs[idx]["GOOS"] == "windows"
     assert "PUBKEY" not in " ".join(host.calls[idx])
+
+
+def test_gotest_cross_compiles_stages_and_runs_each_binary(host: FakeHost) -> None:
+    rc, receipt, _ = run(host, suites=("gotest",))
+    assert rc == 0
+    keys = [FakeHost.key(c) for c in host.calls]
+    idx = keys.index("gotest-build")
+    assert host.envs[idx]["GOOS"] == "windows"
+    assert "go test -c -o bin/sshexec.test.exe ./pkg/infra/sshexec" in host.calls[idx][-1]
+    assert "scp:" + win_check.REMOTE_GOTEST + "/sshexec.test.exe" in keys
+    assert keys.index("scp:" + win_check.REMOTE_GOTEST + "/sshexec.test.exe") < keys.index(
+        "suite:gotest"
+    )
+    assert receipt["status"] == "VERIFIED"
+    params = next(host.root.glob(win_check.CACHE_DIR + "/runs/*/params.json"))
+    assert json.loads(params.read_text(encoding="utf-8"))["gotestDir"] == "C:\\rdc\\gotest"
+
+
+def test_gotest_build_failure_is_build_failed(host: FakeHost) -> None:
+    host.answers["gotest-build"] = win_check.Result(1, "", "undefined: foo")
+    _, receipt, _ = run(host, suites=("gotest",))
+    assert receipt["reason"]["class"] == "build-failed"
+    assert "sshexec test binary" in receipt["reason"]["detail"]
+
+
+def test_gotest_failed_binary_step_is_failed(host: FakeHost) -> None:
+    host.suites["gotest"] = (1, suite_out("gotest", [step("gotest", "sshexec", 1)]))
+    _, receipt, _ = run(host, suites=("gotest",))
+    assert receipt["status"] == "FAILED"
+
+
+def test_default_run_builds_and_stages_no_test_binary(host: FakeHost) -> None:
+    run(host)
+    keys = [FakeHost.key(c) for c in host.calls]
+    assert "gotest-build" not in keys
+    assert not any(k.startswith("scp:" + win_check.REMOTE_GOTEST) for k in keys)
+    assert "gotest" not in win_check.FLEET_SUITES
+    assert win_check.plan_suites(["gotest"], "fleet") == ("gotest",)
 
 
 def test_skip_build_runs_no_build(host: FakeHost) -> None:
