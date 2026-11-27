@@ -409,6 +409,22 @@
         },
         {
           "repo": "private/renet",
+          "file": "pkg/infra/docker/service.go",
+          "role": "version",
+          "match": "zot-linux-amd64:v(?<value>\\d+\\.\\d+\\.\\d+)\"",
+          "label": "pkg/infra/docker/service.go zot container image",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/opsconfig/config.go",
+          "role": "version",
+          "match": "zot-linux-amd64:v(?<value>\\d+\\.\\d+\\.\\d+)\"",
+          "label": "pkg/infra/opsconfig/config.go zot container image",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
           "file": "embed-assets.lock.json",
           "role": "sha256:amd64",
           "json": "/components/zot/arches/amd64/sha256",
