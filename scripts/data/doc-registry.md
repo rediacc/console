@@ -1183,7 +1183,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/ci | 35 | .py 35 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 40 | .py 40 |
-| .ci/rediacc_ci/deploy | 45 | .py 45 |
+| .ci/rediacc_ci/deploy | 46 | .py 46 |
 | .ci/rediacc_ci/dev | 14 | .py 14 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 5 | .py 5 |
