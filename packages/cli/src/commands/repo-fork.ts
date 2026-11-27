@@ -49,6 +49,7 @@ import {
   machineConnections,
 } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertNoSlugCollision, repoDisplayKey } from '../services/repo/repo-slug-collision.js';
 import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { ensureRecordedNetworkId, recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -439,6 +440,11 @@ export async function handleForkAction(
     }
 
     await assertMachineExists(options.machine);
+    // Before any config write: a fork whose slug equals another repo's would share its replica set and datastore fork tag.
+    assertNoSlugCollision(
+      repoDisplayKey(forkKey),
+      (await configService.listRepositories()).map((repo) => repoDisplayKey(repo.name))
+    );
 
     const { repositoryGuid, networkId, reattached } = await registerFork(
       parent,

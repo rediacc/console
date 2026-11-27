@@ -34,6 +34,7 @@ const mockAddRepository = vi.hoisted(() => vi.fn());
 const mockRemoveRepository = vi.hoisted(() => vi.fn());
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getCurrent: vi.fn().mockResolvedValue({ resources: { repositories: { app: {} } } }),
     getRepository: mockGetRepository,
     getRepositoryKey: (ref: string) => Promise.resolve(ref),

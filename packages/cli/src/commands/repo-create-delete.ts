@@ -26,6 +26,7 @@ import {
 } from '../services/jobs/command-job.js';
 import { outstandingSteps } from '../services/jobs/run-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
+import { assertNoSlugCollision, repoDisplayKey } from '../services/repo/repo-slug-collision.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -195,6 +196,12 @@ async function resolveDatastorePlacement(datastore: string): Promise<DatastorePl
   };
 }
 
+/** Refuse a new grand whose replica-set/fork-tag slug equals an existing repo's (a different key with the same slug). */
+async function assertNoRepoSlugCollision(name: string): Promise<void> {
+  const keys = (await configService.listRepositories()).map((repo) => repoDisplayKey(repo.name));
+  assertNoSlugCollision(name, keys);
+}
+
 /**
  * Register the birth record of a new repo, carrying its declared placement
  * (spec 03 §2.3: the R2-F1 tagged union derived-machine ops resolve through).
@@ -215,6 +222,7 @@ export async function registerNewRepo(
   assertResourceName(name);
   // A family left with only forks of a forgotten grand is not a live repo of this name: `repo delete` refuses it, so the create must not call the name taken.
   const existing = await configService.getLiveGrand(name);
+  await assertNoRepoSlugCollision(name);
   // A POST retried with the same body id, placement and size finds the record its first attempt registered (the guid derives from all three): attach to it, so the create job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another placement or size is a different request and meets the duplicate error.
   const servedGuid = servedRecordGuid(`create:${name}:${JSON.stringify(placement)}:${size ?? ''}`);
   if (existing && servedGuid !== undefined && existing.repositoryGuid === servedGuid) {

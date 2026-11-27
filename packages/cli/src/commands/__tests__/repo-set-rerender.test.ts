@@ -29,6 +29,7 @@ const mockGetBackupStrategy = vi.hoisted(() => vi.fn());
 const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getRepository: mockGetRepository,
     // The create's duplicate check reads the live grand; these tests drive it through getRepository.
     getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {

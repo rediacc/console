@@ -64,6 +64,7 @@ vi.mock('../config-resources.js', async (orig) => {
       // getRepository lands on a fork through the grand pointer; getLiveGrand is the create's duplicate check and is set apart so a revert to the old lookup shows.
       getRepository: () => Promise.resolve(h.repository),
       getLiveGrand: () => Promise.resolve(h.liveGrand),
+      listRepositories: () => Promise.resolve([]),
       addRepository: (...args: unknown[]) => {
         addRepository(...args);
         return Promise.resolve();

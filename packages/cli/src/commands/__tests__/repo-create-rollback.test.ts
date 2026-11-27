@@ -27,6 +27,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     // A duplicate check sees nothing; the rollback check then sees the repo this create registered.
     getRepository: vi.fn(() =>
       Promise.resolve(registered.guid ? { repositoryGuid: registered.guid } : undefined)

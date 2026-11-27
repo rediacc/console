@@ -25,6 +25,7 @@ const mockGetCurrent = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getRepository: mockGetRepository,
     addRepository: mockAddRepository,
     allocateNetworkId: mockAllocateNetworkId,

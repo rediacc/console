@@ -38,6 +38,7 @@ vi.mock('../../config/config-resources.js', () => ({
         rows.get(name) ?? (name.includes(':') ? undefined : rows.get(`${name}:latest`))
       )
     ),
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getLiveGrand: vi.fn((name: string) =>
       Promise.resolve(rows.get(name) ?? rows.get(`${name}:latest`))
     ),
