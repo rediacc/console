@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
-// The Windows lane (PLAN-windows-lane D10, D13): the test files that exercise win32 or fake it, named one by one. A file is added by name once it has been measured on the Windows VM (`npm run win:check -- --suite unit`); the whole suite is deliberately not run, because POSIX-only tests would fail on it for reasons that say nothing about win32.
+// The Windows lane (PLAN-windows-lane D10, D13): the test files that exercise win32 or fake it, named one by one. A file is added by name once it has been measured on the Windows VM (`PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check -- --suite unit`); the whole suite is deliberately not run, because POSIX-only tests would fail on it for reasons that say nothing about win32.
 //
 // Files in the list that skip quietly on win32 (a green run does not cover them there):
 //   remote/terminal/__tests__/launchers-windows-cleanup  (posixIt cases)

@@ -1,6 +1,6 @@
 name: CI - Windows
 
-# The Windows lane (PLAN-windows-lane D10): the win32 unit tests by name, the agent-guard refusal cases with the renet Windows artifact, and a bundle smoke. Remote suites (term, sync, vscode against a worker) stay local in `npm run win:check`, because a hosted Windows runner has no Linux worker to reach.
+# The Windows lane (PLAN-windows-lane D10): the win32 unit tests by name, the agent-guard refusal cases with the renet Windows artifact, and a bundle smoke. Remote suites (term, sync, vscode against a worker) stay local in `PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check`, because a hosted Windows runner has no Linux worker to reach.
 on:
   workflow_call:
 

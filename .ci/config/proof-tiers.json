@@ -427,7 +427,7 @@
         },
         "win-check": {
           "what": "the Windows client lane on the local fleet: the CLI built from this tree, staged to the windows-client VM and its suites run there, judged from RDC-STEP lines",
-          "run": ["npm run win:check"]
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check"]
         },
         "enterprise-bench": {
           "what": "the Enterprise tooling run from this tree against bench: the signer proof (V1) and the region-loss proof (V2), each of which stops or cuts a bench signer and restores it; the lab reads the enterprise bws project id from ENTERPRISE_PROOF_BWS_PROJECT",

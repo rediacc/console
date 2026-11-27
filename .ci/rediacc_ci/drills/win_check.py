@@ -1,6 +1,6 @@
-"""`npm run win:check`: drive `rdc` on a Windows VM over SSH, judge the `RDC-STEP` lines its PowerShell suites print, and write a receipt (agent/plans/PLAN-windows-lane.md D7, D8).
+"""`PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check`: drive `rdc` on a Windows VM over SSH, judge the `RDC-STEP` lines its PowerShell suites print, and write a receipt (agent/plans/PLAN-windows-lane.md D7, D8).
 
-    npm run win:check [-- --vm <ip>] [--user <name>] [--key <path>] [--domain <libvirt domain>]
+    PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check [--vm <ip>] [--user <name>] [--key <path>] [--domain <libvirt domain>]
                       [--suite keys,guard,term,dpapi,vscode,sync,gotest] [--target fleet|hostinger --fork <repo:tag> --remote-config <name>]
                       [--worker <ip>] [--worker-name <name>] [--worker-user <name>] [--wait <s>] [--skip-build] [--dry-run] [--selftest]
 
@@ -831,7 +831,7 @@ def parse_args(
     argv: Sequence[str] | None, environ: Mapping[str, str]
 ) -> tuple[argparse.Namespace, Options]:
     p = argparse.ArgumentParser(
-        prog="npm run win:check --",
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check",
         description="Drive rdc on a Windows VM over SSH and judge its RDC-STEP lines.",
     )
     p.add_argument(
