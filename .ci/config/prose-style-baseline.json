@@ -15,10 +15,10 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2573,
+ "count": 2566,
  "files": 629,
  "by_rule": {
-  "R1": 1391,
+  "R1": 1384,
   "R11": 135,
   "R14": 1,
   "R18": 11,
@@ -4445,25 +4445,18 @@
   "packages/www/src/content/docs/en/ai-agents-overview.md": {
    "R1": [
     "52030982a22658c6",
-    "551a870276e0a0b3",
-    "6bba2d4946abefa8"
+    "551a870276e0a0b3"
    ]
   },
   "packages/www/src/content/docs/en/ai-agents-safety.md": {
    "R1": [
-    "00e8d39fd143adac",
     "0f46f04bc104b6c4",
     "1c42ae176629d7c8",
-    "2411c4361b5423e4",
     "31d55d8e61264f67",
     "37865ff39bfd51b2",
-    "4ff2953faad404db",
     "817f45d07a2dcba1",
     "8a65c3d61aae03af",
-    "91c022e3f2ffc11c",
     "926e794d5445541e",
-    "a0f335e9a57f48a9",
-    "d037c6086462331a",
     "f5d9606b5ef63e04"
    ],
    "R2": [

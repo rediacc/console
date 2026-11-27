@@ -41,7 +41,6 @@ Each opt-in is the local half of one decision: an agent acts only where its opt-
 | Variable | Purpose |
 |---|---|
 | `REDIACC_ALLOW_GRAND_REPO` | Opt-in for grand-repo / direct machine access, within the policy's `allowGrandRepos`. |
-| `REDIACC_ALLOW_CONFIG_EDIT` | Pointer-glob scope opting an agent in to config edits, within the policy ceiling. |
 | `REDIACC_ALLOW_CLUSTER_OPS` | Opt-in for destructive cluster operations, within the policy's `allowClusterOps`. |
 | `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI`, `CURSOR_TRACE_ID` | Agent-environment detection (set by the agent runtime, not by you). |
 

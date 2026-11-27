@@ -75,7 +75,7 @@ Error responses include `retryable` and `guidance` fields:
 
 ## Safety & Guardrails
 
-Look, the CLI doesn't treat agents the same as a human at the terminal. Sensitive operations need proof you already know the current state (the `--current` flag), interactive-editor flows are refused by default, and every refusal is audit-logged. The [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) reference covers the full firewall table, the knowledge-gate model, the `REDIACC_ALLOW_CONFIG_EDIT` scope-override, and the hash-chained audit log.
+Look, the CLI doesn't treat agents the same as a human at the terminal. Sensitive operations need proof of the current state (the `--current` flag), whole-config edits are refused with no override, and every refusal is audit-logged. The [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) reference covers the full firewall table, the knowledge-gate model, the opt-in AND policy ceiling rule, and the hash-chained audit log.
 
 ## Next Steps
 

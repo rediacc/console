@@ -1,9 +1,10 @@
 ---
 title: AI Agent Safety & Guardrails
 description: >-
-  How Rediacc's CLI keeps AI coding assistants from leaking secrets,
-  overwriting credentials, or escalating privilege. Knowledge-gates,
-  redaction, ancestry-verified overrides, and a hash-chained audit log.
+  How Rediacc keeps AI coding assistants from leaking secrets,
+  overwriting credentials, or escalating privilege. One decision for every
+  surface, opt-in AND policy ceiling, knowledge-gates, redaction, and a
+  hash-chained audit log.
 category: Concepts
 tags:
   - ai-agents
@@ -24,17 +25,21 @@ So you're pointing an AI coding assistant at your infrastructure. When Claude Co
 | `rdc config field get --pointer <pointer> --digest` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (public field) | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (sensitive field, **with correct `--current`**) | ✅ allowed |  |
-| `rdc config edit --dump` (redacted JSONC) | ✅ allowed |  |
+| `rdc config edit --dump --redacted` (redacted JSONC) | ✅ allowed |  |
 | `rdc config audit {log, tail, verify}` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (sensitive field, no `--current`) | 🔴 refused | Supply `--current "<old value>"` |
+| `rdc repo secret set <repo> --rotate-secret` (rotation without `--current`) | 🔴 refused | Supply `--current`, or a human runs the rotation at a terminal |
 | `rdc config field get --pointer <pointer> --reveal` | 🔴 refused | Use `--digest` instead |
 | `rdc config show --reveal` | 🔴 refused | Use plain `rdc config show` |
-| `rdc config edit` (interactive editor) | 🔴 refused | Human sets `REDIACC_ALLOW_CONFIG_EDIT=*` before launching the agent |
-| `rdc config edit --apply <file>` | 🔴 refused | Same override |
-| `rdc config field rotate --pointer <pointer>` | 🔴 refused | Same override; uses interactive confirmation |
+| `rdc config edit` (interactive editor) | 🔴 refused, no override | Inspect with `--dump --redacted`, change one field with `config field set --current` |
+| `rdc config edit --apply <file>` | 🔴 refused, no override | Same; a human at a terminal applies whole-document edits |
+| `rdc config edit --reveal` | 🔴 refused, no override | Same |
+| `rdc config field rotate --pointer <pointer>` | 🔴 refused | A human runs it at an interactive terminal |
+| Change a grand (production) repository | 🔴 refused | A human opt-in for that repo, inside a policy that allows grand-repo changes ([below](#one-decision-opt-in-and-policy-ceiling)) |
+| Cluster or datastore lifecycle operations | 🔴 refused | A human opt-in for that cluster, inside a policy that allows cluster operations |
 | `rdc term connect <machine>` (direct machine SSH) | 🔴 refused | Fork a repo first and connect to the fork |
 
-Every refusal gets written to the audit log with `outcome: refused` and a reason.
+Every refusal gets written to the audit log with `outcome: refused` and a reason. A whole-document config edit has no agent path at all: the config carries every repository's LUKS credential, and an agent that could rewrite it could also delete a credential that the encrypted volume cannot be opened without.
 
 ## How agents are detected
 
@@ -43,7 +48,22 @@ The CLI treats a process as an agent when any of these are true:
 - One of `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI` is set to `"1"`, or `CURSOR_TRACE_ID` is set at all.
 - On Linux: any parent process up the ancestry chain has one of those variables in its environment (via `/proc/<pid>/environ`). Even if the agent unsets its own variables with `env -i` or a wrapper script, the parent chain still tells the CLI who started it.
 
-Detection runs once per process and is cached. It cannot be disabled.
+Detection runs once per process and is cached. It cannot be disabled. A remote MCP grant marks its calls as agent calls on the executor, with no detection needed.
+
+## One decision: opt-in AND policy ceiling
+
+Every surface that runs an `rdc` command (the CLI, the local MCP server, the remote MCP server, `rdc --proxy` and the web console) asks the same decision function, so they refuse and allow the same things. It applies two conditions, and an agent acts only where both hold:
+
+1. **The policy ceiling.** The organization policy, narrowed by the team policy, decides which commands, machines and repositories a caller may use, and whether grand-repository changes (`allowGrandRepos`) and cluster operations (`allowClusterOps`) are allowed at all. A config with no policy record falls back to a default by role: owners and admins may act, members may not. The policy is a separate sealed record that only owners and admins write ([Security model](/en/docs/security-model#policy)); no agent and no CLI command can edit it.
+2. **The human opt-in.** Inside the ceiling, an agent still needs a human to name the grand repository or cluster it may change:
+   - **Local agents** (CLI and local MCP): the human exports `REDIACC_ALLOW_GRAND_REPO` (repo names, or `*`) or `REDIACC_ALLOW_CLUSTER_OPS` (cluster names, or `*`) in the terminal before starting the agent. The CLI checks the process ancestry, so a variable the agent sets mid-session does not count ([how each OS is checked](#how-a-local-opt-in-is-verified-on-each-os)).
+   - **Remote agents** (remote MCP): the opt-ins are part of the grant the human creates in the account UI ([Remote server](/en/docs/ai-agents-mcp#remote-server)).
+
+An opt-in never widens the ceiling: a repository the policy closes stays closed, whatever the environment or the grant says. Forks need no opt-in. A repository the CLI cannot identify counts as grand.
+
+**Destructive changes ask first.** When an agent is cleared for a destructive change to a grand repository (`repo delete`, for example), the answer is `needs_confirmation`. An MCP client shows the user a confirmation prompt; a client without one gets a `confirm` argument to send back after asking the user. On the CLI, the human reruns the command with `--confirm-grand <repo>`.
+
+Each answer carries a stable code (`POLICY_DENIED`, `GRAND_REPO_DENIED`, `CLUSTER_OPS_DENIED`, `AGENT_OPT_IN_MISSING`, `FORK_BLOCKED`, `AGENT_BLOCKED`, `CONFIRMATION_REQUIRED`), so a script or an agent branches on the code rather than the message ([JSON output](/en/docs/ai-agents-json-output)).
 
 ## The knowledge-gate model
 
@@ -52,7 +72,7 @@ Sensitive mutations follow the `passwd(1)` convention: to change a secret, prove
 - You want to rotate an API token stored at `/credentials/cfDnsApiToken`?
 - The CLI asks: "what's the current value?"
 - The agent (or human) supplies the plaintext via `--current "$OLD"`. The CLI hashes `$OLD` with SHA-256 and compares against the digest of the currently-stored value. Match → write goes through. Mismatch → refused, audited.
-- To rotate without verifying the prior value, pass `--rotate-secret` (mutually exclusive with `--current`). This is loudly audited as a rotation.
+- To rotate without verifying the prior value, pass `--rotate-secret` (mutually exclusive with `--current`). This is loudly audited as a rotation, and it counts only for a human at an interactive terminal: an agent, or a script without a terminal on stdin, still needs `--current`.
 
 The model closes three attack surfaces:
 
@@ -82,7 +102,7 @@ When the precondition fails, the JSON envelope (`--output json`) carries a struc
 }
 ```
 
-**Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own commands.** This avoids the "agent invents a command that doesn't exist" failure mode and keeps the operator in control of the actual action.
+**Agents should relay `next.options[].run` verbatim to the human rather than synthesizing their own commands.** This avoids the "agent invents a command that doesn't exist" failure mode and keeps the operator in control of the actual action. The rotation option is for the human to run at a terminal; it is refused to the agent itself.
 
 ### Worked example
 
@@ -93,7 +113,7 @@ $ rdc config field get --pointer /credentials/cfDnsApiToken
 
 # Try to overwrite without proof: refused.
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
-✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
+✗ Precondition failed: sensitive path requires --current
 
 # Supply the current plaintext: allowed.
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
@@ -102,11 +122,11 @@ $ rdc config field set --pointer /credentials/cfDnsApiToken \
 Set /credentials/cfDnsApiToken
 ```
 
-If the agent never had `$OLD_CF_TOKEN`, it can't satisfy the precondition and the rotation is refused. The user who *does* have it can still do it either through the editor or by passing `--current` from their shell.
+If the agent never had `$OLD_CF_TOKEN`, it can't satisfy the precondition and the rotation is refused. The user who *does* have it can still do it by passing `--current` from their shell, or with `rdc config field rotate` at an interactive terminal.
 
 ## Redaction by default
 
-Every `rdc` command that reads sensitive state: `config show`, `config field get`, `config machine list`, `config edit --dump`: returns **redaction stubs** for secret fields, not plaintext:
+Every `rdc` command that reads sensitive state: `config show`, `config field get`, `config machine list`, `config edit --dump --redacted`: returns **redaction stubs** for secret fields, not plaintext:
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -118,28 +138,9 @@ The stub's 8-char hex suffix is the first 8 chars of `sha256(canonicalize(value)
 
 `--reveal` unredacts for humans on an interactive TTY. Agents are refused regardless of TTY state. Each grant writes a `reveal_granted` audit entry; each refusal writes a `refused` entry with the actor's agent signals attached.
 
-## The `REDIACC_ALLOW_CONFIG_EDIT` override
+## How a local opt-in is verified on each OS
 
-Some operations: the interactive editor, `--apply`, `field rotate`: exist for humans and have no agent-safe path. If you actively want an agent to do one of them, you set:
-
-```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'          # full bypass
-# or
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# (comma-separated scope globs: * wildcards allowed per segment)
-```
-
-…and the agent inherits it.
-
-**Crucial detail**: the override must appear in a process **above** the agent in the ancestry chain. If the agent sets it in its own environment (or in a subshell it spawned), the CLI refuses and tells you so:
-
-> `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
-
-The effect: an agent can't talk its way past a guardrail by running `export REDIACC_ALLOW_CONFIG_EDIT='*'` mid-session. Only a parent process (you, in your terminal, before launching the agent) can open that door.
-
-## Platform support: how the override is verified on each OS
-
-`REDIACC_ALLOW_CONFIG_EDIT` and `REDIACC_ALLOW_GRAND_REPO` both rely on ancestry verification to prove the override was set by you and not injected by the agent. The verification works on Linux, macOS, and Windows, but the witness it reads differs per platform, and so does the strength of the guarantee:
+`REDIACC_ALLOW_GRAND_REPO` and `REDIACC_ALLOW_CLUSTER_OPS` both rely on ancestry verification to prove the opt-in was set by the human and not injected by the agent. The verification works on Linux, macOS, and Windows, but the witness it reads differs per platform, and so does the strength of the guarantee:
 
 | Platform | Witness | Strength |
 |---|---|---|
@@ -147,9 +148,9 @@ The effect: an agent can't talk its way past a guardrail by running `export REDI
 | macOS | `kern.procargs2` sysctl, read by a small helper that ships inside `rdc` | Same exec-time snapshot property as Linux. Readable for your own processes without root. |
 | Windows | The live environment block of each ancestor process (PEB), read by the same helper, with PID-reuse guards | Weaker: Windows keeps no exec-time snapshot, so the check reads current memory. Ancestors still can't be rewritten by anything an agent normally runs, but the witness is not kernel-frozen the way it is on Linux and macOS. |
 
-On macOS and Windows the CLI spawns its bundled `renet` binary to do the reading; the helper reports which of the watched variables each ancestor carries, and all decision logic stays in the CLI. If the helper is missing, outdated, or fails for any reason, the CLI cannot verify the override and **fails closed**: the override is rejected and the error says verification was unavailable, not that you did something wrong. A working installation never shows that message; reinstalling `rdc` restores the helper.
+On macOS and Windows the CLI spawns its bundled `renet` binary to do the reading; the helper reports which of the watched variables each ancestor carries, and all decision logic stays in the CLI. If the helper is missing, outdated, or fails for any reason, the CLI cannot verify the opt-in and **fails closed**: the opt-in is rejected and the error says verification was unavailable, not that anything was done wrong. A working installation never shows that message; reinstalling `rdc` restores the helper.
 
-What stays true on every platform: the override must already be present in the environment of the agent process when it starts. Export it in your terminal, then launch the agent. An agent that sets the variable mid-session is refused.
+What stays true on every platform: the opt-in must already be present in the environment of the agent process when it starts. Export it in the terminal, then launch the agent. An agent that sets the variable mid-session is refused.
 
 ## Audit log
 
@@ -157,7 +158,7 @@ Every mutation, every refusal, every `--reveal` grant writes a JSONL line to `~/
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
-{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent without REDIACC_ALLOW_CONFIG_EDIT=*","prevHash":"sha256:abc1..."}
+{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent environment","prevHash":"sha256:abc1..."}
 {"ts":"2026-04-21T10:03:05.220Z","actor":{"kind":"human"},"command":"config show --reveal","paths":[],"outcome":"reveal_granted","configId":"...","configVersion":48,"prevHash":"sha256:deac..."}
 ```
 
@@ -212,7 +213,7 @@ This is the shared-responsibility line:
 | Repository data, mount namespace, Docker scope, agent guards, audit log, deploy-time secret injection | Rediacc |
 | Application code that uses those secrets, and any credentials baked into the image at build time | Repository developer |
 
-The primary mitigation is built in: **[per-repo secrets](/en/docs/repositories#secrets)** are stored in a separate plane from the encrypted repository image and are not copied across the fork boundary. A fork's containers boot with an empty secrets map and identify themselves as a different external principal than the parent. Set them with `rdc repo secret set` (env-mode for compose interpolation, file-mode for tmpfs `secrets:` blocks). The mutation gate is symmetric. Humans and agents alike must supply `--current` (passwd-style precondition) or `--rotate-secret` (audited rotation) to overwrite or delete an existing value.
+The primary mitigation is built in: **[per-repo secrets](/en/docs/repositories#secrets)** are stored in a separate plane from the encrypted repository image and are not copied across the fork boundary. A fork's containers boot with an empty secrets map and identify themselves as a different external principal than the parent. Set them with `rdc repo secret set` (env-mode for compose interpolation, file-mode for tmpfs `secrets:` blocks). The mutation gate is symmetric. Humans and agents alike must supply `--current` (passwd-style precondition) to overwrite or delete an existing value; `--rotate-secret` (audited rotation) is the human-at-a-terminal alternative.
 
 **Cross-repo isolation is enforced.** A malicious or careless compose file in repo B cannot reference repo A's secrets directory. Renet's compose validator hard-rejects any `secrets: file:`, `configs: file:`, or `env_file:` path that points outside the current repo's `${REDIACC_NETWORK_ID}` directory, and the rejection is NOT overridable by `--unsafe`. Defense-in-depth: the Landlock sandbox around the Rediaccfile bash subprocess scopes filesystem reads to the current network's secrets directory only, so a `cat /var/run/rediacc/net-<other>/secrets/X` from a malicious Rediaccfile fails with EACCES at the kernel layer. The same holds on the Docker API: each repo's Docker socket is served by a renet policy proxy that refuses `--privileged`, host `pid`, `ipc` and `uts`, device requests, and binds that reach another repo's runtime or data with a `403`, so a container holding `${DOCKER_SOCKET}` cannot use the API to reach another repo, and not only a compose file is checked. Only the operator can widen the bind rule, for named host directories, with a root-owned grant that no container can write.
 
@@ -225,24 +226,24 @@ Rediacc handles the deploy-time injection, the cross-fork isolation, and the cro
 
 ## Quick recipes
 
-### Let an agent rotate a single cloud token
+### Let an agent work on one grand repository
 
 ```bash
-# As you, before starting the agent:
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
-claude-code              # or cursor, gemini, etc.
+# As the human, before starting the agent:
+export REDIACC_ALLOW_GRAND_REPO='gitlab'
+claude              # or cursor, gemini, etc.
 ```
 
-Now the agent can `config field rotate /credentials/cfDnsApiToken --new …` but still can't edit `/credentials/ssh/privateKey` or open the interactive editor.
+The agent can now change `gitlab`, where the policy allows grand-repository changes, and no other grand repository. A destructive change, such as `repo delete gitlab`, still asks for confirmation.
 
-### Let an agent do one broad config edit session
+### Rotate a cloud token without knowing the old value
 
 ```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'
-claude-code
+# As the human, at an interactive terminal:
+rdc config field rotate --pointer /credentials/cfDnsApiToken --new "$NEW_CF_TOKEN"
 ```
 
-The agent can open `rdc config edit`, use `--reveal`, and run `field rotate`. Every action is still audit-logged with `actor.kind: agent` and the `CLAUDECODE` signal.
+Rotation without `--current` stays with the human. An agent that knows the current value uses `rdc config field set --current` instead.
 
 ### Discover which fields an agent is allowed to touch
 
@@ -255,6 +256,8 @@ Returns every pointer template, its kind (`secret` / `credential` / `pii` / `ide
 ## See also
 
 - [AI Agent Integration Overview](/en/docs/ai-agents-overview): the top-level tour
+- [MCP server](/en/docs/ai-agents-mcp): local and remote MCP, grants and their opt-ins
+- [Security model](/en/docs/security-model): the policy record and who can write it
 - [Claude Code setup](/en/docs/ai-agents-claude-code): integration template
 - [JSON output envelope](/en/docs/ai-agents-json-output): machine-readable responses
 - [Encrypted config store](/en/docs/config-storage): server-side cryptographic enforcement
