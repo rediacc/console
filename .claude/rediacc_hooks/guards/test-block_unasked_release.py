@@ -72,6 +72,7 @@ DEVBOX = "./run.sh devbox exec --"
 WWW = "%s rediacc_ci.deploy.deploy_www" % PY
 PROMOTE = "%s rediacc_ci.deploy.promote_r2_to_stable" % PY
 ACCT_SECRETS = "rediacc_ci.deploy.set_account_worker_secrets"
+STABLE_RUN = "gh workflow run cd-release-stable.yml"
 
 B, A = True, False
 
@@ -219,6 +220,175 @@ CASES = [
         TR,
         A,
         "admitted",
+    ),
+    # ------------------------------------------------------------- a stable dispatch asks, its dry run is free (PLAN-retire-nightlies-and-mentions G2)
+    (
+        "dispatch: stable by file, no ASKED",
+        STABLE_RUN,
+        None,
+        B,
+        "a dispatch of cd-release-stable.yml",
+    ),
+    (
+        "dispatch: stable with force, no ASKED",
+        STABLE_RUN + " -f force=true",
+        None,
+        B,
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "dispatch: stable by display name, no ASKED",
+        "gh workflow run 'CD - Release to Stable' --ref main",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable by display name in another case",
+        "gh workflow run 'cd - release to stable'",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable by workflow path",
+        "gh workflow run .github/workflows/cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: --repo before the verb",
+        "gh workflow -R o/r run cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: fields before the workflow",
+        "gh workflow run -f force=true --ref main cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    ("dispatch: stable, dry run", STABLE_RUN + " -f dry_run=true", None, A, "!BLOCKED"),
+    (
+        "dispatch: stable, dry run with force",
+        STABLE_RUN + " --ref 1121-1 -f force=true -F dry_run=true",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    ("dispatch: stable, dry run attached", STABLE_RUN + " -fdry_run=true", None, A, "!BLOCKED"),
+    ("dispatch: stable, dry run long", STABLE_RUN + " --raw-field=dry_run=true", None, A, ""),
+    (
+        "dispatch: stable, dry run overridden by a later field",
+        STABLE_RUN + " -f dry_run=true -f dry_run=false",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, dry run not exactly true",
+        STABLE_RUN + " -f dry_run=yes",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, inputs on stdin",
+        'echo \'{"dry_run":"true"}\' | %s --json -f dry_run=true' % STABLE_RUN,
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, proven ASKED",
+        "%s %s" % (ASK, STABLE_RUN),
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "dispatch: stable, ASKED matching no answer",
+        "%s %s" % (ASK_ELSEWHERE, STABLE_RUN),
+        TR,
+        B,
+        "matches no AskUserQuestion answer",
+    ),
+    ("dispatch: stable inside bash -c", "bash -c '%s'" % STABLE_RUN, None, B, "stable promotion"),
+    (
+        "dispatch: a numeric workflow id asks",
+        "gh workflow run 123456",
+        None,
+        B,
+        "an id this guard cannot resolve",
+    ),
+    ("dispatch: ci.yml is untouched", "gh workflow run ci.yml --ref main", None, A, "!BLOCKED"),
+    (
+        "dispatch: another workflow's dry_run is untouched",
+        "gh workflow run ops-local-release-assist.yml -f dry_run=false",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    ("dispatch: listing workflows", "gh workflow list", None, A, "!BLOCKED"),
+    (
+        "dispatch: viewing the stable workflow",
+        "gh workflow view cd-release-stable.yml",
+        None,
+        A,
+        "",
+    ),
+    ("dispatch: help on the stable dispatch", STABLE_RUN + " --help", None, A, "!BLOCKED"),
+    ("dispatch: prose naming it", "echo 'gh workflow run cd-release-stable.yml'", None, A, ""),
+    (
+        "dispatch: the REST endpoint, no ASKED",
+        "gh api repos/o/r/actions/workflows/cd-release-stable.yml/dispatches -f ref=main",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: the REST endpoint, dry run",
+        (
+            "gh api -X POST repos/o/r/actions/workflows/cd-release-stable.yml/dispatches "
+            "-f ref=main -F 'inputs[dry_run]=true'"
+        ),
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
+        "dispatch: the REST endpoint, body from a file",
+        (
+            "gh api repos/o/r/actions/workflows/cd-release-stable.yml/dispatches --input b.json "
+            "-F 'inputs[dry_run]=true'"
+        ),
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: the REST endpoint by id",
+        "gh api repos/o/r/actions/workflows/987/dispatches -f ref=main",
+        None,
+        B,
+        "an id this guard cannot resolve",
+    ),
+    (
+        "dispatch: the REST endpoint of ci.yml",
+        "gh api repos/o/r/actions/workflows/ci.yml/dispatches -f ref=main",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
+        "dispatch: reading the stable workflow's runs",
+        "gh api repos/o/r/actions/workflows/cd-release-stable.yml/runs",
+        None,
+        A,
+        "!BLOCKED",
     ),
     # ------------------------------------------------------------- wrangler: a shared region config free, bench refused for its module, any other config asked
     (
@@ -1364,6 +1534,13 @@ MUST_FLIP = {
     "region-dir-ignored": "wrangler deploy on a region config in an arbitrary dir, no ASKED",
     "bind-verb-unwrapped": "_bind wrapping a stable promote",
     "package-enterprise-ignored": "rings: package enterprise release, real",
+    "stable-dispatch-free": "dispatch: stable by file, no ASKED",
+    "dispatch-dry-run-ignored": "dispatch: stable, dry run",
+    "dispatch-display-name-ignored": "dispatch: stable by display name, no ASKED",
+    "dispatch-json-stdin-trusted": "dispatch: stable, inputs on stdin",
+    "dispatch-last-field-ignored": "dispatch: stable, dry run overridden by a later field",
+    "dispatch-api-ignored": "dispatch: the REST endpoint, no ASKED",
+    "workflow-repo-before-verb": "dispatch: --repo before the verb",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.
 for label, mutant in CONTROLS:
