@@ -1108,6 +1108,8 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // existed in the command tree, so the policy layer and the tree disagreed on the string. Keyed to the real leaves now.
   'term connect': { grandGuard: true },
   'vscode connect': { grandGuard: true },
+  // Exposing the editor exposes a shell in the repo sandbox, so a grand repo is guarded like `vscode connect`; stopping it is always safe.
+  'vscode expose': { grandGuard: true },
 
   // Per-repo secrets, V2 write-only model.
   //

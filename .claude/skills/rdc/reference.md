@@ -2404,6 +2404,26 @@ Stop the browser VS Code server
 
 - `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 
+### rdc vscode expose <ref>
+
+Start the repository's browser VS Code as a container on its own Docker daemon, published at vscode.<repo>.<machine>.<domain> behind the portal-token gate. Open it from the web console, which mints the token; it stops after 15 minutes without a heartbeat.
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
+
+### rdc vscode unexpose <ref>
+
+Stop and remove the repository's exposed VS Code container at once, closing every open editor session.
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
 ### rdc vscode list
 
 List configured VS Code SSH connections

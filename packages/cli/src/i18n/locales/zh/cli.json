@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} 本来就未在运行",
           "stopped": "{{provider}} 已停止"
         }
+      },
+      "expose": {
+        "descriptionShort": "在仓库的公共主机名上公开其 VS Code",
+        "description": "在仓库自己的 Docker 守护进程上以容器形式启动该仓库的浏览器版 VS Code，并在门户令牌关卡之后发布到 vscode.<repo>.<machine>.<domain>。从签发令牌的 Web 控制台打开；15 分钟收不到心跳即停止。",
+        "exposed": "VS Code 已公开在 {{url}}",
+        "openHint": "请从 Web 控制台打开：编辑器只接受门户签发的令牌。",
+        "noResult": "公开任务已结束，但未报告编辑器的 URL",
+        "failed": "无法公开 VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "停止仓库已公开的 VS Code",
+        "description": "立即停止并删除仓库已公开的 VS Code 容器，关闭所有打开的编辑器会话。",
+        "stopped": "{{name}} 已公开的 VS Code 已停止",
+        "failed": "无法停止已公开的 VS Code"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "此 VS Code 服务器需要一个仓库目标。请传入仓库引用。",
       "serverInstallFailed": "安装 {{provider}} 失败：{{error}}",
       "serverStartFailed": "启动 {{provider}} 失败：{{error}}",
-      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}"
+      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}",
+      "exposeNeedsDocker": "公开的编辑器运行在 Docker 仓库守护进程上",
+      "exposeRepoNotFound": "配置中没有仓库 \"{{name}}\""
     },
     "backupImage": {
       "targetDirMissing": "目标目录 {{dir}} 不存在或不可写。该目录不会自动创建，请先挂载驱动器或创建目录。",

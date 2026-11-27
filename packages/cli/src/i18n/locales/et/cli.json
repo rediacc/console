@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} ei töötanud",
           "stopped": "{{provider}} peatatud"
         }
+      },
+      "expose": {
+        "descriptionShort": "Avalda hoidla VS Code selle avalikul hostinimel",
+        "description": "Käivitab hoidla brauseri-VS Code'i konteinerina hoidla enda Dockeri deemonil, avaldatuna aadressil vscode.<repo>.<machine>.<domain> portaali märgi kontrolli taga. See avatakse veebikonsoolist, mis märgi väljastab; 15 minutit ilma südamelöögita peatab selle.",
+        "exposed": "VS Code on avaldatud aadressil {{url}}",
+        "openHint": "Ava see veebikonsoolist: redaktor lubab ainult portaali väljastatud märki.",
+        "noResult": "Avaldamistöö lõppes ilma redaktori URL-i teatamata",
+        "failed": "VS Code'i avaldamine ebaõnnestus"
+      },
+      "unexpose": {
+        "descriptionShort": "Peata hoidla avaldatud VS Code",
+        "description": "Peatab ja eemaldab hoidla avaldatud VS Code'i konteineri kohe, sulgedes kõik avatud redaktori seansid.",
+        "stopped": "Hoidla {{name}} avaldatud VS Code on peatatud",
+        "failed": "Avaldatud VS Code'i peatamine ebaõnnestus"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "See VS Code server vajab hoidla sihtmärki. Anna hoidla viide.",
       "serverInstallFailed": "{{provider}} installimine ebaõnnestus: {{error}}",
       "serverStartFailed": "{{provider}} käivitamine ebaõnnestus: {{error}}",
-      "unsupportedArch": "Brauseri VS Code jaoks pole masinarhitektuur toetatud: {{arch}}"
+      "unsupportedArch": "Brauseri VS Code jaoks pole masinarhitektuur toetatud: {{arch}}",
+      "exposeNeedsDocker": "avaldatud redaktor töötab hoidla Dockeri deemonil",
+      "exposeRepoNotFound": "Hoidlat \"{{name}}\" pole konfiguratsioonis"
     },
     "backupImage": {
       "targetDirMissing": "Sihtkataloogi {{dir}} pole olemas või see pole kirjutatav. Seda ei looda kunagi, seega ühenda ketas esmalt külge või loo kataloog.",

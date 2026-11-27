@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} non era in esecuzione",
           "stopped": "{{provider}} fermato"
         }
+      },
+      "expose": {
+        "descriptionShort": "Espone il VS Code di un repository sul suo nome host pubblico",
+        "description": "Avvia il VS Code da browser del repository come container sul suo daemon Docker, pubblicato su vscode.<repo>.<machine>.<domain> dietro il controllo del token del portale. Si apre dalla console web, che emette il token; si ferma dopo 15 minuti senza heartbeat.",
+        "exposed": "VS Code esposto su {{url}}",
+        "openHint": "Aprilo dalla console web: l'editor accetta solo un token emesso dal portale.",
+        "noResult": "Il job di esposizione è terminato senza riportare l'URL dell'editor",
+        "failed": "Impossibile esporre VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Ferma il VS Code esposto di un repository",
+        "description": "Ferma e rimuove subito il container VS Code esposto del repository, chiudendo tutte le sessioni dell'editor aperte.",
+        "stopped": "VS Code esposto di {{name}} fermato",
+        "failed": "Impossibile fermare il VS Code esposto"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Questo server VS Code richiede una destinazione repository. Passa un riferimento di repository.",
       "serverInstallFailed": "Installazione di {{provider}} non riuscita: {{error}}",
       "serverStartFailed": "Avvio di {{provider}} non riuscito: {{error}}",
-      "unsupportedArch": "Architettura della macchina non supportata per VS Code nel browser: {{arch}}"
+      "unsupportedArch": "Architettura della macchina non supportata per VS Code nel browser: {{arch}}",
+      "exposeNeedsDocker": "l'editor esposto gira su un daemon Docker di repository",
+      "exposeRepoNotFound": "Il repository \"{{name}}\" non è nella configurazione"
     },
     "backupImage": {
       "targetDirMissing": "La directory di destinazione {{dir}} non esiste o non è scrivibile. Non viene mai creata: monta prima il disco o crea la directory.",

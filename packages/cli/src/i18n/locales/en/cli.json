@@ -3048,6 +3048,20 @@
           "stopped": "{{provider}} stopped",
           "notRunning": "{{provider}} was not running"
         }
+      },
+      "expose": {
+        "descriptionShort": "Expose a repository's VS Code at its public hostname",
+        "description": "Start the repository's browser VS Code as a container on its own Docker daemon, published at vscode.<repo>.<machine>.<domain> behind the portal-token gate. Open it from the web console, which mints the token; it stops after 15 minutes without a heartbeat.",
+        "exposed": "VS Code exposed at {{url}}",
+        "openHint": "Open it from the web console: the editor admits only a portal-minted token.",
+        "noResult": "The expose job finished without reporting the editor's URL",
+        "failed": "Failed to expose VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Stop a repository's exposed VS Code",
+        "description": "Stop and remove the repository's exposed VS Code container at once, closing every open editor session.",
+        "stopped": "Exposed VS Code for {{name}} stopped",
+        "failed": "Failed to stop the exposed VS Code"
       }
     },
     "serve": {
@@ -3885,7 +3899,9 @@
       "unsupportedArch": "Unsupported machine architecture for browser VS Code: {{arch}}",
       "serverInstallFailed": "Failed to install {{provider}}: {{error}}",
       "serverStartFailed": "Failed to start {{provider}}: {{error}}",
-      "repoRequired": "This VS Code server needs a repository target. Pass a repository ref."
+      "repoRequired": "This VS Code server needs a repository target. Pass a repository ref.",
+      "exposeNeedsDocker": "the exposed editor runs on a docker repository daemon",
+      "exposeRepoNotFound": "Repository \"{{name}}\" is not in the config"
     },
     "backupImage": {
       "targetDirMissing": "Target directory {{dir}} does not exist or is not writable. It is never created, so mount the drive or create the directory first.",

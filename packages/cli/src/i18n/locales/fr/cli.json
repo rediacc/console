@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} n'était pas en cours d'exécution",
           "stopped": "{{provider}} arrêté"
         }
+      },
+      "expose": {
+        "descriptionShort": "Exposer le VS Code d'un dépôt sur son nom d'hôte public",
+        "description": "Démarre le VS Code navigateur du dépôt en tant que conteneur sur son propre démon Docker, publié sur vscode.<repo>.<machine>.<domain> derrière la barrière du jeton du portail. Il s'ouvre depuis la console web, qui émet le jeton ; il s'arrête après 15 minutes sans signal de vie.",
+        "exposed": "VS Code exposé sur {{url}}",
+        "openHint": "Ouvrez-le depuis la console web : l'éditeur n'accepte qu'un jeton émis par le portail.",
+        "noResult": "La tâche d'exposition s'est terminée sans indiquer l'URL de l'éditeur",
+        "failed": "Impossible d'exposer VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Arrêter le VS Code exposé d'un dépôt",
+        "description": "Arrête et supprime immédiatement le conteneur VS Code exposé du dépôt, en fermant toutes les sessions d'éditeur ouvertes.",
+        "stopped": "VS Code exposé de {{name}} arrêté",
+        "failed": "Impossible d'arrêter le VS Code exposé"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Ce serveur VS Code a besoin d'une cible de dépôt. Passez une réf de dépôt.",
       "serverInstallFailed": "Échec de l'installation de {{provider}} : {{error}}",
       "serverStartFailed": "Échec du démarrage de {{provider}} : {{error}}",
-      "unsupportedArch": "Architecture de machine non prise en charge pour VS Code navigateur : {{arch}}"
+      "unsupportedArch": "Architecture de machine non prise en charge pour VS Code navigateur : {{arch}}",
+      "exposeNeedsDocker": "l'éditeur exposé s'exécute sur un démon Docker de dépôt",
+      "exposeRepoNotFound": "Le dépôt \"{{name}}\" n'est pas dans la configuration"
     },
     "backupImage": {
       "targetDirMissing": "Le répertoire cible {{dir}} n'existe pas ou n'est pas accessible en écriture. Il n'est jamais créé : montez d'abord le disque ou créez le répertoire.",

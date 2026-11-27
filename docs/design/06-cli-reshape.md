@@ -19,7 +19,7 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (shape verified against the live CLI, 2026-07-13; counts re-pinned by plane-coverage.test.ts)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **239 contract commands** (125 machine-plane, 58 config-plane, 56 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **241 contract commands** (127 machine-plane, 58 config-plane, 56 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
@@ -48,7 +48,7 @@ rdc cluster:    create scale join evict destroy status kubeconfig snapshot {crea
 rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile  check  repair  toc-key {sync}  immutability {show set}  undelete  churn
 rdc server:     install status upgrade backup licence {mint} bundle
 rdc term:       connect
-rdc vscode:     connect list cleanup check serve {status stop}
+rdc vscode:     connect list cleanup check expose unexpose serve {status stop}
 rdc ops:        up down status ssh setup check
 rdc preview:    use leave status
 rdc subscription: login register logout status notices retire refresh proxy-token
@@ -105,6 +105,7 @@ Thirty-nine differences. The first six are deliberate and each is traceable to a
 | `repo` with no forensic reads | `repo {flows opens}` | PLAN-forensics-investigation: `flows` lists a repository's recorded network flows and `opens` its recorded file opens over a time window, each with gap rows where no evidence exists. Both read the account server only (the `forensics:read` scope on a paid plan) and reach no machine. |
 | no `incident` noun | `incident {status export declare close}` | PLAN-forensics-investigation D4, D7: incidents are declared in the web console or by `declare` (FI8), which writes the account record and its eviction hold first, then runs the forensic fork and the switch to full capture as child rdc commands, and `close` ends the hold; `status` lists them or shows one with its deadline clocks, and `export` writes the incident's window, raw chain files and their verification to a directory. An incident is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
 | no `forensics` noun | `forensics {verify level}` | PLAN-forensics-investigation D5: `verify` recomputes the audit day-file chain and the signed batch chains of an evidence directory on the workstation, under machine keys from outside the directory (`--machine-key`, or the keys the account server pinned for the incident the directory names). `level` (FI8) sets a machine's capture level (basic, standard or full) as one forensics_level job on the machine plane. |
+| no web-exposed editor | `vscode {expose unexpose}` | PLAN-vscode-browser-exposure V3: `expose` runs the repository's pinned code-server container on its own Docker daemon behind the route server's portal-token gate as one repository_vscode_expose job and prints the editor's URL; `unexpose` removes the container as one repository_vscode_unexpose job. Both are machine-plane. The editor is opened from the web console, which mints the token, so no SSH tunnel is held. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

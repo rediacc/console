@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} no estaba en ejecución",
           "stopped": "{{provider}} detenido"
         }
+      },
+      "expose": {
+        "descriptionShort": "Publica el VS Code de un repositorio en su nombre de host público",
+        "description": "Inicia el VS Code de navegador del repositorio como contenedor en su propio daemon de Docker, publicado en vscode.<repo>.<machine>.<domain> tras la puerta del token del portal. Se abre desde la consola web, que emite el token; se detiene tras 15 minutos sin latido.",
+        "exposed": "VS Code publicado en {{url}}",
+        "openHint": "Ábrelo desde la consola web: el editor solo admite un token emitido por el portal.",
+        "noResult": "El trabajo de publicación terminó sin informar la URL del editor",
+        "failed": "No se pudo publicar VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Detiene el VS Code publicado de un repositorio",
+        "description": "Detiene y elimina al instante el contenedor de VS Code publicado del repositorio y cierra todas las sesiones de editor abiertas.",
+        "stopped": "VS Code publicado de {{name}} detenido",
+        "failed": "No se pudo detener el VS Code publicado"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Este servidor de VS Code necesita un repositorio de destino. Pasa una referencia de repositorio.",
       "serverInstallFailed": "No se pudo instalar {{provider}}: {{error}}",
       "serverStartFailed": "No se pudo iniciar {{provider}}: {{error}}",
-      "unsupportedArch": "Arquitectura de máquina no compatible con VS Code en el navegador: {{arch}}"
+      "unsupportedArch": "Arquitectura de máquina no compatible con VS Code en el navegador: {{arch}}",
+      "exposeNeedsDocker": "el editor publicado se ejecuta en un daemon de repositorio Docker",
+      "exposeRepoNotFound": "El repositorio \"{{name}}\" no está en la configuración"
     },
     "backupImage": {
       "targetDirMissing": "El directorio de destino {{dir}} no existe o no tiene permiso de escritura. Nunca se crea, así que monta la unidad o crea el directorio primero.",

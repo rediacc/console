@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} は起動していませんでした",
           "stopped": "{{provider}} を停止しました"
         }
+      },
+      "expose": {
+        "descriptionShort": "リポジトリの VS Code を公開ホスト名で公開する",
+        "description": "リポジトリのブラウザー版 VS Code を、そのリポジトリ専用の Docker デーモン上でコンテナとして起動し、ポータルトークンのゲートの背後で vscode.<repo>.<machine>.<domain> に公開します。トークンを発行する Web コンソールから開きます。ハートビートが 15 分途絶えると停止します。",
+        "exposed": "VS Code を {{url}} で公開しました",
+        "openHint": "Web コンソールから開いてください。エディターはポータルが発行したトークンしか受け付けません。",
+        "noResult": "公開ジョブはエディターの URL を報告せずに終了しました",
+        "failed": "VS Code を公開できませんでした"
+      },
+      "unexpose": {
+        "descriptionShort": "リポジトリの公開中の VS Code を停止する",
+        "description": "リポジトリの公開中の VS Code コンテナをただちに停止して削除し、開いているエディターのセッションをすべて閉じます。",
+        "stopped": "{{name}} の公開中の VS Code を停止しました",
+        "failed": "公開中の VS Code を停止できませんでした"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "この VS Code サーバーにはリポジトリの対象が必要です。リポジトリ ref を指定してください",
       "serverInstallFailed": "{{provider}} のインストールに失敗しました: {{error}}",
       "serverStartFailed": "{{provider}} の起動に失敗しました: {{error}}",
-      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}"
+      "unsupportedArch": "ブラウザ VS Code はこのマシンアーキテクチャに対応していません: {{arch}}",
+      "exposeNeedsDocker": "公開されるエディターは Docker リポジトリのデーモン上で動作します",
+      "exposeRepoNotFound": "リポジトリ \"{{name}}\" は設定にありません"
     },
     "backupImage": {
       "targetDirMissing": "ターゲットディレクトリ {{dir}} が存在しないか、書き込みできません。ディレクトリは自動作成されないため、先にドライブをマウントするかディレクトリを作成してください。",

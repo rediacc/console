@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} zaten çalışmıyordu",
           "stopped": "{{provider}} durduruldu"
         }
+      },
+      "expose": {
+        "descriptionShort": "Bir deponun VS Code'unu herkese açık ana bilgisayar adında yayınlar",
+        "description": "Deponun tarayıcıdaki VS Code'unu kendi Docker daemon'u üzerinde bir konteyner olarak başlatır ve portal token kapısının arkasında vscode.<repo>.<machine>.<domain> adresinde yayınlar. Token'ı üreten web konsolundan açılır; 15 dakika boyunca heartbeat gelmezse durur.",
+        "exposed": "VS Code {{url}} adresinde yayında",
+        "openHint": "Web konsolundan açın: düzenleyici yalnızca portalın ürettiği bir token'ı kabul eder.",
+        "noResult": "Yayınlama işi düzenleyicinin URL'sini bildirmeden bitti",
+        "failed": "VS Code yayınlanamadı"
+      },
+      "unexpose": {
+        "descriptionShort": "Bir deponun yayınlanan VS Code'unu durdurur",
+        "description": "Deponun yayınlanan VS Code konteynerini hemen durdurup kaldırır ve açık tüm düzenleyici oturumlarını kapatır.",
+        "stopped": "{{name}} için yayınlanan VS Code durduruldu",
+        "failed": "Yayınlanan VS Code durdurulamadı"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Bu VS Code sunucusu bir depo hedefi gerektirir. Bir depo referansı geçirin.",
       "serverInstallFailed": "{{provider}} kurulumu başarısız: {{error}}",
       "serverStartFailed": "{{provider}} başlatılamadı: {{error}}",
-      "unsupportedArch": "Tarayıcı VS Code için desteklenmeyen makine mimarisi: {{arch}}"
+      "unsupportedArch": "Tarayıcı VS Code için desteklenmeyen makine mimarisi: {{arch}}",
+      "exposeNeedsDocker": "yayınlanan düzenleyici bir Docker depo daemon'u üzerinde çalışır",
+      "exposeRepoNotFound": "\"{{name}}\" deposu yapılandırmada yok"
     },
     "backupImage": {
       "targetDirMissing": "Hedef dizin {{dir}} yok veya yazılabilir değil. Dizin hiçbir zaman oluşturulmaz; önce diski bağlayın ya da dizini oluşturun.",

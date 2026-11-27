@@ -66,8 +66,8 @@ const badPreviewFlags = (cmds: Cmd[], prev: Prev): string[] =>
     .map(([k]) => k);
 
 describe('command safety table', () => {
-  it('walks 239 commands', () => {
-    expect(COMMANDS.length).toBe(239);
+  it('walks 241 commands', () => {
+    expect(COMMANDS.length).toBe(241);
   });
 
   it('has a severity for every command, and the check names a missing one', () => {

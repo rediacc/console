@@ -433,4 +433,20 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     box: 'J16',
     steps: ['renderRepoTrim'],
   },
+  // PLAN-vscode-browser-exposure V3: one job each; expose prints the editor's URL as its step. Its first run on a machine pulls the code-server image, so it takes the long class.
+  'vscode expose': {
+    form: 'single',
+    fn: 'repository_vscode_expose',
+    lock: 'repo-exclusive',
+    timeout: '24h',
+    box: 'J16',
+    steps: ['printVscodeExpose'],
+  },
+  'vscode unexpose': {
+    form: 'single',
+    fn: 'repository_vscode_unexpose',
+    lock: 'repo-exclusive',
+    timeout: '10m',
+    box: 'J16',
+  },
 };

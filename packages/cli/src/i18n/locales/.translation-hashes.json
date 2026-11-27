@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3354,
-    "sourceCommit": "25c84828b3dd9abffea3befe3fd9b9dffe8fba1f"
+    "keyCount": 3366,
+    "sourceCommit": "065bd34d62b56c0253964287957562f97e252fc0"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2758,6 +2758,12 @@
     "commands.vscode.connect.tunnelReady": "23f14777",
     "commands.vscode.description": "ec1435a8",
     "commands.vscode.descriptionShort": "1a038f8a",
+    "commands.vscode.expose.description": "4b1e8bdf",
+    "commands.vscode.expose.descriptionShort": "2741cf79",
+    "commands.vscode.expose.exposed": "e820fb21",
+    "commands.vscode.expose.failed": "e2b4c501",
+    "commands.vscode.expose.noResult": "03636947",
+    "commands.vscode.expose.openHint": "040fd309",
     "commands.vscode.list.configFile": "012d1344",
     "commands.vscode.list.description": "925f8d13",
     "commands.vscode.list.descriptionShort": "925f8d13",
@@ -2774,6 +2780,10 @@
     "commands.vscode.serve.stop.descriptionShort": "298cdc1e",
     "commands.vscode.serve.stop.notRunning": "95c3d7fb",
     "commands.vscode.serve.stop.stopped": "f028a02d",
+    "commands.vscode.unexpose.description": "6de71589",
+    "commands.vscode.unexpose.descriptionShort": "d390a6b0",
+    "commands.vscode.unexpose.failed": "8127297e",
+    "commands.vscode.unexpose.stopped": "bf0465bc",
     "docs.admonitions.note": "6f8f552a",
     "docs.admonitions.tip": "70cefeac",
     "docs.admonitions.warning": "8ff3a55a",
@@ -3097,6 +3107,8 @@
     "errors.vscode.browserNeedsRepo": "a89f8b32",
     "errors.vscode.cleanupRequired": "2c347cb4",
     "errors.vscode.connectivityFailed": "f87c9121",
+    "errors.vscode.exposeNeedsDocker": "c9867420",
+    "errors.vscode.exposeRepoNotFound": "17704e15",
     "errors.vscode.notFound": "8eefa0af",
     "errors.vscode.repoRequired": "ac86cb0e",
     "errors.vscode.serverInstallFailed": "c88097dd",

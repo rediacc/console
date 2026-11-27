@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}}이 실행 중이지 않았습니다",
           "stopped": "{{provider}}이 중지되었습니다"
         }
+      },
+      "expose": {
+        "descriptionShort": "저장소의 VS Code를 공개 호스트 이름으로 노출",
+        "description": "저장소의 브라우저 VS Code를 해당 저장소 전용 Docker 데몬에서 컨테이너로 시작하고, 포털 토큰 게이트 뒤의 vscode.<repo>.<machine>.<domain>에 게시합니다. 토큰을 발급하는 웹 콘솔에서 엽니다. 하트비트 없이 15분이 지나면 중지됩니다.",
+        "exposed": "VS Code가 {{url}}에 노출되었습니다",
+        "openHint": "웹 콘솔에서 여세요. 편집기는 포털이 발급한 토큰만 허용합니다.",
+        "noResult": "노출 작업이 편집기 URL을 알리지 않고 끝났습니다",
+        "failed": "VS Code를 노출하지 못했습니다"
+      },
+      "unexpose": {
+        "descriptionShort": "저장소의 노출된 VS Code 중지",
+        "description": "저장소의 노출된 VS Code 컨테이너를 즉시 중지하고 제거하며, 열려 있는 모든 편집기 세션을 닫습니다.",
+        "stopped": "{{name}}의 노출된 VS Code를 중지했습니다",
+        "failed": "노출된 VS Code를 중지하지 못했습니다"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "이 VS Code 서버에는 저장소 대상이 필요합니다. 저장소 참조를 전달하세요",
       "serverInstallFailed": "{{provider}} 설치 실패: {{error}}",
       "serverStartFailed": "{{provider}} 시작 실패: {{error}}",
-      "unsupportedArch": "브라우저용 VS Code에서 지원하지 않는 머신 아키텍처입니다: {{arch}}"
+      "unsupportedArch": "브라우저용 VS Code에서 지원하지 않는 머신 아키텍처입니다: {{arch}}",
+      "exposeNeedsDocker": "노출된 편집기는 Docker 저장소 데몬에서 실행됩니다",
+      "exposeRepoNotFound": "저장소 \"{{name}}\"이(가) 구성에 없습니다"
     },
     "backupImage": {
       "targetDirMissing": "대상 디렉터리 {{dir}}이(가) 없거나 쓸 수 없습니다. 디렉터리는 직접 만들지 않으므로 드라이브를 먼저 마운트하거나 디렉터리를 만들어 주세요.",

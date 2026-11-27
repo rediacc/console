@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} لم يكن يعمل",
           "stopped": "تم إيقاف {{provider}}"
         }
+      },
+      "expose": {
+        "descriptionShort": "نشر VS Code الخاص بمستودع على اسم المضيف العام له",
+        "description": "يشغّل VS Code الخاص بالمستودع في المتصفح كحاوية على عفريت Docker الخاص به، منشورًا على vscode.<repo>.<machine>.<domain> خلف بوابة رمز البوابة. يُفتح من وحدة التحكم على الويب التي تُصدر الرمز، ويتوقف بعد 15 دقيقة دون نبضة.",
+        "exposed": "تم نشر VS Code على {{url}}",
+        "openHint": "افتحه من وحدة التحكم على الويب: المحرر لا يقبل إلا رمزًا تصدره البوابة.",
+        "noResult": "انتهت مهمة النشر دون الإبلاغ عن عنوان URL للمحرر",
+        "failed": "تعذّر نشر VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "إيقاف VS Code المنشور لمستودع",
+        "description": "يوقف حاوية VS Code المنشورة للمستودع ويزيلها فورًا، مع إغلاق جميع جلسات المحرر المفتوحة.",
+        "stopped": "تم إيقاف VS Code المنشور لـ {{name}}",
+        "failed": "تعذّر إيقاف VS Code المنشور"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "يحتاج خادم VS Code هذا إلى هدف مستودع. مرّر مرجع مستودع.",
       "serverInstallFailed": "فشل تثبيت {{provider}}: {{error}}",
       "serverStartFailed": "فشل تشغيل {{provider}}: {{error}}",
-      "unsupportedArch": "بنية الجهاز غير مدعومة لـ VS Code المتصفح: {{arch}}"
+      "unsupportedArch": "بنية الجهاز غير مدعومة لـ VS Code المتصفح: {{arch}}",
+      "exposeNeedsDocker": "المحرر المنشور يعمل على عفريت Docker خاص بمستودع",
+      "exposeRepoNotFound": "المستودع \"{{name}}\" غير موجود في الإعدادات"
     },
     "backupImage": {
       "targetDirMissing": "مجلد الوجهة {{dir}} غير موجود أو غير قابل للكتابة. لا يُنشأ هذا المجلد أبدًا، لذا اربط القرص أو أنشئ المجلد أولًا.",

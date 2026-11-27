@@ -258,9 +258,11 @@ export const COMMAND_SEVERITY: Readonly<Record<string, CommandSeverity>> = {
   'vscode check': 'none',
   'vscode cleanup': 'destructive',
   'vscode connect': 'caution',
+  'vscode expose': 'caution',
   'vscode list': 'none',
   'vscode serve status': 'none',
   'vscode serve stop': 'caution',
+  'vscode unexpose': 'caution',
 };
 
 /** Commands that preview. `repo gc`, `repo prune` and `subscription retire --expired` act only with `--apply`. */

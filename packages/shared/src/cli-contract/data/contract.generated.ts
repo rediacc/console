@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '2d32c2d51d348fbc';
+export const CLI_CONTRACT_VERSION = '468a593fcabde7f7';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "2d32c2d51d348fbc",
+  "version": "468a593fcabde7f7",
   "languages": [
     "ar",
     "de",
@@ -18755,6 +18755,64 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "vscode",
+        "expose"
+      ],
+      "pathKey": "vscode expose",
+      "domain": "vscode",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.vscode.expose.description",
+      "label": "Start the repository's browser VS Code as a container on its own Docker daemon, published at vscode.<repo>.<machine>.<domain> behind the portal-token gate. Open it from the web console, which mints the token; it stops after 15 minutes without a heartbeat.",
+      "summaryKey": "commands.vscode.expose.descriptionShort",
+      "summary": "Expose a repository's VS Code at its public hostname",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "vscode",
         "list"
       ],
       "pathKey": "vscode list",
@@ -18882,6 +18940,63 @@ export const CLI_CONTRACT: CliContract = {
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "vscode",
+        "unexpose"
+      ],
+      "pathKey": "vscode unexpose",
+      "domain": "vscode",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.vscode.unexpose.description",
+      "label": "Stop and remove the repository's exposed VS Code container at once, closing every open editor session.",
+      "summaryKey": "commands.vscode.unexpose.descriptionShort",
+      "summary": "Stop a repository's exposed VS Code",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     }
   ],
   "errorCodes": [

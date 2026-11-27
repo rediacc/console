@@ -45,6 +45,7 @@ import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveConnectTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
+import { registerVSCodeExposeCommands } from './vscode-expose.js';
 import { registerVSCodeServeCommands } from './vscode-serve.js';
 import {
   displayActiveConnections,
@@ -592,6 +593,7 @@ ${t('help.examples')}
     });
 
   registerVSCodeServeCommands(vscode);
+  registerVSCodeExposeCommands(vscode);
 
   // List subcommand
   vscode

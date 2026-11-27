@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} não estava em execução",
           "stopped": "{{provider}} parado"
         }
+      },
+      "expose": {
+        "descriptionShort": "Expõe o VS Code de um repositório no seu nome de host público",
+        "description": "Inicia o VS Code de navegador do repositório como contêiner no próprio daemon Docker dele, publicado em vscode.<repo>.<machine>.<domain> atrás da barreira do token do portal. Abra-o pelo console web, que emite o token; ele para após 15 minutos sem heartbeat.",
+        "exposed": "VS Code exposto em {{url}}",
+        "openHint": "Abra-o pelo console web: o editor só aceita um token emitido pelo portal.",
+        "noResult": "O job de exposição terminou sem informar a URL do editor",
+        "failed": "Falha ao expor o VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Para o VS Code exposto de um repositório",
+        "description": "Para e remove na hora o contêiner do VS Code exposto do repositório, encerrando todas as sessões de editor abertas.",
+        "stopped": "VS Code exposto de {{name}} parado",
+        "failed": "Falha ao parar o VS Code exposto"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Este servidor VS Code precisa de um repositório de destino. Passe uma ref de repositório.",
       "serverInstallFailed": "Falha ao instalar o {{provider}}: {{error}}",
       "serverStartFailed": "Falha ao iniciar o {{provider}}: {{error}}",
-      "unsupportedArch": "Arquitetura da máquina não suportada para VS Code no browser: {{arch}}"
+      "unsupportedArch": "Arquitetura da máquina não suportada para VS Code no browser: {{arch}}",
+      "exposeNeedsDocker": "o editor exposto roda em um daemon Docker de repositório",
+      "exposeRepoNotFound": "O repositório \"{{name}}\" não está na configuração"
     },
     "backupImage": {
       "targetDirMissing": "O diretório de destino {{dir}} não existe ou não é gravável. Nunca é criado, por isso monte primeiro a unidade ou crie o diretório.",

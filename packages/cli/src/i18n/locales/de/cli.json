@@ -3439,6 +3439,20 @@
           "notRunning": "{{provider}} lief nicht",
           "stopped": "{{provider}} gestoppt"
         }
+      },
+      "expose": {
+        "descriptionShort": "VS Code eines Repositorys unter seinem öffentlichen Hostnamen bereitstellen",
+        "description": "Startet das Browser-VS-Code des Repositorys als Container auf dessen eigenem Docker-Daemon, erreichbar unter vscode.<repo>.<machine>.<domain> hinter dem Portal-Token-Gate. Geöffnet wird es über die Web-Konsole, die das Token ausstellt; nach 15 Minuten ohne Heartbeat stoppt es.",
+        "exposed": "VS Code bereitgestellt unter {{url}}",
+        "openHint": "Über die Web-Konsole öffnen: Der Editor lässt nur ein vom Portal ausgestelltes Token zu.",
+        "noResult": "Der Expose-Job wurde beendet, ohne die URL des Editors zu melden",
+        "failed": "VS Code konnte nicht bereitgestellt werden"
+      },
+      "unexpose": {
+        "descriptionShort": "Bereitgestelltes VS Code eines Repositorys stoppen",
+        "description": "Stoppt und entfernt den bereitgestellten VS-Code-Container des Repositorys sofort und schließt alle offenen Editor-Sitzungen.",
+        "stopped": "Bereitgestelltes VS Code für {{name}} gestoppt",
+        "failed": "Bereitgestelltes VS Code konnte nicht gestoppt werden"
       }
     },
     "tools": {
@@ -3892,7 +3906,9 @@
       "repoRequired": "Dieser VS-Code-Server benötigt ein Repository als Ziel. Übergeben Sie eine Repository-Referenz.",
       "serverInstallFailed": "Installation von {{provider}} fehlgeschlagen: {{error}}",
       "serverStartFailed": "Start von {{provider}} fehlgeschlagen: {{error}}",
-      "unsupportedArch": "Nicht unterstützte Maschinenarchitektur für Browser-VS Code: {{arch}}"
+      "unsupportedArch": "Nicht unterstützte Maschinenarchitektur für Browser-VS Code: {{arch}}",
+      "exposeNeedsDocker": "der bereitgestellte Editor läuft auf einem Docker-Repository-Daemon",
+      "exposeRepoNotFound": "Repository \"{{name}}\" ist nicht in der Konfiguration"
     },
     "backupImage": {
       "targetDirMissing": "Das Zielverzeichnis {{dir}} existiert nicht oder ist nicht beschreibbar. Es wird nie angelegt; binden Sie das Laufwerk ein oder erstellen Sie das Verzeichnis zuerst.",
