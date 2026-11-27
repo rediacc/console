@@ -1046,6 +1046,12 @@ export interface RepositoryValidateParams {
   timeout?: number;
 }
 
+/** Expose the repository's VS Code (code-server) at its public hostname behind the portal-token gate (JSON result) */
+export interface RepositoryVscodeExposeParams {}
+
+/** Stop and remove the repository's exposed VS Code container */
+export interface RepositoryVscodeUnexposeParams {}
+
 /** Install and configure renet */
 export interface SetupParams {
   /** Datastore size */
@@ -1167,10 +1173,12 @@ export const RENET_FUNCTIONS = [
   'repository_up',
   'repository_up_all',
   'repository_validate',
+  'repository_vscode_expose',
+  'repository_vscode_unexpose',
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'v4.0.1-46-g2545f06e';
+export const RENET_FUNCTIONS_VERSION = 'v4.0.1-111-g4e896393';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1366,6 +1374,8 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_up',
   'repository_up_all',
   'repository_validate',
+  'repository_vscode_expose',
+  'repository_vscode_unexpose',
   'setup',
 ] as const;
 
@@ -1476,6 +1486,8 @@ export type FunctionParamsMap = {
   repository_up: RepositoryUpParams;
   repository_up_all: RepositoryUpAllParams;
   repository_validate: RepositoryValidateParams;
+  repository_vscode_expose: RepositoryVscodeExposeParams;
+  repository_vscode_unexpose: RepositoryVscodeUnexposeParams;
   setup: SetupParams;
 };
 
@@ -1790,6 +1802,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true },
   },
   'repository_validate': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_vscode_expose': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_vscode_unexpose': {
     requirements: { machine: true, team: true, repository: true },
   },
   'setup': {
@@ -4271,6 +4289,22 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_vscode_expose': {
+    name: 'repository_vscode_expose',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_vscode_unexpose': {
+    name: 'repository_vscode_unexpose',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
   'setup': {
     name: 'setup',
     category: 'machine',
@@ -4440,6 +4474,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_up: (params) => ({ functionName: 'repository_up', params }),
   repository_up_all: (params) => ({ functionName: 'repository_up_all', params }),
   repository_validate: (params) => ({ functionName: 'repository_validate', params }),
+  repository_vscode_expose: (params) => ({ functionName: 'repository_vscode_expose', params }),
+  repository_vscode_unexpose: (params) => ({ functionName: 'repository_vscode_unexpose', params }),
   setup: (params) => ({ functionName: 'setup', params }),
 };
 

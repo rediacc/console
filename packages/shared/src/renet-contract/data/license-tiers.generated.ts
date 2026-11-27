@@ -203,6 +203,8 @@ export const LICENSE_TIERS: Readonly<Record<string, LicenseTierEntry>> = {
   "repository_up": { tier: "operate", pending: false },
   "repository_up_all": { tier: "operate", pending: false },
   "repository_validate": { tier: "none", pending: false },
+  "repository_vscode_expose": { tier: "operate", pending: false },
+  "repository_vscode_unexpose": { tier: "none", pending: false },
   "setup": { tier: "none", pending: false },
 };
 
