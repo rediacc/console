@@ -82,12 +82,21 @@ describe('createTempKnownHostsFile writes the pins under the dialed host', () =>
     );
   });
 
+  it('keeps @cert-authority as a marker on the dialed host, which is the only host the file serves', async () => {
+    const path = await write(`@cert-authority *.example ssh-ed25519 ${ED25519}`, 'h.example', 22);
+    expect(await readFile(path, 'utf8')).toBe(`@cert-authority h.example ssh-ed25519 ${ED25519}\n`);
+  });
+
+  it('has the OpenSSH oracle wherever CI runs, so its tests never skip there', () => {
+    if (process.env.CI) expect(hasSshKeygen).toBe(true);
+  });
+
   it('writes an empty file when nothing is pinned', async () => {
     expect(await readFile(await write(undefined, NEW_V6, 22), 'utf8')).toBe('');
     expect(await readFile(await write('  \n', NEW_V6, 22), 'utf8')).toBe('');
   });
 
-  it.skipIf(!hasSshKeygen)(
+  it.skipIf(!hasSshKeygen && !process.env.CI)(
     'OpenSSH finds exactly the pinned keys for the new address, and none for the old',
     async () => {
       const path = await write(PINNED, NEW_V6, 22);
@@ -100,7 +109,7 @@ describe('createTempKnownHostsFile writes the pins under the dialed host', () =>
     }
   );
 
-  it.skipIf(!hasSshKeygen)('OpenSSH finds the pins under [host]:port off port 22', async () => {
+  it.skipIf(!hasSshKeygen && !process.env.CI)('OpenSSH finds the pins under [host]:port off port 22', async () => {
     const path = await write(PINNED, NEW_V6, 2222);
     expect(opensshKeysFor(path, `[${NEW_V6}]:2222`)).toHaveLength(2);
     expect(opensshKeysFor(path, NEW_V6)).toEqual([]);
