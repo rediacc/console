@@ -686,8 +686,12 @@ def main() -> int:
     _JUDGING.update(text=text, cp=cp)
     # Each mutant is judged by a full run of the controls (about 850 repository commands, 2 s), and the runs share nothing: each builds its own repositories and loads its own mutant module. They run in forked workers, one per core up to the mutant count, and print in MUTANTS order, so the report and the verdict are what the serial loop gave.
     judged = pool_map(_judge, list(range(len(MUTANTS))), worker_count(len(MUTANTS)))
-    # The real judge's parallel results equal its serial ones, on the first two mutants (f6d4c6c0.4).
-    if judged[:2] != pool_map(_judge, [0, 1], 1):
+
+    # The real judge's parallel verdicts equal its serial ones, on the first two mutants (f6d4c6c0.4). The control messages carry temporary paths, so the comparison is the label, whether the arm applies, and how many controls turned red.
+    def shape(rows):
+        return [(label, applies, len(red)) for label, applies, red in rows]
+
+    if shape(judged[:2]) != shape(pool_map(_judge, [0, 1], 1)):
         print("FAIL: the parallel judging of the first two mutants differs from the serial judging")
         bad += 1
     for label, applies, red in judged:
