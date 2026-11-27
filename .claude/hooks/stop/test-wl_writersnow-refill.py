@@ -465,7 +465,13 @@ def shared_sig_cases(tmp):
         done = W.promoted_done_sigs(root)
     finally:
         PQ.promoted_numbered = real
-    check("a sig open in another plan is not done", len(done), 1)
+    import wl_planrec as PR
+
+    only_c = {b[3] for b in PR.done_boxes((root / "c.md").read_text(encoding="utf-8"))}
+    shared = {b[3] for b in PR.done_boxes((root / "a.md").read_text(encoding="utf-8"))}
+    # review c4e31ac4.1: pin WHICH sig survives, not only how many
+    check("only the sig ticked everywhere is done", done, only_c)
+    check("the shared sig is not done", bool(done & shared), False)
 
 
 def main():
