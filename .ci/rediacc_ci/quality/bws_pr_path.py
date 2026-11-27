@@ -23,9 +23,17 @@ THE BASELINE IS SHRINK-ONLY, and it is the plan's oracle. The fetches present wh
 
 ANTI-VACUITY. No workflow triggered on a pull request, fewer reachable jobs than `MIN_PR_JOBS`, no bws-secrets fetch on the PR path, an empty class file, an unreadable secret map, or a reusable workflow that cannot be resolved is a failure, never a pass. The success line prints roots, reachable jobs, fetch steps, requested names by class and the baseline size so a collapse is visible.
 
-THE GATE HEADER IS NOT HERE YET. A `---- gate ----` block makes `npm run gen:gates -- --check` red until the gate is registered, and registration is plan box W7 (package.json, manifest, the quality-security step); W7 adds the header (`step:` a quality-security step name, `needs: none`, `selftest: true`, `lane: quality-security`) together with the wiring.
-
 THE PARSE IS SHARED, NOT RE-TYPED. The `NAME > ENV` grammar is `rediacc_ci.quality.bws_map.parse_requests` and the line-mapped step list is `rediacc_ci.quality.bws_step_scope.scan_jobs`, both imported; the YAML is `rediacc_ci.workflows`. The test drives `verdict` against fixture trees through its keyword arguments, so the CLI has no seam that could point a plain run at another tree.
+
+---- gate ----
+step: Bitwarden PR-path credentials
+needs: none
+selftest: true
+lane: quality-security
+why: the repository is public and a pull_request run executes PR-controlled code with
+     the store token in reach. This refuses a release-only credential fetch, or an
+     OIDC grant, on any job a pull request reaches.
+---- end gate ----
 """
 
 from __future__ import annotations

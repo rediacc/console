@@ -16845,6 +16845,18 @@ export const GATES: readonly GateSpec[] = [
   },
   // >>> gen-gates: header-declared gates (npm run gen:gates -- --write; do not edit)
   {
+    id: 'check:ci-bws-pr-path',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_pr_path',
+    gate: true,
+    leaves: ['.ci/rediacc_ci/quality/bws_pr_path.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-security',
+      step: 'Bitwarden PR-path credentials',
+    },
+  },
+  {
     id: 'check:ci-cli-contract-coverage',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.cli_contract_coverage',
     gate: true,

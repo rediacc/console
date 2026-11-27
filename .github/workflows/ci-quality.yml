@@ -2484,6 +2484,9 @@ jobs:
       - name: Backup credential isolation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.backup_credential_isolation
+      - name: Bitwarden PR-path credentials
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_pr_path
       - name: Bitwarden secret map
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_map
