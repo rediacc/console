@@ -115,7 +115,7 @@ RELEASE_NODE_HEADER = "Node.js v"
 
 
 def release_problems(text: str) -> list[str]:
-    """What makes a notice file unfit to ship: a placeholder section, an SPDX id with no committed text, or no Node.js LICENSE section."""
+    """What makes a notice file unfit to ship: one of RELEASE_REFUSED_MARKERS (the text the generator writes for a section it could not produce, `LICENSE TEXT MISSING` being its mark for an SPDX id with no committed text), or no Node.js LICENSE section. SPDX ids themselves are not read here."""
     problems = ["contains %r" % marker for marker in RELEASE_REFUSED_MARKERS if marker in text]
     if not any(line.startswith(RELEASE_NODE_HEADER) for line in text.splitlines()):
         problems.append("has no %r Node.js LICENSE section" % RELEASE_NODE_HEADER)

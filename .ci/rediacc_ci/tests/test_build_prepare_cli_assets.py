@@ -658,11 +658,17 @@ def test_the_digest_of_a_file_whose_path_holds_a_backslash_carries_no_escape_mar
 _COMPLETE_NOTICE = "header\nNode.js v24.1.0\nMIT licence text\n"
 
 
-def _release_run(root: pathlib.Path, notice: str | None, *flags: str):
-    """Runs the port; the fake `npx` writes `notice`, or fails when it is None."""
+def _release_run(
+    root: pathlib.Path,
+    notice: str | None,
+    *flags: str,
+    cli_version: str | None = None,
+):
+    """Runs the port; the fake `npx` writes `notice`, or fails when it is None. `cli_version` sets (or, as None, unsets) the CLI_VERSION the parent build exports."""
     env: dict[str, str | None] = {
         "FAKE_NPX_CONTENT": notice or "",
         "FAKE_NPX_RC": "0" if notice is not None else "1",
+        "CLI_VERSION": cli_version,
     }
     _reset(root)
     proc, _calls = _run(
@@ -689,6 +695,20 @@ def test_release_refuses_a_missing_licence_text_and_a_missing_node_section(tmp_p
     no_node = _release_run(root, "just a header\n", "--release")
     assert no_node.returncode == 1
     assert "Node.js LICENSE section" in no_node.stderr
+
+
+def test_a_real_cli_version_alone_implies_release_and_the_placeholder_does_not(tmp_path) -> None:
+    """No `--release` flag in any of these: `build_cli_executables` exports CLI_VERSION, and a version other than the dev placeholder makes the build publishable (review finding a00e0e43.1)."""
+    root = fixture(tmp_path)
+    placeholder = "Renet Go module dependencies: NOT GENERATED IN THIS BUILD.\nNode.js v24.1.0\n"
+    implied = _release_run(root, placeholder, cli_version="1.2.3")
+    assert implied.returncode == 1, implied.stderr
+    assert "NOT GENERATED" in implied.stderr
+    for version in (None, "", "0.0.0-dev"):
+        dev = _release_run(root, placeholder, cli_version=version)
+        assert dev.returncode == 0, (version, dev.stderr)
+    complete = _release_run(root, _COMPLETE_NOTICE, cli_version="1.2.3")
+    assert complete.returncode == 0, complete.stderr
 
 
 def test_release_refuses_a_failed_generator_and_accepts_a_complete_notice(tmp_path) -> None:
