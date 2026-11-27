@@ -543,11 +543,11 @@ RUNNER_RECENT_MIN = 45
 HOLD_MAX_MIN = 120
 RUNNER_STATES = (" ", ">")
 HOLD_STATES = (" ", "?", ">")
-# Production counts as held unless a standing authorization is readable, and none is: block_unasked_release judges each release command against an ASKED line of the transcript, so no record names a standing one. A `runner:prod` item still staffs it once the lead holds an authorization.
+# Production counts as held unless a standing authorization is readable, and none is: block_unasked_release judges each release command against an ASKED line of the transcript, so no record names a standing one. A `runner:prod` item staffs it with no authorization check: the lead records one only once it holds a standing authorization.
 PROD_HELD_DEFAULT = (
     "held by default: no production authorization the hooks can read (block_unasked_release "
     "judges each release command against the transcript's ASKED line); a `runner:prod` item "
-    "staffs it under a standing authorization"
+    "staffs it (the lead records one only under a standing authorization; no hook checks that)"
 )
 # A held cluster's blockers: its `BOX:<plan>#<sig8>` tokens when it names any, else its bare 8-hex tokens that are not its own CODE boxes.
 BOX_TOKEN_RE = re.compile(r"\bBOX:[^\s#]*#([0-9a-f]{8})(?![0-9A-Za-z])")
@@ -720,6 +720,7 @@ def held_clusters(text, rows) -> list[dict]:
                 "id": got.group(1),
                 "own": own,
                 "blockers": blockers,
+                "boxed": bool(boxed),
                 "head": _clip_to(head.lstrip("*: ")),
             }
         )
@@ -732,7 +733,7 @@ def blocker_open(blockers, opened) -> bool:
 
 
 def unblocked(held, done, open_sigs, named) -> list[dict]:
-    """The held clusters whose blockers have all closed, as free clusters: a cluster with an own CODE sig neither ticked nor named by an item of this session, at least one blocker that is a known box (open or ticked in the Promoted plans), and no blocker still open. `open_sigs` is called once, and only when a cluster has a blocker to judge; without it, or with no known blocker, a cluster stays held."""
+    """The held clusters whose blockers have all closed, as free clusters: a cluster with an own CODE sig neither ticked nor named by an item of this session, at least one blocker that is a known box (open or ticked in the Promoted plans), no blocker still open, and, when it names its blockers as `BOX:` tokens, every one of them known. `open_sigs` is called once, and only when a cluster has a blocker to judge; without it, or with no known blocker, a cluster stays held."""
     out = []
     opened: set[str] | None = None
     for cl in held:
@@ -743,6 +744,9 @@ def unblocked(held, done, open_sigs, named) -> list[dict]:
             opened = set(open_sigs())
         known = [b for b in cl["blockers"] if b in opened or b in done]
         if not known or blocker_open(known, opened):
+            continue
+        # An explicit `BOX:` token names a real box, so one no Promoted plan knows is a blocker nobody can judge closed: the cluster stays held. A bare token may be any 8-hex word, so an unknown one is ignored.
+        if cl.get("boxed") and len(known) < len(cl["blockers"]):
             continue
         out.append(
             {
@@ -770,9 +774,9 @@ def capacity(
 ) -> dict:
     """The refill facts of this session's newest round.
 
-    `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, `age` is the survey file's age in minutes, and `moved` is True when a box was ticked or a HEAD commit is newer than the survey (or git cannot answer); `read` is False when there is no round, no survey file or no parseable cluster section.
+    `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called once the survey file reads (the live targets need it even when section 4 does not parse), so an unreadable queue raises there and the callers catch it. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, `age` is the survey file's age in minutes, and `moved` is True when a box was ticked or a HEAD commit is newer than the survey (or git cannot answer); `read` is False when there is no round, no survey file or no parseable cluster section.
 
-    The live half: `targets` holds one `live_targets` row per target whenever the survey file reads, section 4 or not (`live_ids` the live worker ids, `vm_verified` the VERIFIED vm:check probe); and a cluster of a "blocked behind" subsection joins `free` once every blocker it names has closed (`held_clusters`, `unblocked`; `open_sigs` a callable returning the Promoted plans' open sigs, asked only when a held cluster names a blocker).
+    The live half: `targets` holds one `live_targets` row per target whenever the survey file reads, section 4 or not (`live_ids` the live worker ids, `vm_verified` the VERIFIED vm:check probe); and a cluster of a "blocked behind" subsection joins `free` once every blocker it names has closed (`held_clusters`, `unblocked`: a `BOX:` blocker no Promoted plan knows keeps it held; `open_sigs` a callable returning the Promoted plans' open sigs, asked only when a held cluster names a blocker).
     """
     now = now or C.utcnow()
     mine = _mine(rows, session)

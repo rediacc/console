@@ -768,6 +768,11 @@ def held_cases(tmp):
         freed[0]["unblocked"],
         list(BOTH),
     )
+    check(
+        "control: an unknown BOX: blocker keeps the cluster held though the other closed",
+        "CL-D" in held_free(live_cap(tmp, items=staffed, done=("e9e9e9e9",))),
+        False,
+    )
     check("a freed held cluster is refilled", W.assess(False, OPEN, closed), ("refill", ""))
     check(
         "a bare blocker sig that closed frees its cluster",
