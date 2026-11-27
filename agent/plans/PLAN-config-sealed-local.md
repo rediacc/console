@@ -146,7 +146,7 @@ English source wording follows the prose style: no first or second person. Examp
   - a stacked config fails with the right key and the wrong password, and with the right password and the wrong key.
   Also the existing persist-unification, storage and remote-cache tests pass.
   After: W1
-- [ ] W4 [writer] Token sealing, model opus. D9 for `.tokens` (only the confidential fields sealed, counters plaintext), the slot-secret cache in `deriveCek`, and the api-token seal with the sync unseal.
+- [x] W4 [writer] Token sealing, model opus. D9 for `.tokens` (only the confidential fields sealed, counters plaintext), the slot-secret cache in `deriveCek`, and the api-token seal with the sync unseal.
   Owns: packages/cli/src/adapters/remote-token-storage.ts, packages/cli/src/adapters/remote-config-adapter.ts, packages/cli/src/services/account/subscription-auth.ts, packages/cli/src/adapters/__tests__/remote-token-storage-seal.test.ts, packages/cli/src/services/account/__tests__/subscription-auth-seal.test.ts
   Accept: vitest rc 0. Controls:
   - the raw `.tokens` file contains no `token`, `fckSalt` or `policyContext` text, and `highWater` is readable;
@@ -156,6 +156,7 @@ English source wording follows the prose style: no first or second person. Examp
   - a local-only config's api-token stays plaintext.
   The existing remote-token-storage.test.ts and remote-config-adapter.real-crypto.test.ts pass.
   After: W1
+    (ticked) 2026-11-27T13:42:08Z by d778be9d: commit:08f2a701b1; W4 token sealing; cli vitest src/adapters src/services/account rc 0 landed
 
 ### Wave 3
 - [ ] W3 [writer] Remote lifecycle, model opus. D7 recovery handler (pull, `discardSealed` write, new key, old key deleted, one notice, offline message) and D10 disable, unlink, enable and delete.

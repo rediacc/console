@@ -1024,13 +1024,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 0,
+      "open": 9,
+      "done": 1,
       "open_sigs": [
         "1580e62a",
         "38a8f72c",
         "469bf3fc",
-        "580f6ded",
         "6091bdf1",
         "61544488",
         "91f6c1b2",
@@ -1038,7 +1037,9 @@
         "c09ef770",
         "dac78187"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "580f6ded"
+      ]
     },
     "agent/plans/PLAN-console-ai-assistant.md": {
       "status": "approved",
@@ -1820,19 +1821,20 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 0,
+      "open": 5,
+      "done": 3,
       "open_sigs": [
-        "05b5240d",
         "184fcf5b",
-        "47eedb87",
         "4a23af14",
         "55b3ac8b",
-        "8700c81f",
         "91fac951",
         "d0439db6"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "05b5240d",
+        "47eedb87",
+        "8700c81f"
+      ]
     },
     "agent/plans/PLAN-experience-feedback.md": {
       "status": "approved",
@@ -2902,8 +2904,8 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 3,
+      "open": 9,
+      "done": 4,
       "open_sigs": [
         "174b1ea1",
         "277d9f04",
@@ -2912,12 +2914,12 @@
         "7425e966",
         "95f95d3c",
         "9cafb158",
-        "a133fa90",
         "db44e4cd",
         "e7bbd418"
       ],
       "done_sigs": [
         "45b199e4",
+        "a133fa90",
         "ae95d99b",
         "fd56a40d"
       ]
@@ -3011,18 +3013,19 @@
       "owner": "e08d0be9",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 6,
+      "done": 1,
       "open_sigs": [
         "104f3730",
         "333e769c",
         "89cb6ae1",
         "ae33856d",
         "c0384c17",
-        "dbdc2cb1",
-        "e07089b6"
+        "dbdc2cb1"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "e07089b6"
+      ]
     },
     "agent/plans/PLAN-pricing-free-professional.md": {
       "status": "approved",
@@ -3045,31 +3048,33 @@
       "owner": "e08d0be9",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 5,
-      "done": 0,
+      "open": 2,
+      "done": 3,
       "open_sigs": [
-        "21a97188",
         "50a61f99",
-        "5a96d024",
+        "5a96d024"
+      ],
+      "done_sigs": [
+        "21a97188",
         "751a26ef",
         "b5b806d8"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-pricing-plan-model.md": {
       "status": "approved",
       "owner": "e08d0be9",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 4,
-      "done": 0,
+      "open": 1,
+      "done": 3,
       "open_sigs": [
-        "28a18d24",
-        "6c105843",
-        "ac72c946",
         "c0384c17"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "28a18d24",
+        "6c105843",
+        "ac72c946"
+      ]
     },
     "agent/plans/PLAN-pricing-public-calculator.md": {
       "status": "approved",
@@ -3482,8 +3487,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 2,
+      "open": 9,
+      "done": 4,
       "open_sigs": [
         "1afb47d2",
         "1ddce289",
@@ -3492,14 +3497,14 @@
         "9c7aec4a",
         "a098b831",
         "b09f5412",
-        "b5b16d18",
         "beb30812",
-        "df472d27",
         "fcd7d0ae"
       ],
       "done_sigs": [
         "23dbc7b1",
-        "c487943c"
+        "b5b16d18",
+        "c487943c",
+        "df472d27"
       ]
     },
     "agent/plans/PLAN-release-path-protection-2027.md": {
@@ -3632,15 +3637,14 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 3,
+      "open": 12,
+      "done": 4,
       "open_sigs": [
         "00a2d647",
         "404b5bbc",
         "51da661f",
         "53338a88",
         "660a4a2e",
-        "728a78d0",
         "74c0371e",
         "88ac7726",
         "89cc37a4",
@@ -3651,6 +3655,7 @@
       ],
       "done_sigs": [
         "6a441214",
+        "728a78d0",
         "da99ec5f",
         "dbeab949"
       ]
@@ -4840,10 +4845,9 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 4,
+      "open": 5,
+      "done": 5,
       "open_sigs": [
-        "0d88a9d8",
         "39dca1f0",
         "991eacb0",
         "a8b52076",
@@ -4852,6 +4856,7 @@
       ],
       "done_sigs": [
         "03351481",
+        "0d88a9d8",
         "11bdd4b0",
         "2fad109f",
         "de4e368a"
@@ -4956,8 +4961,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 29,
-      "done": 3,
+      "open": 27,
+      "done": 5,
       "open_sigs": [
         "0a49e9b9",
         "2915d4b3",
@@ -4983,16 +4988,16 @@
         "c7dcdcf3",
         "d72e361e",
         "daf84eca",
-        "e4b90633",
         "ed4d23ae",
         "f6c60cc4",
-        "fc3a2b59",
         "fd2027df"
       ],
       "done_sigs": [
         "13a907fb",
         "698d1ff5",
-        "ddf76446"
+        "ddf76446",
+        "e4b90633",
+        "fc3a2b59"
       ]
     },
     "agent/plans/PLAN-wire-account-vitest-ci.md": {

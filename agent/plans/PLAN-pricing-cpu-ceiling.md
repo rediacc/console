@@ -36,8 +36,9 @@ Live-Proof: bench, hostinger -- bench runs the account worker's ceiling, grace a
 
 ## Tasks
 
-- [ ] CC1 [writer] renet: Design 1 count in system.go, the license-scan field, the renewal body field, types.go `maxCpusPerMachine`; Go tests with a fake sysfs (controls first: affinity-limited process still reports the online count).
+- [x] CC1 [writer] renet: Design 1 count in system.go, the license-scan field, the renewal body field, types.go `maxCpusPerMachine`; Go tests with a fake sysfs (controls first: affinity-limited process still reports the online count).
   Accept: `cd private/renet && go test ./pkg/list/... ./pkg/license/... ./pkg/subscription/...` rc 0 and `npm run check:ci-renet-types` rc 0
+    (ticked) 2026-11-27T13:42:29Z by d778be9d: commit:5e311a7ab4; CC1 online cpu count (renet efb28a04, schema 25dabc9857); renet go test rc 0 landed, check:ci-renet-types rc 0
 - [ ] CC2 [writer] account: migration and tables per Design 2 and 4, machine-cpu.service.ts and the issuance/renewal hooks per Design 3; integration tests, controls first (renewal over the ceiling succeeds; a running repo's renewal after grace succeeds; issuance after grace refused; a missing count passes).
   Accept: `cd private/account && npx tsc --noEmit && npx vitest run tests/integration/cpu-ceiling.test.ts` rc 0
 - [ ] CC3 [writer] passes: machine-pass.service.ts and both routes per Design 4 with tests for the 4-per-machine and 3-machine limits and the paid-tier rule.

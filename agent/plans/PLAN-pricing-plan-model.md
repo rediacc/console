@@ -41,12 +41,16 @@ Live-Proof: bench -- the account worker reads every new dimension; the receipt i
 
 ## Tasks
 
-- [ ] PM1 [writer] shared: the Design 1 dimensions and the R4-R8 values in constants.ts and types.ts, PLAN_PRICING derived per Design 2, unit tests pinning every number of R3-R8 (controls first: an unknown plan still resolves to COMMUNITY).
+- [x] PM1 [writer] shared: the Design 1 dimensions and the R4-R8 values in constants.ts and types.ts, PLAN_PRICING derived per Design 2, unit tests pinning every number of R3-R8 (controls first: an unknown plan still resolves to COMMUNITY).
   Accept: `npm run build -w packages/shared` rc 0 and `cd packages/shared && npx vitest run src/subscription` rc 0
-- [ ] PM2 [writer] account: effective-limits.ts per Design 3 with its unit test (plan base, per-licence scaling, override precedence, an empty boost list), every getLimitsForPlan caller in private/account/src moved to it, BACKUP_STORE_LIMITS.COMMUNITY 1.
+    (ticked) 2026-11-27T13:42:02Z by d778be9d: commit:ef2354f360; PM1 constants; shared vitest src/subscription rc 0 landed, check-pricing-consistency rc 0
+- [x] PM2 [writer] account: effective-limits.ts per Design 3 with its unit test (plan base, per-licence scaling, override precedence, an empty boost list), every getLimitsForPlan caller in private/account/src moved to it, BACKUP_STORE_LIMITS.COMMUNITY 1.
+  (corrected ASKED:2026-11-27T13:41Z) BACKUP_STORE_LIMITS.COMMUNITY stays 2, not 1: `home` is the deployment's own hosted store, cannot be retired and counts against the limit (private/account/src/services/backup-store-registry.ts), so 1 would leave COMMUNITY no slot for its own S3 store and contradict ruling R2 ("Its users bring their own S3 store"). The intent of R2 is met by COMMUNITY's zero hosted quota (storageQuotaBytes 0, landed with PM2) plus one customer store beside `home`.
   Accept: `cd private/account && npx tsc --noEmit && npx vitest run tests/unit/effective-limits.test.ts` rc 0, and `grep -rn "getLimitsForPlan(" private/account/src --include=*.ts | grep -v effective-limits` prints nothing
-- [ ] PM4 [writer] gate and docs: check-pricing-consistency per Design 5 with a planted control per new rule; the English docs table in subscription-licensing.md updated to R1-R8.
+    (ticked) 2026-11-27T13:42:25Z by d778be9d: commit:5b0928d82a; PM2 effective limits (account ad7191e0); account tsc rc 0, effective-limits 15 passed, whole account suite rc 0 (writer); store limit per correction line
+- [x] PM4 [writer] gate and docs: check-pricing-consistency per Design 5 with a planted control per new rule; the English docs table in subscription-licensing.md updated to R1-R8.
   Accept: `npx tsx scripts/gates/check-pricing-consistency.ts` rc 0 on the tree and rc 1 on each planted control
+    (ticked) 2026-11-27T13:42:03Z by d778be9d: commit:a44c0b7e7b; PM4 pricing gate+doc; check-pricing-consistency rc 0 landed (11 planted controls fire), tsc scripts rc 0
 - [ ] LP-bench [live] Deploy the branch's account worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) after PM1 and PM2 land.
   Accept: live-proof bench account-smoke
 

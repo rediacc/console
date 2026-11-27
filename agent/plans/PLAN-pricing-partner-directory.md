@@ -35,12 +35,15 @@ Live-Proof: bench -- the public directory route runs on the account worker and t
 
 ## Tasks
 
-- [ ] PD1 [writer] account: migration, listing fields, partner-directory.service.ts and the public route per Design 1, 2 and 5; tests, controls first (an unlisted or unapproved partner never appears; no discount field in the response; a suspended partner disappears).
+- [x] PD1 [writer] account: migration, listing fields, partner-directory.service.ts and the public route per Design 1, 2 and 5; tests, controls first (an unlisted or unapproved partner never appears; no discount field in the response; a suspended partner disappears).
   Accept: `cd private/account && npx tsc --noEmit && npx vitest run tests/integration/partner-directory.test.ts` rc 0
-- [ ] PD2 [writer] portal: the partner Profile page and the admin approval control, English first then the locale pipeline.
+    (ticked) 2026-11-27T13:42:27Z by d778be9d: commit:b64b63f832; PD1 directory route (account ae1df678); partner-directory test rc 0 landed
+- [x] PD2 [writer] portal: the partner Profile page and the admin approval control, English first then the locale pipeline.
   Accept: `cd private/account/web && npx tsc --noEmit && npx vitest run` rc 0 and `npm run check:ci-i18n-completeness` rc 0
-- [ ] PD3 [writer] www: the directory page and the /partners copy per Design 3-4, English first then the locale pipeline.
+    (ticked) 2026-11-27T13:42:28Z by d778be9d: commit:8171b1a4c2; PD2 listing setters+profile (account e29a979d); partner-listing rc 0, account and web tsc rc 0 landed
+- [x] PD3 [writer] www: the directory page and the /partners copy per Design 3-4, English first then the locale pipeline.
   Accept: `npm run build -w @rediacc/www` rc 0 and `npm run check:ci-i18n-completeness` rc 0
+    (ticked) 2026-11-27T13:42:05Z by d778be9d: commit:791d0c45d5; PD3 www directory page; www build rc 0 (writer), i18n completeness rc 0 landed
 - [ ] LP-bench [live] Deploy the branch's account and www workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) after PD1-PD3 land.
   Accept: live-proof bench account-smoke
 - [ ] PD-L1 [live] eu bench: a test partner opts in, an admin approves, the directory page lists it under its country filter, and the route response carries no discount or deal field.

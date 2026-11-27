@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 124 plans done, 1604 of 2132 boxes done (75%).
+Promoted: 11 of 124 plans done, 1622 of 2132 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -165,21 +165,21 @@ Promoted: 11 of 124 plans done, 1604 of 2132 boxes done (75%).
 | 103 | PLAN-release-credits-compliance.md | 7/10 | 3 open |
 | 104 | PLAN-reggate-debt-collection.md | 7/11 | 4 open |
 | 105 | PLAN-retire-nightlies-and-mentions.md | 8/16 | 8 open |
-| 106 | PLAN-renet-i18n-baseline-drain.md | 3/16 | 13 open |
+| 106 | PLAN-renet-i18n-baseline-drain.md | 4/16 | 12 open |
 | 107 | PLAN-datastore-migrate-correctness.md | 7/13 | 6 open |
 | 108 | PLAN-backup-toc-exact-opt-in.md | 3/10 | 7 open |
-| 109 | PLAN-vscode-browser-exposure.md | 4/10 | 6 open |
-| 110 | PLAN-release-notes.md | 2/13 | 11 open |
-| 111 | PLAN-pr-path-ephemeral-credentials.md | 3/13 | 10 open |
+| 109 | PLAN-vscode-browser-exposure.md | 5/10 | 5 open |
+| 110 | PLAN-release-notes.md | 4/13 | 9 open |
+| 111 | PLAN-pr-path-ephemeral-credentials.md | 4/13 | 9 open |
 | 112 | PLAN-plan-verbs.md | 0/3 | 3 open |
-| 113 | PLAN-windows-lane.md | 3/32 | 29 open |
-| 114 | PLAN-config-sealed-local.md | 0/10 | 10 open |
+| 113 | PLAN-windows-lane.md | 5/32 | 27 open |
+| 114 | PLAN-config-sealed-local.md | 1/10 | 9 open |
 | 115 | PLAN-proxied-licence-tunnel-auth-fix.md | 0/6 | 6 open |
-| 116 | PLAN-executor-account-routes.md | 0/8 | 8 open |
-| 117 | PLAN-pricing-plan-model.md | 0/4 | 4 open |
-| 118 | PLAN-pricing-partner-directory.md | 0/5 | 5 open |
+| 116 | PLAN-executor-account-routes.md | 3/8 | 5 open |
+| 117 | PLAN-pricing-plan-model.md | 3/4 | 1 open |
+| 118 | PLAN-pricing-partner-directory.md | 3/5 | 2 open |
 | 119 | PLAN-pricing-seat-repo-caps.md | 0/5 | 5 open |
-| 120 | PLAN-pricing-cpu-ceiling.md | 0/7 | 7 open |
+| 120 | PLAN-pricing-cpu-ceiling.md | 1/7 | 6 open |
 | 121 | PLAN-pricing-free-professional.md | 0/5 | 5 open |
 | 122 | PLAN-pricing-billing-upgrade.md | 0/8 | 8 open |
 | 123 | PLAN-pricing-coupons.md | 0/5 | 5 open |
