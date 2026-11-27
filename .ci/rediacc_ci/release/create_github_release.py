@@ -33,7 +33,7 @@ import subprocess
 import sys
 
 from rediacc_ci import log
-from rediacc_ci.core import awscli, common
+from rediacc_ci.core import awscli, common, gh_retry
 from rediacc_ci.release import release_notes
 
 SELF = "rediacc_ci.release.create_github_release"
@@ -91,8 +91,19 @@ def release_assets(root: str = _ROOT) -> list[str]:
     return files
 
 
+def _failure_text(done: subprocess.CompletedProcess[str]) -> str | None:
+    """None for success, else the text `gh_retry.is_transient` judges, so only a 5xx or a connection fault is retried."""
+    return None if done.returncode == 0 else (done.stderr or "failed")
+
+
 def _gh(args: list[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(["gh", *args], cwd=_ROOT, capture_output=True, text=True, check=False)
+    """`gh <args>`, retried on a transient failure only (a 404 or an auth failure returns at once). Every caller here is a read."""
+    return gh_retry.retry_transient(
+        lambda: subprocess.run(
+            ["gh", *args], cwd=_ROOT, capture_output=True, text=True, check=False
+        ),
+        _failure_text,
+    )
 
 
 def _semver(tag: str) -> tuple[int, int, int] | None:
