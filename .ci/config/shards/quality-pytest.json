@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-26T15:16:23.735Z",
+  "generatedAt": "2026-11-27T04:20:49.840Z",
   "legs": [
     {
       "index": 1,
@@ -128,6 +128,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_label_references.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_lint_config_liveness.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_record_paths_declared.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_record_paths_prefilter.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_renet_tier_map.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_scope_mirrors.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_script_exec_bit.py",
@@ -662,6 +663,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_cli_contract.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_control_vacuity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_e2e_coverage.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_env_ast.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_env_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_git_op_conditionals.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_label_inventory.py",
@@ -1017,6 +1019,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_queues_audit.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_rebind_login.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_reset_bench_fail_closed.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_sched_freshness.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_planrec_live_ref.py",
