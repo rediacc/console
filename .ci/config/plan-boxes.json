@@ -2902,23 +2902,23 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 1,
+      "open": 10,
+      "done": 3,
       "open_sigs": [
         "174b1ea1",
         "277d9f04",
-        "45b199e4",
         "59966736",
         "677ce711",
         "7425e966",
         "95f95d3c",
         "9cafb158",
         "a133fa90",
-        "ae95d99b",
         "db44e4cd",
         "e7bbd418"
       ],
       "done_sigs": [
+        "45b199e4",
+        "ae95d99b",
         "fd56a40d"
       ]
     },
@@ -3482,12 +3482,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 12,
-      "done": 1,
+      "open": 11,
+      "done": 2,
       "open_sigs": [
         "1afb47d2",
         "1ddce289",
-        "23dbc7b1",
         "34551fcb",
         "8d7cedfd",
         "9c7aec4a",
@@ -3499,6 +3498,7 @@
         "fcd7d0ae"
       ],
       "done_sigs": [
+        "23dbc7b1",
         "c487943c"
       ]
     },

@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 124 plans done, 1601 of 2132 boxes done (75%).
+Promoted: 11 of 124 plans done, 1604 of 2132 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -169,8 +169,8 @@ Promoted: 11 of 124 plans done, 1601 of 2132 boxes done (75%).
 | 107 | PLAN-datastore-migrate-correctness.md | 7/13 | 6 open |
 | 108 | PLAN-backup-toc-exact-opt-in.md | 3/10 | 7 open |
 | 109 | PLAN-vscode-browser-exposure.md | 4/10 | 6 open |
-| 110 | PLAN-release-notes.md | 1/13 | 12 open |
-| 111 | PLAN-pr-path-ephemeral-credentials.md | 1/13 | 12 open |
+| 110 | PLAN-release-notes.md | 2/13 | 11 open |
+| 111 | PLAN-pr-path-ephemeral-credentials.md | 3/13 | 10 open |
 | 112 | PLAN-plan-verbs.md | 0/3 | 3 open |
 | 113 | PLAN-windows-lane.md | 3/32 | 29 open |
 | 114 | PLAN-config-sealed-local.md | 0/10 | 10 open |

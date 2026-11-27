@@ -535,7 +535,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-email-sender-separation.md` | approved | 267 | 6 | 12 | 48423 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 219 | 7 | 27 | 41330 |
 | `agent/plans/PLAN-enterprise-tenants.md` | approved | 487 | 15 | 32 | 68264 |
-| `agent/plans/PLAN-executor-account-routes.md` | executing | 85 | 8 | 0 | 26181 |
+| `agent/plans/PLAN-executor-account-routes.md` | executing | 85 | 8 | 0 | 26251 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
 | `agent/plans/PLAN-family-loop-migrate.md` | proposed | 76 | 9 | 1 | 14042 |
@@ -585,7 +585,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
-| `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 78 | 12 | 1 | 19380 |
+| `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 83 | 10 | 3 | 21577 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 354 | 13 | 24 | 76115 |
 | `agent/plans/PLAN-pricing-billing-upgrade.md` | approved | 57 | 8 | 0 | 9689 |
 | `agent/plans/PLAN-pricing-coupons.md` | approved | 52 | 5 | 0 | 7570 |
@@ -609,7 +609,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-debt-collection.md` | proposed | 87 | 4 | 7 | 18233 |
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-release-credits-compliance.md` | proposed | 68 | 3 | 7 | 19927 |
-| `agent/plans/PLAN-release-notes.md` | approved | 126 | 12 | 1 | 28162 |
+| `agent/plans/PLAN-release-notes.md` | approved | 127 | 11 | 2 | 28366 |
 | `agent/plans/PLAN-release-path-protection-2027.md` | approved | 58 | 4 | 0 | 4609 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 79 | 1 | 14 | 17008 |

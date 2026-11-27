@@ -101,10 +101,11 @@ D12. Docs. `docs/agent-reference/release-process.md` states that Latest is stabl
   Owns: .ci/rediacc_ci/release/changelog_data.py, .ci/rediacc_ci/tests/test_release_changelog_data.py, packages/www/package.json, packages/www/src/pages/*/changelog.astro, packages/www/src/i18n/translations/*.json, .github/workflows/cd-deploy-worker.yml
   Depends on: RN5, RN7.
   Accept: with fixture Releases v4.0.1 and v4.0.2, a notes file for v4.0.2, a stable history naming v4.0.2 and `APP_VERSION=4.0.3`, the JSON lists v4.0.3, v4.0.2 ("in stable since v4.0.2"), v4.0.1 ("No customer notes recorded"), newest first; a failed fetch exits non-zero; `cd packages/www && npm run build` rc 0 and `dist/en/changelog/index.html` carries the v4.0.2 note and the 2026-05-04 entry under "Earlier history"; `npm run -s check:i18n` rc 0; `cd .ci && python3 -m pytest rediacc_ci/tests/test_release_changelog_data.py -q` rc 0.
-- [ ] RN9 [writer] Docs per D12 in `docs/agent-reference/release-process.md`, `docs/agent-reference/versioning.md` and the *Commit policy* section of `docs/agent-reference/ci-gates.md`.
+- [x] RN9 [writer] Docs per D12 in `docs/agent-reference/release-process.md`, `docs/agent-reference/versioning.md` and the *Commit policy* section of `docs/agent-reference/ci-gates.md`.
   Owns: docs/agent-reference/release-process.md, docs/agent-reference/versioning.md, docs/agent-reference/ci-gates.md
   Depends on: RN2, RN5, RN7.
   Accept: release-process.md states "Latest is stable" with `mark_production.py` named, the body format, the start-tag and orphan rules, `cli/v<V>/release-notes.json` and `cli/stable/history.json`; versioning.md carries the stale-local-tag paragraph; ci-gates.md lists `Release-Note:`; `python3 .ci/scripts/quality/check_prose_style.py check docs/agent-reference/release-process.md docs/agent-reference/versioning.md docs/agent-reference/ci-gates.md` rc 0 and `npx tsx scripts/gen/gen-docs.ts` reports no drift.
+    (ticked) 2026-11-27T11:00:15Z by d778be9d: commit:29cda0ed59; check_prose_style.py check on the three docs rc 0, gen-docs no drift rc 0; claims checked against .ci/rediacc_ci/release/release_notes.py
 - [ ] RN10 [lead] Hook live check: one real `feat:` commit without the trailer in the main checkout and one in `private/account` are refused by the installed hook, and the same commits with `Release-Note:` land.
   Owns: none -- exercises the installed hook on real commits the lead makes anyway.
   Depends on: RN2.
