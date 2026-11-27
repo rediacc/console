@@ -112,6 +112,17 @@ points at must be at least the blob ratio times the record's size. That second h
 - `docs/agent-reference/TRAPS.md` carries the two record traps: a derived title falling back to
 a slug, and a stale `Status:` header being a claim rather than evidence.
 
+## Plan verbs: registering a plan and ticking a box found done
+
+`worklist.py --plan-new <me> <agent/plans/PLAN-x.md> [--write]` registers a new plan in one call. It stages the file with `git add -- <rel>` (never a commit), writes the plan's `.ci/config/plan-boxes.json` row through `ledger_row` and `merge_ledger`, then runs `refresh_index`, which rewrites `agent/INDEX.md` and the generated section of `agent/plans/QUEUE.md`.
+Staging comes first because the ledger scan and the index read tracked plans only (#0b93d454). `## Promoted` is never written.
+Every refusal is decided before the first write: a path that is not `agent/plans/PLAN-<slug>.md` or a missing file, a header without `Status`, `Owner`, `First-Seen`, `Depends-On`, `Priority`, `Concurrency` and `Owns` (or one whose value does not parse), a plan with no box, and a plan the ledger already carries, which is pointed to `--plan-tick`.
+With only `<me>` it lists the plans under `agent/plans/` that have no ledger row. The success line prints the one `git commit -F <msg> -- <paths>` that carries the plan, the ledger, the index and the queue together.
+
+`worklist.py --plan-tick <me> <plan> <box> <evidence...> --investigate present <kind>:<token> <kind>:<token>... [--write]` closes a box whose work is already in the tree in one call instead of two. It builds the investigation row through `plan_investigate`, with the tick evidence as the note (so the evidence must clear the 40-character `INV_NOTE_MIN`), and passes it to `plan_tick` as `inv_row` in place of the ledger lookup.
+Nothing is written until both halves pass; the writes then go investigation row, plan, ledger, index. Only `present` is accepted, because only `present` licenses an immediate tick (Clause 1 already exempts it), and a `present` row exempts the tick from the dependency gate the same way.
+`absent` and `partial` are refused with the `--plan-investigate` line to run first, and an unresolvable pointer refuses the whole call; in every refusal the plan, the ledger and `agent/ledgers/plan-investigation.jsonl` stay byte-identical.
+
 ## Box progress: clause maps, landed halves and the audit
 
 A box with a code half and a live half is split without touching its line (agent/plans/PLAN-tick-tracking.md Design 3). The split lives in `agent/ledgers/plan-box-progress.jsonl`, a sibling of the investigation ledger, never in it: a late row there becomes the latest row, and Clause 1 then refuses the honest tick that cites the code commit. No plan byte changes, so G-A0, G-A1 and check:ci-plan-record hold by construction.
