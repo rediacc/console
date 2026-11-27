@@ -464,7 +464,7 @@
   },
   {
     "id": "check:ci-i18n-docs-inline",
-    "run": "npm run check:ci-i18n-docs-inline",
+    "run": "tsx scripts/gates/check-docs-inline-translations.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -558,7 +558,7 @@
   },
   {
     "id": "check:ci-i18n-hardcoded-strings",
-    "run": "npm run check:ci-i18n-hardcoded-strings",
+    "run": "tsx scripts/gates/check-component-hardcoded-strings.ts --strict",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -4106,7 +4106,7 @@
   },
   {
     "id": "check:ci-gate-prerequisites",
-    "run": "npm run check:ci-gate-prerequisites",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_gate_prerequisites",
     "gate": true,
     "paths": [
       ".ci/bootstrap.sh",
@@ -4634,7 +4634,7 @@
   },
   {
     "id": "check:ci-naturalization-model-policy",
-    "run": "npm run check:ci-naturalization-model-policy",
+    "run": "tsx scripts/gates/check-naturalization-model-policy.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -6324,7 +6324,7 @@
   },
   {
     "id": "check:ci-de-orthography",
-    "run": "npm run check:ci-de-orthography",
+    "run": "tsx scripts/gates/check-de-orthography.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -6552,7 +6552,7 @@
     "env": {
       "GITHUB_BASE_REF": "${{ github.base_ref }}"
     },
-    "run": "npm run check:ci-commit-citations",
+    "run": ".ci/scripts/quality/check_commit_citations.py",
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_commit_citations.py"
@@ -7029,7 +7029,7 @@
   },
   {
     "id": "check:ci-secret-scope",
-    "run": "npm run check:ci-secret-scope",
+    "run": "tsx scripts/gates/check-secret-scope.ts",
     "gate": true,
     "paths": [
       ".ci/config/secret-scope-baseline.json",
@@ -7139,7 +7139,7 @@
   },
   {
     "id": "check:ci-tracked-credentials",
-    "run": "npm run check:ci-tracked-credentials",
+    "run": "tsx scripts/gates/check-tracked-credentials.ts",
     "gate": true,
     "leaves": [
       "scripts/gates/check-tracked-credentials.ts"
@@ -7465,7 +7465,7 @@
   },
   {
     "id": "check:ci-dead-service-methods",
-    "run": "npm run check:ci-dead-service-methods",
+    "run": "tsx scripts/gates/check-dead-service-methods.ts",
     "gate": true,
     "paths": [
       ".ci/scripts/build/**",
@@ -7549,7 +7549,7 @@
   },
   {
     "id": "check:ci-retired-commands",
-    "run": "npm run check:ci-retired-commands",
+    "run": "tsx scripts/gates/check-retired-commands-in-docs.ts",
     "gate": true,
     "paths": [
       ".ci/tutorials/**",
@@ -9450,7 +9450,7 @@
   },
   {
     "id": "check:ci-breakpoint-drift",
-    "run": "npm run check:ci-breakpoint-drift",
+    "run": ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
     "gate": true,
     "paths": [
       ".ci/breakpoint/**",
@@ -9538,7 +9538,7 @@
   },
   {
     "id": "check:ci-scans-tracked-paths",
-    "run": "npm run check:ci-scans-tracked-paths",
+    "run": ".ci/scripts/quality/check_ci_scans_tracked_paths.py",
     "gate": true,
     "leaves": [
       ".ci/scripts/quality/check_ci_scans_tracked_paths.py"
@@ -10939,7 +10939,7 @@
   },
   {
     "id": "check:ci-design-tree",
-    "run": "npm run check:ci-design-tree",
+    "run": "tsx scripts/gates/check-design-tree.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -11260,7 +11260,7 @@
   },
   {
     "id": "check:ci-shared-constant-duplication",
-    "run": "npm run check:ci-shared-constant-duplication",
+    "run": "tsx scripts/gates/check-shared-constant-duplication.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -11428,7 +11428,7 @@
   },
   {
     "id": "check:ci-backup-manifest-shape-parity",
-    "run": "npm run check:ci-backup-manifest-shape-parity",
+    "run": "tsx scripts/gates/check-backup-manifest-shape-parity.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -11455,7 +11455,7 @@
   },
   {
     "id": "check:ci-fetch-integrity",
-    "run": "npm run check:ci-fetch-integrity",
+    "run": "tsx scripts/gates/check-ci-fetch-integrity.ts",
     "gate": true,
     "paths": [
       ".ci/scripts/**",
@@ -11488,7 +11488,7 @@
   },
   {
     "id": "check:ci-aws-credential-bridge",
-    "run": "npm run check:ci-aws-credential-bridge",
+    "run": "tsx scripts/gates/check-aws-credential-bridge.ts",
     "gate": true,
     "paths": [
       ".ci/**/*.sh",
@@ -11540,7 +11540,7 @@
   },
   {
     "id": "check:ci-worker-secret-names",
-    "run": "npm run check:ci-worker-secret-names",
+    "run": "tsx scripts/gates/check-worker-secret-names.ts",
     "gate": true,
     "leaves": [
       "scripts/gates/check-worker-secret-names.ts"
@@ -11554,7 +11554,7 @@
   },
   {
     "id": "check:ci-builder-env-contract",
-    "run": "npm run check:ci-builder-env-contract",
+    "run": "tsx scripts/gates/check-builder-env-contract.ts",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/deploy/set_account_worker_secrets.py",
@@ -11654,7 +11654,7 @@
   },
   {
     "id": "check:ci-no-client-key-composition",
-    "run": "npm run check:ci-no-client-key-composition",
+    "run": "tsx scripts/gates/check-no-client-key-composition.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -11680,7 +11680,7 @@
   },
   {
     "id": "check:ci-retention-knob-parity",
-    "run": "npm run check:ci-retention-knob-parity",
+    "run": "tsx scripts/gates/check-retention-knob-parity.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -11765,7 +11765,7 @@
   },
   {
     "id": "check:ci-test-scripts-reachable",
-    "run": "npm run check:ci-test-scripts-reachable",
+    "run": "tsx scripts/gates/check-test-scripts-reachable.ts",
     "gate": true,
     "paths": [
       ".ci/scripts/**",
@@ -12537,7 +12537,7 @@
   },
   {
     "id": "check:ci-embed-asset-versions",
-    "run": "npm run check:ci-embed-asset-versions",
+    "run": "tsx scripts/gates/check-embed-asset-versions.ts",
     "cores": {
       "min": 1,
       "max": "all"
@@ -12572,7 +12572,7 @@
   },
   {
     "id": "check:ci-recovery-context",
-    "run": "npm run check:ci-recovery-context",
+    "run": "tsx scripts/gates/check-recovery-context.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -12760,7 +12760,7 @@
   },
   {
     "id": "check:ci-pricing-consistency",
-    "run": "npm run check:ci-pricing-consistency",
+    "run": "tsx scripts/gates/check-pricing-consistency.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -12819,7 +12819,7 @@
   },
   {
     "id": "check:ci-seo-core",
-    "run": "npm run check:ci-seo-core",
+    "run": "tsx scripts/gates/check-seo.ts",
     "slow": true,
     "gate": true,
     "needs": [
@@ -13473,7 +13473,7 @@
   },
   {
     "id": "check:ci-viewport-unit-mixing",
-    "run": "npm run check:ci-viewport-unit-mixing",
+    "run": "tsx scripts/gates/check-viewport-unit-mixing.ts --selftest",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -13502,7 +13502,7 @@
   },
   {
     "id": "check:ci-illustration-contract",
-    "run": "npm run check:ci-illustration-contract",
+    "run": "tsx scripts/gates/check-illustration-contract.ts --selftest",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -13550,7 +13550,7 @@
   },
   {
     "id": "check:ci-redirect-integrity",
-    "run": "npm run check:ci-redirect-integrity",
+    "run": "tsx scripts/gates/check-redirect-integrity.ts",
     "slow": true,
     "gate": true,
     "needs": [
@@ -13598,7 +13598,7 @@
   },
   {
     "id": "check:ci-captcha-recovery",
-    "run": "npm run check:ci-captcha-recovery",
+    "run": "tsx scripts/gates/check-captcha-recovery.ts --selftest",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -13953,7 +13953,7 @@
   },
   {
     "id": "check:ci-nis2-quotes",
-    "run": "npm run check:ci-nis2-quotes",
+    "run": "tsx scripts/gates/check-directive-quotes.ts",
     "gate": true,
     "paths": [
       ".ci/config/directive-quotes-allowlist.txt",
@@ -14178,7 +14178,7 @@
   },
   {
     "id": "check:ci-tutorial-render-queue",
-    "run": "npm run check:ci-tutorial-render-queue",
+    "run": "node packages/www/scripts/list-tutorial-render-pairs.js --selftest",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -14551,7 +14551,7 @@
   },
   {
     "id": "check:ci-syncpack-reasons",
-    "run": "npm run check:ci-syncpack-reasons",
+    "run": "tsx scripts/gates/check-syncpack-reasons.ts",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -14756,7 +14756,7 @@
   },
   {
     "id": "check:ci-jq-boolean-default",
-    "run": "npm run check:ci-jq-boolean-default",
+    "run": "tsx scripts/gates/check-jq-boolean-default.ts",
     "gate": true,
     "paths": [
       ".ci/bootstrap.sh",
@@ -15130,7 +15130,7 @@
   },
   {
     "id": "check:ci-locale-config-divergence",
-    "run": "npm run check:ci-locale-config-divergence",
+    "run": "tsx scripts/gates/check-locale-config-divergence.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -15207,7 +15207,7 @@
   },
   {
     "id": "check:ci-anchor-integrity",
-    "run": "npm run check:ci-anchor-integrity",
+    "run": "tsx scripts/gates/check-anchor-integrity.ts",
     "slow": true,
     "gate": true,
     "needs": [
@@ -15225,7 +15225,7 @@
   },
   {
     "id": "check:ci-player-css-scope",
-    "run": "npm run check:ci-player-css-scope",
+    "run": "tsx scripts/gates/check-player-css-scope.ts",
     "slow": true,
     "gate": true,
     "needs": [
@@ -15257,7 +15257,7 @@
   },
   {
     "id": "check:ci-client-bundle-budget",
-    "run": "npm run check:ci-client-bundle-budget",
+    "run": "tsx scripts/gates/check-client-bundle-budget.ts",
     "slow": true,
     "gate": true,
     "needs": [
@@ -15433,7 +15433,7 @@
   },
   {
     "id": "check:ci-hydration-clean",
-    "run": "npm run check:ci-hydration-clean",
+    "run": "tsx scripts/gates/check-hydration-clean.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -15563,7 +15563,7 @@
   },
   {
     "id": "check:ci-form-validation",
-    "run": "npm run check:ci-form-validation",
+    "run": "tsx scripts/gates/check-form-validation.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -17207,7 +17207,7 @@
   },
   {
     "id": "check:ci-package-key-budget",
-    "run": "npm run check:ci-package-key-budget",
+    "run": "tsx scripts/gates/check-package-key-budget.ts",
     "gate": true,
     "paths": [
       ".npmrc",
@@ -17349,7 +17349,7 @@
   },
   {
     "id": "check:ci-enumeration-vacuity",
-    "run": "npm run check:ci-enumeration-vacuity",
+    "run": "tsx scripts/gates/check-enumeration-vacuity.ts",
     "gate": true,
     "paths": [
       ".ci/scripts/**",

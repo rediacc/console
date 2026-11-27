@@ -488,7 +488,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-i18n-docs-inline',
-    run: 'npm run check:ci-i18n-docs-inline',
+    run: 'tsx scripts/gates/check-docs-inline-translations.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -564,7 +564,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-i18n-hardcoded-strings',
-    run: 'npm run check:ci-i18n-hardcoded-strings',
+    run: 'tsx scripts/gates/check-component-hardcoded-strings.ts --strict',
     gate: true,
     paths: [
       '.npmrc',
@@ -3857,7 +3857,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // The gap check:ci-parity leaves open: it proves a gate is WIRED into a workflow, never that the job it landed in can RUN it. Two tsx gates were added to a job that does checkout and nothing else, and run 33125687081 died on `tsx: not found` and took seven cancelled siblings with it. Verified against the pre-fix workflow: this reports exactly those two.
     id: 'check:ci-gate-prerequisites',
-    run: 'npm run check:ci-gate-prerequisites',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_gate_prerequisites',
     gate: true,
     // packages/*/package.json and workers/*/package.json joined 2026-08-30: the resolver now follows `npm run <key> -w <workspace>` into that workspace's OWN scripts (needed to find check:test:tutorial-player's real agent-browser dependency, two hops past root's package.json).
     paths: [
@@ -4347,7 +4347,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-naturalization-model-policy',
-    run: 'npm run check:ci-naturalization-model-policy',
+    run: 'tsx scripts/gates/check-naturalization-model-policy.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -5943,7 +5943,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // German locale strings use ä/ö/ü/ß, never the ASCII transliterations an earlier run wrote (fuer, ueber, Gewaehr*); an explicit stem list over the five German catalogs (www, cli, account web, account server, renet de.go). Its own step in quality-content, which checks out every submodule (renet's catalog is one of the roots). NO `paths:`: always selected.
     id: 'check:ci-de-orthography',
-    run: 'npm run check:ci-de-orthography',
+    run: 'tsx scripts/gates/check-de-orthography.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -6155,7 +6155,7 @@ export const GATES: readonly GateSpec[] = [
     env: {
       GITHUB_BASE_REF: '${{ github.base_ref }}',
     },
-    run: 'npm run check:ci-commit-citations',
+    run: '.ci/scripts/quality/check_commit_citations.py',
     gate: true,
     leaves: ['.ci/scripts/quality/check_commit_citations.py'],
     ci: {
@@ -6620,7 +6620,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-secret-scope',
-    run: 'npm run check:ci-secret-scope',
+    run: 'tsx scripts/gates/check-secret-scope.ts',
     gate: true,
     paths: [
       '.ci/config/secret-scope-baseline.json',
@@ -6709,7 +6709,7 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 8
   {
     id: 'check:ci-tracked-credentials',
-    run: 'npm run check:ci-tracked-credentials',
+    run: 'tsx scripts/gates/check-tracked-credentials.ts',
     gate: true,
     leaves: ['scripts/gates/check-tracked-credentials.ts'],
     ci: {
@@ -6984,7 +6984,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-dead-service-methods',
-    run: 'npm run check:ci-dead-service-methods',
+    run: 'tsx scripts/gates/check-dead-service-methods.ts',
     gate: true,
     paths: [
       '.ci/scripts/build/**',
@@ -7054,7 +7054,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-retired-commands',
-    run: 'npm run check:ci-retired-commands',
+    run: 'tsx scripts/gates/check-retired-commands-in-docs.ts',
     gate: true,
     paths: [
       '.ci/tutorials/**',
@@ -8804,7 +8804,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-breakpoint-drift',
-    run: 'npm run check:ci-breakpoint-drift',
+    run: '.ci/breakpoint/scripts/check-breakpoint-drift.sh',
     gate: true,
     paths: ['.ci/breakpoint/**', '.github/workflows/breakpoint.yml', '.npmrc', 'package.json'],
     lists: ['.ci'],
@@ -8867,7 +8867,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-scans-tracked-paths',
-    run: 'npm run check:ci-scans-tracked-paths',
+    run: '.ci/scripts/quality/check_ci_scans_tracked_paths.py',
     gate: true,
     leaves: ['.ci/scripts/quality/check_ci_scans_tracked_paths.py'],
     ci: {
@@ -10228,7 +10228,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-design-tree',
-    run: 'npm run check:ci-design-tree',
+    run: 'tsx scripts/gates/check-design-tree.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -10514,7 +10514,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-shared-constant-duplication',
-    run: 'npm run check:ci-shared-constant-duplication',
+    run: 'tsx scripts/gates/check-shared-constant-duplication.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -10668,7 +10668,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-backup-manifest-shape-parity',
-    run: 'npm run check:ci-backup-manifest-shape-parity',
+    run: 'tsx scripts/gates/check-backup-manifest-shape-parity.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -10690,7 +10690,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-fetch-integrity',
-    run: 'npm run check:ci-fetch-integrity',
+    run: 'tsx scripts/gates/check-ci-fetch-integrity.ts',
     gate: true,
     paths: [
       '.ci/scripts/**',
@@ -10715,7 +10715,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-aws-credential-bridge',
-    run: 'npm run check:ci-aws-credential-bridge',
+    run: 'tsx scripts/gates/check-aws-credential-bridge.ts',
     gate: true,
     paths: [
       '.ci/**/*.sh',
@@ -10759,7 +10759,7 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 14
   {
     id: 'check:ci-worker-secret-names',
-    run: 'npm run check:ci-worker-secret-names',
+    run: 'tsx scripts/gates/check-worker-secret-names.ts',
     gate: true,
     leaves: ['scripts/gates/check-worker-secret-names.ts'],
     ci: {
@@ -10772,7 +10772,7 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 14
   {
     id: 'check:ci-builder-env-contract',
-    run: 'npm run check:ci-builder-env-contract',
+    run: 'tsx scripts/gates/check-builder-env-contract.ts',
     gate: true,
     paths: [
       '.ci/rediacc_ci/deploy/set_account_worker_secrets.py',
@@ -10855,7 +10855,7 @@ export const GATES: readonly GateSpec[] = [
   // Covers the CLASS the conformance gate above cannot see: that gate pins the key fields EXIST on both sides of the wire, this one pins that the client never COMPOSES a key when one is missing. The composing fallback was introduced twice, and the second time it was duplicated into the read path, because each path's tests passed in isolation.
   {
     id: 'check:ci-no-client-key-composition',
-    run: 'npm run check:ci-no-client-key-composition',
+    run: 'tsx scripts/gates/check-no-client-key-composition.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -10877,7 +10877,7 @@ export const GATES: readonly GateSpec[] = [
   // The knobs are spelled in FOUR places (shared schema, account DTO, the sweep that enforces them, the CLI flags). A knob present in three and absent from the sweep is a rule that silently does nothing, and each layer's own tests pass because each layer is internally consistent.
   {
     id: 'check:ci-retention-knob-parity',
-    run: 'npm run check:ci-retention-knob-parity',
+    run: 'tsx scripts/gates/check-retention-knob-parity.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -10953,7 +10953,7 @@ export const GATES: readonly GateSpec[] = [
   // The CLASS behind four separate findings this program hit: an unrun test suite reads exactly like a passing one. private/account/web ran 1 of 34 files, packages/www ran none, packages/shared ran in CI but never locally, and packages/json runs nowhere. This gate makes a suite impossible to be invisible to BOTH CI and the omissions record.
   {
     id: 'check:ci-test-scripts-reachable',
-    run: 'npm run check:ci-test-scripts-reachable',
+    run: 'tsx scripts/gates/check-test-scripts-reachable.ts',
     gate: true,
     paths: [
       '.ci/scripts/**',
@@ -11632,7 +11632,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-embed-asset-versions',
-    run: 'npm run check:ci-embed-asset-versions',
+    run: 'tsx scripts/gates/check-embed-asset-versions.ts',
     // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool runs one-wide; check:types:incremental's entry records the measurement.
     cores: { min: 1, max: 'all' },
     gate: true,
@@ -11659,7 +11659,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-recovery-context',
-    run: 'npm run check:ci-recovery-context',
+    run: 'tsx scripts/gates/check-recovery-context.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -11817,7 +11817,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-pricing-consistency',
-    run: 'npm run check:ci-pricing-consistency',
+    run: 'tsx scripts/gates/check-pricing-consistency.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -11865,7 +11865,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-seo-core',
-    run: 'npm run check:ci-seo-core',
+    run: 'tsx scripts/gates/check-seo.ts',
     slow: true, // needs build:www; the closure rule (check-gate-manifest.ts) forces it
     gate: true,
     needs: ['build:www'],
@@ -12495,7 +12495,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-viewport-unit-mixing',
-    run: 'npm run check:ci-viewport-unit-mixing',
+    run: 'tsx scripts/gates/check-viewport-unit-mixing.ts --selftest',
     gate: true,
     paths: [
       '.npmrc',
@@ -12518,7 +12518,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-illustration-contract',
-    run: 'npm run check:ci-illustration-contract',
+    run: 'tsx scripts/gates/check-illustration-contract.ts --selftest',
     gate: true,
     paths: [
       '.npmrc',
@@ -12559,7 +12559,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-redirect-integrity',
-    run: 'npm run check:ci-redirect-integrity',
+    run: 'tsx scripts/gates/check-redirect-integrity.ts',
     slow: true, // needs build:www; the closure rule forces it
     gate: true,
     needs: ['build:www'],
@@ -12597,7 +12597,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-captcha-recovery',
-    run: 'npm run check:ci-captcha-recovery',
+    run: 'tsx scripts/gates/check-captcha-recovery.ts --selftest',
     gate: true,
     paths: [
       '.npmrc',
@@ -12905,7 +12905,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-nis2-quotes',
-    run: 'npm run check:ci-nis2-quotes',
+    run: 'tsx scripts/gates/check-directive-quotes.ts',
     gate: true,
     paths: [
       '.ci/config/directive-quotes-allowlist.txt',
@@ -13104,7 +13104,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-tutorial-render-queue',
-    run: 'npm run check:ci-tutorial-render-queue',
+    run: 'node packages/www/scripts/list-tutorial-render-pairs.js --selftest',
     gate: true,
     paths: [
       '.npmrc',
@@ -13447,7 +13447,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-syncpack-reasons',
-    run: 'npm run check:ci-syncpack-reasons',
+    run: 'tsx scripts/gates/check-syncpack-reasons.ts',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -13640,7 +13640,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-jq-boolean-default',
-    run: 'npm run check:ci-jq-boolean-default',
+    run: 'tsx scripts/gates/check-jq-boolean-default.ts',
     gate: true,
     paths: [
       '.ci/bootstrap.sh',
@@ -13998,7 +13998,7 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 17
   {
     id: 'check:ci-locale-config-divergence',
-    run: 'npm run check:ci-locale-config-divergence',
+    run: 'tsx scripts/gates/check-locale-config-divergence.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -14067,7 +14067,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-anchor-integrity',
-    run: 'npm run check:ci-anchor-integrity',
+    run: 'tsx scripts/gates/check-anchor-integrity.ts',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
@@ -14081,7 +14081,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-player-css-scope',
-    run: 'npm run check:ci-player-css-scope',
+    run: 'tsx scripts/gates/check-player-css-scope.ts',
     slow: true, // reads the built dist; needs build:www like its neighbour
     gate: true,
     needs: ['build:www'],
@@ -14105,7 +14105,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-client-bundle-budget',
-    run: 'npm run check:ci-client-bundle-budget',
+    run: 'tsx scripts/gates/check-client-bundle-budget.ts',
     slow: true, // needs build:www (131.9s); the runner demoted it anyway
     gate: true,
     needs: ['build:www'],
@@ -14275,7 +14275,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-hydration-clean',
-    run: 'npm run check:ci-hydration-clean',
+    run: 'tsx scripts/gates/check-hydration-clean.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -14407,7 +14407,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-form-validation',
-    run: 'npm run check:ci-form-validation',
+    run: 'tsx scripts/gates/check-form-validation.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -16054,7 +16054,7 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 18
   {
     id: 'check:ci-package-key-budget',
-    run: 'npm run check:ci-package-key-budget',
+    run: 'tsx scripts/gates/check-package-key-budget.ts',
     gate: true,
     paths: [
       '.npmrc',
@@ -16174,7 +16174,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // A gate that scans and finds nothing prints a tick indistinguishable from a clean tree. Seeded shrink-only: 47 enumerating checks carry no vacuity guard today, and a wall of 47 is a gate somebody disables.
     id: 'check:ci-enumeration-vacuity',
-    run: 'npm run check:ci-enumeration-vacuity',
+    run: 'tsx scripts/gates/check-enumeration-vacuity.ts',
     gate: true,
     paths: ['.ci/scripts/**', '.npmrc', 'package.json', 'scripts/**', 'tsconfig.json'],
     names: ['.ci/scripts/**', 'scripts/**'],

@@ -523,7 +523,7 @@ jobs:
 
       - name: CI executes only tracked paths
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-scans-tracked-paths
+        run: .ci/scripts/quality/check_ci_scans_tracked_paths.py
 
 
       - name: rdc.sh env tests
@@ -717,7 +717,7 @@ jobs:
       # only, so the blob:none clone answers it exactly as a full clone would.
       - name: Commit citations
         if: ${{ !cancelled() }}
-        run: npm run check:ci-commit-citations
+        run: .ci/scripts/quality/check_commit_citations.py
         env:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
@@ -921,7 +921,7 @@ jobs:
       # are different claims, and only the first was checked. Run 33125687081
       # cost seven cancelled sibling jobs to that gap.
       - name: Gate prerequisites
-        run: npm run check:ci-gate-prerequisites
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.ci_gate_prerequisites
 
       # A step invoking a PR_HEAD_REF-preferring script must set it. Found by
       # hand three times in one session before this gate existed.
@@ -1045,7 +1045,7 @@ jobs:
       - name: AWS credential bridge
         id: gate_check_ci_aws_credential_bridge
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: npm run check:ci-aws-credential-bridge
+        run: npx tsx scripts/gates/check-aws-credential-bridge.ts
       - name: Backup bucket conformance
         id: gate_check_ci_backup_bucket_conformance
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1053,7 +1053,7 @@ jobs:
       - name: Backup manifest shape parity
         id: gate_check_ci_backup_manifest_shape_parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: npm run check:ci-backup-manifest-shape-parity
+        run: npx tsx scripts/gates/check-backup-manifest-shape-parity.ts
       - name: Backup protocol conformance
         id: gate_check_ci_backup_protocol_conformance
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1065,7 +1065,7 @@ jobs:
       - name: Builder env contract
         id: gate_check_ci_builder_env_contract
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: npm run check:ci-builder-env-contract
+        run: npx tsx scripts/gates/check-builder-env-contract.ts
       - name: Ceph image pin freshness
         id: gate_check_ci_ceph_image_pin
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1081,7 +1081,7 @@ jobs:
       - name: CI fetch integrity
         id: gate_check_ci_fetch_integrity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: npm run check:ci-fetch-integrity
+        run: npx tsx scripts/gates/check-ci-fetch-integrity.ts
       - name: CI job aggregation
         id: gate_check_ci_job_aggregation
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
@@ -1105,7 +1105,7 @@ jobs:
       - name: Design tree
         id: gate_check_ci_design_tree
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: npm run check:ci-design-tree
+        run: npx tsx scripts/gates/check-design-tree.ts
       - name: Dockerfile npm pins
         id: gate_check_ci_docker_npm_pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
@@ -1113,7 +1113,7 @@ jobs:
       - name: Enumeration vacuity
         id: gate_check_ci_enumeration_vacuity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: npm run check:ci-enumeration-vacuity
+        run: npx tsx scripts/gates/check-enumeration-vacuity.ts
       - name: Every source file reaches a linter
         id: gate_check_ci_lint_scope_coverage
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1173,7 +1173,7 @@ jobs:
       - name: jq boolean defaults
         id: gate_check_ci_jq_boolean_default
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
-        run: npm run check:ci-jq-boolean-default
+        run: npx tsx scripts/gates/check-jq-boolean-default.ts
       - name: Judged rule wiring
         id: gate_check_ci_judged_rule_wiring
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1205,11 +1205,11 @@ jobs:
       - name: Naturalization model policy
         id: gate_check_ci_naturalization_model_policy
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
-        run: npm run check:ci-naturalization-model-policy
+        run: npx tsx scripts/gates/check-naturalization-model-policy.ts
       - name: No client-side key composition
         id: gate_check_ci_no_client_key_composition
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
-        run: npm run check:ci-no-client-key-composition
+        run: npx tsx scripts/gates/check-no-client-key-composition.ts
       - name: No source file exceeds the line-count budget
         id: gate_check_ci_max_lines
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1217,7 +1217,7 @@ jobs:
       - name: Package key budget
         id: gate_check_ci_package_key_budget
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: npm run check:ci-package-key-budget
+        run: npx tsx scripts/gates/check-package-key-budget.ts
       - name: Paths-origin provenance
         id: gate_check_ci_paths_origin
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
@@ -1235,7 +1235,7 @@ jobs:
       - name: Retention knob parity
         id: gate_check_ci_retention_knob_parity
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
-        run: npm run check:ci-retention-knob-parity
+        run: npx tsx scripts/gates/check-retention-knob-parity.ts
       - name: Rubric calibration
         id: gate_check_ci_rubric_calibration
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1263,7 +1263,7 @@ jobs:
       - name: Shared constant duplication
         id: gate_check_ci_shared_constant_duplication
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
-        run: npm run check:ci-shared-constant-duplication
+        run: npx tsx scripts/gates/check-shared-constant-duplication.ts
       - name: Source-authored lint rules, host-run
         id: gate_check_ci_source_rules
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1283,7 +1283,7 @@ jobs:
       - name: Test suites are CI-reachable
         id: gate_check_ci_test_scripts_reachable
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 3) }}
-        run: npm run check:ci-test-scripts-reachable
+        run: npx tsx scripts/gates/check-test-scripts-reachable.ts
       - name: Tmpfs health
         id: gate_check_ci_tmpfs_health
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 2) }}
@@ -1307,7 +1307,7 @@ jobs:
       - name: Worker secret names
         id: gate_check_ci_worker_secret_names
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 1) }}
-        run: npm run check:ci-worker-secret-names
+        run: npx tsx scripts/gates/check-worker-secret-names.ts
       - name: Workflow banned patterns
         id: gate_check_ci_workflows
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (matrix.shard == 4) }}
@@ -1449,7 +1449,7 @@ jobs:
 
       - name: Breakpoint drift
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-breakpoint-drift
+        run: .ci/breakpoint/scripts/check-breakpoint-drift.sh
 
 
       # External gates are hard on every cadence and fail closed (operator
@@ -1578,7 +1578,7 @@ jobs:
         run: npm run check:ci-css-dom-refs
       - name: Dead service methods
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-dead-service-methods
+        run: npx tsx scripts/gates/check-dead-service-methods.ts
       - name: DKIM notify DNS
         if: ${{ !cancelled() && steps.setup.outcome == 'success' && (inputs.external_quality != 'skip') }}
         run: npm run check:ci-dkim-notify
@@ -1612,7 +1612,7 @@ jobs:
         run: npm run check:ci-external-links
       - name: German orthography
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-de-orthography
+        run: npx tsx scripts/gates/check-de-orthography.ts
       - name: i18n value types match English
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.i18n_value_types
@@ -1627,10 +1627,10 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.scope_mirrors
       - name: Pricing consistency
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-pricing-consistency
+        run: npx tsx scripts/gates/check-pricing-consistency.ts
       - name: Retired commands in docs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-retired-commands
+        run: npx tsx scripts/gates/check-retired-commands-in-docs.ts
       - name: Self-improving skill size
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-skill-size
@@ -1663,7 +1663,7 @@ jobs:
         run: npm run check:ci-tutorial-commands
       - name: Verify NIS2 directive quotations match the official source
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-nis2-quotes
+        run: npx tsx scripts/gates/check-directive-quotes.ts
       - name: Video player invariants
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-video-player-invariants
@@ -1679,8 +1679,8 @@ jobs:
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: |
           npm run check:ci-dead-css
-          npm run check:ci-viewport-unit-mixing
-          npm run check:ci-illustration-contract
+          npx tsx scripts/gates/check-viewport-unit-mixing.ts --selftest
+          npx tsx scripts/gates/check-illustration-contract.ts --selftest
       - name: Validate per-locale tutorial video assets exist
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-locale-tutorial-assets
@@ -2209,7 +2209,7 @@ jobs:
         run: npm run check:ci-i18n-untranslated
       - name: Locale config divergence
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-locale-config-divergence
+        run: npx tsx scripts/gates/check-locale-config-divergence.ts
       - name: Locale German contamination
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-locale-de-contamination
@@ -2322,7 +2322,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.browser_smoke
       - name: Captcha recovery
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: npm run check:ci-captcha-recovery
+        run: npx tsx scripts/gates/check-captcha-recovery.ts --selftest
       - name: Docs render parity
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-docs-render-parity
@@ -2334,7 +2334,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density
       - name: Player CSS scope
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
-        run: npm run check:ci-player-css-scope
+        run: npx tsx scripts/gates/check-player-css-scope.ts
       - name: Raw translation keys
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-dist-raw-translation-keys
@@ -2492,7 +2492,7 @@ jobs:
         run: npm run check:ci-overrides-reasons
       - name: BLOCKER validator — syncpack versionGroups
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-syncpack-reasons
+        run: npx tsx scripts/gates/check-syncpack-reasons.ts
       - name: BWS rotation notice
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_rotation_notice
@@ -2539,7 +2539,7 @@ jobs:
           PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability
       - name: Secret scope
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-secret-scope
+        run: npx tsx scripts/gates/check-secret-scope.ts
       - name: Staging tag guard
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.staging_tag_guard
@@ -2548,7 +2548,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.test_file_orphans
       - name: Tracked credentials
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tracked-credentials
+        run: npx tsx scripts/gates/check-tracked-credentials.ts
       # <<< gate-bind
 
       # external_quality 'skip' only, deliberately NO soft mode: a new
@@ -2972,7 +2972,7 @@ jobs:
       # static, and it skips loudly when the renet submodule is absent.
       - name: Check recovery functions get an uncancellable context
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-recovery-context
+        run: npx tsx scripts/gates/check-recovery-context.ts
 
       # The ONLY embed gate that opens the artifact. Every other one compares a
       # declaration to a declaration (pin vs upstream, ARG vs lockfile, credits
@@ -2985,7 +2985,7 @@ jobs:
       # comparison controls still run on every invocation.
       - name: Check embedded asset versions match their pins
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-embed-asset-versions
+        run: npx tsx scripts/gates/check-embed-asset-versions.ts
 
       # THE EXTERNAL GATES ARE HARD ON EVERY CADENCE (operator rulings
       # 2026-10-13, "Everything fails closed, nightly included", and

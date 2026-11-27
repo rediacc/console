@@ -12,7 +12,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THERE IS DELIBERATELY NO `---- gate ----` HEADER HERE, AND THAT IS THE CARRIED FIELD SET. The twin has no header block at all -- grepped for `---- gate ----` and for every field name, zero hits -- so the field-for-field diff comes out empty and an invented header would be a NEW claim, not a moved one. `bind()` returns null for a file with no header and the gate is simply not
 gate-bind's business (`gate-bind.ts:17`).
 
-The CI step exists and is HAND-WRITTEN, outside the `quality-static` gate-bind region (`ci-quality.yml:354`, region closes at 346), which is reported to the driver separately. That step's `run:` line is `npm run check:ci-scans-tracked-paths`, so unlike the OTLP one it follows the package.json registration and needs no workflow edit to cut over.
+The CI step exists and is HAND-WRITTEN, outside the `quality-static` gate-bind region (`ci-quality.yml:354`, region closes at 346), which is reported to the driver separately. That step's `run:` line is this file's path, the same command the manifest entry runs; the package.json key is gone (PLAN-tooling-code-reduction.md CR2), and `gen:gates -- --check` holds the step and the entry to each other.
 
 `inferredNeeds` NOTE, since a headerless file makes the union moot but not the fact: `inferredNeeds(twin)` is `["node"]` (its scanner matches `npm `/`npx `/ `node ` command positions in the surfaces it greps) and `inferredNeeds(this file)` is `[]`. Nothing consumes either today; recorded so a future header is written with the measured value.
 
