@@ -183,13 +183,25 @@ def new_transcript(scenario: str) -> str:
     return buffer.getvalue()
 
 
-@functools.cache
+_UNPLANTED: dict[tuple, str] = {}
+
+
+def _patch_surface() -> tuple[int, ...]:
+    """The identity of every attribute a plant or a `monkeypatch` can replace: the port module, its class, the driver and the stub scenario table. A replaced attribute is a different object, so a plant changes this tuple."""
+    return tuple(
+        id(value) for owner in (devbox, devbox.Devbox, driver) for value in vars(owner).values()
+    ) + tuple(id(value) for value in driver.STUB_SCENARIOS.values())
+
+
 def unplanted_transcript(scenario: str) -> str:
     """`new_transcript` for a case that plants nothing, run once per process: `up-create` is 17 `up` runs over a stub docker (about 750 spawns, 4.7 s), and four cases only read it.
 
-    A case that monkeypatches the port calls `new_transcript` itself, because a plant must be visible to the run; this one is the answer of the tree as it stands, and a plant never reaches it because only the unpatched call sites use it.
+    The cache key carries `_patch_surface`, so a call made while anything is patched misses and runs fresh, and the pristine entry is never overwritten by a plant.
     """
-    return new_transcript(scenario)
+    key = (scenario, _patch_surface())
+    if key not in _UNPLANTED:
+        _UNPLANTED[key] = new_transcript(scenario)
+    return _UNPLANTED[key]
 
 
 def observations(out: str) -> dict[str, list[str]]:
@@ -700,6 +712,17 @@ def test_a_planted_defect_is_caught(label: str, attribute: str, scenario: str, m
     assert not equivalent(scenario, twin_out, new_transcript(scenario)), (
         "PLANT DID NOT FIRE: %s changed no observation in %s" % (label, scenario)
     )
+
+
+def test_unplanted_transcript_is_not_served_to_a_planted_run(monkeypatch) -> None:
+    """CONTROL on the shared cache: a plant in force makes `unplanted_transcript` run fresh, and the pristine answer comes back once the plant is undone."""
+    pristine = unplanted_transcript("slug-edge")
+    monkeypatch.setattr(devbox, "SLUG_MAX", planted_value("SLUG_MAX"))
+    planted = unplanted_transcript("slug-edge")
+    assert planted == new_transcript("slug-edge")
+    assert planted != pristine
+    monkeypatch.undo()
+    assert unplanted_transcript("slug-edge") == pristine
 
 
 def test_the_transcripts_carry_what_a_divergence_would_move() -> None:
