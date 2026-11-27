@@ -702,4 +702,9 @@ __all__ = [
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_prose_duplication.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(main(sys.argv[1:]))

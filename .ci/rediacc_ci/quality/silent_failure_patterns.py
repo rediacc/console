@@ -403,4 +403,11 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_silent_failure_patterns.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json", "--help", "-h"),
+    )
     raise SystemExit(main(sys.argv[1:]))
