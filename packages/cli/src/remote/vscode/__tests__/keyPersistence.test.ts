@@ -37,7 +37,8 @@ describe('persistSSHKey', () => {
     const written = readFileSync(path, 'utf8');
     expect(written.endsWith('-----END OPENSSH PRIVATE KEY-----\n')).toBe(true);
     expect(written.endsWith('\n\n')).toBe(false);
-    expect(statSync(path).mode & 0o777).toBe(0o600);
+    // BLOCKER: POSIX mode bits; NTFS reports 0o666 whatever chmod asked for, so the 0600 check cannot hold on win32.
+    if (process.platform !== 'win32') expect(statSync(path).mode & 0o777).toBe(0o600);
   });
 
   it('turns CRLF endings into LF', () => {

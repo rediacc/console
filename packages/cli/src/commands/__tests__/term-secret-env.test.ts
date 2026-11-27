@@ -69,6 +69,9 @@ function bashRunner(env: NodeJS.ProcessEnv): StagingRunner {
   };
 }
 
+// BLOCKER: the tests marked posixIt run the remote staging command under real `bash` and `sh` (mode bits, `pgrep`, a reaper `sleep`); Windows has no POSIX shell on PATH and no mode bits. The rest are string-level and run everywhere.
+const posixIt = it.skipIf(process.platform === 'win32');
+
 describe('term connect secret delivery', () => {
   let root: string;
 
@@ -87,7 +90,7 @@ describe('term connect secret delivery', () => {
     expect(prefix).toContain("export REDIACC_REPOSITORY='app'");
   });
 
-  it('stages the secrets on stdin only, and the session loads them', async () => {
+  posixIt('stages the secrets on stdin only, and the session loads them', async () => {
     const calls: { command: string; input: string }[] = [];
     const real = bashRunner({ PATH: process.env.PATH, TMPDIR: root });
     const prefix = await stageSessionSecrets(
@@ -119,7 +122,7 @@ describe('term connect secret delivery', () => {
     expect(readdirSync(root)).toEqual([]);
   });
 
-  it('falls back from an unusable runtime directory, and loads under sh too', () => {
+  posixIt('falls back from an unusable runtime directory, and loads under sh too', () => {
     const env = {
       PATH: process.env.PATH,
       TMPDIR: root,
@@ -137,7 +140,7 @@ describe('term connect secret delivery', () => {
     expect(readdirSync(root)).toEqual([]);
   });
 
-  it('reports a session whose staged file is gone, and still runs it', () => {
+  posixIt('reports a session whose staged file is gone, and still runs it', () => {
     const out = execFileSync(
       'bash',
       ['-c', `${consumeStagedSecrets(`${root}/rdc-env.gone1234`)}echo ran 2>&1`],
@@ -189,7 +192,7 @@ describe('term connect secret delivery', () => {
     );
   });
 
-  it('kills a live reaper and its sleep when the session consumes the file', () => {
+  posixIt('kills a live reaper and its sleep when the session consumes the file', () => {
     // Review 73f53020.1/.3: the pid in "$d/reaper" is the reaper subshell; its trap stops the sleep it started.
     const base = mkdtempSync(join(tmpdir(), 'rdc-reaper-'));
     // Cleanup runs even when an expectation fails (review 224dd838.2).
@@ -228,7 +231,7 @@ describe('term connect secret delivery', () => {
     }
   });
 
-  it('loads and deletes a staged directory whose path holds shell metacharacters', () => {
+  posixIt('loads and deletes a staged directory whose path holds shell metacharacters', () => {
     // Review 2e951e55.3: the path reaches the consumer quoted, so a quote, a dollar and a backtick stay literal.
     const parent = mkdtempSync(join(tmpdir(), "rdc q'$x`y "));
     const dir = join(parent, 'rdc-env.Ab12Cd34Ef');

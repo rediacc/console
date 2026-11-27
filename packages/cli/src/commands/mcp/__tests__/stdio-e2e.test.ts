@@ -72,6 +72,9 @@ function biomeJson(value: unknown): string {
   return formatted.stdout;
 }
 
+// BLOCKER: spawns `npx` and `node_modules/.bin/biome` as bare executables (no .cmd shim resolution without a shell) and steers the child with XDG_*, which win32 ignores; the child would read the runner's real %APPDATA%.
+const SKIP_WIN32 = process.platform === 'win32';
+
 let home: string;
 let client: Client;
 let stderr = '';
@@ -103,6 +106,7 @@ async function callTool(name: string, args: Record<string, unknown>) {
 }
 
 beforeAll(async () => {
+  if (SKIP_WIN32) return;
   home = mkdtempSync(path.join(tmpdir(), 'rdc-mcp-e2e-'));
   const configDir = path.join(home, 'config', 'rediacc');
   mkdirSync(configDir, { recursive: true });
@@ -130,7 +134,7 @@ afterAll(async () => {
   if (home) rmSync(home, { recursive: true, force: true });
 });
 
-describe('the mcp serve stdio server, driven by the SDK v2 client', () => {
+describe.skipIf(SKIP_WIN32)('the mcp serve stdio server, driven by the SDK v2 client', () => {
   it('negotiates spec 2026-07-28 through server/discover', () => {
     expect(client.getProtocolEra(), stderr).toBe('modern');
     expect(client.getNegotiatedProtocolVersion()).toBe(SPEC);

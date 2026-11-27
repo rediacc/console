@@ -80,6 +80,9 @@ function argvSeenBy(commandLine: string): string[] {
   return execFileSync('bash', ['-c', probe]).toString().split('\0').slice(0, -1);
 }
 
+// BLOCKER: the tests marked posixIt execute the launched command line under a real `bash` (argv round-trip through POSIX quoting, a /tmp launch script); Windows has no bash on PATH on the GitHub image. The Windows-quoting and spawn-recording tests run everywhere.
+const posixIt = it.skipIf(process.platform === 'win32');
+
 describe('terminal launchers', () => {
   beforeEach(() => {
     spawned.length = 0;
@@ -112,12 +115,12 @@ describe('terminal launchers', () => {
     });
   }
 
-  it('a POSIX command line hands each argument over intact', () => {
+  posixIt('a POSIX command line hands each argument over intact', () => {
     expect(argvSeenBy(posixCommandLine(ARGV))).toEqual(ARGV.slice(1));
   });
 
   for (const type of ['gnome-terminal', 'konsole', 'xfce4-terminal', 'xterm'] as const) {
-    it(`${type}: bash -c receives the argv quoted`, () => {
+    posixIt(`${type}: bash -c receives the argv quoted`, () => {
       launchTerminal(type, { argv: ARGV });
       const args = spawned[0].args;
       expect(args.slice(-3, -1)).toEqual(['bash', '-c']);
@@ -126,7 +129,7 @@ describe('terminal launchers', () => {
   }
 
   for (const type of ['mate-terminal', 'terminator'] as const) {
-    it(`${type}: the -e string splits back into bash -c and the quoted argv`, () => {
+    posixIt(`${type}: the -e string splits back into bash -c and the quoted argv`, () => {
       launchTerminal(type, { argv: ARGV });
       const line = spawned[0].args.at(-1) as string;
       const words = execFileSync('bash', ['-c', `printf '%s\\0' ${line}`])
@@ -165,7 +168,7 @@ describe('terminal launchers', () => {
     expect(windowsQuoteArg(`it's a \\ "x"`)).toBe(`"it's a \\ \\"x\\""`);
   });
 
-  it('wsl inside WSL passes only a launch script path, and the script runs the argv', () => {
+  posixIt('wsl inside WSL passes only a launch script path, and the script runs the argv', () => {
     const argv = ['printf', '%s\\0', TRICKY, `$REDIACC_REPOSITORY`];
     launchTerminal('wsl', { argv, environmentVariables: ENV });
     const { file, args } = spawned[0];

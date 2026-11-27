@@ -115,22 +115,26 @@ describe('ensureVSCodeEnvSetup secret delivery', () => {
     expect(config.envBlock).toContain(`export REDIACC_SECRET_API_KEY='${SECRET}'`);
   });
 
-  it('the real setup script reads that config from stdin', () => {
-    const home = mkdtempSync(join(tmpdir(), 'vscode-bootstrap-'));
-    dirs.push(home);
-    const config = JSON.stringify({
-      envBlock: '',
-      bashFunctions: '',
-      universalUser: 'x',
-      serverInstallPath: '/nowhere',
-      markerStart: '#s',
-      markerEnd: '#e',
-    });
-    const probe = `${SETUP_SCRIPT.split('\ndef main')[0]}\nprint(UNIVERSAL_USER)\n`;
-    const out = execFileSync('python3', ['-c', probe], {
-      input: config,
-      env: { ...process.env, HOME: home },
-    }).toString();
-    expect(out.trim()).toBe('x');
-  });
+  // BLOCKER: runs the remote setup script under `python3`, which is not a Windows command (the launcher there is `python` or `py`); the script itself only ever runs on the remote Linux end.
+  it.skipIf(process.platform === 'win32')(
+    'the real setup script reads that config from stdin',
+    () => {
+      const home = mkdtempSync(join(tmpdir(), 'vscode-bootstrap-'));
+      dirs.push(home);
+      const config = JSON.stringify({
+        envBlock: '',
+        bashFunctions: '',
+        universalUser: 'x',
+        serverInstallPath: '/nowhere',
+        markerStart: '#s',
+        markerEnd: '#e',
+      });
+      const probe = `${SETUP_SCRIPT.split('\ndef main')[0]}\nprint(UNIVERSAL_USER)\n`;
+      const out = execFileSync('python3', ['-c', probe], {
+        input: config,
+        env: { ...process.env, HOME: home },
+      }).toString();
+      expect(out.trim()).toBe('x');
+    }
+  );
 });

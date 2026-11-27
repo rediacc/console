@@ -83,6 +83,9 @@ function launchedScripts(): string[] {
   );
 }
 
+// BLOCKER: the tests marked posixIt run the remote bootstrap under a real `bash` (heredoc, BASH_ENV, process substitution); that script runs on the remote Linux end, and the Windows host has no bash on PATH. The cmd and PowerShell tests run everywhere.
+const posixIt = it.skipIf(process.platform === 'win32');
+
 describe('windowsRemoteBootstrap', () => {
   it('has no line break, quote, caret or percent sign', () => {
     const remote = windowsRemoteBootstrap(REAL_SCRIPT);
@@ -98,7 +101,7 @@ describe('windowsRemoteBootstrap', () => {
     );
   });
 
-  it('runs under bash: heredoc and metacharacters intact, the script file removed', () => {
+  posixIt('runs under bash: heredoc and metacharacters intact, the script file removed', () => {
     const script = [
       'cat <<"EOF"',
       'a $HOME ! && > () ^',
@@ -111,28 +114,31 @@ describe('windowsRemoteBootstrap', () => {
     expect(existsSync(scriptPath)).toBe(false);
   });
 
-  it('reads BASH_ENV once (the gateway bash), so the sandbox banner prints once, and restores it for the script', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'rdc-be-'));
-    try {
-      const marker = join(dir, 'count');
-      const benv = join(dir, 'bashrc');
-      writeFileSync(benv, `echo x >> ${marker}\n`);
-      const out = execFileSync(
-        'bash',
-        ['-c', windowsRemoteBootstrap('echo "BE=$BASH_ENV"; echo "RDC=${RDC_BASH_ENV-unset}"')],
-        { env: { ...process.env, BASH_ENV: benv } }
-      ).toString();
-      expect(out).toContain(`BE=${benv}`);
-      expect(out).toContain('RDC=unset');
-      expect(readFileSync(marker, 'utf8')).toBe('x\n');
-    } finally {
-      rmSync(dir, { recursive: true, force: true });
+  posixIt(
+    'reads BASH_ENV once (the gateway bash), so the sandbox banner prints once, and restores it for the script',
+    () => {
+      const dir = mkdtempSync(join(tmpdir(), 'rdc-be-'));
+      try {
+        const marker = join(dir, 'count');
+        const benv = join(dir, 'bashrc');
+        writeFileSync(benv, `echo x >> ${marker}\n`);
+        const out = execFileSync(
+          'bash',
+          ['-c', windowsRemoteBootstrap('echo "BE=$BASH_ENV"; echo "RDC=${RDC_BASH_ENV-unset}"')],
+          { env: { ...process.env, BASH_ENV: benv } }
+        ).toString();
+        expect(out).toContain(`BE=${benv}`);
+        expect(out).toContain('RDC=unset');
+        expect(readFileSync(marker, 'utf8')).toBe('x\n');
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
     }
-  });
+  );
 });
 
 describe('windowsRemoteBootstrap without a gateway BASH_ENV', () => {
-  it('leaves BASH_ENV unset for the script, not an empty string', () => {
+  posixIt('leaves BASH_ENV unset for the script, not an empty string', () => {
     const env = { ...process.env };
     delete env.BASH_ENV;
     const out = execFileSync('bash', ['-c', windowsRemoteBootstrap('echo "BE=${BASH_ENV+set}"')], {

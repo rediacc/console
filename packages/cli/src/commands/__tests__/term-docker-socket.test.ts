@@ -40,7 +40,8 @@ const derived = {
   DOCKER_HOST: repoDockerHost(NETWORK_ID),
 };
 
-describe('term connect Docker socket on either layout', () => {
+// BLOCKER: runs the session prefix under `sh` against real unix-domain sockets under /tmp; Windows has neither a POSIX `sh` on PATH nor unix sockets at those paths.
+describe.skipIf(process.platform === 'win32')('term connect Docker socket on either layout', () => {
   let root: string;
   const servers: Server[] = [];
 
