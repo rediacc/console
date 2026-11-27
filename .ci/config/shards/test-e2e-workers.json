@@ -48,7 +48,7 @@
       "index": 6,
       "ids": [
         "e2e-workers:11-multi-machine.test.ts",
-        "e2e-workers:vscode-expose.test.ts"
+        "e2e-workers:34-vscode-expose.test.ts"
       ]
     },
     {
