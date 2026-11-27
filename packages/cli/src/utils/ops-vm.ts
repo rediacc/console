@@ -18,13 +18,19 @@ import { VM_NETWORK } from '@rediacc/shared/config';
 import type { Placement } from '@rediacc/shared/config-schema';
 import { configService } from '../services/config/config-resources.js';
 
-/** `192.168.111.` for the default fleet: the bridge address without its host octet. */
-const OPS_VM_NET_PREFIX = VM_NETWORK.BRIDGE_IP.slice(0, VM_NETWORK.BRIDGE_IP.lastIndexOf('.') + 1);
+/** The address without its host octet, `192.168.111.` for the bridge. */
+const prefixOf = (ip: string): string => ip.slice(0, ip.lastIndexOf('.') + 1);
+
+/** The fleet bridge /24 and the Hyper-V NAT /24 (`VM_NETWORK.HYPERV_NAT_NET`). */
+const OPS_VM_NET_PREFIXES: readonly string[] = [
+  prefixOf(VM_NETWORK.BRIDGE_IP),
+  prefixOf(VM_NETWORK.HYPERV_NAT_NET),
+];
 
 const OCTET = /^(0|[1-9]\d{0,2})$/;
 
 /**
- * True only for a dotted IPv4 literal inside the ops fleet's /24. A hostname,
+ * True only for a dotted IPv4 literal inside the ops fleet's bridge /24 or the Hyper-V NAT /24. A hostname,
  * an IPv6 address, or anything that merely STARTS with the prefix
  * (`192.168.111.5.example.com`) is not an ops VM.
  */
@@ -32,7 +38,7 @@ export function isOpsVmAddress(address: string): boolean {
   const octets = address.split('.');
   if (octets.length !== 4) return false;
   if (!octets.every((o) => OCTET.test(o) && Number(o) <= 255)) return false;
-  return `${octets.slice(0, 3).join('.')}.` === OPS_VM_NET_PREFIX;
+  return OPS_VM_NET_PREFIXES.includes(`${octets.slice(0, 3).join('.')}.`);
 }
 
 /** True when the named machine exists in the active config and its address is an ops VM. */
