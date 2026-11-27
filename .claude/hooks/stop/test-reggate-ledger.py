@@ -688,7 +688,77 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     check("...while the shell script still does not", "5656efef0101" in got, False)
 
 
-if Tally.count < 89:
+# R8's import count (agent/plans/PLAN-reggate-debt-collection.md R8, survey r93). The live tree read 138 materialized sigs against 69 open `reggate-debt:` items, which looked like double counting. Folding that tree said otherwise: 148 debts across the ledgers, 148 distinct sigs, 138 `materialize` records for 138 distinct sigs, each naming its own item (all 138 in the
+# store, one owner), and 69 of those debts since DISCHARGED, which ticks their items. The materialize side counts every debt ever materialized; `--list --open` counts only the unpaid ones. This fixture pins both halves: each debt is materialized and counted exactly once across several ledgers and a dotted side file, and the open items equal the materialized sigs minus the paid ones.
+def ledger_records_all():
+    """Every record of every `*.jsonl` under debt_dir, side files included: what R8's `cat agent/reggate/*.jsonl` reads."""
+    out = []
+    for p in sorted(R.debt_dir().glob("*.jsonl")):
+        out += [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    return out
+
+
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    git(root, "init", "-q")
+    git(root, "commit", "-q", "--allow-empty", "-m", "seed")
+    known = {
+        "1111000011110000": ("1104-1", 5, "t/test_one.py"),
+        "2222000022220000": ("1104-1", 5, ""),
+        "3333000033330000": ("0923-1", 5, "t/test_three.py"),
+        "4444000044440000": ("main", OLD, ""),
+    }
+    for sig, (br, ago, art) in known.items():
+        debt(br, sig, "known debt " + sig[:4], ago, root, artifact=art)
+    debt("1121-1", "5555000055550000", "a fresh live-branch debt, not due", 5, root)
+    # The shape-duplication side file: a dotted stem beside a ledger, holding `ask` records only.
+    (R.debt_dir() / "1104-1.shapedup-wide.jsonl").write_text(
+        json.dumps({"kind": "ask", "sig": "1111000011110000"}) + "\n", encoding="utf-8"
+    )
+    R.collect_debts(root, wl, "abcd1234", "1121-1", (), [])
+    (root / "t").mkdir()
+    for rel in ("t/test_one.py", "t/test_three.py"):
+        (root / rel).write_text("def test(): pass\n")
+    git(root, "add", "t")
+    git(root, "commit", "-q", "-m", "the two cases, after the debts")
+    paid_now = dict(R.discharge_scan(root, wl, "abcd1234", S.load(wl, sync=False).items))
+    R.collect_debts(root, wl, "abcd1234", "1121-1", (), S.load(wl, sync=False).items)
+
+    recs = ledger_records_all()
+    mat = [r["sig"] for r in recs if r.get("kind") == "materialize"]
+    paid_set = {r["sig"] for r in recs if r.get("kind") == "discharge"}
+    items_all = debt_items(wl)
+    open_items = [r for r in items_all if r.get("state", " ") == " "]
+    check("the two committed cases discharge their debts", sorted(paid_now), sorted(paid_set))
+    check("...which are exactly the two with an artifact", len(paid_set), 2)
+    check(
+        "every due debt is materialized once, across three ledgers and a side file",
+        sorted(mat),
+        sorted(known),
+    )
+    check("...one item per materialized debt, open and closed together", len(items_all), len(mat))
+    check(
+        "...and each record names a distinct item",
+        len({r["item"] for r in recs if r.get("kind") == "materialize"}),
+        len(mat),
+    )
+    check(
+        "CONTROL: R8's literal comparison (materialized sigs vs open items) differs by the paid count",
+        (len(set(mat)), len(open_items)),
+        (len(known), len(known) - len(paid_set)),
+    )
+    check(
+        "materialized minus paid sigs equals the open debt items",
+        len(set(mat) - paid_set),
+        len(open_items),
+    )
+    check(
+        "...and the debt status counts the same debts unpaid, plus the not-yet-due live one",
+        R.debt_status(root, legacy=set())[0],
+        len(open_items) + 1,
+    )
+
+if Tally.count < 97:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,
