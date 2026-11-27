@@ -328,7 +328,9 @@ def debt_items(worklist):
 
 
 def debt(branch, sig, blind, minutes_ago, root, **extra):
+    """A `debt` record as cap_demand writes it: its content snapshot is taken from `root` NOW (empty outside a git checkout with a commit), unless `extra` overrides a field."""
     rec = {"kind": "debt", "sig": sig, "blind_spot": blind, "at": stamp(minutes_ago)}
+    rec.update(R.debt_snapshot(root))
     rec.update(extra)
     R.append_ledger(branch, rec, root=root)
 
@@ -407,6 +409,12 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
         "",
     )
     subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)
+    _ident = ["-c", "user.name=t", "-c", "user.email=t@t"]
+    subprocess.run(
+        ["git", "-C", str(root), *_ident, "commit", "-q", "--allow-empty", "-m", "seed"],
+        check=True,
+        capture_output=True,
+    )
     debt("1104-1", "7777eeee8888", "a debt the stop collects", 5, root)
     debt("1104-1", "8888ffff9999", "a debt its artifact pays", 5, root, artifact="t/test_a.py")
     (root / "t").mkdir()
@@ -485,25 +493,18 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     (root / "seed").write_text("x\n")
     git(root, "add", "seed")
     git(root, "commit", "-q", "-m", "seed")
-    debt("0914-1", "1111aaaa2222", "a case nobody wrote", 60, root, artifact="tests/test_case.py")
-    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", ()))
-    item = made["1111aaaa2222"]
-
-    # C5: a hand tick closes the ITEM and nothing else.
-    S.set_state(wl, "abcd1234", item, "x", "done by hand")
-    items = S.load(wl, sync=False).items
-    check("C5: a hand tick leaves the debt unpaid", paid(root, "1111aaaa2222"), False)
-    check("...and the status still counts it", R.debt_status(root, legacy=set())[0], 1)
+    # CONTROL before the history: a debt whose artifact is not on disk discharges nothing.
+    debt("0914-1", "0000aaaa1111", "an artifact never written", 60, root, artifact="tests/nope.py")
     check(
         "CONTROL: with no artifact on disk, the scan discharges nothing",
-        R.discharge_scan(root, wl, "abcd1234", items),
+        R.discharge_scan(root, wl, "abcd1234", []),
         [],
     )
-
-    # An artifact last committed BEFORE the debt's `at` proves nothing.
+    # The history BEFORE the debt: a case committed two hours ago, then an uncommitted edit to it (review 6253c25c.1).
     (root / "tests").mkdir()
     (root / "tests" / "test_case.py").write_text("def test(): pass\n")
-    git(root, "add", "tests/test_case.py")
+    (root / "tests" / "test_clean.py").write_text("def test(): pass\n")
+    git(root, "add", "tests/test_case.py", "tests/test_clean.py")
     before = stamp(120)
     git(
         root,
@@ -513,23 +514,50 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
         "old case",
         env={"GIT_COMMITTER_DATE": before, "GIT_AUTHOR_DATE": before},
     )
+    (root / "tests" / "test_case.py").write_text("def test(): assert 1\n")
+    debt("0914-1", "1111aaaa2222", "a case nobody wrote", 60, root, artifact="tests/test_case.py")
+    debt(
+        "0914-1",
+        "2222bbbb3333",
+        "a clean file as the artifact",
+        60,
+        root,
+        artifact="tests/test_clean.py",
+    )
+    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", ()))
+    item = made["1111aaaa2222"]
+    recs, _f = R.read_ledger("0914-1", root)
+    snap = next(r for r in recs if r.get("sig") == "1111aaaa2222")
+    hashed = sorted(k for k in (snap.get("dirty") or {}) if k.startswith("tests/"))
     check(
-        "an artifact last committed before the debt does not discharge it",
+        "the debt record hashes the path dirty when it was written", hashed, ["tests/test_case.py"]
+    )
+    check("...and names the commit it stood on", len(str(snap.get("head") or "")), 40)
+
+    # C5: a hand tick closes the ITEM and nothing else.
+    S.set_state(wl, "abcd1234", item, "x", "done by hand")
+    items = S.load(wl, sync=False).items
+    check("C5: a hand tick leaves the debt unpaid", paid(root, "1111aaaa2222"), False)
+    check("...and the status still counts it", R.debt_status(root, legacy=set())[0], 3)
+    check(
+        "committed before the debt and dirty with the pre-debt edit: nothing discharges",
         R.discharge_scan(root, wl, "abcd1234", items),
         [],
     )
     check("...so the debt stays unpaid", paid(root, "1111aaaa2222"), False)
 
-    # A dirty artifact whose last edit predates the debt proves nothing either (review 6253c25c.1).
-    (root / "tests" / "test_case.py").write_text("def test(): assert 1\n")
-    _old = (C.utcnow() - datetime.timedelta(minutes=120)).timestamp()
-    os.utime(root / "tests" / "test_case.py", (_old, _old))
+    # Review 6b9a0176.1: a pre-debt edit rewritten after the debt (stash and pop, touch) has a fresh mtime and the same bytes.
+    git(root, "stash", "-q")
+    git(root, "stash", "pop", "-q")
+    _new = (C.utcnow() + datetime.timedelta(minutes=5)).timestamp()
+    os.utime(root / "tests" / "test_case.py", (_new, _new))
+    os.utime(root / "tests" / "test_clean.py", (_new, _new))
     check(
-        "a dirty artifact last edited before the debt does not discharge it",
+        "a stash/pop'd and touched pre-debt edit does not discharge the debt",
         R.discharge_scan(root, wl, "abcd1234", items),
         [],
     )
-    check("...so the debt stays unpaid after the stale edit", paid(root, "1111aaaa2222"), False)
+    check("...so the debt stays unpaid after the rewrite", paid(root, "1111aaaa2222"), False)
 
     # C6: the same artifact changed after the debt discharges it (dirty-tree proof).
     (root / "tests" / "test_case.py").write_text("def test(): assert True\n")
@@ -544,6 +572,13 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     check("...with a dirty-tree proof in the record", proof.startswith("dirty-tree:"), True)
     check("...and the debt is now paid", paid(root, "1111aaaa2222"), True)
     check("a second scan writes nothing more", R.discharge_scan(root, wl, "abcd1234", items), [])
+    # A path clean when the debt was written is judged against that commit's blob.
+    (root / "tests" / "test_clean.py").write_text("def test(): assert 2\n")
+    check(
+        "a clean-at-debt artifact changed afterwards discharges its debt",
+        dict(R.discharge_scan(root, wl, "abcd1234", items)).get("2222bbbb3333"),
+        "tests/test_clean.py",
+    )
 
 with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     root = pathlib.Path(td)

@@ -285,6 +285,7 @@ def cap_demand(branch, sig, gate, root=None):
             "surface": str(gate.get("surface", ""))[:20],
             "artifact": str(gate.get("artifact", ""))[:200],
             "charged": charged,
+            **debt_snapshot(root if root is not None else C.project_root(C.project_start())),
         },
         root=root,
     )
@@ -306,7 +307,7 @@ _EPIC_CHUNK = 64
 def debt_entries(root=None):
     """One dict per `debt` record across every ledger, in ledger then file order.
 
-    Keys: sig, br (the record's branch, else the ledger's), ledger (the file stem, which append_ledger maps back to the same file), at, blind_spot, surface, artifact, paid (a discharge or a stamped retire), retired, discharged, item (the materialized item id, or "").
+    Keys: sig, br (the record's branch, else the ledger's), ledger (the file stem, which append_ledger maps back to the same file), at, blind_spot, surface, artifact, paid (a discharge or a stamped retire), retired, discharged, item (the materialized item id, or ""), and the record's content snapshot head, dirty (None when the record has none) and dirty_more (`debt_snapshot`).
     """
     out = []
     for path in ledger_paths(root):
@@ -335,6 +336,9 @@ def debt_entries(root=None):
                     "discharged": sig in discharged,
                     "retired": sig in paid and sig not in discharged,
                     "item": items.get(sig, ""),
+                    "head": str(r.get("head") or ""),
+                    "dirty": r.get("dirty") if isinstance(r.get("dirty"), dict) else None,
+                    "dirty_more": bool(r.get("dirty_more")),
                 }
             )
     return out
@@ -508,13 +512,45 @@ def _is_listed_dirty(rel, dirty):
     return rel in dirty or any(d.endswith("/") and rel.startswith(d) for d in dirty)
 
 
-def _modified_after(full, at):
-    """Whether the file at `full` was last modified after the aware datetime `at`; False when it cannot be stat'ed."""
-    try:
-        mtime = full.stat().st_mtime
-    except OSError:
+# At most this many dirty paths are hashed into a debt record; past it the record says `dirty_more` and a path it did not hash cannot prove by the dirty tree (it may have been dirty already).
+DEBT_DIRTY_MAX = 128
+
+
+def debt_snapshot(root):
+    """The fields a `debt` record carries so a later dirty path can be judged by CONTENT (review 6b9a0176.1): `head`, the commit the tree stood on, and `dirty`, the content hash (`_hash_file`, "" for a deleted path) of every path `git status` named at that moment, capped at DEBT_DIRTY_MAX with `dirty_more` set past it. Empty when git cannot answer, which leaves only the commit-date proof."""
+    head = C._git(root, "rev-parse", "--verify", "-q", "HEAD")
+    if not head:
+        return {}
+    dirty = sorted(_dirty_paths(root))
+    hashes = {
+        rel: _hash_file(pathlib.Path(root) / rel)
+        for rel in dirty[:DEBT_DIRTY_MAX]
+        if not rel.endswith("/")
+    }
+    snap = {"head": head, "dirty": hashes}
+    if len(dirty) > DEBT_DIRTY_MAX:
+        snap["dirty_more"] = True
+    return snap
+
+
+def _changed_since_debt(root, rel, debt):
+    """Whether the content at `rel` now differs from what it was when `debt` was recorded; False when the record carries no snapshot.
+
+    A path dirty at that moment is compared with the hash the record holds, so a pre-debt edit that is stashed and popped, touched or saved unchanged proves nothing. A path clean at that moment held the blob of the record's `head` (or did not exist there), and is compared with it. Never by modification time, which every rewrite moves.
+    """
+    head = str(debt.get("head") or "")
+    hashes = debt.get("dirty")
+    if not head or not isinstance(hashes, dict):
         return False
-    return datetime.datetime.fromtimestamp(mtime, tz=datetime.UTC) > at
+    full = pathlib.Path(root) / rel
+    if rel in hashes:
+        return _hash_file(full) != hashes[rel]
+    if debt.get("dirty_more"):
+        return False
+    then = C._git(root, "rev-parse", "--verify", "-q", "%s:%s" % (head, rel))
+    if not then:
+        return full.exists()
+    return C._git(root, "hash-object", "--", rel) != then
 
 
 def _committed_after(root, rel, at):
@@ -560,19 +596,20 @@ def _hook_suite_reachable(scripts, rel, root):
     return gate_reachable(scripts, PYTEST_GATE_KEY, root)
 
 
-def prove_debt(root, scripts, rel, at, dirty):
-    """(proven, proof) for one candidate path against one debt's `at` (D4).
+def prove_debt(root, scripts, rel, debt, dirty):
+    """(proven, proof) for one candidate path against one debt entry (D4): `debt` is a `debt_entries` row, read for `at` and its content snapshot (`head`, `dirty`, `dirty_more`).
 
-    Proven when the path exists, changed after the debt (dirty in this tree with a modification time after `at`, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
+    Proven when the path exists, changed after the debt (dirty in this tree with content that differs from what the path held when the debt was recorded, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
 
-    DIRTY IS NOT ENOUGH ON ITS OWN (review 6253c25c.1): a path edited before the debt was recorded and still uncommitted is dirty too, and it proves nothing about the debt. The file's modification time must be later than `at`.
+    DIRTY IS NOT ENOUGH ON ITS OWN (review 6253c25c.1), AND NEITHER IS A NEWER MTIME (review 6b9a0176.1): a path edited before the debt and still uncommitted is dirty, and a stash and pop, a `touch` or an unchanged editor save gives it a fresh modification time without changing a byte. The content is compared with the debt's snapshot (`_changed_since_debt`); a record with no snapshot has only the commit-date proof.
     """
     rel = _clean_rel(rel)
-    when = C.parse_stamp(at)
+    when = C.parse_stamp(str(debt.get("at") or ""))
     full = pathlib.Path(root) / rel
     if not rel or when is None or not full.exists():
         return False, ""
-    if _is_listed_dirty(rel, dirty) and _modified_after(full, when):
+    at = debt.get("at")
+    if _is_listed_dirty(rel, dirty) and _changed_since_debt(root, rel, debt):
         proof = "dirty-tree: %s changed in this tree after the debt (%s)" % (rel, at)
     else:
         committed = _committed_after(root, rel, when)
@@ -605,7 +642,7 @@ def discharge_scan(root, worklist, me8, items=None):
             notes = "%s\n%s" % (rec.get("text", ""), rec.get("line", ""))
             cands = [e["artifact"], *_ARTIFACT_TOKEN.findall(notes)]
             for cand in dict.fromkeys(c for c in cands if _clean_rel(c)):
-                ok, proof = prove_debt(root, scripts, cand, e["at"], dirty)
+                ok, proof = prove_debt(root, scripts, cand, e, dirty)
                 if not ok:
                     continue
                 rel = _clean_rel(cand)
