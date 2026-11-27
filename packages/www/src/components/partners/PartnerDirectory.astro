@@ -34,7 +34,7 @@ const strings = JSON.stringify({
 });
 ---
 
-<div class="pd-directory" data-strings={strings}>
+<div data-pd-directory data-strings={strings}>
   <form class="pd-filters" data-pd-filters>
     <label class="pd-field">
       <span>{t(`${ns}.filters.country`)}</span>
@@ -218,7 +218,7 @@ const strings = JSON.stringify({
   }
 
   document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll<HTMLElement>('.pd-directory').forEach(initDirectory);
+    document.querySelectorAll<HTMLElement>('[data-pd-directory]').forEach(initDirectory);
   });
 </script>
 

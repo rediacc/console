@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import PartnerDirectory from '../../../components/partners/PartnerDirectory.astro';
+import Sentences from '../../../components/Sentences.astro';
 import { createTranslator } from '../../../i18n/utils';
 import type { Language } from '../../../i18n/types';
 import { getLanguagePaths } from '../../../i18n/language-utils';
@@ -27,7 +28,7 @@ const benefitItems = ta(`${ns}.benefits.items`);
         <span class="pf-eyebrow">{t(`${ns}.hero.eyebrow`)}</span>
         <h1>{t(`${ns}.hero.title`)}</h1>
         <p class="pf-hero-sub">{t(`${ns}.hero.subtitle`)}</p>
-        <p class="pf-stance">{t('pages.partners.stance')}</p>
+        <p class="pf-stance"><Sentences text={t('pages.partners.stance')} lang={lang} /></p>
       </div>
     </section>
 
