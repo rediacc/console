@@ -1,22 +1,22 @@
-## SESSION d778be9d 2026-11-27T10:21:46Z
+## SESSION d778be9d 2026-11-27T10:46:06Z
 
-# STATE d778be9d (2026-11-27 ~10:20Z, epoch 13 end)
+# STATE d778be9d (2026-11-27 ~10:55Z)
 
 ## Delegated
-- ci:quick 17: background shell b2g1k9tlj, item #71e97dd6, output /tmp/m/ciquick17.out (rc line at the end). No writer owns files; acceptance is its rc 0.
-- Hostinger C6 restore-test driver /tmp/r85h/scripts/c6p3.sh (nohup on host), item #e85457a6 (runner-hold:hostinger); 4 of 7 repos rc 0 in /tmp/r85h/c6p3/summary.txt; read it on DONE and tick C6 850392c1 (mail excused, defect C).
+- ci:quick 17 reds fixer ad9853477506f2e72 (#71e97dd6): ops-health, literal-sources, scope-scripts-reachability, typecheck-scope-coverage, plan-bindings, policy-inventory, record-paths; accept each gate rc 0. Log /tmp/m/ciquick17.out.
+- V4a signer writer aa441abec971ec9a4 (#d2971b98); r96 survey a33cacc4743e487ac (#743e463e).
+- Unlanded finished leases: EA1 c2527cd6f8 (agent-a7554aad642220f56), stdout sweep 0e1388714b (agent-aeae09daa0ba40630). Land with /tmp/m/manual_land.py <lease-id> (the land tool refuses pre-hook commits without Release-Note; the script adds a note or 'none' and regenerates generated-file conflicts).
 
 ## Big pieces
-- PLAN-windows-lane.md, PLAN-config-sealed-local.md, PLAN-proxied-licence-tunnel-auth-fix.md, PLAN-executor-account-routes.md (promoted QUEUE 116 this context).
+- PLAN-windows-lane, PLAN-config-sealed-local, PLAN-proxied-licence-tunnel-auth-fix, PLAN-executor-account-routes, and the 8 pricing plans (QUEUE 117-124, committed 669aa08814 for console-28).
 
 ## Owed ticks
-- Boxes landed this context need investigation rows + ticks: config W1 469bf3fc; windows WL1 536d8285 WL2 a481fb76 WL6 bf0ff643 WL10 f6c60cc4 WL21 4fc47cd5 WL22 7cdabefa WL24 4d5f4be8 (WL7/WL10/WL21/WL22 partial: say so); PL1 935f9fa8 PL2 75dd7fbc PL3 f59e2cbf PL4 f6e340e5; RN2 1afb47d2 RN3 8d7cedfd RN5 1ddce289 RN6 34551fcb; credits M2 b3cf3cae; plan-verbs T14 d03d7256 T15 7921044d T16 050ca424; datastore A3 f704803c E1 18ca2b9c C1 d2381701; renet-i18n B01 bb059f02; rmcp R6 0482cc11; vscode V3 b62e2859; pr-path W3 677ce711 (W4 9cafb158 open per ruling); CR2 7e1402a9 stays open.
+- Boxes landed this context have partial investigation rows (live/ci owed); tick each after its accept run. EA4 blocked until mcp-call-principal.test.ts joins its Owns.
 
 ## Armed
 - #0f42f15e rotation, NOT-BEFORE 2026-12-01T00:00Z.
 
 ## Next action
-1. Read /tmp/m/ciquick17.out. Red: fix each failing gate (writers in leases), rerun only the gates the fix touches. Green: push (`git push origin 1121-1`, vm:check receipt VERIFIED on tree a234c44c covers renet/CLI paths; re-run vm:check --changed if the push guard says the landed batch changed trigger paths), then RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then the real run, record rollback ids and D1 bookmarks (#58a674f6).
-2. Release holds: runner-hold:bench #e0921ffa, runner-hold:vm #dc3ba823 lift after ci:quick; start bench and VM runners from /tmp/writers-now/1121-1-20261127T0941Z-r95.md section 5.
-3. Owed ticks above (investigate present then plan-tick), then writers-now rounds: staff EA1, V4a, #c5b50973 (per-unit backup status), RF-2 hyperv findings (#7a7f26ef), the owed R8 bed1cd9e correction line, release-note notes for the customer-facing commits landed without a Release-Note trailer.
-4. Peer console-28 (pricing plans) will send plan paths; collisions told: subscription.service.ts, packages/shared/src/subscription/**, account licence routes, stripe-disable.
+1. Land the reds fixer's commits, rerun only the gates it touched, then ci:quick; green -> push 1121-1 (vm:check receipt VERIFIED tree a234c44c; re-run vm:check --changed if the push guard asks), then RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then the real run, record rollback ids and D1 bookmarks (#58a674f6).
+2. Land EA1 and the stdout sweep; staff the r96 survey's startable clusters; lift runner holds (bench #e0921ffa, vm #dc3ba823) after ci:quick.
+3. C6 850392c1: 15/17 proven; demo-stackoverflow needs a restore target >137 GB (operator decision), mail blocked by defect C until the renet fix is deployed to hostinger.
