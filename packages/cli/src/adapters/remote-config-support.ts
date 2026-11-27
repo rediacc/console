@@ -87,6 +87,7 @@ export function buildSyncRecord(
     ...(configKey ? { configKey } : {}),
     ...(cekGeneration === undefined ? {} : { cekGeneration }),
     ...(previous?.policyHighWater ? { policyHighWater: previous.policyHighWater } : {}),
+    ...(previous?.policyContext ? { policyContext: previous.policyContext } : {}),
   };
 }
 

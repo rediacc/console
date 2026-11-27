@@ -927,6 +927,66 @@ describe('RemoteConfigAdapter', () => {
         '/account/api/v1/configs/config-001/policy?teamId=team-001',
       ]);
     });
+
+    describe('kept for an unreachable server (vm:check A2.2, 2026-11-27)', () => {
+      const SYNCED = { binding: BINDING, highWater: 3, envelopeVersion: 3, fckSalt: 'salt' };
+      const KEPT = {
+        principal: { orgRole: 'member', userEmail: 'm@example.com' },
+        policy: { locked: [], ignoredLocked: [] },
+      };
+      const refused = () => new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } });
+
+      it('keeps the context it opened in the sync record', async () => {
+        tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: SYNCED });
+        servePolicyContext([{ configId: 'config-001', teamId: 'team-001' }]);
+        const context = await adapter.policyContext();
+        expect(tokenStorage.recordSync).toHaveBeenLastCalledWith(
+          CONFIG_NAME,
+          expect.objectContaining({ binding: BINDING, policyContext: context })
+        );
+      });
+
+      it('judges with the kept context when the server cannot be reached', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).resolves.toEqual(KEPT);
+      });
+
+      it('control: with no kept context the unreachable error propagates', async () => {
+        tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: SYNCED });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).rejects.toBeInstanceOf(RemoteUnreachableError);
+      });
+
+      it('control: a refusal the server answered is never masked by the kept context', async () => {
+        const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(
+          Object.assign(new ConfigServerError('forbidden', 403), { code: 'team_forbidden' })
+        );
+        const error = await adapter.policyContext().catch((e: unknown) => e);
+        expect(error).not.toEqual(KEPT);
+        expect(error).toBeInstanceOf(Error);
+      });
+
+      it('control: a context kept for another binding is not used', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, binding: 'store-001/other/team-001', policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).rejects.toBeInstanceOf(RemoteUnreachableError);
+      });
+    });
   });
 
   describe('a missing key whose enrollment marker cannot be read', () => {

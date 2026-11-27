@@ -17,6 +17,7 @@ import lockfile from 'proper-lockfile';
 import { readLocalMachineId } from '../services/account/client-machine-id.js';
 import { rdcCommand } from '../services/config/config-name.js';
 import { parseJsonText } from '../utils/json-text.js';
+import type { RemotePolicyContext } from './remote-config-types.js';
 
 const TOKENS_DIR = join(getConfigDir(), '.tokens');
 
@@ -50,6 +51,13 @@ export interface SyncRecord {
    * replayed policy and is refused.
    */
   policyHighWater?: Record<string, number>;
+  /**
+   * The principal and effective policy the last opened session judged this device's runs with
+   * (RemoteConfigAdapter.policyContext). Read only when the config server is unreachable, so a
+   * read served from the offline cache is judged as the same member it was online; a device that
+   * never opened a session holds none and is refused offline.
+   */
+  policyContext?: RemotePolicyContext;
 }
 
 export interface TokenData {

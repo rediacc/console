@@ -39,6 +39,7 @@ import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import type { SecureStorage } from '../utils/secure-storage.js';
 import {
+  findUnreachable,
   RemotePreconditionError,
   RemoteRollbackError,
   RemoteStaleSlotError,
@@ -248,35 +249,55 @@ export class RemoteConfigAdapter {
    * config belongs to a team, both opened under that CEK and held against the policy high-water
    * marks in the token file. Never reads a `policy` field of the config document.
    *
+   * Each context opened is kept in the token file's sync record. When the server is unreachable
+   * (RemoteUnreachableError anywhere in the cause chain) the kept one is returned, so a read the
+   * offline cache serves is judged as the same member it was online; with none kept, the
+   * unreachable error propagates and the run is refused.
+   *
    * @throws Error when the session names no valid org role: the caller is never guessed to be an owner
    */
   policyContext(): Promise<RemotePolicyContext> {
     return this.tokenStorage.withLease(this.configName, async (lease) => {
       this.requireToken(lease);
-      // The high-water marks live in the sync record a pull writes, so a device that never pulled pulls first.
-      if (!this.syncRecord(lease)) await this.pullLeased(lease);
-      const session = await this.fetchSession(lease);
-      if (!session.principal) {
-        throw new Error(
-          `The config server named no org role for config "${this.configName}", so its policy cannot be judged.`
-        );
+      let context: RemotePolicyContext;
+      try {
+        context = await this.openPolicyContext(lease);
+      } catch (error) {
+        const kept = findUnreachable(error) ? this.syncRecord(lease)?.policyContext : undefined;
+        if (!kept) throw error;
+        return kept;
       }
-      const cek = await this.deriveCek(session.serverSecret, lease);
-      const orgConfigId = this.remote.teamId
-        ? ((
-            await this.fetch<{ configs?: RemoteConfigEntry[] }>(lease, '/account/api/v1/configs')
-          ).data.configs?.find((entry) => !entry.teamId)?.configId ?? null)
-        : this.remote.configId;
-      const policy = await loadEffectivePolicy({
-        storeId: this.remote.storeId,
-        config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
-        orgConfigId,
-        fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
-        key: cek,
-        highWater: this.policyHighWater(lease),
-      });
-      return { principal: session.principal, policy };
+      const seen = this.syncRecord(lease);
+      if (seen) await lease.recordSync({ ...seen, policyContext: context });
+      return context;
     });
+  }
+
+  /** The online half of `policyContext`: the session's principal and the effective policy. */
+  private async openPolicyContext(lease: TokenLease): Promise<RemotePolicyContext> {
+    // The high-water marks live in the sync record a pull writes, so a device that never pulled pulls first.
+    if (!this.syncRecord(lease)) await this.pullLeased(lease);
+    const session = await this.fetchSession(lease);
+    if (!session.principal) {
+      throw new Error(
+        `The config server named no org role for config "${this.configName}", so its policy cannot be judged.`
+      );
+    }
+    const cek = await this.deriveCek(session.serverSecret, lease);
+    const orgConfigId = this.remote.teamId
+      ? ((
+          await this.fetch<{ configs?: RemoteConfigEntry[] }>(lease, '/account/api/v1/configs')
+        ).data.configs?.find((entry) => !entry.teamId)?.configId ?? null)
+      : this.remote.configId;
+    const policy = await loadEffectivePolicy({
+      storeId: this.remote.storeId,
+      config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
+      orgConfigId,
+      fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
+      key: cek,
+      highWater: this.policyHighWater(lease),
+    });
+    return { principal: session.principal, policy };
   }
 
   /** `GET /configs/:id/policy`: the record, or null when the server holds none for that config. */
