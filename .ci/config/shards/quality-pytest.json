@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T06:20:02.584Z",
+  "generatedAt": "2026-11-27T07:00:28.127Z",
   "legs": [
     {
       "index": 1,
@@ -113,6 +113,7 @@
         "pytest:.ci/rediacc_ci/tests/test_preview_delegated_licence_renet.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_ebpf_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_private_run_renet.py",
+        "pytest:.ci/rediacc_ci/tests/test_promote_r2_to_stable_concurrency.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_license_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_rdc_update.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_bws_step_scope.py",
