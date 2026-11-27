@@ -81,7 +81,12 @@ EDIT_CASES = [
         {"tool_name": "NotebookEdit", "tool_input": {"notebook_path": L}, "cwd": CWD},
         True,
     ),
-    ("Write another ledger", _edit("Write", "agent/ledgers/effort-outcomes.jsonl"), False),
+    # Another .jsonl ledger is the agent store row's to refuse (block_guarded_path_edit reads both rows); a non-jsonl file beside the ledger is neither row's.
+    (
+        "Write the feedback snapshot beside it",
+        _edit("Write", "agent/ledgers/feedback-snapshot.json"),
+        False,
+    ),
     ("Write a plan naming the ledger", _edit("Write", "agent/plans/PLAN-x.md", content=L), False),
     ("Write a sibling backup", _edit("Write", "agent/ledgers/live-proof.jsonl.bak"), False),
     ("Write the kept log", _edit("Write", ".ci/cache/live-proof/lp-0123456789ab.log"), False),

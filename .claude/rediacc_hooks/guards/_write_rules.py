@@ -10,7 +10,7 @@ policy that differs by tool. Each row below is the single declaration both halve
     message     the edit half's refusal and the shell half's, (edit, shell)
     sanctioned  the one writer the refusal points at
 
-Three rows are judged by path alone (review_file, live_proof_ledger, roundlog): their edit half is one `edit_run(ev, RULE)` call and nothing else (the round log's passes `exists_only=True, raw=False`, the two options its own reading needs). Three judge the CONTENT a write leaves (user_only_command, suppressions, protected_files), so their row carries `path=None` and their predicate stays in the guard, where its DEFECT plant reaches it; the row still names the pair and its
+Four rows are judged by path alone (review_file, live_proof_ledger, agent_store, roundlog): their edit half is one `edit_run(ev, RULE)` call and nothing else (the round log's passes `exists_only=True, raw=False`, the two options its own reading needs). Three judge the CONTENT a write leaves (user_only_command, suppressions, protected_files), so their row carries `path=None` and their predicate stays in the guard, where its DEFECT plant reaches it; the row still names the pair and its
 sanctioned door, so `ROWS` enumerates every twin.
 
 THE SHELL HALVES READ THE SAME ROW. A shell half binds the row's landing test and its shell message, and asks the test of each word it reads as a write target. The walk itself is `shellscan.event_write_records(ev)` (`shellscan.write_records`, made once per Event: each write's path, reading, word, run, argv index and append flag), which block_live_proof_ledger_shell_write reads for every shell shape but interpreter code, and block_suppressions_shell_write and block_user_only_command_shell_write for their word writes; each guard keeps the
@@ -62,6 +62,20 @@ _LEDGER_BODY = (
     "  judge the ledger:  PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify\n"
 )
 
+_STORE_BODY = (
+    "\n"
+    "agent/reggate/, agent/worklist/*.jsonl and agent/ledgers/*.jsonl are append-only stores\n"
+    "their readers fold without asking how a line got there: a hand-written reggate `retire`\n"
+    "line with a well-formed ASKED: stamp pays a debt the verb would have refused, and a\n"
+    "hand-written worklist event ticks an item nothing checked. Every line comes from a verb.\n"
+    "\n"
+    "  worklist events:  .claude/hooks/stop/worklist.py --add|--update|--lease|--tick|--defer <me> ...\n"
+    "  reggate retire:   .claude/hooks/stop/worklist.py --reggate-retire <me> <sig8> ASKED:<YYYY-MM-DDTHH:MM>Z <reason>\n"
+    "  a ledger row:     the verb or module that owns it (worklist.py --plan-investigate, --box-progress,\n"
+    "                    --writers-now-start; PYTHONPATH=.ci python3 -m rediacc_ci.ops.<module>)\n"
+    "  reading one:      cat, jq, grep, git diff and git add/commit of the file all pass\n"
+)
+
 _ROUNDLOG_EDIT = (
     "❌ BLOCKED: a whole-file write to a pr-babysit round log. Its STATUS block is spliced "
     "in place, and the obvious splice (text[:i] + new) deletes the entire round history "
@@ -111,6 +125,21 @@ ROWS = {
             "BLOCKED: this command writes the live-proof ledger by hand (%s).\n" + _LEDGER_BODY,
         ),
         sanctioned=LEDGER_RECORDER,
+    ),
+    # Disjoint from live_proof_ledger by its lookahead, so at most one row refuses a given write (block_guarded_path_edit reads them in turn). A store directory itself is matched too, so `rm -r agent/reggate` is one.
+    "agent_store": Rule(
+        id="agent_store",
+        path=re.compile(
+            r"(\A|/)agent/(?:(?:reggate|worklist|ledgers)/?\Z|reggate/[^/]"
+            r"|worklist/[^/]+\.jsonl\Z|ledgers/(?!live-proof\.jsonl\Z)[^/]+\.jsonl\Z)"
+        ),
+        passes=None,
+        exempt=None,
+        message=(
+            "BLOCKED: %s of an append-only agent store (%s).\n" + _STORE_BODY,
+            "BLOCKED: this command writes an append-only agent store by hand (%s).\n" + _STORE_BODY,
+        ),
+        sanctioned="the worklist.py verbs and the hook and CI processes that own each store",
     ),
     "roundlog": Rule(
         id="roundlog",

@@ -57,6 +57,7 @@
         "block_admin_merge": 443,
         "block_agent_browser_repo_output": 180,
         "block_agent_state_shape": 91,
+        "block_agent_store_shell_write": 164,
         "block_away_questions": 66,
         "block_backup_unverified_push": 395,
         "block_bash_write_to_running_script": 316,

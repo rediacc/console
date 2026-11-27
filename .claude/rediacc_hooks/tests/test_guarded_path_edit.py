@@ -24,11 +24,26 @@ def test_a_review_record_edit_is_refused_and_a_plan_is_not():
     assert rc == 0, err
 
 
-def test_a_live_proof_ledger_write_is_refused_and_another_ledger_is_not():
+def test_a_live_proof_ledger_write_is_refused_and_a_non_ledger_beside_it_is_not():
     rc, err = _answer("Write", "agent/ledgers/live-proof.jsonl", content="{}\n")
     assert rc == 2, err
     assert "live_proof record" in err, err
-    rc, err = _answer("Write", "agent/ledgers/effort-outcomes.jsonl", content="{}\n")
+    rc, err = _answer("Write", "agent/ledgers/feedback-snapshot.json", content="{}\n")
+    assert rc == 0, err
+
+
+def test_an_agent_store_write_is_refused_by_its_own_row():
+    """Review finding 896a95d5.3: another `.jsonl` ledger, a reggate file and the worklist event log are the agent store row's, and its refusal (not the live-proof one) names them."""
+    for path in (
+        "agent/ledgers/effort-outcomes.jsonl",
+        "agent/reggate/main.jsonl",
+        "agent/worklist/d778be9d.jsonl",
+    ):
+        rc, err = _answer("Write", path, content="{}\n")
+        assert rc == 2, (path, err)
+        assert "append-only agent store" in err, (path, err)
+        assert "live_proof record" not in err, (path, err)
+    rc, err = _answer("Write", "agent/worklist/README.md", content="x\n")
     assert rc == 0, err
 
 
