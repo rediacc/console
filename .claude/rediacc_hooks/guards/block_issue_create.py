@@ -6,7 +6,7 @@ WHAT IS REFUSED, in any repository (a submodule's `--repo` included) and under `
 
   * `gh issue create`, and its gh alias `gh issue new`, with the `issue` command's own `-R/--repo` read before the verb as gh reads it;
   * `gh api` to an endpoint ending `repos/<owner>/<repo>/issues` whose method is POST: `-X POST`, `--method POST`, or a field or `--input` making it one (`shellscan.gh_api_method`, the same pflag reader `sanctioned.api_method` wraps);
-  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value as bash expands it (a `$Q` or a `${C}eIssue` this same command assigned), or in a `query=@<file>`/`--input <file>` the guard can read; when any query source is not known (an expansion the walk cannot evaluate, stdin, a file that is missing, not a regular file, or one the same command could write first), the whole command text is searched instead, so an unknown source never admits a mutation the command spells;
+  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value as bash expands it (a `$Q` or a `${C}eIssue` this same command assigned), or in a `query=@<file>`/`--input <file>` the guard can read; when any query source is not known (an expansion the walk cannot evaluate, stdin, a file that is missing, not a regular file, or one the same command could write first), the whole command text is searched instead, together with every word of every command as bash expands it and every stdin feed, so an unknown source never admits a mutation the command spells, a `${C}eIssue` echoed into `--input -` included (review 29f470ef.1);
   * `curl` or `wget` sending a POST, or a body that makes one, to an `api.github.com/repos/<owner>/<repo>/issues` URL.
 
 WHAT IS ADMITTED: `gh issue list|view|comment|...`, every GET, `issues/<n>/comments` (the PR-comment endpoint `wl_prreview` answers reviews through, so only the CREATE endpoint is refused), and prose that merely names a command (`echo 'gh issue create'`).
@@ -66,7 +66,7 @@ def _issue_verb(argv):
     return verb[0] if verb else ""
 
 
-def _query_texts(parsed, base, cmd, written):
+def _query_texts(parsed, base, cmd, written, words=()):
     """`(texts, known)` for a parsed `gh api graphql` call (parsed from the EXPANDED argv): each field value, and the file a `query=@<path>` or `--input <path>` names when it can be read. `known` is False when any source is not: a value holding an expansion the walk could not evaluate, stdin (`@-`, `--input -`), or a file `_file_text` cannot vouch for."""
     out = []
     known = True
@@ -81,7 +81,7 @@ def _query_texts(parsed, base, cmd, written):
                 files.append(val[1:])
     files.extend(parsed.values("input"))
     for path in files:
-        text = None if path == "-" else _file_text(base, path, cmd, written)
+        text = None if path == "-" else _file_text(base, path, cmd, written, words)
         if text is None:
             known = False
         else:
@@ -89,12 +89,12 @@ def _query_texts(parsed, base, cmd, written):
     return out, known
 
 
-def _file_text(base, path, cmd, written):
-    """The text of a query file, or None when it is not a known source: missing, not a regular file (review 81488a75.1: `/dev/zero` never ends and a FIFO blocks the pre-bash hook on open), or a file this same command could write before gh reads it (its name appears in the command more than once, or a redirect target of the command names it or cannot be known)."""
+def _file_text(base, path, cmd, written, words=()):
+    """The text of a query file, or None when it is not a known source: missing, not a regular file (review 81488a75.1: `/dev/zero` never ends and a FIFO blocks the pre-bash hook on open), or a file this same command could write before gh reads it (its name appears more than once in the command text or across `words`, every command's argv as bash expands it, so a `tee "$F"` naming it through a variable counts (review 29f470ef.2); or a redirect target of the command names it or cannot be known)."""
     if shellscan._UNRESOLVED in path:
         return None
     name = os.path.basename(path.rstrip("/"))
-    if not name or cmd.count(name) > 1:
+    if not name or cmd.count(name) > 1 or sum(w.count(name) for w in words) > 1:
         return None
     if any(shellscan._UNRESOLVED in w or os.path.basename(w) == name for w in written):
         return None
@@ -107,8 +107,8 @@ def _file_text(base, path, cmd, written):
         return None
 
 
-def _gh_refusal(argv, cmd, base, xargv=None, written=()):
-    """Which create shape a walked `gh` run is, or "". `xargv` is the run's argv as bash expands it (None when the walk has none), `written` every redirect target of the command."""
+def _gh_refusal(argv, cmd, base, xargv=None, written=(), words=(), fallback=None):
+    """Which create shape a walked `gh` run is, or "". `xargv` is the run's argv as bash expands it (None when the walk has none), `written` every redirect target of the command, `words` every command's expanded argv, and `fallback` the text searched when a query source is unknown (the command text when None)."""
     if not argv:
         return ""
     if argv[0] == "issue":
@@ -120,10 +120,13 @@ def _gh_refusal(argv, cmd, base, xargv=None, written=()):
     endpoint = shellscan.gh_api_endpoint(parsed)
     if endpoint == "graphql":
         # GraphQL is always a POST; the query decides, read from the EXPANDED argv so `-f query="$Q"` and `${C}eIssue` (variables this same command assigned) are judged by their values (review 81488a75.2). The raw command text is the fallback only when a source is unknown, so a read whose sources are all known is not refused for a `createIssue` mentioned elsewhere in the command (review 81488a75.3).
-        texts, known = _query_texts(shellscan.gh_args(xargv or argv), base, cmd, written)
+        texts, known = _query_texts(shellscan.gh_args(xargv or argv), base, cmd, written, words)
         if xargv is None:
             known = False
-        if any(_CREATE_ISSUE.search(t) for t in texts) or (not known and _CREATE_ISSUE.search(cmd)):
+        unknown_text = cmd if fallback is None else fallback
+        if any(_CREATE_ISSUE.search(t) for t in texts) or (
+            not known and _CREATE_ISSUE.search(unknown_text)
+        ):
             return "a `gh api graphql` `createIssue` mutation"
         return ""
     if _ISSUES_PATH.match(endpoint) and shellscan.gh_api_method(parsed) == "POST":
@@ -201,12 +204,15 @@ def _wget_refusal(argv):
 def _refusal(cmd, base):
     runs = list(shellscan.every_run(cmd))
     written = [w for run_ in runs for w in (*run_.writes, *run_.xwrites)]
+    # Every command's words as bash expands them, and what each reads on stdin: the fallback for an unknown GraphQL source reads these beside the typed text, since `C=creat; echo "${C}eIssue" | gh api graphql --input -` spells the mutation only after expansion (review 29f470ef.1).
+    words = [w for run_ in runs for w in (run_.argv if run_.xargv is None else run_.xargv)]
+    fallback = "\n".join([cmd, *words, *(run_.feed or "" for run_ in runs)])
     for run_ in runs:
         name = shellscan._base(run_.name)
         argv = list(run_.argv)
         if name == "gh":
             xargv = list(run_.xargv) if run_.xargv is not None else None
-            found = _gh_refusal(argv, cmd, base, xargv, written)
+            found = _gh_refusal(argv, cmd, base, xargv, written, words, fallback)
             if found:
                 return found
         elif name == "curl" and _curl_refusal(argv):

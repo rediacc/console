@@ -112,6 +112,17 @@ FIRE_SPEC = [
         False,
     ),
     (
+        "graphql createIssue assembled in a stdin feed",
+        'C=creat; echo "mutation { ${C}eIssue(input:{repositoryId:\\"R\\"}) { issue { number } } }" | gh api graphql --input -',
+        False,
+    ),
+    (
+        "graphql query file a tee through a variable rewrites",
+        'F=read.graphql; echo \'%s\' | tee "$F"; gh api graphql -F query=@"$F"'
+        % MUTATION.replace('\\"', '"'),
+        False,
+    ),
+    (
         "curl -X POST",
         "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/o/r/issues -d '{\"title\":\"x\"}'",
         False,
