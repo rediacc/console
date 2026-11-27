@@ -21,6 +21,9 @@ const home = mkdtempSync(join(tmpdir(), 'rdc-cli-test-home-'));
 process.env.XDG_CONFIG_HOME = join(home, 'config');
 process.env.XDG_STATE_HOME = join(home, 'state');
 process.env.XDG_CACHE_HOME = join(home, 'cache');
+// win32 resolves its dirs from these two (packages/shared/src/paths/dirs.ts), never from XDG_*.
+process.env.APPDATA = join(home, 'AppData', 'Roaming');
+process.env.LOCALAPPDATA = join(home, 'AppData', 'Local');
 delete process.env.REDIACC_CONFIG;
 
 afterAll(() => {
