@@ -47,7 +47,8 @@ function parseArgs(): { output: string; repoRoot: string } {
 interface Credit {
   kind?: string;
   name: string;
-  version: string;
+  /** Absent on the Node.js runtime row: the exact Node version is read from the running binary. */
+  version?: string;
   spdx: string;
   license: string;
   upstreamSourceUrl?: string;
@@ -118,7 +119,11 @@ function loadCredits(repoRoot: string): CreditsData {
 }
 
 function componentBlock(c: Credit): string {
-  const lines = [`${c.name} ${c.version}`, `  SPDX:    ${c.spdx}`, `  License: ${c.license}`];
+  const lines = [
+    c.version ? `${c.name} ${c.version}` : c.name,
+    `  SPDX:    ${c.spdx}`,
+    `  License: ${c.license}`,
+  ];
   if (c.upstreamSourceUrl) lines.push(`  Source:  ${c.upstreamSourceUrl}`);
   if (c.mirrorUrl) lines.push(`  Mirror:  ${c.mirrorUrl}`);
   if (c.notes) lines.push(`  Note:    ${c.notes}`);
@@ -144,12 +149,18 @@ function pinnedGoLicensesVersion(repoRoot: string): string | null {
 /** The renet module's own packages carry no row in rdc's notice; `build_renet.py` refuses them at write time. */
 const GO_LICENSES_IGNORE = 'github.com/rediacc/renet';
 
-function goReportSection(csv: string): string {
+/** True for the renet module's own path and its sub-packages, never for a sibling such as `github.com/rediacc/renet-utils`. */
+function isRenetOwnModule(mod: string): boolean {
+  return mod === GO_LICENSES_IGNORE || mod.startsWith(`${GO_LICENSES_IGNORE}/`);
+}
+
+/** `renetPresent` tells the empty-report remedy whether the renet submodule is here to run the verb in. */
+function goReportSection(csv: string, renetPresent: boolean): string {
   const rows = csv
     .split('\n')
     .filter((l) => l.trim().length > 0)
     .filter((l) => {
-      if (!l.startsWith(GO_LICENSES_IGNORE)) return true;
+      if (!isRenetOwnModule(l.split(',')[0])) return true;
       console.error(
         `generate-third-party-licenses: WARNING dropped a ${GO_LICENSES_IGNORE} row from the Go report`
       );
@@ -162,8 +173,12 @@ function goReportSection(csv: string): string {
     });
   if (rows.length === 0) {
     return placeholderSection('go-licenses produced no rows.', 'Renet Go module dependencies', [
-      `Check the go-licenses output, then run:`,
-      `  ${GO_LICENSES_VERB}`,
+      ...(renetPresent
+        ? [`Check the go-licenses output, then run:`, `  ${GO_LICENSES_VERB}`]
+        : [
+            `Replace ${GO_LICENSES_CSV_REL} with the one the renet-binaries CI artifact carries, or check out the renet submodule and run:`,
+            `  ${GO_LICENSES_VERB}`,
+          ]),
     ]);
   }
   return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
@@ -177,8 +192,12 @@ function goReportSection(csv: string): string {
  */
 function goLicensesSection(repoRoot: string): string {
   const csvPath = path.join(repoRoot, GO_LICENSES_CSV_REL);
-  if (fs.existsSync(csvPath)) return goReportSection(fs.readFileSync(csvPath, 'utf-8'));
   const renetDir = path.join(repoRoot, 'private/renet');
+  if (fs.existsSync(csvPath))
+    return goReportSection(
+      fs.readFileSync(csvPath, 'utf-8'),
+      fs.existsSync(path.join(renetDir, 'go.mod'))
+    );
   if (!fs.existsSync(path.join(renetDir, 'go.mod'))) {
     return placeholderSection(
       `neither ${GO_LICENSES_CSV_REL} nor the renet submodule is present in this checkout.`,
@@ -213,7 +232,7 @@ function goLicensesSection(repoRoot: string): string {
       ],
       { cwd: renetDir, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 180_000 }
     );
-    return goReportSection(out);
+    return goReportSection(out, true);
   } catch {
     return placeholderSection(
       'go-licenses could not run (offline, or Go/network unavailable at build time).',

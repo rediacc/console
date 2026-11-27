@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T07:18:52.523Z",
+  "generatedAt": "2026-11-27T07:41:24.147Z",
   "legs": [
     {
       "index": 1,
@@ -266,6 +266,7 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_control_db.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py",
+        "pytest:.ci/rediacc_ci/tests/test_gen_third_party_licenses.py",
         "pytest:.ci/rediacc_ci/tests/test_host_temp.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_apt_retry.py",
