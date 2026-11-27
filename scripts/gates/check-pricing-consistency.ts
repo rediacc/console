@@ -115,6 +115,9 @@ interface Sources {
 
 type Findings = string[];
 
+/** Anti-vacuity floor: 13 catalogs ship (en plus 12), so a directory read that finds fewer lost its corpus. */
+const MIN_CATALOGS = 13;
+
 function loadSources(): Sources {
   const locales: Record<string, Catalog> = {};
   let en: Catalog | undefined;
@@ -124,6 +127,12 @@ function loadSources(): Sources {
     const parsed = JSON.parse(fs.readFileSync(path.join(WWW_TRANSLATIONS_DIR, name), 'utf8'));
     if (name === 'en.json') en = parsed;
     else locales[name] = parsed;
+  }
+  const found = Object.keys(locales).length + (en ? 1 : 0);
+  if (found < MIN_CATALOGS) {
+    throw new Error(
+      `VACUOUS: ${found} translation catalog(s) in ${WWW_TRANSLATIONS_DIR}, floor ${MIN_CATALOGS}; the read lost its corpus`
+    );
   }
   const docs: Record<string, string> = {};
   for (const name of ['subscription-licensing.md', 'account-management.md']) {

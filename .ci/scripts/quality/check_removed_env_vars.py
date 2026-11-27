@@ -104,12 +104,16 @@ def dead_exclusions(files: list[str], excluded: dict[str, str]) -> list[str]:
 def check(root: pathlib.Path) -> int:
     names, excluded = load_config(root)
     if not names:
-        print("✗ removed-env-vars: %s lists no removed name; refusing an empty check" % CONFIG_REL)
+        print(
+            "✗ removed-env-vars: VACUOUS: %s lists no removed name; refusing an empty check"
+            % CONFIG_REL
+        )
         return 1
     files = tracked_files(root)
     if not files:
         print(
-            "✗ removed-env-vars: git ls-files listed zero tracked files under %s; refusing" % root
+            "✗ removed-env-vars: VACUOUS: git ls-files listed zero tracked files under %s; refusing"
+            % root
         )
         return 1
     rc = 0
