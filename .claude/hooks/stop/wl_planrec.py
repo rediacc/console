@@ -2475,6 +2475,98 @@ def merge_ledger(doc, rel, row):
     return out
 
 
+#: The header fields `--plan-new` demands before it registers a plan (agent/plans/PLAN-plan-verbs.md T14), in the order its refusal names them.
+PLAN_NEW_FIELDS = ("Status", "Owner", "First-Seen", "Depends-On", "Priority", "Concurrency", "Owns")
+PLAN_NEW_RE = re.compile(r"^agent/plans/PLAN-[A-Za-z0-9._-]+\.md$")
+PLAN_NEW_LIST_HEADER = (
+    "plans under agent/plans/ that --plan-new can register (no box-ledger row yet):"
+)
+
+
+def _plain_value(value):
+    """A FieldSpec parse for the three fields read as plain text (Status, Owner, First-Seen): any non-empty value."""
+    v = (value or "").strip()
+    return v, ([] if v else ["the value is empty"])
+
+
+def _plan_new_specs():
+    plain = {
+        name: PD.FieldSpec(name, PD.X_HEADER_LINES, _plain_value)
+        for name in ("Status", "Owner", "First-Seen")
+    }
+    typed = {name: PD.FIELD_SPECS[name] for name in PLAN_NEW_FIELDS if name in PD.FIELD_SPECS}
+    return {name: plain.get(name) or typed[name] for name in PLAN_NEW_FIELDS}
+
+
+def _read_ledger(root):
+    try:
+        doc = json.loads((pathlib.Path(root) / LEDGER_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RecordError("cannot read %s (%s)" % (LEDGER_REL, exc)) from exc
+    return doc if isinstance(doc, dict) else {}
+
+
+def plan_new(root, rel):
+    """(ledger_doc, row) for registering ONE new plan. Raises RecordError. WRITES NOTHING.
+
+    Refused, before anything is touched: a path that is not `agent/plans/PLAN-<slug>.md` or is missing, a header without every PLAN_NEW_FIELDS field (or one whose value does not parse), a plan with no box, and a plan the ledger already carries (that one is `--plan-tick`'s). The caller stages the file, writes the ledger and refreshes the index in that order; the row is computed here through `ledger_row`, the same function every surgical ledger write uses.
+    """
+    rel = str(rel or "").strip()
+    if not PLAN_NEW_RE.match(rel):
+        raise RecordError(
+            "%r is not a plan path under agent/plans/: --plan-new registers a new live plan, "
+            "spelled agent/plans/PLAN-<slug>.md" % rel
+        )
+    p = pathlib.Path(root) / rel
+    if not p.is_file():
+        raise RecordError("%s does not exist" % rel)
+    text = p.read_text(encoding="utf-8", errors="replace")
+    if is_record(text):
+        raise RecordError("%s is a COMPACTED RECORD, not a new plan" % rel)
+    header = PD.parse_header(text, _plan_new_specs())
+    problems = []
+    for name in PLAN_NEW_FIELDS:
+        field = header.get(name)
+        if field is None:
+            problems.append("  %s: missing" % name)
+        elif field.errors:
+            problems.append("  %s: %s" % (name, "; ".join(str(e) for e in field.errors)))
+    problems += ["  %s: %s" % (name, why) for name, why in header.errors]
+    if problems:
+        raise RecordError(
+            "%s cannot be registered; its header needs every one of %s:\n%s"
+            % (rel, ", ".join(PLAN_NEW_FIELDS), "\n".join(problems))
+        )
+    open_t, done_t = PF.plan_boxes(text)
+    if not open_t and not done_t:
+        raise RecordError(
+            "%s has no box: a plan is registered by its boxes, so write its `- [ ]` tasks first"
+            % rel
+        )
+    doc = _read_ledger(root)
+    if rel in (doc.get("plans") or {}):
+        raise RecordError(
+            "%s already has a row in %s, so it is not new. A box change goes through "
+            "`worklist.py --plan-tick <me> %s <box> <evidence> --write`." % (rel, LEDGER_REL, rel)
+        )
+    row = ledger_row(root, rel, text)
+    return merge_ledger(doc, rel, row), row
+
+
+def plan_new_candidates(root):
+    """Every top-level plan under agent/plans/ the ledger has no row for, name-sorted. The listing `--plan-new <me>` prints."""
+    try:
+        known = set(_read_ledger(root).get("plans") or {})
+    except RecordError:
+        known = set()
+    folder = pathlib.Path(root) / "agent" / "plans"
+    try:
+        names = sorted(f.name for f in folder.glob("PLAN-*.md") if f.is_file())
+    except OSError:
+        return []
+    return [r for r in ("agent/plans/%s" % n for n in names) if r not in known]
+
+
 TICKABLE_HEADER = "open boxes that --plan-tick can flip in place (records are excluded):"
 
 

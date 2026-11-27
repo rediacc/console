@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:11:29.421Z",
+  "generatedAt": "2026-11-27T10:13:27.389Z",
   "legs": [
     {
       "index": 1,
@@ -730,6 +730,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_loopspeed.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_named_reads_stack.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_outcomes.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_plan_verbs.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_planfile_match.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_queue_retire.py",

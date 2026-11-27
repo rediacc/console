@@ -508,6 +508,8 @@ def drive_l1(fix) -> L1Drive:
         # runs the same argv parse, the same PREFIX_RE and the same _identity_or_die, which is the whole surface this table is about.
         ("--plan-compact", "--plan-compact @WHO@", "plan record candidates"),
         ("--plan-revive", "--plan-revive @WHO@", "plan records on disk"),
+        # Listing mode for the same reason (agent/plans/PLAN-plan-verbs.md T14): a bare `<me>` lists the plans with no ledger row after the same _identity_or_die its --write mode runs.
+        ("--plan-new", "--plan-new @WHO@", "--plan-new can register"),
         # Same listing rule, same reason. --plan-tick's write mode needs a plan AND a committed box ledger; its listing mode is where a caller gets the box SIGNATURE the write mode wants, so the read is a prerequisite of the write rather than a convenience, and it runs the identical argv parse.
         ("--plan-tick", "--plan-tick @WHO@", "open boxes that --plan-tick can flip"),
         # Unlike the three rows above, --plan-investigate has no listing mode, so CONTROL A is driven for real against plant_investigate_target's fixture plan rather than against an empty argv.

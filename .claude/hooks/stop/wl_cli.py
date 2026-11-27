@@ -814,6 +814,74 @@ def _plantick_cli(argv):
     _lessons_resolve(root, me, lessons)
 
 
+def _plannew_cli(argv):
+    """--plan-new <me> [<agent/plans/PLAN-x.md> [--write]] (agent/plans/PLAN-plan-verbs.md T14).
+
+    Registers a new plan in one call: stages the file (`git add`, never a commit), writes its `.ci/config/plan-boxes.json` row through `ledger_row`, and refreshes agent/INDEX.md with the QUEUE generated section. Staging comes first because the ledger scan and the index read tracked plans only (#0b93d454). Every refusal is decided before the first write. With only `<me>` it lists the plans that have no ledger row.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_PLANNEW_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planrec as R
+
+    root = C.project_root(C.project_start())
+    rest = [a for a in argv[2:] if a != "--write"]
+    write = "--write" in argv[2:]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, M.CLI_PLANNEW_USAGE))
+    if not rest:
+        rows = R.plan_new_candidates(root)
+        print(R.PLAN_NEW_LIST_HEADER)
+        for rel in rows:
+            print("  %s" % rel)
+        print("  %d plan(s) without a ledger row." % len(rows))
+        return
+    if len(rest) != 1:
+        die(M.CLI_PLANNEW_USAGE)
+    rel = _plan_rel(root, rest[0])
+    try:
+        doc, row = R.plan_new(root, rel)
+    except R.RecordError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    payload = {
+        "rel": rel,
+        "ledger": R.LEDGER_REL,
+        "index": R.INDEX_REL,
+        "queue": "agent/plans/QUEUE.md",
+        "open": row["open"],
+        "done": row["done"],
+    }
+    if not write:
+        sys.stdout.write(M.CLI_PLANNEW_DRY % payload)
+        return
+    staged = subprocess.run(
+        ["git", "-C", str(root), "add", "--", rel],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    if staged.returncode != 0:
+        die(
+            M.CLI_PLANREC_REFUSED
+            % ("git add -- %s exited %d: %s" % (rel, staged.returncode, staged.stderr.strip()))
+        )
+    R.write_atomic(pathlib.Path(root) / R.LEDGER_REL, json.dumps(doc, indent=2) + "\n")
+    R.refresh_index(root, CK.plan_records, CK.plan_box_census)
+    sys.stdout.write(M.CLI_PLANNEW_WROTE % payload)
+
+
 _CLOSE_PTR_RE = re.compile(
     r"(?<![\w-])(blob|tree|commit|ancestor|fileline|gate|plan|trap):([^\s,;'\"`()]+)"
 )
@@ -4138,6 +4206,9 @@ def main():
         return True
     if sys.argv[1:2] == ["--plan-why"]:
         _planwhy_cli(sys.argv[1:])
+        return True
+    if sys.argv[1:2] == ["--plan-new"]:
+        _plannew_cli(sys.argv[1:])
         return True
     if sys.argv[1:2] == ["--plan-tick"]:
         _plantick_cli(sys.argv[1:])

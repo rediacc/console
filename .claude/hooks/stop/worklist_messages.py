@@ -2392,6 +2392,11 @@ Session state:
   --loop <me> <next> <count> <what...>   declare a scheduled loop
 
 Plan records (W12):
+  --plan-new <me> [<agent/plans/PLAN-x.md> [--write]]
+                                register a new plan in one call: stage it,
+                                write its box-ledger row, refresh INDEX and
+                                the QUEUE generated section; bare, list the
+                                plans with no ledger row
   --plan-compact <me>           LIST what can be compacted and what each one
                                 would refuse (oldest first). No path, no write.
   --plan-revive <me>            LIST the records on disk and whether each
@@ -2866,6 +2871,36 @@ CLI_PLANTICK_WROTE = (
     "check:ci-plan-record compares the index byte for byte.\n"
     "\n"
     "  git add %(rel)s %(ledger)s %(investigation)s %(index)s\n"
+)
+
+CLI_PLANNEW_USAGE = (
+    "usage: worklist.py --plan-new <me> [<agent/plans/PLAN-x.md> [--write]]\n"
+    "\n"
+    "Register a NEW plan in one call: stage the file (git add, never a commit),\n"
+    "write its row in .ci/config/plan-boxes.json, and refresh agent/INDEX.md and\n"
+    "the generated section of agent/plans/QUEUE.md. With only <me> it lists the\n"
+    "plans that have no ledger row yet.\n"
+    "\n"
+    "Refused, with nothing written: a path outside agent/plans/ or a missing file;\n"
+    "a header without Status, Owner, First-Seen, Depends-On, Priority, Concurrency\n"
+    "and Owns; a plan with no box; a plan the ledger already carries (box changes\n"
+    "go through --plan-tick). Promoted in QUEUE.md is never written.\n"
+    "\n"
+    "Without --write nothing is written.\n"
+)
+
+CLI_PLANNEW_DRY = (
+    "would register %(rel)s (%(open)d open, %(done)d done box(es)): stage it, write its\n"
+    "row in %(ledger)s, refresh %(index)s and %(queue)s\n"
+    "\n---- NOTHING was written. Re-run with --write. ----\n"
+)
+
+CLI_PLANNEW_WROTE = (
+    "registered %(rel)s (%(open)d open, %(done)d done box(es)): staged it, wrote its row\n"
+    "in %(ledger)s, refreshed %(index)s and %(queue)s\n"
+    "\n"
+    "NOT COMMITTED. Commit the four files together:\n"
+    "  git commit -F <msg> -- %(rel)s %(ledger)s %(index)s %(queue)s\n"
 )
 
 CLI_BOXCLAUSES_USAGE = (
