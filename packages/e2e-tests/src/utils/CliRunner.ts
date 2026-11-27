@@ -209,12 +209,20 @@ export class CliRunner {
 
   /**
    * Create the isolated e2e-cli config (positional name — `config init` takes a
-   * positional, NOT --name). Idempotent-ish: a second init on an existing named
-   * config errors, which callers treat as already-initialised — but see
-   * resetConfig(): a config outliving the fleet is stale, not reusable.
+   * positional, NOT --name). Callers run resetConfig() first: a config outliving
+   * the fleet is stale, not reusable, so an existing name is a failure here.
+   *
+   * Throws unless `config init` exits 0, with its stderr tail: a refused init
+   * writes nothing, and the renetPath pin below then died with a bare ENOENT on
+   * the config file (vm:check 2026-11-27, item #e7bba8d5: POLICY_UNJUDGED).
    */
   async initConfig(sshKeyPath: string): Promise<CliResult> {
     const result = await this.exec(['config', 'init', this.configName, '--ssh-key', sshKeyPath]);
+    if (result.code !== 0) {
+      throw new Error(
+        `rdc config init ${this.configName} exited ${result.code}: ${result.stderr.slice(-800)}`
+      );
+    }
     // Pin the dev renet as an ABSOLUTE top-level renetPath (host-local field, unencrypted per config sensitivity rules) so the CLI never PATH-guesses and downgrades the fleet to the host's production binary. See create().
     if (this.devRenetPath) {
       const file = CliRunner.configFilePath(this.configName);
