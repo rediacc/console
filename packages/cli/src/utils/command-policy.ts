@@ -273,7 +273,8 @@ export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
  * server, a token that cannot be renewed) the run is judged with the member policy the last
  * opened session recorded on this device (RemoteConfigAdapter.cachedPolicyContext). With no such
  * record the run is refused, naming the session error. `ops down|setup|up|ssh` drive and enter the
- * local VMs, `config init` writes a config file, and `feedback report` sends the error ring.
+ * local VMs, the bare `config init` re-initializes the active config, and `feedback report` sends
+ * the error ring. `config init <name>` is not judged here (`createsConfig`).
  */
 export const SESSION_OPTIONAL_COMMANDS: ReadonlySet<string> = new Set([
   'ops down',
@@ -292,10 +293,31 @@ export const SESSION_OPTIONAL_COMMANDS: ReadonlySet<string> = new Set([
  * and `cached` (SESSION_OPTIONAL_COMMANDS) judges with this device's recorded member policy when
  * the session cannot be opened.
  */
-type SessionRecovery = 'none' | 'any' | 'closed-server-path' | 'never-open' | 'cached';
+type SessionRecovery =
+  | 'none'
+  | 'any'
+  | 'closed-server-path'
+  | 'never-open'
+  | 'cached'
+  | 'creates-config';
+
+/**
+ * `config init <name>` creates a fresh local config and acts through no other: it is judged as the
+ * owner of the config it creates, which carries no policy yet, never by the active config's member
+ * policy (vm:check 2026-11-27: `config init e2e-cli` under a remote default config whose token was
+ * tied to another address failed POLICY_UNJUDGED and wrote nothing). A name already taken is
+ * refused by the action itself, before it writes. The bare form re-initializes the ACTIVE config,
+ * a remote one through its store, so it stays session-optional.
+ */
+function createsConfig(commandPath: string, actionCommand: Command): boolean {
+  if (commandPath !== 'config init') return false;
+  const name: unknown = (actionCommand.args as unknown[] | undefined)?.[0];
+  return typeof name === 'string' && name.length > 0;
+}
 
 /** The session failures this run may skip judgement on. */
 function sessionRecoveryOf(commandPath: string, actionCommand: Command): SessionRecovery {
+  if (createsConfig(commandPath, actionCommand)) return 'creates-config';
   if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return 'any';
   if (WORKSTATION_ONLY_COMMANDS.has(commandPath)) return 'never-open';
   if (SESSION_OPTIONAL_COMMANDS.has(commandPath)) return 'cached';
@@ -328,6 +350,9 @@ const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyCo
  * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
  * cannot be opened the run is refused with that error, save for a recovery run and a
  * session-optional run judged with the recorded member policy (`sessionRecoveryOf`).
+ *
+ * A run that creates a config (`createsConfig`) is judged as the owner of that new config, whatever
+ * the active one is.
  */
 async function localJudgement(
   recovery: SessionRecovery,
@@ -335,6 +360,7 @@ async function localJudgement(
 ): Promise<LocalJudgement | null> {
   const kind = isAgentEnvironment() ? 'agent' : 'human';
   const owner: DecisionPrincipal = { kind, userEmail: '', orgRole: 'owner' };
+  if (recovery === 'creates-config') return { principal: owner, policy: null };
   const name = configService.getCurrentName();
   if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);

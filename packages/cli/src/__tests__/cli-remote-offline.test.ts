@@ -242,4 +242,24 @@ describe('a remote config whose server is unreachable', () => {
     expect(run.errors).toContain(`Config server ${SERVER} is unreachable`);
     expect(runOps).not.toHaveBeenCalled();
   });
+
+  // vm:check 2026-11-27 (item #e7bba8d5): `config init e2e-cli` under a remote active config with no judgement kept failed POLICY_UNJUDGED and wrote nothing, so the e2e harness died with ENOENT on the new file.
+  it('creates a named config with no session kept, judged as the owner of the new config', async () => {
+    writeTokenFile(undefined);
+    const created = join(configDir(), 'offline-fresh.json');
+    const run = await rdc('config', 'init', 'offline-fresh');
+    expect(run.errors).not.toContain('POLICY_UNJUDGED');
+    expect(run.code).toBe(0);
+    expect(JSON.parse(readFileSync(created, 'utf8')).remote).toBeUndefined();
+    expect(serverFetch).not.toHaveBeenCalled();
+  });
+
+  it('control: the bare config init re-initializes the active remote config and fails closed with no session kept', async () => {
+    writeTokenFile(undefined);
+    const before = readFileSync(configFile(), 'utf8');
+    const run = await rdc('config', 'init', '--renet-path', '/usr/local/bin/renet');
+    expect(run.code).not.toBe(0);
+    expect(run.errors).toContain('POLICY_UNJUDGED');
+    expect(readFileSync(configFile(), 'utf8')).toBe(before);
+  });
 });

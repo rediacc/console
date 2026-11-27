@@ -476,6 +476,57 @@ describe('a remote config, judged as the session names its member (D2)', () => {
       await expect(run('ops up')).rejects.toBe(broken);
     });
 
+    // vm:check 2026-11-27 (item #e7bba8d5): `config init e2e-cli` under a remote default config whose token was tied to another address failed POLICY_UNJUDGED and wrote nothing.
+    describe('config init <name>, which creates a fresh local config', () => {
+      const init = (args: string[]) =>
+        enforceRootCommand('config init', undefined, {
+          opts: () => ({}),
+          args,
+        } as unknown as Command);
+
+      it('is judged as the owner of the new config, never opening the active session', async () => {
+        const { policyContext, cachedPolicyContext } = offline(unrenewable(), undefined);
+        await expect(init(['e2e-cli'])).resolves.toBeUndefined();
+        expect(policyContext).not.toHaveBeenCalled();
+        expect(cachedPolicyContext).not.toHaveBeenCalled();
+      });
+
+      it("is not refused by the active config's member policy", async () => {
+        const denyingInit = {
+          org: { version: 1, defaults: { commands: { allow: ['*'], deny: ['config init'] } } },
+        };
+        const policyContext = vi.fn(() =>
+          Promise.resolve({ principal: MEMBER, policy: denyingInit })
+        );
+        state.adapter = { policyContext };
+        await expect(init(['e2e-cli'])).resolves.toBeUndefined();
+        expect(policyContext).not.toHaveBeenCalled();
+      });
+
+      it('is allowed for an agent too, which meets only the agent rules', async () => {
+        mockIsAgent.mockReturnValue(true);
+        offline(unrenewable(), undefined);
+        await expect(init(['e2e-cli'])).resolves.toBeUndefined();
+      });
+
+      it('control: the bare form re-initializes the active config and still fails closed', async () => {
+        offline(unrenewable(), undefined);
+        const error = await init([]).catch((e: unknown) => e);
+        expect(error).toBeInstanceOf(CliExitError);
+        expect((error as CliExitError).details?.[0]).toBe('POLICY_UNJUDGED');
+      });
+
+      it('control: the bare form is still refused by a member policy that denies it', async () => {
+        const denyingInit = {
+          org: { version: 1, defaults: { commands: { allow: ['*'], deny: ['config init'] } } },
+        };
+        state.adapter = {
+          policyContext: () => Promise.resolve({ principal: MEMBER, policy: denyingInit }),
+        };
+        expect(await refusalCode(init([]))).toBe('POLICY_DENIED');
+      });
+    });
+
     it('names only live commands as session-optional', () => {
       const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
       for (const path of SESSION_OPTIONAL_COMMANDS) expect(live).toContain(path);
