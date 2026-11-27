@@ -578,7 +578,8 @@ def cmd_probe(ctx: Ctx) -> None:
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     top = argparse.ArgumentParser(
-        prog="python3 -m rediacc_ci.ops.windows_image", description=__doc__.splitlines()[0]
+        prog="PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image",
+        description=__doc__.splitlines()[0],
     )
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--dry-run", action="store_true", help="print every step, touch nothing")

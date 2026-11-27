@@ -17,12 +17,12 @@ from __future__ import annotations
 import dataclasses
 import functools
 import importlib
+import importlib.util
 import json
 import os
 import pathlib
 import re
 import subprocess
-import sys
 from typing import Any
 
 KEY = "Release-Note"
@@ -303,30 +303,37 @@ def internal_names(
     return list(dict.fromkeys(hits))
 
 
+def _ci_on_path() -> None:
+    """Put `.ci` on `sys.path` through `rediacc_ci.paths.on_sys_path`, the canonical hop. The hook loads this file by file, with no package root, so `paths.py` (standard library only) is loaded by file path first."""
+    spec = importlib.util.spec_from_file_location(
+        "_rediacc_ci_paths", _ROOT / ".ci" / "rediacc_ci" / "paths.py"
+    )
+    if spec is None or spec.loader is None:
+        msg = "cannot load .ci/rediacc_ci/paths.py"
+        raise ImportError(msg)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    module.on_sys_path(_ROOT / ".ci")
+
+
 @functools.cache
 def _prose_style() -> Any:
     """`rediacc_ci.quality.prose_style`, imported on first use with `.ci` on `sys.path`: the hook loads this file by file, with no package root of its own."""
-    ci = str(_ROOT / ".ci")
-    if ci not in sys.path:
-        sys.path.insert(0, ci)
+    _ci_on_path()
     return importlib.import_module("rediacc_ci.quality.prose_style")
 
 
 @functools.cache
 def _policy_paths() -> Any:
     """`rediacc_ci.policy_paths`, imported on first use with `.ci` on `sys.path`, for the same reason as `_prose_style`."""
-    ci = str(_ROOT / ".ci")
-    if ci not in sys.path:
-        sys.path.insert(0, ci)
+    _ci_on_path()
     return importlib.import_module("rediacc_ci.policy_paths")
 
 
 @functools.cache
 def _well_known() -> Any:
     """`rediacc_ci.well_known`, imported on first use with `.ci` on `sys.path`, for the same reason as `_prose_style`."""
-    ci = str(_ROOT / ".ci")
-    if ci not in sys.path:
-        sys.path.insert(0, ci)
+    _ci_on_path()
     return importlib.import_module("rediacc_ci.well_known")
 
 
