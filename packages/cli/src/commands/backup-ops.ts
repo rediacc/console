@@ -9,7 +9,8 @@ import {
 } from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { writeProgress } from '../services/core/progress-output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { str } from '../services/jobs/steps-support.js';
@@ -356,7 +357,7 @@ async function showBackupStatus(
   }
   outputService.info(`\nRecent logs (${strategyFilter}):`);
   const lines = (journal.result.stdout ?? '').trim();
-  writeStdout(`${lines || '(no logs)'}\n`);
+  writeProgress(`${lines || '(no logs)'}\n`);
 }
 
 bindStepHandler('seedStrategyRetention', async ({ machine, params }) => {

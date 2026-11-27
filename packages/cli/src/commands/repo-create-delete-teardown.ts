@@ -14,7 +14,7 @@ import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js
 import { configService } from '../services/config/config-resources.js';
 import { ensureRepositoryNetworkId } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
-import { writeStdout } from '../services/core/request-context.js';
+import { writeProgress } from '../services/core/progress-output.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
 import { planStep } from '../services/jobs/steps.js';
 import { ERROR_CODES } from '../types/errors.js';
@@ -43,7 +43,7 @@ async function cleanupDeletedRepoSSH(machineName: string, repoName: string): Pro
 /** Log total step duration and mark timeline as rendered. */
 export function renderTimelineTotal(steps: { duration_ms: number }[]): void {
   const totalMs = steps.reduce((sum, s) => sum + s.duration_ms, 0);
-  writeStdout(`\nTotal: ${formatStepDuration(totalMs)}\n`);
+  writeProgress(`\nTotal: ${formatStepDuration(totalMs)}\n`);
   outputService.setTimelineRendered();
 }
 

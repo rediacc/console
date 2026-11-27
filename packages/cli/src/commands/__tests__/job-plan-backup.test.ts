@@ -554,6 +554,38 @@ describe('backup status', () => {
     );
   });
 
+  it('control: the strategy journal goes to stdout in table format', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+    const { writeStdout, writeStderr } = await import('../../services/core/request-context.js');
+    vi.mocked(writeStdout).mockClear();
+    vi.mocked(writeStderr).mockClear();
+
+    await rdcBackup('status', 'nightly', '-m', 'm1');
+
+    expect(vi.mocked(writeStdout)).toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+    expect(vi.mocked(writeStderr)).not.toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+  });
+
+  it.each(['json', 'yaml', 'csv'] as const)(
+    '-o %s keeps the journal text off stdout so the table document stays parseable',
+    async (format) => {
+      answer = { ...FINISHED, stdout: SHOW };
+      const { writeStdout, writeStderr } = await import('../../services/core/request-context.js');
+      const { setCurrentOutputFormat } = await import('../../services/core/output-format.js');
+      vi.mocked(writeStdout).mockClear();
+      vi.mocked(writeStderr).mockClear();
+      setCurrentOutputFormat(format);
+      try {
+        await rdcBackup('status', 'nightly', '-m', 'm1');
+      } finally {
+        setCurrentOutputFormat('table');
+      }
+
+      expect(vi.mocked(writeStdout)).not.toHaveBeenCalled();
+      expect(vi.mocked(writeStderr)).toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+    }
+  );
+
   it('the table step refuses a missing or malformed expected param, and renders with a valid one', async () => {
     const { resolveStepHandler } = await import('../../services/jobs/steps.js');
     const handler = await resolveStepHandler('renderBackupStatus');

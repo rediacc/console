@@ -2,12 +2,13 @@ import { createHash } from 'node:crypto';
 import type ora from 'ora';
 import { t } from '../i18n/index.js';
 import { warnSkippedEntries } from '../remote/sync/index.js';
+import { writeProgress } from '../services/core/progress-output.js';
 import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
 import { formatBytes } from './repo-sync-helpers.js';
 
 function writeDeletedCount(deleted: number | undefined): void {
   if (deleted !== undefined && deleted > 0) {
-    writeStdout(`${t('commands.sync.deleted', { count: deleted })}\n`);
+    writeProgress(`${t('commands.sync.deleted', { count: deleted })}\n`);
   }
 }
 
@@ -27,12 +28,12 @@ export function displaySyncResult(
   if (result.success) {
     spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
     if (result.bytesTransferred > 0) {
-      writeStdout(
+      writeProgress(
         `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
       );
     }
     writeDeletedCount(result.deleted);
-    writeStdout(
+    writeProgress(
       `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
     );
     warnSkippedEntries(result.skipped ?? [], t, writeStderr);
