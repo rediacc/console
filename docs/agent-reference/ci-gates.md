@@ -438,7 +438,7 @@ Labels in this repo are kill switches (`full-ci` bypasses the scope engine's ski
 | declared <-> the label exists on the repo | `check:ci-label-inventory` (`.ci/scripts/quality/check_label_inventory.py`) |
 | declared (and not `guide: false`) -> explained on every PR | `label-guide` job in `ci.yml` -> `.ci/scripts/ci/label-guide-comment.cjs` |
 
-**The inventory gate** reconciles `.github/labels.yml` against the live repo in both directions. Declared-but-absent is the direction that already bit: `rollback` was declared and referenced while not existing, and `promote-stable.yml` searches `label:rollback` -- a search for a nonexistent label returns zero PRs rather than an error, so the promotion block silently never fired.
+**The inventory gate** reconciles `.github/labels.yml` against the live repo in both directions. Declared-but-absent is the direction that already bit: `rollback` was declared and referenced while not existing, and `cd-release-stable.yml` searches `label:rollback` -- a search for a nonexistent label returns zero PRs rather than an error, so the promotion block silently never fired.
 Live-but-undeclared is the quieter direction: such a label never reaches the PR guide, so people can apply it and nobody can look it up. If the live list cannot be read (no token, API error, empty response) the gate REFUSES rather than passing; an empty label list is a failed read, never a clean tree.
 
 **Verify-at-read, for the absent direction only.** The list is a snapshot and the repo's labels change under it. A full run once accused `no-auto-retry` of not existing while it existed and `watchdog-monitor.cjs:1105` was reading it -- someone was mid-way through a delete-and-recreate, and the paginated list came back one short. The empty-list guard does not catch wrong-by-one, so
@@ -523,7 +523,7 @@ Practical consequence: **acceptance and execution resolve against different refs
 ### Never push to `main` or cut a release unasked
 
 **`main` moves through the PR merge, and a merge releases edge through CD.** Operator ruling 2026-10-02 (agent/plans/PLAN-plan-per-pr-loop.md): `/pr-merge` and `/pr-babysit` are AI-invokable, and the loop merges a PR with `gh pr merge <n> --rebase --auto` once every box of its plan is ticked, `CI Complete` is SUCCESS on the head (`ci-trace.py`) and `wl_review.py --check` exits 0.
-Every merge to `main` runs the release pipeline (`cd-v2.yml` deploys edge on green), and Console CI's `pr-labels` job decides the bump once at the green head; `bump-none` is never applied by hand.
+Every merge to `main` runs the release pipeline (`cd-release-edge.yml` deploys edge on green), and Console CI's `pr-labels` job decides the bump once at the green head; `bump-none` is never applied by hand.
 
 **Edge and bench are free; stable is asked** (operator ruling ASKED 2026-10-27T09:45Z, agent/plans/PLAN-local-release.md). An agent may release edge with `npm run release:local -- --channel edge` (or `--workers-only`), as a faster path beside CD, and may deploy bench. Every stable deploy (eu, us, asia) is CI/CD only and needs the operator's request in the task. `block_unasked_release` (pre-bash) admits a stable target only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the transcript within 300 s:
 
@@ -639,7 +639,7 @@ cd /path/to/console && git add -A && git commit -m "fix: ..." && git push
 ### Secrets in CI vs CD
 
 - **CI workflows** (`ci.yml`, `ci-quality.yml`, `ct-tests.yml`): Use **generated throwaway keys** via `rediacc_ci.infra.ci_env`. Never pass production secrets.
-- **Release workflows** (`cd-v2.yml`, `promote-stable.yml`) and the local entry (`release:local`, through `bws_env exec --profile release-local`): Use **real production credentials**, pulled from
+- **Release workflows** (`cd-release-edge.yml`, `cd-release-stable.yml`) and the local entry (`release:local`, through `bws_env exec --profile release-local`): Use **real production credentials**, pulled from
 **Bitwarden** (the workflows by `./.github/actions/bws-secrets`), not from GitHub's org secret store. That store is unused: `gh api orgs/rediacc/actions/secrets` returns `{"total_count":0,"secrets":[]}`. The only repository secrets are `BWS_ACCESS_TOKEN`, which unlocks Bitwarden, and `BREAKPOINT_TUNNEL_TOKEN`. Corrected 2026-09-06; the previous wording sent readers to an empty store and made a
 live pipeline look broken.
 - Generated secrets are masked via `::add-mask::` in `rediacc_ci.infra.ci_env`.
