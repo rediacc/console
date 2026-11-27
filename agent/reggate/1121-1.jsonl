@@ -196,3 +196,10 @@
 {"kind":"charge","sig":"ff42180293ac","why":"proven","at":"2026-11-27T09:12:47Z","br":"1121-1"}
 {"kind":"discharge","sig":"551b7cb3445b","artifact":"packages/cli/src/utils/__tests__/stat-checked-cache.test.ts","proof":"commit-date: packages/cli/src/utils/__tests__/stat-checked-cache.test.ts last committed 2026-11-27T10:58:19+01:00, after the debt (2026-11-26T21:06:47Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T10:17:29Z","br":"1121-1"}
 {"kind":"charge","sig":"d85185476c03","why":"proven","at":"2026-11-27T10:37:14Z","br":"1121-1"}
+{"kind":"materialize","sig":"623c7733417f","item":"c07d2d52","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"0272eef26919","item":"c6ece6ed","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"244b24ee52ab","item":"a438d32b","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"179f54811d98","item":"16cdd56d","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"ba43984977b6","item":"63e384f6","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"72b04e63d601","item":"fb98d3fa","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"fd032cb9b936","item":"ea2d34fd","at":"2026-11-27T19:19:19Z","br":"1121-1"}
