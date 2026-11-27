@@ -13,11 +13,11 @@ Live-Proof: bench -- the public pricing routes run on the account worker and the
 ## Rulings (operator /ask, 2026-11-27, session e08d0be9)
 
 - R1. The engine stays SERVER-ONLY in private/account ("Server-only API in private/account"); nothing pricing-related is added to the public console repo beyond the list prices already in packages/shared.
-- R2. Page: four cards, Free (no signup) / Professional ($0 if eligible, else per licence) / Business / Custom ("Build your quote"); the quote panel leads with "Get a partner offer", "Buy direct at list" is the secondary link, plus "Download PDF quote"; a partner strip below.
+- R2. Page: four cards, Free (no signup) / Professional ($0 if eligible, else per licence) / Business / Custom (`Build your quote`); the quote panel leads with "Get a partner offer", "Buy direct at list" is the secondary link, plus "Download PDF quote"; a partner strip below.
 - R3. Channel: partner first, Rediacc direct as fallback when no partner covers the customer.
 - R4. Prices excluding VAT by default with an "incl. VAT" toggle.
 - R5. Quote: non-binding, 30-day price hold, line items, list prices in USD excluding VAT. Wording per the legal research (VÕS §16(2)-(3), §17): an invitation to make an offer, with the 30 days as a separate price-hold promise; "Certified partners set their own prices and may offer lower ones".
-- R6. Lead capture: two separate unticked boxes, "email me this quote" and "share with one certified partner serving my region"; the partner is an independent controller and is named.
+- R6. Lead capture: two separate unticked boxes, `email me this quote` and `share with one certified partner serving my region`; the partner is an independent controller and is named.
 - R7. Partners may sell below list; Rediacc's partner floor is unchanged (the offer builder's red below-cost warning stays); public quote leads become registered deals for the assigned partner, never conditioned on partner prices (VBER 2022/720 Art 4(a)).
 - R8. Calculator inputs are floating licences provisioning at the same time, logical CPUs of the largest machine, users, repositories, setups per month, eligibility answers and term; outputs carry the tier, the price state (free, startup discount, list, custom), the limits and the reasons ("Paid licence needed: machine has 48 CPUs (Professional ceiling 32)").
 
