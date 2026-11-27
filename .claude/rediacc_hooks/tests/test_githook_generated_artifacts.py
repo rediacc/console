@@ -871,3 +871,17 @@ def test_a_stale_detail_shows_the_verdict_not_the_trailing_warnings():
     assert "WARNING" not in shown
     # control: warnings alone are still shown rather than nothing
     assert "WARNING" in GA._indent(warnings)
+
+
+def test_a_stale_detail_drops_the_blank_lines_between_warning_paragraphs():
+    """Blank-separated WARNING paragraphs each left their blank line in the tail, so 14 or more pushed the verdict out again as blanks (review 63ba8d75.1)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk"
+    warnings = "\n\n".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked\n      Then: close it." % i
+        for i in range(20)
+    )
+    shown = GA._indent(verdict + "\n\n" + warnings + "\n")
+    assert "agent/INDEX.md disagrees" in shown
+    assert "WARNING" not in shown
+    # Only the one blank line between the verdict and the first warning survives.
+    assert sum(1 for line in shown.splitlines() if not line.strip()) == 1

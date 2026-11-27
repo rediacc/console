@@ -364,6 +364,9 @@ def _indent(text: str, lines: int = 14) -> str:
             continue
         if skipping and line.startswith((" " * 6, "\t")) and not stripped.startswith(("✗", "x ")):
             continue
+        # A blank line between WARNING paragraphs belongs to the run being skipped; kept, 14 of them filled the tail and hid the verdict again (review 63ba8d75.1).
+        if skipping and not stripped:
+            continue
         skipping = False
         kept.append(line)
     return "\n".join("    " + line for line in (kept or text.splitlines())[-lines:])
