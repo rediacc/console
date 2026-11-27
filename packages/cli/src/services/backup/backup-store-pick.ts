@@ -8,18 +8,18 @@
  * snapshot everywhere it is asked for, so it is never retried elsewhere, and an explicit `--from` never falls back.
  */
 
-import { formatDuration } from '@rediacc/shared/backup/duration';
-import { t } from '../../i18n/index.js';
-import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
-import { accountServerFetch } from '../account/account-client.js';
-import { outputService } from '../core/output.js';
-import type { ExecuteResult } from '../executor/types.js';
+import { formatDuration } from "@rediacc/shared/backup/duration";
+import { t } from "../../i18n/index.js";
+import { renderLocalExecutionFailure } from "../../utils/local-execution-failures.js";
+import { accountServerFetch } from "../account/account-client.js";
+import { outputService } from "../core/output.js";
+import type { ExecuteResult } from "../executor/types.js";
 
 /** The store every subscription has from the first day; renet takes no `--store` for it. */
-export const HOME_STORE = 'home';
+export const HOME_STORE = "home";
 
 /** The clean-up state a store carries unless the account says otherwise. */
-const CLEANUP_ENABLED = 'enabled';
+const CLEANUP_ENABLED = "enabled";
 
 /** One row of the account's per-lineage store listing. */
 interface LineageStore {
@@ -45,7 +45,10 @@ export interface StorePick {
  * empty ranking both answer `home` alone, silently: that is what every restore did before stores existed. Any other
  * failure to read the ranking answers `home` too, with a warning.
  */
-export async function pickStores(lineage: string, from?: string): Promise<StorePick> {
+export async function pickStores(
+  lineage: string,
+  from?: string,
+): Promise<StorePick> {
   if (from !== undefined) return { stores: [from], explicit: true };
   let ranked: LineageStore[] | undefined;
   try {
@@ -53,21 +56,28 @@ export async function pickStores(lineage: string, from?: string): Promise<StoreP
   } catch (error) {
     // Restore is disaster recovery: a ranking that cannot be read must not stop it from reading the home store, as it did before stores existed. Said out loud, since it may not be the best store.
     outputService.warn(
-      t('commands.backup.restore.storeRankingUnreadable', {
+      t("commands.backup.restore.storeRankingUnreadable", {
         reason: error instanceof Error ? error.message : String(error),
-      })
+      }),
     );
   }
-  const holding = (ranked ?? []).filter((s) => s.newestSnapshotId !== null).map((s) => s.storeId);
-  return { stores: holding.length > 0 ? holding : [HOME_STORE], explicit: false };
+  const holding = (ranked ?? [])
+    .filter((s) => s.newestSnapshotId !== null)
+    .map((s) => s.storeId);
+  return {
+    stores: holding.length > 0 ? holding : [HOME_STORE],
+    explicit: false,
+  };
 }
 
 /** The account's ranked listing of a lineage's stores; undefined from an older account server (404), which has none. */
-async function fetchLineageStores(lineage: string): Promise<LineageStore[] | undefined> {
+async function fetchLineageStores(
+  lineage: string,
+): Promise<LineageStore[] | undefined> {
   try {
     const response: LineageStoresResponse | undefined =
       await accountServerFetch<LineageStoresResponse>(
-        `/account/api/v1/backups/stores/lineage/${encodeURIComponent(lineage)}`
+        `/account/api/v1/backups/stores/lineage/${encodeURIComponent(lineage)}`,
       );
     return Array.isArray(response?.stores) ? response.stores : [];
   } catch (error) {
@@ -121,17 +131,27 @@ const STORE_SIDE =
  * surfaced, never retried elsewhere.
  */
 export function isStoreFailure(failure: AttemptFailure): boolean {
-  const text = [failure.errorCode, failure.error, failure.stderr, failure.stdout]
-    .filter((s): s is string => typeof s === 'string')
-    .join('\n');
+  const text = [
+    failure.errorCode,
+    failure.error,
+    failure.stderr,
+    failure.stdout,
+  ]
+    .filter((s): s is string => typeof s === "string")
+    .join("\n");
   if (failure.exitCode === 18 || failure.exitCode === 19) return false;
-  if (SNAPSHOT_OWN.test(text) || LOCAL_OWN.test(text) || SERVER_MISCONFIGURED.test(text)) {
+  if (
+    SNAPSHOT_OWN.test(text) ||
+    LOCAL_OWN.test(text) ||
+    SERVER_MISCONFIGURED.test(text)
+  ) {
     return false;
   }
   return STORE_SIDE.test(text);
 }
 
-export type Attempt<T> = { ok: true; value: T } | { ok: false; failure: AttemptFailure };
+export type Attempt<T> =
+  { ok: true; value: T } | { ok: false; failure: AttemptFailure };
 
 export type FallbackResult<T> =
   | { ok: true; store: string; value: T }
@@ -145,15 +165,19 @@ export type FallbackResult<T> =
 export async function runWithFallback<T>(
   pick: StorePick,
   attempt: (store: string) => Promise<Attempt<T>>,
-  onFallback?: (failed: string, next: string, failure: AttemptFailure) => void
+  onFallback?: (failed: string, next: string, failure: AttemptFailure) => void,
 ): Promise<FallbackResult<T>> {
-  let last: { store: string; failure: AttemptFailure } = { store: HOME_STORE, failure: {} };
+  let last: { store: string; failure: AttemptFailure } = {
+    store: HOME_STORE,
+    failure: {},
+  };
   for (const [index, store] of pick.stores.entries()) {
     const outcome = await attempt(store);
     if (outcome.ok) return { ok: true, store, value: outcome.value };
     last = { store, failure: outcome.failure };
     const next = pick.stores[index + 1];
-    if (pick.explicit || next === undefined || !isStoreFailure(outcome.failure)) break;
+    if (pick.explicit || next === undefined || !isStoreFailure(outcome.failure))
+      break;
     onFallback?.(store, next, outcome.failure);
   }
   return { ok: false, ...last };
@@ -164,7 +188,7 @@ export type ResolveInStore = (store: string) => Promise<string>;
 
 /** Whether a resolve refusal is the account's answer (it carries an HTTP status), which every store would give alike. */
 function isAccountError(error: unknown): boolean {
-  return typeof (error as { status?: unknown } | null)?.status === 'number';
+  return typeof (error as { status?: unknown } | null)?.status === "number";
 }
 
 interface Candidate {
@@ -183,15 +207,16 @@ async function resolveFrom(
   resolve: ResolveInStore,
   start: number,
   first: boolean,
-  refusals: unknown[]
+  refusals: unknown[],
 ): Promise<Candidate | undefined> {
   for (let index = start; index < pick.stores.length; index++) {
     const store = pick.stores[index];
     const answer = await resolve(store).then(
       (snapshotId) => ({ snapshotId }),
-      (error: unknown) => ({ error })
+      (error: unknown) => ({ error }),
     );
-    if ('snapshotId' in answer) return { index, store, snapshotId: answer.snapshotId };
+    if ("snapshotId" in answer)
+      return { index, store, snapshotId: answer.snapshotId };
     const account = isAccountError(answer.error);
     if (pick.explicit || (first && account)) throw answer.error;
     if (account) return undefined;
@@ -219,9 +244,9 @@ export async function runWithFallbackAt<T>(
   attempt: (
     store: string,
     snapshotId: string,
-    movesOn: (failure: AttemptFailure) => Promise<boolean>
+    movesOn: (failure: AttemptFailure) => Promise<boolean>,
   ) => Promise<Attempt<T>>,
-  onFallback?: (failed: string, next: string, failure: AttemptFailure) => void
+  onFallback?: (failed: string, next: string, failure: AttemptFailure) => void,
 ): Promise<FallbackResult<T> & { snapshotId: string }> {
   const refusals: unknown[] = [];
   let current = await resolveFrom(pick, resolve, 0, true, refusals);
@@ -234,10 +259,17 @@ export async function runWithFallbackAt<T>(
       return next;
     };
     const movesOn = async (failure: AttemptFailure) =>
-      !pick.explicit && isStoreFailure(failure) && (await following()) !== undefined;
+      !pick.explicit &&
+      isStoreFailure(failure) &&
+      (await following()) !== undefined;
     const outcome = await attempt(here.store, here.snapshotId, movesOn);
     if (outcome.ok) {
-      return { ok: true, store: here.store, value: outcome.value, snapshotId: here.snapshotId };
+      return {
+        ok: true,
+        store: here.store,
+        value: outcome.value,
+        snapshotId: here.snapshotId,
+      };
     }
     if (!(await movesOn(outcome.failure))) {
       return {
@@ -265,7 +297,7 @@ export async function executeWithStoreFallback(
   pick: StorePick,
   resolve: ResolveInStore,
   run: (store: string, snapshotId: string) => Promise<ExecuteResult>,
-  failedMessage: string
+  failedMessage: string,
 ): Promise<{ result: ExecuteResult; store: string; snapshotId: string }> {
   // The result of the latest attempt: when no store serves, it is the one to render.
   let latest: ExecuteResult | undefined;
@@ -276,20 +308,32 @@ export async function executeWithStoreFallback(
     async (store, snapshotId) => {
       const result = await run(store, snapshotId);
       latest = result;
-      if (result.success || result.state === 'running') return { ok: true as const, value: result };
+      if (result.success || result.state === "running")
+        return { ok: true as const, value: result };
       const { exitCode, error, errorCode, stdout, stderr } = result;
-      return { ok: false as const, failure: { exitCode, error, errorCode, stdout, stderr } };
+      return {
+        ok: false as const,
+        failure: { exitCode, error, errorCode, stdout, stderr },
+      };
     },
     (failed, next) => {
       fellBack = true;
-      outputService.warn(t('commands.backup.restore.storeFallback', { failed, next }));
-    }
+      outputService.warn(
+        t("commands.backup.restore.storeFallback", { failed, next }),
+      );
+    },
   );
   if (served.ok) {
     if (served.store !== HOME_STORE || pick.explicit || fellBack) {
-      outputService.info(t('commands.backup.restore.storeServed', { store: served.store }));
+      outputService.info(
+        t("commands.backup.restore.storeServed", { store: served.store }),
+      );
     }
-    return { result: served.value, store: served.store, snapshotId: served.snapshotId };
+    return {
+      result: served.value,
+      store: served.store,
+      snapshotId: served.snapshotId,
+    };
   }
   const result = latest as ExecuteResult;
   renderLocalExecutionFailure(result, result.error ?? failedMessage);
@@ -302,7 +346,7 @@ export interface StoreStatus {
   lastRunStatus: string | null;
   newestSnapshotAt: string | null;
   /** `failed` when any stream's last verify failed, `ok` when one passed and none failed, else `-`. */
-  verify: 'ok' | 'failed' | '-';
+  verify: "ok" | "failed" | "-";
   /** `enabled`, or the `disabled -- <reason>` the store carries. */
   cleanup: string;
 }
@@ -321,12 +365,18 @@ export interface StatusTargets {
  * entry because the listing was unreadable or never named it), `not copied` when the target is listed with no snapshot
  * yet, and `0s` when it is level.
  */
-export function copyLag(source: StoreStatus | undefined, target: StoreStatus | undefined): string {
-  if (!source?.newestSnapshotAt) return '-';
-  if (!target) return '-';
-  if (!target.newestSnapshotAt) return 'not copied';
-  const behind = Date.parse(source.newestSnapshotAt) - Date.parse(target.newestSnapshotAt);
-  return Number.isNaN(behind) ? '-' : formatDuration(Math.max(0, behind) / 1000);
+export function copyLag(
+  source: StoreStatus | undefined,
+  target: StoreStatus | undefined,
+): string {
+  if (!source?.newestSnapshotAt) return "-";
+  if (!target) return "-";
+  if (!target.newestSnapshotAt) return "not copied";
+  const behind =
+    Date.parse(source.newestSnapshotAt) - Date.parse(target.newestSnapshotAt);
+  return Number.isNaN(behind)
+    ? "-"
+    : formatDuration(Math.max(0, behind) / 1000);
 }
 
 /** One stream of `GET /backups/status`; a row without `storeId` is `home`. */
@@ -347,12 +397,14 @@ export interface StatusResponse {
 
 /** The verify verdict after one more stream: a failure sticks, a pass shows only over no verdict. */
 function mergeVerify(
-  known: StoreStatus['verify'],
-  lastVerifyStatus: string | null
-): StoreStatus['verify'] {
+  known: StoreStatus["verify"],
+  lastVerifyStatus: string | null,
+): StoreStatus["verify"] {
   if (lastVerifyStatus === null) return known;
-  if (/fail|error|mismatch/i.test(lastVerifyStatus)) return 'failed';
-  return known === '-' && /ok|verified|proven|pass/i.test(lastVerifyStatus) ? 'ok' : known;
+  if (/fail|error|mismatch/i.test(lastVerifyStatus)) return "failed";
+  return known === "-" && /ok|verified|proven|pass/i.test(lastVerifyStatus)
+    ? "ok"
+    : known;
 }
 
 /** The later of two ISO timestamps, either of which may be absent. */
@@ -368,22 +420,28 @@ function later(a: string | null, b: string | null): string | null {
 /** One status per store id, from the streams of these lineages. Pure. */
 export function summarizeStatus(
   response: StatusResponse,
-  lineages: ReadonlySet<string>
+  lineages: ReadonlySet<string>,
 ): Record<string, StoreStatus> {
   const cleanup = new Map(
-    (response.stores ?? []).map((s) => [s.storeId, s.cleanup ?? CLEANUP_ENABLED])
+    (response.stores ?? []).map((s) => [
+      s.storeId,
+      s.cleanup ?? CLEANUP_ENABLED,
+    ]),
   );
   const out: Record<string, StoreStatus> = {};
-  for (const stream of response.streams.filter((s) => lineages.has(s.lineageGuid))) {
+  for (const stream of response.streams.filter((s) =>
+    lineages.has(s.lineageGuid),
+  )) {
     const id = stream.storeId ?? HOME_STORE;
     const known: StoreStatus = out[id] ?? {
       lastRunAt: null,
       lastRunStatus: null,
       newestSnapshotAt: null,
-      verify: '-',
+      verify: "-",
       cleanup: cleanup.get(id) ?? CLEANUP_ENABLED,
     };
-    const newerRun = later(known.lastRunAt, stream.lastRunAt) === stream.lastRunAt;
+    const newerRun =
+      later(known.lastRunAt, stream.lastRunAt) === stream.lastRunAt;
     out[id] = {
       lastRunAt: later(known.lastRunAt, stream.lastRunAt),
       lastRunStatus: newerRun ? stream.lastRunStatus : known.lastRunStatus,
@@ -399,10 +457,12 @@ export function summarizeStatus(
  * The stores' statuses for these lineages, from the account's status route. An unreadable route (an older account
  * server answers 404, any other failure too) adds nothing: status never fails on it, and its columns stay `-`.
  */
-export async function readStoreStatuses(lineages: string[]): Promise<Record<string, StoreStatus>> {
+export async function readStoreStatuses(
+  lineages: string[],
+): Promise<Record<string, StoreStatus>> {
   try {
     const response = await accountServerFetch<StatusResponse | undefined>(
-      '/account/api/v1/backups/status'
+      "/account/api/v1/backups/status",
     );
     return response && Array.isArray(response.streams)
       ? summarizeStatus(response, new Set(lineages))
@@ -414,12 +474,12 @@ export async function readStoreStatuses(lineages: string[]): Promise<Record<stri
 
 /**
  * One printed row per destination store of the row's strategy (`home` when it names none), carrying that store's
- * last run and outcome (the unit's own when the account has none), newest snapshot, last verify and clean-up state.
+ * last run and outcome (the unit's own only when the account lists no status for the store), newest snapshot, last verify and clean-up state.
  */
 export function expandStatusRows<R extends { strategy: string; unit: string }>(
   rows: R[],
-  targets?: StatusTargets
-): (Omit<R, 'strategy' | 'unit'> & {
+  targets?: StatusTargets,
+): (Omit<R, "strategy" | "unit"> & {
   strategy: string;
   unit: string;
   store: string;
@@ -431,23 +491,30 @@ export function expandStatusRows<R extends { strategy: string; unit: string }>(
   return rows.flatMap((row) => {
     const { strategy, unit, ...rest } = row;
     const stores = targets?.byStrategy[strategy];
-    return (stores && stores.length > 0 ? stores : [HOME_STORE]).map((store) => {
-      const known = targets?.stores[store];
-      const from = targets?.replicas?.[strategy]?.[store];
-      const run = known?.lastRunAt
-        ? { lastRun: known.lastRunAt, result: known.lastRunStatus ?? '-' }
-        : {};
-      return {
-        strategy,
-        unit,
-        store,
-        ...rest,
-        ...run,
-        newestSnapshot: known?.newestSnapshotAt ?? '-',
-        verify: known?.verify ?? '-',
-        cleanup: known?.cleanup ?? CLEANUP_ENABLED,
-        copyLag: from === undefined ? '-' : copyLag(targets?.stores[from], known),
-      };
-    });
+    return (stores && stores.length > 0 ? stores : [HOME_STORE]).map(
+      (store) => {
+        const known = targets?.stores[store];
+        const from = targets?.replicas?.[strategy]?.[store];
+        // A listed store says its own run, `-` when it has none; only an unlisted store keeps the unit's columns.
+        const run = known
+          ? {
+              lastRun: known.lastRunAt ?? "-",
+              result: known.lastRunAt ? (known.lastRunStatus ?? "-") : "-",
+            }
+          : {};
+        return {
+          strategy,
+          unit,
+          store,
+          ...rest,
+          ...run,
+          newestSnapshot: known?.newestSnapshotAt ?? "-",
+          verify: known?.verify ?? "-",
+          cleanup: known?.cleanup ?? CLEANUP_ENABLED,
+          copyLag:
+            from === undefined ? "-" : copyLag(targets?.stores[from], known),
+        };
+      },
+    );
   });
 }
