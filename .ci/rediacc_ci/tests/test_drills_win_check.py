@@ -9,6 +9,7 @@ import base64
 import contextlib
 import datetime
 import json
+import re
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -481,3 +482,16 @@ def test_every_suite_in_the_tree_keeps_the_contract() -> None:
         assert ". (Join-Path $PSScriptRoot 'common.ps1')" in text, suite
         assert "Initialize-RdcSuite '%s'" % suite in text, suite
         assert text.rstrip().endswith("Complete-RdcSuite"), suite
+
+
+def test_common_loop_variables_do_not_shadow_a_parameter() -> None:
+    """PowerShell variables are case-insensitive: a `foreach ($name ...)` inside Initialize-RdcSuite overwrote its `$Name` parameter and the banner printed the last list entry (review finding 2773013c.1)."""
+    text = (win_check.repo_root() / win_check.SUITES_DIR / "common.ps1").read_text(encoding="utf-8")
+    body = text.split("function Initialize-RdcSuite", 1)[1].split("\n}\n", 1)[0]
+    assert not re.search(r"foreach \(\$name\b", body, re.IGNORECASE)
+
+
+def test_common_header_names_the_guard_hostname_exception() -> None:
+    """The literal-IPv4 rule of common.ps1 admits the guard suite's one hostname, which guard.ps1 explains (review finding 2773013c.2)."""
+    text = (win_check.repo_root() / win_check.SUITES_DIR / "common.ps1").read_text(encoding="utf-8")
+    assert "Every address is a literal IPv4, except the guard suite's one hostname" in text

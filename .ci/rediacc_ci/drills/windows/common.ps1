@@ -10,7 +10,7 @@
 # THE RULES (findings lesson 8, Design D6). Windows PowerShell 5.1 turns a native program's stderr into
 # error records, so every native call runs through cmd.exe with its stdout and stderr redirected to files
 # under C:\rdc\work\<suite>, and its exit code comes from $LASTEXITCODE. No step pipes stdin into ssh.exe
-# or reads its output through a pipe. Every address is a literal IPv4. The files stay ASCII, since 5.1
+# or reads its output through a pipe. Every address is a literal IPv4, except the guard suite's one hostname (see guard.ps1). The files stay ASCII, since 5.1
 # reads a script without a BOM in the ANSI code page; a non-ASCII name is built from [char] codes.
 #
 # THE AGENT BOUNDARY. Every rdc call runs in a fresh cmd.exe that carries CLAUDECODE=1, an honest agent
@@ -42,8 +42,8 @@ function Initialize-RdcSuite([string]$Name) {
     $env:REDIACC_NO_PROVISION = '1'
     $env:PYTHONIOENCODING = 'utf-8'
     # The suite process itself is no agent and holds no override; each call's cmd.exe boundary decides.
-    foreach ($name in 'CLAUDECODE', 'REDIACC_AGENT', 'REDIACC_ALLOW_GRAND_REPO', 'REDIACC_ALLOW_CLUSTER_OPS', 'REDIACC_CONFIG', 'REDIACC_SECRET_STORE') {
-        Remove-Item "Env:$name" -ErrorAction SilentlyContinue
+    foreach ($var in 'CLAUDECODE', 'REDIACC_AGENT', 'REDIACC_ALLOW_GRAND_REPO', 'REDIACC_ALLOW_CLUSTER_OPS', 'REDIACC_CONFIG', 'REDIACC_SECRET_STORE') {
+        Remove-Item "Env:$var" -ErrorAction SilentlyContinue
     }
     Write-RdcLine "win:check suite $Name, run $($script:Rdc.runId)"
     return $script:Rdc
