@@ -5298,6 +5298,13 @@
           "role": "version",
           "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>collabora/code:v?\\d[^\\s\"'@#]*)",
           "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/compose/testdata/nextcloud-aio.compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>collabora/code:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
         }
       ],
       "derive": [],
@@ -5905,6 +5912,34 @@
           "file": "proxy/docker-compose.yml",
           "role": "version",
           "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>traefik:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/server/bundle/images.ts",
+          "role": "version",
+          "match": "TRAEFIK_REF = '(?<value>traefik:v?\\d[^']*)'",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/rediacc_ci/core/devbox.py",
+          "role": "version",
+          "match": "^DEVBOX_PROXY_IMAGE = \"(?<value>traefik:v?\\d[^\"]*)\"",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "version",
+          "match": "^readonly DEVBOX_PROXY_IMAGE=\"(?<value>traefik:v?\\d[^\"]*)\"",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "scripts/ci-test.sh",
+          "role": "version",
+          "match": "pull_with_retry (?<value>traefik:v?\\d[^\\s]*)",
           "expect": 1
         }
       ],

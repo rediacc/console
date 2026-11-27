@@ -13,7 +13,7 @@ import { ServerError } from '../box.js';
 import { DEFAULT_IMAGE, templateFiles } from '../common.js';
 
 /** Renet's proxy image; must equal the `image:` line of private/renet/proxy/docker-compose.yml. */
-export const TRAEFIK_REF = 'traefik:v3.7.16';
+export const TRAEFIK_REF = 'traefik:v3.7.20';
 
 type BundleImageName = 'server' | 'rustfs' | 'traefik';
 
