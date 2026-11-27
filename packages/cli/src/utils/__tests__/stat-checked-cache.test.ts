@@ -56,4 +56,23 @@ describe('StatCheckedCache', () => {
     fs.writeFileSync(path.join(dir, 'missing'), 'x');
     expect(cache.get('k')).toBeUndefined();
   });
+
+  it('sees a file installed after a miss once the lookup is stored again', () => {
+    const file = path.join(dir, 'late');
+    const cache = new StatCheckedCache();
+    cache.set('k', file);
+    expect(cache.get('k')).toBeUndefined();
+    fs.writeFileSync(file, 'installed');
+    cache.set('k', file);
+    expect(cache.get('k')).toBe(file);
+  });
+
+  it('a miss replaces the stored hit instead of leaving the old path served', () => {
+    const file = path.join(dir, 'bin');
+    fs.writeFileSync(file, 'one');
+    const cache = new StatCheckedCache();
+    cache.set('k', file);
+    cache.set('k', path.join(dir, 'gone'));
+    expect(cache.get('k')).toBeUndefined();
+  });
 });
