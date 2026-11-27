@@ -969,6 +969,7 @@ RUNNER_NEEDS = {
     "hostinger": "verified-vmcheck",
     "e2e-local": "verified-vmcheck",
     "www-local": "none",
+    "win-check": "none",
 }
 _NEEDS_SUBLINE_RE = re.compile(r"^\s+(?:[-*+]\s+)?Needs:[ \t]*([^\n]*)$")
 _NEEDS_ANY_RE = re.compile(r"\bNeeds:[ \t]*([^\n]*)")
