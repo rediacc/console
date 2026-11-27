@@ -30,7 +30,7 @@ import sys
 
 import yaml
 
-from rediacc_ci.core import gh_retry
+from rediacc_ci.core import gate_clock, gh_retry
 
 # Refresh cadence. An allowlist can change without any commit touching this repo, so a stale record is a failure rather than a warning.
 MAX_BASELINE_AGE_DAYS = 45
@@ -260,7 +260,7 @@ def verdicts(refs_by_repo, record):
             waiver = KNOWN_UNREACHABLE.get((repo_name, n))
             if waiver is not None:
                 expiry, why = waiver
-                if dt.datetime.now(dt.UTC).date().isoformat() <= expiry:
+                if gate_clock.today().isoformat() <= expiry:
                     print(
                         f"  KNOWN, waived until {expiry}: {repo_name}/{n}: {why}",
                         file=sys.stderr,
@@ -453,7 +453,7 @@ def main(argv=None):
 
     problems = verdicts(refs_by_repo, record)
 
-    problems.extend(staleness_problems(record, dt.datetime.now(dt.UTC)))
+    problems.extend(staleness_problems(record, gate_clock.now()))
 
     if problems:
         print("Workflows reference secrets their repository cannot read:", file=sys.stderr)

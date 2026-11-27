@@ -52,7 +52,7 @@ import pathlib
 import re
 import sys
 
-from rediacc_ci.core import allowlist, gh_retry
+from rediacc_ci.core import allowlist, gate_clock, gh_retry
 from rediacc_ci.policy_paths import policy_path
 from rediacc_ci.quality import seams
 from rediacc_ci.well_known import GH_REPO
@@ -855,7 +855,7 @@ def main(argv=None):
 
     stale = None
     try:
-        age = dt.datetime.now(dt.UTC) - dt.datetime.fromisoformat(baseline["refreshed_at"])
+        age = gate_clock.now() - dt.datetime.fromisoformat(baseline["refreshed_at"])
         if age.days > MAX_BASELINE_AGE_DAYS:
             stale = age.days
     except (KeyError, TypeError, ValueError):

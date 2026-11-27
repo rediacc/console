@@ -833,6 +833,7 @@
       "REAL_PROVIDER_FRESHNESS_FIXTURE",
       "REAL_PROVIDER_LOCK_FILE",
       "REDIACC_CI_ROOT",
+      "REDIACC_GATE_CLOCK",
       "REDIACC_GUARD_DIFF_FULL",
       "REDIACC_KEY_USAGE_PROBE",
       "REDIACC_LEASE_TMP_BASE",
@@ -1830,6 +1831,9 @@
       ],
       ".ci/rediacc_ci/core/env.py": [
         "*key"
+      ],
+      ".ci/rediacc_ci/core/gate_clock.py": [
+        "REDIACC_GATE_CLOCK"
       ],
       ".ci/rediacc_ci/core/local_common.py": [
         "ACCOUNT_ED25519_PUBLIC_KEY",

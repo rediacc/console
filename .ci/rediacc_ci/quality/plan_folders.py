@@ -74,6 +74,7 @@ import sys
 
 from rediacc_ci import controls, gitx, paths
 from rediacc_ci.controls import plant
+from rediacc_ci.core import gate_clock
 from rediacc_ci.quality import plan_lifecycle as PL
 
 CONTROL_FLOOR = 24
@@ -686,7 +687,7 @@ def run(root: pathlib.Path, config: dict) -> int:
     found = PL.findings(
         plans,
         config=config,
-        today=dt.datetime.now(dt.UTC).date(),
+        today=gate_clock.today(),
         existing=existing,
         refs=PL.citation_refs(root),
         tombstones=stones,
@@ -728,7 +729,7 @@ def run(root: pathlib.Path, config: dict) -> int:
 
 def status(root: pathlib.Path, config: dict) -> int:
     plans, _existing, stones = _gather(root)
-    today = dt.datetime.now(dt.UTC).date()
+    today = gate_clock.today()
     buckets: dict[str, list[PL.Plan]] = {}
     for plan in plans:
         buckets.setdefault(PL.classify(plan), []).append(plan)
@@ -861,7 +862,7 @@ def _outside_citers(root: pathlib.Path, rel: str) -> list[str]:
 
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
     plans, _existing, stones = _gather(root)
-    today = dt.datetime.now(dt.UTC).date()
+    today = gate_clock.today()
     due = _expired(plans, config, today)
     # A tracked file outside agent/ that still cites a plan keeps it: the tombstone would turn that citation dead (check:ci-plan-citations).
     try:

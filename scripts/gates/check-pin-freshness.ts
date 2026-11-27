@@ -495,11 +495,31 @@ function holdProblemsOf(world: StatusWorld, sel: Selection): HoldProblem[] {
   return holdFindings(files, claimants);
 }
 
+/**
+ * The instant a hold expiry and the release-age window are judged against: `REDIACC_GATE_CLOCK` (an ISO 8601 date or timestamp, the TypeScript twin of `rediacc_ci.core.gate_clock`) when set, else the wall clock.
+ * A bad value throws rather than reading today, because a planted clock that silently fell back would pass without running.
+ */
+export function gateNowMs(env: NodeJS.ProcessEnv = process.env): number {
+  const raw = env.REDIACC_GATE_CLOCK;
+  if (raw === undefined || raw.trim() === '') return Date.now();
+  const text = raw.trim();
+  const iso8601 = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+  const ms = iso8601.test(text)
+    ? Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/.test(text) || !text.includes('T') ? text : `${text}Z`)
+    : Number.NaN;
+  if (Number.isNaN(ms))
+    throw new Error(
+      `REDIACC_GATE_CLOCK=${JSON.stringify(raw)} is not an ISO 8601 date or timestamp (for example 2027-01-01); the gate refuses to guess, because falling back to today would make a planted clock pass without running`
+    );
+  console.error(`  NOTE: REDIACC_GATE_CLOCK=${raw} moves this gate's clock; this verdict is not today's.`);
+  return ms;
+}
+
 /** The run over `root` (the console's, or the selftest's fixture), with the root's release-age window and major grace. */
 async function check(
   root: string,
   mutant?: Mutant,
-  nowMs: number = Date.now(),
+  nowMs: number = gateNowMs(),
   scope: ReadonlySet<string> | null = null
 ): Promise<Report> {
   const reg = loadRegistry(path.join(root, '.ci/config/pins.json'));
@@ -897,6 +917,35 @@ async function selftest(): Promise<number> {
       ex.all
     );
 
+    // THE CLOCK SEAM (REDIACC_GATE_CLOCK, nightly-green F1): the same fixture and the same hold, judged at a planted instant. The hold dated tomorrow is green at NOW (above) and red once the clock is planted past that date; planting NOW itself must give today's verdict back. A gate that ignored the seam, or read it as an excuse, fails one of the two.
+    const clockAt = (iso: string) => gateNowMs({ REDIACC_GATE_CLOCK: iso });
+    const planted = await check(futureRoot, undefined, clockAt(`${dayAfterNow}T12:00:00Z`));
+    add(
+      'CLOCK past the deadline: the hold dated tomorrow, judged at tomorrow noon, is expired and its aged pin is red',
+      planted.rc === 1 &&
+        planted.err.some((l) => l.includes(`${HOLDS}:1 expired on ${dayAfterNow}`)),
+      [...planted.out, ...planted.err].join('\n')
+    );
+    const plantedNow = await check(futureRoot, undefined, clockAt(new Date(NOW).toISOString()));
+    add(
+      'CLOCK at NOW: planting the fixture clock itself gives the unplanted verdict (green, hold in force)',
+      plantedNow.rc === 0,
+      [...plantedNow.out, ...plantedNow.err].join('\n')
+    );
+    add(
+      'CLOCK unset or blank reads the wall clock; a bad value throws instead of reading today',
+      Math.abs(gateNowMs({}) - Date.now()) < 60_000 &&
+        Math.abs(gateNowMs({ REDIACC_GATE_CLOCK: '  ' }) - Date.now()) < 60_000 &&
+        (() => {
+          try {
+            gateNowMs({ REDIACC_GATE_CLOCK: 'next tuesday' });
+            return false;
+          } catch (e) {
+            return (e as Error).message.includes('REDIACC_GATE_CLOCK');
+          }
+        })()
+    );
+
     // Hold liveness: a line no leaf answers to is red, naming the line.
     const dead = fixtureRoot([YOUNG], {
       [HOLDS]:
@@ -1254,11 +1303,11 @@ function scopeOf(env: NodeJS.ProcessEnv): ReadonlySet<string> | null {
 async function main(): Promise<number> {
   if (process.argv.includes('--selftest')) return selftest();
   registerDrivers(realDrivers());
-  const r = await check(REPO_ROOT, undefined, Date.now(), scopeOf(process.env));
+  const r = await check(REPO_ROOT, undefined, gateNowMs(), scopeOf(process.env));
   for (const l of r.out) console.log(l);
   const outsideFile = process.env[OUTSIDE_ENV];
   if (outsideFile && r.outside && r.outside.length > 0)
-    // tree-write: safe PINS_TXN_OUTSIDE names outside.txt inside the transaction journal under .ci/cache/pins (txn.ts journalRoot), which is gitignored cache and never tracked tree
+    // tree-write: safe the append goes to the file PINS_TXN_OUTSIDE names, which only the pins transaction sets (txn.ts), to outside.txt in its journal under .ci/cache/pins (gitignored cache, never tracked tree); an unset variable writes nothing, and a caller that points it elsewhere owns that path
     fs.appendFileSync(outsideFile, r.outside.map((l) => `check:ci-pin-freshness: ${l}\n`).join(''));
   // The app templates' references that name no version are no leaf (scripts/lib/pins/templates.ts), so nothing above judges them; they are named on every run instead of passing in silence.
   const { unpinned } = scanTemplates(readTemplateFiles(REPO_ROOT));

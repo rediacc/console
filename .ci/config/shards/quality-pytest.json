@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T06:15:48.203Z",
+  "generatedAt": "2026-11-27T06:20:02.584Z",
   "legs": [
     {
       "index": 1,
@@ -967,6 +967,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_account_lifecycle_reset.py",
         "pytest:.ci/rediacc_ci/tests/test_core_age.py",
         "pytest:.ci/rediacc_ci/tests/test_core_bws_env_park.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_gate_clock.py",
         "pytest:.ci/rediacc_ci/tests/test_core_host_slots.py",
         "pytest:.ci/rediacc_ci/tests/test_core_https.py",
         "pytest:.ci/rediacc_ci/tests/test_core_local_common_renet_build_tolerated.py",
