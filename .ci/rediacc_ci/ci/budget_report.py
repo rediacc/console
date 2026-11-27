@@ -1582,9 +1582,9 @@ def aggregate_variant_costs(
 
 
 def fetch_job_log(repo: str, job_id: int) -> str:
-    """One job's raw log text through `ghx.gh` (a failed call raises on `.stdout`). `--allow-escape-sequences`: gh 2.98 REFUSES a response carrying terminal escapes without it ("the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway", measured 2026-09-28 on job 108948938590), and every E2E log carries colour codes."""
+    """One job's raw log text through `ghx.gh` (a failed call raises on `.stdout`). `--allow-escape-sequences` (added only when the installed gh knows it, `ghx.api_escape_flags`): gh 2.98 REFUSES a response carrying terminal escapes without it ("the response contains terminal escape sequences; pass --allow-escape-sequences to output it anyway", measured 2026-09-28 on job 108948938590), and every E2E log carries colour codes."""
     return gh_retry.gh(
-        ["api", "--allow-escape-sequences", "repos/%s/actions/jobs/%s/logs" % (repo, job_id)],
+        ["api", *ghx.api_escape_flags(), "repos/%s/actions/jobs/%s/logs" % (repo, job_id)],
         attempts=GH_ATTEMPTS,
     ).stdout
 

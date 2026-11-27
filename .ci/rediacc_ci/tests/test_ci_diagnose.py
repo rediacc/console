@@ -16,6 +16,7 @@ import pytest
 
 from rediacc_ci import workflows
 from rediacc_ci.ci import ci_diagnose as D
+from rediacc_ci.core import ghx
 
 FIX = pathlib.Path(__file__).resolve().parent / "fixtures" / "ci_diagnose"
 RUN = 36953549081
@@ -1540,3 +1541,47 @@ def test_ordinary_application_text_about_balance_is_no_billing_refusal():
         "operator-only",
         "billing-refused",
     )
+
+
+# ---- the escape-sequences flag and the first-error-line text -----------------------
+
+
+def _text_with_flag_support(monkeypatch, flags, reply):
+    calls: list = []
+
+    def fake_run(argv, **_kw):
+        calls.append(argv)
+        return reply
+
+    monkeypatch.setattr(ghx, "api_escape_flags", lambda: list(flags))
+    monkeypatch.setattr(D.subprocess, "run", fake_run)
+    return D.GhFetcher("o/r"), calls
+
+
+def test_text_passes_the_escape_flag_when_gh_has_it(monkeypatch):
+    f, calls = _text_with_flag_support(monkeypatch, ["--allow-escape-sequences"], _Proc(0, "x"))
+    assert f.text("actions/jobs/1/logs") == ("x", "")
+    assert calls[0][-1] == "--allow-escape-sequences"
+
+
+def test_text_omits_the_flag_for_an_older_gh_and_job_log_strips_escapes(monkeypatch, tmp_path):
+    f, calls = _text_with_flag_support(monkeypatch, [], _Proc(0, "\x1b[31mred\x1b[0m line\n"))
+    log, err = D.job_log(f, 7, completed=False, cache_dir=tmp_path)
+    assert (log, err) == ("red line\n", "")
+    assert "--allow-escape-sequences" not in calls[0]
+
+
+def test_text_error_keeps_the_whole_first_error_line(monkeypatch):
+    usage = "unknown flag: --allow-escape-sequences\n\nUsage:  gh api <endpoint> [flags]\n" + (
+        "  --some-flag   print the response body\n" * 12
+    )
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(1, "", usage))
+    data, err = f.text("actions/jobs/1/logs")
+    assert data is None
+    assert err == "unknown flag: --allow-escape-sequences"
+
+
+def test_first_error_line_clips_a_very_long_line_with_an_ellipsis():
+    out = D._first_error_line("\n  " + "e" * 400 + "\nsecond", 1)
+    assert out == "e" * 299 + "…"
+    assert D._first_error_line("", 3) == "gh exited 3"

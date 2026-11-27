@@ -334,6 +334,15 @@ def _gh_retry():
     return gh_retry
 
 
+def _first_error_line(text, returncode):
+    """gh's first non-blank error line, whole (clipped at 300 characters with an ellipsis). The old `[-200:]` tail cut mid-word and kept the end of gh's usage text instead of the error."""
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if line:
+            return line if len(line) <= 300 else line[:299] + "\u2026"
+    return "gh exited %d" % returncode
+
+
 class GhFetcher:
     """Reads through the local `gh` CLI. Never raises: every error comes back as a string.
 
@@ -361,9 +370,7 @@ class GhFetcher:
         except (OSError, subprocess.SubprocessError) as exc:
             return None, str(exc)[:200]
         if out.returncode != 0:
-            return None, (
-                (out.stderr or out.stdout or "").strip() or "gh exited %d" % out.returncode
-            )[-200:]
+            return None, _first_error_line(out.stderr or out.stdout, out.returncode)
         return out.stdout, ""
 
     def _run(self, args):
@@ -386,8 +393,8 @@ class GhFetcher:
             return None, "non-JSON from %s: %r" % (path, raw[:80])
 
     def text(self, path):
-        # --allow-escape-sequences IS REQUIRED: job logs carry ANSI colour, and without it gh writes nothing to stdout and exits 1 (measured 2026-08-28 and again 2026-10-02 on job 110680194371).
-        return self._run([_full(self.repo, path), "--allow-escape-sequences"])
+        # --allow-escape-sequences IS REQUIRED on a gh that has it: job logs carry ANSI colour, and without it gh writes nothing to stdout and exits 1 (measured 2026-08-28 and again 2026-10-02 on job 110680194371). An older gh (2.46.0) rejects the flag as unknown, so `ghx.api_escape_flags` adds it only when `gh api --help` lists it; job_log strips the escapes either way.
+        return self._run([_full(self.repo, path), *_gh_retry().ghx.api_escape_flags()])
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):

@@ -702,3 +702,37 @@ def test_api_json_paginate_asks_gh_to_slurp_pages(monkeypatch):
     pages = ghx.api_json("repos/x/y/actions/runs/1/jobs", paginate=True)
     assert seen["args"][-2:] == ["--paginate", "--slurp"]
     assert pages == [{"jobs": [1]}, {"jobs": [2]}]
+
+
+def _probe_with(monkeypatch, help_text, rc=0):
+    monkeypatch.setattr(ghx, "_ESCAPE_FLAG_SUPPORT", [])
+    seen = []
+
+    def fake_gh(args, **_kw):
+        seen.append(list(args))
+        return ghx.GhResult(["gh", *args], rc, help_text, "")
+
+    monkeypatch.setattr(ghx, "gh", fake_gh)
+    return seen
+
+
+def test_api_escape_flags_present_when_gh_api_help_lists_it(monkeypatch):
+    seen = _probe_with(monkeypatch, "FLAGS\n      --allow-escape-sequences   allow\n")
+    assert ghx.api_escape_flags() == ["--allow-escape-sequences"]
+    assert ghx.api_escape_flags() == ["--allow-escape-sequences"]
+    assert seen == [["api", "--help"]], "the probe runs once per process"
+
+
+def test_api_escape_flags_empty_for_an_older_gh(monkeypatch):
+    _probe_with(monkeypatch, "FLAGS\n  -X, --method string\n")
+    assert ghx.api_escape_flags() == []
+
+
+def test_api_escape_flags_empty_when_the_probe_cannot_run(monkeypatch):
+    monkeypatch.setattr(ghx, "_ESCAPE_FLAG_SUPPORT", [])
+
+    def boom(*_a, **_kw):
+        raise OSError("no gh")
+
+    monkeypatch.setattr(ghx, "gh", boom)
+    assert ghx.api_escape_flags() == []
