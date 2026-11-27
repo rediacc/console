@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-26T22:35:28.000Z",
+  "generatedAt": "2026-11-27T14:19:32.718Z",
   "legs": [
     {
       "index": 1,
@@ -47,7 +47,8 @@
         "github.com/rediacc/renet/pkg/toolexec",
         "github.com/rediacc/renet/pkg/toolexec/devicemapper",
         "github.com/rediacc/renet/pkg/vaultcrypto",
-        "github.com/rediacc/renet/pkg/systemctl"
+        "github.com/rediacc/renet/pkg/systemctl",
+        "github.com/rediacc/renet/pkg/infra/vm/windows"
       ]
     },
     {
