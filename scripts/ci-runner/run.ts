@@ -2114,15 +2114,16 @@ async function busySamplerSelftest(): Promise<string[]> {
   const SETSID = 'selftest:busy-setsid';
   const sampler = startBusySampler(new Set([BUSY, IDLE, SETSID]));
   const opts = { cwd: REPO_ROOT, mergeOutput: false };
+  // The window opens 2.5 s after the workers start and lasts 2 s, so the one-second sampler has a reading at or before each end even when its ticks slip under a loaded ci:quick (2026-11-27 ci:quick 20: a 1.3 s lead and a 1 s window read `no window` at load 30 and passed alone).
   // The expectation is measured INSIDE the window the sampler is asked about: the probe script reads its own two workers' utime+stime from /proc/<pid>/stat (a direct read, not the sampler's group walk) at both ends of a one-second window and prints `startMs ticks endMs ticks`. A busy host starves the workers in that window and in the sampler's read of it alike, so contention moves both sides (2026-11-27: whole-life times said 0.69 cores while the window's last second held 0.33, and the old comparison failed a healthy reader).
   const probe = (prefix: string): string =>
-    `${prefix}yes >/dev/null & a=$!; ${prefix}yes >/dev/null & b=$!; sleep 1.3; ` +
-    `s1=$(date +%s%3N); x1=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); sleep 1.0; ` +
+    `${prefix}yes >/dev/null & a=$!; ${prefix}yes >/dev/null & b=$!; sleep 2.5; ` +
+    `s1=$(date +%s%3N); x1=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); sleep 2.0; ` +
     `s2=$(date +%s%3N); x2=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); ` +
     `kill $a $b; wait 2>/dev/null; echo "PROBE $s1 $x1 $s2 $x2"`;
   const [busyRun, , detachedRun] = await Promise.all([
     execGate(syntheticSpec(BUSY, probe('')), opts),
-    execGate(syntheticSpec(IDLE, 'sleep 2.8'), opts),
+    execGate(syntheticSpec(IDLE, 'sleep 5.0'), opts),
     // The same two workers, each moved into its own session: their CPU leaves the gate's process group but not its parent chain.
     execGate(syntheticSpec(SETSID, probe('setsid ')), opts),
   ]);
