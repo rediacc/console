@@ -184,6 +184,33 @@ def test_provenance_signs_before_anything_is_uploaded_and_rides_the_release() ->
     assert order.index("provenance") < order.index("github-release")
 
 
+def test_the_third_party_source_mirror_follows_the_cli_upload_under_the_r2_profile() -> None:
+    """PLAN-release-credits-compliance M2: the written offer names the mirror, so it is published by the release that conveys the binaries."""
+    order = ids(EDGE)
+    step = EDGE[order.index("mirror-third-party-src")]
+    assert order.index("upload-cli-r2") < order.index("mirror-third-party-src")
+    assert order.index("mirror-third-party-src") < order.index("seal")
+    assert step.profiles == ("r2-artifacts",)
+    assert step.section == "stage"
+    assert step.argv == ("python3", "-m", "rediacc_ci.deploy.mirror_third_party_src")
+    assert "mirror-third-party-src" not in ids(WORKERS)
+
+
+def test_the_release_notes_are_uploaded_before_any_deploy_and_feed_the_release_body() -> None:
+    """PLAN-release-notes D8: one computation, uploaded to cli/v<V>/ before a Worker deploy, rendered into the Release from the same file."""
+    order = ids(EDGE)
+    notes = EDGE[order.index("release-notes")]
+    release = EDGE[order.index("github-release")]
+    first_deploy = next(i for i, s in enumerate(EDGE) if s.section == "deploy")
+    assert order.index("release-notes") < first_deploy
+    assert notes.profiles == ("r2-artifacts",)
+    assert notes.gh_env == ("GH_TOKEN",)
+    path = notes.argv[notes.argv.index("--write-notes-json") + 1]
+    assert "--upload-notes" in notes.argv
+    assert dict(release.env)["RELEASE_NOTES_JSON"] == path
+    assert dict(release.env)["GITHUB_SHA"] == "{sha}"
+
+
 @pytest.mark.parametrize("steps", [EDGE, WORKERS], ids=["edge", "workers"])
 def test_sections_run_in_the_declared_order(steps: list[local.Step]) -> None:
     ranks = [local.SECTIONS.index(s.section) for s in steps]

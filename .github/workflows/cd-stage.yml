@@ -115,6 +115,8 @@ jobs:
             CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ZONE_ID > BWS_CLOUDFLARE_ZONE_ID
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
       - name: Download CLI executables
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
@@ -372,6 +374,32 @@ jobs:
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+
+      # PLAN-release-credits-compliance M2: the written offer in `rdc credits` names releases.rediacc.com/third-party-src/, so the exact-version source of each embedded third-party binary is mirrored write-once beside the edge release that conveys it. The inventory is the renet submodule's embed-assets.lock.json, so only that one submodule is initialised, through a token that can see renet alone.
+      - name: Mint a renet-only token for the third-party source mirror
+        if: inputs.channel == 'edge'
+        id: renet-token
+        uses: ./.github/actions/app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: renet
+
+      - name: Init the renet submodule (inventory and build recipe)
+        if: inputs.channel == 'edge'
+        env:
+          GH_APP_TOKEN: ${{ steps.renet-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${GH_APP_TOKEN}@${GITHUB_SERVER_URL#https://}/".insteadOf "$GITHUB_SERVER_URL/"
+          git submodule update --init --depth=1 private/renet
+
+      - name: Mirror third-party source to R2
+        if: inputs.channel == 'edge'
+        env:
+          CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.mirror_third_party_src
 
       - name: Upload repos to R2 channel
         if: inputs.channel != ''

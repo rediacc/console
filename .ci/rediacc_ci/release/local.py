@@ -613,6 +613,13 @@ def _table() -> tuple[Step, ...]:
             profiles=("r2-artifacts",),
             env=(("SNAPSHOT_VERSION", "{version}"),),
         ),
+        # PLAN-release-credits-compliance M2: the exact-version source of every third-party binary renet embeds, mirrored write-once beside the release that conveys the binaries (cd-stage.yml runs the same module).
+        Step(
+            "mirror-third-party-src",
+            "stage",
+            (*PY, "rediacc_ci.deploy.mirror_third_party_src"),
+            profiles=("r2-artifacts",),
+        ),
         Step(
             "upload-repos-r2",
             "stage",
