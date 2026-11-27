@@ -498,10 +498,15 @@ function holdProblemsOf(world: StatusWorld, sel: Selection): HoldProblem[] {
 /**
  * The instant a hold expiry and the release-age window are judged against: `REDIACC_GATE_CLOCK` (an ISO 8601 date or timestamp, the TypeScript twin of `rediacc_ci.core.gate_clock`) when set, else the wall clock.
  * A bad value throws rather than reading today, because a planted clock that silently fell back would pass without running.
+ * A planted clock cannot turn a real run green (review finding 914b173e.3): it is honoured only with `REDIACC_GATE_CLOCK_TEST=1` and never under `CI=true`; anywhere else a set `REDIACC_GATE_CLOCK` throws a refusal.
  */
 export function gateNowMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env.REDIACC_GATE_CLOCK;
   if (raw === undefined || raw.trim() === '') return Date.now();
+  if ((env.CI ?? '').trim().toLowerCase() === 'true')
+    throw new Error(`REDIACC_GATE_CLOCK is set under CI=true, where no gate may run on a planted clock. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`);
+  if ((env.REDIACC_GATE_CLOCK_TEST ?? '').trim() !== '1')
+    throw new Error(`REDIACC_GATE_CLOCK is set outside a test harness (REDIACC_GATE_CLOCK_TEST=1 is not set), so a real gate run would be judged on a date nobody chose. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`);
   const text = raw.trim();
   const iso8601 = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
   const ms = iso8601.test(text)
@@ -918,7 +923,7 @@ async function selftest(): Promise<number> {
     );
 
     // THE CLOCK SEAM (REDIACC_GATE_CLOCK, nightly-green F1): the same fixture and the same hold, judged at a planted instant. The hold dated tomorrow is green at NOW (above) and red once the clock is planted past that date; planting NOW itself must give today's verdict back. A gate that ignored the seam, or read it as an excuse, fails one of the two.
-    const clockAt = (iso: string) => gateNowMs({ REDIACC_GATE_CLOCK: iso });
+    const clockAt = (iso: string) => gateNowMs({ REDIACC_GATE_CLOCK: iso, REDIACC_GATE_CLOCK_TEST: '1' });
     const planted = await check(futureRoot, undefined, clockAt(`${dayAfterNow}T12:00:00Z`));
     add(
       'CLOCK past the deadline: the hold dated tomorrow, judged at tomorrow noon, is expired and its aged pin is red',
@@ -938,12 +943,26 @@ async function selftest(): Promise<number> {
         Math.abs(gateNowMs({ REDIACC_GATE_CLOCK: '  ' }) - Date.now()) < 60_000 &&
         (() => {
           try {
-            gateNowMs({ REDIACC_GATE_CLOCK: 'next tuesday' });
+            gateNowMs({ REDIACC_GATE_CLOCK: 'next tuesday', REDIACC_GATE_CLOCK_TEST: '1' });
             return false;
           } catch (e) {
-            return (e as Error).message.includes('REDIACC_GATE_CLOCK');
+            return (e as Error).message.includes('not an ISO 8601');
           }
         })()
+    );
+    // A planted clock outside the harness, or under CI=true even with the marker, is a refusal and never a verdict.
+    const clockRefusal = (env: NodeJS.ProcessEnv): string => {
+      try {
+        gateNowMs(env);
+        return '';
+      } catch (e) {
+        return (e as Error).message;
+      }
+    };
+    add(
+      'CLOCK refused: a planted clock with no test marker, or under CI=true, throws and is never honoured',
+      clockRefusal({ REDIACC_GATE_CLOCK: '2020-01-01' }).includes('outside a test harness') &&
+        clockRefusal({ REDIACC_GATE_CLOCK: '2020-01-01', REDIACC_GATE_CLOCK_TEST: '1', CI: 'true' }).includes('CI=true')
     );
 
     // Hold liveness: a line no leaf answers to is red, naming the line.

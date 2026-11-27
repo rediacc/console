@@ -32,7 +32,14 @@ def _wall() -> dt.datetime:
 
 
 def _env(**over: str) -> dict[str, str]:
-    return {"PYTHONPATH": str(paths.from_root(".ci")), **over}
+    return {"PYTHONPATH": str(paths.from_root(".ci")), gate_clock.TEST_ENV: "1", **over}
+
+
+@pytest.fixture(autouse=True)
+def _harness_marked(monkeypatch):
+    """This file IS the test harness: the marker is set and CI is cleared (CI=true refuses the seam), in-process and in every child."""
+    monkeypatch.setenv(gate_clock.TEST_ENV, "1")
+    monkeypatch.delenv("CI", raising=False)
 
 
 # --------------------------------------------------------------------------- The module itself.

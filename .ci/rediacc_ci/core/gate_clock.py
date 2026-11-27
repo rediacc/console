@@ -7,6 +7,8 @@ WRITES KEEP THE WALL CLOCK. A `refreshed_at` or `moved_at` stamp records when th
 A BAD VALUE IS A FAILURE, never a fallback to the wall clock: a typo that silently reads today would turn a planted-clock test into a green that ran nothing. The seam is also not a skip. Every gate's pytest plants a clock past its deadline and requires RED, so a gate that ignores the seam fails its own test (tests/test_core_gate_clock.py).
 
 When the variable is set, `now()` says so once on stderr, so a verdict produced under a moved clock is never mistaken for today's.
+
+A PLANTED CLOCK CANNOT TURN A REAL RUN GREEN (review finding 914b173e.3). A date set before a waiver's expiry would excuse an expired waiver with only a stderr NOTE, so the seam is honoured ONLY when `REDIACC_GATE_CLOCK_TEST=1` marks the process as a test harness (a pytest case, a `--selftest`), and NEVER when `CI=true`. Anywhere else a set `REDIACC_GATE_CLOCK` is a REFUSAL, a `GateClockError` naming the variable (rc non-zero), not an ignored value: a stray export in a shell must be loud, not a quiet return to the wall clock that a reader would take for a planted-clock verdict. The marker is a second explicit variable on purpose; one leaked export cannot move a verdict.
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ import os
 import sys
 
 ENV = "REDIACC_GATE_CLOCK"
+TEST_ENV = "REDIACC_GATE_CLOCK_TEST"
 
 _announced: set[str] = set()
 
@@ -40,11 +43,28 @@ def parse(raw: str) -> dt.datetime:
     return moment.astimezone(dt.UTC)
 
 
+def _refusal(env: dict[str, str] | os._Environ[str]) -> str | None:
+    """Why a set clock must not be honoured here, or None when the process is a marked test harness outside CI."""
+    if env.get("CI", "").strip().lower() == "true":
+        return f"{ENV} is set under CI=true, where no gate may run on a planted clock"
+    if env.get(TEST_ENV, "").strip() != "1":
+        return (
+            f"{ENV} is set outside a test harness ({TEST_ENV}=1 is not set), so a real gate run "
+            f"would be judged on a date nobody chose"
+        )
+    return None
+
+
 def override() -> dt.datetime | None:
-    """The planted instant, or None when the variable is unset or empty."""
+    """The planted instant, or None when the variable is unset or empty. Refuses (GateClockError) outside a test harness."""
     raw = os.environ.get(ENV, "")
     if not raw.strip():
         return None
+    why = _refusal(os.environ)
+    if why is not None:
+        raise GateClockError(
+            f"{why}. Unset {ENV}; only a gate's --selftest or pytest may plant it."
+        )
     moment = parse(raw)
     if raw not in _announced:
         _announced.add(raw)
