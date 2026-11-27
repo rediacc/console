@@ -110,19 +110,26 @@ def is_port_in_use(port: int) -> bool:
 
 
 def listening_ports() -> frozenset[int] | None:
-    """Every TCP port something is LISTENING on, from ONE `ss` run, or None when `ss` is not there (the callers then probe port by port, the older ladder).
+    """Every TCP port something is LISTENING on, from ONE `ss` run, or None when `ss` is not there, fails or lists nothing (the callers then probe port by port, the older ladder).
 
     A scan over a window used to run `ss` once per candidate, about 70 ms each on this host, so a window with a few hundred busy ports cost tens of seconds. The snapshot answers the same question `is_port_in_use` does for each candidate: `ss -tlnH` rows carry the local address as `addr:port`, wildcard and IPv6 spellings included.
     """
     if not proc.which("ss"):
         return None
-    rows = proc.run(["ss", "-tlnH"]).stdout.splitlines()
+    result = proc.run(["ss", "-tlnH"])
+    if result.returncode != 0:
+        return None
+    return parse_listeners(result.stdout)
+
+
+def parse_listeners(text: str) -> frozenset[int] | None:
+    """The ports in `ss -tlnH` output, or None when no row parses: a failed or empty run would otherwise read as a host where every port is free, and a host with nothing listening is not a case the callers can tell from a broken `ss`, so they probe port by port instead."""
     found = set()
-    for row in rows:
+    for row in text.splitlines():
         columns = row.split()
         if len(columns) >= 4 and columns[3].rpartition(":")[2].isdigit():
             found.add(int(columns[3].rpartition(":")[2]))
-    return frozenset(found)
+    return frozenset(found) if found else None
 
 
 def _prober():
