@@ -59,6 +59,12 @@ export function replicaSnapshotName(setName: string, suffix?: string): string {
 /**
  * A repo ref's k8s/datastore-safe stem. A repo key may carry a tag (`shop:test`),
  * but a k8s object name and a datastore fork tag both reject `:`.
+ *
+ * The map is not injective (`shop:test` and a literal `shop-test` share a stem).
+ * Uniqueness of the set and canary names derived from it is guaranteed at
+ * creation: `assertNoSlugCollision` (services/repo/repo-slug-collision.ts)
+ * refuses a new repo whose slug equals another repo's, in `repo create` and
+ * `repo fork`, so no two registered repos ever share a slug.
  */
 export function repoKeySlug(repoKey: string): string {
   return repoKey.replaceAll(':', '-');
