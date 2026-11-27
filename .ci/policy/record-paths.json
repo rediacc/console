@@ -284,6 +284,10 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -529,6 +533,10 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -753,6 +761,10 @@
         {
           "id": "check:ci-dead-translation-keys",
           "reason": "Its only citation of this record is the key-site pattern '*.*' in a selftest fixture (scripts/gates/check-dead-translation-keys.ts:529), a string the selftest feeds to its own resolver; the verdict is computed over packages/www translation JSON and source, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -993,6 +1005,10 @@
         {
           "id": "check:ci-plan-feedback",
           "reason": "The agent/ledgers/ file it reads is agent/ledgers/feedback-snapshot.json (SNAPSHOT_PARTS, .ci/rediacc_ci/feedback/link.py:45), a different ledger outside this glob; no effort-*.jsonl file is read: the verdict is computed over agent/plans/PLAN-*.md and that snapshot."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -1478,6 +1494,10 @@
         {
           "id": "check:ci-prose-duplication",
           "reason": "Its only citation of this record is scope_mirrors.CORPUS_GLOBS (agent/plans/QUEUE.md), which it imports for normalize, md_blocks, parse_anchors and mirror_spans; it never calls corpus_files, and its verdict reads only its fixed family (CLAUDE.md, .claude/commands/pr-babysit.md, .claude/agents/pr-babysitter.md, .claude/commands/pr-merge.md) and .ci/config/scope-mirrors.json."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -1686,6 +1706,10 @@
         {
           "id": "check:ci-resprofile",
           "reason": "Its citations are a selftest fixture path (agent/plans/PLAN-resprofile-wave2.md in an acts_outside control) and the agent/ prefix acts_outside drops from a list of changed-path strings (.ci/scripts/quality/check_resprofile.py); it compares path names and opens no file under agent/."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -2088,6 +2112,10 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -2279,6 +2307,10 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -2470,6 +2502,10 @@
         {
           "id": "check:ci-commit-citations",
           "reason": "It names agent/ledgers/ only to say it never reads it: EXCLUDED (.ci/scripts/quality/check_commit_citations.py) drops agent/reviews/, agent/worklist/ and agent/ledgers/ from the files whose commit citations it judges. It is a declared reader of the plan files themselves."
+        },
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
         }
       ]
     },
@@ -2697,7 +2733,12 @@
           "evidence": "scripts/ci-runner/gates.lock.json:11996 (declared) names **"
         }
       ],
-      "notReaders": []
+      "notReaders": [
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        }
+      ]
     },
     {
       "glob": "agent/ledgers/landing-rounds.jsonl",
@@ -2923,7 +2964,12 @@
           "evidence": "scripts/ci-runner/gates.lock.json:11996 (declared) names **"
         }
       ],
-      "notReaders": []
+      "notReaders": [
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        }
+      ]
     },
     {
       "glob": "agent/*/STATE.md",
@@ -3246,7 +3292,11 @@
         }
       ],
       "notReaders": [
-        {"id": "check:ci-mcp-docs-parity", "reason": "Its only citation the derivation finds is the string 'agent' in RETIRED_FAMILIES (scripts/gates/check-mcp-docs-parity.ts), an MCP tool family name; the gate reads the MCP registry and the docs pages under packages/www, and no file under agent/."}
+        {"id": "check:ci-mcp-docs-parity", "reason": "Its only citation the derivation finds is the string 'agent' in RETIRED_FAMILIES (scripts/gates/check-mcp-docs-parity.ts), an MCP tool family name; the gate reads the MCP registry and the docs pages under packages/www, and no file under agent/."},
+        {
+          "id": "check:ci-pin-freshness",
+          "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        }
       ]
     }
   ]
