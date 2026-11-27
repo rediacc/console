@@ -37,8 +37,17 @@ test.describe
       return json!.data;
     };
 
+    // GUID-named entries already under <datastore>/repositories before this suite creates anything (the fleet's own `vmcheck-base` grand repo, for one). 5b judges only what this suite's migrates could have left behind, and the phase-1 base is a fresh random UUID per migrate, so it is never in this set.
+    const preexisting = new Set<string>();
+    const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
     test.beforeAll(async () => {
       await s.setup();
+      for (const runner of [s.w1, s.w2]) {
+        const res = await runner.executeViaBridge(`sudo ls -1 ${DS}/repositories`);
+        for (const line of res.stdout.split('\n'))
+          if (GUID_RE.test(line.trim())) preexisting.add(line.trim());
+      }
     });
 
     test.afterAll(async () => {
@@ -88,8 +97,7 @@ test.describe
     });
 
     test('5b. default migrate left no phase-1 delta base: only live repos remain under <datastore>/repositories', async () => {
-      // The phase-1 base is a GUID-named file beside the repo images. The cutover push asks for it to be pruned, so a GUID other than a live repo's means the prune never ran.
-      const guidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+      // The phase-1 base is a GUID-named file beside the repo images. The cutover push asks for it to be pruned, so a GUID that is neither a live repo's nor one already resident before the suite (`preexisting`, e.g. vm:check's vmcheck-base) means the prune never ran.
       const live = new Set(Object.values(s.guids));
       for (const [runner, label] of [
         [s.w1, M1],
@@ -100,7 +108,7 @@ test.describe
         const stray = res.stdout
           .split('\n')
           .map((l) => l.trim())
-          .filter((l) => guidRe.test(l) && !live.has(l));
+          .filter((l) => GUID_RE.test(l) && !live.has(l) && !preexisting.has(l));
         expect(stray, `surviving non-live GUIDs on ${label}`).toEqual([]);
       }
     });
