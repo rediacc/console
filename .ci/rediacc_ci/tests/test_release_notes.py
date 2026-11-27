@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import copy
 import os
+import shutil
 import subprocess
 import typing
 
@@ -37,6 +38,22 @@ def test_feat_on_customer_path_without_trailer_is_refused_and_passes_with_one():
     assert (
         rn.refusal(_msg("feat(cli): resume backups", "Release-Note: " + NOTE), CLI, "console") == ""
     )
+
+
+@pytest.mark.parametrize(
+    "subject",
+    ["Feat(cli): x", "feat(cli):x", "feat (cli): x", "FIX(cli) : x", "feat(cli) !: x", "Perf: x"],
+)
+def test_a_loosely_spelled_conventional_subject_still_owes_a_note(subject):
+    """Review finding bdbf06a4.1: a subject the strict grammar missed read as exempt and skipped D2."""
+    assert rn.subject_of(subject) is not None
+    assert "Release-Note:" in rn.refusal(_msg(subject), CLI, "console")
+
+
+def test_a_subject_outside_the_grammar_is_still_exempt():
+    assert rn.subject_of('Revert "feat(cli): x"') is None
+    assert rn.subject_of("Merge branch 'a'") is None
+    assert rn.refusal(_msg('Revert "feat(cli): x"'), CLI, "console") == ""
 
 
 def test_none_with_a_short_reason_is_refused():
@@ -378,6 +395,18 @@ def test_collect_refuses_a_submodule_commit_that_is_not_present(fixture_console)
         _git(console, "update-index", "--cacheinfo", "160000,%s,private/account" % missing)
         _git(console, "commit", "-q", "-m", "chore(submodules): bump to an unfetched commit")
         with pytest.raises(rn.ReleaseNotesError, match="not present"):
+            rn.collect("v1.0.0", "HEAD", console, _config())
+
+
+def test_collect_refuses_a_submodule_that_is_not_checked_out(fixture_console):
+    """Review finding bdbf06a4.3: an absent submodule directory raised FileNotFoundError, not the typed error."""
+    console = fixture_console
+    with isolated_git_env():
+        missing = "0123456789abcdef0123456789abcdef01234567"
+        _git(console, "update-index", "--cacheinfo", "160000,%s,private/account" % missing)
+        _git(console, "commit", "-q", "-m", "chore(submodules): bump to an unfetched commit")
+        shutil.rmtree(console / "private" / "account")
+        with pytest.raises(rn.ReleaseNotesError, match="not checked out"):
             rn.collect("v1.0.0", "HEAD", console, _config())
 
 

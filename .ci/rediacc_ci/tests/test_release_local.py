@@ -2339,3 +2339,58 @@ def test_a_pinned_dry_run_with_head_at_the_pin_answers_the_identical_pair_with_t
     result = local.dry_gates(tmp_path, "9.9.9", ctx)
     assert seen == {"same_none": True, "same_true": True}
     assert result.unjudged == 2
+
+
+# --------------------------------------------------------------------------- public_record's refusal branches (review finding 2b1ab46e.1) ---------------------------------------------------------------------------
+
+
+def _curl_says(monkeypatch: pytest.MonkeyPatch, stdout: str = "", returncode: int = 0, raises=None):
+    """`local.subprocess.run` as a curl that printed `stdout` and exited `returncode`, or raised. Nothing reaches the network."""
+    calls: list[list[str]] = []
+
+    def run(argv, **_kw):
+        calls.append(argv)
+        if raises is not None:
+            raise raises
+        return subprocess.CompletedProcess(argv, returncode, stdout, "")
+
+    monkeypatch.setattr(local.subprocess, "run", run)
+    return calls
+
+
+def test_public_record_reads_a_json_object_body(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _curl_says(monkeypatch, '{"version": "1.2.3"}\n200')
+    assert local.public_record("https://r.example.invalid/")("cli/edge/manifest.json") == (
+        {"version": "1.2.3"},
+        "",
+    )
+    assert calls[0][-1] == "https://r.example.invalid/cli/edge/manifest.json"
+
+
+def test_public_record_reads_a_404_as_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    _curl_says(monkeypatch, "not found\n404")
+    assert local.public_record("https://r.example.invalid")("k") == (None, "absent")
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "why"),
+    [
+        ({"raises": OSError("curl missing")}, "could not be read: curl missing"),
+        (
+            {"raises": subprocess.TimeoutExpired(["curl"], 60)},
+            "could not be read: Command '['curl']' timed out after 60 seconds",
+        ),
+        ({"stdout": "\n000", "returncode": 7}, "could not be read: curl exited 7"),
+        ({"stdout": "oops\n503"}, "could not be read: HTTP 503 from https://r.example.invalid/k"),
+        ({"stdout": "{not json\n200"}, "could not be read: not JSON"),
+        ({"stdout": "[1, 2]\n200"}, "could not be read: not an object"),
+    ],
+)
+def test_public_record_never_reads_a_failure_as_a_record_or_as_absent(
+    monkeypatch: pytest.MonkeyPatch, kwargs: dict, why: str
+) -> None:
+    _curl_says(monkeypatch, **kwargs)
+    record, reason = local.public_record("https://r.example.invalid")("k")
+    assert record is None
+    assert reason.startswith(why), reason
+    assert reason != "absent"

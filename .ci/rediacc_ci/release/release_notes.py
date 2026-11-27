@@ -9,7 +9,7 @@ WHO OWES IT (D2). A Conventional Commits `feat`, `fix` or `perf` subject (scope 
 
 COLLECTION (D3). `collect(start, end, root)` reads the console commits of `start..end`, then for each configured submodule the gitlink delta between the two trees and that submodule's own commits `old..new`. The console bump is exempt, so a submodule note is counted once, from the submodule commit. Notes are keyed by `(repo, sha)`, ordered by committer time across repos, and deduplicated by normalized text, so the same note landing as a console commit and a submodule commit appears once. `none` notes are counted, never shown.
 
-THE TRAILER BLOCK IS READ THE WAY `git interpret-trailers --parse` READS IT, without starting git: the last paragraph is a trailer block when every line in it is a trailer, a continuation, or a git-generated line, or when a quarter of its lines are trailers and one of them is git-generated. The `(cherry picked from commit <sha>)` line `git cherry-pick -x` appends at land is git-generated, so a landed commit keeps its trailers. The test file drives both readers over the same messages.
+THE TRAILER BLOCK IS READ THE WAY `git interpret-trailers --parse` READS IT, without starting git: the last paragraph is a trailer block when every line in it is a trailer, a continuation, or a git-generated line, or when its trailer lines are at least a third of its other lines and one of them is git-generated. The `(cherry picked from commit <sha>)` line `git cherry-pick -x` appends at land is git-generated, so a landed commit keeps its trailers. The test file drives both readers over the same messages.
 """
 
 from __future__ import annotations
@@ -35,8 +35,10 @@ CONSOLE = "console"
 GROUP_ORDER = ("Added", "Fixed", "Improved")
 EMPTY_LINE = "No customer-facing changes recorded in this range."
 
-# Conventional Commits: `type(scope)!: subject`. The type is lowercase letters, as every subject in this tree spells it.
-_SUBJECT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[^()]*)\))?(?P<bang>!)?: \S")
+# Conventional Commits: `type(scope)!: subject`. Read leniently (any letter case, spaces around the scope and the colon) because a subject the strict form misses reads as outside the grammar and skips D2; the type is lowercased.
+_SUBJECT = re.compile(
+    r"^(?P<type>[A-Za-z]+)[ \t]*(?:\((?P<scope>[^()]*)\))?[ \t]*(?P<bang>!)?[ \t]*:[ \t]*\S"
+)
 # `git interpret-trailers` separators: `:` only (trailer.separators is unset in these repos). Token characters per git's `find_separator`: alphanumerics and `-`.
 _TRAILER = re.compile(r"^(?P<key>[A-Za-z0-9][A-Za-z0-9-]*)[ \t]*:[ \t]?(?P<value>.*)$")
 _SIGNED_OFF = "Signed-off-by: "
@@ -202,7 +204,9 @@ def subject_of(subject: str) -> Subject | None:
     found = _SUBJECT.match(subject.strip())
     if not found:
         return None
-    return Subject(found.group("type"), found.group("scope") or "", bool(found.group("bang")))
+    return Subject(
+        found.group("type").lower(), found.group("scope") or "", bool(found.group("bang"))
+    )
 
 
 def is_breaking(msg: str) -> bool:
@@ -538,6 +542,15 @@ def collect(
             )
             continue
         sub = root / repo
+        if not sub.is_dir():
+            msg = (
+                "release notes: submodule %s is not checked out at %s; fetch it before collecting"
+                % (
+                    repo,
+                    sub,
+                )
+            )
+            raise ReleaseNotesError(msg)
         for sha in (old, new):
             if _git(sub, "cat-file", "-e", sha + "^{commit}", check=False).returncode != 0:
                 msg = (
