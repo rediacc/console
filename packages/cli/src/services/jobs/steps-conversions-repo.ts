@@ -281,7 +281,8 @@ export const REPO_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'renderBackupStatus',
     'success',
-    ['machine', 'expected'],
+    // `targets` carries the per-store columns (newest snapshot, verify, copy lag); planStep drops an undeclared key, which left them `-` on every row (hostinger 2026-11-27).
+    ['machine', 'expected', 'targets'],
     () => import('../../commands/backup-ops.js'),
     true
   ),
