@@ -4,7 +4,7 @@ description: >-
   RediaccがAIコーディングアシスタントによる秘密の漏えい、認証情報の上書き、
   権限昇格をどのように防ぐか。すべてのインターフェースに共通する1つの判断、
   オプトインとポリシー上限の両立、ナレッジゲート、秘匿化、ハッシュチェーン
-  監査ログ。
+  監査ログ（サーバーでは組織と日ごと、CLIではローカルファイル）。
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: ja
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 あなたのインフラストラクチャを管理するAIコーディングアシスタントを使用しているとします。Claude Code、Cursor、Gemini CLI、Copilot CLIなど、AIアシスタントが `rdc` を操作する場合、CLIはキーボードを操作する人間とは異なるルールセットを適用します。このページでは、エージェントが何ができるか・できないか、そしてエージェントがガードレールを回避しようとしても保護が機能する仕組みについて説明します。

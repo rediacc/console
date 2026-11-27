@@ -4,7 +4,7 @@ description: >-
   Kuidas Rediacc takistab tehisintellektil põhinevatel kodeerimisabilistel
   saladusi lekitada, mandaate üle kirjutada või õigusi laiendada. Üks otsus
   igale liidesele, sõnaselge nõusolek JA poliitika lagi, teadmisvärav,
-  redakteerimine ja räsiahelaga auditilogi.
+  redakteerimine ja auditilogi, mis on serveris räsiahelaga organisatsiooni ja päeva kaupa ning CLI-s kohalikus failis.
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: et
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Niisiis suunad AI-koodiabistaja oma infrastruktuuri peale. Kui Claude Code, Cursor, Gemini CLI, Copilot CLI või mõni muu sarnane tööriist juhib `rdc`-d, kohtleb CLI seda klaviatuuri taga olevast inimesest erinevalt. Sellel lehel selgitatakse, mida agent saab teha, mida mitte, ja kuidas turvamehhanismid kehtivad isegi siis, kui agent üritab neist mööda rääkida.

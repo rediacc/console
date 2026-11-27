@@ -3,7 +3,7 @@ title: AI 에이전트 안전성 및 가드레일
 description: >-
   Rediacc가 AI 코딩 어시스턴트의 시크릿 유출, 자격 증명 덮어쓰기, 권한 상승을
   어떻게 막는지 설명합니다. 모든 인터페이스에 적용되는 하나의 결정, 옵트인과
-  정책 상한의 동시 충족, 지식 게이트, 리댁션, 해시 체인 감사 로그를 다룹니다.
+  정책 상한의 동시 충족, 지식 게이트, 리댁션, 해시 체인 감사 로그(서버에서는 조직과 일 단위, CLI에서는 로컬 파일)를 다룹니다.
 category: Concepts
 tags:
   - ai-agents
@@ -11,8 +11,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: ko
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 당신의 인프라에 AI 코딩 어시스턴트를 배치하려고 합니다. Claude Code, Cursor, Gemini CLI, Copilot CLI 또는 유사한 것이 `rdc`를 구동할 때, CLI는 이를 감지하여 키보드 앞의 사람과는 다른 규칙 집합을 적용합니다. 이 페이지에서는 에이전트가 할 수 있는 것, 할 수 없는 것, 그리고 에이전트가 스스로 가드레일을 벗어나려 해도 가드레일이 유지되는 방법을 설명합니다.

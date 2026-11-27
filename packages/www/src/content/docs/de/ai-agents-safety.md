@@ -4,7 +4,7 @@ description: >-
   Wie Rediacc KI-Coding-Assistenten daran hindert, Geheimnisse preiszugeben,
   Anmeldedaten zu überschreiben oder Berechtigungen zu eskalieren. Eine
   Entscheidung für jede Oberfläche, Opt-in UND Richtlinien-Obergrenze,
-  Wissens-Gates, Schwärzung und ein hash-verkettetes Audit-Log.
+  Wissens-Gates, Schwärzung und ein Audit-Log, das auf dem Server pro Organisation und Tag hash-verkettet ist, in der CLI in einer lokalen Datei.
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: de
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Sie setzen einen KI-Coding-Assistenten auf Ihre Infrastruktur an. Wenn Claude Code, Cursor, Gemini CLI, Copilot CLI oder etwas Ähnliches `rdc` steuert, erkennt die CLI das und wendet einen anderen Regelsatz an als bei einem Menschen an der Tastatur. Diese Seite erklärt, was der Agent tun kann, was er nicht tun kann, und wie die Schutzmaßnahmen auch dann greifen, wenn der Agent versucht, sie zu umgehen.

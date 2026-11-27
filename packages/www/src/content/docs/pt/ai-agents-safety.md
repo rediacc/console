@@ -4,7 +4,7 @@ description: >-
   Como a Rediacc impede que assistentes de programação com IA vazem segredos,
   sobrescrevam credenciais ou escalem privilégios. Uma única decisão para cada
   superfície, adesão explícita E teto de política, portões de conhecimento,
-  redação e um registro de auditoria encadeado por hash.
+  redação e um registro de auditoria encadeado por hash por organização e por dia no servidor, e em um arquivo local para a CLI.
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: pt
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Você está apontando um assistente de código IA para sua infraestrutura. Quando Claude Code, Cursor, Gemini CLI, Copilot CLI ou qualquer coisa similar dirige `rdc`, o CLI detecta e aplica um conjunto de regras diferente do de um humano no teclado. Esta página cobre o que o agente pode e não pode fazer, e como as proteções se mantêm mesmo quando ele tenta convencer seu caminho para sair delas.

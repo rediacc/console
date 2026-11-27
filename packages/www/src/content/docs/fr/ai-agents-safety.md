@@ -4,7 +4,7 @@ description: >-
   Comment Rediacc empêche les assistants de programmation IA de divulguer des
   secrets, d'écraser des identifiants ou d'élever leurs privilèges. Une seule
   décision pour toutes les surfaces, adhésion explicite ET plafond de politique,
-  barrières de connaissance, expurgation et journal d'audit chaîné par hachage.
+  barrières de connaissance, expurgation et journal d'audit chaîné par hachage par organisation et par jour sur le serveur, et dans un fichier local pour la CLI.
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: fr
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout outil similaire pilote `rdc`, la CLI le détecte et applique un ensemble de règles différent de celui applicable à un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsqu'il cherche à les contourner.

@@ -2,7 +2,7 @@
 title: AI 智能体安全与防护机制
 description: >-
   Rediacc 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限。所有入口共用一个
-  决策，主动授权与策略上限缺一不可，另有知识门控、脱敏和哈希链式审计日志。
+  决策，主动授权与策略上限缺一不可，另有知识门控、脱敏和哈希链式审计日志（服务器端按组织和日生成，CLI 则写入本地文件）。
 category: Concepts
 tags:
   - ai-agents
@@ -10,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: zh
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 当 Claude Code、Cursor、Gemini CLI、Copilot CLI 或其他任何 AI 编程助手驱动 `rdc` 时，CLI 对其的处理方式与坐在键盘前的人类不同。本页说明智能体能做什么、不能做什么，以及即使智能体试图绕过防护机制，这些机制依然有效的原因。

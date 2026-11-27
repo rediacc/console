@@ -4,7 +4,7 @@ description: >-
   Rediacc'in yapay zekâ kodlama asistanlarının sırları sızdırmasını, kimlik
   bilgilerinin üzerine yazmasını veya yetki yükseltmesini nasıl engellediği.
   Her yüzey için tek karar, açık onay VE ilke tavanı, bilgi kapıları, gizleme
-  ve hash zincirli bir denetim günlüğü.
+  ve sunucuda kuruluş ve gün bazında, CLI'da ise yerel bir dosyada hash zincirli bir denetim günlüğü.
 category: Concepts
 tags:
   - ai-agents
@@ -12,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: tr
-sourceHash: "90603fac1c7635d4"
-sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Altyapınızı yönetmek için bir AI kodlama asistanını kullanıyorsanız. Claude Code, Cursor, Gemini CLI, Copilot CLI veya benzer herhangi bir araç `rdc` komutunu çalıştırdığında, CLI onu klavye başındaki bir insandan farklı ele alır ve farklı bir kural seti uygular. Bu sayfa ajanın yapabileceğini, yapamayacağını ve ajan bu koruma önlemlerini atlatmaya çalışsa bile bunların nasıl geçerli kaldığını açıklar.
