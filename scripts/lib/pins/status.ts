@@ -347,7 +347,13 @@ export async function viewOf(
     if (r.redigest) return false;
     const a = insp.current === null ? null : majorOf(bareTag(entry, insp.current));
     const b = majorOf(bareTag(entry, r.version));
-    return a === null || b === null || a !== b;
+    if (a === null || b === null || a !== b) return true;
+    // A docker tag moving to a higher line at the source's depth (python 3.9 to 3.10, depth 2) is a series move the driver parks behind --major, though the leading number is the pinned one's; a patch inside the line is no major.
+    if (entry.driver !== 'docker' || insp.current === null) return false;
+    const depth = lineDepthOf(w.reg, entry);
+    const from = lineOf(insp.current, depth, w.lineMutant);
+    const to = lineOf(r.version, depth, w.lineMutant);
+    return from !== null && to !== null && cmpLine(to, from) > 0;
   };
   const lineOpts: LineOpts = {
     isMajor,

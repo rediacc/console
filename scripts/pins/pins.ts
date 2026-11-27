@@ -682,7 +682,11 @@ async function selectAndPlan(
     const v = await viewOf(w, ctx, entry, sel);
     out.views.set(entry.id, v);
     if (v.state !== 'bumpable' || !v.target) {
-      const why = v.state === 'not-compared' ? v.detail : `${v.state}: ${v.detail}`;
+      let why = `${v.state}: ${v.detail}`;
+      if (v.state === 'not-compared') why = v.detail;
+      // A refusal that names nothing ("current: current") says what it is: the pin has no newer release, and which version it sits at.
+      else if (v.state === 'current')
+        why = `already current: pinned at ${v.current ?? 'no version'}, no newer release`;
       if (!explicit && v.state === 'not-compared' && v.notChecked.length > 0) {
         out.notChecked.push({ id: entry.id, submodules: v.notChecked, why });
         continue;

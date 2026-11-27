@@ -602,10 +602,10 @@ const LAZY_HOLD = 'toolchain:shellcheck';
 /**
  * The version-line controls (plan #ef324e18), real docker leaves whose `lines` rows the fixture
  * carries: python (depth 2) one line below 3.10 past the grace, alpine (depth 2) one line below
- * 3.24 under it, and node (depth 1) moving 26.1 to 26.2, on its own line, 400 days ago. ZERO is
+ * 3.24 under it, and node (depth 1) moving 26.1 to 26.2, a plain bump inside its own line (no line, never aged). ZERO is
  * a toolchain leaf with no `lines` row answering otel-shaped labels: the 0.x rule alone makes
- * 0.166 a line above 0.111. Its labels carry the `<image>:` prefix so the core reads them as a
- * plain bump cannot take them, as it reads every docker candidate.
+ * 0.166 a line above 0.111. Its labels carry the `<image>:` prefix so the core reads their
+ * version after the colon, as it reads every docker candidate.
  */
 const LINE_AGED = 'image:cloud-switch-python';
 const LINE_YOUNG = 'image:cli-alpine';
@@ -717,10 +717,19 @@ function stubDriver(): PinDriver {
  * driver's verdict, so the core reads it as major only. `ageDays` overrides per leaf.
  */
 function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
-  const answer: Record<string, { current: string; next: string; days: number }> = {
+  const answer: Record<
+    string,
+    { current: string; next: string; days: number; publishedAgoMs?: number }
+  > = {
     [LINE_AGED]: { current: 'python:3.9-slim', next: 'python:3.10-slim', days: PAST },
     [LINE_YOUNG]: { current: 'alpine:3.23', next: 'alpine:3.24', days: UNDER },
-    [SAME_LINE]: { current: 'node:26.1-alpine', next: 'node:26.2-alpine', days: 400 },
+    // A move inside the pinned line is a plain bump (status.ts isMajor), so it is judged by the release-age window like any stale pin: published an hour ago it is young, deferred.
+    [SAME_LINE]: {
+      current: 'node:26.1-alpine',
+      next: 'node:26.2-alpine',
+      days: 400,
+      publishedAgoMs: 3_600_000,
+    },
   };
   return {
     name: 'docker',
@@ -729,10 +738,12 @@ function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
       if (!a) return Promise.reject(new Error(`the line stub has no answer for ${entry.id}`));
       const next: LineDatedRelease = {
         version: a.next,
-        publishedMs: NOW - DAY_MS * 2,
+        publishedMs: NOW - (a.publishedAgoMs ?? DAY_MS * 2),
         lineFirstMs: NOW - (ageDays[entry.id] ?? a.days) * DAY_MS,
-        verdict: { eligible: true, why: 'a series move, taken only with --major --reason' },
       };
+      // A release inside the pinned line carries no driver verdict here: the core judges it by the window, as it judges a docker patch.
+      if (entry.id !== SAME_LINE)
+        next.verdict = { eligible: true, why: 'a series move, taken only with --major --reason' };
       return Promise.resolve({ current: a.current, releases: [next] });
     },
     plan() {
@@ -1137,11 +1148,11 @@ async function selftest(): Promise<number> {
       ln.all
     );
     add(
-      'LINES control: node 26.1 to 26.2 (depth 1) dated 400 days ago is no line, and says `same line 26, never aged`',
-      ln.out.some(
-        (l) =>
-          l.startsWith(`  major only  ${SAME_LINE}:`) && l.endsWith('; same line 26, never aged')
-      ) && lnErr(SAME_LINE).length === 0,
+      'LINES control: node 26.1 to 26.2 (depth 1) dated 400 days ago is a plain bump inside line 26: no line, no major only, never aged, deferred by the window',
+      ln.out.some((l) => l.startsWith(`  deferred    ${SAME_LINE}:`)) &&
+        !ln.all.includes(`major only  ${SAME_LINE}`) &&
+        !ln.all.includes(`new major   ${SAME_LINE}`) &&
+        lnErr(SAME_LINE).length === 0,
       ln.all
     );
     add('LINES: the run with an aged 3.10 and an aged 0.166 line is red', ln.rc === 1, ln.all);
@@ -1162,7 +1173,7 @@ async function selftest(): Promise<number> {
     add(
       `LINES control: the same python line at ${UNDER} days and otel bumped is green, counting the never-aged leaf`,
       lnGreen.rc === 0 &&
-        lnGreen.out.some((l) => l.includes('3 major only (1 on their own line, never aged)')) &&
+        lnGreen.out.some((l) => l.includes('2 major only (0 on their own line, never aged)')) &&
         lnGreen.out.some((l) =>
           l.startsWith(`  new major   ${LINE_AGED}: python:3.10-slim (line 3.10)`)
         ),
