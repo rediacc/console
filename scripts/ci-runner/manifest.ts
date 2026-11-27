@@ -3209,6 +3209,7 @@ export const GATES: readonly GateSpec[] = [
       '.npmrc',
       'package.json',
     ],
+    // `lists` are tracked directories whose immediate children (an add, a removal, a rename) move the hash; '' is the repository root itself (input-hash.ts), so a new or removed root-level file moves it as well.
     lists: [
       '',
       '.ci',

@@ -5954,13 +5954,13 @@
       "depth": 2,
       "why": "cassandra numbers its release lines x.y (4.0, 4.1, 5.0), each with its own sstable format and support window"
     },
-    "dockerhub:codercom/code-server": {
-      "depth": 1,
-      "why": "code-server keeps major 4 and moves its minor with each monthly VS Code release, so a 4.x minor is a routine step on one line"
-    },
     "dockerhub:clickhouse/clickhouse-server": {
       "depth": 2,
       "why": "clickhouse numbers its releases YY.M (24.3, 24.8), each a release line with its own settings changes"
+    },
+    "dockerhub:codercom/code-server": {
+      "depth": 1,
+      "why": "code-server keeps major 4 and moves its minor with each monthly VS Code release, so a 4.x minor is a routine step on one line"
     },
     "dockerhub:collabora/code": {
       "depth": 2,
