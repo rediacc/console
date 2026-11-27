@@ -1404,7 +1404,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_missing_npm_script.py",
-        bash_json("npx -c 'npm run check:ci-python-lint'"),
+        bash_json("npx -c 'npm run gen:gates'"),
         "missing-npm-script CONTROL: a launched npm run of a real script",
     ),
     case(
@@ -2617,7 +2617,7 @@ STATIC: list[Case] = [
     # --- block-host-toolchain-run: a gate that cannot run reports no verdict --- This guard sat on disk UNREGISTERED, so the lesson it encodes had no enforcement at all. It fires only when the HOST lacks the toolchain and the devbox has it, so its allow direction is the interesting half: a host that has the tool must not be pushed anywhere.
     case(
         "check 0 guards/block_host_toolchain_run.py",
-        bash_json("./run.sh devbox exec -- npm run check:ci-python-lint"),
+        bash_json("./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint"),
         "host-toolchain: already routed through the devbox",
     ),
     case(
@@ -2627,7 +2627,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_host_toolchain_run.py",
-        bash_json("echo 'npm run check:ci-python-lint'"),
+        bash_json("echo 'npm run ci -- --only check:ci-python-lint'"),
         "host-toolchain CONTROL: echoing a gate name is not running it",
     ),
     case(

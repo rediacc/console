@@ -463,7 +463,10 @@ def main(argv: list[str] | None = None) -> int:
         print("    pip install ruff==%s" % RUFF_VERSION, file=sys.stderr)
         print("    uv tool install ruff@%s" % RUFF_VERSION, file=sys.stderr)
         print("  or point RUFF_BIN at an existing binary:", file=sys.stderr)
-        print("    RUFF_BIN=/path/to/ruff npm run check:ci-python-lint", file=sys.stderr)
+        print(
+            "    RUFF_BIN=/path/to/ruff PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness",
+            file=sys.stderr,
+        )
         print(
             "  NOT skipping: a linter that cannot run is a gate that cannot fail.", file=sys.stderr
         )

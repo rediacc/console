@@ -4776,7 +4776,7 @@ export const GATES: readonly GateSpec[] = [
   // >>> gen-manifest: region 5
   {
     id: 'check:ci-python-lint',
-    run: 'npm run check:ci-python-lint',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness',
     gate: true,
     leaves: ['.ci/rediacc_ci/quality/lint_config_liveness.py'],
     ci: {
@@ -5060,7 +5060,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-actions-allowlist',
-    run: 'npm run check:ci-actions-allowlist',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_allowlist',
     gate: true,
     paths: [
       '.ci/breakpoint/workflow/breakpoint.yml',

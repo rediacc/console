@@ -169,9 +169,9 @@ def test_the_partition_covers_the_real_corpus_exactly():
 
 
 def test_the_gate_is_wired_into_all_three_places():
-    """package.json, the lock, and a real workflow step whose name matches.
+    """No package.json key (the runner calls the module directly, CR2), a lock entry, and a real workflow step whose name matches and runs that module.
 
-    `check:ci-parity` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of a 345-entry report.
+    `npm run gen:gates -- --check` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of an estate-wide report.
     """
     scripts = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["scripts"]
     assert "check:ci-python-types" not in scripts, "the gate runs its module directly (CR2)"

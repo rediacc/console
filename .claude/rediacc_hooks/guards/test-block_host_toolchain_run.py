@@ -151,7 +151,7 @@ cases.append((0, run("git status"), "CONTROL: a non-npm command is out of scope"
 cases.append(
     (
         0,
-        run("./run.sh devbox exec -- npm run check:ci-python-lint"),
+        run("./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint"),
         "CONTROL: already routed through the devbox is out of scope",
     )
 )
@@ -163,12 +163,12 @@ cases.append(
     )
 )
 
-# The host HAS the tool -> never route. Proven by shimming one onto PATH.
+# The host HAS the tool -> never route. Proven by shimming one onto PATH. The gate runs as its module since CR2 (no npm key), so the module spelling is what a session types.
 fake("ruff")
 cases.append(
     (
         0,
-        run("npm run check:ci-python-lint", WITH_SHIM),
+        run("PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness", WITH_SHIM),
         "CONTROL: host HAS ruff, so the guard leaves it alone",
     )
 )
@@ -191,7 +191,7 @@ if have_box:
         cases.append(
             (
                 2,
-                run("npm run check:ci-python-lint", REAL),
+                run("npm run ci -- --only check:ci-python-lint", REAL),
                 "host lacks ruff and the devbox has it -> REFUSED with the devbox form",
             )
         )
@@ -199,7 +199,7 @@ if have_box:
         cases.append(
             (
                 0,
-                run("npm run check:ci-python-lint", REAL),
+                run("npm run ci -- --only check:ci-python-lint", REAL),
                 "CONTROL: this host actually has ruff, so no routing is correct",
             )
         )
@@ -207,10 +207,73 @@ else:
     cases.append(
         (
             0,
-            run("npm run check:ci-python-lint", REAL),
+            run("npm run ci -- --only check:ci-python-lint", REAL),
             "CONTROL: no devbox running, so the guard notes rather than blocks",
         )
     )
+
+# --- A GATE WITH NO NPM KEY (CR2): the module spellings and the runner spelling -----
+# check:ci-python-lint lost its package.json key, so `npm run check:ci-python-lint` no longer exists and block_missing_npm_script refuses it. These cases are CONSTRUCTED rather than ambient, because the refusal arm needs a running devbox carrying ruff and this host may have neither: a fake `docker` answers `ps` with one box and `exec` with 0, and `_path_without` hides ruff. Whether this machine has a devbox or ruff must not decide which arm runs.
+_FAKEBOX = tempfile.mkdtemp(dir=RUN_TMP)
+atexit.register(shutil.rmtree, _FAKEBOX, ignore_errors=True)
+with open(os.path.join(_FAKEBOX, "docker"), "w", encoding="utf-8") as fh:
+    fh.write('#!/bin/sh\nif [ "$1" = ps ]; then echo fake-devbox; fi\nexit 0\n')
+os.chmod(os.path.join(_FAKEBOX, "docker"), 0o700)
+NORUFF_BOX = "%s:%s" % (_FAKEBOX, _path_without("ruff", REAL))
+for module in ("rediacc_ci.quality.lint_config_liveness", "rediacc_ci.quality.python_lint"):
+    typed = "PYTHONPATH=.ci python3 -m %s" % module
+    r = run_full(typed, NORUFF_BOX)
+    cases.append((2, r.returncode, "NEEDS_SCRIPT: %s without ruff, box has it -> REFUSED" % module))
+    cases.append(
+        (
+            True,
+            "this command needs 'ruff'" in r.stderr
+            and ("./run.sh devbox exec -- %s" % typed) in r.stderr,
+            "NEEDS_SCRIPT: %s is routed as the command typed" % module,
+        )
+    )
+r = run_full("npm run ci -- --only check:ci-python-lint", NORUFF_BOX)
+cases.append((2, r.returncode, "gate key with no npm script: the runner spelling is REFUSED"))
+cases.append(
+    (
+        True,
+        "gate 'check:ci-python-lint' needs 'ruff'" in r.stderr
+        and "./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint" in r.stderr,
+        "gate key with no npm script: named as the gate, routed as the command typed",
+    )
+)
+cases.append(
+    (
+        False,
+        "devbox exec -- npm run check:ci-python-lint" in r.stderr,
+        "gate key with no npm script: never routed to the npm key that no longer exists",
+    )
+)
+cases.append(
+    (
+        0,
+        run("python3 -m pytest -k rediacc_ci.quality.lint_config_liveness", NORUFF_BOX),
+        "CONTROL: a pytest selection naming the lint module is a mention, not a run",
+    )
+)
+# THE OTHER DIRECTION: a gate key that IS still a root npm script keeps the npm route, so the CR2 branch cannot swallow every gate-key hit.
+r = run_full("npm run check:ci-renet", "%s:%s" % (_FAKEBOX, _path_without("go", REAL)))
+cases.append((2, r.returncode, "CONTROL: check:ci-renet (an npm script) without go -> REFUSED"))
+cases.append(
+    (
+        True,
+        "./run.sh devbox exec -- npm run check:ci-renet\n" in r.stderr,
+        "CONTROL: a gate key that is a root npm script keeps the npm route",
+    )
+)
+cases.extend(
+    (want, guards.load("block_host_toolchain_run")._root_script_absent(root, name), label)
+    for want, root, name, label in (
+        (True, REPO, "check:ci-python-lint", "package.json: the python-lint key is gone (CR2)"),
+        (False, REPO, "release:local", "CONTROL: a present root script is not absent"),
+        (False, RUN_TMP, "check:ci-python-lint", "CONTROL: no package.json keeps the npm form"),
+    )
+)
 
 # --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch
 # of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
@@ -306,7 +369,9 @@ if have_box:
     ):
         if not os.path.exists(os.path.join(REPO, path)):
             continue
-        cases.append((want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why))
+        cases.append(
+            (want, run(f"npm run ci --prefix {path} -- --only check:ci-python-lint", REAL), why)
+        )
 
 # A command that uploads to R2 without its credentials does not fail, it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning that named the wrong cause. The credentials come from Bitwarden through `bws_env exec --profile publish-media` (PLAN-account-env-to-bws). Only asserted where the account submodule is checked out, since the guard is deliberately silent without it.
 if os.path.exists(os.path.join(REPO, "private/account/package.json")):

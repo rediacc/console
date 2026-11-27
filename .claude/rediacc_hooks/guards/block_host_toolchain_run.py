@@ -33,6 +33,7 @@ A different bash could hash differently. That is a property of the ORIGINAL, not
 """
 
 import glob as globmod
+import json
 import os
 import pathlib
 import re
@@ -114,6 +115,9 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.ops.r2_bucket_copy", "aws"),
     # The detector model bundle upload (5dc50111a5) reads and writes R2 through `awscli.AWS` from the module (publish_models.py:87, :111); the coverage scan found it without a row.
     ("rediacc_ci.ops.publish_models", "aws"),
+    # THE MODULE SPELLINGS OF check:ci-python-lint (PLAN-tooling-code-reduction CR2). The gate lost its npm key, so the runner and CI run `PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness`, which runs the ruff lint (`python_lint.main`) first; `python_lint` is runnable on its own too. Both refuse with 77 when ruff is absent, which is this table's entry test. The NEEDS row keeps the gate id for `npm run ci -- --only check:ci-python-lint`.
+    ("rediacc_ci.quality.lint_config_liveness", "ruff"),
+    ("rediacc_ci.quality.python_lint", "ruff"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -130,7 +134,7 @@ NEEDS_ENV = (
     ("rediacc_ci.deploy.sync_media_to_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )
 
-# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
+# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run ci -- --only check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
 #
 # `aws`, `bw` and `bws` joined on 2026-09-23. All three are baked into `.devcontainer/Dockerfile` (aws at 467-490, bw at 509-553 pinned to 2026.9.0, bws at 555-587 pinned to 2.1.0), so a bare host that lacks one has somewhere to route to. Nothing in the tree invokes `bw`, and only `.ci/rediacc_ci/setup/tools.py:566-584` registers `bws`, so neither earns a NEEDS_SCRIPT row -- but a
 # session typing either by hand on a host without it gets the same wrong lesson, which is what this array is for.
@@ -347,6 +351,17 @@ def _npx_runs(tool, runs):
 def _bare_runs(tool, runs):
     """Does a judged run open with the bare tool name?"""
     return any(run_.name == tool for run_ in runs)
+
+
+def _root_script_absent(repo_root, name):
+    """True only when the root package.json is readable and has no `name` script; any read or parse failure answers False, so the caller keeps its npm form."""
+    try:
+        scripts = json.loads(
+            pathlib.Path(repo_root, "package.json").read_text(encoding="utf-8")
+        ).get("scripts")
+    except (OSError, ValueError, AttributeError):
+        return False
+    return isinstance(scripts, dict) and name not in scripts
 
 
 def _is_invoked(key, cmd, runs=None):
@@ -648,13 +663,17 @@ def run(ev):
         if hostbound != "":
             break
 
-    # LABEL and ROUTE differ for a gate-key hit ("check:ci-python-lint needs 'ruff'", routed as "npm run check:ci-python-lint") versus a bare-tool hit ("go needs 'go'" read wrong, and "npm run go" is not a command that exists). BARE is set above by whichever of the two loops matched.
+    # LABEL and ROUTE differ for a gate-key hit ("check:ci-renet needs 'go'", routed as "npm run check:ci-renet") versus a bare-tool hit ("go needs 'go'" read wrong, and "npm run go" is not a command that exists). BARE is set above by whichever of the two loops matched.
+    # A GATE KEY IS NOT ALWAYS AN NPM SCRIPT. Since CR2 (PLAN-tooling-code-reduction) the runner calls a gate's module directly and its package.json key goes, so `npm run check:ci-python-lint` is a command that no longer exists and block_missing_npm_script refuses it. A key the root package.json positively lacks is routed as the command typed (`npm run ci -- --only <id>` names the id and still runs); an unreadable package.json keeps the npm form.
     if bare:
         label = "this command"
         route = "./run.sh devbox exec -- %s" % cmd
     else:
         label = "gate '%s'" % hit
-        route = "./run.sh devbox exec -- npm run %s" % hit
+        if _root_script_absent(repo_root, hit):
+            route = "./run.sh devbox exec -- %s" % cmd
+        else:
+            route = "./run.sh devbox exec -- npm run %s" % hit
 
     if hostbound:
         ev.warn_raw(
