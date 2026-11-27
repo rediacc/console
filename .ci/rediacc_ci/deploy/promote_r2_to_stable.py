@@ -398,7 +398,7 @@ def update_history(
 
 
 def record_stable(run: r2_promote.Transfers, version: str, promoted_at: str = "") -> bool:
-    """Append `version` to the stable record after its promote has landed. Returns whether a row was added; a version already recorded writes nothing. It prints nothing, so the promote's own stdout is unchanged."""
+    """Append `version` to the stable record after its promote has landed. Returns whether a row was added; a version already recorded writes nothing. It prints nothing to stdout, so the promote's own stdout is unchanged; a lost CAS race prints its `re-reading (n/5)` line to stderr."""
     stage_root = tempfile.mkdtemp(prefix="promote-history-")
     stamp = promoted_at or now_utc()
 

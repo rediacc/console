@@ -229,6 +229,8 @@ def put_if_argv(
     source: str, key: str, etag: str | None, endpoint: str, bucket: str = BUCKET
 ) -> list[str]:
     """A conditional upload of ONE object: `--if-match <etag>` replaces only the version that was read, and `--if-none-match *` (for `etag` None) creates the key only when it does not exist. R2 answers 412 `PreconditionFailed` to a write that lost the race."""
+    # `put-object` does not guess a content type (`aws s3 cp` did), so the key's own is sent, as `copy_argv` does; a key with no guessable type gets none.
+    content_type = mimetypes.guess_type(key)[0]
     return [
         awscli.AWS,
         "s3api",
@@ -241,6 +243,7 @@ def put_if_argv(
         source,
         "--cache-control",
         CC_MUTABLE,
+        *(["--content-type", content_type] if content_type else []),
         *(["--if-match", etag] if etag else ["--if-none-match", "*"]),
         *endpoint_args(endpoint),
     ]
