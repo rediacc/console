@@ -4137,7 +4137,11 @@ async function selftest(env: NodeJS.ProcessEnv): Promise<number> {
 
 async function selftestCases(forced: Mutant | undefined): Promise<number> {
   const cases: ControlCase[] = [];
-  for (const [name, c] of Object.entries(CASES)) {
+  // A forced mutant runs the ONE case that mutant must turn red (MUTANT_CASES), not every case: the other cases do not read the property it disables, so rerunning them under it repeated the whole selftest (about 12 s) to prove the same exit code and the same red.
+  const selected = Object.entries(CASES).filter(
+    ([name]) => forced === undefined || name === MUTANT_CASES[forced]
+  );
+  for (const [name, c] of selected) {
     try {
       cases.push(...(await c(forced)));
     } catch (err) {
