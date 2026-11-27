@@ -302,6 +302,12 @@ jobs:
   publish:
     name: Tag & Release
     runs-on: ubuntu-latest
+    # A hotfix publish rewrites the stable history record, so it queues behind
+    # (and ahead of) cd-release-stable.yml's promote under the same group; any
+    # other publish keeps a group of its own run.
+    concurrency:
+      group: ${{ inputs.publish_stable == true && 'cd-release-stable' || format('cd-release-edge-publish-{0}', github.run_id) }}
+      cancel-in-progress: false
     # packages: write because retag_image.py does `buildx imagetools create`,
     # which PUSHES to ghcr. actions: read for the cross-run
     # download-artifact (run-id + github-token). attestations: read for
