@@ -155,6 +155,56 @@ export function knownHostsHost(host: string, port: number): string {
   return port === 22 ? bare : `[${bare}]:${port}`;
 }
 
+/** The endpoint a system ssh actually dials, which OpenSSH looks pinned keys up under. */
+export interface KnownHostsTarget {
+  host: string;
+  port: number;
+}
+
+/**
+ * Re-key every pinned line under the host field of the endpoint being dialed.
+ *
+ * The pin is the key, not the address it was scanned at: the ssh2 path trusts
+ * by key alone (SFTPClient's hostVerifier), so a machine whose address changed
+ * (an IPv4 swapped for its IPv6) keeps working there. OpenSSH looks the key up
+ * by host field instead, and a line still carrying the old address is invisible
+ * to it, so it refused with "No ED25519 host key is known for <new address>".
+ * Writing the same keys under the dialed host keeps the check exactly as strict
+ * (only the pinned keys are accepted) while matching what ssh looks up. A
+ * leading marker (`@revoked`, `@cert-authority`) is kept; comments are dropped.
+ */
+function retargetKnownHosts(entry: string, target: KnownHostsTarget): string {
+  const hostField = knownHostsHost(target.host, target.port);
+  const out: string[] = [];
+  for (const raw of entry.replaceAll('\r\n', '\n').replaceAll('\r', '\n').split('\n')) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const parts = line.split(/\s+/);
+    const marker = parts[0]?.startsWith('@') ? parts.shift() : undefined;
+    // `<host> <type> <key> [comment]`: a line without a key is not a pin.
+    if (parts.length < 3) continue;
+    const [, type, key] = parts;
+    out.push(marker ? `${marker} ${hostField} ${type} ${key}` : `${hostField} ${type} ${key}`);
+  }
+  return out.join('\n');
+}
+
+/**
+ * The known_hosts file content an OpenSSH client dialing `target` reads: every
+ * pinned key under the dialed host field, newline-terminated, or '' when
+ * nothing is pinned. Every file handed to a system ssh is written from this
+ * (the temp files in remote/ssh/knownHosts.ts, VS Code's persisted one). It
+ * lives here, in the neutral layer, so remote/vscode (which the config service
+ * reaches) does not import the ssh layer for it.
+ */
+export function knownHostsFileContent(
+  knownHosts: string | undefined,
+  target: KnownHostsTarget
+): string {
+  const retargeted = knownHosts ? retargetKnownHosts(knownHosts, target) : '';
+  return retargeted ? `${retargeted}\n` : '';
+}
+
 /**
  * Read the host's public keys over SSH and return them as known_hosts lines
  * (`<host> <type> <base64>`), one per key type the host offers.

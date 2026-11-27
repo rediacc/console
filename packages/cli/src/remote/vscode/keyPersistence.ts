@@ -5,7 +5,7 @@
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { type KnownHostsTarget, knownHostsFileContent } from '../ssh/knownHosts.js';
+import { type KnownHostsTarget, knownHostsFileContent } from '../../utils/host-keys.js';
 import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platform.js';
 import { decodeSSHKey } from '../utils/sshKeyText.js';
 
