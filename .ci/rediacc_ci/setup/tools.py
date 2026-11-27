@@ -1330,4 +1330,26 @@ __all__ = [
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` tests the three flags by membership and takes the argument right after `--install-plan` as the package manager. A bare argument anywhere else was ignored, so it is refused here.
+    _parsed = gate_args.parse(
+        "tools.py",
+        sys.argv[1:],
+        switches=("--selftest", "--report", "--install-plan"),
+        positional="<manager>",
+    )
+    _tail = sys.argv[1:]
+    _after = (
+        [a for a in _tail[_tail.index("--install-plan") + 1 :][:1] if not a.startswith("-")]
+        if "--install-plan" in _tail
+        else []
+    )
+    if _parsed.positionals != _after:
+        print(
+            "tools.py: a bare argument is only the package manager right after --install-plan, "
+            "got %r (accepted: --selftest, --report, --install-plan [<manager>])" % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

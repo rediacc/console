@@ -81,6 +81,9 @@ PACKAGE_FILES = (
     "rediacc_ci/__init__.py",
     "rediacc_ci/paths.py",
     "rediacc_ci/security/__init__.py",
+    # `__main__` refuses an unknown argument through the shared parser before `main` runs
+    "rediacc_ci/quality/__init__.py",
+    "rediacc_ci/quality/gate_args.py",
 )
 
 
@@ -88,6 +91,7 @@ def fixture(where: pathlib.Path, name: str, *, subject: pathlib.Path) -> pathlib
     """A tree shaped like the repository, holding a COPY of the subject at its own depth."""
     root = where / "tree"
     (root / ".ci" / "rediacc_ci" / "security").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "security").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "x").mkdir(parents=True, exist_ok=True)
     (root / "scripts").mkdir(parents=True, exist_ok=True)

@@ -2,6 +2,8 @@
 
     npm run test:onprem [-- <onprem_scenarios arguments>]
 
+The arguments are forwarded to the scenario runner and checked against ITS set before the stack starts: `--all`, `--list`, `--suite <name>`, `--env <file>` and `--compare bench` (the valued three also as `--flag=value`).
+
 Brings the on-premise stack up with a container machine, runs the scenario runner (every registered suite unless the arguments name `--suite`, `--all` or `--list`), and takes the stack down again whatever the run did. The lane's exit code is the runner's, or the teardown's when the runner passed and `down` did not, so a stack left running never reads as green.
 """
 
@@ -38,4 +40,14 @@ def main(
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # Refused here, before the stack starts: `main` hands argv to `onprem_scenarios.main`, whose argparse would only refuse after `up` had run. The set is that parser's (`--suite` repeatable, `--env`, `--compare`, `--all`, `--list`), each valued flag in both spellings; its `--help` is left out on purpose, since the lane would bring the stack up to print it.
+    gate_args.parse(
+        "onprem_lane.py",
+        sys.argv[1:],
+        switches=("--all", "--list"),
+        valued=("--suite", "--env", "--compare"),
+        equals=("--suite", "--env", "--compare"),
+    )
     sys.exit(main(sys.argv[1:]))

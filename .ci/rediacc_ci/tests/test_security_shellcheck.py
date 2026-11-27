@@ -72,6 +72,9 @@ COPIED = (
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/proc.py",
     ".ci/rediacc_ci/gitx.py",

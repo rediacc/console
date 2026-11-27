@@ -10,4 +10,7 @@ import _cipath
 from rediacc_ci.security import workflow_gates
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_workflow_gates.py", sys.argv[1:])
     raise SystemExit(workflow_gates.main(sys.argv[1:]))

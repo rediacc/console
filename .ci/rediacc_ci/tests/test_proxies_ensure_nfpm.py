@@ -54,6 +54,9 @@ FIXTURE_FILES = (
     ".ci/config/well-known.generated.sh",
     ".ci/rediacc_ci/core/env.py",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/well_known.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",

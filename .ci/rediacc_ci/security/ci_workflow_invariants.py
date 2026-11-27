@@ -2534,4 +2534,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("ci_workflow_invariants.py", sys.argv[1:])
     raise SystemExit(main(sys.argv[1:]))

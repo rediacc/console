@@ -288,6 +288,30 @@ def test_every_known_bypass_carries_a_blocker_reason():
     assert all(why.startswith("BLOCKER:") for why in mod.KNOWN_BYPASS.values())
 
 
+def test_known_bypass_stays_inside_the_frozen_set():
+    """Shrink-only in code (review 60874d5e.1): the real list may hold only names the frozen set allows."""
+    assert set(mod.KNOWN_BYPASS) <= mod.KNOWN_BYPASS_FROZEN
+
+
+def test_a_new_bypass_listed_as_debt_is_red_when_it_was_not_frozen(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_IGNORES)
+    listed = {DOTTED: "BLOCKER: a reason"}
+    assert mod.run(root, own={}, floor=1, debt=listed, frozen=frozenset(listed)) == 0
+    assert mod.run(root, own={}, floor=1, debt=listed, frozen=frozenset()) == 1
+    assert "was not in the debt frozen" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("entry", ["stray", {"id": "check:ci-no-run"}, {"id": "x", "run": " "}])
+def test_a_malformed_lock_entry_is_a_finding_not_a_silent_drop(tmp_path, capsys, entry):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_REFUSES)
+    lock = root / mod.LOCK_REL
+    lock.write_text(json.dumps([*json.loads(lock.read_text()), entry]), encoding="utf-8")
+    assert mod.run(root, own={}, floor=1, debt={}) == 1
+    assert "the entry points it runs are not being judged" in capsys.readouterr().err
+
+
 def test_an_own_refusal_name_that_is_not_an_entry_point_is_red(tmp_path, capsys):
     root = tree(tmp_path, {"check_x": SHARED})
     assert mod.run(root, own={"check_gone": "a reason"}, floor=1, debt={}) == 1

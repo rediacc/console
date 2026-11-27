@@ -1811,4 +1811,8 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # The accepted set IS what `unknown_args` accepts (the same two tuples), so the two cannot drift. `main` keeps its own refusal, with the hint for a named test, for in-process callers; this one runs first on the command line and exits 2, the contract's code.
+    gate_args.parse("check_pytest.py", sys.argv[1:], switches=FLAGS_ALONE, valued=FLAGS_WITH_VALUE)
     sys.exit(main(sys.argv[1:]))

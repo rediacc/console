@@ -182,4 +182,15 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` reads `$1` as the stage and drops `$2` onward, which is how `test deploy` ran the tests and said nothing about `deploy`. One bare argument, first, and no flag.
+    _parsed = gate_args.parse("run_account.py", sys.argv[1:], positional="<stage>")
+    if len(_parsed.positionals) > 1 or _parsed.argv[:1] != _parsed.positionals[:1]:
+        print(
+            "run_account.py: takes one stage and nothing after it, got %r (accepted: <stage>)"
+            % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

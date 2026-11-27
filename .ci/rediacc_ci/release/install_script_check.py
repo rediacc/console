@@ -459,4 +459,7 @@ def main(_argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("install_script_check.py", sys.argv[1:])
     raise SystemExit(main(sys.argv[1:]))

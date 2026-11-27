@@ -306,9 +306,18 @@ def recorded(name: str) -> dict[str, object]:
     }
 
 
+# DELIBERATE DEPARTURES FROM THE TWIN, on the command line only. The twin dropped every argument after the stage, and a flag in the stage's place was run as a stage name; the port's `__main__` now refuses both with exit 2 before anything runs (check:ci-gate-argv), so a typo cannot read as the gate it meant. The goldens stay as the twin's record; these cases assert the refusal instead of the twin's output.
+REFUSED_AT_THE_ARGV = ("extra-arguments-are-dropped", "a-flag-is-just-an-unknown-stage")
+
+
 def compare(tmp_path: pathlib.Path, name: str) -> dict[str, object]:
-    want = recorded(name)
     got = run(tmp_path, name)
+    if name in REFUSED_AT_THE_ARGV:
+        assert got["exit"] == 2, "%s: exit %r, wanted the argv refusal" % (name, got["exit"])
+        assert "run_account.py" in str(got["stderr"]), got["stderr"]
+        assert not got["calls"], "%s ran %r after refusing" % (name, got["calls"])
+        return got
+    want = recorded(name)
     for field in ("exit", "stdout", "stderr", "calls"):
         assert got[field] == want[field], "%s: %s diverged:\n twin: %r\n port: %r" % (
             name,

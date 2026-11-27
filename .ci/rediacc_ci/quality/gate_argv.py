@@ -114,57 +114,20 @@ OWN_REFUSAL = {
 
 # SHRINK-ONLY: lock-run entries that were bypasses when the module scan arrived (2026-11-27) and lie outside #d78d1ae3's file set. Each is PRINTED every run; a new bypass is red (do not add it here, give the entry a parse) and an entry that stops being a bypass is red until its line is deleted.
 _DEBT_WHY = "BLOCKER: outside #d78d1ae3's file set; %s"
-KNOWN_BYPASS = {
-    ".ci/rediacc_ci/check_pytest.py": _DEBT_WHY
-    % "`unknown_args` refuses an unread argument before anything runs, but with exit 1, not the contract's 2",
-    ".ci/rediacc_ci/deploy/write_once_guard_check.py": _DEBT_WHY % "`main(_argv)` never reads argv",
-    ".ci/rediacc_ci/release/install_script_check.py": _DEBT_WHY % "`main(_argv)` never reads argv",
-    ".ci/rediacc_ci/security/ci_workflow_invariants.py": _DEBT_WHY % "`main` does `del argv`",
-    ".ci/scripts/security/check_workflow_gates.py": _DEBT_WHY
-    % "it hands argv to `workflow_gates.main`, which does `del argv`",
-    "rediacc_ci.private.run_account": _DEBT_WHY
-    % "`stage_of` reads `$1` and ignores `$2` onward, by its own docstring",
-    "rediacc_ci.proxies.unit_tests": _DEBT_WHY
-    % "`main` reads `argv[0]` and `argv[1]` as positionals and ignores the rest, so a flag becomes the workspace",
-    "rediacc_ci.private.run_renet": _DEBT_WHY
-    % "`parse_argv` drops every argument after the stage it does not recognise, by its own docstring",
-    "rediacc_ci.proxies.cli_manifest": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.docker_prepull": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.ensure_nfpm": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.go_unit": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.license_e2e": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.linux_packages": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.ops_host_check": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.proxies.rdc_update": _DEBT_WHY
-    % "`main` reads only `argv[0] == --selftest` and runs the proxy on anything else",
-    "rediacc_ci.security.actionlint": _DEBT_WHY % "`main` does `del argv`",
-    "rediacc_ci.security.audit": _DEBT_WHY % "`main` does `del argv`",
-    "rediacc_ci.security.check_commands": _DEBT_WHY % "`main` does `del argv`",
-    "rediacc_ci.security.shellcheck": _DEBT_WHY % "`main` does `del argv`",
-    "rediacc_ci.security.shfmt": _DEBT_WHY % "`main` does `del argv`",
-    "rediacc_ci.setup.tools": _DEBT_WHY
-    % "`main` tests `--selftest`, `--report` and `--install-plan` by membership and ignores the rest",
-    "rediacc_ci.testrun.onprem_lane": _DEBT_WHY
-    % "`main` hands argv to the scenarios runner only after the stack has started",
-}
+KNOWN_BYPASS: dict[str, str] = {}
+# The names KNOWN_BYPASS may hold: the debt as frozen on 2026-11-27, which is now drained, so it is empty and any listed name is red. Never add to it; a bypass gets an argument parse.
+KNOWN_BYPASS_FROZEN: frozenset[str] = frozenset()
 
 ACCEPT_KEYWORDS = ("switches", "valued", "equals", "variadic")
 CALL_SOURCES = ("package.json", "scripts/ci-runner/manifest.ts")
 CALL_GLOBS = (".github/workflows/*.yml", ".github/workflows/*.yaml")
 HOOK_DIRS = (".claude/hooks", ".claude/rediacc_hooks")
-ENTRY_CALL_RE = re.compile(
-    r"\.ci/scripts/quality/([A-Za-z0-9_]+)\.py((?:[ \t]+[^ \t\n\"'`;&|)]+)*)"
-)
+# One argument of a call: a whole quoted word (`--shard "${{ matrix.shard }}/2"`) or a bare run of characters that cannot end the command. A quote that does not follow whitespace (the one closing a JSON string around the call) is still not part of an argument. Before, a quoted value ended the list at its flag, so `--shard` read as valueless and a module that declared it was reported against a call that passed it.
+CALL_ARG = r"(?:\"[^\"\n]*\"|'[^'\n]*'|[^ \t\n\"'`;&|)]+)"
+ENTRY_CALL_RE = re.compile(r"\.ci/scripts/quality/([A-Za-z0-9_]+)\.py((?:[ \t]+" + CALL_ARG + ")*)")
 # `python3 -m rediacc_ci.<pkg>.<name> <args>`: the module form CI and the runner use.
 MODULE_CALL_RE = re.compile(
-    r"(?:^|[\s\"'`(])-m[ \t]+(rediacc_ci(?:\.[A-Za-z0-9_]+)+)((?:[ \t]+[^ \t\n\"'`;&|)]+)*)"
+    r"(?:^|[\s\"'`(])-m[ \t]+(rediacc_ci(?:\.[A-Za-z0-9_]+)+)((?:[ \t]+" + CALL_ARG + ")*)"
 )
 # Any `.ci/**.py` run by path; one under QUALITY_REL is a shim, anything else a script.
 SCRIPT_RE = re.compile(r"(?<![A-Za-z0-9_/.-])(\.ci/[A-Za-z0-9_/.-]+\.py)")
@@ -634,6 +597,25 @@ def lock_targets(root: pathlib.Path) -> list[Target] | None:
     return sorted(out.values(), key=lambda t: (t.kind, t.key))
 
 
+def lock_malformed(root: pathlib.Path) -> list[str]:
+    """One line per lock entry that is not an object with a non-empty string `run`. Such an entry contributes an empty command above, so its entry points would leave the population silently while the gate stayed green (per-commit review 60874d5e.2); each is a finding instead."""
+    try:
+        gates = json.loads((root / LOCK_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(gates, list):
+        return []
+    bad: list[str] = []
+    for index, gate in enumerate(gates):
+        if not isinstance(gate, dict):
+            bad.append("entry %d is a %s, not an object" % (index, type(gate).__name__))
+        elif not isinstance(gate.get("run"), str) or not gate["run"].strip():
+            bad.append(
+                "entry %d (%s) has no non-empty string `run`" % (index, gate.get("id", "no id"))
+            )
+    return bad
+
+
 def _rel(root: pathlib.Path, path: pathlib.Path) -> str:
     try:
         return str(path.relative_to(root))
@@ -793,8 +775,10 @@ def run(
     own: dict[str, str] | None = None,
     floor: int = FLOOR,
     debt: dict[str, str] | None = None,
+    frozen: frozenset[str] | None = None,
 ) -> int:
     own = OWN_REFUSAL if own is None else own
+    debt_given = debt is not None
     debt = KNOWN_BYPASS if debt is None else debt
     from_lock, targets = population(root)
     if from_lock is None:
@@ -810,6 +794,22 @@ def run(
         )
         return 1
     findings: list[str] = []
+    findings += [
+        "%s: %s: the entry points it runs are not being judged. Give it a `run` command"
+        % (LOCK_REL, why)
+        for why in lock_malformed(root)
+    ]
+    # SHRINK-ONLY IN CODE (per-commit review 60874d5e.1): a name in `debt` is judged "debt" before its file is read, so a NEW bypass listed there would be green. Only a name in the frozen set may be listed; a caller's own `debt` (a test) is its own frozen set unless it passes one.
+    if frozen is not None:
+        allowed = frozen
+    else:
+        allowed = frozenset(debt) if debt_given else KNOWN_BYPASS_FROZEN
+    findings += [
+        "KNOWN_BYPASS names %s, which was not in the debt frozen on 2026-11-27: do not add it to the "
+        "list, give the entry an argument parse that refuses unknown flags" % key
+        for key in sorted(debt)
+        if key not in allowed
+    ]
     present = [t for t in targets if t.path.is_file()]
     findings += [
         "%s: the lock runs it as %s, and the file does not exist" % (_rel(root, t.path), t.kind)
@@ -969,7 +969,7 @@ def _quiet_run(root: pathlib.Path) -> int:
 
 
 def selftest(verbose: bool = True) -> int:
-    ctl = Controls("gate-argv", floor=22, verbose=verbose)
+    ctl = Controls("gate-argv", floor=30, verbose=verbose)
     ctl.check(
         "CONTROL: the shared parse as the first statement is accepted",
         _entry_of(SHIM % "check_x").problems,
@@ -1105,6 +1105,59 @@ def selftest(verbose: bool = True) -> int:
         root = fixture_tree(pathlib.Path(tmp), MODULE_REFUSES)
         (root / LOCK_REL).unlink()
         ctl.check("PLANT: no readable lock is a refusal, never a pass", _quiet_run(root), 1)
+    with tempfile.TemporaryDirectory() as tmp:
+        root = fixture_tree(pathlib.Path(tmp), MODULE_REFUSES)
+        ctl.check("CONTROL: a well-formed lock has no malformed entry", lock_malformed(root), [])
+        lock = root / LOCK_REL
+        good = json.loads(lock.read_text(encoding="utf-8"))
+        lock.write_text(json.dumps([*good, "stray", {"id": "check:ci-no-run"}]), encoding="utf-8")
+        ctl.check(
+            "PLANT: a lock entry that is no object, and one with no `run`, are both reported",
+            len(lock_malformed(root)),
+            2,
+        )
+        ctl.check("PLANT: ...and the run over that lock is red", _quiet_run(root), 1)
+    with tempfile.TemporaryDirectory() as tmp:
+        root = fixture_tree(pathlib.Path(tmp), MODULE_IGNORES)
+        listed = {MODULE_KEY: "BLOCKER: planted"}
+
+        def with_frozen(names: frozenset[str]) -> int:
+            with (
+                contextlib.redirect_stdout(io.StringIO()),
+                contextlib.redirect_stderr(io.StringIO()),
+            ):
+                return run(root, own={}, floor=1, debt=listed, frozen=names)
+
+        ctl.check(
+            "CONTROL: a listed name that was frozen is debt, not red",
+            with_frozen(frozenset(listed)),
+            0,
+        )
+        ctl.check(
+            "PLANT: a NEW genuine bypass listed in KNOWN_BYPASS, absent from the frozen set, is red",
+            with_frozen(frozenset()),
+            1,
+        )
+    ctl.truthy(
+        "CONTROL: the real KNOWN_BYPASS holds nothing outside the frozen set",
+        set(KNOWN_BYPASS) <= KNOWN_BYPASS_FROZEN,
+    )
+    quoted = MODULE_CALL_RE.search(
+        'run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_argv a --shard "${{ m }}/2"'
+    )
+    ctl.check(
+        "CONTROL: a quoted value is one argument of the call",
+        _tokens(quoted.group(2)) if quoted else None,
+        ["a", "--shard", "${{ m }}/2"],
+    )
+    closed = MODULE_CALL_RE.search(
+        '"cmd": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.gate_argv --selftest", "next"'
+    )
+    ctl.check(
+        "CONTROL: the quote closing a string around the call is not an argument",
+        _tokens(closed.group(2)) if closed else None,
+        ["--selftest"],
+    )
     return 0 if ctl.report() else 1
 
 

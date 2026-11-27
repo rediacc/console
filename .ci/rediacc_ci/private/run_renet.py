@@ -388,4 +388,20 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `parse_argv` takes the stage from `$1` and reads only `--shard-manifest PATH --shard i/N` after it, dropping the rest. One bare argument, first (a flag in its place would be run as the stage), then those two flags.
+    _parsed = gate_args.parse(
+        "run_renet.py",
+        sys.argv[1:],
+        valued=("--shard-manifest", "--shard"),
+        positional="<stage>",
+    )
+    if len(_parsed.positionals) > 1 or _parsed.argv[:1] != _parsed.positionals[:1]:
+        print(
+            "run_renet.py: the stage must be the first argument and the only bare one, got %r "
+            "(accepted: <stage>, --shard-manifest <value>, --shard <value>)" % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

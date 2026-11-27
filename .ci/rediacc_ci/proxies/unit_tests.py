@@ -208,4 +208,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` reads `--selftest` or two bare arguments, <workspace> and <npm script key>; a flag in either place is a typo, refused rather than run as the workspace.
+    gate_args.parse(
+        "unit_tests.py", sys.argv[1:], switches=("--selftest",), positional="<workspace> <script>"
+    )
     raise SystemExit(main(sys.argv[1:]))
