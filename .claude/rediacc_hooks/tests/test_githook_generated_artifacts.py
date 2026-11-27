@@ -885,3 +885,54 @@ def test_a_stale_detail_drops_the_blank_lines_between_warning_paragraphs():
     assert "WARNING" not in shown
     # Only the one blank line between the verdict and the first warning survives.
     assert sum(1 for line in shown.splitlines() if not line.strip()) == 1
+
+
+def test_a_stale_detail_shows_the_stderr_verdict_past_long_stdout_warnings():
+    """check_plan_record writes its ✗ verdict to stderr and its RF WARNING paragraphs to stdout. Joined stderr first and cut to the last TAIL_CHARS, the cut kept only the warnings' tail and the refusal showed one continuation fragment and no problem (worklist #e01814e8, 2026-11-27)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk\n"
+    warnings = "".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked (9 of 9) on this branch, not yet on main;\n"
+        "      close it on the next branch, after the merge, and 1 plan(s) depend on it until it closes.\n"
+        % i
+        for i in range(20)
+    )
+    assert len(warnings) > GA.TAIL_CHARS
+    # CONTROL: the old join (stderr first) loses the verdict under the same cut.
+    old = (verdict + warnings).strip()[-GA.TAIL_CHARS :]
+    assert "agent/INDEX.md disagrees" not in GA._indent(old)
+    shown = GA._indent(GA.said_tail(warnings, verdict))
+    assert "agent/INDEX.md disagrees" in shown
+    assert "✗ plan records" in shown
+    assert "until it closes" not in shown, "a cut WARNING fragment survived as the first line"
+
+
+def test_run_check_hands_the_stale_verdict_the_stderr_words(tmp_path):
+    """The same refusal through `run_check` itself, with a real checker process: stdout floods with WARNING paragraphs, stderr carries the verdict, exit is the stale code."""
+    checker = tmp_path / "checker.py"
+    checker.write_text(
+        "import sys\n"
+        "for i in range(20):\n"
+        "    print('  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked on this branch;' % i)\n"
+        "    print('      close it after the merge; 1 plan(s) depend on it until it closes.')\n"
+        "sys.stdout.flush()\n"
+        "print('x plan records: 1 problem(s):', file=sys.stderr)\n"
+        "print('    agent/INDEX.md disagrees with what is on disk', file=sys.stderr)\n"
+        "sys.exit(1)\n",
+        encoding="utf-8",
+    )
+    artifact = GA.Artifact(
+        id="t",
+        title="t",
+        when=GA.WHEN_COMMIT,
+        inputs=("x",),
+        inputs_exclude=(),
+        outputs=("y",),
+        generator="gen",
+        gate="gate",
+        check=("python3", str(checker)),
+        stale_exit=1,
+        budget_s=60,
+    )
+    verdict = GA.run_check(str(tmp_path), str(tmp_path), dict(os.environ), artifact, ("x",))
+    assert verdict.kind == "stale"
+    assert "agent/INDEX.md disagrees" in GA._indent(verdict.detail)

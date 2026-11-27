@@ -338,7 +338,7 @@ def run_check(
             detail="`%s` could not start: %s" % (artifact.check[0], exc),
         )
     seconds = time.monotonic() - started
-    said = ((proc.stderr or "") + (proc.stdout or "")).strip()[-TAIL_CHARS:]
+    said = said_tail(proc.stdout, proc.stderr)
     if proc.returncode == 0:
         return Verdict(artifact, "clean", hits, seconds)
     if proc.returncode == artifact.stale_exit:
@@ -351,6 +351,16 @@ def run_check(
         "`%s` exited %d, which is neither 0 nor its stale code %d:\n%s"
         % (" ".join(artifact.check), proc.returncode, artifact.stale_exit, said),
     )
+
+
+def said_tail(stdout: str | None, stderr: str | None) -> str:
+    """The checker's words, stdout first and stderr LAST, cut to the last TAIL_CHARS. A checker writes its findings to stderr; with stderr first, check_plan_record's ✗ verdict sat above its stdout RF WARNING paragraphs, the cut kept only the warnings' tail, and the refusal showed a continuation line and no problem (worklist #e01814e8, measured twice on 2026-11-27)."""
+    said = ((stdout or "").rstrip() + "\n" + (stderr or "")).strip()
+    if len(said) <= TAIL_CHARS:
+        return said
+    # The cut lands mid-line; a fragment of a WARNING paragraph without its `WARNING` head would survive `_indent` and read as the checker's first words.
+    tail = said[-TAIL_CHARS:]
+    return tail.partition("\n")[2] or tail
 
 
 def _indent(text: str, lines: int = 14) -> str:
