@@ -25,6 +25,7 @@ import sys
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.core import ghx
 from rediacc_ci.release import mark_production as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
@@ -693,3 +694,93 @@ def test_the_failure_line_names_creating_when_the_production_ref_was_missing(
     proc, _ = _run_live(PORT, tmp_path, ["v1.3.1"], FAKE_GH_MUTATE_RC="6")
     assert proc.returncode == 6
     assert "moving of the 'production' tag to " in proc.stderr
+
+
+# --------------------------------------------------------------------------- The stable record's backfill (PLAN-release-notes D9) ---------------------------------------------------------------------------
+
+
+def _fake_gh(monkeypatch, runs: dict[int, tuple[str, str]], latest: str = "v3.0.1"):
+    """A `gh_retry.gh` over a canned run list: run id to (job log text, completed_at). Nothing reaches GitHub."""
+    calls: list[list[str]] = []
+
+    def gh(args, **_kw):
+        calls.append(args)
+        joined = " ".join(args)
+        if args[:2] == ["run", "list"]:
+            body = json.dumps([{"databaseId": rid} for rid in runs])
+            return ghx.GhResult(args, 0, body, "")
+        if "/jobs?" in joined:
+            rid = int(joined.split("/runs/")[1].split("/")[0])
+            job = {
+                "id": rid * 10,
+                "name": "Release to Stable",
+                "conclusion": "success",
+                "completed_at": runs[rid][1],
+            }
+            return ghx.GhResult(args, 0, json.dumps([job]), "")
+        if "/jobs/" in joined and joined.endswith("/logs"):
+            rid = int(joined.split("/jobs/")[1].split("/")[0]) // 10
+            return ghx.GhResult(args, 0, runs[rid][0], "")
+        if joined.endswith("releases/latest --jq .tag_name"):
+            return ghx.GhResult(args, 0, latest + "\n", "")
+        return ghx.GhResult(args, 1, "", "unexpected: " + joined)
+
+    monkeypatch.setattr(port.gh_retry, "gh", gh)
+    return calls
+
+
+def test_backfill_prints_one_row_per_promoted_version_oldest_first(monkeypatch, capsys) -> None:
+    runs = {
+        3: ("x\nR2 promotion complete: edge v3.0.1 -> stable\n", "2026-11-04T10:00:00Z"),
+        2: ("nothing to promote\n", "2026-11-02T10:00:00Z"),
+        1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z"),
+        # The same version promoted twice keeps its first row.
+        4: ("R2 promotion complete: edge v3.0.1 -> stable\n", "2026-11-05T10:00:00Z"),
+    }
+    _fake_gh(monkeypatch, runs)
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    out = capsys.readouterr()
+    assert out.out.splitlines() == [
+        "v2.4.0\t2026-10-20T10:00:00Z",
+        "v3.0.1\t2026-11-04T10:00:00Z",
+    ]
+    assert "agrees with the Latest release (v3.0.1)" in out.err
+
+
+def test_backfill_says_when_the_newest_row_differs_from_latest(monkeypatch, capsys) -> None:
+    _fake_gh(
+        monkeypatch,
+        {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")},
+        latest="v3.0.1",
+    )
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert "DIFFERS FROM the Latest release (v3.0.1)" in capsys.readouterr().err
+
+
+def test_backfill_dry_run_makes_no_write_and_needs_no_r2_environment(monkeypatch) -> None:
+    calls = _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    monkeypatch.delenv("CLOUDFLARE_R2_ENDPOINT", raising=False)
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert all("POST" not in c and "PATCH" not in c for c in calls)
+
+
+def test_backfill_without_dry_run_refuses_a_missing_r2_endpoint(monkeypatch) -> None:
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    monkeypatch.delenv("CLOUDFLARE_R2_ENDPOINT", raising=False)
+    assert port.main(["--backfill"]) == 1
+
+
+def test_backfill_refuses_an_unknown_flag(monkeypatch) -> None:
+    _fake_gh(monkeypatch, {})
+    assert port.main(["--backfill", "--bogus"]) == 2
+
+
+def test_backfill_fails_when_the_run_list_cannot_be_read(monkeypatch) -> None:
+    monkeypatch.setattr(
+        port.gh_retry, "gh", lambda args, **_kw: ghx.GhResult(args, 1, "", "HTTP 403 forbidden")
+    )
+    assert port.main(["--backfill", "--dry-run"]) == 1
