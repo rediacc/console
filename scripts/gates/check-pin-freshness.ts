@@ -164,6 +164,7 @@ interface LeafView {
  *   undatable-is-young  a major whose first release has no date passes
  *   ignore-holds        a dated hold does not excuse an aged major
  *   undated-hold-excuses an undated hold excuses an aged major
+ *   expired-excuses     an expired dated hold still excuses an aged major
  *   no-hold-liveness    a hold line no leaf answers to passes
  *   first-number-only   a version line is its first number alone, so python 3.9 below 3.10 is one line
  *   zero-is-major       a 0.x version's line is its 0, so otel 0.111 below 0.166 is one line
@@ -182,6 +183,7 @@ const MUTANTS = [
   'undatable-is-young',
   'ignore-holds',
   'undated-hold-excuses',
+  'expired-excuses',
   'no-hold-liveness',
   'first-number-only',
   'zero-is-major',
@@ -342,7 +344,8 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
     const due = ages.filter((a) => a.kind !== 'young');
     if (due.length === 0) continue;
     const h = v.hold;
-    const live = v.state === 'held' && h && !h.expired;
+    const expiredPasses = mutant === 'expired-excuses';
+    const live = (v.state === 'held' || expiredPasses) && h && (!h.expired || expiredPasses);
     if (
       live &&
       mutant !== 'ignore-holds' &&
@@ -861,6 +864,39 @@ async function selftest(): Promise<number> {
       ex.all
     );
 
+    // The expiry date is what ends a hold: a hold dated tomorrow still excuses its aged pin, one dated today (midnight UTC, already past at NOW) does not. The mutant 'expired-excuses' keeps an expired hold excusing, and the pair below must then disagree with the gate.
+    const dayAfterNow = new Date(NOW + DAY_MS).toISOString().slice(0, 10);
+    const dayOfNow = new Date(NOW).toISOString().slice(0, 10);
+    const holdDated = (day: string): string =>
+      fixtureRoot([HELD], {
+        [HOLDS]: `${holdKeyOf(HELD)}  # BLOCKER: the 2.x line drops the plugin API the suite loads (expires ${day})\n`,
+      });
+    const futureRoot = holdDated(dayAfterNow);
+    const todayRoot = holdDated(dayOfNow);
+    roots.push(futureRoot, todayRoot);
+    const future = await run(undefined, futureRoot);
+    add(
+      `EXPIRY future: a hold dated ${dayAfterNow} keeps its aged pin excused, and green`,
+      future.rc === 0 &&
+        future.out.some(
+          (l) => l.startsWith(`  held major  ${HELD}:`) && l.includes(`until ${dayAfterNow}`)
+        ),
+      future.all
+    );
+    const today = await run(undefined, todayRoot);
+    add(
+      `EXPIRY today: a hold dated ${dayOfNow} is expired at NOW, so its aged pin is red and the line names the date`,
+      today.rc === 1 &&
+        today.err.some((l) => l.startsWith(`  ${HELD} `) && l.includes('aged')) &&
+        today.err.some((l) => l.includes(`${HOLDS}:1 expired on ${dayOfNow}`)),
+      today.all
+    );
+    add(
+      'EXPIRY: the already-expired fixture (2026-10-01) is red on its aged pin too, not only a printed line',
+      ex.err.some((l) => l.startsWith(`  ${HELD} `) && l.includes('aged')),
+      ex.all
+    );
+
     // Hold liveness: a line no leaf answers to is red, naming the line.
     const dead = fixtureRoot([YOUNG], {
       [HOLDS]:
@@ -1126,6 +1162,8 @@ async function selftest(): Promise<number> {
         !(await mjRun('ignore-holds')).err.some((l) => l.startsWith(`  ${HELD} `)),
       'undated-hold-excuses': async () =>
         (await mjRun('undated-hold-excuses')).err.some((l) => l.startsWith(`  ${LAZY_HOLD} `)),
+      'expired-excuses': async () =>
+        (await run('expired-excuses', todayRoot)).err.some((l) => l.startsWith(`  ${HELD} `)),
       'no-hold-liveness': async () =>
         (await run('no-hold-liveness', dead)).err.some((l) => l.includes('holds not-a-pin')),
       'first-number-only': async () =>
