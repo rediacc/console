@@ -175,14 +175,6 @@
       "reason": "baseline 2026-11-17: 54.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_record_paths::test_a_real_reader_dropped_from_the_policy_is_reported",
-      "reason": "baseline 2026-11-17: 24.5 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_record_paths::test_the_real_record_policy_matches_the_derivation",
-      "reason": "baseline 2026-11-17: 25.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_stop_hook_stdin::test_never_written_payload_does_not_crash_or_hang",
       "reason": "baseline 2026-11-17: 11.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -845,10 +837,6 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-store.py]",
       "reason": "measured 2026-11-21: 10.9 s in PR 605 CI run 44884489459 (Quality / Pytest 4/6, CI runner); the landing-store control suite builds real two-tree repositories; drop the entry once it runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_record_paths::test_the_bare_run_still_passes_on_the_real_tree",
-      "reason": "2026-11-27: 10.7 s in ci:quick run 14, 10.5 s alone; the no-argument run of check:ci-record-paths judges both modes with a full scan of the tracked tree, the same cost its three listed siblings in this file carry, and the test's point is that the real bare run passes; drop the entry once the gate scans under 5 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-stack.py]",

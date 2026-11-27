@@ -44,6 +44,7 @@ from typing import Any
 from rediacc_ci import controls, paths
 from rediacc_ci.controls import plant
 from rediacc_ci.policy_paths import policy_rel
+from rediacc_ci.quality import env_ast
 
 POLICY_REL = policy_rel("record-paths.json")
 SELF_REL = ".ci/rediacc_ci/quality/record_paths.py"
@@ -84,6 +85,7 @@ TS_LEG_RE = re.compile(r"""\bargs:\s*\[\s*['"]((?:scripts|\.ci)/[^'"\s]+\.(?:ts|
 # ---------------------------------------------------------------- globs
 
 
+@functools.cache
 def glob_re(glob: str) -> re.Pattern[str]:
     """`glob` as an anchored regex over a repo-relative path: `**` spans directories, `*` and `?` do not.
 
@@ -243,11 +245,11 @@ def _py_imports_cached(
 
 def _py_imports_uncached(path: pathlib.Path, root: pathlib.Path) -> list[pathlib.Path]:
     try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
+        tree = env_ast.parse(path.read_text(encoding="utf-8"), str(path))
     except (OSError, SyntaxError, ValueError):
         return []
     names: list[str] = []
-    for node in ast.walk(tree):
+    for node in env_ast.imports(tree):
         if isinstance(node, ast.Import):
             names.extend(a.name for a in node.names)
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
@@ -301,6 +303,12 @@ def _ts_imports_uncached(path: pathlib.Path, root: pathlib.Path) -> list[pathlib
     return found
 
 
+@functools.cache
+def _resolve(path: pathlib.Path) -> pathlib.Path:
+    """`path.resolve()` once per path: a closure per gate per record re-resolved the same 29,178 imports."""
+    return path.resolve()
+
+
 def closure(leaves: list[str], root: pathlib.Path) -> set[pathlib.Path]:
     """Every local file reachable from `leaves` by import. A leaf that is not a file (a tool name like `biome`) contributes nothing."""
     seen: set[pathlib.Path] = set()
@@ -308,7 +316,7 @@ def closure(leaves: list[str], root: pathlib.Path) -> set[pathlib.Path]:
     while stack:
         path = stack.pop()
         try:
-            path = path.resolve()
+            path = _resolve(path)
         except OSError:
             continue
         if path in seen or not path.is_file():
@@ -328,9 +336,20 @@ def _line_of(text: str, offset: int) -> int:
     return text.count("\n", 0, offset) + 1
 
 
+@functools.cache
+def _resolved(root: pathlib.Path) -> pathlib.Path:
+    """`root.resolve()` once per root: `_rel` ran it 59,369 times a scan, a realpath walk each time."""
+    return root.resolve()
+
+
 def _rel(path: pathlib.Path, root: pathlib.Path) -> str:
+    # `relative_to` is lexical, so a plain prefix test gives the same answer without building a Path per call.
+    head = str(_resolved(root)) + "/"
+    text = str(path)
+    if text.startswith(head):
+        return text[len(head) :]
     try:
-        return str(path.relative_to(root.resolve()))
+        return str(path.relative_to(_resolved(root)))
     except ValueError:
         return str(path)
 
@@ -454,6 +473,8 @@ def cite_hits(code: str, record: dict, bare_words: bool = False) -> list[tuple[i
         hits = [(m.start(), m.group(0)) for m in stem_re.finditer(code)]
     else:
         for off, run in _literal_runs(code):
+            if stem not in run:
+                continue  # the regex below needs the stem verbatim, so a plain substring test spares most searches
             m = stem_re.search(run)
             if m is not None:
                 hits.append((off + m.start(), m.group(0)))
@@ -528,12 +549,10 @@ def _code_globs(text: str) -> tuple[tuple[int, str, tuple[str, ...]], ...]:
     )
 
 
-def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> list[tuple[int, str]]:
-    """(offset, "<config>: <glob>") for every cited JSON config holding a glob that reaches one of the record's probes.
-
-    `text` is the file WHOLE, docstring included, unlike the other tiers: a gate that builds its config path from segments often names the file only in its docstring, and a config cited there is still the config it loads.
-    """
-    hits = []
+@functools.lru_cache(maxsize=4096)
+def _config_cites(text: str) -> tuple[tuple[int, str], ...]:
+    """(offset, repo-relative path) of every scannable JSON config `text` cites, once per text: the citations do not depend on the record asking, and `config_hits` ran this regex over the same file once per record (17,094 times a scan)."""
+    out = []
     for m in JSON_CITE_RE.finditer(text):
         rel = m.group(1).lstrip("./") if m.group(1).startswith("./") else m.group(1)
         if (
@@ -543,6 +562,17 @@ def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> lis
             or rel.startswith(("/", ".."))
         ):
             continue
+        out.append((m.start(), rel))
+    return tuple(out)
+
+
+def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> list[tuple[int, str]]:
+    """(offset, "<config>: <glob>") for every cited JSON config holding a glob that reaches one of the record's probes.
+
+    `text` is the file WHOLE, docstring included, unlike the other tiers: a gate that builds its config path from segments often names the file only in its docstring, and a config cited there is still the config it loads.
+    """
+    hits = []
+    for start, rel in _config_cites(text):
         if rel not in cache:
             try:
                 cache[rel] = _json_globs(json.loads((root / rel).read_text(encoding="utf-8")))
@@ -550,7 +580,7 @@ def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> lis
                 cache[rel] = []
         for pattern in cache[rel]:
             if any(config_glob_matches(pattern, probe) for probe in record["probes"]):
-                hits.append((m.start(), "%s: %s" % (rel, pattern)))
+                hits.append((start, "%s: %s" % (rel, pattern)))
                 break
     return hits
 
@@ -749,6 +779,19 @@ WIDTH_NAME_RE = re.compile(
 )
 FLAG_TAKES_WIDTH = frozenset({"-n", "--numprocesses", "-j", "--jobs", "-P", "--max-procs"})
 PYTEST_MARKERS = ("--dist", "pytest", "xdist")
+#: The text every node-level width rule below needs, so a source without any of it skips the whole-tree walk (a pre-filter that over-accepts: each alternative is a name or literal the AST rule itself tests for). The core probes and the pool-call and keyword names are identifiers in the source; a flag is a quoted string constant, `"-n"` or `'-n'`.
+WIDTH_WALK_RE = re.compile(
+    "|".join(
+        [
+            *(re.escape(probe.rstrip("(")) for probe in CORE_PROBES),
+            *(re.escape(name) for name in sorted(POOL_CALLS)),
+            *(re.escape(name) for name in sorted(WIDTH_KWARGS)),
+            "[\"'](?:%s)[\"']" % "|".join(re.escape(f) for f in sorted(FLAG_TAKES_WIDTH)),
+        ]
+    )
+)
+#: What a module-level width constant's NAME must contain (WIDTH_NAME_RE's alternatives), for the same pre-filter.
+WIDTH_CONST_RE = re.compile("PARALLELISM|CONCURRENCY|WORKERS|JOBS_CAP|_WIDTH")
 LINE_RULES = (
     ("xargs -P", re.compile(r"\bxargs\b[^|;\n]*?\s-P\s*(\d+)")),
     ("--jobs", re.compile(r"(?:^|\s)--jobs[= ](\d+)\b")),
@@ -770,6 +813,28 @@ LINE_RULES = (
     ("--concurrency", re.compile(r"--concurrency[= ](\d+)\b")),
     ("go -p", re.compile(r"\bgo\s+(?:test|build|vet)\b[^|;\n]*\s-p\s*(\d+)")),
 )
+#: One tuple of literal needles per rule of LINE_RULES, same order. A rule's regex can only match a line that holds one of its needles verbatim, so `line_widths` tests the plain substrings first and runs a regex only on a line that passes (3.9 million searches a scan before). The import fails when the two tuples differ in length, so adding a rule without its needles fails loudly.
+LINE_NEEDLES = (
+    ("xargs",),
+    ("--jobs",),
+    ("make",),
+    ("pytest",),
+    ("--max",),
+    ("max",),
+    ("imit(",),
+    ("Math.min(",),
+    ("const", "let", "var"),
+    ("GOMAXPROCS",),
+    ("RAYON_NUM_THREADS",),
+    ("--threads",),
+    ("--concurrency",),
+    ("go",),
+)
+LINE_ANY_RE = re.compile(
+    "|".join(re.escape(needle) for needles in LINE_NEEDLES for needle in needles)
+)
+if len(LINE_NEEDLES) != len(LINE_RULES):
+    raise RuntimeError("LINE_NEEDLES must hold one needle tuple per LINE_RULES entry, in order")
 #: `:(glob)` IS LOAD-BEARING. A bare `packages/*/scripts` pathspec matched ZERO files when this gate was written (git reads a plain wildcard pathspec as a whole-path fnmatch, so it never matches a file below the directory), which would have left 79 scripts unswept and the gate green. `width_files` refuses a scope root that contributes nothing.
 WIDTH_SCOPE = (
     ".ci",
@@ -828,8 +893,10 @@ def _segment(src: str, node: ast.AST) -> str:
 
 def python_widths(rel: str, src: str) -> list[dict]:
     """Fixed widths in one Python source, by AST, so a width in a comment or a docstring is never one."""
+    if not (WIDTH_WALK_RE.search(src) or WIDTH_CONST_RE.search(src)):
+        return []  # no rule below can fire, and a source that does not parse answers [] too
     try:
-        tree = ast.parse(src)
+        tree = env_ast.parse(src)
     except (SyntaxError, ValueError):
         return []
     consts: dict[str, int] = {}
@@ -868,6 +935,8 @@ def python_widths(rel: str, src: str) -> list[dict]:
         ):
             add("width const", stmt, consts[stmt.targets[0].id])
     named = {n for n, _ in consts.items() if WIDTH_NAME_RE.match(n)}
+    if not WIDTH_WALK_RE.search(src):
+        return out
     for sub in ast.walk(tree):
         cap = _core_cap(sub, consts)
         if cap is not None:
@@ -915,7 +984,11 @@ def line_widths(rel: str, src: str) -> list[dict]:
         bare = line.strip()
         if bare.startswith(("#", "//", "/*", "*")):
             continue
-        for kind, rx in LINE_RULES:
+        if not LINE_ANY_RE.search(line):
+            continue
+        for (kind, rx), needles in zip(LINE_RULES, LINE_NEEDLES, strict=True):
+            if not any(needle in line for needle in needles):
+                continue
             m = rx.search(line)
             if m and int(m.group(1)) >= 2:
                 out.append(
