@@ -571,14 +571,17 @@ describe('backup status', () => {
     async (format) => {
       answer = { ...FINISHED, stdout: SHOW };
       const { writeStdout, writeStderr } = await import('../../services/core/request-context.js');
-      const { setCurrentOutputFormat } = await import('../../services/core/output-format.js');
+      const { setCurrentOutputFormat, currentOutputFormat } = await import(
+        '../../services/core/output-format.js'
+      );
       vi.mocked(writeStdout).mockClear();
       vi.mocked(writeStderr).mockClear();
+      const previous = currentOutputFormat();
       setCurrentOutputFormat(format);
       try {
         await rdcBackup('status', 'nightly', '-m', 'm1');
       } finally {
-        setCurrentOutputFormat('table');
+        setCurrentOutputFormat(previous);
       }
 
       expect(vi.mocked(writeStdout)).not.toHaveBeenCalled();

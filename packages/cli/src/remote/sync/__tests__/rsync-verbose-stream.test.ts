@@ -32,7 +32,7 @@ vi.mock('../../../services/core/request-context.js', async (importOriginal) => (
   writeStderr: (s: string) => out.stderr.push(s),
 }));
 
-import { executeRsync } from '../rsync.js';
+import { executeRsync, getRsyncPreview } from '../rsync.js';
 
 const run = () =>
   executeRsync({ sshOptions: '', source: '/src/', destination: 'h:/dst/', verbose: true });
@@ -55,5 +55,23 @@ describe('executeRsync verbose command echo', () => {
     await run();
     expect(out.stdout).toEqual([]);
     expect(out.stderr.join('')).toContain('[rsync] Executing');
+  });
+});
+
+describe('getRsyncPreview verbose command echo', () => {
+  const preview = () =>
+    getRsyncPreview({ sshOptions: '', source: '/src/', destination: 'h:/dst/', verbose: true });
+
+  it('table format writes it to stdout (control)', async () => {
+    await preview();
+    expect(out.stdout.join('')).toContain('[rsync] Preview');
+    expect(out.stderr.join('')).not.toContain('[rsync] Preview');
+  });
+
+  it.each(['json', 'yaml', 'csv'] as const)('-o %s writes it to stderr', async (format) => {
+    setCurrentOutputFormat(format);
+    await preview();
+    expect(out.stdout).toEqual([]);
+    expect(out.stderr.join('')).toContain('[rsync] Preview');
   });
 });

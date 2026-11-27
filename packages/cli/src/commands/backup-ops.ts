@@ -357,6 +357,8 @@ async function showBackupStatus(
   }
   outputService.info(`\nRecent logs (${strategyFilter}):`);
   const lines = (journal.result.stdout ?? '').trim();
+  // The journal is free-form log text, not part of the status document this command returns, so under
+  // -o json|yaml|csv it stays on stderr and stdout carries only the machine-readable document.
   writeProgress(`${lines || '(no logs)'}\n`);
 }
 
