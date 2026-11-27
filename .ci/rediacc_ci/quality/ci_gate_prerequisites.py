@@ -32,6 +32,7 @@ lane: quality-code
 
 from __future__ import annotations
 
+import functools
 import json
 import pathlib
 import re
@@ -56,6 +57,7 @@ def _load_package_json(path: pathlib.Path) -> dict:
         return {}
 
 
+@functools.cache
 def _workspace_scripts() -> dict[str, dict[str, str]]:
     """`{workspace name: {script key: command}}`, root included under "".
 
@@ -74,8 +76,6 @@ def _workspace_scripts() -> dict[str, dict[str, str]]:
                 table[name] = pkg.get("scripts", {})
     return table
 
-
-SCRIPTS_BY_WORKSPACE = _workspace_scripts()
 
 _NPM_RUN_RE = re.compile(
     r"npm\s+run\s+([A-Za-z0-9:_-]+)(?:\s+(?:-w|--workspace)(?:=|\s+)([^\s]+))?"
@@ -113,7 +113,7 @@ def _needs_via_run_pattern(
                 return True
         for key, ws in _NPM_RUN_RE.findall(run):
             target_ws = ws or workspace
-            cmd = SCRIPTS_BY_WORKSPACE.get(target_ws, {}).get(key)
+            cmd = _workspace_scripts().get(target_ws, {}).get(key)
             if cmd and needs(cmd, _depth + 1, target_ws):
                 return True
         return False
