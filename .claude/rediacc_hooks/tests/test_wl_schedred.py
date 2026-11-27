@@ -217,9 +217,8 @@ def test_discovery_pins_this_repos_scheduled_workflows():
     """The list is discovered, never hardcoded; this pin says which workflows that discovery finds today, so a schedule silently dropping out of the watch fails here."""
     root = wlfix.STOP_DIR.parents[2]
     stems = {w["stem"] for w in SR.scheduled_workflows(root)}
-    # BLOCKER: ci-drift.yml and cd-release-stable.yml's schedule are deleted by box S1 of PLAN-retire-nightlies-and-mentions, which a different writer lands; until it does they are still discovered. Delete this set and the subtraction below when S1 is on this branch, so the pin reads exactly the nine kept stems.
-    retiring = {"ci-drift", "cd-release-stable"}
-    assert stems - retiring == KEPT_SCHEDULED_STEMS
+    # Exact, no subtraction (review d9f8a401.1): box S1 of PLAN-retire-nightlies-and-mentions deleted ci-drift.yml and cd-release-stable.yml's schedule, so either one coming back is a new scheduled workflow this pin must name.
+    assert stems == KEPT_SCHEDULED_STEMS
     assert len(KEPT_SCHEDULED_STEMS) == 9
 
 
