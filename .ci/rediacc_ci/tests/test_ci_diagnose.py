@@ -1581,6 +1581,21 @@ def test_text_error_keeps_the_whole_first_error_line(monkeypatch):
     assert err == "unknown flag: --allow-escape-sequences"
 
 
+def test_text_error_falls_back_to_stdout_when_stderr_is_only_blank_lines(monkeypatch):
+    f, _calls = _text_with_flag_support(
+        monkeypatch, [], _Proc(1, "HTTP 502: bad gateway\n", "\n  \n")
+    )
+    data, err = f.text("actions/jobs/1/logs")
+    assert data is None
+    assert err == "HTTP 502: bad gateway"
+    # control: a real stderr line still wins over stdout
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(1, "from stdout\n", "from stderr\n"))
+    assert f.text("actions/jobs/1/logs") == (None, "from stderr")
+    # control: both blank still reads as the exit code
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(4, " \n", "\n"))
+    assert f.text("actions/jobs/1/logs") == (None, "gh exited 4")
+
+
 def test_first_error_line_clips_a_very_long_line_with_an_ellipsis():
     out = D._first_error_line("\n  " + "e" * 400 + "\nsecond", 1)
     assert out == "e" * 299 + "…"

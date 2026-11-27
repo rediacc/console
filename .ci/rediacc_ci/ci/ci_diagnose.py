@@ -370,7 +370,9 @@ class GhFetcher:
         except (OSError, subprocess.SubprocessError) as exc:
             return None, str(exc)[:200]
         if out.returncode != 0:
-            return None, _first_error_line(out.stderr or out.stdout, out.returncode)
+            # A stderr of only blank lines is truthy but says nothing: fall through to stdout.
+            text = out.stderr if (out.stderr or "").strip() else out.stdout
+            return None, _first_error_line(text, out.returncode)
         return out.stdout, ""
 
     def _run(self, args):
