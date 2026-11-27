@@ -854,8 +854,10 @@ def main(argv=None):
     )
 
     stale = None
+    # The clock is read OUTSIDE the try: a bad REDIACC_GATE_CLOCK raises GateClockError (a ValueError), which the handler below would turn into "refreshed_at is missing or unparseable" and hide the real error.
+    now = gate_clock.now()
     try:
-        age = gate_clock.now() - dt.datetime.fromisoformat(baseline["refreshed_at"])
+        age = now - dt.datetime.fromisoformat(baseline["refreshed_at"])
         if age.days > MAX_BASELINE_AGE_DAYS:
             stale = age.days
     except (KeyError, TypeError, ValueError):

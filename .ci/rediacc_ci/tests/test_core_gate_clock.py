@@ -244,6 +244,14 @@ def test_runner_advice_reds_on_a_clock_past_the_baseline_age_limit(tmp_path):
     assert "the baseline itself is stale" in planted.err, planted.err
 
 
+def test_runner_advice_names_a_bad_clock_not_a_stale_baseline(tmp_path):
+    bad = _ra_run(tmp_path, "tomorrow")
+    assert bad.rc != 0, bad.out + bad.err
+    assert "GateClockError" in bad.err, bad.err
+    assert "not an ISO 8601 date" in bad.err, bad.err
+    assert "the baseline itself is stale" not in bad.err, bad.err
+
+
 # --------------------------------------------------------------------------- secret-reachability.
 
 
@@ -274,3 +282,68 @@ def test_secret_reachability_waiver_expiry_reads_the_seam(monkeypatch):
     problems = sr.verdicts(refs, {})
     assert len(problems) == 1, problems
     assert "EXPIRED on 2031-06-01" in problems[0], problems
+
+
+# --------------------------------------------------------------------------- the refusal branches (review findings 7c6798ea.1, 7c6798ea.2).
+
+
+def test_a_set_clock_without_the_harness_marker_is_refused(monkeypatch):
+    monkeypatch.delenv(gate_clock.TEST_ENV, raising=False)
+    monkeypatch.setenv(gate_clock.ENV, "2027-01-01")
+    with pytest.raises(gate_clock.GateClockError, match="outside a test harness"):
+        gate_clock.override()
+    with pytest.raises(gate_clock.GateClockError, match="outside a test harness"):
+        gate_clock.now()
+
+
+def test_a_marker_other_than_one_is_not_a_marker(monkeypatch):
+    monkeypatch.setenv(gate_clock.TEST_ENV, "true")
+    monkeypatch.setenv(gate_clock.ENV, "2027-01-01")
+    with pytest.raises(gate_clock.GateClockError, match="outside a test harness"):
+        gate_clock.override()
+
+
+@pytest.mark.parametrize("ci", ["true", "TRUE", " true "])
+def test_a_set_clock_under_ci_is_refused_even_with_the_marker(monkeypatch, ci):
+    monkeypatch.setenv("CI", ci)
+    monkeypatch.setenv(gate_clock.TEST_ENV, "1")
+    monkeypatch.setenv(gate_clock.ENV, "2027-01-01")
+    with pytest.raises(gate_clock.GateClockError, match="CI=true"):
+        gate_clock.override()
+
+
+def test_an_unset_clock_is_never_refused_whatever_the_marker_says(monkeypatch):
+    monkeypatch.delenv(gate_clock.ENV, raising=False)
+    monkeypatch.delenv(gate_clock.TEST_ENV, raising=False)
+    monkeypatch.setenv("CI", "true")
+    assert gate_clock.override() is None
+
+
+def test_refusal_is_none_only_for_a_marked_harness_outside_ci():
+    assert gate_clock._refusal({gate_clock.TEST_ENV: "1"}) is None
+    assert gate_clock._refusal({gate_clock.TEST_ENV: "1", "CI": "true"}) is not None
+    assert gate_clock._refusal({}) is not None
+
+
+def _unmarked_sr_run(extra: dict[str, str]) -> harness.RunResult:
+    """A real secret_reachability run whose environment carries the planted clock and NO harness marker (or CI=true)."""
+    env = {"PYTHONPATH": str(paths.from_root(".ci")), gate_clock.ENV: "2027-01-01", **extra}
+    return harness.run(
+        [sys.executable, "-m", "rediacc_ci.quality.secret_reachability"],
+        cwd=paths.repo_root(),
+        env=env,
+    )
+
+
+def test_a_real_secret_reachability_run_refuses_a_planted_clock_without_the_marker(monkeypatch):
+    monkeypatch.delenv(gate_clock.TEST_ENV, raising=False)
+    planted = _unmarked_sr_run({})
+    assert planted.rc != 0, planted.out + planted.err
+    assert "outside a test harness" in planted.err, planted.err
+
+
+def test_a_real_secret_reachability_run_refuses_a_planted_clock_under_ci(monkeypatch):
+    monkeypatch.delenv(gate_clock.TEST_ENV, raising=False)
+    planted = _unmarked_sr_run({"CI": "true", gate_clock.TEST_ENV: "1"})
+    assert planted.rc != 0, planted.out + planted.err
+    assert "CI=true" in planted.err, planted.err
