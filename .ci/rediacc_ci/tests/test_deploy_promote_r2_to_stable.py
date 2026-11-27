@@ -902,6 +902,10 @@ def test_a_record_that_keeps_changing_fails_loudly_instead_of_dropping_a_version
     monkeypatch.setattr(port, "read_history", lambda _run, _root: ([], '"e"'))
     monkeypatch.setattr(port, "write_history", write)
     with pytest.raises(r2_promote.PromoteError) as raised:
-        port.update_history(FakeRun(), lambda rows: ([*rows, {}], 1), str(tmp_path))
+        port.update_history(
+            typing.cast("r2_promote.Transfers", FakeRun()),
+            lambda rows: ([*rows, {}], 1),
+            str(tmp_path),
+        )
     assert raised.value.status == 1
     assert len(attempts) == port.HISTORY_CAS_ATTEMPTS

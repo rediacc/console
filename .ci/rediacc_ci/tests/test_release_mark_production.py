@@ -864,11 +864,12 @@ def test_backfill_merges_new_rows_into_the_record_and_writes_once(monkeypatch) -
     existing = [{"version": "3.0.1", "promoted_at": "2026-11-04T10:00:00Z"}]
     written: list[list[dict[str, str]]] = []
     monkeypatch.setattr(port.stable, "read_history", lambda _run, _root: (list(existing), '"e1"'))
-    monkeypatch.setattr(
-        port.stable,
-        "write_history",
-        lambda _run, rows, _root, _etag: written.append(rows) or True,
-    )
+
+    def write(_run, rows, _root, _etag) -> bool:
+        written.append(rows)
+        return True
+
+    monkeypatch.setattr(port.stable, "write_history", write)
     assert port.main(["--backfill"]) == 0
     assert written == [
         [

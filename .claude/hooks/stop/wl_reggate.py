@@ -499,7 +499,7 @@ def discharge_scan(root, worklist, me8, items=None):
     HOOK-ONLY. No CLI verb writes `discharge`: a hand tick of a debt's item changes nothing in the ledger, so the gate still counts the debt unpaid (C5). On proof the hook appends `{"kind": "discharge", ...}` and ticks the item with `discharge:<sig8> <artifact>`. `items` is the fold's item list, read for the `artifact:` tokens and to skip re-ticking a closed item.
     """
     by_id = {r.get("id"): r for r in (items or [])}
-    out = []
+    out: list[tuple[str, str]] = []
     with _collect_lock(root):
         unpaid = [e for e in debt_entries(root) if not e["paid"]]
         if not unpaid:

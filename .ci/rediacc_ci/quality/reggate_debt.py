@@ -131,7 +131,7 @@ def findings(root, live, legacy, base=None, now=None):
         )
     entries = RG.debt_entries(root)
     known = {e["sig"] for e in entries}
-    per_branch = {}
+    per_branch: dict[str, list[dict]] = {}
     for e in entries:
         if len(e["blind_spot"].strip()) < BLIND_SPOT_MIN:
             out.append(
