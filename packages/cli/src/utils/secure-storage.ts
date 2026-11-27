@@ -49,6 +49,12 @@ export interface SecureStorage {
   readonly type: string;
 }
 
+/** The storage `getSecureStorage()` hands out: also reads synchronously, for a caller that cannot await (the api-token reader). */
+export interface SyncReadableSecureStorage extends SecureStorage {
+  /** `get` without the promise: the backends do their work synchronously anyway. */
+  getSync(key: string): string | null;
+}
+
 /**
  * This device has no usable place for its secrets, and the file backend was not chosen. The message names what is missing and the opt-in (`REDIACC_SECRET_STORE=file`); `details` carries the native tool's own error line when it gave one. Thrown by `getSecureStorage()` before anything is stored, so a caller's `handleError` reports it with its code and guidance.
  */
@@ -503,8 +509,8 @@ class FileStorage extends Backend {
  * validating here guarantees no untrusted `storageKeyId` reaches keyctl,
  * security, or PowerShell, regardless of which backend is active.
  */
-class ValidatingStorage implements SecureStorage {
-  constructor(private readonly inner: SecureStorage) {}
+class ValidatingStorage implements SyncReadableSecureStorage {
+  constructor(private readonly inner: Backend) {}
 
   get type(): string {
     return this.inner.type;
@@ -513,6 +519,11 @@ class ValidatingStorage implements SecureStorage {
   get(key: string): Promise<string | null> {
     assertSafeStorageKey(key);
     return this.inner.get(key);
+  }
+
+  getSync(key: string): string | null {
+    assertSafeStorageKey(key);
+    return this.inner.read(key);
   }
 
   set(key: string, value: string): Promise<void> {
@@ -669,6 +680,6 @@ function selectBackend(): Backend {
  * The secure storage of this device: the native backend of the OS (on Linux the Secret Service when a session bus offers one, else the kernel keyring), proven by a round trip, or the file backend when `REDIACC_SECRET_STORE=file` chose it. Throws SecureStorageUnavailableError when the native backend cannot be used and the file backend was not chosen; nothing falls back on its own.
  * The returned storage validates every key (see ValidatingStorage).
  */
-export function getSecureStorage(): SecureStorage {
+export function getSecureStorage(): SyncReadableSecureStorage {
   return new ValidatingStorage(selectBackend());
 }

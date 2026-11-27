@@ -10,7 +10,7 @@
  *
  * One cache per process holds every `K_ring` and `K_pw` it has seen, so a config read costs at most one
  * secure-storage `get` per key per process (one PowerShell spawn on a DPAPI host, not one per field),
- * and one PBKDF2 per password. Nothing here runs at import: `getSecureStorage()` is reached only when a
+ * and one PBKDF2 per password. Nothing here runs at import: `getSecureStorage()` is called only when a
  * key is actually needed, so a public read that never unseals never selects a backend (its proof alone
  * is a round trip, three PowerShell spawns on DPAPI).
  *
@@ -32,6 +32,7 @@ import {
   usesMasterPassword,
 } from '@rediacc/shared/config-schema';
 import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
+import { getSecureStorage } from '../utils/secure-storage.js';
 import { nodeCryptoProvider } from './crypto.js';
 
 /** Bytes of a random seal key. */
@@ -84,11 +85,6 @@ export function clearSealKeyCache(): void {
   passwordKeyCache.clear();
 }
 
-async function secureStorage() {
-  const { getSecureStorage } = await import('../utils/secure-storage.js');
-  return getSecureStorage();
-}
-
 /**
  * The value secure storage holds under `storageKey`, read at most once per process; null when there is
  * none (an absence is not cached, so a later write is seen). Used for the seal key, and by the remote
@@ -97,21 +93,30 @@ async function secureStorage() {
 export async function readCachedSecret(storageKey: string): Promise<string | null> {
   const cached = secretCache.get(storageKey);
   if (cached !== undefined) return cached;
-  const value = await (await secureStorage()).get(storageKey);
+  const value = await getSecureStorage().get(storageKey);
+  if (value !== null) secretCache.set(storageKey, value);
+  return value;
+}
+
+/** `readCachedSecret` for a caller that cannot await (the api-token reader, D9); the same cache. */
+function readCachedSecretSync(storageKey: string): string | null {
+  const cached = secretCache.get(storageKey);
+  if (cached !== undefined) return cached;
+  const value = getSecureStorage().getSync(storageKey);
   if (value !== null) secretCache.set(storageKey, value);
   return value;
 }
 
 /** Store `value` under `storageKey` and remember it for this process. */
 export async function writeCachedSecret(storageKey: string, value: string): Promise<void> {
-  await (await secureStorage()).set(storageKey, value);
+  await getSecureStorage().set(storageKey, value);
   secretCache.set(storageKey, value);
 }
 
 /** Delete `storageKey` from secure storage and from this process's cache. */
 export async function deleteCachedSecret(storageKey: string): Promise<void> {
   secretCache.delete(storageKey);
-  await (await secureStorage()).delete(storageKey);
+  await getSecureStorage().delete(storageKey);
 }
 
 // ─── Seal keys ──────────────────────────────────────────────────────────
@@ -127,6 +132,14 @@ function decodeRingKey(value: string): Buffer | null {
  */
 export async function loadKey(configId: string, keyringId: string): Promise<Buffer> {
   const value = await readCachedSecret(keyringId);
+  const key = value === null ? null : decodeRingKey(value);
+  if (!key) throw new SealKeyLostError(configId, keyringId, 'missing');
+  return key;
+}
+
+/** `loadKey` for a caller that cannot await (the api-token reader, D9); the same cache and the same error. */
+export function loadKeySync(configId: string, keyringId: string): Buffer {
+  const value = readCachedSecretSync(keyringId);
   const key = value === null ? null : decodeRingKey(value);
   if (!key) throw new SealKeyLostError(configId, keyringId, 'missing');
   return key;

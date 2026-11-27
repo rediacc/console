@@ -148,6 +148,44 @@ describe('seal-key cache on DPAPI', () => {
   });
 });
 
+describe('synchronous key load (D9, the api-token reader)', () => {
+  it('loadKeySync returns the stored key with one Unprotect, then serves the cache', async () => {
+    const keyringId = await seal.mintKey();
+    const minted = await seal.loadKey('cfg', keyringId);
+    seal.clearSealKeyCache();
+    stand.unprotects = 0;
+    for (let i = 0; i < 20; i++) {
+      expect(seal.loadKeySync('cfg', keyringId).equals(minted)).toBe(true);
+    }
+    expect(stand.unprotects).toBe(1);
+  });
+
+  it('shares one cache with the async path: a key loaded async costs a sync read nothing', async () => {
+    const keyringId = await seal.mintKey();
+    seal.clearSealKeyCache();
+    stand.unprotects = 0;
+    await seal.loadKey('cfg', keyringId);
+    seal.loadKeySync('cfg', keyringId);
+    expect(stand.unprotects).toBe(1);
+  });
+
+  it('a missing key is SealKeyLostError (missing), the same as the async path', async () => {
+    const keyringId = await seal.mintKey();
+    await seal.dropKey(keyringId);
+    expect(() => seal.loadKeySync('cfg', keyringId)).toThrow(
+      expect.objectContaining({ name: 'SealKeyLostError', reason: 'missing', keyringId })
+    );
+  });
+
+  it('the sync read validates its key before any tool runs', async () => {
+    const { getSecureStorage } = await import('../../utils/secure-storage.js');
+    const storage = getSecureStorage();
+    stand.unprotects = 0;
+    expect(() => storage.getSync('bad key; rm -rf /')).toThrow();
+    expect(stand.unprotects).toBe(0);
+  });
+});
+
 describe('password key cache', () => {
   it('stretches a password once per (config, salt), and again for a different password', async () => {
     const spy = vi.spyOn(nodeCryptoProvider, 'deriveKeyBytes');
