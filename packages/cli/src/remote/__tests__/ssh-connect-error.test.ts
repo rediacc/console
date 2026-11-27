@@ -378,6 +378,18 @@ describe('SFTPClient.connect IPv6 retry', () => {
       expect(third.tried).toEqual([v4]);
     });
 
+    it('a machine down on both addresses costs two dials, not three', async () => {
+      await seamedSftpClient(
+        { ...base, host: v4, ipv6: v6 },
+        byHost({ [v4]: 'unreachable', [v6]: 'ready' }).create,
+        noAaaa
+      ).connect();
+      const down = byHost({ [v4]: 'unreachable', [v6]: 'unreachable' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, down.create, noAaaa);
+      await expect(client.connect()).rejects.toBeInstanceOf(SshConnectError);
+      expect(down.tried).toEqual([v6, v4]);
+    });
+
     it('is dropped when the recorded IPv6 changed since it was learned', async () => {
       await seamedSftpClient(
         { ...base, host: v4, ipv6: v6 },

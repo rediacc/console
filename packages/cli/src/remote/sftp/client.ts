@@ -77,6 +77,8 @@ export class SFTPClient {
   private sftp: SFTPWrapper | null = null;
   private connected = false as boolean;
   private dialed: string;
+  /** The learned IPv6 address this connect already dialed and found unreachable, so the fallback never dials it twice. */
+  private learnedFailure: { host: string; error: unknown } | undefined;
 
   /** `createClient` and `resolveIpv6` let a test plant an ssh2 client and a resolver; production takes the defaults. */
   constructor(
@@ -100,6 +102,7 @@ export class SFTPClient {
     if (this.connected) {
       return;
     }
+    this.learnedFailure = undefined;
     if (await this.connectLearned()) return;
     try {
       await this.connectTo(this.config.host);
@@ -110,6 +113,8 @@ export class SFTPClient {
       if (!ipv6) {
         throw isIP(this.config.host) === 4 ? error.withNoIpv6Target() : error;
       }
+      const already = this.learnedFailureOf(ipv6);
+      if (already) throw error.withIpv6Attempt(ipv6, already.error);
       this.replaceClient();
       try {
         await this.connectTo(ipv6);
@@ -155,11 +160,17 @@ export class SFTPClient {
     } catch (error) {
       if (!(error instanceof SshConnectError) || error.kind !== 'unreachable') throw error;
       learnedIpv6.delete(this.learnKey());
+      this.learnedFailure = { host: learned, error };
       this.replaceClient();
       return false;
     }
     this.dialed = learned;
     return true;
+  }
+
+  /** The failed learned dial when it was to `host`; read through a method since connect() resets the field before awaiting. */
+  private learnedFailureOf(host: string): { host: string; error: unknown } | undefined {
+    return this.learnedFailure?.host === host ? this.learnedFailure : undefined;
   }
 
   /** An ssh2 client that failed to connect is never reused. */
