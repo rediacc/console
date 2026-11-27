@@ -32,6 +32,7 @@ from rediacc_ci import log, paths
 from rediacc_ci.core import host_slots
 from rediacc_ci.dev import worktree_land_run
 from rediacc_ci.dev import worktree_spike as spike
+from rediacc_ci.release import release_notes
 
 BASE_BRANCH = "main"
 RECORD_DIR = "rediacc-worktrees"
@@ -792,8 +793,8 @@ def _boxes_named(message):
     ]
 
 
-def _problems(tree, sha, root):
-    """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against."""
+def _problems(tree, sha, root, key="."):
+    """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against; `key` is the repo of the lease the commit sits in (`.` for the console, else the submodule path), which the Release-Note trailer is judged against (PLAN-release-notes RN3)."""
     found = []
     trailers = spike.must(tree, "show", "-s", "--format=%B", sha)
     parsed = subprocess.run(
@@ -808,12 +809,17 @@ def _problems(tree, sha, root):
     found += _plan_box_problems(root, trailers)
     raw = spike.must(tree, "diff-tree", "-r", "--root", "-m", "--no-commit-id", "--raw", "-z", sha)
     fields = raw.split("\0")
+    changed = []
     for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
         modes = meta.lstrip(":").split()[:2]
+        changed.append(rel)
         if GITLINK_MODE in modes:
             found.append("touches the gitlink %s" % rel)
         if rel.startswith(AGENT_PREFIX):
             found.append("touches %s" % rel)
+    note = release_notes.refusal(trailers, changed, release_notes.CONSOLE if key == "." else key)
+    if note:
+        found.append(note)
     return found
 
 
@@ -876,7 +882,7 @@ def land_plan(root, lease_id, notes=None):
         refused += [
             "%s %s: %s" % (key, sha[:12], ", ".join(why))
             for sha in plan[2]
-            if (why := _problems(plan[0], sha, root))
+            if (why := _problems(plan[0], sha, root, key))
         ]
     if refused:
         raise LeaseRefusedError("; ".join(refused))

@@ -37,7 +37,10 @@ EMPTY_LOCK = {
     "packages": {"": {"name": "fx", "version": "1.0.0"}},
 }
 # Every lease commit of a fixture carries both trailers `land` demands; this one serves no plan box (PLAN-tick-tracking T2).
-TRAILERS = "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n"
+RELEASE_NONE = "Release-Note: none -- fixture commit of the lease tests\n"
+TRAILERS = (
+    "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n" + RELEASE_NONE
+)
 # Past the old tree cap of 25, which agent/plans/PLAN-unlimited-writers.md removed: the lease verb now admits any number of trees.
 CROWD = 30
 BUILD_JS = (
@@ -1005,10 +1008,12 @@ def plant_plan(root):
     spike.write(root / "agent" / "ledgers" / "plan-box-progress.jsonl", json.dumps(row) + "\n")
 
 
-def lease_commit(tree, name, trailers):
+def lease_commit(tree, name, trailers, *, subject="feat", note=True):
+    """One new file committed with `trailers`; `note` appends a `Release-Note: none` line (the Release-Note refusal is RN3's, so the other tests carry one)."""
     spike.write(tree / name, "%s\n" % name)
     spike.must(tree, "add", "--", name)
-    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: %s\n\n%s" % (name, trailers))
+    body = trailers + (RELEASE_NONE if note else "")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "%s: %s\n\n%s" % (subject, name, body))
     return spike.must(tree, "rev-parse", "HEAD")
 
 
@@ -1038,6 +1043,52 @@ def test_land_plan_box_control_without_the_call_the_same_commit_is_admitted(boxe
     monkeypatch.setattr(lease, "_plan_box_problems", lambda _root, _message: [])
     lines = lease.land_plan(boxed.repo.root, LAND_ID)
     assert any(bare in line for line in lines)
+
+
+RN_BOX = "Plan-Box: none -- fixture commit that serves no plan box\n"
+RN_NOTE = "Release-Note: Backups now resume after a dropped connection\n"
+
+
+def test_land_release_note_missing_exits_1_naming_the_sha_and_the_trailer(boxed):
+    bare = lease_commit(boxed.tree, "cust.txt", PR_TASK_ONLY + RN_BOX, note=False)
+    result = run_land(boxed.repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert bare[:12] in result.stderr
+    assert "Release-Note:" in result.stderr
+
+
+def test_land_release_note_control_without_the_call_the_same_commit_is_admitted(boxed, monkeypatch):
+    bare = lease_commit(boxed.tree, "cust.txt", PR_TASK_ONLY + RN_BOX, note=False)
+    with pytest.raises(lease.LeaseRefusedError, match="Release-Note:"):
+        lease.land_plan(boxed.repo.root, LAND_ID)
+    monkeypatch.setattr(lease.release_notes, "refusal", lambda *_a, **_k: "")
+    assert any(bare in line for line in lease.land_plan(boxed.repo.root, LAND_ID))
+
+
+def test_land_release_note_trailer_and_exempt_test_commit_are_admitted(boxed):
+    noted = lease_commit(boxed.tree, "noted.txt", PR_TASK_ONLY + RN_BOX + RN_NOTE, note=False)
+    exempt = lease_commit(
+        boxed.tree, "exempt.txt", PR_TASK_ONLY + RN_BOX, subject="test", note=False
+    )
+    lines = lease.land_plan(boxed.repo.root, LAND_ID)
+    assert any(noted in line and exempt in line for line in lines)
+
+
+def test_land_release_note_missing_in_a_submodule_commit_is_refused(boxed, monkeypatch):
+    # The fixture's submodule is `private/sub`; the live config knows `private/account` and `private/renet`, so the fixture is added as a repo with no internal paths.
+    config = {
+        **lease.release_notes.load_config(),
+        "repos": {"private/sub": {"internal": [], "gitlinks": []}},
+    }
+    monkeypatch.setattr(lease.release_notes, "load_config", lambda: config)
+    sub = boxed.tree / SUB
+    spike.write(sub / "cust.txt", "x\n")
+    spike.must(sub, "add", "--", "cust.txt")
+    msg = "feat: sub cust\n\n" + PR_TASK_ONLY + RN_BOX
+    spike.must(sub, "commit", "--no-gpg-sign", "-m", msg)
+    with pytest.raises(lease.LeaseRefusedError, match="Release-Note:"):
+        lease.land_plan(boxed.repo.root, LAND_ID)
 
 
 def test_land_plan_box_none_and_an_open_box_are_admitted_and_listed(boxed):
