@@ -857,3 +857,17 @@ def test_prefetch_still_fetches_when_the_lock_file_cannot_be_opened(monkeypatch,
     assert script.fetches == 1
     assert len(PREFETCH_REPORT) == 1
     assert "ran without its lock" in PREFETCH_REPORT[0]
+
+
+def test_a_stale_detail_shows_the_verdict_not_the_trailing_warnings():
+    """check_plan_record prints its verdict above a run of RF WARNING paragraphs; the refusal's 14-line tail once showed only warnings and named no problem (2026-11-27)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk"
+    warnings = "\n".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked\n      Then: close it." % i
+        for i in range(12)
+    )
+    shown = GA._indent(verdict + "\n" + warnings)
+    assert "agent/INDEX.md disagrees" in shown
+    assert "WARNING" not in shown
+    # control: warnings alone are still shown rather than nothing
+    assert "WARNING" in GA._indent(warnings)

@@ -354,7 +354,19 @@ def run_check(
 
 
 def _indent(text: str, lines: int = 14) -> str:
-    return "\n".join("    " + line for line in text.splitlines()[-lines:])
+    """The checker's last `lines` lines, its advisory WARNING paragraphs left out first: a checker that prints its verdict above a run of warnings (check_plan_record's RF notes) otherwise shows only warnings, and the refusal names no problem at all."""
+    kept: list[str] = []
+    skipping = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("WARNING "):
+            skipping = True
+            continue
+        if skipping and line.startswith((" " * 6, "\t")) and not stripped.startswith(("✗", "x ")):
+            continue
+        skipping = False
+        kept.append(line)
+    return "\n".join("    " + line for line in (kept or text.splitlines())[-lines:])
 
 
 def _paths(hits: tuple[str, ...]) -> str:
