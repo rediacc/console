@@ -1172,3 +1172,11 @@ def test_a_fleet_probe_runs_in_a_config_home_of_its_own(
     control = drill.cli_env()
     assert control["XDG_CONFIG_HOME"] == str(tmp_path / "operator-home")
     assert control["REDIACC_CONFIG"] == "rediacc"
+
+
+def test_a_fleet_probe_before_init_is_refused() -> None:
+    """a38c35e9.1: the probe's config home lives under the work dir, so `probe_env` before `init` refuses instead of building a home under an unset path."""
+    drill = lib.Drill("t")
+    assert drill.work is None
+    with pytest.raises(RuntimeError, match="probe_env\\(\\) before init\\(\\)"):
+        drill.probe_env()
