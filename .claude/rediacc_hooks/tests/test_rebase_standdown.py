@@ -84,7 +84,16 @@ def write(repo, rel, text):
 
 def commit_all(repo, msg, **extra):
     git(repo, "add", "-A", **extra)
-    git(repo, "commit", "-q", "-m", msg, **extra)
+    git(
+        repo,
+        "commit",
+        "-q",
+        "-m",
+        msg,
+        "-m",
+        "Release-Note: none -- fixture commit for the rebase stand-down test",
+        **extra,
+    )
     return git(repo, "rev-parse", "HEAD").stdout.strip()
 
 

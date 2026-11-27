@@ -117,6 +117,9 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.ops.publish_models", "aws"),
     # The third-party source mirror (30af24f253) uploads to the releases bucket through `awscli.run` (mirror_third_party_src.py:222) after `awscli.require()`; the coverage scan found it without a row.
     ("rediacc_ci.deploy.mirror_third_party_src", "aws"),
+    # The shared Windows evaluation image upload and download (windows_image.py:217, the `s3 cp` argv) and the GitHub release asset check against R2 (create_github_release.py:219, :241) both put `awscli.AWS` at the head of an argv from inside the module; the coverage scan found them without a row.
+    ("rediacc_ci.ops.windows_image", "aws"),
+    ("rediacc_ci.release.create_github_release", "aws"),
     # THE MODULE SPELLINGS OF check:ci-python-lint (PLAN-tooling-code-reduction CR2). The gate lost its npm key, so the runner and CI run `PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness`, which runs the ruff lint (`python_lint.main`) first; `python_lint` is runnable on its own too. Both refuse with 77 when ruff is absent, which is this table's entry test. The NEEDS row keeps the gate id for `npm run ci -- --only check:ci-python-lint`.
     ("rediacc_ci.quality.lint_config_liveness", "ruff"),
     ("rediacc_ci.quality.python_lint", "ruff"),

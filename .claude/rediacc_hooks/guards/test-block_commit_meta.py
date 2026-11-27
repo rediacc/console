@@ -477,6 +477,8 @@ p = git(
     "-q",
     "-m",
     "fix(hooks): refuse the %s trailer and claude.ai/code/session_<id> links" % SESSION_HEAD,
+    "-m",
+    "Release-Note: none -- fixture commit for the hook test",
     check=False,
 )
 fails += layer("CONTROL commit-msg admits a message naming the rule", p.returncode == 0, p.stderr)
@@ -495,7 +497,7 @@ fails += layer(
 git("-c", "core.hooksPath=/dev/null", "push", "-q", "origin", "0101-1")
 (REPO / "c").write_text("c\n", encoding="utf-8")
 git("add", "c")
-git("commit", "-q", "-m", "fix: y")
+git("commit", "-q", "-m", "fix: y", "-m", "Release-Note: none -- fixture commit for the hook test")
 p = git("push", "-q", "origin", "0101-1", check=False)
 fails += layer(
     "CONTROL pre-push does not re-block a commit a remote already has", p.returncode == 0, p.stderr

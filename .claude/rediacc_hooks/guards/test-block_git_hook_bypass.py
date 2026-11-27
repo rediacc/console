@@ -214,7 +214,15 @@ report("commit-msg: [hotfix] off main", True, got, err)
 stage(feature, "src/a.ts")
 got, err = refused(feature, "commit", "-q", "-m", "docs: x [no-review]")
 report("commit-msg: [no-review] on code", True, got, err)
-got, err = refused(feature, "commit", "-q", "-m", "feat: x")
+got, err = refused(
+    feature,
+    "commit",
+    "-q",
+    "-m",
+    "feat: x",
+    "-m",
+    "Release-Note: none -- fixture commit for the hook test",
+)
 report("commit-msg: a plain commit on the branch", False, got, err)
 stage(feature, "docs/y.md")
 got, err = refused(feature, "commit", "-q", "-m", "docs: y [no-review]")
