@@ -146,7 +146,7 @@
     },
     "ACCOUNT_ED25519_PUBLIC_KEY_DEV": {
       "class": "release-only",
-      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+      "reason": "BLOCKER: the public half of the local DEV licence keypair, which only the account-dev, backup-plane and deploy-bench-eu profiles bind; unlike the production public key it is not embedded in released renet, and no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
     },
     "ACCOUNT_JWT_SECRET": {
       "class": "release-only",
@@ -646,7 +646,7 @@
     },
     "OPS_HEALTH_READ_TOKEN": {
       "class": "pr-safe",
-      "reason": "a bearer that only reads the ops-health status Worker's verdict; it cannot write or deploy anything"
+      "reason": "a bearer that only reads the ops-health status Worker's verdict (probe states, ingest states, cron time); check:ci-ops-health fetches it on the pull-request path and that job's code can read it, so the class rests on what a leak discloses (health verdicts) and not on secrecy, and it cannot write or deploy anything"
     },
     "OTEL_ENDPOINT": {
       "class": "release-only",
