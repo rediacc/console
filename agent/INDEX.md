@@ -480,7 +480,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-backup-local-image.md` | approved | 459 | 2 | 12 | 58536 |
 | `agent/plans/PLAN-backup-multi-target.md` | approved | 114 | 3 | 18 | 31635 |
 | `agent/plans/PLAN-backup-plane-shared-bucket-hardening.md` | approved | 44 | 0 | 7 | 7429 |
-| `agent/plans/PLAN-backup-program.md` | approved | 625 | 3 | 189 | 167785 |
+| `agent/plans/PLAN-backup-program.md` | approved | 625 | 3 | 189 | 167794 |
 | `agent/plans/PLAN-backup-quota-delta-gc.md` | compacted | 58 | 0 | 0 | 5584 |
 | `agent/plans/PLAN-backup-restore-path.md` | executing | 203 | 2 | 8 | 35942 |
 | `agent/plans/PLAN-backup-restore-target-license.md` | compacted | 56 | 0 | 0 | 5560 |
@@ -586,7 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 347 | 13 | 24 | 73141 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 227 | 3 | 25 | 45968 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 229 | 3 | 25 | 47074 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 418 | 2 | 29 | 70833 |

@@ -200,6 +200,7 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
 - [ ] L10 [live] Let the schedule re-upload to `backups-eu`, then prove it: a verify, one restore test under an `-rt` name with only that copy deleted by GUID, and one nightly on the new target.
   Accept: `./rdc.sh --config eu-remote backup verify --store` rc 0, `./rdc.sh --config eu-remote backup usage -o json` rc 0 with a snapshot per repository, and the restore compared by checksum.
   (corrected 2026-11-11, R2) Local-route: hostinger -- trigger the backups-eu upload and the nightly by hand on hostinger with the branch renet, then verify and restore-test through eu-bench.
+  (corrected 2026-11-27, PLAN-hostinger-to-bench D1) L10 is superseded by agent/plans/PLAN-hostinger-to-bench.md: hostinger moved to bench on 2026-11-16, so its schedule uploads to `backups-bench` and no longer re-uploads to `backups-eu`. The work this box named is carried there as C5 (store verify), C6 (a restore test of every repository) and C7 (the first scheduled run on bench). L11 depends on C7 in place of L10.
 
 ### GitHub and delete
 
@@ -216,6 +217,7 @@ M1 merges with these boxes open, so the PR body carries `Operational-Reason: hos
   (note 2026-11-08, review 3f37af26.1) L11 also revokes the Cloudflare tokens the rename leaves behind: the edge backup token rediacc-backup-edge-20261015T151955Z (Cloudflare token id starting 105d60b9, R2 read/write on the edge backup buckets; its rotation-manifest.json entry left with W8, private/account/src/types/rotation-manifest.ts:393 still knows the slug) and the R2 migration token rediacc-r2-migration-20261108T150703Z (Cloudflare token id starting 1897fcf4) once L10's copy is done, and deletes their bws names.
   Accept: `! npx wrangler r2 bucket list --jurisdiction eu | grep -q rediacc-backups-eu` rc 0, `PYTHONPATH=.ci python3 -m rediacc_ci.ops.service_bindings_audit` rc 0, and `./rdc.sh --config eu-remote backup verify --store` rc 0.
     (corrected 2026-11-09, d778be9d) 9006c29d.1: the Accept does not check the two token revocations the note names. Owed when the box runs: the edge backup token (id 105d60b9...) and the R2 migration token (id 1897fcf4...) read back as absent from the Cloudflare token list, and both bws names gone from `bws secret list`; the box is not done on the three Accept commands alone.
+  (corrected 2026-11-27, PLAN-hostinger-to-bench D1) L11 gains a dependency on C7 of agent/plans/PLAN-hostinger-to-bench.md (the first scheduled run of hostinger's timer on bench, verified after the C5 store verify and the C6 restore tests): nothing in the box runs before C7 is ticked. Its Accept moves to bench: `./rdc.sh --config eu-bench backup verify --store` rc 0 replaces the `--config eu-remote` read, because hostinger backs up to `backups-bench` and the old eu store is what this box deletes. The `rotation deactivate cf-r2-backup-stable` step that retires token b38b0881 waits on C7 as well, and the deactivation is followed by `backup verify --store` rc 0 through eu-bench.
 
 ## Not verified
 

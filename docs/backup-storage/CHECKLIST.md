@@ -52,9 +52,15 @@ Owner: 97604f47
       with a real store. The bucket immediately earned its keep: the tier-B
       delete probe found a latent data-loss defect in `deletePrefix` (string
       prefix matching destroying a sibling lineage), now fixed.
-- [ ] w8 Wave 5b-ii: the REMAINING credentialed legs, still operator-only —
+- [x] w8 Wave 5b-ii: the REMAINING credentialed legs, still operator-only —
       set the four ACCOUNT_BACKUP_S3_* Worker secrets, add the bucket-scoped
       cf-r2-backup rotation slug, then migrate real machines and cut over.
+      Done 2026-11: hostinger was cut over to the chunk store. Run ids, all in
+      PLAN-backup-program.md Phase Q and 07-execution-record.md section 12:
+      probe snapshot 20261029T074142Z-f7574d9603cd6d0f (Q5), schedule fix
+      c380c4164 (Q10), first seed of all 13 repositories 29e66220b (Q11,
+      2026-11-07), and the move to bench 31214d672d (C7 of
+      PLAN-hostinger-to-bench.md, 2026-11-17).
 - [x] w9 Decommission: CLI restore proven, so on the operator's instruction the
       rclone/OneDrive emission was DELETED (not deprecated). The preflight
       interlock was inverted to match: it now fails if the emission still
