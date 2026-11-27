@@ -1220,6 +1220,7 @@ async function main(): Promise<number> {
   for (const l of r.out) console.log(l);
   const outsideFile = process.env[OUTSIDE_ENV];
   if (outsideFile && r.outside && r.outside.length > 0)
+    // tree-write: safe PINS_TXN_OUTSIDE names outside.txt inside the transaction journal under .ci/cache/pins (txn.ts journalRoot), which is gitignored cache and never tracked tree
     fs.appendFileSync(outsideFile, r.outside.map((l) => `check:ci-pin-freshness: ${l}\n`).join(''));
   // The app templates' references that name no version are no leaf (scripts/lib/pins/templates.ts), so nothing above judges them; they are named on every run instead of passing in silence.
   const { unpinned } = scanTemplates(readTemplateFiles(REPO_ROOT));
