@@ -1741,6 +1741,16 @@ R_REGGATE_ALSO = (
     "     NEXT: %s"
 )
 
+# Printed on every stop while any reggate debt is unpaid, never latched (agent/plans/PLAN-reggate-debt-collection.md D7): open count, how many of those are in the legacy baseline, the oldest debt's date.
+REGGATE_DEBT_STATUS = "REGGATE DEBT: %d open (%d legacy), oldest %s"
+
+# The cap's own report line, once a demand is deferred into a debt (wl_checks, the block site).
+REGGATE_CAPPED = (
+    "Regression gate CAPPED at %d/%d on branch %s: fix-set %s is now a tracked DEBT, "
+    "not a dropped finding. It returns as a worklist item when the branch is no longer "
+    "the live one or after %dm, and CI fails while it stays unpaid."
+)
+
 R_REGGATE_HALLUCINATED = (
     "  you cited %r as existing coverage but no such check:* key "
     "exists, so that coverage is HALLUCINATED and counts as none.\n"

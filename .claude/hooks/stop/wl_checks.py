@@ -4317,6 +4317,24 @@ def _stop_reggate_detect(ns):
         reg_signals, reg_ids, reg_sig, reg_done_tasks, reg_banked = [], [], "", [], []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
+    # ---- REGGATE DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3, D4, D7). Every due capped demand becomes one worklist item, once; the one status line rides every stop while any debt is unpaid. Never breaks gating: a failure is a read-failure note.
+    try:
+        _rd_me8 = str(ns.get("me8") or (session_id or "")[:8])
+        _rd_live = C.git_branch(ns.get("own") or root)
+        wl_reggate.materialize(root, worklist, _rd_me8, _rd_live, ns.get("_loop_plans") or ())
+        _rd_open, _rd_legacy, _rd_oldest = wl_reggate.debt_status(root)
+        if _rd_open:
+            outq_add(
+                worklist,
+                session_id,
+                state_doc,
+                "reg-capped",
+                M.REGGATE_DEBT_STATUS % (_rd_open, _rd_legacy, _rd_oldest),
+                1,
+                refresh_min=0,
+            )
+    except Exception as exc:
+        note_read_failure("reggate-debt", exc)
     ns.update(
         R.exports(
             locals(),
@@ -8593,9 +8611,7 @@ def _stop_judge(ns):
                             session_id,
                             state_doc,
                             "reg-capped",
-                            "Regression gate CAPPED at %d/%d on branch %s: fix-set %s "
-                            "is now a tracked DEBT, not a dropped finding. It returns "
-                            "as a hard block when the branch lands or after %dm."
+                            M.REGGATE_CAPPED
                             % (
                                 charged,
                                 wl_reggate.REGGATE_CAP,

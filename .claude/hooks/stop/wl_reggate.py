@@ -263,6 +263,165 @@ def charge(branch, sig, reason, root=None):
     return append_ledger(branch, {"kind": "charge", "sig": sig, "why": reason}, root=root)
 
 
+# --------------------------------------------------------------------------- DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3-D7).
+#
+# The cap above turns a demand into a `debt` record. Until this half landed nothing read those records back: no code wrote `materialize` or `discharge`, so a capped demand was a permanent deferral. Here a due debt becomes a worklist item exactly once, a changed named artifact discharges it, an operator minute retires it, and the CI gate (.ci/rediacc_ci/quality/reggate_debt.py) folds the same ledgers through these same readers.
+# ---------------------------------------------------------------------------
+BACKLOG_PLAN = "agent/plans/PLAN-reggate-debt-collection.md"
+BACKLOG_TITLE = "reggate debt backlog"
+LEGACY_REL = ".ci/policy/reggate-debt-legacy.json"
+# Epics truncate one record's covers at wl_epic.EPIC_MAX_COVERS; a first import of a hundred debts is attached in chunks of this size.
+_EPIC_CHUNK = 64
+
+
+def debt_entries(root=None):
+    """One dict per `debt` record across every ledger, in ledger then file order.
+
+    Keys: sig, br (the record's branch, else the ledger's), ledger (the file stem, which append_ledger maps back to the same file), at, blind_spot, surface, artifact, paid (a discharge or a stamped retire), retired, discharged, item (the materialized item id, or "").
+    """
+    out = []
+    for path in ledger_paths(root):
+        records, _forgot = read_ledger_path(path)
+        discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+        paid = paid_sigs(records)
+        items = {
+            r.get("sig"): str(r.get("item") or "")
+            for r in records
+            if r.get("kind") == "materialize"
+        }
+        for r in records:
+            if r.get("kind") != "debt":
+                continue
+            sig = str(r.get("sig") or "")
+            out.append(
+                {
+                    "sig": sig,
+                    "br": str(r.get("br") or path.stem),
+                    "ledger": path.stem,
+                    "at": str(r.get("at") or ""),
+                    "blind_spot": str(r.get("blind_spot") or ""),
+                    "surface": str(r.get("surface") or ""),
+                    "artifact": str(r.get("artifact") or ""),
+                    "paid": sig in paid,
+                    "discharged": sig in discharged,
+                    "retired": sig in paid and sig not in discharged,
+                    "item": items.get(sig, ""),
+                }
+            )
+    return out
+
+
+def due_debts(root, live_branch, now=None):
+    """Debts that are due, unpaid and not yet materialized."""
+    return [
+        e
+        for e in debt_entries(root)
+        if not e["paid"] and not e["item"] and debt_due(e, live_branch, now)
+    ]
+
+
+def debt_item_text(entry, me8):
+    """The item a due debt becomes. The blind spot rides VERBATIM: it is the judge's finding, and a paraphrase is how a debt loses what it was about."""
+    return "reggate-debt:%s (%s) %s -- branch %s, surface %s, named artifact %s" % (
+        entry["sig"][:8],
+        (me8 or "")[:8],
+        entry["blind_spot"],
+        entry["br"],
+        entry["surface"] or "none",
+        entry["artifact"] or "(none)",
+    )
+
+
+@contextlib.contextmanager
+def _collect_lock(root=None):
+    """One collector at a time across sessions sharing this tree: two stops folding the same due set would each add the same items. The lock file has no `.jsonl` suffix, so ledger_paths never reads it."""
+    import fcntl
+
+    d = debt_dir(root)
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "collect.lock", "a", encoding="utf-8") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _live_plan_epic(loop_plans):
+    """The first epic carrying one of the live PR's plans, or ""."""
+    import wl_epic as E
+
+    plans = set(loop_plans or ())
+    if not plans:
+        return ""
+    return next((eid for eid, rec in E.load_epics().items() if rec.get("plan") in plans), "")
+
+
+def backlog_epic(me8):
+    """The one backlog epic carrying this plan, minted on first use."""
+    import wl_epic as E
+
+    for eid, rec in E.load_epics().items():
+        if rec.get("plan") == BACKLOG_PLAN and rec.get("title") == BACKLOG_TITLE:
+            return eid
+    return E.new_epic(me8, BACKLOG_TITLE, plan=BACKLOG_PLAN)
+
+
+def _attach(me8, epic_id, ids):
+    import wl_epic as E
+
+    for k in range(0, len(ids), _EPIC_CHUNK):
+        E.add_to_epic(me8, epic_id, ids[k : k + _EPIC_CHUNK])
+
+
+def materialize(root, worklist, me8, live_branch, loop_plans=(), now=None):
+    """Turn every due, unpaid, unmaterialized debt into ONE worklist item, once. -> [(sig, item_id)].
+
+    One `add_items` append for the whole set, then one `materialize` record per debt in its own ledger, which is what makes a second stop add nothing. A debt on the live branch joins the live PR plan's epic, so it blocks like any item there; any other debt (and a live one when no PR plan epic exists) joins the backlog epic, which carries this plan and stays one queued line until this plan is the live PR's.
+    """
+    with _collect_lock(root):
+        due = due_debts(root, live_branch, now)
+        if not due:
+            return []
+        ids = S.add_items(worklist, me8, [debt_item_text(e, me8) for e in due], root=root)
+        for e, iid in zip(due, ids, strict=True):
+            append_ledger(
+                e["ledger"], {"kind": "materialize", "sig": e["sig"], "item": iid}, root=root
+            )
+        live_epic = _live_plan_epic(loop_plans)
+        on_live = [
+            iid for e, iid in zip(due, ids, strict=True) if live_epic and e["br"] == live_branch
+        ]
+        rest = [iid for iid in ids if iid not in set(on_live)]
+        if on_live:
+            _attach(me8, live_epic, on_live)
+        if rest:
+            _attach(me8, backlog_epic(me8), rest)
+        return [(e["sig"], iid) for e, iid in zip(due, ids, strict=True)]
+
+
+def legacy_sigs(root=None):
+    """The frozen legacy set from LEGACY_REL, or an empty set when the file is absent or unreadable."""
+    if root is None:
+        root = C.project_root(C.project_start())
+    try:
+        data = json.loads((pathlib.Path(root) / LEGACY_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    sigs = data.get("sigs") if isinstance(data, dict) else None
+    return {s for s in sigs if isinstance(s, str)} if isinstance(sigs, list) else set()
+
+
+def debt_status(root=None, legacy=None):
+    """(open, legacy_open, oldest_date) over every unpaid debt; oldest_date is "" when none is open."""
+    legacy = legacy_sigs(root) if legacy is None else legacy
+    unpaid = [e for e in debt_entries(root) if not e["paid"]]
+    if not unpaid:
+        return 0, 0, ""
+    oldest = min((e["at"] for e in unpaid if e["at"]), default="")
+    return len(unpaid), sum(1 for e in unpaid if e["sig"] in legacy), oldest[:10]
+
+
 def save_reggate(path, state):
     # Whole-file rewrite is correct here for the same reason as the handover: the marker is per-session, so there is no second writer to race.
     with contextlib.suppress(OSError):

@@ -15,6 +15,7 @@ The debt-collection half (agent/plans/PLAN-reggate-debt-collection.md) adds the 
 Each assertion is PAIRED with a control proving the opposite input produces the opposite answer. Without the pair, a function hard-coded to return the strict answer would pass every strict assertion while having stopped working.
 """
 
+import contextlib
 import datetime
 import json
 import os
@@ -24,7 +25,11 @@ import tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 
+import wl_core as C
+import wl_epic as E
 import wl_reggate as R
+import wl_store as S
+import worklist_messages as M
 
 
 class Tally:
@@ -215,6 +220,101 @@ with tempfile.TemporaryDirectory() as td:
     check("the record is a JSON OBJECT, not a JSON string", isinstance(obj, dict), True)
     check("...carrying its branch", obj.get("br"), "rt")
     check("...and a timestamp", bool(obj.get("at")), True)
+
+
+# --- 7. materialization (D3): a due debt becomes ONE worklist item, once, routed to the right epic
+@contextlib.contextmanager
+def scratch_store(td):
+    """Point the store, the epics and the ledgers at `td` (WORKLIST_STORE_DIR also turns the checkout journal off), and restore the environment after."""
+    prev = os.environ.get("WORKLIST_STORE_DIR")
+    os.environ["WORKLIST_STORE_DIR"] = str(pathlib.Path(td) / "store")
+    (pathlib.Path(td) / "store").mkdir()
+    try:
+        yield pathlib.Path(td) / "wl.md"
+    finally:
+        if prev is None:
+            del os.environ["WORKLIST_STORE_DIR"]
+        else:
+            os.environ["WORKLIST_STORE_DIR"] = prev
+
+
+def stamp(minutes_ago):
+    return (C.utcnow() - datetime.timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def debt_items(worklist):
+    return [r for r in S.load(worklist, sync=False).items if "reggate-debt:" in r.get("text", "")]
+
+
+def debt(branch, sig, blind, minutes_ago, root, **extra):
+    rec = {"kind": "debt", "sig": sig, "blind_spot": blind, "at": stamp(minutes_ago)}
+    rec.update(extra)
+    R.append_ledger(branch, rec, root=root)
+
+
+BLIND = "the stop hook never refuses a lease whose worker id is a placeholder"
+PR_PLAN = "agent/plans/PLAN-live-pr.md"
+OLD = R.REGGATE_DEBT_GRACE_MIN + 5
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    debt("1104-1", "aaaa1111bbbb", BLIND, 5, root, surface="hooks", artifact="x/test.py")
+    debt("1121-1", "cccc2222dddd", "a fresh live-branch debt", 5, root)
+    debt("1121-1", "eeee3333ffff", "a live-branch debt past its grace", OLD, root)
+    pr_epic = E.new_epic("abcd1234", "the live PR", plan=PR_PLAN)
+    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", (PR_PLAN,)))
+    check(
+        "two due debts materialize, the fresh live one does not",
+        sorted(made),
+        ["aaaa1111bbbb", "eeee3333ffff"],
+    )
+    texts = {r["id"]: r.get("text", "") for r in debt_items(wl)}
+    first = texts.get(made.get("aaaa1111bbbb"), "")
+    check("C4: the blind spot returns VERBATIM in the item text", BLIND in first, True)
+    check(
+        "...tagged with the debt's sig8 and the session",
+        "reggate-debt:aaaa1111 (abcd1234)" in first,
+        True,
+    )
+    again = R.materialize(root, wl, "abcd1234", "1121-1", (PR_PLAN,))
+    check("materialize runs once: a second stop adds nothing", again, [])
+    check("...and the store still holds exactly two debt items", len(debt_items(wl)), 2)
+    epics = E.load_epics()
+    backlog = R.backlog_epic("abcd1234")
+    check(
+        "a non-live-branch debt lands in the backlog epic",
+        made["aaaa1111bbbb"] in epics[backlog]["covers"],
+        True,
+    )
+    check("the backlog epic carries this plan", epics[backlog].get("plan"), R.BACKLOG_PLAN)
+    check(
+        "a live-branch debt lands in the PR plan's epic",
+        made["eeee3333ffff"] in epics[pr_epic]["covers"],
+        True,
+    )
+    check(
+        "CONTROL: the non-live one is NOT in the PR plan's epic",
+        made["aaaa1111bbbb"] in epics[pr_epic]["covers"],
+        False,
+    )
+
+# CONTROL: off the loop (no PR plan) a live-branch debt falls back to the backlog epic rather than to no epic at all.
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    debt("1121-1", "9999aaaa0000", "an old live-branch debt", OLD, root)
+    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", ()))
+    covers = E.load_epics()[R.backlog_epic("abcd1234")]["covers"]
+    check(
+        "CONTROL: with no PR plan the live debt joins the backlog epic",
+        made.get("9999aaaa0000") in covers,
+        True,
+    )
+    open_n, legacy_n, oldest = R.debt_status(root, legacy={"9999aaaa0000"})
+    check("the status counts the unpaid debt and its legacy membership", (open_n, legacy_n), (1, 1))
+    check(
+        "REGGATE_DEBT_STATUS renders one line",
+        M.REGGATE_DEBT_STATUS % (open_n, legacy_n, oldest),
+        "REGGATE DEBT: 1 open (1 legacy), oldest %s" % oldest,
+    )
 
 
 if Tally.count < 30:
