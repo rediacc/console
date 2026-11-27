@@ -160,7 +160,7 @@ const RULES = [
   //
   // The load-bearing half was the second clause -- "these also feed hooks and dev flows whose surface is unmapped" -- so the surface was mapped (2026-08-06, tracing execution rather than reading names). The subsets a gated job reaches are carved out below, and the rest becomes a zero-job module.
   //
-  // scripts/ci/*.cjs are EXECUTED by gated jobs: ci-quality.yml runs `node scripts/ci/write-shard-receipt.cjs` on every sharded lane, and ops-housekeeping.yml requires scripts/ci/report-budget-check.cjs. A delta touching only one of them changes what those jobs do, so it forces full CI like scripts-license-gen.
+  // scripts/ci/*.cjs are EXECUTED by gated jobs: ci-quality.yml runs `node scripts/ci/write-shard-receipt.cjs` on every sharded lane,. A delta touching only one of them changes what those jobs do, so it forces full CI like scripts-license-gen.
   { name: 'scripts-ci', match: matchExactOrPrefix('scripts/ci'), full: 'harness' },
 
   // The local gate runner is EXECUTED by a gated job: ops-housekeeping.yml's gate-costs-capture runs `scripts/ci-runner/run.ts --quick --jobs 1 --sched slots --json` (8670cdc00), and its budget-check job reads scripts/ci-runner/gates.lock.json, so a delta touching only the runner changes what that job measures.

@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.publish_ci_verdict` and the non-blocking exclusions of the `CI Verdict` context (agent/plans/PLAN-ci-verdict.md, box D).
 
-NO NETWORK. The publisher's four GitHub calls go through an injectable object (`FakeGh` below), and `ci_diagnose` is injected through `main(loader=...)`, so these tests neither need W1's module to exist nor reach GitHub. The exclusion tests read the REAL tracked files (ops-watchdog-monitor.yml, report-nightly-status.cjs, budget_report.py) and drive the real `evaluateBudget` under node, so a context added to one list and forgotten in another fails here.
+NO NETWORK. The publisher's four GitHub calls go through an injectable object (`FakeGh` below), and `ci_diagnose` is injected through `main(loader=...)`, so these tests neither need W1's module to exist nor reach GitHub. The exclusion tests read the REAL tracked files (ops-watchdog-monitor.yml, watchdog-monitor.cjs, budget_report.py) and drive the real `evaluateBudget` under node, so a context added to one list and forgotten in another fails here.
 """
 
 from __future__ import annotations

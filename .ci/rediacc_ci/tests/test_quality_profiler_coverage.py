@@ -37,7 +37,6 @@ CORPUS_NAMES = (
     "claude-review.yml",
     "cleanup-r2-staging.yml",
     "ct-update-flow.yml",
-    "nightly-status.yml",
     "profiler-probe.yml",
 )
 
@@ -142,7 +141,7 @@ def test_job_keys_agrees_with_the_twin_on_every_real_workflow(tmp_path: pathlib.
         assert got == want, wf.name
         total += len(got)
     # THE SHAPE, NOT JUST THE VERDICT: a parse that collapsed to nothing would make every comparison above trivially true.
-    assert total >= 13, "the two agreed on only %d job(s)" % total
+    assert total >= 12, "the two agreed on only %d job(s)" % total
 
 
 def test_job_block_agrees_with_the_twin_on_every_real_job(tmp_path: pathlib.Path) -> None:
@@ -154,7 +153,7 @@ def test_job_block_agrees_with_the_twin_on_every_real_job(tmp_path: pathlib.Path
             got = "".join("%s\n" % line for line in pc.job_block(lines, job))
             assert got == want, "%s:%s" % (wf.name, job)
             checked += 1
-    assert checked >= 13, "only %d block(s) compared" % checked
+    assert checked >= 12, "only %d block(s) compared" % checked
 
 
 def test_runs_on_and_is_caller_agree_with_the_twin(tmp_path: pathlib.Path) -> None:
