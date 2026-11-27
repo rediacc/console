@@ -1100,14 +1100,16 @@
         "description": "Provision VM cluster locally",
         "starting": "Starting VM cluster provisioning...",
         "completed": "VM cluster provisioned successfully",
-        "failed": "VM cluster provisioning failed"
+        "failed": "VM cluster provisioning failed",
+        "windowsInvalid": "--windows takes a comma-separated list of VM ids (for example 31 or 31,32), got \"{{value}}\""
       },
       "down": {
         "descriptionShort": "Destroy VM cluster",
         "description": "Destroy VM cluster",
         "starting": "Destroying VM cluster...",
         "completed": "VM cluster destroyed successfully",
-        "failed": "VM cluster destruction failed"
+        "failed": "VM cluster destruction failed",
+        "windowsClients": "Also destroying Windows client VMs: {{vms}}"
       },
       "status": {
         "descriptionShort": "Show VM cluster status",
@@ -4142,6 +4144,7 @@
     "opsForce": "Force restart all VMs",
     "opsLite": "Skip VM provisioning (status only)",
     "opsOS": "VM operating system (e.g., ubuntu-24.04, debian-13)",
+    "opsWindows": "Windows client VM ids to provision (comma-separated, reserved range 31-39; sets VM_WINDOWS)",
     "opsParallel": "Create VMs in parallel",
     "opsSSHUser": "SSH username for VM connection",
     "opsSkipOrchestration": "Skip cluster orchestration",

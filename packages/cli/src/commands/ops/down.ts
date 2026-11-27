@@ -7,6 +7,26 @@ import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
 import { OPS_BACKEND_CHOICES } from './backends.js';
 
+export const WINDOWS_CLIENT_ROLE = 'windows-client';
+
+interface OpsVm {
+  name: string;
+  ip: string;
+  role?: string;
+}
+
+/** Best effort: a status failure never blocks the teardown. */
+async function listWindowsClients(backend: OpsBackend | undefined): Promise<OpsVm[]> {
+  try {
+    const status = await opsExecutorService.runOpsJSON<{ vms?: OpsVm[] }>('status', [], {
+      backend,
+    });
+    return (status.vms ?? []).filter((vm) => vm.role === WINDOWS_CLIENT_ROLE);
+  } catch {
+    return [];
+  }
+}
+
 export function registerOpsDownCommand(ops: Command, _program: Command): void {
   ops
     .command('down')
@@ -18,9 +38,17 @@ export function registerOpsDownCommand(ops: Command, _program: Command): void {
     .option('--debug', t('options.debug'))
     .action(async (options: { backend?: string; debug?: boolean }) => {
       try {
+        const backend = options.backend ? (options.backend as OpsBackend) : undefined;
+        const windowsClients = await listWindowsClients(backend);
+        if (windowsClients.length > 0) {
+          outputService.info(
+            t('commands.ops.down.windowsClients', {
+              vms: windowsClients.map((vm) => `${vm.name} (${vm.ip})`).join(', '),
+            })
+          );
+        }
         outputService.info(t('commands.ops.down.starting'));
 
-        const backend = options.backend ? (options.backend as OpsBackend) : undefined;
         const exitCode = await opsExecutorService.runOpsStreaming('down', [], {
           backend,
           debug: options.debug,

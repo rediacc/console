@@ -54,11 +54,10 @@ describe('rdc ops --debug is consumed by rdc, never forwarded to renet', () => {
     'ops %s --debug leaves --debug out of the renet argv',
     async (sub) => {
       await run([sub, '--debug']);
-      const [, argv, opts] = spawn.mock.calls[0] as [
-        string,
-        string[],
-        { env: Record<string, string> },
-      ];
+      // down asks renet for `ops status` first (to name Windows clients), so pick the call by argv.
+      const [, argv, opts] = spawn.mock.calls.find(
+        (call: unknown[]) => (call[1] as string[])[1] === sub
+      ) as [string, string[], { env: Record<string, string> }];
       expect(argv).toEqual(['ops', sub]);
       expect(opts.env.REDIACC_DEBUG).toBe('1');
       expect(echoed()).toContain('[DEBUG] renet ops');

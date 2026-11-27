@@ -967,6 +967,7 @@ Provision VM cluster locally
 - `--skip-orchestration`: Skip cluster orchestration
 - `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--os <name>`: VM operating system (e.g., ubuntu-24.04, debian-13)
+- `--windows <ids>`: Windows client VM ids to provision (comma-separated, reserved range 31-39; sets VM_WINDOWS)
 - `--debug`: Enable debug output
 
 ### rdc ops down

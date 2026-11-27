@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '468a593fcabde7f7';
+export const CLI_CONTRACT_VERSION = '47920543720b6a36';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "468a593fcabde7f7",
+  "version": "47920543720b6a36",
   "languages": [
     "ar",
     "de",
@@ -10452,6 +10452,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "options.opsOS",
           "label": "VM operating system (e.g., ubuntu-24.04, debian-13)"
+        },
+        {
+          "flags": "--windows <ids>",
+          "long": "windows",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.opsWindows",
+          "label": "Windows client VM ids to provision (comma-separated, reserved range 31-39; sets VM_WINDOWS)"
         },
         {
           "flags": "--debug",
