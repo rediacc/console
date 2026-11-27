@@ -593,7 +593,7 @@ def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
 
 
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
-    """`check:ci-python-env-registry` derives a module's inputs from its AST; ask ITS scanner, in both directions."""
+    """`check:ci-env-registry (python_reads)` derives a module's inputs from its AST; ask ITS scanner, in both directions."""
     source = PORT_FILE.read_text(encoding="utf-8")
     names = set(port.environment())
     assert names == {

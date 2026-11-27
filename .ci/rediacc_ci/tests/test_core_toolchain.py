@@ -727,7 +727,7 @@ def test_report_matches_the_twin(
 
     The FUNCTION's rc is correct on both sides. What is broken is the twin's SCRIPT dispatch, which is pinned separately below.
 
-    THE REAL $PATH IS TAKEN FROM `diff.BASE_ENV`, not from `os.environ`, and monkeypatch does the save-and-restore. Both choices are deliberate: reading `os.environ["PATH"]` here would add an undeclared environment input to a test module (`check:ci-python-env-registry` says so, and it is right), and a hand-rolled try/finally restore leaks the value on any exception raised before
+    THE REAL $PATH IS TAKEN FROM `diff.BASE_ENV`, not from `os.environ`, and monkeypatch does the save-and-restore. Both choices are deliberate: reading `os.environ["PATH"]` here would add an undeclared environment input to a test module (`check:ci-env-registry (python_reads)` says so, and it is right), and a hand-rolled try/finally restore leaks the value on any exception raised before
     the finally arms.
     """
     (tmp_path / "bin").mkdir(parents=True, exist_ok=True)

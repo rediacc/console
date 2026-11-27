@@ -366,7 +366,6 @@
       "BINARY_PATH",
       "BRANCH_MAX_AGE_DAYS",
       "BUCKET",
-      "BUDGET_CHECK_SUMMARY_PATH",
       "BUMP_TYPE",
       "BWS_FETCH",
       "BWS_PREWARM",
@@ -417,7 +416,6 @@
       "DISPATCH_REF",
       "DISPATCH_RELEASE_DRY_RUN",
       "DOCKER_TAG",
-      "DRIFT_CONCLUSION",
       "DRY_RUN",
       "DST_PREFIX",
       "EDGE_DATE",
@@ -540,6 +538,7 @@
       "RELEASE_BUILD",
       "RELEASE_GPG_PUBLIC_KEY_FILE",
       "RELEASE_MODE",
+      "RELEASE_NOTES_JSON",
       "RELEASE_SIGNING_REQUIRED",
       "RENET_EMBED_CACHE_HIT",
       "RENET_TAG",
@@ -779,7 +778,6 @@
       "LANGUAGE_POLICY_BASELINE",
       "LANGUAGE_POLICY_ROOT",
       "MEDIA_COVERAGE_FILE",
-      "OPS_HEALTH_CONFIG",
       "OUT",
       "PAGE_LOCALE_IMPORTS_ROOT",
       "PINS_MUTANT",
@@ -1074,6 +1072,8 @@
       "REDIACC_WORKING_DIR",
       "REDIACC_WORKTREE_STDIN_PROCFS",
       "SUDO_USER",
+      "TEMP",
+      "TMP",
       "TMPDIR",
       "TZ",
       "USER",
@@ -1258,6 +1258,8 @@
       "FULL_INTEGRATION",
       "GATEWAY_PORT",
       "GEN_DOCS_PRECOMMIT_VERBOSE",
+      "GIT_AUTHOR_DATE",
+      "GIT_COMMITTER_DATE",
       "GIT_CONFIG_GLOBAL",
       "GIT_CONFIG_NOSYSTEM",
       "GIT_DIR",
@@ -1301,6 +1303,7 @@
       "REDIACC_HOOK_SETTINGS",
       "REDIACC_IN_DEVBOX",
       "REDIACC_LANE",
+      "REDIACC_LIVE_MACHINE",
       "REDIACC_NO_DOCKER",
       "REDIACC_NPM_RUNTIME",
       "REDIACC_PID_WAIT_PROCFS",
@@ -1357,6 +1360,7 @@
       "WHY_ON_EDIT_CAP",
       "WHY_ON_EDIT_SEEN_MAX",
       "WHY_ON_EDIT_SIMILAR",
+      "WINDOWS_CLIENT_USER",
       "WL_AWAY_STATE",
       "WORK",
       "WORKER2_IP",
@@ -1456,6 +1460,7 @@
       "WORKLIST_RECORD_PER_BOX_BYTES",
       "WORKLIST_REGGATE_CAP",
       "WORKLIST_REGGATE_DEBT_GRACE_MIN",
+      "WORKLIST_REGGATE_MAX_DEBTS",
       "WORKLIST_REGGATE_TICK_FLOOD",
       "WORKLIST_REGGATE_TIMEOUT_S",
       "WORKLIST_REPORTS_DIR",
@@ -1636,6 +1641,7 @@
         "VERSION"
       ],
       ".ci/rediacc_ci/build/prepare_cli_assets.py": [
+        "CLI_VERSION",
         "RENET_VERSION"
       ],
       ".ci/rediacc_ci/catalog/lifecycle.py": [
@@ -2191,6 +2197,9 @@
         "TMPDIR",
         "VM_IMAGE",
         "XDG_CACHE_HOME"
+      ],
+      ".ci/rediacc_ci/drills/vm_check_winclient.py": [
+        "WINDOWS_CLIENT_USER"
       ],
       ".ci/rediacc_ci/enterprise/cli.py": [
         "CF_MANAGEMENT_TOKEN"
@@ -2824,6 +2833,12 @@
         "MYPY_BIN",
         "PATH"
       ],
+      ".ci/rediacc_ci/quality/reggate_debt.py": [
+        "GITHUB_ACTIONS",
+        "GITHUB_BASE_REF",
+        "GITHUB_HEAD_REF",
+        "WORKLIST_STORE_DIR"
+      ],
       ".ci/rediacc_ci/quality/region_consistency_live.py": [
         "CF_EMAIL",
         "CF_GLOBAL_API_KEY",
@@ -2991,7 +3006,6 @@
       ".ci/rediacc_ci/release/check_soak_period.py": [
         "*name",
         "CHANNEL_SNAPSHOTS",
-        "DRIFT_CONCLUSION",
         "EDGE_RELEASES",
         "EDGE_VERSION",
         "FORCE",
@@ -3009,7 +3023,9 @@
         "*name"
       ],
       ".ci/rediacc_ci/release/create_github_release.py": [
-        "*name"
+        "*name",
+        "RELEASES_BUCKET",
+        "RELEASE_NOTES_JSON"
       ],
       ".ci/rediacc_ci/release/decide_release_mode.py": [
         "*name",
@@ -3517,6 +3533,9 @@
       ".ci/rediacc_ci/tests/test_core_run_verbs.py": [
         "SCRIPT_ENTRYPOINT"
       ],
+      ".ci/rediacc_ci/tests/test_d1_size_report.py": [
+        "PATH"
+      ],
       ".ci/rediacc_ci/tests/test_deploy_cf_purge_urls.py": [
         "HOME"
       ],
@@ -3547,6 +3566,9 @@
         "HOME"
       ],
       ".ci/rediacc_ci/tests/test_deploy_executor_artifacts.py": [
+        "PATH"
+      ],
+      ".ci/rediacc_ci/tests/test_deploy_mirror_third_party_src.py": [
         "PATH"
       ],
       ".ci/rediacc_ci/tests/test_deploy_promote_docker_to_stable_hotfix.py": [
@@ -3984,6 +4006,9 @@
         "HOME",
         "PATH"
       ],
+      ".claude/hooks/stop/test-reggate-ledger.py": [
+        "WORKLIST_STORE_DIR"
+      ],
       ".claude/hooks/stop/test-wl_worktrees.py": [
         "WL_WORKTREES_TEST_CLAUDE"
       ],
@@ -4157,6 +4182,7 @@
       ".claude/hooks/stop/wl_reggate.py": [
         "WORKLIST_REGGATE_CAP",
         "WORKLIST_REGGATE_DEBT_GRACE_MIN",
+        "WORKLIST_REGGATE_MAX_DEBTS",
         "WORKLIST_REGGATE_TICK_FLOOD",
         "WORKLIST_REGGATE_TIMEOUT_S",
         "WORKLIST_STORE_DIR"
@@ -5199,6 +5225,13 @@
           "'720'"
         ]
       },
+      "WORKLIST_REGGATE_MAX_DEBTS": {
+        "kind": "tuning",
+        "class": "harness",
+        "defaults": [
+          "'5'"
+        ]
+      },
       "WORKLIST_REGGATE_TICK_FLOOD": {
         "kind": "tuning",
         "class": "harness",
@@ -5375,7 +5408,7 @@
         "defaults": [
           "''"
         ],
-        "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-worklist-env-registry's own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so test_a_typo_in_a_real_source_file_reds never writes the real tracked file it names. Unset means no substitution: the real corpus is scanned unchanged."
+        "why": "GATE-SEAM, test-only: `rel/path:override/file`, read by check:ci-env-registry (worklist section)'s own scan_corpus() to substitute one tracked source file's CONTENT with a tmp copy during the plant tests, so test_a_typo_in_a_real_source_file_reds never writes the real tracked file it names. Unset means no substitution: the real corpus is scanned unchanged."
       },
       "WORKLIST_STORE_DIR": {
         "kind": "path",

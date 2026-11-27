@@ -908,7 +908,7 @@ def test_the_port_carries_no_gate_header() -> None:
 
 
 def test_the_environment_this_module_reads_is_read_with_literal_keys() -> None:
-    """`check:ci-python-env-registry` derives a module's inputs by walking the AST for literal `os.environ` reads, so a read through a local alias would be invisible and the module would report zero inputs while depending on six.
+    """`check:ci-env-registry (python_reads)` derives a module's inputs by walking the AST for literal `os.environ` reads, so a read through a local alias would be invisible and the module would report zero inputs while depending on six.
 
     THE LIST IS THE TWIN'S OWN HEADER, in its order."""
     source = PORT_FILE.read_text(encoding="utf-8")
