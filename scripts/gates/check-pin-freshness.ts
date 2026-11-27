@@ -504,19 +504,30 @@ export function gateNowMs(env: NodeJS.ProcessEnv = process.env): number {
   const raw = env.REDIACC_GATE_CLOCK;
   if (raw === undefined || raw.trim() === '') return Date.now();
   if ((env.CI ?? '').trim().toLowerCase() === 'true')
-    throw new Error(`REDIACC_GATE_CLOCK is set under CI=true, where no gate may run on a planted clock. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`);
+    throw new Error(
+      `REDIACC_GATE_CLOCK is set under CI=true, where no gate may run on a planted clock. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`
+    );
   if ((env.REDIACC_GATE_CLOCK_TEST ?? '').trim() !== '1')
-    throw new Error(`REDIACC_GATE_CLOCK is set outside a test harness (REDIACC_GATE_CLOCK_TEST=1 is not set), so a real gate run would be judged on a date nobody chose. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`);
+    throw new Error(
+      `REDIACC_GATE_CLOCK is set outside a test harness (REDIACC_GATE_CLOCK_TEST=1 is not set), so a real gate run would be judged on a date nobody chose. Unset REDIACC_GATE_CLOCK; only a gate's --selftest or pytest may plant it.`
+    );
   const text = raw.trim();
-  const iso8601 = /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+  const iso8601 =
+    /^\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/;
+  // A bare date is already midnight UTC to Date.parse. A naive timestamp (`T` or space separated) would be read as host-local time, so it is spelled out as UTC, as gate_clock.parse reads it.
+  const spelled = text.replace(' ', 'T');
   const ms = iso8601.test(text)
-    ? Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/.test(text) || !text.includes('T') ? text : `${text}Z`)
+    ? Date.parse(
+        /(?:Z|[+-]\d{2}:?\d{2})$/.test(text) || !spelled.includes('T') ? spelled : `${spelled}Z`
+      )
     : Number.NaN;
   if (Number.isNaN(ms))
     throw new Error(
       `REDIACC_GATE_CLOCK=${JSON.stringify(raw)} is not an ISO 8601 date or timestamp (for example 2027-01-01); the gate refuses to guess, because falling back to today would make a planted clock pass without running`
     );
-  console.error(`  NOTE: REDIACC_GATE_CLOCK=${raw} moves this gate's clock; this verdict is not today's.`);
+  console.error(
+    `  NOTE: REDIACC_GATE_CLOCK=${raw} moves this gate's clock; this verdict is not today's.`
+  );
   return ms;
 }
 
@@ -923,7 +934,8 @@ async function selftest(): Promise<number> {
     );
 
     // THE CLOCK SEAM (REDIACC_GATE_CLOCK, nightly-green F1): the same fixture and the same hold, judged at a planted instant. The hold dated tomorrow is green at NOW (above) and red once the clock is planted past that date; planting NOW itself must give today's verdict back. A gate that ignored the seam, or read it as an excuse, fails one of the two.
-    const clockAt = (iso: string) => gateNowMs({ REDIACC_GATE_CLOCK: iso, REDIACC_GATE_CLOCK_TEST: '1' });
+    const clockAt = (iso: string) =>
+      gateNowMs({ REDIACC_GATE_CLOCK: iso, REDIACC_GATE_CLOCK_TEST: '1' });
     const planted = await check(futureRoot, undefined, clockAt(`${dayAfterNow}T12:00:00Z`));
     add(
       'CLOCK past the deadline: the hold dated tomorrow, judged at tomorrow noon, is expired and its aged pin is red',
@@ -950,6 +962,21 @@ async function selftest(): Promise<number> {
           }
         })()
     );
+    // A naive timestamp is UTC whatever the host zone, the same reading as rediacc_ci.core.gate_clock.parse (review finding 914b173e.1): T and space separators agree, and a date-only value is midnight UTC.
+    const savedTz = process.env.TZ;
+    process.env.TZ = 'Asia/Kolkata';
+    const naive = ['2027-01-01 06:30', '2027-01-01T06:30', '2027-01-01 06:30:00', '2027-01-01'].map(
+      clockAt
+    );
+    if (savedTz === undefined) delete process.env.TZ;
+    else process.env.TZ = savedTz;
+    add(
+      'CLOCK naive: a space or T separated timestamp without a zone reads as UTC on a non-UTC host, as gate_clock.parse does',
+      naive[0] === Date.UTC(2027, 0, 1, 6, 30) &&
+        naive[1] === naive[0] &&
+        naive[2] === naive[0] &&
+        naive[3] === Date.UTC(2027, 0, 1)
+    );
     // A planted clock outside the harness, or under CI=true even with the marker, is a refusal and never a verdict.
     const clockRefusal = (env: NodeJS.ProcessEnv): string => {
       try {
@@ -962,7 +989,11 @@ async function selftest(): Promise<number> {
     add(
       'CLOCK refused: a planted clock with no test marker, or under CI=true, throws and is never honoured',
       clockRefusal({ REDIACC_GATE_CLOCK: '2020-01-01' }).includes('outside a test harness') &&
-        clockRefusal({ REDIACC_GATE_CLOCK: '2020-01-01', REDIACC_GATE_CLOCK_TEST: '1', CI: 'true' }).includes('CI=true')
+        clockRefusal({
+          REDIACC_GATE_CLOCK: '2020-01-01',
+          REDIACC_GATE_CLOCK_TEST: '1',
+          CI: 'true',
+        }).includes('CI=true')
     );
 
     // Hold liveness: a line no leaf answers to is red, naming the line.
