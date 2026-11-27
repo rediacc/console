@@ -742,6 +742,7 @@
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/storage",
         "pkg/subscription",
         "pkg/trim"
@@ -930,6 +931,7 @@
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
         "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows",
         "pkg/infra/worker",
         "pkg/jobs",
         "pkg/kernel",
@@ -1000,7 +1002,8 @@
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
-        "pkg/infra/vm/terraform"
+        "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows"
       ]
     },
     {
@@ -1040,7 +1043,8 @@
         "pkg/infra/vm/imagedl",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
-        "pkg/infra/vm/terraform"
+        "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows"
       ],
       "dependents": [
         "cmd/renet",
@@ -1129,8 +1133,13 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
@@ -1142,8 +1151,13 @@
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/restorepath"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -1216,8 +1230,12 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
         "pkg/credentials",
+        "pkg/daemon",
         "pkg/functions",
         "pkg/hub",
         "pkg/kube/csidriver",
@@ -1233,10 +1251,12 @@
         "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
+        "pkg/ps",
         "pkg/repodiff",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/storage",
         "pkg/subscription",
         "pkg/trim"
@@ -1871,7 +1891,11 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
         "pkg/hub",
         "pkg/kube/csidriver",
@@ -1887,9 +1911,11 @@
         "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/subscription",
         "pkg/trim"
       ]
@@ -1902,8 +1928,13 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
@@ -1916,8 +1947,13 @@
         "pkg/netaudit/spool",
         "pkg/netaudit/trigger",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/restorepath"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -2022,6 +2058,7 @@
         "pkg/prune",
         "pkg/ps",
         "pkg/rbd",
+        "pkg/repodiff",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
