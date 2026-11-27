@@ -12,11 +12,13 @@ The landing tree is made with git's linked-tree verb, so block_worktree_add admi
 
 from __future__ import annotations
 
+import concurrent.futures
 import importlib.machinery
 import importlib.util
 import multiprocessing
 import os
 import pathlib
+import signal
 import subprocess
 import sys
 import tempfile
@@ -617,6 +619,54 @@ def _judge(index: int) -> tuple[str, bool, list[str]]:
     return label, True, controls(load(text.replace(old, new)), _JUDGING["cp"])
 
 
+def worker_count(jobs: int) -> int:
+    """One worker per usable core up to `jobs`. `os.sched_getaffinity` is Linux-only (f6d4c6c0.1), so a host without it falls back to `os.cpu_count`."""
+    getter = getattr(os, "sched_getaffinity", None)
+    cores = len(getter(0)) if getter is not None else (os.cpu_count() or 1)
+    return max(1, min(jobs, cores))
+
+
+def pool_map(fn, items: list, workers: int) -> list:
+    """`[fn(i) for i in items]`, in forked workers when the host has fork (not Windows, f6d4c6c0.2) and more than one worker is wanted, serially otherwise.
+
+    A worker killed mid-task (OOM) makes `ProcessPoolExecutor` raise BrokenProcessPool at once, where `multiprocessing.Pool.map` waits forever (f6d4c6c0.3); the error propagates so the run fails loudly instead of hanging."""
+    if workers <= 1 or "fork" not in multiprocessing.get_all_start_methods():
+        return [fn(i) for i in items]
+    ctx = multiprocessing.get_context("fork")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
+        return list(pool.map(fn, items, chunksize=1))
+
+
+def _square(n: int) -> int:
+    return n * n
+
+
+def _die_on_two(n: int) -> int:
+    if n == 2:
+        os._exit(9)
+    return n
+
+
+def pool_checks() -> list[str]:
+    """Controls on `pool_map` itself: the parallel branch maps like the serial one, in order, and a killed worker fails the run instead of hanging it."""
+    fails = []
+    items = list(range(8))
+    if pool_map(_square, items, 4) != [n * n for n in items]:
+        fails.append("POOL: the parallel branch does not return the serial results in order")
+    if pool_map(_square, items, 1) != [n * n for n in items]:
+        fails.append("POOL: the serial branch does not return the serial results in order")
+    try:
+        # A hang here is the defect; the alarm turns it into a failure.
+        signal.alarm(120)
+        pool_map(_die_on_two, items, 4)
+        fails.append("POOL: a killed worker did not fail the run")
+    except concurrent.futures.process.BrokenProcessPool:
+        pass
+    finally:
+        signal.alarm(0)
+    return fails
+
+
 def main() -> int:
     real = load()
     cp = real._hooks_pkg()
@@ -625,7 +675,7 @@ def main() -> int:
             "FAIL: commit_policy has no landing record (PLAN-two-track-merge-dev LT1 not present)"
         )
         return 1
-    fails = controls(real, cp)
+    fails = controls(real, cp) + pool_checks()
     for line in fails:
         print("FAIL: " + line)
     if fails:
@@ -635,9 +685,11 @@ def main() -> int:
     bad = 0
     _JUDGING.update(text=text, cp=cp)
     # Each mutant is judged by a full run of the controls (about 850 repository commands, 2 s), and the runs share nothing: each builds its own repositories and loads its own mutant module. They run in forked workers, one per core up to the mutant count, and print in MUTANTS order, so the report and the verdict are what the serial loop gave.
-    workers = max(1, min(len(MUTANTS), len(os.sched_getaffinity(0))))
-    with multiprocessing.get_context("fork").Pool(workers) as pool:
-        judged = pool.map(_judge, range(len(MUTANTS)), chunksize=1)
+    judged = pool_map(_judge, list(range(len(MUTANTS))), worker_count(len(MUTANTS)))
+    # The real judge's parallel results equal its serial ones, on the first two mutants (f6d4c6c0.4).
+    if judged[:2] != pool_map(_judge, [0, 1], 1):
+        print("FAIL: the parallel judging of the first two mutants differs from the serial judging")
+        bad += 1
     for label, applies, red in judged:
         if not applies:
             print("FAIL: mutant %r no longer applies once" % label)
