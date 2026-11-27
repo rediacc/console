@@ -361,6 +361,27 @@ export function stepsOf(
         repoPathOf(ctx, path.join(ctx.root, p.repo, p.file))
       ),
     });
+  // A project linking a changed manifest through `file:` carries that manifest's dependency lines in its own lockfile, so its lockfile goes stale even when no step names it (2026-11-27: packages/shared moved @cloudflare/workers-oauth-provider and private/account/e2e/package-lock.json, which no step touched, failed check:ci-lockfile). The pass runs last, after every step that can write a manifest.
+  const changedDirs = [
+    ...new Set(
+      [...writes, ...out.flatMap((s) => s.writes)]
+        .filter((w) => path.posix.basename(w.file) === 'package.json')
+        .map((w) => path.join(ctx.root, w.repo, path.posix.dirname(w.file)))
+    ),
+  ];
+  if (changedDirs.length > 0) {
+    const projects = scopedProjects(entry, ctx).out.map((p) => ({
+      abs: p.abs,
+      manifest: ctx.read(repoPathOf(ctx, path.join(p.abs, 'package.json'))),
+    }));
+    for (const dep of fileLinkedDependents(changedDirs, projects))
+      out.push({
+        label: `lockfile pass for a file: dependent of a changed manifest: ${relDir(ctx, dep)}`,
+        run: npmLine(version, ['install', '--package-lock-only', '--ignore-scripts']),
+        cwd: relDir(ctx, dep),
+        writes: [repoPathOf(ctx, path.join(dep, 'package-lock.json'))],
+      });
+  }
   return { writes, steps: out, notes };
 }
 
@@ -957,6 +978,20 @@ function projectDirs(
   entry: PinEntry,
   ctx: DriverContext
 ): Array<{ repo: string; dir: string; abs: string }> {
+  const { out, absent } = scopedProjects(entry, ctx);
+  // VACUOUS guard: a family that scopes npm lockfiles yet enumerates none would let every plan and every removal report "nothing to do" over an empty corpus.
+  if (out.length === 0 && (entry.scope ?? []).some((sc) => sc.scanner === 'npm-lockfile'))
+    throw new PlanRefused(
+      `${entry.id}: VACUOUS: the npm-lockfile scope matched no package-lock.json under ${ctx.root}${absent.length > 0 ? ` (repo checkout absent: ${absent.join(', ')})` : ''}, so nothing was judged`
+    );
+  return out;
+}
+
+/** The scan behind projectDirs, without its vacuity guard: the projects found and the scoped repos whose checkout is absent. */
+function scopedProjects(
+  entry: PinEntry,
+  ctx: DriverContext
+): { out: Array<{ repo: string; dir: string; abs: string }>; absent: string[] } {
   const out: Array<{ repo: string; dir: string; abs: string }> = [];
   const absent: string[] = [];
   for (const sc of entry.scope ?? []) {
@@ -974,12 +1009,45 @@ function projectDirs(
         out.push({ repo: sc.repo, dir, abs: path.join(base, dir) });
       }
   }
-  // VACUOUS guard: a family that scopes npm lockfiles yet enumerates none would let every plan and every removal report "nothing to do" over an empty corpus.
-  if (out.length === 0 && (entry.scope ?? []).some((sc) => sc.scanner === 'npm-lockfile'))
-    throw new PlanRefused(
-      `${entry.id}: VACUOUS: the npm-lockfile scope matched no package-lock.json under ${ctx.root}${absent.length > 0 ? ` (repo checkout absent: ${absent.join(', ')})` : ''}, so nothing was judged`
-    );
-  return out;
+  return { out, absent };
+}
+
+const LINK_FIELDS = [
+  'dependencies',
+  'devDependencies',
+  'optionalDependencies',
+  'peerDependencies',
+] as const;
+
+/**
+ * The projects whose lockfile mirrors a changed manifest: each declares a `file:` dependency
+ * resolving to one of `changedDirs`, and npm copies a linked directory's dependency lines into
+ * the dependent's lockfile. Pure; absolute directories in, absolute directories out, sorted.
+ */
+export function fileLinkedDependents(
+  changedDirs: string[],
+  projects: Array<{ abs: string; manifest: string | null }>
+): string[] {
+  const changed = new Set(changedDirs.map((d) => path.resolve(d)));
+  const out = new Set<string>();
+  for (const p of projects) {
+    if (p.manifest === null) continue;
+    let m: Record<string, unknown>;
+    try {
+      m = JSON.parse(p.manifest) as Record<string, unknown>;
+    } catch {
+      continue;
+    }
+    for (const field of LINK_FIELDS) {
+      const deps = m[field];
+      if (deps === null || typeof deps !== 'object') continue;
+      for (const spec of Object.values(deps as Record<string, unknown>)) {
+        if (typeof spec !== 'string' || !spec.startsWith('file:')) continue;
+        if (changed.has(path.resolve(p.abs, spec.slice('file:'.length)))) out.add(p.abs);
+      }
+    }
+  }
+  return [...out].sort((a, b) => Number(a > b) - Number(a < b));
 }
 
 /**

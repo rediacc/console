@@ -33,6 +33,7 @@ import { gomodDriver } from './gomod.js';
 import {
   deferredCount,
   deferredNames,
+  fileLinkedDependents,
   inRangePlan,
   inRangeReleases,
   judgeOverrides,
@@ -1216,6 +1217,78 @@ function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string 
   ];
 }
 
+// ---- npm: lockfiles of file: dependents follow a changed manifest (2026-11-27) ---------------
+
+function fileDependentCases(): Array<{ name: string; ok: boolean; detail?: string }> {
+  const pkg = (deps: Record<string, string> = {}, field = 'dependencies'): string =>
+    JSON.stringify({ name: 'x', version: '0.0.0-dev', [field]: deps });
+  const shared = '{"name":"@rediacc/shared","version":"0.0.0-dev"}';
+  const root = tree({
+    'package.json': '{"name":"root","workspaces":["packages/*"]}',
+    'package-lock.json': '{}',
+    'packages/shared/package.json': shared,
+    'workers/proxy/package.json': pkg(),
+    'workers/proxy/package-lock.json': '{}',
+    'private/account/package.json': pkg({ '@rediacc/shared': 'file:../../packages/shared' }),
+    'private/account/package-lock.json': '{}',
+    'private/account/e2e/package.json': pkg(
+      { '@rediacc/shared': 'file:../../../packages/shared' },
+      'devDependencies'
+    ),
+    'private/account/e2e/package-lock.json': '{}',
+    'private/account/web/package.json': pkg({ react: '19.0.0' }),
+    'private/account/web/package-lock.json': '{}',
+  });
+  const plan = (cwd: string, args: string[]) =>
+    stepsOf(
+      ctxOf(root),
+      entry('npm'),
+      [
+        { cwd, args, label: 'step', packages: [{ name: 'a', current: '1.0.0', latest: '1.1.0' }] },
+      ] as never,
+      '11.0.0'
+    ).steps;
+  const passes = (steps: ReturnType<typeof plan>): string[] =>
+    steps
+      .filter((s) => s.label.startsWith('lockfile pass for a file: dependent'))
+      .map((s) => s.cwd);
+  const sharedRun = passes(plan(root, ['install', '-w=packages/shared', 'a@1.1.0']));
+  const proxyRun = passes(plan(path.join(root, 'workers/proxy'), ['update', 'a']));
+  const pure = fileLinkedDependents(
+    [path.join(root, 'packages/shared')],
+    [
+      {
+        abs: path.join(root, 'private/account'),
+        manifest: pkg({ s: 'file:../../packages/shared' }),
+      },
+      {
+        abs: path.join(root, 'private/account/web'),
+        manifest: pkg({ s: 'file:../../packages/other' }),
+      },
+      { abs: path.join(root, 'private/account/e2e'), manifest: pkg({ s: '^1.0.0' }) },
+      { abs: path.join(root, 'workers/proxy'), manifest: null },
+      { abs: path.join(root, 'workers/www'), manifest: '{not json' },
+    ]
+  );
+  return [
+    {
+      name: 'file: dependents: a project linking the changed directory is named, one linking another directory, a registry range, an absent and an unreadable manifest are not',
+      ok: JSON.stringify(pure) === JSON.stringify([path.join(root, 'private/account')]),
+      detail: JSON.stringify(pure),
+    },
+    {
+      name: 'file: dependents: a run writing packages/shared/package.json ends with a lockfile pass in each project linking it (dependencies and devDependencies alike), and none in the unlinked one',
+      ok: JSON.stringify(sharedRun) === JSON.stringify(['private/account', 'private/account/e2e']),
+      detail: JSON.stringify(sharedRun),
+    },
+    {
+      name: 'file: dependents (control): a run writing only a manifest nothing links adds no such pass',
+      ok: proxyRun.length === 0,
+      detail: JSON.stringify(proxyRun),
+    },
+  ];
+}
+
 // ---- npm: override ranges the lockfile does not meet (worklist #c97a62d9) ---------------------
 
 async function npmOverrideCases(): Promise<Array<{ name: string; ok: boolean; detail?: string }>> {
@@ -1547,6 +1620,7 @@ async function allCases(mutant?: T8Mutant) {
     ...(await realProviderCases()),
     ...(await dockerCases(mutant)),
     ...biomeSchemaCases(),
+    ...fileDependentCases(),
     ...(await npmOverrideCases()),
   ];
 }
