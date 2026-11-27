@@ -774,15 +774,33 @@ def _plantick_cli(argv):
     rel, selector = argv[2], argv[3]
     rest = [a for a in argv[4:] if a != "--write"]
     write = "--write" in argv[4:]
+    # `--investigate present <kind>:<tok>...` (agent/plans/PLAN-plan-verbs.md T15): everything after the flag is the verdict and its pointers, and the tick evidence before it doubles as the investigation note. Only `present` licenses an immediate tick, so it is the only verdict this form takes.
+    inv_tokens = None
+    if "--investigate" in rest:
+        k = rest.index("--investigate")
+        tail, rest = rest[k + 1 :], rest[:k]
+        if not tail:
+            die("--investigate takes `present` and its pointers\n\n%s" % M.CLI_PLANTICK_USAGE)
+        if tail[0].strip().lower() != "present":
+            die(M.CLI_PLANTICK_INV_VERDICT % {"verdict": tail[0], "me": me, "rel": rel})
+        inv_tokens = tail[1:]
+        rest += [f for f in inv_tokens if f.startswith("--")]
     for f in rest:
         if f.startswith("--"):
             die("unknown flag %r\n\n%s" % (f, M.CLI_PLANTICK_USAGE))
     evidence = " ".join(rest)
     rel = _plan_rel(root, rel)
 
-    _plantick_dep_gate(R, root, rel, selector, evidence)
+    if inv_tokens is None:
+        # A `present` row exempts a tick from the dependency gate (_plantick_dep_gate), so the one-call form skips it for the same reason.
+        _plantick_dep_gate(R, root, rel, selector, evidence)
+    inv_row, resolved = None, []
     try:
-        text, doc, note = R.plan_tick(root, rel, selector, evidence, me)
+        if inv_tokens is not None:
+            inv_row, resolved = R.plan_investigate(
+                root, rel, selector, "present", inv_tokens, evidence, me
+            )
+        text, doc, note = R.plan_tick(root, rel, selector, evidence, me, inv_row=inv_row)
         # The tick is accepted, so the plan exists and still holds its pre-tick text on disk.
         lessons = H.tick_resolution(
             root,
@@ -795,8 +813,13 @@ def _plantick_cli(argv):
         die(M.CLI_PLANREC_REFUSED % exc)
         return
     if not write:
+        if inv_row is not None:
+            sys.stdout.write(M.CLI_PLANTICK_INV_DRY % R.render_resolution(resolved))
         sys.stdout.write(M.CLI_PLANTICK_DRY % {"rel": rel, "note": note})
         return
+    # THE INVESTIGATION ROW FIRST, when this call built it: both halves passed above, and a crash after it leaves a box with a `present` row and no tick, which a plain --plan-tick finishes.
+    if inv_row is not None:
+        R.append_investigation(root, inv_row)
     # THE PLAN FIRST, THEN THE LEDGER. The ledger is a reading OF the plan, so this order leaves the recoverable state at every instant: a crash between them leaves a ticked plan and a stale ledger, which check:ci-plan-boxes reports with the exact regenerate command. The other order leaves a ledger attesting a tick no file carries, which reads as a box that vanished.
     R.write_atomic(pathlib.Path(root) / rel, text)
     R.write_atomic(pathlib.Path(root) / R.LEDGER_REL, json.dumps(doc, indent=2) + "\n")

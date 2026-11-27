@@ -2834,8 +2834,16 @@ CLI_PLANWHY_NO_INDEX = (
 
 CLI_PLANTICK_USAGE = (
     "usage: worklist.py --plan-tick <me> <agent/plans/PLAN-x.md> <box> <evidence...> [--write]\n"
+    "       worklist.py --plan-tick <me> <agent/plans/PLAN-x.md> <box> <evidence...> \\\n"
+    "           --investigate present <kind>:<token> <kind>:<token>... [--write]\n"
     "\n"
     "Tick ONE box in a plan and update the committed box ledger in the same run.\n"
+    "\n"
+    "--investigate present  a box found already done takes ONE call: the\n"
+    "            investigation row is built from the pointers, with the evidence\n"
+    "            as its note (at least 40 characters), and appended only when\n"
+    "            the tick passes too. `absent` and `partial` go through\n"
+    "            --plan-investigate first.\n"
     "\n"
     "<box>       an 8-hex box signature, or any text that matches exactly one open\n"
     "            box. Ambiguity is refused rather than resolved by picking the\n"
@@ -2856,6 +2864,18 @@ CLI_PLANTICK_DRY = (
     "  %(note)s\n"
     "\n---- NOTHING was written. Re-run with --write. ----\n"
 )
+
+CLI_PLANTICK_INV_VERDICT = (
+    "--investigate takes `present` only, and %(verdict)r was given. Only `present`\n"
+    "licenses an immediate tick: an `absent` or `partial` box is recorded first and\n"
+    "implemented before it is ticked:\n"
+    "    worklist.py --plan-investigate %(me)s %(rel)s <box> %(verdict)s \\\n"
+    "        <kind>:<token> <kind>:<token> -- <note> --write\n"
+    "\n"
+    "Nothing was written."
+)
+
+CLI_PLANTICK_INV_DRY = "would append one `present` investigation row:\n%s\n"
 
 CLI_PLANTICK_WROTE = (
     "ticked one box in %(rel)s and updated %(ledger)s\n"
@@ -3043,6 +3063,8 @@ CLI_PLAN_ORDER = (
     "         <kind>:<token> <kind>:<token> -- <note> --write\n"
     "  2. implement (skip when the verdict was `present`)\n"
     "  3. worklist.py --plan-tick <me> <plan> <box> <evidence> --write\n"
+    "A box found already done takes one call: --plan-tick <me> <plan> <box>\n"
+    "<evidence> --investigate present <kind>:<token> <kind>:<token> --write.\n"
     "A box ticked any other way can only be recorded late, with --retro, and\n"
     "check:ci-plan-implementation prints every such row on every run.\n"
     "\n"

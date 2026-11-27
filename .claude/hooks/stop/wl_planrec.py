@@ -3114,10 +3114,12 @@ def clause2_falsifiable(root, row, evidence):
     return ""
 
 
-def plan_tick(root, rel, selector, evidence, me, now=None):
+def plan_tick(root, rel, selector, evidence, me, now=None, inv_row=None):
     """(new_plan_text, new_ledger_doc, note) for one tick. Raises RecordError.
 
     Writes NOTHING. The caller writes both files, so a refusal on the second cannot leave the first half-applied.
+
+    `inv_row` is an investigation row built in the same call (`--plan-tick ... --investigate present`, agent/plans/PLAN-plan-verbs.md T15) and not yet appended; given, it stands in for the ledger lookup, and the caller appends it only after this returns.
     """
     root = pathlib.Path(root)
     p = root / rel
@@ -3163,7 +3165,13 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     #
     # Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. `--plan-tick` has been used on about 2% of the boxes it was written for and the rest were flipped with the Edit tool carrying no evidence of any kind. There is nothing to re-check on them and never will be, so this
     # binds the NEXT tick and never a past one. Saying so here is what stops a later "strengthening" into a rule that reds 576 boxes it cannot possibly judge.
-    inv_row = investigation_for(root, rel, sig)
+    if inv_row is not None and inv_row.get("sig") != sig:
+        raise RecordError(
+            "the investigation row passed in is for box %s, not box %s of %s"
+            % (inv_row.get("sig"), sig, rel)
+        )
+    if inv_row is None:
+        inv_row = investigation_for(root, rel, sig)
     if inv_row is not None and inv_row.get("retro"):
         # A RETRO ROW DESCRIBES A PAST CLOSE and never licenses a new one. It can only exist for a box that was ticked, so reaching it here means the box was re-opened; the re-opened box gets a live investigation like any other.
         raise RecordError(

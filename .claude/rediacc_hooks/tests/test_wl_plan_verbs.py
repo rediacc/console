@@ -127,3 +127,61 @@ def test_plan_new_refusals_write_nothing(wl):
     missing = wl.cli("--plan-new", ME, "agent/plans/PLAN-absent.md", "--write")
     assert missing.rc == 2, (missing.rc, missing.err)
     assert "does not exist" in missing.err, missing.err
+
+
+# ---- T15: --plan-tick ... --investigate present ---------------------------------------------
+
+INV = "agent/ledgers/plan-investigation.jsonl"
+EVIDENCE = "the fixture tree already holds the box at base.txt:1, rc=0 on the fixture accept"
+
+
+def registered(wl) -> str:
+    """The fixture plan committed with its ledger row; returns the open box's sig."""
+    seed(wl)
+    write_plan(wl, plan_text())
+    got = wl.cli("--plan-new", ME, NEW, "--write")
+    assert got.rc == 0, (got.out, got.err)
+    wl.git("add", "-A")
+    wl.git("commit", "-qm", "docs(plans): register the fixture plan")
+    return PR.open_boxes((wl.proj / NEW).read_text(encoding="utf-8"))[0][3]
+
+
+def test_plan_tick_investigate_present_writes_the_row_and_ticks_in_one_call(wl):
+    sig = registered(wl)
+    assert PR.investigation_for(str(wl.proj), NEW, sig) is None
+    args = ("--plan-tick", ME, NEW, sig, EVIDENCE, "--investigate", "present")
+    pointers = ("fileline:base.txt:1", "plan:%s" % NEW)
+    before = snapshot(wl.proj, NEW, LEDGER, INV)
+    dry = wl.cli(*args, *pointers)
+    assert dry.rc == 0, (dry.out, dry.err)
+    assert "NOTHING was written" in dry.out, dry.out
+    assert snapshot(wl.proj, NEW, LEDGER, INV) == before
+
+    got = wl.cli(*args, *pointers, "--write")
+    assert got.rc == 0, (got.out, got.err)
+    row = PR.investigation_for(str(wl.proj), NEW, sig)
+    assert row is not None, "no investigation row was written"
+    assert row["verdict"] == "present"
+    assert row["note"] == EVIDENCE
+    assert "- [x] F1" in (wl.proj / NEW).read_text(encoding="utf-8")
+    ledger = json.loads((wl.proj / LEDGER).read_text(encoding="utf-8"))
+    assert sig in ledger["plans"][NEW]["done_sigs"], ledger["plans"][NEW]
+
+
+def test_plan_tick_investigate_refusals_leave_plan_ledger_and_jsonl_byte_identical(wl):
+    sig = registered(wl)
+    cases = [
+        # A verdict other than `present` licenses no tick.
+        (("partial", "fileline:base.txt:1", "plan:%s" % NEW), "--investigate takes `present` only"),
+        (("absent", "fileline:base.txt:1", "plan:%s" % NEW), "--plan-investigate"),
+        # A pointer that does not resolve sinks the whole call.
+        (("present", "fileline:nope.txt:1", "plan:%s" % NEW), "nope.txt"),
+    ]
+    for tail, needle in cases:
+        before = snapshot(wl.proj, NEW, LEDGER, INV)
+        got = wl.cli("--plan-tick", ME, NEW, sig, EVIDENCE, "--investigate", *tail, "--write")
+        assert got.rc == 2, (tail, got.rc, got.out, got.err)
+        assert needle in got.err, (needle, got.err)
+        assert "Nothing was written" in got.err, got.err
+        assert snapshot(wl.proj, NEW, LEDGER, INV) == before, tail
+    assert PR.investigation_for(str(wl.proj), NEW, sig) is None
