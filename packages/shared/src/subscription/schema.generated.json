@@ -103,6 +103,11 @@
           "type": "number",
           "jsonKey": "maxRepoLicenseIssuancesPerMonth"
         },
+        "maxCpusPerMachine": {
+          "type": "number",
+          "jsonKey": "maxCpusPerMachine",
+          "optional": true
+        },
         "features": {
           "type": "object",
           "jsonKey": "features",

@@ -114,6 +114,7 @@ function generateSchema(): SubscriptionSchema {
             type: 'number',
             jsonKey: 'maxRepoLicenseIssuancesPerMonth',
           },
+          maxCpusPerMachine: { type: 'number', jsonKey: 'maxCpusPerMachine', optional: true },
           features: { type: 'object', jsonKey: 'features', nestedType: 'FeatureFlags' },
           maxActivations: { type: 'number', jsonKey: 'maxActivations' },
           activationCount: { type: 'number', jsonKey: 'activationCount' },

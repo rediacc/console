@@ -74,6 +74,8 @@ export interface SubscriptionData {
   maxRepositorySizeGb: number;
   /** Maximum successful repo-license issuances per UTC calendar month */
   maxRepoLicenseIssuancesPerMonth: number;
+  /** Logical-CPU ceiling per machine; null or absent means unlimited. Recorded for the licence, enforced by the account server */
+  maxCpusPerMachine?: number | null;
   /** Feature flags for this plan */
   features: FeatureFlags;
 
