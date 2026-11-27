@@ -163,7 +163,7 @@ def run(
             "bws map live: SKIP, CANNOT RUN here: missing %s. The %d mapped name(s) were NOT compared "
             "with the live store. Install the token at %s (mode 0600) and bws as "
             ".devcontainer/Dockerfile does (or at ~/.local/bin/bws), then rerun "
-            "`npm run check:ci-bws-map-live`."
+            "`PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_map_live`."
             % (" and ".join(missing), len(map_ids), bws_env.token_path(environ))
         )
         return CANNOT_RUN

@@ -901,7 +901,7 @@ def selftest() -> bool:
         ),
         (
             "a step running something else is a finding",
-            plant(lane, "run: %s" % CI_RUN, "run: npm run check:ci-proxy-image-smoke"),
+            plant(lane, "run: %s" % CI_RUN, "run: .ci/scripts/quality/check_proxy_image_smoke.py"),
         ),
         (
             "a timeout over the lane cap is a finding",

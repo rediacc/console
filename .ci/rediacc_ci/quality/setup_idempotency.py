@@ -960,7 +960,7 @@ def main(argv: list[str] | None = None) -> int:
     if report.fails != 0:
         print(file=sys.stderr)
         print(
-            "%s%d assertion(s) failed.%s Rerun: npm run check:ci-setup-idempotency"
+            "%s%d assertion(s) failed.%s Rerun: PYTHONPATH=.ci python3 -m rediacc_ci.quality.setup_idempotency"
             % (red, report.fails, nc),
             file=sys.stderr,
         )

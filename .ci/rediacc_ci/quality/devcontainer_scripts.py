@@ -392,7 +392,8 @@ def main(argv: list[str] | None = None) -> int:
     if report.count != 0:
         print(file=sys.stderr)
         print(
-            "%d assertion(s) failed. Rerun: npm run check:ci-devcontainer-scripts" % report.count,
+            "%d assertion(s) failed. Rerun: PYTHONPATH=.ci python3 -m rediacc_ci.quality.devcontainer_scripts"
+            % report.count,
             file=sys.stderr,
         )
         return 1

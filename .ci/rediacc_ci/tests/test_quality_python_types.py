@@ -174,10 +174,7 @@ def test_the_gate_is_wired_into_all_three_places():
     `check:ci-parity` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of a 345-entry report.
     """
     scripts = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["scripts"]
-    assert (
-        scripts["check:ci-python-types"]
-        == "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types"
-    )
+    assert "check:ci-python-types" not in scripts, "the gate runs its module directly (CR2)"
 
     lock = json.loads((ROOT / "scripts/ci-runner/gates.lock.json").read_text(encoding="utf-8"))
     entry = next(e for e in lock if e["id"] == "check:ci-python-types")

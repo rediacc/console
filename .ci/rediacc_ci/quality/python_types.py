@@ -625,7 +625,10 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
         print("    uv tool install mypy@%s" % want, file=sys.stderr)
         print("    bash .ci/bootstrap.sh        # provisions uv on a pipless host", file=sys.stderr)
         print("  or point MYPY_BIN at an existing binary AT THAT VERSION:", file=sys.stderr)
-        print("    MYPY_BIN=/path/to/mypy npm run check:ci-python-types", file=sys.stderr)
+        print(
+            "    MYPY_BIN=/path/to/mypy PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types",
+            file=sys.stderr,
+        )
         print(
             "  NOT skipping: a type checker that cannot run is a gate that cannot fail.",
             file=sys.stderr,
@@ -758,7 +761,10 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
             print("    ... and %d more" % (len(drained) - 20), file=sys.stderr)
         print(file=sys.stderr)
         print("%d baselined finding(s) no longer fire. Drain them:" % len(drained), file=sys.stderr)
-        print("    npm run check:ci-python-types -- --write-baseline", file=sys.stderr)
+        print(
+            "    PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types --write-baseline",
+            file=sys.stderr,
+        )
         print(
             "  A baseline that keeps rows nobody can reproduce freezes last year's debt",
             file=sys.stderr,

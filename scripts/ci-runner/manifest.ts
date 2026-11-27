@@ -3321,7 +3321,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-setup-idempotency',
-    run: 'npm run check:ci-setup-idempotency',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.setup_idempotency',
     gate: true,
     paths: [
       // `.ci/lib/**` WAS HERE until 94934de41 deleted devbox.sh and its siblings (2026-10-08); checks A, C, E and F now read their Python ports, so those three files are the subjects an edit must select this gate on.
@@ -3502,7 +3502,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-devcontainer-scripts',
-    run: 'npm run check:ci-devcontainer-scripts',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.devcontainer_scripts',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -4789,7 +4789,7 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 5
   {
     id: 'check:ci-python-types',
-    run: 'npm run check:ci-python-types',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types',
     slow: true, // 34.8s measured COLD, 1.8s warm. CI is always cold: `.ci/cache/mypy` is gitignored and nothing restores it, so the number that matters here is the first one.
     // NO `paths`, DELIBERATELY. mypy follows imports, so a change to any .py can move a finding in another one, and the pins file decides which mypy reaches the verdict at all. An entry without `paths` is ALWAYS selected, which is the safe half of that trade; a half-populated table here would make `--changed` drop the gate silently.
     gate: true,
@@ -4948,7 +4948,7 @@ export const GATES: readonly GateSpec[] = [
     // The LIVE half that check:ci-bws-map declines by design: every name in .ci/config/bws-secret-map.json (and every stored-kind exemption in bws-unrequested.json) must still be a secret in the live `ci-shared` project, at its mapped UUID. Names and ids only; the listing is scripts/ops/bws-map-refresh.py's own `list_live`, which projects away the value before returning.
     // NO `paths:` DELIBERATELY. A secret is deleted in the Bitwarden web vault, never in a diff, so the one change this gate exists to catch touches no file; an entry without paths is always selected.
     id: 'check:ci-bws-map-live',
-    run: 'npm run check:ci-bws-map-live',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_map_live',
     gate: true,
     paths: [
       '.ci/config/bws-rotation-notice.txt',
@@ -11573,7 +11573,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-no-otlp-creds',
-    run: 'npm run check:ci-no-otlp-creds',
+    run: '.ci/scripts/quality/check_no_otlp_creds.py',
     gate: true,
     // READS private/renet/bin/renet (`go version -m`), so it waits for the `renet-bin` writers: on 2026-10-04 ci:quick ran it while check:ci-renet-types rebuilt the binary, `go version -m` met a half-written file ("unrecognized file format"), and the gate reported a credential leak that did not exist. It also reads packages/cli/dist/cli-bundle.cjs, which build:cli writes under `build-artifacts`.
     mutex: ['renet-bin', 'build-artifacts'],
@@ -16520,7 +16520,7 @@ export const GATES: readonly GateSpec[] = [
   // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow. CI runs it in ci-build-renet.yml after the renet build (full or cached), because the image must ship a renet-linux-amd64 and that job is where one exists; the gate stages the downloaded private/bin/ copy. Hand-registered: a gate header can only bind a step in ci-quality.yml.
   {
     id: 'check:ci-proxy-image-smoke',
-    run: 'npm run check:ci-proxy-image-smoke',
+    run: '.ci/scripts/quality/check_proxy_image_smoke.py',
     slow: true,
     gate: true,
     heavy: true,
