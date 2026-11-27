@@ -37,6 +37,13 @@ describe('renet timeout classes', () => {
     });
   });
 
+  it('pins the vscode expose/unexpose classes: expose waits on a health gate, unexpose does not', () => {
+    expect(LONG_TIMEOUT_FUNCTIONS.has('repository_vscode_expose')).toBe(true);
+    expect(DEFAULT_TIMEOUT_FUNCTIONS.has('repository_vscode_expose')).toBe(false);
+    expect(DEFAULT_TIMEOUT_FUNCTIONS.has('repository_vscode_unexpose')).toBe(true);
+    expect(LONG_TIMEOUT_FUNCTIONS.has('repository_vscode_unexpose')).toBe(false);
+  });
+
   it('names no function renet does not have', () => {
     const known = new Set(functions);
     const stale = [...LONG_TIMEOUT_FUNCTIONS, ...DEFAULT_TIMEOUT_FUNCTIONS].filter(
