@@ -175,18 +175,21 @@ describe('backup verify', () => {
     });
     mockExecuteRepoFunction.mockResolvedValue(failed);
     const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
-    await run(['verify', 'shop']);
+    try {
+      await run(['verify', 'shop']);
 
-    expect(mockPrint).not.toHaveBeenCalled();
-    // The record "see records above" refers to reaches the operator, before the failure rendering.
-    expect(stderrWrite.mock.calls.map((c) => String(c[0])).join('')).toContain(
-      '"status":"mismatch"'
-    );
-    expect(mockRenderFailure).toHaveBeenCalledWith(failed, failed.error);
-    expect(stderrWrite.mock.invocationCallOrder[0]).toBeLessThan(
-      mockRenderFailure.mock.invocationCallOrder[0]
-    );
-    stderrWrite.mockRestore();
+      expect(mockPrint).not.toHaveBeenCalled();
+      // The record "see records above" refers to reaches the operator, before the failure rendering.
+      expect(stderrWrite.mock.calls.map((c) => String(c[0])).join('')).toContain(
+        '"status":"mismatch"'
+      );
+      expect(mockRenderFailure).toHaveBeenCalledWith(failed, failed.error);
+      expect(stderrWrite.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRenderFailure.mock.invocationCallOrder[0]
+      );
+    } finally {
+      stderrWrite.mockRestore();
+    }
 
     const call = mockExecuteRepoFunction.mock.calls[0];
     expect(call[3]).toEqual({ level: 'spot' });
