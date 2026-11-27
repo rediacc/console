@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: de
-sourceHash: "53e0bdad5b3654a2"
+sourceHash: "4d9fc42d2493e500"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Maschinenplätze (serverseitig)
 
-Das Tracking von Maschinenplätzen wird serverseitig durchgesetzt. Wenn die CLI eine Repo-Lizenz ausstellt, prüft der Account-Server das Maschinenplatz-Kontingent des Abonnements. Jeder Self-Service-Plan (Community, Professional, Business) umfasst einen Maschinenplatz; Multi-Maschinen-Deployments sind ein Enterprise-Setup, das gemeinsam mit unseren Partnern dimensioniert wird. Ein Platz wird 5 Stunden ab der letzten Repo-Lizenzausstellung auf dieser Maschine gehalten und wird nach Inaktivität automatisch freigegeben. Da ein Platz nur während der aktiven Bereitstellung gehalten wird, kann ein einzelner Platz im Laufe eines Monats dennoch mehrere Maschinen abdecken.
+Das Tracking von Maschinenplätzen wird serverseitig durchgesetzt. Wenn die CLI eine Repo-Lizenz ausstellt, prüft der Account-Server das Maschinenplatz-Kontingent des Abonnements. Registrierte (kostenlose) Konten und kostenloses Professional umfassen einen Maschinenplatz. Professional und Business haben pro Floating-Lizenz einen Maschinenplatz (im Self-Service 1 bis 5 bzw. 1 bis 39); größere Deployments sind ein Enterprise-Setup, das gemeinsam mit unseren Partnern dimensioniert wird. Ein Platz wird 5 Stunden ab der letzten Repo-Lizenzausstellung auf dieser Maschine gehalten und wird nach Inaktivität automatisch freigegeben. Da ein Platz nur während der aktiven Bereitstellung gehalten wird, kann ein einzelner Platz im Laufe eines Monats dennoch mehrere Maschinen abdecken.
 
-Die Obergrenze wird aus Ihrem Abonnementdatensatz gelesen, nicht aus einer fest einprogrammierten Plankonstante. Eine ausgehandelte Aktivierungszahl gilt daher, sobald sie am Abonnement hinterlegt ist. Die Planstufe legt lediglich den Startwert fest.
+Die Obergrenze wird aus dem Abonnementdatensatz gelesen, nicht aus einer fest einprogrammierten Plankonstante. Eine ausgehandelte Aktivierungszahl gilt daher, sobald sie am Abonnement hinterlegt ist. Die Planstufe legt lediglich den Startwert fest.
 
 Ausstellung und Erneuerung werden unterschiedlich durchgesetzt, und dieser Unterschied ist wichtig:
 
@@ -125,17 +125,27 @@ Einen Cluster zu dimensionieren ist ein Gespräch, kein Häkchen. Aktivierungsza
 
 Die Repository-Größe hängt vom Berechtigungsniveau ab:
 
-- Community: bis zu `10 GB`
+- Registriert (kostenlos), der Community-Plan: bis zu `10 GB`
+- Kostenloses Professional: bis zu `100 GB`
 - Kostenpflichtige Pläne: Plan- oder Vertragslimit
 
-Standard-Limits für kostenpflichtige Pläne:
+Professional und Business werden pro Floating-Lizenz berechnet, zum Listenpreis der entsprechenden Edition im Partnerkatalog: Professional `$550` pro Jahr, Business `$700` pro Jahr, Enterprise `$900` pro Jahr. Monatliche Abrechnung kostet 15 % mehr als jährliche (Jahrespreis x 1,15 / 12), gerundet sind das `$53`, `$67` und `$86` pro Monat. Professional wird im Self-Service mit 1 bis 5 Floating-Lizenzen verkauft, Business mit 1 bis 39, und Enterprise beginnt bei 40 (dem Maschinenminimum des Partnerkatalogs).
 
-| Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Delegierungszert. Standard / Max |
-|------|-------------------|------------------|-------------------------------------|---|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2.000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5.000+ | 90d / 180d |
-| Enterprise | Individuell | 1 TB+ | 15.000+ | 120d / 365d |
+Standard-Limits:
+
+| Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Benutzer | Repositories | CPUs pro Maschine | Gehostetes R2 | Preis pro Lizenz | Delegierungszert. Standard / Max |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registriert (kostenlos) | 1 | 10 GB | 100 | 1 | Unbegrenzt | 16 | Keines | Kostenlos | 15d / 30d |
+| Kostenloses Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Kostenlos | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 pro Lizenz | 32 | 100 GiB pro Lizenz | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Unbegrenzt | 250 pro Lizenz | 64 | 500 GiB pro Lizenz | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Unbegrenzt | Auf Anfrage | Unbegrenzt | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+Die Preisspalte zeigt monatlich / jährlich, in US-Dollar pro Floating-Lizenz. Benutzer sind die Mitglieder der Organisation, aktive plus ausstehende Einladungen. Repositories zählen nur Originale; ein Fork zählt nie. Die Spalten pro Lizenz (Repositories, Ausstellungen und gehostetes R2 bei Professional und Business) werden mit der Anzahl der Floating-Lizenzen im Abonnement multipliziert, die Benutzer- und CPU-Limits dagegen nicht. CPUs sind logische CPUs, wie das Betriebssystem sie meldet, einschließlich Hyperthreads und VM-vCPUs.
+
+Registrierte (kostenlose) Konten erhalten keinen gehosteten R2-Backup-Speicher und bringen ihren eigenen S3-Speicher mit. Gehostetes R2 gibt es für kostenloses Professional und für kostenpflichtige Pläne.
+
+Das Add-on für große Maschinen erhöht das CPU-Limit einer benannten Maschine um 8 CPUs pro Pass, für `$50` pro Monat oder `$200` pro Jahr und Pass, mit höchstens 4 Pässen pro Maschine und höchstens 3 Maschinen mit Pässen pro Abonnement. Alles darüber hinaus ist Enterprise.
 
 Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erhöhen oder verringern. Die Gültigkeit von Delegierungszertifikaten ist zusätzlich auf `subscription.expiresAt + 3 day grace` begrenzt, sodass monatlich abgerechnete Abonnements natürlicherweise Zertifikate erhalten, die auf ihren Abrechnungszeitraum ausgerichtet sind. Siehe [License Chain & Delegation - Validity Policy](/de/docs/license-chain) für die vollständigen Regeln.
 
@@ -143,7 +153,7 @@ Vertragsspezifische Limits können diese Werte für einen bestimmten Kunden erh�
 
 Neuanmeldungen starten eine 14-tägige kostenlose Testphase im Plan Professional oder Business. Bei der Anmeldung wird eine Kreditkarte hinterlegt, und die erste Abbuchung erfolgt erst, wenn die Testphase endet, sodass eine Kündigung davor kostenlos ist. Pro Kunde ist eine Testphase verfügbar.
 
-Community ist die dauerhafte kostenlose Grundstufe. Für neue Konten ist sie keine direkte Anmeldeoption mehr; stattdessen landet ein Konto auf Community, sobald ein Abonnement endet: durch Kündigung während der Testphase, spätere Kündigung eines kostenpflichtigen Plans oder eine fehlgeschlagene Zahlung. Im Community-Fallback behalten Sie eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat. Konten, die vor der Einführung des testphasenbasierten Modells erstellt wurden, behalten ihren bestehenden Community-Zugang.
+Community, angezeigt als Registriert (kostenlos), ist die dauerhafte kostenlose Grundstufe und wird nicht als Plan beworben. Für neue Konten ist sie keine direkte Anmeldeoption mehr; stattdessen landet ein Konto auf Community, sobald ein Abonnement endet: durch Kündigung während der Testphase, spätere Kündigung eines kostenpflichtigen Plans oder eine fehlgeschlagene Zahlung. Im Community-Fallback behalten Sie eine Maschine mit 10 GB pro Repository und 100 Setups pro Monat, aber keinen gehosteten R2-Backup-Speicher. Konten, die vor der Einführung des testphasenbasierten Modells erstellt wurden, behalten ihren bestehenden Community-Zugang.
 
 Die Durchsetzung bleibt dort nachsichtig, wo es am meisten zählt: Laufende Repositories funktionieren auch nach Ablauf eines Abonnements weiter (`up`, `down`, `delete`, Autostart). Darüber hinaus gelten zwei verschiedene Regeln, und ihre Verwechslung ist der Grund, warum die 60-tägige Kulanzfrist widersprüchlich wirkt:
 

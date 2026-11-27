@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: pt
-sourceHash: "53e0bdad5b3654a2"
+sourceHash: "4d9fc42d2493e500"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de máquina (lado do servidor)
 
-O rastreamento de slots de máquina é aplicado do lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura. Todo plano self-service (Community, Professional, Business) inclui um slot de máquina; implantações multi-máquina são uma configuração Enterprise dimensionada junto com nossos parceiros. Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Como um slot só fica retido enquanto você está provisionando ativamente, um único slot ainda pode cobrir várias máquinas ao longo de um mês.
+O rastreamento de slots de máquina é aplicado do lado do servidor. Quando a CLI emite uma licença de repositório, o servidor de conta verifica a cota de slots de máquina da assinatura. Contas registradas (gratuitas) e o Professional gratuito incluem um slot de máquina. Professional e Business têm um slot de máquina por licença flutuante (1 a 5 e 1 a 39 no self-service); implantações maiores são uma configuração Enterprise dimensionada junto com nossos parceiros. Um slot é mantido por 5 horas a partir da última emissão de licença de repositório naquela máquina e é liberado automaticamente após inatividade. Como um slot só fica retido durante o provisionamento ativo, um único slot ainda pode cobrir várias máquinas ao longo de um mês.
 
-O teto é lido do registo da sua assinatura, e não de uma constante fixa do plano, por isso um número de ativações negociado passa a valer assim que é definido na assinatura. O nível do plano apenas decide o valor inicial.
+O teto é lido do registo da assinatura, e não de uma constante fixa do plano, por isso um número de ativações negociado passa a valer assim que é definido na assinatura. O nível do plano apenas decide o valor inicial.
 
 A emissão e a renovação são aplicadas de forma diferente, e essa diferença importa:
 
@@ -125,17 +125,27 @@ Dimensionar um Cluster é uma conversa, não uma caixa a assinalar. Os números 
 
 O tamanho do repositório depende do nível de direito:
 
-- Community: até `10 GB`
+- Registrado (gratuito), o plano Community: até `10 GB`
+- Professional gratuito: até `100 GB`
 - planos pagos: limite de plano ou contrato
 
-Os limites padrão para planos pagos são:
+Professional e Business são cobrados por licença flutuante, ao preço de tabela da edição correspondente do catálogo de parceiros: Professional `$550` por ano, Business `$700` por ano, Enterprise `$900` por ano. A cobrança mensal custa 15% a mais que a anual (preço anual x 1,15 / 12), o que arredonda para `$53`, `$67` e `$86` por mês. O Professional vende de 1 a 5 licenças flutuantes no self-service, o Business de 1 a 39, e o Enterprise começa em 40 (o mínimo de máquinas do catálogo de parceiros).
 
-| Plano | Licenças Flutuantes | Tamanho do Repositório | Emissões mensais de licença de repositório | Validade padrão / máxima do cert. de delegação |
-|-------|----------------------|--------------------------|------------------------------------------------|--------------------------------------------------|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2.000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5.000+ | 90d / 180d |
-| Enterprise | Personalizado | 1 TB+ | 15.000+ | 120d / 365d |
+Os limites padrão são:
+
+| Plano | Licenças Flutuantes | Tamanho do Repositório | Emissões mensais de licença de repositório | Usuários | Repositórios | CPUs por máquina | R2 hospedado | Preço por licença | Validade padrão / máxima do cert. de delegação |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registrado (gratuito) | 1 | 10 GB | 100 | 1 | Ilimitados | 16 | Nenhum | Grátis | 15d / 30d |
+| Professional gratuito | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Grátis | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 por licença | 32 | 100 GiB por licença | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Ilimitados | 250 por licença | 64 | 500 GiB por licença | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Ilimitados | Sob cotação | Ilimitados | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+A coluna de preço mostra mensal / anual, em dólares americanos por licença flutuante. Usuários são os membros da organização, ativos mais convites pendentes. Os repositórios contam apenas os originais; um fork nunca conta. As colunas por licença (repositórios, emissões e R2 hospedado no Professional e no Business) são multiplicadas pelo número de licenças flutuantes da assinatura, e os limites de usuários e de CPU não. CPUs são CPUs lógicas conforme o sistema operacional as reporta, incluindo hyperthreads e vCPUs de VMs.
+
+Contas registradas (gratuitas) não têm armazenamento de backup R2 hospedado e usam o próprio armazenamento S3. O R2 hospedado é para o Professional gratuito e os planos pagos.
+
+O complemento de máquina grande eleva em 8 CPUs por passe o limite de CPU de uma máquina específica, a `$50` por mês ou `$200` por ano por passe, com no máximo 4 passes por máquina e no máximo 3 máquinas com passes por assinatura. Acima disso, é Enterprise.
 
 Limites específicos do contrato podem aumentar ou diminuir esses valores para um cliente específico. A validade do certificado de delegação também é limitada a `subscription.expiresAt + 3 day grace`, portanto assinaturas faturadas mensalmente naturalmente obtêm certificados alinhados ao seu ciclo de faturamento. Veja [License Chain & Delegation - Validity Policy](/pt/docs/license-chain) para as regras completas.
 
@@ -143,7 +153,7 @@ Limites específicos do contrato podem aumentar ou diminuir esses valores para u
 
 Novas contas começam um teste gratuito de 14 dias no plano Professional ou Business. O cartão de crédito é coletado no cadastro, e a primeira cobrança só acontece quando o teste termina, então cancelar antes disso não custa nada. Há apenas um teste disponível por cliente.
 
-Community é o piso gratuito permanente. Ele não é mais uma opção de cadastro direta para novas contas; em vez disso, uma conta cai para o Community sempre que uma assinatura termina: cancelamento durante o teste, cancelamento de um plano pago depois, ou um pagamento que falhou. No Community de fallback você mantém uma máquina com 10 GB por repositório e 100 configurações por mês. Contas criadas antes do lançamento do modelo baseado em teste mantêm o acesso Community que já tinham.
+Community, exibido como Registrado (gratuito), é o piso gratuito permanente e não é divulgado como um plano. Ele não é mais uma opção de cadastro direta para novas contas; em vez disso, uma conta cai para o Community sempre que uma assinatura termina: cancelamento durante o teste, cancelamento de um plano pago depois, ou um pagamento que falhou. No Community de fallback você mantém uma máquina com 10 GB por repositório e 100 configurações por mês, sem armazenamento de backup R2 hospedado. Contas criadas antes do lançamento do modelo baseado em teste mantêm o acesso Community que já tinham.
 
 A aplicação continua branda onde mais importa: repositórios em execução (`up`, `down`, `delete`, autostart) continuam funcionando mesmo depois que uma assinatura termina. Para além disso, aplicam-se duas regras diferentes, e confundi-las é o que faz a graça de 60 dias parecer inconsistente:
 

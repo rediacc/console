@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: et
-sourceHash: "53e0bdad5b3654a2"
+sourceHash: "4d9fc42d2493e500"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Masina kohad (serveri pool)
 
-Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti. Iga iseteenindusplaan (Community, Professional, Business) sisaldab ühte masina kohta; mitme masinaga juurutused on Enterprise'i lahendus, mille suuruse lepime kokku koos meie partneritega. Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. Kuna kohta hoitakse ainult aktiivse ettevalmistamise ajal, saab üks koht ikkagi katta mitut masinat kuu jooksul.
+Masina kohtade jälgimine toimub serveri poolel. Kui CLI väljastab repositooriumilitsentsi, kontrollib account-server tellimuse masina kohtade kvooti. Registreeritud (tasuta) konto ja tasuta Professional sisaldavad ühte masina kohta. Professional ja Business annavad ühe masina koha iga hõljuva litsentsi kohta (iseteeninduses 1 kuni 5 ja 1 kuni 39); suuremad juurutused on Enterprise'i lahendus, mille suuruse lepime kokku koos meie partneritega. Koht hoitakse 5 tundi alates sellel masinal viimase repositooriumilitsentsi väljastamisest ja vabaneb automaatselt pärast tegevusetust. Kuna kohta hoitakse ainult aktiivse ettevalmistamise ajal, saab üks koht ikkagi katta mitut masinat kuu jooksul.
 
-Lagi loetakse sinu tellimuse kirjest, mitte koodi kirjutatud plaanikonstandist, nii et kokkulepitud aktiveeringute arv hakkab kehtima kohe, kui see tellimusele märgitakse. Plaanitase määrab ainult algväärtuse.
+Lagi loetakse tellimuse kirjest, mitte koodi kirjutatud plaanikonstandist, nii et kokkulepitud aktiveeringute arv hakkab kehtima kohe, kui see tellimusele märgitakse. Plaanitase määrab ainult algväärtuse.
 
 Väljastamist ja uuendamist jõustatakse erinevalt, ja see vahe on oluline:
 
@@ -125,17 +125,27 @@ Klastri suuruse valik on vestlus, mitte linnuke kastis. Klastrite aktiveeringute
 
 Repositooriumi suurus sõltub õiguste tasemest:
 
-- Community: kuni `10 GB`
+- Registreeritud (tasuta), Community plaan: kuni `10 GB`
+- tasuta Professional: kuni `100 GB`
 - tasulised plaanid: plaani või lepingu piirang
 
-Vaikimisi tasuliste plaanide piirangud on:
+Professional ja Business on hinnastatud hõljuva litsentsi kaupa, partnerikataloogi vastava väljaande hinnakirja hinnaga: Professional `$550` aastas, Business `$700` aastas, Enterprise `$900` aastas. Kuumaksega arveldamine on 15% kallim kui aastane (aastahind x 1,15 / 12), mis ümardub summadeks `$53`, `$67` ja `$86` kuus. Professionalil müüakse iseteeninduses 1 kuni 5 hõljuvat litsentsi, Businessil 1 kuni 39, ja Enterprise algab 40st (partnerikataloogi masinate miinimum).
 
-| Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Delegeerimissertifikaadi vaikimisi/max |
-|------|-------------------|-----------------|-------------------------------|---|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
-| Enterprise | Kohandatud | 1 TB+ | 15,000+ | 120d / 365d |
+Vaikepiirangud on:
+
+| Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Kasutajad | Repositooriumid | CPU-sid masina kohta | Hostitud R2 | Hind litsentsi kohta | Delegeerimissertifikaadi vaikimisi/max |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registreeritud (tasuta) | 1 | 10 GB | 100 | 1 | Piiramatu | 16 | Puudub | Tasuta | 15d / 30d |
+| Tasuta Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Tasuta | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 litsentsi kohta | 32 | 100 GiB litsentsi kohta | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Piiramatu | 250 litsentsi kohta | 64 | 500 GiB litsentsi kohta | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Piiramatu | Pakkumise järgi | Piiramatu | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+Hinnaveerg näitab kuumakset / aastamakset USA dollarites ühe hõljuva litsentsi kohta. Kasutajad on organisatsiooni liikmed, aktiivsed ja ootel kutsed kokku. Repositooriumide hulka loetakse ainult originaalid; kahvel ei lähe kunagi arvesse. Litsentsipõhised veerud (Professionali ja Businessi repositooriumid, väljastamised ja hostitud R2) korrutuvad tellimuse hõljuvate litsentside arvuga, kasutajate ja CPU piirid aga mitte. CPU-d on loogilised protsessorid sellisena, nagu operatsioonisüsteem neist teatab, kaasa arvatud hüperlõimed ja virtuaalmasinate vCPU-d.
+
+Registreeritud (tasuta) kontodel puudub hostitud R2 varunduse salvestusruum ning nad peavad kasutama oma S3 hoidlat. Hostitud R2 on mõeldud tasuta Professionalile ja tasulistele plaanidele.
+
+Suurmasina lisapakett tõstab ühe nimetatud masina CPU lage 8 CPU võrra pääsme kohta, hinnaga `$50` kuus või `$200` aastas pääsme kohta; ühel masinal võib olla kuni 4 pääset ja ühes tellimuses kuni 3 pääsmega masinat. Sellest suuremad vajadused kuuluvad Enterprise'i alla.
 
 Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõsta või langetada. Delegeerimissertifikaadi kehtivus on ka kõvasti piiratud väärtusega `subscription.expiresAt + 3 day grace`, nii et igakuise arveldusega tellimused saavad sertifikaadid, mis on joondatud nende arveldustsükliga. Täielikke reegleid vaata jaotisest [Litsentsiahel ja delegeerimine - kehtivuspoliitika](/en/docs/license-chain).
 
@@ -143,7 +153,7 @@ Lepingupõhised piirangud võivad konkreetse kliendi puhul neid väärtusi tõst
 
 Uued kasutajad alustavad 14-päevase tasuta prooviperioodiga Professionali või Businessi plaanil. Krediitkaart võetakse registreerimisel, kuid esimene arve esitatakse alles siis, kui prooviperiood lõpeb, seega ei maksa tühistamine enne seda midagi. Iga klient saab ühe prooviperioodi.
 
-Community on püsiv tasuta baastase. See ei ole enam uutele kontodele otsene registreerimisvõimalus; selle asemel langeb konto Community peale iga kord, kui tellimus lõpeb: tühistamine prooviperioodi ajal, tasulise plaani hilisem tühistamine või ebaõnnestunud makse. Community tagasilanguse puhul jääb alles üks masin, 10 GB repositooriumi kohta ja 100 seadistust kuus. Kontod, mis loodi enne prooviperioodil põhineva mudeli käivitamist, säilitavad oma senise Community juurdepääsu.
+Community, mida näidatakse nimega Registreeritud (tasuta), on püsiv tasuta baastase ja seda ei turundata plaanina. See ei ole enam uutele kontodele otsene registreerimisvõimalus; selle asemel langeb konto Community peale iga kord, kui tellimus lõpeb: tühistamine prooviperioodi ajal, tasulise plaani hilisem tühistamine või ebaõnnestunud makse. Community tagasilanguse puhul jääb alles üks masin, 10 GB repositooriumi kohta ja 100 seadistust kuus ning hostitud R2 varunduse salvestusruumi pole. Kontod, mis loodi enne prooviperioodil põhineva mudeli käivitamist, säilitavad oma senise Community juurdepääsu.
 
 Jõustamine jääb pehmeks seal, kus see kõige rohkem loeb: töötavad repositooriumid jätkavad tööd ka pärast tellimuse lõppemist (`up`, `down`, `delete`, automaatkäivitus). Edasi kehtivad aga kaks erinevat reeglit, ja just nende segiajamine paneb 60-päevase tähtajaperioodi ebajärjekindlana paistma:
 

@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: fr
-sourceHash: "53e0bdad5b3654a2"
+sourceHash: "4d9fc42d2493e500"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slots de machine (côté serveur)
 
-Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement. Chaque plan en libre-service (Community, Professional, Business) inclut un slot de machine ; les déploiements multi-machines relèvent d'une configuration Enterprise dimensionnée avec nos partenaires. Un slot est conservé pendant 5 heures à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Comme un slot n'est conservé que pendant que vous approvisionnez activement, un seul slot peut tout de même couvrir plusieurs machines au cours d'un mois.
+Le suivi des slots de machine est appliqué côté serveur. Lorsque le CLI émet une licence de dépôt, le serveur de comptes vérifie le quota de slots de machine de l'abonnement. Registered (gratuit) et Professional gratuit incluent un slot de machine. Professional et Business comptent un slot de machine par licence flottante (de 1 à 5 et de 1 à 39 en libre-service) ; les déploiements plus importants relèvent d'une configuration Enterprise dimensionnée avec nos partenaires. Un slot est conservé pendant 5 heures à partir de la dernière émission de licence de dépôt sur cette machine et se libère automatiquement après inactivité. Comme un slot n'est conservé que pendant l'approvisionnement actif, un seul slot peut tout de même couvrir plusieurs machines au cours d'un mois.
 
-Le plafond est lu dans votre fiche d'abonnement, et non dans une constante de plan figée dans le code : un nombre d'activations négocié est donc honoré dès qu'il est inscrit sur l'abonnement. Le niveau de plan ne fait que déterminer la valeur de départ.
+Le plafond est lu dans la fiche d'abonnement, et non dans une constante de plan figée dans le code : un nombre d'activations négocié est donc honoré dès qu'il est inscrit sur l'abonnement. Le niveau de plan ne fait que déterminer la valeur de départ.
 
 L'émission et le renouvellement ne sont pas appliqués de la même façon, et la différence compte :
 
@@ -125,17 +125,27 @@ Dimensionner un cluster est une discussion, pas une case à cocher. Les nombres 
 
 La taille du dépôt dépend du niveau de droits :
 
-- Community : jusqu'à `10 GB`
+- Registered (gratuit), le plan Community : jusqu'à `10 GB`
+- Professional gratuit : jusqu'à `100 GB`
 - plans payants : limite du plan ou du contrat
 
-Limites par défaut des plans payants :
+Professional et Business sont facturés par licence flottante, au prix catalogue de l'édition du catalogue partenaires : Professional `$550` par an, Business `$700` par an, Enterprise `$900` par an. La facturation mensuelle coûte 15 % de plus que l'annuelle (prix annuel x 1.15 / 12), ce qui donne `$53`, `$67` et `$86` par mois après arrondi. Professional propose de 1 à 5 licences flottantes en libre-service, Business de 1 à 39, et Enterprise démarre à 40 (le minimum de machines du catalogue partenaires).
 
-| Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Validité cert de délégation par défaut / max |
-|------|---------------------|-----------------|-------------------------------------------|----------------------------------------------|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
-| Enterprise | Sur mesure | 1 TB+ | 15,000+ | 120d / 365d |
+Limites par défaut :
+
+| Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Utilisateurs | Dépôts | CPU par machine | R2 hébergé | Prix par licence | Validité cert de délégation par défaut / max |
+|------|---------------------|-----------------|-------------------------------------------|--------------|--------|-----------------|------------|------------------|----------------------------------------------|
+| Registered (gratuit) | 1 | 10 GB | 100 | 1 | Illimités | 16 | Aucun | Gratuit | 15d / 30d |
+| Professional gratuit | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Gratuit | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 par licence | 32 | 100 GiB par licence | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Illimités | 250 par licence | 64 | 500 GiB par licence | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Illimités | Sur devis | Illimités | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+La colonne des prix se lit mensuel / annuel, en dollars américains par licence flottante. Les utilisateurs sont les membres de l'organisation, actifs plus invitations en attente. Les dépôts ne comptent que les originaux ; un fork ne compte jamais. Les colonnes par licence (Dépôts, émissions et R2 hébergé sur Professional et Business) se multiplient par le nombre de licences flottantes de l'abonnement, contrairement aux plafonds d'utilisateurs et de CPU. Les CPU sont des CPU logiques, tels que le système d'exploitation les signale, hyperthreads et vCPU de machines virtuelles compris.
+
+Les comptes Registered (gratuit) n'ont pas de stockage de sauvegarde R2 hébergé et apportent leur propre stockage S3. Le R2 hébergé est réservé à Professional gratuit et aux plans payants.
+
+L'option grande machine relève de 8 CPU par pass le plafond de CPU d'une machine nommée, à `$50` par mois ou `$200` par an et par pass, avec au plus 4 pass par machine et au plus 3 machines avec pass par abonnement. Au-delà, c'est Enterprise.
 
 Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs pour un client particulier. La validité des certificats de délégation est également plafonnée à `subscription.expiresAt + 3 day grace`, de sorte que les abonnements facturés mensuellement obtiennent naturellement des certificats alignés sur leur cycle de facturation. Voir [Chaîne de licences et délégation - Politique de validité](/fr/docs/license-chain) pour les règles complètes.
 
@@ -143,7 +153,7 @@ Les limites spécifiques au contrat peuvent augmenter ou diminuer ces valeurs po
 
 Les nouvelles inscriptions démarrent un essai gratuit de 14 jours sur Professional ou Business. Une carte bancaire est enregistrée à l'inscription, et le premier prélèvement n'intervient qu'à la fin de l'essai, donc annuler avant ne coûte rien. Un seul essai est disponible par client.
 
-Community est le socle gratuit permanent. Ce n'est plus une option d'inscription directe pour les nouveaux comptes ; à la place, un compte bascule sur Community dès qu'un abonnement prend fin : annulation pendant l'essai, annulation ultérieure d'un plan payant, ou paiement en échec. Sur le repli Community, vous conservez une machine avec 10 Go par dépôt et 100 setups par mois. Les comptes créés avant le lancement du modèle basé sur l'essai conservent leur accès Community existant.
+Community, affiché comme Registered (gratuit), est le socle gratuit permanent et n'est pas commercialisé comme un plan. Ce n'est plus une option d'inscription directe pour les nouveaux comptes ; à la place, un compte bascule sur Community dès qu'un abonnement prend fin : annulation pendant l'essai, annulation ultérieure d'un plan payant, ou paiement en échec. Sur le repli Community, une machine reste disponible, avec 10 Go par dépôt et 100 setups par mois, et sans stockage de sauvegarde R2 hébergé. Les comptes créés avant le lancement du modèle basé sur l'essai conservent leur accès Community existant.
 
 L'application des limites reste souple là où cela compte le plus : les dépôts en cours d'exécution continuent de fonctionner même après la fin d'un abonnement (`up`, `down`, `delete`, démarrage automatique). Au-delà, deux règles différentes s'appliquent, et c'est en les confondant que la grâce de 60 jours paraît incohérente :
 

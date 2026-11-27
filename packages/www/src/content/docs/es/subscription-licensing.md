@@ -9,7 +9,7 @@ tags:
 subcategory: account
 order: 7
 language: es
-sourceHash: "53e0bdad5b3654a2"
+sourceHash: "4d9fc42d2493e500"
 sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
 ---
 
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Ranuras de máquina (lado del servidor)
 
-El seguimiento de ranura de máquina se aplica del lado del servidor. Cuando la CLI emite una licencia de repositorio, el servidor de cuenta verifica la cuota de ranura de máquina de la suscripción. Todos los planes de autoservicio (Community, Professional, Business) incluyen una ranura de máquina; las implementaciones multi-máquina son una configuración Enterprise dimensionada junto con nuestros partners. Se mantiene una ranura durante 5 horas desde la última emisión de licencia de repositorio en esa máquina y se libera automáticamente después de la inactividad. Como una ranura solo se mantiene mientras aprovisionas activamente, una sola ranura puede seguir cubriendo varias máquinas a lo largo de un mes.
+El seguimiento de ranura de máquina se aplica del lado del servidor. Cuando la CLI emite una licencia de repositorio, el servidor de cuenta verifica la cuota de ranura de máquina de la suscripción. Registered (gratis) y Professional gratis incluyen una ranura de máquina. Professional y Business llevan una ranura de máquina por licencia flotante (de 1 a 5 y de 1 a 39 en autoservicio); las implementaciones más grandes son una configuración Enterprise dimensionada junto con nuestros partners. Se mantiene una ranura durante 5 horas desde la última emisión de licencia de repositorio en esa máquina y se libera automáticamente después de la inactividad. Como una ranura solo se mantiene durante el aprovisionamiento activo, una sola ranura puede seguir cubriendo varias máquinas a lo largo de un mes.
 
-El tope se lee del registro de tu suscripción, no de una constante de plan fija en el código, así que un número de activaciones negociado se respeta en cuanto queda anotado en la suscripción. El nivel del plan solo decide el valor inicial.
+El tope se lee del registro de la suscripción, no de una constante de plan fija en el código, así que un número de activaciones negociado se respeta en cuanto queda anotado en la suscripción. El nivel del plan solo decide el valor inicial.
 
 La emisión y la renovación se aplican de forma distinta, y esa diferencia importa:
 
@@ -125,17 +125,27 @@ Dimensionar un clúster es una conversación, no una casilla. El número de acti
 
 El tamaño del repositorio depende del nivel de derecho:
 
-- Community: hasta `10 GB`
+- Registered (gratis), el plan Community: hasta `10 GB`
+- Professional gratis: hasta `100 GB`
 - planes pagados: límite de plan o contrato
 
-Los límites predeterminados de planes pagados son:
+Professional y Business se cobran por licencia flotante, al precio de lista de la edición del catálogo de partners: Professional `$550` al año, Business `$700` al año, Enterprise `$900` al año. La facturación mensual cuesta un 15% más que la anual (precio anual x 1.15 / 12), lo que se redondea a `$53`, `$67` y `$86` al mes. Professional vende de 1 a 5 licencias flotantes en autoservicio, Business de 1 a 39, y Enterprise empieza en 40 (el mínimo de máquinas del catálogo de partners).
 
-| Plan | Licencias Flotantes | Tamaño de Repositorio | Issuances de licencia de repositorio mensuales | Delegación cert predeterminado / máximo |
-|------|-------------------|-----------------|-------------------------------|---|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
-| Enterprise | Personalizado | 1 TB+ | 15,000+ | 120d / 365d |
+Los límites predeterminados son:
+
+| Plan | Licencias Flotantes | Tamaño de Repositorio | Issuances de licencia de repositorio mensuales | Usuarios | Repositorios | CPU por máquina | R2 alojado | Precio por licencia | Delegación cert predeterminado / máximo |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registered (gratis) | 1 | 10 GB | 100 | 1 | Ilimitados | 16 | Ninguno | Gratis | 15d / 30d |
+| Professional gratis | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Gratis | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 por licencia | 32 | 100 GiB por licencia | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Ilimitados | 250 por licencia | 64 | 500 GiB por licencia | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Ilimitados | A medida | Ilimitadas | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+La columna de precio se lee mensual / anual, en dólares estadounidenses por licencia flotante. Los usuarios son los miembros de la organización, activos más invitaciones pendientes. Los repositorios cuentan solo los originales; un fork nunca cuenta. Las columnas por licencia (Repositorios, issuances y R2 alojado en Professional y Business) se multiplican por el número de licencias flotantes de la suscripción, y los topes de usuarios y CPU no. Las CPU son CPU lógicas tal como las informa el sistema operativo, con hyperthreads y vCPU de máquinas virtuales incluidos.
+
+Las cuentas Registered (gratis) no incluyen almacenamiento de respaldo en R2 alojado y usan su propio almacén S3. El R2 alojado es para Professional gratis y los planes pagados.
+
+El complemento de máquina grande eleva en 8 CPU por pase el tope de CPU de una máquina concreta, a `$50` al mes o `$200` al año por pase, con un máximo de 4 pases por máquina y de 3 máquinas con pases por suscripción. Más allá de eso, es Enterprise.
 
 Los límites específicos del contrato pueden aumentar o disminuir estos valores para un cliente específico. La validez del certificado de delegación también tiene un límite máximo de `subscription.expiresAt + 3 day grace`, por lo que las suscripciones facturadas mensualmente obtienen naturalmente certificados alineados con su ciclo de facturación. Consulta [Cadena de Licencias y Delegación - Política de Validez](/es/docs/license-chain) para conocer todas las reglas.
 
@@ -143,7 +153,7 @@ Los límites específicos del contrato pueden aumentar o disminuir estos valores
 
 Los nuevos registros comienzan una prueba gratuita de 14 días en Professional o Business. Se solicita una tarjeta de crédito al registrarte, y el primer cobro se realiza solo cuando termina la prueba, así que cancelar antes no tiene ningún costo. Hay una prueba disponible por cliente.
 
-Community es el nivel gratuito permanente. Ya no es una opción de registro directo para cuentas nuevas; en su lugar, una cuenta pasa a Community cuando termina una suscripción: al cancelar durante la prueba, al cancelar más tarde un plan pagado, o por un pago fallido. En el respaldo de Community conservas una máquina con 10 GB por repositorio y 100 setups al mes. Las cuentas creadas antes del lanzamiento del modelo basado en prueba conservan su acceso Community existente.
+Community, que se muestra como Registered (gratis), es el nivel gratuito permanente y no se comercializa como un plan. Ya no es una opción de registro directo para cuentas nuevas; en su lugar, una cuenta pasa a Community cuando termina una suscripción: al cancelar durante la prueba, al cancelar más tarde un plan pagado, o por un pago fallido. En el respaldo de Community se conserva una máquina, con 10 GB por repositorio y 100 setups al mes, y sin almacenamiento de respaldo en R2 alojado. Las cuentas creadas antes del lanzamiento del modelo basado en prueba conservan su acceso Community existente.
 
 La aplicación de límites se mantiene flexible donde más importa: los repositorios en ejecución siguen funcionando incluso después de que termina una suscripción (`up`, `down`, `delete`, autostart). Más allá de eso rigen dos reglas distintas, y confundirlas es lo que hace que el margen de 60 días parezca incoherente:
 
