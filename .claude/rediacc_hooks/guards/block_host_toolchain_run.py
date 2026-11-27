@@ -115,6 +115,8 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.ops.r2_bucket_copy", "aws"),
     # The detector model bundle upload (5dc50111a5) reads and writes R2 through `awscli.AWS` from the module (publish_models.py:87, :111); the coverage scan found it without a row.
     ("rediacc_ci.ops.publish_models", "aws"),
+    # The third-party source mirror (30af24f253) uploads to the releases bucket through `awscli.run` (mirror_third_party_src.py:222) after `awscli.require()`; the coverage scan found it without a row.
+    ("rediacc_ci.deploy.mirror_third_party_src", "aws"),
     # THE MODULE SPELLINGS OF check:ci-python-lint (PLAN-tooling-code-reduction CR2). The gate lost its npm key, so the runner and CI run `PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness`, which runs the ruff lint (`python_lint.main`) first; `python_lint` is runnable on its own too. Both refuse with 77 when ruff is absent, which is this table's entry test. The NEEDS row keeps the gate id for `npm run ci -- --only check:ci-python-lint`.
     ("rediacc_ci.quality.lint_config_liveness", "ruff"),
     ("rediacc_ci.quality.python_lint", "ruff"),
