@@ -250,7 +250,8 @@ def test_listening_ports_sees_a_real_listener(listener: int) -> None:
     snapshot = ports.listening_ports()
     if snapshot is None:
         pytest.skip("no ss on this host")
-    assert listener in snapshot
+    else:
+        assert listener in snapshot
 
 
 def test_require_free_refuses_a_listening_port_and_passes_once_it_closes() -> None:
