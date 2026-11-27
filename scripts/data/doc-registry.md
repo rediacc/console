@@ -509,7 +509,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_benchblock.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/stop/wl_bgsweep.py | (none) | via .claude/hooks/stop/test-bgsweep.py | py |
 | .claude/hooks/stop/wl_boxaudit.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_boxready.py | (none) | via .claude/hooks/post-bash/writers_now_note.py | py |
+| .claude/hooks/stop/wl_boxready.py | (none) | via .claude/hooks/post-bash/test-writers-now-note.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
@@ -575,7 +575,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_review.py | (none) | via .claude/hooks/post-bash/review_commit.py | py |
 | .claude/hooks/stop/wl_reviewclass.py | (none) | via .claude/hooks/stop/test-wl_review-security.py | py |
 | .claude/hooks/stop/wl_reviewsec.py | (none) | via .claude/hooks/stop/test-wl_review-security.py | py |
-| .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/post-bash/writers_now_note.py | py |
+| .claude/hooks/stop/wl_roster.py | (none) | via .claude/hooks/post-bash/test-writers-now-note.py | py |
 | .claude/hooks/stop/wl_roster_resume.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_roundlog.py | (none) | via .claude/hooks/stop/wl_checks.py | py |
 | .claude/hooks/stop/wl_rules.py | (none) | via .claude/hooks/stop/test-completion-evidence.py | py |

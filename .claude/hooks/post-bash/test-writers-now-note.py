@@ -34,6 +34,8 @@ spec.loader.exec_module(note)
 wl_core = importlib.import_module("wl_core")
 wl_planqueue = importlib.import_module("wl_planqueue")
 wl_writersnow = importlib.import_module("wl_writersnow")
+wl_boxready = importlib.import_module("wl_boxready")
+wl_roster = importlib.import_module("wl_roster")
 
 FAILURES: list[str] = []
 CASES = [0]
@@ -58,6 +60,11 @@ LEASED_B = {"id": "1", "state": ">", "owner": SESSION, "text": "b1b1b1b1"}
 OPEN_A = {"id": "2", "state": " ", "owner": SESSION, "text": "a1a1a1a1"}
 
 
+def roster_rows(count, ids):
+    """`count` roster rows, the first ones carrying `ids` as their worker ids."""
+    return [{"id": ids[n] if n < len(ids) else "anon%d" % n, "writer": True} for n in range(count)]
+
+
 def plant_survey(tmp, age_min):
     path = pathlib.Path(tmp) / "survey.md"
     path.write_text(SURVEY, encoding="utf-8")
@@ -74,6 +81,7 @@ def run(
     survey="/nonexistent",
     items=(),
     live=2,
+    live_ids=(),
 ):
     at = (NOW - datetime.timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows = [{"round": "feedf00d", "session": session, "at": at, "survey": survey}]
@@ -85,9 +93,10 @@ def run(
         mock.patch.object(wl_writersnow, "read_rounds", return_value=rows),
         mock.patch.object(wl_writersnow, "promoted_open", return_value=469),
         mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
+        mock.patch.object(wl_writersnow, "promoted_open_sigs", return_value=set()),
+        mock.patch.object(wl_boxready, "vmcheck_admits", return_value=False),
         mock.patch.object(note, "_items", return_value=list(items)),
-        mock.patch.object(note, "_live_writers", return_value=live),
-        mock.patch.object(note, "_live_ids", return_value=()),
+        mock.patch.object(note, "_live_rows", return_value=roster_rows(live, live_ids)),
         mock.patch.object(note.tempfile, "gettempdir", return_value=stamp_dir),
     ):
         return note.note_for({"session_id": session, "cwd": "/repo"})
@@ -171,6 +180,68 @@ def staff_cases():
         check("control: a staffed target prints no staff note", "STAFF" in got, False)
 
 
+STALE_RUNNER = dict(
+    BENCH_RUNNER, worker="w-live", upd="2026-11-25T15:00:00Z", first="2026-11-25T15:00:00Z"
+)
+
+
+def live_id_cases():
+    """The roster's live worker ids reach capacity: a runner item too old to count as fresh still staffs its target while its worker is live, and a roster without that id reads it unstaffed (reviews beddbf39.1, .2). The roster is scanned once per note (beddbf39.4)."""
+    items = [LEASED_B, OPEN_A, STALE_RUNNER]
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "survey.md"
+        path.write_text(STAFF_SURVEY, encoding="utf-8")
+        got = run(12, stamp_dir=tmp, survey=str(path), items=items, live_ids=("w-live",))
+        check("a live roster id staffs a stale runner item", "STAFF" in got, False)
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "survey.md"
+        path.write_text(STAFF_SURVEY, encoding="utf-8")
+        got = run(12, stamp_dir=tmp, survey=str(path), items=items, live_ids=())
+        check(
+            "control: without the live id the stale runner leaves the target unstaffed",
+            got.startswith("WRITERS-NOW STAFF ("),
+            True,
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        survey = plant_survey(tmp, 10)
+        scans = []
+
+        def counting(_cwd, _session, _now=None):
+            scans.append(1)
+            return roster_rows(2, ("w-live",))
+
+        with (
+            mock.patch.object(wl_core, "utcnow", return_value=NOW),
+            mock.patch.object(wl_core, "project_root", return_value="/repo"),
+            mock.patch.object(
+                wl_planqueue,
+                "settings_for",
+                return_value=(wl_planqueue.Settings(effort="high"), []),
+            ),
+            mock.patch.object(
+                wl_writersnow,
+                "read_rounds",
+                return_value=[
+                    {
+                        "round": "feedf00d",
+                        "session": SESSION,
+                        "at": (NOW - datetime.timedelta(minutes=12)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                        "survey": survey,
+                    }
+                ],
+            ),
+            mock.patch.object(wl_writersnow, "promoted_open", return_value=469),
+            mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
+            mock.patch.object(wl_writersnow, "promoted_open_sigs", return_value=set()),
+            mock.patch.object(wl_boxready, "vmcheck_admits", return_value=False),
+            mock.patch.object(note, "_items", return_value=[LEASED_B]),
+            mock.patch.object(wl_roster, "live_writers_estimate", counting),
+            mock.patch.object(note.tempfile, "gettempdir", return_value=tmp),
+        ):
+            note.note_for({"session_id": SESSION, "cwd": "/repo"})
+        check("one note scans the roster once", len(scans), 1)
+
+
 def quiet_cases():
     """A quiet verdict is reused for QUIET_EVERY_SEC: the store is not read again on the next call (review 7d036d68.3)."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -214,8 +285,9 @@ def run_quiet(survey, tmp, now=None):
         mock.patch.object(wl_writersnow, "read_rounds", return_value=rows),
         mock.patch.object(wl_writersnow, "promoted_open", return_value=469),
         mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
-        mock.patch.object(note, "_live_writers", return_value=12),
-        mock.patch.object(note, "_live_ids", return_value=()),
+        mock.patch.object(wl_writersnow, "promoted_open_sigs", return_value=set()),
+        mock.patch.object(wl_boxready, "vmcheck_admits", return_value=False),
+        mock.patch.object(note, "_live_rows", return_value=roster_rows(12, ())),
         mock.patch.object(note.tempfile, "gettempdir", return_value=tmp),
     ):
         return note.note_for({"session_id": SESSION, "cwd": "/repo"}, now=now)
@@ -256,6 +328,7 @@ def main():
         check("a short session id is silent", run(75, session="d77", stamp_dir=tmp), "")
     refill_cases()
     staff_cases()
+    live_id_cases()
     quiet_cases()
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))

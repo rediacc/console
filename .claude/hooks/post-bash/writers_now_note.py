@@ -107,14 +107,15 @@ def note_for(doc, now=None):
         return ""
     # A survey or roster read that fails leaves the clock's verdict standing (the Stop segment does the same).
     try:
+        roster = _live_rows(doc, session)
         cap = wl_writersnow.capacity(
             rows,
             session,
             root,
             _items(doc),
-            _live_writers(doc, session),
+            _live_writers(roster),
             lambda: wl_writersnow.promoted_done_sigs(root),
-            live_ids=_live_ids(doc, session),
+            live_ids=_live_ids(roster),
             open_sigs=lambda: wl_writersnow.promoted_open_sigs(root),
             vm_verified=lambda: wl_boxready.vmcheck_admits(root),
         )
@@ -195,19 +196,20 @@ def _items(doc):
     return S.load(C.worklist_for(start), sync=False).items
 
 
-def _live_writers(doc, session):
-    """The live writers the roster estimates for this session, or None when it cannot count (which never refills)."""
+def _live_rows(doc, session):
+    """The live writer rows the roster estimates for this session (one scan per note), or None when it cannot count."""
     import wl_roster
 
-    rows = wl_roster.live_writers_estimate(doc.get("cwd") or os.getcwd(), session)
+    return wl_roster.live_writers_estimate(doc.get("cwd") or os.getcwd(), session)
+
+
+def _live_writers(rows):
+    """The live writer count of `rows`, or None when the roster could not count (which never refills)."""
     return None if rows is None else len(rows)
 
 
-def _live_ids(doc, session):
-    """The live worker ids the roster sees for this session (the stop check's `_live_worker_ids`), or () when it cannot count."""
-    import wl_roster
-
-    rows = wl_roster.live_writers_estimate(doc.get("cwd") or os.getcwd(), session)
+def _live_ids(rows):
+    """The live worker ids of `rows` (the stop check's `_live_worker_ids`), or () when the roster could not count."""
     return (
         () if rows is None else tuple(str(r.get("id") or "") for r in rows if isinstance(r, dict))
     )
