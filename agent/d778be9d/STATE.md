@@ -1,21 +1,21 @@
-## SESSION d778be9d 2026-11-27T04:08:48Z
+## SESSION d778be9d 2026-11-27T04:34:54Z
 
 ## Next action
-1. Land each lease writer as it reports (`./run.sh worktree land <id> --run --me d778be9d`, run its tests on the landed tree, tick its item, `worktree gc --write --id <id>`): CLI drill fix afc9e032097a4643e (#b201a49d, running the drills now), run-14 slow tests a6d41b11683128ccb (#fe84202c), writers-now follow-ups a0eb10f824eaceaed (#e2467380), CL-CR2 aefb9792e6cd5e5de (#dc7abfcd), CL-PS a0879b250a10f91d8 (#d00585c2), CL-Q aff95a769382041f7 (#97b73a24), CL-DO18+FN12 a3104ecf14709a9b0 (#24900592).
-2. Lead batch from /tmp/writers-now/1121-1-20261127T0337Z-r82.md: tick the 11 PRESENT boxes (c1822dd6 needs a corrected path line; bca87be6 and 8c5557a5 need DEPS-WAIVED and check:ci-renet first); start 4 review writers (CL-W-AGENT-1..4, 116 plan-record findings, r82-clusters.json); runners for the 9 no-KVM VM boxes and 4 non-release prod boxes (043803fb, 1ad331de, 50c5369e, f84846f5).
-3. After the CLI drill fix: `npm run vm:check -- --changed`; on VERIFIED restart a bench runner (close hold #bcf7acef).
-4. After the slow-test writer: ci:quick 16 alone, push, edge release dry run then real (RELEASE_ASKED=ASKED:2026-11-25T16:35Z), rollback ids on #58a674f6; then eu-remote backup schedule (#2fa2845b).
-5. Review finding 06e362be.1: fix the pins tool deadlock #2144097d, re-run the arangodb hold through `npm run pins -- hold`, mark fixed.
+1. URGENT: when the D1 restore writer a1513e48cbfd966c8 (#98c720db) reports, verify hostinger backups are green again (`./rdc.sh --config eu-bench backup usage` shows subscription 63284afd with ~564 GB, `backup manifests ops@hostinger` non-empty, mail hot unit succeeds); if it stopped on a guard, run or hand the operator its exact command.
+2. Commit the review-writer plan fixes (#2a1bf367): about 30 fixes across ~25 plan files are applied UNCOMMITTED in the main checkout (messages /tmp/cl1_msg1.txt, /tmp/cl1_msg2.txt, /tmp/m/agent2-msg.txt, /tmp/m/agent3-msgs/*.txt, /tmp/m/agent4-msgs/*.txt). The commit-policy hook refused because the rendered QUEUE.md/INDEX differ from HEAD ('plan-renders ... until it closes: PLAN-vmcheck-incremental.md'): render QUEUE+INDEX against a temp index holding the plan files, and commit the rendered QUEUE hunk with them (the working QUEUE.md carries a foreign delta). Then --review-mark each Fixes-Review id and tick #3d379ad3 #89299326 #256b31dd with the shas. AGENT-6/7 (a01c9ad3aee49e156, acbdd7ec740cd365a) will add more to apply the same way.
+3. Land as they report: fleet runner ab25a53e4dbd1ca05 (#b201a49d: drills on renet 334ed408 then vm:check), CL-Q aff95a769382041f7 (#97b73a24), pins + drift a8b82d45e758d0d8d (#2144097d #590739b3, carries 06e362be.1), CL-RF-CI2 a9c67f96d89bb7892.
+4. When vm:check is VERIFIED and host load is low: ci:quick 16 alone, push, edge release dry run then real (RELEASE_ASKED=ASKED:2026-11-25T16:35Z), rollback ids on #58a674f6; restart bench and hostinger runners; eu-remote backup schedule (#2fa2845b).
+5. r83 lead batch: 16 PRESENT boxes in /tmp/writers-now/1121-1-20261127T0415Z-r83.md (D2 after D1/N2, FN12 after FN4; T1 needs a corrected tsconfig path line); gate-tooling defects #d5f23a12.
 
 ## Big pieces
-- Edge release #58a674f6: waits on ci:quick 16 and a VERIFIED vm:check.
-- Promoted drain: 347 open boxes; r82 staffed 4 code writers, hostinger runner live, bench held behind vm:check.
+- Hostinger backups broken by the bench wipe: D1 restore in progress (#98c720db).
+- Edge release #58a674f6: waits on a VERIFIED vm:check and ci:quick 16.
 
 ## Owed ticks
-Box audit live-owed: ciquick-cpu#64e50145, console-ai-assistant#62309d70 #e85200b3, console-ai-in-pages#4cd2161d, console-contract-semantics#dd29c56a, drain-throughput#b8c60921, enterprise-tenants#5f5ca7ff, forensics-alerts-notices#5bbcdbfd #ce78dbac, forensics-capture#1778ed35, forensics-shipping#8c5557a5 #bca87be6, health-checks-local#85f55665, native-host-rdc-feedback#c9ea2164, preview-signer#2df4a7f5 #ae54f093 #b312ee25 #b9074ceb #d2efe573, rmcp-config-edit-removal#41d8554a, rmcp-decide#c1822dd6, rmcp-docs#41ac618b #a3124efd #c9790d6c, rmcp-executor-hardening#1e269665; D1 f1adf697, Q16 e14b9f6a.
+PRESENT batch from r83 (16 boxes) and the box-audit live-owed list in the previous STATE commit.
 
 ## Armed
-- #0f42f15e NOT-BEFORE 2026-12-01T00:00Z: asia key rotation/delete through bws profile rotation.
+- #0f42f15e NOT-BEFORE 2026-12-01T00:00Z asia key rotation.
 
 ## Delegated
-Writers above; hostinger runner ad3e704e4d6017afb (#437ad203).
+Writers and runners named in Next action.
