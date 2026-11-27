@@ -779,13 +779,13 @@ WIDTH_NAME_RE = re.compile(
 )
 FLAG_TAKES_WIDTH = frozenset({"-n", "--numprocesses", "-j", "--jobs", "-P", "--max-procs"})
 PYTEST_MARKERS = ("--dist", "pytest", "xdist")
-#: The text every node-level width rule below needs, so a source without any of it skips the whole-tree walk (a pre-filter that over-accepts: each alternative is a name or literal the AST rule itself tests for). The core probes and the pool-call and keyword names are identifiers in the source; a flag is a quoted string constant, `"-n"` or `'-n'`.
+#: The text every node-level width rule below needs, so a source without any of it skips the whole-tree walk (a pre-filter that over-accepts: each alternative is a name or literal the AST rule itself tests for). The core probes and the pool-call names are identifiers in the source, a width keyword is a name followed by `=`, and a flag is a quoted string constant, `"-n"` or `'-n'`.
 WIDTH_WALK_RE = re.compile(
     "|".join(
         [
             *(re.escape(probe.rstrip("(")) for probe in CORE_PROBES),
             *(re.escape(name) for name in sorted(POOL_CALLS)),
-            *(re.escape(name) for name in sorted(WIDTH_KWARGS)),
+            r"\b(?:%s)\s*=" % "|".join(re.escape(name) for name in sorted(WIDTH_KWARGS)),
             "[\"'](?:%s)[\"']" % "|".join(re.escape(f) for f in sorted(FLAG_TAKES_WIDTH)),
         ]
     )
