@@ -87,8 +87,11 @@ describe('createTempKnownHostsFile writes the pins under the dialed host', () =>
     expect(await readFile(path, 'utf8')).toBe(`@cert-authority h.example ssh-ed25519 ${ED25519}\n`);
   });
 
-  it('has the OpenSSH oracle wherever CI runs, so its tests never skip there', () => {
-    if (process.env.CI) expect(hasSshKeygen).toBe(true);
+  // Enforced only under CI: locally the oracle test below skips when ssh-keygen is absent.
+  it('has the OpenSSH oracle under CI, so its tests never skip there', () => {
+    if (process.env.CI) {
+      expect(hasSshKeygen, 'ssh-keygen (the OpenSSH oracle) is not on PATH under CI').toBe(true);
+    }
   });
 
   it('writes an empty file when nothing is pinned', async () => {
