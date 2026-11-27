@@ -98,9 +98,8 @@ def evaluate(path: pathlib.Path, now: dt.datetime) -> tuple[int, list[str]]:
     ]
 
 
-def main(argv: list[str] | None = None) -> int:
-    args = sys.argv[1:] if argv is None else argv
-    path = pathlib.Path(args[0]) if args else paths.repo_root() / RECORD_REL
+def main(argv: list[str]) -> int:
+    path = pathlib.Path(argv[0]) if argv else paths.repo_root() / RECORD_REL
     try:
         now = gate_clock.now()
     except gate_clock.GateClockError as exc:
@@ -113,4 +112,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("windows_image_expiry.py", sys.argv[1:], positional="<record.json>")
+    raise SystemExit(main(sys.argv[1:]))
