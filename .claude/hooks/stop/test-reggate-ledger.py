@@ -184,6 +184,86 @@ with tempfile.TemporaryDirectory() as td:
     check("CONTROL: the real ledger beside it is", names, ["0923-1.jsonl"])
 
 
+# --- 3d. a dotted branch name still lands in a ledger the readers list (review 896a95d5.4)
+with tempfile.TemporaryDirectory() as td:
+    root = pathlib.Path(td)
+    R.append_ledger("rel.1.2", {"kind": "debt", "sig": "dotted", "blind_spot": "x" * 20}, root=root)
+    check(
+        "a debt on a dotted branch is read back by debt_entries",
+        [e["sig"] for e in R.debt_entries(root)],
+        ["dotted"],
+    )
+    check(
+        "CONTROL: its ledger stem carries no dot, so ledger_paths lists it",
+        [p.name for p in R.ledger_paths(root)],
+        ["rel-1-2.jsonl"],
+    )
+
+
+# --- 3e. a defaulted live branch git cannot name resets no counter (review 896a95d5.1)
+with tempfile.TemporaryDirectory() as td:
+    root = pathlib.Path(td)
+    for i in range(R.REGGATE_CAP):
+        R.charge("spent-br", "c%d" % i, "proven", root=root)
+    _real_branch = C.git_branch
+    try:
+        C.git_branch = lambda _root: ""
+        _c, remaining, _d, _f = R.budget_state("spent-br", root)
+        check("a failed branch probe leaves a spent budget spent", remaining, 0)
+        C.git_branch = lambda _root: "other-br"
+        _c, remaining, _d, _f = R.budget_state("spent-br", root)
+        check("CONTROL: a probe naming another branch resets the counter", remaining, R.REGGATE_CAP)
+    finally:
+        C.git_branch = _real_branch
+
+
+# --- 3f. cap_demand, the one call the wl_checks block site makes (review 896a95d5.2)
+_GATE = {"blind_spot": "a blind spot long enough", "surface": "hooks", "artifact": "a/test.py"}
+with tempfile.TemporaryDirectory() as td:
+    root = pathlib.Path(td)
+    br = "cap-demand"
+    for i in range(R.REGGATE_CAP):
+        R.charge(br, "c%d" % i, "proven", root=root)
+    for i in range(R.REGGATE_MAX_DEBTS - 1):
+        R.append_ledger(br, {"kind": "debt", "sig": "d%d" % i, "blind_spot": "x" * 20}, root=root)
+    hit, _charged = R.cap_demand(br, "below-max", _GATE, root=root)
+    check("CONTROL: below REGGATE_MAX_DEBTS cap_demand defers", hit, True)
+    _c, _r, debts, _f = R.budget_state(br, root, live=br)
+    check("...and writes the debt with the judge's finding", debts[-1].get("artifact"), "a/test.py")
+    hit, _charged = R.cap_demand(br, "past-max", _GATE, root=root)
+    check("at REGGATE_MAX_DEBTS cap_demand does NOT defer: the demand blocks", hit, False)
+    _c, _r, debts, _f = R.budget_state(br, root, live=br)
+    check("...and writes no debt for it", "past-max" in {d.get("sig") for d in debts}, False)
+    hit, _charged = R.cap_demand("fresh-br", "unspent", _GATE, root=root)
+    check("CONTROL: with budget left cap_demand does not defer", hit, False)
+
+# The block site and the stop-time collection reach the ledger only through these calls, so the controls above and in section 7 are controls on the stop itself.
+_WL_CHECKS = (pathlib.Path(__file__).resolve().parent / "wl_checks.py").read_text(encoding="utf-8")
+check(
+    "wl_checks' block site calls wl_reggate.cap_demand",
+    "wl_reggate.cap_demand(" in _WL_CHECKS,
+    True,
+)
+check(
+    "...and reads no budget of its own beside it",
+    "wl_reggate.budget_state(" in _WL_CHECKS or "wl_reggate.cap_defers(" in _WL_CHECKS,
+    False,
+)
+check(
+    "wl_checks' stop-time debt segment calls wl_reggate.collect_debts",
+    "wl_reggate.collect_debts(" in _WL_CHECKS,
+    True,
+)
+check(
+    "...and runs no collection step of its own beside it",
+    any(
+        "wl_reggate.%s(" % name in _WL_CHECKS
+        for name in ("materialize", "discharge_scan", "debt_status")
+    ),
+    False,
+)
+
+
 # --- 4. the cap's own guard condition: wl_checks calls R.cap_defers, so the suite drives the same function
 def cap_fires(remaining, forgot):
     """R.cap_defers with no outstanding debt, the budget and read halves of the predicate."""
@@ -318,6 +398,62 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     )
 
 
+# collect_debts: the stop's sequence, materialize then discharge then the status line (review ee1cb780.3).
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    check(
+        "CONTROL: with no debt collect_debts returns no line",
+        R.collect_debts(root, wl, "abcd1234", "1121-1"),
+        "",
+    )
+    subprocess.run(["git", "-C", str(root), "init", "-q"], check=True, capture_output=True)
+    debt("1104-1", "7777eeee8888", "a debt the stop collects", 5, root)
+    debt("1104-1", "8888ffff9999", "a debt its artifact pays", 5, root, artifact="t/test_a.py")
+    (root / "t").mkdir()
+    (root / "t" / "test_a.py").write_text("def test(): pass\n")
+    line = R.collect_debts(root, wl, "abcd1234", "1121-1", (), [])
+    check("collect_debts materializes both due debts", len(debt_items(wl)), 2)
+    check(
+        "...discharges the one its changed artifact pays",
+        {e["sig"]: e["paid"] for e in R.debt_entries(root)}.get("8888ffff9999"),
+        True,
+    )
+    check(
+        "...and returns the status line for the other",
+        line.startswith("REGGATE DEBT: 1 open (0 legacy)"),
+        True,
+    )
+
+# A stop that raised between the item append and its materialize record must not add the item twice (review ee1cb780.2).
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    debt("1104-1", "abab1212cdcd", "a debt whose record write fails once", 5, root)
+    _real_append = R.append_ledger
+
+    def _failing_append(branch, record, root=None):
+        if record.get("kind") == "materialize":
+            raise OSError("disk full")
+        return _real_append(branch, record, root=root)
+
+    R.append_ledger = _failing_append
+    try:
+        with contextlib.suppress(OSError):
+            R.materialize(root, wl, "abcd1234", "1121-1", ())
+    finally:
+        R.append_ledger = _real_append
+    check("the failed stop left its one item behind", len(debt_items(wl)), 1)
+    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", ()))
+    check("the next stop adds no second item for the debt", len(debt_items(wl)), 1)
+    check(
+        "...and records the item already there", made.get("abab1212cdcd"), debt_items(wl)[0]["id"]
+    )
+    check(
+        "CONTROL: a third stop materializes nothing",
+        R.materialize(root, wl, "abcd1234", "1121-1", ()),
+        [],
+    )
+
+
 # --- 8. discharge (D4) and retire (D5): only an artifact or an operator minute pays a debt
 def git(root, *args, env=None):
     full = dict(os.environ, **(env or {}))
@@ -383,6 +519,17 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
         [],
     )
     check("...so the debt stays unpaid", paid(root, "1111aaaa2222"), False)
+
+    # A dirty artifact whose last edit predates the debt proves nothing either (review 6253c25c.1).
+    (root / "tests" / "test_case.py").write_text("def test(): assert 1\n")
+    _old = (C.utcnow() - datetime.timedelta(minutes=120)).timestamp()
+    os.utime(root / "tests" / "test_case.py", (_old, _old))
+    check(
+        "a dirty artifact last edited before the debt does not discharge it",
+        R.discharge_scan(root, wl, "abcd1234", items),
+        [],
+    )
+    check("...so the debt stays unpaid after the stale edit", paid(root, "1111aaaa2222"), False)
 
     # C6: the same artifact changed after the debt discharges it (dirty-tree proof).
     (root / "tests" / "test_case.py").write_text("def test(): assert True\n")
@@ -470,7 +617,78 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     check("a paid debt cannot be retired twice", rc, 2)
 
 
-if Tally.count < 61:
+# --- 9. reachability (review 6253c25c.2, 6253c25c.3): a check script `npm run ci` runs discharges; a hook path nothing runs does not
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    git(root, "init", "-q")
+    (root / "package.json").write_text(
+        json.dumps(
+            {
+                "scripts": {
+                    "ci": "npm run check:ci-y && npm run check:ci-pytest",
+                    "check:ci-y": "tsx scripts/gates/check-y.ts",
+                    "check:ci-pytest": "python3 .ci/rediacc_ci/check_pytest.py",
+                }
+            }
+        )
+    )
+    (root / "pyproject.toml").write_text(
+        '[tool.pytest.ini_options]\ntestpaths = [".claude/rediacc_hooks/tests"]\n'
+        'python_files = ["test_*.py"]\n'
+    )
+    git(root, "add", "package.json", "pyproject.toml")
+    git(root, "commit", "-q", "-m", "seed")
+    debt(
+        "0914-1",
+        "1212ababcdcd",
+        "a gate npm run ci runs",
+        60,
+        root,
+        artifact="scripts/gates/check-y.ts",
+    )
+    debt(
+        "0914-1",
+        "3434cdcdefef",
+        "a hook suite with no driver",
+        60,
+        root,
+        artifact=".claude/hooks/stop/test-orphan.py",
+    )
+    debt(
+        "0914-1",
+        "5656efef0101",
+        "a hook shell script nothing runs",
+        60,
+        root,
+        artifact=".claude/hooks/stop/test-orphan.sh",
+    )
+    (root / "scripts" / "gates").mkdir(parents=True)
+    (root / "scripts" / "gates" / "check-y.ts").write_text("// gate\n")
+    (root / ".claude" / "hooks" / "stop").mkdir(parents=True)
+    (root / ".claude" / "hooks" / "stop" / "test-orphan.py").write_text("print('ok')\n")
+    (root / ".claude" / "hooks" / "stop" / "test-orphan.sh").write_text("echo ok\n")
+    got = dict(R.discharge_scan(root, wl, "abcd1234", []))
+    check(
+        "CONTROL: a check script `npm run ci` runs discharges its debt",
+        got.get("1212ababcdcd"),
+        "scripts/gates/check-y.ts",
+    )
+    check("a hook suite no driver runs does not discharge", "3434cdcdefef" in got, False)
+    check("a hook test-*.sh no runner reads does not discharge", "5656efef0101" in got, False)
+    driver = root / R.HOOK_SUITE_DRIVER
+    driver.parent.mkdir(parents=True)
+    driver.write_text("def test_x(): pass\n")
+    (root / ".claude" / "hooks" / "stop" / "test-orphan.py").write_text("print('ok again')\n")
+    got = dict(R.discharge_scan(root, wl, "abcd1234", []))
+    check(
+        "CONTROL: with the driver collected under a reachable check:ci-pytest the suite discharges",
+        got.get("3434cdcdefef"),
+        ".claude/hooks/stop/test-orphan.py",
+    )
+    check("...while the shell script still does not", "5656efef0101" in got, False)
+
+
+if Tally.count < 89:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,

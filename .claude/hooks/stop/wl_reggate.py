@@ -79,9 +79,9 @@ def debt_dir(root=None):
 def _branch_slug(branch):
     """A branch name flattened to one safe filename component.
 
-    Branch names carry '/' and worse; one file per branch means the name IS the filename, so it is sanitised rather than trusted.
+    Branch names carry '/' and worse; one file per branch means the name IS the filename, so it is sanitised rather than trusted. A dot is flattened too: ledger_paths skips every dotted stem (the `<branch>.shapedup-wide.jsonl` side files), so a ledger written under a dotted branch name would never be read back (review 896a95d5.4).
     """
-    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", (branch or "detached").strip()) or "detached"
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", (branch or "detached").strip()) or "detached"
     return slug[:100]
 
 
@@ -198,7 +198,7 @@ def read_ledger_path(path):
 def ledger_paths(root=None):
     """Every per-branch debt ledger under debt_dir, sorted.
 
-    SKIPS `*.*.jsonl`. The shape-duplication advisory writes `<branch>.shapedup-wide.jsonl` beside the ledgers, holding only `ask` records; a reader that folded those as ledgers would count a second "branch" per real one. A branch slug never carries a dot in this repo's `MMDD-N` naming, so a dotted stem is never a ledger.
+    SKIPS `*.*.jsonl`. The shape-duplication advisory writes `<branch>.shapedup-wide.jsonl` beside the ledgers, holding only `ask` records; a reader that folded those as ledgers would count a second "branch" per real one. `_branch_slug` flattens every dot, so a dotted stem is never a ledger whatever the branch is called.
     """
     d = debt_dir(root)
     if not d.is_dir():
@@ -246,6 +246,8 @@ def budget_state(branch, root=None, live=None):
     """(charged, remaining, debts, forgot) folded from the ledger; `debts` are the outstanding (unpaid) ones.
 
     THE COUNTER RESETS WHEN THE LEDGER'S BRANCH IS NOT THE LIVE ONE; DEBTS DO NOT. A branch that landed has a counter nobody can charge again, while its outstanding debts become due (debt_due). That inversion is the point: landing is what makes a debt payable, and there is no ordering in which landing discharges one. `live` defaults to the checkout's current branch.
+
+    AN UNKNOWN LIVE BRANCH RESETS NOTHING (review 896a95d5.1). When `live` is defaulted and git cannot name a branch (a failed probe, a detached HEAD), `C.git_branch` answers "", and comparing that against the ledger's branch would reset every counter to the full cap: the lax direction. With no live branch to compare against, the counter stands.
     """
     records, forgot = read_ledger(branch, root)
     paid = paid_sigs(records)
@@ -253,6 +255,8 @@ def budget_state(branch, root=None, live=None):
     debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in paid]
     if live is None:
         live = C.git_branch(root or C.project_root(C.project_start()))
+        if not live:
+            return charged, max(0, REGGATE_CAP - charged), debts, forgot
     if (branch or "") != (live or ""):
         charged = 0
     return charged, max(0, REGGATE_CAP - charged), debts, forgot
@@ -261,6 +265,31 @@ def budget_state(branch, root=None, live=None):
 def charge(branch, sig, reason, root=None):
     """Spend one unit of budget. Called ONLY on a `proven` settle or at the cap."""
     return append_ledger(branch, {"kind": "charge", "sig": sig, "why": reason}, root=root)
+
+
+def cap_demand(branch, sig, gate, root=None):
+    """The cap at the wl_checks block site, as one call: -> (capped, charged).
+
+    Reads the live branch's budget, asks cap_defers (the spent budget, a clean read, and fewer than REGGATE_MAX_DEBTS outstanding debts), and only on a yes writes the `debt` record (the judge's `regression_gate` finding in `gate`) and the `capped` charge. Any other answer writes nothing and the demand blocks normally. The block site calls this and nothing else of the ledger, so a control on it is a control on the block (review 896a95d5.2).
+    """
+    charged, remaining, debts, forgot = budget_state(branch, root, live=branch)
+    if not cap_defers(remaining, forgot, len(debts)):
+        return False, charged
+    gate = gate or {}
+    append_ledger(
+        branch,
+        {
+            "kind": "debt",
+            "sig": sig,
+            "blind_spot": str(gate.get("blind_spot", ""))[:300],
+            "surface": str(gate.get("surface", ""))[:20],
+            "artifact": str(gate.get("artifact", ""))[:200],
+            "charged": charged,
+        },
+        root=root,
+    )
+    charge(branch, sig, "capped", root=root)
+    return True, charged
 
 
 # --------------------------------------------------------------------------- DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3-D7).
@@ -378,12 +407,21 @@ def materialize(root, worklist, me8, live_branch, loop_plans=(), now=None):
     """Turn every due, unpaid, unmaterialized debt into ONE worklist item, once. -> [(sig, item_id)].
 
     One `add_items` append for the whole set, then one `materialize` record per debt in its own ledger, which is what makes a second stop add nothing. A debt on the live branch joins the live PR plan's epic, so it blocks like any item there; any other debt (and a live one when no PR plan epic exists) joins the backlog epic, which carries this plan and stays one queued line until this plan is the live PR's.
+
+    AN ITEM WITHOUT ITS RECORD IS ADOPTED, NOT ADDED AGAIN (review ee1cb780.2). The items are appended before the records, so a stop that raised between the two left items whose debts still read as unmaterialized; the next stop added each one a second time. A due debt whose item already sits in the store (`_orphan_items`) takes that item's id, and only the rest are added.
     """
     with _collect_lock(root):
         due = due_debts(root, live_branch, now)
         if not due:
             return []
-        ids = S.add_items(worklist, me8, [debt_item_text(e, me8) for e in due], root=root)
+        orphans = _orphan_items(worklist, due)
+        fresh = [e for e in due if e["sig"] not in orphans]
+        added = iter(
+            S.add_items(worklist, me8, [debt_item_text(e, me8) for e in fresh], root=root)
+            if fresh
+            else []
+        )
+        ids = [orphans[e["sig"]] if e["sig"] in orphans else next(added) for e in due]
         for e, iid in zip(due, ids, strict=True):
             append_ledger(
                 e["ledger"], {"kind": "materialize", "sig": e["sig"], "item": iid}, root=root
@@ -398,6 +436,29 @@ def materialize(root, worklist, me8, live_branch, loop_plans=(), now=None):
         if rest:
             _attach(me8, backlog_epic(me8), rest)
         return [(e["sig"], iid) for e, iid in zip(due, ids, strict=True)]
+
+
+def _orphan_items(worklist, due):
+    """`sig -> item id` for each due debt whose item is already in the store with no `materialize` record: an item whose text opens `reggate-debt:<sig8> (` and names the debt's branch (debt_item_text's shape)."""
+    by_head = {
+        ("reggate-debt:%s (" % e["sig"][:8], "-- branch %s," % e["br"]): e["sig"] for e in due
+    }
+    out: dict[str, str] = {}
+    for rec in S.load(worklist, sync=False).items:
+        text = str(rec.get("text") or "")
+        for (head, branch), sig in by_head.items():
+            if sig not in out and text.startswith(head) and branch in text:
+                out[sig] = str(rec.get("id") or "")
+    return {sig: iid for sig, iid in out.items() if iid}
+
+
+def collect_debts(root, worklist, me8, live_branch, loop_plans=(), items=None):
+    """The stop-time debt collection, in order (D3, D4, D7): materialize every due debt, discharge every proven one, and return the REGGATE_DEBT_STATUS line while any debt stays unpaid ("" when none does). wl_checks queues the line; this is the one call it makes, so the suite drives the same sequence the stop runs (review ee1cb780.3)."""
+    materialize(root, worklist, me8, live_branch, loop_plans)
+    # Discharge is hook-only (D4): a changed named artifact pays a debt here, and nothing else writes `discharge`.
+    discharge_scan(root, worklist, me8, items)
+    n_open, n_legacy, oldest = debt_status(root)
+    return M.REGGATE_DEBT_STATUS % (n_open, n_legacy, oldest) if n_open else ""
 
 
 def legacy_sigs(root=None):
@@ -442,6 +503,20 @@ def _dirty_paths(root):
     return {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
 
 
+def _is_listed_dirty(rel, dirty):
+    """Whether `git status` named `rel`, or an untracked directory holding it."""
+    return rel in dirty or any(d.endswith("/") and rel.startswith(d) for d in dirty)
+
+
+def _modified_after(full, at):
+    """Whether the file at `full` was last modified after the aware datetime `at`; False when it cannot be stat'ed."""
+    try:
+        mtime = full.stat().st_mtime
+    except OSError:
+        return False
+    return datetime.datetime.fromtimestamp(mtime, tz=datetime.UTC) > at
+
+
 def _committed_after(root, rel, at):
     """The committer date of the last commit touching `rel` when it is later than `at`, else ""."""
     out = (C._git(root, "log", "-1", "--format=%cI", "--", rel) or "").strip()
@@ -465,20 +540,39 @@ def _artifact_reachable(root, scripts, rel):
         return gate_reachable(scripts, PYTEST_GATE_KEY, root)
     if _citation_matches_gate(rel, root):
         return True
-    # The hook suites run in CI without a check:* key (prove_new_gate accepts them on change for the same reason).
-    return rel.startswith(".claude/hooks/")
+    return _hook_suite_reachable(scripts, rel, root)
+
+
+# The hook suites that run in CI without a check:* key: `.claude/rediacc_hooks/tests/test_hooks_delegates.py` (`_discover_tailed`) globs `test-*.py` directly under each of its `_TAILED_ROOTS` and runs every one, and pytest collects that driver under `check:ci-pytest`. A `.claude/hooks/**` path anywhere else (the `test-*.sh` globs, which no runner reads since the bash batteries retired) is reached by nothing (review 6253c25c.3).
+HOOK_SUITE_DRIVER = ".claude/rediacc_hooks/tests/test_hooks_delegates.py"
+HOOK_SUITE_DIRS = (".claude/hooks/stop/", ".claude/hooks/context/", ".claude/hooks/post-bash/")
+
+
+def _hook_suite_reachable(scripts, rel, root):
+    """True when `rel` is a `test-*.py` suite directly under a HOOK_SUITE_DIRS directory, the driver that runs those suites exists and pytest collects it, and `check:ci-pytest` is reachable from `npm run ci`."""
+    folder, _sep, name = rel.rpartition("/")
+    if folder + "/" not in HOOK_SUITE_DIRS or not fnmatch.fnmatch(name, "test-*.py"):
+        return False
+    if not (pathlib.Path(root) / HOOK_SUITE_DRIVER).is_file():
+        return False
+    if PYTEST_GATE_KEY not in scripts or not pytest_collects(HOOK_SUITE_DRIVER, root):
+        return False
+    return gate_reachable(scripts, PYTEST_GATE_KEY, root)
 
 
 def prove_debt(root, scripts, rel, at, dirty):
     """(proven, proof) for one candidate path against one debt's `at` (D4).
 
-    Proven when the path exists, changed after the debt (dirty in this tree, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
+    Proven when the path exists, changed after the debt (dirty in this tree with a modification time after `at`, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
+
+    DIRTY IS NOT ENOUGH ON ITS OWN (review 6253c25c.1): a path edited before the debt was recorded and still uncommitted is dirty too, and it proves nothing about the debt. The file's modification time must be later than `at`.
     """
     rel = _clean_rel(rel)
     when = C.parse_stamp(at)
-    if not rel or when is None or not (pathlib.Path(root) / rel).exists():
+    full = pathlib.Path(root) / rel
+    if not rel or when is None or not full.exists():
         return False, ""
-    if rel in dirty or any(d.endswith("/") and rel.startswith(d) for d in dirty):
+    if _is_listed_dirty(rel, dirty) and _modified_after(full, when):
         proof = "dirty-tree: %s changed in this tree after the debt (%s)" % (rel, at)
     else:
         committed = _committed_after(root, rel, when)

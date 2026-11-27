@@ -4321,20 +4321,11 @@ def _stop_reggate_detect(ns):
     try:
         _rd_me8 = str(ns.get("me8") or (session_id or "")[:8])
         _rd_live = C.git_branch(ns.get("own") or root)
-        wl_reggate.materialize(root, worklist, _rd_me8, _rd_live, ns.get("_loop_plans") or ())
-        # Discharge is hook-only (D4): a changed named artifact pays a debt here, and nothing else writes `discharge`.
-        wl_reggate.discharge_scan(root, worklist, _rd_me8, fold.items)
-        _rd_open, _rd_legacy, _rd_oldest = wl_reggate.debt_status(root)
-        if _rd_open:
-            outq_add(
-                worklist,
-                session_id,
-                state_doc,
-                "reg-capped",
-                M.REGGATE_DEBT_STATUS % (_rd_open, _rd_legacy, _rd_oldest),
-                1,
-                refresh_min=0,
-            )
+        _rd_line = wl_reggate.collect_debts(
+            root, worklist, _rd_me8, _rd_live, ns.get("_loop_plans") or (), fold.items
+        )
+        if _rd_line:
+            outq_add(worklist, session_id, state_doc, "reg-capped", _rd_line, 1, refresh_min=0)
     except Exception as exc:
         note_read_failure("reggate-debt", exc)
     ns.update(
@@ -8582,23 +8573,10 @@ def _stop_judge(ns):
                 capped = False
                 with contextlib.suppress(Exception):
                     br = C.git_branch(own)
-                    charged, remaining, _debts, forgot = wl_reggate.budget_state(br, root, live=br)
-                    # The cap on the cap (REGGATE_MAX_DEBTS): past that many outstanding debts on this branch the demand blocks normally.
-                    if wl_reggate.cap_defers(remaining, forgot, len(_debts)):
-                        rg = verdict.get("regression_gate") or {}
-                        wl_reggate.append_ledger(
-                            br,
-                            {
-                                "kind": "debt",
-                                "sig": reg_sig,
-                                "blind_spot": str(rg.get("blind_spot", ""))[:300],
-                                "surface": str(rg.get("surface", ""))[:20],
-                                "artifact": str(rg.get("artifact", ""))[:200],
-                                "charged": charged,
-                            },
-                            root=root,
-                        )
-                        wl_reggate.charge(br, reg_sig, "capped", root=root)
+                    rg = verdict.get("regression_gate") or {}
+                    # The budget, the cap on the cap (REGGATE_MAX_DEBTS) and the debt record, in one call the suite drives.
+                    _cap_hit, charged = wl_reggate.cap_demand(br, reg_sig, rg, root=root)
+                    if _cap_hit:
                         reg_state["fixsets"][reg_sig] = {
                             "verdict": "capped",
                             "existing_gate": "",
