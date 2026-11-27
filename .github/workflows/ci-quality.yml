@@ -809,6 +809,20 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
 
+      # Hand-written: this lane has no gate-bind region. It is the lane because the gate reads each
+      # submodule's gitlink delta, which needs the submodules checked out with full history (blob:none
+      # above is enough: it reads commits and trees, never file content). The range starts at the commit
+      # that added the gate, so the commits written before the trailer existed are never judged.
+      # PR_HEAD_SHA is the PR head, not the synthetic merge ref this checkout holds, and the gate skips
+      # itself on main, where this lane also runs.
+      - name: Release-Note trailers
+        if: ${{ !cancelled() }}
+        run: .ci/scripts/quality/check_release_note_trailers.py
+        env:
+          PR_BASE_REF: origin/${{ github.event.pull_request.base.ref }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
   # ============================================================================
   # L4 CODE -- node + submodules + account deps. The source-shape lane.
   # Absorbs: versions, format, lint, typescript, cli-examples, workflows.

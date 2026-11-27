@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T11:08:07.455Z",
+  "generatedAt": "2026-11-27T11:13:56.800Z",
   "legs": [
     {
       "index": 1,
@@ -970,6 +970,7 @@
         "pytest:.ci/rediacc_ci/tests/test_check_config_server_key_constant.py",
         "pytest:.ci/rediacc_ci/tests/test_check_proxy_deploy_dry_run.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_stale_junit.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_release_note_trailers.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_capture_gate_costs.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_check_rerun_attempt.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_leg_keys.py",
