@@ -17,7 +17,11 @@ import {
   configWriteFailureCode,
   currentCommandName,
 } from '../services/core/config-write-errors.js';
-import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
+import {
+  currentRequestConfig,
+  type RequestConfigScope,
+  writeStderr,
+} from '../services/core/request-context.js';
 import { parseJsonText } from '../utils/json-text.js';
 import { loadKey, mintKey, newSealKdf, SealKeyLostError } from './config-seal-key.js';
 
@@ -138,7 +142,7 @@ export function resetFileStoreRefusalNotice(): void {
 function noteFileStoreRefusal(name: string): void {
   if (fileStoreRefusalShown.has(name)) return;
   fileStoreRefusalShown.add(name);
-  process.stderr.write(`${t('commands.config.seal.fileStoreRefused', { name })}\n`);
+  writeStderr(`${t('commands.config.seal.fileStoreRefused', { name })}\n`);
 }
 
 /**
