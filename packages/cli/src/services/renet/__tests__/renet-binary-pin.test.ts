@@ -43,7 +43,8 @@ describe('deltaSyncBinary host-key pinning', () => {
     expect(seen?.opts).not.toContain('StrictHostKeyChecking=no');
     expect(seen?.opts).not.toContain('UserKnownHostsFile=/dev/null');
     expect(seen?.mode).toBe(0o600);
-    expect(seen?.content).toBe(`${KNOWN}\n`);
+    // Re-keyed under the dialed host: OpenSSH looks a port-22 pin up under the bare address.
+    expect(seen?.content).toBe(`${KNOWN.replace('[203.0.113.9]:22', '203.0.113.9')}\n`);
     expect(fs.existsSync(seen?.file ?? '')).toBe(false);
   });
 

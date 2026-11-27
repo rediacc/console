@@ -41,7 +41,7 @@ const REMOTE_PATH = `${WK_DATASTORE_PATH}/mounts/0f0e0d0c-aaaa-bbbb-cccc-1111222
 const details = { environment: {}, workingDirectory: REMOTE_PATH } as never;
 
 function fakeConnection() {
-  const conn = new SSHConnection('k', 'h', { preferAgent: false });
+  const conn = new SSHConnection('k', 'h', { host: '10.0.0.1', preferAgent: false });
   Object.assign(conn, {
     setupResult: {
       sshOptions: ['-o', 'X=1'],

@@ -8,7 +8,7 @@ vi.mock('../../utils/platform.js', async (importOriginal) => {
   return { ...actual, isWSL: () => false, getPlatform: () => 'linux' };
 });
 
-const { persistSSHKey } = await import('../keyPersistence.js');
+const { persistKnownHosts, persistSSHKey } = await import('../keyPersistence.js');
 
 const KEY_BODY = [
   `-----BEGIN OPENSSH ${'PRIVATE KEY'}-----`,
@@ -48,5 +48,31 @@ describe('persistSSHKey', () => {
       `${KEY_BODY.replaceAll('\n', '\r\n')}\r\n`
     );
     expect(readFileSync(path, 'utf8')).not.toContain('\r');
+  });
+});
+
+describe('persistKnownHosts', () => {
+  let home: string;
+  let savedHome: string | undefined;
+
+  beforeEach(() => {
+    savedHome = process.env.HOME;
+    home = mkdtempSync(join(tmpdir(), 'rdc-khpersist-'));
+    process.env.HOME = home;
+  });
+
+  afterEach(() => {
+    if (savedHome === undefined) delete process.env.HOME;
+    else process.env.HOME = savedHome;
+    rmSync(home, { recursive: true, force: true });
+  });
+
+  it('writes the pins under the HostName the VS Code entry dials, not the address they were scanned at', () => {
+    const key = 'AAAAC3NzaC1lZDI1NTE5AAAAIOc6d1X0xGOoKduhuDqMgbBDT+AvKI/mf7cfltmqwB06';
+    const path = persistKnownHosts('', 'hostinger', `203.0.113.7 ssh-ed25519 ${key}`, {
+      host: '2a02:4780:c:e9b5::1',
+      port: 22,
+    });
+    expect(readFileSync(path, 'utf8')).toBe(`2a02:4780:c:e9b5::1 ssh-ed25519 ${key}\n`);
   });
 });

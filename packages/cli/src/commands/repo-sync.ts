@@ -188,11 +188,14 @@ async function prepareSyncConnection(
 }
 
 async function withTempSshFiles<T>(
-  details: { privateKey: string; known_hosts: string },
+  details: { privateKey: string; known_hosts: string; host: string; port: number },
   fn: (keyFilePath: string, knownHostsPath: string) => Promise<T>
 ): Promise<T> {
   const keyFilePath = await createTempSSHKeyFile(details.privateKey);
-  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
+  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts, {
+    host: details.host,
+    port: details.port,
+  });
   try {
     return await fn(keyFilePath, knownHostsPath);
   } finally {

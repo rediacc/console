@@ -54,6 +54,7 @@ async function execSSH(
   stdin?: string
 ): Promise<SSHExecResult> {
   const conn = new SSHConnection(privateKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
     forceTTY: false,
   });

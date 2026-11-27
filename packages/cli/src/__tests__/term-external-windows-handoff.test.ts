@@ -23,7 +23,7 @@ import { SSHConnection } from '../remote/ssh/connection.js';
 const details = { environment: {}, workingDirectory: undefined } as never;
 
 function fakeConnection(keyFilePath: string, knownHostsPath: string, agentPid?: string) {
-  const conn = new SSHConnection('k', 'h', { preferAgent: false });
+  const conn = new SSHConnection('k', 'h', { host: '10.0.0.1', preferAgent: false });
   Object.assign(conn, {
     setupResult: {
       sshOptions: ['-i', keyFilePath],

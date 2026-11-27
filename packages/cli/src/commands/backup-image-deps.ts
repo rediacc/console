@@ -147,8 +147,8 @@ async function openHelperSession<S>(
     const sftp = await lease.ensure();
     const machine = lease.machine;
     temp.push(await createTempSSHKeyFile(lease.sshPrivateKey));
-    temp.push(await createTempKnownHostsFile(machine.knownHosts));
     const port = machine.port ?? DEFAULT_SSH_PORT;
+    temp.push(await createTempKnownHostsFile(machine.knownHosts, { host: machine.ip, port }));
     const sshCommand = await getRsyncSSHCommand(
       `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${temp[1]}" -p ${port} -i "${temp[0]}" ` +
         '-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4'

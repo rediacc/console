@@ -420,7 +420,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port, forceTTY: !noTTY }
+    { host: connectionDetails.host, port: connectionDetails.port, forceTTY: !noTTY }
   );
 
   let success = true;

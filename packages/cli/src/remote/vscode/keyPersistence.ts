@@ -5,6 +5,7 @@
 
 import { existsSync, mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { type KnownHostsTarget, knownHostsFileContent } from '../ssh/knownHosts.js';
 import { getPlatform, getSSHHome, isWSL, wslPathToWindows } from '../utils/platform.js';
 import { decodeSSHKey } from '../utils/sshKeyText.js';
 
@@ -80,13 +81,16 @@ export function persistSSHKey(
  *
  * @param teamName - Team name
  * @param machineName - Machine name
- * @param known_hosts - Host key entry
+ * @param known_hosts - Pinned host keys (any host field)
+ * @param target - The HostName and Port the VS Code ssh config entry dials; the
+ *   keys are written under it, since OpenSSH looks a pin up by host field
  * @returns Path to the persisted known hosts file
  */
 export function persistKnownHosts(
   teamName: string,
   machineName: string,
-  known_hosts: string
+  known_hosts: string,
+  target: KnownHostsTarget
 ): string {
   const keysDir = getKeysDirectory();
   const sanitize = (s: string) => s.replaceAll(/[^a-zA-Z0-9_-]/g, '_');
@@ -99,7 +103,7 @@ export function persistKnownHosts(
   }
 
   // Write known hosts
-  writeFileSync(hostsPath, `${known_hosts}\n`, { mode: 0o644 });
+  writeFileSync(hostsPath, knownHostsFileContent(known_hosts, target), { mode: 0o644 });
 
   // Return normalized path for SSH config compatibility on Windows
   return normalizePathForSSH(hostsPath);

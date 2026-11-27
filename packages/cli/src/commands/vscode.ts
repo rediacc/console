@@ -106,7 +106,10 @@ async function setupSSHConfig(
     );
   });
 
-  const knownHostsFile = persistKnownHosts(teamName, machineName, connectionDetails.known_hosts);
+  const knownHostsFile = persistKnownHosts(teamName, machineName, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
+    port: connectionDetails.port,
+  });
   const connectionName = generateConnectionName(teamName, machineName, repositoryName);
 
   await withSpinner(t('commands.vscode.connect.configuringSSH'), () => {
@@ -207,6 +210,7 @@ async function preparePerRepoVSCodeServer(
   const sandboxServerPath = `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}/.vscode-server`;
   const sharedServerPath = `${connectionDetails.datastore}/.vscode-server`;
   const sshConn = new SSHConnection(teamKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
   });
 
@@ -250,6 +254,7 @@ async function pinClusterNamespace(
   if (!kubeconfig) return;
 
   const sshConn = new SSHConnection(connectionDetails.privateKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
   });
   const ns = namespace.replaceAll("'", "'\\''");
@@ -285,7 +290,7 @@ async function setupRemoteEnvironment(
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port }
+    { host: connectionDetails.host, port: connectionDetails.port }
   );
 
   const serverInstallPath =

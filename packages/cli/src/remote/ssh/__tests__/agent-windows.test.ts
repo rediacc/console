@@ -93,7 +93,7 @@ describe('win32 with the ssh-agent service running', () => {
   });
 
   it('SSHConnection uses the key file with -i and IdentitiesOnly, with no agent socket', async () => {
-    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { port: 22 });
+    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { host: '10.0.0.1', port: 22 });
     let keyFilePath: string | undefined;
     try {
       const result = await conn.setup();
@@ -121,7 +121,7 @@ describe.each(['linux', 'macos'] as const)('%s keeps its private agent', (platfo
   it('spawns `ssh-agent -s`, adds the key with ssh-add and passes no key file', async () => {
     h.platform = platform;
     await expect(isSSHAgentAvailable()).resolves.toBe(true);
-    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { port: 22 });
+    const conn = new SSHConnection(KEY, KNOWN_HOSTS, { host: '10.0.0.1', port: 22 });
     try {
       const result = await conn.setup();
       expect(result.connectionMethod).toBe('ssh-agent');

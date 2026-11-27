@@ -200,7 +200,10 @@ export async function deltaSyncBinary(
 
   try {
     if (config.knownHosts?.trim()) {
-      knownHostsPath = await createTempKnownHostsFile(config.knownHosts);
+      knownHostsPath = await createTempKnownHostsFile(config.knownHosts, {
+        host: config.host,
+        port: config.port ?? DEFAULTS.SSH.PORT,
+      });
     }
     await fs.writeFile(localBinaryPath, binary, { mode: 0o700 });
     const sshOptions = buildDeltaSshOptions(config, keyFilePath, knownHostsPath);
