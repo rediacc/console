@@ -4,6 +4,7 @@
  * it live.
  */
 
+import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDoneLine, getActiveLabel } from '../../utils/timeline.js';
 import { outputService } from '../core/output.js';
 import { writeStderr, writeStdout } from '../core/request-context.js';
@@ -283,7 +284,8 @@ function handleStepDetectionStdout(): StdoutHandler {
       if (jsonIdx < 0) continue;
       try {
         const p = JSON.parse(trimmed.slice(jsonIdx)) as Record<string, unknown>;
-        renderStepEvent(p);
+        // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
+        renderStepEvent(p, getOutputFormat() === 'json' ? writeStderr : writeStdout);
       } catch {
         /* not JSON, ignore */
       }

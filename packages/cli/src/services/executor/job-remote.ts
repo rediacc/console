@@ -478,12 +478,17 @@ export function renderJobEvent(event: RenetEvent): void {
   if (!line) return;
 
   // Route through the request context so a served follow writes into the request's buffer, not the container's terminal. On a laptop this is stdout.
-  if (line.stream === 'err') {
+  // Under `-o json` stdout is the one envelope, so step progress moves to stderr: a `⠋ Deleting repository...✔ Repository deleted` fragment ahead of `backup verify --restore-test`'s JSON left stdout unparseable (hostinger 2026-11-27).
+  if (line.stream === 'err' || (isStepEvent(event) && getOutputFormat() === 'json')) {
     writeStderr(line.text);
     return;
   }
 
   writeStdout(line.text);
+}
+
+function isStepEvent(event: RenetEvent): boolean {
+  return event.type === 'step_start' || event.type === 'step_done';
 }
 
 /**

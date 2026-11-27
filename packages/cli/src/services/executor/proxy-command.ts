@@ -213,13 +213,15 @@ function targetMachine(
  * where the SSH happened.
  */
 function renderEvent(event: RenetEvent): void {
+  // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
+  const writeStep = getOutputFormat() === 'json' ? writeStderr : writeStdout;
   switch (event.type) {
     case 'step_start':
-      writeStdout(`⠋ ${getActiveLabel(event.name ?? '')}...`);
+      writeStep(`⠋ ${getActiveLabel(event.name ?? '')}...`);
       break;
     case 'step_done':
       if (!event.name || event.duration_ms === undefined) break;
-      writeStdout(
+      writeStep(
         `\r✔ ${getDoneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
       );
       break;
