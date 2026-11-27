@@ -288,6 +288,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -537,6 +545,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -705,6 +721,10 @@
           "evidence": "scripts/ci-runner/gates.lock.json:5795 (declared) lists agent"
         },
         {
+          "id": "check:ci-reggate-debt",
+          "evidence": "scripts/ci-runner/gates.lock.json:6192 (declared) paths agent/reggate/**"
+        },
+        {
           "id": "check:ci-resprofile",
           "evidence": ".ci/rediacc_ci/quality/resprofile.py:235 (root) agent/"
         },
@@ -765,6 +785,10 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
         }
       ]
     },
@@ -1009,6 +1033,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -1256,6 +1288,10 @@
         {
           "id": "check:ci-env-registry",
           "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from the python_reads section of .ci/config/env-manifest.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py and python_env_registry.py (modules whose checks check:ci-env-registry now holds) read that section for env names, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -1498,6 +1534,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -1710,6 +1754,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -1921,6 +1973,10 @@
         {
           "id": "check:ci-env-registry",
           "reason": "It imports worklist_env_registry only for its registry loader; the agent/ the derivation finds there is a selftest fixture's `exclusions` key, and the '*n' it finds in the python_reads section of .ci/config/env-manifest.json is an opaque env-read key (the shellscan.py entry for a computed variable name), not a file glob. It reads no plan file, ledger or .ci/config/plan-boxes.json."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -2116,6 +2172,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -2311,6 +2375,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -2506,6 +2578,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -2737,6 +2817,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -2968,6 +3056,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     },
@@ -3296,6 +3392,14 @@
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."
+        },
+        {
+          "id": "check:ci-portal-sitekey-guard",
+          "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-reggate-debt",
+          "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
         }
       ]
     }
