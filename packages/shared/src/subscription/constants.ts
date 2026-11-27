@@ -5,7 +5,16 @@
  * All components (account-server, renet, CLI) should use these values.
  */
 
-import type { BillingPeriod, FeatureFlags, PlanCode, PlanMetadata, PlanPricing } from './types.js';
+import type {
+  BillingPeriod,
+  FeatureFlags,
+  FloatingLicenceRange,
+  PlanCaps,
+  PlanCode,
+  PlanMetadata,
+  PlanPricing,
+  PricingBasis,
+} from './types.js';
 
 /**
  * Resource limits by plan.
@@ -555,10 +564,28 @@ export function comparePlans(a: PlanCode, b: PlanCode): number {
 // =============================================================================
 
 /**
- * Pricing by plan. Amounts in cents (USD).
- * Annual prices are 15% off the 12-month rate, rounded to a 9-ending price.
- * ENTERPRISE is sold through partners only (never self-serve checkout); its
- * amounts exist for internal accounting and partner-deal reference.
+ * List price per floating licence per year, in whole USD, for the three paid editions (PLAN-pricing-plan-model.md R3). These are the partner catalog's edition rates: the catalog (private/account/src/pricing/catalog.default.ts) reads its `ratePerMachine` values from here, so the catalog, the account server and www price from one table.
+ */
+export const PLAN_EDITION_RATE_USD_PER_YEAR = {
+  PROFESSIONAL: 550,
+  BUSINESS: 700,
+  ENTERPRISE: 900,
+} as const satisfies Partial<Record<PlanCode, number>>;
+
+/** Monthly billing costs 15% more than annual: monthly = annual x 1.15 / 12 (R3). */
+export const MONTHLY_BILLING_MARKUP = 1.15;
+
+/** Per-licence price from an edition rate (Design 2): annual = rate x 100 cents; monthly = round(rate x 1.15 / 12) whole dollars, in cents. */
+function editionPricing(ratePerYearUsd: number): PlanPricing {
+  return {
+    monthlyPriceCents: Math.round((ratePerYearUsd * MONTHLY_BILLING_MARKUP) / 12) * 100,
+    annualPriceCents: ratePerYearUsd * 100,
+    currency: 'usd',
+  };
+}
+
+/**
+ * Pricing by plan, PER FLOATING LICENCE. Amounts in cents (USD). Derived from PLAN_EDITION_RATE_USD_PER_YEAR (Design 2), never typed by hand: Professional $550/yr or $53/mo, Business $700/yr or $67/mo, Enterprise $900/yr or $86/mo. ENTERPRISE is sold through partners only (never self-serve checkout).
  */
 export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
   FREE: {
@@ -571,21 +598,111 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
     annualPriceCents: 0,
     currency: 'usd',
   },
-  PROFESSIONAL: {
-    monthlyPriceCents: 4_900,
-    annualPriceCents: 49_900,
-    currency: 'usd',
-  },
-  BUSINESS: {
-    monthlyPriceCents: 5_900,
-    annualPriceCents: 59_900,
-    currency: 'usd',
-  },
-  ENTERPRISE: {
-    monthlyPriceCents: 210_000,
-    annualPriceCents: 2_100_000,
-    currency: 'usd',
-  },
+  PROFESSIONAL: editionPricing(PLAN_EDITION_RATE_USD_PER_YEAR.PROFESSIONAL),
+  BUSINESS: editionPricing(PLAN_EDITION_RATE_USD_PER_YEAR.BUSINESS),
+  ENTERPRISE: editionPricing(PLAN_EDITION_RATE_USD_PER_YEAR.ENTERPRISE),
+} as const;
+
+// =============================================================================
+// PLAN MODEL DIMENSIONS (PLAN-pricing-plan-model.md Design 1, rulings R4-R8)
+// =============================================================================
+//
+// Kept beside PLAN_LIMITS rather than inside it, for the reason PLAN_BACKUP_RETENTION is: PLAN_LIMITS is the flat number map the generated subscription schema hands renet's schema test as `map[string]map[string]int`, which takes neither a null (unlimited) nor a string (pricing basis) nor a key renet does not know.
+
+/**
+ * User, repository and CPU caps by plan code, for the 'paid' pricing basis (R4, R5). FREE and COMMUNITY users are 1 (PLAN-pricing-seat-repo-caps.md R1). FREE repositories are 1, the one repository a Free License covers. COMMUNITY repositories have no ruling yet and stay uncapped, as they are today. ENTERPRISE repositories are per quote (the subscription override).
+ */
+export const PLAN_CAPS: Record<PlanCode, PlanCaps> = {
+  FREE: { maxUsers: 1, maxRepositories: 1, maxCpusPerMachine: 16 },
+  COMMUNITY: { maxUsers: 1, maxRepositories: null, maxCpusPerMachine: 16 },
+  PROFESSIONAL: { maxUsers: 25, maxRepositories: 100, maxCpusPerMachine: 32 },
+  BUSINESS: { maxUsers: null, maxRepositories: 250, maxCpusPerMachine: 64 },
+  ENTERPRISE: { maxUsers: null, maxRepositories: null, maxCpusPerMachine: null },
+} as const;
+
+/** One plan's base: the PLAN_LIMITS row plus its PLAN_CAPS row. */
+export type PlanBaseLimits = (typeof PLAN_LIMITS)[PlanCode] & PlanCaps;
+
+/**
+ * Free Professional: the PROFESSIONAL plan code on the 'free-eligible' basis. These values replace the PROFESSIONAL ones (R4: 16 CPUs; R5: 10 users, 25 repositories; R6: 500 setups a month, 25 GiB hosted R2). Every other dimension is the PROFESSIONAL one.
+ */
+export const FREE_PROFESSIONAL_LIMITS = {
+  maxRepoLicenseIssuancesPerMonth: 500,
+  storageQuotaBytes: 25 * 1024 ** 3,
+  maxUsers: 10,
+  maxRepositories: 25,
+  maxCpusPerMachine: 16,
+} as const satisfies Partial<PlanBaseLimits>;
+
+/** The dimensions that multiply by the subscription's floating-licence count. */
+export type PerLicenceDimension =
+  | 'maxRepositories'
+  | 'maxRepoLicenseIssuancesPerMonth'
+  | 'storageQuotaBytes';
+
+/**
+ * Which dimensions scale per floating licence, by plan code on the 'paid' basis (R5, R6): Professional and Business repositories, setups and hosted R2 are per licence. Users never scale. Free Professional is one licence and scales nothing; ENTERPRISE is quoted through the per-subscription overrides.
+ */
+export const PLAN_PER_LICENCE_DIMENSIONS: Record<PlanCode, readonly PerLicenceDimension[]> = {
+  FREE: [],
+  COMMUNITY: [],
+  PROFESSIONAL: ['maxRepositories', 'maxRepoLicenseIssuancesPerMonth', 'storageQuotaBytes'],
+  BUSINESS: ['maxRepositories', 'maxRepoLicenseIssuancesPerMonth', 'storageQuotaBytes'],
+  ENTERPRISE: [],
+} as const;
+
+/**
+ * The base limits of a plan code on a pricing basis, before licence scaling, overrides and boosts (the account server's resolveEffectiveLimits applies those). An unknown plan code resolves to COMMUNITY, as every other getter here does; so does 'free-eligible' on any code but PROFESSIONAL, because that pairing does not exist and must not grant a paid plan's limits for free.
+ */
+export function getPlanBaseLimits(
+  planCode: string,
+  pricingBasis: PricingBasis = 'paid'
+): PlanBaseLimits {
+  const code: PlanCode = Object.hasOwn(PLAN_LIMITS, planCode)
+    ? (planCode as PlanCode)
+    : 'COMMUNITY';
+  if (pricingBasis === 'free-eligible') {
+    if (code !== 'PROFESSIONAL') return { ...PLAN_LIMITS.COMMUNITY, ...PLAN_CAPS.COMMUNITY };
+    return { ...PLAN_LIMITS.PROFESSIONAL, ...PLAN_CAPS.PROFESSIONAL, ...FREE_PROFESSIONAL_LIMITS };
+  }
+  return { ...PLAN_LIMITS[code], ...PLAN_CAPS[code] };
+}
+
+/** The per-licence dimensions of a plan code on a pricing basis (none on 'free-eligible'). */
+export function getPerLicenceDimensions(
+  planCode: string,
+  pricingBasis: PricingBasis = 'paid'
+): readonly PerLicenceDimension[] {
+  if (pricingBasis === 'free-eligible') return [];
+  if (!Object.hasOwn(PLAN_PER_LICENCE_DIMENSIONS, planCode)) {
+    return PLAN_PER_LICENCE_DIMENSIONS.COMMUNITY;
+  }
+  return PLAN_PER_LICENCE_DIMENSIONS[planCode as PlanCode];
+}
+
+/** The fewest floating licences an Enterprise subscription carries: the partner catalog's machine minimum (catalog.default.ts `enterpriseCapacity.machines.min`), R7. */
+export const ENTERPRISE_MIN_FLOATING_LICENCES = 40;
+
+/** Floating licences per subscription (R7): Professional 1-5 and Business 1-39 self-serve, Enterprise 40 and up. Business stops one short of the Enterprise minimum. */
+export const PLAN_FLOATING_LICENCES: Record<
+  'PROFESSIONAL' | 'BUSINESS' | 'ENTERPRISE',
+  FloatingLicenceRange
+> = {
+  PROFESSIONAL: { min: 1, max: 5 },
+  BUSINESS: { min: 1, max: ENTERPRISE_MIN_FLOATING_LICENCES - 1 },
+  ENTERPRISE: { min: ENTERPRISE_MIN_FLOATING_LICENCES, max: null },
+} as const;
+
+/**
+ * The large-machine add-on (R8): each pass adds 8 logical CPUs to one named machine's ceiling, at $50 a month or $200 a year; at most 4 passes on a machine and 3 machines with passes per subscription. Beyond that is Enterprise. PLAN-pricing-cpu-ceiling.md sells and enforces it.
+ */
+export const LARGE_MACHINE_PASS = {
+  cpusPerPass: 8,
+  monthlyPriceCents: 5_000,
+  annualPriceCents: 20_000,
+  currency: 'usd',
+  maxPassesPerMachine: 4,
+  maxMachinesWithPassesPerSubscription: 3,
 } as const;
 
 /**

@@ -309,6 +309,35 @@ export interface PlanPricing {
 }
 
 /**
+ * How a subscription on a plan code is paid for (PLAN-pricing-plan-model.md Design 1).
+ * 'free-eligible' exists only on PROFESSIONAL: free Professional is the PROFESSIONAL plan
+ * code with the free limits, so renet needs no new plan code. Every other subscription is
+ * 'paid', including the zero-priced FREE and COMMUNITY floors.
+ */
+export type PricingBasis = 'free-eligible' | 'paid';
+
+/**
+ * The plan dimensions PLAN_LIMITS cannot carry, because PLAN_LIMITS is the flat number map
+ * the generated subscription schema hands renet as `map[string]map[string]int`.
+ * `null` means unlimited (for repositories on ENTERPRISE: per quote, set by the
+ * per-subscription override).
+ */
+export interface PlanCaps {
+  /** Organization members, active plus pending invitations. Never scaled per licence. */
+  maxUsers: number | null;
+  /** ORIGINAL repositories only; a fork never counts. */
+  maxRepositories: number | null;
+  /** Logical CPUs per machine, as the OS reports them (hyperthreads and vCPUs included). */
+  maxCpusPerMachine: number | null;
+}
+
+/** Self-serve floating-licence count a plan sells; `max: null` is open-ended (quoted). */
+export interface FloatingLicenceRange {
+  min: number;
+  max: number | null;
+}
+
+/**
  * Display metadata for a subscription plan.
  */
 export interface PlanMetadata {
