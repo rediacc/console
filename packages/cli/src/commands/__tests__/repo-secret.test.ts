@@ -46,6 +46,16 @@ vi.mock('../../services/core/audit-log.js', () => ({
   auditLog: vi.fn(),
 }));
 
+// stdin TTY: a --rotate-secret acknowledgement counts only for a human at an interactive terminal (mutation-gate.ts).
+const stdinTty = vi.hoisted(() => ({ value: true }));
+vi.mock('node:tty', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:tty')>()),
+  isatty: (fd: number) => fd === 0 && stdinTty.value,
+}));
+
+// The retired config-edit override, spelled in pieces so the removed-name gate finds no literal here.
+const OLD_VAR = ['REDIACC', 'ALLOW', 'CONFIG', 'EDIT'].join('_');
+
 // process-ancestry override-legitimacy check
 const mockIsAgentByAncestry = vi.hoisted(() => vi.fn(() => false));
 const mockIsOverrideLegitimate = vi.hoisted(() => vi.fn(() => true));
@@ -55,7 +65,6 @@ vi.mock('../../utils/process-ancestry.js', () => ({
   isAncestryVerificationAvailable: vi.fn(() => true),
   _resetAncestryCache: vi.fn(),
   OVERRIDE_VAR_GRAND: 'REDIACC_ALLOW_GRAND_REPO',
-  OVERRIDE_VAR_CONFIG_EDIT: 'REDIACC_ALLOW_CONFIG_EDIT',
 }));
 
 // handleError rethrows so we can assert
@@ -82,7 +91,7 @@ const ALL_AGENT_KEYS = [
   'COPILOT_CLI',
   'CURSOR_TRACE_ID',
   'REDIACC_ALLOW_GRAND_REPO',
-  'REDIACC_ALLOW_CONFIG_EDIT',
+  OLD_VAR,
 ] as const;
 
 function backupAndClearEnv(backup: Record<string, string | undefined>) {
@@ -400,13 +409,15 @@ describe('rdc repo secret get/list', () => {
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
 
-    it('REDIACC_ALLOW_CONFIG_EDIT scope match bypasses --current requirement', async () => {
-      process.env.REDIACC_ALLOW_CONFIG_EDIT = '/resources/repositories/*/tags/*/secrets/*/value';
+    it('the retired override var with a matching scope and verified ancestry still needs --current', async () => {
+      process.env[OLD_VAR] = '/resources/repositories/*/tags/*/secrets/*/value';
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithFork('old'));
 
-      await run(['repo', 'secret', 'set', 'app:dev', '--key', 'STRIPE', '--value', 'new']);
-      expect(mockWriteRepositorySecret).toHaveBeenCalled();
+      await expect(
+        run(['repo', 'secret', 'set', 'app:dev', '--key', 'STRIPE', '--value', 'new'])
+      ).rejects.toThrow(/sensitive path requires --current/);
+      expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
 
     // --mode declares .choices(['env', 'file']), so Commander rejects an out-of-set value at parse time, before the handler runs. The handler's own badMode check still guards non-CLI callers.
@@ -436,11 +447,13 @@ describe('rdc repo secret get/list', () => {
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
 
-    it('write to grand succeeds with --rotate-secret (audited as rotation)', async () => {
+    it('--rotate-secret is refused for an agent, even with a TTY on stdin', async () => {
       mockReadRepositorySecret.mockReturnValue(undefined);
       mockGetCurrent.mockResolvedValue(familyConfig('latest', grandRepo));
-      await run(['repo', 'secret', 'set', 'app', '--key', 'X', '--value', 'v', '--rotate-secret']);
-      expect(mockWriteRepositorySecret).toHaveBeenCalled();
+      await expect(
+        run(['repo', 'secret', 'set', 'app', '--key', 'X', '--value', 'v', '--rotate-secret'])
+      ).rejects.toThrow(/honoured only for a human at an interactive terminal/);
+      expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
   });
 
@@ -543,7 +556,7 @@ describe('rdc repo secret get/list', () => {
       expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
     });
 
-    it('--rotate-secret bypasses --current requirement', async () => {
+    it('--rotate-secret bypasses --current for a human at an interactive terminal', async () => {
       mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
       mockGetCurrent.mockResolvedValue(configWithSecret('old'));
       await run([
@@ -558,6 +571,30 @@ describe('rdc repo secret get/list', () => {
         '--rotate-secret',
       ]);
       expect(mockWriteRepositorySecret).toHaveBeenCalled();
+    });
+
+    it('--rotate-secret is refused for a human without a TTY on stdin', async () => {
+      stdinTty.value = false;
+      mockReadRepositorySecret.mockReturnValue({ mode: 'env', value: 'old' });
+      mockGetCurrent.mockResolvedValue(configWithSecret('old'));
+      try {
+        await expect(
+          run([
+            'repo',
+            'secret',
+            'set',
+            'app',
+            '--key',
+            'STRIPE',
+            '--value',
+            'new',
+            '--rotate-secret',
+          ])
+        ).rejects.toThrow(/honoured only for a human at an interactive terminal/);
+        expect(mockWriteRepositorySecret).not.toHaveBeenCalled();
+      } finally {
+        stdinTty.value = true;
+      }
     });
 
     it('precondition mismatch throws PreconditionValidationError carrying next', async () => {

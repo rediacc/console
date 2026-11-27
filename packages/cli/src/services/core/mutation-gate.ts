@@ -3,17 +3,17 @@
  *
  * Responsibilities:
  *   1. Detect which sensitive paths are being mutated (by diffing previous vs new).
- *   2. For each sensitive path, enforce knowledge-gates-capability symmetrically
- *      for both humans and agents: require matching `--current` digest OR
- *      explicit `rotateAcknowledged` (the `--rotate-secret` / `--rotate` flag) OR,
- *      for agents only, REDIACC_ALLOW_CONFIG_EDIT scope override.
+ *   2. For each sensitive path, enforce knowledge-gates-capability: require a
+ *      matching `--current` digest, a previously empty pointer, or, for a human at
+ *      an interactive terminal only, explicit `rotateAcknowledged` (the
+ *      `--rotate-secret` / `--rotate` flag). An agent has exactly the first two;
+ *      no environment variable widens that.
  *   3. Emit audit log entries for every decision.
  *   4. Fail fast (before any network or disk write) with PreconditionMismatchError.
  *
- * Symmetric-by-design: humans don't get a TTY bypass. The "I'm at the
- * keyboard" claim was theatre, the gate prevents typos and accidents
- * regardless of who's driving, and removes a divergent code path that
- * had no integration coverage.
+ * The knowledge check itself is symmetric: a TTY does not let a human skip
+ * `--current`. A TTY only decides whether a rotation acknowledgement counts,
+ * so a script an agent drives outside the ancestry check cannot rotate either.
  *
  * The gate is DATA-SHAPE-AGNOSTIC: it operates on JSON-Pointer+value pairs
  * produced by the schema walker, so it doesn't care whether the config is in
@@ -22,14 +22,11 @@
  * callers can pass v1-shape or v2-shape diffs and the gate handles both.
  */
 
+import { isatty } from 'node:tty';
 import type { SensitivityMeta } from '@rediacc/shared/config-schema';
 import { metaForPointer } from '@rediacc/shared/config-schema';
 import { digestForPointer } from '../../schema/fingerprint.js';
-import {
-  configEditOverrideScope,
-  isAgentEnvironment,
-  scopeAllows,
-} from '../../utils/agent-guard.js';
+import { isAgentEnvironment } from '../../utils/agent-guard.js';
 
 export interface MutationEntry {
   /** JSON Pointer to the mutated leaf. */
@@ -52,8 +49,8 @@ export interface MutationContext {
   knowledge?: Record<string, string>;
   /**
    * Explicit acknowledgement that the mutation is a rotation (no `--current`
-   * available). Adds a loud audit log entry. Agents can only use this with
-   * REDIACC_ALLOW_CONFIG_EDIT set in ancestry.
+   * available). Adds a loud audit log entry. Honoured only for a human with a
+   * TTY on stdin; an agent, or any caller without a TTY, still needs `--current`.
    */
   rotateAcknowledged?: Set<string>;
   /**
@@ -90,36 +87,57 @@ interface SingleMutationResult {
   failure?: { pointer: string; reason: string };
 }
 
+/** The refusal for a sensitive mutation that carries no `--current` claim. */
+function missingKnowledge(
+  pointer: string,
+  meta: SensitivityMeta,
+  agent: boolean,
+  rotateClaimed: boolean
+): SingleMutationResult {
+  if (rotateClaimed) {
+    return {
+      decision: {
+        pointer,
+        meta,
+        action: 'refused',
+        reason: 'rotate not honoured (agent or no TTY)',
+      },
+      failure: {
+        pointer,
+        reason:
+          'a rotation without --current is honoured only for a human at an interactive terminal; supply --current',
+      },
+    };
+  }
+  return {
+    decision: { pointer, meta, action: 'refused', reason: 'missing knowledge' },
+    failure: {
+      pointer,
+      reason: agent
+        ? 'sensitive path requires --current'
+        : 'sensitive path requires --current (or --rotate-secret at an interactive terminal)',
+    },
+  };
+}
+
 /**
- * Evaluate a single sensitive-path mutation. Applied symmetrically to
- * humans and agents. The four allow paths in order of precedence:
+ * Evaluate a single sensitive-path mutation. The allow paths in order of precedence:
  *
- *   1. Override scope match (REDIACC_ALLOW_CONFIG_EDIT), agent-only;
- *      humans get null overrideScope so this branch is skipped naturally.
- *   2. Explicit rotation acknowledgement (rotateAcknowledged Set
- *      populated by `--rotate-secret` / `--rotate`).
- *   3. Knowledge claim against a previously-empty path (new field).
- *   4. Knowledge claim matching the stored digest.
+ *   1. Explicit rotation acknowledgement (rotateAcknowledged Set populated by
+ *      `--rotate-secret` / `--rotate`), honoured only when `rotateHonoured`
+ *      (a human with a TTY on stdin).
+ *   2. A previously empty pointer (a human outright; an agent with a knowledge claim).
+ *   3. Knowledge claim matching the stored digest.
  */
 function evaluateSensitiveMutation(
   entry: MutationEntry,
   meta: SensitivityMeta,
-  overrideScope: string | null,
   context: MutationContext,
-  agent: boolean
+  agent: boolean,
+  rotateHonoured: boolean
 ): SingleMutationResult {
-  if (overrideScope && scopeAllows(overrideScope, entry.pointer)) {
-    return {
-      decision: {
-        pointer: entry.pointer,
-        meta,
-        action: 'allowed',
-        reason: `override scope (${overrideScope})`,
-      },
-    };
-  }
-
-  if (context.rotateAcknowledged?.has(entry.pointer)) {
+  const rotateClaimed = context.rotateAcknowledged?.has(entry.pointer) === true;
+  if (rotateClaimed && rotateHonoured) {
     return {
       decision: { pointer: entry.pointer, meta, action: 'allowed', reason: 'rotate acknowledged' },
     };
@@ -139,15 +157,7 @@ function evaluateSensitiveMutation(
   }
 
   const claimed = context.knowledge?.[entry.pointer];
-  if (!claimed) {
-    return {
-      decision: { pointer: entry.pointer, meta, action: 'refused', reason: 'missing knowledge' },
-      failure: {
-        pointer: entry.pointer,
-        reason: 'sensitive path requires --current (or --rotate-secret)',
-      },
-    };
-  }
+  if (!claimed) return missingKnowledge(entry.pointer, meta, agent, rotateClaimed);
 
   if (stored === undefined) {
     // Agent first-write with a knowledge claim, nothing to verify against. Treat as rotation: permit, but audit.
@@ -190,7 +200,8 @@ export function evaluateMutations(
   const decisions: GateDecision[] = [];
   const failures: { pointer: string; reason: string }[] = [];
   const agent = isAgentEnvironment();
-  const overrideScope = agent ? configEditOverrideScope() : null;
+  // A rotation acknowledgement skips the knowledge proof, so it counts only for a human at a terminal.
+  const rotateHonoured = !agent && isatty(process.stdin.fd);
 
   for (const entry of entries) {
     const meta = metaForPointer(entry.pointer);
@@ -204,13 +215,12 @@ export function evaluateMutations(
       continue;
     }
 
-    // Symmetric path: humans and agents both go through the same evaluator. Humans get a null overrideScope (REDIACC_ALLOW_CONFIG_EDIT only takes effect under agent context), so they cannot bypass via that branch.
     const { decision, failure } = evaluateSensitiveMutation(
       entry,
       meta,
-      overrideScope,
       context,
-      agent
+      agent,
+      rotateHonoured
     );
     decisions.push(decision);
     if (failure) failures.push(failure);

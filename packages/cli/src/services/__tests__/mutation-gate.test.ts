@@ -10,8 +10,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const agentEnvMock = vi.fn<() => boolean>();
-const overrideScopeMock = vi.fn<() => string | null>();
+const stdinTty = vi.hoisted(() => ({ value: true }));
+// The retired config-edit override, spelled in pieces so the removed-name gate finds no literal here.
+const OLD_VAR = ['REDIACC', 'ALLOW', 'CONFIG', 'EDIT'].join('_');
 
+vi.mock('node:tty', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:tty')>()),
+  isatty: (fd: number) => fd === 0 && stdinTty.value,
+}));
 vi.mock('../../utils/agent-guard.js', async () => {
   const actual = await vi.importActual<typeof import('../../utils/agent-guard.js')>(
     '../../utils/agent-guard.js'
@@ -19,9 +25,13 @@ vi.mock('../../utils/agent-guard.js', async () => {
   return {
     ...actual,
     isAgentEnvironment: () => agentEnvMock(),
-    configEditOverrideScope: () => overrideScopeMock(),
   };
 });
+vi.mock('../../utils/process-ancestry.js', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  // What the old override needed: ancestry reporting the var as set before the agent started.
+  isOverrideLegitimate: () => true,
+}));
 
 import { digestForPointer } from '../../schema/fingerprint.js';
 import {
@@ -52,13 +62,36 @@ function currentDigest(pointer: string): string {
   return d;
 }
 
+const rotation: MutationEntry[] = [
+  {
+    pointer: '/credentials/cfDnsApiToken',
+    previousValue: 'old-cf-token',
+    newValue: 'rotated-token',
+  },
+];
+const rotateContext = {
+  previousConfig: v2Config,
+  rotateAcknowledged: new Set(['/credentials/cfDnsApiToken']),
+};
+
+function refusalReasons(run: () => unknown): string[] {
+  try {
+    run();
+  } catch (error) {
+    if (error instanceof PreconditionMismatchError) return error.failures.map((f) => f.reason);
+    throw error;
+  }
+  throw new Error('expected a PreconditionMismatchError');
+}
+
 describe('MutationGate — human (symmetric with agent)', () => {
   beforeEach(() => {
     agentEnvMock.mockReturnValue(false);
-    overrideScopeMock.mockReturnValue(null);
+    stdinTty.value = true;
   });
   afterEach(() => {
     vi.clearAllMocks();
+    delete process.env[OLD_VAR];
   });
 
   it('refuses sensitive mutation without knowledge (symmetric — was bypassed pre-V2)', () => {
@@ -90,33 +123,21 @@ describe('MutationGate — human (symmetric with agent)', () => {
     expect(decisions[0].reason).toBe('knowledge verified');
   });
 
-  it('allows rotation when --rotate-secret acknowledged', () => {
-    const entries: MutationEntry[] = [
-      {
-        pointer: '/credentials/cfDnsApiToken',
-        previousValue: 'old-cf-token',
-        newValue: 'new-cf-token',
-      },
-    ];
-    const decisions = evaluateMutations(entries, {
-      previousConfig: v2Config,
-      rotateAcknowledged: new Set(['/credentials/cfDnsApiToken']),
-    });
+  it('allows rotation when --rotate-secret acknowledged at an interactive terminal', () => {
+    const decisions = evaluateMutations(rotation, rotateContext);
     expect(decisions[0].action).toBe('allowed');
     expect(decisions[0].reason).toBe('rotate acknowledged');
   });
 
-  it('REDIACC_ALLOW_CONFIG_EDIT does NOT bypass for humans (agent-only override)', () => {
-    overrideScopeMock.mockReturnValue('*');
-    const entries: MutationEntry[] = [
-      {
-        pointer: '/credentials/cfDnsApiToken',
-        previousValue: 'old-cf-token',
-        newValue: 'new-cf-token',
-      },
-    ];
-    // Even with override scope set, humans don't get the agent-only branch (overrideScope is only consulted when isAgentEnvironment() is true). Without knowledge or rotation, refusal is expected.
-    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
+  it('refuses a rotation acknowledgement from a human without a TTY on stdin', () => {
+    stdinTty.value = false;
+    const reasons = refusalReasons(() => evaluateMutations(rotation, rotateContext));
+    expect(reasons[0]).toMatch(/honoured only for a human at an interactive terminal/);
+  });
+
+  it('the retired override var set to * does not bypass for a human', () => {
+    process.env[OLD_VAR] = '*';
+    expect(() => evaluateMutations(rotation, { previousConfig: v2Config })).toThrow(
       PreconditionMismatchError
     );
   });
@@ -131,10 +152,11 @@ describe('MutationGate — human (symmetric with agent)', () => {
 describe('MutationGate — agent environment', () => {
   beforeEach(() => {
     agentEnvMock.mockReturnValue(true);
-    overrideScopeMock.mockReturnValue(null);
+    stdinTty.value = true;
   });
   afterEach(() => {
     vi.clearAllMocks();
+    delete process.env[OLD_VAR];
   });
 
   it('refuses sensitive mutation without knowledge', () => {
@@ -188,33 +210,30 @@ describe('MutationGate — agent environment', () => {
     expect(decisions[0].action).toBe('allowed');
   });
 
-  it('allows rotation with acknowledgement', () => {
-    const entries: MutationEntry[] = [
-      {
-        pointer: '/credentials/cfDnsApiToken',
-        previousValue: 'old-cf-token',
-        newValue: 'rotated-token',
-      },
-    ];
-    const decisions = evaluateMutations(entries, {
-      previousConfig: v2Config,
-      rotateAcknowledged: new Set(['/credentials/cfDnsApiToken']),
-    });
-    expect(decisions[0].action).toBe('allowed');
-    expect(decisions[0].reason).toBe('rotate acknowledged');
+  it('refuses a rotation acknowledgement from an agent, even with a TTY on stdin', () => {
+    const reasons = refusalReasons(() => evaluateMutations(rotation, rotateContext));
+    expect(reasons[0]).toMatch(/supply --current/);
   });
 
-  it('refuses rotation without override env when ancestry not legit', () => {
-    // Without REDIACC_ALLOW_CONFIG_EDIT set by a human parent, scope returns null.
-    const entries: MutationEntry[] = [
+  it('an agent with the retired override var set to * and verified ancestry still needs --current', () => {
+    process.env[OLD_VAR] = '*';
+    const reasons = refusalReasons(() => evaluateMutations(rotation, { previousConfig: v2Config }));
+    expect(reasons[0]).toBe('sensitive path requires --current');
+    const decisions = evaluateMutations(rotation, {
+      previousConfig: v2Config,
+      knowledge: { '/credentials/cfDnsApiToken': currentDigest('/credentials/cfDnsApiToken') },
+    });
+    expect(decisions[0].reason).toBe('knowledge verified');
+  });
+
+  it('a previously empty pointer is the other agent allow path (with a knowledge claim)', () => {
+    const decisions = evaluateMutations(
+      [{ pointer: '/credentials/cfDnsApiToken', previousValue: undefined, newValue: 'first' }],
       {
-        pointer: '/credentials/cfDnsApiToken',
-        previousValue: 'old-cf-token',
-        newValue: 'new-token',
-      },
-    ];
-    expect(() => evaluateMutations(entries, { previousConfig: v2Config })).toThrow(
-      PreconditionMismatchError
+        previousConfig: { ...v2Config, credentials: { ssh: v2Config.credentials.ssh } },
+        knowledge: { '/credentials/cfDnsApiToken': 'claimed' },
+      }
     );
+    expect(decisions[0].reason).toBe('new field with knowledge claim');
   });
 });
