@@ -5820,6 +5820,30 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // PLAN-reggate-debt-collection D6. A capped regression-gate demand is a ledger debt; this fails while a due one stays unpaid outside the shrink-only legacy baseline, folding the ledgers through the Stop hook's own wl_reggate readers.
+    id: 'check:ci-reggate-debt',
+    env: {
+      GITHUB_HEAD_REF: '${{ github.head_ref }}',
+      GITHUB_BASE_REF: '${{ github.base_ref }}',
+    },
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.reggate_debt',
+    gate: true,
+    paths: [
+      '.ci/policy/reggate-debt-legacy.json',
+      '.ci/rediacc_ci/quality/gate_args.py',
+      '.ci/rediacc_ci/quality/reggate_debt.py',
+      '.claude/hooks/stop/wl_reggate.py',
+      'agent/reggate/**',
+    ],
+    leaves: ['.ci/rediacc_ci/quality/reggate_debt.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-branch',
+      step: 'Reggate debt',
+    },
+  },
+  {
     // PLAN-cloudflare-proxy A5. The proxy's one real cost risk is container instances pinned awake: max_instances and sleepAfter were lowered on purpose (the plan's section 4), and a raise reads like a capacity tweak in review.
     id: 'check:ci-proxy-cost-guard',
     run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.proxy_cost_guard',

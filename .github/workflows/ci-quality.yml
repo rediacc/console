@@ -702,6 +702,16 @@ jobs:
           GITHUB_BASE_REF: ${{ github.base_ref }}
 
       # Hand-written for the same reason as its neighbours: quality-branch has no
+      # `- id: setup` (invariant 11). It reads the merge-base copy of the legacy
+      # baseline, which needs origin/<base>, fetched only in this lane.
+      - name: Reggate debt
+        if: ${{ !cancelled() }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.reggate_debt
+        env:
+          GITHUB_HEAD_REF: ${{ github.head_ref }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+
+      # Hand-written for the same reason as its neighbours: quality-branch has no
       # `- id: setup` (invariant 11). It needs the full commit graph and
       # origin/<base>, which only this lane fetches; it reads commit topology
       # only, so the blob:none clone answers it exactly as a full clone would.
