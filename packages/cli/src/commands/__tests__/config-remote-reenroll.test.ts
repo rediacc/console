@@ -437,7 +437,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
     expect(written.remote).toMatchObject({ cachedVersion: 7 });
     // Host-local sections come from the local copy; the pull carries none of them.
     expect(written.renetPath).toBe('/opt/dev/renet');
-    expect(written.encryption).toEqual({ mode: 'plaintext' });
+    expect(written.encryption).toMatchObject({ mode: 'keyring' });
     expect(written.account).toMatchObject({
       accountServer: API_URL,
       e2ePublicKey: 'device-synced-key',
@@ -535,7 +535,10 @@ describe('config remote enable --machine-secret on a linked config whose slot se
     const pointer = (await readConfigFile()).remote;
     expect(pointer).toMatchObject({ storeId: STORE_ID, configId: CONFIG_ID, cachedVersion: 7 });
     expect(pointer?.storageKeyId).toMatch(/^rdc:ms:/);
-    expect([...secureMem.keys()]).toEqual([pointer?.storageKeyId]);
+    const keys = [...secureMem.keys()];
+    expect(keys).toHaveLength(2);
+    expect(keys).toContain(pointer?.storageKeyId);
+    expect(keys.filter((k) => k.startsWith('rdc:seal:'))).toHaveLength(1);
     expect(account.enrollCalls).toBe(1);
     await rdc('refresh');
   });
