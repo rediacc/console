@@ -3,7 +3,7 @@
 
 The answer feeds `backup_changed`, which runs ct-tests.yml's `test-e2e-backup-browse-at` job (suite 26, the account gateway and the VM fleet) without `full_suite`. The path set is the `backup` area of `.ci/config/proof-tiers.json` (`tiers.vm.areas.backup`), read through `rediacc_ci.proof.surfaces` rather than listed a second time: its globs select the renet backup paths, and its `suites` are the backup suite files, which sit in the console tree.
 
-A push compares `$BEFORE_SHA` with HEAD, except a push to the default branch, which answers false: `main` moves only by a rebase merge (`gh pr merge --rebase`) or the fast-forward fallback, so the pushed commits are the pull request's own and its CI already ran suite 26 on that tree (a squash or merge-commit push would break that premise and is not used), and ct-backup-nightly.yml runs the suite against main daily. A pull request compares the merge base of `$BASE_SHA` and HEAD with HEAD. Any other event answers false.
+A push compares `$BEFORE_SHA` with HEAD, except a push to the default branch, which answers false: `main` moves only by a rebase merge (`gh pr merge --rebase`) or the fast-forward fallback, so the pushed commits are the pull request's own and its CI already ran suite 26 on that tree (a squash or merge-commit push would break that premise and is not used), and the weekly full suite of ci.yml covers main. A pull request compares the merge base of `$BASE_SHA` and HEAD with HEAD. Any other event answers false.
 
 Fail open, like renet_changed: a branch-creating push, a missing or unreachable base, a git failure, or a submodule range that cannot be diffed (the initialize job checks no submodule out, so any `private/renet` pointer move lands here) answers true, so the backup leg runs rather than none.
 
@@ -59,7 +59,7 @@ def decide(
         if on_default_branch(ref, default_branch):
             print(
                 "a push to the default branch ships a tree its PR CI already tested; "
-                "the nightly covers main, so the backup leg does not run for this push"
+                "the weekly full suite covers main, so the backup leg does not run for this push"
             )
             return False
         if before_sha.strip("0") == "":

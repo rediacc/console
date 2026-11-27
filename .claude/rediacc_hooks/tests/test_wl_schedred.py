@@ -200,26 +200,27 @@ def test_discovery_reads_uncommented_schedules_only(tmp_path):
     assert "was-nightly" in [w["stem"] for w in SR.scheduled_workflows(root)]
 
 
+KEPT_SCHEDULED_STEMS = {
+    "ci",
+    "ops-housekeeping",
+    "ci-obs-mirror",
+    "ci-vm-bake",
+    "ct-backup-perf",
+    "ops-pins-soaked",
+    "ops-cf-usage-report",
+    "ops-telemetry-probe",
+    "ops-d1-size-report",
+}
+
+
 def test_discovery_pins_this_repos_scheduled_workflows():
     """The list is discovered, never hardcoded; this pin says which workflows that discovery finds today, so a schedule silently dropping out of the watch fails here."""
     root = wlfix.STOP_DIR.parents[2]
     stems = {w["stem"] for w in SR.scheduled_workflows(root)}
-    assert stems == {
-        "ci",
-        "ops-housekeeping",
-        "cd-release-stable",
-        "ci-obs-mirror",
-        "ci-vm-bake",
-        "ct-backup-perf",
-        "ops-pins-soaked",
-        "ops-cf-usage-report",
-        "ops-telemetry-probe",
-        "ops-d1-size-report",
-        # The weekly drift run, which took over ci.yml's old schedule.
-        "ci-drift",
-        # The nightly backup suite run.
-        "ct-backup-nightly",
-    }
+    # BLOCKER: ci-drift.yml and cd-release-stable.yml's schedule are deleted by box S1 of PLAN-retire-nightlies-and-mentions, which a different writer lands; until it does they are still discovered. Delete this set and the subtraction below when S1 is on this branch, so the pin reads exactly the nine kept stems.
+    retiring = {"ci-drift", "cd-release-stable"}
+    assert stems - retiring == KEPT_SCHEDULED_STEMS
+    assert len(KEPT_SCHEDULED_STEMS) == 9
 
 
 # --------------------------------------------------------------------------- the verdict
@@ -238,6 +239,39 @@ def test_newest_scheduled_run_and_its_latest_attempt_decide(repo, tmp_path, gh):
     # Control: the newest run is the red one, so the verdict turns red.
     serve(gh, [run(RED_RUN, created="2026-10-04T06:00:00Z"), *runs[1:]])
     assert row_of(SR.refresh(repo, tmp_path / "wl.md", force=True), "ci")["red"] is True
+
+
+GONE_RUN = 70000001
+
+
+def test_a_scheduled_run_of_a_workflow_with_no_schedule_in_the_tree_is_an_undeclared_row(
+    repo, tmp_path, gh
+):
+    """A schedule deleted from the tree leaves its runs on main; the verdict names the absence as one `undeclared` row, never a red."""
+    gone = run(
+        GONE_RUN,
+        file="retired.yml",
+        conclusion="failure",
+        created="2026-10-04T06:00:00Z",
+        name="Retired",
+    )
+    older = run(
+        GONE_RUN - 1, file="retired.yml", conclusion="success", created="2026-10-02T06:00:00Z"
+    )
+    hk = run(1, file="housekeeping.yml", conclusion="success")
+    serve(gh, [run(RED_RUN, conclusion="success"), gone, older, hk])
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    assert [(r["stem"], r["run_id"], r["undeclared"], r["red"]) for r in doc["undeclared"]] == [
+        ("retired", GONE_RUN, True, False)
+    ]
+    # Control, the other direction: the declared workflows are never undeclared rows, and the retired one is not a declared row.
+    assert {r["stem"] for r in doc["undeclared"]}.isdisjoint({w["stem"] for w in doc["workflows"]})
+    # A red undeclared run blocks nobody: assess() reads only the declared rows.
+    assert SR.assess(tmp_path / "wl.md", [], "s" * 8, doc)["block"] == []
+    # Control: with no stray run on the page there is no undeclared row.
+    serve(gh, [run(RED_RUN, conclusion="success"), hk])
+    assert SR.refresh(repo, tmp_path / "wl2.md", force=True)["undeclared"] == []
 
 
 def test_a_green_dispatch_run_never_clears_a_scheduled_red(repo, tmp_path, gh):

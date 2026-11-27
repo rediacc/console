@@ -109,7 +109,7 @@ on:
         default: 'false'
       # J6 (PLAN-backup-program): 'true' when a push or pull request changed a backup path
       # (rediacc_ci.ci.backup_changed, decided by ci.yml's initialize job) and on the
-      # nightly (ct-backup-nightly.yml). It runs test-e2e-backup-browse-at, which holds
+      # weekly full suite (ci.yml). It runs test-e2e-backup-browse-at, which holds
       # suite 26 (BACKUP_STORAGE_SUITE=1), even without `full_suite`. Any other value
       # leaves that job following `full_suite` and `run_e2e_backup_browse_at` as before.
       backup_changed:

@@ -366,8 +366,8 @@ jobs:
       # `full_suite`. rediacc_ci.ci.backup_changed decides whether a backup path moved (the
       # `backup` area of the proof tier map: its renet globs and its suite files),
       # over the same range as the step above. Fail open like it: 'true' on anything it cannot
-      # decide, 'false' on every other event and on a push to the default branch (the nightly
-      # ct-backup-nightly.yml runs suite 26 against main).
+      # decide, 'false' on every other event and on a push to the default branch (the weekly
+      # full suite of this workflow covers main).
       - name: Decide whether a backup path changed
         id: backup-push
         env:

@@ -1,6 +1,6 @@
 """wl_schedred: a red scheduled workflow on main reaches an agent session, and exactly one session owns it (agent/plans/PLAN-scheduled-red-detector.md, Part A).
 
-WHY THIS EXISTS. Console CI's nightly went red five nights running and Housekeeping four, and no agent saw either: the rolling `nightly-red` issue and the budget-check comment reach a human, the CI-read guards refuse every raw read of the runs list, and `ci-trace.py` listed only Console CI runs. The red held the stable promotion (the promote-stable soak counts only scheduled runs) while every session stopped clean.
+WHY THIS EXISTS. Console CI's nightly went red five nights running and Housekeeping four, and no agent saw either: the mail a human gets reaches nobody else, the CI-read guards refuse every raw read of the runs list, and `ci-trace.py` listed only Console CI runs. The red held the stable promotion (the promote-stable soak counts only scheduled runs) while every session stopped clean.
 
 WHAT IT READS, AND HOW OFTEN.
 - `scheduled_workflows(root)` discovers the workflows from `.github/workflows/*.y*ml`: any uncommented `schedule:` key with `cron:` entries. Never a hardcoded list, so a sixth scheduled workflow is watched the day it lands.
@@ -54,7 +54,6 @@ _OPEN_STATES = (" ", ">", "?")
 # What a red blocks, by workflow stem: the weekly fleet run is the test evidence the stable promotion waives its soak on; every other scheduled workflow is main's own hygiene.
 _BLOCKS = {
     "ci": "the weekly fleet run (the 5-OS stock-image fleet and the full union), which is the test evidence the stable promotion waives its soak on",
-    "ci-drift": "the stable promotion's daily trigger and the operator's drift mail",
 }
 _BLOCKS_DEFAULT = "main hygiene (this workflow's scheduled job is not running clean)"
 
@@ -268,8 +267,25 @@ def _registered_files(root, owner, name):
     return files
 
 
+def undeclared_rows(by_file, declared_files):
+    """One informational row per workflow file that has a scheduled run on main and no uncommented `schedule:` in the tree: its newest scheduled run, `undeclared: True`, never red. A schedule deleted from the tree leaves its old runs on main until they age off the page, so this is how the absence is read through the sanctioned verb (`ci-trace.py --scheduled --json`, box L2 of PLAN-retire-nightlies-and-mentions) instead of a raw runs read. `by_file` maps a workflow file name to its scheduled runs."""
+    out = []
+    for file in sorted(by_file):
+        runs = by_file[file]
+        if not file or file in declared_files or not runs:
+            continue
+        newest = _newest(runs)
+        stem = pathlib.PurePosixPath(file).stem
+        wf = {"stem": stem, "file": file, "name": newest.get("name") or stem, "crons": []}
+        row = _run_row(wf, newest if newest.get("status") == "completed" else None, False)
+        row["undeclared"] = True
+        row["red"] = False
+        out.append(row)
+    return out
+
+
 def _fetch(root, owner, name, workflows, jobs_cache):
-    """(rows, error, jobs_cache). An error string means the verdict could not be read at all."""
+    """(rows, error, jobs_cache, undeclared). An error string means the verdict could not be read at all."""
     data, err = wl_gh.call(
         [
             "api",
@@ -278,7 +294,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
         cwd=root,
     )
     if err or not isinstance(data, dict):
-        return [], err or "no runs document", jobs_cache
+        return [], err or "no runs document", jobs_cache, []
     by_file: dict[str, list[dict]] = {}
     for run in data.get("workflow_runs") or []:
         if run.get("event") not in (None, "schedule"):
@@ -313,7 +329,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 rows.append(row)
                 continue
             if ferr:
-                return [], ferr, jobs_cache
+                return [], ferr, jobs_cache, []
             done = [
                 r
                 for r in ((more or {}).get("workflow_runs") or [])
@@ -341,7 +357,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                     new_jobs[key] = failed
         rows.append(row)
     # Only the jobs of runs that are still somebody's newest red are kept: the map cannot grow without bound.
-    return rows, "", new_jobs
+    return rows, "", new_jobs, undeclared_rows(by_file, {wf["file"] for wf in workflows})
 
 
 def push_workflow(root):
@@ -489,8 +505,8 @@ def refresh(root, worklist, force=False, now=None):
         jobs_cache = (cached or {}).get("jobs") or {}
         if not isinstance(jobs_cache, dict):
             jobs_cache = {}
-        rows, err, jobs = (
-            _fetch(root, owner, name, workflows, jobs_cache) if workflows else ([], "", {})
+        rows, err, jobs, undeclared = (
+            _fetch(root, owner, name, workflows, jobs_cache) if workflows else ([], "", {}, [])
         )
         if err:
             doc = {
@@ -499,10 +515,18 @@ def refresh(root, worklist, force=False, now=None):
                 "at": now,
                 # The last known rows ride along for display only; nothing blocks on an unreadable answer.
                 "workflows": (cached or {}).get("workflows") or [],
+                "undeclared": (cached or {}).get("undeclared") or [],
                 "jobs": jobs_cache,
             }
         else:
-            doc = {"state": "ok", "error": "", "at": now, "workflows": rows, "jobs": jobs}
+            doc = {
+                "state": "ok",
+                "error": "",
+                "at": now,
+                "workflows": rows,
+                "undeclared": undeclared,
+                "jobs": jobs,
+            }
         # The push read is independent of the scheduled one: either can be unreadable while the other answers.
         doc["push"], doc["push_error"], doc["push_diag"] = None, "", {}
         if pushwf:
