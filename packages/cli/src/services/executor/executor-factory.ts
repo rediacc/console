@@ -92,6 +92,8 @@ interface VaultDirective {
   /** The family name, for the refusal text of the client-side fallback probe. */
   repoName: string;
   expect?: RepoExpectation;
+  /** The named datastore mount the repo lives on, written into the job's machine vault when the call names none: the precondition probe reads `<datastore>/repos/<guid>` from it. */
+  datastore?: string;
   networkIdAuto?: boolean;
   /** The config key the allocated ID is recorded under. */
   recordAs?: string;
@@ -144,8 +146,12 @@ export function expectRepoState(input: {
   repoGuid: string;
   repoName: string;
   expect: RepoExpectation;
+  /** The named datastore mount, for a repo placed on one. */
+  datastore?: string;
 }): void {
-  directiveFor(input).expect = input.expect;
+  const directive = directiveFor(input);
+  directive.expect = input.expect;
+  if (input.datastore !== undefined) directive.datastore = input.datastore;
 }
 
 /** Ask the next job on this repository and machine to allocate its network ID (`network_id: "auto"`). */
@@ -192,7 +198,11 @@ async function stampDirective(
   if (outside && expect === 'repo_present') {
     await probePresentOutsideJob(options.machineName, directive);
   }
-  return withDirective(options, outside ? undefined : expect, directive.networkIdAuto);
+  const stamped = withDirective(options, outside ? undefined : expect, directive.networkIdAuto);
+  // The datastore rides only with the precondition it serves: renet's probe reads the vault's machine datastore, which is the machine default unless the call names the mount.
+  return !outside && expect && options.datastore === undefined && directive.datastore !== undefined
+    ? { ...stamped, datastore: directive.datastore }
+    : stamped;
 }
 
 /** The call's options with the directive's fields added where the caller set none. */
