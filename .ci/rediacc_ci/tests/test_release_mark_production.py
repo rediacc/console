@@ -863,9 +863,11 @@ def test_backfill_merges_new_rows_into_the_record_and_writes_once(monkeypatch) -
     monkeypatch.setattr(port.r2_promote, "Transfers", lambda *_a, **_k: object())
     existing = [{"version": "3.0.1", "promoted_at": "2026-11-04T10:00:00Z"}]
     written: list[list[dict[str, str]]] = []
-    monkeypatch.setattr(port.stable, "read_history", lambda _run, _root: list(existing))
+    monkeypatch.setattr(port.stable, "read_history", lambda _run, _root: (list(existing), '"e1"'))
     monkeypatch.setattr(
-        port.stable, "write_history", lambda _run, rows, _root: written.append(rows)
+        port.stable,
+        "write_history",
+        lambda _run, rows, _root, _etag: written.append(rows) or True,
     )
     assert port.main(["--backfill"]) == 0
     assert written == [
@@ -887,7 +889,10 @@ def test_backfill_writes_nothing_when_the_record_already_holds_every_row(monkeyp
     monkeypatch.setattr(
         port.stable,
         "read_history",
-        lambda _run, _root: [{"version": "2.4.0", "promoted_at": "2026-10-20T10:00:00Z"}],
+        lambda _run, _root: (
+            [{"version": "2.4.0", "promoted_at": "2026-10-20T10:00:00Z"}],
+            '"e1"',
+        ),
     )
     written: list[object] = []
     monkeypatch.setattr(port.stable, "write_history", lambda *_a: written.append(1))

@@ -302,9 +302,13 @@ jobs:
   publish:
     name: Tag & Release
     runs-on: ubuntu-latest
-    # A hotfix publish rewrites the stable history record, so it queues behind
-    # (and ahead of) cd-release-stable.yml's promote under the same group; any
-    # other publish keeps a group of its own run.
+    # A hotfix publish rewrites the stable history record, so it shares
+    # cd-release-stable.yml's promote group; any other publish keeps a group of
+    # its own run. The group serializes RUNNING jobs only: GitHub keeps one
+    # pending run per group, so a newer pending run supersedes an older pending
+    # one. The record write is therefore compare-and-swap (If-Match on the
+    # ETag it read, re-read and re-merged on a 412), so a superseded or
+    # overlapping run cannot lose a version.
     concurrency:
       group: ${{ inputs.publish_stable == true && 'cd-release-stable' || format('cd-release-edge-publish-{0}', github.run_id) }}
       cancel-in-progress: false

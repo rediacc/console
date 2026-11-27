@@ -843,3 +843,65 @@ def test_append_row_normalises_the_leading_v_and_keeps_the_first_promoted_at() -
     again, added = port.append_row(rows, "1.2.3", "t2")
     assert not added
     assert again == rows
+
+
+# --------------------------------------------------------------------------- The record write is compare-and-swap (review 9ba3c0c1.1) ---------------------------------------------------------------------------
+
+OLDER = '[{"version": "1.0.0", "promoted_at": "2026-01-01T00:00:00Z"}]\n'
+RACER = (
+    '[{"version": "1.0.0", "promoted_at": "2026-01-01T00:00:00Z"},'
+    ' {"version": "1.1.0", "promoted_at": "2026-02-01T00:00:00Z"}]\n'
+)
+
+
+def _race_run(tmp_path: pathlib.Path, **kw: typing.Any):
+    """A promote whose read of the record is followed by a concurrent writer adding 1.1.0 before this run's write lands."""
+    body = tmp_path / "racer.json"
+    body.write_text(RACER, encoding="utf-8")
+    extra = {
+        "FAKE_RACE_ONCE_MATCH": "history.json",
+        "FAKE_RACE_DONE": str(tmp_path / "race.done"),
+        "FAKE_RACE_BODY": str(body),
+    }
+    return run(tmp_path, {**DEFAULT_BUCKET, "cli/stable/history.json": OLDER}, extra=extra, **kw)
+
+
+def test_a_concurrent_record_write_is_a_412_and_the_retry_keeps_both_versions(tmp_path) -> None:
+    root, proc, records = _race_run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert [r["key"] for r in fake.ops(records, "PUT412")] == [HISTORY]
+    assert [row["version"] for row in _history(root)] == ["1.0.0", "1.1.0", "1.2.3"]
+    assert "re-reading (1/5)" in proc.stderr
+
+
+def test_the_record_race_control_loses_a_version_without_the_conditional_put(tmp_path) -> None:
+    """PROVE THE TEST ABOVE CAN FAIL: with the `--if-match` dropped from the write the racing writer's row is overwritten."""
+    planted = fake.plant(
+        tmp_path,
+        '*(["--if-match", etag] if etag else ["--if-none-match", "*"]),',
+        "",
+    )
+    root, proc, records = _race_run(tmp_path, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert fake.ops(records, "PUT412") == []
+    assert [row["version"] for row in _history(root)] == ["1.0.0", "1.2.3"]
+
+
+def test_a_record_that_keeps_changing_fails_loudly_instead_of_dropping_a_version(
+    monkeypatch, tmp_path
+) -> None:
+    attempts: list[int] = []
+
+    class FakeRun:
+        self_name = "t"
+
+    def write(_run, _rows, _root, _etag):
+        attempts.append(1)
+        return False
+
+    monkeypatch.setattr(port, "read_history", lambda _run, _root: ([], '"e"'))
+    monkeypatch.setattr(port, "write_history", write)
+    with pytest.raises(r2_promote.PromoteError) as raised:
+        port.update_history(FakeRun(), lambda rows: ([*rows, {}], 1), str(tmp_path))
+    assert raised.value.status == 1
+    assert len(attempts) == port.HISTORY_CAS_ATTEMPTS

@@ -233,14 +233,16 @@ def _write_backfill(rows: list[dict[str, str]]) -> int:
     run = r2_promote.Transfers(SELF, endpoint, 10.0)
     stage_root = tempfile.mkdtemp(prefix="stable-backfill-")
     try:
-        merged = stable.read_history(run, stage_root)
-        added = 0
-        for row in rows:
-            merged, was_added = stable.append_row(merged, row["version"], row["promoted_at"])
-            added += was_added
-        merged.sort(key=lambda row: row["promoted_at"])
-        if added:
-            stable.write_history(run, merged, stage_root)
+
+        def merge(current: list[dict[str, str]]) -> tuple[list[dict[str, str]], int]:
+            merged, added = current, 0
+            for row in rows:
+                merged, was_added = stable.append_row(merged, row["version"], row["promoted_at"])
+                added += was_added
+            merged.sort(key=lambda row: row["promoted_at"])
+            return merged, added
+
+        added = stable.update_history(run, merge, stage_root)
         log.info("%s: backfill wrote %d new row(s)" % (SELF, added))
         return 0
     except r2_promote.PromoteError as exc:

@@ -59,9 +59,13 @@ import os
 import shutil
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 
 from rediacc_ci.core import awscli, common
 from rediacc_ci.deploy import cf_purge_urls, channel_snapshot, channel_stamp, r2_promote
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.promote_r2_to_stable"
@@ -211,6 +215,8 @@ REWRITES = channel_stamp.REWRITES
 
 # THE STABLE RECORD (PLAN-release-notes D9). `cli/stable/history.json` is a list of `{version, promoted_at}` rows, one per version a promote put on stable, oldest first. It exists on stable only: it is written by `record_stable` after a promote has landed, never copied from edge, so `HISTORY_EXCLUDE` keeps it out of every copy phase (the soak lane's phase 1, and the hotfix lane's catch-all) even if an edge tree ever held a file of that name.
 HISTORY_NAME = "history.json"
+# Compare-and-swap attempts for one record update before it fails loudly.
+HISTORY_CAS_ATTEMPTS = 5
 HISTORY_KEY = "cli/stable/" + HISTORY_NAME
 HISTORY_EXCLUDE: tuple[str, ...] = ("--exclude", HISTORY_NAME)
 STABLE_HISTORY_IS_NEVER_COPIED_FROM_EDGE = True
@@ -334,16 +340,18 @@ def render_history(rows: list[dict[str, str]]) -> str:
     return json.dumps(rows, indent=2) + "\n"
 
 
-def read_history(run: r2_promote.Transfers, stage_root: str) -> list[dict[str, str]]:
-    """The stable record, or an empty one when `cli/stable/history.json` does not exist yet. Raises `PromoteError(1)` for a record that does not parse."""
-    if HISTORY_NAME not in {obj.rel for obj in run.list_tree("cli/stable/")}:
-        return []
+def read_history(
+    run: r2_promote.Transfers, stage_root: str
+) -> tuple[list[dict[str, str]], str | None]:
+    """The stable record and the ETag of the exact bytes read (None, with no rows, when `cli/stable/history.json` does not exist yet), so the write can be conditional on nothing having changed since. Raises `PromoteError(1)` for a record that does not parse."""
     target = os.path.join(stage_root, HISTORY_NAME)
-    run.get(HISTORY_KEY, target)
+    etag = run.get_with_etag(HISTORY_KEY, target)
+    if etag is None:
+        return [], None
     with open(target, encoding="utf-8") as handle:
         text = handle.read()
     try:
-        return parse_history(text)
+        return parse_history(text), etag
     except (TypeError, ValueError) as exc:
         print(
             "%s: %s is not a valid record, left untouched: %s" % (run.self_name, HISTORY_KEY, exc),
@@ -352,21 +360,54 @@ def read_history(run: r2_promote.Transfers, stage_root: str) -> list[dict[str, s
         raise r2_promote.PromoteError(1) from exc
 
 
-def write_history(run: r2_promote.Transfers, rows: list[dict[str, str]], stage_root: str) -> None:
+def write_history(
+    run: r2_promote.Transfers, rows: list[dict[str, str]], stage_root: str, etag: str | None
+) -> bool:
+    """Compare-and-swap: write `rows` only if the record is still the version `etag` names. False means a concurrent writer (the soak promote and the hotfix publish both read-modify-write this one object) changed it first and nothing was written."""
     target = os.path.join(stage_root, "history-out.json")
     with open(target, "w", encoding="utf-8") as handle:
         handle.write(render_history(rows))
-    run.put(target, HISTORY_KEY)
+    return run.put_if_match(target, HISTORY_KEY, etag)
+
+
+def update_history(
+    run: r2_promote.Transfers,
+    merge: Callable[[list[dict[str, str]]], tuple[list[dict[str, str]], int]],
+    stage_root: str,
+) -> int:
+    """Read the record, apply `merge` (rows -> (rows, number added)) and write it back with compare-and-swap. On a lost race the record is re-read and the merge re-applied, up to `HISTORY_CAS_ATTEMPTS` times, so a version a concurrent writer added is kept; exhausting them raises `PromoteError(1)` rather than dropping a version. A merge that adds nothing writes nothing."""
+    for attempt in range(1, HISTORY_CAS_ATTEMPTS + 1):
+        rows, etag = read_history(run, stage_root)
+        merged, added = merge(rows)
+        if not added:
+            return 0
+        if write_history(run, merged, stage_root, etag):
+            return added
+        print(
+            "%s: %s changed under the write, re-reading (%d/%d)"
+            % (run.self_name, HISTORY_KEY, attempt, HISTORY_CAS_ATTEMPTS),
+            file=sys.stderr,
+            flush=True,
+        )
+    print(
+        "%s: %s still changing after %d attempts; the stable record was not updated"
+        % (run.self_name, HISTORY_KEY, HISTORY_CAS_ATTEMPTS),
+        file=sys.stderr,
+    )
+    raise r2_promote.PromoteError(1)
 
 
 def record_stable(run: r2_promote.Transfers, version: str, promoted_at: str = "") -> bool:
     """Append `version` to the stable record after its promote has landed. Returns whether a row was added; a version already recorded writes nothing. It prints nothing, so the promote's own stdout is unchanged."""
     stage_root = tempfile.mkdtemp(prefix="promote-history-")
+    stamp = promoted_at or now_utc()
+
+    def merge(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], int]:
+        merged, added = append_row(rows, version, stamp)
+        return merged, int(added)
+
     try:
-        rows, added = append_row(read_history(run, stage_root), version, promoted_at or now_utc())
-        if added:
-            write_history(run, rows, stage_root)
-        return added
+        return bool(update_history(run, merge, stage_root))
     finally:
         shutil.rmtree(stage_root, ignore_errors=True)
 
