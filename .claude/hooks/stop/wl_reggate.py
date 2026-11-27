@@ -231,7 +231,9 @@ def cap_defers(remaining, forgot, outstanding):
 
 
 def paid_sigs(records):
-    """Sigs one ledger has paid: a `discharge`, or a `retire` carrying its operator `ASKED:` stamp. A retire without the stamp pays nothing (D5)."""
+    """Sigs one ledger has paid: a `discharge`, or a `retire` carrying its operator `ASKED:` stamp. A retire without a well-formed stamp pays nothing (D5).
+
+    THIS READER ONLY SHAPE-CHECKS THE STAMP (review 896a95d5.3). That the minute matches an operator answer is checked once, at write time, by `retire()` against the transcript; a reader cannot repeat it. What keeps a hand-typed `retire` line out of the ledger is the pre-bash and Edit/Write guard `block_agent_store_shell_write` (agent/reggate is an agent store)."""
     out = {r.get("sig") for r in records if r.get("kind") == "discharge"}
     out |= {
         r.get("sig")

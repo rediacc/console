@@ -7,6 +7,7 @@ THE CONTROL is the old hook: with a pass-through commit-msg hook the trailerless
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import pathlib
 import subprocess
@@ -148,3 +149,16 @@ def test_control_without_the_refusal_the_trailerless_commit_lands(console, tmp_p
     _hooked(console, tmp_path / "hooks-old", "#!/bin/sh\nexit 0\n")
     _write(console, "packages/cli/src/x.ts")
     assert _commit(console, "feat(cli): resume backups").returncode == 0
+
+
+def test_no_work_tree_refuses_instead_of_passing(capsys):
+    """Review cba6b222.1: an empty repo answer is an unchecked commit, so the hook refuses it."""
+    spec = importlib.util.spec_from_file_location(
+        "githooks_under_test", REPO_ROOT / ".claude" / "rediacc_hooks" / "git" / "githooks.py"
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    gh = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(gh)
+    assert gh.release_note_refusal("feat(x): customer thing\n", "", ["packages/cli/src/a.ts"]) == 1
+    assert "UNCHECKED" in capsys.readouterr().err

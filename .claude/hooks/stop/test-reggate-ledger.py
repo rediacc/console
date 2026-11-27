@@ -726,9 +726,9 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
 # R8's import count (agent/plans/PLAN-reggate-debt-collection.md R8, survey r93). The live tree read 138 materialized sigs against 69 open `reggate-debt:` items, which looked like double counting. Folding that tree said otherwise: 148 debts across the ledgers, 148 distinct sigs, 138 `materialize` records for 138 distinct sigs, each naming its own item (all 138 in the
 # store, one owner), and 69 of those debts since DISCHARGED, which ticks their items. The materialize side counts every debt ever materialized; `--list --open` counts only the unpaid ones. This fixture pins both halves: each debt is materialized and counted exactly once across several ledgers and a dotted side file, and the open items equal the materialized sigs minus the paid ones.
 def ledger_records_all():
-    """Every record of every `*.jsonl` under debt_dir, side files included: what R8's `cat agent/reggate/*.jsonl` reads."""
+    """Every record of every ledger the readers fold (`R.ledger_paths`, so the dotted side files are NOT read), which is the set the debt counts come from."""
     out = []
-    for p in sorted(R.debt_dir().glob("*.jsonl")):
+    for p in R.ledger_paths():
         out += [json.loads(x) for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
     return out
 
@@ -746,9 +746,13 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     for sig, (br, ago, art) in known.items():
         debt(br, sig, "known debt " + sig[:4], ago, root, artifact=art)
     debt("1121-1", "5555000055550000", "a fresh live-branch debt, not due", 5, root)
-    # The shape-duplication side file: a dotted stem beside a ledger, holding `ask` records only.
+    # The shape-duplication side file: a dotted stem beside a ledger. It really holds `ask` records only; a `materialize` record is planted in it too (review f71d2ea5.1), so a reader that folded side files would see sig 1111 as already materialized and the once-each check below would fail.
     (R.debt_dir() / "1104-1.shapedup-wide.jsonl").write_text(
-        json.dumps({"kind": "ask", "sig": "1111000011110000"}) + "\n", encoding="utf-8"
+        json.dumps({"kind": "ask", "sig": "1111000011110000"})
+        + "\n"
+        + json.dumps({"kind": "materialize", "sig": "1111000011110000", "item": "sidefile0"})
+        + "\n",
+        encoding="utf-8",
     )
     R.collect_debts(root, wl, "abcd1234", "1121-1", (), [])
     (root / "t").mkdir()
@@ -767,7 +771,7 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     check("the two committed cases discharge their debts", sorted(paid_now), sorted(paid_set))
     check("...which are exactly the two with an artifact", len(paid_set), 2)
     check(
-        "every due debt is materialized once, across three ledgers and a side file",
+        "every due debt is materialized once, across three ledgers, with a materialize record planted in a side file that no reader folds",
         sorted(mat),
         sorted(known),
     )

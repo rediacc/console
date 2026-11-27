@@ -791,7 +791,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_admin_merge.py | (none) | via .claude/hooks/stop/wl_review.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_agent_browser_repo_output.py | (none) | via .claude/rediacc_hooks/guards/block_agent_browser_repo_output.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_agent_state_shape.py | (none) | via .claude/hooks/stop/wl_store.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_agent_store_shell_write.py | (none) | via .claude/rediacc_hooks/guards/block_agent_store_shell_write.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_agent_store_shell_write.py | (none) | via .claude/hooks/stop/wl_reggate.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_away_questions.py | (none) | via .claude/hooks/stop/wl_away.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_backup_unverified_push.py | (none) | via .claude/hooks/stop/test-wl_worktrees.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_bash_write_to_running_script.py | (none) | via .claude/rediacc_hooks/guards/_harness.py | py |

@@ -305,7 +305,10 @@ def _release_repo(repo: str) -> str:
 
 def release_note_refusal(msg: str, repo: str, paths: list[str]) -> int:
     if not repo:
-        return 0
+        # No work tree means no staged paths to judge: that is an unreadable repo, not a commit that needs no note (review cba6b222.1). git runs commit-msg inside a work tree, so an empty answer is a failed probe.
+        return _refuse(
+            "UNCHECKED: the Release-Note trailer could not be checked (no work tree found)."
+        )
     rn = _load("githook_release_notes", RELEASE_NOTES_PATH)
     try:
         why = rn.refusal(msg, paths, _release_repo(repo))
