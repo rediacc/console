@@ -7035,6 +7035,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--windows <ids>",
+              "descriptionKey": "options.opsWindows",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
