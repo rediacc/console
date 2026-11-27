@@ -334,14 +334,19 @@ export async function viewOf(
   }
   base.current = insp.current;
   // A release a driver marks breaking (a Go minor line) is a major whatever its leading number.
+  // A docker label is `<image>:<tag>`; the version lives in the tag. Read whole, `node:26.13.1-slim` has no leading number, so a patch of the pinned line read as a major and parked behind --major (2026-11-27, image:proxy-node).
+  const bareTag = (e: PinEntry, v: string): string =>
+    e.driver === 'docker' && v.includes(':') ? v.slice(v.lastIndexOf(':') + 1) : v;
+  const inRangeOf = (r: Release): boolean =>
+    inRange(insp.current === null ? null : bareTag(entry, insp.current), bareTag(entry, r.version));
   const breaking = (r: Release): boolean =>
     r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
   const isMajor = (r: Release): boolean => {
     if (breaking(r)) return true;
     // The pinned version with new content is no move at all, let alone a major (2026-11-06: node:26.13.0-slim re-pushed read as major-only).
     if (r.redigest) return false;
-    const a = insp.current === null ? null : majorOf(insp.current);
-    const b = majorOf(r.version);
+    const a = insp.current === null ? null : majorOf(bareTag(entry, insp.current));
+    const b = majorOf(bareTag(entry, r.version));
     return a === null || b === null || a !== b;
   };
   const lineOpts: LineOpts = {
@@ -407,7 +412,7 @@ export async function viewOf(
       const r = pool.find((x) => x.version === v) as Release;
       if (
         !(sel.onlyInRange
-          ? !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
+          ? !breaking(r) && (r.redigest === true || inRangeOf(r))
           : sel.allowMajor === true || !isMajor(r))
       )
         return {
@@ -431,7 +436,7 @@ export async function viewOf(
   const admitted = pool.filter((r) =>
     sel.onlyInRange
       ? // A re-digest is the pinned version with new content: its label (`<name>:<version>@<hex>`) is no version `inRange` can read, so it is admitted by what it is, and the soak judge below still holds it inside the window.
-        !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
+        !breaking(r) && (r.redigest === true || inRangeOf(r))
       : sel.allowMajor === true || !isMajor(r)
   );
   for (const r of admitted) {

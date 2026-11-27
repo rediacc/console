@@ -22,10 +22,11 @@ import { policyPath } from '../../policy-paths.js';
 import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
-import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
+import { type DriverContext, type PinPlan, PlanRefused, registerDrivers } from '../driver.js';
 import { lineOf } from '../lines.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
 import { soakClearsAt, iso as soakIso } from '../soak.js';
+import { viewOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
@@ -1189,6 +1190,65 @@ async function dockerCases(
       freshRd.releases[0]?.verdict?.clearsAt === clears &&
       freshRd.releases[0].verdict.why.includes(soakIso(clears)),
     detail: JSON.stringify({ clears, releases: freshRd.releases }),
+  });
+  // A patch of the pinned line is no major (2026-11-27: `pins status` listed image:proxy-node as major-only with node:26.13.1-slim offered, because the core read the label `node:26.13.1-slim` whole and found no leading number). Through viewOf, the classifier the CLI runs.
+  const patchTree = tree({
+    'workers/proxy/Dockerfile': `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dA}\nCMD ["node"]\n`,
+    'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+  });
+  const patchHub = (u: string): unknown =>
+    u.includes('/tags/26.13.0-slim')
+      ? { digest: dA, tag_last_pushed: iso(OLD) }
+      : {
+          results: [
+            { name: '27.0.0-slim', last_updated: iso(OLD) },
+            { name: '26.13.1-slim', last_updated: iso(OLD) },
+            { name: '26.13.0-slim', last_updated: iso(OLD) },
+          ],
+          next: null,
+        };
+  registerDrivers({ docker: dockerDriver(() => deps({ json: patchHub }).deps, mutant) });
+  const patchWorld = {
+    root: patchTree,
+    reg: REG,
+    fixture: null,
+    mutant: null,
+    nowMs: NOW,
+    windowMs: DAY,
+  };
+  const patchView = await viewOf(patchWorld, ctxOf(patchTree), pn);
+  out.push({
+    name: 'docker: a patch of the pinned line (node:26.13.1-slim over 26.13.0-slim) is bumpable and takes no major, the 27 series beside it stays a major',
+    ok:
+      patchView.state === 'bumpable' &&
+      patchView.target?.version === 'node:26.13.1-slim' &&
+      patchView.takesMajor === false,
+    detail: JSON.stringify(patchView),
+  });
+  // CONTROL, the other direction: with only the next series offered, the pin is major-only, so the fix did not turn every candidate into a patch.
+  registerDrivers({
+    docker: dockerDriver(
+      () =>
+        deps({
+          json: (u: string) =>
+            u.includes('/tags/26.13.0-slim')
+              ? { digest: dA, tag_last_pushed: iso(OLD) }
+              : {
+                  results: [
+                    { name: '27.0.0-slim', last_updated: iso(OLD) },
+                    { name: '26.13.0-slim', last_updated: iso(OLD) },
+                  ],
+                  next: null,
+                },
+        }).deps,
+      mutant
+    ),
+  });
+  const majorView = await viewOf(patchWorld, ctxOf(patchTree), pn);
+  out.push({
+    name: 'docker: CONTROL only the next series offered (node:27.0.0-slim over 26.13.0-slim) is major-only',
+    ok: majorView.state === 'major-only',
+    detail: JSON.stringify(majorView),
   });
   return out;
 }
