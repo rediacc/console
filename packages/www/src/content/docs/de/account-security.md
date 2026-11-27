@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: de
-sourceHash: "99e2c8b45d41e3b9"
-sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### Authentifizierung
@@ -119,6 +119,6 @@ rdc update --status            # Aktuellen Kanal anzeigen
 
 ### CLI-Sicherheitshaltung für KI-Agenten
 
-Coding-Agenten, die `rdc` aufrufen, sind eine echte Angriffsfläche, deshalb behandeln wir sie als separaten Principal. Jeder `rdc`-Aufruf wird beim Start als **Mensch** oder **Agent** klassifiziert, basierend auf Umgebungssignalen (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus einem Linux-`/proc`-Abstammungs-Walk. Die Erkennung ist bestmöglich. Ein entschlossener Wrapper kann Umgebungsvariablen fälschen, weshalb die Abstammung wichtig ist. Agenten erhalten ein reduziertes Berechtigungsset: sensible Konfigurations-Mutationen erfordern das Knowledge-Gate (`--current <alt>`), der interaktive Editor wird ohne einen abstammungsverifizierten `REDIACC_ALLOW_CONFIG_EDIT`-Override verweigert, und `--reveal` bei jedem Anzeigebefehl ist gesperrt. Jede Entscheidung (erlauben, verweigern oder `--reveal` gewähren) schreibt eine hash-verkettete JSONL-Zeile in `~/.config/rediacc/audit.log.jsonl`. Führen Sie `rdc config audit verify` aus, um die Kettenintegrität zu prüfen.
+Coding-Agenten, die `rdc` aufrufen, sind eine echte Angriffsfläche, deshalb behandeln wir sie als separaten Principal. Jeder `rdc`-Aufruf wird beim Start als **Mensch** oder **Agent** klassifiziert, basierend auf Umgebungssignalen (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus einem Linux-`/proc`-Abstammungs-Walk. Die Erkennung ist bestmöglich. Ein entschlossener Wrapper kann Umgebungsvariablen fälschen, weshalb die Abstammung wichtig ist. Agenten erhalten ein reduziertes Berechtigungsset: sensible Konfigurations-Mutationen erfordern das Knowledge-Gate (`--current <alt>`), `rdc config edit` (interaktiv, `--apply`, `--reveal`) wird ohne Override verweigert, und `--reveal` bei jedem Anzeigebefehl ist gesperrt. Ein Agent handelt nur dort, wo ein Opt-in des Menschen und die Richtlinien-Obergrenze beide es erlauben ([KI-Agent-Sicherheit](/de/docs/ai-agents-safety)). Jede Entscheidung (erlauben, verweigern oder `--reveal` gewähren) schreibt eine hash-verkettete JSONL-Zeile in `~/.config/rediacc/audit.log.jsonl`. Führen Sie `rdc config audit verify` aus, um die Kettenintegrität zu prüfen.
 
 Siehe [Sicherheit und Schutzmechanismen für KI-Agenten](/de/docs/ai-agents-safety) für die vollständige Matrix dessen, was Agenten tun und nicht tun können, mit Beispielen zum Knowledge-Gate und Scope-Override-Mechaniken.

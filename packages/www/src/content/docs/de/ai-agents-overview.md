@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: de
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Ehrlich gesagt ist `rdc` von Grund auf agentenkompatibel entworfen. Claude Code, Cursor, Cline: Jeder KI-Assistent, der `rdc` in einer Subshell aufruft, erhält strukturierte JSON-Ausgabe, maschinenlesbare Fehlermeldungen und die Sicherheitsmechanismen, die man für die autonome Verwaltung der Rediacc-Infrastruktur erwartet. So funktioniert die Integration.
@@ -77,7 +77,7 @@ Fehlerantworten enthalten die Felder `retryable` und `guidance`:
 
 ## Sicherheit und Schutzmaßnahmen
 
-Die CLI behandelt Agenten nicht gleich wie einen Menschen am Terminal. Sensible Operationen erfordern den Nachweis, dass der aktuelle Zustand bekannt ist (das Flag `--current`), interaktive Editor-Abläufe werden standardmäßig abgelehnt, und jede Ablehnung wird im Audit-Log festgehalten. Die Referenz [KI-Agenten: Sicherheit und Schutzmaßnahmen](/de/docs/ai-agents-safety) enthält die vollständige Firewall-Tabelle, das Knowledge-Gate-Modell, die Scope-Überschreibung `REDIACC_ALLOW_CONFIG_EDIT` und das hash-verkettete Audit-Log.
+Die CLI behandelt Agenten nicht gleich wie einen Menschen am Terminal. Sensible Operationen erfordern den Nachweis des aktuellen Zustands (das Flag `--current`), Bearbeitungen der gesamten Konfiguration werden ohne Override verweigert, und jede Ablehnung wird im Audit-Log festgehalten. Die Referenz [KI-Agenten: Sicherheit und Schutzmaßnahmen](/de/docs/ai-agents-safety) enthält die vollständige Firewall-Tabelle, das Knowledge-Gate-Modell, die Regel Opt-in UND Richtlinien-Obergrenze und das hash-verkettete Audit-Log.
 
 ## Nächste Schritte
 

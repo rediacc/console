@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: fr
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 De fait, `rdc` est conçu pour les agents dès sa conception. Claude Code, Cursor, Cline : tout assistant IA qui appelle `rdc` dans un sous-shell obtient une sortie JSON structurée, des erreurs lisibles par machine et les garde-fous nécessaires à la gestion autonome de l'infrastructure Rediacc. Voici comment fonctionne l'intégration.
@@ -77,7 +77,7 @@ Les réponses d'erreur incluent les champs `retryable` et `guidance` :
 
 ## Sécurité et garde-fous
 
-Le CLI ne traite pas les agents comme un humain devant un terminal. Les opérations sensibles requièrent la preuve que l'état courant est déjà connu (l'option `--current`), les flux nécessitant un éditeur interactif sont refusés par défaut, et chaque refus est consigné dans le journal d'audit. La référence [Sécurité et garde-fous des agents IA](/fr/docs/ai-agents-safety) couvre la table de blocage complète, le modèle de validation des connaissances, la portée `REDIACC_ALLOW_CONFIG_EDIT` et le journal d'audit chaîné par hachage.
+Le CLI ne traite pas les agents comme un humain devant un terminal. Les opérations sensibles requièrent la preuve de l'état courant (l'option `--current`), les modifications de la configuration entière sont refusées sans dérogation, et chaque refus est consigné dans le journal d'audit. La référence [Sécurité et garde-fous des agents IA](/fr/docs/ai-agents-safety) couvre la table de blocage complète, le modèle de validation des connaissances, la règle d'adhésion explicite ET de plafond de politique et le journal d'audit chaîné par hachage.
 
 ## Prochaines étapes
 

@@ -1,9 +1,10 @@
 ---
 title: Sécurité et garde-fous pour les agents IA
 description: >-
-  Comment la CLI de Rediacc empêche les assistants de codage IA de divulguer des secrets,
-  d'écraser des identifiants ou d'escalader des privilèges. Portes de connaissance,
-  rédaction, substitutions vérifiées par ascendance et un journal d'audit enchaîné par hachage.
+  Comment Rediacc empêche les assistants de programmation IA de divulguer des
+  secrets, d'écraser des identifiants ou d'élever leurs privilèges. Une seule
+  décision pour toutes les surfaces, adhésion explicite ET plafond de politique,
+  barrières de connaissance, expurgation et journal d'audit chaîné par hachage.
 category: Concepts
 tags:
   - ai-agents
@@ -11,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: fr
-sourceHash: "34d12ee4f0a3791c"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "90603fac1c7635d4"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude Code, Cursor, Gemini CLI, Copilot CLI ou tout outil similaire pilote `rdc`, la CLI le détecte et applique un ensemble de règles différent de celui applicable à un humain au clavier. Cette page explique ce que l'agent peut faire, ce qu'il ne peut pas faire, et comment les garde-fous tiennent même lorsqu'il cherche à les contourner.
@@ -26,17 +27,21 @@ Vous pointez un assistant de codage IA vers votre infrastructure. Lorsque Claude
 | `rdc config field get --pointer <pointer> --digest` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (champ public) | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (champ sensible, **avec `--current` correct**) | ✅ allowed |  |
-| `rdc config edit --dump` (JSONC expurgé) | ✅ allowed |  |
+| `rdc config edit --dump --redacted` (JSONC expurgé) | ✅ allowed |  |
 | `rdc config audit {log, tail, verify}` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>` (champ sensible, sans `--current`) | 🔴 refused | Fournir `--current "<ancienne valeur>"` |
+| `rdc repo secret set <repo> --rotate-secret` (rotation sans `--current`) | 🔴 refused | Fournir `--current`, ou un humain effectue la rotation dans un terminal |
 | `rdc config field get --pointer <pointer> --reveal` | 🔴 refused | Utiliser `--digest` à la place |
 | `rdc config show --reveal` | 🔴 refused | Utiliser `rdc config show` sans option |
-| `rdc config edit` (éditeur interactif) | 🔴 refused | L'humain définit `REDIACC_ALLOW_CONFIG_EDIT=*` avant de lancer l'agent |
-| `rdc config edit --apply <file>` | 🔴 refused | Même substitution |
-| `rdc config field rotate --pointer <pointer>` | 🔴 refused | Même substitution ; utilise une confirmation interactive |
+| `rdc config edit` (éditeur interactif) | 🔴 refused, sans dérogation | Consulter avec `--dump --redacted`, modifier un seul champ avec `config field set --current` |
+| `rdc config edit --apply <file>` | 🔴 refused, sans dérogation | Idem ; un humain dans un terminal applique les modifications du document entier |
+| `rdc config edit --reveal` | 🔴 refused, sans dérogation | Idem |
+| `rdc config field rotate --pointer <pointer>` | 🔴 refused | Un humain l'exécute dans un terminal interactif |
+| Modifier un dépôt grand (production) | 🔴 refused | Adhésion explicite d'un humain pour ce dépôt, dans le cadre d'une politique qui autorise les modifications de dépôts grand ([ci-dessous](#one-decision-opt-in-and-policy-ceiling)) |
+| Opérations de cycle de vie d'un cluster ou d'un datastore | 🔴 refused | Adhésion explicite d'un humain pour ce cluster, dans le cadre d'une politique qui autorise les opérations de cluster |
 | `rdc term connect <machine>` (SSH direct vers la machine) | 🔴 refused | Forker d'abord un dépôt et se connecter au fork |
 
-Tout ce qui est refusé à un agent est consigné dans le journal d'audit avec `outcome: refused` et une raison.
+Tout ce qui est refusé à un agent est consigné dans le journal d'audit avec `outcome: refused` et une raison. La modification du document de configuration entier n'offre aucune voie à un agent : la configuration contient l'identifiant LUKS de chaque dépôt, et un agent capable de la réécrire pourrait aussi supprimer un identifiant sans lequel le volume chiffré ne peut pas être ouvert.
 
 ## Comment les agents sont détectés
 
@@ -45,7 +50,22 @@ La CLI traite un processus comme un agent lorsque l'une de ces conditions est vr
 - L'une des variables `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI` est définie à `"1"`, ou `CURSOR_TRACE_ID` est définie du tout.
 - Sur Linux : tout processus parent dans la chaîne d'ascendance possède l'une de ces variables dans son environnement (via `/proc/<pid>/environ`). Même si l'agent supprime ses propres variables avec `env -i` ou un script enveloppant, la chaîne parente indique toujours à la CLI qui l'a démarré.
 
-La détection s'exécute une fois par processus et est mise en cache. Elle ne peut pas être désactivée.
+La détection s'exécute une fois par processus et est mise en cache. Elle ne peut pas être désactivée. Une délégation MCP distante marque ses appels comme des appels d'agent sur l'exécuteur, sans aucune détection.
+
+## Une seule décision : adhésion explicite ET plafond de politique
+
+Chaque surface qui exécute une commande `rdc` (le CLI, le serveur MCP local, le serveur MCP distant, `rdc --proxy` et la console web) interroge la même fonction de décision, si bien que toutes refusent et autorisent les mêmes choses. Elle applique deux conditions, et un agent n'agit que là où les deux sont remplies :
+
+1. **Le plafond de politique.** La politique de l'organisation, restreinte par celle de l'équipe, décide quelles commandes, machines et dépôts un appelant peut utiliser, et si les modifications de dépôts grand (`allowGrandRepos`) et les opérations de cluster (`allowClusterOps`) sont autorisées. Une configuration sans enregistrement de politique retombe sur une valeur par défaut selon le rôle : les propriétaires et les administrateurs peuvent agir, les membres non. La politique est un enregistrement scellé distinct que seuls les propriétaires et les administrateurs écrivent ([Modèle de sécurité](/fr/docs/security-model#policy)) ; aucun agent et aucune commande du CLI ne peut la modifier.
+2. **L'adhésion explicite de l'humain.** À l'intérieur du plafond, un agent a encore besoin qu'un humain désigne le dépôt grand ou le cluster qu'il peut modifier :
+   - **Agents locaux** (CLI et MCP local) : l'humain exporte `REDIACC_ALLOW_GRAND_REPO` (noms de dépôts, ou `*`) ou `REDIACC_ALLOW_CLUSTER_OPS` (noms de clusters, ou `*`) dans le terminal avant de démarrer l'agent. Le CLI vérifie l'ascendance des processus, donc une variable que l'agent définit en cours de session ne compte pas ([comment c'est vérifié sur chaque système d'exploitation](#how-a-local-opt-in-is-verified-on-each-os)).
+   - **Agents distants** (MCP distant) : les adhésions font partie de la délégation que l'humain crée dans l'interface du compte ([Serveur distant](/fr/docs/ai-agents-mcp#remote-server)).
+
+Une adhésion n'élargit jamais le plafond : un dépôt que la politique ferme reste fermé, quoi que disent l'environnement ou la délégation. Les forks n'ont pas besoin d'adhésion. Un dépôt que le CLI ne sait pas identifier compte comme grand.
+
+**Les modifications destructrices demandent d'abord.** Quand un agent est autorisé à effectuer une modification destructrice sur un dépôt grand (`repo delete`, par exemple), la réponse est `needs_confirmation`. Un client MCP affiche à l'utilisateur une demande de confirmation ; un client qui n'en a pas reçoit un argument `confirm` à renvoyer après avoir interrogé l'utilisateur. Dans le CLI, l'humain relance la commande avec `--confirm-grand <repo>`.
+
+Chaque réponse porte un code stable (`POLICY_DENIED`, `GRAND_REPO_DENIED`, `CLUSTER_OPS_DENIED`, `AGENT_OPT_IN_MISSING`, `FORK_BLOCKED`, `AGENT_BLOCKED`, `CONFIRMATION_REQUIRED`), de sorte qu'un script ou un agent se fie au code plutôt qu'au message ([Sortie JSON](/fr/docs/ai-agents-json-output)).
 
 ## Le modèle de la porte de connaissance
 
@@ -54,7 +74,7 @@ Les mutations sensibles suivent la convention `passwd(1)` : pour modifier un sec
 - Vous voulez faire tourner un token API stocké à `/credentials/cfDnsApiToken` ?
 - La CLI demande : « quelle est la valeur actuelle ? »
 - L'agent (ou l'humain) fournit le texte brut via `--current "$OLD"`. La CLI applique SHA-256 à `$OLD` et compare avec le digest de la valeur actuellement stockée. Correspondance → l'écriture passe. Discordance → refusé, audité.
-- Pour faire tourner sans vérifier la valeur précédente, passez `--rotate-secret` (mutuellement exclusif avec `--current`). Cette opération est lourdement auditée en tant que rotation.
+- Pour effectuer une rotation sans vérifier la valeur précédente, passez `--rotate-secret` (mutuellement exclusif avec `--current`). Elle est auditée explicitement comme une rotation, et ne compte que pour un humain dans un terminal interactif : un agent, ou un script sans terminal sur stdin, a toujours besoin de `--current`.
 
 Le modèle ferme trois surfaces d'attaque :
 
@@ -84,7 +104,7 @@ Lorsque la précondition échoue, l'enveloppe JSON (`--output json`) contient un
 }
 ```
 
-**Les agents doivent relayer `next.options[].run` mot pour mot à l'humain plutôt que de synthétiser leurs propres commandes.** Cela évite le scénario où l'agent invente une commande inexistante et maintient l'opérateur en contrôle de l'action réelle.
+**Les agents doivent transmettre `next.options[].run` tel quel à l'humain plutôt que d'inventer leurs propres commandes.** Cela évite le cas où l'agent invente une commande qui n'existe pas, et laisse l'opérateur maître de l'action réelle. L'option de rotation est destinée à l'humain, dans un terminal ; elle est refusée à l'agent lui-même.
 
 ### Exemple concret
 
@@ -95,7 +115,7 @@ $ rdc config field get --pointer /credentials/cfDnsApiToken
 
 # Tentative d'écrasement sans preuve: refusé.
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
-✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
+✗ Precondition failed: sensitive path requires --current
 
 # Fournir le texte brut actuel: autorisé.
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
@@ -104,11 +124,11 @@ $ rdc config field set --pointer /credentials/cfDnsApiToken \
 Set /credentials/cfDnsApiToken
 ```
 
-Si l'agent n'a jamais eu `$OLD_CF_TOKEN`, il ne peut pas satisfaire la précondition et la rotation est refusée. L'utilisateur qui *l'a* peut toujours le faire via l'éditeur ou en passant `--current` depuis son shell.
+Si l'agent n'a jamais eu `$OLD_CF_TOKEN`, il ne peut pas satisfaire la précondition et la rotation est refusée. Celui qui connaît la valeur peut tout de même l'effectuer : en passant `--current` depuis son shell, ou avec `rdc config field rotate` dans un terminal interactif.
 
 ## Rédaction par défaut
 
-Chaque commande `rdc` qui lit un état sensible: `config show`, `config field get`, `config machine list`, `config edit --dump`: renvoie des **stubs de rédaction** pour les champs secrets, pas du texte brut :
+Chaque commande `rdc` qui lit un état sensible: `config show`, `config field get`, `config machine list`, `config edit --dump --redacted`: renvoie des **stubs de rédaction** pour les champs secrets, pas du texte brut :
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -120,28 +140,9 @@ Le suffixe hexadécimal de 8 caractères du stub correspond aux 8 premiers carac
 
 `--reveal` lève la rédaction pour les humains sur un TTY interactif. Les agents sont refusés quel que soit l'état du TTY. Chaque autorisation écrit une entrée d'audit `reveal_granted` ; chaque refus écrit une entrée `refused` avec les signaux d'agent de l'acteur attachés.
 
-## La substitution `REDIACC_ALLOW_CONFIG_EDIT`
+## Comment une adhésion explicite locale est vérifiée sur chaque système d'exploitation
 
-Certaines opérations: l'éditeur interactif, `--apply`, `field rotate`: existent pour les humains et n'ont pas de chemin sûr pour les agents. Si vous voulez activement qu'un agent en effectue une, vous définissez :
-
-```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'          # contournement total
-# ou
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# (globs de portée séparés par des virgules: wildcards * autorisés par segment)
-```
-
-…et l'agent l'hérite.
-
-**Détail crucial** : la substitution doit apparaître dans un processus **au-dessus** de l'agent dans la chaîne d'ascendance. Si l'agent la définit dans son propre environnement (ou dans un sous-shell qu'il a engendré), la CLI refuse et vous le signale :
-
-> `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
-
-L'effet : un agent ne peut pas se frayer un chemin au-delà d'un garde-fou en exécutant `export REDIACC_ALLOW_CONFIG_EDIT='*'` en cours de session. Seul un processus parent (vous, dans votre terminal, avant de lancer l'agent) peut ouvrir cette porte.
-
-## Prise en charge des plateformes : comment la substitution est vérifiée sur chaque OS
-
-`REDIACC_ALLOW_CONFIG_EDIT` et `REDIACC_ALLOW_GRAND_REPO` reposent tous deux sur la vérification d'ascendance pour prouver que la substitution a été définie par vous et non injectée par l'agent. La vérification fonctionne sur Linux, macOS et Windows, mais le témoin qu'elle lit diffère selon la plateforme, de même que la force de la garantie :
+`REDIACC_ALLOW_GRAND_REPO` et `REDIACC_ALLOW_CLUSTER_OPS` reposent toutes deux sur la vérification de l'ascendance pour prouver que l'adhésion a été définie par l'humain et non injectée par l'agent. La vérification fonctionne sous Linux, macOS et Windows, mais le témoin qu'elle lit diffère selon la plateforme, tout comme la solidité de la garantie :
 
 | Plateforme | Témoin | Force |
 |---|---|---|
@@ -149,9 +150,9 @@ L'effet : un agent ne peut pas se frayer un chemin au-delà d'un garde-fou en ex
 | macOS | `kern.procargs2` sysctl, lu par un petit assistant intégré dans `rdc` | Même propriété de snapshot au moment de l'exec que Linux. Lisible pour vos propres processus sans avoir besoin de root. |
 | Windows | Le bloc d'environnement live de chaque processus ancêtre (PEB), lu par le même assistant, avec des garde-fous contre la réutilisation de PID | Plus faible : Windows ne conserve pas de snapshot au moment de l'exec, la vérification lit donc la mémoire courante. Les ancêtres ne peuvent toujours pas être réécrits par rien qu'un agent ne lance normalement, mais le témoin n'est pas gelé au niveau du noyau comme sur Linux et macOS. |
 
-Sur macOS et Windows, la CLI lance son binaire `renet` intégré pour effectuer la lecture ; l'assistant rapporte lesquelles des variables surveillées chaque ancêtre porte, et toute la logique de décision reste dans la CLI. Si l'assistant est manquant, obsolète ou échoue pour une raison quelconque, la CLI ne peut pas vérifier la substitution et **échoue en sécurité** : la substitution est rejetée et l'erreur indique que la vérification était indisponible, pas que vous avez fait quelque chose de mal. Une installation correcte ne montre jamais ce message ; réinstaller `rdc` restaure l'assistant.
+Sous macOS et Windows, le CLI lance son binaire `renet` intégré pour effectuer la lecture ; l'assistant indique lesquelles des variables surveillées chaque ancêtre porte, et toute la logique de décision reste dans le CLI. Si l'assistant est absent, obsolète ou échoue pour une raison quelconque, le CLI ne peut pas vérifier l'adhésion et **échoue en mode fermé** : l'adhésion est rejetée et l'erreur indique que la vérification n'était pas disponible, non que quelque chose a été mal fait. Une installation qui fonctionne n'affiche jamais ce message ; réinstaller `rdc` rétablit l'assistant.
 
-Ce qui reste vrai sur chaque plateforme : la substitution doit déjà être présente dans l'environnement du processus agent lorsqu'il démarre. Exportez-la dans votre terminal, puis lancez l'agent. Un agent qui définit la variable en cours de session est refusé.
+Ce qui reste vrai sur toutes les plateformes : l'adhésion doit déjà être présente dans l'environnement du processus de l'agent au démarrage de celui-ci. Elle s'exporte dans le terminal, puis l'agent est lancé. Un agent qui définit la variable en cours de session est refusé.
 
 ## Journal d'audit
 
@@ -159,7 +160,7 @@ Chaque mutation, chaque refus, chaque autorisation `--reveal` écrit une ligne J
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
-{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent without REDIACC_ALLOW_CONFIG_EDIT=*","prevHash":"sha256:abc1..."}
+{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent environment","prevHash":"sha256:abc1..."}
 {"ts":"2026-04-21T10:03:05.220Z","actor":{"kind":"human"},"command":"config show --reveal","paths":[],"outcome":"reveal_granted","configId":"...","configVersion":48,"prevHash":"sha256:deac..."}
 ```
 
@@ -214,7 +215,7 @@ Voici la ligne de responsabilité partagée :
 | Données du dépôt, espace de noms de montage, périmètre Docker, garde-fous des agents, journal d'audit, injection de secrets au déploiement | Rediacc |
 | Le code applicatif qui utilise ces secrets et tout identifiant gravé dans l'image lors de la compilation | Développeur du dépôt |
 
-La principale atténuation est intégrée : les **[secrets par dépôt](/fr/docs/repositories#secrets)** sont stockés dans un plan séparé de l'image de dépôt chiffrée et ne sont pas copiés à travers la limite du fork. Les conteneurs d'un fork démarrent avec une carte de secrets vide et s'identifient comme un principal externe différent de celui du parent. Définissez-les avec `rdc repo secret set` (mode env pour l'interpolation compose, mode fichier pour les blocs `secrets:` tmpfs). La porte de mutation est symétrique. Les humains et les agents doivent également fournir `--current` (précondition de style passwd) ou `--rotate-secret` (rotation auditée) pour écraser ou supprimer une valeur existante.
+La principale atténuation est intégrée : les **[secrets par dépôt](/fr/docs/repositories#secrets)** sont stockés dans un plan séparé de l'image de dépôt chiffrée et ne sont pas copiés à travers la limite du fork. Les conteneurs d'un fork démarrent avec une carte de secrets vide et s'identifient comme un principal externe différent de celui du parent. Définissez-les avec `rdc repo secret set` (mode env pour l'interpolation compose, mode fichier pour les blocs `secrets:` tmpfs). La porte de mutation est symétrique. Les humains et les agents doivent également fournir `--current` (précondition de style passwd) pour écraser ou supprimer une valeur existante ; `--rotate-secret` (rotation auditée) est l'alternative pour un humain dans un terminal.
 
 **L'isolation inter-dépôts est imposée.** Un fichier compose malveillant ou négligent dans le dépôt B ne peut pas référencer le répertoire de secrets du dépôt A. Le validateur compose de renet rejette catégoriquement tout chemin `secrets: file:`, `configs: file:` ou `env_file:` qui pointe en dehors du répertoire `${REDIACC_NETWORK_ID}` du dépôt courant, et ce rejet n'est PAS contournable par `--unsafe`. Défense en profondeur : le bac à sable Landlock autour du sous-processus bash du Rediaccfile restreint les lectures du système de fichiers au seul répertoire de secrets du réseau courant, de sorte qu'un `cat /var/run/rediacc/net-<other>/secrets/X` depuis un Rediaccfile malveillant échoue avec EACCES au niveau du noyau. Il en va de même sur l'API Docker : le socket Docker de chaque dépôt est servi par un proxy de politiques renet qui refuse par un `403` `--privileged`, `pid`, `ipc` et `uts` de l'hôte, les demandes de périphériques et les binds qui atteignent l'environnement d'exécution ou les données d'un autre dépôt. Un conteneur qui détient `${DOCKER_SOCKET}` ne peut donc pas passer par l'API pour atteindre un autre dépôt, et la vérification ne porte pas que sur un fichier compose. Seul l'opérateur peut élargir la règle des binds, pour des répertoires hôte nommés, au moyen d'une autorisation appartenant à root où aucun conteneur ne peut écrire.
 
@@ -227,24 +228,24 @@ Rediacc gère l'injection au déploiement, l'isolation inter-fork et l'isolation
 
 ## Recettes rapides
 
-### Permettre à un agent de faire tourner un seul token cloud
+### Laisser un agent travailler sur un dépôt grand
 
 ```bash
-# En tant que vous, avant de démarrer l'agent :
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
-claude-code              # ou cursor, gemini, etc.
+# En tant qu'humain, avant de démarrer l'agent :
+export REDIACC_ALLOW_GRAND_REPO='gitlab'
+claude              # ou cursor, gemini, etc.
 ```
 
-L'agent peut maintenant exécuter `config field rotate /credentials/cfDnsApiToken --new …` mais ne peut toujours pas modifier `/credentials/ssh/privateKey` ni ouvrir l'éditeur interactif.
+L'agent peut désormais modifier `gitlab`, là où la politique autorise les modifications de dépôts grand, et aucun autre dépôt grand. Une modification destructrice, comme `repo delete gitlab`, demande toujours une confirmation.
 
-### Permettre à un agent d'effectuer une session de modification de configuration large
+### Faire la rotation d'un jeton cloud sans connaître l'ancienne valeur
 
 ```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'
-claude-code
+# En tant qu'humain, dans un terminal interactif :
+rdc config field rotate --pointer /credentials/cfDnsApiToken --new "$NEW_CF_TOKEN"
 ```
 
-L'agent peut ouvrir `rdc config edit`, utiliser `--reveal` et exécuter `field rotate`. Chaque action est toujours journalisée dans l'audit avec `actor.kind: agent` et le signal `CLAUDECODE`.
+La rotation sans `--current` reste du ressort de l'humain. Un agent qui connaît la valeur actuelle utilise plutôt `rdc config field set --current`.
 
 ### Découvrir quels champs un agent est autorisé à toucher
 
@@ -257,6 +258,8 @@ Renvoie chaque modèle de pointeur, son type (`secret` / `credential` / `pii` / 
 ## Voir aussi
 
 - [Aperçu de l'intégration des agents IA](/fr/docs/ai-agents-overview): la vue d'ensemble
+- [Serveur MCP](/fr/docs/ai-agents-mcp) : MCP local et distant, délégations et leurs adhésions explicites
+- [Modèle de sécurité](/fr/docs/security-model) : l'enregistrement de politique et qui peut l'écrire
 - [Configuration de Claude Code](/fr/docs/ai-agents-claude-code): modèle d'intégration
 - [Enveloppe de sortie JSON](/fr/docs/ai-agents-json-output): réponses lisibles par machine
 - [Magasin de configuration chiffré](/fr/docs/config-storage): application cryptographique côté serveur
