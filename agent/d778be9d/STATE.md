@@ -1,22 +1,22 @@
-## SESSION d778be9d 2026-11-27T08:57:05Z
+## SESSION d778be9d 2026-11-27T10:21:46Z
 
-# STATE d778be9d (2026-11-27 ~08:55Z)
+# STATE d778be9d (2026-11-27 ~10:20Z, epoch 13 end)
 
 ## Delegated
-- vm:check pass 2 running as background shell btgn1y7gg (#3f24d3e7, log /tmp/vmcheck.log); ALL landings into main held until it reports.
-- Hostinger runner a7e08a6e130d44679 (#bbd7c0c7) waits on /tmp/r85h/c6p3/summary.txt (C6 restore tests; erpnext rc 0).
-- Writers live: reggate count a0c821972c9e5a613 (#9b825b4e), advisory findings a9185065f301d6913 (#e4c1bdf1), inotify setup af4f635cdd32d4d26 (#e443aab4). Reviews of 20 unreviewed commits running (b51p3920r).
-- Held finished leases to land after vm:check (list with ./run.sh worktree leases, unlanded>0): rf2-ci, WL1+WL2, WL6/7, WL10, WL21/22, WL24, config W1/W6/W7, PL1, PL1-actor, PL2, PL3, R6, DS A3/E1, DS C1, RI B01, RN2/3, RN5/6/M2, T14-16, V3, renet router + renet2 findings, defect A sweep, defects B-D, guard ledgers + 6b9a0176.1, guard 4347c4c0 + budgets, _write_rules, max-lines/source-rules, external links, W3/W4, CR2 batch, hyperv lint, plan-renders fix.
+- ci:quick 17: background shell b2g1k9tlj, item #71e97dd6, output /tmp/m/ciquick17.out (rc line at the end). No writer owns files; acceptance is its rc 0.
+- Hostinger C6 restore-test driver /tmp/r85h/scripts/c6p3.sh (nohup on host), item #e85457a6 (runner-hold:hostinger); 4 of 7 repos rc 0 in /tmp/r85h/c6p3/summary.txt; read it on DONE and tick C6 850392c1 (mail excused, defect C).
 
 ## Big pieces
-- PLAN-windows-lane.md, PLAN-config-sealed-local.md, PLAN-proxied-licence-tunnel-auth-fix.md, PLAN-executor-account-routes.md (written, uncommitted).
+- PLAN-windows-lane.md, PLAN-config-sealed-local.md, PLAN-proxied-licence-tunnel-auth-fix.md, PLAN-executor-account-routes.md (promoted QUEUE 116 this context).
 
 ## Owed ticks
-- Plan ticks for WL16/17/19, DS A2, backup-integrity H5 and snapshot-read L2 written but uncommitted (commit once the hostinger runner finishes editing plan files); PL4 patch /tmp/writers-now/pl4-outcome.patch; correction lines owed on PLAN-ciquick-cpu W3.3, PLAN-two-track-merge-dev A3, PLAN-plan-verbs Owns, T16 accept, PR-path W4 rule (iii).
+- Boxes landed this context need investigation rows + ticks: config W1 469bf3fc; windows WL1 536d8285 WL2 a481fb76 WL6 bf0ff643 WL10 f6c60cc4 WL21 4fc47cd5 WL22 7cdabefa WL24 4d5f4be8 (WL7/WL10/WL21/WL22 partial: say so); PL1 935f9fa8 PL2 75dd7fbc PL3 f59e2cbf PL4 f6e340e5; RN2 1afb47d2 RN3 8d7cedfd RN5 1ddce289 RN6 34551fcb; credits M2 b3cf3cae; plan-verbs T14 d03d7256 T15 7921044d T16 050ca424; datastore A3 f704803c E1 18ca2b9c C1 d2381701; renet-i18n B01 bb059f02; rmcp R6 0482cc11; vscode V3 b62e2859; pr-path W3 677ce711 (W4 9cafb158 open per ruling); CR2 7e1402a9 stays open.
 
 ## Armed
 - #0f42f15e rotation, NOT-BEFORE 2026-12-01T00:00Z.
 
 ## Next action
-1. On vm:check report: land the held leases (submodules first), run suites + python_types + tsc on the landed tree, mark findings (helper /home/developer/.cache/tmp/rmark.py), tick boxes, commit the plan batch, then ci:quick, push, edge release dry run then real (RELEASE_ASKED=ASKED:2026-11-25T16:35Z). If vm:check FAILED, fix the step and run pass 3.
-2. Start the bench runner (hold #e0921ffa) after vm:check.
+1. Read /tmp/m/ciquick17.out. Red: fix each failing gate (writers in leases), rerun only the gates the fix touches. Green: push (`git push origin 1121-1`, vm:check receipt VERIFIED on tree a234c44c covers renet/CLI paths; re-run vm:check --changed if the push guard says the landed batch changed trigger paths), then RELEASE_ASKED=ASKED:2026-11-25T16:35Z npm run release:local -- --channel edge --branch-release --dry-run, then the real run, record rollback ids and D1 bookmarks (#58a674f6).
+2. Release holds: runner-hold:bench #e0921ffa, runner-hold:vm #dc3ba823 lift after ci:quick; start bench and VM runners from /tmp/writers-now/1121-1-20261127T0941Z-r95.md section 5.
+3. Owed ticks above (investigate present then plan-tick), then writers-now rounds: staff EA1, V4a, #c5b50973 (per-unit backup status), RF-2 hyperv findings (#7a7f26ef), the owed R8 bed1cd9e correction line, release-note notes for the customer-facing commits landed without a Release-Note trailer.
+4. Peer console-28 (pricing plans) will send plan paths; collisions told: subscription.service.ts, packages/shared/src/subscription/**, account licence routes, stripe-disable.
