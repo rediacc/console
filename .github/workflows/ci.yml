@@ -1276,6 +1276,24 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
   # ============================================================================
+  # COLUMN 4E: WINDOWS LANE
+  # Win32 unit tests, agent-guard refusal cases and a bundle smoke on windows-latest
+  # (PLAN-windows-lane D10). Needs the renet Windows binary from build-renet.
+  # ============================================================================
+  windows-lane:
+    name: Windows
+    permissions:
+      contents: read
+    needs: [initialize, build-renet]
+    if: >-
+      always() &&
+      needs.initialize.outputs.full_suite == 'true' &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.pointer_bump_only != 'true' &&
+      needs.build-renet.result == 'success'
+    uses: ./.github/workflows/ci-windows.yml
+
+  # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
   # Validates the elite on-premise docker-compose stack starts correctly
   # Tests the same setup customers use before changes affect them
@@ -2056,7 +2074,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, windows-lane, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -2108,6 +2126,7 @@ jobs:
           RESULT_TESTS: ${{ needs.tests.result }}
           RESULT_ELITE_RUN_TEST: ${{ needs.elite-run-test.result }}
           RESULT_OPS_TESTS: ${{ needs.ops-tests.result }}
+          RESULT_WINDOWS_LANE: ${{ needs.windows-lane.result }}
           RESULT_UPDATE_FLOW_TEST: ${{ needs.update-flow-test.result }}
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}
