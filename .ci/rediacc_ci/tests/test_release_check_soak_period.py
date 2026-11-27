@@ -765,8 +765,16 @@ def test_every_step_after_the_soak_check_honours_dry_run() -> None:
     names = [step.get("name", "") for step in steps]
     after = steps[names.index("Check soak period") + 1 :]
     assert len(after) >= 8, "the promote job's tail collapsed: %r" % [x.get("name") for x in after]
-    bare = [step.get("name") for step in after if "inputs.dry_run" not in str(step.get("if", ""))]
-    assert bare == []
+    # Polarity matters: a write step gated `inputs.dry_run == true` would run ONLY on a dry run. Every step but the dry-run summary must be off on a dry run; the summary alone is on.
+    summary = "Dry run summary"
+    assert summary in [x.get("name") for x in after], "the dry-run summary step is gone"
+    wrong = [
+        step.get("name")
+        for step in after
+        if ("inputs.dry_run == true" if step.get("name") == summary else "inputs.dry_run != true")
+        not in str(step.get("if", ""))
+    ]
+    assert wrong == []
     # Control: the soak check itself and the reads before it must still run on a dry run.
     before = steps[: names.index("Check soak period") + 1]
     assert not [x for x in before if "inputs.dry_run" in str(x.get("if", ""))]
