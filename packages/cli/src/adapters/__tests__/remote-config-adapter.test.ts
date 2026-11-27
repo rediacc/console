@@ -59,6 +59,7 @@ import {
   RemotePreconditionError,
   RemoteRollbackError,
   RemoteStaleSlotError,
+  RemoteTeamForbiddenError,
   RemoteTokenExpiredError,
   RemoteTokenIpMismatchError,
   RemoteUnreachableError,
@@ -974,7 +975,7 @@ describe('RemoteConfigAdapter', () => {
         );
         const error = await adapter.policyContext().catch((e: unknown) => e);
         expect(error).not.toEqual(KEPT);
-        expect(error).toBeInstanceOf(Error);
+        expect(error).toBeInstanceOf(RemoteTeamForbiddenError);
       });
 
       it('control: a context kept for another binding is not used', async () => {
