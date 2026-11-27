@@ -25,6 +25,7 @@
  * job-remote.ts, which imports from here and never the other way around.
  */
 
+import { StringDecoder } from 'node:string_decoder';
 import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import { z } from 'zod';
 import { t } from '../../i18n/index.js';
@@ -717,31 +718,48 @@ export function buildJobGcCommand(params: {
  * A fresh reader must be created per connection attempt: the buffered partial
  * line belongs to the attempt that died, and gluing it onto the first line of a
  * resumed stream would corrupt it.
+ *
+ * Lines have no length cap: a `backup browse -o json` listing is one record of
+ * several MiB. Bytes go through one StringDecoder, so a multi-byte character
+ * split across two chunks is decoded whole (a per-chunk `toString()` turned it
+ * into U+FFFD), and each chunk is searched for newlines on its own while the
+ * partial line accumulates as pieces, so a large record costs linear time
+ * rather than a re-split of the whole buffered line per chunk.
  */
 export function createEventLineReader(
   onEvent: (event: RenetEvent, line?: number) => void,
   startLine = 0
 ): (chunk: Buffer) => void {
-  let buffered = '';
+  const decoder = new StringDecoder('utf8');
+  let pending: string[] = [];
   let lineNumber = startLine;
 
-  return (chunk: Buffer) => {
-    buffered += chunk.toString();
-    const lines = buffered.split('\n');
-    buffered = lines.pop() ?? '';
+  const handleLine = (line: string): void => {
+    // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
+    lineNumber += 1;
+    const trimmed = line.trim();
+    if (!trimmed) return;
 
-    for (const line of lines) {
-      // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
-      lineNumber += 1;
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      try {
-        onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
-      } catch {
-        writeStdout(`${line}\n`);
-      }
+    try {
+      onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
+    } catch {
+      writeStdout(`${line}\n`);
     }
+  };
+
+  return (chunk: Buffer) => {
+    const text = decoder.write(chunk);
+    let start = 0;
+    let newline = text.indexOf('\n');
+    while (newline >= 0) {
+      pending.push(text.slice(start, newline));
+      const line = pending.join('');
+      pending = [];
+      handleLine(line);
+      start = newline + 1;
+      newline = text.indexOf('\n', start);
+    }
+    if (start < text.length) pending.push(text.slice(start));
   };
 }
 
