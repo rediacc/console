@@ -119,6 +119,8 @@ export const RENET_FUNCTION_ACCESS: Record<RenetFunctionName, RenetAccess> = {
   repository_up: 'provision',
   repository_up_all: 'provision',
   repository_validate: 'read-only',
+  repository_vscode_expose: 'provision',
+  repository_vscode_unexpose: 'provision',
   setup: 'provision',
 };
 

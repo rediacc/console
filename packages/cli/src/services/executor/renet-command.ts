@@ -126,6 +126,8 @@ export const LONG_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_repair',
   // Two backup pushes to the destination machine, sized by the image.
   'repository_migrate',
+  // The first expose on a machine pulls the code-server image.
+  'repository_vscode_expose',
   // CRIU checkpoints grow with the memory they dump and restore.
   'checkpoint_create',
   'checkpoint_restore',
@@ -307,6 +309,7 @@ export const DEFAULT_TIMEOUT_FUNCTIONS: ReadonlySet<string> = new Set([
   'repository_template_apply',
   'repository_unmount',
   'repository_validate',
+  'repository_vscode_unexpose',
 ]);
 
 /**

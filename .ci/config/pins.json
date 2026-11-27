@@ -1343,6 +1343,57 @@
       "literals": []
     },
     {
+      "id": "cli-tool:code-server",
+      "kind": "leaf",
+      "name": "code-server release rdc installs for the browser VS Code (moves with image:vscode-code-server)",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "coder/code-server",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "version",
+          "match": "^const VERSION = '(?<value>[^']+)';$",
+          "label": "code-server.ts VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "sha256:x64",
+          "match": "^  'linux-x64': \\{\\n    url: [^\\n]+\\n    sha256: '(?<value>[0-9a-f]{64})',$",
+          "label": "code-server.ts ARTIFACTS['linux-x64'].sha256",
+          "asset": "code-server-{version}-linux-amd64.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "sha256:arm64",
+          "match": "^  'linux-arm64': \\{\\n    url: [^\\n]+\\n    sha256: '(?<value>[0-9a-f]{64})',$",
+          "label": "code-server.ts ARTIFACTS['linux-arm64'].sha256",
+          "asset": "code-server-{version}-linux-arm64.tar.gz",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "toolchain:go",
       "kind": "leaf",
       "name": "Go toolchain",
@@ -4197,6 +4248,46 @@
       "literals": []
     },
     {
+      "id": "image:vscode-code-server",
+      "kind": "leaf",
+      "name": "codercom/code-server image renet runs for the browser-exposed VS Code (the tag and its multi-arch index digest; moves with cli-tool:code-server)",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "codercom/code-server"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/repository_vscode.go",
+          "role": "version",
+          "match": "^\\tvscodeImage = \"(?<value>codercom/code-server:[^@\"]+)@sha256:[0-9a-f]{64}\"$",
+          "label": "cmd/renet/repository_vscode.go vscodeImage tag",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/repository_vscode.go",
+          "role": "digest",
+          "match": "^\\tvscodeImage = \"codercom/code-server:[^@\"]+@(?<value>sha256:[0-9a-f]{64})\"$",
+          "label": "cmd/renet/repository_vscode.go vscodeImage digest",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "image:renet-ubuntu",
       "kind": "leaf",
       "name": "ubuntu image for the renet target and its rsync, zot and k3s stages",
@@ -5862,6 +5953,10 @@
     "dockerhub:cassandra": {
       "depth": 2,
       "why": "cassandra numbers its release lines x.y (4.0, 4.1, 5.0), each with its own sstable format and support window"
+    },
+    "dockerhub:codercom/code-server": {
+      "depth": 1,
+      "why": "code-server keeps major 4 and moves its minor with each monthly VS Code release, so a 4.x minor is a routine step on one line"
     },
     "dockerhub:clickhouse/clickhouse-server": {
       "depth": 2,
