@@ -1593,6 +1593,30 @@ for label, mutant in CONTROLS:
         )
 
 print()
+# THE STABLE SELECTOR SET (review 1c35b2e6.1-.3): the name read from the workflow file and the recorded name, always both; the recorded name alone when the file is missing or is not UTF-8. A non-UTF-8 file raised UnicodeDecodeError out of every `gh workflow run` the guard judged.
+_RECORDED = G.STABLE_WORKFLOW_NAME.casefold()
+for label, content in (
+    ("renamed file", b"name: Stable Promote\non: workflow_dispatch\n"),
+    ("non-UTF-8 file", b"name: \xff\xfe Stable\non: workflow_dispatch\n"),
+    ("missing file", None),
+):
+    root = pathlib.Path(tempfile.mkdtemp(prefix="stable-name-", dir=RUN_TMP))
+    if content is not None:
+        (root / ".github" / "workflows").mkdir(parents=True)
+        (root / G.STABLE_WORKFLOW_REL).write_bytes(content)
+    try:
+        got_names = G._stable_workflow_names(root)
+    except (OSError, ValueError) as exc:
+        got_names = "raised %s" % type(exc).__name__
+    want_names = {_RECORDED, "stable promote"} if label == "renamed file" else {_RECORDED}
+    ok = got_names == want_names
+    fails += not ok
+    print(
+        "%-62s %s"
+        % ("stable selector names: %s" % label, "ok" if ok else "*** FAIL *** got %r" % got_names)
+    )
+
+print()
 if len(CASES) < 100 or blocked < 40 or len(CASES) - blocked < 40:
     fails += 1
     print("*** FAIL *** the suite shrank: %d case(s), %d refused" % (len(CASES), blocked))

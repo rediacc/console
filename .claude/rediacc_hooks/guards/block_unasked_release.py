@@ -248,7 +248,7 @@ GH_RELEASE_PUBLISH = ("create", "upload", "edit", "delete")
 # The stable promotion is a dispatch of this workflow (PLAN-retire-nightlies-and-mentions D4, box G2): gh names a workflow by its file name, its `name:` (matched without regard to case) or its numeric id.
 STABLE_WORKFLOW_FILE = "cd-release-stable.yml"
 STABLE_WORKFLOW_REL = ".github/workflows/" + STABLE_WORKFLOW_FILE
-# The `name:` the file carries today, used only when the file cannot be read: the file is the source, so a rename moves the guard with it.
+# The `name:` the file carries today. The stable selector set is this name AND the one read from the file: the file is the source, so a rename moves the guard with it, and the recorded name keeps refusing the old spelling until it is updated here (and stands alone when the file cannot be read or decoded).
 STABLE_WORKFLOW_NAME = "CD - Release to Stable"
 # `gh workflow run`'s flags (gh 2.x `workflow run --help`, plus the inherited `--repo`), in shellscan's pflag table form: (shorthand, takes a value).
 GH_WORKFLOW_RUN_FLAGS = {
@@ -938,11 +938,11 @@ def _publish(run, where, root):
 
 
 def _stable_workflow_names(root):
-    """The casefolded `name:` of the stable workflow, read from its file under `root`; the recorded name when the file cannot be read."""
+    """The casefolded stable selector names: the `name:` read from the workflow file under `root` together with the recorded `STABLE_WORKFLOW_NAME`, always both, so a rename in the file adds the new spelling without dropping the old one; only the recorded name when the file cannot be read or is not UTF-8 (review 1c35b2e6.3: a `UnicodeDecodeError` escaped the `OSError` arm)."""
     try:
         with open(os.path.join(str(root), STABLE_WORKFLOW_REL), encoding="utf-8") as handle:
             found = re.search(r"^name:[ \t]*(.+?)[ \t]*$", handle.read(), re.MULTILINE)
-    except OSError:
+    except (OSError, ValueError):
         found = None
     name = found.group(1).strip("'\"") if found else STABLE_WORKFLOW_NAME
     return {name.casefold(), STABLE_WORKFLOW_NAME.casefold()}
