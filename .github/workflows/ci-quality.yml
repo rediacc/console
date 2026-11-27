@@ -528,7 +528,7 @@ jobs:
 
       - name: rdc.sh env tests
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-rdc-sh-env
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.security.rdc_sh_env_check
 
 
       - name: Check for Claude attribution
@@ -922,7 +922,7 @@ jobs:
       # pre-bash guard with prose built from its own pattern; anchoring is the
       # fix, never deleting the pattern.
       - name: Guard mention anchoring
-        run: npm run check:ci-guard-mention-anchoring
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.guard_mention_anchoring
 
       # The enforcement layer cannot quietly disarm itself: guards are
       # inventoried shrink-only, and each must keep a case proving it blocks
@@ -956,7 +956,7 @@ jobs:
       # the verdict. The step above shipped exactly that in both of its
       # detectors and certified "124 file(s) clean" over a real offender.
       - name: No racing pipefail/grep -q detectors
-        run: npm run check:ci-pipefail-grep-q
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.pipefail_grep_q
 
       - name: Control-first gates prove their plant landed
         run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.control_vacuity

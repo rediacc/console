@@ -3184,7 +3184,7 @@
   },
   {
     "id": "check:ci-rdc-sh-env",
-    "run": "npm run check:ci-rdc-sh-env",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.security.rdc_sh_env_check",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -4109,7 +4109,7 @@
   {
     "id": "check:ci-guard-mention-anchoring",
     "slow": true,
-    "run": "npm run check:ci-guard-mention-anchoring",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.guard_mention_anchoring",
     "gate": true,
     "paths": [
       ".claude/rediacc_hooks/guards/**",
@@ -4227,7 +4227,7 @@
   },
   {
     "id": "check:ci-pipefail-grep-q",
-    "run": "npm run check:ci-pipefail-grep-q",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.pipefail_grep_q",
     "gate": true,
     "paths": [
       ".ci/media/**/*.sh",
@@ -5450,7 +5450,7 @@
   },
   {
     "id": "check:ci-plan-housekeeping",
-    "run": "npm run check:ci-plan-housekeeping",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_housekeeping",
     "slow": true,
     "gate": true,
     "paths": [
@@ -5505,7 +5505,7 @@
   },
   {
     "id": "check:ci-hook-exec-baseline",
-    "run": "npm run check:ci-hook-exec-baseline",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_exec_baseline",
     "gate": true,
     "paths": [
       ".ci/config/hook-ledger.json",
@@ -6024,7 +6024,7 @@
   },
   {
     "id": "check:ci-dead-python",
-    "run": "npm run check:ci-dead-python",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.dead_python",
     "gate": true,
     "slow": true,
     "leaves": [
@@ -7075,7 +7075,7 @@
   },
   {
     "id": "check:ci-hooks-resolvable",
-    "run": "npm run check:ci-hooks-resolvable",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.hooks_resolvable",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -7881,7 +7881,7 @@
   },
   {
     "id": "check:ci-lint-rule-liveness",
-    "run": "npm run check:ci-lint-rule-liveness",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_rule_liveness",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -9125,7 +9125,7 @@
   },
   {
     "id": "check:ci-greenlight-closures",
-    "run": "npm run check:ci-greenlight-closures",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.greenlight_closures",
     "gate": true,
     "paths": [
       ".ci/config/constants.sh",
@@ -9703,7 +9703,7 @@
   },
   {
     "id": "check:ci-audit-coverage",
-    "run": "npm run check:ci-audit-coverage",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.audit_coverage",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",
@@ -10149,7 +10149,7 @@
   },
   {
     "id": "check:ci-command-tree",
-    "run": "npm run check:ci-command-tree",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.command_tree",
     "gate": true,
     "needs": [
       "build:packages"
@@ -13514,7 +13514,7 @@
   },
   {
     "id": "check:ci-page-density",
-    "run": "npm run check:ci-page-density",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density",
     "slow": true,
     "needs": [
       "build:www"
@@ -16601,7 +16601,7 @@
   },
   {
     "id": "check:ci-setup-port-parity",
-    "run": "npm run check:ci-setup-port-parity",
+    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.setup.port_parity",
     "gate": true,
     "paths": [
       ".ci/rediacc_ci/__init__.py",

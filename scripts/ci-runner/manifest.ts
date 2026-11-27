@@ -3027,7 +3027,7 @@ export const GATES: readonly GateSpec[] = [
   // <<< gen-manifest: region 2
   {
     id: 'check:ci-rdc-sh-env',
-    run: 'npm run check:ci-rdc-sh-env',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.security.rdc_sh_env_check',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -3854,7 +3854,7 @@ export const GATES: readonly GateSpec[] = [
     // guards are added.
     id: 'check:ci-guard-mention-anchoring',
     slow: true, // 22.2s in the idle pre-push pool, 5.5s alone (parses every guard); 2026-09-26
-    run: 'npm run check:ci-guard-mention-anchoring',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.guard_mention_anchoring',
     gate: true,
     // The script scans all 3 chains (pre-bash, pre-edit, pre-ask) since the peer's extension on 2026-08-28; this list had stayed pre-bash-only, the exact "half-populated path table" anti-pattern gate-author.md warns against -- a guard added under pre-edit/pre-ask would not have re-selected this gate on --changed. RE-KEYED BY THE W5 CUTOVER, which is invariant 2: the three chain
     // directories moved and a glob that matches nothing can only EXCLUDE. RETARGETED AGAIN by PLAN-retire-bash-oracles A2/A3: the gate now reads its patterns from the live Python guard modules directly (no second, frozen copy left to select), so `.claude/oracles/**` dropped out of this list along with the tree it named.
@@ -3963,7 +3963,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // A detector built as `producer | grep -q` under pipefail cannot reliably fail: grep -q exits at its first match, SIGPIPEs the producer, and pipefail makes that 141 the verdict. check-ci-watch-recipe.sh shipped exactly that in both detectors and certified 124 files clean over a real offender for as long as it existed.
     id: 'check:ci-pipefail-grep-q',
-    run: 'npm run check:ci-pipefail-grep-q',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.pipefail_grep_q',
     gate: true,
     // `.ci/lib/**`, `.devcontainer/**` and `.ci/media/**` joined the corpus with the printf/echo widening, and this list is what decides whether CI RUNS the gate when one of them changes. It was expanded in gates.lock.json alone, which is generated from here -- so regenerating the lock would have quietly narrowed the gate back and left it not watching the very directories the
     // sweep just converted sites in. A green gate with less coverage than yesterday.
@@ -5116,7 +5116,7 @@ export const GATES: readonly GateSpec[] = [
   // quality-i18n is the ONLY lane with fetch-depth 0 that also runs on the nightly, and this gate needs both: shallow makes it vacuous (see its header), and a clock-driven gate that never runs on a schedule first surfaces by ambushing an unrelated PR. It is a TENANT of that lane, not an i18n gate.
   {
     id: 'check:ci-plan-housekeeping',
-    run: 'npm run check:ci-plan-housekeeping',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.plan_housekeeping',
     slow: true, // 20.2s measured in CI (run 36545832497)
     gate: true,
     paths: [
@@ -5173,7 +5173,7 @@ export const GATES: readonly GateSpec[] = [
     // D0. The exec baseline W5's "2 processes per Bash tool call" target is defined against;
     // it did not exist in the tree until 2026-09-09, so the target was unfalsifiable. Pins per-tool and per-event harness process counts from .claude/settings.json and refuses in BOTH directions, which is what makes D4's collapse claim its own numbers.
     id: 'check:ci-hook-exec-baseline',
-    run: 'npm run check:ci-hook-exec-baseline',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.hook_exec_baseline',
     gate: true,
     paths: [
       '.ci/config/hook-ledger.json',
@@ -5657,7 +5657,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // U4. The Python twin of the dead-bash instrument. SIX execution routes, not three: wired, pytest, shadow, glob, imported, mentioned. Prose is deliberately NOT a route -- `agent/`, `docs/`, `*.md` and the ledger directory (deleted in commit:936280cd35) are excluded, the last so the shadow route can EXPIRE when its bash twin goes rather than vouching for itself forever.
     id: 'check:ci-dead-python',
-    run: 'npm run check:ci-dead-python',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.dead_python',
     gate: true,
     slow: true, // 20.3s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
     leaves: ['.ci/rediacc_ci/quality/dead_python.py'],
@@ -6636,7 +6636,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-hooks-resolvable',
-    run: 'npm run check:ci-hooks-resolvable',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.hooks_resolvable',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -7337,7 +7337,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-lint-rule-liveness',
-    run: 'npm run check:ci-lint-rule-liveness',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_rule_liveness',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -8490,7 +8490,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-greenlight-closures',
-    run: 'npm run check:ci-greenlight-closures',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.greenlight_closures',
     gate: true,
     paths: [
       '.ci/config/constants.sh',
@@ -9010,7 +9010,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-audit-coverage',
-    run: 'npm run check:ci-audit-coverage',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.audit_coverage',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
@@ -9448,7 +9448,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-command-tree',
-    run: 'npm run check:ci-command-tree',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.command_tree',
     gate: true,
     needs: ['build:packages'],
     mutex: ['build-artifacts'],
@@ -12508,7 +12508,7 @@ export const GATES: readonly GateSpec[] = [
   },
   {
     id: 'check:ci-page-density',
-    run: 'npm run check:ci-page-density',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.page_density',
     slow: true, // drives 3 routes x 4 viewports in a container
     // Reads packages/www/dist, which build:www rewrites under the www-dist mutex; without this edge a full local run scheduled it mid-build and it saw "zero routes" (2026-09-27). CI orders it after the build step in quality-www-build already.
     needs: ['build:www'],
@@ -15449,7 +15449,7 @@ export const GATES: readonly GateSpec[] = [
   {
     // E1. The shadow ledger (deleted in commit:936280cd35) proved the bash and Python `setup` agreed over five frozen trees and says nothing about tomorrow's, so the phase ORDER is re-derived from both implementations on every run. Order and not just the set: swapping two phases leaves the finding count and the name set identical, so an unordered comparison passes it.
     id: 'check:ci-setup-port-parity',
-    run: 'npm run check:ci-setup-port-parity',
+    run: 'PYTHONPATH=.ci python3 -m rediacc_ci.setup.port_parity',
     gate: true,
     paths: [
       '.ci/rediacc_ci/__init__.py',
