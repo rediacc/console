@@ -3,8 +3,9 @@ title: AI Agent Safety & Guardrails
 description: >-
   How Rediacc keeps AI coding assistants from leaking secrets,
   overwriting credentials, or escalating privilege. One decision for every
-  surface, opt-in AND policy ceiling, knowledge-gates, redaction, and a
-  hash-chained audit log.
+  surface, opt-in AND policy ceiling, knowledge-gates, redaction, and an
+  audit log hash-chained per org and day on the server and in a local file
+  for the CLI.
 category: Concepts
 tags:
   - ai-agents

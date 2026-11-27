@@ -7,7 +7,7 @@ order: 2
 language: it
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/it/cli.json
-sourceHash: "62944666aad4b4ac"
+sourceHash: "06b3653b5adb2103"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2916,6 +2916,7 @@ rdc backup schedule [options]
 | `--dry-run` | {{t:cli.commands.backup.schedule.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--force` | {{t:cli.commands.backup.schedule.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--reset-failed` | {{t:cli.commands.backup.schedule.optionResetFailed}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--adopt-origin` | {{t:cli.commands.backup.schedule.optionAdoptOrigin}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
