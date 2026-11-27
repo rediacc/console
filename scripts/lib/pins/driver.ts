@@ -171,6 +171,10 @@ export const MUTANTS = [
   'no-registry-gate',
   'breaking-is-minor',
   'breaking-unlisted',
+  'unscoped-gate',
+  'hidden-outside',
+  'hold-first-only',
+  'unhold-by-prefix',
 ] as const;
 export type Mutant = (typeof MUTANTS)[number];
 
@@ -331,6 +335,10 @@ export interface Fixture {
     writes?: Record<string, string>;
     out?: string;
     events?: string[];
+    /** Regexes the command's environment must match, by variable, for this answer to win; an absent variable reads as the empty string. */
+    env?: Record<string, string>;
+    /** The lines a scoped gate run writes to the file its PINS_TXN_OUTSIDE names: the reds outside the transaction it printed and did not judge. */
+    outside?: string[];
   }>;
   /** Extra plan steps per entry id, for the lockfile and undeclared-write cases. */
   steps?: Record<string, PlanStep[]>;

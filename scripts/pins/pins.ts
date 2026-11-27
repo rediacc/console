@@ -17,7 +17,9 @@
  *   bump --all [--task <id>] [--json] [--out <dir>]
  *   apply-soaked [--task <id>] [--json] [--out <dir>]
  *                                          bump --all limited to patches and in-range minors
- *   hold <id> --reason "<why>" [--expires YYYY-MM-DD] [--task <id>]
+ *   hold <id> [<id>...] --reason "<why>" [--expires YYYY-MM-DD] [--task <id>]
+ *                                          several ids hold in ONE transaction under one reason
+ *   unhold <id> [<id>...] [--task <id>]    remove each pin's hold line, in one transaction
  *   remove <pkg> [--task <id>]             npm uninstall from every declaring manifest and drop
  *                                          every policy, override, syncpack and knip line for it
  *   lockfiles [<dir>] [--task <id>]        the canonical lockfile pass over every npm project
@@ -130,6 +132,7 @@ import {
   recordLateWrites,
   restoreJournal,
   runTransaction,
+  SCOPE_ENV,
   type TxnResult,
   takeLock,
 } from '../lib/pins/txn.js';
@@ -799,6 +802,7 @@ function report(
     failure: res?.failure ?? regenFailure,
     commands: res?.commands ?? [],
     gates: res?.gates ?? null,
+    outside: res?.outside ?? [],
     ungated: res?.ungated ?? [],
     restored: res?.restored ?? [],
     resynced: res?.resynced ?? [],
@@ -814,8 +818,14 @@ function report(
   };
 }
 
-/** Run a set of plans as one transaction and print its outcome. */
-function apply(w: World, f: Flags, s: Selected, subject: string): number {
+/** Run a set of plans as one transaction and print its outcome; `exposed` names the pins the run unholds, left out of the gate's scope. */
+function apply(
+  w: World,
+  f: Flags,
+  s: Selected,
+  subject: string,
+  exposed: readonly string[] = []
+): number {
   if (s.plans.length === 0) {
     if (f.json) w.out.push(JSON.stringify(report(w, f, s, null, []), null, 2));
     else {
@@ -838,6 +848,7 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
       submodules: w.reg.submodules.scanned,
       registry: w.reg.entries,
       adopt: f.adopt,
+      exposed,
     });
   } finally {
     release();
@@ -881,6 +892,8 @@ function apply(w: World, f: Flags, s: Selected, subject: string): number {
   }
   for (const r of s.refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
   noteNotChecked(w, s);
+  for (const o of res.outside)
+    w.err.push(`OUTSIDE (red, not this transaction's, so not a refusal): ${o}`);
   if (regenFailure !== null) {
     w.err.push(`FAILED: ${regenFailure}`);
     w.err.push(`journal: ${res.dir}`);
@@ -963,8 +976,14 @@ async function cmdBump(w: World, f: Flags, soakedOnly: boolean): Promise<number>
   return apply(w, f, s, f.major && f.reason ? `${subject} (major: ${f.reason})` : subject);
 }
 
+/**
+ * `hold <id> [<id>...] --reason "<why>" [--expires YYYY-MM-DD]`: one BLOCKER line per pin, every pin in ONE transaction, so two
+ * pins that aged together are held together and the scoped gate run judges both (worklist #2144097d). One reason covers every
+ * pin named, as one --reason covers every major of a bump. A pin the run cannot hold refuses the whole run, nothing written.
+ */
 async function cmdHold(w: World, f: Flags): Promise<number> {
-  const [entry] = pick(w, f.pos[0], false);
+  const named = pickMany(w, f.pos, false);
+  const entries = w.mutant === 'hold-first-only' ? named.slice(0, 1) : named;
   if (!f.reason) throw new Usage('hold needs --reason "<why>"');
   if (
     f.expires &&
@@ -972,52 +991,157 @@ async function cmdHold(w: World, f: Flags): Promise<number> {
   )
     throw new Usage(`--expires must be a future YYYY-MM-DD, got ${f.expires}`);
   const ctx = contextOf(w);
-  const drv = driverFor(entry, ctx);
-  const key = drv?.holdKey(entry) ?? null;
-  const file = entry.holds[0];
-  if (!drv || key === null || !file) {
+  const plans: PinPlan[] = [];
+  const refused: Array<{ id: string; why: string }> = [];
+  for (const entry of entries) {
+    const drv = driverFor(entry, ctx);
+    const key = drv?.holdKey(entry) ?? null;
+    const file = entry.holds[0];
+    if (!drv || key === null || !file) {
+      refused.push({
+        id: entry.id,
+        why: !drv ? `the ${entry.driver} driver has not landed` : 'this entry has no hold file',
+      });
+      continue;
+    }
+    const bad = validateBlockerQuality(key, f.reason, file);
+    if (bad) {
+      refused.push({ id: entry.id, why: bad.message });
+      continue;
+    }
+    const existing = holdOf(w, entry, key);
+    if (existing && !existing.expired) {
+      refused.push({
+        id: entry.id,
+        why: `already held in ${file}:${existing.line}: ${existing.reason}; \`npm run pins -- unhold ${entry.id}\` removes it first`,
+      });
+      continue;
+    }
+    // Read through the overlay, so a second pin holding into the same file builds on the first one's line.
+    const text = ctx.read({ repo: '.', file }) ?? '';
+    const line = `${key}  # BLOCKER: ${f.reason}${f.expires ? ` (expires ${f.expires})` : ''}`;
+    // An expired hold is RENEWED in place: a second line for the key would leave the file holding two verdicts for one pin.
+    const after = existing
+      ? text
+          .split('\n')
+          .map((l, i) => (i === existing.line - 1 ? line : l))
+          .join('\n')
+      : `${text}${text === '' || text.endsWith('\n\n') ? '' : text.endsWith('\n') ? '\n' : '\n\n'}${line}\n`;
+    const write: FileWrite = { repo: '.', file, after };
+    ctx.overlay.set(keyOf(write), after);
+    const cur = leafCurrent(entry, ctx) ?? 'its current pin';
+    plans.push({
+      entry: { ...entry, derive: [] },
+      from: cur,
+      to: { version: cur, publishedMs: null },
+      writes: [write],
+      steps: [],
+      changes: [`${file}: hold ${key}`],
+    });
+  }
+  if (refused.length > 0) {
+    for (const r of refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
     w.err.push(
-      `REFUSED ${entry.id}: ${!drv ? `the ${entry.driver} driver has not landed` : 'this entry has no hold file'}`
+      `nothing written: a hold is one transaction, so every pin it names must be holdable (${refused.length} of ${entries.length} refused)`
     );
     return 1;
   }
-  const bad = validateBlockerQuality(key, f.reason, file);
-  if (bad) {
-    w.err.push(bad.message);
+  const s: Selected = { plans, views: new Map(), refused: [], skipped: [], notChecked: [] };
+  const subject =
+    plans.length === 1
+      ? `chore(pins): hold ${plans[0].entry.name} at ${plans[0].from}`
+      : `chore(pins): hold ${plans.length} pins (${plans.map((p) => p.entry.name).join(', ')})`;
+  return apply(w, f, s, subject);
+}
+
+/**
+ * The hold file text with every hold line for `key` removed, and the 1-based numbers of the lines removed. A line holds a key
+ * when its first token IS the key; comments and other keys are kept byte for byte. The unhold-by-prefix mutant matches by
+ * prefix, which takes `toolbox` with `tool`. Pure.
+ */
+export function withoutHold(
+  text: string,
+  key: string,
+  mutant: Mutant | null = null
+): { after: string; removed: number[] } {
+  const removed: number[] = [];
+  const kept = text.split('\n').filter((l, i) => {
+    const t = l.trim();
+    if (t === '' || t.startsWith('#')) return true;
+    const first = t.split(/\s+/)[0];
+    const hit = mutant === 'unhold-by-prefix' ? first.startsWith(key) : first === key;
+    if (hit) removed.push(i + 1);
+    return !hit;
+  });
+  return { after: kept.join('\n'), removed };
+}
+
+/**
+ * `unhold <id> [<id>...]`: remove each pin's hold line from its hold file, in one transaction. An unhold takes an excuse
+ * away, so the pin's own red afterwards is the expected result, not a refusal: the unheld pins are left out of the gate's
+ * scope, and whatever the gate then says about them is printed as a red outside the transaction. Each pin's state after the
+ * run is printed too, so the red is never silent. A pin with no hold line refuses the run, nothing written.
+ */
+async function cmdUnhold(w: World, f: Flags): Promise<number> {
+  const entries = pickMany(w, f.pos, false);
+  if (f.reason || f.expires) throw new Usage('unhold takes no --reason or --expires');
+  const ctx = contextOf(w);
+  const plans: PinPlan[] = [];
+  const refused: Array<{ id: string; why: string }> = [];
+  for (const entry of entries) {
+    const drv = driverFor(entry, ctx);
+    const key = drv?.holdKey(entry) ?? null;
+    const file = entry.holds[0];
+    if (!drv || key === null || !file) {
+      refused.push({
+        id: entry.id,
+        why: !drv ? `the ${entry.driver} driver has not landed` : 'this entry has no hold file',
+      });
+      continue;
+    }
+    const text = ctx.read({ repo: '.', file }) ?? '';
+    const { after, removed } = withoutHold(text, key, w.mutant);
+    if (removed.length === 0) {
+      refused.push({ id: entry.id, why: `${file} holds no line for ${key}` });
+      continue;
+    }
+    const write: FileWrite = { repo: '.', file, after };
+    ctx.overlay.set(keyOf(write), after);
+    const cur = leafCurrent(entry, ctx) ?? 'its current pin';
+    plans.push({
+      entry: { ...entry, derive: [] },
+      from: cur,
+      to: { version: cur, publishedMs: null },
+      writes: [write],
+      steps: [],
+      changes: [`${file}: unhold ${key} (line ${removed.join(', ')})`],
+    });
+  }
+  if (refused.length > 0) {
+    for (const r of refused) w.err.push(`REFUSED ${r.id}: ${r.why}`);
+    w.err.push(
+      `nothing written: an unhold is one transaction, so every pin it names must hold a line (${refused.length} of ${entries.length} refused)`
+    );
     return 1;
   }
-  const existing = holdOf(w, entry, key);
-  if (existing && !existing.expired) {
-    w.err.push(`REFUSED ${entry.id}: already held in ${file}: ${existing.reason}`);
-    return 1;
-  }
-  const text = ctx.read({ repo: '.', file }) ?? '';
-  const line = `${key}  # BLOCKER: ${f.reason}${f.expires ? ` (expires ${f.expires})` : ''}`;
-  // An expired hold is RENEWED in place: a second line for the key would leave the file holding two verdicts for one pin.
-  const after = existing
-    ? text
-        .split('\n')
-        .map((l, i) => (i === existing.line - 1 ? line : l))
-        .join('\n')
-    : `${text}${text === '' || text.endsWith('\n\n') ? '' : text.endsWith('\n') ? '\n' : '\n\n'}${line}\n`;
-  const write: FileWrite = { repo: '.', file, after };
-  const cur = leafCurrent(entry, ctx) ?? 'its current pin';
-  const plan: PinPlan = {
-    entry,
-    from: cur,
-    to: { version: cur, publishedMs: null },
-    writes: [write],
-    steps: [],
-    changes: [`${file}: hold ${key}`],
-  };
-  const s: Selected = {
-    plans: [{ ...plan, entry: { ...entry, derive: [] } }],
-    views: new Map(),
-    refused: [],
-    skipped: [],
-    notChecked: [],
-  };
-  return apply(w, f, s, `chore(pins): hold ${entry.name} at ${cur}`);
+  const s: Selected = { plans, views: new Map(), refused: [], skipped: [], notChecked: [] };
+  const subject =
+    plans.length === 1
+      ? `chore(pins): unhold ${plans[0].entry.name} at ${plans[0].from}`
+      : `chore(pins): unhold ${plans.length} pins (${plans.map((p) => p.entry.name).join(', ')})`;
+  const rc = apply(
+    w,
+    f,
+    s,
+    subject,
+    plans.map((p) => p.entry.id)
+  );
+  if (rc === 0 && !f.json)
+    for (const entry of entries) {
+      const v = await viewOf(w, contextOf(w), entry);
+      w.out.push(`${entry.id} after the unhold: ${v.state}: ${v.detail}`);
+    }
+  return rc;
 }
 
 /** `remove <pkg>` and `lockfiles [<dir>]`: the npm driver's two plans that are not a version move (scripts/lib/pins/drivers/npm.ts). */
@@ -1182,13 +1306,14 @@ export async function runCli(
     else if (verb === 'bump') rc = await cmdBump(w, f, false);
     else if (verb === 'apply-soaked') rc = await cmdBump(w, f, true);
     else if (verb === 'hold') rc = await cmdHold(w, f);
+    else if (verb === 'unhold') rc = await cmdUnhold(w, f);
     else if (verb === 'verify') rc = cmdVerify(w, f);
     else if (verb === 'remove') rc = cmdNpmPlan(w, f, 'remove');
     else if (verb === 'lockfiles') rc = cmdNpmPlan(w, f, 'lockfiles');
     else if (verb === 'sync-templates') rc = cmdSyncTemplates(w, f);
     else
       throw new Usage(
-        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, remove, lockfiles, verify, sync-templates`
+        `unknown verb ${verb ?? '(none)'}; verbs: status, when, plan, bump, apply-soaked, hold, unhold, remove, lockfiles, verify, sync-templates`
       );
     return { rc, out: w.out.join('\n'), err: w.err.join('\n') };
   } catch (err) {
@@ -2893,6 +3018,141 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  // A HOLD SHARES ITS TRANSACTION, AND ITS GATE JUDGES ONLY ITS OWN PINS (worklist #2144097d). The stub gate stands in for check:ci-pin-freshness: green only for the scope a correct run passes, red otherwise, as the real gate is red on any pin aged and not in the scope (its own selftest proves the scoping itself).
+  async holdmany(m) {
+    const REASON = 'the 2.x line drops the plugin API the installer loads';
+    const GATE = '^npm run ci -- --only ';
+    const red = { match: GATE, rc: 1, events: ['{"ev":"gate-red","gate":"check:fixture-tool"}'] };
+    const commit = (fx: Fx, msg: string) => {
+      sh(fx.root, 'add', '-A');
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qm',
+        msg
+      );
+    };
+    const BL = '.ci/policy/.fixture-blocklist';
+    const holdLine = (key: string) => `${key}  # BLOCKER: ${REASON} (expires 2026-11-01)`;
+
+    // (1) Two aged pins held in ONE transaction: one gate run whose scope names both.
+    const two = fixtureTree((f) => {
+      f.commands.unshift(
+        { match: GATE, env: { [SCOPE_ENV]: '^embed:tool,embed:zed$' }, rc: 0 },
+        red
+      );
+    });
+    const rTwo = await runCli(
+      ['hold', 'embed:tool', 'embed:zed', '--reason', REASON, '--expires', '2026-11-01', '--json'],
+      withMutant(two, m)
+    );
+    const jTwo = (() => {
+      try {
+        return JSON.parse(rTwo.out) as { commands: CommandRecord[]; pins: Array<{ id: string }> };
+      } catch {
+        return null;
+      }
+    })();
+    const blTwo = two.read(BL);
+
+    // (2) An unrelated red that is already there (embed:zed) does not refuse the hold of embed:tool; it is printed.
+    const ZED_RED =
+      'check:ci-pin-freshness: embed:zed: aged newer line, 3.0.0 (line 3): first released 2026-08-01T00:00:00.000Z';
+    const unrel = fixtureTree((f) => {
+      f.commands.unshift(
+        { match: GATE, env: { [SCOPE_ENV]: '^embed:tool$' }, rc: 0, outside: [ZED_RED] },
+        red
+      );
+    });
+    const rUnrel = await runCli(
+      ['hold', 'embed:tool', '--reason', REASON, '--expires', '2026-11-01'],
+      withMutant(unrel, m)
+    );
+
+    // (3) unhold removes exactly that pin's line: the neighbour `toolbox`, whose key starts with `tool`, stays.
+    const un = fixtureTree((f) => {
+      f.commands.unshift({ match: GATE, env: { [SCOPE_ENV]: '^$' }, rc: 0 }, red);
+    });
+    const header = un.read(BL);
+    const before = `${header}${holdLine('toolbox')}\n${holdLine('tool')}\n# trailing comment\n`;
+    un.write(BL, before);
+    commit(un, 'two holds');
+    const rUn = await runCli(['unhold', 'embed:tool'], withMutant(un, m));
+    const afterUn = un.read(BL);
+    const rNone = await runCli(['unhold', 'embed:zed'], withMutant(un, m));
+
+    // (4) A hold naming one pin it cannot hold refuses the whole run: nothing is written for the other.
+    const part = fixtureTree();
+    part.write(BL, `${part.read(BL)}${holdLine('zed')}\n`);
+    commit(part, 'zed held');
+    const partBefore = part.read(BL);
+    const rPart = await runCli(
+      ['hold', 'embed:tool', 'embed:zed', '--reason', REASON, '--expires', '2026-11-01'],
+      withMutant(part, m)
+    );
+
+    const gateCmds = (jTwo?.commands ?? []).filter((c) =>
+      c.cmd.startsWith('npm run ci -- --only ')
+    );
+    return [
+      {
+        // Red under hold-first-only (only embed:tool is held, the scope misses embed:zed) and under unscoped-gate.
+        name: 'hold <id> <id>: two aged pins held in one transaction pass, one gate run, both lines written once',
+        ok:
+          rTwo.rc === 0 &&
+          gateCmds.length === 1 &&
+          (jTwo?.pins ?? []).map((p) => p.id).join(',') === 'embed:tool,embed:zed' &&
+          blTwo.split('\n').filter((l) => l === holdLine('tool')).length === 1 &&
+          blTwo.split('\n').filter((l) => l === holdLine('zed')).length === 1,
+        detail: `rc=${rTwo.rc} ${rTwo.err} | ${blTwo}`,
+      },
+      {
+        // Red under unscoped-gate (the unrelated red refuses the hold, the deadlock) and hidden-outside (not printed).
+        name: 'hold: an unrelated pre-existing red does not refuse the hold of another pin, and is printed as OUTSIDE',
+        ok:
+          rUnrel.rc === 0 &&
+          unrel.read(BL).includes(holdLine('tool')) &&
+          rUnrel.err.includes(
+            `OUTSIDE (red, not this transaction's, so not a refusal): ${ZED_RED}`
+          ),
+        detail: `rc=${rUnrel.rc} ${rUnrel.err}`,
+      },
+      {
+        // Red under unhold-by-prefix, which takes the toolbox line too.
+        name: "unhold: removes exactly the pin's hold line, every other byte of the file kept, and prints its state after",
+        ok:
+          rUn.rc === 0 &&
+          afterUn === `${header}${holdLine('toolbox')}\n# trailing comment\n` &&
+          rUn.out.includes('embed:tool after the unhold: '),
+        detail: `rc=${rUn.rc} ${rUn.err} | ${JSON.stringify(afterUn)}`,
+      },
+      {
+        name: 'unhold (control): a pin with no hold line is refused, the file untouched',
+        ok: rNone.rc === 1 && rNone.err.includes('REFUSED embed:zed') && un.read(BL) === afterUn,
+        detail: `rc=${rNone.rc} ${rNone.err}`,
+      },
+      {
+        name: 'hold (control): one pin it cannot hold refuses the whole run, nothing written for the other',
+        ok:
+          rPart.rc === 1 &&
+          rPart.err.includes('REFUSED embed:zed: already held') &&
+          rPart.err.includes('unhold embed:zed') &&
+          part.read(BL) === partBefore,
+        detail: `rc=${rPart.rc} ${rPart.err}`,
+      },
+      {
+        name: 'withoutHold (pure): the exact key only, comments and blank lines kept, the removed line numbers named',
+        ok: (() => {
+          const r = withoutHold('# c\ntool  # a\n\ntoolbox  # b\ntool  # old\n', 'tool');
+          return r.after === '# c\n\ntoolbox  # b\n' && r.removed.join(',') === '2,5';
+        })(),
+      },
+    ];
+  },
   async regen(m) {
     const regenCmd = {
       match: 'gen-docs\\.ts --write$',
@@ -4121,6 +4381,10 @@ const MUTANT_CASES: Record<Mutant, string> = {
   'no-registry-gate': 'pinmanifests',
   'breaking-is-minor': 'breaking',
   'breaking-unlisted': 'breaking',
+  'unscoped-gate': 'holdmany',
+  'hidden-outside': 'holdmany',
+  'hold-first-only': 'holdmany',
+  'unhold-by-prefix': 'holdmany',
 };
 
 async function selftest(env: NodeJS.ProcessEnv): Promise<number> {

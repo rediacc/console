@@ -54,6 +54,14 @@
  * HOLD LIVENESS. Each hold file a judged leaf reads is checked here: a line whose key no leaf
  * of that file answers to holds nothing and is red, and so is a key two leaves answer to.
  *
+ * A PINS TRANSACTION'S RUN (worklist #2144097d). `npm run pins -- bump|hold|unhold` runs this gate inside its transaction with
+ * PINS_TXN_SCOPE set to the pins it moves or holds (scripts/lib/pins/txn.ts SCOPE_ENV). Every leaf is still compared, and
+ * every finding still printed, but only a finding about a pin in the scope is red; any other finding is printed as
+ * `outside this transaction:` and appended to the file PINS_TXN_OUTSIDE names, so a red the transaction did not make and does
+ * not touch never refuses it, and is never silent. Without the scope two pins that aged together deadlocked: the hold of
+ * one was refused on the other's red, and the bump of the other on the first's. A scope naming a pin the registry does not
+ * hold is red (a typo would otherwise judge nothing). CI never sets the variable, so its run judges every pin.
+ *
  * Red at once, on every cadence (operator answer): the step runs unwrapped, and the
  * no-external-quality label on a pull request is its one hold, named by the job's announcer.
  *
@@ -104,6 +112,7 @@ import {
   viewOf,
 } from '../lib/pins/status.js';
 import { readTemplateFiles, scanTemplates } from '../lib/pins/templates.js';
+import { OUTSIDE_ENV, SCOPE_ENV } from '../lib/pins/txn.js';
 import { policyPath } from '../lib/policy-paths.js';
 import { getMinReleaseAgeMs } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
@@ -160,6 +169,9 @@ interface LeafView {
  *   zero-is-major       a 0.x version's line is its 0, so otel 0.111 below 0.166 is one line
  *                       (both are scripts/lib/pins/lines.ts LINE_MUTANTS, passed through StatusWorld)
  *   no-line-rows        a dockerhub leaf with no `lines` row passes, judged at depth 1
+ *   scope-ignored       a transaction's scope is ignored: a red about a pin outside it is red
+ *   scope-hides-all     a scoped run is never red, even on a finding about a pin inside the scope
+ *   scope-silent        a red outside the scope is dropped instead of printed
  */
 const MUTANTS = [
   'no-compare',
@@ -174,6 +186,9 @@ const MUTANTS = [
   'first-number-only',
   'zero-is-major',
   'no-line-rows',
+  'scope-ignored',
+  'scope-hides-all',
+  'scope-silent',
 ] as const;
 type Mutant = (typeof MUTANTS)[number];
 
@@ -181,6 +196,8 @@ interface Report {
   rc: number;
   out: string[];
   err: string[];
+  /** Under a transaction's scope, the findings about pins outside it: printed, never red. */
+  outside?: string[];
 }
 
 const DAY_MS = 86_400_000;
@@ -215,33 +232,44 @@ const describeLine = (a: MajorAge): string => {
     : `${what}: ${first}`;
 };
 
+/** One hold-file problem, with the pins it concerns (none for a line no leaf answers to), so a transaction's scope can place it. */
+interface HoldProblem {
+  text: string;
+  ids: string[];
+}
+
 /** The hold-file problems of the judged leaves, given each claimant's hold key. Pure. */
 function holdFindings(
   files: Map<string, string | null>,
   claimants: Map<string, Array<{ id: string; key: string | null }>>
-): string[] {
-  const out: string[] = [];
+): HoldProblem[] {
+  const out: HoldProblem[] = [];
   for (const [file, text] of files) {
     const owners = claimants.get(file) ?? [];
     const byKey = new Map<string, string[]>();
     for (const o of owners) {
       if (o.key === null) {
-        out.push(`${file}: ${o.id} names it as its hold file, but its driver gives no hold key`);
+        out.push({
+          text: `${file}: ${o.id} names it as its hold file, but its driver gives no hold key`,
+          ids: [o.id],
+        });
         continue;
       }
       byKey.set(o.key, [...(byKey.get(o.key) ?? []), o.id]);
     }
     for (const [key, ids] of byKey)
-      if (ids.length > 1) out.push(`${file}: key ${key} is answered by ${ids.join(' and ')}`);
+      if (ids.length > 1)
+        out.push({ text: `${file}: key ${key} is answered by ${ids.join(' and ')}`, ids });
     if (text === null) continue;
     for (const [i, line] of text.split('\n').entries()) {
       const t = line.trim();
       if (t === '' || t.startsWith('#')) continue;
       const key = t.split(/\s+/)[0];
       if (!byKey.has(key))
-        out.push(
-          `${file}:${i + 1}: holds ${key}, which no leaf naming this hold file answers to; delete the line`
-        );
+        out.push({
+          text: `${file}:${i + 1}: holds ${key}, which no leaf naming this hold file answers to; delete the line`,
+          ids: [],
+        });
     }
   }
   return out;
@@ -251,9 +279,11 @@ function holdFindings(
 interface Judging {
   nowMs: number;
   graceMs: number;
-  holdProblems: string[];
+  holdProblems: HoldProblem[];
   /** registry.ts lineRowProblems().missing: a dockerhub leaf whose line depth nobody named. */
   missingLines?: string[];
+  /** A pins transaction's scope (PINS_TXN_SCOPE): only a finding about one of these pins is red; null judges every pin. */
+  scope?: ReadonlySet<string> | null;
 }
 
 /** The verdict over every judged leaf's view. Pure. */
@@ -263,8 +293,17 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
   const seen =
     mutant === 'no-compare' ? views.map((v) => ({ ...v, state: 'current' as const })) : views;
   const of = (s: LeafView['state']) => seen.filter((v) => v.state === s);
-  const stale = of('bumpable');
-  const blind = mutant === 'unknown-is-fine' ? [] : of('not-compared');
+  // A transaction's scope: a finding about a pin outside it is printed below as outside, never red.
+  const scope = mutant === 'scope-ignored' ? null : (majors.scope ?? null);
+  const inScope = (id: string): boolean => scope === null || scope.has(id);
+  const outside: string[] = [];
+  const stale = of('bumpable').filter((v) => inScope(v.id));
+  const blind = mutant === 'unknown-is-fine' ? [] : of('not-compared').filter((v) => inScope(v.id));
+  for (const v of of('bumpable').filter((x) => !inScope(x.id)))
+    outside.push(`${v.id}: behind a release past the release-age window: ${v.detail}`);
+  if (mutant !== 'unknown-is-fine')
+    for (const v of of('not-compared').filter((x) => !inScope(x.id)))
+      outside.push(`${v.id}: NOT compared with upstream: ${v.detail}`);
 
   out.push(
     `Pin freshness: ${sel.judged.length} registry leaf(s) with a source and no freshness gate of their own`
@@ -315,7 +354,12 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
         );
       continue;
     }
-    overdue.push({ v, ages: due });
+    if (inScope(v.id)) overdue.push({ v, ages: due });
+    else
+      for (const a of due)
+        outside.push(
+          `${v.id}: ${a.kind === 'aged' ? 'aged' : 'undatable'} newer line, ${describeLine(a)}`
+        );
   }
 
   if (sel.judged.length === 0 && mutant !== 'empty-passes') {
@@ -359,13 +403,25 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
       );
     }
   }
-  const holdRed = mutant === 'no-hold-liveness' ? [] : majors.holdProblems;
+  const holdAll = mutant === 'no-hold-liveness' ? [] : majors.holdProblems;
+  const holdRed = holdAll.filter((p) => scope === null || p.ids.some(inScope)).map((p) => p.text);
+  for (const p of holdAll.filter((x) => scope !== null && !x.ids.some(inScope)))
+    outside.push(`hold file: ${p.text}`);
   if (holdRed.length > 0) {
     err.push(`✗ ${holdRed.length} hold line(s) or hold key(s) are wrong:`);
     for (const p of holdRed) err.push(`  ${p}`);
   }
   // A dockerhub leaf with no `lines` row is judged at depth 1, the reading that kept python 3.9 below 3.15 un-aged: unchecked, so red.
-  const lineRed = mutant === 'no-line-rows' ? [] : (majors.missingLines ?? []);
+  const lineAll = mutant === 'no-line-rows' ? [] : (majors.missingLines ?? []);
+  const lineOf = (p: string): string => p.slice(0, p.indexOf(': '));
+  const lineRed = lineAll.filter((p) => inScope(lineOf(p)));
+  for (const p of lineAll.filter((x) => !inScope(lineOf(x)))) outside.push(`lines table: ${p}`);
+  if (scope !== null && mutant !== 'scope-silent') {
+    out.push(
+      `  transaction scope (PINS_TXN_SCOPE): ${scope.size} pin(s)${scope.size > 0 ? ` (${[...scope].join(', ')})` : ''}; only a finding about one of them is red`
+    );
+    for (const o of outside) out.push(`  outside this transaction: ${o}`);
+  }
   if (lineRed.length > 0) {
     err.push(
       `✗ ${lineRed.length} docker leaf(s) have no version-line row, so their newer lines cannot be aged at the right depth:`
@@ -373,19 +429,21 @@ function verdict(sel: Selection, views: LeafView[], majors: Judging, mutant?: Mu
     for (const p of lineRed) err.push(`  ${p}`);
   }
   if (
-    stale.length > 0 ||
-    blind.length > 0 ||
-    majorRed.length > 0 ||
-    holdRed.length > 0 ||
-    lineRed.length > 0
+    mutant !== 'scope-hides-all' || scope === null
+      ? stale.length > 0 ||
+        blind.length > 0 ||
+        majorRed.length > 0 ||
+        holdRed.length > 0 ||
+        lineRed.length > 0
+      : false
   )
-    return { rc: 1, out, err };
+    return { rc: 1, out, err, outside };
   const newer = seen.reduce((n, v) => n + (v.majors?.length ?? 0), 0);
   const sameLine = of('major-only').filter((v) => (v.majors?.length ?? 0) === 0).length;
   out.push(
-    `✓ ${seen.length} of ${sel.judged.length} leaf(s) compared with upstream: ${of('current').length} current, ${of('deferred').length} deferred, ${of('major-only').length} major only (${sameLine} on their own line, never aged), ${of('held').length} held; ${newer} newer version line(s), none past the ${graceDays}-day grace unexcused`
+    `✓ ${seen.length} of ${sel.judged.length} leaf(s) compared with upstream: ${of('current').length} current, ${of('deferred').length} deferred, ${of('major-only').length} major only (${sameLine} on their own line, never aged), ${of('held').length} held; ${newer} newer version line(s), none past the ${graceDays}-day grace unexcused${scope === null ? '' : ` among the ${scope.size} pin(s) of the transaction; ${outside.length} red finding(s) outside it printed above and not judged here`}`
   );
-  return { rc: 0, out, err };
+  return { rc: 0, out, err, outside };
 }
 
 /**
@@ -415,7 +473,7 @@ async function viewsOf(world: StatusWorld, entries: PinEntry[]): Promise<LeafVie
  * file first and the key its driver writes there. A file absent from the tree reads as null
  * (check:ci-pin-registry owns a hold file's existence).
  */
-function holdProblemsOf(world: StatusWorld, sel: Selection): string[] {
+function holdProblemsOf(world: StatusWorld, sel: Selection): HoldProblem[] {
   const ctx = contextOf(world);
   const files = new Map<string, string | null>();
   for (const e of sel.judged) {
@@ -435,8 +493,22 @@ function holdProblemsOf(world: StatusWorld, sel: Selection): string[] {
 }
 
 /** The run over `root` (the console's, or the selftest's fixture), with the root's release-age window and major grace. */
-async function check(root: string, mutant?: Mutant, nowMs: number = Date.now()): Promise<Report> {
+async function check(
+  root: string,
+  mutant?: Mutant,
+  nowMs: number = Date.now(),
+  scope: ReadonlySet<string> | null = null
+): Promise<Report> {
   const reg = loadRegistry(path.join(root, '.ci/config/pins.json'));
+  const unknown = [...(scope ?? [])].filter((id) => !reg.entries.some((e) => e.id === id));
+  if (unknown.length > 0)
+    return {
+      rc: 1,
+      out: [],
+      err: [
+        `✗ PINS_TXN_SCOPE names ${unknown.join(', ')}, which .ci/config/pins.json does not hold; a scope with a wrong id would judge nothing`,
+      ],
+    };
   let graceMs: number;
   try {
     graceMs = getMajorGraceMs(path.join(root, MAJOR_GRACE_CONFIG));
@@ -468,6 +540,7 @@ async function check(root: string, mutant?: Mutant, nowMs: number = Date.now()):
       graceMs,
       holdProblems: holdProblemsOf(world, sel),
       missingLines: lineRowProblems(reg).missing,
+      scope,
     },
     mutant
   );
@@ -664,8 +737,8 @@ async function selftest(): Promise<number> {
       sel.noSource.includes(NO_SOURCE)
     );
 
-    const run = async (m?: Mutant, at: string = root) => {
-      const r = await check(at, m, NOW);
+    const run = async (m?: Mutant, at: string = root, scope: ReadonlySet<string> | null = null) => {
+      const r = await check(at, m, NOW, scope);
       return { ...r, all: [...r.out, ...r.err].join('\n') };
     };
     const base = await run();
@@ -813,7 +886,7 @@ async function selftest(): Promise<number> {
             ],
           ],
         ])
-      ).some((p) => p.includes('key x is answered by a:x and b:x'))
+      ).some((p) => p.text.includes('key x is answered by a:x and b:x'))
     );
 
     // The grace is read from its config, and an unreadable one is red, not zero.
@@ -975,6 +1048,65 @@ async function selftest(): Promise<number> {
       rl.all
     );
 
+    // ---- a pins transaction's scope (worklist #2144097d): only a finding about a pin the transaction moves or holds is red ----
+    const outsideOf = (r: { out: string[] }, id: string) =>
+      r.out.some((l) => l.startsWith(`  outside this transaction: ${id}: `));
+    const scopedGreen = await run(undefined, root, new Set([DEFERRED]));
+    add(
+      'SCOPE: a stale and an unreachable pin outside the transaction do not refuse it, and both are printed as outside',
+      scopedGreen.rc === 0 &&
+        outsideOf(scopedGreen, STALE) &&
+        outsideOf(scopedGreen, DOWN) &&
+        scopedGreen.err.length === 0 &&
+        scopedGreen.outside?.length === 2,
+      scopedGreen.all
+    );
+    const scopedRed = await run(undefined, root, new Set([STALE]));
+    add(
+      'SCOPE (control): a stale pin inside the transaction is still red with its fix line, the unreachable one outside it printed',
+      scopedRed.rc === 1 &&
+        scopedRed.err.includes(`  fix: npm run pins -- bump ${STALE}`) &&
+        !scopedRed.err.some((l) => l.includes(DOWN)) &&
+        outsideOf(scopedRed, DOWN),
+      scopedRed.all
+    );
+    const scopedMajor = await run(undefined, majorsRoot, new Set([HELD, YOUNG]));
+    add(
+      'SCOPE: aged and undatable majors outside the transaction are printed as outside, and a held one inside it passes',
+      scopedMajor.rc === 0 &&
+        outsideOf(scopedMajor, AGED) &&
+        outsideOf(scopedMajor, UNDATED) &&
+        outsideOf(scopedMajor, LAZY_HOLD),
+      scopedMajor.all
+    );
+    const scopedMajorRed = await run(undefined, majorsRoot, new Set([AGED]));
+    add(
+      'SCOPE (control): an aged major inside the transaction is red',
+      scopedMajorRed.rc === 1 && scopedMajorRed.err.some((l) => l.startsWith(`  ${AGED} `)),
+      scopedMajorRed.all
+    );
+    const scopedDead = await run(undefined, dead, new Set([YOUNG]));
+    add(
+      'SCOPE: a dead hold line no pin of the transaction answers to is printed as outside, not red',
+      scopedDead.rc === 0 &&
+        scopedDead.out.some(
+          (l) => l.startsWith('  outside this transaction: hold file: ') && l.includes('not-a-pin')
+        ),
+      scopedDead.all
+    );
+    const scopedTypo = await run(undefined, root, new Set(['toolchain:no-such-pin']));
+    add(
+      'SCOPE: a scope naming a pin the registry does not hold is red, naming it',
+      scopedTypo.rc === 1 && scopedTypo.err.some((l) => l.includes('toolchain:no-such-pin')),
+      scopedTypo.all
+    );
+    add(
+      'SCOPE: the variable unset judges every pin; set and empty judges none of them red, comma list split and trimmed',
+      scopeOf({}) === null &&
+        scopeOf({ [SCOPE_ENV]: '' })?.size === 0 &&
+        [...(scopeOf({ [SCOPE_ENV]: ' a:x, b:y ,' }) ?? [])].join('|') === 'a:x|b:y'
+    );
+
     // Each mutant disables one property; the case that relies on it must then fail.
     const mjRun = async (m: Mutant) => run(m, majorsRoot);
     const caseFor: Record<Mutant, () => Promise<boolean>> = {
@@ -1006,6 +1138,11 @@ async function selftest(): Promise<number> {
         (await run('no-line-rows', rowless)).err.some((l) =>
           l.includes('needs a row "dockerhub:alpine"')
         ),
+      'scope-ignored': async () => (await run('scope-ignored', root, new Set([DEFERRED]))).rc === 0,
+      'scope-hides-all': async () =>
+        (await run('scope-hides-all', root, new Set([STALE]))).rc === 1,
+      'scope-silent': async () =>
+        outsideOf(await run('scope-silent', root, new Set([DEFERRED])), STALE),
     };
     for (const m of MUTANTS)
       add(
@@ -1064,11 +1201,26 @@ async function selftest(): Promise<number> {
   return summarizeControls(cases);
 }
 
+/** The transaction scope PINS_TXN_SCOPE names: null when the variable is unset (every pin is judged), an empty set when it names none. Pure. */
+function scopeOf(env: NodeJS.ProcessEnv): ReadonlySet<string> | null {
+  const raw = env[SCOPE_ENV];
+  if (raw === undefined) return null;
+  return new Set(
+    raw
+      .split(',')
+      .map((x) => x.trim())
+      .filter((x) => x !== '')
+  );
+}
+
 async function main(): Promise<number> {
   if (process.argv.includes('--selftest')) return selftest();
   registerDrivers(realDrivers());
-  const r = await check(REPO_ROOT);
+  const r = await check(REPO_ROOT, undefined, Date.now(), scopeOf(process.env));
   for (const l of r.out) console.log(l);
+  const outsideFile = process.env[OUTSIDE_ENV];
+  if (outsideFile && r.outside && r.outside.length > 0)
+    fs.appendFileSync(outsideFile, r.outside.map((l) => `check:ci-pin-freshness: ${l}\n`).join(''));
   // The app templates' references that name no version are no leaf (scripts/lib/pins/templates.ts), so nothing above judges them; they are named on every run instead of passing in silence.
   const { unpinned } = scanTemplates(readTemplateFiles(REPO_ROOT));
   console.log(

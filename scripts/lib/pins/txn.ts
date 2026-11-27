@@ -35,10 +35,21 @@ import { spawnSync } from 'node:child_process';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { type Fixture, keyOf, type Mutant, type PinPlan, type PlanStep } from './driver.js';
 import type { RepoPath } from './registry.js';
 
 // ---- running commands -----------------------------------------------------------------------
+
+/**
+ * THE GATE RUN IS SCOPED TO THE TRANSACTION (worklist #2144097d). A gate that judges every pin at once (check:ci-pin-freshness)
+ * reads PINS_TXN_SCOPE, the comma list of the pins this transaction moves or holds, and is red only on a finding about one of
+ * them; a red about any other pin is printed and appended to the file PINS_TXN_OUTSIDE names, one line per finding, and does
+ * not refuse the run. Before this, two simultaneously aged pins deadlocked: the hold of one was refused on the other's red,
+ * and the bump of the other on the first's.
+ */
+export const SCOPE_ENV = 'PINS_TXN_SCOPE';
+export const OUTSIDE_ENV = 'PINS_TXN_OUTSIDE';
 
 export interface CommandRecord {
   cmd: string;
@@ -46,12 +57,17 @@ export interface CommandRecord {
   rc: number;
 }
 
-/** Runs a shell command line; the fixture stub answers from the fixture instead. */
-export type Runner = (cmd: string, cwdAbs: string) => { rc: number; out: string };
+/** Runs a shell command line, with `env` added to this process's environment; the fixture stub answers from the fixture instead. */
+export type Runner = (
+  cmd: string,
+  cwdAbs: string,
+  env?: Readonly<Record<string, string>>
+) => { rc: number; out: string };
 
-export const realRunner: Runner = (cmd, cwdAbs) => {
+export const realRunner: Runner = (cmd, cwdAbs, env) => {
   const r = spawnSync('bash', ['-c', cmd], {
     cwd: cwdAbs,
+    ...(env ? { env: { ...process.env, ...env } } : {}),
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -61,9 +77,15 @@ export const realRunner: Runner = (cmd, cwdAbs) => {
 
 /** The selftest's runner: the first fixture command whose regex matches answers, writing its files. */
 export function fixtureRunner(root: string, fixture: Fixture): Runner {
-  return (cmd) => {
-    const hit = fixture.commands.find((c) => new RegExp(c.match).test(cmd));
+  return (cmd, _cwd, env = {}) => {
+    const hit = fixture.commands.find(
+      (c) =>
+        new RegExp(c.match).test(cmd) &&
+        Object.entries(c.env ?? {}).every(([k, re]) => new RegExp(re).test(env[k] ?? ''))
+    );
     if (!hit) return { rc: 127, out: `fixture: no command matches ${JSON.stringify(cmd)}` };
+    if (hit.outside && env[OUTSIDE_ENV])
+      fs.writeFileSync(env[OUTSIDE_ENV], hit.outside.map((l) => `${l}\n`).join(''));
     for (const [rel, text] of Object.entries(hit.writes ?? {})) {
       const abs = path.join(root, rel);
       fs.mkdirSync(path.dirname(abs), { recursive: true });
@@ -330,6 +352,8 @@ export interface TxnOptions {
    * clean manifest overwrote a peer's hand edit).
    */
   adopt?: readonly string[];
+  /** Pins the run unholds: their red afterwards is the run's expected result, so they are left out of the gate's scope (PINS_TXN_SCOPE). */
+  exposed?: readonly string[];
 }
 
 export interface RepoChange {
@@ -346,6 +370,8 @@ export interface TxnResult {
   commands: CommandRecord[];
   /** `failed` holds the gates the runner's event stream reported red; empty when it reported none. */
   gates: { ids: string[]; rc: number; failed: string[] } | null;
+  /** The reds a scoped gate printed about pins this run neither moves nor holds: reported, never a refusal. */
+  outside: string[];
   /** The pins of the run whose registry entry names no gate, so no gate judged them; printed and drafted, never silent. */
   ungated: string[];
   restored: string[];
@@ -464,6 +490,7 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
     failure: null,
     commands: [],
     gates: null,
+    outside: [],
     ungated: [],
     restored: [],
     leftAlone: [],
@@ -557,12 +584,19 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
   j.state = 'writing';
   saveJournal(dir, j);
 
-  const runOut = (cmd: string, cwdRel: string): { rc: number; out: string } => {
-    const r = o.runner(cmd, path.join(o.root, cwdRel));
+  const runOut = (
+    cmd: string,
+    cwdRel: string,
+    env?: Record<string, string>
+  ): { rc: number; out: string } => {
+    const r = o.runner(cmd, path.join(o.root, cwdRel), env);
     res.commands.push({ cmd, cwd: cwdRel, rc: r.rc });
+    const shown = Object.entries(env ?? {})
+      .map(([k, v]) => `${k}=${v} `)
+      .join('');
     fs.appendFileSync(
       path.join(dir, 'commands.log'),
-      `$ (cd ${cwdRel} && ${cmd})  # rc=${r.rc}\n${r.out}\n`
+      `$ (cd ${cwdRel} && ${shown}${cmd})  # rc=${r.rc}\n${r.out}\n`
     );
     return r;
   };
@@ -674,10 +708,26 @@ export function runTransaction(plans: PinPlan[], o: TxnOptions): TxnResult {
       // The runner's event stream names each red gate; its text output interleaves every gate's own stdout.
       const events = path.join(dir, 'gates.jsonl');
       fs.rmSync(events, { force: true });
+      const outside = path.join(dir, 'outside.txt');
+      fs.rmSync(outside, { force: true });
       const g = runOut(
         `npm run ci -- --only ${ids.join(',')} --events ${/^[\w@%+=:,./-]+$/.test(events) ? events : `'${events.replace(/'/g, `'\\''`)}'`}`,
-        '.'
+        '.',
+        o.mutant === 'unscoped-gate'
+          ? undefined
+          : {
+              [SCOPE_ENV]: plans
+                .map((p) => p.entry.id)
+                .filter((id) => !(o.exposed ?? []).includes(id))
+                .join(','),
+              [OUTSIDE_ENV]: outside,
+            }
       );
+      if (fs.existsSync(outside) && o.mutant !== 'hidden-outside')
+        res.outside = fs
+          .readFileSync(outside, 'utf8')
+          .split('\n')
+          .filter((l) => l.trim() !== '');
       const v = gateVerdicts(
         g.out,
         fs.existsSync(events) ? fs.readFileSync(events, 'utf8') : '',
