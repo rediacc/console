@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T09:58:35.541Z",
+  "generatedAt": "2026-11-27T10:04:41.226Z",
   "legs": [
     {
       "index": 1,
@@ -78,6 +78,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_license_seed.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_session_teardown.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_vm_check_winclient.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_configs.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_leak.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_workflow.py",

@@ -1197,7 +1197,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/dev | 14 | .py 14 |
 | .ci/rediacc_ci/diagnostics | 3 | .py 3 |
 | .ci/rediacc_ci/docker | 5 | .py 5 |
-| .ci/rediacc_ci/drills | 25 | .py 25 |
+| .ci/rediacc_ci/drills | 26 | .py 26 |
 | .ci/rediacc_ci/drills/privdrop-probe | 1 | (none) 1 |
 | .ci/rediacc_ci/enterprise | 13 | .py 13 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
@@ -1220,7 +1220,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 16 | .py 16 |
 | .ci/rediacc_ci/testrun/onprem_suites | 8 | .py 8 |
-| .ci/rediacc_ci/tests | 673 | .py 673 |
+| .ci/rediacc_ci/tests | 674 | .py 674 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

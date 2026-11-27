@@ -1,10 +1,13 @@
 """`npm run vm:check`: prove the renet side (the repo shell, sync, SFTP and VS Code paths of `rdc` on the ops VMs) and the account side (private/account's suites and the account drills against a fresh dev gateway), and write the receipt the push guard reads.
 
     npm run vm:check [-- --changed] [--os <image>] [--parent <grand>] [--machine <name>] [--wait <s>] [--selftest] [--keep-work]
+    npm run vm:check -- --windows-client <ip> [--rdc-exe <path>]
     npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
 
 AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); a running worker whose recipe sets VM_DSK=<N> must have a root disk of N GiB or more (`_undersized`, one ssh per VM), else the leg is NOT_VERIFIED `fleet-disk-too-small` naming `ops down` and the recipe, since `ops up` leaves a running VM alone and, like P3's `fleet-os-mismatch`, nothing here tears a running fleet down; A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
+
+TIER B. `--windows-client <ip>` (agent/plans/PLAN-windows-lane.md D14) routes P3's `machine scan-keys`, V1.5's sync round trip, V1.6's `vscode connect --url-only`, `term connect -c` and `doctor` through a Windows client VM as extra `WC-` rows beside the Linux rows, with `rdc.exe` from `--rdc-exe <path>` or the staged bundle on `node`; it makes the renet phase required and does not combine with `--changed` or `--only`. The seam, its staging, its verdicts and its teardown are in `rediacc_ci.drills.vm_check_winclient`; the hooks here are the client's preflight at the top of `_battery`, WC-P3 after P3, the other rows after V1.7, `complete` at the end of `_battery`, and the client's teardown in `_release_forks`.
 
 `--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
@@ -77,6 +80,7 @@ from rediacc_ci.drills import (
     session_teardown,
     tenant_isolation,
     upgrade_converge,
+    vm_check_winclient,
     vm_ssh,
     wire,
 )
@@ -1715,6 +1719,9 @@ class Options:
     paths: tuple[str, ...] = ()
     # `--commit <sha>` (agent/plans/PLAN-push-decoupling.md D1.4) runs from the kept ci:quick clone sitting at that ancestor of HEAD, with the clone's own builds and gateway record, and files the receipt archive under the pinned tree.
     commit: str = ""
+    # `--windows-client <ip>` (Tier B, PLAN-windows-lane D14) routes the `vm_check_winclient.ROWS` calls through that Windows VM; `--rdc-exe <path>` stages that rdc.exe there instead of the bundle.
+    windows_client: str = ""
+    rdc_exe: str = ""
 
 
 def only_step_ids() -> frozenset[str]:
@@ -1743,7 +1750,30 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
     parser.add_argument("--paths", action="append", default=[])
     parser.add_argument("--commit", default="")
+    parser.add_argument("--windows-client", dest="windows_client", default="")
+    parser.add_argument("--rdc-exe", dest="rdc_exe", default="")
     ns = parser.parse_args(rest)
+    if ns.windows_client:
+        try:
+            ns.windows_client = vm_check_winclient.parse_ip(ns.windows_client)
+        except ValueError as exc:
+            parser.error("--windows-client needs a literal IPv4 address: %s" % exc)
+        if ns.changed:
+            parser.error(
+                "--windows-client rides the whole renet battery, so it does not combine with --changed"
+            )
+        if ns.only:
+            parser.error(
+                "--windows-client does not combine with --only: its rows merge into no receipt"
+            )
+    if ns.rdc_exe:
+        if not ns.windows_client:
+            parser.error(
+                "--rdc-exe stages a CLI on the Windows client, so it needs --windows-client"
+            )
+        if not os.path.isfile(ns.rdc_exe):
+            parser.error("--rdc-exe names no file: %s" % ns.rdc_exe)
+        ns.rdc_exe = os.path.abspath(ns.rdc_exe)
     ns.commit = ns.commit.strip()
     if ns.commit and ns.dry_run:
         parser.error("--commit pins a run; --dry-run reads the diff and judges nothing")
@@ -1785,6 +1815,8 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         dry_run=ns.dry_run,
         paths=paths_,
         commit=ns.commit,
+        windows_client=ns.windows_client,
+        rdc_exe=ns.rdc_exe,
     )
 
 
@@ -1920,6 +1952,12 @@ class VmCheck:
         self.started_mono = 0.0
         self.b_stat = ""
         self.tags: tuple[str, str] = ("", "")
+        # Tier B's seam (`--windows-client`), None on every other run.
+        self.winclient = (
+            vm_check_winclient.WindowsClient(self, opts.windows_client, opts.rdc_exe)
+            if opts.windows_client
+            else None
+        )
 
     # ------------------------------------------------------------------ output
 
@@ -2409,6 +2447,10 @@ class VmCheck:
 
     def _battery(self) -> None:
         """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
+        if self.winclient:
+            # Tier B rides fork A of the renet battery, so a run that asks for it proves that phase too; the client must answer before any fleet work.
+            self.phases[SIDE_RENET]["required"] = True
+            self.winclient.preflight()
         renet = self.phases[SIDE_RENET]["required"]
         account = self.phases[SIDE_ACCOUNT]["required"]
         self.say(
@@ -2439,6 +2481,8 @@ class VmCheck:
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        if self.winclient:
+            self.winclient.p3()
         self.p3_leftovers()
         # A2 runs BEFORE the join, beside the A1 worker: the drills need P4, the gateway and the fleet, not the suites' results. The suites are in-memory vitest and `tsc --noEmit` (no port, no database file, no write to the worker), and the preparation lock orders any rebuild a drill's `./rdc.sh` needs behind them. A red A1 still ends the run, now after A2 instead of before it; its rows are recorded at the join, so they follow A2's.
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
@@ -2459,9 +2503,13 @@ class VmCheck:
         self.v1_5_sync()
         self.v1_6_vscode()
         self.v1_7_sftp()
+        if self.winclient:
+            self.winclient.v_rows()
         self.u1_converge()
         for step_id, _deps, _fn in EXTRA_RENET_STEPS:
             self.extra_fns[step_id](self)
+        if self.winclient:
+            self.winclient.complete()
 
     def _steps_only(self) -> None:
         """A `--only <ids>` run: the infra chain to reach the worker, then just the named steps (and their declared prerequisites). The verdict path never writes receipt.json for it (`_finish`)."""
@@ -4229,6 +4277,8 @@ class VmCheck:
             res = self.rdc("vscode", "cleanup", "-c", self.connection, refuse=False)
             if res.rc != 0:
                 leftovers.append("vscode connection %s (cleanup rc=%d)" % (self.connection, res.rc))
+        if self.winclient:
+            leftovers.extend(self.winclient.teardown())
         delete_errors: dict[str, str] = {}
         for fork in self.forks:
             res = self.rdc("repo", "delete", self.ref(fork["tag"]), "-y", refuse=False)

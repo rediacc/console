@@ -92,6 +92,7 @@
         ".ci/rediacc_ci/drills/universe.py": ["account"],
         ".ci/rediacc_ci/drills/transfer.py": ["account"],
         ".ci/rediacc_ci/drills/vm_check.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/vm_check_winclient.py": ["renet"],
         ".ci/rediacc_ci/drills/lib.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/upgrade_converge.py": ["renet"],
         ".ci/rediacc_ci/drills/tenant_isolation.py": ["renet"],
