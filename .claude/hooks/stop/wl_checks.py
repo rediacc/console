@@ -1764,6 +1764,30 @@ def claimed_text(text):
     return "\n".join(keep)
 
 
+# The phrases a brief uses to present an item as the task's OWN work: `Item #<id>`, `Your item is #<id>`, `fix #<id>`, `take #<id>` and kin, at the start of a line (bullets, quotes and heading marks aside).
+_OWN_WORK = re.compile(
+    r"^[\s>*_`-]*(?:#+\s*)?(?:(?:your\s+(?:item|task)\s+is)|item|fix|take|own|implement|write|watch)\s+#[0-9a-f]{8}(?:[0-9a-f]{4})?\b",
+    re.IGNORECASE,
+)
+# How many leading non-blank lines of a brief may carry the claim: the brief opens with its own item, later lines are context.
+OWN_WORK_LINES = 4
+
+
+def own_claims(text):
+    """`text` reduced to the lines that present ONE item as the task's own work, so the auto-lease reads only those.
+
+    A line claims when it starts with an `item`/`fix`/`take`/`own`/`implement`/`write`/`watch` phrase followed by `#<id>`, names exactly one distinct item (a line listing several is context, not a claim), carries no `runner-hold:` token (a hold is a standing marker, never a task's work), and sits among the first OWN_WORK_LINES non-blank lines of the brief. Found 2026-11-27: #6c568996 (`runner-hold:prod`), #f749a33e and #c045fea0 were auto-leased to a survey agent whose prompt only cited their ids and tokens inside lists.
+    """
+    lines = [ln.strip() for ln in str(text or "").splitlines() if ln.strip()][:OWN_WORK_LINES]
+    return "\n".join(
+        line
+        for line in lines
+        if _OWN_WORK.match(line)
+        and len(wl_leasehelp.item_refs(line)) == 1
+        and "runner-hold:" not in line
+    )
+
+
 def review_items(recs, live_worker_ids):
     """{item_id: (state, text)} for wl_review.branch_state, with a `[>]` item counted as leased only while its worker is verified live.
 
@@ -1792,9 +1816,9 @@ def claiming_prompts(live_bg, metas, read_only, first_prompt):
         if task.get("type") == "subagent" and tid in metas:
             if metas[tid]["type"] in read_only:
                 continue
-            out[tid] = claimed_text(first_prompt(metas[tid]["jsonl"]))
+            out[tid] = own_claims(claimed_text(first_prompt(metas[tid]["jsonl"])))
         elif task.get("type") == "shell" and tid:
-            out[tid] = claimed_text(str(task.get("description") or ""))
+            out[tid] = own_claims(claimed_text(str(task.get("description") or "")))
     return out
 
 
@@ -3940,6 +3964,7 @@ def _stop_setup(ns):
         )
         if _auto:
             _until = C.stamp_ahead(wl_leasehelp.AUTO_LEASE_MIN)[:16] + "Z"
+            by_id_rec = {r["id"]: r for r in fold.items}
             for _rid, _tid in _auto:
                 S.lease_item(
                     worklist,
@@ -3947,7 +3972,7 @@ def _stop_setup(ns):
                     _rid,
                     _until,
                     _tid,
-                    "auto-lease: named by live task %s" % _tid,
+                    wl_leasehelp.auto_lease_note(_tid, by_id_rec.get(_rid)),
                     worker_verified=True,
                 )
             fold = S.load(worklist, sync=False)

@@ -91,7 +91,7 @@ metas = {
     "ro1": {"type": "Explore", "jsonl": "ro1"},
     "wr1": {"type": "general-purpose", "jsonl": "wr1"},
 }
-prompts = {"ro1": "survey #%s" % A, "wr1": "write #%s" % B}
+prompts = {"ro1": "Item #%s: survey it" % A, "wr1": "write #%s" % B}
 live = [
     {"id": "ro1", "type": "subagent"},
     {"id": "wr1", "type": "subagent"},
@@ -104,6 +104,89 @@ check("a shell description is read", "#%s" % C in got.get("sh1", ""), True)
 check("the read-only agent leases nothing", leased(got), [B, C])
 got_all = K.claiming_prompts(live, metas, frozenset(), lambda p: prompts[p])
 check("control: the same agent as a writer type would lease its item", leased(got_all), [A, B, C])
+
+# ---- own_claims (2026-11-27): only an `Item #<id>` style phrase that presents ONE item as the task's own work leases it.
+H = "d4d4d4d4"
+SURVEY_BRIEF = """# Survey brief
+Survey the Promoted plans. Related items: #%s, #%s, #%s (do not work them).
+The hold #%s runner-hold:prod -- after the edge release stays open.
+Context: see #%s for the last note.
+The survey writes one file.
+It reports every group.
+Item #%s is mentioned last.
+""" % (A, B, C, H, B, A)
+check(
+    "own_claims: ids cited in lists, holds and context do not claim",
+    LH.item_refs(K.own_claims(K.claimed_text(SURVEY_BRIEF))),
+    [],
+)
+check(
+    "own_claims: `Item #<id>` as the first line claims it",
+    LH.item_refs(K.own_claims("Item #%s: narrow the matcher.\nSee #%s and #%s." % (A, B, C))),
+    [A],
+)
+check(
+    "own_claims: a bulleted `fix #<id>` claims it",
+    LH.item_refs(K.own_claims("# Brief\n- Fix #%s now" % A)),
+    [A],
+)
+check(
+    "own_claims: a line listing two items after the verb claims neither",
+    LH.item_refs(K.own_claims("Take #%s and #%s" % (A, B))),
+    [],
+)
+check(
+    "own_claims: a claim phrase past the first lines is context",
+    LH.item_refs(K.own_claims("one\ntwo\nthree\nfour\nItem #%s" % A)),
+    [],
+)
+check(
+    "own_claims: a runner-hold line never claims",
+    LH.item_refs(K.own_claims("Item #%s runner-hold:prod -- later" % H)),
+    [],
+)
+live_survey = [{"id": "sv1", "type": "subagent"}]
+sv_metas = {"sv1": {"type": "general-purpose", "jsonl": "sv1"}}
+sv = K.claiming_prompts(live_survey, sv_metas, frozenset(), lambda _p: SURVEY_BRIEF)
+check("a survey brief citing ids in lists leases only what it presents as its own", leased(sv), [])
+sv_own = K.claiming_prompts(
+    live_survey, sv_metas, frozenset(), lambda _p: "Item #%s is yours.\n" % A + SURVEY_BRIEF
+)
+check("control: the same brief opening with its own item leases that item", leased(sv_own), [A])
+hold_pool = [dict(rec(H), text="runner-hold:prod -- after the edge release"), rec(A)]
+check(
+    "a runner-hold item is never auto-leased",
+    sorted(
+        i
+        for i, _t in LH.auto_lease_candidates(
+            hold_pool, lambda _r: True, {"t": "#%s #%s" % (H, A)}, set()
+        )
+    ),
+    [A],
+)
+check(
+    "control: the same text without the hold token is leased",
+    sorted(
+        i
+        for i, _t in LH.auto_lease_candidates(
+            [dict(rec(H), text="prod after the edge release")],
+            lambda _r: True,
+            {"t": "#%s" % H},
+            set(),
+        )
+    ),
+    [H],
+)
+check(
+    "auto_lease_note keeps the previous LATEST note",
+    LH.auto_lease_note("t1", {"lastnote": "waiting on edge"}),
+    "auto-lease: named by live task t1; previous: waiting on edge",
+)
+check(
+    "control: no previous note leaves the bare marker",
+    LH.auto_lease_note("t1", {"lastnote": ""}),
+    "auto-lease: named by live task t1",
+)
 
 # ---- review_items: an open finding named by a [>] item waits only on a VERIFIED live worker.
 F = "0228ca2d.1"

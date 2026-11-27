@@ -158,10 +158,23 @@ def first_prompt(jsonl):
     return ""
 
 
+# A `runner-hold:<target> -- <reason>` item is a standing marker the lead keeps open; no task works it, so no task is leased it.
+RUNNER_HOLD = re.compile(r"^\s*runner-hold:", re.IGNORECASE)
+
+
+def auto_lease_note(task_id, rec):
+    """The lease note of an auto-lease: the marker, then the item's previous LATEST note when it has one, because the store replaces `lastnote` with the lease note (2026-11-27: #c045fea0 lost its last note that way)."""
+    marker = "auto-lease: named by live task %s" % task_id
+    prev = str((rec or {}).get("lastnote") or "").strip()
+    if not prev or marker in prev:
+        return marker
+    return "%s; previous: %s" % (marker, prev)
+
+
 def auto_lease_candidates(items, owned, named, live_ids, graph=None):
     """[(item_id, task_id)] to lease: an item owned by this session that is open (and not waiting) or leased to a worker no longer live, named by exactly one live task. With a plan `graph`, an item whose linked plan has unfinished dependencies is skipped, tracked or not: leasing is the start, and the verbs refuse it.
 
-    `items` is the fold's item list, `owned(rec)` the ownership predicate, `named` {task_id: text naming items}, `live_ids` the live worker ids. An item named by two tasks is left alone: which one is working it is not a fact the hook has.
+    A `runner-hold:` item is never leased. `items` is the fold's item list, `owned(rec)` the ownership predicate, `named` {task_id: text naming items}, `live_ids` the live worker ids. An item named by two tasks is left alone: which one is working it is not a fact the hook has.
     """
     by_id = {r["id"]: r for r in items}
     claims: dict[str, set[str]] = {}
@@ -173,7 +186,7 @@ def auto_lease_candidates(items, owned, named, live_ids, graph=None):
     out = []
     for rid, tids in sorted(claims.items()):
         rec = by_id[rid]
-        if len(tids) != 1 or not owned(rec):
+        if len(tids) != 1 or not owned(rec) or RUNNER_HOLD.match(rec.get("text") or ""):
             continue
         tid = next(iter(tids))
         deps = PD.item_deps(graph, rec.get("text") or "", items)
