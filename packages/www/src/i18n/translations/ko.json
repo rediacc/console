@@ -2485,7 +2485,7 @@
           "community": {
             "floatingLicenses": "4",
             "jobsPerMonth": "1,000",
-            "repositories": "무제한",
+            "repositories": "5",
             "repoSize": "20 GB",
             "usersTeams": "무제한"
           },

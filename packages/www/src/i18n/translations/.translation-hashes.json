@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 6074,
-    "sourceCommit": "bae6c8c16fe03b7aca3a36b0fd6dc08d6bd1d97e"
+    "sourceCommit": "817730f1c4108972c3aab03e2491ab9ed09d7492"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -1388,7 +1388,7 @@
     "pages.pricing.technicalSummary.values.business.usersTeams": "5e612b47",
     "pages.pricing.technicalSummary.values.community.floatingLicenses": "83dcefb7",
     "pages.pricing.technicalSummary.values.community.jobsPerMonth": "237750ea",
-    "pages.pricing.technicalSummary.values.community.repositories": "5e612b47",
+    "pages.pricing.technicalSummary.values.community.repositories": "84b12bae",
     "pages.pricing.technicalSummary.values.community.repoSize": "b5ef2114",
     "pages.pricing.technicalSummary.values.community.usersTeams": "5e612b47",
     "pages.pricing.technicalSummary.values.enterprise.floatingLicenses": "f22813ad",
