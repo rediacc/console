@@ -76,7 +76,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, git_isolated, plant
-from rediacc_ci.quality import env_doc
+from rediacc_ci.quality import env_ast, env_doc
 
 # The registry is the `worklist` section of the one environment registry document.
 REGISTRY_REL = env_doc.DOC_REL
@@ -125,9 +125,11 @@ def scan_python(rel, source):
     Writes are excluded: `os.environ["X"] = v` is a test setting the variable,
     not code depending on it, and counting it would make a name that only the test corpus assigns look alive. `del os.environ["X"]` is the same exclusion under a different AST node: a test tearing the variable back down is not a read either, and left uncaught it misreports as a REQUIRED subscript read.
     """
-    tree = ast.parse(source, filename=rel)
+    tree = env_ast.parse(source, rel)
+    if not env_ast.may_read_env(source):
+        return []
     written = set()
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Assign):
             written.update(
                 id(target) for target in node.targets if isinstance(target, ast.Subscript)
@@ -135,7 +137,7 @@ def scan_python(rel, source):
         elif isinstance(node, ast.Delete):
             written.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
     out = []
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Call):
             func = node.func
             attr = getattr(func, "attr", None) or getattr(func, "id", None)
@@ -180,9 +182,9 @@ _ENV_METHODS = frozenset({"env"})
 
 def scan_env_any(source, rel="<sealed>"):
     """[(line, spelling)] for every environment access in one Python source, of ANY name."""
-    tree = ast.parse(source, filename=rel)
+    tree = env_ast.parse(source, rel)
     out = []
-    for node in ast.walk(tree):
+    for node in env_ast.all_nodes(tree):
         if isinstance(node, ast.Attribute) and node.attr in _ENV_ATTRS:
             out.append((node.lineno, ast.unparse(node)))
         elif isinstance(node, ast.Name) and node.id in _ENV_ATTRS:
@@ -204,7 +206,7 @@ def scan_env_any(source, rel="<sealed>"):
 
 def module_literals(source, rel="<sealed>"):
     """{name: ast value node} for every module-level `NAME = ...` assignment."""
-    tree = ast.parse(source, filename=rel)
+    tree = env_ast.parse(source, rel)
     out = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):

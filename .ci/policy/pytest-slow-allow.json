@@ -847,26 +847,6 @@
       "reason": "measured 2026-11-21: 10.9 s in PR 605 CI run 44884489459 (Quality / Pytest 4/6, CI runner); the landing-store control suite builds real two-tree repositories; drop the entry once it runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_the_one_gate_is_green_on_the_real_tree_and_prints_each_section",
-      "reason": "2026-11-27: 26-27 s each in ci:quick run 14 with the machine idle, 27 s alone; the case drives the real check:ci-env-registry gate (`python -m rediacc_ci.quality.env_registry`) end to end over the real tracked tree, and the gate's cost is its AST scan of the ~2,450 tracked Python modules (cProfile: ast.walk is 60 of 94 s, in python_env_registry.scan_module, worklist_env_registry.scan_python and env_manifest.names_from_py), so the test cannot be faster without a faster gate and a mocked tree would void its point; drop the entry once the gate scans under 5 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_control_an_unmutated_copy_through_the_override_stays_green",
-      "reason": "2026-11-27: 26-27 s each in ci:quick run 14 with the machine idle, 27 s alone; the case drives the real check:ci-env-registry gate (`python -m rediacc_ci.quality.env_registry`) end to end over the real tracked tree, and the gate's cost is its AST scan of the ~2,450 tracked Python modules (cProfile: ast.walk is 60 of 94 s, in python_env_registry.scan_module, worklist_env_registry.scan_python and env_manifest.names_from_py), so the test cannot be faster without a faster gate and a mocked tree would void its point; drop the entry once the gate scans under 5 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_an_orphan_row_reds_the_one_gate_in_every_section",
-      "reason": "2026-11-27: 26-27 s each in ci:quick run 14 with the machine idle, 27 s alone; the case drives the real check:ci-env-registry gate (`python -m rediacc_ci.quality.env_registry`) end to end over the real tracked tree, and the gate's cost is its AST scan of the ~2,450 tracked Python modules (cProfile: ast.walk is 60 of 94 s, in python_env_registry.scan_module, worklist_env_registry.scan_python and env_manifest.names_from_py), so the test cannot be faster without a faster gate and a mocked tree would void its point; drop the entry once the gate scans under 5 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_an_unregistered_worklist_read_reds_the_one_gate",
-      "reason": "2026-11-27: 26-27 s each in ci:quick run 14 with the machine idle, 27 s alone; the case drives the real check:ci-env-registry gate (`python -m rediacc_ci.quality.env_registry`) end to end over the real tracked tree, and the gate's cost is its AST scan of the ~2,450 tracked Python modules (cProfile: ast.walk is 60 of 94 s, in python_env_registry.scan_module, worklist_env_registry.scan_python and env_manifest.names_from_py), so the test cannot be faster without a faster gate and a mocked tree would void its point; drop the entry once the gate scans under 5 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_an_unregistered_read_reds_the_one_gate",
-      "reason": "2026-11-27: 26-27 s each in ci:quick run 14 with the machine idle, 27 s alone; the case drives the real check:ci-env-registry gate (`python -m rediacc_ci.quality.env_registry`) end to end over the real tracked tree, and the gate's cost is its AST scan of the ~2,450 tracked Python modules (cProfile: ast.walk is 60 of 94 s, in python_env_registry.scan_module, worklist_env_registry.scan_python and env_manifest.names_from_py), so the test cannot be faster without a faster gate and a mocked tree would void its point; drop the entry once the gate scans under 5 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_record_paths::test_the_bare_run_still_passes_on_the_real_tree",
       "reason": "2026-11-27: 10.7 s in ci:quick run 14, 10.5 s alone; the no-argument run of check:ci-record-paths judges both modes with a full scan of the tracked tree, the same cost its three listed siblings in this file carry, and the test's point is that the real bare run passes; drop the entry once the gate scans under 5 s"
     },

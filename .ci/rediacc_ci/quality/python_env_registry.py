@@ -91,7 +91,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, git_isolated, plant
-from rediacc_ci.quality import env_doc
+from rediacc_ci.quality import env_ast, env_doc
 
 # The baseline is the `python_reads` section of the one environment registry. NOT reached through `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this file is deliberately not policy (see the docstring).
 BASELINE_REL = env_doc.DOC_REL
@@ -168,7 +168,7 @@ def module_index(rels) -> dict[str, str]:
 def import_aliases(tree: ast.Module) -> dict[str, str]:
     """Local name -> dotted module it refers to, for `X.CONST` resolution."""
     out: dict[str, str] = {}
-    for node in ast.walk(tree):
+    for node in env_ast.imports(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 out[alias.asname or alias.name] = "%s.%s" % (node.module, alias.name)
@@ -193,7 +193,7 @@ def env_key_nodes(tree: ast.Module):
     argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the two exclusions have to agree or the registry says a variable is an input depending on which spelling the harness happens to use.
     """
     not_a_read = set()
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Assign):
             not_a_read.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
         elif isinstance(node, (ast.AugAssign, ast.AnnAssign)) and isinstance(
@@ -202,7 +202,7 @@ def env_key_nodes(tree: ast.Module):
             not_a_read.add(id(node.target))
         elif isinstance(node, ast.Delete):
             not_a_read.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Call):
             func = node.func
             attr = getattr(func, "attr", None) or getattr(func, "id", None)
@@ -233,8 +233,13 @@ def env_key_nodes(tree: ast.Module):
 def scan_module(rel: str, tree: ast.Module, consts_by_rel, index) -> set[str]:
     """The NAME set one module contributes. Opaque names carry a `*` prefix."""
     consts = consts_by_rel.get(rel, {})
-    aliases = import_aliases(tree)
+    alias_table: list[dict[str, str]] = []
     here = str(pathlib.PurePosixPath(rel).parent)
+
+    def aliases_of() -> dict[str, str]:
+        if not alias_table:
+            alias_table.append(import_aliases(tree))
+        return alias_table[0]
 
     def resolve(node: ast.expr) -> str | None:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -242,7 +247,7 @@ def scan_module(rel: str, tree: ast.Module, consts_by_rel, index) -> set[str]:
         if isinstance(node, ast.Name):
             return consts.get(node.id)
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-            target = index.get(aliases.get(node.value.id, ""))
+            target = index.get(aliases_of().get(node.value.id, ""))
             if target is not None:
                 return consts_by_rel.get(target, {}).get(node.attr)
             sibling = "%s/%s.py" % (here, node.value.id)
@@ -300,6 +305,7 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
                 "--allow-new argument would be ambiguous, so there is no verdict." % rel
             )
     trees: dict[str, ast.Module] = {}
+    may_read: set[str] = set()
     for rel in rels:
         try:
             source = (root / rel).read_text(encoding="utf-8", errors="surrogateescape")
@@ -308,8 +314,10 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
                 "%s is tracked but cannot be read (%s), so it cannot be scanned and "
                 "this gate will not report a clean tree around it" % (rel, exc)
             ) from exc
+        if env_ast.may_read_env(source):
+            may_read.add(rel)
         try:
-            trees[rel] = ast.parse(source, filename=rel)
+            trees[rel] = env_ast.parse(source, rel)
         except SyntaxError as exc:
             raise RefusalError(
                 "%s does not parse (%s), so its environment reads are invisible and "
@@ -319,6 +327,8 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
     index = module_index(trees)
     derived: dict[str, list[str]] = {}
     for rel, tree in trees.items():
+        if rel not in may_read:
+            continue
         names = scan_module(rel, tree, consts_by_rel, index)
         if names:
             derived[rel] = sorted(names)

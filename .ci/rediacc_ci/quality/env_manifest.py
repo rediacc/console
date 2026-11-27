@@ -91,7 +91,7 @@ import tempfile
 
 from rediacc_ci import log, paths, runtmp
 from rediacc_ci.controls import Controls
-from rediacc_ci.quality import env_doc
+from rediacc_ci.quality import env_ast, env_doc
 from rediacc_ci.quality import worklist_env_registry as wer
 
 MANIFEST_REL = env_doc.DOC_REL
@@ -251,7 +251,9 @@ def names_from_py(text: str) -> set[str]:
 
     A file that does not parse RAISES. It is not silently skipped and it is not quietly regexed: `derive_sources` turns the raise into a finding, because a Python file this reader cannot read is a hole in the corpus and "unknown" is not "fine".
     """
-    tree = ast.parse(text)
+    tree = env_ast.parse(text)
+    if not env_ast.may_read_env(text):
+        return set()
     consts: dict[str, str] = {}
     for stmt in tree.body:
         if (
@@ -263,7 +265,7 @@ def names_from_py(text: str) -> set[str]:
         ):
             consts[stmt.targets[0].id] = stmt.value.value
     out = set()
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         arg = _environ_arg(node)
         if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
             out.add(arg.value)
