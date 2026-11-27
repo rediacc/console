@@ -1853,7 +1853,8 @@
         "completed": "VM kümesi başarıyla yok edildi",
         "description": "VM kümesini yok et",
         "failed": "VM kümesi yok etme işlemi başarısız oldu",
-        "starting": "VM kümesi yok ediliyor..."
+        "starting": "VM kümesi yok ediliyor...",
+        "windowsClients": "Windows istemci VM'leri de siliniyor: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Sanallaştırma ön koşullarını kurar",
@@ -1882,7 +1883,8 @@
         "completed": "VM kümesi başarıyla oluşturuldu",
         "description": "VM kümesini yerel olarak oluştur",
         "failed": "VM kümesi oluşturma başarısız oldu",
-        "starting": "VM kümesi oluşturma başlatılıyor..."
+        "starting": "VM kümesi oluşturma başlatılıyor...",
+        "windowsInvalid": "--windows virgülle ayrılmış bir VM kimliği listesi bekler (örneğin 31 veya 31,32), alınan değer \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Makinede önceden konumlandırılmış sunucu tarball yolu (ağ dışı kurulumlar için)",
     "vscodeServerProvider": "Tarayıcı VS Code sunucu uygulaması (openvscode, code-server)",
     "yes": "Onay istemini atla",
-    "confirmGrand": "Bir grand deposundaki yıkıcı değişikliği, reddin istediği adı tekrarlayarak onaylar"
+    "confirmGrand": "Bir grand deposundaki yıkıcı değişikliği, reddin istediği adı tekrarlayarak onaylar",
+    "opsWindows": "Hazırlanacak Windows istemci VM kimlikleri (virgülle ayrılmış, ayrılmış aralık 31-39; VM_WINDOWS değerini ayarlar)"
   },
   "prompts": {
     "cancelled": "İptal edildi",

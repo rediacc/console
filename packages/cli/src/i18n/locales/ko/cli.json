@@ -1853,7 +1853,8 @@
         "completed": "VM 클러스터가 성공적으로 삭제되었습니다",
         "description": "VM 클러스터를 삭제합니다",
         "failed": "VM 클러스터 삭제에 실패했습니다",
-        "starting": "VM 클러스터 삭제 중..."
+        "starting": "VM 클러스터 삭제 중...",
+        "windowsClients": "Windows 클라이언트 VM도 함께 삭제합니다: {{vms}}"
       },
       "setup": {
         "descriptionShort": "가상화 사전 요건을 설치합니다",
@@ -1882,7 +1883,8 @@
         "completed": "VM 클러스터가 성공적으로 프로비저닝되었습니다",
         "description": "로컬에서 VM 클러스터를 프로비저닝합니다",
         "failed": "VM 클러스터 프로비저닝에 실패했습니다",
-        "starting": "VM 클러스터 프로비저닝 시작 중..."
+        "starting": "VM 클러스터 프로비저닝 시작 중...",
+        "windowsInvalid": "--windows에는 쉼표로 구분된 VM ID 목록이 필요합니다(예: 31 또는 31,32). 받은 값: \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "머신에 미리 준비된 서버 tarball 경로 (에어갭 설치용)",
     "vscodeServerProvider": "브라우저용 VS Code 서버 구현체 (openvscode, code-server)",
     "yes": "확인 프롬프트 건너뜀",
-    "confirmGrand": "거부 메시지가 요청한 이름을 다시 입력해 grand 저장소의 파괴적 변경을 확인합니다"
+    "confirmGrand": "거부 메시지가 요청한 이름을 다시 입력해 grand 저장소의 파괴적 변경을 확인합니다",
+    "opsWindows": "프로비저닝할 Windows 클라이언트 VM ID(쉼표로 구분, 예약 범위 31-39, VM_WINDOWS 설정)"
   },
   "prompts": {
     "cancelled": "취소됨",

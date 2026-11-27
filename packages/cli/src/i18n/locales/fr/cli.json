@@ -1853,7 +1853,8 @@
         "completed": "Cluster VM détruit avec succès",
         "description": "Détruire le cluster VM",
         "failed": "La destruction du cluster VM a échoué",
-        "starting": "Destruction du cluster VM en cours..."
+        "starting": "Destruction du cluster VM en cours...",
+        "windowsClients": "Les VM clientes Windows sont également détruites : {{vms}}"
       },
       "setup": {
         "descriptionShort": "Installer les prérequis de virtualisation",
@@ -1882,7 +1883,8 @@
         "completed": "Cluster VM provisionné avec succès",
         "description": "Provisionner un cluster VM localement",
         "failed": "Le provisionnement du cluster VM a échoué",
-        "starting": "Démarrage du provisionnement du cluster VM..."
+        "starting": "Démarrage du provisionnement du cluster VM...",
+        "windowsInvalid": "--windows attend une liste d'identifiants de VM séparés par des virgules (par exemple 31 ou 31,32), reçu « {{value}} »"
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Chemin de l'archive du serveur pré-installée sur la machine (installations hors ligne)",
     "vscodeServerProvider": "Implémentation du serveur VS Code navigateur (openvscode, code-server)",
     "yes": "Ignorer l'invite de confirmation",
-    "confirmGrand": "Confirmer une modification destructive d'un dépôt grand en répétant le nom demandé par le refus"
+    "confirmGrand": "Confirmer une modification destructive d'un dépôt grand en répétant le nom demandé par le refus",
+    "opsWindows": "Identifiants des VM clientes Windows à provisionner (séparés par des virgules, plage réservée 31-39 ; définit VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Annulé",

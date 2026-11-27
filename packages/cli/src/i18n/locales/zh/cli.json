@@ -1853,7 +1853,8 @@
         "completed": "VM 集群已成功销毁",
         "description": "销毁 VM 集群",
         "failed": "VM 集群销毁失败",
-        "starting": "正在销毁 VM 集群..."
+        "starting": "正在销毁 VM 集群...",
+        "windowsClients": "同时销毁 Windows 客户端虚拟机:{{vms}}"
       },
       "setup": {
         "descriptionShort": "安装虚拟化所需的前置组件",
@@ -1882,7 +1883,8 @@
         "completed": "VM 集群创建成功",
         "description": "在本地创建 VM 集群",
         "failed": "VM 集群创建失败",
-        "starting": "正在开始创建 VM 集群..."
+        "starting": "正在开始创建 VM 集群...",
+        "windowsInvalid": "--windows 需要逗号分隔的虚拟机 ID 列表(例如 31 或 31,32),收到的是 \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
     "yes": "跳过确认提示",
-    "confirmGrand": "重复拒绝信息中要求的名称，以确认对 grand 仓库的破坏性更改"
+    "confirmGrand": "重复拒绝信息中要求的名称，以确认对 grand 仓库的破坏性更改",
+    "opsWindows": "要预配的 Windows 客户端虚拟机 ID(逗号分隔,保留范围 31-39;设置 VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "已取消",

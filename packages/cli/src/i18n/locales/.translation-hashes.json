@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3366,
-    "sourceCommit": "065bd34d62b56c0253964287957562f97e252fc0"
+    "keyCount": 3369,
+    "sourceCommit": "acab59308143c6235ffcd5939de26d113baf09dc"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1490,6 +1490,7 @@
     "commands.ops.down.descriptionShort": "2c0ee15f",
     "commands.ops.down.failed": "b6f345b7",
     "commands.ops.down.starting": "46131673",
+    "commands.ops.down.windowsClients": "6d9b0259",
     "commands.ops.setup.brewFailed": "1816af39",
     "commands.ops.setup.completed": "19cbefc9",
     "commands.ops.setup.description": "e886be12",
@@ -1511,6 +1512,7 @@
     "commands.ops.up.descriptionShort": "693f8e6f",
     "commands.ops.up.failed": "f4661958",
     "commands.ops.up.starting": "0b6e10e0",
+    "commands.ops.up.windowsInvalid": "f2814ba6",
     "commands.preview.description": "ff9f4fc0",
     "commands.preview.descriptionShort": "dddf8328",
     "commands.preview.leave.description": "d0ed2fc6",
@@ -3307,6 +3309,7 @@
     "options.opsParallel": "51b17395",
     "options.opsSkipOrchestration": "5df7270a",
     "options.opsSSHUser": "9b0c1b45",
+    "options.opsWindows": "09dcd7a2",
     "options.output": "1cdd6d2f",
     "options.outputFormat": "23715797",
     "options.param": "20c89d92",

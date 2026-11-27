@@ -1853,7 +1853,8 @@
         "completed": "Cluster de VMs destruído com sucesso",
         "description": "Destruir cluster de VMs",
         "failed": "Falha na destruição do cluster de VMs",
-        "starting": "A destruir cluster de VMs..."
+        "starting": "A destruir cluster de VMs...",
+        "windowsClients": "As VMs cliente Windows também serão destruídas: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Instala os pré-requisitos de virtualização",
@@ -1882,7 +1883,8 @@
         "completed": "Cluster de VMs provisionado com sucesso",
         "description": "Provisionar cluster de VMs localmente",
         "failed": "Falha no provisionamento do cluster de VMs",
-        "starting": "A iniciar provisionamento do cluster de VMs..."
+        "starting": "A iniciar provisionamento do cluster de VMs...",
+        "windowsInvalid": "--windows espera uma lista de IDs de VM separados por vírgula (por exemplo 31 ou 31,32), recebido \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Caminho do arquivo tar do servidor pré-colocado na máquina (instalações sem ligação à internet)",
     "vscodeServerProvider": "Implementação do servidor VS Code para browser (openvscode, code-server)",
     "yes": "Ignorar pedido de confirmação",
-    "confirmGrand": "Confirma uma alteração destrutiva num repositório grand repetindo o nome pedido pela recusa"
+    "confirmGrand": "Confirma uma alteração destrutiva num repositório grand repetindo o nome pedido pela recusa",
+    "opsWindows": "IDs das VMs cliente Windows a provisionar (separados por vírgula, intervalo reservado 31-39; define VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Cancelado",

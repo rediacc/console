@@ -1853,7 +1853,8 @@
         "completed": "VM-klaster hävitatud edukalt",
         "description": "Hävitab VM-klastri",
         "failed": "VM-klastri hävitamine ebaõnnestus",
-        "starting": "VM-klastrit hävitatakse..."
+        "starting": "VM-klastrit hävitatakse...",
+        "windowsClients": "Ka Windowsi kliendi-VM-id hävitatakse: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Installib virtualiseerimise eeltingimused",
@@ -1882,7 +1883,8 @@
         "completed": "VM-klaster ettevalmistatud edukalt",
         "description": "Ettevalmistab VM-klastri kohalikult",
         "failed": "VM-klastri ettevalmistamine ebaõnnestus",
-        "starting": "VM-klastri ettevalmistamine..."
+        "starting": "VM-klastri ettevalmistamine...",
+        "windowsInvalid": "--windows ootab komadega eraldatud VM-ide ID-de loendit (näiteks 31 või 31,32), saadi \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Serveritarball-i eellavastatud tee masinal (õhust eraldatud paigaldused)",
     "vscodeServerProvider": "Brauseri VS Code serveri implementatsioon (openvscode, code-server)",
     "yes": "Jäta kinnitusviip vahele",
-    "confirmGrand": "Kinnita grand-hoidla hävitav muudatus, korrates nime, mida keeldumine küsis"
+    "confirmGrand": "Kinnita grand-hoidla hävitav muudatus, korrates nime, mida keeldumine küsis",
+    "opsWindows": "Loodavate Windowsi kliendi-VM-ide ID-d (komadega eraldatud, reserveeritud vahemik 31-39; määrab VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Tühistatud",

@@ -1853,7 +1853,8 @@
         "completed": "Cluster VM distrutto con successo",
         "description": "Distruggi il cluster VM",
         "failed": "Distruzione del cluster VM fallita",
-        "starting": "Distruzione del cluster VM in corso..."
+        "starting": "Distruzione del cluster VM in corso...",
+        "windowsClients": "Vengono distrutte anche le VM client Windows: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Installa i prerequisiti per la virtualizzazione",
@@ -1882,7 +1883,8 @@
         "completed": "Cluster VM provisioned con successo",
         "description": "Provisioning del cluster VM in locale",
         "failed": "Provisioning del cluster VM fallito",
-        "starting": "Avvio provisioning cluster VM in corso..."
+        "starting": "Avvio provisioning cluster VM in corso...",
+        "windowsInvalid": "--windows richiede un elenco di ID di VM separati da virgole (ad esempio 31 o 31,32), ricevuto \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Percorso del tarball del server pre-caricato sul macchinario (installazioni air-gap)",
     "vscodeServerProvider": "Implementazione del server VS Code nel browser (openvscode, code-server)",
     "yes": "Salta la richiesta di conferma",
-    "confirmGrand": "Conferma una modifica distruttiva a un repository grand ripetendo il nome richiesto dal rifiuto"
+    "confirmGrand": "Conferma una modifica distruttiva a un repository grand ripetendo il nome richiesto dal rifiuto",
+    "opsWindows": "ID delle VM client Windows da predisporre (separati da virgole, intervallo riservato 31-39; imposta VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Annullato",

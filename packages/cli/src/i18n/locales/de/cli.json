@@ -1853,7 +1853,8 @@
         "completed": "VM-Cluster erfolgreich zerstört",
         "description": "VM-Cluster zerstören",
         "failed": "Zerstörung des VM-Clusters fehlgeschlagen",
-        "starting": "VM-Cluster wird zerstört..."
+        "starting": "VM-Cluster wird zerstört...",
+        "windowsClients": "Windows-Client-VMs werden ebenfalls entfernt: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Virtualisierungsvoraussetzungen installieren",
@@ -1882,7 +1883,8 @@
         "completed": "VM-Cluster erfolgreich bereitgestellt",
         "description": "VM-Cluster lokal bereitstellen",
         "failed": "Bereitstellung des VM-Clusters fehlgeschlagen",
-        "starting": "VM-Cluster-Bereitstellung wird gestartet..."
+        "starting": "VM-Cluster-Bereitstellung wird gestartet...",
+        "windowsInvalid": "--windows erwartet eine kommagetrennte Liste von VM-IDs (zum Beispiel 31 oder 31,32), erhalten wurde \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Vorinstallierter Server-Archivpfad auf der Maschine (für Offline-Installationen)",
     "vscodeServerProvider": "Browser-VS-Code-Server-Implementierung (openvscode, code-server)",
     "yes": "Bestätigungsaufforderung überspringen",
-    "confirmGrand": "Eine destruktive Änderung an einem Grand-Repository bestätigen, indem der in der Ablehnung genannte Name wiederholt wird"
+    "confirmGrand": "Eine destruktive Änderung an einem Grand-Repository bestätigen, indem der in der Ablehnung genannte Name wiederholt wird",
+    "opsWindows": "IDs der Windows-Client-VMs, die bereitgestellt werden (kommagetrennt, reservierter Bereich 31-39; setzt VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Abgebrochen",

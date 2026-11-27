@@ -1853,7 +1853,8 @@
         "completed": "VM クラスターの破棄が完了しました",
         "description": "VM クラスターを破棄",
         "failed": "VM クラスターの破棄に失敗しました",
-        "starting": "VM クラスターを破棄しています..."
+        "starting": "VM クラスターを破棄しています...",
+        "windowsClients": "Windows クライアント VM も削除します: {{vms}}"
       },
       "setup": {
         "descriptionShort": "仮想化の前提条件をインストールする",
@@ -1882,7 +1883,8 @@
         "completed": "VM クラスターのプロビジョニングが完了しました",
         "description": "VM クラスターをローカルにプロビジョニング",
         "failed": "VM クラスターのプロビジョニングに失敗しました",
-        "starting": "VM クラスターのプロビジョニングを開始しています..."
+        "starting": "VM クラスターのプロビジョニングを開始しています...",
+        "windowsInvalid": "--windows にはカンマ区切りの VM ID リストを指定してください(例: 31 または 31,32)。受け取った値: \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "マシン上に事前配置されたサーバー tarball のパス（エアギャップインストール用）",
     "vscodeServerProvider": "ブラウザ VS Code サーバー実装 (openvscode, code-server)",
     "yes": "確認プロンプトをスキップする",
-    "confirmGrand": "拒否メッセージが求めた名前を繰り返して、grand リポジトリへの破壊的な変更を確認します"
+    "confirmGrand": "拒否メッセージが求めた名前を繰り返して、grand リポジトリへの破壊的な変更を確認します",
+    "opsWindows": "プロビジョニングする Windows クライアント VM の ID(カンマ区切り、予約範囲 31-39。VM_WINDOWS を設定)"
   },
   "prompts": {
     "cancelled": "キャンセルされました",

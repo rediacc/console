@@ -1853,7 +1853,8 @@
         "completed": "Clúster de VM destruido exitosamente",
         "description": "Destruir clúster de VM",
         "failed": "La destrucción del clúster de VM falló",
-        "starting": "Destruyendo clúster de VM..."
+        "starting": "Destruyendo clúster de VM...",
+        "windowsClients": "También se destruyen las VM cliente de Windows: {{vms}}"
       },
       "setup": {
         "descriptionShort": "Instalar prerequisitos de virtualización",
@@ -1882,7 +1883,8 @@
         "completed": "Clúster de VM aprovisionado exitosamente",
         "description": "Aprovisionar clúster de VM localmente",
         "failed": "El aprovisionamiento del clúster de VM falló",
-        "starting": "Iniciando aprovisionamiento del clúster de VM..."
+        "starting": "Iniciando aprovisionamiento del clúster de VM...",
+        "windowsInvalid": "--windows espera una lista de ID de VM separadas por comas (por ejemplo 31 o 31,32), pero se recibió \"{{value}}\""
       }
     },
     "preview": {
@@ -4262,7 +4264,8 @@
     "vscodeServerArchive": "Ruta al tarball del servidor preinstalado en la máquina (instalaciones sin conexión)",
     "vscodeServerProvider": "Implementación del servidor VS Code para el navegador (openvscode, code-server)",
     "yes": "Omitir indicador de confirmación",
-    "confirmGrand": "Confirma un cambio destructivo en un repositorio grand repitiendo el nombre que pidió el rechazo"
+    "confirmGrand": "Confirma un cambio destructivo en un repositorio grand repitiendo el nombre que pidió el rechazo",
+    "opsWindows": "ID de las VM cliente de Windows que se aprovisionan (separadas por comas, rango reservado 31-39; define VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Cancelado",
