@@ -263,6 +263,9 @@ def main_block(tree: ast.Module) -> ast.If | None:
 
 # A shim imports the parser as `_gate_args` (the `.ci/scripts/quality/_gate_args.py` re-export); a module imports `rediacc_ci.quality.gate_args` itself.
 PARSER_NAMES = ("_gate_args", "gate_args")
+# The dotted modules that ARE the shared parser: the shim's `_gate_args` re-export and the package module. `from rediacc_ci.quality import gate_args` imports the parser out of the `rediacc_ci.quality` package, whose `__init__` is the only other code it runs.
+PARSER_MODULES = ("_gate_args", "rediacc_ci.quality.gate_args")
+PARSER_PACKAGE = "rediacc_ci.quality"
 
 
 def _is_parse_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
@@ -276,19 +279,18 @@ def _is_parse_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
 
 
 def _inert_import(stmt: ast.stmt) -> bool:
-    """Whether `stmt` is an import that runs no work an unknown argument could ride: the shared parser itself, or a standard-library module (`import sys` before the parse)."""
+    """Whether `stmt` is an import that runs no work an unknown argument could ride: the shared parser itself (by its full module name, never by a last segment, so `heavy.gate_args` is work), or a standard-library module (`import sys` before the parse)."""
     if isinstance(stmt, ast.ImportFrom):
         if stmt.level or stmt.module is None:
             return False
         if stmt.module.split(".")[0] in sys.stdlib_module_names:
             return True
-        return stmt.module.rsplit(".", 1)[-1] in PARSER_NAMES or all(
-            a.name in PARSER_NAMES for a in stmt.names
+        return stmt.module in PARSER_MODULES or (
+            stmt.module == PARSER_PACKAGE and all(a.name in PARSER_NAMES for a in stmt.names)
         )
     if isinstance(stmt, ast.Import):
         return all(
-            a.name.split(".")[0] in sys.stdlib_module_names
-            or a.name.rsplit(".", 1)[-1] in PARSER_NAMES
+            a.name.split(".")[0] in sys.stdlib_module_names or a.name in PARSER_MODULES
             for a in stmt.names
         )
     return False
@@ -541,7 +543,7 @@ def entry_points(root: pathlib.Path) -> list[pathlib.Path]:
 
 
 def expand_npm(command: str, scripts: dict[str, str]) -> str:
-    """`command` with every `npm run <script>` it names replaced by the script's body, recursively and to any depth (each script expands once, so a cycle ends); a name package.json lacks stays as written."""
+    """`command` with the first `npm run <script>` it names for each script replaced by the script's body, recursively and to any depth (each script expands once, so a cycle ends; a later occurrence of an already-expanded script stays as written, its body being reached through the first); a name package.json lacks stays as written."""
     out = command
     seen: set[str] = set()
     while True:

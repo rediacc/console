@@ -441,6 +441,56 @@ def test_a_non_parser_import_before_the_parse_is_work_and_is_named(tmp_path):
     assert any("work runs before an unknown argument is refused" in x for x in got.problems), got
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "from heavy import gate_args",
+        "from heavy.gate_args import parse",
+        "import heavy.gate_args",
+        "from rediacc_ci.other import gate_args",
+        "import heavy.sub._gate_args",
+    ],
+)
+def test_a_lookalike_of_the_parser_import_is_work_and_is_named(tmp_path, line):
+    text = MODULE_REFUSES.replace(
+        "    from rediacc_ci.quality import gate_args\n",
+        "    from rediacc_ci.quality import gate_args\n    %s\n" % line,
+    )
+    assert text != MODULE_REFUSES
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    path = module_file(root, DOTTED, text)
+    got = mod.analyse(path, root, {}, key=DOTTED)
+    assert any("work runs before an unknown argument is refused" in x for x in got.problems), got
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "import sys",
+        "from rediacc_ci.quality.gate_args import parse",
+        "from rediacc_ci.quality import gate_args",
+        "import rediacc_ci.quality.gate_args",
+    ],
+)
+def test_the_parser_import_and_the_standard_library_stay_inert(tmp_path, line):
+    text = MODULE_REFUSES.replace(
+        "    from rediacc_ci.quality import gate_args\n",
+        "    %s\n    from rediacc_ci.quality import gate_args\n" % line,
+    )
+    assert text != MODULE_REFUSES
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    path = module_file(root, DOTTED, text)
+    got = mod.analyse(path, root, {}, key=DOTTED)
+    assert not any("work runs before" in x for x in got.problems), got
+
+
+def test_a_second_occurrence_of_an_expanded_script_stays_as_written():
+    scripts = {"a": "echo a-body"}
+    out = mod.expand_npm("npm run a && npm run a", scripts)
+    assert out.count("a-body") == 1
+    assert out.endswith("npm run a")
+
+
 def test_module_path_of_a_package_is_its_main_file(tmp_path):
     pkg = tmp_path / ".ci" / "rediacc_ci" / "pkgmod"
     pkg.mkdir(parents=True)
