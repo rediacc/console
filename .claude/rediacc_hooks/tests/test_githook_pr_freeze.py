@@ -434,12 +434,14 @@ def test_commit_msg_reaches_the_freeze(world, monkeypatch, capsys):
     monkeypatch.setattr(gh, "_repo", lambda: str(repo))
     monkeypatch.setattr(gh, "CONSOLE_ROOT", repo)
     msg = repo / "MSG"
-    msg.write_text("feat(ci): through commit_msg\n")
+    msg.write_text("chore(ci): through commit_msg\n")
     (repo / "f.txt").write_text("x\n")
     _git(repo, "add", "f.txt")
     assert gh.commit_msg([str(msg)]) != 0
     assert "fix work only" in capsys.readouterr().err
-    msg.write_text("fix(ci): through commit_msg\n")
+    msg.write_text(
+        "fix(ci): through commit_msg\n\nRelease-Note: none -- fixture commit of the freeze test\n"
+    )
     assert gh.commit_msg([str(msg)]) == 0, "CONTROL: a fix passes the same path"
 
 

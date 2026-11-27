@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T07:41:24.147Z",
+  "generatedAt": "2026-11-27T09:58:35.541Z",
   "legs": [
     {
       "index": 1,
@@ -703,6 +703,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_githook_gen_docs.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_plan_box.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_python_lint.py",
+        "pytest:.claude/rediacc_hooks/tests/test_githook_release_note.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_cases.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_procs.py",

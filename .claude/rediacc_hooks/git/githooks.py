@@ -159,6 +159,7 @@ def commit_msg(argv: list[str]) -> int:
     return (
         lease_pr_task_refusal(msg, repo)
         or lease_plan_box_refusal(msg, repo)
+        or release_note_refusal(msg, repo, paths)
         or pr_freeze_refusal(msg, repo, branch, paths)
     )
 
@@ -286,6 +287,36 @@ def lease_plan_box_refusal(msg: str, repo: str) -> int:
     return _refuse(
         "UNCHECKED: the Plan-Box check exited %d: %s"
         % (done.returncode, done.stderr.strip()[-400:])
+    )
+
+
+# A CUSTOMER-FACING COMMIT CARRIES ITS RELEASE NOTE (agent/plans/PLAN-release-notes.md, box RN2). `feat`, `fix` and `perf` commits on a customer path need `Release-Note: <customer text>` or `Release-Note: none -- <reason>`; the grammar, the requirement rule and the internal path lists are `release_notes.py`, loaded by file (it imports only the standard library at load) so this hook, the land check and the CI gate agree. The repo the commit lands in is `console`, or the submodule path (`private/account`, `private/renet`) read from its superproject; the staged paths are relative to that repo's root.
+RELEASE_NOTES_PATH = CONSOLE_ROOT / ".ci" / "rediacc_ci" / "release" / "release_notes.py"
+
+
+def _release_repo(repo: str) -> str:
+    """`console` for a console checkout, the superproject-relative path for a submodule."""
+    sup = cp.git(["rev-parse", "--show-superproject-working-tree"], cwd=repo, foreign=True)
+    if not sup:
+        return "console"
+    rel = os.path.relpath(os.path.realpath(repo), os.path.realpath(sup))
+    return rel.replace(os.sep, "/")
+
+
+def release_note_refusal(msg: str, repo: str, paths: list[str]) -> int:
+    if not repo:
+        return 0
+    rn = _load("githook_release_notes", RELEASE_NOTES_PATH)
+    try:
+        why = rn.refusal(msg, paths, _release_repo(repo))
+    except rn.ReleaseNotesError as exc:
+        return _refuse("UNCHECKED: the Release-Note trailer could not be checked (%s)." % exc)
+    if not why:
+        return 0
+    return _refuse(
+        "this commit %s.\n"
+        "Grammar: `Release-Note: <one line of customer text, at most 200 characters>` or\n"
+        "`Release-Note: none -- <reason of at least 12 characters>`, in the trailer block." % why
     )
 
 
