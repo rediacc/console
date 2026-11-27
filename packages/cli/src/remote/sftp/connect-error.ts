@@ -84,10 +84,15 @@ export interface SshConnectErrorInit {
   cause: string;
   /** The IPv6 retry after an unreachable primary address, when one was made and failed too. */
   ipv6Attempt?: { host: string; cause: string };
+  /** An unreachable IPv4 address with no IPv6 address recorded to retry over. */
+  noIpv6Target?: boolean;
 }
 
 function describeFailure(init: SshConnectErrorInit): string {
   const base = describePrimary(init);
+  if (init.noIpv6Target) {
+    return `${base} No IPv6 address is recorded for this machine to retry over; \`rdc machine infra set <machine> --public-ipv6 <address>\` records one.`;
+  }
   if (!init.ipv6Attempt) return base;
   return `${base} The IPv6 address ${init.ipv6Attempt.host} was tried next and failed too: ${init.ipv6Attempt.cause}`;
 }
@@ -141,5 +146,10 @@ export class SshConnectError extends Error {
   withIpv6Attempt(host: string, retryError: unknown): SshConnectError {
     const cause = retryError instanceof Error ? retryError.message : String(retryError);
     return new SshConnectError({ ...this.init, ipv6Attempt: { host, cause } });
+  }
+
+  /** The same failure, naming that no IPv6 address was recorded to retry an unreachable IPv4 over. */
+  withNoIpv6Target(): SshConnectError {
+    return new SshConnectError({ ...this.init, noIpv6Target: true });
   }
 }

@@ -137,6 +137,16 @@ export function resetRsyncProbe(): void {
 }
 
 /**
+ * The `user@host` an rsync remote path (`user@host:path`) starts with. An IPv6 literal is
+ * bracketed, since rsync would otherwise split the address at its first colon and read the rest
+ * as the path (a machine whose address is its IPv6, eu-bench's hostinger since 2026-11-27).
+ */
+export function rsyncUserHost(user: string, host: string): string {
+  const bare = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
+  return `${user}@${bare.includes(':') ? `[${bare}]` : bare}`;
+}
+
+/**
  * Gets the SSH command for rsync with options
  *
  * On Windows, uses bundled or system MSYS2 SSH for compatibility.

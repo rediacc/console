@@ -70,8 +70,11 @@ class MockSFTPClient {
   writeFile = vi.fn((_path: string, _data: Buffer) => Promise.resolve());
   exists = vi.fn((_path: string) => Promise.resolve(false));
   close = vi.fn();
+  /** The real client reports the address it connected over; with no IPv6 fallback that is the configured host. */
+  readonly dialedHost: string;
 
-  constructor(_config: unknown) {
+  constructor(config: { host: string }) {
+    this.dialedHost = config.host;
     mockInstances.push(this);
   }
 }
@@ -103,9 +106,12 @@ vi.mock('../core/embedded-assets.js', () => ({
   computeSha256: computeSha256Mock,
 }));
 
-vi.mock('../../remote/sync/index.js', () => ({
+vi.mock('../../remote/sync/index.js', async () => ({
   executeRsync: executeRsyncMock,
   getRsyncCommand: getRsyncCommandMock,
+  rsyncUserHost: (
+    await vi.importActual<typeof import('../../remote/sync/rsync.js')>('../../remote/sync/rsync.js')
+  ).rsyncUserHost,
 }));
 
 vi.mock('../../remote/ssh/index.js', () => ({

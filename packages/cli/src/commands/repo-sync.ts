@@ -11,6 +11,7 @@ import {
   executeRsync,
   type RsyncExecutorOptions,
   rsyncUnusableReason,
+  rsyncUserHost,
   type SftpUploadSource,
   sftpDownloadDirectory,
   sftpDownloadFile,
@@ -324,7 +325,7 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
         source: rsyncSource,
-        destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        destination: `${rsyncUserHost(ctx.details.user, ctx.details.host)}:${ctx.remotePath}`,
         mirror: options.mirror,
         verify: options.verify,
         exclude: options.exclude,
@@ -425,7 +426,7 @@ async function syncDownload(
     await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
-        source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        source: `${rsyncUserHost(ctx.details.user, ctx.details.host)}:${ctx.remotePath}`,
         destination,
         // status lists what only the local side holds, which rsync reports only as a deletion of a mirror run.
         mirror: options.mirror === true || (options.dryRun === true && options.localOnly === true),

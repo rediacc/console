@@ -18,7 +18,7 @@ import {
   removeTempSSHKeyFile,
 } from '../remote/ssh/index.js';
 import { assertRsyncCapable, runImageRsync } from '../remote/sync/image-rsync.js';
-import { getRsyncSSHCommand } from '../remote/sync/rsync.js';
+import { getRsyncSSHCommand, rsyncUserHost } from '../remote/sync/rsync.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import {
   getSubscriptionServerUrl,
@@ -103,10 +103,6 @@ export function parseRetries(value: string | undefined): number {
   return n;
 }
 
-function hostSpec(ip: string): string {
-  return ip.includes(':') ? `[${ip}]` : ip;
-}
-
 function progressLine(text: string): void {
   writeStderr(text);
 }
@@ -148,7 +144,9 @@ async function openHelperSession<S>(
     const machine = lease.machine;
     temp.push(await createTempSSHKeyFile(lease.sshPrivateKey));
     const port = machine.port ?? DEFAULT_SSH_PORT;
-    temp.push(await createTempKnownHostsFile(machine.knownHosts, { host: machine.ip, port }));
+    // The rsync ssh dials the address the pooled session reached, which after an IPv6 fallback is not the configured one.
+    const host = sftp.dialedHost;
+    temp.push(await createTempKnownHostsFile(machine.knownHosts, { host, port }));
     const sshCommand = await getRsyncSSHCommand(
       `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${temp[1]}" -p ${port} -i "${temp[0]}" ` +
         '-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
@@ -162,7 +160,7 @@ async function openHelperSession<S>(
     return await start({
       handle,
       stderrTail: () => stderr,
-      transport: { sshCommand, userHost: `${machine.user}@${hostSpec(machine.ip)}` },
+      transport: { sshCommand, userHost: rsyncUserHost(machine.user, host) },
       onClosed: cleanup,
     });
   } catch (error) {

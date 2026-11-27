@@ -36,6 +36,17 @@ const EXECUTOR_ENV = 'REDIACC_EXECUTOR_ORG_ID';
  */
 export const EXECUTOR_READY_TIMEOUT_MS = 25_000;
 
+/**
+ * Per process, `host:port` -> the IPv6 address its configured host last had to fall back to. A
+ * learned address is dialed first by every later connect to that host (SFTPClient.connectLearned).
+ */
+const learnedIpv6 = new Map<string, string>();
+
+/** Forget every learned IPv6 address. Test seam: production processes keep what they learned. */
+export function forgetLearnedIpv6(): void {
+  learnedIpv6.clear();
+}
+
 /** The ssh2 readyTimeout when the config names none: EXECUTOR_READY_TIMEOUT_MS inside a container executor, DEFAULTS.SSH.READY_TIMEOUT everywhere else. */
 export function defaultReadyTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
   return env[EXECUTOR_ENV]?.trim() ? EXECUTOR_READY_TIMEOUT_MS : DEFAULTS.SSH.READY_TIMEOUT;
@@ -65,6 +76,7 @@ export class SFTPClient {
   private ssh: SSHClient;
   private sftp: SFTPWrapper | null = null;
   private connected = false as boolean;
+  private dialed: string;
 
   /** `createClient` and `resolveIpv6` let a test plant an ssh2 client and a resolver; production takes the defaults. */
   constructor(
@@ -73,6 +85,7 @@ export class SFTPClient {
     private readonly resolveIpv6: Ipv6Resolver = resolveAaaa
   ) {
     this.ssh = createClient();
+    this.dialed = config.host;
   }
 
   /**
@@ -87,24 +100,76 @@ export class SFTPClient {
     if (this.connected) {
       return;
     }
+    if (await this.connectLearned()) return;
     try {
       await this.connectTo(this.config.host);
+      this.dialed = this.config.host;
     } catch (error) {
       if (!(error instanceof SshConnectError) || error.kind !== 'unreachable') throw error;
       const ipv6 = await this.ipv6Fallback();
-      if (!ipv6) throw error;
-      try {
-        this.ssh.end();
-      } catch {
-        // Best effort: the failed client is already closed.
+      if (!ipv6) {
+        throw isIP(this.config.host) === 4 ? error.withNoIpv6Target() : error;
       }
-      this.ssh = this.createClient();
+      this.replaceClient();
       try {
         await this.connectTo(ipv6);
       } catch (retryError) {
         throw error.withIpv6Attempt(ipv6, retryError);
       }
+      this.dialed = ipv6;
+      learnedIpv6.set(this.learnKey(), ipv6);
     }
+  }
+
+  /**
+   * The address the live session connected over: the configured host, or the IPv6 address it
+   * fell back to. A system ssh (rsync, the known_hosts it reads) that rides alongside this
+   * session dials the same address, since the configured one may be the address that never
+   * answers (an IPv4 a container executor's egress cannot reach).
+   */
+  get dialedHost(): string {
+    return this.dialed;
+  }
+
+  private learnKey(): string {
+    return `${this.config.host}:${this.config.port ?? DEFAULTS.SSH.PORT}`;
+  }
+
+  /**
+   * Dial the IPv6 address this process last had to fall back to for the host, first. A warm
+   * container executor otherwise paid the full readyTimeout (25 s) on the dead IPv4 before every
+   * connect. An unreachable learned address is forgotten and the configured host is dialed as
+   * usual; any other failure is the machine's own answer and is reported as is.
+   */
+  private async connectLearned(): Promise<boolean> {
+    const learned = learnedIpv6.get(this.learnKey());
+    if (!learned) return false;
+    // A machine whose recorded IPv6 changed since this process learned the old one is dialed as configured.
+    const { ipv6 } = this.config;
+    if (ipv6 && isIP(ipv6) === 6 && ipv6 !== learned) {
+      learnedIpv6.delete(this.learnKey());
+      return false;
+    }
+    try {
+      await this.connectTo(learned);
+    } catch (error) {
+      if (!(error instanceof SshConnectError) || error.kind !== 'unreachable') throw error;
+      learnedIpv6.delete(this.learnKey());
+      this.replaceClient();
+      return false;
+    }
+    this.dialed = learned;
+    return true;
+  }
+
+  /** An ssh2 client that failed to connect is never reused. */
+  private replaceClient(): void {
+    try {
+      this.ssh.end();
+    } catch {
+      // Best effort: the failed client is already closed.
+    }
+    this.ssh = this.createClient();
   }
 
   /**

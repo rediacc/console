@@ -2,6 +2,7 @@ import {
   executeRsync,
   planMissingParents,
   type RsyncExecutorOptions,
+  rsyncUserHost,
   skeletonDestination,
   writeSkeleton,
 } from '../remote/sync/index.js';
@@ -67,7 +68,7 @@ export async function ensureUploadParents(
       ensureRemoteParents({
         baseRemotePath,
         subPath,
-        userHost: `${ctx.details.user}@${ctx.details.host}`,
+        userHost: rsyncUserHost(ctx.details.user, ctx.details.host),
         rsyncOptions,
         probe: (p) => sftp.exists(p),
         runRsync: executeRsync,
