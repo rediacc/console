@@ -738,3 +738,16 @@ def test_the_collector_feeds_the_body_when_no_file_is_given(
     assert start == "v4.0.1"
     assert doc["groups"]["Added"] == ["Backups can be scheduled."]
     assert doc["stable"] == "4.0.1"
+
+
+def test_dry_run_against_an_orphan_prints_the_warning_and_exits_zero(
+    tmp_path: pathlib.Path,
+) -> None:
+    """RN6's accept: no assets built, a faked Release list with an orphan, rc 0 and the annotation on stdout."""
+    rc, out, err, calls = _go(
+        tmp_path, args=("--dry-run",), VERSION="4.0.1", **STATE, **_notes(tmp_path, "v3.0.1")
+    )
+    assert rc == 0, err
+    assert calls == []
+    assert out.startswith("::warning::v4.0.0 was tagged but not published")
+    assert "--notes-start-tag v3.0.1" in out

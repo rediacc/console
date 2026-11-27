@@ -796,6 +796,15 @@ jobs:
           ORIGIN=$(sed -n 's/^WK_RELEASES_ORIGIN=//p' .ci/config/well-known.env)
           curl -fsS --retry 5 --retry-all-errors -o dist/release-notes.json "${ORIGIN}/cli/v${VERSION}/release-notes.json"
 
+      # PLAN-release-notes D7: a previous version that was tagged but never published is folded into this range, and named here so the gap shows in the run. It reads the start tag through the same function the body uses (create_github_release.start_tag). A retry completes its own Release below with the trailer body and warns about nothing.
+      - name: Warn about a previous orphan tag
+        if: steps.owed.outputs.owed == 'true' && needs.init.outputs.retry_mode != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.init.outputs.next_version }}
+          GITHUB_SHA: ${{ needs.init.outputs.ci_sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release --print-orphan-warning
+
       - name: Create GitHub Release
         if: steps.owed.outputs.owed == 'true'
         env:

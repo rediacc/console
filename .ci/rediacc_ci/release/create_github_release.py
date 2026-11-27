@@ -19,7 +19,7 @@ DIRECTORIES ARE FILTERED OUT AFTER THE GLOB, not during it, matching the twin's
 `for f in "${assets[@]}"; do [[ -f "$f" ]] && files+=("$f"); done`. `-f` follows
 symlinks and is true only for a regular file, which is what `os.path.isfile` does, so a symlink to a directory is dropped by both and a symlink to a file is kept by both.
 
-THE BODY COMES FROM THE AUTHOR'S `Release-Note:` TRAILERS, NOT FROM `--generate-notes` (PLAN-release-notes RN5, D5-D8). The start tag is the newest `v*` tag older than this version that HAS a GitHub Release, read through the GitHub API and never from local tags; a tag between the two with no Release is an orphan, named in the body and folded into the range. The body is rendered by `release_notes.render_markdown` from one notes document: `--notes-json` (or `RELEASE_NOTES_JSON`) names the file `--write-notes-json` rendered earlier, `publish` uploads the same file to `cli/v<V>/release-notes.json` with `--upload-notes`, and a release with no file collects the range itself. A file whose `start_tag` is not the start tag read now is refused: its groups describe another range. A tag that already exists at a commit other than `GITHUB_SHA` is refused before `gh release create` (D7, the v2.4.0 shape). `--dry-run` prints the body and the argv and writes nothing. `--print-orphan-warning` prints the `::warning::` of D7 and exits 0.
+THE BODY COMES FROM THE AUTHOR'S `Release-Note:` TRAILERS, NOT FROM `--generate-notes` (PLAN-release-notes RN5, D5-D8). The start tag is the newest `v*` tag older than this version that HAS a GitHub Release, read through the GitHub API and never from local tags; a tag between the two with no Release is an orphan, named in the body and folded into the range. The body is rendered by `release_notes.render_markdown` from one notes document: `--notes-json` (or `RELEASE_NOTES_JSON`) names the file `--write-notes-json` rendered earlier, `publish` uploads the same file to `cli/v<V>/release-notes.json` with `--upload-notes`, and a release with no file collects the range itself. A file whose `start_tag` is not the start tag read now is refused: its groups describe another range. A tag that already exists at a commit other than `GITHUB_SHA` is refused before `gh release create` (D7, the v2.4.0 shape). `--dry-run` prints the orphan warning, the body and the argv and writes nothing, and needs no built assets. `--print-orphan-warning` prints the `::warning::` of D7 and exits 0.
 """
 
 from __future__ import annotations
@@ -147,6 +147,14 @@ def start_tag(version: str, repo: str) -> tuple[str | None, list[str], str | Non
     floor = (_semver(start) if start else None) or (-1, -1, -1)
     orphans = [t for t in older if t not in released and (_semver(t) or (0, 0, 0)) > floor]
     return start, orphans, latest
+
+
+def orphan_warning(tag: str, version: str) -> str:
+    """The workflow annotation of D7 for an orphan tag folded into `version`."""
+    return "::warning::%s was tagged but not published; its changes are folded into v%s." % (
+        tag,
+        version.removeprefix("v"),
+    )
 
 
 def render_notes(
@@ -283,16 +291,13 @@ def main(argv: list[str]) -> int:
         if args.print_orphan_warning:
             _start, orphans, _latest = start_tag(version, github_repository)
             for tag in orphans:
-                print(
-                    "::warning::%s was tagged but not published; its changes are folded into v%s."
-                    % (tag, version.removeprefix("v"))
-                )
+                print(orphan_warning(tag, version))
             return 0
         if args.write_notes_json:
             _write_notes(args, version, github_sha, github_repository)
             return 0
         files = release_assets()
-        if not files:
+        if not files and not args.dry_run:
             print(NO_ASSETS)
             return 1
         doc, start = render_notes(version, github_repository, github_sha, args.notes_json)
@@ -327,6 +332,8 @@ def main(argv: list[str]) -> int:
         *files,
     ]
     if args.dry_run:
+        for tag in doc.get("orphans") or ():
+            print(orphan_warning(tag, version))
         print(body, end="")
         print("+ " + " ".join(gh_argv))
         return 0
