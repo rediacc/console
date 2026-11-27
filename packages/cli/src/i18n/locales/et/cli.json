@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "Otsene ligipääs masinale \"{{machine}}\" on üle kirjutatud, kuid selle ülekirjutamise päritolu ei saanud platvormil {{platform}} verifitseerida (esivanema verifitseerimise abivahend on saadaval olematu või ebaõnnestus), seega ülekirjutamine ei ole aktsepteeritud.\n\nForki repositoorium esmalt, seejärel ühenda forgi külge:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nKasutaja: verifitseerimine töötab Linuxis, macOS-is ja Windowsis koos puhtalt paigaldatud rdc-ga. Kui probleem jääb, paigalda rdc uuesti ja seadista muutuja oma terminalis enne agendi käivitamist.",
       "revealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun printimast tundlikku väärtust torusse.",
       "rotateNotSensitive": "Osuti \"{{pointer}}\" ei ole tundlik väli; kasuta selle asemel 'config field set'.",
-      "rotateRequiresTty": "config field rotate nõuab interaktiivset TTY kinnitust; keeldun mitteinteraktiivses kontekstis (ülekirja jaoks seadista REDIACC_ALLOW_CONFIG_EDIT).",
+      "rotateRequiresTty": "config field rotate nõuab interaktiivset TTY kinnitust; keeldun mitteinteraktiivses kontekstis.",
       "showReveal": "--reveal on agendikeskkondades blokeeritud. Kasuta `rdc config show` (varjatud) või `rdc config field get --pointer <pointer> --digest` turvalise sõrmejälje saamiseks.",
       "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti.",
       "applyRequiresTty": "config edit --apply vajab stdin-il interaktiivset terminali; mitteinteraktiivses kontekstis keeldun.",

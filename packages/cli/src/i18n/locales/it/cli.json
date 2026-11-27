@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "L'accesso diretto alla macchina \"{{machine}}\" ha un override impostato, ma la sua origine non ha potuto essere verificata su {{platform}} (l'helper di verifica dell'ascendenza non è disponibile o ha avuto un errore), quindi l'override non è accettato.\n\nCrea prima un fork di un repository, poi connettiti al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtente: la verifica funziona su Linux, macOS e Windows con un'installazione rdc intatta. Reinstalla rdc se il problema persiste e imposta la variabile nel tuo terminale prima di avviare l'agente.",
       "revealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di stampare il valore sensibile su una pipe.",
       "rotateNotSensitive": "Il puntatore \"{{pointer}}\" non è un campo sensibile; usa 'config field set'.",
-      "rotateRequiresTty": "config field rotate richiede conferma su TTY interattivo; rifiuto in contesto non interattivo (imposta REDIACC_ALLOW_CONFIG_EDIT per ignorare il blocco).",
+      "rotateRequiresTty": "config field rotate richiede conferma su TTY interattivo; rifiuto in contesto non interattivo.",
       "showReveal": "--reveal è bloccato negli ambienti agente. Usa `rdc config show` (con redazione) o `rdc config field get --pointer <pointer> --digest` per un'impronta sicura.",
       "showRevealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di inviare testo in chiaro a un sink non-TTY.",
       "applyRequiresTty": "config edit --apply richiede un terminale interattivo su stdin; rifiutato in un contesto non interattivo.",

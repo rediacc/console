@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "Прямой доступ к машине \"{{machine}}\" переопределён, но его происхождение не удалось проверить на {{platform}} (помощник проверки происхождения недоступен или произошла ошибка), поэтому переопределение не принято.\n\nСначала создайте fork репозитория, затем подключитесь к нему:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nПользователю: проверка работает на Linux, macOS и Windows при наличии правильной установки rdc. Переустановите rdc, если проблема сохраняется, и установите переменную в своём терминале перед запуском агента.",
       "revealRequiresTty": "--reveal требует интерактивного TTY; отказ в печати секретного значения в канал.",
       "rotateNotSensitive": "Указатель «{{pointer}}» не является секретным полем; используйте 'config field set'.",
-      "rotateRequiresTty": "config field rotate требует подтверждения в интерактивном TTY; отказ в неинтерактивном режиме (для обхода задайте REDIACC_ALLOW_CONFIG_EDIT).",
+      "rotateRequiresTty": "config field rotate требует подтверждения в интерактивном TTY; отказ в неинтерактивном режиме.",
       "showReveal": "--reveal заблокирован в агентных окружениях. Используйте `rdc config show` (редактированный) или `rdc config field get --pointer <pointer> --digest` для безопасного отпечатка.",
       "showRevealRequiresTty": "--reveal требует интерактивного TTY; отказ перенаправлять открытый текст в не-TTY приёмник.",
       "applyRequiresTty": "config edit --apply требует интерактивного терминала на stdin; в неинтерактивном режиме команда отклоняется.",

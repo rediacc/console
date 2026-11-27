@@ -85,7 +85,7 @@ function bodyOfMarkdown(text: string): string {
  * Markdown inline syntax removed, leaving the text a renderer would emit.
  *
  * Underscores are deliberately NOT treated as emphasis: heading text in this repo
- * carries identifiers like `REDIACC_ALLOW_CONFIG_EDIT`, and stripping `_` would
+ * carries identifiers like `REDIACC_ALLOW_GRAND_REPO`, and stripping `_` would
  * mangle the very string the assertion compares.
  */
 function plainFromMarkdown(heading: string): string {

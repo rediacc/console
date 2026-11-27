@@ -7,7 +7,7 @@ order: 2
 language: es
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/es/cli.json
-sourceHash: "6873b5e2379a253f"
+sourceHash: "62944666aad4b4ac"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -379,6 +379,7 @@ rdc config edit [options]
 |------|-------------|----------|---------|
 | `--reveal` | {{t:cli.commands.config.field.get.optionReveal}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dump` | {{t:cli.commands.config.edit.optionDump}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--redacted` | {{t:cli.commands.config.edit.optionRedacted}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--apply <file>` | {{t:cli.commands.config.edit.optionApply}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--current-secrets <file>` | {{t:cli.commands.config.edit.optionCurrentSecrets}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--editor <cmd>` | {{t:cli.commands.config.edit.optionEditor}} | {{t:cli.docs.optionLabels.no}} | - |

@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 3348,
-    "sourceCommit": "993b21b06652b080e9c98f0d42367b1141b398e5"
+    "sourceCommit": "b57e31340cc120a3a9ff876a3dd5e83dfed43389"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2863,7 +2863,7 @@
     "errors.agent.rootGrantBlocked": "44d27858",
     "errors.agent.rootGrantOverride": "474388b1",
     "errors.agent.rotateNotSensitive": "db60ecb6",
-    "errors.agent.rotateRequiresTty": "bff9b119",
+    "errors.agent.rotateRequiresTty": "f6e89ede",
     "errors.agent.showReveal": "def1cb5f",
     "errors.agent.showRevealRequiresTty": "36f0d7a0",
     "errors.authRequired": "49b65b0c",

@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "O acesso direto à máquina \"{{machine}}\" está com substituição definida, mas a sua origem não pôde ser verificada em {{platform}} (o auxiliar de verificação de herança está indisponível ou falhou), portanto a substituição não é aceite.\n\nFaça primeiro um fork de um repositório e ligue-se ao fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilizador: a verificação funciona em Linux, macOS e Windows com uma instalação rdc intacta. Reinstale o rdc se isto persistir e defina a variável no terminal antes de iniciar o agente.",
       "revealRequiresTty": "--reveal requer um TTY interativo; recusando imprimir valor sensível para um pipe.",
       "rotateNotSensitive": "O apontador \"{{pointer}}\" não é um campo sensível; use 'config field set' em alternativa.",
-      "rotateRequiresTty": "config field rotate requer confirmação em TTY interativo; recusando em contexto não interativo (defina REDIACC_ALLOW_CONFIG_EDIT para substituir).",
+      "rotateRequiresTty": "config field rotate requer confirmação em TTY interativo; recusando em contexto não interativo.",
       "showReveal": "--reveal está bloqueado em ambientes de agente. Use `rdc config show` (redatado) ou `rdc config field get --pointer <pointer> --digest` para uma impressão digital segura.",
       "showRevealRequiresTty": "--reveal requer um TTY interativo; recusando enviar texto simples para um destino que não é TTY.",
       "applyRequiresTty": "config edit --apply requer um terminal interativo no stdin; recusado em contexto não interativo.",

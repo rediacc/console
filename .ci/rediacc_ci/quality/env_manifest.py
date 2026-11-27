@@ -73,7 +73,7 @@ still be found by a reader at that path (a dangling entry fails), and the name m
 
 WHAT THIS GATE DOES NOT SEE, stated so that its green is not read as a claim it
 cannot make. Bash `${VAR}`, as above. And a JS/TS `process.env[expr]` where
-`expr` is not a literal: 19 such sites exist today, and every one that resolves to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via `SUBSCRIPTION_TOKEN_ENV`, `REDIACC_ALLOW_CONFIG_EDIT` via `OVERRIDE_VAR_CONFIG_EDIT`, the four `AGENT_ENV_VARS`), the rest being loop variables. The count is printed every run rather than asserted, because the honest assertion
+`expr` is not a literal: the run prints how many such sites exist, and every one that resolves to a constant resolves to a name already in the manifest (`REDIACC_TOKEN` via `SUBSCRIPTION_TOKEN_ENV`, the four `AGENT_ENV_VARS`), the rest being loop variables. The count is printed every run rather than asserted, because the honest assertion
 -- "no unresolvable dynamic read" -- is false today and could only be made true with a baseline.
 
 ONE FILE, ONE GATE. The shard classification, the `python_reads` read set and the `worklist` registry are sections of `.ci/config/env-manifest.json` (`env_doc.py`), and check:ci-env-registry (`env_registry.py`) runs this module's `check()` and controls with the other two. This module is no gate of its own.

@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "L'accès direct à la machine \"{{machine}}\" est contourné, mais l'origine du contournement n'a pas pu être vérifiée sur {{platform}} (l'auxiliaire de vérification d'ascendance est indisponible ou a échoué), donc le contournement n'est pas accepté.\n\nCréez d'abord un fork d'un dépôt, puis connectez-vous au fork :\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtilisateur : la vérification fonctionne sur Linux, macOS et Windows avec une installation rdc intacte. Réinstallez rdc si le problème persiste, et définissez la variable dans votre terminal avant de démarrer l'agent.",
       "revealRequiresTty": "--reveal nécessite un TTY interactif ; impossible d'envoyer une valeur sensible dans un tube.",
       "rotateNotSensitive": "Le pointeur « {{pointer}} » n'est pas un champ sensible ; utilisez 'config field set' à la place.",
-      "rotateRequiresTty": "config field rotate exige une confirmation interactive sur un TTY ; refusé en contexte non interactif (définissez REDIACC_ALLOW_CONFIG_EDIT pour passer outre).",
+      "rotateRequiresTty": "config field rotate exige une confirmation interactive sur un TTY ; refusé en contexte non interactif.",
       "showReveal": "--reveal est bloqué dans les environnements d'agent. Utilisez `rdc config show` (caviardé) ou `rdc config field get --pointer <pointer> --digest` pour une empreinte sûre.",
       "showRevealRequiresTty": "--reveal nécessite un TTY interactif ; pas de texte en clair vers une cible non-TTY.",
       "applyRequiresTty": "config edit --apply exige un terminal interactif sur stdin ; refusé en contexte non interactif.",

@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "El acceso directo a la máquina \"{{machine}}\" está anulado, pero el origen de la anulación no se pudo verificar en {{platform}} (el asistente de verificación de ascendencia no está disponible o falló), por lo que la anulación no se acepta.\n\nCree un fork del repositorio primero, luego conéctese al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUsuario: la verificación funciona en Linux, macOS y Windows con una instalación intacta de rdc. Reinstale rdc si esto persiste y configure la variable en su terminal antes de iniciar el agente.",
       "revealRequiresTty": "--reveal requiere un TTY interactivo; no se imprimirá un valor sensible en una tubería.",
       "rotateNotSensitive": "El puntero \"{{pointer}}\" no es un campo sensible; usa 'config field set' en su lugar.",
-      "rotateRequiresTty": "config field rotate requiere confirmación en un TTY interactivo; rechazado en contexto no interactivo (define REDIACC_ALLOW_CONFIG_EDIT para anular).",
+      "rotateRequiresTty": "config field rotate requiere confirmación en un TTY interactivo; rechazado en contexto no interactivo.",
       "showReveal": "--reveal está bloqueado en entornos de agente. Usa `rdc config show` (redactado) o `rdc config field get --pointer <pointer> --digest` para una huella segura.",
       "showRevealRequiresTty": "--reveal requiere un TTY interactivo; no se enviará texto en claro a un destino sin TTY.",
       "applyRequiresTty": "config edit --apply necesita una terminal interactiva en stdin; se rechaza en un contexto no interactivo.",

@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "\"{{machine}}\" makinesine doğrudan erişim geçersiz kılınmış, ancak {{platform}} üzerinde kaynağı doğrulanamadı (soybilim doğrulama yardımcısı kullanılamıyor veya başarısız), bu nedenle geçersiz kılma kabul edilmiyor.\n\nÖnce bir depodan fork oluşturun, ardından fork'a bağlanın:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nKullanıcı: doğrulama Linux, macOS ve Windows'da sağlam bir rdc kurulumunda çalışır. Bu devam ederse rdc'yi yeniden kurun ve ajan başlatmadan önce terminalde değişkeni ayarlayın.",
       "revealRequiresTty": "--reveal etkileşimli TTY gerektirir; hassas değer bir boruya yazılmayacak.",
       "rotateNotSensitive": "Pointer \"{{pointer}}\" hassas bir alan değil; bunun yerine 'config field set' kullanın.",
-      "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir (geçersiz kılmak için REDIACC_ALLOW_CONFIG_EDIT tanımlayın).",
+      "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir.",
       "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get --pointer <pointer> --digest` kullanın.",
       "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak.",
       "applyRequiresTty": "config edit --apply, stdin üzerinde etkileşimli bir terminal ister; etkileşimli olmayan bağlamda reddedilir.",

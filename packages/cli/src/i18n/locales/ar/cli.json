@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "الوصول المباشر إلى الآلة \"{{machine}}\" متجاوَز عليه، لكن لا يمكن التحقق من أصل هذا التجاوز على {{platform}} (أداة التحقق من السلالة غير متاحة أو فشلت)، لذلك لا يُقبل التجاوز.\n\nأنشئ fork للمستودع أولاً، ثم اتصل بالـ fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nملاحظة: التحقق يعمل على Linux و macOS و Windows مع تثبيت rdc سليم. أعد تثبيت rdc إذا استمرت المشكلة، وعيّن المتغير في الطرفية قبل بدء الوكيل.",
       "revealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض طباعة القيمة الحساسة إلى أنبوب.",
       "rotateNotSensitive": "المؤشر \"{{pointer}}\" ليس حقلاً حساساً؛ استخدم 'config field set' بدلاً من ذلك.",
-      "rotateRequiresTty": "‏config field rotate يتطلب تأكيدًا في طرفية تفاعلية؛ يُرفض في السياق غير التفاعلي (حدد REDIACC_ALLOW_CONFIG_EDIT للتجاوز).",
+      "rotateRequiresTty": "‏config field rotate يتطلب تأكيدًا في طرفية تفاعلية؛ يُرفض في السياق غير التفاعلي.",
       "showReveal": "‏--reveal محظور في بيئات العملاء. استخدم `rdc config show` (مُخفى) أو `rdc config field get --pointer <pointer> --digest` للحصول على بصمة آمنة.",
       "showRevealRequiresTty": "‏--reveal يتطلب طرفية تفاعلية؛ يُرفض تمرير النص الصريح إلى وجهة غير تفاعلية.",
       "applyRequiresTty": "‏config edit --apply يتطلب طرفية تفاعلية على stdin؛ يُرفض في السياق غير التفاعلي.",

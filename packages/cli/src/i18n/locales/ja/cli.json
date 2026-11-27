@@ -3679,7 +3679,7 @@
       "machineGuardOverrideNonLinux": "\"{{machine}}\" への直接マシンアクセスのオーバーライドが設定されていますが、{{platform}} では起源が検証できません（祖先検証ヘルパーが使用不可またはエラー）。したがってオーバーライドは受け入れられません。\n\nまずリポジトリのforkを作成し、forkに接続してください:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n注記: 検証は Linux、macOS、Windows で機能します（rdc インストールが正常な場合）。問題が続く場合は rdc を再インストールし、エージェント開始前にターミナルで変数を設定してください。",
       "revealRequiresTty": "--reveal には対話型 TTY が必要です。機密値をパイプに出力することは拒否します。",
       "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
-      "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
+      "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます。",
       "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --pointer <pointer> --digest` を使用してください。",
       "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。",
       "applyRequiresTty": "config edit --apply には stdin が対話型ターミナルである必要があります。非対話型では拒否されます。",

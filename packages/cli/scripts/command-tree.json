@@ -5728,6 +5728,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--redacted",
+              "descriptionKey": "commands.config.edit.optionRedacted",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--apply <file>",
               "descriptionKey": "commands.config.edit.optionApply",
               "mandatory": false,
