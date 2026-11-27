@@ -1,3 +1,4 @@
+import { WK_RELEASES_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import { loadCreditsData, renderCredits, renderCreditsJson } from '../core/credits.js';
 
@@ -13,7 +14,7 @@ describe('credits inventory', () => {
 
   it('prints mirror URLs without a planned marker', () => {
     const text = renderCredits(loadCreditsData());
-    expect(text).toContain('Mirror:   https://releases.rediacc.com/third-party-src/');
+    expect(text).toContain(`Mirror:   ${WK_RELEASES_ORIGIN}/third-party-src/`);
     expect(text).not.toContain('(planned)');
     expect(text).not.toContain('plannedMirror');
   });

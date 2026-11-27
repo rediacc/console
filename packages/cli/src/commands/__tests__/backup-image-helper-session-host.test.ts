@@ -4,6 +4,7 @@
  * rsync destination and the known_hosts file it reads must both name the address ssh dials.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const CONFIGURED = '203.0.113.7';
@@ -57,7 +58,7 @@ describe('openHelperSession dials the address the pooled session reached', () =>
     await deps.openSession({
       machine: 'hostinger',
       guid: 'aaaaaaaa-0000-4000-8000-000000000001',
-      datastore: '/mnt/rediacc',
+      datastore: WK_DATASTORE_PATH,
     } as Parameters<typeof deps.openSession>[0]);
     expect(mocks.createKnownHosts).toHaveBeenCalledWith(expect.any(String), {
       host: REACHED,

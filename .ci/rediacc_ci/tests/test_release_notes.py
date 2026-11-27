@@ -15,6 +15,7 @@ import pytest
 
 from rediacc_ci.controls import isolated_git_env
 from rediacc_ci.release import release_notes as rn
+from rediacc_ci.well_known import GH_ORIGIN, GH_REPO, SITE_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -94,7 +95,7 @@ def test_a_note_naming_an_internal_thing_is_refused(note):
         "Node.js 24 is now supported on every machine",
         "Upgrades to v4.0.1 keep every repository and its data",
         "Mounts honour read/write flags after a reboot",
-        "The docs at https://www.rediacc.com/en/docs/a/b now list every flag",
+        f"The docs at {SITE_ORIGIN}/en/docs/a/b now list every flag",
         "`rdc repo fork` finishes in constant time on large repositories",
     ],
 )
@@ -459,7 +460,7 @@ def test_render_markdown_carries_groups_orphan_stable_and_full_changelog():
         "## Fixed\n\n- Crash fixed\n\n"
         "v4.0.0 was tagged but not published; its changes are listed here.\n\n"
         "Stable: v3.0.1, marked Latest; this is an edge release.\n\n"
-        "**Full Changelog**: https://github.com/rediacc/console/compare/v3.0.1...v4.0.1\n"
+        f"**Full Changelog**: {GH_ORIGIN}/{GH_REPO}/compare/v3.0.1...v4.0.1\n"
     )
     assert doc["version"] == "4.0.1"
     assert doc["stable"] == "3.0.1"

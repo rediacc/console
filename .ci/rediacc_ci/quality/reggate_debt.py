@@ -68,19 +68,19 @@ def live_branch(root):
 
 def read_legacy(root):
     """(sigs, problem). A missing file is an empty baseline; an unreadable one is a problem."""
-    path = pathlib.Path(root) / RG.LEGACY_REL
+    path = pathlib.Path(root) / RG.legacy_rel()
     if not path.exists():
         return set(), ""
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return set(), "%s is unreadable: %s" % (RG.LEGACY_REL, exc)
+        return set(), "%s is unreadable: %s" % (RG.legacy_rel(), exc)
     sigs = data.get("sigs") if isinstance(data, dict) else None
     if not isinstance(sigs, list) or not all(isinstance(s, str) for s in sigs):
-        return set(), "%s carries no `sigs` list of strings" % RG.LEGACY_REL
+        return set(), "%s carries no `sigs` list of strings" % RG.legacy_rel()
     reason = data.get("reason") if isinstance(data, dict) else None
     if not (isinstance(reason, str) and reason.startswith("BLOCKER:")):
-        return set(), "%s carries no `reason` starting `BLOCKER:`" % RG.LEGACY_REL
+        return set(), "%s carries no `reason` starting `BLOCKER:`" % RG.legacy_rel()
     return set(sigs), ""
 
 
@@ -98,7 +98,7 @@ def base_legacy(root):
         if mb.returncode != 0 or not mb.stdout.strip():
             return None, True
         shown = subprocess.run(
-            ["git", "-C", str(root), "show", "%s:%s" % (mb.stdout.strip(), RG.LEGACY_REL)],
+            ["git", "-C", str(root), "show", "%s:%s" % (mb.stdout.strip(), RG.legacy_rel())],
             capture_output=True,
             text=True,
             check=False,
@@ -175,18 +175,19 @@ def findings(root, live, legacy, base=None, now=None):
     for sig in sorted(legacy):
         if sig in paid:
             out.append(
-                ("RD6", sig, "baseline entry is paid now; remove it from %s" % RG.LEGACY_REL)
+                ("RD6", sig, "baseline entry is paid now; remove it from %s" % RG.legacy_rel())
             )
         elif sig not in known:
             out.append(
                 (
                     "RD6",
                     sig,
-                    "baseline entry names no debt in any ledger; remove it from %s" % RG.LEGACY_REL,
+                    "baseline entry names no debt in any ledger; remove it from %s"
+                    % RG.legacy_rel(),
                 )
             )
     if base is not None:
-        grew = "added to %s since the merge-base; the baseline only shrinks" % RG.LEGACY_REL
+        grew = "added to %s since the merge-base; the baseline only shrinks" % RG.legacy_rel()
         out.extend(("RD6", sig, grew) for sig in sorted(legacy - base))
     return len(ledgers), out
 
@@ -345,7 +346,7 @@ def main(argv):
     if state == "skip":
         print(
             "  RD6 growth check skipped: no merge-base copy of %s to compare against"
-            % RG.LEGACY_REL
+            % RG.legacy_rel()
         )
     if found:
         print("x reggate debt: %d finding(s)" % len(found), file=sys.stderr)

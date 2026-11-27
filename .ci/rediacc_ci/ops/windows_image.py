@@ -52,8 +52,8 @@ if TYPE_CHECKING:
 SELF = "windows_image"
 RECORD_REL = ".ci/config/windows-image.json"
 SCHEMA = 1
-# Refused by name even if the well-known value were ever renamed: the literal is the bucket the plan names as public by policy.
-PUBLIC_BUCKETS = frozenset({PUBLIC_DATA_BUCKET, "rediacc-public-data"})
+# Refused by name: the well-known public-data bucket, public by policy (`.ci/docs/r2-media-setup.md` section 10).
+PUBLIC_BUCKETS = frozenset({PUBLIC_DATA_BUCKET})
 SECRET_NAMES = ("R2_WINDOWS_IMAGE_ACCESS_KEY_ID", "R2_WINDOWS_IMAGE_SECRET_ACCESS_KEY")
 PROFILE = "windows-image"
 ISO_NAME = "win11-eval.iso"

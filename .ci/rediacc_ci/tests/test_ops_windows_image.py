@@ -12,6 +12,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import windows_image as wi
+from rediacc_ci.well_known import PUBLIC_DATA_BUCKET
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -156,14 +157,14 @@ def test_go_pins_reader(tmp_path: pathlib.Path) -> None:
 @pytest.mark.parametrize("verb", [["probe"], ["fetch"], ["fetch", "--inputs"], ["publish"]])
 def test_public_data_bucket_refused_by_name(tmp_path: pathlib.Path, verb: list[str]) -> None:
     runner = FakeBucket()
-    rc, _ = call(write_record(tmp_path), [*verb, "--bucket", "rediacc-public-data"], runner=runner)
+    rc, _ = call(write_record(tmp_path), [*verb, "--bucket", PUBLIC_DATA_BUCKET], runner=runner)
     assert rc == 1
     assert runner.calls == []
 
 
 def test_public_data_bucket_refused_in_record(tmp_path: pathlib.Path, capsys) -> None:
     runner = FakeBucket()
-    rc, _ = call(write_record(tmp_path, bucket="rediacc-public-data"), ["probe"], runner=runner)
+    rc, _ = call(write_record(tmp_path, bucket=PUBLIC_DATA_BUCKET), ["probe"], runner=runner)
     assert rc == 1
     assert "public by policy" in capsys.readouterr().err
     assert runner.calls == []
@@ -461,7 +462,7 @@ def test_probe_statuses(tmp_path: pathlib.Path) -> None:
     assert rc == 0, out
     assert seen == [
         ("windows-ci-images", True),
-        ("rediacc-public-data", True),
+        (PUBLIC_DATA_BUCKET, True),
         ("windows-ci-images", False),
     ]
     assert "secret" not in out

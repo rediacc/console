@@ -1,8 +1,12 @@
-import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_RETIRING_ORIGIN,
+  WK_DATASTORE_PATH,
+} from '@rediacc/shared/config/well-known.generated';
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const EU = 'https://eu.rediacc.cloud';
-const BENCH = 'https://bench.rediacc.cloud';
+const EU = WK_ACCOUNT_DEFAULT_ORIGIN;
+const BENCH = WK_BENCH_RETIRING_ORIGIN;
 
 beforeAll(async () => {
   await import('../backup-schedule.js');

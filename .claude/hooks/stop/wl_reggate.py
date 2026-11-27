@@ -301,7 +301,18 @@ def cap_demand(branch, sig, gate, root=None):
 # ---------------------------------------------------------------------------
 BACKLOG_PLAN = "agent/plans/PLAN-reggate-debt-collection.md"
 BACKLOG_TITLE = "reggate debt backlog"
-LEGACY_REL = ".ci/policy/reggate-debt-legacy.json"
+_LEGACY_REL: list[str] = []
+
+
+def legacy_rel():
+    """`.ci/policy/reggate-debt-legacy.json` through rediacc_ci.policy_paths (check:ci-policy-inventory), resolved on first use and cached; wl_proc's import put `.ci` on sys.path. Lazy for the reason wl_loopspeed.record_policy_rel gives: a module-level call breaks the Stop-hook tests that copy this directory into a scratch tree without `.ci`."""
+    if not _LEGACY_REL:
+        from rediacc_ci.policy_paths import policy_rel
+
+        _LEGACY_REL.append(policy_rel("reggate-debt-legacy.json"))
+    return _LEGACY_REL[0]
+
+
 # Epics truncate one record's covers at wl_epic.EPIC_MAX_COVERS; a first import of a hundred debts is attached in chunks of this size.
 _EPIC_CHUNK = 64
 
@@ -468,12 +479,12 @@ def collect_debts(root, worklist, me8, live_branch, loop_plans=(), items=None):
 
 
 def legacy_sigs(root=None):
-    """The frozen legacy set from LEGACY_REL, or an empty set when the file is absent or unreadable."""
+    """The frozen legacy set from `legacy_rel()`, or an empty set when the file is absent or unreadable."""
     if root is None:
         root = C.project_root(C.project_start())
     try:
-        data = json.loads((pathlib.Path(root) / LEGACY_REL).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        data = json.loads((pathlib.Path(root) / legacy_rel()).read_text(encoding="utf-8"))
+    except (OSError, ValueError, ImportError):
         return set()
     sigs = data.get("sigs") if isinstance(data, dict) else None
     return {s for s in sigs if isinstance(s, str)} if isinstance(sigs, list) else set()

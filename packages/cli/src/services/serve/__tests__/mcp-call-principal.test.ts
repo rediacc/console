@@ -4,6 +4,7 @@
  * call plain to the executor route naming that token. The Commander tree is replaced by one command that makes the licence call.
  */
 
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -25,13 +26,16 @@ vi.mock('../../../cli.js', async () => {
 vi.mock('../../account/account-client.js', () => ({
   accountServerFetch: vi.fn(() => Promise.reject(new Error('tunnel used'))),
 }));
-vi.mock('../../account/subscription-auth.js', () => ({
-  getSubscriptionTokenState: () => ({
-    kind: 'ready',
-    serverUrl: 'http://account.internal',
-    token: { token: 'PLACEHOLDER' },
-  }),
-}));
+vi.mock('../../account/subscription-auth.js', async () => {
+  const wk = await import('@rediacc/shared/config/well-known.generated');
+  return {
+    getSubscriptionTokenState: () => ({
+      kind: 'ready',
+      serverUrl: `http://${wk.WK_ACCOUNT_EGRESS_HOST}`,
+      token: { token: 'PLACEHOLDER' },
+    }),
+  };
+});
 
 import type { AgentGrantHandle } from '../agent-grant-session.js';
 import { dispatcher } from '../mcp-call-dispatch.js';
@@ -80,7 +84,9 @@ describe('hosted MCP call in container mode', () => {
     const outcome = await run('tok-mcp');
     expect(outcome.result.success).toBe(true);
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`http://account.internal/account/api/v1/proxy/licenses/repos/${GUID}/retire`);
+    expect(url).toBe(
+      `http://${WK_ACCOUNT_EGRESS_HOST}/account/api/v1/proxy/licenses/repos/${GUID}/retire`
+    );
     expect(JSON.parse(init.body as string)).toEqual({ onBehalfOfTokenId: 'tok-mcp' });
   });
 

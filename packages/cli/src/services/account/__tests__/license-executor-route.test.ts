@@ -1,3 +1,4 @@
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const tunnelMock = vi.hoisted(() => vi.fn());
@@ -10,6 +11,7 @@ import { inContainerDispatch, licenceFetch, withExecutorPrincipal } from '../exe
 import { retireRepoLicense } from '../license-retire.js';
 
 const GUID = '11111111-1111-4111-8111-111111111111';
+const EGRESS = `http://${WK_ACCOUNT_EGRESS_HOST}`;
 const fetchMock = vi.fn();
 
 beforeEach(() => {
@@ -21,7 +23,7 @@ beforeEach(() => {
     );
   stateMock.mockReset().mockReturnValue({
     kind: 'ready',
-    serverUrl: 'http://account.internal',
+    serverUrl: EGRESS,
     token: { token: 'PLACEHOLDER' },
   });
   vi.stubGlobal('fetch', fetchMock);
@@ -42,7 +44,7 @@ describe('licence calls in a container dispatch', () => {
     await withExecutorPrincipal({ tokenId: 'tok-1' }, () => retireRepoLicense(GUID));
     expect(tunnelMock).not.toHaveBeenCalled();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(`http://account.internal/account/api/v1/proxy/licenses/repos/${GUID}/retire`);
+    expect(url).toBe(`${EGRESS}/account/api/v1/proxy/licenses/repos/${GUID}/retire`);
     expect(init.method).toBe('POST');
     expect((init.headers as Record<string, string>).Authorization).toBe('Bearer PLACEHOLDER');
     expect(JSON.parse(init.body as string)).toEqual({ onBehalfOfTokenId: 'tok-1' });
@@ -57,7 +59,7 @@ describe('licence calls in a container dispatch', () => {
       )
     );
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://account.internal/account/api/v1/proxy/licenses/activate-repo');
+    expect(url).toBe(`${EGRESS}/account/api/v1/proxy/licenses/activate-repo`);
     expect(JSON.parse(init.body as string)).toEqual({
       repositoryGuid: GUID,
       onBehalfOfTokenId: 'tok-2',

@@ -29,7 +29,6 @@ KEY = "Release-Note"
 
 _ROOT = pathlib.Path(__file__).resolve().parents[3]
 CONFIG_REL = ".ci/config/release-notes.json"
-RECORD_PATHS_REL = ".ci/policy/record-paths.json"
 CONSOLE = "console"
 
 GROUP_ORDER = ("Added", "Fixed", "Improved")
@@ -86,7 +85,7 @@ def load_config() -> dict[str, Any]:
 
 
 def _record_globs() -> tuple[tuple[str, tuple[str, ...]], ...]:
-    doc = _load_json(str(_ROOT / RECORD_PATHS_REL))
+    doc = _load_json(str(_policy_paths().policy_path("record-paths.json", _ROOT)))
     return tuple((r["glob"], tuple(r.get("except") or ())) for r in doc.get("records") or ())
 
 
@@ -311,6 +310,24 @@ def _prose_style() -> Any:
     if ci not in sys.path:
         sys.path.insert(0, ci)
     return importlib.import_module("rediacc_ci.quality.prose_style")
+
+
+@functools.cache
+def _policy_paths() -> Any:
+    """`rediacc_ci.policy_paths`, imported on first use with `.ci` on `sys.path`, for the same reason as `_prose_style`."""
+    ci = str(_ROOT / ".ci")
+    if ci not in sys.path:
+        sys.path.insert(0, ci)
+    return importlib.import_module("rediacc_ci.policy_paths")
+
+
+@functools.cache
+def _well_known() -> Any:
+    """`rediacc_ci.well_known`, imported on first use with `.ci` on `sys.path`, for the same reason as `_prose_style`."""
+    ci = str(_ROOT / ".ci")
+    if ci not in sys.path:
+        sys.path.insert(0, ci)
+    return importlib.import_module("rediacc_ci.well_known")
 
 
 @functools.cache
@@ -612,10 +629,10 @@ def document(
     *,
     orphans: list[str] | None = None,
     stable: str | None = None,
-    repo: str = "rediacc/console",
+    repo: str | None = None,
     config: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """The notes document of D8 (`cli/v<V>/release-notes.json`): what `render_markdown` and the changelog page read."""
+    """The notes document of D8 (`cli/v<V>/release-notes.json`): what `render_markdown` and the changelog page read. `repo` defaults to the registry's console repository."""
     return {
         "version": version.removeprefix("v"),
         "start_tag": start_tag,
@@ -623,7 +640,7 @@ def document(
         "groups": group(collection.notes, config),
         "none_count": collection.none_count,
         "stable": stable.removeprefix("v") if stable else None,
-        "repo": repo,
+        "repo": repo if repo is not None else _well_known().GH_REPO,
     }
 
 
@@ -653,6 +670,7 @@ def render_markdown(doc: dict[str, Any]) -> str:
     start = doc.get("start_tag")
     if repo and start:
         parts.append(
-            "**Full Changelog**: https://github.com/%s/compare/%s...%s" % (repo, start, version)
+            "**Full Changelog**: %s/%s/compare/%s...%s"
+            % (_well_known().GH_ORIGIN, repo, start, version)
         )
     return "\n\n".join(parts) + "\n"

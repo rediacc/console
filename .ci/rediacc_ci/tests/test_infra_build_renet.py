@@ -345,7 +345,7 @@ def test_go_licenses_refuses_an_empty_report(monkeypatch, tmp_path):
 
 
 def test_go_licenses_refuses_a_renet_package_row(monkeypatch, tmp_path):
-    stdout = "a/b,https://x,MIT\ngithub.com/rediacc/renet/cmd,x,Unknown\n"
+    stdout = f"a/b,https://x,MIT\ngithub.com/{RENET_REPO}/cmd,x,Unknown\n"
     rc, out = _go_licenses_run(monkeypatch, tmp_path, stdout=stdout)
     assert rc == 1
     assert not out.exists()

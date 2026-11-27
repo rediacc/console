@@ -17,6 +17,7 @@ import tempfile
 import _hookpath
 
 from rediacc_hooks.guards import _harness
+from rediacc_hooks.wellknown import ACCOUNT_REPO, GH_API_BASE, GH_REPO, RENET_REPO
 
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -55,9 +56,13 @@ FIRE_SPEC = [
     ("gh issue create", "gh issue create -t x -b y", True),
     ("gh issue new (the alias)", "gh issue new -t x", True),
     ("bare gh issue create", "gh issue create", True),
-    ("a submodule --repo after the verb", "gh issue create --repo rediacc/renet -t x -b y", True),
-    ("a submodule -R before the verb", "gh issue -R rediacc/renet create -t x", True),
-    ("--repo= before the verb", "gh issue --repo=rediacc/account create -t x", True),
+    (
+        "a submodule --repo after the verb",
+        "gh issue create --repo " + RENET_REPO + " -t x -b y",
+        True,
+    ),
+    ("a submodule -R before the verb", "gh issue -R " + RENET_REPO + " create -t x", True),
+    ("--repo= before the verb", "gh issue --repo=" + ACCOUNT_REPO + " create -t x", True),
     ("an sh -c wrap", "sh -c 'gh issue create -t x -b y'", True),
     ("a bash -lc wrap", 'bash -lc "gh issue create -t x"', True),
     ("an env prefix", "GH_TOKEN=t env GH_REPO=o/r gh issue create -t x", True),
@@ -67,7 +72,7 @@ FIRE_SPEC = [
     ("through command", "command gh issue create -t x", True),
     ("through xargs", "printf x | xargs gh issue create -t", True),
     ("api -X POST", "gh api -X POST repos/o/r/issues -f title=x", False),
-    ("api --method POST", "gh api --method POST repos/rediacc/console/issues -f title=x", False),
+    ("api --method POST", "gh api --method POST repos/" + GH_REPO + "/issues -f title=x", False),
     ("api --method=post", "gh api --method=post repos/o/r/issues -f title=x", False),
     ("api -XPOST bundled", "gh api -XPOST repos/o/r/issues -f title=x", False),
     ("api a body field makes it POST", "gh api repos/o/r/issues -f title=x -f body=y", False),
@@ -76,7 +81,7 @@ FIRE_SPEC = [
     ("api --input file", "gh api repos/o/r/issues --input body.json", False),
     ("api a leading slash", "gh api /repos/o/r/issues -f title=x", False),
     ("api a trailing slash", "gh api repos/o/r/issues/ -f title=x", False),
-    ("api the full URL", "gh api https://api.github.com/repos/o/r/issues -f title=x", False),
+    ("api the full URL", "gh api " + GH_API_BASE + "/repos/o/r/issues -f title=x", False),
     ("api {owner}/{repo} placeholders", "gh api 'repos/{owner}/{repo}/issues' -f title=x", False),
     ("api under sh -c", "sh -c 'gh api repos/o/r/issues -f title=x'", False),
     (
@@ -134,24 +139,26 @@ FIRE_SPEC = [
     ),
     (
         "curl -X POST",
-        "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/o/r/issues -d '{\"title\":\"x\"}'",
+        "curl -X POST -H 'Authorization: token t' "
+        + GH_API_BASE
+        + '/repos/o/r/issues -d \'{"title":"x"}\'',
         False,
     ),
     (
         "curl a -d body makes it POST",
-        "curl -s https://api.github.com/repos/o/r/issues -d @body.json",
+        "curl -s " + GH_API_BASE + "/repos/o/r/issues -d @body.json",
         False,
     ),
-    ("curl --json", 'curl --json \'{"title":"x"}\' https://api.github.com/repos/o/r/issues', False),
+    ("curl --json", 'curl --json \'{"title":"x"}\' ' + GH_API_BASE + "/repos/o/r/issues", False),
     (
         "curl --request=POST --url",
-        "curl --request=POST --url https://api.github.com/repos/o/r/issues",
+        "curl --request=POST --url " + GH_API_BASE + "/repos/o/r/issues",
         False,
     ),
-    ("curl -XPOST bundled", "curl -sXPOST https://api.github.com/repos/o/r/issues", False),
+    ("curl -XPOST bundled", "curl -sXPOST " + GH_API_BASE + "/repos/o/r/issues", False),
     (
         "wget --post-data",
-        'wget --post-data=\'{"title":"x"}\' https://api.github.com/repos/o/r/issues',
+        'wget --post-data=\'{"title":"x"}\' ' + GH_API_BASE + "/repos/o/r/issues",
         False,
     ),
 ]
@@ -161,7 +168,7 @@ ADMIT_SPEC = [
     ("comment on issues/<n>/comments", "gh api repos/o/r/issues/12/comments -f body=x"),
     ("comment POST explicit", "gh api -X POST repos/o/r/issues/12/comments -f body=x"),
     ("gh issue list", "gh issue list --state open"),
-    ("gh issue view", "gh issue view 12 --repo rediacc/renet"),
+    ("gh issue view", "gh issue view 12 --repo " + RENET_REPO),
     ("gh issue comment", "gh issue comment 12 -b x"),
     ("gh issue list -R before the verb", "gh issue -R o/r list"),
     ("api GET of repos/o/r/issues", "gh api repos/o/r/issues"),
@@ -201,13 +208,13 @@ ADMIT_SPEC = [
     ("echo naming the api shape", "echo 'gh api -X POST repos/o/r/issues'"),
     ("grep for the command", "grep -rn 'gh issue create' .claude"),
     ("a heredoc to a file naming it", "cat > notes.md <<'EOF'\ngh issue create -t x\nEOF"),
-    ("curl GET of issues", "curl -s https://api.github.com/repos/o/r/issues"),
-    ("curl -G with data is a GET", "curl -G -d state=open https://api.github.com/repos/o/r/issues"),
+    ("curl GET of issues", "curl -s " + GH_API_BASE + "/repos/o/r/issues"),
+    ("curl -G with data is a GET", "curl -G -d state=open " + GH_API_BASE + "/repos/o/r/issues"),
     (
         "curl POST to comments",
-        "curl -X POST https://api.github.com/repos/o/r/issues/12/comments -d x",
+        "curl -X POST " + GH_API_BASE + "/repos/o/r/issues/12/comments -d x",
     ),
-    ("wget GET of issues", "wget -qO- https://api.github.com/repos/o/r/issues"),
+    ("wget GET of issues", "wget -qO- " + GH_API_BASE + "/repos/o/r/issues"),
     ("gh pr create", "gh pr create --draft -t x -b y"),
     ("an empty command", ""),
 ]
