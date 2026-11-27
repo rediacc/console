@@ -597,7 +597,7 @@
   "commands.config.edit.optionCurrentSecrets": "JSON-fail, mis vastendab osuti→vana lihtteksti teadmisvärava jaoks --apply puhul",
   "commands.config.edit.optionDump": "Trüki praegune konfiguratsioon JSONC-na stdout-i (ainult lugemiseks; ohutu agentidele maskeerimisel)",
   "commands.config.edit.optionEditor": "Redaktori käsu tühistamine (järgib git-prioriteeti: lipp > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
-  "commands.config.edit.optionRedacted": "Peida --dump väljundis tundlikud väärtused (vaikimisi nii; --reveal-iga koos ei tööta)",
+  "commands.config.edit.optionRedacted": "Peida --dump väljundis tundlikud väärtused (vaikimisi nii; ei sobi kokku valikuga --reveal)",
   "commands.config.edit.optionReveal": "Kuva tundlike väärtuste lihttekst (ainult interaktiivne TTY; auditeeritakse)",
   "commands.config.edit.rotateDeclined": "Katkestatud; mustand säilitati redaktori ajutises failis.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",
