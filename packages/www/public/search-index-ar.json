@@ -1888,7 +1888,7 @@
   {
     "id": "search-1936",
     "content": "الوضع الأمني لـ CLI لوكلاء الذكاء الاصطناعي",
-    "body": "وكلاء البرمجة التي تستدعي rdc هي سطح تهديد حقيقي، لذا نعاملهم كمبدأ منفصل. كل استدعاء لـ rdc يُصنَّف عند البدء إما كـ إنسان أو وكيل استناداً إلى إشارات البيئة (CLAUDECODE، GEMINI_CLI، COPILOT_CLI، CURSOR_TRACE_ID، REDIACC_AGENT) بالإضافة إلى مشي سلسلة العمليات في /proc على Linux. الكشف يعتمد أفضل جهد ممكن. غلاف محكم يمكنه انتحال متغيرات البيئة، ولهذا تهم السلسلة الأصلية. يحصل الوكلاء على مجموعة صلاحيات مخفضة: التعديلات الحساسة على الإعداد تستلزم بوابة المعرفة (--current <old>)، ويُرفض المحرر التفاعلي دون تجاوز REDIACC_ALLOW_CONFIG_EDIT المتحقق من السلسلة، كما يُحجب --reveal على أي أمر عرض. كل قرار (سماح، رفض، أو منح --reveal) يكتب سطر JSONL واحد مرتبطاً بتجزئة في ~/.config/rediacc/audit.log.jsonl. شغّل rdc config audit verify للتحقق من نزاهة السلسلة. راجع أمان وكلاء الذكاء الاصطناعي وحواجزه للمصفوفة الكاملة لما يستطيع الوكلاء وما لا يستطيعون فعله، وأمثلة عملية على بوابة المعرفة وآليات تجاوز النطاق.",
+    "body": "وكلاء البرمجة التي تستدعي rdc هي سطح تهديد حقيقي، لذا نعاملهم كمبدأ منفصل. كل استدعاء لـ rdc يُصنَّف عند البدء إما كـ إنسان أو وكيل استناداً إلى إشارات البيئة (CLAUDECODE، GEMINI_CLI، COPILOT_CLI، CURSOR_TRACE_ID، REDIACC_AGENT) بالإضافة إلى مشي سلسلة العمليات في /proc على Linux. الكشف يعتمد أفضل جهد ممكن. غلاف محكم يمكنه انتحال متغيرات البيئة، ولهذا تهم السلسلة الأصلية. يحصل الوكلاء على مجموعة صلاحيات مخفضة: التعديلات الحساسة على الإعداد تستلزم بوابة المعرفة (--current <old>)، ويُرفض rdc config edit (التفاعلي و--apply و--reveal) دون أي تجاوز، كما يُحجب --reveal على أي أمر عرض. ولا يتصرف الوكيل إلا حيث تسمح الموافقة الصريحة من الإنسان وسقف السياسة معاً (سلامة وكلاء الذكاء الاصطناعي). كل قرار (سماح، رفض، أو منح --reveal) يكتب سطر JSONL واحد مرتبطاً بتجزئة في ~/.config/rediacc/audit.log.jsonl. شغّل rdc config audit verify للتحقق من نزاهة السلسلة. راجع أمان وكلاء الذكاء الاصطناعي وحواجزه للمصفوفة الكاملة لما يستطيع الوكلاء وما لا يستطيعون فعله، وأمثلة عملية على بوابة المعرفة وآليات تجاوز النطاق.",
     "excerpt": "وكلاء البرمجة التي تستدعي rdc هي سطح تهديد حقيقي، لذا نعاملهم كمبدأ منفصل. كل استدعاء لـ rdc يُصنَّف عند البدء إما كـ إنسان أو وكيل استناداً إلى إشارا...",
     "category": "Documentation",
     "page": "/ar/docs/account-security",
@@ -2039,8 +2039,8 @@
   {
     "id": "search-1950",
     "content": "دليل إعداد Claude Code",
-    "body": "يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة rdc CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة.",
-    "excerpt": "يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة rdc CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة.",
+    "body": "يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة rdc CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة. الأمان أولاً: قبل ربط وكيل بأي شيء يمس الأسرار، اقرأ السلامة والضوابط لوكلاء الذكاء الاصطناعي. يُكتشف Claude Code الذي يعمل تحت rdc بوصفه وكيلاً. تتطلب التعديلات الحساسة --current <previous-value> (شرط مسبق بأسلوب passwd) للإنسان والوكيل على حد سواء؛ أما --rotate-secret (تدوير مُقَرّ ومُدقَّق) فلا يُعتدّ به إلا لإنسان على طرفية. يُرفض rdc config edit (التفاعلي و--apply و--reveal) دون أي تجاوز، وتبقى مستودعات grand وSSH المباشر إلى الأجهزة مغلقة ما لم يوافق إنسان صراحةً ضمن ما تسمح به السياسة. عندما يفشل شرط مسبق، يخبر الحقل errors[].next.options[].run في غلاف JSON الوكيلَ بأمر CLI الدقيق الذي يقترح على المستخدم تشغيله. انقله حرفياً.",
+    "excerpt": "يعمل Claude Code بشكل أصلي مع Rediacc من خلال أداة rdc CLI. يغطي هذا الدليل الإعداد والأذونات وسير العمل الشائعة. الأمان أولاً: قبل ربط وكيل بأي شيء ي...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-claude-code",
     "path": "docs.ai-agents-claude-code.content",
@@ -2062,7 +2062,7 @@
   {
     "id": "search-1952",
     "content": "تهيئة CLAUDE.md",
-    "body": "ضع هذا الملف في جذر مشروعك. راجع قالب AGENTS.md الكامل للحصول على النسخة الكاملة. الأقسام الرئيسية: # Rediacc Infrastructure ## CLI Tool: rdc ### Common Operations Status: rdc machine status <machine> -o json Deploy: rdc repo up <repo>@<machine> --yes Containers: rdc machine status <machine> --containers -o json Health: rdc machine health <machine> -o json SSH: rdc term connect <machine> [repo] ### Rules Always use --output json when parsing output Always use --yes for automated confirmations Use --dry-run before destructive operations",
+    "body": "ضع هذا الملف في جذر مشروعك. راجع قالب AGENTS.md الكامل للحصول على النسخة الكاملة. الأقسام الرئيسية: # Rediacc Infrastructure ## CLI Tool: rdc ### Common Operations Status: rdc machine status <machine> -o json Deploy: rdc repo up <repo>@<machine> --yes Containers: rdc machine status <machine> --containers -o json Health: rdc machine health <machine> -o json SSH: rdc term connect <machine|repo-ref> ### Rules Always use --output json when parsing output Always use --yes for automated confirmations Use --dry-run before destructive operations",
     "excerpt": "ضع هذا الملف في جذر مشروعك. راجع قالب AGENTS.md الكامل للحصول على النسخة الكاملة. الأقسام الرئيسية: # Rediacc Infrastructure ## CLI Tool: rdc ### Comm...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-claude-code",
@@ -2122,7 +2122,7 @@
   {
     "id": "search-1957",
     "content": "تشخيص مشاكل الحاويات",
-    "body": "You: \"Why is the nextcloud container unhealthy?\" Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository → Lists container states Claude Code runs: rdc term prod-1 -c \"docker logs nextcloud-app --tail 50\" → Checks recent logs",
+    "body": "You: \"Why is the nextcloud container unhealthy?\" Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository → Lists container states Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 → Checks recent logs",
     "excerpt": "You: \"Why is the nextcloud container unhealthy?\" Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository → Li...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-claude-code",
@@ -2914,8 +2914,8 @@
   {
     "id": "search-2026",
     "content": "السلامة والضوابط",
-    "body": "لا يتعامل CLI مع الوكلاء بالطريقة ذاتها التي يتعامل بها مع إنسان أمام الطرفية. العمليات الحساسة تتطلب إثبات معرفتك بالحالة الراهنة عبر العلم --current، وتدفقات المحرر التفاعلية مرفوضة افتراضيًا، وكل رفض يُسجَّل في سجل التدقيق. يغطي مرجع السلامة والضوابط لوكلاء الذكاء الاصطناعي جدول جدار الحماية الكامل، ونموذج بوابة المعرفة، ونطاق التجاوز REDIACC_ALLOW_CONFIG_EDIT، وسجل التدقيق المرتبط بالتجزئة.",
-    "excerpt": "لا يتعامل CLI مع الوكلاء بالطريقة ذاتها التي يتعامل بها مع إنسان أمام الطرفية. العمليات الحساسة تتطلب إثبات معرفتك بالحالة الراهنة عبر العلم --current...",
+    "body": "لا يتعامل CLI مع الوكلاء بالطريقة ذاتها التي يتعامل بها مع إنسان أمام الطرفية. العمليات الحساسة تتطلب إثبات الحالة الراهنة عبر العلم --current، وتعديلات الإعدادات الكاملة مرفوضة دون أي تجاوز، وكل رفض يُسجَّل في سجل التدقيق. يغطي مرجع السلامة والضوابط لوكلاء الذكاء الاصطناعي جدول جدار الحماية الكامل، ونموذج بوابة المعرفة، وقاعدة الموافقة الصريحة مع سقف السياسة، وسجل التدقيق المرتبط بالتجزئة.",
+    "excerpt": "لا يتعامل CLI مع الوكلاء بالطريقة ذاتها التي يتعامل بها مع إنسان أمام الطرفية. العمليات الحساسة تتطلب إثبات الحالة الراهنة عبر العلم --current، وتعديل...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-overview",
     "fragment": "safety--guardrails",
@@ -2938,7 +2938,7 @@
   {
     "id": "search-2028",
     "content": "أمان وضمانات وكلاء الذكاء الاصطناعي",
-    "excerpt": "كيف تمنع واجهة سطر أوامر Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو تصعيد الصلاحيات. بوابات المعرفة والتعتيم والتجاوزات المعتمدة بالسلف وسجل تدقيق مرتبط بالتجزئة.",
+    "excerpt": "كيف يمنع Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو رفع صلاحياتهم. قرار واحد لكل واجهة، موافقة صريحة مع سقف للسياسة، وبوابات المعرفة، والتعتيم، وسجل تدقيق متسلسل بالتجزئة.",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.title",
@@ -2947,8 +2947,8 @@
   },
   {
     "id": "search-2029",
-    "content": "كيف تمنع واجهة سطر أوامر Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو تصعيد الصلاحيات. بوابات المعرفة والتعتيم والتجاوزات المعتمدة بالسلف وسجل تدقيق مرتبط بالتجزئة.",
-    "excerpt": "كيف تمنع واجهة سطر أوامر Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو تصعيد الصلاحيات. بوابات المعرفة و...",
+    "content": "كيف يمنع Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو رفع صلاحياتهم. قرار واحد لكل واجهة، موافقة صريحة مع سقف للسياسة، وبوابات المعرفة، والتعتيم، وسجل تدقيق متسلسل بالتجزئة.",
+    "excerpt": "كيف يمنع Rediacc مساعدي البرمجة بالذكاء الاصطناعي من تسريب الأسرار أو الكتابة فوق بيانات الاعتماد أو رفع صلاحياتهم. قرار واحد لكل واجهة، موافقة صريحة...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "path": "docs.ai-agents-safety.description",
@@ -2989,7 +2989,7 @@
   {
     "id": "search-2033",
     "content": "مرجع سريع: ما يمكن للوكلاء فعله وما لا يمكنهم فعله",
-    "body": "| العملية | الإعداد الافتراضي للوكيل | كيفية الفتح لحالة استخدام محددة | |---|---|---| | rdc config show (معتَّم) | ✅ allowed | | | rdc config field get --pointer <pointer> (نموذج معتَّم أو ملخص) | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل عام) | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل حساس، مع --current صحيح) | ✅ allowed | | | rdc config edit --dump (JSONC معتَّم) | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل حساس، بدون --current) | 🔴 refused | تزويد --current \"<القيمة القديمة>\" | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | استخدام --digest بدلاً من ذلك | | rdc config show --reveal | 🔴 refused | استخدام rdc config show العادي | | rdc config edit (المحرر التفاعلي) | 🔴 refused | يضع الإنسان REDIACC_ALLOW_CONFIG_EDIT=* قبل تشغيل الوكيل | | rdc config edit --apply <file> | 🔴 refused | نفس التجاوز | | rdc config field rotate --pointer <pointer> | 🔴 refused | نفس التجاوز؛ يستخدم تأكيداً تفاعلياً | | rdc term connect <machine> (SSH مباشر إلى الجهاز) | 🔴 refused | تفريع مستودع أولاً والاتصال بالنسخة المفرعة | كل ما يُرفض للوكيل يُكتب في سجل التدقيق مع outcome: refused وسبب الرفض.",
+    "body": "| العملية | الإعداد الافتراضي للوكيل | كيفية الفتح لحالة استخدام محددة | |---|---|---| | rdc config show (معتَّم) | ✅ allowed | | | rdc config field get --pointer <pointer> (نموذج معتَّم أو ملخص) | ✅ allowed | | | rdc config field get --pointer <pointer> --digest | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل عام) | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل حساس، مع --current صحيح) | ✅ allowed | | | rdc config edit --dump --redacted (JSONC معتَّم) | ✅ allowed | | | rdc config audit {log, tail, verify} | ✅ allowed | | | rdc config field set --pointer <pointer> (حقل حساس، بدون --current) | 🔴 refused | تزويد --current \"<القيمة القديمة>\" | | rdc repo secret set <repo> --rotate-secret (تدوير بدون --current) | 🔴 refused | تزويد --current، أو يُجري إنسان التدوير من طرفية | | rdc config field get --pointer <pointer> --reveal | 🔴 refused | استخدام --digest بدلاً من ذلك | | rdc config show --reveal | 🔴 refused | استخدام rdc config show العادي | | rdc config edit (المحرر التفاعلي) | 🔴 refused، بلا تجاوز | الاطلاع عبر --dump --redacted، وتغيير حقل واحد عبر config field set --current | | rdc config edit --apply <file> | 🔴 refused، بلا تجاوز | الأمر نفسه؛ يطبّق إنسان من طرفية التعديلات على المستند كاملاً | | rdc config edit --reveal | 🔴 refused، بلا تجاوز | الأمر نفسه | | rdc config field rotate --pointer <pointer> | 🔴 refused | يشغّله إنسان من طرفية تفاعلية | | تغيير مستودع grand (الإنتاج) | 🔴 refused | موافقة صريحة من إنسان لهذا المستودع، ضمن سياسة تسمح بتغيير مستودعات grand (أدناه) | | عمليات دورة حياة العنقود أو مخزن البيانات | 🔴 refused | موافقة صريحة من إنسان لهذا العنقود، ضمن سياسة تسمح بعمليات العناقيد | | rdc term connect <machine> (SSH مباشر إلى الجهاز) | 🔴 refused | تفريع مستودع أولاً والاتصال بالنسخة المفرعة | كل ما يُرفض للوكيل يُكتب في سجل التدقيق مع outcome: refused وسبب الرفض. وتعديل المستند الكامل للإعدادات لا مسار له أمام الوكيل إطلاقاً: فالإعدادات تحمل بيانات اعتماد LUKS لكل مستودع، والوكيل الذي يستطيع إعادة كتابتها يستطيع أيضاً حذف بيانات اعتماد لا يمكن فتح الحجم المشفر بدونها.",
     "excerpt": "| العملية | الإعداد الافتراضي للوكيل | كيفية الفتح لحالة استخدام محددة | |---|---|---| | rdc config show (معتَّم) | ✅ allowed | | | rdc config field g...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3001,7 +3001,7 @@
   {
     "id": "search-2034",
     "content": "كيف يتم اكتشاف الوكلاء",
-    "body": "تتعامل واجهة سطر الأوامر مع العملية على أنها وكيل عند تحقق أي من الشروط التالية: أي من المتغيرات REDIACC_AGENT أو CLAUDECODE أو GEMINI_CLI أو COPILOT_CLI مضبوط على \"1\"، أو CURSOR_TRACE_ID مضبوط بأي قيمة. على Linux: أي عملية أصل في سلسلة السلف تحتوي على إحدى هذه المتغيرات في بيئتها (عبر /proc/<pid>/environ). حتى لو قام الوكيل بحذف متغيراته الخاصة باستخدام env -i أو سكريبت مغلف، تظل سلسلة الأصل تخبر واجهة سطر الأوامر بمن بدأ التشغيل. يعمل الاكتشاف مرة واحدة لكل عملية ويُخزَّن مؤقتاً. ولا يمكن تعطيله.",
+    "body": "تتعامل واجهة سطر الأوامر مع العملية على أنها وكيل عند تحقق أي من الشروط التالية: أي من المتغيرات REDIACC_AGENT أو CLAUDECODE أو GEMINI_CLI أو COPILOT_CLI مضبوط على \"1\"، أو CURSOR_TRACE_ID مضبوط بأي قيمة. على Linux: أي عملية أصل في سلسلة السلف تحتوي على إحدى هذه المتغيرات في بيئتها (عبر /proc/<pid>/environ). حتى لو قام الوكيل بحذف متغيراته الخاصة باستخدام env -i أو سكريبت مغلف، تظل سلسلة الأصل تخبر واجهة سطر الأوامر بمن بدأ التشغيل. يعمل الاكتشاف مرة واحدة لكل عملية ويُخزَّن مؤقتاً. ولا يمكن تعطيله. ويُعلِّم تفويض MCP البعيد استدعاءاته على المنفِّذ بأنها استدعاءات وكيل، دون حاجة إلى اكتشاف.",
     "excerpt": "تتعامل واجهة سطر الأوامر مع العملية على أنها وكيل عند تحقق أي من الشروط التالية: أي من المتغيرات REDIACC_AGENT أو CLAUDECODE أو GEMINI_CLI أو COPILOT_...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3012,8 +3012,20 @@
   },
   {
     "id": "search-2035",
+    "content": "قرار واحد: الموافقة الصريحة وسقف السياسة معاً",
+    "body": "كل واجهة تشغّل أمر rdc (واجهة CLI وخادم MCP المحلي وخادم MCP البعيد وrdc --proxy ووحدة تحكم الويب) تسأل دالة القرار نفسها، فترفض وتسمح بالأشياء ذاتها. وتطبّق الدالة شرطين، ولا يتصرف الوكيل إلا حيث يتحقق الاثنان: سقف السياسة. سياسة المؤسسة، مقيَّدة بسياسة الفريق، تحدد الأوامر والأجهزة والمستودعات التي يجوز للمستدعي استخدامها، وهل يُسمح أصلاً بتغيير مستودعات grand (allowGrandRepos) وبعمليات العناقيد (allowClusterOps). وإذا لم يكن للإعدادات سجل سياسة فتُطبَّق قيمة افتراضية بحسب الدور: يستطيع المالكون والمسؤولون التصرف، ولا يستطيع الأعضاء. السياسة سجل مختوم منفصل لا يكتبه إلا المالكون والمسؤولون (النموذج الأمني)؛ ولا يستطيع أي وكيل ولا أي أمر في CLI تعديلها. الموافقة الصريحة من الإنسان. داخل السقف، يحتاج الوكيل مع ذلك إلى إنسان يسمّي مستودع grand أو العنقود الذي يجوز له تغييره: الوكلاء المحليون (CLI وMCP المحلي): يصدّر الإنسان REDIACC_ALLOW_GRAND_REPO (أسماء المستودعات، أو ) أو REDIACC_ALLOW_CLUSTER_OPS (أسماء العناقيد، أو ) في الطرفية قبل تشغيل الوكيل. تفحص CLI سلسلة العمليات الأصلية، فلا يُعتدّ بمتغير يضبطه الوكيل في منتصف الجلسة (كيف يُفحص ذلك على كل نظام تشغيل). الوكلاء البعيدون (MCP البعيد): تكون الموافقات جزءاً من التفويض الذي ينشئه الإنسان في واجهة الحساب (الخادم البعيد). لا توسّع الموافقة الصريحة السقف أبداً: فالمستودع الذي تغلقه السياسة يبقى مغلقاً مهما قالت البيئة أو التفويض. ولا تحتاج النسخ المفرعة (forks) إلى موافقة. والمستودع الذي لا تستطيع CLI تحديد هويته يُعدّ grand. التغييرات المدمِّرة تسأل أولاً. عندما يُصرَّح للوكيل بتغيير مدمِّر في مستودع grand (مثل repo delete)، تكون الإجابة needs_confirmation. يعرض عميل MCP على المستخدم نافذة تأكيد؛ أما العميل الذي لا يملك ذلك فيحصل على وسيط confirm يعيده بعد سؤال المستخدم. وفي CLI يعيد الإنسان تشغيل الأمر مع --confirm-grand <repo>. تحمل كل إجابة رمزاً ثابتاً (POLICY_DENIED وGRAND_REPO_DENIED وCLUSTER_OPS_DENIED وAGENT_OPT_IN_MISSING وFORK_BLOCKED وAGENT_BLOCKED وCONFIRMATION_REQUIRED)، فيتفرّع النص البرمجي أو الوكيل بحسب الرمز لا بحسب الرسالة (مخرجات JSON).",
+    "excerpt": "كل واجهة تشغّل أمر rdc (واجهة CLI وخادم MCP المحلي وخادم MCP البعيد وrdc --proxy ووحدة تحكم الويب) تسأل دالة القرار نفسها، فترفض وتسمح بالأشياء ذاتها....",
+    "category": "Documentation",
+    "page": "/ar/docs/ai-agents-safety",
+    "fragment": "one-decision-opt-in-and-policy-ceiling",
+    "path": "docs.ai-agents-safety.content",
+    "priority": 2,
+    "language": "ar"
+  },
+  {
+    "id": "search-2036",
     "content": "نموذج بوابة المعرفة",
-    "body": "التعديلات الحساسة تتبع اتفاقية passwd(1): لتغيير سر، أثبت أنك كنت تعرفه بالفعل. متماثل للبشر والوكلاء. كلاهما يمر بنفس البوابة. لا يوجد تجاوز بحجة \"أنا أمام لوحة المفاتيح\". تريد تدوير رمز API مخزَّن في /credentials/cfDnsApiToken؟ تسأل واجهة سطر الأوامر: \"ما هي القيمة الحالية؟\" يزوّد الوكيل (أو الإنسان) النص الصريح عبر --current \"$OLD\". تُجزِّئ واجهة سطر الأوامر $OLD بـ SHA-256 وتقارنه بملخص القيمة المخزَّنة حالياً. تطابق → تنفيذ الكتابة. عدم تطابق → رفض، تسجيل. للتدوير دون التحقق من القيمة السابقة، مرّر --rotate-secret (لا يجتمع مع --current). يُسجَّل هذا في سجل التدقيق بشكل صريح باعتباره تدويراً. النموذج يغلق ثلاث أسطح هجومية: التدوير الصامت: الوكيل الذي لم يكن له وصول سابق إلى $OLD لا يستطيع استبداله بقيمة من اختياره. التسرب عبر الاستطلاع: استجابة الملخص لا تحتوي أبداً على نص صريح؛ حتى سجل التدقيق المخترق يُظهر expected abc12345…, got deadbeef…، وليس القيم الأساسية. الكتابة العرضية فوق إعدادات الإنتاج: يتطلب --current متعمداً في كل مرة، حتى على TTY. يلتقط خطأ \"قصدت ضبط STRIPE_TEST لكنني في shell الإنتاج\".",
+    "body": "التعديلات الحساسة تتبع اتفاقية passwd(1): لتغيير سر، أثبت أنك كنت تعرفه بالفعل. متماثل للبشر والوكلاء. كلاهما يمر بنفس البوابة. لا يوجد تجاوز بحجة \"أنا أمام لوحة المفاتيح\". تريد تدوير رمز API مخزَّن في /credentials/cfDnsApiToken؟ تسأل واجهة سطر الأوامر: \"ما هي القيمة الحالية؟\" يزوّد الوكيل (أو الإنسان) النص الصريح عبر --current \"$OLD\". تُجزِّئ واجهة سطر الأوامر $OLD بـ SHA-256 وتقارنه بملخص القيمة المخزَّنة حالياً. تطابق → تنفيذ الكتابة. عدم تطابق → رفض، تسجيل. للتدوير دون التحقق من القيمة السابقة، مرّر --rotate-secret (يستبعد --current ويستبعده). يُسجَّل ذلك في التدقيق بوضوح بوصفه تدويراً، ولا يُعتدّ به إلا لإنسان على طرفية تفاعلية: أما الوكيل، أو نص برمجي بلا طرفية على stdin، فيحتاج دائماً إلى --current. النموذج يغلق ثلاث أسطح هجومية: التدوير الصامت: الوكيل الذي لم يكن له وصول سابق إلى $OLD لا يستطيع استبداله بقيمة من اختياره. التسرب عبر الاستطلاع: استجابة الملخص لا تحتوي أبداً على نص صريح؛ حتى سجل التدقيق المخترق يُظهر expected abc12345…, got deadbeef…، وليس القيم الأساسية. الكتابة العرضية فوق إعدادات الإنتاج: يتطلب --current متعمداً في كل مرة، حتى على TTY. يلتقط خطأ \"قصدت ضبط STRIPE_TEST لكنني في shell الإنتاج\".",
     "excerpt": "التعديلات الحساسة تتبع اتفاقية passwd(1): لتغيير سر، أثبت أنك كنت تعرفه بالفعل. متماثل للبشر والوكلاء. كلاهما يمر بنفس البوابة. لا يوجد تجاوز بحجة \"أن...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3023,9 +3035,9 @@
     "language": "ar"
   },
   {
-    "id": "search-2036",
+    "id": "search-2037",
     "content": "تلميحات الإجراء التالي المنظمة",
-    "body": "عند فشل الشرط المسبق، يحمل غلاف JSON (مع --output json) حقلاً منظماً errors[].next يخبر الوكلاء بالضبط بما يقترحونه على الإنسان: { \"errors\": [{ \"code\": \"PRECONDITION_MISMATCH\", \"message\": \"...\", \"next\": { \"summary\": \"Provide the current value or acknowledge rotation.\", \"options\": [ { \"description\": \"Re-read current digest, then retry with --current\", \"run\": \"rdc repo secret get mail --key STRIPE_KEY\" }, { \"description\": \"Skip the precondition (rotation, audited)\", \"run\": \"rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret\" } ] } }] } ينبغي للوكلاء نقل next.options[].run حرفياً إلى الإنسان بدلاً من صياغة أوامرهم الخاصة. هذا يتجنب نمط فشل \"الوكيل يخترع أمراً غير موجود\" ويبقي المشغّل في السيطرة على الإجراء الفعلي.",
+    "body": "عند فشل الشرط المسبق، يحمل غلاف JSON (مع --output json) حقلاً منظماً errors[].next يخبر الوكلاء بالضبط بما يقترحونه على الإنسان: { \"errors\": [{ \"code\": \"PRECONDITION_MISMATCH\", \"message\": \"...\", \"next\": { \"summary\": \"Provide the current value or acknowledge rotation.\", \"options\": [ { \"description\": \"Re-read current digest, then retry with --current\", \"run\": \"rdc repo secret get mail --key STRIPE_KEY\" }, { \"description\": \"Skip the precondition (rotation, audited)\", \"run\": \"rdc repo secret set mail --key STRIPE_KEY --value <new> --mode file --rotate-secret\" } ] } }] } ينبغي للوكلاء أن ينقلوا next.options[].run حرفياً إلى الإنسان بدلاً من اختراع أوامر من عندهم. هذا يتجنب حالة الفشل التي يخترع فيها الوكيل أمراً غير موجود، ويُبقي المشغّل متحكماً في الإجراء الفعلي. أما خيار التدوير فيشغّله الإنسان من طرفية؛ ويُرفض للوكيل نفسه.",
     "excerpt": "عند فشل الشرط المسبق، يحمل غلاف JSON (مع --output json) حقلاً منظماً errors[].next يخبر الوكلاء بالضبط بما يقترحونه على الإنسان: { \"errors\": [{ \"code\"...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3035,9 +3047,9 @@
     "language": "ar"
   },
   {
-    "id": "search-2037",
+    "id": "search-2038",
     "content": "مثال توضيحي",
-    "body": "# الحصول على الملخص القصير لنموذج التعتيم (آمن للوكلاء). $ rdc config field get --pointer /credentials/cfDnsApiToken {\"pointer\": \"/credentials/cfDnsApiToken\", \"value\": \"<redacted:secret>:abc12345\"} # محاولة الكتابة فوق بلا إثبات: مرفوض. $ rdc config field set --pointer /credentials/cfDnsApiToken --new '\"agent-picked-value\"' ✗ Precondition failed: sensitive path requires --current (or --rotate-secret) # تزويد النص الصريح الحالي: مسموح. $ rdc config field set --pointer /credentials/cfDnsApiToken \\ --current \"$OLD_CF_TOKEN\" \\ --new \"$NEW_CF_TOKEN\" Set /credentials/cfDnsApiToken إذا لم يكن للوكيل $OLD_CF_TOKEN قط، فلا يمكنه الوفاء بالشرط المسبق وسيُرفض التدوير. المستخدم الذي يمتلكه لا يزال بإمكانه القيام بذلك إما عبر المحرر أو بتمرير --current من shell الخاص به.",
+    "body": "# الحصول على الملخص القصير لنموذج التعتيم (آمن للوكلاء). $ rdc config field get --pointer /credentials/cfDnsApiToken {\"pointer\": \"/credentials/cfDnsApiToken\", \"value\": \"<redacted:secret>:abc12345\"} # محاولة الكتابة فوق بلا إثبات: مرفوض. $ rdc config field set --pointer /credentials/cfDnsApiToken --new '\"agent-picked-value\"' ✗ Precondition failed: sensitive path requires --current # تزويد النص الصريح الحالي: مسموح. $ rdc config field set --pointer /credentials/cfDnsApiToken \\ --current \"$OLD_CF_TOKEN\" \\ --new \"$NEW_CF_TOKEN\" Set /credentials/cfDnsApiToken إذا لم يكن لدى الوكيل $OLD_CF_TOKEN قط، فلا يستطيع استيفاء الشرط المسبق ويُرفض التدوير. ومن يملك القيمة يستطيع إجراءه مع ذلك: بتمرير --current من صدفته، أو بـ rdc config field rotate على طرفية تفاعلية.",
     "excerpt": "# الحصول على الملخص القصير لنموذج التعتيم (آمن للوكلاء). $ rdc config field get --pointer /credentials/cfDnsApiToken {\"pointer\": \"/credentials/cfDnsAp...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3047,10 +3059,10 @@
     "language": "ar"
   },
   {
-    "id": "search-2038",
+    "id": "search-2039",
     "content": "التعتيم افتراضياً",
-    "body": "كل أمر rdc يقرأ الحالة الحساسة: config show، config field get، config machine list، config edit --dump: يُرجع نماذج تعتيم لحقول الأسرار، وليس نصاً صريحاً: \"sshKey\": \"<redacted:credential>:9f3a2c1b\" \"cfDnsApiToken\":\"<redacted:secret>:abc12345\" \"storages.s3-prod.vaultContent\": \"<redacted:secret>:1f2e3d4c\" اللاحقة السداسية عشرية المكونة من 8 أحرف في النموذج هي أول 8 أحرف من sha256(canonicalize(value)): كافية للتمييز بين قيمتين مختلفتين بنظرة واحدة، غير كافية للعكس. يمكن للوكيل استخدام النموذج لتتبع ما إذا كانت القيمة قد تغيرت دون رؤيتها قط. --reveal يرفع التعتيم للبشر على TTY تفاعلي. يُرفض الوكلاء بغض النظر عن حالة TTY. كل منح يكتب قيداً في سجل التدقيق بـ reveal_granted؛ كل رفض يكتب قيداً refused مع إشارات الوكيل للجهة الفاعلة مرفقة.",
-    "excerpt": "كل أمر rdc يقرأ الحالة الحساسة: config show، config field get، config machine list، config edit --dump: يُرجع نماذج تعتيم لحقول الأسرار، وليس نصاً صري...",
+    "body": "كل أمر rdc يقرأ الحالة الحساسة: config show، config field get، config machine list، config edit --dump --redacted: يُرجع نماذج تعتيم لحقول الأسرار، وليس نصاً صريحاً: \"sshKey\": \"<redacted:credential>:9f3a2c1b\" \"cfDnsApiToken\":\"<redacted:secret>:abc12345\" \"storages.s3-prod.vaultContent\": \"<redacted:secret>:1f2e3d4c\" اللاحقة السداسية عشرية المكونة من 8 أحرف في النموذج هي أول 8 أحرف من sha256(canonicalize(value)): كافية للتمييز بين قيمتين مختلفتين بنظرة واحدة، غير كافية للعكس. يمكن للوكيل استخدام النموذج لتتبع ما إذا كانت القيمة قد تغيرت دون رؤيتها قط. --reveal يرفع التعتيم للبشر على TTY تفاعلي. يُرفض الوكلاء بغض النظر عن حالة TTY. كل منح يكتب قيداً في سجل التدقيق بـ reveal_granted؛ كل رفض يكتب قيداً refused مع إشارات الوكيل للجهة الفاعلة مرفقة.",
+    "excerpt": "كل أمر rdc يقرأ الحالة الحساسة: config show، config field get، config machine list، config edit --dump --redacted: يُرجع نماذج تعتيم لحقول الأسرار، ول...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "fragment": "redaction-by-default",
@@ -3059,25 +3071,13 @@
     "language": "ar"
   },
   {
-    "id": "search-2039",
-    "content": "التجاوز `REDIACC_ALLOW_CONFIG_EDIT`",
-    "body": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: # أو # (نطاقات glob مفصولة بفواصل: أحرف * البدل مسموحة لكل شريحة) …ويرث الوكيل هذا. تفصيل حاسم: يجب أن يظهر التجاوز في عملية فوق الوكيل في سلسلة السلف. إذا ضبطه الوكيل في بيئته الخاصة (أو في shell فرعي أنشأه)، ترفض واجهة سطر الأوامر وتعلمك بذلك: Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent). الأثر: لا يستطيع الوكيل تجاوز ضمانة بتشغيل export REDIACC_ALLOW_CONFIG_EDIT='*' في منتصف الجلسة. فقط عملية أصل (أنت، في طرفيتك، قبل تشغيل الوكيل) يمكنها فتح ذلك الباب.",
-    "excerpt": "بعض العمليات: المحرر التفاعلي، --apply، field rotate: موجودة للبشر وليس لها مسار آمن للوكلاء. إذا كنت تريد بنشاط أن يقوم وكيل بإحداها، تضبط: # أو # (ن...",
-    "category": "Documentation",
-    "page": "/ar/docs/ai-agents-safety",
-    "fragment": "the-rediacc_allow_config_edit-override",
-    "path": "docs.ai-agents-safety.content",
-    "priority": 2,
-    "language": "ar"
-  },
-  {
     "id": "search-2040",
-    "content": "دعم المنصات: كيفية التحقق من التجاوز على كل نظام تشغيل",
-    "body": "يعتمد كل من REDIACC_ALLOW_CONFIG_EDIT و REDIACC_ALLOW_GRAND_REPO على التحقق من سلسلة السلف لإثبات أن التجاوز قد ضبطته أنت ولم يحقنه الوكيل. يختلف التحقق في الآلية من نظام لآخر، وتختلف قوة الضمان أيضاً: | المنصة | الشاهد | قوة الضمان | |---|---|---| | Linux | /proc/<pid>/environ لكل عملية في السلسلة | صورة وقت التنفيذ من النواة. لا تستطيع العملية تعديل بيئتها بأثر رجعي. | | macOS | مكالمة نظام kern.procargs2 يقرأها مساعد صغير مضمّن في rdc | نفس خاصية صورة وقت التنفيذ كما في Linux. قابلة للقراءة لعملياتك بدون حقوق المسؤول. | | Windows | كتلة البيئة المباشرة لكل عملية سلف (PEB)، يقرأها نفس المساعد، مع حماية ضد إعادة استخدام PID | أضعف: Windows لا تحتفظ بصورة وقت التنفيذ، لذا يقرأ التحقق الذاكرة الحالية. العمليات الأب لا تزال لا تستطيع إعادة الكتابة من قِبَل شيء يشغله وكيل عادي، لكن الشاهد غير مجمّد في النواة مثلما هو على Linux و macOS. | على macOS و Windows تُشغّل واجهة سطر الأوامر ثنائي renet المدمج بها للقيام بالقراءة؛ يُرجع المساعد أي من المتغيرات المُراقبة تحملها كل عملية سلف، وتبقى كل منطق القرار في واجهة سطر الأوامر. إذا كان المساعد مفقوداً أو قديماً أو فشل لأي سبب، فإن واجهة سطر الأوامر لا تستطيع التحقق من التجاوز وتفشل بشكل آمن: يُرفض التجاوز وتقول رسالة الخطأ إن التحقق كان غير متوفّر، وليس أنك فعلت شيئاً خاطئاً. التثبيت الصحيح لن يعرض هذه الرسالة أبداً؛ إعادة تثبيت rdc تستعيد المساعد. ما يبقى صحيحاً على كل المنصات: التجاوز يجب أن يكون موجوداً بالفعل في بيئة عملية الوكيل عند بدء التشغيل. صدّره في طرفيتك ثم شغّل الوكيل. الوكيل الذي يضبط المتغير في منتصف الجلسة يُرفض.",
-    "excerpt": "يعتمد كل من REDIACC_ALLOW_CONFIG_EDIT و REDIACC_ALLOW_GRAND_REPO على التحقق من سلسلة السلف لإثبات أن التجاوز قد ضبطته أنت ولم يحقنه الوكيل. يختلف التح...",
+    "content": "كيفية التحقق من الموافقة الصريحة المحلية على كل نظام تشغيل",
+    "body": "يعتمد كل من REDIACC_ALLOW_GRAND_REPO و REDIACC_ALLOW_CLUSTER_OPS على التحقق من سلسلة السلف لإثبات أن الموافقة الصريحة ضبطها الإنسان ولم يحقنها الوكيل. يعمل التحقق على Linux وmacOS وWindows، لكن الشاهد الذي يقرؤه يختلف من منصة لأخرى، وتختلف قوة الضمان أيضاً: | المنصة | الشاهد | قوة الضمان | |---|---|---| | Linux | /proc/<pid>/environ لكل عملية في السلسلة | صورة وقت التنفيذ من النواة. لا تستطيع العملية تعديل بيئتها بأثر رجعي. | | macOS | مكالمة نظام kern.procargs2 يقرأها مساعد صغير مضمّن في rdc | نفس خاصية صورة وقت التنفيذ كما في Linux. قابلة للقراءة لعملياتك بدون حقوق المسؤول. | | Windows | كتلة البيئة المباشرة لكل عملية سلف (PEB)، يقرأها نفس المساعد، مع حماية ضد إعادة استخدام PID | أضعف: Windows لا تحتفظ بصورة وقت التنفيذ، لذا يقرأ التحقق الذاكرة الحالية. العمليات الأب لا تزال لا تستطيع إعادة الكتابة من قِبَل شيء يشغله وكيل عادي، لكن الشاهد غير مجمّد في النواة مثلما هو على Linux و macOS. | على macOS وWindows تشغّل CLI الملف التنفيذي renet المضمَّن لإجراء القراءة؛ ويبلغ المساعد عن المتغيرات المراقَبة التي تحملها كل عملية سلف، ويبقى منطق القرار كله داخل CLI. وإذا كان المساعد مفقوداً أو قديماً أو فشل لأي سبب، فلا تستطيع CLI التحقق من الموافقة الصريحة وتفشل بإغلاق آمن: تُرفض الموافقة وتذكر رسالة الخطأ أن التحقق لم يكن متاحاً، لا أن خطأً قد وقع. لا يُظهر التثبيت السليم هذه الرسالة أبداً؛ وإعادة تثبيت rdc تستعيد المساعد. ما يبقى صحيحاً على كل منصة: يجب أن تكون الموافقة الصريحة موجودة أصلاً في بيئة عملية الوكيل عند بدئها. تُصدَّر في الطرفية ثم يُشغَّل الوكيل. أما الوكيل الذي يضبط المتغير في منتصف الجلسة فيُرفض.",
+    "excerpt": "يعتمد كل من REDIACC_ALLOW_GRAND_REPO و REDIACC_ALLOW_CLUSTER_OPS على التحقق من سلسلة السلف لإثبات أن الموافقة الصريحة ضبطها الإنسان ولم يحقنها الوكيل....",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
-    "fragment": "platform-support-how-the-override-is-verified-on-each-os",
+    "fragment": "how-a-local-opt-in-is-verified-on-each-os",
     "path": "docs.ai-agents-safety.content",
     "priority": 2,
     "language": "ar"
@@ -3085,7 +3085,7 @@
   {
     "id": "search-2041",
     "content": "سجل التدقيق",
-    "body": "كل تعديل، كل رفض، كل منح --reveal يكتب سطر JSONL في ~/.config/rediacc/audit.log.jsonl (النمط 0600، يتدوّر عند 10 ميجابايت). كل سطر مرتبط بتجزئة: حقل prevHash الخاص به هو sha256(\"<السطر السابق>\"). العبث بأي سطر يكسر السلسلة في كل سطر تالٍ. {\"ts\":\"2026-04-21T10:02:47.831Z\",\"actor\":{\"kind\":\"agent\",\"agentSignals\":[\"CLAUDECODE\"]},\"command\":\"config field set\",\"paths\":[\"/credentials/cfDnsApiToken\"],\"outcome\":\"ok\",\"configId\":\"...\",\"configVersion\":48,\"prevHash\":\"sha256:9f3a...\"} {\"ts\":\"2026-04-21T10:02:51.114Z\",\"actor\":{\"kind\":\"agent\",\"agentSignals\":[\"CLAUDECODE\"]},\"command\":\"config edit\",\"paths\":[],\"outcome\":\"refused\",\"reason\":\"agent without REDIACC_ALLOW_CONFIG_EDIT=*\",\"prevHash\":\"sha256:abc1...\"} {\"ts\":\"2026-04-21T10:03:05.220Z\",\"actor\":{\"kind\":\"human\"},\"command\":\"config show --reveal\",\"paths\":[],\"outcome\":\"reveal_granted\",\"configId\":\"...\",\"configVersion\":48,\"prevHash\":\"sha256:deac...\"}",
+    "body": "كل تعديل، كل رفض، كل منح --reveal يكتب سطر JSONL في ~/.config/rediacc/audit.log.jsonl (النمط 0600، يتدوّر عند 10 ميجابايت). كل سطر مرتبط بتجزئة: حقل prevHash الخاص به هو sha256(\"<السطر السابق>\"). العبث بأي سطر يكسر السلسلة في كل سطر تالٍ. {\"ts\":\"2026-04-21T10:02:47.831Z\",\"actor\":{\"kind\":\"agent\",\"agentSignals\":[\"CLAUDECODE\"]},\"command\":\"config field set\",\"paths\":[\"/credentials/cfDnsApiToken\"],\"outcome\":\"ok\",\"configId\":\"...\",\"configVersion\":48,\"prevHash\":\"sha256:9f3a...\"} {\"ts\":\"2026-04-21T10:02:51.114Z\",\"actor\":{\"kind\":\"agent\",\"agentSignals\":[\"CLAUDECODE\"]},\"command\":\"config edit\",\"paths\":[],\"outcome\":\"refused\",\"reason\":\"agent environment\",\"prevHash\":\"sha256:abc1...\"} {\"ts\":\"2026-04-21T10:03:05.220Z\",\"actor\":{\"kind\":\"human\"},\"command\":\"config show --reveal\",\"paths\":[],\"outcome\":\"reveal_granted\",\"configId\":\"...\",\"configVersion\":48,\"prevHash\":\"sha256:deac...\"}",
     "excerpt": "كل تعديل، كل رفض، كل منح --reveal يكتب سطر JSONL في ~/.config/rediacc/audit.log.jsonl (النمط 0600، يتدوّر عند 10 ميجابايت). كل سطر مرتبط بتجزئة: حقل p...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3133,7 +3133,7 @@
   {
     "id": "search-2045",
     "content": "ما لا يعزله Rediacc",
-    "body": "تحمي ضمانات الوكيل في هذه الصفحة البنية التحتية الخاصة بـ Rediacc نفسها: ملف الإعدادات وعملية Docker لكل مستودع وبيانات المستودع المشفَّرة بـ LUKS وصندوق رمل SSH المقصور النطاق. لكنها لا تحمي الخدمات الخارجية التي يحتفظ مستودعك ببيانات اعتمادها. النسخة المتفرعة من المستودع هي BTRFS reflink لحجم الأصل. كل ما هو موجود على القرص في الأصل يكون متطابقاً بايتاً ببايت في النسخة المتفرعة: الكود والبيانات وملفات .env على حد سواء. إذا احتوى مستودعك على STRIPE_LIVE_KEY أو AWS_ACCESS_KEY_ID أو رمز API لـ Railway أو أي بيانات اعتماد طويلة الأمد لخدمة طرف ثالث، فإن النسخة المتفرعة ترثها. يمكن لوكيل يعمل في صندوق رمل النسخة المتفرعة قراءة ذلك الملف أو تسريب القيمة أو استخدامها لاستدعاء واجهة برمجة التطبيقات لطرف ثالث. ولا تملك خدمة الطرف الثالث أي وسيلة لمعرفة أن الاستدعاء جاء من نسخة متفرعة بدلاً من الإنتاج. هذا هو خط المسؤولية المشتركة: | الحدود | المالك | |---|---| | بيانات المستودع، فضاء أسماء التحميل، نطاق Docker، ضمانات الوكيل، سجل التدقيق، حقن الأسرار وقت النشر | Rediacc | | كود التطبيق الذي يستخدم تلك الأسرار، وأي بيانات اعتماد مُضمَّنة في الصورة وقت البناء | مطوّر المستودع | الحد الأساسي مدمج في النظام: أسرار المستودع الخاصة مخزَّنة في مستوى منفصل عن صورة المستودع المشفَّرة ولا تُنسخ عبر حدود التفريع. تبدأ حاويات النسخة المتفرعة بخريطة أسرار فارغة وتعرّف نفسها بوصفها جهة فاعلة خارجية مختلفة عن الأصل. اضبطها باستخدام rdc repo secret set (وضع env لاستبدال compose، ووضع file لكتل secrets: من tmpfs). بوابة الطفرة متماثلة. يجب على البشر والوكلاء على حد سواء تزويد --current (الشرط المسبق بأسلوب passwd) أو --rotate-secret (تدوير مُسجَّل) للكتابة فوق أو حذف قيمة قائمة. عزل المستودعات المتبادل مُطبَّق. لا يستطيع ملف compose الخبيث أو المهمل في المستودع B الإشارة إلى دليل أسرار المستودع A. يرفض مدقق compose في renet رفضاً قاطعاً أي مسار secrets: file: أو configs: file: أو env_file: يشير خارج دليل ${REDIACC_NETWORK_ID} للمستودع الحالي، والرفض غير قابل للتجاوز بـ --unsafe. دفاع متعمق: صندوق رمل Landlock حول العملية الفرعية bash في Rediaccfile يقصر قراءات نظام الملفات على دليل أسرار الشبكة الحالية فقط، لذا يفشل cat /var/run/rediacc/net-<other>/secrets/X من Rediaccfile خبيث بخطأ EACCES على مستوى النواة. والأمر نفسه ينطبق على واجهة Docker البرمجية: يخدم مقبس Docker لكل مستودع وكيل سياسات في renet يرفض --privileged وقيم pid وipc وuts الخاصة بالمضيف وطلبات الأجهزة وعمليات الربط (binds) التي تصل إلى بيئة تشغيل مستودع آخر أو بياناته، ويرد بالرمز 403. لذا لا تستطيع حاوية تحمل ${DOCKER_SOCKET} استخدام الواجهة للوصول إلى مستودع آخر، ولا يقتصر الفحص على ملف compose. وحده المشغّل يستطيع توسيع قاعدة الربط، لمجلدات مضيف محددة بالاسم، عبر تصريح مملوك للجذر لا تستطيع أي حاوية الكتابة إليه. نمطان إضافيان يسدّان الحالات الحدية: لا تُضمِّن بيانات اعتماد الإنتاج في نظام ملفات المستودع نفسه. ملف .env مُدمَج في الصورة، أو بيانات اعتماد محفوظة في حجم خلال up()، ينتقل عبر reflink إلى النسخة المتفرعة. تحمي ميزة أسرار المستودع فقط القيم التي تحتفظ بها في مستوى الأسرار. لا تستطيع حماية البايتات التي تعيش بالفعل داخل صورة LUKS بأثر رجعي. للمستودعات الحالية التي تحتوي على ملفات .env مُضمَّنة، انقلها يدوياً إلى أسرار المستودع. قيّد الشبكة الصادرة للنسخة المتفرعة بترشيح eBPF للخروج بحيث لا تستطيع النسخة المتفرعة الوصول إلا إلى localhost ونقاط نهاية صندوق الرمل المحددة بوضوح. عزل شبكة Rediacc لكل مستودع هو الأساس؛ قوائم السماح للخروج لكل نسخة متفرعة غير مبنية اليوم، لكن المسار مفتوح. يتولى Rediacc حقن الأسرار وقت النشر وعزل النسخ المتفرعة وعزل المستودعات المتبادل. أما النصف الخاص بـ\"لا تُضمِّنه في الصورة\" فيقع على عاتقك.",
+    "body": "تحمي ضمانات الوكيل في هذه الصفحة البنية التحتية الخاصة بـ Rediacc نفسها: ملف الإعدادات وعملية Docker لكل مستودع وبيانات المستودع المشفَّرة بـ LUKS وصندوق رمل SSH المقصور النطاق. لكنها لا تحمي الخدمات الخارجية التي يحتفظ مستودعك ببيانات اعتمادها. النسخة المتفرعة من المستودع هي BTRFS reflink لحجم الأصل. كل ما هو موجود على القرص في الأصل يكون متطابقاً بايتاً ببايت في النسخة المتفرعة: الكود والبيانات وملفات .env على حد سواء. إذا احتوى مستودعك على STRIPE_LIVE_KEY أو AWS_ACCESS_KEY_ID أو رمز API لـ Railway أو أي بيانات اعتماد طويلة الأمد لخدمة طرف ثالث، فإن النسخة المتفرعة ترثها. يمكن لوكيل يعمل في صندوق رمل النسخة المتفرعة قراءة ذلك الملف أو تسريب القيمة أو استخدامها لاستدعاء واجهة برمجة التطبيقات لطرف ثالث. ولا تملك خدمة الطرف الثالث أي وسيلة لمعرفة أن الاستدعاء جاء من نسخة متفرعة بدلاً من الإنتاج. هذا هو خط المسؤولية المشتركة: | الحدود | المالك | |---|---| | بيانات المستودع، فضاء أسماء التحميل، نطاق Docker، ضمانات الوكيل، سجل التدقيق، حقن الأسرار وقت النشر | Rediacc | | كود التطبيق الذي يستخدم تلك الأسرار، وأي بيانات اعتماد مُضمَّنة في الصورة وقت البناء | مطوّر المستودع | الحد الأساسي مدمج في النظام: أسرار المستودع الخاصة مخزَّنة في مستوى منفصل عن صورة المستودع المشفَّرة ولا تُنسخ عبر حدود التفريع. تبدأ حاويات النسخة المتفرعة بخريطة أسرار فارغة وتعرّف نفسها بوصفها جهة فاعلة خارجية مختلفة عن الأصل. اضبطها باستخدام rdc repo secret set (وضع env لاستبدال compose، ووضع file لكتل secrets: من tmpfs). بوابة الطفرة متماثلة. يجب على البشر والوكلاء على حد سواء تزويد --current (الشرط المسبق بأسلوب passwd) للكتابة فوق قيمة قائمة أو حذفها؛ أما --rotate-secret (تدوير مُسجَّل) فهو البديل لإنسان على طرفية. عزل المستودعات المتبادل مُطبَّق. لا يستطيع ملف compose الخبيث أو المهمل في المستودع B الإشارة إلى دليل أسرار المستودع A. يرفض مدقق compose في renet رفضاً قاطعاً أي مسار secrets: file: أو configs: file: أو env_file: يشير خارج دليل ${REDIACC_NETWORK_ID} للمستودع الحالي، والرفض غير قابل للتجاوز بـ --unsafe. دفاع متعمق: صندوق رمل Landlock حول العملية الفرعية bash في Rediaccfile يقصر قراءات نظام الملفات على دليل أسرار الشبكة الحالية فقط، لذا يفشل cat /var/run/rediacc/net-<other>/secrets/X من Rediaccfile خبيث بخطأ EACCES على مستوى النواة. والأمر نفسه ينطبق على واجهة Docker البرمجية: يخدم مقبس Docker لكل مستودع وكيل سياسات في renet يرفض --privileged وقيم pid وipc وuts الخاصة بالمضيف وطلبات الأجهزة وعمليات الربط (binds) التي تصل إلى بيئة تشغيل مستودع آخر أو بياناته، ويرد بالرمز 403. لذا لا تستطيع حاوية تحمل ${DOCKER_SOCKET} استخدام الواجهة للوصول إلى مستودع آخر، ولا يقتصر الفحص على ملف compose. وحده المشغّل يستطيع توسيع قاعدة الربط، لمجلدات مضيف محددة بالاسم، عبر تصريح مملوك للجذر لا تستطيع أي حاوية الكتابة إليه. نمطان إضافيان يسدّان الحالات الحدية: لا تُضمِّن بيانات اعتماد الإنتاج في نظام ملفات المستودع نفسه. ملف .env مُدمَج في الصورة، أو بيانات اعتماد محفوظة في حجم خلال up()، ينتقل عبر reflink إلى النسخة المتفرعة. تحمي ميزة أسرار المستودع فقط القيم التي تحتفظ بها في مستوى الأسرار. لا تستطيع حماية البايتات التي تعيش بالفعل داخل صورة LUKS بأثر رجعي. للمستودعات الحالية التي تحتوي على ملفات .env مُضمَّنة، انقلها يدوياً إلى أسرار المستودع. قيّد الشبكة الصادرة للنسخة المتفرعة بترشيح eBPF للخروج بحيث لا تستطيع النسخة المتفرعة الوصول إلا إلى localhost ونقاط نهاية صندوق الرمل المحددة بوضوح. عزل شبكة Rediacc لكل مستودع هو الأساس؛ قوائم السماح للخروج لكل نسخة متفرعة غير مبنية اليوم، لكن المسار مفتوح. يتولى Rediacc حقن الأسرار وقت النشر وعزل النسخ المتفرعة وعزل المستودعات المتبادل. أما النصف الخاص بـ\"لا تُضمِّنه في الصورة\" فيقع على عاتقك.",
     "excerpt": "تحمي ضمانات الوكيل في هذه الصفحة البنية التحتية الخاصة بـ Rediacc نفسها: ملف الإعدادات وعملية Docker لكل مستودع وبيانات المستودع المشفَّرة بـ LUKS وصن...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
@@ -3156,24 +3156,24 @@
   },
   {
     "id": "search-2047",
-    "content": "السماح لوكيل بتدوير رمز سحابي واحد",
-    "body": "# بوصفك أنت، قبل بدء الوكيل: claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تشغيل config field rotate /credentials/cfDnsApiToken --new … لكنه لا يزال غير قادر على تحرير /credentials/ssh/privateKey أو فتح المحرر التفاعلي.",
-    "excerpt": "# بوصفك أنت، قبل بدء الوكيل: claude-code # أو cursor أو gemini إلخ الآن يستطيع الوكيل تشغيل config field rotate /credentials/cfDnsApiToken --new … لكن...",
+    "content": "السماح لوكيل بالعمل على مستودع grand واحد",
+    "body": "# بوصفك الإنسان، قبل بدء الوكيل: claude # أو cursor أو gemini وغيرها. يستطيع الوكيل الآن تغيير gitlab، حيث تسمح السياسة بتغيير مستودعات grand، ولا يستطيع تغيير أي مستودع grand آخر. أما التغيير المدمِّر، مثل repo delete gitlab، فيظل يطلب التأكيد.",
+    "excerpt": "# بوصفك الإنسان، قبل بدء الوكيل: claude # أو cursor أو gemini وغيرها. يستطيع الوكيل الآن تغيير gitlab، حيث تسمح السياسة بتغيير مستودعات grand، ولا يست...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
-    "fragment": "let-an-agent-rotate-a-single-cloud-token",
+    "fragment": "let-an-agent-work-on-one-grand-repository",
     "path": "docs.ai-agents-safety.content",
     "priority": 2,
     "language": "ar"
   },
   {
     "id": "search-2048",
-    "content": "السماح لوكيل بجلسة تحرير إعدادات واسعة",
-    "body": "claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً في سجل التدقيق مع actor.kind: agent وإشارة CLAUDECODE.",
-    "excerpt": "claude-code يستطيع الوكيل فتح rdc config edit واستخدام --reveal وتشغيل field rotate. كل إجراء لا يزال مُسجَّلاً في سجل التدقيق مع actor.kind: agent وإ...",
+    "content": "تدوير رمز سحابي دون معرفة القيمة القديمة",
+    "body": "# بوصفك الإنسان، من طرفية تفاعلية: rdc config field rotate --pointer /credentials/cfDnsApiToken --new \"$NEW_CF_TOKEN\" يبقى التدوير بلا --current من شأن الإنسان. أما الوكيل الذي يعرف القيمة الحالية فيستخدم rdc config field set --current بدلاً منه.",
+    "excerpt": "# بوصفك الإنسان، من طرفية تفاعلية: rdc config field rotate --pointer /credentials/cfDnsApiToken --new \"$NEW_CF_TOKEN\" يبقى التدوير بلا --current من شأ...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
-    "fragment": "let-an-agent-do-one-broad-config-edit-session",
+    "fragment": "rotate-a-cloud-token-without-knowing-the-old-value",
     "path": "docs.ai-agents-safety.content",
     "priority": 2,
     "language": "ar"
@@ -3193,8 +3193,8 @@
   {
     "id": "search-2050",
     "content": "انظر أيضاً",
-    "body": "نظرة عامة على تكامل وكيل الذكاء الاصطناعي: الجولة الشاملة إعداد Claude Code: قالب التكامل غلاف إخراج JSON: استجابات قابلة للقراءة الآلية مخزن الإعدادات المشفَّر: التطبيق المشفَّر من جانب الخادم أمان الحساب: وضع الأمان من جانب المشغِّل",
-    "excerpt": "نظرة عامة على تكامل وكيل الذكاء الاصطناعي: الجولة الشاملة إعداد Claude Code: قالب التكامل غلاف إخراج JSON: استجابات قابلة للقراءة الآلية مخزن الإعدادا...",
+    "body": "نظرة عامة على تكامل وكيل الذكاء الاصطناعي: الجولة الشاملة خادم MCP: MCP المحلي والبعيد، والتفويضات وموافقاتها الصريحة النموذج الأمني: سجل السياسة ومن يستطيع كتابته إعداد Claude Code: قالب التكامل غلاف إخراج JSON: استجابات قابلة للقراءة الآلية مخزن الإعدادات المشفَّر: التطبيق المشفَّر من جانب الخادم أمان الحساب: وضع الأمان من جانب المشغِّل",
+    "excerpt": "نظرة عامة على تكامل وكيل الذكاء الاصطناعي: الجولة الشاملة خادم MCP: MCP المحلي والبعيد، والتفويضات وموافقاتها الصريحة النموذج الأمني: سجل السياسة ومن...",
     "category": "Documentation",
     "page": "/ar/docs/ai-agents-safety",
     "fragment": "see-also",
@@ -4898,7 +4898,7 @@
   {
     "id": "search-2197",
     "content": "1.13 edit",
-    "body": "فتح التكوين الحالي في $EDITOR كإسقاط JSONC مُخفى. للمستخدمين البشريين فقط؛ يُرفض العملاء. rdc config edit [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | --reveal | إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق) | لا | - | | --dump | طباعة التكوين الحالي كـ JSONC إلى stdout بدلاً من فتح المحرر (للقراءة فقط؛ آمن للعملاء عند الإخفاء) | لا | - | | --apply <file> | تطبيق ملف JSONC معدّل (يتخطى إطلاق $EDITOR) | لا | - | | --current-secrets <file> | ملف JSON يربط المؤشر → النص الصريح القديم لبوابة المعرفة عند --apply | لا | - | | --editor <cmd> | أمر المحرر البديل (يتبع تسلسل git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR) | لا | - | <a id=\"cli-local-config-audit\"></a>",
+    "body": "فتح التكوين الحالي في $EDITOR كإسقاط JSONC مُخفى. للمستخدمين البشريين فقط؛ يُرفض العملاء. rdc config edit [options] | العلامة | الوصف | مطلوب | افتراضي | |------|-------------|----------|---------| | --reveal | إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل في التدقيق) | لا | - | | --dump | طباعة التكوين الحالي كـ JSONC إلى stdout بدلاً من فتح المحرر (للقراءة فقط؛ آمن للعملاء عند الإخفاء) | لا | - | | --redacted | إخفاء القيم الحساسة في مخرجات --dump (السلوك الافتراضي؛ لا يمكن دمجه مع --reveal) | لا | - | | --apply <file> | تطبيق ملف JSONC معدّل (يتخطى إطلاق $EDITOR) | لا | - | | --current-secrets <file> | ملف JSON يربط المؤشر → النص الصريح القديم لبوابة المعرفة عند --apply | لا | - | | --editor <cmd> | أمر المحرر البديل (يتبع تسلسل git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR) | لا | - | <a id=\"cli-local-config-audit\"></a>",
     "excerpt": "فتح التكوين الحالي في $EDITOR كإسقاط JSONC مُخفى. للمستخدمين البشريين فقط؛ يُرفض العملاء. rdc config edit [options] | العلامة | الوصف | مطلوب | افتراض...",
     "category": "Documentation",
     "page": "/ar/docs/cli-application",
