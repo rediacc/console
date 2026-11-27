@@ -16,7 +16,7 @@ name: Housekeeping
 #                        wrangler config accounts for. Deletes nothing; findings never fail it.
 #   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
 #                        artifact .ci/config/freshness.json registers against fresh
-#                        measurements, reported to the rolling nightly-red issue.
+#                        measurements, reported to the job log and step summary.
 #   gate-costs-capture - a serial ci:quick plus one third of the slow gates, measuring
 #                        each gate's CPU, uploaded as the artifact gate_costs --refresh reads.
 
@@ -189,21 +189,20 @@ jobs:
 
   budget-check:
     name: CI time budget check
-    # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
-    # (readonly, housekeeping, cd) grant `issues`, so this job uses its own job-scoped
+    # T3.3 (PLAN-ci-time-budget). No app-token: this job uses its own job-scoped
     # `github.token` instead of the App -- it cannot bypass the branch-protection
-    # ruleset and creates no further workflow runs, so it is the smaller grant for the same read (Actions API) plus post (an issue comment)
-    # this job needs.
+    # ruleset and creates no further workflow runs, so it is the smaller grant for
+    # the read (Actions API) it needs. It reports to its log and step summary; a
+    # failing check reds the scheduled run, which wl_schedred surfaces to a session.
     runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       contents: read
       actions: read # sample ci.yml's own runs/jobs/artifacts (budget_report.py)
-      issues: write # post to the nightly-red issue thread on a failing check
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
+          # .ci for the rediacc_ci package,
           # .github for the workflow YAML budget_report.py's lane_display_patterns reads,
           # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against;
           # .ci also carries config/freshness.json, the registry the check step runs.
@@ -221,7 +220,7 @@ jobs:
       # artifact .ci/config/freshness.json registers at the nightly cadence is checked
       # here (today lane-durations.json via budget_report --check and gate-costs.json
       # via gate_costs --check), and rediacc_ci.ci.freshness alone writes the summary
-      # the report step posts, one section per artifact. A missing artifact, a check
+      # the report step prints, one section per artifact. A missing artifact, a check
       # that cannot start and a refused registry are all failures, never a pass.
       - name: CI time budget check
         id: budget-check
@@ -234,16 +233,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
-      # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
-      # header for why this posts its own dated section.
+      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the report is printed whether or
+      # not the next step's own `exit 1` runs.
       - name: Report a stale or over-budget CI leg
         if: steps.budget-check.outputs.rc != '0'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
-        with:
-          script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
+        run: |
+          cat /tmp/budget-check.txt
+          cat /tmp/budget-check.txt >>"$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job when the budget check failed
         if: steps.budget-check.outputs.rc != '0'

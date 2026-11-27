@@ -51,7 +51,7 @@
   color: "D93F0B"
   description: "Marks a merged PR as rolled back; blocks stable promotion while one exists inside the soak window"
 
-# Automation / triage (referenced by report-budget-check.cjs)
+# Automation / triage
 - name: bug
   color: "d73a4a"
   description: "Something isn't working"
@@ -59,10 +59,6 @@
 - name: automated
   color: "0E8A16"
   description: "Automated pull request"
-
-- name: nightly-red
-  color: "b60205"
-  description: "The scheduled nightly CI run is failing (opened and closed automatically)"
 
 # Version Bump Labels
 #

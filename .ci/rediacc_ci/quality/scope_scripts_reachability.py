@@ -186,7 +186,7 @@ OUTPUT_STATEMENT = re.compile(r"\b(log_error|log_warn|log_info|log_debug|echo|pr
 # `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED RATHER THAN ASSUMED. The twin's lead alternation is `(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)`, written to admit a command that starts after an opening single quote. GNU grep 3.12, which is what `/usr/bin/grep` is on this host and therefore what the twin actually runs, does NOT read `\x27` as a hex
 # escape in an ERE: it treats `\x` as an escaped ordinary `x`, so the alternative matches the literal three characters `x27`. Probed 2026-09-06 on a two-line file containing `a'b` and `ax27b`: `/usr/bin/grep -oE '\x27'` printed `x27`.
 #
-# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, report-nightly-status, validate-pr and watchdog-monitor -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
+# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, validate-pr, watchdog-monitor and one reporter since retired -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
 # working single-quote alternative counts 231. So an invocation whose only lead character is `'` is invisible to this gate.
 #
 # Reproduced, not repaired: invariant 5 forbids editing the twin in the change that ports it, and the differential rules on behaviour. Reported as a defect.

@@ -100,10 +100,10 @@ MIN_DISTINCT_ENV = "LABEL_REFS_MIN_DISTINCT"
 
 DEFAULT_LABELS_FILE = ".github/labels.yml"
 # Space-separated for the test seam; defaults to the real surfaces.
-# `scripts` joined on 2026-11-24: a6840066e8 retired `.ci/scripts/ci/report-nightly-status.cjs`, whose `nightly-red`, `bug` and `automated` were three of the sweep's eight labels, and the live consumer of the same three is `scripts/ci/report-budget-check.cjs`, which the sweep never read. The floor went red at five, which is the floor doing its job: the corpus had lost a consumer surface.
+# `scripts` joined on 2026-11-24 when the nightly-status reporter was retired and its labels lost their consumer surface. The poster that took over is gone too (PLAN-retire-nightlies-and-mentions N1), so the real sweep now finds 5.
 DEFAULT_SCAN_DIRS = ".github .ci scripts"
 # "The tree carries well over this many distinct referenced labels; finding fewer means the sweep itself broke (wrong root, bad glob), not a clean tree."
-DEFAULT_MIN_DISTINCT = 8
+DEFAULT_MIN_DISTINCT = 5
 
 # Excluded by BASENAME, because both files carried planted sample lines that were instrument fixtures rather than label references. Both have since been retired, so the list matches nothing today and is kept because the twin's recorded output was produced with it in place.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")

@@ -9,7 +9,7 @@ Every case carries its control: a firing direction is only meaningful next to th
 
 NO NETWORK. The live list is injected through `LABEL_INVENTORY_LIVE_FILE`, which is also how the real-tree case below drives the REAL gate over the REAL `.github/labels.yml`.
 
-THREE CASES READ THE WORKING TREE DIRECTLY: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `report-budget-check.cjs`), and the malformed-JSON
+THREE CASES READ THE WORKING TREE DIRECTLY: the two real-tree cases derive their live list from `.github/labels.yml` and drive the subject at it in place (real parse, real floor, real allowlist verification against the real `pr_labels.py`), and the malformed-JSON
 case copies the subject itself. All three are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from the real `python3 check_label_inventory.py`. The subject was `bash check-label-inventory.sh` until W7 P5 froze its output into `goldens/label-inventory/` and deleted it, and the mutant in `test_malformed_live_json_fails_closed` moved with it: it now patches the ported module rather than the shell script, keeping the
@@ -150,9 +150,9 @@ def test_both_directions_report_together(gate):
 
 
 def test_create_on_demand_label_is_forgiven_when_absent(gate):
-    """`nightly-red` does not exist until the first red night, because `report-budget-check.cjs` creates it right before opening the rolling issue. Declared-and-absent is its NORMAL state."""
+    """`ci` does not exist until the PR label applier first uses it, because `pr_labels.py` creates it right before use. Declared-and-absent is its NORMAL state."""
     with harness.temp_dir() as d:
-        write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
+        write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ci")
         (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
         gate.assert_exit(0, result, "an absent create-on-demand label must NOT fail")
@@ -167,17 +167,17 @@ def test_create_on_demand_label_is_forgiven_when_absent(gate):
 def test_create_on_demand_label_is_still_fine_when_present(gate):
     """The exemption forgives ABSENCE only; once the label exists it must not start failing the other direction."""
     with harness.temp_dir() as d:
-        write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "nightly-red")
-        (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nnightly-red\n", encoding="utf-8")
+        write_labels(d / "labels.yml", "one", "two", "three", "four", "five", "ci")
+        (d / "live.txt").write_text("one\ntwo\nthree\nfour\nfive\nci\n", encoding="utf-8")
         result = run_gate(gate, d / "labels.yml", d / "live.txt")
         gate.assert_exit(0, result, "a present create-on-demand label is ordinary")
         gate.log_pass("the create-on-demand label passes once it exists")
 
 
 def test_a_stale_allowlist_entry_is_refused(gate):
-    """The exemption must self-expire. If `nightly-red` stops being declared, the allowlist entry is a permanent hole pointing at nothing.
+    """The exemption must self-expire. If `ci` stops being declared, the allowlist entry is a permanent hole pointing at nothing.
 
-    The verification is scoped to the real declaration file (a fixture tree legitimately has no `nightly-red`), so the flag is driven on explicitly here rather than left to the scoping heuristic.
+    The verification is scoped to the real declaration file (a fixture tree legitimately has no `ci`), so the flag is driven on explicitly here rather than left to the scoping heuristic.
     """
     with harness.temp_dir() as d:
         write_labels(d / "labels.yml", "one", "two", "three", "four", "five")
@@ -338,7 +338,7 @@ def test_indented_fields_are_never_mistaken_for_names(gate):
 def test_real_tree_reconciles_against_an_injected_live_list(gate):
     """THE REAL-TREE CASE, and the one the manifest BLOCKER points at.
 
-    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `report-budget-check.cjs` -- with the live list injected so no network is touched. The live GitHub read itself cannot run in the quality lane (no label-read token there); it runs on `npm run check:ci-label-inventory`.
+    The gate runs seam-free over the REAL `.github/labels.yml` -- real parse, real floor, real allowlist verification against the real `pr_labels.py` -- with the live list injected so no network is touched. The live GitHub read itself cannot run in the quality lane (no label-read token there); it runs on `npm run check:ci-label-inventory`.
     """
     python3 = require_gate(gate)
     names = real_declared_names(gate)

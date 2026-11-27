@@ -35,7 +35,7 @@ GATE = paths.from_root(*GATE_REL.split("/"))
 HERE_REL = ".ci/rediacc_ci/tests/gates"
 
 # The subject's own floor on distinct references found in the real tree. Repeated here only so the real-tree case can PRINT the shape it swept; the number that governs is the one in the subject.
-REAL_FLOOR = 8
+REAL_FLOOR = 5
 
 # `all 23 code-referenced labels are declared in .github/labels.yml`
 DISTINCT_RE = re.compile(r"all (\d+) code-referenced labels")

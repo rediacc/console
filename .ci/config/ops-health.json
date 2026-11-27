@@ -3,7 +3,7 @@
     "The one generic ops-health config (agent/plans/PLAN-health-checks-local.md D-config). Thresholds and limits only: no host name, no IP and no target list.",
     "The off-box Worker (workers/ops-health) bundles this file at build time and the Python side (rediacc_ci.ops) reads it, so no threshold is written twice.",
     "Targets reach the Worker as the OPS_HEALTH_TARGETS secret at deploy time (rediacc_ci.ops.deploy_ops_health); per-service thresholds live in each repo's own health().",
-    "github_mentions: GitHub logins or org/team slugs, without the leading @, mentioned by scripts/ci/report-budget-check.cjs (D-alerts)."
+    "github_mentions: empty by operator ruling 4 (2026-11-16, agent/plans/PLAN-retire-nightlies-and-mentions.md): nothing @mentions anyone and no reader remains."
   ],
   "version": 1,
   "tls": {
@@ -33,7 +33,6 @@
   },
   "ingest": {
     "max_age_h": {
-      "drift": 36,
       "ci-weekly": 192,
       "local-*": 24,
       "default": 24
@@ -53,5 +52,5 @@
       "hour_utc": 6
     }
   },
-  "github_mentions": ["mfbayraktar"]
+  "github_mentions": []
 }
