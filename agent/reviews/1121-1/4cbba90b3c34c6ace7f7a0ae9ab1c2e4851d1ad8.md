@@ -22,4 +22,4 @@ Body-Sig: e0ca0eb7abba0ca3
 Anchor: in-diff
 Claim: The commit message says QUEUE.md's generated block and the session worklist are committed too, but the STAT and diff touch only agent/ledgers/ops-health.jsonl, so a reader relying on the message will expect files that are absent from this commit.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | commit-message wording only; the ops-health ledger is append-only and nothing in the tree is wrong (sha 5093f6b48e) | d778be9d 2026-11-27T07:49:50Z

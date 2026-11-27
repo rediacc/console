@@ -22,4 +22,4 @@ Body-Sig: a48c4a36dc31888a
 Anchor: in-diff
 Claim: The AC11 tick records evidence for `nav-label-collisions` and `check:i18n` but not for the second Accept command, `npm run check:ci-i18n-account-key-usage`, so the box is ticked without recorded proof of that gate.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already corrected by a later correction line at agent/plans/PLAN-console-ai-credits.md:121 | d778be9d 2026-11-27T07:47:52Z

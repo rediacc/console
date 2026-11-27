@@ -22,10 +22,10 @@ Body-Sig: 2a09b058e150d4c2
 Anchor: in-diff
 Claim: CF9 is ticked [x] but its Accept line (line 110) requires both `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` to return rc 0; the tick cites only check:i18n rc 0, so the second gate has no recorded evidence.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already corrected by a later correction line at agent/plans/PLAN-console-confirm-stepup.md:112 | d778be9d 2026-11-27T07:48:30Z
 
 ### dffdcec4.2 [low] agent/plans/PLAN-enterprise-tenants.md:214
 Anchor: in-diff
 Claim: LT1 is ticked [x] on the strength of V4 passing, yet its Accept command (`./run.sh enterprise proof routing --bench`) was never run for LT1 itself; the tick reasons the conditional box is moot rather than recording a rc 0 run, which a reader of the Accept line would not expect.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already corrected by a later correction line at agent/plans/PLAN-enterprise-tenants.md:214 | d778be9d 2026-11-27T07:49:15Z

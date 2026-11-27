@@ -28,4 +28,4 @@ Resolution: fixed a4ba9142761d6b951b393384606a7feaf6c56fc6 | d778be9d 2026-11-26
 Anchor: in-diff
 Claim: The commit message says plan-boxes.json and QUEUE.md were regenerated, but the STAT list and diff contain neither file, so the message and the change set disagree.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | commit-message wording only; agent/INDEX.md is generated and was re-rendered by a1174f0a40 | d778be9d 2026-11-27T07:50:33Z

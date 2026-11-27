@@ -22,16 +22,16 @@ Body-Sig: dc163b386ef4790f
 Anchor: in-diff
 Claim: The W3.1 tick cites scripts/ci-runner/trace-honest.ts:9 and a selftest count, but W3's Owns line names .ci/scripts/quality/check_gate_paths_honest.py and its test, not trace-honest.ts, and the tick never shows the box's Accept (undeclared-read fixture fails both modes, declared fixture passes).
 Class: other
-Resolution: open
+Resolution: fixed a1174f0a40da258352965229d28243b2da068845 | d778be9d 2026-11-27T07:50:58Z
 
 ### aef593ed.2 [low] agent/plans/PLAN-simple-two-tree-loop.md:105
 Anchor: in-diff
 Claim: The B1 tick says only 'freeze keyed on tree role fc672c600 + 3f522182a; block_focus_spawn.py absent' and defers test_wl_focus.py to B10, yet the box's Accept requires the rc 0 pytest and guard-test runs plus check:ci-guard-mutations and check:ci-hooks-resolvable, none of which are quoted.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already corrected by a later correction line at agent/plans/PLAN-simple-two-tree-loop.md:105 | d778be9d 2026-11-27T07:48:05Z
 
 ### aef593ed.3 [low] agent/plans/PLAN-simple-two-tree-loop.md:101
 Anchor: in-diff
 Claim: The B1 box is ticked [x] while its scope still lists test_wl_focus.py for deletion and the tick says that residue moved to B10, so the ticked box no longer matches its own description.
 Class: other
-Resolution: open
+Resolution: not-a-bug | already corrected by a later correction line at agent/plans/PLAN-simple-two-tree-loop.md:105 | d778be9d 2026-11-27T07:48:16Z
