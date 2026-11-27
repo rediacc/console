@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""wl_writersnow capacity refill: every unstaffed startable cluster of the newest survey is named while live writers sit below CAPACITY_FLOOR, inside the clock's window or not; the survey is re-run once it has none left or REFRESH_TICKS of its boxes were ticked; and the half-hourly clock still fires on its own, carrying the shortfall when the roster is below the floor. Each branch has a silent control beside it, and the Stop segment renders every message under the one `writers-now-due` key."""
+"""wl_writersnow capacity refill: every unstaffed startable cluster of the newest survey is named while live writers sit below CAPACITY_FLOOR, inside the clock's window or not; the survey is re-run once it has none left or REFRESH_TICKS of its boxes were ticked; and the half-hourly clock still fires on its own, carrying the shortfall when the roster is below the floor.
+A live target with startable boxes that no `runner:<target>` item staffs and no fresh `runner-hold:<target> -- <reason>` item holds orders STAFF RUNNERS ahead of any new survey, and a held cluster whose named blockers all closed is free again (operator order 2026-11-27); each of those rules has a mutant that removes it and makes its case fail. Each branch has a silent control beside it, and the Stop segment renders every message under the one `writers-now-due` key."""
 
 import datetime
 import importlib
@@ -28,6 +29,7 @@ _load_syspath().on_sys_path(HERE)
 wl_checks = importlib.import_module("wl_checks")
 wl_hints = importlib.import_module("wl_hints")
 wl_storestatus = importlib.import_module("wl_storestatus")
+wl_boxready = importlib.import_module("wl_boxready")
 W = importlib.import_module("wl_writersnow")
 
 FAILURES: list[str] = []
@@ -296,6 +298,8 @@ class Patched:
         self._set(W, "read_rounds", lambda _root: self.rows)
         self._set(W, "promoted_open", lambda _root: 40)
         self._set(W, "promoted_done_sigs", lambda _root: {"c1c1c1c1"})
+        self._set(W, "promoted_open_sigs", lambda _root: set())
+        self._set(wl_boxready, "vmcheck_admits", lambda _root: False)
         self._set(W.C, "utcnow", lambda: NOW)
         self._set(wl_checks.C, "utcnow", lambda: NOW)
         return self
@@ -305,10 +309,10 @@ class Patched:
             setattr(obj, name, value)
 
 
-def run_segment(tmp, items, writers=("w1",), rows=None):
+def run_segment(tmp, items, writers=("w1",), rows=None, text=SURVEY):
     fired: list = []
     ns = segment_ns(tmp, items, fired, writers)
-    planted = plant(tmp)
+    planted = plant(tmp, text=text)
     with Patched(rows or planted):
         wl_checks._stop_store_freshness(ns)
     return fired
@@ -479,9 +483,344 @@ def shared_sig_cases(tmp):
     check("the shared sig is not done", bool(done & shared), False)
 
 
+# The live staffing (operator order 2026-11-27): five rounds closed "no startable cluster" over hundreds of live boxes with no runner staffed. CL-A is staffed by LEASED_LA so the CODE side never decides these cases; CL-D is held behind a `BOX:` blocker and CL-E behind a bare sig.
+LIVE_SURVEY = """# survey
+
+## 1. Plan tables
+
+| sig8 | box | group | needs | evidence |
+|---|---|---|---|---|
+| a1a1a1a1 | A1 [writer] first | CODE | none | x |
+| d1d1d1d1 | D1 [writer] held | CODE | none | x |
+| d2d2d2d2 | D2 [writer] held | CODE | none | x |
+| f1f1f1f1 | V1 [live] vm | LIVE-VM | none | x |
+| f2f2f2f2 | V2 [live] vm after vm:check | LIVE-VM | verified-vmcheck | x |
+| f7f7f7f7 | V3 [live] vm after push | LIVE-VM | pushed-head | x |
+| f3f3f3f3 | B1 [live] bench | LIVE-BENCH | bench-deploy | x |
+| f4f4f4f4 | H1 [live] hostinger | LIVE-HOSTINGER | verified-vmcheck | x |
+| f5f5f5f5 | H2 [live] hostinger after push | LIVE-HOSTINGER | pushed-head | x |
+| f6f6f6f6 | P1 [live] prod | LIVE-PROD | none | x |
+| f8f8f8f8 | P2 [live] prod on bench | LIVE-PROD | bench-deploy | x |
+
+## 4. CODE boxes clustered by shared files
+
+### Startable now
+
+- **CL-A (sonnet)**: plan-a A1 a1a1a1a1. Files: a.py.
+
+### Blocked behind live boxes or unlanded work
+
+- **CL-D (sonnet)**: plan-d D1 d1d1d1d1, blocked behind BOX:PLAN-x.md#e9e9e9e9 and BOX:PLAN-y.md#e8e8e8e8 (lease commit 0badc0de). Files: d.py.
+- CL-E: plan-e D2 d2d2d2d2 after 0e0e0e0e. Files: e.py.
+
+## 5. LIVE run order per target
+"""
+
+LEASED_LA = {"id": "10", "state": ">", "owner": ME, "text": "CL-A writer a1a1a1a1"}
+
+
+def runner(target, rid, minutes_ago, state=">", worker="", hold=""):
+    text = "runner-hold:%s -- %s" % (target, hold) if hold else "live runner runner:%s" % target
+    return {
+        "id": rid,
+        "state": state,
+        "owner": ME,
+        "text": text,
+        "worker": worker,
+        "first": at(minutes_ago),
+        "upd": at(minutes_ago),
+    }
+
+
+def live_cap(tmp, items=(), done=(), opened=(), vm_ok=False, live_ids=(), text=LIVE_SURVEY):
+    rows = plant(tmp, text=text)
+    return W.capacity(
+        rows,
+        ME,
+        tmp,
+        [LEASED_LA, *items],
+        2,
+        lambda: set(done),
+        now=NOW,
+        head_time=lambda: None,
+        live_ids=live_ids,
+        open_sigs=lambda: set(opened),
+        vm_verified=lambda: vm_ok,
+    )
+
+
+def by_target(facts):
+    return {t["target"]: (t["startable"], t["state"]) for t in facts["targets"]}
+
+
+def staff_order(facts, clock=False):
+    return W.assess(clock, OPEN, facts) == ("staff", "")
+
+
+def held_free(facts):
+    return [c["id"] for c in facts["free"]]
+
+
+class Mutant:
+    """Swap one attribute of the module for the length of a `with`, the way each rule below is shown to be load-bearing: its case is run again with the rule removed and must fail."""
+
+    def __init__(self, name, value):
+        self.name, self.value = name, value
+
+    def __enter__(self):
+        self.saved = getattr(W, self.name)
+        setattr(W, self.name, self.value)
+
+    def __exit__(self, *_exc):
+        setattr(W, self.name, self.saved)
+
+
+def staffing_cases(tmp):
+    got = live_cap(tmp)
+    check(
+        "each target counts only the boxes its rules start",
+        by_target(got),
+        {
+            "bench": (1, "unstaffed"),
+            "hostinger": (0, "unstaffed"),
+            "vm": (2, "unstaffed"),
+            "prod": (1, "held"),
+        },
+    )
+    check(
+        "a VERIFIED vm:check receipt starts hostinger's verified-vmcheck box",
+        by_target(live_cap(tmp, vm_ok=True))["hostinger"],
+        (1, "unstaffed"),
+    )
+    check(
+        "prod is held by default, with the reason",
+        [t["note"] for t in got["targets"] if t["target"] == "prod"],
+        [W.PROD_HELD_DEFAULT],
+    )
+    # Unstaffed live target: STAFF, not a new survey, over an exhausted survey and over the clock.
+    check(
+        "an unstaffed live target orders STAFF RUNNERS", W.assess(False, OPEN, got), ("staff", "")
+    )
+    check("STAFF comes ahead of the clock", staff_order(got, clock=True), True)
+    fields = W.staff_fields(got, ME[:8])
+    check(
+        "the order names each unstaffed target, its count and its section",
+        fields["rows"].splitlines(),
+        [
+            "  - bench: 1 startable box(es) (1 needs bench-deploy); brief from the survey's section 5 `LIVE-BENCH` list",
+            "  - vm: 2 startable box(es) (1 needs none, 1 needs verified-vmcheck); brief from the survey's section 5 `LIVE-VM` list",
+        ],
+    )
+    check(
+        "the order names prod's hold",
+        "prod held (1 startable, held by default" in fields["others"],
+        True,
+    )
+    # Staffed: a live-leased runner item, and a fresh open one with no verified worker.
+    staffed = (runner("vm", "11", 90, worker="agent-vm"), runner("bench", "12", 5, state=" "))
+    facts = live_cap(tmp, items=staffed, live_ids={"agent-vm"})
+    check("staffed targets order nothing", W.assess(False, OPEN, facts)[0] != "staff", True)
+    check("the staffed survey is then exhausted", W.assess(False, OPEN, facts)[0], "due")
+    stale = (runner("vm", "11", 90, worker="agent-gone"), runner("bench", "12", 5, state=" "))
+    check(
+        "control: a runner item whose worker is gone and which has not moved staffs nothing",
+        staff_order(live_cap(tmp, items=stale, live_ids={"agent-vm"})),
+        True,
+    )
+    closed = ({**runner("vm", "11", 1), "state": "x"}, runner("bench", "12", 5))
+    check(
+        "control: a closed runner item staffs nothing",
+        staff_order(live_cap(tmp, items=closed)),
+        True,
+    )
+    cites = (
+        {**runner("vm", "11", 1), "text": "ci:quick; the vm:check comes from runner:vm #b201a49d"},
+        runner("bench", "12", 5),
+    )
+    check(
+        "control: a token citing another item's runner staffs nothing",
+        staff_order(live_cap(tmp, items=cites)),
+        True,
+    )
+    note = ({**runner("vm", "11", 1), "text": "fleet", "lastnote": "runner:vm agent a1"},)
+    check(
+        "a token in the last note staffs the target",
+        by_target(live_cap(tmp, items=note))["vm"],
+        (2, "staffed"),
+    )
+    ranked = (note[0], {**runner("vm", "16", 1), "text": "the fleet runner:vm"})
+    check(
+        "an item carrying the token in its own text is named first",
+        [t["note"] for t in live_cap(tmp, items=ranked)["targets"] if t["target"] == "vm"],
+        ["#16"],
+    )
+    leased_hold = {
+        **runner("prod", "17", 1, hold="after the edge release"),
+        "basetext": "runner-hold:prod -- after the edge release",
+        "text": "runner-hold:prod -- after the edge release  auto-lease: named by live task a1",
+    }
+    check(
+        "a hold's reason is its own text, without the appended lease note",
+        [
+            t["note"]
+            for t in live_cap(tmp, items=(leased_hold,))["targets"]
+            if t["target"] == "prod"
+        ],
+        ["#17: after the edge release"],
+    )
+    peer = ({**runner("vm", "11", 1), "owner": "ffffffff-peer"}, runner("bench", "12", 5))
+    check(
+        "control: a peer's runner item staffs nothing", staff_order(live_cap(tmp, items=peer)), True
+    )
+    # Holds: fresh holds, expired holds.
+    fresh = (runner("vm", "13", 10, state=" ", hold="load above nproc"), runner("bench", "12", 5))
+    check("a fresh hold orders nothing", staff_order(live_cap(tmp, items=fresh)), False)
+    check(
+        "the hold's reason is carried",
+        by_target(live_cap(tmp, items=fresh))["vm"],
+        (2, "held"),
+    )
+    expired = (
+        runner("vm", "13", W.HOLD_MAX_MIN + 10, state=" ", hold="load above nproc"),
+        runner("bench", "12", 5),
+    )
+    check("an expired hold orders STAFF again", staff_order(live_cap(tmp, items=expired)), True)
+    bare = (
+        {**runner("vm", "13", 10, state=" "), "text": "runner-hold:vm"},
+        runner("bench", "12", 5),
+    )
+    check(
+        "control: a hold with no reason holds nothing", staff_order(live_cap(tmp, items=bare)), True
+    )
+    # A target whose every startable box is pushed-head only is not startable.
+    pushed = LIVE_SURVEY.replace("| LIVE-VM | none |", "| LIVE-VM | pushed-head |").replace(
+        "| LIVE-VM | verified-vmcheck |", "| LIVE-VM | pushed-head |"
+    )
+    only_bench = (runner("bench", "12", 5),)
+    check(
+        "a pushed-head-only target orders nothing",
+        staff_order(live_cap(tmp, items=only_bench, text=pushed)),
+        False,
+    )
+    ticked = live_cap(tmp, items=only_bench, done=("f1f1f1f1", "f2f2f2f2"))
+    check("a ticked box is not startable", by_target(ticked)["vm"], (0, "unstaffed"))
+    # The `## Staffing` table, when present, gives the startable counts; staffing still comes from the items.
+    table = LIVE_SURVEY.replace(
+        "## 1. Plan tables",
+        "## Staffing\n\n| target | startable | runner item or hold reason |\n|---|---|---|\n"
+        "| LIVE-BENCH | 0 | #12 |\n| VM fleet | 7 | none |\n| hostinger | 3 | none |\n| production | 4 | held |\n\n"
+        "## 1. Plan tables",
+    )
+    check(
+        "the Staffing table decides the counts",
+        by_target(live_cap(tmp, items=(runner("hostinger", "14", 5),), text=table)),
+        {
+            "bench": (0, "unstaffed"),
+            "hostinger": (3, "staffed"),
+            "vm": (7, "unstaffed"),
+            "prod": (4, "held"),
+        },
+    )
+    # The mutants: each rule removed makes its case fail.
+    with Mutant("startable_for", lambda _t, _n, _v: True):
+        check(
+            "mutant: without the needs rule a pushed-head-only target orders",
+            staff_order(live_cap(tmp, items=only_bench, text=pushed)),
+            True,
+        )
+    with Mutant("runner_status", lambda *_a, **_k: {}):
+        check(
+            "mutant: without the runner tokens a staffed target orders",
+            staff_order(live_cap(tmp, items=staffed, live_ids={"agent-vm"})),
+            True,
+        )
+    with Mutant("HOLD_MAX_MIN", 10**9):
+        check(
+            "mutant: without the hold expiry an expired hold still holds",
+            staff_order(live_cap(tmp, items=expired)),
+            False,
+        )
+    with Mutant("unstaffed", lambda _cap: []):
+        check(
+            "mutant: without the STAFF step an unstaffed target asks for a new survey",
+            W.assess(False, OPEN, live_cap(tmp))[0],
+            "due",
+        )
+
+
+BOTH = ("e9e9e9e9", "e8e8e8e8")
+
+
+def held_cases(tmp):
+    staffed = (runner("vm", "11", 1), runner("bench", "12", 1))
+    half = live_cap(tmp, items=staffed, done=("e9e9e9e9",), opened=("e8e8e8e8",))
+    check("an open BOX: blocker keeps the cluster held", "CL-D" in held_free(half), False)
+    closed = live_cap(tmp, items=staffed, done=BOTH)
+    check("closed BOX: blockers free the cluster", "CL-D" in held_free(closed), True)
+    freed = [c for c in closed["free"] if c["id"] == "CL-D"]
+    check(
+        "the freed cluster carries its own sigs and names the closed blockers",
+        (freed[0]["sigs"], freed[0]["head"].startswith("(blocker e9e9e9e9 e8e8e8e8 closed)")),
+        (["d1d1d1d1"], True),
+    )
+    check(
+        "the BOX: tokens decide, so the commit sha beside them is not read as a blocker",
+        freed[0]["unblocked"],
+        list(BOTH),
+    )
+    check("a freed held cluster is refilled", W.assess(False, OPEN, closed), ("refill", ""))
+    check(
+        "a bare blocker sig that closed frees its cluster",
+        "CL-E" in held_free(live_cap(tmp, items=staffed, done=("0e0e0e0e",))),
+        True,
+    )
+    check(
+        "control: a bare token no plan knows keeps the cluster held",
+        "CL-E" in held_free(live_cap(tmp, items=staffed)),
+        False,
+    )
+    named = {"id": "15", "state": ">", "owner": ME, "text": "d1d1d1d1"}
+    check(
+        "control: a held cluster an item already names stays off the free list",
+        "CL-D" in held_free(live_cap(tmp, items=(*staffed, named), done=BOTH)),
+        False,
+    )
+    with Mutant("unblocked", lambda *_a, **_k: []):
+        check(
+            "mutant: without the blocker re-check closed blockers leave the cluster held",
+            "CL-D" in held_free(live_cap(tmp, items=staffed, done=BOTH)),
+            False,
+        )
+    with Mutant("blocker_open", lambda _blockers, _opened: False):
+        check(
+            "mutant: without the open-blocker clause an open blocker frees the cluster",
+            "CL-D"
+            in held_free(live_cap(tmp, items=staffed, done=("e9e9e9e9",), opened=("e8e8e8e8",))),
+            True,
+        )
+
+
+def live_segment_cases(tmp):
+    fired = run_segment(tmp, [LEASED_LA], text=LIVE_SURVEY)
+    check(
+        "the segment renders STAFF RUNNERS",
+        [(k, t.startswith("WRITERS-NOW STAFF RUNNERS: start 2 live runner(s)")) for k, t in fired],
+        [("writers-now-due", True)],
+    )
+    check(
+        "the STAFF message names the token convention",
+        "`runner:<target>`" in fired[0][1] and "`runner-hold:<target> -- <reason>`" in fired[0][1],
+        True,
+    )
+    check("no read failure is noted", "writers-now-due" in wl_checks.READ_FAILURES, False)
+
+
 def main():
     parse_cases()
     for group in (
+        staffing_cases,
+        held_cases,
+        live_segment_cases,
         shared_sig_cases,
         refill_cases,
         refresh_cases,

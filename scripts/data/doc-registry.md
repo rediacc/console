@@ -509,7 +509,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/hooks/stop/wl_benchblock.py | (none) | via .claude/rediacc_hooks/lifecycle.py | py |
 | .claude/hooks/stop/wl_bgsweep.py | (none) | via .claude/hooks/stop/test-bgsweep.py | py |
 | .claude/hooks/stop/wl_boxaudit.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
-| .claude/hooks/stop/wl_boxready.py | (none) | via .claude/hooks/stop/wl_armed.py | py |
+| .claude/hooks/stop/wl_boxready.py | (none) | via .claude/hooks/stop/test-wl_writersnow-refill.py | py |
 | .claude/hooks/stop/wl_bravedefault.py | (none) | via .claude/hooks/stop/test-judge-schema.py | py |
 | .claude/hooks/stop/wl_checklist.py | (none) | via .claude/hooks/stop/test-always-tier.py | py |
 | .claude/hooks/stop/wl_checks.py | (none) | via .claude/hooks/post-tool/commit_remind.py | py |
@@ -847,7 +847,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/guard_cases/block_ssh_file_write.py | (none) | via .claude/rediacc_hooks/guards/block_ssh_file_write.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_suppressions.py | (none) | via .claude/rediacc_hooks/guards/block_suppressions.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_suppressions_shell_write.py | (none) | via .claude/rediacc_hooks/guards/_write_rules.py | py |
-| .claude/rediacc_hooks/tests/guard_cases/block_unasked_release.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
+| .claude/rediacc_hooks/tests/guard_cases/block_unasked_release.py | (none) | via .claude/hooks/stop/wl_writersnow.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unlinked_commit_author.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unproven_bulk_transform.py | (none) | via .claude/rediacc_hooks/guards/_repo_scope.py | py |
 | .claude/rediacc_hooks/tests/guard_cases/block_unpushed_submodule_pin.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |

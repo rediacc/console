@@ -3213,6 +3213,22 @@ V_WRITERS_NOW_REFILL = (
     "names; `worklist.py --add %(who)s` and `--lease` to the real agent id, with the cluster's "
     "sigs in the item text, so the next stop counts the cluster as staffed."
 )
+# The same key when a live target has startable boxes and is neither staffed nor held (wl_writersnow.assess kind "staff", operator order 2026-11-27): it comes ahead of any new survey, the clock's included, because a survey cannot move a live box. Fields from wl_writersnow.staff_fields: n, round, survey, rows (one `  - <target>: <n> startable box(es) ...` line per unstaffed target), others (the staffed and held targets), recent, hold, who.
+V_WRITERS_NOW_STAFF = (
+    "WRITERS-NOW STAFF RUNNERS: start %(n)d live runner(s) now from the current survey, no new "
+    "survey. Round %(round)s's survey %(survey)s holds startable live boxes for each target below, "
+    "and no `runner:<target>` item of this session staffs it and no `runner-hold:<target> -- "
+    "<reason>` item holds it:\n%(rows)s\nThe other targets: %(others)s.\n"
+    "Each runner runs in the main checkout with the brief of .claude/commands/writers-now.md "
+    "section 5 (`Owns: none -- live runner <target>`, read-only steps before mutating ones, one "
+    "evidence file, no tick and no commit, no production data wiped, no fleet run beside "
+    "ci:quick). Track it with `worklist.py --add %(who)s` carrying `runner:<target>` in the text "
+    "and `--lease` it to the real agent id; the item staffs the target while its worker is live "
+    "or it moved in the last %(recent)d minutes. A target that cannot run now takes an item "
+    "carrying `runner-hold:<target> -- <reason>`, which holds it for %(hold)d minutes from the "
+    "item's last update. A new survey is due only once every CODE cluster and every live target "
+    "with startable boxes is staffed or held."
+)
 # Appended to V_WRITERS_NOW_DUE when the clock fires below the floor and the current survey still holds free clusters (wl_writersnow.short): the old survey staffs writers while the new one runs. Fields from wl_writersnow.refill_fields.
 V_WRITERS_NOW_SHORT = (
     "\nMeanwhile the roster counts %(live)d live writer(s) against a floor of %(floor)d "

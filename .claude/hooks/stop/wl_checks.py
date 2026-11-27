@@ -7271,6 +7271,7 @@ def _stop_store_freshness(ns):
         if _wn_facts and not _wn_facts.get("why") and _wn_facts.get("open"):
             _wn_roster = ns.get("_roster")
             # A survey read that fails leaves the clock's own verdict standing: the capacity half adds to the check and never silences it.
+            # The live staffing (operator order 2026-11-27): the survey's live targets are staffed by `runner:<target>` items and held by fresh `runner-hold:<target>` items; a held cluster whose named blockers all closed is free again. The roster's writer count already holds the runners (their agent types are not read-only).
             try:
                 _wn_cap = wl_writersnow.capacity(
                     _wn_rows,
@@ -7281,6 +7282,9 @@ def _stop_store_freshness(ns):
                     if _wn_roster is None or _wn_roster.get("blind")
                     else len(_wn_roster.get("writers") or ()),
                     lambda: wl_writersnow.promoted_done_sigs(ns["root"]),
+                    live_ids=ns["_live_worker_ids"],
+                    open_sigs=lambda: wl_writersnow.promoted_open_sigs(ns["root"]),
+                    vm_verified=lambda: wl_boxready.vmcheck_admits(ns["root"]),
                 )
             except Exception as exc:
                 note_read_failure("writers-now-due", exc)
@@ -7288,7 +7292,18 @@ def _stop_store_freshness(ns):
     except Exception as exc:
         note_read_failure("writers-now-due", exc)
         _wn_kind = ""
-    if _wn_kind == "due" and _wn_why == wl_writersnow.WHY_CLOCK:
+    if _wn_kind == "staff":
+        vadd(
+            "writers-now-due",
+            False,
+            M.V_WRITERS_NOW_STAFF % wl_writersnow.staff_fields(_wn_cap, me8)
+            + (
+                M.V_WRITERS_NOW_SHORT % wl_writersnow.refill_fields(_wn_cap, me8)
+                if wl_writersnow.short(_wn_cap)
+                else ""
+            ),
+        )
+    elif _wn_kind == "due" and _wn_why == wl_writersnow.WHY_CLOCK:
         vadd(
             "writers-now-due",
             False,

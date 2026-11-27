@@ -6,6 +6,8 @@ THE CADENCE (WN2). `writers-now-due` (effort.json: blocks at `high`, advises at 
 
 THE CAPACITY REFILL (operator asks 2026-11-25 and 2026-11-26). The clock alone left writer capacity idle for most of each window. `capacity` reads the newest round's survey (its section 4 `### Startable now` clusters, the CODE work presumed independent unless their file lists overlap), drops the clusters a box tick or an open, deferred or leased item of this session already covers, and `assess` turns that into one of two messages under the same `writers-now-due` key: REFILL (start a writer on EVERY free cluster from the existing survey, no new survey) while the roster counts fewer than CAPACITY_FLOOR live writers and a free cluster remains, whatever the clock says; and a new round due, by the clock above, or once a survey at least REFRESH_GAP_MIN minutes old has no free cluster left or REFRESH_TICKS of its boxes were ticked. A clock-due round below the floor also names the free slots and the current survey's unstaffed clusters (`short`), so writers start from the old survey while the new one runs.
 
+THE LIVE STAFFING (operator order 2026-11-27). Rounds r77 to r81 each ended "no startable cluster" over 230 startable live boxes with no runner staffed for six hours, because the check read only the CODE clusters. `capacity` also counts each live target's startable boxes from the survey's section 1 rows (or its `## Staffing` table) and reads the worklist tokens `runner:<target>` (staffed) and `runner-hold:<target> -- <reason>` (held, for HOLD_MAX_MIN minutes after the item's last update), target one of bench, hostinger, vm, prod; `assess` orders STAFF RUNNERS for every unstaffed target ahead of any new survey. A cluster of a "blocked behind" subsection whose named blocker boxes have all closed joins the free clusters.
+
 THE SEEDS (WN3). A repeat round re-surveys the same plan text, so work that surfaced only in this session's own records stays invisible to it. `collect_seeds` lists, since the previous round of this session (or LOOKBACK_H hours without one): the open items this session added or updated (not the ones a worker holds), the `BLOCKED_BY:` items whose every blocker is now closed (at any age), the per-commit review findings still open that were reviewed in the window, and the "owed", "outside Owns" and "for the lead" lines of the sub-agent reports `wl_report` captured for this session in the window. `--writers-now-start` writes them to `<survey stem>-seeds.md`, and the skill hands that file to the survey agent, which classifies every seed.
 """
 
@@ -454,8 +456,8 @@ def named_sigs(items, session) -> set[str]:
     return out
 
 
-def promoted_done_sigs(root) -> set[str]:
-    """The sigs of every ticked box of the Promoted plans (a plan moved to `_done/` is read there), minus any sig still open in one of them.
+def promoted_box_sigs(root) -> tuple[set[str], set[str]]:
+    """(done, open): the sigs of every ticked box of the Promoted plans (a plan moved to `_done/` is read there) minus any sig still open in one of them, and the sigs still open in one of them.
 
     Boxes with identical text in two plans (the `LP-bench [live]` receipts) share one sig: ticked in one plan and open in another, it is not done, and counting it as done made every survey that lists the open one read as "ticked since". A QUEUE.md that cannot be read raises; a plan file that is gone adds nothing.
     """
@@ -474,13 +476,303 @@ def promoted_done_sigs(root) -> set[str]:
             body = path.read_text(encoding="utf-8")
             done.update(sig for _i, _l, _b, sig in PR.done_boxes(body))
             still_open.update(sig for _i, _l, _b, sig in PR.open_boxes(body))
-    return done - still_open
+    return done - still_open, still_open
 
 
-def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head_time=None) -> dict:
+def promoted_done_sigs(root) -> set[str]:
+    """The ticked sigs of `promoted_box_sigs`: what a survey's table sig counts as ticked since."""
+    return promoted_box_sigs(root)[0]
+
+
+def promoted_open_sigs(root) -> set[str]:
+    """The open sigs of `promoted_box_sigs`: what a held cluster's blocker counts as still open (`held_clusters`)."""
+    return promoted_box_sigs(root)[1]
+
+
+# ---- the live staffing and the held clusters ------------------------------------
+#
+# WHY (operator order 2026-11-27T03:3xZ, "fix the writers-now for also future sessions so when we have hundreds of boxes, we should not make the same mistake(s)"). The Promoted queue held 347 open boxes, 56 of them CODE and every CODE cluster held, 104 LIVE-BENCH, 52 LIVE-VM, 40 LIVE-HOSTINGER and 34 LIVE-PROD. The check read only the CODE clusters, so rounds r77 to r81 each closed as "no startable cluster" and ordered another survey while no live runner had been staffed for about six hours, and the box count did not move. Held clusters stayed held round after round because each survey copied the table forward and nothing re-checked whether the blocker had closed. So the live targets are first-class here: a target with startable boxes that no runner item staffs and no fresh hold holds orders STAFF RUNNERS ahead of any new survey, and a held cluster whose every named blocker box has closed counts as free.
+
+# The live targets and the survey group each reads; a runner is briefed from the section 5 list of that group.
+LIVE_TARGETS = ("bench", "hostinger", "vm", "prod")
+TARGET_GROUP = {
+    "bench": "LIVE-BENCH",
+    "hostinger": "LIVE-HOSTINGER",
+    "vm": "LIVE-VM",
+    "prod": "LIVE-PROD",
+}
+GROUP_TARGET = {g: t for t, g in TARGET_GROUP.items()}
+# The other spellings a `## Staffing` table's first cell may use.
+TARGET_ALIASES = {
+    "bench": "bench",
+    "hostinger": "hostinger",
+    "vm": "vm",
+    "vm fleet": "vm",
+    "fleet": "vm",
+    "prod": "prod",
+    "production": "prod",
+}
+SURVEY_GROUPS = (
+    "CODE",
+    "PRESENT",
+    "LIVE-BENCH",
+    "LIVE-VM",
+    "LIVE-HOSTINGER",
+    "LIVE-PROD",
+    "GITHUB",
+    "TIME",
+    "OPERATOR",
+)
+# A section 1 row: `| sig8 | box | group | needs | evidence |`; the group and needs cells are read by their first token.
+ROW_RE = re.compile(r"^\|\s*([0-9a-f]{8})\s*\|[^|]*\|([^|]*)\|([^|]*)\|", re.MULTILINE)
+GROUP_TOKEN_RE = re.compile(r"^\s*(%s)(?![\w-])" % "|".join(re.escape(g) for g in SURVEY_GROUPS))
+NEEDS_TOKEN_RE = re.compile(r"^\s*(none|bench-deploy|verified-vmcheck|pushed-head)(?![\w-])")
+SECTION1_RE = re.compile(r"^## 1\.[^\n]*$", re.MULTILINE)
+STAFFING_HEAD_RE = re.compile(r"^## Staffing\b[^\n]*$", re.MULTILINE)
+NEXT_H2_RE = re.compile(r"^## ", re.MULTILINE)
+# The worklist tokens (writers-now.md, "An empty round"). `runner:<target>` on an open or leased item of this session staffs the target while its worker is live or the item moved in the last RUNNER_RECENT_MIN minutes; `runner-hold:<target> -- <reason>` on an open, deferred or leased item holds it for HOLD_MAX_MIN minutes after the item's last update, so a hold expires and never parks a target for good.
+# A token followed by an item id (`runner:vm #b201a49d`) names another item's runner, as a note citing it does, and staffs nothing (measured on r81: a ci:quick item's note "the VERIFIED vm:check comes from runner:vm #b201a49d" read as a vm runner). The fold keeps an item's text and only its LAST note, so the claim belongs in the `--add` text, where a later note or an auto-lease cannot overwrite it.
+RUNNER_TOKEN_RE = re.compile(
+    r"(?<![\w-])runner:(bench|hostinger|vm|prod)(?![\w-])(?!\s+#[0-9a-f]{6,})"
+)
+HOLD_TOKEN_RE = re.compile(
+    r"(?<![\w-])runner-hold:(bench|hostinger|vm|prod)\s+--\s+(\S[^\n]*?)(?=\s+runner(?:-hold)?:|$)",
+    re.MULTILINE,
+)
+RUNNER_RECENT_MIN = 45
+HOLD_MAX_MIN = 120
+RUNNER_STATES = (" ", ">")
+HOLD_STATES = (" ", "?", ">")
+# Production counts as held unless a standing authorization is readable, and none is: block_unasked_release judges each release command against an ASKED line of the transcript, so no record names a standing one. A `runner:prod` item still staffs it once the lead holds an authorization.
+PROD_HELD_DEFAULT = (
+    "held by default: no production authorization the hooks can read (block_unasked_release "
+    "judges each release command against the transcript's ASKED line); a `runner:prod` item "
+    "staffs it under a standing authorization"
+)
+# A held cluster's blockers: its `BOX:<plan>#<sig8>` tokens when it names any, else its bare 8-hex tokens that are not its own CODE boxes.
+BOX_TOKEN_RE = re.compile(r"\bBOX:[^\s#]*#([0-9a-f]{8})(?![0-9A-Za-z])")
+HELD_HEAD_RE = re.compile(r"^###\s.*\bblocked behind\b", re.IGNORECASE)
+HELD_BULLET_RE = re.compile(r"^- (?:\*\*)?(CL-[A-Za-z0-9_-]+)(.*)$")
+
+
+def _section(text, head_re) -> str | None:
+    """The body of the level-2 section `head_re` opens, up to the next level-2 heading; None when the heading is absent."""
+    text = text or ""
+    m = head_re.search(text)
+    if not m:
+        return None
+    nxt = NEXT_H2_RE.search(text, m.end())
+    return text[m.end() : nxt.start() if nxt else len(text)]
+
+
+def survey_rows(text) -> dict[str, tuple[str, str]]:
+    """{sig: (group, needs)} of the survey's section 1 plan tables (the whole text when the survey has no `## 1.` heading). A row whose group cell names no survey group is not a plan row (the section 4 cluster table shares the first column); a needs cell with no known value reads as "". The first row of a sig wins."""
+    body = _section(text, SECTION1_RE)
+    if body is None:
+        body = text or ""
+    out: dict[str, tuple[str, str]] = {}
+    for sig, group_cell, needs_cell in ROW_RE.findall(body):
+        g = GROUP_TOKEN_RE.match(group_cell)
+        if not g or sig in out:
+            continue
+        n = NEEDS_TOKEN_RE.match(needs_cell)
+        out[sig] = (g.group(1), n.group(1) if n else "")
+    return out
+
+
+def startable_for(target, needs, vm_verified) -> bool:
+    """Whether a box of `target` whose `Needs:` is `needs` can start now: `none` for every target; `bench-deploy` for bench, whose runner deploys first; `verified-vmcheck` for vm, whose runner runs vm:check first, and for the others once `vm_verified()` answers that a VERIFIED vm:check receipt covers HEAD; `pushed-head` (and an unreadable value) never."""
+    if needs == "none":
+        return True
+    if needs == "bench-deploy":
+        return target == "bench"
+    if needs == "verified-vmcheck":
+        return target == "vm" or bool(vm_verified and vm_verified())
+    return False
+
+
+def target_counts(rows, done, vm_verified=None) -> dict[str, dict[str, int]]:
+    """{target: {needs: count}} of the startable live boxes among `rows` (survey_rows), the ticked `done` sigs left out. `vm_verified` is asked at most once, and only for a non-vm `verified-vmcheck` row."""
+    cached: dict[str, bool] = {}
+
+    def verified() -> bool:
+        if "v" not in cached:
+            cached["v"] = bool(vm_verified and vm_verified())
+        return cached["v"]
+
+    out: dict[str, dict[str, int]] = {t: {} for t in LIVE_TARGETS}
+    for sig, (group, needs) in rows.items():
+        target = GROUP_TARGET.get(group)
+        if target is None or sig in done:
+            continue
+        if startable_for(target, needs, verified):
+            out[target][needs] = out[target].get(needs, 0) + 1
+    return out
+
+
+def staffing_table(text) -> dict[str, int] | None:
+    """{target: startable} of the survey's `## Staffing` table (`target | startable | runner item or hold reason`), or None without the section. Only the startable counts are read: whether a target is staffed or held is always derived from the worklist items, never from a survey that may have copied it forward."""
+    body = _section(text, STAFFING_HEAD_RE)
+    if body is None:
+        return None
+    out: dict[str, int] = {}
+    for line in body.splitlines():
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2:
+            continue
+        name = cells[0].strip("*` ").lower()
+        target = TARGET_ALIASES.get(name) or GROUP_TARGET.get(name.upper())
+        num = re.match(r"\d+", cells[1])
+        if target and num:
+            out[target] = int(num.group(0))
+    return out
+
+
+def _upd_min(rec, now) -> float | None:
+    """Minutes since the item's last update (its first write when it has none); None when neither stamp reads."""
+    stamp = C.parse_stamp(rec.get("upd")) or C.parse_stamp(rec.get("first"))
+    return None if stamp is None else (now - stamp).total_seconds() / 60.0
+
+
+def runner_status(items, session, now, live_ids=()) -> dict[str, tuple[str, str]]:
+    """{target: (state, note)} from this session's items: ("staffed", "#<id>") for a `runner:<target>` item open or leased whose worker is live or which moved in the last RUNNER_RECENT_MIN minutes, else ("held", "#<id>: <reason>") for a `runner-hold:<target> -- <reason>` item open, deferred or leased that moved in the last HOLD_MAX_MIN minutes. A target with neither is absent. Staffed wins over held, and an item carrying the token in its own text is named before one carrying it only in a note.
+
+    The item's own text is `basetext` (the fold's `text` of a leased item has the lease note appended), then the last note, then the lease note, each on its own line so a hold's reason ends with its line.
+    """
+    live = set(live_ids or ())
+    staffed: dict[str, tuple[int, str]] = {}
+    held: dict[str, str] = {}
+    for rec in items or ():
+        if not C.owned_by_me(rec.get("owner"), session):
+            continue
+        state = rec.get("state")
+        own = str(rec.get("basetext") or rec.get("text") or "")
+        notes = "\n".join(str(rec.get(k) or "") for k in ("lastnote", "lease_note"))
+        age = _upd_min(rec, now)
+        if state in RUNNER_STATES:
+            fresh = age is not None and age < RUNNER_RECENT_MIN
+            alive = state == ">" and rec.get("worker") in live
+            if fresh or alive:
+                for rank, part in ((0, own), (1, notes)):
+                    for target in RUNNER_TOKEN_RE.findall(part):
+                        if target not in staffed or rank < staffed[target][0]:
+                            staffed[target] = (rank, "#%s" % rec.get("id"))
+        if state in HOLD_STATES and age is not None and age < HOLD_MAX_MIN:
+            for target, reason in HOLD_TOKEN_RE.findall(own + "\n" + notes):
+                held.setdefault(target, "#%s: %s" % (rec.get("id"), _clip_to(reason, 100)))
+    out = {t: ("held", n) for t, n in held.items()}
+    out.update({t: ("staffed", n) for t, (_rank, n) in staffed.items()})
+    return out
+
+
+def live_targets(text, done, items, session, now, live_ids=(), vm_verified=None) -> list[dict]:
+    """One row per live target, in LIVE_TARGETS order: `target`, `startable` (the `## Staffing` table's count when the survey has one, else the section 1 rows counted by `target_counts`), `needs` (the per-value counts, {} when the table decided), `state` (`staffed`, `held` or `unstaffed`; prod is `held` by default with PROD_HELD_DEFAULT unless a runner item staffs it) and `note`."""
+    table = staffing_table(text)
+    counts = target_counts(survey_rows(text), done, vm_verified) if table is None else None
+    status = runner_status(items, session, now, live_ids)
+    out = []
+    for target in LIVE_TARGETS:
+        if counts is None:
+            needs: dict[str, int] = {}
+            startable = (table or {}).get(target, 0)
+        else:
+            needs = counts[target]
+            startable = sum(needs.values())
+        state, note = status.get(target, ("unstaffed", ""))
+        if target == "prod" and state == "unstaffed":
+            state, note = "held", PROD_HELD_DEFAULT
+        out.append(
+            {"target": target, "startable": startable, "needs": needs, "state": state, "note": note}
+        )
+    return out
+
+
+def unstaffed(cap) -> list[dict]:
+    """The live targets of `cap` with startable boxes that are neither staffed nor held."""
+    return [
+        t
+        for t in (cap or {}).get("targets") or ()
+        if t["startable"] > 0 and t["state"] == "unstaffed"
+    ]
+
+
+def held_clusters(text, rows) -> list[dict]:
+    """The clusters of section 4's "blocked behind" subsections (any `###` heading naming "blocked behind"): each carries its id, `own` (the sigs it names that section 1 lists as CODE), `blockers` (its `BOX:<plan>#<sig8>` tokens when it names any, else every other 8-hex token it names before `Files:`) and its head clipped. A bullet may be bold or plain (`- **CL-X**: ...` or `- CL-X: ...`)."""
+    body = _section(text, CLUSTERS_HEAD_RE)
+    if body is None:
+        return []
+    out = []
+    inside = False
+    for ln in body.splitlines():
+        if ln.startswith("#"):
+            inside = bool(HELD_HEAD_RE.match(ln))
+            continue
+        got = HELD_BULLET_RE.match(ln) if inside else None
+        if not got:
+            continue
+        head = got.group(2).split("Files:", 1)[0]
+        tokens = list(dict.fromkeys(SIG_TOKEN_RE.findall(head)))
+        own = [t for t in tokens if rows.get(t, ("", ""))[0] == "CODE"]
+        boxed = list(dict.fromkeys(BOX_TOKEN_RE.findall(head)))
+        blockers = [b for b in (boxed or tokens) if b not in own]
+        out.append(
+            {
+                "id": got.group(1),
+                "own": own,
+                "blockers": blockers,
+                "head": _clip_to(head.lstrip("*: ")),
+            }
+        )
+    return out
+
+
+def blocker_open(blockers, opened) -> bool:
+    """True while one of `blockers` is still an open box (`opened`): the one clause that keeps a held cluster held."""
+    return any(b in opened for b in blockers)
+
+
+def unblocked(held, done, open_sigs, named) -> list[dict]:
+    """The held clusters whose blockers have all closed, as free clusters: a cluster with an own CODE sig neither ticked nor named by an item of this session, at least one blocker that is a known box (open or ticked in the Promoted plans), and no blocker still open. `open_sigs` is called once, and only when a cluster has a blocker to judge; without it, or with no known blocker, a cluster stays held."""
+    out = []
+    opened: set[str] | None = None
+    for cl in held:
+        left = [s for s in cl["own"] if s not in done]
+        if not left or any(s in named for s in cl["own"]) or not cl["blockers"] or not open_sigs:
+            continue
+        if opened is None:
+            opened = set(open_sigs())
+        known = [b for b in cl["blockers"] if b in opened or b in done]
+        if not known or blocker_open(known, opened):
+            continue
+        out.append(
+            {
+                "id": cl["id"],
+                "sigs": left,
+                "head": _clip_to("(blocker %s closed) %s" % (" ".join(known), cl["head"])),
+                "unblocked": known,
+            }
+        )
+    return out
+
+
+def capacity(
+    rows,
+    session,
+    root,
+    items,
+    live_writers,
+    done_sigs,
+    now=None,
+    head_time=None,
+    live_ids=(),
+    open_sigs=None,
+    vm_verified=None,
+) -> dict:
     """The refill facts of this session's newest round.
 
     `live_writers` is the count of live writers the roster sees (code writers and live runners alike; None when it cannot count, which never refills). `done_sigs` is a callable returning the Promoted plans' ticked sigs, called only once a survey parses. In the facts, `free` lists the startable clusters with at least one unticked sig and no sig named by an open, deferred or leased item of this session (each carrying only its unticked sigs), `ticked` counts the survey's table sigs ticked since, `age` is the survey file's age in minutes, and `moved` is True when a box was ticked or a HEAD commit is newer than the survey (or git cannot answer); `read` is False when there is no round, no survey file or no parseable cluster section.
+
+    The live half: `targets` holds one `live_targets` row per target whenever the survey file reads, section 4 or not (`live_ids` the live worker ids, `vm_verified` the VERIFIED vm:check probe); and a cluster of a "blocked behind" subsection joins `free` once every blocker it names has closed (`held_clusters`, `unblocked`; `open_sigs` a callable returning the Promoted plans' open sigs, asked only when a held cluster names a blocker).
     """
     now = now or C.utcnow()
     mine = _mine(rows, session)
@@ -495,6 +787,7 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head
         "ticked": 0,
         "age": None,
         "moved": True,
+        "targets": [],
     }
     if last is None:
         return facts
@@ -505,9 +798,10 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head
     except FileNotFoundError:
         return facts
     clusters, table = parse_survey(text)
+    done = set(done_sigs())
+    facts["targets"] = live_targets(text, done, items, session, now, live_ids, vm_verified)
     if clusters is None:
         return facts
-    done = set(done_sigs())
     named = named_sigs(items, session)
     facts["read"] = True
     facts["age"] = (now.timestamp() - mtime) / 60.0
@@ -526,6 +820,8 @@ def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head
         left = [s for s in cl["sigs"] if s not in done]
         if left and not any(s in named for s in cl["sigs"]):
             facts["free"].append({**cl, "sigs": left})
+    held = held_clusters(text, survey_rows(text))
+    facts["free"].extend(unblocked(held, done, open_sigs, named))
     return facts
 
 
@@ -546,12 +842,14 @@ def head_commit_time(root) -> float | None:
 
 
 def assess(clock_fires, clock_facts, cap) -> tuple[str, str]:
-    """(kind, why) of the writers-now check: ("due", why) when a new round is due, ("refill", "") when writers start from the current survey, ("", "") otherwise.
+    """(kind, why) of the writers-now check: ("staff", "") when live runners start from the current survey, ("due", why) when a new round is due, ("refill", "") when writers start from the current survey, ("", "") otherwise.
 
-    The clock (`due`) decides first; its message carries the capacity shortfall (`short`) beside it. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left and something `moved` since it was written, or once REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than CAPACITY_FLOOR live writers and the survey still holds a free cluster (open CODE work), inside the clock's window or not. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
+    STAFF RUNNERS decides first: a live target with startable boxes that no `runner:<target>` item staffs and no fresh `runner-hold:<target>` item holds (`unstaffed`) orders its runner instead of a new survey, the clock's included, because a survey cannot move a live box and rounds r77 to r81 re-surveyed five times over 230 unstaffed live boxes. A new round is therefore due only once every CODE cluster and every live target with startable boxes is staffed or held. The clock (`due`) decides next; its message carries the capacity shortfall (`short`) beside it. A survey at least REFRESH_GAP_MIN minutes old is then due once it has no free cluster left and something `moved` since it was written, or once REFRESH_TICKS of its boxes were ticked. A refill fires when the roster counts fewer than CAPACITY_FLOOR live writers and the survey still holds a free cluster (open CODE work), inside the clock's window or not. A stand-down or an empty Promoted queue (in `clock_facts`) silences all three.
     """
     if not clock_facts or clock_facts.get("why") or int(clock_facts.get("open") or 0) <= 0:
         return "", ""
+    if unstaffed(cap):
+        return "staff", ""
     if clock_fires:
         return "due", WHY_CLOCK
     if not cap or not cap.get("read"):
@@ -572,6 +870,38 @@ def short(cap) -> bool:
         return False
     live = cap.get("live")
     return live is not None and live < cap.get("floor", CAPACITY_FLOOR) and bool(cap["free"])
+
+
+def staff_fields(cap, me8) -> dict:
+    """The fields of worklist_messages.V_WRITERS_NOW_STAFF: one row per unstaffed target (its startable count, the per-value split and the survey section to brief from), and one line naming each other target's staffing (the runner item or the hold and its reason) so the order reads whole."""
+    rows = []
+    for t in unstaffed(cap):
+        split = ", ".join("%d needs %s" % (n, k) for k, n in sorted(t["needs"].items()))
+        rows.append(
+            "  - %s: %d startable box(es)%s; brief from the survey's section 5 `%s` list"
+            % (
+                t["target"],
+                t["startable"],
+                " (%s)" % split if split else "",
+                TARGET_GROUP[t["target"]],
+            )
+        )
+    others = [
+        "%s %s (%d startable%s)"
+        % (t["target"], t["state"], t["startable"], ", %s" % t["note"] if t["note"] else "")
+        for t in cap.get("targets") or ()
+        if t not in unstaffed(cap)
+    ]
+    return {
+        "n": len(rows),
+        "round": cap.get("round"),
+        "survey": cap.get("survey"),
+        "rows": "\n".join(rows),
+        "others": "; ".join(others) or "none",
+        "recent": RUNNER_RECENT_MIN,
+        "hold": HOLD_MAX_MIN,
+        "who": me8,
+    }
 
 
 def refill_shown(cap) -> list[dict]:
