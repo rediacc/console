@@ -837,10 +837,6 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-store.py]",
       "reason": "measured 2026-11-21: 10.9 s in PR 605 CI run 44884489459 (Quality / Pytest 4/6, CI runner); the landing-store control suite builds real two-tree repositories; drop the entry once it runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-stack.py]",
-      "reason": "2026-11-27: 26.7 s in ci:quick run 14, 33 s alone; the suite builds a bare origin, a main checkout and a linked landing tree in real git, then reruns all of its controls (about 790 git spawns, 1.8 s) once clean and once per each of 17 mutants, each of which must turn a control red, so the cost is real git times the mutant count and a faked git would void its point; drop the entry once it runs under 10 s"
     }
   ]
 }

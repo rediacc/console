@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib.machinery
 import importlib.util
+import multiprocessing
 import os
 import pathlib
 import subprocess
@@ -604,6 +605,18 @@ def controls(ws: Any, cp) -> list[str]:
     return fails
 
 
+_JUDGING: dict[str, Any] = {}
+
+
+def _judge(index: int) -> tuple[str, bool, list[str]]:
+    """(label, the arm applies exactly once, the controls it turned red) for MUTANTS[index], in a forked worker."""
+    label, old, new = MUTANTS[index]
+    text = _JUDGING["text"]
+    if text.count(old) != 1:
+        return label, False, []
+    return label, True, controls(load(text.replace(old, new)), _JUDGING["cp"])
+
+
 def main() -> int:
     real = load()
     cp = real._hooks_pkg()
@@ -620,13 +633,16 @@ def main() -> int:
     print("controls: all held")
     text = SOURCE.read_text(encoding="utf-8")
     bad = 0
-    for label, old, new in MUTANTS:
-        if text.count(old) != 1:
+    _JUDGING.update(text=text, cp=cp)
+    # Each mutant is judged by a full run of the controls (about 850 repository commands, 2 s), and the runs share nothing: each builds its own repositories and loads its own mutant module. They run in forked workers, one per core up to the mutant count, and print in MUTANTS order, so the report and the verdict are what the serial loop gave.
+    workers = max(1, min(len(MUTANTS), len(os.sched_getaffinity(0))))
+    with multiprocessing.get_context("fork").Pool(workers) as pool:
+        judged = pool.map(_judge, range(len(MUTANTS)), chunksize=1)
+    for label, applies, red in judged:
+        if not applies:
             print("FAIL: mutant %r no longer applies once" % label)
             bad += 1
-            continue
-        red = controls(load(text.replace(old, new)), cp)
-        if not red:
+        elif not red:
             print("FAIL: mutant %r left every control green" % label)
             bad += 1
         else:
