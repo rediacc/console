@@ -90,9 +90,7 @@ interface Catalog {
 }
 
 /** The pricing copy of a catalog, for the planted controls that mutate it. */
-function pricingCopy(
-  catalog: Catalog
-): PricingCopy & {
+function pricingCopy(catalog: Catalog): PricingCopy & {
   technicalSummary: {
     metrics: { tooltip?: string }[];
     values: Record<string, TechnicalSummaryCell>;

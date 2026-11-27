@@ -30,7 +30,7 @@ import { EXIT_CODES } from '../../types/index.js';
 import { AuthError } from '../../utils/errors.js';
 import { askPassword } from '../../utils/prompt.js';
 
-export const VERIFIER_V2_PREFIX = 'v2:';
+const VERIFIER_V2_PREFIX = 'v2:';
 const VERIFIER_PLAINTEXT = 'rdc-mp-verifier-v2';
 
 interface ResolvedPassword {

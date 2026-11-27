@@ -226,48 +226,40 @@ function compareVerdict(
   snapshotId: string
 ): Verdict {
   const passphraseCheck = record?.passphraseCheck;
-  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that inventory against the manifest's root.
   const heldToSnapshot = verdict.heldTo === 'snapshot';
-  const comparedSnapshot = heldToSnapshot ? verdict.snapshotId : verdict.anchorSnapshotId;
-  if (comparedSnapshot !== snapshotId) {
-    return {
-      status: 'failed',
-      reason: heldToSnapshot
-        ? `the copy was compared against ${verdict.snapshotId ?? '-'}, not the restored snapshot ${snapshotId}, so it cannot be proven`
-        : `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: false,
-    };
-  }
-  if (heldToSnapshot && record?.cellsRoot !== 'verified') {
-    return {
-      status: 'failed',
-      reason: REASON_ROOT_NOT_VERIFIED,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: false,
-    };
-  }
-  if (verdict.status !== 'identical') {
-    return {
-      status: 'failed',
-      reason: verdict.reason,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: verdict.status === 'different',
-    };
-  }
+  const failed = (reason: string | undefined, postFailed = false): Verdict => ({
+    status: 'failed',
+    reason,
+    passphraseCheck,
+    compare: verdict,
+    postFailed,
+  });
+  const unproven = comparedUnproven(verdict, record, snapshotId);
+  if (unproven) return failed(unproven);
+  if (verdict.status !== 'identical') return failed(verdict.reason, verdict.status === 'different');
   if (passphraseCheck !== 'opened') {
-    return {
-      status: 'failed',
-      reason: `the copy matches the ${heldToSnapshot ? 'snapshot' : 'anchor'} but the passphrase did not open it, so it is not proven`,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: false,
-    };
+    return failed(
+      `the copy matches the ${heldToSnapshot ? 'snapshot' : 'anchor'} but the passphrase did not open it, so it is not proven`
+    );
   }
   return { status: 'proven', passphraseCheck, compare: verdict, postFailed: false };
+}
+
+/** Why the compared copy cannot be tied to the restored snapshot, or undefined when it can. */
+function comparedUnproven(
+  verdict: CompareRecord,
+  record: RestoreStats | undefined,
+  snapshotId: string
+): string | undefined {
+  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that inventory against the manifest's root.
+  if (verdict.heldTo === 'snapshot') {
+    if (verdict.snapshotId !== snapshotId) {
+      return `the copy was compared against ${verdict.snapshotId ?? '-'}, not the restored snapshot ${snapshotId}, so it cannot be proven`;
+    }
+    return record?.cellsRoot === 'verified' ? undefined : REASON_ROOT_NOT_VERIFIED;
+  }
+  if (verdict.anchorSnapshotId === snapshotId) return undefined;
+  return `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`;
 }
 
 const STATE_UNRECORDED = 'unrecorded';

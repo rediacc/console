@@ -8,7 +8,7 @@ import { handleError } from '../../utils/errors.js';
 import { OPS_BACKEND_CHOICES } from './backends.js';
 
 /** Normalizes `31,32` to the comma list renet reads from VM_WINDOWS; the id range rule itself is renet's. */
-export function parseWindowsIds(raw: string): string {
+function parseWindowsIds(raw: string): string {
   const ids = raw.split(',').map((part) => part.trim());
   if (ids.some((id) => !/^\d+$/.test(id))) {
     throw new Error(t('commands.ops.up.windowsInvalid', { value: raw }));

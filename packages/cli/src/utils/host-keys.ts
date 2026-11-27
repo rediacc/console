@@ -150,7 +150,7 @@ function scanFamily(
  * the bare host on port 22, `[host]:port` otherwise. A host already written in
  * brackets (an IPv6 literal) is unwrapped first so it is never double-bracketed.
  */
-export function knownHostsHost(host: string, port: number): string {
+function knownHostsHost(host: string, port: number): string {
   const bare = host.startsWith('[') && host.endsWith(']') ? host.slice(1, -1) : host;
   return port === 22 ? bare : `[${bare}]:${port}`;
 }

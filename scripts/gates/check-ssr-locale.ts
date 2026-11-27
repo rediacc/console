@@ -34,6 +34,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { type ControlCase, runControls, summarizeControls } from '../lib/controls.js';
 import { refuseFindings } from '../lib/findings-report.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
@@ -68,12 +69,9 @@ function locales(): string[] {
   return raw.siteLocales as string[];
 }
 
-function selftest(): number {
-  let bad = 0;
-  const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
-    if (!ok) bad++;
-  };
+function selftest(): ControlCase[] {
+  const cases: ControlCase[] = [];
+  const check = (name: string, ok: boolean) => cases.push({ name, ok });
   check('a dotted path resolves', at({ a: { b: 'x' } }, 'a.b') === 'x');
   check('a missing path is undefined', at({ a: {} }, 'a.b') === undefined);
   check('a non-string leaf is undefined', at({ a: { b: 1 } }, 'a.b') === undefined);
@@ -86,17 +84,15 @@ function selftest(): number {
     'CONTROL: a translated value present in html is detected',
     '<p>Jetzt starten</p>'.includes('Jetzt starten')
   );
-  return bad;
+  return cases;
 }
 
 function main(): void {
   if (process.argv.includes('--selftest')) {
     console.log('ssr-locale gate selftest');
-    const bad = selftest();
-    console.log(bad === 0 ? '\n${GREEN}✓${NC} 6/6 controls pass' : `\n${RED}✗${NC} ${bad} failed`);
-    process.exit(bad === 0 ? 0 : 1);
+    process.exit(summarizeControls(selftest()));
   }
-  if (selftest() !== 0) {
+  if (runControls(selftest()) !== 0) {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
   }

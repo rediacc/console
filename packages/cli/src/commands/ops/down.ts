@@ -7,7 +7,7 @@ import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import { handleError } from '../../utils/errors.js';
 import { OPS_BACKEND_CHOICES } from './backends.js';
 
-export const WINDOWS_CLIENT_ROLE = 'windows-client';
+const WINDOWS_CLIENT_ROLE = 'windows-client';
 
 interface OpsVm {
   name: string;

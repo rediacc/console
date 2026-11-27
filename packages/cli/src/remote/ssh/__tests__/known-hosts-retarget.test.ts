@@ -112,9 +112,12 @@ describe('createTempKnownHostsFile writes the pins under the dialed host', () =>
     }
   );
 
-  it.skipIf(!hasSshKeygen && !process.env.CI)('OpenSSH finds the pins under [host]:port off port 22', async () => {
-    const path = await write(PINNED, NEW_V6, 2222);
-    expect(opensshKeysFor(path, `[${NEW_V6}]:2222`)).toHaveLength(2);
-    expect(opensshKeysFor(path, NEW_V6)).toEqual([]);
-  });
+  it.skipIf(!hasSshKeygen && !process.env.CI)(
+    'OpenSSH finds the pins under [host]:port off port 22',
+    async () => {
+      const path = await write(PINNED, NEW_V6, 2222);
+      expect(opensshKeysFor(path, `[${NEW_V6}]:2222`)).toHaveLength(2);
+      expect(opensshKeysFor(path, NEW_V6)).toEqual([]);
+    }
+  );
 });
