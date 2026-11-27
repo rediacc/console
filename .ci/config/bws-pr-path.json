@@ -1,0 +1,921 @@
+{
+  "_comment": [
+    "The class of every Bitwarden store name for check:ci-bws-pr-path (.ci/rediacc_ci/quality/bws_pr_path.py), per",
+    "agent/plans/PLAN-pr-path-ephemeral-credentials.md D7. `pr-safe` names may be fetched by a job that runs on a pull",
+    "request; `release-only` names may not, and each carries a reason starting with `BLOCKER:` that passes",
+    "rediacc_ci.core.allowlist.validate_reason. Every name in bws-secret-map.json must be classed here, and a classed",
+    "name the map lacks is refused as dead. When unsure, a name is release-only: pr-safe is the claim that needs proof.",
+    "",
+    "`baseline.ids` is SHRINK-ONLY: the rule (i) and (iii) findings present when the gate landed, as the first 12 hex of",
+    "sha256 over `rule|call chain|name`. A new finding fails and is fixed, never added here; a fixed one fails until",
+    "`PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_pr_path --write-baseline` drains it, and that command only removes.",
+    "`--show-baseline` prints the findings the ids stand for."
+  ],
+  "names": {
+    "ACCOUNT_AE_READ_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_ENDPOINT": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the account-database backup bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_ASIA_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_US_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_US_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a key-encryption key of the account backup store; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the config-storage server key of a deployed account Worker; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_ED25519_PRIVATE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the licence-signing private key; a holder mints licences that released renet accepts; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_ED25519_PRIVATE_KEY_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: the licence-signing private key; a holder mints licences that released renet accepts; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_ED25519_PUBLIC_KEY": {
+      "class": "pr-safe",
+      "reason": "the public half of the licence-signing key; public by design, since every released renet embeds it to verify licences"
+    },
+    "ACCOUNT_ED25519_PUBLIC_KEY_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_JWT_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: the production session-signing secret; a holder forges a session on every production account Worker. agent/plans/PLAN-pr-path-ephemeral-credentials.md D3 generates one per preview"
+    },
+    "ACCOUNT_JWT_SECRET_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_SERVER_API_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the production server API key of the account Workers; a holder calls their server-only routes. agent/plans/PLAN-pr-path-ephemeral-credentials.md D3 generates one per preview"
+    },
+    "ACCOUNT_SERVER_API_KEY_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_X25519_PRIVATE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the production tunnel private key; a holder decrypts what clients encrypt to the account Workers. agent/plans/PLAN-pr-path-ephemeral-credentials.md D3 generates one per preview"
+    },
+    "ACCOUNT_X25519_PRIVATE_KEY_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ACCOUNT_X25519_PUBLIC_KEY": {
+      "class": "pr-safe",
+      "reason": "the public half of the tunnel key; public by design, since clients encrypt to it"
+    },
+    "ACCOUNT_X25519_PUBLIC_KEY_DEV": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account Worker key or token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AI_GATEWAY_LOGS_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ALERTS_FROM_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ALERTS_NOTIFY_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_OPS_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: an AWS operations credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_OPS_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: an AWS operations credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_ACCESS_KEY_ID_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_ACCESS_KEY_ID_BENCH": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_ACCESS_KEY_ID_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: half of the production EU outbound mail identity; with its secret a holder sends mail as the product. agent/plans/PLAN-pr-path-ephemeral-credentials.md D3 leaves the preview without it"
+    },
+    "AWS_SES_ACCESS_KEY_ID_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_CONFIGURATION_SET": {
+      "class": "pr-safe",
+      "reason": "an SES configuration-set name, not a credential; sending mail needs the release-only SES key pair"
+    },
+    "AWS_SES_FROM": {
+      "class": "pr-safe",
+      "reason": "the sender address printed on every outgoing mail, not a credential; sending needs the release-only SES key pair"
+    },
+    "AWS_SES_HOST": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_REGION": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_REGION_EU": {
+      "class": "pr-safe",
+      "reason": "an AWS region name, not a credential; sending mail needs the release-only SES key pair"
+    },
+    "AWS_SES_SECRET_ACCESS_KEY_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_SECRET_ACCESS_KEY_BENCH": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_SECRET_ACCESS_KEY_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: the production EU outbound mail secret; a holder sends mail as the product. agent/plans/PLAN-pr-path-ephemeral-credentials.md D3 leaves the preview without it"
+    },
+    "AWS_SES_SECRET_ACCESS_KEY_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "AWS_SES_SMTP_PASSWORD_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_PASSWORD_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_PASSWORD_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_PASSWORD_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_TOTP_SEED_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_TOTP_SEED_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_ROOT_TOTP_SEED_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_STORE_RECOVERY_CODE_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_STORE_RECOVERY_CODE_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_STORE_RECOVERY_CODE_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_WIPE_R2_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "BENCH_WIPE_R2_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a bench environment root or wipe credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CF_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account-level Cloudflare credential that can mint any scoped token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CF_GLOBAL_API_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account-level Cloudflare credential that can mint any scoped token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CF_MANAGEMENT_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: an account-level Cloudflare credential that can mint any scoped token; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_ACCOUNT_ID": {
+      "class": "pr-safe",
+      "reason": "an identifier that appears in public API paths and workers.dev URLs; it authorises nothing on its own"
+    },
+    "CLOUDFLARE_API_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: the broad production Cloudflare token (Workers, D1, cache, DNS); agent/plans/PLAN-pr-path-ephemeral-credentials.md D5 gives PR jobs a scoped CLOUDFLARE_API_TOKEN_PREVIEW instead"
+    },
+    "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production Cloudflare credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_R2_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: half of the R2 key pair that writes the release and staging buckets; with its secret a holder replaces published artifacts"
+    },
+    "CLOUDFLARE_R2_ENDPOINT": {
+      "class": "pr-safe",
+      "reason": "the R2 S3 endpoint URL, derived from the public account id; it authorises nothing without a key pair"
+    },
+    "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: half of the media bucket key pair; with its secret a holder replaces the tutorial videos and audio the site serves"
+    },
+    "CLOUDFLARE_R2_MEDIA_ENDPOINT": {
+      "class": "pr-safe",
+      "reason": "the media bucket's S3 endpoint URL, derived from the public account id; it authorises nothing without a key pair"
+    },
+    "CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the media bucket secret; a holder replaces the tutorial videos and audio the site serves"
+    },
+    "CLOUDFLARE_R2_MIGRATION_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production Cloudflare credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_R2_MIGRATION_API_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production Cloudflare credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_R2_MIGRATION_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production Cloudflare credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_R2_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the R2 secret that writes the release and staging buckets; a holder replaces published artifacts"
+    },
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Turnstile secret of a deployed site; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Turnstile secret of a deployed site; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CLOUDFLARE_ZONE_ID": {
+      "class": "pr-safe",
+      "reason": "a zone identifier that appears in public API paths; it authorises nothing on its own"
+    },
+    "CONTACT_FROM_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "CONTACT_NOTIFY_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "DOCKERHUB_TOKEN": {
+      "class": "pr-safe",
+      "reason": "a Docker Hub account token that only raises the pull rate limit and grants no write, per .ci/config/secret-supply.json"
+    },
+    "DOCKERHUB_USERNAME": {
+      "class": "pr-safe",
+      "reason": "the Docker Hub account name, public on every pushed image; it authorises nothing on its own"
+    },
+    "ENTERPRISE_LOOKUP_PEPPER": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "FREE_LICENSE_HMAC_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "FULL_CI": {
+      "class": "pr-safe",
+      "reason": "a switch value that forces the full suite on a run; it is not a credential and authorises nothing"
+    },
+    "GITHUB_APP_CLIENT_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a GitHub App credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "GITHUB_APP_ID": {
+      "class": "pr-safe",
+      "reason": "the GitHub App's numeric id, shown on its public page; minting a token needs the release-only private key"
+    },
+    "GITHUB_APP_PRIVATE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the GitHub App private key; the App holds an always bypass on the main-branch ruleset, so a holder mints a write token past branch protection (.github/actions/app-token/action.yml)"
+    },
+    "GIT_BOT_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "GIT_BOT_NAME": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "HOSTINGER_REPO_CREDENTIALS_ESCROW": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LINODE_API_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_D1_DATABASE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_D1_DATABASE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_A_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_A_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_A_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_B_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_B_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_ORG_B_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_ASIA_RECOVERY_CODE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_D1_DATABASE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_A_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_A_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_A_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_B_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_B_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_ORG_B_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_EU_RECOVERY_CODE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_D1_DATABASE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_A_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_A_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_A_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_B_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_B_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_B_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_C_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_ORG_C_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_EDGE_US_RECOVERY_CODE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_MACHINE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_A_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_A_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_A_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_B_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_B_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_ORG_B_TOTP_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_PROBE_SSH_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "LIVE_CONSOLE_RECOVERY_CODE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a live-proof account credential or identifier of a deployed console; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "MAIL_ALERTS_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "MAIL_CONTACT_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "MODEL_ED25519_PRIVATE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a model-signing private key; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_GRAFANA_READ_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_CREDENTIALS": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_CREDENTIALS_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_CREDENTIALS_BENCH": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_CREDENTIALS_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_CREDENTIALS_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_OTLP_USERNAME": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_READER_SSH_KEY_B64": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_READER_SSH_KNOWN_HOSTS": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OBS_READER_SSH_TARGET": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OPS_ALERT_EMAILS": {
+      "class": "release-only",
+      "reason": "BLOCKER: an operations credential or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OPS_HEALTH_INGEST_TOKEN": {
+      "class": "release-only",
+      "reason": "BLOCKER: an operations credential or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "OPS_HEALTH_READ_TOKEN": {
+      "class": "pr-safe",
+      "reason": "a bearer that only reads the ops-health status Worker's verdict; it cannot write or deploy anything"
+    },
+    "OTEL_ENDPOINT": {
+      "class": "release-only",
+      "reason": "BLOCKER: an observability credential or target; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "PREVIEW_NAME_KEY": {
+      "class": "pr-safe",
+      "reason": "keys the preview hostname so it cannot be guessed from the PR number; a holder learns preview hostnames only, and every preview job needs it to name its own Worker"
+    },
+    "R2_PUBLIC_DATA_ACCESS_KEY_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the public data bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a credential of the public data bucket; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "REDIACC_MACHINE_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a machine secret of a deployed fleet; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a machine secret of a deployed fleet; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a machine secret of a deployed fleet; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "REDIACC_MACHINE_SECRET_ID_BENCH_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a machine secret of a deployed fleet; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "RELEASE_GPG_PASSPHRASE": {
+      "class": "release-only",
+      "reason": "BLOCKER: the passphrase of the release package-signing key. agent/plans/PLAN-pr-path-ephemeral-credentials.md D1 signs PR channels with a throwaway key"
+    },
+    "RELEASE_GPG_PRIVATE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: the release package-signing key that every apt and dnf install trusts. agent/plans/PLAN-pr-path-ephemeral-credentials.md D1 signs PR channels with a throwaway key"
+    },
+    "RELEASE_GPG_REVOCATION_CERT": {
+      "class": "release-only",
+      "reason": "BLOCKER: a value of the release package-signing key; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ROOT_API_TOKEN_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production root account credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ROOT_API_TOKEN_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production root account credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ROOT_API_TOKEN_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production root account credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ROOT_EMAIL": {
+      "class": "pr-safe",
+      "reason": "the root account's sign-in address, an identity rather than a credential; the preview and the account e2e seed their root user with it"
+    },
+    "ROOT_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production root account credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "ROOT_TOTP_SEED": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production root account credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SALES_NOTIFY_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_ADDRESS_LINE1": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_ADDRESS_LINE2": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_CITY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_COUNTRY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_EMAIL": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_NAME": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_POSTAL_CODE": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_REGISTER_NAME": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_REGISTRATION_NUMBER": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SELLER_VAT_NUMBER": {
+      "class": "release-only",
+      "reason": "BLOCKER: a seller identity field printed on invoices; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SMTP_FROM": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SMTP_HOST": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SMTP_PASSWORD": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SMTP_PORT": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "SMTP_USER": {
+      "class": "release-only",
+      "reason": "BLOCKER: an outbound mail credential or setting; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_PUBLISHABLE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_SANDBOX_PUBLISHABLE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_SANDBOX_SECRET_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_SANDBOX_WEBHOOK_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_SANDBOX_WEBHOOK_SECRET_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_SECRET_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_WEBHOOK_SECRET": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_WEBHOOK_SECRET_ASIA": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_WEBHOOK_SECRET_EU": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_WEBHOOK_SECRET_ID": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "STRIPE_WEBHOOK_SECRET_US": {
+      "class": "release-only",
+      "reason": "BLOCKER: a Stripe billing value; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    },
+    "TURNSTILE_SITE_KEY": {
+      "class": "release-only",
+      "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
+    }
+  },
+  "baseline": {
+    "ids": [
+      "04b1caf94ecb",
+      "094b9c1ba369",
+      "099874638811",
+      "10707f5ff940",
+      "18ba0b6e3fcd",
+      "1e640a63617a",
+      "20cf70b0f332",
+      "22121849e58f",
+      "231f67ce59f6",
+      "234b1cd825e8",
+      "260643b60ad8",
+      "27665b15ca4d",
+      "2a9be89119a7",
+      "2af2acfe25dd",
+      "2da7e8186c29",
+      "317f23f47947",
+      "3944afb3799f",
+      "3a7d496fe511",
+      "3a84be52c5de",
+      "3d4ca72c718e",
+      "3e6e17f530a2",
+      "462099410309",
+      "46ba0cf2b8fd",
+      "47d05dae69ae",
+      "4840b63ac461",
+      "4c33db0cb6ae",
+      "4dee7d37d228",
+      "4dfa46c2c1e9",
+      "52dac51da92c",
+      "5603609c7ea0",
+      "579de9de6bd2",
+      "58407d07b31a",
+      "5d3a801c7c0c",
+      "5f49120bc016",
+      "619d38785da8",
+      "621e546b83b3",
+      "62ecc9a84c4c",
+      "6303cccdd9d8",
+      "672242f75128",
+      "6c7dec4e9f47",
+      "6efcf81cb35a",
+      "6f20740f4a6b",
+      "7065c30d13c9",
+      "7082884c9ed1",
+      "7165e1da13b0",
+      "728e3e6846fd",
+      "73836e029728",
+      "75119b6aa69c",
+      "7aef81e96fda",
+      "7f3529afa60f",
+      "8c1a10021a89",
+      "93da3231c65e",
+      "943cf87dcd38",
+      "94962cab8e22",
+      "96f2230d048b",
+      "976da12f730d",
+      "9a98e2313878",
+      "9e7947d8a352",
+      "9f4b290f19d3",
+      "a43414b16893",
+      "a563a7e953a8",
+      "a7294d7cd34a",
+      "a9485a921889",
+      "a9ceaf6d5a49",
+      "acb7cbd73cab",
+      "af1841bd9dde",
+      "b18adff55a69",
+      "b24d08964981",
+      "b2b540c1d42d",
+      "b47c5209d8fa",
+      "bc56701f7065",
+      "be806941e403",
+      "cfdadb786744",
+      "d8dd172bac9e",
+      "da7a0bdbaeeb",
+      "de8e752de114",
+      "e02e41d43eeb",
+      "e4b80473d28c",
+      "ea3d5a1757bd",
+      "ebc201427a35",
+      "f00af81b8509",
+      "f402a04a31bc",
+      "f53dbf805be7",
+      "f7370a7ecf66",
+      "f9f1b9dec656"
+    ]
+  }
+}

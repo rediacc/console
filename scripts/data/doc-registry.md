@@ -1109,6 +1109,7 @@ Scans: every tracked non-source, non-prose file carrying a `BLOCKER:` line.
 |---|---|---|
 | .ci/breakpoint/.breakpoint-drift-accept | 1 | prose only (no live entry) |
 | .ci/config/actions-vars.json | 1 | JSON value |
+| .ci/config/bws-pr-path.json | 189 | JSON value |
 | .ci/config/bws-step-scoped.json | 5 | JSON value |
 | .ci/config/directive-quotes-allowlist.txt | 2 | prose only (no live entry) |
 | .ci/config/docker-npm-pin-exclusions.json | 1 | JSON value |
@@ -1168,7 +1169,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/breakpoint/lib | 2 | .sh 2 |
 | .ci/breakpoint/scripts | 20 | .sh 20 |
 | .ci/breakpoint/workflow | 1 | .yml 1 |
-| .ci/config | 78 | .json 67, .txt 5, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
+| .ci/config | 79 | .json 68, .txt 5, .sh 2, .cfg 1, .conf 1, .env 1, .yaml 1 |
 | .ci/config/shards | 6 | .json 6 |
 | .ci/docker | 1 | .sh 1 |
 | .ci/docker/ci | 1 | .yml 1 |
@@ -1462,6 +1463,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/bench-access-pinned.json` | .ci/config | code: `.ci/rediacc_ci/ops/bench_access.py` | no -- hardcoded in `.ci/rediacc_ci/ops/bench_access.py` |
 | `.ci/config/bench-production.json` | .ci/config | code: `.ci/rediacc_ci/ops/bench_production.py` | no -- hardcoded in `.ci/rediacc_ci/ops/bench_production.py` |
 | `.ci/config/bulk-transform-proof-baseline.json` | .ci/config | code: `.claude/hooks/stop/wl_classsweep.py` | no -- hardcoded in `.claude/hooks/stop/wl_classsweep.py` |
+| `.ci/config/bws-pr-path.json` | .ci/config | code: `.ci/rediacc_ci/quality/bws_pr_path.py` | no -- hardcoded in `.ci/rediacc_ci/quality/bws_pr_path.py` |
 | `.ci/config/bws-secret-map.json` | .ci/config | wiring: `.github/actions/bws-secrets/action.yml` | yes -- repoint in `.github/actions/bws-secrets/action.yml` |
 | `.ci/config/bws-step-scoped.json` | .ci/config | wiring: `.github/actions/bws-scrub/action.yml` | yes -- repoint in `.github/actions/bws-scrub/action.yml` |
 | `.ci/config/bws-unrequested.json` | .ci/config | code: `.ci/rediacc_ci/quality/bws_map_live.py` | no -- hardcoded in `.ci/rediacc_ci/quality/bws_map_live.py` |
