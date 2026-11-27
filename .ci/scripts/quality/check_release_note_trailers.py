@@ -36,6 +36,7 @@ import tempfile
 from typing import TYPE_CHECKING
 
 import _cipath
+import _gate_args
 from rediacc_ci import controls
 from rediacc_ci.release import release_notes as rn
 
@@ -341,4 +342,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_release_note_trailers.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
     raise SystemExit(main(sys.argv[1:]))
