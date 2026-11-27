@@ -113,6 +113,14 @@ describe('R5: users and original repositories', () => {
   });
 });
 
+describe('R2: COMMUNITY has no hosted R2', () => {
+  it('gives COMMUNITY a zero hosted-storage quota, which an unknown plan inherits', () => {
+    expect(PLAN_LIMITS.COMMUNITY.storageQuotaBytes).toBe(0);
+    expect(getPlanBaseLimits('COMMUNITY').storageQuotaBytes).toBe(0);
+    expect(getPlanBaseLimits('NOT_A_PLAN').storageQuotaBytes).toBe(0);
+  });
+});
+
 describe('R6: setups and hosted R2', () => {
   it('gives free Professional 500 setups a month and 25 GiB, PROFESSIONAL for everything else', () => {
     const free = getPlanBaseLimits('PROFESSIONAL', 'free-eligible');

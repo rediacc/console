@@ -232,7 +232,7 @@
       "COMMUNITY": {
         "maxRepositorySizeGb": 10,
         "maxRepoLicenseIssuancesPerMonth": 100,
-        "storageQuotaBytes": 10737418240,
+        "storageQuotaBytes": 0,
         "forensicsQuotaBytes": 0
       },
       "PROFESSIONAL": {

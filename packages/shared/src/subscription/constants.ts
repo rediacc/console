@@ -57,7 +57,8 @@ export const PLAN_LIMITS: Record<
   COMMUNITY: {
     maxRepositorySizeGb: 10,
     maxRepoLicenseIssuancesPerMonth: 100,
-    storageQuotaBytes: 10 * 1024 ** 3,
+    // No hosted R2 (PLAN-pricing-plan-model.md R2, Design 4): a Registered (free) account backs up to its own S3 store.
+    storageQuotaBytes: 0,
     forensicsQuotaBytes: 0,
   },
   PROFESSIONAL: {
