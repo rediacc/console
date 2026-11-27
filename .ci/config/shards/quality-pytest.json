@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:08:34.412Z",
+  "generatedAt": "2026-11-27T10:11:10.642Z",
   "legs": [
     {
       "index": 1,
@@ -483,6 +483,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_region_smoke.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_reset_bench_region.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_windows_image.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_plan_record_parse_once.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py",

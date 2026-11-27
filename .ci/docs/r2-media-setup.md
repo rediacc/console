@@ -276,3 +276,36 @@ bws_env exec --profile public-data -- true
 DATA_HOST=data.rediacc.com
 curl -sI "https://$DATA_HOST/models/channels/stable.json" | grep -iE "http/|cache-control"
 ```
+
+## 11. Private Windows image bucket (`windows-ci-images`)
+
+`windows-ci-images` holds the Windows lane's bake inputs and golden image (plan `PLAN-windows-lane.md` D12). It is PRIVATE: it carries the Windows 11 Enterprise Evaluation ISO, the pinned virtio-win ISO and an installed image whose registry holds the autologon password in clear text. It is never `rediacc-public-data`, which is public by policy (section 10), and `rediacc_ci.ops.windows_image` refuses that bucket by name before any request. The name sits outside the `rediacc-<x>` form Cloudflare housekeeping retires, so no keep-list entry is needed.
+
+| | |
+|---|---|
+| **Bucket** | `windows-ci-images`, created by hand (box WL20); no custom domain, no public access, no Cache Rule, no CORS |
+| **Record** | `.ci/config/windows-image.json`: the bucket, `warn_days`, the `rebake` command, and `inputs` and `image` (each `null` until its first upload) with their sha256 values |
+| **bws profile** | `windows-image`, holding `R2_WINDOWS_IMAGE_ACCESS_KEY_ID`, `R2_WINDOWS_IMAGE_SECRET_ACCESS_KEY` and `WINDOWS_IMAGE_ADMIN_PASSWORD` once WL20 mints them |
+
+The token is bucket-scoped (Object Read & Write on `windows-ci-images` only), minted through `cf_auth` like the public-data token. No workflow binds it: a GitHub secret on a public repository would hand the image to any workflow run.
+
+### Layout
+
+| Key | Content |
+|---|---|
+| `inputs/win11-eval/<sha256>.iso` | The evaluation ISO, refused by `upload-inputs` unless its ISO 9660 label is an evaluation one (`<edition>_<arch>FREE_<lang>_DV<n>`) |
+| `inputs/virtio-win/<sha256>.iso` | The virtio-win ISO the bake loads drivers from |
+| `images/win11/<build>-<installed date>/golden.tar.zst` | The golden qcow2, OVMF VARS, swtpm state and `rediacc-image.json`, packed by `pack` |
+
+### Commands
+
+```bash
+P='PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image'
+$P probe                                  # 200 on the bucket, 403 on rediacc-public-data, anonymous GET refused
+$P upload-inputs <eval.iso> <virtio-win.iso>
+$P fetch --inputs                         # into $RENET_DATA_DIR/images/{win11-eval,virtio-win}.iso; WINDOWS_ISO / VIRTIO_ISO skip a download
+$P fetch                                  # the golden image into $RENET_DATA_DIR/images/win11-golden/
+$P rebake                                 # fetch --inputs, renet ops windows bake, pack, publish
+```
+
+Every verb takes `--dry-run`, which prints the commands and touches neither the network, the bucket nor the record. Each download is verified against the record's sha256 and deleted on a mismatch. `check:ci-windows-image-expiry` reads the record's `expires_at` and goes red `warn_days` before the evaluation period ends, printing the `rebake` command.
