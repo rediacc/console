@@ -12,6 +12,7 @@ import sys
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.controls import plant
 from rediacc_ci.quality import gate_argv as mod
 
 QUALITY = mod.QUALITY_REL
@@ -60,7 +61,7 @@ def tree(
 
 
 def module_file(root: pathlib.Path, dotted: str, text: str) -> pathlib.Path:
-    path = root / ".ci" / (dotted.replace(".", "/") + ".py")
+    path = mod.module_path(root, dotted)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
     return path
@@ -192,7 +193,8 @@ MODULE_IGNORES = (
     'def main(argv):\n    return 1 if argv and argv[0] == "--selftest" else 0\n\n'
     'if __name__ == "__main__":\n    raise SystemExit(main(sys.argv[1:]))\n'
 )
-MODULE_REFUSES = MODULE_IGNORES.replace(
+MODULE_REFUSES = plant(
+    MODULE_IGNORES,
     'if __name__ == "__main__":\n',
     'if __name__ == "__main__":\n    from rediacc_ci.quality import gate_args\n\n'
     '    gate_args.parse("x.py", sys.argv[1:], switches=("--selftest",))\n',
@@ -333,6 +335,6 @@ def test_the_module_form_refuses_an_unknown_flag_before_any_work(dotted):
 @pytest.mark.parametrize("dotted", REFUSING_MODULES)
 def test_the_module_form_is_judged_as_a_shared_parse(dotted):
     root = paths.repo_root()
-    path = root / ".ci" / (dotted.replace(".", "/") + ".py")
+    path = mod.module_path(root, dotted)
     got = mod.analyse(path, root, {}, key=dotted)
     assert (got.form, got.problems) == ("parse", [])

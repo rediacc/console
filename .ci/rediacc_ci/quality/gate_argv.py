@@ -576,12 +576,17 @@ def expand_npm(command: str, scripts: dict[str, str], depth: int = 6) -> str:
     return out
 
 
+def module_path(root: pathlib.Path, dotted: str) -> pathlib.Path:
+    """The file `python3 -m <dotted>` runs, with `.ci` on PYTHONPATH."""
+    return root.joinpath(".ci", *dotted.split(".")).with_suffix(".py")
+
+
 def targets_of(command: str, root: pathlib.Path) -> list[Target]:
     """Every Python entry point one expanded command invokes, in the form it invokes it."""
     found: list[Target] = []
     for m in MODULE_CALL_RE.finditer(command):
         dotted = m.group(1)
-        found.append(Target(dotted, "module", root / ".ci" / (dotted.replace(".", "/") + ".py")))
+        found.append(Target(dotted, "module", module_path(root, dotted)))
     for m in SCRIPT_RE.finditer(command):
         rel = m.group(1)
         if rel.startswith(QUALITY_REL + "/"):
@@ -912,7 +917,8 @@ MODULE_IGNORES = (
     'def main(argv):\n    return 1 if argv and argv[0] == "--selftest" else 0\n\n'
     'if __name__ == "__main__":\n    raise SystemExit(main(sys.argv[1:]))\n'
 )
-MODULE_REFUSES = MODULE_IGNORES.replace(
+MODULE_REFUSES = plant(
+    MODULE_IGNORES,
     'if __name__ == "__main__":\n',
     'if __name__ == "__main__":\n    from rediacc_ci.quality import gate_args\n\n'
     '    gate_args.parse("x.py", sys.argv[1:], switches=("--selftest",))\n',
@@ -924,7 +930,7 @@ def fixture_tree(
     root: pathlib.Path, module_text: str, run_field: str | None = None
 ) -> pathlib.Path:
     """A scan root whose lock runs one module by `python3 -m`, and which holds no shim at all."""
-    module = root / ".ci" / (MODULE_KEY.replace(".", "/") + ".py")
+    module = module_path(root, MODULE_KEY)
     module.parent.mkdir(parents=True, exist_ok=True)
     module.write_text(module_text, encoding="utf-8")
     (root / QUALITY_REL).mkdir(parents=True, exist_ok=True)
@@ -1034,7 +1040,7 @@ def selftest(verbose: bool = True) -> int:
     )
     with tempfile.TemporaryDirectory() as tmp:
         root = fixture_tree(pathlib.Path(tmp), MODULE_IGNORES)
-        path = root / ".ci" / (MODULE_KEY.replace(".", "/") + ".py")
+        path = module_path(root, MODULE_KEY)
         ctl.check(
             "PLANT: a module the lock runs that ignores an unknown flag is a bypass",
             analyse(path, root, {}, key=MODULE_KEY).form,
@@ -1048,7 +1054,7 @@ def selftest(verbose: bool = True) -> int:
         )
     with tempfile.TemporaryDirectory() as tmp:
         root = fixture_tree(pathlib.Path(tmp), MODULE_REFUSES)
-        path = root / ".ci" / (MODULE_KEY.replace(".", "/") + ".py")
+        path = module_path(root, MODULE_KEY)
         refusing = analyse(path, root, {}, key=MODULE_KEY)
         ctl.check(
             "CONTROL: a module whose block imports the parser then parses first is accepted",
