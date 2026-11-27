@@ -296,6 +296,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -553,6 +557,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -789,6 +797,10 @@
         {
           "id": "check:ci-portal-sitekey-guard",
           "reason": "It reaches .ci/rediacc_ci/release/release_notes.py through rediacc_ci.release.local, and the derivation reads the `agent/**` in .ci/config/release-notes.json as a read of every agent/ record; that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. The gate judges the build steps of release/local.py, the www components and secret-supply.json, so no agent/ file's content reaches its verdict."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -1041,6 +1053,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -1542,6 +1558,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -1762,6 +1782,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -2180,6 +2204,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -2383,6 +2411,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -2586,6 +2618,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -2825,6 +2861,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -3064,6 +3104,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     },
@@ -3400,6 +3444,10 @@
         {
           "id": "check:ci-reggate-debt",
           "reason": "It imports the Stop hook's wl_reggate and wl_core to fold the debt ledgers, and the derivation follows those hook modules to their other citations (wl_checks, wl_boxaudit, plan_lifecycle, trap_registry). The gate's verdict is computed from agent/reggate/*.jsonl (a declared reader) and .ci/policy/reggate-debt-legacy.json alone; this record is never opened by it."
+        },
+        {
+          "id": "check:ci-release-note-trailers",
+          "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
         }
       ]
     }
