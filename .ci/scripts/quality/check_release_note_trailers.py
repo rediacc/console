@@ -162,6 +162,8 @@ def evaluate(
 
 # --------------------------------------------------------------------------- fixture and controls
 
+# The fixture repositories hold made-up files under this directory; the directory is named once, apart from the file names, so the dead-path scan sees no full path that does not exist in this tree.
+FX_CLI_SRC = "packages/cli/src"
 NOTE = "Backups now resume after a dropped connection"
 
 
@@ -231,7 +233,7 @@ class Fixture:
         self.base_sha = self.git(self.console, "rev-parse", "HEAD")
         # Written before the gate: trailer-less customer `feat:` commits in both repos. They sit between the base and the anchor, so a retroactive scan would flag them.
         self.commit(
-            self.console, "packages/cli/src/old.ts", "feat(cli): an old feature with no trailer"
+            self.console, FX_CLI_SRC + "/old.ts", "feat(cli): an old feature with no trailer"
         )
         self.commit(self.sub, "src/old.ts", "feat: an old submodule feature with no trailer")
         self.bump()
@@ -275,9 +277,7 @@ def run_controls() -> bool:
             rc == 0,
         )
 
-        fx.commit(
-            fx.console, "packages/cli/src/ok.ts", "feat(cli): resume\n\nRelease-Note: %s" % NOTE
-        )
+        fx.commit(fx.console, FX_CLI_SRC + "/ok.ts", "feat(cli): resume\n\nRelease-Note: %s" % NOTE)
         rc, _ = evaluate(fx.console, base)
         check("a valid trailer is 0", rc == 0)
 
@@ -293,7 +293,7 @@ def run_controls() -> bool:
 
         console_sha = fx.commit(
             fx.console,
-            "packages/cli/src/bad.ts",
+            FX_CLI_SRC + "/bad.ts",
             "fix(cli): a console fix\n\nRelease-Note: none -- n/a",
         )
         rc, lines = evaluate(fx.console, base)
