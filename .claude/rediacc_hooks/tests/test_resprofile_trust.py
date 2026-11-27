@@ -228,9 +228,10 @@ def test_an_unwritable_home_prints_nothing(tmp_path):
     assert got.returncode == 0
     assert got.stdout == "body\n"
     assert got.stderr == ""
-    # The failed-open path really ran. `not (claude / "resprofile").exists()` cannot fail in the root fallback (a path under a regular file never exists), so the witness is a control (b9b00cb1.1): the same setup, against the same home made writable, does write its loader, so the silence above came from the unwritable home and not from a setup that never writes.
+    # Silence alone does not show the setup tried to write. Under mode 0500 the target is a real directory, so "nothing was written" is a real claim and is asserted. Where the fallback put a regular file in its place (root), nothing under it can exist, so that assertion would be vacuous and is skipped (4f789e58.2); the witness there, and in both cases, is the control below (b9b00cb1.1): the same setup against the same home made writable does write its loader.
     roots = claude / "resprofile" / "pth-roots"
-    assert not roots.exists()
+    if claude.is_dir():
+        assert not roots.exists()
     if claude.is_file():
         claude.unlink()
         claude.mkdir()
