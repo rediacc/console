@@ -592,7 +592,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pricing-cpu-ceiling.md` | approved | 55 | 6 | 1 | 8685 |
 | `agent/plans/PLAN-pricing-free-professional.md` | approved | 53 | 5 | 0 | 7767 |
 | `agent/plans/PLAN-pricing-partner-directory.md` | approved | 52 | 2 | 3 | 6866 |
-| `agent/plans/PLAN-pricing-plan-model.md` | approved | 61 | 1 | 3 | 8894 |
+| `agent/plans/PLAN-pricing-plan-model.md` | approved | 62 | 1 | 3 | 9660 |
 | `agent/plans/PLAN-pricing-public-calculator.md` | approved | 59 | 7 | 0 | 9433 |
 | `agent/plans/PLAN-pricing-seat-repo-caps.md` | approved | 46 | 5 | 0 | 5580 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
