@@ -35,9 +35,9 @@
       "reason": "Off-box state, not code: the ops-health Worker reports the main-branch CI Drift ingest red since 2026-11-26T11:42Z (pin-freshness, devcontainer-pins, go-deps, deps, embed-asset-freshness, plan-folders), which main carries until this branch merges; on 1121-1 those gates run green in ci:quick (run 7). Lift: drop this entry once the first CI Drift run after the merge posts a green ingest."
     },
     {
-      "gate": "check:ci-plan-bindings",
+      "gate": "check:ci-lane-budget",
       "findings": "*",
-      "reason": "Three finished plans (PLAN-console-executor-multi-org, PLAN-executor-durable-object-policy, PLAN-signer-bench-stop-binding-reattach) are cited by the open live box 0e4aa275 (R2) of PLAN-multi-region-bench, whose bench work 357547f9 and 8ec6bd76 is still owed; the box cannot be ticked before that run and rewording an open box changes its signature (check:ci-plan-boxes reads it as deleted). Lift: drop this entry once R2 runs on bench and is ticked, after which the three plans move to agent/plans/_done."
+      "reason": "The Windows lane (ci-windows.yml, PLAN-windows-lane) has never run on CI, so the gate reports it UNCHECKED with no job p90, and the 2026-09-29 ruling (#5a954657) forbids seeding an unmeasured number. Only a push lets the job run once and be measured. Operator ruling ASKED:2026-11-27T15:26Z: carry it. Lift: drop this entry once windows-lane has run green and budget_report --refresh has recorded its p90."
     }
   ]
 }
