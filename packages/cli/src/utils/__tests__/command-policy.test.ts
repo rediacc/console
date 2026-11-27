@@ -358,6 +358,32 @@ describe('a remote config, judged as the session names its member (D2)', () => {
     }
   );
 
+  // vm:check A2.3 (2026-11-27): `ops status` and `config current` on a remote config whose login was tied to another address died with the renewal refusal before their actions ran.
+  it.each(['ops status', 'ops up', 'config current'])(
+    'runs the local verb %s on a remote config whose token cannot be renewed',
+    async (commandPath) => {
+      mockIsAgent.mockReturnValue(false);
+      state.config = { remote: { storeId: 's', configId: 'c', apiUrl: 'https://acct.example' } };
+      const refusal = new RemoteTokenRefreshError('login_ip_mismatch', 'tied to another address');
+      const policyContext = vi.fn(() => Promise.reject(refusal));
+      state.adapter = { policyContext };
+      await expect(
+        enforceRootCommand(commandPath, undefined, { opts: () => ({}) } as unknown as Command)
+      ).resolves.toBeUndefined();
+      expect(policyContext).not.toHaveBeenCalled();
+    }
+  );
+
+  it('control: a command that reads the store still opens the session and meets the refusal', async () => {
+    mockIsAgent.mockReturnValue(false);
+    state.config = { remote: { storeId: 's', configId: 'c', apiUrl: 'https://acct.example' } };
+    const refusal = new RemoteTokenRefreshError('login_ip_mismatch', 'tied to another address');
+    state.adapter = { policyContext: () => Promise.reject(refusal) };
+    await expect(
+      enforceRootCommand('machine list', undefined, { opts: () => ({}) } as unknown as Command)
+    ).rejects.toBe(refusal);
+  });
+
   it('names only live commands as workstation-only', () => {
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
     for (const path of WORKSTATION_ONLY_COMMANDS) expect(live).toContain(path);

@@ -242,16 +242,31 @@ export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
 const LOCAL_FORM_RECOVERY_COMMANDS: ReadonlySet<string> = new Set(['config remote disable']);
 
 /**
- * Commands that run on this workstation and never read the config store or the account: opening
- * the remote session for them would renew the config token (and fail on a device whose login is
- * tied to another address) for nothing. Judged as the local owner with no policy ceiling, whatever
- * the active config is.
+ * Commands that run on this workstation and never read the config store: opening the remote
+ * session for them would renew the config token (and fail on a device whose login is tied to
+ * another address) for nothing. Judged as the local owner with no policy ceiling, whatever the
+ * active config is; an agent still meets the agent rules. `ops *` drives the local libvirt VMs,
+ * `config current|list|init` read or create local files only, `version` asks the account server
+ * with no config token, and `feedback *` reads and sends this device's own error ring.
  */
 export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
   'tools install',
   'tools list',
   'completion',
   'update',
+  'version',
+  'ops check',
+  'ops down',
+  'ops setup',
+  'ops ssh',
+  'ops status',
+  'ops up',
+  'config current',
+  'config list',
+  'config init',
+  'feedback list',
+  'feedback show',
+  'feedback report',
 ]);
 
 /**
