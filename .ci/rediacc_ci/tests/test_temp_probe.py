@@ -328,13 +328,13 @@ def test_tool_cache_outside_tmpdir_is_ignored(tmp_path):
 def _unnamed_write(root, name, hold=0):
     """Code that creates `root/name` with a current mtime, building the path at run time so no argv string equals it.
 
-    With `hold` the file stays open that long. Without it the file is made by `os.mknod`, which never holds a descriptor, so no 20 ms sample can catch it open however loaded the host is; the child then lingers 0.1 s so the sampler runs at least once with the entry present and unheld.
+    With `hold` the file stays open that long. Without it the file is made by `os.mknod`, which never holds a descriptor, so no 20 ms sample can catch it open however loaded the host is; the child then lingers 0.1 s to give the sampler a chance to see the entry present and unheld. The linger is best effort, not a guarantee: a starved sampler that never runs gives the same verdict, so the test's assertions do not depend on it.
     """
     return (
         f"import os,time;p=os.path.join({str(root)!r},'-'.join({name.split('-')!r}));"
         f"f=open(p,'w');time.sleep({hold});f.close()"
         if hold
-        else f"import os,time;p=os.path.join({str(root)!r},'-'.join({name.split('-')!r}));os.mknod(p);time.sleep(0.1)"
+        else f"import os,time;p=os.path.join({str(root)!r},'-'.join({name.split('-')!r}));os.path.exists(p) and os.unlink(p);os.mknod(p);time.sleep(0.1)"
     )
 
 
