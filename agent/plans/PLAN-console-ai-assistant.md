@@ -146,6 +146,7 @@ D13. **Accessibility.** `aria-live="polite"` announces each finished message onc
   Depends on: AI7, AI8, AI15.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/chat src/pages/console/__tests__/ai-chat-page.test.tsx && npm run typecheck)` and `npm run -s lint:unused` rc 0, with tests for the pinning rules of D9 and a branch switch between two siblings; the three libraries are imported (knip no longer needs to allow them).
     (ticked) 2026-11-26T10:42:45Z by d778be9d: AI16 lint:unused rc 0 on the merged tree after unexporting six report.ts exports commit:4606b6bbce plan:agent/plans/PLAN-console-ai-assistant.md
+    (corrected 2026-11-27T04:34:40Z, 1d2cd0dd.1) The tick cites only lint:unused. The rest of the Accept ran on the tree at 2026-11-27T04:34:40Z: `(cd private/account/web && npx vitest run src/components/ai/chat src/pages/console/__tests__/ai-chat-page.test.tsx)` rc 0, 41 passed in 3 files, and `(cd private/account/web && npm run typecheck)` rc 0.
 - [ ] LP-bench [live] Deploy the branch's account and proxy Workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), then, with the BWS Anthropic key copied through `bws_env exec` (C41), run one Ask-mode chat that lists machines, proposes a `caution` batch and a destructive popup, and read the conversation back after a reload on a second browser profile; proxy-ready and cli-bench run as additional verification.
   Accept: live-proof bench account-smoke
 

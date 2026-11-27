@@ -55,6 +55,7 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: AX1, AX5, PLAN-console-contract-semantics.md#CS11.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-pages.test.tsx src/pages/console/__tests__/resource-family-pages.test.tsx)` rc 0, including a test that no command runs on mount beyond the page's existing reads.
     (ticked) 2026-11-25T20:35:41Z by d778be9d: AX2 landed (gitlink 688e765d1b); ai-pages tests pass, typecheck rc 0; the /console/ai target page is AI15 (next writer). DEPS-WAIVED: AX5 and CS11 landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) ai-pages.test.tsx and resource-family-pages.test.tsx run together, 34 passed across 5 files rc 0, including 'runs nothing on mount beyond the existing repo list' (review 93cff236.2)
 - [x] AX3 [writer] The D3 rules as pure functions with the signal hash, with fixtures for a failed and a missed backup unit, a failed last run, an unreachable machine, and a healthy resource that yields nothing.
   Owns: private/account/web/src/lib/ai/suggestions.ts, private/account/web/src/lib/ai/__tests__/suggestions.test.ts
   Depends on: none.
@@ -80,11 +81,13 @@ D6. **Strings** live in an `aiPages` namespace in all 13 locales.
   Depends on: AX5, PLAN-console-ai-assistant.md#AI7.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/tasks)` rc 0.
     (ticked) 2026-11-25T20:34:41Z by d778be9d: AX7 landed (gitlink d26420c050); tasks 6 passed, typecheck rc 0; locales in flight (#a19d4266); mounting in RunStatusBar and the timeline needs AX6's task routes (#next). DEPS-WAIVED: AX5 landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the pills and result card are mounted: src/components/ai/tasks is imported by pages/console/AiChat.tsx and MachineDetail.tsx, vitest src/components/ai/tasks passed rc 0 in that 34-test run, and check:i18n rc 0 shows the locales are in (review 93cff236.1)
 - [x] AX8 [writer] Translate `aiPages` into the 12 other locales through the naturalization pipeline; translation writers run on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiPages.json
   Depends on: AX5, AX7.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T22:11:41Z by d778be9d: AX8 present: aiPages fully translated in 12 locales, check:i18n rc 0, web typecheck rc 0. DEPS-WAIVED: AX7 landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) npm run check:ci-i18n-account-key-usage rc 0 (review d5f57e15.1)
 - [ ] AX9 [writer] Playwright spec: the bar on a machine page opens the chat with the machine chip, a routed failed `backup status` row shows a suggestion, Dismiss hides it across a reload, and a background task's result card appears after navigating away, all keyboard-operable.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-4*-ai-pages.test.ts

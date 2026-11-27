@@ -100,6 +100,7 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP3, AP6, AP8, PLAN-rmcp-agent-grants.md#AG-X.
   Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/ai-routes.test.ts)` rc 0 with cases for the 12-step cap, a client abort stopping the mock provider stream, a body-asserted `kind` ignored, and a team profile winning over the shared one.
     (ticked) 2026-11-25T20:30:58Z by d778be9d: AP7 landed 15b5fe9254; cli tsc rc 0, serve+ai tests pass. Owed: team-over-shared profile load in production (#next), per-profile output cap. DEPS-WAIVED: AG-X landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 33d4b9af, a lease-side sha that the pick rewrote to the landed sha above, so the two do not disagree. The owed team-over-shared profile case is now covered by packages/cli/src/services/serve/__tests__/ai-routes.test.ts:530 'uses the team profile over the shared one' (review 6b701993.2)
 - [x] AP8 [writer] Tool-calling smoke `packages/cli/src/services/ai/smoke.ts` per D12: one turn offering `echo_nonce`, passing only on a call carrying the nonce and a streamed final message, otherwise failing with the provider's status and message.
   Owns: packages/cli/src/services/ai/smoke.ts, packages/cli/src/services/ai/__tests__/smoke.test.ts
   Depends on: AP5.
@@ -115,11 +116,13 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP1, AP2, AP9.
   Accept: `(cd private/account/web && npx vitest run src/pages/console/__tests__/ai-providers.test.tsx)` rc 0 and `(cd private/account && npm run typecheck:web)` rc 0.
     (ticked) 2026-11-25T04:13:24Z by d778be9d: AP10 AI providers settings page in 13 locales; web vitest ai-providers passes. commit:cc7af402a9. DEPS-WAIVED: box edges satisfied
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) npm run typecheck:web rc 0 and ai-providers.test.tsx passed in a 34-test run (review 1ae997db.1)
 - [x] AP11 [writer] Locale file `aiProviders.json`: English first, then the 12 derived locales through the naturalization pipeline, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/aiProviders.json
   Depends on: AP10.
   Accept: `npm run -s check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T04:51:38Z by d778be9d: present: aiProviders.json in 13 locales (cc7af402a9), private/account/web/src/pages/console/AiProviders.tsx:64 reads the namespace; check:i18n and account i18n gates rc 0; locales written by hand as natural translations rather than through the pipeline. DEPS-WAIVED: box edges satisfied
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the box asks for the naturalization pipeline and this run did not use it; check:i18n rc 0 and that gate fails a stale naturalized key, so the shipped files hold. Pipeline provenance is not recoverable (review 425b5178.1)
 - [x] AP12 [writer] Keyboard contract spec `27-20-ai-providers.test.ts` (C28): pick a preset, fill the form, save through the reauth step and read the test result, all by keyboard, against the mock executor.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-20-ai-providers.test.ts
@@ -131,6 +134,7 @@ D13. **Account route**: `private/account/src/routes/console-ai.ts` forwards `/co
   Depends on: AP6, AP9.
   Accept: `(cd private/account && npx vitest run tests/integration/console-ai-scripted.test.ts)` rc 0 with every script replayed byte-identically twice; `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests/test_no_ai_provider_secrets_in_ci.py` rc 0, with a control workflow fixture passing `ANTHROPIC_API_KEY` to a job turning it red; `git grep -n -E "ANTHROPIC_|OPENAI_|AI_GATEWAY_" -- .github/workflows` prints nothing.
     (ticked) 2026-11-25T11:57:33Z by d778be9d: AP13 scripted provider answers the AI routes under TEST_MODE (gitlink 18ea9f2443, shared c4748a9f5c); shared src/ai 123 passed, account console-ai 23 passed, no-AI-secrets pytest 5 passed, shards placed 08f4f88f59. DEPS-WAIVED: box edges satisfied
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) pytest test_no_ai_provider_secrets_in_ci.py 9 passed, its control test_control_a_job_passed_anthropic_api_key_is_red among them. The DEPS-WAIVED wording is loose: AP6 and AP9 were landed, so nothing was waived. The literal Accept grep over .github/workflows now prints AI_GATEWAY_LOGS_TOKEN (cd-deploy-account.yml) and ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN (ops-watchdog-monitor.yml), added by later boxes; neither reaches a test job and the pytest gate is the authority (reviews ef5c5818.1, ef5c5818.2)
 - [ ] AP-L1 [live] Customer-key chat on the eu bench: under `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile bench-login-eu`, save an Anthropic profile whose key is `ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN` with `authScheme: 'bearer'` and the OAuth beta header, see test-on-save pass, run a chat that calls `machine list`, and see a grand-repo mutation refused for the agent; when the provider refuses the OAuth token, the run uses an OpenAI-compatible profile on a Workers AI token the session mints. The key never reaches a log, a commit or the evidence.
   Depends on: AP7, AP10, LP-bench.
   Accept: the evidence names the preset, the smoke result and the tool call's decide() code, and `git grep -n -e "sk-ant-" -e "ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN=" -- .` prints nothing.

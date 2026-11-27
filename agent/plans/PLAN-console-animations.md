@@ -54,6 +54,7 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Depends on: none.
   Accept: before the change, `(cd private/account/web && npm run build)` rc 0 and `grep -c "@keyframes enter" private/account/web/dist/assets/*.css` prints 0; after it, the same build rc 0 and the count is at least 1; `npm run check:ci-lockfile` rc 0.
     (ticked) 2026-11-24T20:29:40Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) web build rc 0 and workers/account/dist/account/assets css holds 1 '@keyframes enter'; check:ci-lockfile rc 0; the before-count of 0 is not re-measurable on the landed tree (review 464d935d.2)
 - [x] AN2 [writer] Phase map (D1, D2): run-phases.json and `phaseFor(events)` in lib/run-phases.ts returning the scene, the phase, the failed flag, or `indeterminate` when no step has arrived.
   Owns: private/account/web/src/lib/run-phases.ts, private/account/web/src/lib/run-phases.json, private/account/web/src/lib/__tests__/run-phases.test.ts
   Depends on: none.
@@ -74,6 +75,7 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Depends on: AN3.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run ci -- --narrow` rc 0.
     (ticked) 2026-11-24T21:03:10Z by d778be9d: AN5 landed 24d722c5ea; check:i18n rc 0; vitest animations and i18n 22 passed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) check:ci-i18n-account-key-usage rc 0 and check:i18n rc 0; 'npm run ci -- --narrow' was not run (review 49b0907c.2)
 - [x] AN6 [writer] Step coverage gate (D7): .ci/rediacc_ci/quality/step_phase_coverage.py with its `---- gate ----` header (lane quality-code, selftest true) and its gate test, the control planting an unmapped renet step id and a stale json id.
   Owns: .ci/rediacc_ci/quality/step_phase_coverage.py, .ci/rediacc_ci/tests/gates/test_gate_step_phase_coverage.py
   Depends on: AN2, PLAN-tooling-code-reduction.md#CR2.
@@ -84,6 +86,7 @@ D7. **Coverage gate.** `step_phase_coverage.py` lists every step id the non-test
   Depends on: AN4.
   Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-04-run-animations.test.ts)` rc 0.
     (ticked) 2026-11-24T20:30:09Z by d778be9d: landed in account gitlink 878815856b: run animations box, vitest run-phases animations runs 42 passed rc 0
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the 42 vitest run-phases tests do not cover this Accept: the Playwright run of 27-04-run-animations.test.ts needs the dev stack and was not re-run here, so it stays owed to a live runner (review 464d935d.1)
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) so AN-L1 drives the bundle this branch builds.
   Accept: live-proof bench account-smoke
 - [ ] AN-L1 [live] eu bench: from the console, `repo fork` of a bench repo shows the clone scene then the start scene in its run block, `repo down` of the fork shows the stop scene, and a dialog opens with the tw-animate-css fade. Local-route: deploy-bench -- the branch account Worker serves the eu bench portal and the browser is driven from this machine.

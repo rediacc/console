@@ -89,11 +89,13 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: AC1, PLAN-console-ai-providers.md#AP7.
   Accept: `(cd packages/cli && npx vitest run src/services/ai/__tests__/rediacc-provider.test.ts)` rc 0 and `(cd packages/shared && npx vitest run src/ai)` rc 0.
     (ticked) 2026-11-26T02:41:23Z by d778be9d: AC6 landed 63920c4b2a; cli tsc rc 0, ai+serve 712 tests. A grant-bound chat bills the caller, since the agent session carries no person user id (#next). DEPS-WAIVED: AC5 landed
+    (corrected 2026-11-27T04:55Z, a1293b0f.2) The Accept commands, run on the tree at 2026-11-27T04:55Z: `(cd packages/cli && npx vitest run src/services/ai/__tests__/rediacc-provider.test.ts)` rc 0 (6 passed) and `(cd packages/shared && npx vitest run src/ai)` rc 0 (8 files, 149 passed).
 - [x] AC7 [writer] Reconcile per D8: `ai-reconcile.service.ts` run from the 03:00 branch of `scheduled`, refunds as `reconcile-adjust`, drift and low-balance alerts through `AlertDigestService`, tested on recorded log-page fixtures.
   Owns: private/account/src/services/ai-reconcile.service.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/ai-reconcile.test.ts
   Depends on: AC4.
   Accept: `(cd private/account && npx vitest run tests/integration/ai-reconcile.test.ts)` rc 0, including a fixture with 3 percent drift that queues an alert and a fixture at 1 percent that does not.
     (ticked) 2026-11-26T18:20:51Z by d778be9d: AC7 present: adjustLot and lapseLot in the credit ledger, the reconcile integration test exists fileline:workers/account/src/credit-ledger.ts:233
+    (corrected 2026-11-27T04:55Z, 5d26e634.1) The Accept command, run on the tree at 2026-11-27T04:55Z: `(cd private/account && npx vitest run tests/integration/ai-reconcile.test.ts)` rc 0 (21 passed), including `queues an alert for 3 percent drift and refunds the overcharge as reconcile-adjust` (line 125) and `queues no alert for 1 percent drift` (line 143).
 - [x] AC8 [writer] Gateway config per D3: .ci/config/ai-gateway.json and `rediacc_ci.ops.cf_ai_gateway` (upsert and `--check`), with a test against a recorded API fixture and a control where a hand-changed setting makes `--check` exit 1.
   Owns: .ci/config/ai-gateway.json, .ci/rediacc_ci/ops/cf_ai_gateway.py, .ci/rediacc_ci/tests/test_ops_cf_ai_gateway.py
   Depends on: PLAN-tooling-code-reduction.md#CR2.
@@ -114,6 +116,7 @@ D12. **Customer view**: an AI credits page (balance, lots with expiry, usage by 
   Depends on: AC9, AC10.
   Accept: `npm run -s check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T21:50:47Z by d778be9d: AC11 landed (gitlink ab75ad457a); nav-label-collisions passes, typecheck rc 0; check:i18n account-web clean of AC keys. DEPS-WAIVED: AC9, AC10 landed
+    (corrected 2026-11-27T04:55Z, 7dfe7cf0.1) The second Accept command, run on the tree at 2026-11-27T04:55Z: `npm run -s check:ci-i18n-account-key-usage` rc 0 (28 controls passed; 185 ui() literals and 3453 key references checked over 419 files).
 - [ ] AC12 [lead] Operator-only Cloudflare account settings (billing powers no agent holds): purchase the first Unified Billing credit, turn auto top-up off, set the gateway spend limit below the purchased balance and the dashboard low-balance email, then record the purchase as an `ai_funding` entry on the admin page. The session parks this as a worklist `[?]` naming each setting, with a DEFAULT of keeping the Rediacc tier paused through the global switch until the entry exists.
   Depends on: AC4, AC9.
   Accept: the operator's answer quoted with its minute, a dashboard screenshot path or API read showing auto top-up off and the spend limit, and the `ai_funding` row id.

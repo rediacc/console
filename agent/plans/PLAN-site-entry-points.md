@@ -156,5 +156,6 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
 - [x] PROD-edge [live] After the release flow's edge deploy of eu is green: repeat both bench checks against production edge eu.
   - Accept: `curl -s https://www.rediacc.com/en/ | grep -c 'href="/en/downloads"'` prints at least 1, and the portal smoke against edge eu passes.
     (ticked) 2026-11-23T11:09:31Z by ace763dd: portal_health --target stable --region eu rc 0 GREEN 7 URLs 0 red; curl -s https://www.rediacc.com/en | grep -c href="/en/downloads" prints 1, /en/downloads 200
+    (corrected 2026-11-27T04:11Z, 2aac84b3.3) `portal_health --target stable` probes the regions.json `domain` of each region (eu.rediacc.cloud), the shared host the edge deploy of eu serves (.ci/rediacc_ci/ops/portal_health.py hosts()); it has no `edge` target, so this is the portal smoke against edge eu. Re-run 2026-11-27: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health --target stable --region eu` rc 0, GREEN, 1 host, 7 URLs, 0 red.
 - [ ] PROD-stable [live] After the stable promotion per the release flow: repeat on stable eu, and confirm the originally reported link no longer 404s from the portal page.
   - Accept: the portal smoke against stable eu passes, and the Getting started "Read tutorial" anchors on https://eu.rediacc.cloud/account/ all resolve to a 200 on www.rediacc.com.

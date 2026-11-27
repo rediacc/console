@@ -111,3 +111,8 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"457c03cd","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #52aacbd1","at":"2026-11-26T07:18:44Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-ciquick-cpu.md","sig":"64e50145","clause":"all","state":"live-owed","ref":"released #f5f6a1df","at":"2026-11-26T09:17:47Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #d00585c2","at":"2026-11-27T04:13:20Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"ae54f093","clause":"all","state":"live-owed","ref":"released #d00585c2","at":"2026-11-27T04:13:20Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"7e1402a9","clause":"all","state":"live-owed","ref":"released #dc7abfcd","at":"2026-11-27T04:33:33Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-rmcp-docs.md","sig":"c9790d6c","clause":"all","state":"live-owed","ref":"released #f1d81183","at":"2026-11-27T04:53:38Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"7e1402a9","clause":"all","state":"live-owed","ref":"released #c62aaa1d","at":"2026-11-27T05:11:56Z"}

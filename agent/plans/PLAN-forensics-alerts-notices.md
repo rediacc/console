@@ -69,11 +69,13 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
   Depends on: FN1.
   Accept: `(cd private/account && npx vitest run tests/integration/security-contact.test.ts)` rc 0 (a member refused, an invalid address refused, a change audited); `(cd private/account/web && npx vitest run src/pages/__tests__/security-contact.test.tsx)` rc 0; `npm run -s check:i18n` rc 0.
     (ticked) 2026-11-25T16:37:44Z by d778be9d: FN2 org security contact, owners and admins set it; security-contact tests pass, account tsc and typecheck:web rc 0; landed 8e909363df. DEPS-WAIVED: used prerequisites landed, wiring owed by its own box
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites fb0bdd84, a lease-side sha the pick rewrote to the landed sha above, so they do not disagree (review f247b1d6.3)
 - [x] FN3 [writer] The `security_incident` kind per D1 in notice.ts, notice.dto.ts, the web summary and the CLI summary, English first, then notices.json and cli.json in the 13 locales (sonnet writers).
   Owns: private/account/src/types/notice.ts, private/account/src/dto/notice.dto.ts, private/account/web/src/lib/notice-names.ts, private/account/web/src/api/types.ts, private/account/web/src/i18n/locales/*/notices.json, packages/cli/src/commands/subscription-notices.ts, packages/cli/src/i18n/locales/*/cli.json, private/account/web/src/i18n/locales/.translation-hashes.json, packages/cli/src/i18n/locales/.translation-hashes.json, private/account/tests/integration/security-incident-notice.test.ts
   Depends on: FN1.
   Accept: `(cd private/account && npx vitest run tests/integration/security-incident-notice.test.ts tests/integration/notices-routes.test.ts)` rc 0; `(cd packages/cli && npm test)` rc 0; `npm run -s check:i18n` rc 0.
     (ticked) 2026-11-25T16:37:45Z by d778be9d: FN3 security_incident notice kind on the wire, portal and CLI summary (account half in 8e909363df); CLI notices and ai tests 100 passed, check:i18n rc 0; landed e35e7b0625. DEPS-WAIVED: used prerequisites landed, wiring owed by its own box
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 2e0d5e53, a lease-side sha the pick rewrote to the landed sha above, so they do not disagree (review f247b1d6.4)
 - [ ] FN4 [writer] Incident service and routes per D4 to D6: security-incident.service.ts (drafts, affected-org selection, STIX validation, deadlines, publish, the sweep and the CRA export), routes/root-security-incidents.ts and routes/security-incidents.ts mounted in index.ts, types, DTOs, container wiring, and the hourly cron call in cloudflare.ts.
   Owns: private/account/src/services/security-incident.service.ts, private/account/src/routes/root-security-incidents.ts, private/account/src/routes/security-incidents.ts, private/account/src/routes/index.ts, private/account/src/types/security-incident.ts, private/account/src/dto/security-incident.dto.ts, private/account/src/dto/index.ts, private/account/src/container.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/security-incident-routes.test.ts, private/account/tests/integration/security-incident-sweep.test.ts
   Depends on: FN1, FN3.
@@ -103,6 +105,7 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
   Depends on: none.
   Accept: `npm run check:ci-prose-style` rc 0; the lead spot-checks each quoted deadline against the linked regulation text.
     (ticked) 2026-11-23T15:59:41Z by ace763dd: commit:8b7361a3dc docs/legal/cra-incident-intake.md quotes Regulation (EU) 2024/2847 Art. 14(1)-(5) and GDPR Art. 33(3)-(4) from the Official Journal rendition with each URL
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the lead spot-check, read against docs/legal/cra-incident-intake.md: 24 hours and 72 hours of awareness for the early warning and notification, one month after the incident notification for a severe incident's final report (Art. 14(4)(c)), 14 days after a corrective measure for an exploited vulnerability (Art. 14(2)(c)), and 72 hours for GDPR Art. 33(1); each matches its quoted text and its URL. Not re-fetched from the Official Journal in this pass (review 3b307aa2.5)
 - [ ] FNL1 [lead] Route security@rediacc.com to the security inbox through Cloudflare Email Routing on the rediacc.com zone and send a test mail; door:operator-only only when the zone token lacks Email Routing edit.
   Depends on: none.
   Accept: a test mail to security@rediacc.com arrives, recorded with its message id in the tick.
@@ -116,6 +119,7 @@ D10. **CRA runbook.** docs/legal/cra-incident-intake.md: who opens the intake, h
   Depends on: FN3, FN10.
   Accept: `(cd private/account && npx vitest run tests/integration/forensics-alert-notice.test.ts)` rc 0; `(cd packages/cli && npm test)` rc 0; `npm run -s check:i18n` rc 0.
     (ticked) 2026-11-25T18:38:06Z by d778be9d: FN11 forensics_anomaly notice in DTO, web summary, CLI and 13 locales, forensicsTimelinePath; notice tests pass, check:i18n rc 0; web list and bell do not render the link yet; landed HEAD. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the web list and bell now render the link: private/account/web/src/lib/notice-names.ts:110 returns forensicsTimelinePath and private/account/web/src/components/NoticeBell.tsx:95 navigates through noticeLinkPath (review 9e7d6c04.3)
 - [ ] FN12 [writer] Anomaly intake per D2 and D3: forensics-alert.service.ts reading `forensics_findings` past its cursor, the severity and silence rules, dedup, rate limits and recipients, wired in container.ts and called after the detector step in cloudflare.ts's `*/5` branch and node.ts's interval.
   Owns: private/account/src/services/forensics-alert.service.ts, private/account/src/container.ts, private/account/src/entry/cloudflare.ts, private/account/src/entry/node.ts, private/account/tests/integration/forensics-alert-intake.test.ts
   Depends on: FN4, FN10, FN11, PLAN-forensics-detection.md.

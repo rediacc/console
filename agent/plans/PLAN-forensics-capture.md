@@ -98,6 +98,7 @@ D14. **Budget.** Basic and Standard cost at most 3% throughput on an iperf3 run 
   Depends on: FC2, FC3, FC5, FC6.
   Accept: `cd private/renet && go test ./cmd/renet/ ./pkg/netaudit/...` rc 0; a unit test asserts `Slice=system.slice` and the two writable paths; `./build.sh dev` rc 0.
     (ticked) 2026-11-24T21:25:37Z by d778be9d: FC7 present: renet netaudit serve, status and forensics level commands with units (07c84b60eb); go test ./cmd/renet/ ./pkg/netaudit/... rc 0; build.sh dev not run
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) go test ./pkg/netaudit/... rc 0 and go test ./cmd/renet/ ./pkg/netaudit/ rc 0; './build.sh dev' still not run: it exits 1 with 'ACCOUNT_ED25519_PUBLIC_KEY is not set' in this lease, so that Accept clause is owed to a tree with the licence key (review 49b0907c.1)
 - [x] FC8 [writer] Add `CPUFeatures` (`cpu_features`) to `SystemInfo` from golang.org/x/sys/cpu (D13) and regenerate list-types.generated.ts.
   Owns: private/renet/pkg/list/system.go, private/renet/pkg/list/types.go, private/renet/pkg/list/system_test.go, packages/shared/src/renet-contract/data/list-types.generated.ts
   Depends on: none.

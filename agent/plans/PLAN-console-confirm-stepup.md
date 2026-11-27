@@ -109,6 +109,7 @@ D10. **Strings.** Code boxes add English keys only; CF9 translates the delta int
   Depends on: CF4, CF6, CF7, CF8.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T00:50:20Z by d778be9d: CF9 present: step-up strings in all 13 console locales (1bf0874ad0); check:i18n rc 0 after 0cb79d5fca
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) npm run check:ci-i18n-account-key-usage rc 0 (review dffdcec4.1)
 - [x] CF10 [writer] Update the e2e destructive test in private/account/e2e/tests/27-console/27-01-console.test.ts to the new flow: an unelevated destructive run shows ReauthStep, `/test/elevate` with a method then lets the red dialog run, a caution command shows the amber dialog, a preview opens no dialog.
   Owns: private/account/e2e/tests/27-console/27-01-console.test.ts
   Depends on: CF5, CF6.

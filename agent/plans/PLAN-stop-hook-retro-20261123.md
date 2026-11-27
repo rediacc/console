@@ -28,8 +28,8 @@ Other ledgers in the window:
 - 10 refused `--tick` calls: 6 `no-commit-ref`, 4 `no-evidence`
 
 Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing moved two commits:
-- The landing-stack fix b430509a52 is now b430509a52.
-- The rebase stand-down fix d9c3ad783c / 6af8c18eb3 is now d9c3ad783c and 6af8c18eb3.
+- The landing-stack fix was rewritten by the rebase and is now b430509a52 (its pre-rebase sha is no longer an ancestor of HEAD or origin/main, so it is not cited).
+- The rebase stand-down fix was two commits before the rebase and is now d9c3ad783c and 6af8c18eb3 (the pre-rebase shas are not ancestors of HEAD and are not cited).
 
 `git merge-base --is-ancestor d9c3ad783c origin/main` fails, so the stand-down is **not on origin/main**.
 
@@ -63,13 +63,13 @@ Line numbers refer to the working tree at 1121-1, after the rebase. Rebasing mov
 - **Burst A: 15 blocks, 18:01:35Z to 18:10:56Z.** Promote refused on a dirty main checkout. Peer console-1a was editing `PLAN-ciquick-cpu.md`, `INDEX.md`, `plan-boxes.json`, `QUEUE.md` and `epics.jsonl` (36061944, 36159976). The lead filed hint c6e3c13e (2026-11-22T18:03:55Z). At 36179620 it started to fix `wl_stack.py`, as the block text invites (its "Fix THIS" line names the session as the one that fixes it). It gave up at 36209256 because "deciding which dirty paths belong to which session ... is more than a small fix". The burst ended when the peer committed bad4ebe5cb (36507958, 18:11:06Z).
 - **Burst B: 21 blocks, 18:38:33Z to 18:47:16Z.** The bench/VM runner's vm:check was running in the main checkout. The lead held back because "rebasing the checkout under a running vm:check is what broke an earlier run" (37129557). 19 of the 21 replies are one line of "still waiting" (37151204 to 37541696). The burst ended with vm:check rc 0 (37571963).
 - **Burst C: 34 blocks, 19:04:57Z to 19:15:23Z.** Promote refused at step 5: `PLAN-two-track-merge-dev` had open `[writer]` boxes R3 and R4 (38384007 at 19:02:22Z, 38477880). That refusal is deterministic: no amount of stopping changes it before the writer reports. All 34 replies are "still waiting on the R3 and R4 writer" (38503352 to 39191929).
-- **The operator stepped in at 19:27:07Z:** "effort: quiet but the stop hook doesn't exit with code 0" (39234631). The lead fixed it in b430509a52 (now b430509a52) at 19:41Z.
+- **The operator stepped in at 19:27:07Z:** "effort: quiet but the stop hook doesn't exit with code 0" (39234631). The lead fixed it in b430509a52 (rewritten by the rebase) at 19:41Z.
 
 **Root cause.**
 - `wl_stack.stack_block` (`.claude/hooks/stop/wl_stack.py:225-233`) returns the block text whenever `st.state == MERGED` and `released`. It never asks whether promote would actually proceed.
 - `landing_promote.promote` refuses at step 1 on any tracked non-record dirt in either checkout (`_dirty`, `.ci/rediacc_ci/dev/landing_promote.py:135-145`). It also refuses at step 5 on any open `[writer]` box (`_code_complete`, `:286-317`, called at `:447`).
 - The repo's own notify text says promote waits for code-complete: "once every [writer] box of the plans on its branch is ticked, promote" (`.claude/hooks/stop/wl_stack.py:286-294`, `cd-done`). The block ignores that rule, which contradicts it.
-- The vadd is at `.claude/hooks/stop/wl_checks.py:5455-5457`.
+- The block is raised by the `vadd("landing-stack", ...)` call in the `landing-stack` segment of `.claude/hooks/stop/wl_checks.py` (written as `:5455-5457` when this plan was drafted; `:6655` in the current tree).
 - b430509a52 changed only the level table, so at low, smart and high all three bursts would recur. Burst C would recur byte for byte.
 
 **Fix.**
@@ -121,7 +121,7 @@ The refusal goes away by itself once origin/main carries the stand-down. Add one
 **What happened.** There are 6 `no-commit-ref` refusals:
 - **#876420de (11:41:07Z, 11:41:34Z):** landing-tree commits 7886ef9b8, f4093e83a and 1b5c7d83a, not yet on 1121-1.
 - **#9a4823c8 (16:59:10Z, 16:59:16Z):** the operator's hotfix aa829a19d on main.
-- **#b07162cf (00:46:01Z, 00:46:12Z):** d9c3ad783c, rewritten by the rebase. The lead had to look up the new sha (45046206).
+- **#b07162cf (00:46:01Z, 00:46:12Z):** d9c3ad783c (the pre-rebase sha is no longer an ancestor), rewritten by the rebase. The lead had to look up the new sha (45046206).
 
 **Root cause.** `commit_ref_problem` requires `merge-base --is-ancestor <sha> HEAD` (`.claude/hooks/stop/wl_cli.py:1455-1458`). It ignores origin/main, the landing branch, and the patch-equivalent copy that `wl_worktrees` already treats as landed via `git cherry` (`.claude/hooks/stop/wl_worktrees.py:9`).
 

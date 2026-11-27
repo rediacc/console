@@ -311,6 +311,7 @@ There are two account keypairs today. Production is one keypair, the same for al
   6. Run a bench backup drill. It must pass with licences under `fingerprint:fb37f1ae16f8b7c0`.
   (corrected 2026-11-11, R2) Local-route: deploy-bench -- deploy_bench runs from the branch head, and the version id, smoke rc and bench licence drill are the record.
     (ticked) 2026-11-23T11:11:45Z by ace763dd: commit:8bff102df1 live on the released edge (aa829a19dc): deploy_bench eu rc 0 smoke 200; bench secret prune found no extras; eu-bench e2ePublicKey matches the bench server-info key; login:bench ok; hostinger licence refresh 17 unchanged, all 17 licences valid; l1vm (an ops VM, not a bench machine) refresh failed SSH_AUTH_FAILED. Rollback version and D1 bookmark in /tmp/writers-now/post-merge-evidence-edge.md
+    (corrected 2026-11-27, review 2aac84b3.1) Step 5 ran for hostinger only: its 17 licences refreshed; l1vm is an ops VM, not a bench machine, and its SSH_AUTH_FAILED is outside the step. The tick records no result for step 6 (the bench backup drill under `fingerprint:fb37f1ae16f8b7c0`), so that step is not evidenced here; L3 above carries the hostinger licence and snapshot proof under that fingerprint.
 
 - [x] L3 [live] hostinger, read-only first.
   1. Run `renet_key_gate` against the local `private/renet/bin/renet` built by `./rdc.sh`. It must pass and name `fingerprint:fb37f1ae16f8b7c0`.

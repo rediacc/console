@@ -49,6 +49,7 @@ D8. `i18n-stamp-keys.ts --restamp` rewrites an existing ledger entry only where 
     (ticked) 2026-11-26T17:01:47Z by d778be9d: L1 landed, check:ci-terms-version rc 0 commit:ddd7e99e4b
 - [x] L1b [writer] Check 7 and `SUPERSEDED_ARCHIVES` per D4 with the two selftest controls. Accept: `npm run check:ci-terms-version` rc 0 with the three superseded entries printed and both controls PASS.
     (ticked) 2026-11-26T17:01:49Z by d778be9d: L1b landed, check:ci-terms-version rc 0 with the three superseded entries printed commit:af26b78dcf
+    (corrected 2026-11-27, review 8f1097f9.1) The tick did not record the two controls its Accept names. Re-run on the current tree: `npx tsx scripts/gates/check-terms-version.ts --selftest` rc 0, "all controls fired", with the controls "a fourth SUPERSEDED_ARCHIVES entry is red" and "an exemption for an archive versioned on or after CHECK7_SINCE is red" both PASS; `npm run check:ci-terms-version` rc 0 printing the three superseded entries.
 - [x] L2 [writer] MCP flags per D5 and parity checks per D6. Accept: `cd packages/cli && npx vitest run src/commands/mcp src/config` rc 0, `npm run check:ci-cli-contract` rc 0, `npm run check:ci-mcp-docs-parity` rc 0 with both new controls PASS.
     (ticked) 2026-11-26T15:46:36Z by d778be9d: L2 landed, check:ci-mcp-docs-parity and check:ci-cli-contract rc 0 commit:154bfe13fb
 - [x] L3a [writer] D7 deltas for ar, de, es, et after L1. Accept: all seven keys differ from HEAD in each of the four locales and the stamp dry run rc 0.
@@ -61,7 +62,9 @@ D8. `i18n-stamp-keys.ts --restamp` rewrites an existing ledger entry only where 
     (ticked) 2026-11-26T15:26:15Z by d778be9d: L5 --restamp landed, npx tsx scripts/__tests__/i18n-stamp-keys.control.ts rc 0 commit:9baa26e9fb
 - [x] L4 [writer] Stamp the four new-ledger keys, restamp the three existing ones, run `npm run i18n:generate-hashes` and `npm run i18n:naturalize-status` after L3a-c and L5. Accept: `npm run check:i18n`, `npm run check:ci-terms-version` and `npm run check:ci-prose-style` rc 0.
     (ticked) 2026-11-26T17:32:29Z by d778be9d: L4 landed, check:i18n rc 0, naturalize-status fresh commit:b6238aa1a9
+    (corrected 2026-11-27, review 5d26e634.4) The tick omitted two of the three Accept commands. Re-run on the current tree: `npm run check:ci-terms-version` rc 0 and `npm run check:ci-prose-style` rc 0 ("no new findings").
 - [ ] L6 [lead] Close 4f4dc043.1 with the L1 sha, f416cc62.1 and f416cc62.3 with the L2 sha, and 75bdcc72.1-.3 and a473201c.2-.3 with the L1b sha and `--test scripts/gates/check-terms-version.ts`. Accept: `npm run check:ci-review-resolutions` rc 0.
+    (corrected 2026-11-27, review 8f1097f9.3) 75bdcc72.1-.3 and a473201c.2-.3 were closed as waived under #4966e06d ASKED:2026-11-26T17:03Z (superseded archives, commit 8f1097f9), which is the closure this box names for the L1b sha. The other findings it lists stay to close, and the box stays open for them and for the Accept run.
 - [ ] LP-bench [live] A fresh bench receipt after L1 and L2: deploy the branch to bench with deploy_bench, check the two new archives and the MCP tables render, then record and tick through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
 

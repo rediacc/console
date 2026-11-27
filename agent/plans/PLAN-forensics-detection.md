@@ -123,6 +123,7 @@ D12. **Air-gapped (F14).** `rdc server bundle` fetches the stable bundle into `m
 - [x] LP-hostinger [live] On hostinger, install the stable bundle, drive an outbound spike from one paid repo and read the machine finding with its explanation, then publish a bad canary to edge and show it refused with the previous bundle kept.
   Accept: live-proof hostinger renet-live machine=hostinger
     (ticked) 2026-11-24T00:03:00Z by ace763dd: live-proof lp-bbcf0d396b8c VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-forensics-detection.md box 95b5b05b proven live on hostinger
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) this receipt predates FD13, which is still open: the bad-canary refusal on a stable bundle is not proven by it, so a fresh hostinger receipt is owed after FD13 (review 63834f81.3)
 - [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) and show a server finding written from a shipped batch; `cli-bench` covers the signed server bundle as additional verification.
   Accept: live-proof bench account-smoke
 

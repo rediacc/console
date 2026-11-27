@@ -64,6 +64,7 @@ D49 and D50 (the on-premise daemon gets the same write-back scenarios as the hos
     (ticked) 2026-11-24T05:42:34Z by ace763dd: commit:0dc3f829392e landed for box 5b1cee9c; investigation present@13373b2b33
 - [x] WB6 [writer] Rollback only on a definitive failure (Design 6), swept across every command that rolls back its own registration. Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/writeback-rollback.test.ts)` rc 0: a timeout keeps the entry, a failed job removes it through the settle step, a cancelled job removes it; `rg -n "rollbackCreateRepo\(" packages/cli/src/commands` lists only the settle-step call sites.
     (ticked) 2026-11-25T12:29:03Z by d778be9d: writer TICK done: landed 9a8dc9101aa5; commit:9a8dc9101aa5 packages/cli/src/commands/__tests__/repo-fork.test.ts:1
+    (corrected 2026-11-27T04:11Z, 57293cd8.1) the Accept command ran on the current tree: `(cd packages/cli && npx vitest run src/services/serve/__tests__/writeback-rollback.test.ts)` rc 0, 5 passed; `rg -n "rollbackCreateRepo\(" packages/cli/src/commands` lists packages/cli/src/commands/repo-create-delete.ts:45 (the definition) and :59 (the settle step) only. The `repo-fork` test file the tick cites is the landed file the writer named, not the Accept test.
 - [x] WB7 [writer] Job routes under the write-capable scope, with rehydration after an executor restart (Design 7). Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/writeback-job-settle.test.ts)` rc 0: a create job that fails after the executor process restarts still removes the registration from the store.
     (ticked) 2026-11-23T15:20:59Z by ace763dd: commit:7b99d05ee7fd landed from lease agent-ae0a5c89585f83955; cli vitest src/services/serve src/services/core 41 files 425 passed rc 0
 - [x] WB8 [writer] Audit fail-closed for mutating commands (Design 8). Accept: `(cd packages/cli && npx vitest run src/services/serve/__tests__/audit-failclosed.test.ts)` rc 0: an unreachable audit route fails `repo delete` with `AUDIT_UNAVAILABLE` and no host call, and `repo list` succeeds with the warning.
@@ -72,8 +73,10 @@ D49 and D50 (the on-premise daemon gets the same write-back scenarios as the hos
     (ticked) 2026-11-23T18:17:47Z by ace763dd: commit:caa9297b88 landed; writer accept rc=0, lead re-verified on the landed tree
 - [x] WB10 [writer] D6 sweep: every remaining in-memory-only record on the executor path listed with file:line in this plan's `## Outcome`, each fixed here or owned by a named box of another program plan. Accept: `rg -n "never persisted|in memory only|die with the request" packages/cli/src/services/serve packages/cli/src/services/core` prints no line that `## Outcome` does not cite.
     (ticked) 2026-11-23T15:22:20Z by ace763dd: lead: ## Outcome at agent/plans/PLAN-rmcp-writeback.md:78 lists every in-memory record from the rg sweep (3 hits, none a record), WB1 6b10a50c64 and WB9 ed950aa112 fixed two, ticket-store owned by WB11
+    (corrected 2026-11-27T04:11Z, 5a0505b3.1 5a0505b3.2 65cac51d.1) the list is the `## Outcome` section, found by its heading (a line number moves with every edit above it, so the earlier `:78` went stale). The rg sweep itself printed 3 hits and none is a record; the Outcome lists those 3 plus the 3 records the writers found: the container config cache (WB1), the terminal ledger (WB9) and the job tickets (WB11). The records carry file:line in the Outcome below.
 - [x] WB11 [writer] Job tickets survive a container sleep: services/jobs/ticket-store.ts keeps a create job's ticket and its rollback step on the container's throwaway disk, so a sleep before the job settles loses the rollback and leaves the registration (found by the WB writer 2026-11-23, the WB10 sweep). Accept: a test that drops the container disk between dispatch and settle still rolls the registration back, rc 0, and goes red with the ticket held on local disk only.
     (ticked) 2026-11-24T05:42:34Z by ace763dd: commit:306e11a287c0 landed for box 92637737; investigation present@13373b2b33
+    (corrected 2026-11-27T04:11Z, 65cac51d.2) the Accept test is `packages/cli/src/services/serve/__tests__/writeback-ticket-survives-sleep.test.ts`, added by 306e11a287c0: `(cd packages/cli && npx vitest run src/services/serve/__tests__/writeback-ticket-survives-sleep.test.ts)` rc 0, 1 passed on the current tree.
 - [x] WB-OP1 [writer] The `writeback` on-premise suite (Design 10) with its unit test against a recorded stack env. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_suite_writeback.py` rc 0, including a control scenario whose expected version count is wrong and must fail.
     (ticked) 2026-11-24T05:42:35Z by ace763dd: commit:8419e21505ec landed for box dce1cf95; investigation present@13373b2b33
 - [ ] LP-bench [live] Deploy the branch's proxy and account Workers to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench` and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`) so WB-L1 and WB-L2 run against the executor this branch builds.
@@ -89,9 +92,9 @@ WB10 sweep (2026-11-23, `rg -n "never persisted|in memory only|die with the requ
 - packages/cli/src/services/serve/sessions.ts:52: the session's config-encryption key is held in RAM by design and re-granted after a restart; not a record.
 - packages/cli/src/services/core/config-write-errors.ts:9: a doc comment describing the failure WB0 closes; not a record.
 - packages/cli/src/services/serve/__tests__/loopback.test.ts:399: a test name; not a record.
-- The container config cache: fixed here by WB1 (6b10a50c64).
-- The terminal ledger: fixed here by WB9 (ed950aa112).
-- Job tickets on the container's throwaway disk (packages/cli/src/services/jobs/ticket-store.ts): owned by WB11.
+- The container config cache (packages/cli/src/services/serve/config-writeback.ts:260, `SessionConfigStore`): fixed here by WB1 (6b10a50c64).
+- The terminal ledger (packages/cli/src/services/serve/job-poll.ts:224, `createTerminalLedger`): fixed here by WB9 (ed950aa112).
+- Job tickets on the container's throwaway disk (packages/cli/src/services/jobs/ticket-store.ts:331, `TicketStore`): owned by WB11.
 
 ## Docs touched
 

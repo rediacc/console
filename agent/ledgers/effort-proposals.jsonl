@@ -96,3 +96,10 @@
 {"at": "2026-11-19T09:32:02Z", "epoch": 42, "fraction": 0.868, "id": "ep-f1c4675d", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-11-19T21:27:32Z", "epoch": 43, "fraction": 0.856, "id": "ep-efad4eec", "kind": "tuner-request", "session": "d778be9d"}
 {"at": "2026-11-22T15:46:06Z", "epoch": 1, "fraction": 0.881, "id": "ep-5c0d9fed", "kind": "tuner-request", "session": "ace763dd"}
+{"at": "2026-11-23T08:48:03Z", "epoch": 3, "fraction": 0.861, "id": "ep-ea0f8cbd", "kind": "tuner-request", "session": "ace763dd"}
+{"at": "2026-11-23T14:29:16Z", "epoch": 4, "fraction": 0.903, "id": "ep-4c4e9ac6", "kind": "tuner-request", "session": "ace763dd"}
+{"at": "2026-11-23T15:32:49Z", "epoch": 0, "fraction": 0.853, "id": "ep-5a5318a0", "kind": "tuner-request", "session": "9b22c347"}
+{"at": "2026-11-23T20:05:22Z", "epoch": 5, "fraction": 0.853, "id": "ep-dc6722af", "kind": "tuner-request", "session": "ace763dd"}
+{"at": "2026-11-24T03:39:02Z", "epoch": 6, "fraction": 0.857, "id": "ep-b543deae", "kind": "tuner-request", "session": "ace763dd"}
+{"at": "2026-11-24T07:26:18Z", "epoch": 0, "fraction": 0.874, "id": "ep-6ec35674", "kind": "tuner-request", "session": "d778be9d"}
+{"at": "2026-11-25T19:30:09Z", "epoch": 4, "fraction": 0.852, "id": "ep-5a7293b7", "kind": "tuner-request", "session": "d778be9d"}

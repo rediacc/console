@@ -111,6 +111,7 @@ Worklist: #6d2022b2, PR-TASK 9f92c43e
 - [x] LP-hostinger [live] Fresh hostinger receipt after L3 and a verified vm:check on the same tree.
   Accept: live-proof hostinger renet-live machine=hostinger
     (ticked) 2026-11-24T00:02:54Z by ace763dd: live-proof lp-18b4ec0569c8 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-free-license.md box 186fb47a proven live on hostinger
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) this receipt predates L3, which is still open: the FREE-licence-on-hostinger flow is not proven by it, so a fresh hostinger receipt is owed after L3 (review 63834f81.1)
 
 ## Risks
 

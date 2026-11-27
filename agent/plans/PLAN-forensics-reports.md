@@ -54,11 +54,13 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Depends on: PLAN-forensics-investigation.md#FI1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/report-model.test.ts src/incident/__tests__/canonical.test.ts)` rc 0 (an early warning carrying a final-only section fails to parse, an inferred fact without confidence fails, two key orders hash the same).
     (ticked) 2026-11-25T16:07:46Z by d778be9d: FR1 staged report model with canonical hashing; landed 35e28ea1f4; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 11f03fae, a lease-side sha the pick rewrote to the landed sha above; the FI1 waiver holds, PLAN-forensics-investigation.md ticks FI1 (reviews 128b7bb6.1, 128b7bb6.3)
 - [x] FR2 [writer] STIX 2.1 bundle (D4): `stix.ts` with indicators, observables, observed-data and relationships, content-derived UUIDv5 ids, and a test of every object against the STIX 2.1 required properties and pattern grammar.
   Owns: packages/shared/src/incident/stix.ts, packages/shared/src/incident/__tests__/stix.test.ts
   Depends on: FR1.
   Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/stix.test.ts)` rc 0 (two runs give identical bytes, an IPv6 destination gets an `ipv6-addr` pattern, a missing process hash emits no file indicator, a control object without `spec_version` fails).
     (ticked) 2026-11-25T16:07:47Z by d778be9d: FR2 deterministic STIX bundle; landed d2a4633aae; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 2d7c07ae, a lease-side sha the pick rewrote to the landed sha above (review 128b7bb6.2)
 - [x] FR3 [writer] Regulatory field map (D7): read the NIS Cooperation Group templates of 26 May 2026, Implementing Regulation (EU) 2025/302 and GDPR Art. 33(3), then write `report-field-map.json` and its typed loader with source URLs and retrieval dates.
   Owns: packages/shared/src/incident/report-field-map.json, packages/shared/src/incident/report-field-map.ts, packages/shared/src/incident/__tests__/report-field-map.test.ts
   Depends on: FR1.
@@ -69,6 +71,7 @@ D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 
   Depends on: FR1, PLAN-forensics-investigation.md#FI2, PLAN-forensics-investigation.md#FI3.
   Accept: `(cd private/account && npx vitest run tests/integration/incident-report-build.test.ts)` rc 0 (a fork and a secret rotation in the window appear as actions, a suggested technique stays `inferred` until accepted, the volume-not-content statement is present in every stage); `npm run check:ci-account-scope-audit` rc 0.
     (ticked) 2026-11-25T18:55:26Z by d778be9d: FR4 report build service and migration 0114; incident-report-build tests pass, drizzle-kit check fine; landed ed5365996b. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 07a5fd57, a lease-side sha the pick rewrote to the landed sha above (review 48af0392.1)
 - [x] FR5 [writer] Signing and storage (D3): `report-signing.service.ts` over the report key, the `REPORT_ED25519_*` env keys, the files written under `reports/<org>/<incident>/`, and `GET /reports/keys`.
   Owns: private/account/src/services/report-signing.service.ts, private/account/src/types/env.ts, private/account/src/routes/report-verify.ts, private/account/tests/integration/incident-report-sign.test.ts
   Depends on: FR1.

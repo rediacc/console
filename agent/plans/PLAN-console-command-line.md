@@ -116,11 +116,13 @@ Shared files edited after their earlier owner lands: CommandForm.tsx (PLAN-conso
   Depends on: CL2.
   Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/completion.test.ts)` rc 0: each shell's script passes its syntax check (`bash -n`, `zsh -n`, `fish --no-execute` where installed), static words match the contract, `__complete --kind repo` prints the repos of a fixture config; `npm run check:ci-cli-contract`, `npm run check:ci-command-tree` and `npm run check:cli-docs` rc 0; a timing test shows the generated bash completion of `rdc repo f` under 100 ms p50 over 20 runs.
     (ticked) 2026-11-24T22:42:45Z by d778be9d: CL12 completed: rdc completion plus its cli-application reference pages in 13 locales; check:ci-i18n-www-cli-docs rc 0, check:ci-cli-contract rc 0
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) completion.test.ts 26 passed, 3 skipped (zsh, fish or pwsh not installed; the structural check still runs), its 'under 100 ms p50 over 20 runs' timing case passed; check:ci-cli-contract, check:ci-command-tree and check:cli-docs rc 0 (review ab71afbe.1)
 - [x] CL13 [writer] Translations: the new console.json keys into the 12 other web locales and the completion help keys into the 12 other CLI locales, naturalized per docs/i18n/CONVENTIONS.md, writers on sonnet.
   Owns: private/account/web/src/i18n/locales/*/console.json, packages/cli/src/i18n/locales/*/cli.json
   Depends on: CL4, CL6, CL7, CL8, CL11, CL12.
   Accept: `npm run check:ci-i18n-account-key-usage` rc 0, `npm run check:ci-i18n-cli-key-usage` rc 0, and `npm run ci -- --narrow` rc 0.
     (ticked) 2026-11-24T22:42:43Z by d778be9d: CL13 landed: completion and commandLine strings in all 12 CLI and console locales; check:i18n rc 0, check:ci-i18n-account-key-usage rc 0
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) check:ci-i18n-cli-key-usage rc 0; 'npm run ci -- --narrow' was not run (review ab71afbe.2)
 - [x] CL14 [writer] Keyboard and IME contract tests (C28): arrow, Tab, Esc, history and `aria-activedescendant` on the panel prompt, the form line and Cmd+K; composition through CDP `Input.imeSetComposition` then `Input.insertText` asserting no suggestion is accepted mid-composition and the committed text lands; an Arabic page keeps the box `dir="ltr"`.
   Owns: private/account/e2e/tests/27-console/27-05-command-line-keyboard.test.ts, private/account/e2e/tests/27-console/27-06-command-line-ime.test.ts
   Depends on: CL6, CL7, CL8.

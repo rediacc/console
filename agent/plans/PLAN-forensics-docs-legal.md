@@ -57,6 +57,7 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: FL1.
   Accept: `npm run check:ci-i18n-docs-untranslated` rc 0; the last of FL2, FL3 and FL4 to land quotes `npm run check:ci-docs-structure-parity` rc 0.
     (ticked) 2026-11-26T11:27:50Z by d778be9d: forensics, incident-response and incident-reports guides translated into the box's locales (36 files across FL2-FL4): check:i18n rc 0, docs frontmatter and structure parity rc 0 on the merged tree commit:5e7e03051c plan:agent/plans/PLAN-forensics-docs-legal.md
+    (corrected 2026-11-27T04:40:45Z, review 9759950f.2) The tick names check:i18n; the Accept gates, re-run on this tree 2026-11-27, are `npm run check:ci-i18n-docs-untranslated` rc 0 and `npm run check:ci-docs-structure-parity` rc 0 (1056 English/locale pairs), which also cover FL3 and FL4.
 - [x] FL3 [writer] Translate the three FL1 docs into fr, it, ja and ko, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/fr/forensics.md, packages/www/src/content/docs/fr/incident-*.md, packages/www/src/content/docs/it/forensics.md, packages/www/src/content/docs/it/incident-*.md, packages/www/src/content/docs/ja/forensics.md, packages/www/src/content/docs/ja/incident-*.md, packages/www/src/content/docs/ko/forensics.md, packages/www/src/content/docs/ko/incident-*.md
   Depends on: FL1.
@@ -72,6 +73,7 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: PLAN-forensics-reports.md, PLAN-forensics-alerts-notices.md, PLAN-console-audit-r2.md#AU8.
   Accept: `git grep -n --ignore-case -E "forensic trail|forensic-grade" -- packages/www/src/content/docs/en packages/www/src/content/blog/en packages/www/src/i18n/translations/en.json` prints nothing; `npm run check:cli-docs` rc 0 and `npm run check:ci-prose-style` rc 0.
     (ticked) 2026-11-25T19:22:14Z by d778be9d: FL5 English legal docs and blog posts name each mechanism and limit; the forensic-grade grep prints nothing; landed with da1a657f0b; check:i18n rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:40:45Z, review 560cb2e0.1) The tick names the grep and check:i18n only; re-run on this tree 2026-11-27: the Accept grep over the en docs, en blog and en.json exits 1 with no output, `npm run check:cli-docs` rc 0 (196 docs clean) and `npm run check:ci-prose-style` rc 0.
 - [x] FL6 [writer] Carry the FL5 doc rewrites into the 12 other locales of legal-nis2-dora.md, legal-gdpr.md, legal-hipaa.md and legal-overview.md, and translate siem-integration.md into those 12 locales, naturalized, writers on sonnet.
   Owns: packages/www/src/content/docs/*/legal-nis2-dora.md, packages/www/src/content/docs/*/legal-gdpr.md, packages/www/src/content/docs/*/legal-hipaa.md, packages/www/src/content/docs/*/legal-overview.md, packages/www/src/content/docs/*/siem-integration.md
   Depends on: FL5.
@@ -82,6 +84,7 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: FL5.
   Accept: `npm run check:i18n` rc 0; `git grep -n --ignore-case "forensic" -- packages/www/src/content/blog/*/nis2-effectiveness-without-theatre.md packages/www/src/content/blog/*/nis2-the-real-bill.md` shows only sentences naming a shipped mechanism, quoted per locale in the tick.
     (ticked) 2026-11-25T19:22:16Z by d778be9d: FL7 both NIS2 posts carried into the 12 locales and re-stamped; landed with da1a657f0b; check:i18n rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:40:45Z, review 560cb2e0.2) The tick quotes no per-locale grep. Re-run on this tree 2026-11-27, `grep -ci forensic` per file gives nis2-the-real-bill.md 0 in all 13 locales and nis2-effectiveness-without-theatre.md en 6, it 3, ar de es et fr ru tr zh 2 each, ja ko pt 1 each; the sentence text of those hits was counted, not re-read here.
 - [x] FL8 [writer] Rewrite the three hash-chained claims in ms6-compliance.ts (:31, :92, :117) to the per-org, per-day chain of audit-r2 and the forensics evidence of plans 2 and 4, keeping the exam's article mapping.
   Owns: private/account/web/src/data/study-content/ms6-compliance.ts
   Depends on: PLAN-console-audit-r2.md#AU8, PLAN-forensics-investigation.md.
@@ -92,11 +95,13 @@ D6. **Translations.** Docs and blog posts are rewritten per locale from the new 
   Depends on: PLAN-forensics-shipping.md, PLAN-forensics-capture.md.
   Accept: `npm run check:ci-prose-style` rc 0; the tick quotes the capture and shipping lines the IP rule was read from.
     (ticked) 2026-11-25T19:03:13Z by d778be9d: FL9 DPA forensics evidence items and the telemetry-policy sentence, IP and retention read from code; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:40:45Z, review 0b8068fa.2) `c2cc38c682` is the console gitlink commit (subject "land lease agent-a3163cbc949a0b6cf commits") that carried FL8, FL9 and FL10 onto the branch; the commit message of 0b8068fa cites the lease-side shas (FL8 d0224321, FL9 8d487a0e, FL10 2202d690), which cherry-pick rewrote and which do not resolve in private/account on this tree. Both records are right, one per side of the landing.
 - [x] FL10 [writer] Translate the FL5 blurb and FL9 DPA and telemetry keys into the 12 other locales by hand per docs/i18n/CONVENTIONS.md, stamp them with `npx tsx scripts/gen/i18n-stamp-keys.ts --prefix pages.dataProcessingAgreement --write` and the telemetry and blurb prefixes, then `npm run i18n:generate-hashes`; writers on sonnet.
   Owns: packages/www/src/i18n/translations/*.json, packages/www/src/i18n/translations/.translation-hashes.json, packages/www/src/i18n/translations/.naturalized-hashes.json
   Depends on: FL5, FL9.
   Accept: `npm run check:i18n` rc 0 and `npm run check:ci-i18n-ledger-growth` rc 0.
     (ticked) 2026-11-25T19:03:14Z by d778be9d: FL10 the FL9 keys in the 12 other locales, stamped, check:i18n rc 0; landed c2cc38c682. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:40:45Z, review 0b8068fa.2) Same as the FL9 correction: `c2cc38c682` is the console gitlink commit, and 2202d690 in the 0b8068fa commit message is the lease-side sha of this box.
 - [x] FL11 [writer] Document `rediacc-public-data` in .ci/docs/r2-media-setup.md: bucket, `data.rediacc.com` domain, cache rule, CORS, the `public-data` bws profile, and the `stackexchange/`, `models/` (plan 3) and `fonts/` (plan 6) prefixes with their scripted upload jobs.
   Owns: .ci/docs/r2-media-setup.md
   Depends on: PLAN-tooling-code-reduction.md#CR2, PLAN-forensics-detection.md, PLAN-forensics-reports.md#FR12.
