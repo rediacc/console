@@ -91,6 +91,8 @@ jobs:
       - name: Build shared packages
         run: npm run build:packages
 
+      # Legacy sweep: no deploy publishes a Pages branch any more (previews are the `pv-` Workers below), so
+      # this only clears Pages deployments left under the old `pr-<n>` branch name (PLAN-preview-signer N2).
       - name: Cleanup preview deployments
         run: PYTHONPATH=.ci python3 -m rediacc_ci.housekeeping.cleanup_cf_preview --branch "pr-${{ github.event.pull_request.number }}"
         env:
