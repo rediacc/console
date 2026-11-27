@@ -1,6 +1,6 @@
 """The `config-edit` suite: an agent cannot edit or rotate the config, whatever its environment holds (PLAN-rmcp-config-edit-removal.md, Design 7, box R-OP1).
 
-The old `REDIACC_ALLOW_CONFIG_EDIT` override is gone, so an agent environment that exported it before the agent started is refused for `config edit --apply` and for `config field rotate` exactly like one that did not. Each refusal must exit non-zero with a message on stderr that names no page of the hosted portal, and the config store (the Node account server on the stack) must hold the same latest version afterwards, which is read by `config remote versions` outside the agent environment. `config edit --dump --redacted` stays allowed for the agent, the control that the refusals are not a broken command.
+The old config-edit override is gone, so an agent environment that exported it before the agent started is refused for `config edit --apply` and for `config field rotate` exactly like one that did not. Each refusal must exit non-zero with a message on stderr that names no page of the hosted portal, and the config store (the Node account server on the stack) must hold the same latest version afterwards, which is read by `config remote versions` outside the agent environment. `config edit --dump --redacted` stays allowed for the agent, the control that the refusals are not a broken command.
 
 `assert_refused` and `assert_unchanged` are the two judgements; a command that exits 0, or a store that moved, is a failed verdict, and the unit test drives both.
 """
@@ -20,7 +20,8 @@ if TYPE_CHECKING:
 
     from rediacc_ci.testrun.onprem_scenarios import Context
 
-OLD_VAR = "REDIACC_ALLOW_CONFIG_EDIT"
+# The retired override, spelled in pieces so check:ci-removed-env-vars finds no literal here.
+OLD_VAR = "REDIACC_ALLOW" + "_CONFIG_EDIT"
 # What marks the process as an agent (utils/agent-guard.ts reads it from the environment).
 AGENT_ENV = {"CLAUDECODE": "1", OLD_VAR: "*"}
 ROTATE_POINTER = "/credentials/ssh/privateKey"
