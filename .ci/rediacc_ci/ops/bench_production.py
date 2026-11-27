@@ -2,19 +2,19 @@
 
 Bench signs with the production key, and once a production machine backs up through bench (hostinger), a bench wipe or a drill cleanup could remove the only off-site copy, and a stopped bench signer stops its licence renewals. Four refusals read this one declaration:
 
-  1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything for the region being wiped, before any credential is read.
-  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the backstop behind `reset_refusal`: reached only if that static refusal is relaxed, since `reset_bench` exits 2 on any declaration for its region first.
+  1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything for the region being wiped, before any credential is read. It refuses as well while the file declares NOTHING: an empty list is a guard nobody armed, not proof that bench holds no production data. On 2026-11-27 an empty list let `reset_bench --yes` wipe the bench D1 that held hostinger's backup manifests (PLAN-hostinger-to-bench L5), so the empty state fails closed like an unreadable one.
+  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds ANY `backup_manifests` row, declared subscription or not: a manifest is a machine's off-site copy, the production signal a declaration can miss. The read runs after the token is minted and before the confirmation, in every mode, and a failed read refuses too.
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
   4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse a bench signer while the file declares anything for its region (`signer-bench-<region>`), before any secret is deleted.
 
-Each entry names the `region` of the bench that holds it (`eu`, `us`, `asia`), and a refusal covers only that region: a us wipe is not stopped by an eu subscription. A refusal asked without a region (a drill's `refuse_ids`) covers every entry. There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed.
+Each entry names the `region` of the bench that holds it (`eu`, `us`, `asia`), and a refusal covers only that region: a us wipe is not stopped by an eu subscription. A refusal asked without a region (a drill's `refuse_ids`) covers every entry. There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed. `target_refusal` is reset_bench's third check, also before any credential: the database and buckets the region's bench config names must be bench-named and bound by no production region config (`workers/account/wrangler.<region>.toml`).
 """
 
 from __future__ import annotations
 
 import json
 import re
-import string
+import tomllib
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -31,11 +31,13 @@ REGION = re.compile(r"^[a-z][a-z0-9-]*\Z")
 SIGNER_PREFIX = "signer-bench-"
 # The exit code of a production refusal, distinct from a failed run (1).
 REFUSAL_EXIT = 2
-# `$ids` is filled only with validated UUID literals (`manifest_query`).
-MANIFEST_QUERY = string.Template(
-    "SELECT subscription_id, COUNT(*) AS manifests FROM backup_manifests "
-    "WHERE subscription_id IN ($ids) GROUP BY subscription_id"
+# Every subscription's manifests, not only the declared ones: any row is a production signal.
+MANIFEST_QUERY = (
+    "SELECT subscription_id, COUNT(*) AS manifests FROM backup_manifests GROUP BY subscription_id"
 )
+# The word every name a wipe touches carries, and the production account configs whose bindings it must not share.
+BENCH_MARK = "bench"
+PRODUCTION_CONFIG = "workers/account/wrangler.%s.toml"
 
 
 class ProductionRefusalError(Exception):
@@ -108,7 +110,13 @@ def for_region(entries: Sequence[Protected], region: str | None) -> list[Protect
 
 
 def reset_refusal(entries: Sequence[Protected], region: str | None = None) -> str | None:
-    """Why reset_bench must not run on REGION's bench, or None when that region declares nothing."""
+    """Why reset_bench must not run on REGION's bench: the declaration is empty (an unarmed guard), or it declares a subscription in REGION. None only when the file declares something and none of it is in REGION."""
+    if not entries:
+        return (
+            "%s declares no protected subscription, so the bench production guard is unarmed and fails closed: "
+            "reset_bench refuses every mode. Declare each bench subscription that carries production data "
+            "(agent/plans/PLAN-hostinger-to-bench.md L5) in a reviewed commit first" % CONFIG_REL
+        )
     entries = for_region(entries, region)
     if not entries:
         return None
@@ -133,31 +141,68 @@ def signer_stop_refusal(signer: str, entries: Sequence[Protected]) -> str | None
     )
 
 
-def manifest_query(ids: Sequence[str]) -> str:
-    """The D1 read counting `backup_manifests` rows per declared subscription. Ids are validated UUIDs."""
-    for ident in ids:
-        if not UUID.match(ident):
-            raise ProductionRefusalError("refusing a non-UUID subscription id %r" % ident)
-    listed = ", ".join("'%s'" % i for i in ids)
-    return MANIFEST_QUERY.substitute(ids=listed)
-
-
 def d1_refusal(rows: Callable[[str], list[dict]], entries: Sequence[Protected]) -> str | None:
-    """Why the live D1 forbids a wipe: it holds manifests of a declared subscription. None when nothing is declared (no query is made) or no such row exists."""
-    ids = [e.subscription_id for e in entries]
-    if not ids:
-        return None
-    held = [
-        "%s (%s manifests)" % (r.get("subscription_id"), r.get("manifests"))
-        for r in rows(manifest_query(ids))
-        if int(r.get("manifests") or 0) > 0
-    ]
+    """Why the live D1 forbids a wipe: it holds any `backup_manifests` row (a declared subscription's is named as declared). The query always runs; None only when no row carries a manifest. A count that is not a number raises ProductionRefusalError."""
+    declared = {e.subscription_id for e in entries}
+    held = []
+    for row in rows(MANIFEST_QUERY):
+        try:
+            count = int(row.get("manifests") or 0)
+        except (TypeError, ValueError):
+            raise ProductionRefusalError(
+                "the manifest count %r is not a number" % (row.get("manifests"),)
+            ) from None
+        if count > 0:
+            sub = row.get("subscription_id")
+            held.append(
+                "%s (%d manifests%s)" % (sub, count, ", declared" if sub in declared else "")
+            )
     if not held:
         return None
     return (
-        "the bench D1 holds backup manifests of a declared production subscription: %s"
-        % ", ".join(held)
+        "the bench D1 holds backup manifests, a production signal (a machine's off-site copy): %s; "
+        "reset_bench refuses every mode while any remain" % ", ".join(held)
     )
+
+
+def _bindings(path: pathlib.Path) -> set[str]:
+    """The DB database names and ids and every R2 bucket name a wrangler config binds."""
+    with open(path, "rb") as fh:
+        doc = tomllib.load(fh)
+    out: set[str] = set()
+    for db in doc.get("d1_databases") or []:
+        out |= {str(db.get("database_name") or ""), str(db.get("database_id") or "")}
+    for bucket in doc.get("r2_buckets") or []:
+        out.add(str(bucket.get("bucket_name") or ""))
+    return out - {""}
+
+
+def target_refusal(
+    names: Sequence[tuple[str, str]], regions: Iterable[str], root: pathlib.Path | None = None
+) -> str | None:
+    """Why the wipe target is not a bench, or None. NAMES is `(what, value)` for the database name and id and each bucket the wipe empties; an empty value is skipped, and the id is only collision-checked. A name without `bench`, or a value a production region config (PRODUCTION_CONFIG per id in REGIONS) also binds, refuses; so does a production config that exists and cannot be parsed."""
+    base = root or paths.repo_root()
+    problems = [
+        "%s %r is not bench-named" % (what, value)
+        for what, value in names
+        if value and what != "database_id" and BENCH_MARK not in value
+    ]
+    for region in regions:
+        path = base / (PRODUCTION_CONFIG % region)
+        if not path.is_file():
+            continue
+        try:
+            taken = _bindings(path)
+        except (OSError, ValueError) as exc:
+            return "cannot read %s (%s); the wipe target check fails closed" % (path.name, exc)
+        problems += [
+            "%s %r is also bound by %s" % (what, value, path.name)
+            for what, value in names
+            if value and value in taken
+        ]
+    if not problems:
+        return None
+    return "the wipe target is not a bench: %s; reset_bench refuses" % "; ".join(problems)
 
 
 def refuse_ids(

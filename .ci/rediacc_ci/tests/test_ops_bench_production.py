@@ -1,15 +1,25 @@
-"""The bench production guard (agent/plans/PLAN-hostinger-to-bench.md Design 3): a declared subscription stops every reset_bench mode before any credential is read, the D1 manifest check refuses on planted rows, and an empty declaration lets reset_bench run as before."""
+"""The bench production guard (agent/plans/PLAN-hostinger-to-bench.md Design 3): a declared subscription stops every reset_bench mode before any credential is read, the D1 manifest check refuses on any planted row, and an empty declaration is an unarmed guard that refuses too (fail closed, 2026-11-27)."""
 
 import json
 import pathlib
 
 import pytest
 
-from rediacc_ci.ops import bench_production, reset_bench
+from rediacc_ci.ops import bench_preflight, bench_production, reset_bench
 
 SUB = "33333333-3333-4333-8333-333333333333"
 OTHER = "99999999-9999-4999-8999-999999999999"
 DECLARED = [bench_production.Protected(SUB, "hostinger", "production backups")]
+US_ENTRY = bench_production.Protected(SUB, "hostinger", "production backups", "us")
+BENCH_NAMES = bench_preflight.BenchNames(
+    "account-bench",
+    "8c260075-db26-4787-b700-b657f21a5f61",
+    "configs-bench",
+    "",
+    "b",
+    "",
+    "audit-bench",
+)
 
 
 class CredentialReadError(Exception):
@@ -42,9 +52,12 @@ def test_the_committed_declaration_parses():
     assert isinstance(bench_production.load(), list)
 
 
-def test_an_empty_declaration_declares_nothing(tmp_path):
+def test_an_empty_declaration_loads_empty_and_refuses_the_reset(tmp_path):
     assert bench_production.load(_write(tmp_path, {"protected": []})) == []
-    assert bench_production.reset_refusal([]) is None
+    for region in (None, "eu", "us", "asia"):
+        refusal = bench_production.reset_refusal([], region)
+        assert refusal is not None
+        assert "unarmed" in refusal
 
 
 def test_a_declared_entry_is_loaded(tmp_path):
@@ -112,9 +125,20 @@ def test_a_malformed_declaration_makes_reset_bench_exit_2(monkeypatch, capsys):
 
 
 @pytest.mark.usefixtures("no_credentials")
-def test_an_empty_declaration_lets_reset_bench_reach_its_credentials(monkeypatch):
-    # CONTROL: with nothing declared the run continues to the profile re-exec exactly as before the guard.
+@pytest.mark.parametrize("argv", [["--yes"], ["--yes", "--d1-only"], ["--yes", "--r2-only"], []])
+def test_an_empty_declaration_makes_every_mode_exit_2_before_any_credential(
+    monkeypatch, capsys, argv
+):
+    # The 2026-11-27 defect: an empty list let `--yes` reach the wipe of the bench D1 holding hostinger's backups.
     monkeypatch.setattr(bench_production, "load", lambda *_a: [])
+    assert reset_bench.main(argv) == 2
+    assert "unarmed" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("no_credentials")
+def test_a_declaration_in_another_region_lets_reset_bench_reach_its_credentials(monkeypatch):
+    # CONTROL: an armed guard with nothing declared in the wiped region continues to the profile re-exec.
+    monkeypatch.setattr(bench_production, "load", lambda *_a: [US_ENTRY])
     with pytest.raises(CredentialReadError):
         reset_bench.main(["--yes"])
 
@@ -127,11 +151,7 @@ def _rows_with(manifests: dict[str, int]):
 
     def rows(sql: str) -> list[dict]:
         seen.append(sql)
-        return [
-            {"subscription_id": s, "manifests": n}
-            for s, n in manifests.items()
-            if "'%s'" % s in sql
-        ]
+        return [{"subscription_id": s, "manifests": n} for s, n in manifests.items()]
 
     return rows, seen
 
@@ -141,25 +161,37 @@ def test_the_d1_check_refuses_on_planted_manifest_rows():
     refusal = bench_production.d1_refusal(rows, DECLARED)
     assert refusal is not None
     assert SUB in refusal
-    assert "3 manifests" in refusal
-    assert seen
+    assert "3 manifests, declared" in refusal
+    assert seen == [bench_production.MANIFEST_QUERY]
     assert "FROM backup_manifests" in seen[0]
 
 
-def test_the_d1_check_passes_when_the_declared_subscription_has_no_manifests():
-    rows, _ = _rows_with({OTHER: 5})
+def test_the_d1_check_refuses_on_an_undeclared_subscriptions_manifests():
+    # The production signal a declaration can miss: hostinger's rows were in D1 while the list was empty.
+    rows, seen = _rows_with({OTHER: 5})
+    refusal = bench_production.d1_refusal(rows, DECLARED)
+    assert refusal is not None
+    assert "%s (5 manifests)" % OTHER in refusal
+    assert bench_production.d1_refusal(rows, []) is not None
+    assert len(seen) == 2
+
+
+def test_the_d1_check_passes_only_when_no_row_carries_a_manifest():
+    rows, seen = _rows_with({SUB: 0, OTHER: 0})
     assert bench_production.d1_refusal(rows, DECLARED) is None
-
-
-def test_the_d1_check_makes_no_query_when_nothing_is_declared():
-    rows, seen = _rows_with({SUB: 3})
+    # the query runs with nothing declared too
     assert bench_production.d1_refusal(rows, []) is None
-    assert seen == []
+    assert len(seen) == 2
 
 
-def test_the_manifest_query_refuses_a_non_uuid_id():
-    with pytest.raises(bench_production.ProductionRefusalError):
-        bench_production.manifest_query(["x' OR 1=1 --"])
+def test_the_d1_check_refuses_a_count_that_is_not_a_number():
+    with pytest.raises(bench_production.ProductionRefusalError, match="not a number"):
+        bench_production.d1_refusal(lambda _s: [{"subscription_id": SUB, "manifests": "x"}], [])
+
+
+def test_the_manifest_query_interpolates_no_id():
+    assert "WHERE" not in bench_production.MANIFEST_QUERY
+    assert "GROUP BY subscription_id" in bench_production.MANIFEST_QUERY
 
 
 class _Auth:
@@ -167,12 +199,11 @@ class _Auth:
 
 
 def test_reset_bench_runs_the_d1_check_before_the_wipe(monkeypatch, capsys):
-    # The static refusal is lifted here so the second layer is reached: planted manifests stop the run at exit 2 before any wipe.
-    monkeypatch.setattr(bench_production, "load", lambda *_a: DECLARED)
-    monkeypatch.setattr(bench_production, "reset_refusal", lambda _e, *_a: None)
+    # The declaration names only a us subscription, so the eu wipe passes the static refusal and reaches the live check: manifests of an UNDECLARED subscription stop it at exit 2 before any wipe.
+    monkeypatch.setattr(bench_production, "load", lambda *_a: [US_ENTRY])
     monkeypatch.setattr(reset_bench.shutil, "which", lambda _c: "/usr/bin/true")
     monkeypatch.setattr(reset_bench, "_reexec_under_profile", lambda _a: None)
-    monkeypatch.setattr(reset_bench, "_names", lambda *_a: object())
+    monkeypatch.setattr(reset_bench, "_names", lambda *_a: BENCH_NAMES)
     monkeypatch.setattr(reset_bench.cf_auth, "resolve", lambda _a: _Auth())
     monkeypatch.setattr(reset_bench.cf_auth, "wrangler_env", lambda *_a, **_k: {})
     monkeypatch.setattr(reset_bench.cf_auth, "await_propagation", lambda _a: None)
@@ -194,7 +225,7 @@ def test_reset_bench_runs_the_d1_check_before_the_wipe(monkeypatch, capsys):
         queries.append(sql)
         return {
             "success": True,
-            "result": [{"results": [{"subscription_id": SUB, "manifests": 2}]}],
+            "result": [{"results": [{"subscription_id": OTHER, "manifests": 2}]}],
         }
 
     monkeypatch.setattr(reset_bench, "_query", query)
@@ -234,8 +265,6 @@ def test_signer_stop_refusal_names_the_signer_and_the_declaration():
 
 
 # --- regions: an entry stops only its own region (PLAN-multi-region-bench W3)
-
-US_ENTRY = bench_production.Protected(SUB, "hostinger", "production backups", "us")
 
 
 def test_an_entry_without_a_region_fails_closed(tmp_path):

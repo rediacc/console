@@ -6,7 +6,11 @@ DESTRUCTIVE. It drops every table of one region's bench D1 database (`account-be
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
-PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 (for a subscription declared in the chosen region) before the profile re-exec and before any credential is read; a second check after the token is minted (`bench_production.d1_refusal`) refuses when the live D1 holds `backup_manifests` rows of a declared subscription. While the static refusal stands that check is never reached with a declaration, so it is the backstop that takes over if the static refusal is ever relaxed to allow a mode (the reached case is its own test with `reset_refusal` patched out). There is no override flag.
+PRODUCTION GUARD, FAIL CLOSED. A wipe runs only when every positive condition holds, and each refusal exits 2 with nothing deleted:
+  a. `.ci/config/bench-production.json` is readable and declares at least one protected subscription (an empty list is an unarmed guard: on 2026-11-27 it let `--yes` wipe the bench D1 holding hostinger's backups), and none of them in the chosen region (`bench_production.reset_refusal`);
+  b. the database and every bucket the wipe empties are bench-named and bound by no production region's `wrangler.<region>.toml` (`bench_production.target_refusal`);
+  c. the live D1 holds no `backup_manifests` row of any subscription, declared or not, and the read succeeds (`bench_production.d1_refusal`, after the token is minted and before the confirmation).
+a and b run before the profile re-exec and before any credential is read. There is no override flag (agent/plans/PLAN-hostinger-to-bench.md Design 3): un-protecting a region, or clearing its manifests, is a reviewed or deliberate step of its own.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
@@ -349,6 +353,25 @@ def _wipe_r2(creds: R2Credentials) -> None:
     log.info("Objects deleted")
 
 
+def _target_refusal(region: str) -> str | None:
+    """Why REGION's wipe target is not a bench (`bench_production.target_refusal` over the database and the buckets the wipe empties, against every production region's config), or None. An unreadable bench config or regions.json refuses."""
+    try:
+        bench = _names(region)
+        rows = json.loads((paths.repo_root() / "regions.json").read_text(encoding="utf-8"))
+        regions = [str(r["id"]) for r in rows["regions"]]
+    except (ResetError, OSError, ValueError, KeyError, TypeError) as exc:
+        return "the wipe target check cannot run (%s); reset_bench fails closed" % exc
+    return bench_production.target_refusal(
+        [
+            ("database_name", bench.database_name),
+            ("database_id", bench.database_id),
+            ("config bucket", bench.config_bucket),
+            ("audit bucket", bench.audit_bucket),
+        ],
+        regions,
+    )
+
+
 def main(argv: list[str]) -> int:
     # The stack holds the bench region lock `_main` takes, until the run returns.
     with contextlib.ExitStack() as stack:
@@ -390,6 +413,10 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
     if refusal:
         log.error(refusal)
         return bench_production.REFUSAL_EXIT
+    refusal = _target_refusal(region)
+    if refusal:
+        log.error(refusal)
+        return bench_production.REFUSAL_EXIT
 
     for cmd in ("curl", "npx"):
         if shutil.which(cmd) is None:
@@ -427,9 +454,7 @@ def _main(argv: list[str], stack: contextlib.ExitStack) -> int:
         env = cf_auth.wrangler_env(auth, ACCOUNT_ID, scrub_global_key=True)
         cf_auth.await_propagation(auth)
         try:
-            held = bench_production.d1_refusal(
-                lambda sql: _rows(auth, sql, region), bench_production.for_region(protected, region)
-            )
+            held = bench_production.d1_refusal(lambda sql: _rows(auth, sql, region), protected)
         except (ResetError, bench_production.ProductionRefusalError) as exc:
             held = "the bench production D1 check could not run: %s" % exc
         if held:

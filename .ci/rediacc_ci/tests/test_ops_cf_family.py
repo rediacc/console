@@ -488,6 +488,15 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     port_calls, probes = h.split_probe_block(world.calls())
     assert not h.split_probe_block(bash_calls)[1]  # the control: the bash sent no probe
     assert probes, "the minted token was used without a readiness probe"
+    # DECLARED DELTA: the port reads the live production signal (every subscription's backup manifests) before it wipes; the bash read none. Compared without that one query, which must be there.
+    signal = [
+        c
+        for c in port_calls
+        if c["tool"] == "curl" and c["body"] and "FROM backup_manifests" in c["body"]
+    ]
+    assert len(signal) == 1, signal
+    assert not any(c.get("body") and "backup_manifests" in c["body"] for c in bash_calls)
+    port_calls = [c for c in port_calls if c not in signal]
     assert rc_b == rc_p == 0, (err_b, err_p)
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
@@ -731,6 +740,16 @@ def test_delta_reset_bench_re_executes_under_its_own_profile(
         return subprocess.CompletedProcess(argv, 7)
 
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu")
+    # An armed declaration that stops no eu wipe: the committed one may be empty, which refuses (fail closed).
+    monkeypatch.setattr(
+        reset_bench.bench_production,
+        "load",
+        lambda *_a: [
+            reset_bench.bench_production.Protected(
+                "00000000-0000-4000-8000-000000000000", "m", "r", "asia"
+            )
+        ],
+    )
     monkeypatch.setattr(reset_bench.shutil, "which", lambda cmd: "/usr/bin/" + cmd)
     monkeypatch.setattr(reset_bench.subprocess, "run", fake_run)
     assert reset_bench.main(["--yes", "--r2-only"]) == 7

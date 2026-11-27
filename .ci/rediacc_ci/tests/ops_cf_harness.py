@@ -219,7 +219,6 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
-            ".ci/config/bench-production.json",  # reset_bench fails closed without the declaration
             "regions.json",  # backup_d1 names the shared databases from it
         ):
             if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
@@ -227,6 +226,22 @@ class World:
             dest = self.root / rel
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, dest)
+        # reset_bench fails closed on a missing or EMPTY declaration, so the world arms it with an entry for a region no test wipes (asia); the eu wipes the twins replay are then admitted.
+        (self.root / ".ci/config").mkdir(parents=True, exist_ok=True)
+        (self.root / ".ci/config/bench-production.json").write_text(
+            json.dumps(
+                {
+                    "protected": [
+                        {
+                            "subscription_id": "00000000-0000-4000-8000-000000000000",
+                            "region": "asia",
+                            "machine": "fixture",
+                            "reason": "arms the reset guard in the test world",
+                        }
+                    ]
+                }
+            )
+        )
         (self.root / "workers/account/node_modules").mkdir(parents=True)
         (self.root / "workers/account/wrangler.bench-eu.toml").write_text(
             # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
