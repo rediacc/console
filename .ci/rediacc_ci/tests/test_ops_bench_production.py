@@ -260,8 +260,17 @@ def test_signer_stop_refusal_names_the_signer_and_the_declaration():
     assert "signer-bench-eu" in refusal
     assert SUB in refusal
     assert bench_production.CONFIG_REL in refusal
-    # control: nothing declared, nothing refused
-    assert bench_production.signer_stop_refusal("signer-bench-eu", []) is None
+    # control: a declaration with nothing in this signer's region refuses nothing
+    assert bench_production.signer_stop_refusal("signer-bench-eu", [US_ENTRY]) is None
+
+
+def test_signer_stop_refusal_fails_closed_on_an_empty_declaration():
+    """Review 856c142a.1: the unarmed list refuses every signer, as reset_refusal does."""
+    for signer in ("signer-bench-eu", "signer-bench-us", "signer-other"):
+        refusal = bench_production.signer_stop_refusal(signer, [])
+        assert refusal is not None
+        assert "declares no protected subscription" in refusal
+        assert signer in refusal
 
 
 # --- regions: an entry stops only its own region (PLAN-multi-region-bench W3)

@@ -5,7 +5,7 @@ Bench signs with the production key, and once a production machine backs up thro
   1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything for the region being wiped, before any credential is read. It refuses as well while the file declares NOTHING: an empty list is a guard nobody armed, not proof that bench holds no production data. On 2026-11-27 an empty list let `reset_bench --yes` wipe the bench D1 that held hostinger's backup manifests (PLAN-hostinger-to-bench L5), so the empty state fails closed like an unreadable one.
   2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds ANY `backup_manifests` row, declared subscription or not: a manifest is a machine's off-site copy, the production signal a declaration can miss. The read runs after the token is minted and before the confirmation, in every mode, and a failed read refuses too.
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
-  4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse a bench signer while the file declares anything for its region (`signer-bench-<region>`), before any secret is deleted.
+  4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse a bench signer while the file declares anything for its region (`signer-bench-<region>`), and while it declares nothing at all (the unarmed guard fails closed, as for reset_bench), before any secret is deleted.
 
 Each entry names the `region` of the bench that holds it (`eu`, `us`, `asia`), and a refusal covers only that region: a us wipe is not stopped by an eu subscription. A refusal asked without a region (a drill's `refuse_ids`) covers every entry. There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed. `target_refusal` is reset_bench's third check, also before any credential: the database and buckets the region's bench config names must be bench-named and bound by no production region config (`workers/account/wrangler.<region>.toml`).
 """
@@ -130,7 +130,14 @@ def reset_refusal(entries: Sequence[Protected], region: str | None = None) -> st
 
 
 def signer_stop_refusal(signer: str, entries: Sequence[Protected]) -> str | None:
-    """Why the bench signer `signer` must not be stopped or cut, or None when its region declares nothing. A `signer-bench-<region>` name scopes the refusal to that region; any other name is held against every entry."""
+    """Why the bench signer `signer` must not be stopped or cut, or None when the file declares something and none of it is in the signer's region. An EMPTY declaration refuses (an unarmed guard fails closed, as for reset_bench). A `signer-bench-<region>` name scopes the refusal to that region; any other name is held against every entry."""
+    if not entries:
+        return (
+            "%s declares no protected subscription, so the bench production guard is unarmed and fails closed: "
+            "%s is not stopped or cut. Declare each bench subscription that carries production data "
+            "(agent/plans/PLAN-hostinger-to-bench.md L5) in a reviewed commit first"
+            % (CONFIG_REL, signer)
+        )
     region = signer.removeprefix(SIGNER_PREFIX) if signer.startswith(SIGNER_PREFIX) else None
     entries = for_region(entries, region)
     if not entries:
