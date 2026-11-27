@@ -25,7 +25,7 @@ Live-Proof: bench -- the account worker reads every new dimension; the receipt i
 
 - Plan tables: PLAN_LIMITS at packages/shared/src/subscription/constants.ts:19, the degraded plan at :329, PLAN_MAX_MACHINES at :358 (every self-serve plan 1, ENTERPRISE 25), PLAN_PRICING at :563 ($49/$59 monthly, $499/$599 annual, ENTERPRISE 210000 cents).
 - No user, repository-count or CPU dimension exists anywhere in shared, account or renet.
-- Every account getter falls back to COMMUNITY: private/account/src/types/subscription.ts:283 (getLimitsForPlan) and :309, :315.
+- Every account getter falls back to COMMUNITY: private/account/src/types/subscription.ts (getLimitsForPlan and two sibling getters, all removed by PM2 in private/account ad7191e0).
 - Backup store counts are a separate table: private/account/src/services/backup-store-registry.ts:68 (COMMUNITY 2).
 - Catalog edition rates: private/account/src/pricing/catalog.default.ts (professional 550, business 700, enterprise 900 per machine per year), so R3 needs no catalog change beyond keeping it the single source.
 - The pricing gate checks English copy against PLAN_LIMITS and PLAN_MAX_MACHINES only, never prices or the 12 other locales (scripts/gates/check-pricing-consistency.ts).

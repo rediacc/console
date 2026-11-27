@@ -3238,17 +3238,18 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 0,
+      "open": 5,
+      "done": 1,
       "open_sigs": [
         "1dd565c3",
         "4a23af14",
-        "75dd7fbc",
         "935f9fa8",
         "f59e2cbf",
         "f6e340e5"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "75dd7fbc"
+      ]
     },
     "agent/plans/PLAN-proxy-cd-six-targets.md": {
       "status": "approved",

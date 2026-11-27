@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 124 plans done, 1622 of 2132 boxes done (76%).
+Promoted: 11 of 124 plans done, 1623 of 2132 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -174,7 +174,7 @@ Promoted: 11 of 124 plans done, 1622 of 2132 boxes done (76%).
 | 112 | PLAN-plan-verbs.md | 0/3 | 3 open |
 | 113 | PLAN-windows-lane.md | 5/32 | 27 open |
 | 114 | PLAN-config-sealed-local.md | 1/10 | 9 open |
-| 115 | PLAN-proxied-licence-tunnel-auth-fix.md | 0/6 | 6 open |
+| 115 | PLAN-proxied-licence-tunnel-auth-fix.md | 1/6 | 5 open |
 | 116 | PLAN-executor-account-routes.md | 3/8 | 5 open |
 | 117 | PLAN-pricing-plan-model.md | 3/4 | 1 open |
 | 118 | PLAN-pricing-partner-directory.md | 3/5 | 2 open |
