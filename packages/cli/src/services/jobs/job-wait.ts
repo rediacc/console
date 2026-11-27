@@ -67,6 +67,7 @@ export type WaitOutcome =
   | { kind: 'timeout' }
   | { kind: 'interrupted' }
   | { kind: 'unresolved' }
+  | { kind: 'never-started' }
   | { kind: 'proxy-unsupported' };
 
 export interface WaitOptions {
@@ -87,9 +88,14 @@ async function ensureJobId(
   store: TicketStore,
   ticket: Ticket,
   deps: JobWaitDeps
-): Promise<Ticket | undefined> {
+): Promise<Ticket | 'never-started' | undefined> {
   if (ticket.jobId) return ticket;
   const resolved = await deps.resolveStarting?.(ticket);
+  if (resolved === null) {
+    // renet answered that no job carries this request id: the start never made one.
+    store.append('expired', ticket.requestId, { reason: 'never-started' });
+    return 'never-started';
+  }
   if (!resolved) return undefined;
   store.append('started', ticket.requestId, { jobId: resolved });
   return { ...ticket, jobId: resolved };
@@ -126,6 +132,7 @@ export async function waitForJob(
   options: WaitOptions
 ): Promise<WaitOutcome> {
   const current = await ensureJobId(store, ticket, deps);
+  if (current === 'never-started') return { kind: 'never-started' };
   if (!current?.jobId) return { kind: 'unresolved' };
   const jobId = current.jobId;
 

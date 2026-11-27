@@ -174,4 +174,30 @@ describe('rdc job wait', () => {
     exit.mockRestore();
     err.mockRestore();
   });
+
+  it('closes a starting ticket renet answers has no job, and says it never started', async () => {
+    store.append('starting', 'inv:hostinger:1', { machine: 'hostinger' });
+    holder.deps = { ...(holder.deps as JobWaitDeps), resolveStarting: async () => null };
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run('wait', 'inv:hostinger:1');
+    expect(follow).not.toHaveBeenCalled();
+    expect(JSON.stringify(out.error.mock.calls)).toContain('never started');
+    expect(store.find('inv:hostinger:1')?.expiredReason).toBe('never-started');
+    exit.mockRestore();
+    err.mockRestore();
+  });
+
+  it('refuses to adopt a request id as a job id, and makes no machine call', async () => {
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run('wait', 'abc:hostinger:1', '-m', 'hostinger');
+    expect(follow).not.toHaveBeenCalled();
+    const messages = JSON.stringify(out.error.mock.calls);
+    expect(messages).toContain('is not a job id');
+    expect(messages).not.toContain('The machine returned');
+    expect(store.find('abc:hostinger:1')).toBeUndefined();
+    exit.mockRestore();
+    err.mockRestore();
+  });
 });

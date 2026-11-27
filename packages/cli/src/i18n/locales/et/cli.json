@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}: töö lõppes, kuid sammud {{steps}} jäid pooleli. rdc job wait viib need lõpuni.",
       "summary": "Halda masina eraldiseisvaid töid",
       "machineRequired": "Selles konfiguratsioonis pole tööle {{jobId}} piletit. Anna valikuga -m <machine> teada, kus see töötab.",
+      "noJobId": "Päringul {{requestId}} masinas {{machine}} pole töö ID-d ({{state}}): selle käivitamist ei kinnitatud kunagi, seega pole masinas tööd, mille kohta küsida. Loobu piletist käsuga: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" ei ole töö ID (renet'i töö ID-d näevad välja nagu j18b2c3d4e5f6a7b8-0123abcd) ja ükski selle konfiguratsiooni pilet seda ei kanna.",
       "ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
       "wait": {
         "descriptionShort": "Jätka töö jälgimist selle pileti alusel, kinnita see ja lõpeta töö väljumiskoodiga",
@@ -1383,6 +1385,7 @@
         "timedOut": "Töö {{jobId}} ootamine lõpetati. See töötab endiselt masinas {{machine}}. Jätka käsuga: rdc job wait {{jobId}}",
         "detached": "Töö {{jobId}} küljest lahti ühendatud. See töötab endiselt masinas {{machine}} ning seda EI tühistatud. Jätka käsuga: rdc job wait {{jobId}}",
         "startingUnresolved": "Tööl {{jobId}} pole veel töö ID-d: selle käivitust ei kinnitatud kunagi ja see renet ei oska seda päringu ID järgi leida.",
+        "neverStarted": "Töö {{jobId}} ei käivitunud kunagi: renet'il masinas {{machine}} pole selle päringu ID-ga tööd. Pilet on suletud.",
         "proxyUnsupported": "Töö {{jobId}} käivitati proksi kaudu ning proksipileti jälgimine pole selles ehituses saadaval.",
         "examples": {
           "basic": "Oota töö lõppu ja lõpeta selle väljumiskoodiga."

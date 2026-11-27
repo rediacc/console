@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}: Der Job ist beendet, aber die Schritte {{steps}} sind es nicht. rdc job wait schließt sie ab.",
       "summary": "Entkoppelte Jobs auf einem Rechner verwalten",
       "machineRequired": "Für Job {{jobId}} gibt es in dieser Konfiguration kein Ticket. Mit -m <machine> angeben, wo er läuft.",
+      "noJobId": "Request {{requestId}} auf {{machine}} hat keine Job-ID ({{state}}): Sein Start wurde nie bestätigt, daher gibt es auf der Maschine keinen Job, nach dem sich fragen ließe. Ticket verwerfen mit: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" ist keine Job-ID (renet-Job-IDs sehen aus wie j18b2c3d4e5f6a7b8-0123abcd), und kein Ticket in dieser Konfiguration trägt sie.",
       "ticketMachineOption": "Name der Zielmaschine (optional, wenn diese Konfiguration ein Ticket für den Job hält)",
       "wait": {
         "descriptionShort": "Einen Job anhand seines Tickets weiterverfolgen, ihn dann quittieren und mit dem Exit-Code des Jobs beenden",
@@ -1383,6 +1385,7 @@
         "timedOut": "Das Warten auf Job {{jobId}} wurde beendet. Er läuft weiterhin auf {{machine}}. Fortsetzen mit: rdc job wait {{jobId}}",
         "detached": "Vom Job {{jobId}} getrennt. Er läuft weiterhin auf {{machine}} und wurde NICHT abgebrochen. Fortsetzen mit: rdc job wait {{jobId}}",
         "startingUnresolved": "Job {{jobId}} hat noch keine Job-ID: Sein Start wurde nie bestätigt, und dieses renet kann ihn nicht über die Request-ID nachschlagen.",
+        "neverStarted": "Job {{jobId}} wurde nie gestartet: renet auf {{machine}} hat keinen Job zu seiner Request-ID. Das Ticket ist geschlossen.",
         "proxyUnsupported": "Job {{jobId}} wurde über den Proxy gestartet, und das Verfolgen eines Proxy-Tickets ist in diesem Build nicht verfügbar.",
         "examples": {
           "basic": "Auf das Ende eines Jobs warten und mit dessen Exit-Code beenden."

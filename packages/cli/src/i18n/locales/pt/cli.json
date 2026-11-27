@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}: o job terminou, mas as etapas {{steps}} não. O rdc job wait conclui essas etapas.",
       "summary": "Gerencia jobs desanexados em uma máquina",
       "machineRequired": "Não há ticket do job {{jobId}} nesta configuração. Indique com -m <machine> onde ele é executado.",
+      "noJobId": "A solicitação {{requestId}} em {{machine}} não tem id de job ({{state}}): o início nunca foi confirmado, então a máquina não tem job algum para consultar. Descarte o ticket com: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" não é um id de job (os ids de job do renet têm esta forma: j18b2c3d4e5f6a7b8-0123abcd), e nenhum ticket desta configuração o contém.",
       "ticketMachineOption": "Nome da máquina de destino (opcional quando esta configuração guarda um ticket do job)",
       "wait": {
         "descriptionShort": "Retoma o acompanhamento de um job a partir do ticket, depois o confirma e sai com o código de saída do job",
@@ -1383,6 +1385,7 @@
         "timedOut": "A espera pelo job {{jobId}} foi interrompida. Ele continua em execução em {{machine}}. Retome com: rdc job wait {{jobId}}",
         "detached": "Desconectado do job {{jobId}}. Ele continua em execução em {{machine}} e NÃO foi cancelado. Retome com: rdc job wait {{jobId}}",
         "startingUnresolved": "O job {{jobId}} ainda não tem ID: o início dele nunca foi confirmado e este renet não consegue localizá-lo pelo ID da requisição.",
+        "neverStarted": "O job {{jobId}} nunca começou: o renet em {{machine}} não tem job para o id da solicitação. O ticket foi fechado.",
         "proxyUnsupported": "O job {{jobId}} foi iniciado pelo proxy, e acompanhar um ticket do proxy não está disponível nesta versão.",
         "examples": {
           "basic": "Esperar um job terminar e sair com o código de saída dele."

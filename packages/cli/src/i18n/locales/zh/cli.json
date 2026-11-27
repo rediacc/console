@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}：作业已结束，但步骤 {{steps}} 未完成。可用 rdc job wait 完成这些步骤。",
       "summary": "管理机器上的分离任务",
       "machineRequired": "此配置中没有任务 {{jobId}} 的凭据。请用 -m <machine> 指明它运行在哪台机器上。",
+      "noJobId": "{{machine}} 上的请求 {{requestId}} 没有作业 ID（{{state}}）：其启动从未得到确认，因此机器上没有可查询的作业。丢弃该票据：rdc job dismiss {{requestId}}",
+      "notAJobId": "“{{value}}”不是作业 ID（renet 作业 ID 形如 j18b2c3d4e5f6a7b8-0123abcd），此配置中也没有票据带有它。",
       "ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
       "wait": {
         "descriptionShort": "凭票据继续跟踪作业，随后确认并以作业的退出码退出",
@@ -1383,6 +1385,7 @@
         "timedOut": "已停止等待任务 {{jobId}}。它仍在 {{machine}} 上运行。继续等待请执行:rdc job wait {{jobId}}",
         "detached": "已与任务 {{jobId}} 断开。它仍在 {{machine}} 上运行,并且没有被取消。继续等待请执行:rdc job wait {{jobId}}",
         "startingUnresolved": "任务 {{jobId}} 还没有任务 ID:它的启动从未得到确认,而此 renet 无法按请求 ID 查找。",
+        "neverStarted": "作业 {{jobId}} 从未启动：{{machine}} 上的 renet 没有对应其请求 ID 的作业。票据已关闭。",
         "proxyUnsupported": "任务 {{jobId}} 是通过代理启动的,当前版本不支持跟踪代理凭据。",
         "examples": {
           "basic": "等待任务结束,并以其退出码退出。"

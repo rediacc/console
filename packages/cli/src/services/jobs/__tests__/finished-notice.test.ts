@@ -214,4 +214,21 @@ describe('stale tickets', () => {
       expect.stringContaining('older than 7 days'),
     ]);
   });
+
+  // A scripted run (non-TTY, so JSON) only ever takes pending-only, which makes no machine call: a start that never confirmed a job id used to reach the age expiry only through the machine check, so it stayed in `rdc job list` for good.
+  it('pending-only ages out a starting ticket that never got a job id, without a machine call', async () => {
+    addStarting('s', T0);
+    addStarting('young', T0 + 7 * DAY);
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo up',
+      quiet: false,
+      format: 'json',
+      inExecutorRequest: false,
+    });
+    await finishNotice(() => ({ store, write, now: () => T0 + 8 * DAY }));
+    expect(store.find('r-s')?.expiredReason).toBe('age');
+    expect(store.find('r-young')?.expiredReason).toBeUndefined();
+    expect(store.pending().map((tk) => tk.requestId)).toEqual(['r-young']);
+  });
 });

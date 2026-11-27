@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}} : le job est terminé, mais les étapes {{steps}} ne le sont pas. rdc job wait les termine.",
       "summary": "Gérer les jobs détachés sur une machine",
       "machineRequired": "Aucun ticket pour le job {{jobId}} dans cette configuration. Indiquez avec -m <machine> où il s'exécute.",
+      "noJobId": "La requête {{requestId}} sur {{machine}} n'a pas d'identifiant de job ({{state}}) : son démarrage n'a jamais été confirmé, la machine n'a donc aucun job à interroger. Abandonnez le ticket avec : rdc job dismiss {{requestId}}",
+      "notAJobId": "« {{value}} » n'est pas un identifiant de job (ceux de renet ressemblent à j18b2c3d4e5f6a7b8-0123abcd), et aucun ticket de cette configuration ne le porte.",
       "ticketMachineOption": "Nom de la machine cible (facultatif quand cette configuration détient un ticket pour le job)",
       "wait": {
         "descriptionShort": "Reprendre le suivi d'un job à partir de son ticket, puis l'acquitter et quitter avec le code de sortie du job",
@@ -1383,6 +1385,7 @@
         "timedOut": "Attente du job {{jobId}} interrompue. Il s'exécute toujours sur {{machine}}. Reprise avec : rdc job wait {{jobId}}",
         "detached": "Détaché du job {{jobId}}. Il s'exécute toujours sur {{machine}} et n'a PAS été annulé. Reprise avec : rdc job wait {{jobId}}",
         "startingUnresolved": "Le job {{jobId}} n'a pas encore d'identifiant : son démarrage n'a jamais été confirmé, et ce renet ne sait pas le retrouver par identifiant de requête.",
+        "neverStarted": "Le job {{jobId}} n'a jamais démarré : renet sur {{machine}} n'a aucun job pour son identifiant de requête. Le ticket est clos.",
         "proxyUnsupported": "Le job {{jobId}} a été démarré via le proxy, et le suivi d'un ticket proxy n'est pas disponible dans cette version.",
         "examples": {
           "basic": "Attendre la fin d'un job et quitter avec son code de sortie."

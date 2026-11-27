@@ -244,21 +244,27 @@ export async function runJobExecution(
   // Written BEFORE the start (section 16): a start whose answer is lost is still found later through its request id.
   run.ticket.append('starting', { startedAt: new Date(run.startedAt).toISOString() });
 
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   try {
-    const params = await launchParams(remoteRenetPath, options, run.requestId);
-    const window = options.attachWindowMs;
-    const launch = buildJobStartCommand({
-      ...params,
-      ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
-    });
-    const discardFirst = forcedStartRetryArmed() ? buildJobStartCommand(params) : undefined;
-    const outcome = await run.start(lease, launch, vault, discardFirst);
-    const result = await run.settle(outcome, lease, remoteRenetPath);
-    run.annotateSpan(outcome, result);
-    return result;
-  } finally {
-    lease.release();
+    const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+    try {
+      const params = await launchParams(remoteRenetPath, options, run.requestId);
+      const window = options.attachWindowMs;
+      const launch = buildJobStartCommand({
+        ...params,
+        ...(window === 0 ? {} : { attach: attachFlagValue(window) }),
+      });
+      const discardFirst = forcedStartRetryArmed() ? buildJobStartCommand(params) : undefined;
+      const outcome = await run.start(lease, launch, vault, discardFirst);
+      const result = await run.settle(outcome, lease, remoteRenetPath);
+      run.annotateSpan(outcome, result);
+      return result;
+    } finally {
+      lease.release();
+    }
+  } catch (error) {
+    // A call that failed before any `job start` reached the machine (unreachable host, a refused key, a vault that would not build) provably made no job. Its ticket used to stay `starting` for the week the age expiry takes, listed by `rdc job list` under its request id (hostinger unreachable from eu-bench, 2026-11-27).
+    if (!run.startSent) run.ticket.append('expired', { reason: 'never-started' });
+    throw error;
   }
 }
 
@@ -272,6 +278,8 @@ class JobRun {
   readonly ticket: CallTicket;
   readonly state: AttachState = { lines: 0, overlaps: [], deduped: false };
   readonly collector = createJobOutputCollector();
+  /** Whether any `job start` exec was issued: until then the call provably made no job. */
+  startSent = false as boolean;
   private readonly render: ((event: RenetEvent, line?: number) => void) | undefined;
 
   constructor(readonly options: ExecuteOptions) {
@@ -334,8 +342,12 @@ class JobRun {
       let outcome: StartOutcome;
       if (!sftp) outcome = { kind: 'dropped', error: new Error('connection lost') };
       else if (attempt === 0 && discardFirst) {
+        this.startSent = true;
         outcome = await this.discardedStart(sftp, discardFirst, vault);
-      } else outcome = await startOnce(sftp, launch, vault, this);
+      } else {
+        this.startSent = true;
+        outcome = await startOnce(sftp, launch, vault, this);
+      }
       if (outcome.kind !== 'dropped' || this.state.jobId) return outcome;
       firstDrop ??= timing.now();
       if (timing.now() - firstDrop >= timing.budgetMs) return outcome;
@@ -400,6 +412,8 @@ class JobRun {
       case 'trailer':
         return this.fromTrailer();
       case 'dropped':
+        // No attempt ever got a session to send the start on: no job exists, so there is no ticket to hand back (runJobExecution expires it).
+        if (!this.startSent) throw outcome.error;
         // A finite window hands back the ticket; an unlimited one reattaches from the last line received.
         if (this.window !== undefined || !this.state.jobId) return this.pending();
         return this.reattach(lease, remoteRenetPath, this.state.jobId);

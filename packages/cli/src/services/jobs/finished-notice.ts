@@ -188,15 +188,24 @@ export async function checkPendingTickets(deps: NoticeDeps): Promise<void> {
   }
 }
 
+/** A finished ticket that owes something, or a start that never confirmed a job id. */
+function expiresByAge(ticket: Ticket): boolean {
+  if (ticket.jobId) return isTerminalTicketState(ticket.state);
+  return ticket.state === 'starting';
+}
+
 /**
- * Give up on finished tickets that owe something for over a week. No machine call, so it runs in
- * `pending-only` mode too. Never rejects.
+ * Give up on tickets nothing resolved in a week: finished ones that owe something, and starts
+ * that never confirmed a job id. No machine call, so it runs in `pending-only` mode too, which is
+ * the only mode a scripted (non-TTY, so JSON) run ever takes: a starting ticket whose machine
+ * could not be asked used to reach the age expiry only through the machine check, which such a
+ * run never makes, so it stayed in `rdc job list` for good. Never rejects.
  */
 function expireOldTickets(deps: Pick<NoticeDeps, 'store' | 'write' | 'now'>): void {
   try {
     const now = (deps.now ?? Date.now)();
     for (const ticket of deps.store.pending()) {
-      if (!(ticket.jobId && isTerminalTicketState(ticket.state))) continue;
+      if (!expiresByAge(ticket)) continue;
       if ((ageMs(ticket, now) ?? 0) >= TICKET_EXPIRE_AFTER_MS) expire(deps, ticket, 'age');
     }
   } catch {

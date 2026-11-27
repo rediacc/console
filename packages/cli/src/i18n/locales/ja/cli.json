@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}: ジョブは終了しましたが、ステップ {{steps}} は完了していません。rdc job wait で完了させられます。",
       "summary": "マシン上のデタッチジョブを管理",
       "machineRequired": "この設定にはジョブ {{jobId}} のチケットがありません。実行場所を -m <machine> で指定してください。",
+      "noJobId": "{{machine}} 上のリクエスト {{requestId}} にはジョブ ID がありません ({{state}})。開始が確認されなかったため、マシンに問い合わせるジョブがありません。チケットを破棄するには: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" はジョブ ID ではありません (renet のジョブ ID は j18b2c3d4e5f6a7b8-0123abcd の形式です)。また、この設定のどのチケットもこの値を持っていません。",
       "ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
       "wait": {
         "descriptionShort": "チケットからジョブの追跡を再開し、確認応答したうえでジョブの終了コードで終了する",
@@ -1383,6 +1385,7 @@
         "timedOut": "ジョブ {{jobId}} の待機を中止しました。{{machine}} 上で引き続き実行中です。再開するには: rdc job wait {{jobId}}",
         "detached": "ジョブ {{jobId}} からデタッチしました。ジョブは {{machine}} 上で引き続き実行中であり、キャンセルはされていません。再開するには: rdc job wait {{jobId}}",
         "startingUnresolved": "ジョブ {{jobId}} にはまだジョブ ID がありません。開始が確認されておらず、この renet はリクエスト ID から検索できません。",
+        "neverStarted": "ジョブ {{jobId}} は開始されませんでした。{{machine}} の renet にはこのリクエスト ID のジョブがありません。チケットは閉じられました。",
         "proxyUnsupported": "ジョブ {{jobId}} はプロキシ経由で開始されました。プロキシのチケットの追跡は、このビルドでは利用できません。",
         "examples": {
           "basic": "ジョブの完了を待ち、そのジョブの終了コードで終了する。"

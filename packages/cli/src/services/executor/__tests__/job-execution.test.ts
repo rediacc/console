@@ -22,6 +22,7 @@ import type { RenetEvent } from '../types.js';
 
 const {
   mockExecStreaming,
+  mockConnect,
   mockGetLocalConfig,
   mockGetLocalMachine,
   mockListStorages,
@@ -29,6 +30,7 @@ const {
   mockGetRepository,
 } = vi.hoisted(() => ({
   mockExecStreaming: vi.fn(),
+  mockConnect: vi.fn(),
   mockGetLocalConfig: vi.fn(),
   mockGetLocalMachine: vi.fn(),
   mockListStorages: vi.fn(),
@@ -38,11 +40,11 @@ const {
 
 vi.mock('../../../remote/sftp/index.js', () => ({
   SFTPClient: class MockSFTPClient {
-    connect = vi.fn();
+    connect = mockConnect;
     close = vi.fn();
     exec = vi.fn();
     execStreaming = mockExecStreaming;
-    isConnected = () => true;
+    isConnected = () => connection.alive;
   },
 }));
 
@@ -80,7 +82,10 @@ vi.mock('../../renet/renet-execution.js', () => ({
   getLocalRenetPath: vi.fn(),
 }));
 
+const connection = vi.hoisted(() => ({ alive: true }));
+
 const { localExecutorService } = await import('../local-executor.js');
+const { runJobExecution } = await import('../detached-execution.js');
 
 const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
 const OTHER_JOB = 'j18c1994eaa33d30e-0badcafe';
@@ -144,6 +149,8 @@ const stderrWrites: string[] = [];
 beforeEach(() => {
   vi.clearAllMocks();
   mockExecStreaming.mockReset();
+  mockConnect.mockReset();
+  connection.alive = true;
   process.env.REDIACC_TELEMETRY_DISABLED = '1';
   process.env.REDIACC_CONFIG = `jobexec${++configSeq}`;
   resetInvocationMinter('inv-1');
@@ -345,6 +352,77 @@ describe('no double execution', () => {
     const [ticket] = store().pending();
     expect(ticket).toMatchObject({ jobId: JOB_ID, lastSeenLine: 1, state: 'running' });
     expect(stderrWrites.join('')).toContain(`rdc job wait ${JOB_ID}`);
+  });
+});
+
+describe('a call that never sent its start', () => {
+  // hostinger unreachable from eu-bench (2026-11-27): a session that died before the start was sent, and never came back, returned a `running` result with no job id, so the ticket stayed `starting` and `rdc job list` showed its request id for up to a week.
+  it('fails, and closes the ticket as never-started, when no session ever carried the start', async () => {
+    let clock = 0;
+    setJobExecutionTiming({
+      now: () => clock,
+      sleep: (ms) => {
+        clock += ms;
+        return Promise.resolve();
+      },
+      budgetMs: 10_000,
+    });
+    // The executor's own connect succeeds; the session is dead by the time the start would go out, and every reconnect times out.
+    mockConnect.mockImplementationOnce(() => {
+      connection.alive = false;
+      return Promise.resolve();
+    });
+    mockConnect.mockRejectedValue(new Error('connect ETIMEDOUT 203.0.113.7:22'));
+
+    const result = await run({ attachWindowMs: 20_000 });
+
+    expect(result).toMatchObject({ success: false });
+    expect(result.state).toBeUndefined();
+    expect(commands()).toEqual([]);
+    expect(store().pending()).toEqual([]);
+    expect(store().find('inv-1:hostinger:1')?.expiredReason).toBe('never-started');
+  });
+
+  it('closes the ticket as never-started when its own connect fails', async () => {
+    mockConnect.mockRejectedValue(new Error('connect ETIMEDOUT 203.0.113.7:22'));
+    const machine = { machineName: 'hostinger', ip: '203.0.113.7', user: 'root', port: 22 };
+
+    await expect(
+      runJobExecution(
+        '/usr/bin/renet',
+        '{}',
+        {
+          functionName: 'repository_up',
+          machineName: 'hostinger',
+          params: {},
+          requestId: 'inv-1:hostinger:9',
+        },
+        machine as Parameters<typeof runJobExecution>[3],
+        'PRIVATE_KEY'
+      )
+    ).rejects.toThrow(/ETIMEDOUT/);
+
+    expect(commands()).toEqual([]);
+    expect(store().find('inv-1:hostinger:9')?.expiredReason).toBe('never-started');
+  });
+
+  it('control: a start that was sent and then lost keeps its ticket for the request-id lookup', async () => {
+    let clock = 0;
+    setJobExecutionTiming({
+      now: () => clock,
+      sleep: (ms) => {
+        clock += ms;
+        return Promise.resolve();
+      },
+      budgetMs: 10_000,
+    });
+    mockExecStreaming.mockImplementation(drop());
+
+    await run({ attachWindowMs: 20_000 });
+
+    const [ticket] = store().pending();
+    expect(ticket).toMatchObject({ requestId: 'inv-1:hostinger:1', state: 'starting' });
+    expect(ticket?.expiredReason).toBeUndefined();
   });
 });
 

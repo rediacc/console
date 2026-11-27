@@ -150,6 +150,73 @@ describe('the optional -m takes the machine from the ticket', () => {
   });
 });
 
+describe('a ticket whose start never confirmed a job id', () => {
+  // `rdc job list` prints such a ticket under its request id; the job commands used to send that id to the machine, which refused it as "The machine returned a job id that renet could not have produced".
+  const REQUEST_ID = '6f1c2b8e-0d4a-4c1e-9a77-1b2c3d4e5f60:hostinger:1';
+
+  function addStarting(): void {
+    store.append('starting', REQUEST_ID, {
+      machine: 'hostinger',
+      verb: 'repo up',
+      startedAt: new Date(Date.now() - 8 * 3_600_000).toISOString(),
+    });
+  }
+
+  function quietly<T>(fn: () => Promise<T>): Promise<T> {
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    const err = vi.spyOn(console, 'error').mockImplementation(() => {});
+    return fn().finally(() => {
+      exit.mockRestore();
+      err.mockRestore();
+    });
+  }
+
+  it('job status answers from the ticket and makes no machine call', async () => {
+    addStarting();
+    await run('status', REQUEST_ID);
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    expect(remote.readJobStatus).not.toHaveBeenCalled();
+    expect(out.print).toHaveBeenCalledWith(
+      expect.objectContaining({ id: REQUEST_ID, state: 'starting', machine: 'hostinger' }),
+      'table'
+    );
+    const warned = String(out.warn.mock.calls[0]?.[0]);
+    expect(warned).toContain('has no job id');
+    expect(warned).toContain(`rdc job dismiss ${REQUEST_ID}`);
+    expect(warned).not.toContain('The machine returned');
+  });
+
+  it('job status shows an expired ticket with its reason', async () => {
+    addStarting();
+    store.append('expired', REQUEST_ID, { reason: 'never-started' });
+    await run('status', REQUEST_ID);
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    expect(out.print).toHaveBeenCalledWith(
+      expect.objectContaining({ state: 'expired:never-started' }),
+      'table'
+    );
+  });
+
+  it('job logs and job cancel refuse with the ticket message and make no machine call', async () => {
+    addStarting();
+    await quietly(() => run('logs', REQUEST_ID));
+    await quietly(() => run('cancel', REQUEST_ID, '-y'));
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    const messages = out.error.mock.calls.map((c) => String(c[0]));
+    expect(messages).toHaveLength(2);
+    for (const m of messages) {
+      expect(m).toContain('has no job id');
+      expect(m).not.toContain('The machine returned');
+    }
+  });
+
+  it('a request id with -m and no ticket is named as not a job id before any machine call', async () => {
+    await quietly(() => run('status', REQUEST_ID, '-m', 'hostinger'));
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    expect(String(out.error.mock.calls[0]?.[0])).toContain('is not a job id');
+  });
+});
+
 describe('job dismiss', () => {
   it('dismisses a ticket by job id locally and hides it from list until --all', async () => {
     addTicket();

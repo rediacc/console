@@ -18,6 +18,7 @@ import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import {
   formatJobDuration,
+  isJobId,
   isTerminalState,
   JobLogCursor,
   type JobStatus,
@@ -84,20 +85,40 @@ async function withJobConnection<T>(
  * spool to read, and says so.
  */
 function resolveJobTarget(
-  jobId: string,
+  requested: string,
   machineOption: string | undefined
 ): { machine: string; jobId: string } {
-  const ticket = openTicketStore().find(jobId);
+  const ticket = openTicketStore().find(requested);
+  if (ticket && !ticket.jobId) throw new Error(joblessTicketMessage(ticket));
+  const jobId = ticket?.jobId ?? requested;
+  // Checked here, before any machine call: a request id typed by hand used to reach the machine and come back as "The machine returned a job id that renet could not have produced".
+  if (!isJobId(jobId)) throw new Error(t('commands.job.notAJobId', { value: requested }));
   const machine = machineOption ?? ticket?.machine;
   if (!machine) throw new Error(t('commands.job.machineRequired', { jobId }));
-  return { machine, jobId: ticket?.jobId ?? jobId };
+  return { machine, jobId };
+}
+
+function ticketStateLabel(ticket: Ticket): string {
+  return ticket.expiredReason ? `expired:${ticket.expiredReason}` : ticket.state;
+}
+
+/**
+ * A ticket whose start never confirmed a job id (`rdc job list` shows its request id): the
+ * machine has no job to ask about, so the answer comes from the ticket alone.
+ */
+function joblessTicketMessage(ticket: Ticket): string {
+  return t('commands.job.noJobId', {
+    requestId: ticket.requestId,
+    machine: ticket.machine ?? '-',
+    state: ticketStateLabel(ticket),
+  });
 }
 
 /** The rows `rdc job list` prints without `-m`: this config's tickets. */
 function toTicketRow(ticket: Ticket) {
   return {
     id: ticket.jobId ?? ticket.requestId,
-    state: ticket.expiredReason ? `expired:${ticket.expiredReason}` : ticket.state,
+    state: ticketStateLabel(ticket),
     verb: ticket.verb ?? ticket.function ?? '-',
     repo: ticket.repo ?? '-',
     machine: ticket.machine ?? '-',
@@ -200,6 +221,13 @@ export function registerJobCommands(program: Command): void {
     .option('-m, --machine <name>', t('commands.job.ticketMachineOption'))
     .action(async (requested: string, options: JobCommandOptions) => {
       try {
+        const ticket = openTicketStore().find(requested);
+        if (ticket && !ticket.jobId) {
+          // No job id was ever confirmed: report the ticket itself and make no machine call.
+          outputService.print(toTicketRow(ticket), getOutputFormat());
+          outputService.warn(joblessTicketMessage(ticket));
+          return;
+        }
         const { machine, jobId } = resolveJobTarget(requested, options.machine);
         const status = await withJobConnection(machine, 'read-only', (conn) =>
           readJobStatus(conn.lease.sftp, conn.remoteRenetPath, jobId, machine)
@@ -336,6 +364,28 @@ async function runJobLogs(jobId: string, options: MachineJobOptions): Promise<vo
   });
 }
 
+/** The ticket `job wait` follows; a job started elsewhere is adopted so the wait leaves a resumable record. */
+function findOrAdoptTicket(
+  store: ReturnType<typeof openTicketStore>,
+  requested: string,
+  machine: string | undefined
+): Ticket {
+  const found = store.find(requested);
+  if (found) return found;
+  // Adopting a non-job id would reach the machine and come back blaming it for the id.
+  if (!isJobId(requested)) throw new Error(t('commands.job.notAJobId', { value: requested }));
+  if (!machine) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
+  store.append('started', `adopted-${requested}`, {
+    jobId: requested,
+    machine,
+    via: { kind: 'ssh' },
+    startedAt: new Date().toISOString(),
+  });
+  const adopted = store.find(requested);
+  if (!adopted) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
+  return adopted;
+}
+
 /**
  * Resume following a ticketed job from its last seen line, then acknowledge it
  * and exit with the job's own exit code. `--timeout` stops the WAIT, not the job.
@@ -347,20 +397,7 @@ async function runJobWait(requested: string, options: JobCommandOptions): Promis
   }
 
   const store = openTicketStore();
-  let ticket = store.find(requested);
-  if (!ticket) {
-    if (!options.machine) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
-    // No ticket (a job started elsewhere): adopt it so the wait leaves a resumable record.
-    store.append('started', `adopted-${requested}`, {
-      jobId: requested,
-      machine: options.machine,
-      via: { kind: 'ssh' },
-      startedAt: new Date().toISOString(),
-    });
-    ticket = store.find(requested);
-  }
-  if (!ticket) throw new Error(t('commands.job.machineRequired', { jobId: requested }));
-
+  const ticket = findOrAdoptTicket(store, requested, options.machine);
   const target = ticket.jobId ?? ticket.requestId;
   const outcome = await waitForJob(store, ticket, sshWaitDeps(renderJobEvent), {
     timeoutMs,
@@ -396,6 +433,8 @@ function reportWaitOutcome(outcome: WaitOutcome, jobId: string, machine: string)
       return;
     case 'unresolved':
       throw new Error(t('commands.job.wait.startingUnresolved', { jobId }));
+    case 'never-started':
+      throw new Error(t('commands.job.wait.neverStarted', { jobId, machine }));
     case 'proxy-unsupported':
       throw new Error(t('commands.job.wait.proxyUnsupported', { jobId }));
   }

@@ -1374,6 +1374,8 @@
       "stepsUnfinished": "{{verb}}: el trabajo terminó, pero los pasos {{steps}} no. rdc job wait los completa.",
       "summary": "Administra trabajos independientes en una máquina",
       "machineRequired": "No hay ningún ticket del trabajo {{jobId}} en esta configuración. Indica con -m <machine> dónde se ejecuta.",
+      "noJobId": "La solicitud {{requestId}} en {{machine}} no tiene id de trabajo ({{state}}): su inicio nunca se confirmó, así que la máquina no tiene ningún trabajo por el que preguntar. Descarta el ticket con: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" no es un id de trabajo (los id de trabajo de renet tienen esta forma: j18b2c3d4e5f6a7b8-0123abcd) y ningún ticket de esta configuración lo lleva.",
       "ticketMachineOption": "Nombre de la máquina de destino (opcional si esta configuración guarda un ticket del trabajo)",
       "wait": {
         "descriptionShort": "Retomar el seguimiento de un trabajo a partir de su ticket, darlo por visto y salir con el código de salida del trabajo",
@@ -1383,6 +1385,7 @@
         "timedOut": "Se dejó de esperar al trabajo {{jobId}}. Sigue ejecutándose en {{machine}}. Retómalo con: rdc job wait {{jobId}}",
         "detached": "Desconectado del trabajo {{jobId}}. Sigue ejecutándose en {{machine}} y NO se canceló. Retómalo con: rdc job wait {{jobId}}",
         "startingUnresolved": "El trabajo {{jobId}} aún no tiene ID de trabajo: su inicio nunca se confirmó y este renet no puede buscarlo por ID de solicitud.",
+        "neverStarted": "El trabajo {{jobId}} nunca arrancó: renet en {{machine}} no tiene ningún trabajo con su id de solicitud. El ticket queda cerrado.",
         "proxyUnsupported": "El trabajo {{jobId}} se inició a través del proxy, y seguir un ticket del proxy no está disponible en esta compilación.",
         "examples": {
           "basic": "Esperar a que un trabajo termine y salir con su código de salida."

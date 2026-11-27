@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3350,
-    "sourceCommit": "038228c5f48538085285611267c22f040b162b6a"
+    "keyCount": 3354,
+    "sourceCommit": "25c84828b3dd9abffea3befe3fd9b9dffe8fba1f"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1103,6 +1103,8 @@
     "commands.job.logs.sinceLineOption": "33fa8437",
     "commands.job.machineOption": "28f9ee95",
     "commands.job.machineRequired": "1792ae17",
+    "commands.job.noJobId": "8338766d",
+    "commands.job.notAJobId": "114bece2",
     "commands.job.notice.cancelled": "929ccd00",
     "commands.job.notice.failed": "ff2717da",
     "commands.job.notice.succeeded": "2fd0cc54",
@@ -1124,6 +1126,7 @@
     "commands.job.wait.detached": "1f2c82b7",
     "commands.job.wait.examples.basic": "2e7e03a1",
     "commands.job.wait.invalidTimeout": "a09ff9de",
+    "commands.job.wait.neverStarted": "c437699a",
     "commands.job.wait.proxyUnsupported": "7a19dc9f",
     "commands.job.wait.startingUnresolved": "575ebea2",
     "commands.job.wait.timedOut": "3a113c25",
@@ -3028,6 +3031,7 @@
     "errors.repo.secret.badMode": "a26faafa",
     "errors.repo.secret.emptyValue": "dfff9148",
     "errors.repo.secret.mutuallyExclusive": "ca687fad",
+    "errors.repo.slugCollision": "afb43245",
     "errors.repoNotDeployed": "fe2bbb15",
     "errors.repositoryAlreadyMounted": "aad3cbfb",
     "errors.repositoryNotFound": "920337ed",

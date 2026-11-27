@@ -62,9 +62,14 @@ export class InvalidJobIdError extends Error {
   }
 }
 
+/** Whether a string has the shape of a renet job id (a request id never does). */
+export function isJobId(id: string): boolean {
+  return JOB_ID_PATTERN.test(id);
+}
+
 /** Validate a job ID before it reaches a shell. Returns it for chaining. */
 export function assertJobId(jobId: string): string {
-  if (!JOB_ID_PATTERN.test(jobId)) {
+  if (!isJobId(jobId)) {
     throw new InvalidJobIdError(jobId);
   }
   return jobId;
