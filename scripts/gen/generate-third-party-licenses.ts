@@ -24,6 +24,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,6 +58,9 @@ interface CreditsData {
   gplWrittenOffer: string;
   components: Credit[];
 }
+
+/** Where `packages/cli/bundle.mjs` writes the esbuild metafile, relative to packages/cli. */
+const META_REL = 'dist/cli-bundle.meta.json';
 
 const RULE = '='.repeat(78);
 const SUBRULE = '-'.repeat(78);
@@ -133,13 +137,15 @@ function goLicensesSection(repoRoot: string): string {
  * time; the release job must regenerate with network so the shipped artifact
  * carries the real Go-dependency license report.
  */
-function placeholderSection(reason: string): string {
-  return [
-    'Renet Go module dependencies: NOT GENERATED IN THIS BUILD.',
-    `Reason: ${reason}`,
-    'Regenerate on a networked build:',
-    '  (cd private/renet && go run github.com/google/go-licenses@latest report ./...)',
-  ].join('\n');
+function placeholderSection(reason: string, what = 'Renet Go module dependencies'): string {
+  const lines = [`${what}: NOT GENERATED IN THIS BUILD.`, `Reason: ${reason}`];
+  if (what === 'Renet Go module dependencies') {
+    lines.push(
+      'Regenerate on a networked build:',
+      '  (cd private/renet && go run github.com/google/go-licenses@latest report ./...)'
+    );
+  }
+  return lines.join('\n');
 }
 
 interface NpmDep {
@@ -162,33 +168,92 @@ function readPkgLicense(dir: string): string {
   return 'UNKNOWN';
 }
 
+/** Package directory of a bundled input path: the last `node_modules/<pkg>` (scoped or not) segment. */
+function bundledPackageDir(inputPath: string): string | null {
+  const marker = 'node_modules/';
+  const at = inputPath.lastIndexOf(marker);
+  if (at < 0) return null;
+  const rest = inputPath.slice(at + marker.length).split('/');
+  const nameParts = rest[0].startsWith('@') ? rest.slice(0, 2) : rest.slice(0, 1);
+  if (nameParts.length === 0 || nameParts.some((p) => !p)) return null;
+  return inputPath.slice(0, at + marker.length) + nameParts.join('/');
+}
+
+/**
+ * The npm packages the rdc bundle really contains: every `node_modules/<pkg>` input of the esbuild
+ * metafile `bundle.mjs` writes, with version and licence read from that package's own package.json.
+ */
 function npmDepsSection(repoRoot: string): string {
-  const lockPath = path.join(repoRoot, 'package-lock.json');
-  let lock: { packages?: Record<string, { version?: string; dev?: boolean; license?: string }> };
+  const metaPath = path.join(repoRoot, 'packages/cli', META_REL);
+  let inputs: string[];
   try {
-    lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')) as {
+      inputs?: Record<string, unknown>;
+    };
+    inputs = Object.keys(meta.inputs ?? {});
   } catch {
-    return placeholderSection('package-lock.json could not be read.');
+    return placeholderSection(
+      `${META_REL} could not be read (run \`node bundle.mjs\` in packages/cli first).`,
+      'CLI npm dependencies'
+    );
   }
-  const packages = lock.packages ?? {};
+  const dirs = new Set<string>();
+  for (const input of inputs) {
+    const dir = bundledPackageDir(input);
+    if (dir) dirs.add(dir);
+  }
   const deps = new Map<string, NpmDep>();
-  for (const [p, meta] of Object.entries(packages)) {
-    if (!p.includes('node_modules/')) continue; // skip workspace roots
-    if (meta.dev) continue; // production deps only
-    const name = p.slice(p.lastIndexOf('node_modules/') + 'node_modules/'.length);
-    const version = meta.version ?? '';
-    const license = meta.license ?? readPkgLicense(path.join(repoRoot, p));
-    deps.set(`${name}@${version}`, { name, version, license });
+  for (const dir of dirs) {
+    const abs = path.resolve(repoRoot, 'packages/cli', dir);
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(abs, 'package.json'), 'utf-8')) as {
+        name?: string;
+        version?: string;
+      };
+      const name = pkg.name ?? dir.slice(dir.lastIndexOf('node_modules/') + 'node_modules/'.length);
+      const version = pkg.version ?? '';
+      deps.set(`${name}@${version}`, { name, version, license: readPkgLicense(abs) });
+    } catch {
+      // an input whose package.json is unreadable is not listed; the count below still guards emptiness
+    }
   }
   const rows = [...deps.values()]
     .sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version))
     .map((d) => `  ${d.name}@${d.version}  [${d.license}]`);
-  if (rows.length === 0) return placeholderSection('no production npm dependencies found.');
-  return [
-    'Bundled npm dependencies (production; hoisted from package-lock.json):',
-    '',
-    ...rows,
-  ].join('\n');
+  if (rows.length === 0) {
+    return placeholderSection(
+      'the bundle metafile lists no node_modules inputs.',
+      'CLI npm dependencies'
+    );
+  }
+  return [`Bundled npm dependencies (from ${META_REL}):`, '', ...rows].join('\n');
+}
+
+/**
+ * The LICENSE of the exact Node.js release that builds the SEA (the runtime embedded in rdc),
+ * fetched from the tagged source at build time; the output records its sha256.
+ */
+async function nodeLicenseSection(): Promise<string> {
+  const version = process.version;
+  const url = `https://raw.githubusercontent.com/nodejs/node/${version}/LICENSE`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const digest = createHash('sha256').update(text).digest('hex');
+    return [
+      `Node.js ${version} (runtime embedded in rdc)`,
+      `  Source: ${url}`,
+      `  sha256: ${digest}`,
+      '',
+      text.trimEnd(),
+    ].join('\n');
+  } catch (err) {
+    return placeholderSection(
+      `the Node.js ${version} LICENSE could not be fetched from ${url}: ${(err as Error).message}`,
+      'Node.js runtime LICENSE'
+    );
+  }
 }
 
 function licenseTextsAppendix(repoRoot: string, spdxIds: string[]): string {
@@ -210,7 +275,7 @@ function licenseTextsAppendix(repoRoot: string, spdxIds: string[]): string {
   return blocks.join('\n\n');
 }
 
-function build(repoRoot: string): string {
+async function build(repoRoot: string): Promise<string> {
   const credits = loadCredits(repoRoot);
   const embedded = credits.components.filter((c) => c.kind === 'embedded-binary');
   const rest = credits.components.filter((c) => c.kind !== 'embedded-binary');
@@ -269,6 +334,13 @@ function build(repoRoot: string): string {
 
   parts.push('');
   parts.push(RULE);
+  parts.push('NODE.JS RUNTIME LICENSE');
+  parts.push(RULE);
+  parts.push('');
+  parts.push(await nodeLicenseSection());
+
+  parts.push('');
+  parts.push(RULE);
   parts.push('LICENSE TEXTS');
   parts.push(RULE);
   parts.push('');
@@ -278,11 +350,11 @@ function build(repoRoot: string): string {
   return parts.join('\n');
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const { output, repoRoot } = parseArgs();
   let content: string;
   try {
-    content = build(repoRoot);
+    content = await build(repoRoot);
   } catch (err) {
     console.error(`generate-third-party-licenses: FATAL ${(err as Error).message}`);
     process.exit(1);
@@ -292,4 +364,4 @@ function main(): void {
   console.log(`THIRD_PARTY_LICENSES written to ${output} (${content.length} bytes)`);
 }
 
-main();
+await main();
