@@ -22,11 +22,13 @@ CONF_PATH = pathlib.Path("/etc/sysctl.d/60-rediacc-inotify.conf")
 PROC_ROOT = pathlib.Path("/proc/sys")
 
 
-def conf_text() -> str:
+def conf_text(live: dict[str, int | None] | None = None) -> str:
+    """The sysctl.d body. A live value above a floor is kept, so the file never lowers a host an earlier sysctl.d file raised."""
     lines = [
         "# Written by ./run.sh setup: the dev host runs out of inotify instances at the kernel default (128)."
     ]
-    lines += ["%s = %d" % (key, value) for key, value in FLOORS.items()]
+    live = live or {}
+    lines += ["%s = %d" % (key, max(value, live.get(key) or 0)) for key, value in FLOORS.items()]
     return "\n".join(lines) + "\n"
 
 
@@ -79,7 +81,7 @@ def ensure(
     """Write the sysctl.d file and apply it. Always 0; a failure is warned with the command to run."""
     if all(v is None for v in current(proc_root).values()):
         return 0
-    want = conf_text()
+    want = conf_text(current(proc_root))
     try:
         file_ok = conf.read_text(encoding="utf-8") == want
     except OSError:
@@ -95,14 +97,16 @@ def ensure(
             ctx.say(fix_command())
             return 0
         ctx.info("wrote %s" % conf)
-    if below_floor(proc_root):
+    low = below_floor(proc_root)
+    if low:
+        # Only the keys under their floor: `sysctl -w` of a floor would LOWER a value that is already higher.
         applied = ctx.run(
-            [*sudo, "sysctl", "-w", *["%s=%d" % kv for kv in FLOORS.items()]], timeout=60
+            [*sudo, "sysctl", "-w", *["%s=%d" % (key, FLOORS[key]) for key in low]], timeout=60
         )
         if applied.rc != 0:
             ctx.warn("could not apply the limits: %s" % applied.err.strip())
             ctx.say(fix_command())
             return 0
-        ctx.info("applied: %s" % ", ".join("%s=%d" % kv for kv in FLOORS.items()))
+        ctx.info("applied: %s" % ", ".join("%s=%d" % (key, FLOORS[key]) for key in low))
     ctx.say()
     return 0

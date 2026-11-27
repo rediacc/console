@@ -11,8 +11,9 @@ from rediacc_ci.setup.ctx import Ctx, Result
 class FakeCtx(Ctx):
     """A Ctx whose commands are recorded and whose `tee` and `sysctl -w` act on tmp paths."""
 
-    def __init__(self, proc: pathlib.Path):
+    def __init__(self, proc: pathlib.Path, fail: str | None = None):
         super().__init__(root=proc)
+        self.fail = fail
         self.proc = proc
         self.calls: list[list[str]] = []
         self.said: list[str] = []
@@ -32,6 +33,8 @@ class FakeCtx(Ctx):
     def run(self, argv, *, timeout=None, stdin_text=None):
         del timeout
         self.calls.append(list(argv))
+        if self.fail and self.fail in argv:
+            return Result(1, "", "sudo: a password is required")
         if "tee" in argv:
             pathlib.Path(argv[-1]).write_text(stdin_text or "", encoding="utf-8")
         if "sysctl" in argv:
@@ -100,3 +103,42 @@ def test_unreadable_proc_is_skipped(tmp_path):
     assert inotify.ensure(ctx, tmp_path / "missing", tmp_path / "conf") == 0
     assert ctx.calls == []
     assert inotify.check_row(tmp_path / "missing", tmp_path / "conf")[1] is False
+
+
+def test_at_floor_without_conf_is_not_pending(tmp_path):
+    proc = _proc(tmp_path, 1024, 524288)
+    row, pending = inotify.check_row(proc, tmp_path / "absent")
+    assert pending is False
+    assert "at the floor, not persisted" in row
+
+
+def test_tee_failure_warns_and_stays_zero(tmp_path):
+    proc = _proc(tmp_path, 128, 524288)
+    conf = tmp_path / "conf"
+    ctx = FakeCtx(proc, fail="tee")
+    assert inotify.ensure(ctx, proc, conf) == 0
+    assert any(m.startswith("WARN could not write") for m in ctx.said)
+    assert inotify.fix_command() in ctx.said
+    assert not any("sysctl" in call for call in ctx.calls)
+    assert not conf.exists()
+
+
+def test_sysctl_failure_warns_and_stays_zero(tmp_path):
+    proc = _proc(tmp_path, 128, 524288)
+    ctx = FakeCtx(proc, fail="sysctl")
+    assert inotify.ensure(ctx, proc, tmp_path / "conf") == 0
+    assert any(m.startswith("WARN could not apply") for m in ctx.said)
+    assert inotify.fix_command() in ctx.said
+    assert inotify.below_floor(proc) == {"fs.inotify.max_user_instances": 128}
+
+
+def test_conf_keeps_a_higher_live_value(tmp_path):
+    proc = _proc(tmp_path, 4096, 1000)
+    conf = tmp_path / "conf"
+    inotify.ensure(FakeCtx(proc), proc, conf)
+    text = conf.read_text()
+    assert "fs.inotify.max_user_instances = 4096" in text
+    assert "fs.inotify.max_user_watches = 524288" in text
+    again = FakeCtx(proc)
+    inotify.ensure(again, proc, conf)
+    assert again.calls == []

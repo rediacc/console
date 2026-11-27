@@ -3415,8 +3415,16 @@ async function selftest(): Promise<number> {
     fs.rmSync(hungPidFile, { force: true });
     await new Promise((r) => setTimeout(r, 100));
     // `tail -f` dies at once when the host's inotify instances are exhausted, which reads as "the timer did not fire". Name the cause: the fix is a sysctl, not the timer (`./run.sh setup --check` reports the floor).
+    // CONTROL for the matcher: it must fire on the real kernel text and stay quiet on the timer's own message, or the refusal below is unproven.
+    const inotifyRe = /file watch limit reached|inotify/i;
     require_(
-      !/file watch limit reached|inotify/i.test(hung.stderr),
+      inotifyRe.test('tail: OS file watch limit reached') &&
+        inotifyRe.test('tail: inotify cannot be used, reverting to polling: Too many open files') &&
+        !inotifyRe.test('selftest:hung TIMED OUT after 300ms'),
+      "the host-inotify matcher must match tail's limit messages and not the kill-timer message"
+    );
+    require_(
+      !inotifyRe.test(hung.stderr),
       `host inotify limit: \`tail -f\` failed with "${hung.stderr.trim().split('\n')[0]}" (fs.inotify.max_user_instances exhausted), so the kill-timer control cannot run; raise it with: sudo sysctl -w fs.inotify.max_user_instances=1024 fs.inotify.max_user_watches=524288 (./run.sh setup writes /etc/sysctl.d/60-rediacc-inotify.conf)`
     );
     require_(
