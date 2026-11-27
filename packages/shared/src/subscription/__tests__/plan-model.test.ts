@@ -102,6 +102,8 @@ describe('R5: users and original repositories', () => {
     expect(getPlanBaseLimits('PROFESSIONAL').maxRepositories).toBe(100);
     expect(getPlanBaseLimits('BUSINESS').maxRepositories).toBe(250);
     expect(getPlanBaseLimits('ENTERPRISE').maxRepositories).toBeNull();
+    expect(getPlanBaseLimits('FREE').maxRepositories).toBe(1);
+    expect(getPlanBaseLimits('COMMUNITY').maxRepositories).toBe(5);
     expect(getPerLicenceDimensions('PROFESSIONAL')).toContain('maxRepositories');
     expect(getPerLicenceDimensions('BUSINESS')).toContain('maxRepositories');
   });
@@ -127,7 +129,9 @@ describe('R6: setups and hosted R2', () => {
     expect(free.maxRepoLicenseIssuancesPerMonth).toBe(500);
     expect(free.storageQuotaBytes).toBe(25 * GIB);
     expect(FREE_PROFESSIONAL_LIMITS.storageQuotaBytes).toBe(25 * GIB);
-    expect(free.maxRepositorySizeGb).toBe(PLAN_LIMITS.PROFESSIONAL.maxRepositorySizeGb);
+    expect(free.maxRepositorySizeGb).toBe(100);
+    expect(free.forensicsQuotaBytes).toBe(6710886400);
+    expect(free.forensicsQuotaBytes).toBe(free.storageQuotaBytes / 4);
     expect(getPerLicenceDimensions('PROFESSIONAL', 'free-eligible')).toEqual([]);
   });
 

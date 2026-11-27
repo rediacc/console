@@ -131,7 +131,7 @@ Default limits are:
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Users | Repositories | CPUs per machine | Hosted R2 | Price per licence | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| Registered (free) | 1 | 10 GB | 100 | 1 | Unlimited | 16 | None | Free | 15d / 30d |
+| Registered (free) | 1 | 10 GB | 100 | 1 | 5 | 16 | None | Free | 15d / 30d |
 | Free Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Free | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 per licence | 32 | 100 GiB per licence | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Unlimited | 250 per licence | 64 | 500 GiB per licence | $67 / $700 | 90d / 180d |

@@ -895,7 +895,7 @@
           "community": {
             "jobsPerMonth": "100",
             "repoSize": "10 GB",
-            "repositories": "Unlimited",
+            "repositories": "5",
             "floatingLicenses": "1",
             "usersTeams": "Unlimited"
           },

@@ -611,11 +611,12 @@ export const PLAN_PRICING: Record<PlanCode, PlanPricing> = {
 // Kept beside PLAN_LIMITS rather than inside it, for the reason PLAN_BACKUP_RETENTION is: PLAN_LIMITS is the flat number map the generated subscription schema hands renet's schema test as `map[string]map[string]int`, which takes neither a null (unlimited) nor a string (pricing basis) nor a key renet does not know.
 
 /**
- * User, repository and CPU caps by plan code, for the 'paid' pricing basis (R4, R5). FREE and COMMUNITY users are 1 (PLAN-pricing-seat-repo-caps.md R1). FREE repositories are 1, the one repository a Free License covers. COMMUNITY repositories have no ruling yet and stay uncapped, as they are today. ENTERPRISE repositories are per quote (the subscription override).
+ * User, repository and CPU caps by plan code, for the 'paid' pricing basis (R4, R5). FREE and COMMUNITY users are 1 (PLAN-pricing-seat-repo-caps.md R1). FREE repositories are 1, the one repository a Free License covers (documented only, see the FREE row). COMMUNITY repositories are 5 (ladder FREE < COMMUNITY < free Professional 25 < paid); an existing COMMUNITY organisation above 5 keeps its repositories running and only a new original is refused (seat-repo-caps SR2/R4). ENTERPRISE repositories are per quote (the subscription override).
  */
 export const PLAN_CAPS: Record<PlanCode, PlanCaps> = {
+  // FREE has no subscription row, so the per-subscription repository cap (PLAN-pricing-seat-repo-caps.md SR2) never applies to it and this 1 is a documented value only. What is enforced is PLAN-free-license.md R8: at most 3 active FREE licences per machine, one per repository GUID. Do not wire SR2 to FREE.
   FREE: { maxUsers: 1, maxRepositories: 1, maxCpusPerMachine: 16 },
-  COMMUNITY: { maxUsers: 1, maxRepositories: null, maxCpusPerMachine: 16 },
+  COMMUNITY: { maxUsers: 1, maxRepositories: 5, maxCpusPerMachine: 16 },
   PROFESSIONAL: { maxUsers: 25, maxRepositories: 100, maxCpusPerMachine: 32 },
   BUSINESS: { maxUsers: null, maxRepositories: 250, maxCpusPerMachine: 64 },
   ENTERPRISE: { maxUsers: null, maxRepositories: null, maxCpusPerMachine: null },
@@ -630,6 +631,8 @@ export type PlanBaseLimits = (typeof PLAN_LIMITS)[PlanCode] & PlanCaps;
 export const FREE_PROFESSIONAL_LIMITS = {
   maxRepoLicenseIssuancesPerMonth: 500,
   storageQuotaBytes: 25 * 1024 ** 3,
+  // A quarter of the 25 GiB hosted storage: 6.25 GiB = 6710886400 bytes. maxRepositorySizeGb stays the PROFESSIONAL 100.
+  forensicsQuotaBytes: (25 * 1024 ** 3) / 4,
   maxUsers: 10,
   maxRepositories: 25,
   maxCpusPerMachine: 16,
