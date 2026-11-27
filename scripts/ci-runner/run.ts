@@ -2080,7 +2080,7 @@ function busyReadVerdict(avg: number, read: number | undefined, what: string): s
 }
 
 /**
- * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads what its own `times` says it averaged (an independent instrument: RUSAGE_CHILDREN, not /proc) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
+ * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads near the average its own two workers report over the same one-second window (each worker's utime+stime read from /proc/<pid>/stat at both ends, so host contention moves the expectation and the reading together) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
  */
 async function busySamplerSelftest(): Promise<string[]> {
   if (process.platform !== 'linux') {
@@ -2117,11 +2117,17 @@ async function busySamplerSelftest(): Promise<string[]> {
     execGate(syntheticSpec(SETSID, probe('setsid ')), opts),
   ]);
   sampler.stop();
-  let clkTck = 100;
+  // The tick rate scales /proc ticks to seconds; a guessed rate would scale the expectation wrong without a word (review 58ffb4eb.2).
+  let clkTck = Number.NaN;
   try {
-    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim()) || 100;
+    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim());
   } catch {
-    /* 100 is the Linux default */
+    clkTck = Number.NaN;
+  }
+  if (!(clkTck > 0)) {
+    return [
+      'busy sampler: getconf CLK_TCK gave no tick rate, so the in-window average cannot be computed',
+    ];
   }
   // The window the script measured, and the cores its workers averaged in it. undefined when the script did not report (it died, or /proc was unreadable).
   const measured = (out: string): { from: number; to: number; avg: number } | undefined => {
