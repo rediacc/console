@@ -12,9 +12,9 @@
  *      (network); a clearly-marked placeholder if that is unavailable.
  *   5. Bundled npm dependencies enumerated from the root package-lock.json
  *      (no new dependency).
- *   6. Verbatim license texts for each SPDX id used, from committed
- *      packages/cli/src/data/third-party-licenses/<id>.txt when present, else the canonical
- *      SPDX URL (offline fallback).
+ *   6. Verbatim license texts for each SPDX id the inventory and both reports name, from the
+ *      committed packages/cli/src/data/third-party-licenses/<id>.txt (SPDX license-list-data,
+ *      byte-exact); an id with no committed text is marked LICENSE TEXT MISSING, never a URL.
  *
  * Usage:
  *   npx tsx scripts/gen/generate-third-party-licenses.ts [--output <path>] [--repo-root <dir>]
@@ -65,18 +65,35 @@ const META_REL = 'dist/cli-bundle.meta.json';
 const RULE = '='.repeat(78);
 const SUBRULE = '-'.repeat(78);
 
-/** Canonical SPDX license-text URLs, for the offline fallback note. */
-const SPDX_URLS: Record<string, string> = {
-  MIT: 'https://spdx.org/licenses/MIT.html',
-  'GPL-2.0-only': 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
-  'GPL-3.0-or-later': 'https://www.gnu.org/licenses/gpl-3.0.txt',
-  'Apache-2.0': 'https://www.apache.org/licenses/LICENSE-2.0.txt',
+/**
+ * The SPDX license-list-data release every committed text under
+ * packages/cli/src/data/third-party-licenses/ was copied from, byte for byte, from
+ * `text/<id>.txt` at this tag. Refresh a text by fetching it at the tag and committing it unchanged.
+ */
+const SPDX_LICENSE_LIST_TAG = 'v3.29.0';
+
+/** Deprecated identifiers the Go report still emits, mapped to the current id that has a committed text. */
+const SPDX_ALIASES: Record<string, string> = {
+  'GPL-2.0': 'GPL-2.0-only',
+  'GPL-3.0': 'GPL-3.0-only',
+  'LGPL-2.1': 'LGPL-2.1-only',
 };
+
+/** Every SPDX id a report row names, collected as the report sections are built. */
+const reportIds = new Set<string>();
+
+/** Records the ids of a licence expression such as `(MIT OR Apache-2.0)`; `UNKNOWN`-style words stay as they are. */
+function noteLicenses(expression: string): void {
+  for (const raw of expression.split(/[()\s]+|\bOR\b|\bAND\b|\bWITH\b/)) {
+    const id = raw.trim();
+    if (!id || id === 'OR' || id === 'AND' || id === 'WITH') continue;
+    reportIds.add(SPDX_ALIASES[id] ?? id);
+  }
+}
 
 /** Candidate committed filenames for an SPDX id's verbatim text. */
 function licenseTextCandidates(spdx: string): string[] {
-  const base = spdx.replace(/-(only|or-later)$/, '');
-  return [`${spdx}.txt`, `${base}.txt`];
+  return [`${SPDX_ALIASES[spdx] ?? spdx}.txt`];
 }
 
 function readCommittedLicenseText(repoRoot: string, spdx: string): string | null {
@@ -121,6 +138,7 @@ function goLicensesSection(repoRoot: string): string {
       .filter((l) => l.trim().length > 0)
       .map((l) => {
         const [mod, url, lic] = l.split(',');
+        noteLicenses(lic ?? 'UNKNOWN');
         return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
       });
     if (rows.length === 0) return placeholderSection('go-licenses produced no rows.');
@@ -264,11 +282,9 @@ function licenseTextsAppendix(repoRoot: string, spdxIds: string[]): string {
     if (text) {
       blocks.push(`${header}\n\n${text.trimEnd()}`);
     } else {
-      const url = SPDX_URLS[spdx] ?? `https://spdx.org/licenses/${spdx}.html`;
       blocks.push(
-        `${header}\n\nFull license text: ${url}\n` +
-          '(Verbatim text is retrievable at the URL above. To bundle it in this file, ' +
-          `commit it to packages/cli/src/data/third-party-licenses/${spdx}.txt.)`
+        `${header}\n\nLICENSE TEXT MISSING for ${spdx}: commit the SPDX license-list-data ${SPDX_LICENSE_LIST_TAG} ` +
+          `text/${spdx}.txt, unchanged, to packages/cli/src/data/third-party-licenses/${spdx}.txt.`
       );
     }
   }
@@ -280,9 +296,9 @@ async function build(repoRoot: string): Promise<string> {
   const embedded = credits.components.filter((c) => c.kind === 'embedded-binary');
   const rest = credits.components.filter((c) => c.kind !== 'embedded-binary');
 
-  const spdxIds = [...new Set(credits.components.map((c) => c.spdx))]
-    .filter((s) => s && s !== 'various')
-    .sort((a, b) => Number(a > b) - Number(a < b));
+  for (const c of credits.components) {
+    if (c.spdx && c.spdx !== 'various') noteLicenses(c.spdx);
+  }
 
   const parts: string[] = [];
   parts.push(RULE);
@@ -344,6 +360,8 @@ async function build(repoRoot: string): Promise<string> {
   parts.push('LICENSE TEXTS');
   parts.push(RULE);
   parts.push('');
+  // The report sections above have run, so reportIds now holds the inventory's ids and both reports' ids.
+  const spdxIds = [...reportIds].sort((a, b) => Number(a > b) - Number(a < b));
   parts.push(licenseTextsAppendix(repoRoot, spdxIds));
   parts.push('');
 
