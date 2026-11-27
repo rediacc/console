@@ -54,6 +54,8 @@ SOFT_REQUIRED = (
     "REVIEW_GATE",
     "PACKAGE_TESTS",
     "STAGE_ARTIFACTS",
+    # The push/schedule/dispatch caller of cd-stage.yml; STAGE_ARTIFACTS is the pull-request one (PLAN-pr-path-ephemeral-credentials D2). Exactly one runs per event, so the other is always skipped.
+    "STAGE_ARTIFACTS_RELEASE",
     "LABEL_GUIDE",
     "VALIDATE_INSTALL",
     "VALIDATE_PROMOTE",

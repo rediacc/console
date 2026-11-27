@@ -1110,10 +1110,10 @@ jobs:
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
-  # Jobs: stage-artifacts (reusable workflow)
+  # Jobs: stage-artifacts-release, stage-artifacts (both call cd-stage.yml)
   # Dependencies: build-docker, build-cli, quality, review-gate, check-release-state
   # ============================================================================
-  stage-artifacts:
+  stage-artifacts-release:
     name: Stage Artifacts
     # Serialize staging per channel+version: a retried/duplicate run (e.g. a
     # watchdog auto-retry attempt 2) must not run a second upload-to-r2 for the
@@ -1124,18 +1124,21 @@ jobs:
       group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
       cancel-in-progress: false
     needs: [initialize, build-docker, build-cli, quality, review-gate, check-release-state]
+    # Every event but pull_request: the release path. Its pull-request twin is
+    # stage-artifacts below, and the split exists only so the OIDC grant is
+    # absent on a PR run (PLAN-pr-path-ephemeral-credentials D2). A reusable
+    # workflow's permissions are static per caller job, so dropping a scope by
+    # event takes a second caller; cd-stage.yml's `stage` job inherits this one.
     permissions:
       contents: read
       packages: write      # GHCR pull for validation
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
-    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
+    if: always() && github.event_name != 'pull_request' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
     uses: ./.github/workflows/cd-stage.yml
     with:
-      upload_pages: ${{ github.event_name == 'pull_request' }}
-      # A pull request runs PR-controlled build code, so it signs with a throwaway
-      # key and never fetches the release one (PLAN-pr-path-ephemeral-credentials D1).
-      signing: ${{ github.event_name == 'pull_request' && 'ephemeral' || 'release' }}
+      upload_pages: false
+      signing: release
       channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       # A bump-none commit earns no tag and no GitHub release, so it must not
@@ -1143,6 +1146,39 @@ jobs:
       # untagged version breaks `rdc` auto-update and, worse, feeds
       # cd-release-stable a `ref: v<version>` that does not exist. See
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
+      skip_release: ${{ needs.initialize.outputs.skip_release }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
+      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
+    secrets:
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+
+  # The pull-request caller of cd-stage.yml: the same needs, gate and inputs as
+  # stage-artifacts-release above, minus the two OIDC scopes, since a PR run
+  # executes PR-controlled code and the attestation steps are push-only anyway.
+  # It signs with a throwaway key (signing: ephemeral, PLAN-pr-path-ephemeral-
+  # credentials D1) and uploads the preview pages artifact deploy-preview
+  # consumes. It keeps the id `stage-artifacts` because check:ci-bws-pr-path
+  # keys its shrink-only baseline on the PR call chain, so the release-only R2
+  # fetches still open here (W5's) keep their ids. The display name is shared on
+  # purpose: the lane budget, the timeout-headroom baseline and ci-trace key on
+  # "Stage Artifacts / Stage Artifacts", and exactly one caller runs per event.
+  stage-artifacts:
+    name: Stage Artifacts
+    concurrency:
+      group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
+      cancel-in-progress: false
+    needs: [initialize, build-docker, build-cli, quality, review-gate, check-release-state]
+    permissions:
+      contents: read
+      packages: write      # GHCR pull for validation, retag to the pr-N channel
+    if: always() && github.event_name == 'pull_request' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
+    uses: ./.github/workflows/cd-stage.yml
+    with:
+      upload_pages: true
+      signing: ephemeral
+      channel: ${{ needs.initialize.outputs.channel }}
+      next_version: ${{ needs.initialize.outputs.next_version }}
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
@@ -1465,7 +1501,7 @@ jobs:
   # ============================================================================
   # COLUMN 5: DEPLOY PREVIEW
   # Deploys pages preview to Cloudflare Pages for PR validation
-  # Dependencies: stage-artifacts, tests (ALL must pass)
+  # Dependencies: stage-artifacts (the pull-request caller of cd-stage.yml)
   # Only runs on pull_request events
   # ============================================================================
   deploy-preview:
@@ -1479,8 +1515,8 @@ jobs:
       contents: read
     # `tests` was in `needs` and gated in the `if:`, and this job consumes
     # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
-    # cd-stage.yml:223 through the `stage-artifacts` job, which is still
-    # required below. Waiting on `tests` meant the preview URL appeared only
+    # cd-stage.yml through the `stage-artifacts` job (the pull-request caller),
+    # which is still required below. Waiting on `tests` meant the preview URL appeared only
     # after the full E2E fleet finished, roughly 44 minutes for the slowest leg.
     #
     # BEHAVIOUR CHANGE, stated rather than buried: previews are now published
@@ -1863,7 +1899,10 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize, stage-artifacts]
+    # Either caller of cd-stage.yml: stage-artifacts-release on push, schedule
+    # and dispatch, stage-artifacts on a pull request. Exactly one runs, so the
+    # other is always `skipped`.
+    needs: [initialize, stage-artifacts-release, stage-artifacts]
     # THE CHANNEL CONDITION IS LOAD-BEARING, and its absence was a standing red.
     #
     # `run_install_methods` comes from the `scope` step, which is gated on
@@ -1887,7 +1926,7 @@ jobs:
     # `skipped`.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success' &&
+      (needs.stage-artifacts-release.result == 'success' || needs.stage-artifacts.result == 'success') &&
       needs.initialize.outputs.run_install_methods != 'false' &&
       needs.initialize.outputs.channel != '' &&
       needs.initialize.outputs.skip_release != 'true'
@@ -1907,7 +1946,8 @@ jobs:
     # Checkout, then aws s3api against R2 and the Cloudflare API. No GitHub API.
     permissions:
       contents: read
-    needs: [initialize, stage-artifacts]
+    # Either caller of cd-stage.yml; see validate-install.
+    needs: [initialize, stage-artifacts-release, stage-artifacts]
     runs-on: ubuntu-latest
     # 60, not 30, because on `main` this job has been running within MINUTES of
     # its own ceiling for weeks and has now blown through it twice. Measured
@@ -1978,7 +2018,7 @@ jobs:
     # cause -- a job assuming a channel that schedule runs deliberately lack.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success' &&
+      (needs.stage-artifacts-release.result == 'success' || needs.stage-artifacts.result == 'success') &&
       needs.initialize.outputs.channel != '' &&
       needs.initialize.outputs.skip_release != 'true'
     env:
@@ -2077,7 +2117,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, windows-lane, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts-release, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, windows-lane, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -2123,6 +2163,7 @@ jobs:
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
           RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
           RESULT_CD_PREFLIGHT: ${{ needs.cd-preflight.result }}
+          RESULT_STAGE_ARTIFACTS_RELEASE: ${{ needs.stage-artifacts-release.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}

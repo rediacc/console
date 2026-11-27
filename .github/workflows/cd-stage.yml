@@ -63,12 +63,20 @@ on:
       # (.github/actions/bws-secrets). Every caller must pass it.
       BWS_ACCESS_TOKEN:
         required: true
-# Every job below declares its own permissions, so this workflow-level default
-# is deliberately empty: a job added without a block gets nothing and fails
-# loudly, rather than silently inheriting a scope nobody audited it for.
-# This is a reusable workflow. A callee can never exceed what the calling job
-# grants, so each job's block below is also the contract its callers must meet.
-permissions: {}
+# NO permissions BLOCK, here or on the job, and the absence is the contract.
+# A callee can never exceed what the calling job grants, and GitHub checks that
+# when the run starts, for every callee job whatever its `if:`: a job here that
+# requested `id-token: write` would fail the whole workflow on the pull-request
+# caller, which grants none. So `stage` inherits the calling job's grant, and
+# the two ci.yml callers ARE the permission blocks (PLAN-pr-path-ephemeral-
+# credentials D2):
+#   stage-artifacts-release  contents: read, packages: write, id-token: write,
+#                            attestations: write (push, dispatch, schedule)
+#   stage-artifacts          contents: read, packages: write (pull_request)
+# packages: write is the ghcr retag (buildx imagetools create pushes); id-token
+# and attestations are the two push-only attest-build-provenance steps, which
+# sign via Sigstore and store the attestation on GitHub. A job added to this
+# file inherits the same grant, so it is audited against both callers.
 
 jobs:
   stage:
@@ -82,15 +90,7 @@ jobs:
     # T4.1 (PLAN-ci-time-budget, 2026-09-30): under D-W2 the lane gate's
     # 15-minute ceiling supersedes the 1.5x headroom rule for this job.
     timeout-minutes: 15
-    # All four are load-bearing and none is obtainable from any default:
-    # packages: write for the ghcr retag (buildx imagetools create pushes),
-    # and id-token + attestations: write for the two attest-build-provenance
-    # steps that sign via Sigstore and store the attestation on GitHub.
-    permissions:
-      contents: read
-      packages: write
-      id-token: write
-      attestations: write
+    # Permissions: inherited from the calling job; see the note above `jobs:`.
     outputs:
       passed: ${{ steps.validate.outputs.passed }}
     steps:
