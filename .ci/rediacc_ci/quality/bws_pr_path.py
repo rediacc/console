@@ -1134,7 +1134,7 @@ def selftest() -> bool:
             )
         # An unguarded release fetch in a push-only job stays silent; the same fetch in a job only `needs:`-gated on it stays silent.
         res = run_fixture(
-            base / "nopr", FIXED_CI.replace("  pull_request:\n", ""), FIXED_STAGE, FIXTURE_CONFIG
+            base / "nopr", plant(FIXED_CI, "  pull_request:\n", ""), FIXED_STAGE, FIXTURE_CONFIG
         )
         check(
             "a tree with no PR root is a failure, never a pass (rc=%d)" % res.rc,
