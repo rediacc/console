@@ -137,6 +137,7 @@ Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync scri
     commit serves (the lease commit-msg hook and `land` refuse without):
       Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
       Plan-Box: none -- <reason, at least 12 characters>
+    and a `Release-Note:` trailer, one customer-facing sentence when the commit changes what a customer sees, else `none -- <why>` (the commit-msg hook refuses a feat or fix on a customer path without one, and `land` refuses any commit without one);
     never push, never touch `agent/**` or a gitlink, never switch or create a branch;
   - each git command is its own simple Bash call, with no `;`, `&&`, pipe or redirect in the same command, `git -C <lease>` in place of `cd ... &&`, and the exit code read from the tool result rather than `; echo rc=$?`, because the harness refuses a compound command naming git inside an isolated worktree;
   - one verify command per step: `npx tsx scripts/ci-runner/verify-changed.ts --changed` once it exists (DT6), else `npm run ci -- --narrow` or the named tests; ci:quick, vm:check and live_proof record refuse a lease;
