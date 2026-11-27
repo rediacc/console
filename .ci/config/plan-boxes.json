@@ -4840,11 +4840,10 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 3,
+      "open": 6,
+      "done": 4,
       "open_sigs": [
         "0d88a9d8",
-        "11bdd4b0",
         "39dca1f0",
         "991eacb0",
         "a8b52076",
@@ -4853,6 +4852,7 @@
       ],
       "done_sigs": [
         "03351481",
+        "11bdd4b0",
         "2fad109f",
         "de4e368a"
       ]
