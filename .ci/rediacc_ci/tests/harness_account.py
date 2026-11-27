@@ -171,7 +171,8 @@ class LiveServer:
 
 def require_free(base: int, count: int, why: str) -> None:
     """Refuse unless `count` ports from `base` are all free right now."""
-    busy = [base + i for i in range(count) if ports.is_port_in_use(base + i)]
+    in_use = ports._prober()
+    busy = [base + i for i in range(count) if in_use(base + i)]
     if busy:
         raise RefusalError(
             "%s needs %d free port(s) from %d and these are listening: %s. This driver does "
@@ -210,7 +211,8 @@ def occupy(base: int, count: int, why: str) -> list[socket.socket]:
             sock.close()
             continue
         held.append(sock)
-    free = [base + i for i in range(count) if not ports.is_port_in_use(base + i)]
+    in_use = ports._prober()
+    free = [base + i for i in range(count) if not in_use(base + i)]
     if free:
         for sock in held:
             sock.close()
