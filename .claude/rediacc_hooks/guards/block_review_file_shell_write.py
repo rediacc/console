@@ -13,6 +13,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 """
 
 import ast
+import collections
 import contextlib
 import fnmatch
 import functools
@@ -22,6 +23,7 @@ import os
 import posixpath
 import re
 import shlex
+import subprocess
 import types
 
 from rediacc_hooks import hookio, shellscan
@@ -711,6 +713,10 @@ def _offending(cmd, depth=0, cwd=None):
             if _code_writes_through_disk(code, base, program):
                 return "%s code that writes through a link into the review directory" % name
             verdict = _python_writes_review(program, depth) if program is not None else None
+            # An edited tracked script is judged by what its edit adds (r92 seed S8).
+            if verdict and kind == "file":
+                added = _dirty_edit_adds_review_write(run, cwd, program, depth)
+                verdict = verdict if added is None else added
             if verdict is None:
                 verdict = _code_writes_review(code, depth)
             if verdict:
@@ -917,8 +923,18 @@ def _python_writes_review(program, depth=0):
 
     THE SHELL COMMANDS ARE ADDITIVE (e30f1ad1.2): a program whose only write is `os.system('echo x > agent/reviews/a.md')` names no write target, so each command it hands to a shell is rendered and judged by `_offending` as the shell line it is. A review path in written CONTENT is still data: only a string that reaches a shell is read as a command.
     """
+    found = _python_review_writes(program, depth)
+    return None if found is None else bool(found)
+
+
+def _python_review_writes(program, depth=0):
+    """The writes `_python_writes_review` refuses, as a multiset of line-free keys (`collections.Counter`), empty for none; None when the program does not parse.
+
+    A key is what a write IS, never where it sits: the target as the ast spells it and as `_render` reads it, and for a target fed by a listing the rendered roots of every listing call too, so a comment or a moved block changes no key while a new target, a new value reaching an old one, or a listing re-rooted under the review directory does. `_dirty_edit_adds_review_write` compares the keys of a tracked script's working copy with its HEAD copy's.
+    """
+    found: collections.Counter = collections.Counter()
     if REVIEW_TEXT.rstrip("/") not in program and not _AGENT_SEGMENT.search(program):
-        return False
+        return found
     try:
         tree = ast.parse(program)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
@@ -929,20 +945,88 @@ def _python_writes_review(program, depth=0):
     def holds_review(expr):
         return shellscan.python_holds(expr, _is_review_string, review_names)
 
+    def spelled(expr):
+        return (ast.unparse(expr), _render(expr, bound, review_names))
+
     imports = shellscan.python_imports(tree)
     targets = list(shellscan.python_write_targets(tree, imports))
-    if any(holds_review(t) for t in targets):
-        return True
+    found.update(("target", *spelled(t)) for t in targets if holds_review(t))
     # A target bound to what a listing over the review directory or an ancestor returns (d218ebf3), and a command handed to a shell with such a name in it, rendered as a review path.
     listed, calls = _python_listing_names(tree, imports, bound, review_names)
-    parents = {id(c): p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
-    if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):
-        return True
+    if calls:
+        roots = tuple(
+            sorted(
+                ast.unparse(n) + "\0" + "\0".join(_render(a, bound, review_names) for a in n.args)
+                for n in ast.walk(tree)
+                if isinstance(n, ast.Call) and id(n) in calls
+            )
+        )
+        parents = {id(c): p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+        found.update(
+            ("listed", *spelled(t), *roots)
+            for t in targets
+            if _listing_target(t, listed, calls, bound, review_names, parents)
+        )
     unbound = {k: v for k, v in bound.items() if k not in listed}
-    return any(
-        REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
+    found.update(
+        ("shell", c)
         for c in _shell_commands(tree, imports, unbound, review_names | listed)
+        if REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
     )
+    return found
+
+
+def _script_target(run, cwd):
+    """The file a run executes BY PATH, as `shellscan.interpreter_program` resolves it (a script operand, or the run's own word for a script run by its shebang), or None for a run with no such file."""
+    base = run.name.rsplit("/", 1)[-1]
+    if base.startswith(INTERPRETERS):
+        kind, value = shellscan.program_parse(base, list(run.argv))
+        if kind != "file" or not value:
+            return None
+    else:
+        value = run.name
+    return shellscan._script_path(value, run.cwd, cwd)
+
+
+def _head_text(target):
+    """The text HEAD holds for `target` in the checkout that tracks it, or None when no checkout tracks it there (untracked, staged only, outside any checkout, unreadable)."""
+    try:
+        done = subprocess.run(
+            ["git", "--literal-pathspecs", "show", "HEAD:./" + os.path.basename(target)],
+            cwd=os.path.dirname(target) or ".",
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if done.returncode != 0:
+        return None
+    return done.stdout.decode("utf-8", "replace")
+
+
+def _dirty_edit_adds_review_write(run, cwd, text, depth):
+    """For a TRACKED Python script with uncommitted edits: False when every write the working copy is refused for is one its HEAD copy already makes, True when the edit adds one, None when the comparison does not apply (the program is not that file on disk, git holds no HEAD copy, or either copy does not parse).
+
+    A TRACKED SCRIPT IS REVIEWED CODE, AND ITS EDIT IS THE DELTA (r92 seed S8). `shellscan` exempts a tracked script only while it matches HEAD (review b922f15c.3), so an edit as small as a comment sent `.ci/scripts/quality/check_plan_record.py` to the full reading, which reads a write of `git ls-files agent` entries into a scratch view as a write of listed review paths, and `python3 .ci/scripts/quality/check_plan_record.py --rendered-only --update` was refused (rc 2) once the script was dirty and allowed (rc 0) while it was clean. What HEAD already does is what the exemption trusts; what the edit adds is judged. A residue: an edit that makes an old target land elsewhere while it spells and renders the same is read as that old write.
+    """
+    target = _script_target(run, cwd)
+    if target is None:
+        return None
+    try:
+        with open(target, encoding="utf-8", errors="replace") as handle:
+            if handle.read() != text:
+                return None
+    except OSError:
+        return None
+    head = _head_text(target)
+    if head is None:
+        return None
+    now = _python_review_writes(text, depth)
+    was = _python_review_writes(head, depth)
+    if now is None or was is None:
+        return None
+    return bool(now - was)
 
 
 def _is_python_run(run, cwd):

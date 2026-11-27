@@ -14,6 +14,7 @@ import importlib.util
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import typing
@@ -40,6 +41,27 @@ atexit.register(shutil.rmtree, str(_DOTTED), True)
 _DOTTED_REVIEWS = str(_DOTTED / "agent" / "revi*s")
 # A listing loop that leaves `f` naming a review file, for the ffbd9211.1 rows.
 _LISTED = "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(f)\n"
+
+# r92 seed S8: a TRACKED generator with an uncommitted edit is judged by what the edit adds. `check_plan_record.py --rendered-only --update` was refused (rc 2) once the script was dirty and allowed (rc 0) while clean: the full reading takes its write of `git ls-files agent` entries into a scratch view for a listed review write. The real script is committed into a scratch checkout, then edited twice: a comment (the measured edit's shape), and in a sibling copy a real write into the review directory.
+_GEN = pathlib.Path(tempfile.mkdtemp(prefix="test-review-generator-"))
+atexit.register(shutil.rmtree, str(_GEN), True)
+_GEN_REL = ".ci/scripts/quality/check_plan_record.py"
+_GEN_SRC = (pathlib.Path(__file__).resolve().parents[3] / _GEN_REL).read_text(encoding="utf-8")
+(_GEN / ".ci/scripts/quality").mkdir(parents=True)
+(_GEN / _GEN_REL).write_text(_GEN_SRC, encoding="utf-8")
+(_GEN / "adds_review.py").write_text(_GEN_SRC, encoding="utf-8")
+subprocess.run(["git", "init", "-q", str(_GEN)], check=True)
+subprocess.run(["git", "-C", str(_GEN), "add", "."], check=True)
+subprocess.run(
+    ["git", "-C", str(_GEN), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"],
+    check=True,
+)
+(_GEN / _GEN_REL).write_text(_GEN_SRC + "# an uncommitted edit\n", encoding="utf-8")
+_SHA_RECORD = "agent/reviews/1127-1/" + "b" * 40 + ".md"
+(_GEN / "adds_review.py").write_text(
+    _GEN_SRC + "\nopen(%r, 'w').write('clean')\n" % _SHA_RECORD, encoding="utf-8"
+)
+_GEN_RUN = "%s --rendered-only --update > /tmp/x/upd.out 2>&1" % _GEN_REL
 
 
 def _py(code):
@@ -1105,9 +1127,34 @@ OWN_CASES = [
         "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/a/b/",
         False,
     ),
+    # r92 seed S8: the reported command, with the script dirty, was refused (rc 2) before; the controls stay refused.
+    (
+        "a dirty tracked generator, the reported command",
+        "cd %s && python3 %s" % (_GEN, _GEN_RUN),
+        False,
+    ),
+    ("a dirty tracked generator by absolute path", "python3 %s/%s" % (_GEN, _GEN_RUN), False),
+    (
+        "control: a dirty tracked generator whose edit adds a review write",
+        "python3 %s/adds_review.py --rendered-only --update" % _GEN,
+        True,
+    ),
+    ("control: a hand-write of a per-commit review record", "echo x > %s" % _SHA_RECORD, True),
+    (
+        "control: a python hand-write of a per-commit review record",
+        "python3 -c \"open('%s', 'w').write('x')\"" % _SHA_RECORD,
+        True,
+    ),
 ]
 
 MUTANTS = [
+    (
+        "an edited tracked script never compared with HEAD (r92 seed S8)",
+        (
+            "verdict = verdict if added is None else added",
+            "verdict = verdict",
+        ),
+    ),
     (
         "past the depth cap a root never reads as the review directory (a6ad833c.1)",
         (
@@ -1214,8 +1261,8 @@ MUTANTS = [
     (
         "a Python target bound to a listing not read (d218ebf3)",
         (
-            "if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):",
-            "if False:",
+            "            if _listing_target(t, listed, calls, bound, review_names, parents)\n",
+            "            if False\n",
         ),
     ),
     (
