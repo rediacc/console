@@ -393,3 +393,73 @@ def test_reclaim_legacy_keeps_a_dir_whose_files_are_rewritten_in_place(tmp_path)
     assert busy.exists()
     assert not idle.exists()
     assert any(r.startswith("KEEP %s modified" % busy) for r in rows), rows
+
+
+def _aged(path: pathlib.Path, seconds: float) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    os.utime(path, (NOW - seconds, NOW - seconds))
+
+
+def test_reclaim_legacy_takes_every_cli_vitest_prefix_not_only_two(tmp_path):
+    """#ee891257: 2034 `rdc-*` dirs survived HT-R1 because LEGACY_PREFIXES named only rdc-mcp-call- and rdc-cli-test-home-."""
+    entries = [
+        tmp_path / n for n in ("rdc-writeback-push-aB3dEf", "rdc-busy-xYz123", "rediacc-drill-t-Qw")
+    ]
+    for entry in entries:
+        _aged(entry, 7200)
+    other = tmp_path / "unrelated-dir"
+    _aged(other, 7200)
+    rows = ht.reclaim_legacy([str(tmp_path)], write=True, now=NOW, open_scan=lambda: (set(), []))
+    assert not any(e.exists() for e in entries), rows
+    assert other.exists(), "control: a prefix nobody registered is never touched"
+
+
+def test_reclaim_legacy_holds_adhoc_files_for_six_hours(tmp_path):
+    young, old = tmp_path / "tmp.AAAAAAAAAA", tmp_path / "rediacc-prepare-0123456789abcdef.lock"
+    _aged(young, 7200)
+    old.write_text("")
+    os.utime(old, (NOW - 7 * 3600, NOW - 7 * 3600))
+    rows = ht.reclaim_legacy([str(tmp_path)], write=True, now=NOW, open_scan=lambda: (set(), []))
+    assert young.exists(), "two hours is inside the six-hour ad-hoc quiet time"
+    assert not old.exists()
+    assert any(r.startswith("KEEP %s modified" % young) for r in rows), rows
+
+
+def test_reclaim_legacy_reports_a_removal_that_did_not_happen_as_failed(tmp_path, monkeypatch):
+    """The 224 root-owned renet-markers dirs were listed REMOVE by `--write` while `rm` silently failed."""
+    entry = tmp_path / "renet-markers-123456789"
+    _aged(entry, 7200)
+    monkeypatch.setattr(ht, "_remove", lambda _path: 0)
+    rows = ht.reclaim_legacy([str(tmp_path)], write=True, now=NOW, open_scan=lambda: (set(), []))
+    assert entry.exists()
+    assert len(rows) == 1, rows
+    assert rows[0].startswith("FAILED %s not removed" % entry), rows
+    assert not any(r.startswith("REMOVE") for r in rows)
+
+
+def test_remove_as_root_refuses_anything_but_a_marker_dir_directly_under_tmp(tmp_path, monkeypatch):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(ht.subprocess, "run", lambda argv, **_kw: calls.append(argv))
+    inside = tmp_path / "renet-markers-123"
+    inside.mkdir()
+    assert ht._remove_as_root(str(inside)) is False, "not under /tmp"
+    assert ht._remove_as_root("/tmp/renet-markers-notdigits") is False
+    assert ht._remove_as_root("/tmp/other-123") is False
+    assert calls == []
+    assert ht.ROOT_OWNED.match("renet-markers-4048846-n4026531836-3354575941")
+    assert ht.ROOT_OWNED.match("renet-markers-1008025186")
+    assert not ht.ROOT_OWNED.match("renet-markers-12/../x")
+
+
+def test_dead_root_marker_needs_a_foreign_owner_and_a_dead_pid(tmp_path, monkeypatch):
+    live = tmp_path / ("renet-markers-%d-n1-2" % os.getpid())
+    gone = tmp_path / "renet-markers-999999999-n1-2"
+    plain = tmp_path / "renet-markers-123"
+    for d in (live, gone, plain):
+        d.mkdir()
+    assert ht._dead_root_marker(str(gone)) is False, "owned by this uid: sweep_dead's job"
+    real = os.getuid
+    monkeypatch.setattr(ht.os, "getuid", lambda: real() + 1)
+    assert ht._dead_root_marker(str(gone)) is True
+    assert ht._dead_root_marker(str(live)) is False, "owner pid is alive"
+    assert ht._dead_root_marker(str(plain)) is False, "unstamped dirs go through the legacy path"

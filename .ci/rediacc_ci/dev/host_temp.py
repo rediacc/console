@@ -84,8 +84,16 @@ LEGACY_PREFIXES = (
     "churn-store-",
     "rdc-mcp-call-",
     "rdc-cli-test-home-",
+    # Every other `mkdtempSync(os.tmpdir(), "rdc-...")` prefix of the CLI vitest suites (2034 of them were left in ~/.cache/tmp by runs before HT7's run dir, and the list above named only two).
+    "rdc-",
+    "rediacc-drill-",
 )
 LEGACY_AGE_S = 1800
+#: Prefixes of ad-hoc files and per-tree lock files that a live session may still hold by path alone, so they need a long quiet time on top of the open-fd test.
+ADHOC_PREFIXES = ("tmp.", "rediacc-prepare-")
+ADHOC_AGE_S = 6 * 3600
+#: The root-owned directories the sandbox tests' sudo'd children left in /tmp, the only ones `reclaim --as-root` removes.
+ROOT_OWNED = re.compile(r"^renet-markers-\d+(-n\d+-\d+)?$")
 LIVE_ERRORS = (OSError, ValueError, RuntimeError, AttributeError, TypeError, KeyError, ImportError)
 
 GcFn = Callable[[pathlib.Path, str], tuple[int, list[str]]]
@@ -679,6 +687,32 @@ def _newest_mtime(path: str, young_after: float) -> float:
     return newest
 
 
+def _remove_as_root(path: str) -> bool:
+    """Remove a root-owned marker directory through `sudo -n rm -rf`, only for a real directory of the ROOT_OWNED shape directly under /tmp."""
+    if os.path.dirname(path) != "/tmp" or not ROOT_OWNED.match(os.path.basename(path)):
+        return False
+    if os.path.islink(path) or not os.path.isdir(path):
+        return False
+    subprocess.run(
+        ["sudo", "-n", "rm", "-rf", "--one-file-system", "--", path],
+        check=False,
+        capture_output=True,
+    )
+    return not os.path.lexists(path)
+
+
+def _dead_root_marker(path: str) -> bool:
+    """A stamped renet marker directory owned by another uid whose owner pid is dead: `sweep_dead` runs as this user and cannot remove it."""
+    m = re.match(r"^renet-markers-(\d+)-n\d+-\d+$", os.path.basename(path))
+    try:
+        foreign = os.lstat(path).st_uid != os.getuid()
+    except OSError:
+        return False
+    if m is None or not foreign:
+        return False
+    return not os.path.exists("/proc/%s" % m.group(1))
+
+
 def reclaim_legacy(
     bases: list[str],
     *,
@@ -686,8 +720,10 @@ def reclaim_legacy(
     now: float | None = None,
     prefixes: tuple[str, ...] = LEGACY_PREFIXES,
     open_scan: Callable[[], tuple[set[str], list[str]]] = open_paths,
+    as_root: bool = False,
+    adhoc: tuple[str, ...] = ADHOC_PREFIXES,
 ) -> list[str]:
-    """Rows `REMOVE|WOULD-REMOVE|KEEP <path> <why>` for every unstamped leftover; removed only with `write`. An entry stays when any process has a cwd or open fd under it, when it is younger than LEGACY_AGE_S, or when a running strace writes under it."""
+    """Rows `REMOVE|WOULD-REMOVE|KEEP <path> <why>` for every unstamped leftover; removed only with `write`. An entry stays when any process has a cwd or open fd under it, when it is younger than LEGACY_AGE_S (ADHOC_AGE_S for the ADHOC_PREFIXES), or when a running strace writes under it. A removal that did not happen is a `FAILED` row, never a `REMOVE`; a root-owned marker directory is removed only with `as_root`."""
     now = time.time() if now is None else now
     held, strace_out = open_scan()
     rows: list[str] = []
@@ -698,14 +734,18 @@ def reclaim_legacy(
             continue
         for name in names:
             path = os.path.join(base, name)
-            if not name.startswith(prefixes) or _STAMPED.search(name) or os.path.islink(path):
+            is_adhoc = name.startswith(adhoc)
+            if not name.startswith(prefixes + adhoc) or os.path.islink(path):
                 continue
+            if _STAMPED.search(name) and not (as_root and _dead_root_marker(path)):
+                continue
+            floor = ADHOC_AGE_S if is_adhoc else LEGACY_AGE_S
             try:
-                age = now - _newest_mtime(path, now - LEGACY_AGE_S)
+                age = now - _newest_mtime(path, now - floor)
             except OSError:
                 continue
             why = ""
-            if age < LEGACY_AGE_S:
+            if age < floor:
                 why = "modified %d s ago" % age
             elif any(_under(h, path) for h in held):
                 why = "a process has it open"
@@ -714,10 +754,23 @@ def reclaim_legacy(
             if why:
                 rows.append("KEEP %s %s" % (path, why))
                 continue
-            verb = "REMOVE" if write else "WOULD-REMOVE"
-            rows.append("%s %s %s" % (verb, path, human(tree_size(path))))
-            if write:
-                _remove(path)
+            size = human(tree_size(path))
+            if not write:
+                rows.append("WOULD-REMOVE %s %s" % (path, size))
+                continue
+            _remove(path)
+            if os.path.lexists(path) and as_root:
+                _remove_as_root(path)
+            if os.path.lexists(path):
+                owner = os.lstat(path).st_uid
+                hint = (
+                    ""
+                    if owner == os.getuid()
+                    else "; owned by uid %d, retry with --as-root" % owner
+                )
+                rows.append("FAILED %s not removed%s" % (path, hint))
+            else:
+                rows.append("REMOVE %s %s" % (path, size))
     return rows
 
 
@@ -749,6 +802,11 @@ def main(argv: list[str] | None = None) -> int:
     rc = sub.add_parser("reclaim")
     rc.add_argument("--legacy", action="store_true", required=True)
     rc.add_argument("--write", action="store_true")
+    rc.add_argument(
+        "--as-root",
+        action="store_true",
+        help="also remove the root-owned renet marker dirs in /tmp through sudo -n",
+    )
     sub.add_parser("status")
     args = ap.parse_args(argv)
     root = main_checkout(args.root)
@@ -761,7 +819,7 @@ def main(argv: list[str] | None = None) -> int:
         for row in sweep(root, lock_held=args.lock_held, token=token):
             print("host-temp: " + row)
     elif args.verb == "reclaim":
-        for row in reclaim_legacy(default_bases(), write=args.write):
+        for row in reclaim_legacy(default_bases(), write=args.write, as_root=args.as_root):
             print(row)
     else:
         for row in status(root):
