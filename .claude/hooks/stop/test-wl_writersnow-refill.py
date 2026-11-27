@@ -445,9 +445,33 @@ def prefix_cases(tmp):
     check("a spaced longer survey id staffs itself", "CL-W-CI-PY-1" in free_ids(facts), False)
 
 
+def shared_sig_cases(tmp):
+    """A box text shared by two plans (the LP-bench receipts) shares one sig: ticked in one plan and open in the other, it is not done (2026-11-27: two such sigs made every survey read as "ticked since")."""
+    import wl_planqueue as PQ
+
+    root = pathlib.Path(tmp)
+    box = "- [{}] LP-bench [live] Fresh bench receipt.\n  Accept: live-proof bench account-smoke\n"
+    (root / "a.md").write_text("# a\n\n" + box.format("x"), encoding="utf-8")
+    (root / "b.md").write_text("# b\n\n" + box.format(" "), encoding="utf-8")
+    (root / "c.md").write_text(
+        "# c\n\n" + box.format("x").replace("Fresh", "Only"), encoding="utf-8"
+    )
+    queue = root / PQ.QUEUE_REL
+    queue.parent.mkdir(parents=True, exist_ok=True)
+    queue.write_text("queue\n", encoding="utf-8")
+    real = PQ.promoted_numbered
+    PQ.promoted_numbered = lambda _text: [("1", "a.md"), ("2", "b.md"), ("3", "c.md")]
+    try:
+        done = W.promoted_done_sigs(root)
+    finally:
+        PQ.promoted_numbered = real
+    check("a sig open in another plan is not done", len(done), 1)
+
+
 def main():
     parse_cases()
     for group in (
+        shared_sig_cases,
         refill_cases,
         refresh_cases,
         clock_cases,

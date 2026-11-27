@@ -455,20 +455,26 @@ def named_sigs(items, session) -> set[str]:
 
 
 def promoted_done_sigs(root) -> set[str]:
-    """The sigs of every ticked box of the Promoted plans (a plan moved to `_done/` is read there). A QUEUE.md that cannot be read raises; a plan file that is gone adds nothing."""
+    """The sigs of every ticked box of the Promoted plans (a plan moved to `_done/` is read there), minus any sig still open in one of them.
+
+    Boxes with identical text in two plans (the `LP-bench [live]` receipts) share one sig: ticked in one plan and open in another, it is not done, and counting it as done made every survey that lists the open one read as "ticked since". A QUEUE.md that cannot be read raises; a plan file that is gone adds nothing.
+    """
     import wl_planqueue as PQ
     import wl_planrec as PR
 
     root = pathlib.Path(root)
     text = (root / PQ.QUEUE_REL).read_text(encoding="utf-8")
-    out: set[str] = set()
+    done: set[str] = set()
+    still_open: set[str] = set()
     for rel in dict.fromkeys(rel for _num, rel in PQ.promoted_numbered(text)):
         path = root / rel
         if not path.is_file():
             path = root / PQ.PROGRESS_DONE_DIR / path.name
         if path.is_file():
-            out.update(sig for _i, _l, _b, sig in PR.done_boxes(path.read_text(encoding="utf-8")))
-    return out
+            body = path.read_text(encoding="utf-8")
+            done.update(sig for _i, _l, _b, sig in PR.done_boxes(body))
+            still_open.update(sig for _i, _l, _b, sig in PR.open_boxes(body))
+    return done - still_open
 
 
 def capacity(rows, session, root, items, live_writers, done_sigs, now=None, head_time=None) -> dict:
