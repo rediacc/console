@@ -1361,7 +1361,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Rediacc-Partner in Ihrem Land finden",
+          "title": "Rediacc-Partnerverzeichnis nach Ländern",
           "description": "Findet einen Rediacc-Partner in Eurem Land und Eurer Sprache für lokalen Support, Rechnungen in Landeswährung und Hilfe bei der Migration."
         },
         "hero": {
@@ -1387,15 +1387,15 @@
         },
         "services": {
           "resale": "Wiederverkauf",
-          "migration": "Migration",
+          "migration": "Migrationshilfe",
           "managed": "Managed Service",
           "training": "Schulung"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Registriert",
+          "silver": "Silber",
+          "gold": "Gold-Partner",
+          "platinum": "Platin"
         },
         "card": {
           "certificates": "Zertifikate: {{count}}",

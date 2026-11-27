@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "新しいキーで設定を復号できるか検証中...",
   "commands.config.rotateCek.waiting": "ブラウザでのローテーション完了を待っています (Ctrl+C で中止)...",
   "commands.config.rotateCek.warning": "これは組織全体の設定を暗号化しているキーをローテーションする。他のすべてのデバイスは、その後再リンクが必要になる",
+  "commands.config.seal.fileStoreRefused": "設定 {{name}} は封印しませんでした。REDIACC_SECRET_STORE=file ではキーが通常のファイルに保存されるため、封印しても何も守れないためです。",
   "commands.config.set.description": "デフォルト値を設定する (team、region、bridge)",
   "commands.config.set.descriptionShort": "既定値 (チーム、リージョン、ブリッジ) を設定する",
   "commands.config.set.success": "\"{{key}}\" を \"{{value}}\" に設定しました",

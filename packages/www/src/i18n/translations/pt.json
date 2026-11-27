@@ -1355,7 +1355,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Encontre um parceiro Rediacc no seu país",
+          "title": "Diretório de parceiros Rediacc por país",
           "description": "Encontre um parceiro Rediacc no seu país e no seu idioma para suporte local, faturamento em moeda local e ajuda com a migração."
         },
         "hero": {
@@ -1386,10 +1386,10 @@
           "training": "Treinamento"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Registrado",
+          "silver": "Prata",
+          "gold": "Ouro",
+          "platinum": "Platina"
         },
         "card": {
           "certificates": "Certificados: {{count}}",
@@ -1511,7 +1511,7 @@
               "Certificação gratuita em vendas e técnica",
               "Licenças de teste para os seus clientes"
             ],
-            "name": "Registered",
+            "name": "Registrado",
             "requirements": ["Candidate-se e seja aprovado"],
             "tagline": "Onde todos os parceiros começam"
           },
@@ -1520,7 +1520,7 @@
               "Tudo o que está incluído no nível Registered",
               "Um desconto maior nos negócios registados"
             ],
-            "name": "Silver",
+            "name": "Prata",
             "requirements": [
               "Tudo o que um parceiro Registered faz",
               "Duas certificações válidas na sua equipa",
@@ -1533,7 +1533,7 @@
               "Tudo o que está incluído no nível Silver",
               "Um nível de desconto mais alto"
             ],
-            "name": "Gold",
+            "name": "Ouro",
             "requirements": [
               "Tudo o que um parceiro Silver faz",
               "Conquistado à medida que o seu negócio connosco cresce"
@@ -1545,7 +1545,7 @@
               "Tudo o que está incluído no nível Gold",
               "O nosso melhor desconto para parceiros"
             ],
-            "name": "Platinum",
+            "name": "Platina",
             "requirements": [
               "Tudo o que um parceiro Gold faz",
               "Reservado para os parceiros mais ativos"

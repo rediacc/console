@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "A verificar se a nova chave desencripta a configuração...",
   "commands.config.rotateCek.waiting": "A aguardar que a rotação termine no browser (prima Ctrl+C para parar)...",
   "commands.config.rotateCek.warning": "Isto roda a chave com que está encriptada toda a configuração da organização. Todos os outros dispositivos terão de voltar a ligar-se depois.",
+  "commands.config.seal.fileStoreRefused": "A configuração {{name}} não foi selada: REDIACC_SECRET_STORE=file guarda as chaves num arquivo comum, então a selagem não protegeria nada.",
   "commands.config.set.description": "Definir um valor por omissão (equipa, região, bridge)",
   "commands.config.set.descriptionShort": "Define um valor padrão (equipe, região, bridge)",
   "commands.config.set.success": "\"{{key}}\" definido para \"{{value}}\"",

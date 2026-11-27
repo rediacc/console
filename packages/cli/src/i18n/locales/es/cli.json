@@ -1131,6 +1131,9 @@
         "refused": "{{count}} entradas no coinciden con la configuración de origen; no se ha escrito nada.",
         "summary": "Se han copiado {{count}} cambios de la máquina \"{{machine}}\" desde la configuración \"{{from}}\".",
         "summaryDryRun": "Se copiarían {{count}} cambios de la máquina \"{{machine}}\" desde la configuración \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "La configuración {{name}} no se selló: REDIACC_SECRET_STORE=file guarda las claves en un archivo normal, así que un sellado no protegería nada."
       }
     },
     "credits": {

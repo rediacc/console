@@ -1131,6 +1131,9 @@
         "refused": "{{count}} Einträge weichen von der Quellkonfiguration ab; es wurde nichts geschrieben.",
         "summary": "{{count}} Änderungen für Maschine \"{{machine}}\" aus Konfiguration \"{{from}}\" übernommen.",
         "summaryDryRun": "{{count}} Änderungen für Maschine \"{{machine}}\" aus Konfiguration \"{{from}}\" würden übernommen."
+      },
+      "seal": {
+        "fileStoreRefused": "Die Konfiguration {{name}} wurde nicht versiegelt: REDIACC_SECRET_STORE=file legt Schlüssel in einer einfachen Datei ab, eine Versiegelung würde also nichts schützen."
       }
     },
     "credits": {

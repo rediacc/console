@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3369,
+    "keyCount": 3370,
     "sourceCommit": "acab59308143c6235ffcd5939de26d113baf09dc"
   },
   "hashes": {
@@ -873,6 +873,7 @@
     "commands.config.rotateCek.verifying": "58f4a8d0",
     "commands.config.rotateCek.waiting": "376a45cd",
     "commands.config.rotateCek.warning": "0cf256f5",
+    "commands.config.seal.fileStoreRefused": "15a7c9b9",
     "commands.config.set.description": "183defc5",
     "commands.config.set.descriptionShort": "183defc5",
     "commands.config.set.success": "1f4e059c",

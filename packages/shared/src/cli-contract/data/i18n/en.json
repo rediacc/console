@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Verifying the new key decrypts the config...",
   "commands.config.rotateCek.waiting": "Waiting for the rotation to finish in the browser (press Ctrl+C to stop)...",
   "commands.config.rotateCek.warning": "This rotates the key the whole organization config is encrypted under. Every other device must re-link afterwards.",
+  "commands.config.seal.fileStoreRefused": "Config {{name}} was not sealed: REDIACC_SECRET_STORE=file keeps keys in a plain file, so a seal would protect nothing.",
   "commands.config.set.description": "Set a default value (team, region, bridge)",
   "commands.config.set.descriptionShort": "Set a default value (team, region, bridge)",
   "commands.config.set.success": "Set \"{{key}}\" to \"{{value}}\"",

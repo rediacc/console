@@ -1131,6 +1131,9 @@
         "refused": "عدد السجلات المختلفة عن الإعداد المصدر: {{count}}، ولم يُكتب أي شيء.",
         "summary": "نُسخ {{count}} تغيير للجهاز \"{{machine}}\" من الإعداد \"{{from}}\".",
         "summaryDryRun": "سيُنسخ {{count}} تغيير للجهاز \"{{machine}}\" من الإعداد \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "لم يتم ختم الإعداد {{name}}: يحتفظ REDIACC_SECRET_STORE=file بالمفاتيح في ملف عادي، لذا لن يحمي الختم أي شيء."
       }
     },
     "credits": {

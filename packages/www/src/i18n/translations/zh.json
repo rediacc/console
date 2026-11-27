@@ -1349,7 +1349,7 @@
       },
       "directory": {
         "meta": {
-          "title": "在您所在的国家和语言中查找 Rediacc 合作伙伴和本地服务商",
+          "title": "按国家查找 Rediacc 合作伙伴目录",
           "description": "按国家和语言查找 Rediacc 合作伙伴，获得本地支持、本币开票、迁移协助以及符合当地要求的各类服务。"
         },
         "hero": {
@@ -1380,10 +1380,10 @@
           "training": "培训"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "注册",
+          "silver": "银牌",
+          "gold": "金牌",
+          "platinum": "白金"
         },
         "card": {
           "certificates": "证书数量：{{count}}",
@@ -1505,13 +1505,13 @@
               "免费销售与技术认证",
               "为客户开通试用许可证"
             ],
-            "name": "Registered",
+            "name": "注册",
             "requirements": ["提交申请并通过审核"],
             "tagline": "每位合作伙伴的起点"
           },
           {
             "benefits": ["Registered 等级的所有权益", "报备商机享受更大折扣"],
-            "name": "Silver",
+            "name": "银牌",
             "requirements": [
               "拥有 Registered 合作伙伴的所有权益",
               "团队持有两张有效证书",
@@ -1521,13 +1521,13 @@
           },
           {
             "benefits": ["Silver 等级的所有权益", "更高一档的折扣"],
-            "name": "Gold",
+            "name": "金牌",
             "requirements": ["拥有 Silver 合作伙伴的所有权益", "随着与我们的业务增长自动获得"],
             "tagline": "与我们共同成长"
           },
           {
             "benefits": ["Gold 等级的所有权益", "我们最优的合作伙伴折扣"],
-            "name": "Platinum",
+            "name": "白金",
             "requirements": ["拥有 Gold 合作伙伴的所有权益", "专为最活跃的合作伙伴保留"],
             "tagline": "我们最紧密的合作伙伴"
           }

@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Проверка того, что новый ключ расшифровывает конфигурацию...",
   "commands.config.rotateCek.waiting": "Ожидание завершения ротации в браузере (Ctrl+C для остановки)...",
   "commands.config.rotateCek.warning": "Это ротирует ключ, которым зашифрована конфигурация всей организации. После этого все остальные устройства должны быть повторно привязаны.",
+  "commands.config.seal.fileStoreRefused": "Конфигурация {{name}} не запечатана: REDIACC_SECRET_STORE=file хранит ключи в обычном файле, поэтому запечатывание ничего бы не защитило.",
   "commands.config.set.description": "Задать значение по умолчанию (команда, регион, мост)",
   "commands.config.set.descriptionShort": "Задаёт значение по умолчанию (команда, регион, мост)",
   "commands.config.set.success": "Значение \"{{key}}\" установлено в \"{{value}}\"",

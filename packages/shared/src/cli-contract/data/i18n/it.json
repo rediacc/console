@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Verifica che la nuova chiave decifri la configurazione in corso...",
   "commands.config.rotateCek.waiting": "In attesa che la rotazione termini nel browser (premi Ctrl+C per interrompere)...",
   "commands.config.rotateCek.warning": "Questa operazione ruota la chiave con cui è cifrata l'intera configurazione dell'organizzazione. Tutti gli altri dispositivi dovranno ricollegarsi in seguito.",
+  "commands.config.seal.fileStoreRefused": "La configurazione {{name}} non è stata sigillata: REDIACC_SECRET_STORE=file conserva le chiavi in un normale file, quindi il sigillo non proteggerebbe nulla.",
   "commands.config.set.description": "Imposta un valore predefinito (team, regione, bridge)",
   "commands.config.set.descriptionShort": "Imposta un valore predefinito (team, regione, bridge)",
   "commands.config.set.success": "\"{{key}}\" impostato su \"{{value}}\"",

@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Es wird überprüft, ob der neue Schlüssel die Konfiguration entschlüsselt...",
   "commands.config.rotateCek.waiting": "Warten, bis die Rotation im Browser abgeschlossen ist (Strg+C zum Abbrechen)...",
   "commands.config.rotateCek.warning": "Dies rotiert den Schlüssel, mit dem die gesamte Organisationskonfiguration verschlüsselt ist. Alle anderen Geräte müssen sich danach erneut verknüpfen.",
+  "commands.config.seal.fileStoreRefused": "Die Konfiguration {{name}} wurde nicht versiegelt: REDIACC_SECRET_STORE=file legt Schlüssel in einer einfachen Datei ab, eine Versiegelung würde also nichts schützen.",
   "commands.config.set.description": "Einen Standardwert setzen (Team, Region, Bridge)",
   "commands.config.set.descriptionShort": "Einen Standardwert setzen (Team, Region, Bridge)",
   "commands.config.set.success": "\"{{key}}\" auf \"{{value}}\" gesetzt",

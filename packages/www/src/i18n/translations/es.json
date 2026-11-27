@@ -1361,7 +1361,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Encuentra un partner de Rediacc",
+          "title": "Directorio de socios de Rediacc por país",
           "description": "Encuentra un partner de Rediacc en tu país y tu idioma para soporte local, facturación en moneda local y ayuda con la migración."
         },
         "hero": {
@@ -1392,10 +1392,10 @@
           "training": "Formación"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Registrado",
+          "silver": "Plata",
+          "gold": "Oro",
+          "platinum": "Platino"
         },
         "card": {
           "certificates": "Certificados: {{count}}",

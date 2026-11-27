@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 6074,
-    "sourceCommit": "95b14992ace8fea7ef9e999eca23602d433960a1"
+    "sourceCommit": "bae6c8c16fe03b7aca3a36b0fd6dc08d6bd1d97e"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -759,7 +759,7 @@
     "pages.partners.directory.hero.subtitle": "168b6a70",
     "pages.partners.directory.hero.title": "05c55218",
     "pages.partners.directory.meta.description": "e109f66e",
-    "pages.partners.directory.meta.title": "c28dfa3c",
+    "pages.partners.directory.meta.title": "6e8263a2",
     "pages.partners.directory.services.managed": "7d3f299d",
     "pages.partners.directory.services.migration": "41ed3761",
     "pages.partners.directory.services.resale": "6559ef7b",

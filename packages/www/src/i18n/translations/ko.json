@@ -1361,7 +1361,7 @@
       },
       "directory": {
         "meta": {
-          "title": "내 국가와 언어에 맞는 Rediacc 파트너 찾기 디렉터리",
+          "title": "국가별 Rediacc 파트너 디렉터리",
           "description": "내 국가와 언어에 맞는 Rediacc 파트너를 찾아 현지 지원, 현지 통화 청구, 마이그레이션 도움을 받아 보세요."
         },
         "hero": {
@@ -1392,10 +1392,10 @@
           "training": "교육"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "등록",
+          "silver": "실버",
+          "gold": "골드",
+          "platinum": "플래티넘"
         },
         "card": {
           "certificates": "인증서: {{count}}개",

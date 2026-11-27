@@ -1359,7 +1359,7 @@
       },
       "directory": {
         "meta": {
-          "title": "お住まいの国と言語で探せる Rediacc パートナー検索ディレクトリ",
+          "title": "国別 Rediacc パートナーディレクトリ",
           "description": "お住まいの国と言語に対応したRediaccパートナーを探せます。現地サポート、現地通貨での請求、移行支援が受けられます。"
         },
         "hero": {
@@ -1390,10 +1390,10 @@
           "training": "トレーニング"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "登録",
+          "silver": "シルバー",
+          "gold": "ゴールド",
+          "platinum": "プラチナ"
         },
         "card": {
           "certificates": "認定数: {{count}}",
@@ -1515,13 +1515,13 @@
               "営業・技術認定が無料",
               "お客様向けのトライアルライセンス"
             ],
-            "name": "Registered",
+            "name": "登録",
             "requirements": ["申請して承認される"],
             "tagline": "すべてのパートナーのスタート地点"
           },
           {
             "benefits": ["Registeredの特典すべて", "登録した商談へのさらに深い割引"],
-            "name": "Silver",
+            "name": "シルバー",
             "requirements": [
               "Registeredパートナーの条件をすべて満たす",
               "チーム全体で有効な認定証を2件保有",
@@ -1531,7 +1531,7 @@
           },
           {
             "benefits": ["Silverの特典すべて", "さらに高い割引ティア"],
-            "name": "Gold",
+            "name": "ゴールド",
             "requirements": [
               "Silverパートナーの条件をすべて満たす",
               "私たちとのビジネスの成長に応じて到達"
@@ -1540,7 +1540,7 @@
           },
           {
             "benefits": ["Goldの特典すべて", "私たちが提供する最大の割引"],
-            "name": "Platinum",
+            "name": "プラチナ",
             "requirements": [
               "Goldパートナーの条件をすべて満たす",
               "最も活発なパートナーのための特別なティア"

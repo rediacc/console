@@ -1365,7 +1365,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Trova un partner Rediacc nel tuo paese",
+          "title": "Elenco dei partner Rediacc per paese",
           "description": "Trova un partner Rediacc nel tuo paese e nella tua lingua per assistenza locale, fatturazione in valuta locale e aiuto con la migrazione."
         },
         "hero": {
@@ -1396,10 +1396,10 @@
           "training": "Formazione"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Registrato",
+          "silver": "Argento",
+          "gold": "Oro",
+          "platinum": "Platino"
         },
         "card": {
           "certificates": "Certificati: {{count}}",
@@ -1521,7 +1521,7 @@
               "Certificazione gratuita vendite e tecnica",
               "Licenze di prova per i tuoi clienti"
             ],
-            "name": "Registered",
+            "name": "Registrato",
             "requirements": ["Fai domanda e ottieni l'approvazione"],
             "tagline": "Il punto di partenza per tutti"
           },
@@ -1530,7 +1530,7 @@
               "Tutto il livello Registered",
               "Uno sconto maggiore sulle trattative registrate"
             ],
-            "name": "Silver",
+            "name": "Argento",
             "requirements": [
               "Tutto quello che fa un partner Registered",
               "Due certificati validi nel team",
@@ -1540,7 +1540,7 @@
           },
           {
             "benefits": ["Tutto il livello Silver", "Uno sconto più alto"],
-            "name": "Gold",
+            "name": "Oro",
             "requirements": [
               "Tutto quello che fa un partner Silver",
               "Si ottiene man mano che il tuo business con noi cresce"
@@ -1549,7 +1549,7 @@
           },
           {
             "benefits": ["Tutto il livello Gold", "Il nostro sconto partner più alto"],
-            "name": "Platinum",
+            "name": "Platino",
             "requirements": [
               "Tutto quello che fa un partner Gold",
               "Riservato ai nostri partner più attivi"

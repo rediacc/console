@@ -1131,6 +1131,9 @@
         "refused": "{{count}} kayıt kaynak yapılandırmadan farklı; hiçbir şey yazılmadı.",
         "summary": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalandı.",
         "summaryDryRun": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalanacak."
+      },
+      "seal": {
+        "fileStoreRefused": "{{name}} yapılandırması mühürlenmedi: REDIACC_SECRET_STORE=file anahtarları düz bir dosyada tutar, bu yüzden mühür hiçbir şeyi korumaz."
       }
     },
     "credits": {

@@ -1363,7 +1363,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Trouver un partenaire Rediacc local",
+          "title": "Annuaire des partenaires Rediacc par pays",
           "description": "Trouvez un partenaire Rediacc dans votre pays et votre langue pour un support local, une facturation en devise locale et de l'aide à la migration."
         },
         "hero": {
@@ -1389,22 +1389,22 @@
         },
         "services": {
           "resale": "Revente",
-          "migration": "Migration",
+          "migration": "Aide à la migration",
           "managed": "Service managé",
           "training": "Formation"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Enregistré",
+          "silver": "Argent",
+          "gold": "Or",
+          "platinum": "Platine"
         },
         "card": {
           "certificates": "Certificats : {{count}}",
           "visit": "Visiter le site",
           "countries": "Pays",
           "languages": "Langues",
-          "services": "Services"
+          "services": "Prestations"
         },
         "status": {
           "loading": "Chargement des partenaires...",

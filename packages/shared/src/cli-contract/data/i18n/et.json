@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Kontrollitakse, kas uus võti dekrüpteerib konfiguratsiooni...",
   "commands.config.rotateCek.waiting": "Ootan, kuni rotatsioon brauseris lõpeb (peatamiseks vajutage Ctrl+C)...",
   "commands.config.rotateCek.warning": "See roteerib võtme, millega kogu organisatsiooni konfiguratsioon on krüpteeritud. Iga teine seade peab pärast uuesti liituma.",
+  "commands.config.seal.fileStoreRefused": "Konfiguratsiooni {{name}} ei pitseeritud: REDIACC_SECRET_STORE=file hoiab võtmeid tavalises failis, seega ei kaitseks pitsat mitte midagi.",
   "commands.config.set.description": "Määra vaikeväärtus (meeskond, piirkond, sild)",
   "commands.config.set.descriptionShort": "Määra vaikeväärtus (meeskond, piirkond, sild)",
   "commands.config.set.success": "\"{{key}}\" seati väärtusele \"{{value}}\"",

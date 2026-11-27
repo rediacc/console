@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "جارٍ التحقق من أن المفتاح الجديد يفكّ تشفير التكوين...",
   "commands.config.rotateCek.waiting": "بانتظار اكتمال التدوير في المتصفح (اضغط Ctrl+C للإيقاف)...",
   "commands.config.rotateCek.warning": "هذا يُدوِّر المفتاح الذي يُشفَّر به تكوين المؤسسة بأكمله. يجب على كل جهاز آخر إعادة الربط بعد ذلك.",
+  "commands.config.seal.fileStoreRefused": "لم يتم ختم الإعداد {{name}}: يحتفظ REDIACC_SECRET_STORE=file بالمفاتيح في ملف عادي، لذا لن يحمي الختم أي شيء.",
   "commands.config.set.description": "تعيين قيمة افتراضية (فريق، منطقة، جسر)",
   "commands.config.set.descriptionShort": "تعيين قيمة افتراضية (فريق، منطقة، جسر)",
   "commands.config.set.success": "تم تعيين \"{{key}}\" إلى \"{{value}}\"",

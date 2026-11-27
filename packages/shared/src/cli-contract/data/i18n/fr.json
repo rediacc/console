@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Vérification que la nouvelle clé déchiffre la configuration...",
   "commands.config.rotateCek.waiting": "En attente de la fin de la rotation dans le navigateur (Ctrl+C pour arrêter)...",
   "commands.config.rotateCek.warning": "Cela fait tourner la clé sous laquelle toute la configuration de l'organisation est chiffrée. Tous les autres appareils devront se relier ensuite.",
+  "commands.config.seal.fileStoreRefused": "La configuration {{name}} n'a pas été scellée : REDIACC_SECRET_STORE=file conserve les clés dans un simple fichier, un scellement ne protégerait donc rien.",
   "commands.config.set.description": "Définir une valeur par défaut (équipe, région, pont)",
   "commands.config.set.descriptionShort": "Définir une valeur par défaut (équipe, région, pont)",
   "commands.config.set.success": "\"{{key}}\" défini à \"{{value}}\"",

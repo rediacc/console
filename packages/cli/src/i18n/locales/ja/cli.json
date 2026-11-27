@@ -1131,6 +1131,9 @@
         "refused": "コピー元の設定と異なるエントリが {{count}} 件あるため、何も書き込んでいません。",
         "summary": "設定 \"{{from}}\" からマシン \"{{machine}}\" の変更を {{count}} 件コピーしました。",
         "summaryDryRun": "設定 \"{{from}}\" からマシン \"{{machine}}\" の変更が {{count}} 件コピーされます。"
+      },
+      "seal": {
+        "fileStoreRefused": "設定 {{name}} は封印しませんでした。REDIACC_SECRET_STORE=file ではキーが通常のファイルに保存されるため、封印しても何も守れないためです。"
       }
     },
     "credits": {

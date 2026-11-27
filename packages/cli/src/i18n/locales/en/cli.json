@@ -685,6 +685,9 @@
         "refused": "{{count}} entries differ from the source config; nothing was written.",
         "summary": "{{count}} changes copied for machine \"{{machine}}\" from config \"{{from}}\".",
         "summaryDryRun": "{{count}} changes would be copied for machine \"{{machine}}\" from config \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "Config {{name}} was not sealed: REDIACC_SECRET_STORE=file keeps keys in a plain file, so a seal would protect nothing."
       }
     },
     "machine": {

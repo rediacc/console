@@ -1357,7 +1357,7 @@
       },
       "directory": {
         "meta": {
-          "title": "ابحث عن شريك لدى Rediacc في بلدك",
+          "title": "دليل شركاء Rediacc حسب البلد",
           "description": "ابحث عن شريك لدى Rediacc في بلدك وبلغتك للحصول على دعم محلي وفواتير بالعملة المحلية ومساعدة في الترحيل."
         },
         "hero": {
@@ -1388,10 +1388,10 @@
           "training": "التدريب"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "مسجل",
+          "silver": "فضي",
+          "gold": "ذهبي",
+          "platinum": "بلاتيني"
         },
         "card": {
           "certificates": "الشهادات: {{count}}",

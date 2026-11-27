@@ -1351,7 +1351,7 @@
       },
       "directory": {
         "meta": {
-          "title": "Ülkenizdeki Rediacc İş Ortağını Bulun",
+          "title": "Ülkeye göre Rediacc iş ortağı rehberi",
           "description": "Yerel destek, yerel para biriminde fatura ve geçiş yardımı için ülkenizde ve dilinizde bir Rediacc iş ortağı bulun."
         },
         "hero": {
@@ -1382,10 +1382,10 @@
           "training": "Eğitim"
         },
         "tiers": {
-          "registered": "Registered",
-          "silver": "Silver",
-          "gold": "Gold",
-          "platinum": "Platinum"
+          "registered": "Kayıtlı",
+          "silver": "Gümüş",
+          "gold": "Altın",
+          "platinum": "Platin"
         },
         "card": {
           "certificates": "Sertifika sayısı: {{count}}",
@@ -1507,7 +1507,7 @@
               "Ücretsiz satış ve teknik sertifika",
               "Müşterileriniz için deneme lisansları"
             ],
-            "name": "Registered",
+            "name": "Kayıtlı",
             "requirements": ["Başvurun ve onaylanın"],
             "tagline": "Her ortağın başladığı yer"
           },
@@ -1516,7 +1516,7 @@
               "Registered kademesindeki her şey",
               "Kayıtlı anlaşmalarda daha yüksek indirim"
             ],
-            "name": "Silver",
+            "name": "Gümüş",
             "requirements": [
               "Registered ortağın yaptığı her şey",
               "Ekibinizde geçerli iki sertifika",
@@ -1526,7 +1526,7 @@
           },
           {
             "benefits": ["Silver kademesindeki her şey", "Daha yüksek bir indirim kademesi"],
-            "name": "Gold",
+            "name": "Altın",
             "requirements": [
               "Silver ortağın yaptığı her şey",
               "İşiniz bizimle büyüdükçe kazanılır"
@@ -1535,7 +1535,7 @@
           },
           {
             "benefits": ["Gold kademesindeki her şey", "En iyi ortak indirimimiz"],
-            "name": "Platinum",
+            "name": "Platin",
             "requirements": ["Gold ortağın yaptığı her şey", "En aktif ortaklarımıza ayrılmıştır"],
             "tagline": "En yakın ortaklarımız"
           }

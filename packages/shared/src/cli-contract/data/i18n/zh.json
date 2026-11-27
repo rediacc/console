@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "正在验证新密钥能否解密配置...",
   "commands.config.rotateCek.waiting": "正在等待浏览器中的轮换完成（按 Ctrl+C 停止）...",
   "commands.config.rotateCek.warning": "此操作会轮换整个组织配置所使用的加密密钥。之后所有其他设备都必须重新关联。",
+  "commands.config.seal.fileStoreRefused": "配置 {{name}} 未加封：REDIACC_SECRET_STORE=file 会把密钥保存在普通文件中，加封起不到任何保护作用。",
   "commands.config.set.description": "设置默认值（team、region、bridge）",
   "commands.config.set.descriptionShort": "设置默认值 (团队、区域、网桥)",
   "commands.config.set.success": "已将 \"{{key}}\" 设置为 \"{{value}}\"",

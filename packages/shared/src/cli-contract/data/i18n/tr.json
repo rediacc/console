@@ -865,6 +865,7 @@
   "commands.config.rotateCek.verifying": "Yeni anahtarın yapılandırmanın şifresini çözdüğü doğrulanıyor...",
   "commands.config.rotateCek.waiting": "Döndürmenin tarayıcıda tamamlanması bekleniyor (durdurmak için Ctrl+C)...",
   "commands.config.rotateCek.warning": "Bu işlem, kuruluşun tüm yapılandırmasının şifrelendiği anahtarı döndürür. Diğer tüm cihazların ardından yeniden bağlanması gerekir.",
+  "commands.config.seal.fileStoreRefused": "{{name}} yapılandırması mühürlenmedi: REDIACC_SECRET_STORE=file anahtarları düz bir dosyada tutar, bu yüzden mühür hiçbir şeyi korumaz.",
   "commands.config.set.description": "Varsayılan bir değer belirleyin (takım, bölge, köprü)",
   "commands.config.set.descriptionShort": "Varsayılan bir değer ayarlar (takım, bölge, köprü)",
   "commands.config.set.success": "\"{{key}}\" değeri \"{{value}}\" olarak ayarlandı",

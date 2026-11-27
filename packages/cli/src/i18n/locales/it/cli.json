@@ -1131,6 +1131,9 @@
         "refused": "{{count}} voci differiscono dalla configurazione di origine; non è stato scritto nulla.",
         "summary": "{{count}} modifiche copiate per la macchina \"{{machine}}\" dalla configurazione \"{{from}}\".",
         "summaryDryRun": "Verrebbero copiate {{count}} modifiche per la macchina \"{{machine}}\" dalla configurazione \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "La configurazione {{name}} non è stata sigillata: REDIACC_SECRET_STORE=file conserva le chiavi in un normale file, quindi il sigillo non proteggerebbe nulla."
       }
     },
     "credits": {

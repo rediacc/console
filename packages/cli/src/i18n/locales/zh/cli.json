@@ -1131,6 +1131,9 @@
         "refused": "有 {{count}} 个条目与源配置不同，未写入任何内容。",
         "summary": "已从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。",
         "summaryDryRun": "将从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。"
+      },
+      "seal": {
+        "fileStoreRefused": "配置 {{name}} 未加封：REDIACC_SECRET_STORE=file 会把密钥保存在普通文件中，加封起不到任何保护作用。"
       }
     },
     "credits": {

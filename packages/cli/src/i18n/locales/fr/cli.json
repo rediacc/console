@@ -1131,6 +1131,9 @@
         "refused": "{{count}} entrées diffèrent de la configuration source ; rien n'a été écrit.",
         "summary": "{{count}} modifications copiées pour la machine \"{{machine}}\" depuis la configuration \"{{from}}\".",
         "summaryDryRun": "{{count}} modifications seraient copiées pour la machine \"{{machine}}\" depuis la configuration \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "La configuration {{name}} n'a pas été scellée : REDIACC_SECRET_STORE=file conserve les clés dans un simple fichier, un scellement ne protégerait donc rien."
       }
     },
     "credits": {

@@ -1131,6 +1131,9 @@
         "refused": "{{count}} kirjet erineb lähtekonfiguratsioonist; midagi ei kirjutatud.",
         "summary": "Masina \"{{machine}}\" jaoks kopeeriti konfiguratsioonist \"{{from}}\" {{count}} muudatust.",
         "summaryDryRun": "Masina \"{{machine}}\" jaoks kopeeritaks konfiguratsioonist \"{{from}}\" {{count}} muudatust."
+      },
+      "seal": {
+        "fileStoreRefused": "Konfiguratsiooni {{name}} ei pitseeritud: REDIACC_SECRET_STORE=file hoiab võtmeid tavalises failis, seega ei kaitseks pitsat mitte midagi."
       }
     },
     "credits": {
