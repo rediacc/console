@@ -2082,6 +2082,16 @@ function busyReadVerdict(avg: number, read: number | undefined, what: string): s
 /**
  * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads near the average its own two workers report over the same one-second window (each worker's utime+stime read from /proc/<pid>/stat at both ends, so host contention moves the expectation and the reading together) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
  */
+/** The clock-tick rate a reader answers, or undefined when it throws or answers no positive number. */
+function readClkTck(read: () => string): number | undefined {
+  try {
+    const n = Number(read().trim());
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function busySamplerSelftest(): Promise<string[]> {
   if (process.platform !== 'linux') {
     // Without /proc the reader must cover no window, so nothing is ever released: assert that, rather than pass on a skipped probe (review c428c052.3).
@@ -2118,12 +2128,23 @@ async function busySamplerSelftest(): Promise<string[]> {
   ]);
   sampler.stop();
   // The tick rate scales /proc ticks to seconds; a guessed rate would scale the expectation wrong without a word (review 58ffb4eb.2).
-  let clkTck = Number.NaN;
-  try {
-    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim());
-  } catch {
-    clkTck = Number.NaN;
+  // review 3ba9b867.1: the refusal is forced through the same helper with readers that throw or answer nothing usable.
+  for (const [label, bad] of [
+    [
+      'throws',
+      () => {
+        throw new Error('no getconf');
+      },
+    ],
+    ['empty', () => ''],
+    ['zero', () => '0'],
+    ['non-numeric', () => 'abc'],
+  ] as const) {
+    if (readClkTck(bad) !== undefined)
+      return [`busy sampler: a tick-rate reader that ${label} must be refused`];
   }
+  const clkTck =
+    readClkTck(() => execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' })) ?? Number.NaN;
   if (!(clkTck > 0)) {
     return [
       'busy sampler: getconf CLK_TCK gave no tick rate, so the in-window average cannot be computed',
