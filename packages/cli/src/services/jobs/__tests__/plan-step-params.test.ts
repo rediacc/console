@@ -57,7 +57,7 @@ function topLevelKeys(body: string): string[] {
 /** Every `planStep('<name>', { ... })` in `text`, with the keys it passes. */
 function literalPlanSteps(text: string): { step: string; keys: string[] }[] {
   const found: { step: string; keys: string[] }[] = [];
-  const call = /planStep\(\s*'([A-Za-z]+)'\s*,\s*\{/g;
+  const call = /planStep\(\s*'([A-Za-z][\w$]*)'\s*,\s*\{/g;
   for (let m = call.exec(text); m; m = call.exec(text)) {
     found.push({ step: m[1], keys: topLevelKeys(balanced(text, call.lastIndex)) });
   }
@@ -76,6 +76,12 @@ describe('planStep params are declared by their step', () => {
   it('control: a call passing an undeclared key is caught', () => {
     expect(undeclared("planStep('renderBackupStatus', { machine: m, nope: 1 })")).toEqual([
       'renderBackupStatus.nope',
+    ]);
+  });
+
+  it('control: a step name with a digit, underscore or dollar is still scanned', () => {
+    expect(literalPlanSteps("planStep('step2_a$', { nope: 1 })")).toEqual([
+      { step: 'step2_a$', keys: ['nope'] },
     ]);
   });
 
