@@ -93,9 +93,12 @@ def biome_count(root, args):
 
     RAISES rather than guessing when biome did not run: a probe that cannot distinguish absence from a negative answer is not a probe. "No files were processed" is a real answer (zero).
     """
+    # THE BINARY, NOT `npx`: npx hands the command to `sh -c` as ONE string, and Linux refuses a single argument over 128 KiB (MAX_ARG_STRLEN). The whole-tree probe passes every tracked source path (about 133 KB at 2575 paths) and died with exit 249 and no output once the list crossed that line.
+    local = pathlib.Path(root) / "node_modules" / ".bin" / "biome"
+    runner = [str(local)] if local.is_file() else ["npx", "--no-install", "biome"]
     try:
         out = subprocess.run(
-            ["npx", "--no-install", "biome", "lint", "--max-diagnostics=0", *args],
+            [*runner, "lint", "--max-diagnostics=0", *args],
             capture_output=True,
             text=True,
             cwd=str(root),
