@@ -3427,6 +3427,47 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
     assert norm[3] == old[3]
 
 
+def test_phase_10_keeps_the_evidence_sessions_cite_for_the_documented_retention() -> None:
+    """Item #9098405b: runs cited in commits (a main push, a merged PR's runs, a release run, a renamed workflow's last runs) were found 404 days later. Phase 10 is NOT their deleter (the 2026-11-24, 25 and 26 Cleanup jobs each printed `Workflow runs: deleted 0 of 466 / 446 / 390` while the listing kept shrinking), and this pins why: a run younger than its retention is never selected, whatever its event, branch, conclusion or workflow, and only a run past it (the watchdog's own 7 days included) is. Every kept run sits 5 days old, so a selection that applied a 3-day regime, the repository's artifact-and-log retention, would turn this red."""
+    ci = _workflow(31, "Console CI", ".github/workflows/ci.yml")
+    edge = _workflow(32, "CD - Release to Edge", ".github/workflows/cd-release-edge.yml")
+    dog = _workflow(33, "Watchdog: run 9 (gen 2)", ".github/workflows/ops-watchdog-monitor.yml")
+    # Renamed on 2026-11-08: the old path is gone from the default branch, the new one holds the file.
+    renamed = _workflow(34, "Release to Production", ".github/workflows/release-old.yml")
+
+    def run(run_id: int, age: float, conclusion: str = "success") -> dict:
+        return {"id": run_id, "created_at": ago(age), "conclusion": conclusion}
+
+    fixture = _p10_fixture(
+        [ci, edge, dog, renamed],
+        # A main push, a merged PR's runs (red then green), a scheduled run, and one 40 days old inside the floor.
+        *_pages(31, [run(101, 5), run(102, 5, "failure"), run(103, 5), run(104, 5), run(105, 40)]),
+        *_pages(32, [run(201, 5)]),  # the release run
+        *_pages(
+            33, [*_runs(100, start=5000, age=1.5), run(301, 6.5), run(302, 8.5)]
+        ),  # past the floor: inside and past the watchdog's 7 days
+        *_pages(34, [run(401, 5), run(402, 35)]),  # a renamed workflow's last runs
+        rule("runs?status=completed", json_body={"workflow_runs": []}),
+        files=_files(ci["path"], edge["path"], dog["path"]),
+    )
+    # The port alone: the twin is gone, and a new twin case would need a golden recorded from the port itself.
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        code, _out, err, _calls = _run(
+            "python", "cleanup_workflow_runs", ("--dry-run",), fixture, {}, base
+        )
+    new_err = err.decode("utf-8")
+    assert code == 0
+    for kept in (101, 102, 103, 104, 105, 201, 301, 401):
+        assert "Would delete run: %d " % kept not in new_err, (
+            "run %d is inside its retention" % kept
+        )
+    for gone in (302, 402):
+        assert "Would delete run: %d (" % gone in new_err, "run %d is past its retention" % gone
+    assert "Workflow runs: would delete 2 of 110 (across 4 workflows)" in new_err
+
+
 def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> None:
     """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED, so a young low-volume workflow stays quiet."""
     result = _p10_sides(
