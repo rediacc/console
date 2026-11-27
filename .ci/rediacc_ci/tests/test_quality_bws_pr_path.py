@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 ROOT = paths.repo_root()
 CI_YML = ROOT / ".github" / "workflows" / "ci.yml"
 # The deploy-preview fetch block, a job reachable on every same-repo pull request.
-PREVIEW_FETCH_LINE = "            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET\n"
+PREVIEW_FETCH_LINE = "            ROOT_EMAIL > BWS_ROOT_EMAIL\n"
 PLANTED_NAME = "STRIPE_SECRET_KEY"
 
 
@@ -183,3 +183,61 @@ def test_the_signing_key_is_release_only() -> None:
     doc = json.loads((ROOT / gate.CONFIG_REL).read_text(encoding="utf-8"))
     for name in ("RELEASE_GPG_PRIVATE_KEY", "ACCOUNT_ED25519_PRIVATE_KEY", "CLOUDFLARE_API_TOKEN"):
         assert doc["names"][name]["class"] == gate.RELEASE_ONLY
+
+
+RECEIPT_JOB = ".github/workflows/ci-quality.yml:quality-content-receipt"
+CALLER_JOB = ".github/workflows/ci.yml:quality"
+
+
+def test_the_receipt_signer_is_exempt_by_name_and_nothing_else_holds_the_grant() -> None:
+    doc = json.loads((ROOT / gate.CONFIG_REL).read_text(encoding="utf-8"))
+    assert set(doc["id_token_exemptions"]) == {RECEIPT_JOB, CALLER_JOB}
+    res = gate.evaluate_tree(ROOT)
+    assert not [f for f in res.current if f.rule == "iii"], [
+        f.text for f in res.current if f.rule == "iii"
+    ]
+
+
+def test_an_id_token_grant_on_another_quality_job_is_not_covered_by_the_exemption(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _real_copy(tmp_path)
+    quality = root / ".github" / "workflows" / "ci-quality.yml"
+    text = quality.read_text(encoding="utf-8")
+    anchor = "  quality-content:\n"
+    head, tail = text.split(anchor, 1)
+    tail = tail.replace(
+        "    permissions:\n      contents: read\n",
+        "    permissions:\n      contents: read\n      id-token: write\n",
+        1,
+    )
+    quality.write_text(head + anchor + tail, encoding="utf-8")
+    res = _evaluate_copy(root)
+    iii = [f for f in res.current if f.rule == "iii"]
+    assert len(iii) == 1, [f.text for f in res.current]
+    assert "quality-content grants" in iii[0].text
+
+
+def test_an_exemption_that_matches_no_grant_is_a_dead_entry(tmp_path: pathlib.Path) -> None:
+    root = _real_copy(tmp_path / "tree")
+    cfg = _scratch_config(tmp_path)
+    doc = json.loads(cfg.read_text(encoding="utf-8"))
+    doc["id_token_exemptions"][".github/workflows/ci-quality.yml:quality-gone"] = doc[
+        "id_token_exemptions"
+    ][RECEIPT_JOB]
+    cfg.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    res = _evaluate_copy(root, cfg)
+    assert res.rc == 1
+    assert "quality-gone in" in "\n".join(res.stderr)
+    assert "matches no id-token grant" in "\n".join(res.stderr)
+
+
+def test_an_exemption_reason_without_blocker_is_refused(tmp_path: pathlib.Path) -> None:
+    root = _real_copy(tmp_path / "tree")
+    cfg = _scratch_config(tmp_path)
+    doc = json.loads(cfg.read_text(encoding="utf-8"))
+    doc["id_token_exemptions"][RECEIPT_JOB] = "the signer holds it"
+    cfg.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    res = _evaluate_copy(root, cfg)
+    assert res.rc == 1
+    assert "must be a string starting with 'BLOCKER:'" in "\n".join(res.stderr)

@@ -324,6 +324,10 @@
       "class": "release-only",
       "reason": "BLOCKER: the broad production Cloudflare token (Workers, D1, cache, DNS); agent/plans/PLAN-pr-path-ephemeral-credentials.md D5 gives PR jobs a scoped CLOUDFLARE_API_TOKEN_PREVIEW instead"
     },
+    "CLOUDFLARE_API_TOKEN_PREVIEW": {
+      "class": "pr-safe",
+      "reason": "minted for the PR path alone (Workers Scripts Write, D1 Write and Turnstile Sites Write on the one account, no zone, cache, DNS, KV or R2 permission, no API Tokens grant); the preview deploy and its smoke test use it in place of the broad CLOUDFLARE_API_TOKEN. Cloudflare cannot scope Workers or D1 to a name prefix, so it can still touch production Workers and D1 until D6 removes it from the PR path (PLAN-pr-path-ephemeral-credentials D5 and Risks)"
+    },
     "CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN": {
       "class": "release-only",
       "reason": "BLOCKER: a production Cloudflare credential; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
@@ -829,6 +833,10 @@
       "reason": "BLOCKER: a production credential, identifier or address; no pull-request job requests it, and classing it release-only keeps a future PR-path fetch of it a finding rather than a silent grant"
     }
   },
+  "id_token_exemptions": {
+    ".github/workflows/ci-quality.yml:quality-content-receipt": "BLOCKER: the CI receipt signer. It attests the unsigned receipt quality-content wrote (id-token and attestations: write) and checks out nothing and runs no repo code, so PR code cannot mint a token through it; the attestation's job_workflow_ref pins this workflow file as the signer identity (ci-receipt.ts ATTESTATION_SPEC, PLAN-two-track-merge-dev D6). Operator ruling 2026-11-27T09:21Z: exempt the signer by name; no other job may hold the grant",
+    ".github/workflows/ci.yml:quality": "BLOCKER: the caller of ci-quality.yml. A called workflow holds no more than its caller, so the caller carries the id-token and attestations grants quality-content-receipt needs, and GitHub fails the run at startup with no job and no log without them (run 37184675916, 2026-10-04). It is exempt only with that signer; every other ci-quality.yml job declares neither, which ci-receipt.ts --selftest asserts"
+  },
   "baseline": {
     "ids": [
       "04b1caf94ecb",
@@ -842,13 +850,11 @@
       "231f67ce59f6",
       "234b1cd825e8",
       "260643b60ad8",
-      "2a9be89119a7",
       "2af2acfe25dd",
       "2da7e8186c29",
       "317f23f47947",
       "3944afb3799f",
       "3a84be52c5de",
-      "3d4ca72c718e",
       "3e6e17f530a2",
       "462099410309",
       "46ba0cf2b8fd",
@@ -856,16 +862,12 @@
       "4840b63ac461",
       "4c33db0cb6ae",
       "4dee7d37d228",
-      "4dfa46c2c1e9",
-      "52dac51da92c",
       "5603609c7ea0",
       "579de9de6bd2",
       "58407d07b31a",
-      "5d3a801c7c0c",
       "5f49120bc016",
       "619d38785da8",
       "621e546b83b3",
-      "62ecc9a84c4c",
       "6303cccdd9d8",
       "672242f75128",
       "6c7dec4e9f47",
@@ -877,7 +879,6 @@
       "73836e029728",
       "75119b6aa69c",
       "7aef81e96fda",
-      "7f3529afa60f",
       "8c1a10021a89",
       "93da3231c65e",
       "943cf87dcd38",
@@ -899,7 +900,6 @@
       "b47c5209d8fa",
       "bc56701f7065",
       "be806941e403",
-      "cfdadb786744",
       "d8dd172bac9e",
       "da7a0bdbaeeb",
       "de8e752de114",
@@ -909,8 +909,6 @@
       "ebc201427a35",
       "f00af81b8509",
       "f402a04a31bc",
-      "f53dbf805be7",
-      "f7370a7ecf66",
       "f9f1b9dec656"
     ]
   }

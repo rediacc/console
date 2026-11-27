@@ -71,8 +71,8 @@ SCRUB_ACTION = "./.github/actions/bws-scrub"
 WORKFLOW_DIR_ENV = "WORKFLOW_DIR"
 CONFIG_ENV = "BWS_STEP_SCOPED_CONFIG"
 MIN_WINDOWS_ENV = "BWS_STEP_SCOPE_MIN_WINDOWS"
-# Counted per exported variable: 1 ACCOUNT_ED25519_PRIVATE_KEY window (cd-deploy-worker, for the www Worker; account Workers sign through LICENSE_SIGNER since PLAN-enterprise-isolation S4 and every CI job mints its own pair since PLAN-production-key-only N5), 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch.
-DEFAULT_MIN_WINDOWS = 8
+# Counted per exported variable: 1 ACCOUNT_ED25519_PRIVATE_KEY window (cd-deploy-worker, for the www Worker; account Workers sign through LICENSE_SIGNER since PLAN-enterprise-isolation S4 and every CI job mints its own pair since PLAN-production-key-only N5), 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch; the deploy-preview window went when that job began generating its tunnel key per preview (PLAN-pr-path-ephemeral-credentials D3), 8 to 7.
+DEFAULT_MIN_WINDOWS = 7
 
 ALWAYS = "always()"
 MIN_CONTROLS = 20

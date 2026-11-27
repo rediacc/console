@@ -1581,20 +1581,12 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
-            AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_API_TOKEN_PREVIEW > BWS_CLOUDFLARE_API_TOKEN_PREVIEW
             GITHUB_APP_ID > BWS_APP_ID
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
             ROOT_EMAIL > BWS_ROOT_EMAIL
-            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
-            AWS_SES_FROM > BWS_AWS_SES_FROM
-            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
             PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
       - uses: ./.github/actions/app-token
         id: app-token
@@ -1683,7 +1675,7 @@ jobs:
         working-directory: private/account
         run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}" "${PREVIEW_NAME}"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build account portal
@@ -1726,51 +1718,27 @@ jobs:
           --manifest "${GITHUB_WORKSPACE}/workers/www/dist/cli/manifest.json"
           --renet-diff "${RUNNER_TEMP}/renet.diff"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
-      # The preview Worker holds NO licence private key: it signs through its LICENSE_SIGNER binding to its
-      # own `<name>-signer` (deploy_www.word_preview_toml), which holds a delegated key certified for this
-      # preview only, never the production key (PLAN-preview-signer D1, D2). Only the production public
-      # half is pushed, which the smoke test verifies the delegation chain against.
-      - name: Set preview worker secrets
+      # The preview Worker holds NO production secret (PLAN-pr-path-ephemeral-credentials D3). Its tunnel key,
+      # session secret and server API key are generated here for this preview and pushed through the stdin of one
+      # `wrangler secret bulk` call (rediacc_ci.deploy.preview_keys); only the tunnel PUBLIC half leaves the step.
+      # It signs through its own `<name>-signer`, never a production key (PLAN-preview-signer D1, D2). The
+      # pass-through values are the public licence key, the root address and the per-PR Turnstile secret; outbound
+      # mail is off, so no AWS_SES value is fetched or sent.
+      - name: Generate and set preview worker secrets
         id: preview-secrets
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          # ONE NAME EVERYWHERE: the left side is the name the builder READS
-          # and the key it WRITES into the Worker (private/account/src/types/
-          # env.ts). The right side keeps the GitHub secret's current name.
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
-          ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
-          AWS_SES_ACCESS_KEY_ID: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
-          AWS_SES_SECRET_ACCESS_KEY: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
-          AWS_SES_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
           # Per-PR Turnstile secret comes from the create-widget step above,
           # paired with the per-PR sitekey baked into the Vite build.
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
-          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
-          AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: |
-          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_X25519_PRIVATE_KEY
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_keys
 
       # The summary names no address: the run page is as public as the repository, and the word name is what
       # keeps a preview unguessable (PLAN-preview-signer ruling 7). The operator looks the name up.
@@ -1833,8 +1801,7 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_API_TOKEN_PREVIEW > BWS_CLOUDFLARE_API_TOKEN_PREVIEW
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
             PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
 
@@ -1868,13 +1835,22 @@ jobs:
       - name: Install the Worker's wrangler
         run: npm ci --prefix workers/www
 
+      # The smoke token is a row this job plants in the preview D1 and uses within this one job, so its seed is
+      # random here and is not the Worker's session secret, which deploy-preview generates and never exports
+      # (PLAN-pr-path-ephemeral-credentials D3).
+      - name: Draw the smoke token seed
+        run: |
+          seed="$(openssl rand -hex 32)"
+          echo "::add-mask::${seed}"
+          echo "SMOKE_SEED=${seed}" >> "$GITHUB_ENV"
+
       - name: Seed test data into preview D1
         id: seed
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.seed_smoke
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
+          ACCOUNT_JWT_SECRET: ${{ env.SMOKE_SEED }}
 
       - name: Wait for preview worker
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wait_for_preview_worker

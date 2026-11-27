@@ -7,7 +7,7 @@
  *
  *   .ci/rediacc_ci/deploy/set_account_worker_secrets.py   (cd-deploy-account.yml)
  *   .ci/rediacc_ci/deploy/set_www_worker_secrets.py       (cd-deploy-worker.yml)
- *   .ci/rediacc_ci/deploy/set_preview_worker_secrets.py   (ci.yml)
+ *   .ci/rediacc_ci/deploy/preview_keys.py                 (ci.yml)
  *
  * and exactly one place decides what those variables are called on the way in:
  * the `env:` block of the workflow step whose `run:` invokes the builder. The
@@ -175,9 +175,9 @@ const PAIRS: Pair[] = [
   },
   {
     workflow: '.github/workflows/ci.yml',
-    builder: '.ci/rediacc_ci/deploy/set_preview_worker_secrets.py',
-    exportFloor: 12,
-    readFloor: 12,
+    builder: '.ci/rediacc_ci/deploy/preview_keys.py',
+    exportFloor: 5,
+    readFloor: 3,
     fanInFloor: 0,
     channelFanInFloor: 0,
   },

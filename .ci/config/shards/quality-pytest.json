@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T11:13:56.800Z",
+  "generatedAt": "2026-11-27T13:28:18.660Z",
   "legs": [
     {
       "index": 1,
@@ -449,6 +449,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_bench_sales_notify.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_record.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_mcp.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_preview_keys.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable_hotfix.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py",

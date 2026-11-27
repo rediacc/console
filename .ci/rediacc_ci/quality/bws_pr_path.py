@@ -614,6 +614,8 @@ class Config:
     classes: dict[str, str]
     baseline: list[str]
     problems: list[str]
+    # `file:job` -> reason: a job named by an operator ruling that holds `id-token: write` on purpose (rule (iii) only).
+    id_token_exemptions: dict[str, str] = field(default_factory=dict)
 
 
 def load_config(path: pathlib.Path, label: str) -> Config:
@@ -668,7 +670,32 @@ def load_config(path: pathlib.Path, label: str) -> Config:
             "%s: `baseline.ids` must be a list of finding ids (an empty list once drained)" % label
         )
         ids = []
-    return Config(classes, list(ids), problems)
+    exemptions: dict[str, str] = {}
+    raw_ex = doc.get("id_token_exemptions", {}) if isinstance(doc, dict) else {}
+    if not isinstance(raw_ex, dict):
+        problems.append(
+            "%s: `id_token_exemptions` must be an object of `file:job` -> reason" % label
+        )
+        raw_ex = {}
+    for job, reason in raw_ex.items():
+        if not re.fullmatch(r"\.github/workflows/[A-Za-z0-9_.-]+\.yml:[A-Za-z0-9_-]+", job):
+            problems.append(
+                "%s: id_token_exemptions key %r is not a `workflow-file:job` reference"
+                % (label, job)
+            )
+            continue
+        if not isinstance(reason, str) or not reason.startswith("BLOCKER:"):
+            problems.append(
+                "%s: the id_token_exemptions reason for %s must be a string starting with 'BLOCKER:'"
+                % (label, job)
+            )
+            continue
+        rejection = allowlist.validate_reason(job, reason[len("BLOCKER:") :], label)
+        if rejection is not None:
+            problems.append(rejection.message)
+            continue
+        exemptions[job] = reason
+    return Config(classes, list(ids), problems, exemptions)
 
 
 def rule_ii(
@@ -686,6 +713,11 @@ def rule_ii(
         for name in sorted(set(classes) - mapped)
     ]
     return out
+
+
+def _chain_ends_at(chain: str, job: str) -> bool:
+    """True when the last hop of a ` > `-joined call chain is `job` (`file:job`)."""
+    return chain.rsplit(" > ", maxsplit=1)[-1] == job
 
 
 def findings(scan: Scan, classes: dict[str, str]) -> list[Finding]:
@@ -779,6 +811,22 @@ def evaluate_tree(
         return Outcome(CANNOT_RUN, [], ["✗ instrument: %s" % exc])
 
     problems += rule_ii(cfg.classes, mapped, requested, cfg_label)
+    # Rule (iii) exemptions: a grant whose call chain ENDS at an exempted job is held on purpose. A caller job that
+    # carries the same grant for it is exempted by naming it too (a called workflow holds no more than its caller).
+    # An exemption no grant matches is a dead entry and refused, so a deleted job cannot leave a standing pass.
+    matched = {
+        j for j in cfg.id_token_exemptions for g in scan.grants if _chain_ends_at(g.chain, j)
+    }
+    problems += [
+        "id_token_exemptions entry %s in %s matches no id-token grant on a pull-request job; a dead entry. Fix: delete it."
+        % (j, cfg_label)
+        for j in sorted(set(cfg.id_token_exemptions) - matched)
+    ]
+    scan.grants = [
+        g
+        for g in scan.grants
+        if not any(_chain_ends_at(g.chain, j) for j in cfg.id_token_exemptions)
+    ]
     current = findings(scan, cfg.classes)
     base = set(cfg.baseline)
     new = [f for f in current if f.id not in base]
