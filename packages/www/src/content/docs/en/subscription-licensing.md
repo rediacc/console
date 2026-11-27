@@ -61,7 +61,7 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Machine slots (server-side)
 
-Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota. Every self-serve plan (Community, Professional, Business) includes one machine slot; multi-machine deployments are an Enterprise setup sized with our partners. A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. Because a slot is only held while you are actively provisioning, a single slot can still cover several machines over the course of a month.
+Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota. Registered (free) and free Professional include one machine slot. Professional and Business carry one machine slot per floating license (1 to 5 and 1 to 39 self-serve); larger deployments are an Enterprise setup sized with our partners. A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. Because a slot is only held while you are actively provisioning, a single slot can still cover several machines over the course of a month.
 
 The ceiling is read from your subscription record, not from a hard-coded plan constant, so a negotiated activation count is honored as soon as it is set on the subscription. The plan tier only decides the starting value.
 
@@ -121,17 +121,27 @@ Sizing a cluster is a conversation, not a checkbox. Activation counts for cluste
 
 Repository size depends on the entitlement level:
 
-- Community: up to `10 GB`
+- Registered (free), the Community plan: up to `10 GB`
+- free Professional: up to `100 GB`
 - paid plans: plan or contract limit
 
-Default paid-plan limits are:
+Professional and Business are priced per floating license, at the list price of the partner catalog edition: Professional `$550` a year, Business `$700` a year, Enterprise `$900` a year. Monthly billing costs 15% more than annual (annual price x 1.15 / 12), which rounds to `$53`, `$67` and `$86` a month. Professional sells 1 to 5 floating licenses self-serve, Business 1 to 39, and Enterprise starts at 40 (the partner catalog machine minimum).
 
-| Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Delegation cert default / max |
-|------|-------------------|-----------------|-------------------------------|---|
-| Community | 1 | 10 GB | 100 | 15d / 30d |
-| Professional | 1 | 100 GB | 2,000+ | 60d / 120d |
-| Business | 1 | 500 GB | 5,000+ | 90d / 180d |
-| Enterprise | Custom | 1 TB+ | 15,000+ | 120d / 365d |
+Default limits are:
+
+| Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Users | Repositories | CPUs per machine | Hosted R2 | Price per licence | Delegation cert default / max |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registered (free) | 1 | 10 GB | 100 | 1 | Unlimited | 16 | None | Free | 15d / 30d |
+| Free Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Free | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 per licence | 32 | 100 GiB per licence | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Unlimited | 250 per licence | 64 | 500 GiB per licence | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Unlimited | Per quote | Unlimited | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+The price column reads monthly / annual, in US dollars per floating license. Users are organization members, active plus pending invitations. Repositories count originals only; a fork never counts. Per-license columns (Repositories, issuances and Hosted R2 on Professional and Business) multiply by the number of floating licenses on the subscription, and the user and CPU caps do not. CPUs are logical CPUs as the operating system reports them, hyperthreads and VM vCPUs included.
+
+Registered (free) accounts get no hosted R2 backup storage and bring their own S3 store. Hosted R2 is for free Professional and paid plans.
+
+The large-machine add-on raises one named machine's CPU ceiling by 8 CPUs per pass, at `$50` a month or `$200` a year per pass, with at most 4 passes on a machine and at most 3 machines with passes per subscription. Beyond that is Enterprise.
 
 Contract-specific limits can raise or lower these values for a specific customer. Delegation cert validity is also hard-capped at `subscription.expiresAt + 3 day grace`, so monthly-billed subscriptions naturally get certs aligned to their billing cycle. See [License Chain & Delegation - Validity Policy](/en/docs/license-chain) for the full rules.
 
@@ -139,7 +149,7 @@ Contract-specific limits can raise or lower these values for a specific customer
 
 New signups start a 14-day free trial on Professional or Business. A credit card is collected at signup, and the first charge only lands when the trial ends, so cancelling before then costs nothing. One trial is available per customer.
 
-Community is the standing free floor. It is no longer a direct signup option for new accounts; instead, an account lands on Community whenever a subscription ends: cancelling during the trial, cancelling a paid plan later, or a failed payment. On the Community fallback you keep one machine with 10 GB per repository and 100 setups a month. Accounts created before the trial-based model launched keep their existing Community access.
+Community, shown as Registered (free), is the standing free floor and is not marketed as a plan. It is no longer a direct signup option for new accounts; instead, an account lands on Community whenever a subscription ends: cancelling during the trial, cancelling a paid plan later, or a failed payment. On the Community fallback one machine stays, with 10 GB per repository and 100 setups a month, and no hosted R2 backup storage. Accounts created before the trial-based model launched keep their existing Community access.
 
 Enforcement stays soft where it matters most: running repositories keep working even after a subscription ends (`up`, `down`, `delete`, autostart). Beyond that, two different rules apply, and mixing them up is what makes the 60-day grace look inconsistent:
 
