@@ -85,7 +85,7 @@ def read_legacy(root):
 
 
 def base_legacy(root):
-    """The baseline's sigs at the merge-base with the base branch, or None when there is no usable base or the file did not exist there."""
+    """`(sigs, ref_unusable)`: the baseline's sigs at the merge-base with the base branch, or `None` for sigs when there is no usable base or the file did not exist there. `ref_unusable` is True only when the merge-base itself could not be computed (no `origin/<base>` ref, a failed merge-base, a subprocess that did not run); a file that is merely absent at a real merge-base is the PR that introduces the baseline, which has nothing to grow from."""
     base = "origin/%s" % (os.environ.get("GITHUB_BASE_REF") or "main")
     try:
         mb = subprocess.run(
@@ -96,7 +96,7 @@ def base_legacy(root):
             timeout=20,
         )
         if mb.returncode != 0 or not mb.stdout.strip():
-            return None
+            return None, True
         shown = subprocess.run(
             ["git", "-C", str(root), "show", "%s:%s" % (mb.stdout.strip(), RG.LEGACY_REL)],
             capture_output=True,
@@ -105,14 +105,21 @@ def base_legacy(root):
             timeout=20,
         )
     except (OSError, subprocess.SubprocessError):
-        return None
+        return None, True
     if shown.returncode != 0:
-        return None
+        return None, False
     try:
         sigs = json.loads(shown.stdout).get("sigs")
     except (ValueError, AttributeError):
-        return None
-    return {s for s in sigs if isinstance(s, str)} if isinstance(sigs, list) else None
+        return None, False
+    return ({s for s in sigs if isinstance(s, str)} if isinstance(sigs, list) else None), False
+
+
+def growth_check_state(base, ref_unusable, in_ci):
+    """`run` when there is a merge-base copy to compare against; `refuse` when CI could not compute a merge-base (a skipped growth check would let a branch add sigs to the baseline unseen); `skip` otherwise (a local checkout with no base ref, or the PR that introduces the baseline file)."""
+    if base is not None:
+        return "run"
+    return "refuse" if ref_unusable and in_ci else "skip"
 
 
 def findings(root, live, legacy, base=None, now=None):
@@ -284,6 +291,15 @@ def selftest():
         "RD6",
         "x6",
     )
+    # The growth check may be skipped only where nothing can be compared, never in CI for a merge-base it could not compute.
+    for label, args, want in (
+        ("a merge-base copy runs the growth check", (set(), False, True), "run"),
+        ("CI with no computable merge-base refuses", (None, True, True), "refuse"),
+        ("a local run with no base ref skips", (None, True, False), "skip"),
+        ("the PR that introduces the baseline skips, in CI too", (None, False, True), "skip"),
+    ):
+        if growth_check_state(*args) != want:
+            failed.append("CONTROL RD6 growth state: %s" % label)
     if run([])[0] != 0:
         failed.append("CONTROL RD7: an empty ledger directory parsed a ledger")
     # A legacy sig is exempt from RD1, which is what the baseline is for; without this control a baseline that exempted nothing would still pass every plant above.
@@ -308,7 +324,15 @@ def main(argv):
     if problem:
         print("x reggate debt: %s" % problem, file=sys.stderr)
         return 1
-    base = base_legacy(ROOT)
+    base, ref_unusable = base_legacy(ROOT)
+    state = growth_check_state(base, ref_unusable, os.environ.get("GITHUB_ACTIONS") == "true")
+    if state == "refuse":
+        print(
+            "x reggate debt: RD6 the merge-base with origin/%s could not be computed, so the baseline's growth cannot be checked; fetch the base branch (fetch-depth 0) rather than skip it"
+            % (os.environ.get("GITHUB_BASE_REF") or "main"),
+            file=sys.stderr,
+        )
+        return 1
     live = live_branch(ROOT)
     count, found = findings(ROOT, live, legacy, base)
     if count == 0:
@@ -318,7 +342,7 @@ def main(argv):
             file=sys.stderr,
         )
         return CANNOT_RUN
-    if base is None:
+    if state == "skip":
         print(
             "  RD6 growth check skipped: no merge-base copy of %s to compare against"
             % RG.LEGACY_REL
