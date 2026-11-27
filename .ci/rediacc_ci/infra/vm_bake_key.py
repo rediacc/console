@@ -28,7 +28,7 @@ WHAT IS HASHED. The files that decide what `renet ops image build` leaves on the
 
 Test files (`*_test.go`) are never hashed: they do not reach the image.
 
-WHAT IS EXCLUDED, BY NAME, and why each one does not shape the guest disk: pkg/datastore (the bake runs no datastore work that the quick path does not redo), pkg/repository and cmd/renet/helpers.go (setup's state-record mode repair, which finds no record on a fresh bake), pkg/i18n (message text), pkg/infra/sshexec (the ssh/scp transport to the builder VM), pkg/infra/vm, vm/kvm and vm/imagedl (they drive the builder VM and fetch the pinned base image; the pin itself is hashed), opsconfig's config.go and parallel.go (fleet plumbing), cmd/renet/main.go and version.go (entry wiring and the build-time version), datastore_readme.go, backup_pull.go (system_commands.go names its methodRsync constant only in the `system check tools` list), pkg/infra/cephpkg/cephpkg.go (gpu_drivers.go uses only that package's fingerprint.go; the Ceph pins and plans reach no image), and the Windows-only process-group file.
+WHAT IS EXCLUDED, BY NAME, and why each one does not shape the guest disk: pkg/datastore (the bake runs no datastore work that the quick path does not redo), pkg/repository and cmd/renet/helpers.go (setup's state-record mode repair, which finds no record on a fresh bake), pkg/i18n (message text), pkg/infra/sshexec/capture.go (output capture only; sshexec.go and remote.go shape how the bake's commands are sent and quoted, so they are hashed),pkg/infra/vm, vm/kvm and vm/imagedl (they drive the builder VM and fetch the pinned base image; the pin itself is hashed), opsconfig's config.go and parallel.go (fleet plumbing), cmd/renet/main.go and version.go (entry wiring and the build-time version), datastore_readme.go, backup_pull.go (system_commands.go names its methodRsync constant only in the `system check tools` list), pkg/infra/cephpkg/cephpkg.go (gpu_drivers.go uses only that package's fingerprint.go; the Ceph pins and plans reach no image), and the Windows-only process-group file.
 
 COMPLETENESS IS COMPUTED, NOT TRUSTED. `findings()` walks every hashed Go file and follows two kinds of edge: an internal import (and the `pkg.Ident` references through it), and an unqualified reference to a top-level name another file of the same package declares. Every file or package the walk reaches must be classified HASH or EXCLUDE, or it is a finding, and `compute_key()` refuses to produce a key while any finding stands. A new internal import in setup_command.go therefore fails the key rather than silently leaving the new package out of it. The walk is lexical, not type-checked: a method reached only through a value is not followed, and a local variable that shares a top-level name makes the walk reach further than it needs to, never less far.
 """
@@ -116,8 +116,12 @@ PACKAGES: dict[str, str | dict[str, str]] = {
     "pkg/daemon": EXCLUDE,
     "pkg/i18n": EXCLUDE,
     "pkg/infra/vm": EXCLUDE,
-    # The ssh/scp transport the builder uses to reach its VM (deadlines, output capture); it carries the commands, it does not shape the disk.
-    "pkg/infra/sshexec": EXCLUDE,
+    # The ssh/scp transport the builder reaches its VM through. sshexec.go (SSHArgs, SCPArgs, the call deadlines) and remote.go (ShellQuote, RemoteDir) decide how the bake's disk-building commands are sent and quoted, so a change there can alter the image; capture.go only collects the output.
+    "pkg/infra/sshexec": {
+        "sshexec.go": HASH,
+        "remote.go": HASH,
+        "capture.go": EXCLUDE,
+    },
     "pkg/infra/vm/kvm": EXCLUDE,
     "pkg/infra/vm/imagedl": EXCLUDE,
 }
