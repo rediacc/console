@@ -244,6 +244,21 @@ describe('legacy blobs (per-blob PBKDF2, 100k)', () => {
   });
 });
 
+describe('a blob whose parent container is missing at rest', () => {
+  it('decrypt restores the value, creating the parent, so the next save keeps it', async () => {
+    const keyringId = await mintKey();
+    const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
+    const { ssh: _ssh, ...credentialsWithoutSsh } = sealed.credentials ?? {};
+    const parentless: RdcConfig = { ...sealed, credentials: credentialsWithoutSsh };
+    const opened = await decryptConfigFields(parentless);
+    expect(opened.credentials?.ssh?.privateKey).toBe(PRIVATE_KEY);
+    const resealed = await encryptConfigFields(opened);
+    expect(Object.keys(resealed.encryption?.encryptedFields ?? {})).toContain(
+      '/credentials/ssh/privateKey'
+    );
+  });
+});
+
 describe('device-local vs encryptAtRest invariant (D7)', () => {
   it('no device-local pointer is sealed at rest, so a re-pull restores every sealed leaf', () => {
     expect(deviceLocalSealedTemplates()).toEqual([]);

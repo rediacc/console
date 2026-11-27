@@ -13,6 +13,7 @@ import {
   canonicalJson,
   getByPointer,
   pathsToCommit,
+  setByPointer,
   walkSensitive,
 } from '../walker.js';
 
@@ -145,5 +146,28 @@ describe('walker', () => {
     const paths = pathsToCommit(sampleConfig);
     expect(paths).toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/value');
     expect(paths).not.toContain('/resources/repositories/app/tags/latest/secrets/STRIPE_KEY/mode');
+  });
+});
+
+describe('setByPointer', () => {
+  it('creates missing parent objects, as its contract says', () => {
+    const root = { credentials: {} };
+    expect(setByPointer(root, '/credentials/ssh/privateKey', 'k')).toEqual({
+      credentials: { ssh: { privateKey: 'k' } },
+    });
+    expect(setByPointer({}, '/a/b/c', 1)).toEqual({ a: { b: { c: 1 } } });
+    expect(root).toEqual({ credentials: {} });
+  });
+
+  it('removing a leaf under a missing parent creates nothing', () => {
+    expect(setByPointer({ credentials: {} }, '/credentials/ssh/privateKey', undefined)).toEqual({
+      credentials: {},
+    });
+  });
+
+  it('never replaces a primitive on the path, and never grows an array past its end', () => {
+    expect(setByPointer({ a: 'text' }, '/a/b', 1)).toEqual({ a: 'text' });
+    expect(setByPointer({ a: [] }, '/a/3/b', 1)).toEqual({ a: [] });
+    expect(setByPointer({ a: [{}] }, '/a/0/b', 1)).toEqual({ a: [{ b: 1 }] });
   });
 });

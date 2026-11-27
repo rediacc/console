@@ -138,21 +138,33 @@ export function getByPointer(root: unknown, pointer: string): unknown {
   return cursor;
 }
 
+function isContainer(value: unknown): value is Record<string, unknown> | unknown[] {
+  return value !== null && typeof value === 'object';
+}
+
 /**
  * Advance a mutable cursor (Record or Array) by one intermediate segment.
  * Returns the child container, or `undefined` if traversal should abort
- * (invalid array index or out-of-bounds).
+ * (invalid array index or out-of-bounds, or a primitive on the path). A
+ * missing object member is created as `{}` when `create` is set.
  */
 function advanceCursorWrite(
   cursor: Record<string, unknown> | unknown[],
-  segment: string
+  segment: string,
+  create: boolean
 ): Record<string, unknown> | unknown[] | undefined {
   if (Array.isArray(cursor)) {
     const idx = Number.parseInt(segment, 10);
     if (!Number.isFinite(idx) || idx < 0 || idx >= cursor.length) return undefined;
-    return cursor[idx] as Record<string, unknown> | unknown[];
+    const item = cursor[idx];
+    return isContainer(item) ? item : undefined;
   }
-  return cursor[segment] as Record<string, unknown> | unknown[];
+  const child = cursor[segment];
+  if (isContainer(child)) return child;
+  if (child !== undefined || !create) return undefined;
+  const created: Record<string, unknown> = {};
+  cursor[segment] = created;
+  return created;
 }
 
 /**
@@ -173,7 +185,9 @@ function writeAtLeaf(
 
 /**
  * Set a value at a JSON Pointer within a deep-cloned tree. Returns the cloned root.
- * Intermediate objects/arrays are created as needed; missing paths are a no-op on the clone.
+ * Missing intermediate object members are created as objects, except when `newValue` is
+ * undefined (removing a leaf under a missing parent creates nothing). A path through a primitive
+ * or past the end of an array is a no-op on the clone.
  */
 export function setByPointer(root: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
@@ -184,7 +198,7 @@ export function setByPointer(root: unknown, pointer: string, newValue: unknown):
   const clone = deepClone(root);
   let cursor: Record<string, unknown> | unknown[] = clone as Record<string, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
-    const next = advanceCursorWrite(cursor, segments[i]);
+    const next = advanceCursorWrite(cursor, segments[i], newValue !== undefined);
     if (next === undefined) return clone;
     cursor = next;
   }
