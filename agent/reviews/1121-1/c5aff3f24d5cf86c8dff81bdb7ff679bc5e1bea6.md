@@ -22,4 +22,4 @@ Body-Sig: 566b540610fd4e38
 Anchor: in-diff
 Claim: The CLI activate-repo and activate-repo-batch routes now pass the actor, but no test calls those HTTP routes. The new tests call subscriptionService directly, so dropping the actor line from either route would leave every test passing and no repo_license_issued event would carry the token or user.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed edf20ec9deb217d23021d8b34dbf002574829e66 | d778be9d 2026-11-27T11:13:04Z
