@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: fr
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Abonnement et licences
@@ -135,7 +135,7 @@ Limites par défaut :
 
 | Plan | Licences flottantes | Taille du dépôt | Émissions mensuelles de licences de dépôt | Utilisateurs | Dépôts | CPU par machine | R2 hébergé | Prix par licence | Validité cert de délégation par défaut / max |
 |------|---------------------|-----------------|-------------------------------------------|--------------|--------|-----------------|------------|------------------|----------------------------------------------|
-| Registered (gratuit) | 1 | 10 GB | 100 | 1 | Illimités | 16 | Aucun | Gratuit | 15d / 30d |
+| Registered (gratuit) | 1 | 10 GB | 100 | 1 | 5 | 16 | Aucun | Gratuit | 15d / 30d |
 | Professional gratuit | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Gratuit | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 par licence | 32 | 100 GiB par licence | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Illimités | 250 par licence | 64 | 500 GiB par licence | $67 / $700 | 90d / 180d |

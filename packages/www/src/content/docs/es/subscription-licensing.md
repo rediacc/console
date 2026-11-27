@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: es
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Suscripciones y Licencias
@@ -135,7 +135,7 @@ Los límites predeterminados son:
 
 | Plan | Licencias Flotantes | Tamaño de Repositorio | Issuances de licencia de repositorio mensuales | Usuarios | Repositorios | CPU por máquina | R2 alojado | Precio por licencia | Delegación cert predeterminado / máximo |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| Registered (gratis) | 1 | 10 GB | 100 | 1 | Ilimitados | 16 | Ninguno | Gratis | 15d / 30d |
+| Registered (gratis) | 1 | 10 GB | 100 | 1 | 5 | 16 | Ninguno | Gratis | 15d / 30d |
 | Professional gratis | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Gratis | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 por licencia | 32 | 100 GiB por licencia | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Ilimitados | 250 por licencia | 64 | 500 GiB por licencia | $67 / $700 | 90d / 180d |

@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: tr
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Abonelik ve Lisanslama
@@ -135,7 +135,7 @@ Varsayılan limitler:
 
 | Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Kullanıcılar | Depolar | Makine başına CPU | Barındırılan R2 | Lisans başına fiyat | Delegasyon sertifikası varsayılan / maks |
 |------|---------------------|-------------|----------------------------------|--------------|---------|-------------------|-----------------|---------------------|----------------------------------------|
-| Kayıtlı (ücretsiz) | 1 | 10 GB | 100 | 1 | Sınırsız | 16 | Yok | Ücretsiz | 15g / 30g |
+| Kayıtlı (ücretsiz) | 1 | 10 GB | 100 | 1 | 5 | 16 | Yok | Ücretsiz | 15g / 30g |
 | Ücretsiz Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Ücretsiz | 60g / 120g |
 | Professional | 1-5 | 100 GB | 2.000+ | 25 | Lisans başına 100 | 32 | Lisans başına 100 GiB | $53 / $550 | 60g / 120g |
 | Business | 1-39 | 500 GB | 5.000+ | Sınırsız | Lisans başına 250 | 64 | Lisans başına 500 GiB | $67 / $700 | 90g / 180g |

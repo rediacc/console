@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: pt
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Assinatura e Licenciamento
@@ -135,7 +135,7 @@ Os limites padrão são:
 
 | Plano | Licenças Flutuantes | Tamanho do Repositório | Emissões mensais de licença de repositório | Usuários | Repositórios | CPUs por máquina | R2 hospedado | Preço por licença | Validade padrão / máxima do cert. de delegação |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| Registrado (gratuito) | 1 | 10 GB | 100 | 1 | Ilimitados | 16 | Nenhum | Grátis | 15d / 30d |
+| Registrado (gratuito) | 1 | 10 GB | 100 | 1 | 5 | 16 | Nenhum | Grátis | 15d / 30d |
 | Professional gratuito | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Grátis | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 por licença | 32 | 100 GiB por licença | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Ilimitados | 250 por licença | 64 | 500 GiB por licença | $67 / $700 | 90d / 180d |

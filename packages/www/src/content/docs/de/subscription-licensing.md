@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: de
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Abonnement & Lizenzierung
@@ -135,7 +135,7 @@ Standard-Limits:
 
 | Plan | Floating-Lizenzen | Repository-Größe | Monatliche Repo-Lizenzausstellungen | Benutzer | Repositories | CPUs pro Maschine | Gehostetes R2 | Preis pro Lizenz | Delegierungszert. Standard / Max |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| Registriert (kostenlos) | 1 | 10 GB | 100 | 1 | Unbegrenzt | 16 | Keines | Kostenlos | 15d / 30d |
+| Registriert (kostenlos) | 1 | 10 GB | 100 | 1 | 5 | 16 | Keines | Kostenlos | 15d / 30d |
 | Kostenloses Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Kostenlos | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 pro Lizenz | 32 | 100 GiB pro Lizenz | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Unbegrenzt | 250 pro Lizenz | 64 | 500 GiB pro Lizenz | $67 / $700 | 90d / 180d |

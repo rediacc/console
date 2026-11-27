@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: et
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Tellimus ja litsentsid
@@ -135,7 +135,7 @@ Vaikepiirangud on:
 
 | Plaan | Hõljuvad litsentsid | Repositooriumi suurus | Igakuised repositooriumilitsentside väljastamised | Kasutajad | Repositooriumid | CPU-sid masina kohta | Hostitud R2 | Hind litsentsi kohta | Delegeerimissertifikaadi vaikimisi/max |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| Registreeritud (tasuta) | 1 | 10 GB | 100 | 1 | Piiramatu | 16 | Puudub | Tasuta | 15d / 30d |
+| Registreeritud (tasuta) | 1 | 10 GB | 100 | 1 | 5 | 16 | Puudub | Tasuta | 15d / 30d |
 | Tasuta Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Tasuta | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 litsentsi kohta | 32 | 100 GiB litsentsi kohta | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | Piiramatu | 250 litsentsi kohta | 64 | 500 GiB litsentsi kohta | $67 / $700 | 90d / 180d |

@@ -7,8 +7,8 @@ tags:
 subcategory: account
 order: 7
 language: ko
-sourceHash: "4d9fc42d2493e500"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # 구독 및 라이선싱
@@ -133,7 +133,7 @@ Professional과 Business는 플로팅 라이선스 단위로 가격이 책정되
 
 | Plan | Floating Licenses | Repository Size | Monthly repo license issuances | Users | Repositories | CPUs per machine | Hosted R2 | Price per licence | Delegation cert default / max |
 |------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
-| 등록(무료) | 1 | 10 GB | 100 | 1 | 무제한 | 16 | 없음 | 무료 | 15d / 30d |
+| 등록(무료) | 1 | 10 GB | 100 | 1 | 5 | 16 | 없음 | 무료 | 15d / 30d |
 | 무료 Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | 무료 | 60d / 120d |
 | Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 라이선스당 | 32 | 100 GiB 라이선스당 | $53 / $550 | 60d / 120d |
 | Business | 1-39 | 500 GB | 5,000+ | 무제한 | 250 라이선스당 | 64 | 500 GiB 라이선스당 | $67 / $700 | 90d / 180d |
