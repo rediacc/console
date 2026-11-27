@@ -14,6 +14,7 @@ import {
   renetOlderThanCliMessage,
 } from './job-client.js';
 import { cleanRelayLine, isLogrusLine, stripRelayPrefix } from './output-lines.js';
+import { createLineSplitter } from './stream-lines.js';
 import type { ExecuteOptions, RenetEvent } from './types.js';
 
 type StepEntry = { name: string; duration_ms: number; detail?: string };
@@ -231,22 +232,17 @@ type StdoutHandler = ((data: Buffer) => void) & { flush?: () => void };
 
 /** Handle NDJSON events from renet in events mode. */
 function handleEventsStdout(onEvent: (event: RenetEvent) => void): StdoutHandler {
-  let lineBuffer = '';
-  return (data: Buffer) => {
-    lineBuffer += data.toString();
-    const lines = lineBuffer.split('\n');
-    lineBuffer = lines.pop() ?? '';
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      try {
-        const event = JSON.parse(trimmed) as RenetEvent;
-        onEvent(event);
-      } catch {
-        writeStdout(`${line}\n`);
-      }
+  const splitter = createLineSplitter((line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    try {
+      const event = JSON.parse(trimmed) as RenetEvent;
+      onEvent(event);
+    } catch {
+      writeStdout(`${line}\n`);
     }
-  };
+  });
+  return (data: Buffer) => splitter.push(data);
 }
 
 /**
@@ -273,24 +269,19 @@ function renderStepEvent(
 
 /** Handle stdout in non-events, non-capture mode: detect step events and render them. */
 function handleStepDetectionStdout(): StdoutHandler {
-  let stepLineBuffer = '';
-  return (data: Buffer) => {
-    stepLineBuffer += data.toString();
-    const stepLines = stepLineBuffer.split('\n');
-    stepLineBuffer = stepLines.pop() ?? '';
-    for (const sl of stepLines) {
-      const trimmed = sl.trim();
-      const jsonIdx = trimmed.indexOf('{');
-      if (jsonIdx < 0) continue;
-      try {
-        const p = JSON.parse(trimmed.slice(jsonIdx)) as Record<string, unknown>;
-        // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
-        renderStepEvent(p, getOutputFormat() === 'json' ? writeStderr : writeStdout);
-      } catch {
-        /* not JSON, ignore */
-      }
+  const splitter = createLineSplitter((sl) => {
+    const trimmed = sl.trim();
+    const jsonIdx = trimmed.indexOf('{');
+    if (jsonIdx < 0) return;
+    try {
+      const p = JSON.parse(trimmed.slice(jsonIdx)) as Record<string, unknown>;
+      // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
+      renderStepEvent(p, getOutputFormat() === 'json' ? writeStderr : writeStdout);
+    } catch {
+      /* not JSON, ignore */
     }
-  };
+  });
+  return (data: Buffer) => splitter.push(data);
 }
 
 /**
@@ -306,8 +297,6 @@ function handleStepDetectionStdout(): StdoutHandler {
  * printed: leaking a `{"step_done":...}` line would poison `$(rdc repo exec …)`.
  */
 function handlePassthroughStdout(renderSteps: boolean): StdoutHandler {
-  let lineBuffer = '';
-
   const emit = (line: string): void => {
     const trimmed = line.trim();
     const jsonIdx = trimmed.indexOf('{');
@@ -328,18 +317,9 @@ function handlePassthroughStdout(renderSteps: boolean): StdoutHandler {
     if (cleaned !== undefined) writeStdout(`${cleaned}\n`);
   };
 
-  const handler: StdoutHandler = (data: Buffer) => {
-    lineBuffer += data.toString();
-    const lines = lineBuffer.split('\n');
-    lineBuffer = lines.pop() ?? '';
-    for (const line of lines) emit(line);
-  };
-  handler.flush = () => {
-    if (!lineBuffer) return;
-    const tail = lineBuffer;
-    lineBuffer = '';
-    emit(tail);
-  };
+  const splitter = createLineSplitter(emit);
+  const handler: StdoutHandler = (data: Buffer) => splitter.push(data);
+  handler.flush = () => splitter.flush();
   return handler;
 }
 

@@ -25,7 +25,6 @@
  * job-remote.ts, which imports from here and never the other way around.
  */
 
-import { StringDecoder } from 'node:string_decoder';
 import type { BackgroundEnvelope, JobOverlap } from '@rediacc/shared/cli-contract/wire';
 import { z } from 'zod';
 import { t } from '../../i18n/index.js';
@@ -33,6 +32,7 @@ import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
 import { failedJobStderr, type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
+import { createLineSplitter } from './stream-lines.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
 const UNKNOWN_JOB_ID = '?';
@@ -719,22 +719,16 @@ export function buildJobGcCommand(params: {
  * line belongs to the attempt that died, and gluing it onto the first line of a
  * resumed stream would corrupt it.
  *
- * Lines have no length cap: a `backup browse -o json` listing is one record of
- * several MiB. Bytes go through one StringDecoder, so a multi-byte character
- * split across two chunks is decoded whole (a per-chunk `toString()` turned it
- * into U+FFFD), and each chunk is searched for newlines on its own while the
- * partial line accumulates as pieces, so a large record costs linear time
- * rather than a re-split of the whole buffered line per chunk.
+ * Lines go through createLineSplitter: no length cap, multi-byte characters
+ * decoded whole across chunk boundaries, linear in the record size.
  */
 export function createEventLineReader(
   onEvent: (event: RenetEvent, line?: number) => void,
   startLine = 0
 ): (chunk: Buffer) => void {
-  const decoder = new StringDecoder('utf8');
-  let pending: string[] = [];
   let lineNumber = startLine;
 
-  const handleLine = (line: string): void => {
+  const splitter = createLineSplitter((line: string): void => {
     // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
     lineNumber += 1;
     const trimmed = line.trim();
@@ -745,22 +739,9 @@ export function createEventLineReader(
     } catch {
       writeStdout(`${line}\n`);
     }
-  };
+  });
 
-  return (chunk: Buffer) => {
-    const text = decoder.write(chunk);
-    let start = 0;
-    let newline = text.indexOf('\n');
-    while (newline >= 0) {
-      pending.push(text.slice(start, newline));
-      const line = pending.join('');
-      pending = [];
-      handleLine(line);
-      start = newline + 1;
-      newline = text.indexOf('\n', start);
-    }
-    if (start < text.length) pending.push(text.slice(start));
-  };
+  return (chunk: Buffer) => splitter.push(chunk);
 }
 
 /**
