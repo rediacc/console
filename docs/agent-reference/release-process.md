@@ -84,6 +84,20 @@ What can still split the pair: `init` failing before its tag step, or the dispat
 
 The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches the edge workflow with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
 
+### Release notes
+
+**Latest is stable.** The GitHub `Latest` badge names the stable version, and only `.ci/rediacc_ci/release/mark_production.py` moves it (`gh release edit <V> --latest`, called from `cd-release-stable.yml`). An edge Release is created with `--latest=false`, so v4 can exist while Latest names an older stable version. Each edge body carries one line naming the current stable version.
+
+**Source.** The body is built from the `Release-Note:` trailers of the commits in the range (grammar and requirement rule in [ci-gates.md](ci-gates.md) *Commit policy*), not from `--generate-notes`. `.ci/rediacc_ci/release/release_notes.py` reads the console range and, for each submodule, the gitlink delta and the submodule commits inside it, so a note counts once. Notes are deduplicated by normalized text, and `none` notes are counted and never shown.
+
+**Body format.** Three groups, in commit order: Added (`feat`), Fixed (`fix`), Improved (`perf`), with a `!` or `BREAKING CHANGE:` footer prefixing the note with "Breaking:". An empty range reads "No customer-facing changes recorded in this range." The body ends with the stable line and `**Full Changelog**: <repo>/compare/<start tag>...v<V>`. `create_github_release --dry-run` prints the body and the `gh` argv and writes nothing. An existing Release body is never rewritten.
+
+**Start tag.** The range starts at the newest `v*` tag older than the new one that HAS a GitHub Release, read through `gh release list`, never from local tags or the `production` ref.
+
+**Orphan tags.** A tag with no Release is an orphan. It is skipped as a start, its changes fall into the next Release's range, and the body names it. An orphan is never deleted, since submodule tags and pinned artifacts may reference it. A retry run completes the Release of its own version, and `create_github_release` refuses a tag that already exists at a commit other than `GITHUB_SHA`.
+
+**Files on the releases origin.** `publish` renders the notes once and uploads `cli/v<V>/release-notes.json` (`version`, `start_tag`, `orphans`, `groups`, `stable`); the Release body and the www changelog page both read it. `cli/stable/history.json` holds one `{version, promoted_at}` row per stable promote, appended by the soak promote and the `publish_stable` hotfix lane and excluded from the edge-to-stable copy. An edge version E is "in stable since S" for the oldest S in the history with S >= E. Versions older than `since` in `.ci/config/release-notes.json` show no customer notes.
+
 ## Release to Stable (`cd-release-stable.yml`)
 
 ```
