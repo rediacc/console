@@ -986,6 +986,25 @@ describe('RemoteConfigAdapter', () => {
         mockConfigServerFetch.mockRejectedValue(refused());
         await expect(adapter.policyContext()).rejects.toBeInstanceOf(RemoteUnreachableError);
       });
+
+      it('reads the kept context with no request and no token (review df48a12a.1)', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: '',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        await expect(adapter.cachedPolicyContext()).resolves.toEqual(KEPT);
+        expect(mockConfigServerFetch).not.toHaveBeenCalled();
+      });
+
+      it('control: reads no context kept for another binding', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, binding: 'store-001/other/team-001', policyContext: KEPT },
+        });
+        await expect(adapter.cachedPolicyContext()).resolves.toBeUndefined();
+      });
     });
   });
 

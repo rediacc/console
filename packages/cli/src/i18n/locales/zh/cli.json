@@ -3689,6 +3689,7 @@
       "limitsGrantBlocked": "代理无法更改主仓库 “{{name}}” 的资源限制：更低的上限可能导致其容器因 OOM 被终止。\n\n用户：如需允许，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或用 * 表示所有仓库）。分叉无需此设置。",
       "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。",
       "policyDenied": "当前策略不允许“rdc {{command}}”。拒绝它的规则见详细信息。",
+      "policyUnjudged": "“rdc {{command}}”须由配置“{{name}}”的策略判定，但无法打开其会话，且本设备没有保存先前会话的判定，因此未执行任何操作：{{error}}\n\n请先恢复访问（rdc subscription login 或 rdc config remote status），再重新运行。",
       "grandRepoDenied": "“rdc {{command}}”会更改 grand（生产）仓库“{{name}}”，而当前策略不允许更改 grand 仓库。\n\n请改为在分叉上操作：\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "“rdc {{command}}”是集群操作，而当前策略不允许集群操作。",
       "confirmationRequired": "“rdc {{command}}”是破坏性命令，会更改 grand（生产）仓库“{{name}}”。\n\n请先征得用户确认，然后加上 {{flag}} {{value}} 再次运行同一命令。",

@@ -25,9 +25,11 @@ import type {
   RemoteConfigAdapter,
   RemotePolicyContext,
 } from '../adapters/remote-config-adapter.js';
+import { findUnreachable, RemoteAuthError } from '../adapters/remote-config-errors.js';
 import { COMMAND_METADATA } from '../config/command-metadata.js';
 import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
+import { RemoteTokenRefreshError } from '../services/config/device-token-refresh.js';
 import { localPolicyCeiling } from '../services/config/policy-record.js';
 import { auditLog } from '../services/core/audit-log.js';
 import { currentRequestContext } from '../services/core/request-context.js';
@@ -242,12 +244,13 @@ export const SESSION_RECOVERY_COMMANDS: ReadonlySet<string> = new Set([
 const LOCAL_FORM_RECOVERY_COMMANDS: ReadonlySet<string> = new Set(['config remote disable']);
 
 /**
- * Commands that run on this workstation and never read the config store: opening the remote
+ * Commands that only READ this workstation's state and never the config store: opening the remote
  * session for them would renew the config token (and fail on a device whose login is tied to
  * another address) for nothing. Judged as the local owner with no policy ceiling, whatever the
- * active config is; an agent still meets the agent rules. `ops *` drives the local libvirt VMs,
- * `config current|list|init` read or create local files only, `version` asks the account server
- * with no config token, and `feedback *` reads and sends this device's own error ring.
+ * active config is; an agent still meets the agent rules. `ops check|status` probe the local
+ * libvirt VMs, `config current|list` read local files, `version` asks the account server with no
+ * config token, and `feedback list|show` read this device's own error ring. `tools *`,
+ * `completion` and `update` keep the CLI itself working, so a broken session never strands them.
  */
 export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
   'tools install',
@@ -256,16 +259,28 @@ export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
   'update',
   'version',
   'ops check',
+  'ops status',
+  'config current',
+  'config list',
+  'feedback list',
+  'feedback show',
+]);
+
+/**
+ * Workstation commands that CHANGE something or reach machines, so a remote config's member
+ * policy still judges them, though their work never reads the config store. The session is tried
+ * first; when it cannot be opened for a reason short of a closed server path (an unreachable
+ * server, a token that cannot be renewed) the run is judged with the member policy the last
+ * opened session recorded on this device (RemoteConfigAdapter.cachedPolicyContext). With no such
+ * record the run is refused, naming the session error. `ops down|setup|up|ssh` drive and enter the
+ * local VMs, `config init` writes a config file, and `feedback report` sends the error ring.
+ */
+export const SESSION_OPTIONAL_COMMANDS: ReadonlySet<string> = new Set([
   'ops down',
   'ops setup',
   'ops ssh',
-  'ops status',
   'ops up',
-  'config current',
-  'config list',
   'config init',
-  'feedback list',
-  'feedback show',
   'feedback report',
 ]);
 
@@ -273,14 +288,17 @@ export const WORKSTATION_ONLY_COMMANDS: ReadonlySet<string> = new Set([
  * Which session failures leave a run unjudged: `none` refuses every one, `any` admits every one
  * (SESSION_RECOVERY_COMMANDS), and `closed-server-path` admits only a definitive answer that the
  * server path is closed for good, by `closedServerPath`, the same test that names `--local` in the
- * server-backed refusal. `never-open` (WORKSTATION_ONLY_COMMANDS) does not open the session at all.
+ * server-backed refusal. `never-open` (WORKSTATION_ONLY_COMMANDS) does not open the session at all,
+ * and `cached` (SESSION_OPTIONAL_COMMANDS) judges with this device's recorded member policy when
+ * the session cannot be opened.
  */
-type SessionRecovery = 'none' | 'any' | 'closed-server-path' | 'never-open';
+type SessionRecovery = 'none' | 'any' | 'closed-server-path' | 'never-open' | 'cached';
 
 /** The session failures this run may skip judgement on. */
 function sessionRecoveryOf(commandPath: string, actionCommand: Command): SessionRecovery {
   if (SESSION_RECOVERY_COMMANDS.has(commandPath)) return 'any';
   if (WORKSTATION_ONLY_COMMANDS.has(commandPath)) return 'never-open';
+  if (SESSION_OPTIONAL_COMMANDS.has(commandPath)) return 'cached';
   if (!LOCAL_FORM_RECOVERY_COMMANDS.has(commandPath)) return 'none';
   return (actionCommand.opts() as { local?: unknown }).local === true
     ? 'closed-server-path'
@@ -308,15 +326,21 @@ const remoteJudgements = new WeakMap<RemoteConfigAdapter, Promise<RemotePolicyCo
  * A REMOTE config is judged as the account server names its token's member: the org role and
  * email from `/configs/session` and the effective policy from the policy record
  * (RemoteConfigAdapter.policyContext). A member is never judged as an owner: when the session
- * cannot be opened the run is refused with that error, save for a recovery run (`sessionRecoveryOf`).
+ * cannot be opened the run is refused with that error, save for a recovery run and a
+ * session-optional run judged with the recorded member policy (`sessionRecoveryOf`).
  */
-async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement | null> {
+async function localJudgement(
+  recovery: SessionRecovery,
+  commandPath: string
+): Promise<LocalJudgement | null> {
   const kind = isAgentEnvironment() ? 'agent' : 'human';
   const owner: DecisionPrincipal = { kind, userEmail: '', orgRole: 'owner' };
   const name = configService.getCurrentName();
   if (!(await configFileStorage.exists(name))) return { principal: owner, policy: null };
   const config = await configFileStorage.load(name);
-  if (config.remote !== undefined) return remoteOrOwner(kind, recovery, name, config.remote);
+  if (config.remote !== undefined) {
+    return remoteOrOwner(kind, recovery, { commandPath, configName: name, remote: config.remote });
+  }
   if (config.policy === undefined) return { principal: owner, policy: null };
   const effective = localPolicyCeiling(config);
   for (const document of [effective.org, effective.team]) {
@@ -327,6 +351,13 @@ async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement
   return { principal: owner, policy: effective };
 }
 
+/** What a remote judgement names: the command judged and the active config it is judged under. */
+interface RemoteRun {
+  commandPath: string;
+  configName: string;
+  remote: RemoteConfig;
+}
+
 /**
  * A workstation-only command never opens the session (WORKSTATION_ONLY_COMMANDS): no token
  * renewal and no policy fetch, so it is judged as the local owner with no ceiling.
@@ -334,24 +365,39 @@ async function localJudgement(recovery: SessionRecovery): Promise<LocalJudgement
 function remoteOrOwner(
   kind: DecisionPrincipal['kind'],
   recovery: SessionRecovery,
-  configName: string,
-  remote: RemoteConfig
+  run: RemoteRun
 ): Promise<LocalJudgement | null> {
   if (recovery === 'never-open') {
     return Promise.resolve({ principal: { kind, userEmail: '', orgRole: 'owner' }, policy: null });
   }
-  return remoteJudgement(kind, recovery, configName, remote);
+  return remoteJudgement(kind, recovery, run);
+}
+
+/**
+ * A session failure the recorded member policy may stand in for (`cached` recovery): the server
+ * could not be reached, or the config token is dead or could not be renewed. A closed server path
+ * (the account left the store, the store copy is gone) is never one, so a member the server no
+ * longer admits is not judged with a policy it once granted.
+ */
+async function cachedMayStandIn(error: unknown, run: RemoteRun): Promise<boolean> {
+  const unanswered =
+    findUnreachable(error) !== undefined ||
+    error instanceof RemoteAuthError ||
+    error instanceof RemoteTokenRefreshError;
+  if (!unanswered) return false;
+  const { closedServerPath } = await import('../commands/config-remote-unlink.js');
+  return closedServerPath(error, run.configName, run.remote) === undefined;
 }
 
 /** The session's principal and policy for a remote config (see `localJudgement`). */
 async function remoteJudgement(
   kind: DecisionPrincipal['kind'],
   recovery: SessionRecovery,
-  configName: string,
-  remote: RemoteConfig
+  run: RemoteRun
 ): Promise<LocalJudgement | null> {
+  let adapter: RemoteConfigAdapter | null = null;
   try {
-    const adapter = await configService.getActiveRemoteAdapter();
+    adapter = await configService.getActiveRemoteAdapter();
     if (!adapter) throw new Error('The active config names a remote store but has no adapter.');
     let pending = remoteJudgements.get(adapter);
     if (!pending) {
@@ -361,14 +407,50 @@ async function remoteJudgement(
     const { principal, policy } = await pending;
     return { principal: { kind, ...principal }, policy };
   } catch (error) {
-    if (recovery === 'any') return null;
-    if (recovery === 'closed-server-path') {
-      // Loaded only on this failure path; the unlink module owns the test of a closed server path.
-      const { closedServerPath } = await import('../commands/config-remote-unlink.js');
-      if (closedServerPath(error, configName, remote) !== undefined) return null;
-    }
-    throw error;
+    return sessionFailure(kind, recovery, run, { adapter, error });
   }
+}
+
+/** A session that could not be opened: unjudged, judged from the record, or the error rethrown. */
+async function sessionFailure(
+  kind: DecisionPrincipal['kind'],
+  recovery: SessionRecovery,
+  run: RemoteRun,
+  { adapter, error }: { adapter: RemoteConfigAdapter | null; error: unknown }
+): Promise<LocalJudgement | null> {
+  if (recovery === 'any') return null;
+  if (recovery === 'closed-server-path') {
+    // Loaded only on this failure path; the unlink module owns the test of a closed server path.
+    const { closedServerPath } = await import('../commands/config-remote-unlink.js');
+    if (closedServerPath(error, run.configName, run.remote) !== undefined) return null;
+  }
+  if (recovery === 'cached' && adapter && (await cachedMayStandIn(error, run))) {
+    return cachedJudgement(kind, adapter, run, error);
+  }
+  throw error;
+}
+
+/**
+ * The judgement of a `cached` run whose session could not be opened: the member and policy the
+ * last opened session recorded on this device, else a refusal naming the session error.
+ */
+async function cachedJudgement(
+  kind: DecisionPrincipal['kind'],
+  adapter: RemoteConfigAdapter,
+  run: RemoteRun,
+  error: unknown
+): Promise<LocalJudgement> {
+  const kept = await adapter.cachedPolicyContext();
+  if (kept) return { principal: { kind, ...kept.principal }, policy: kept.policy };
+  throw new CliExitError(
+    ERROR_CODES.VALIDATION_ERROR,
+    t('errors.agent.policyUnjudged', {
+      command: run.commandPath,
+      name: run.configName,
+      error: error instanceof Error ? error.message : String(error),
+    }),
+    { details: ['POLICY_UNJUDGED'] }
+  );
 }
 
 const LIVE_COMMANDS: readonly string[] = CLI_CONTRACT.commands.map((c) => c.pathKey);
@@ -524,7 +606,7 @@ async function enforceLocal(
   recovery: SessionRecovery = 'none'
 ): Promise<void> {
   if (currentRequestContext() !== undefined) return;
-  const judgement = await localJudgement(recovery);
+  const judgement = await localJudgement(recovery, commandPath);
   if (judgement === null) return;
   const { principal, policy } = judgement;
   if (principal.kind === 'human' && policy === null) return;

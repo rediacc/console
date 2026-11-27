@@ -3689,6 +3689,7 @@
       "limitsGrantBlocked": "エージェントはグランドリポジトリ「{{name}}」のリソース制限を変更できません。上限を下げるとそのコンテナが OOM で終了する可能性があります。\n\nユーザー: 許可するには、エージェントのセッションを開始する前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（すべてのリポジトリなら *）を設定してください。フォークには不要です。",
       "limitsGrantOverride": "グランドリポジトリ「{{name}}」の制限変更では、エージェントが設定した上書きは受け付けません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。許可できるのは、エージェントの起動前のユーザーだけです。",
       "policyDenied": "現在のポリシーでは「rdc {{command}}」は許可されていません。拒否したルールは詳細に示されています。",
+      "policyUnjudged": "「rdc {{command}}」は構成「{{name}}」のポリシーで判定する必要がありますが、セッションを開けず、このデバイスには以前のセッションの判定も残っていないため、何も実行していません: {{error}}\n\nアクセスを回復してから（rdc subscription login または rdc config remote status）、もう一度実行してください。",
       "grandRepoDenied": "「rdc {{command}}」は grand（本番）リポジトリ「{{name}}」を変更しますが、現在のポリシーでは grand リポジトリの変更は許可されていません。\n\n代わりにフォークで作業してください:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "「rdc {{command}}」はクラスター操作ですが、現在のポリシーではクラスター操作は許可されていません。",
       "confirmationRequired": "「rdc {{command}}」は破壊的なコマンドで、grand（本番）リポジトリ「{{name}}」を変更します。\n\nユーザーに確認を求めてから、同じコマンドを {{flag}} {{value}} を付けて再実行してください。",

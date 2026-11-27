@@ -21,7 +21,15 @@ import { join } from 'node:path';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { serverFetch } = vi.hoisted(() => ({ serverFetch: vi.fn() }));
+const { serverFetch, runOps } = vi.hoisted(() => ({
+  serverFetch: vi.fn(),
+  runOps: vi.fn(() => Promise.resolve(0)),
+}));
+
+// `ops up` must never reach the host's real VMs from a test, even when a regressed judge lets it run.
+vi.mock('../services/executor/ops-executor.js', () => ({
+  opsExecutorService: { runOpsStreaming: runOps },
+}));
 
 vi.mock('../services/config/config-server-client.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../services/config/config-server-client.js')>()),
@@ -158,6 +166,7 @@ describe('a remote config whose server is unreachable', () => {
     process.env.REDIACC_DEFAULT_OUTPUT = 'table';
     delete process.env.REDIACC_TOKEN;
     serverFetch.mockReset().mockRejectedValue(refusedConnection());
+    runOps.mockClear();
     writeCachedConfig();
   });
   afterEach(() => {
@@ -207,5 +216,30 @@ describe('a remote config whose server is unreachable', () => {
     expect(run.code).not.toBe(0);
     expect(run.errors).toContain('POLICY_DENIED');
     expect(run.stdout).not.toContain('cached-box');
+  });
+
+  // Review df48a12a.1: a read-only workstation verb skips the session; a mutating one is judged by the kept member policy, and refused when none was kept.
+  it('runs the read-only config current with no session kept, never asking the server', async () => {
+    writeTokenFile(undefined);
+    const run = await rdc('config', 'current');
+    expect(run.code).toBe(0);
+    expect(serverFetch).not.toHaveBeenCalled();
+  });
+
+  it('judges ops up offline as the kept member, so the policy refuses it before it runs', async () => {
+    writeTokenFile(MEMBER_CONTEXT);
+    const run = await rdc('ops', 'up');
+    expect(run.code).not.toBe(0);
+    expect(run.errors).toContain('POLICY_DENIED');
+    expect(runOps).not.toHaveBeenCalled();
+  });
+
+  it('control: ops up offline with no session kept fails closed, naming the unreachable server', async () => {
+    writeTokenFile(undefined);
+    const run = await rdc('ops', 'up');
+    expect(run.code).not.toBe(0);
+    expect(run.errors).toContain('POLICY_UNJUDGED');
+    expect(run.errors).toContain(`Config server ${SERVER} is unreachable`);
+    expect(runOps).not.toHaveBeenCalled();
   });
 });

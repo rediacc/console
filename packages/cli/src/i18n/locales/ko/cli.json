@@ -3689,6 +3689,7 @@
       "limitsGrantBlocked": "에이전트는 그랜드 저장소 \"{{name}}\"의 리소스 제한을 변경할 수 없습니다. 상한을 낮추면 컨테이너가 OOM으로 종료될 수 있습니다.\n\n사용자: 허용하려면 에이전트 세션을 시작하기 전에 터미널에서 REDIACC_ALLOW_GRAND_REPO={{name}}(모든 저장소는 *)를 설정하세요. 포크에는 필요하지 않습니다.",
       "limitsGrantOverride": "그랜드 저장소 \"{{name}}\"의 제한 변경에는 에이전트가 설정한 재정의가 허용되지 않습니다.\n\nREDIACC_ALLOW_GRAND_REPO를 설정하려고 하지 마세요. 에이전트가 시작되기 전에 사용자만 허용할 수 있습니다.",
       "policyDenied": "현재 정책은 \"rdc {{command}}\"를 허용하지 않습니다. 거부한 규칙은 세부 정보에 나와 있습니다.",
+      "policyUnjudged": "\"rdc {{command}}\"는 구성 \"{{name}}\"의 정책으로 판정해야 하지만 세션을 열 수 없었고 이 기기에는 이전 세션의 판정도 남아 있지 않아 아무것도 실행하지 않았습니다: {{error}}\n\n액세스를 복구한 뒤(rdc subscription login 또는 rdc config remote status) 다시 실행하세요.",
       "grandRepoDenied": "\"rdc {{command}}\"는 grand(프로덕션) 저장소인 \"{{name}}\"을(를) 변경하지만, 현재 정책은 grand 저장소 변경을 허용하지 않습니다.\n\n대신 포크에서 작업하세요:\n  rdc repo fork {{name}} --tag <tag-name>",
       "clusterOpsDenied": "\"rdc {{command}}\"는 클러스터 작업이며, 현재 정책은 클러스터 작업을 허용하지 않습니다.",
       "confirmationRequired": "\"rdc {{command}}\"는 파괴적인 명령으로 grand(프로덕션) 저장소인 \"{{name}}\"을(를) 변경합니다.\n\n사용자에게 확인을 받은 뒤 같은 명령을 {{flag}} {{value}}와 함께 다시 실행하세요.",

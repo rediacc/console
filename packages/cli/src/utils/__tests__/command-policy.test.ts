@@ -12,7 +12,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const state = vi.hoisted(() => ({
   config: undefined as unknown,
   fileExists: true,
-  adapter: null as null | { policyContext: () => Promise<unknown> },
+  adapter: null as null | {
+    policyContext: () => Promise<unknown>;
+    cachedPolicyContext?: () => Promise<unknown>;
+  },
 }));
 
 vi.mock('../../services/config/config-resources.js', () => ({
@@ -78,6 +81,7 @@ import {
   COMMAND_POLICIES,
   enforceResolvedTarget,
   enforceRootCommand,
+  SESSION_OPTIONAL_COMMANDS,
   SESSION_RECOVERY_COMMANDS,
   setConfirmGrand,
   validateRemotePath,
@@ -359,8 +363,8 @@ describe('a remote config, judged as the session names its member (D2)', () => {
   );
 
   // vm:check A2.3 (2026-11-27): `ops status` and `config current` on a remote config whose login was tied to another address died with the renewal refusal before their actions ran.
-  it.each(['ops status', 'ops up', 'config current'])(
-    'runs the local verb %s on a remote config whose token cannot be renewed',
+  it.each(['ops status', 'ops check', 'config current', 'version'])(
+    'runs the read-only local verb %s on a remote config whose token cannot be renewed',
     async (commandPath) => {
       mockIsAgent.mockReturnValue(false);
       state.config = { remote: { storeId: 's', configId: 'c', apiUrl: 'https://acct.example' } };
@@ -387,6 +391,95 @@ describe('a remote config, judged as the session names its member (D2)', () => {
   it('names only live commands as workstation-only', () => {
     const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
     for (const path of WORKSTATION_ONLY_COMMANDS) expect(live).toContain(path);
+  });
+
+  // Review df48a12a.1: a verb that changes the workstation or reaches machines is still judged by the member policy, with the one this device recorded when the session cannot be opened.
+  describe('a session-optional workstation verb', () => {
+    const REMOTE_ON_ACCT = {
+      remote: { storeId: 's', configId: 'c', apiUrl: 'https://acct.example' },
+    };
+    const MEMBER = { orgRole: 'member', userEmail: 'm@example.com' };
+    const allowing = { org: { version: 1, defaults: { commands: { allow: ['*'] } } } };
+    const denying = {
+      org: { version: 1, defaults: { commands: { allow: ['*'], deny: ['ops up'] } } },
+    };
+    const unrenewable = () =>
+      new RemoteTokenRefreshError('login_ip_mismatch', 'tied to another address');
+    const run = (commandPath: string) =>
+      enforceRootCommand(commandPath, undefined, { opts: () => ({}) } as unknown as Command);
+
+    /** An adapter whose session fails with `failure` and whose token file recorded `kept`. */
+    function offline(failure: Error, kept: unknown) {
+      const policyContext = vi.fn(() => Promise.reject(failure));
+      const cachedPolicyContext = vi.fn(() => Promise.resolve(kept));
+      state.adapter = { policyContext, cachedPolicyContext };
+      return { policyContext, cachedPolicyContext };
+    }
+
+    beforeEach(() => {
+      mockIsAgent.mockReturnValue(false);
+      state.config = REMOTE_ON_ACCT;
+    });
+
+    it.each([...SESSION_OPTIONAL_COMMANDS])(
+      'still opens the session for %s (it is not workstation-only)',
+      async (commandPath) => {
+        expect(WORKSTATION_ONLY_COMMANDS).not.toContain(commandPath);
+        const policyContext = vi.fn(() => Promise.resolve({ principal: MEMBER, policy: allowing }));
+        state.adapter = { policyContext };
+        await expect(run(commandPath)).resolves.toBeUndefined();
+        expect(policyContext).toHaveBeenCalledTimes(1);
+      }
+    );
+
+    it('runs ops up with an unrenewable token when the recorded member policy allows it', async () => {
+      const { cachedPolicyContext } = offline(unrenewable(), {
+        principal: MEMBER,
+        policy: allowing,
+      });
+      await expect(run('ops up')).resolves.toBeUndefined();
+      expect(cachedPolicyContext).toHaveBeenCalledTimes(1);
+    });
+
+    it('refuses ops up with an unrenewable token when the recorded member policy denies it', async () => {
+      offline(unrenewable(), { principal: MEMBER, policy: denying });
+      expect(await refusalCode(run('ops up'))).toBe('POLICY_DENIED');
+    });
+
+    it('refuses ops up on an unreachable server when the recorded member policy denies it', async () => {
+      offline(new RemoteUnreachableError('https://acct.example', new TypeError('fetch failed')), {
+        principal: MEMBER,
+        policy: denying,
+      });
+      expect(await refusalCode(run('ops up'))).toBe('POLICY_DENIED');
+    });
+
+    it('fails closed for ops up with an unrenewable token and no recorded judgement', async () => {
+      offline(unrenewable(), undefined);
+      const error = await run('ops up').catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(CliExitError);
+      expect((error as CliExitError).details?.[0]).toBe('POLICY_UNJUDGED');
+      expect((error as Error).message).toContain('errors.agent.policyUnjudged');
+      expect((error as Error).message).toContain('tied to another address');
+    });
+
+    it('never stands the record in for an account the server says left the store', async () => {
+      const left = new RemoteTokenRefreshError('not_store_member', 'not a member');
+      const { cachedPolicyContext } = offline(left, { principal: MEMBER, policy: allowing });
+      await expect(run('ops up')).rejects.toBe(left);
+      expect(cachedPolicyContext).not.toHaveBeenCalled();
+    });
+
+    it('never stands the record in for a failure that is not a session outage', async () => {
+      const broken = new Error('The config server named no org role');
+      offline(broken, { principal: MEMBER, policy: allowing });
+      await expect(run('ops up')).rejects.toBe(broken);
+    });
+
+    it('names only live commands as session-optional', () => {
+      const live = new Set(CLI_CONTRACT.commands.map((c) => c.pathKey));
+      for (const path of SESSION_OPTIONAL_COMMANDS) expect(live).toContain(path);
+    });
   });
 
   it('names only live commands as recovery commands, re-enrollment and subscription login among them', () => {

@@ -273,6 +273,18 @@ export class RemoteConfigAdapter {
     });
   }
 
+  /**
+   * The principal and effective policy the last opened session recorded in the token file's sync
+   * record, read with no request and no token renewal; undefined when this device never opened a
+   * session for this binding. The judge reads it for a workstation command whose session could not
+   * be opened (command-policy.ts SESSION_OPTIONAL_COMMANDS).
+   */
+  cachedPolicyContext(): Promise<RemotePolicyContext | undefined> {
+    return this.tokenStorage.withLease(this.configName, (lease) =>
+      Promise.resolve(this.syncRecord(lease)?.policyContext)
+    );
+  }
+
   /** The online half of `policyContext`: the session's principal and the effective policy. */
   private async openPolicyContext(lease: TokenLease): Promise<RemotePolicyContext> {
     // The high-water marks live in the sync record a pull writes, so a device that never pulled pulls first.
