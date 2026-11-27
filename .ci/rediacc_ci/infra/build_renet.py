@@ -19,7 +19,7 @@ from rediacc_ci import log
 from rediacc_ci.core import local_common
 from rediacc_ci.infra import renet_embed_cache
 
-# The go-licenses release that writes the Go dependency report. Pinned here and in `.ci/config/pins.json` (`toolchain:go-licenses`), never `@latest`.
+# The go-licenses release that writes the Go dependency report. Pinned here and in `.ci/config/pins.json` (`devcontainer:go-licenses`), never `@latest`.
 GO_LICENSES_VERSION = "v1.6.0"
 
 # The renet module's own packages carry no licence row of their own: rdc's notice lists third-party code.
