@@ -67,7 +67,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.clearAllMocks());
 
-describe('resolveRepoRef — default step-5 verifier (R6)', () => {
+describe('resolveRepoRef: default step-5 verifier (R6)', () => {
   it('hands a mutating verb the repo_present precondition instead of probing', async () => {
     const resolved = await resolveRepoRef('shop');
     expect(resolved.machineName).toBe('m1');
@@ -124,7 +124,7 @@ describe('resolveRepoRef — default step-5 verifier (R6)', () => {
 });
 
 // #92 (found live by the B1 window): probeRepoPresent rides repository_list, which is docker-world-only, so probing the DATASTORE arm false-refused every mutating verb on a cluster repo with exit 12. The arm now defers to the job precondition `expect: repo_present` (renet's probeRepoState reads <ds>/repos/<guid>) and carries the named mount so the job's machine vault points there. Mutation control: re-point the datastore arm at the probe and the first test goes red.
-describe('resolveRepoRef — datastore arm defers to the job precondition (#92)', () => {
+describe('resolveRepoRef: datastore arm defers to the job precondition (#92)', () => {
   it('records repo_present with the named mount and never runs the repository_list probe', async () => {
     h.present = false;
     const resolved = await resolveRepoRef('kshop');
