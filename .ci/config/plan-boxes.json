@@ -2971,6 +2971,140 @@
         "f9763990"
       ]
     },
+    "agent/plans/PLAN-pricing-billing-upgrade.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "17da013b",
+        "2f556844",
+        "3d390030",
+        "4a1fce65",
+        "769c5aca",
+        "79ddd1a6",
+        "bb1f62d5",
+        "c0384c17"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-coupons.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "180b82dd",
+        "4b99a5ee",
+        "8861fbd1",
+        "bf8f40e8",
+        "c0384c17"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-cpu-ceiling.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "104f3730",
+        "333e769c",
+        "89cb6ae1",
+        "ae33856d",
+        "c0384c17",
+        "dbdc2cb1",
+        "e07089b6"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-free-professional.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "0aaaa4f7",
+        "4d3c6df5",
+        "c0384c17",
+        "db021ff3",
+        "ffb3cc77"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-partner-directory.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "21a97188",
+        "50a61f99",
+        "5a96d024",
+        "751a26ef",
+        "b5b806d8"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-plan-model.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 0,
+      "open_sigs": [
+        "28a18d24",
+        "6c105843",
+        "ac72c946",
+        "c0384c17"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-public-calculator.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "50c3ce6f",
+        "599f49df",
+        "5a96d024",
+        "aedd531c",
+        "b2b07f78",
+        "d122d0d4",
+        "d9b3db2d"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-pricing-seat-repo-caps.md": {
+      "status": "approved",
+      "owner": "e08d0be9",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 5,
+      "done": 0,
+      "open_sigs": [
+        "4cdd9a86",
+        "4e1b7dc9",
+        "bd726af5",
+        "c0384c17",
+        "db8fcb15"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-printf-echo-pipefail-sweep.md": {
       "status": "compacted",
       "owner": "d778be9d",

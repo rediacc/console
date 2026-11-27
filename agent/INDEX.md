@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 310 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 318 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -587,6 +587,14 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 78 | 12 | 1 | 19380 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 354 | 13 | 24 | 76115 |
+| `agent/plans/PLAN-pricing-billing-upgrade.md` | approved | 57 | 8 | 0 | 9689 |
+| `agent/plans/PLAN-pricing-coupons.md` | approved | 52 | 5 | 0 | 7570 |
+| `agent/plans/PLAN-pricing-cpu-ceiling.md` | approved | 54 | 7 | 0 | 8508 |
+| `agent/plans/PLAN-pricing-free-professional.md` | approved | 53 | 5 | 0 | 7767 |
+| `agent/plans/PLAN-pricing-partner-directory.md` | approved | 49 | 5 | 0 | 6412 |
+| `agent/plans/PLAN-pricing-plan-model.md` | approved | 57 | 4 | 0 | 7805 |
+| `agent/plans/PLAN-pricing-public-calculator.md` | approved | 59 | 7 | 0 | 9433 |
+| `agent/plans/PLAN-pricing-seat-repo-caps.md` | approved | 46 | 5 | 0 | 5580 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
 | `agent/plans/PLAN-product-domain-rename.md` | executing | 229 | 3 | 25 | 47947 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 351 | 2 | 15 | 52554 |
@@ -775,7 +783,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-310 plan(s), 248 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+318 plan(s), 256 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

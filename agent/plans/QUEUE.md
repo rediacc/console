@@ -42,21 +42,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 2326 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2402 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 1 live (session d778be9d): worker:aa98e15c9a7e331db.
-- Leased items: 2: #3f24d3e7 (worker:btgn1y7gg, d778be9d), #fbfd849e (worker:aa98e15c9a7e331db, d778be9d).
+- Writers: 4 live (session d778be9d): worker:a33cacc4743e487ac, worker:aa441abec971ec9a4, worker:a7554aad642220f56, worker:aeae09daa0ba40630.
+- Leased items: 5: #71e97dd6 (worker:b2g1k9tlj, d778be9d), #743e463e (worker:a33cacc4743e487ac, d778be9d), #b7a096e0 (worker:a7554aad642220f56, d778be9d), #d2971b98 (worker:aa441abec971ec9a4, d778be9d), #d72af9bb (worker:aeae09daa0ba40630, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 116 plans done, 1600 of 2086 boxes done (76%).
+Promoted: 11 of 124 plans done, 1600 of 2132 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -176,6 +176,14 @@ Promoted: 11 of 116 plans done, 1600 of 2086 boxes done (76%).
 | 114 | PLAN-config-sealed-local.md | 0/10 | 10 open |
 | 115 | PLAN-proxied-licence-tunnel-auth-fix.md | 0/6 | 6 open |
 | 116 | PLAN-executor-account-routes.md | 0/8 | 8 open |
+| 117 | PLAN-pricing-plan-model.md | 0/4 | 4 open |
+| 118 | PLAN-pricing-partner-directory.md | 0/5 | 5 open |
+| 119 | PLAN-pricing-seat-repo-caps.md | 0/5 | 5 open |
+| 120 | PLAN-pricing-cpu-ceiling.md | 0/7 | 7 open |
+| 121 | PLAN-pricing-free-professional.md | 0/5 | 5 open |
+| 122 | PLAN-pricing-billing-upgrade.md | 0/8 | 8 open |
+| 123 | PLAN-pricing-coupons.md | 0/5 | 5 open |
+| 124 | PLAN-pricing-public-calculator.md | 0/7 | 7 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -294,6 +302,14 @@ Promoted: 11 of 116 plans done, 1600 of 2086 boxes done (76%).
 114. agent/plans/PLAN-config-sealed-local.md -- operator /ask ASKED:2026-11-27 (four decisions in the plan header): seal remote-enabled local configs by default
 115. agent/plans/PLAN-proxied-licence-tunnel-auth-fix.md -- finding fix from bench runner pass r89 (#4222addb): proxied repo create, fork and licence retire refused by the executor egress
 116. agent/plans/PLAN-executor-account-routes.md -- operator /ask ASKED:2026-11-27T09:21Z ("promote as approved"): one shared executor account-route table; folds PL1-PL3 licence routes in
+117. agent/plans/PLAN-pricing-plan-model.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign, first plan: per-licence prices from the catalog, CPU ceilings, user and repository caps, COMMUNITY floor without hosted R2, one effective-limit resolver
+118. agent/plans/PLAN-pricing-partner-directory.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: opt-in public Find-a-partner directory at launch and the /partners value page
+119. agent/plans/PLAN-pricing-seat-repo-caps.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: member and original-repository caps enforced; Depends-On PLAN-pricing-plan-model.md
+120. agent/plans/PLAN-pricing-cpu-ceiling.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: logical-CPU ceiling per machine with 30-day grace and large-machine passes; Depends-On PLAN-pricing-plan-model.md
+121. agent/plans/PLAN-pricing-free-professional.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: self-attested free Professional, startup programme, upgrade popups; Depends-On plan-model and seat-repo-caps
+122. agent/plans/PLAN-pricing-billing-upgrade.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: billing profile with VIES, instant upgrade, manual invoice 14+7 days, root-token controls, 30-day R2 restore-only; Depends-On plan-model and PLAN-stripe-disable.md
+123. agent/plans/PLAN-pricing-coupons.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: coupon campaigns with stacking boosts, managed from admin UI and root API tokens; Depends-On plan-model and billing-upgrade
+124. agent/plans/PLAN-pricing-public-calculator.md -- operator /ask 2026-11-27 in session e08d0be9 ("write your plan(s) then they should be promoted at QUEUE.md"; "plans will be promoted and approved"): pricing redesign: server-only estimate and non-binding quote API, partner lead routing, pricing page with Custom tier and VAT toggle; Depends-On plan-model and partner-directory
 
 ## Generated
 
