@@ -2079,9 +2079,6 @@ function busyReadVerdict(avg: number, read: number | undefined, what: string): s
   return undefined;
 }
 
-/**
- * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads near the average its own two workers report over the same one-second window (each worker's utime+stime read from /proc/<pid>/stat at both ends, so host contention moves the expectation and the reading together) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
- */
 /** The clock-tick rate a reader answers, or undefined when it throws or answers no positive number. */
 function readClkTck(read: () => string): number | undefined {
   try {
@@ -2092,6 +2089,9 @@ function readClkTck(read: () => string): number | undefined {
   }
 }
 
+/**
+ * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads near the average its own two workers report over the same one-second window (each worker's utime+stime read from /proc/<pid>/stat at both ends, so host contention moves the expectation and the reading together) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
+ */
 async function busySamplerSelftest(): Promise<string[]> {
   if (process.platform !== 'linux') {
     // Without /proc the reader must cover no window, so nothing is ever released: assert that, rather than pass on a skipped probe (review c428c052.3).
