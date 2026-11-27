@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "백업 전략을 지금 실행합니다.",
   "commands.backup.schedule.description": "원격 머신에 백업 일정을 배포합니다 (systemd 타이머)",
   "commands.backup.schedule.descriptionShort": "원격 머신에 백업 일정(systemd 타이머)을 배포합니다",
+  "commands.backup.schedule.optionAdoptOrigin": "배포된 유닛을 이 설정의 계정 서버로 옮깁니다 (지정하지 않으면 유닛이 묶인 서버를 바꾸는 푸시는 거부됩니다)",
   "commands.backup.schedule.optionDryRun": "배포하지 않고 생성된 유닛을 미리 봅니다",
   "commands.backup.schedule.optionForce": "현재 백업이 실행 중이어도 진행합니다 (새 유닛은 다음 틱에 적용됩니다; 실행 중인 호출은 이전 유닛을 유지합니다)",
   "commands.backup.schedule.optionResetFailed": "성공적인 배포 후 수정된 서비스의 실패 상태를 지웁니다 (기본적으로 꺼져 있으며, 실패 신호를 보존합니다)",

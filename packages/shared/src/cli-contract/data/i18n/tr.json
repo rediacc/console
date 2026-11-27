@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Bir yedekleme stratejisini şimdi çalıştır.",
   "commands.backup.schedule.description": "Uzak makineye yedekleme zamanlaması dağıt (systemd zamanlayıcıları)",
   "commands.backup.schedule.descriptionShort": "Yedekleme zamanlamasını uzak bir makineye dağıtır (systemd zamanlayıcıları)",
+  "commands.backup.schedule.optionAdoptOrigin": "Dağıtılmış birimleri bu yapılandırmanın hesap sunucusuna taşı (bu bayrak olmadan, birimlerin bağlı olduğu sunucuyu değiştirecek gönderim reddedilir)",
   "commands.backup.schedule.optionDryRun": "Dağıtmadan oluşturulan birimleri önizle",
   "commands.backup.schedule.optionForce": "Şu anda bir yedekleme çalışıyor olsa bile devam et (yeni birim sonraki tetiklemede uygulanır; çalışan işlem eski birimini korur)",
   "commands.backup.schedule.optionResetFailed": "Başarılı dağıtım sonrası etkilenen servislerin failed durumunu temizle (varsayılan kapalı, hata sinyalini korur)",

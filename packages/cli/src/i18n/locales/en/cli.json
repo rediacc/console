@@ -2230,6 +2230,7 @@
         "optionDryRun": "Preview generated units without deploying",
         "optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
         "optionResetFailed": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)",
+        "optionAdoptOrigin": "Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)",
         "success": "Backup schedule deployed to {{machine}}"
       },
       "snapshot": {

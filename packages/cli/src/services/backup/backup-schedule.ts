@@ -310,6 +310,36 @@ export async function reconcileSchedulesAfterRepoChange(
   }
 }
 
+/**
+ * Why a push from this config would re-point deployed units at another account server, or undefined when it may go on.
+ * A machine with no deployed units, or units recording no origin (older renet), has nothing to protect.
+ */
+export function originMismatchRefusal(
+  machineName: string,
+  recorded: string[],
+  expected: string | undefined
+): string | undefined {
+  const foreign = recorded.filter((origin) => origin !== expected);
+  if (foreign.length === 0) return undefined;
+  return `Refusing to push the backup schedule to ${machineName}: its deployed units are held to ${foreign.join(', ')}, but this config's account server is ${expected ? expected : 'unset'}, and renet would then refuse the licences those units run with. Re-run with --adopt-origin to move the units to this config's account server on purpose: rdc backup schedule -m ${machineName} --adopt-origin`;
+}
+
+/** Read the deployed units' recorded origins and refuse a push that would change them, before anything touches the machine. */
+async function assertOriginUnchanged(
+  machineName: string,
+  machine: LocalMachine,
+  sshPrivateKey: string
+): Promise<void> {
+  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
+  try {
+    const recorded = await readRecordedScheduleOrigins(lease.sftp);
+    const refusal = originMismatchRefusal(machineName, recorded, expectedAccountServerOrigin());
+    if (refusal !== undefined) throw new Error(refusal);
+  } finally {
+    lease.release();
+  }
+}
+
 /** Why this config may not re-render the machine's schedule, read from the units the machine holds; undefined when it may. */
 async function ownerRefusalOn(
   machine: LocalMachine,
@@ -519,6 +549,9 @@ export async function pushBackupSchedule(
   const specs = await resolveUnitSpecs(machineName, strategies);
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+
+  // Before renet is provisioned or a licence refreshed: a mismatched origin must change nothing.
+  if (!options.adoptOrigin) await assertOriginUnchanged(machineName, machine, sshPrivateKey);
 
   const remoteRenetPath = await preDeployProvisioning(
     machineName,

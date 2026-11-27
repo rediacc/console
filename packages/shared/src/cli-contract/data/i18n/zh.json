@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "立即执行备份策略。",
   "commands.backup.schedule.description": "将备份计划部署到远程机器（systemd 定时器）",
   "commands.backup.schedule.descriptionShort": "将备份计划 (systemd 定时器) 部署到远程机器",
+  "commands.backup.schedule.optionAdoptOrigin": "将已部署的单元迁移到此配置的账户服务器（不带此标志时，会更改单元所绑定服务器的推送将被拒绝）",
   "commands.backup.schedule.optionDryRun": "预览生成的单元而不部署",
   "commands.backup.schedule.optionForce": "即使当前有备份正在运行也继续执行（新单元在下次定时器触发时生效；正在运行的调用保留其旧单元）",
   "commands.backup.schedule.optionResetFailed": "部署成功后清除已修改服务的 failed 状态（默认关闭，保留故障信号）",

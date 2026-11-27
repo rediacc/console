@@ -501,6 +501,7 @@ Deploy backup schedule to a remote machine (systemd timers)
 - `--dry-run`: Preview generated units without deploying
 - `--force`: Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
 - `--reset-failed`: Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
+- `--adopt-origin`: Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)
 - `--debug`: Enable debug output
 
 > MCP excluded: Installs systemd backup timers on a machine; use CLI directly.

@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Esegui subito una strategia di backup.",
   "commands.backup.schedule.description": "Distribuisci la programmazione dei backup su una macchina remota (timer systemd)",
   "commands.backup.schedule.descriptionShort": "Distribuisci la programmazione dei backup su una macchina remota (timer systemd)",
+  "commands.backup.schedule.optionAdoptOrigin": "Sposta le unità distribuite sul server account di questa configurazione (senza, un invio che cambierebbe il server a cui sono legate le unità viene rifiutato)",
   "commands.backup.schedule.optionDryRun": "Visualizza le unità generate senza distribuirle",
   "commands.backup.schedule.optionForce": "Procedi anche se un backup è in esecuzione (la nuova unità si applica al prossimo tick; l'invocazione in corso mantiene la vecchia unità)",
   "commands.backup.schedule.optionResetFailed": "Cancella lo stato di errore sui servizi modificati dopo una distribuzione riuscita (disabilitato per default, preserva il segnale di errore)",

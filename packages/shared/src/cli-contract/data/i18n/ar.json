@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "تشغيل إستراتيجية نسخ احتياطي الآن.",
   "commands.backup.schedule.description": "نشر جدول النسخ الاحتياطي إلى جهاز بعيد (مؤقتات systemd)",
   "commands.backup.schedule.descriptionShort": "نشر جدول النسخ الاحتياطي إلى جهاز بعيد (مؤقتات systemd)",
+  "commands.backup.schedule.optionAdoptOrigin": "نقل الوحدات المنشورة إلى خادم الحساب الخاص بهذا الإعداد (بدونه يُرفض أي نشر سيغيّر الخادم الذي ترتبط به الوحدات)",
   "commands.backup.schedule.optionDryRun": "معاينة الوحدات المُولَّدة دون نشرها",
   "commands.backup.schedule.optionForce": "المتابعة حتى إن كانت هناك نسخة احتياطية قيد التشغيل (تنطبق الوحدة الجديدة عند النبضة التالية للمؤقت؛ يحتفظ التنفيذ الجاري بوحدته القديمة)",
   "commands.backup.schedule.optionResetFailed": "مسح حالة الفشل للخدمات المُعدَّلة بعد نشر ناجح (معطّل افتراضيًا، يحافظ على إشارة الفشل)",

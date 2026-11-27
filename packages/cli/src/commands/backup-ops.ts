@@ -388,6 +388,7 @@ export function registerBackupOpsCommands(backup: Command): void {
     .option('--dry-run', t('commands.backup.schedule.optionDryRun'))
     .option('--force', t('commands.backup.schedule.optionForce'))
     .option('--reset-failed', t('commands.backup.schedule.optionResetFailed'))
+    .option('--adopt-origin', t('commands.backup.schedule.optionAdoptOrigin'))
     .option('--debug', t('options.debug'))
     .action(async (options) => {
       try {
@@ -408,6 +409,7 @@ export function registerBackupOpsCommands(backup: Command): void {
           dryRun: options.dryRun,
           force: options.force,
           resetFailed: options.resetFailed,
+          adoptOrigin: options.adoptOrigin,
           steps: options.dryRun ? [] : steps,
         });
         if (result === 'applied' || result === 'unchanged') {

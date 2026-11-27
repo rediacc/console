@@ -184,6 +184,7 @@
         "optionDryRun": "Previsualizar unidades generadas sin desplegar",
         "optionForce": "Continuar aunque haya una copia de seguridad en ejecución (la nueva unidad se aplica en el siguiente tick del temporizador; la ejecución en curso conserva su unidad anterior)",
         "optionResetFailed": "Borrar el estado de fallo en los servicios modificados tras un despliegue exitoso (desactivado por defecto, preserva la señal de fallo)",
+        "optionAdoptOrigin": "Mover las unidades desplegadas al servidor de cuentas de esta configuración (sin esto se rechaza un envío que cambiaría el servidor al que están ligadas las unidades)",
         "success": "Programación de respaldos desplegada en {{machine}}"
       },
       "snapshot": {

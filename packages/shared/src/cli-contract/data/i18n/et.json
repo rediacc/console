@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Käivita varunduse strateegia kohe.",
   "commands.backup.schedule.description": "Juuruta varukoopia ajakava kaugmasinasse (systemd taimerid)",
   "commands.backup.schedule.descriptionShort": "Juuruta varukoopia ajakava kaugmasinasse (systemd taimerid)",
+  "commands.backup.schedule.optionAdoptOrigin": "Viib juurutatud ühikud selle konfiguratsiooni kontoserverile (ilma selleta lükatakse tagasi lükkamine, mis muudaks serverit, millega ühikud on seotud)",
   "commands.backup.schedule.optionDryRun": "Näitab genereeritud üksusi ilma neid juurutamata",
   "commands.backup.schedule.optionForce": "Jätkab ka siis, kui varukoopia on parasjagu käimas (uus üksus rakendub järgmisel käivitumisel; käiv käivitus kasutab vana üksust)",
   "commands.backup.schedule.optionResetFailed": "Tühjendab puudutatud teenustel ebaõnnestunud oleku pärast edukat juurutamist (vaikimisi väljas, säilitab ebaõnnestumise signaali)",

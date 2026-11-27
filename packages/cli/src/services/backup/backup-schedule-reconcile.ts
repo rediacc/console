@@ -82,6 +82,8 @@ export interface ReconcileOptions {
   dryRun?: boolean;
   force?: boolean;
   resetFailed?: boolean;
+  /** Re-point the deployed units at this config's account server; without it a mismatch refuses the push. */
+  adoptOrigin?: boolean;
 }
 
 // --------------------------------------------------------------------------- Parsing helpers ---------------------------------------------------------------------------

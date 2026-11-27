@@ -184,6 +184,7 @@
         "optionDryRun": "Prévisualiser les unités générées sans déployer",
         "optionForce": "Continuer même si une sauvegarde est en cours (la nouvelle unité s'applique au prochain tick du minuteur ; l'invocation en cours conserve son ancienne unité)",
         "optionResetFailed": "Effacer l'état d'échec des services modifiés après un déploiement réussi (désactivé par défaut, préserve le signal d'échec)",
+        "optionAdoptOrigin": "Déplacer les unités déployées vers le serveur de comptes de cette configuration (sans cela, un envoi qui changerait le serveur auquel les unités sont liées est refusé)",
         "success": "Planification de sauvegarde déployée sur {{machine}}"
       },
       "snapshot": {

@@ -1,5 +1,5 @@
 {
-  "version": "450574a813ac1f31",
+  "version": "2d32c2d51d348fbc",
   "languages": [
     "ar",
     "de",
@@ -1629,6 +1629,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.schedule.optionResetFailed",
           "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
+        },
+        {
+          "flags": "--adopt-origin",
+          "long": "adopt-origin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.schedule.optionAdoptOrigin",
+          "label": "Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)"
         },
         {
           "flags": "--debug",

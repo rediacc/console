@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Executa uma estratégia de cópia de segurança agora.",
   "commands.backup.schedule.description": "Implementar o agendamento de cópias de segurança numa máquina remota (temporizadores systemd)",
   "commands.backup.schedule.descriptionShort": "Implanta o agendamento de backup em uma máquina remota (timers do systemd)",
+  "commands.backup.schedule.optionAdoptOrigin": "Mover as unidades implementadas para o servidor de contas desta configuração (sem isto, um envio que mudaria o servidor a que as unidades estão ligadas é recusado)",
   "commands.backup.schedule.optionDryRun": "Pré-visualizar as unidades geradas sem implementar",
   "commands.backup.schedule.optionForce": "Prosseguir mesmo que uma cópia de segurança esteja em curso (a nova unidade aplica-se no próximo ciclo; a invocação em curso mantém a unidade antiga)",
   "commands.backup.schedule.optionResetFailed": "Limpar estado falhado nos serviços afetados após uma implementação bem-sucedida (desativado por predefinição, preserva o sinal de falha)",

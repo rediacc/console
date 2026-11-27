@@ -184,6 +184,7 @@
         "optionDryRun": "Visualizza le unità generate senza distribuirle",
         "optionForce": "Procedi anche se un backup è in esecuzione (la nuova unità si applica al prossimo tick; l'invocazione in corso mantiene la vecchia unità)",
         "optionResetFailed": "Cancella lo stato di errore sui servizi modificati dopo una distribuzione riuscita (disabilitato per default, preserva il segnale di errore)",
+        "optionAdoptOrigin": "Sposta le unità distribuite sul server account di questa configurazione (senza, un invio che cambierebbe il server a cui sono legate le unità viene rifiutato)",
         "success": "Programmazione backup distribuita su {{machine}}"
       },
       "snapshot": {

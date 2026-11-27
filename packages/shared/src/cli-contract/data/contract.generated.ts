@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = '450574a813ac1f31';
+export const CLI_CONTRACT_VERSION = '2d32c2d51d348fbc';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "450574a813ac1f31",
+  "version": "2d32c2d51d348fbc",
   "languages": [
     "ar",
     "de",
@@ -1637,6 +1637,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.backup.schedule.optionResetFailed",
           "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
+        },
+        {
+          "flags": "--adopt-origin",
+          "long": "adopt-origin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.schedule.optionAdoptOrigin",
+          "label": "Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)"
         },
         {
           "flags": "--debug",

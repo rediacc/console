@@ -184,6 +184,7 @@
         "optionDryRun": "Dağıtmadan oluşturulan birimleri önizle",
         "optionForce": "Şu anda bir yedekleme çalışıyor olsa bile devam et (yeni birim sonraki tetiklemede uygulanır; çalışan işlem eski birimini korur)",
         "optionResetFailed": "Başarılı dağıtım sonrası etkilenen servislerin failed durumunu temizle (varsayılan kapalı, hata sinyalini korur)",
+        "optionAdoptOrigin": "Dağıtılmış birimleri bu yapılandırmanın hesap sunucusuna taşı (bu bayrak olmadan, birimlerin bağlı olduğu sunucuyu değiştirecek gönderim reddedilir)",
         "success": "Yedekleme zamanlaması {{machine}} makinesine dağıtıldı"
       },
       "snapshot": {

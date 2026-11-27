@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Eine Backup-Strategie jetzt ausführen.",
   "commands.backup.schedule.description": "Backup-Zeitplan auf einer Remote-Maschine deployen (systemd-Timer)",
   "commands.backup.schedule.descriptionShort": "Backup-Zeitplan auf einer Remote-Maschine deployen (systemd-Timer)",
+  "commands.backup.schedule.optionAdoptOrigin": "Die bereitgestellten Units auf den Account-Server dieser Konfiguration umstellen (ohne das Flag wird ein Push abgelehnt, der den Server der Units ändern würde)",
   "commands.backup.schedule.optionDryRun": "Generierte Units anzeigen ohne zu deployen",
   "commands.backup.schedule.optionForce": "Auch fortfahren, wenn gerade ein Backup läuft (neue Unit greift beim nächsten Timer-Tick; laufender Vorgang behält seine alte Unit)",
   "commands.backup.schedule.optionResetFailed": "Fehlerstatus berührter Dienste nach erfolgreichem Deploy zurücksetzen (standardmäßig aus, bewahrt das Fehlersignal)",

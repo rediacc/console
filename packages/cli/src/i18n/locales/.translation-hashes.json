@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3348,
-    "sourceCommit": "b57e31340cc120a3a9ff876a3dd5e83dfed43389"
+    "keyCount": 3350,
+    "sourceCommit": "038228c5f48538085285611267c22f040b162b6a"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -271,6 +271,7 @@
     "commands.backup.run.examples.basic": "55198cbb",
     "commands.backup.schedule.description": "03a33c04",
     "commands.backup.schedule.descriptionShort": "03a33c04",
+    "commands.backup.schedule.optionAdoptOrigin": "9dcef027",
     "commands.backup.schedule.optionDryRun": "9ccfa7d1",
     "commands.backup.schedule.optionForce": "8036b3a3",
     "commands.backup.schedule.optionResetFailed": "947f7b9f",
@@ -2859,6 +2860,7 @@
     "errors.agent.pathGrantBlocked": "023e0b38",
     "errors.agent.pathGrantOverride": "205d60d3",
     "errors.agent.policyDenied": "872f12cb",
+    "errors.agent.policyUnjudged": "3b7619cf",
     "errors.agent.revealRequiresTty": "fbb0a32d",
     "errors.agent.rootGrantBlocked": "44d27858",
     "errors.agent.rootGrantOverride": "474388b1",

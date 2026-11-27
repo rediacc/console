@@ -184,6 +184,7 @@
         "optionDryRun": "Pré-visualizar as unidades geradas sem implementar",
         "optionForce": "Prosseguir mesmo que uma cópia de segurança esteja em curso (a nova unidade aplica-se no próximo ciclo; a invocação em curso mantém a unidade antiga)",
         "optionResetFailed": "Limpar estado falhado nos serviços afetados após uma implementação bem-sucedida (desativado por predefinição, preserva o sinal de falha)",
+        "optionAdoptOrigin": "Mover as unidades implementadas para o servidor de contas desta configuração (sem isto, um envio que mudaria o servidor a que as unidades estão ligadas é recusado)",
         "success": "Agendamento de cópia de segurança implementado em {{machine}}"
       },
       "snapshot": {

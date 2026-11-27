@@ -263,6 +263,7 @@
   "commands.backup.run.examples.basic": "Run a backup strategy now.",
   "commands.backup.schedule.description": "Deploy backup schedule to a remote machine (systemd timers)",
   "commands.backup.schedule.descriptionShort": "Deploy backup schedule to a remote machine (systemd timers)",
+  "commands.backup.schedule.optionAdoptOrigin": "Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)",
   "commands.backup.schedule.optionDryRun": "Preview generated units without deploying",
   "commands.backup.schedule.optionForce": "Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)",
   "commands.backup.schedule.optionResetFailed": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)",

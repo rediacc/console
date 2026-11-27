@@ -184,6 +184,7 @@
         "optionDryRun": "Näitab genereeritud üksusi ilma neid juurutamata",
         "optionForce": "Jätkab ka siis, kui varukoopia on parasjagu käimas (uus üksus rakendub järgmisel käivitumisel; käiv käivitus kasutab vana üksust)",
         "optionResetFailed": "Tühjendab puudutatud teenustel ebaõnnestunud oleku pärast edukat juurutamist (vaikimisi väljas, säilitab ebaõnnestumise signaali)",
+        "optionAdoptOrigin": "Viib juurutatud ühikud selle konfiguratsiooni kontoserverile (ilma selleta lükatakse tagasi lükkamine, mis muudaks serverit, millega ühikud on seotud)",
         "success": "Varukoopia ajakava juurutatud masinasse {{machine}}"
       },
       "snapshot": {

@@ -184,6 +184,7 @@
         "optionDryRun": "Generierte Units anzeigen ohne zu deployen",
         "optionForce": "Auch fortfahren, wenn gerade ein Backup läuft (neue Unit greift beim nächsten Timer-Tick; laufender Vorgang behält seine alte Unit)",
         "optionResetFailed": "Fehlerstatus berührter Dienste nach erfolgreichem Deploy zurücksetzen (standardmäßig aus, bewahrt das Fehlersignal)",
+        "optionAdoptOrigin": "Die bereitgestellten Units auf den Account-Server dieser Konfiguration umstellen (ohne das Flag wird ein Push abgelehnt, der den Server der Units ändern würde)",
         "success": "Backup-Zeitplan auf {{machine}} deployed"
       },
       "snapshot": {
