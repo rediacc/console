@@ -8,6 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { setOutputFormat } from '../../../utils/errors.js';
 import { createOutputState, runInRequestContext } from '../../core/request-context.js';
+import { renderEvent } from '../proxy-command.js';
 import { renderJobEvent } from '../job-remote.js';
 import { createStdoutHandler } from '../renet-output.js';
 import type { RenetEvent } from '../types.js';
@@ -65,6 +66,21 @@ describe('the renet execute step detector under -o json', () => {
   it('moves the step timeline to stderr, leaving stdout empty', async () => {
     setOutputFormat('json');
     const out = await captured(() => createStdoutHandler({} as never)(lines));
+    expect(out.stdout).toBe('');
+    expect(out.stderr).toContain('Repository deleted');
+  });
+});
+
+describe('the proxy renderer under -o json', () => {
+  it('control: a table run draws the step timeline on stdout', async () => {
+    setOutputFormat('table');
+    const out = await captured(() => STEP_EVENTS.forEach(renderEvent));
+    expect(out.stdout).toContain('Repository deleted');
+  });
+
+  it('moves the step timeline to stderr, leaving stdout empty', async () => {
+    setOutputFormat('json');
+    const out = await captured(() => STEP_EVENTS.forEach(renderEvent));
     expect(out.stdout).toBe('');
     expect(out.stderr).toContain('Repository deleted');
   });

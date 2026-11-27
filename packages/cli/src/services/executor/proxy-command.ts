@@ -212,7 +212,7 @@ function targetMachine(
  * steps ticking over in the same shapes as `rdc repo up`; the only difference is
  * where the SSH happened.
  */
-function renderEvent(event: RenetEvent): void {
+export function renderEvent(event: RenetEvent): void {
   // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
   const writeStep = getOutputFormat() === 'json' ? writeStderr : writeStdout;
   switch (event.type) {
