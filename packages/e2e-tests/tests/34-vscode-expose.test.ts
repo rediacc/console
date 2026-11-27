@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { repoDockerHost } from '@rediacc/shared/config/runtime-paths';
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
 import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
@@ -52,7 +53,7 @@ const NETWORK_ID = DEFAULT_NETWORK_ID;
 const DATASTORE = DEFAULT_DATASTORE_PATH;
 const DOCKER = `sudo docker -H ${repoDockerHost(NETWORK_ID)}`;
 const CONTAINER = 'rediacc-vscode';
-const ROUTER_ENV = '/etc/rediacc/router.env';
+const ROUTER_ENV = `${WK_ETC_DIR}/router.env`;
 const ROUTER_UNIT = 'rediacc-router';
 const TRANSIENT_UNIT = 'rediacc-e2e-vscode-router';
 const ROUTER_DATA_DIR = '/var/lib/rediacc/router';
@@ -276,7 +277,7 @@ test.describe
       must(
         `writing ${ROUTER_ENV}`,
         await runner.executeViaBridge(
-          `sudo mkdir -p /etc/rediacc ${ROUTER_DATA_DIR} && sudo tee ${ROUTER_ENV} >/dev/null`,
+          `sudo mkdir -p ${WK_ETC_DIR} ${ROUTER_DATA_DIR} && sudo tee ${ROUTER_ENV} >/dev/null`,
           undefined,
           { stdin: env }
         )

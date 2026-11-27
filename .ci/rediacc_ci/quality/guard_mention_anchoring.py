@@ -33,6 +33,7 @@ why: A guard that refuses PROSE is a guard nobody can write a doc line about.
 from __future__ import annotations
 
 import ast
+import functools
 import json
 import re
 
@@ -493,6 +494,7 @@ def instantiate(pattern: str) -> str:
     return found[0] if found else ""
 
 
+@functools.cache
 def _shellscan_placeholders() -> tuple[str, str]:
     """`(SPACE, BLANK)`, read from `shellscan.py` rather than retyped here.
 
@@ -518,9 +520,6 @@ def _shellscan_placeholders() -> tuple[str, str]:
     return found.get("SPACE", r" \t\n\v\f\r"), found.get("BLANK", r" \t\v\f\r")
 
 
-SPACE, BLANK = _shellscan_placeholders()
-
-
 def _const_eval(node: ast.AST, table: dict[str, str]) -> str | None:
     """Best-effort constant folding for one guard's regex-shaped assignments.
 
@@ -541,9 +540,9 @@ def _const_eval(node: ast.AST, table: dict[str, str]) -> str | None:
         and node.value.id == "hookio"
     ):
         if node.attr == "SPACE":
-            return SPACE
+            return _shellscan_placeholders()[0]
         if node.attr == "BLANK":
-            return BLANK
+            return _shellscan_placeholders()[1]
         return None
     if isinstance(node, ast.Call) and node.args:
         func = node.func
@@ -556,7 +555,8 @@ def _const_eval(node: ast.AST, table: dict[str, str]) -> str | None:
         inner = _const_eval(node.args[0], table)
         if inner is None:
             return None
-        return inner.replace("{S}", SPACE).replace("{B}", BLANK) if is_rx else inner
+        space, blank = _shellscan_placeholders()
+        return inner.replace("{S}", space).replace("{B}", blank) if is_rx else inner
     return None
 
 
