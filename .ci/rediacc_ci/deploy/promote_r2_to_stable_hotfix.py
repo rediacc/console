@@ -58,7 +58,7 @@ BUCKET = r2_promote.BUCKET
 PUBLIC_HOST = r2_promote.PUBLIC_HOST
 CC_MUTABLE = r2_promote.CC_MUTABLE
 
-# The catch-all that ends every tree's copy: no filters, as the twin's recursive copy had none. `r2_promote.promote_tree` never copies a key twice, so it moves only what the soak-gated phases leave out (`latest-linux.yml`, `repodata/comps.xml`).
+# The catch-all that ends every tree's copy: no filters beyond the history record (`HISTORY_EXCLUDE`), which is written by `record_stable` and never copied. `r2_promote.promote_tree` never copies a key twice, so it moves only what the soak-gated phases leave out (`latest-linux.yml`, `repodata/comps.xml`).
 CATCH_ALL: tuple[str, ...] = promote_r2_to_stable.HISTORY_EXCLUDE
 
 # The stamps, shared with the soak-gated sibling through `channel_stamp`.
@@ -258,18 +258,20 @@ def main(argv: list[str]) -> int:
 
     print("R2 promoted to stable")
 
+    # The purge follows the promote that landed even when the record step fails, so the CDN never serves a stale edge copy of a promotion that succeeded; the record's failure still decides the exit code.
+    record_code = 0
     try:
         _record_stable(endpoint, env["PROMOTE_RETRY_DELAY_S"])
     except BashExitError as exc:
-        return exc.code
+        record_code = exc.code
 
     if purge_urls:
         try:
             # `${CLOUDFLARE_ZONE_ID:-}`: unset and empty are the same argument.
             _purge(purge_urls, env["CLOUDFLARE_ZONE_ID"])
         except BashExitError as exc:
-            return exc.code
-    return 0
+            return record_code or exc.code
+    return record_code
 
 
 if __name__ == "__main__":

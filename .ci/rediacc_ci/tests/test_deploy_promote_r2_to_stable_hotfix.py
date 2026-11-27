@@ -630,3 +630,57 @@ def test_the_stable_record_is_never_copied_from_edge_by_the_catch_all(tmp_path) 
     assert proc.returncode == 0, proc.stderr
     assert [r for r in fake.ops(records, "COPY") if r["key"] == HISTORY] == []
     assert [row["version"] for row in _history(root)] == ["1.2.3"]
+
+
+# --------------------------------------------------------------------------- The record step's refusals and the purge after it (review findings 2786d8d0.6, 2786d8d0.7) ---------------------------------------------------------------------------
+
+
+class _ManifestRun:
+    """A `Transfers` stand-in whose only read is the stable manifest, with the given body."""
+
+    def __init__(self, body: str) -> None:
+        self.body = body
+
+    def get(self, _key: str, target: str) -> None:
+        with open(target, "w", encoding="utf-8") as handle:
+            handle.write(self.body)
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ('{"name": "rdc"}', "names no version"),
+        ('{"version": "null"}', "names no version"),
+        ('{"version": ""}', "names no version"),
+        ("[1, 2]", "names no version"),
+        ("not json {", "is not valid JSON"),
+    ],
+)
+def test_the_record_step_refuses_a_manifest_that_names_no_usable_version(
+    monkeypatch, capsys, body: str, message: str
+) -> None:
+    recorded: list[str] = []
+    monkeypatch.setattr(port.r2_promote, "Transfers", lambda *_a, **_k: _ManifestRun(body))
+    monkeypatch.setattr(
+        port.promote_r2_to_stable, "record_stable", lambda _r, v: recorded.append(v)
+    )
+    with pytest.raises(port.BashExitError) as raised:
+        port._record_stable("https://r2.example.invalid", "0")
+    assert raised.value.code == 1
+    assert message in capsys.readouterr().err
+    assert recorded == []
+
+
+def test_the_cdn_is_purged_for_a_promotion_whose_record_step_failed(monkeypatch) -> None:
+    purged: list[tuple[list[str], str]] = []
+    monkeypatch.setattr(port.awscli, "require", lambda: None)
+    monkeypatch.setattr(port, "environment", lambda: {**BASE_ENV, "PROMOTE_RETRY_DELAY_S": "0"})
+    monkeypatch.setattr(port, "_promote_dirs", lambda _endpoint: ["https://x/cli/stable/a"])
+
+    def fail_record(_endpoint: str, _delay: str) -> None:
+        raise port.BashExitError(7)
+
+    monkeypatch.setattr(port, "_record_stable", fail_record)
+    monkeypatch.setattr(port, "_purge", lambda urls, zone: purged.append((urls, zone)))
+    assert port.main([]) == 7
+    assert purged == [(["https://x/cli/stable/a"], "zone-fixture")]

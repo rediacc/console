@@ -1,4 +1,4 @@
-"""Whether the green nightly that triggered `promote-stable.yml` actually tested the edge release it would promote.
+"""Whether the green scheduled Console CI run that `cd-release-stable.yml` finds (dispatch only, no schedule or workflow_run trigger) actually tested the edge release it would promote.
 
 Operator ruling 2026-09-30: a green scheduled `Console CI` run also releases edge to stable, alongside the 7-day soak. The nightly vouches only for the commit it ran on (`github.event.workflow_run.head_sha`), so the soak is waived only when the edge version's own tagged commit is that commit or one of its ancestors: `git merge-base --is-ancestor <edge commit> <head_sha>`.
 An edge built from anything the nightly did not contain (a later push, a hotfix branch) is not vouched for.

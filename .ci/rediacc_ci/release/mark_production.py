@@ -135,8 +135,13 @@ def _promoted_version(repo: str, run_id: int) -> tuple[str, str] | None:
             continue
         logs = gh_retry.gh(["api", "repos/%s/actions/jobs/%d/logs" % (repo, job["id"])])
         if not logs.ok:
-            # Past retention (HTTP 410) or unreadable: nothing provable.
-            return None
+            if "HTTP 410" in logs.stderr:
+                # Past retention: nothing provable, and nothing a retry would change.
+                return None
+            raise RuntimeError(
+                "could not read the log of job %d (run %d): %s"
+                % (job["id"], run_id, logs.stderr.strip())
+            )
         found = PROMOTED_LINE_RE.search(logs.stdout_raw)
         if found:
             return found.group(1), str(job.get("completed_at") or "")
@@ -164,7 +169,13 @@ def backfill_rows(repo: str) -> list[dict[str, str]]:
             "could not list the %s runs: %s" % (STABLE_WORKFLOW, listed.stderr.strip())
         )
     rows: dict[str, dict[str, str]] = {}
-    for run in json.loads(listed.stdout_raw or "[]"):
+    listed_runs = json.loads(listed.stdout_raw or "[]")
+    if len(listed_runs) >= BACKFILL_RUN_LIMIT:
+        log.warn(
+            "%s: backfill read the newest %d successful runs, the cap; older promoted versions are not in the rows"
+            % (SELF, BACKFILL_RUN_LIMIT)
+        )
+    for run in listed_runs:
         proved = _promoted_version(repo, int(run["databaseId"]))
         if proved is None or not proved[1]:
             continue
@@ -196,6 +207,11 @@ def backfill(argv: list[str]) -> int:
     for row in rows:
         print("v%s\t%s" % (row["version"], row["promoted_at"]))
     latest = latest_release_tag(repo)
+    if rows and not latest:
+        log.warn(
+            "%s: the Latest release could not be read; the newest backfilled row was not checked against it"
+            % SELF
+        )
     if rows and latest:
         newest = "v" + rows[-1]["version"]
         verdict = "agrees with" if newest == latest else "DIFFERS FROM"

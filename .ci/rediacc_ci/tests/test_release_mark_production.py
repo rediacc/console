@@ -784,3 +784,112 @@ def test_backfill_fails_when_the_run_list_cannot_be_read(monkeypatch) -> None:
         port.gh_retry, "gh", lambda args, **_kw: ghx.GhResult(args, 1, "", "HTTP 403 forbidden")
     )
     assert port.main(["--backfill", "--dry-run"]) == 1
+
+
+# --------------------------------------------------------------------------- Review findings 2786d8d0.1, .2, .3, .8 ---------------------------------------------------------------------------
+
+
+def _gh_with_log_failure(monkeypatch, stderr: str) -> None:
+    """The run list and jobs read fine; the one job log read fails with `stderr`."""
+    runs = {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    _fake_gh(monkeypatch, runs)
+    inner = port.gh_retry.gh
+
+    def gh(args, **kw):
+        if "/logs" in " ".join(args):
+            return ghx.GhResult(args, 1, "", stderr)
+        return inner(args, **kw)
+
+    monkeypatch.setattr(port.gh_retry, "gh", gh)
+
+
+def test_backfill_fails_when_a_job_log_read_fails_transiently(monkeypatch) -> None:
+    _gh_with_log_failure(monkeypatch, "gh: Server Error (HTTP 502)")
+    assert port.main(["--backfill", "--dry-run"]) == 1
+
+
+def test_backfill_skips_a_job_log_past_retention(monkeypatch, capsys) -> None:
+    _gh_with_log_failure(monkeypatch, "gh: Gone (HTTP 410)")
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_backfill_warns_when_the_latest_release_cannot_be_read(monkeypatch, capsys) -> None:
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    inner = port.gh_retry.gh
+
+    def gh(args, **kw):
+        if "releases/latest" in " ".join(args):
+            return ghx.GhResult(args, 1, "", "HTTP 500")
+        return inner(args, **kw)
+
+    monkeypatch.setattr(port.gh_retry, "gh", gh)
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert "Latest release could not be read" in capsys.readouterr().err
+
+
+def test_backfill_warns_when_the_run_cap_is_hit(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(port, "BACKFILL_RUN_LIMIT", 1)
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert "the cap" in capsys.readouterr().err
+
+
+def test_backfill_does_not_warn_about_the_cap_below_it(monkeypatch, capsys) -> None:
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    assert port.main(["--backfill", "--dry-run"]) == 0
+    assert "the cap" not in capsys.readouterr().err
+
+
+def test_backfill_merges_new_rows_into_the_record_and_writes_once(monkeypatch) -> None:
+    """The non-dry-run merge: only the missing versions are appended, the record is re-sorted, and one write follows."""
+    _fake_gh(
+        monkeypatch,
+        {
+            1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z"),
+            2: ("R2 promotion complete: edge v3.0.1 -> stable\n", "2026-11-04T10:00:00Z"),
+        },
+    )
+    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.example.invalid")
+    monkeypatch.setattr(
+        port.stable, "environment", lambda: {"CLOUDFLARE_R2_ENDPOINT": "https://r2.example.invalid"}
+    )
+    monkeypatch.setattr(port.r2_promote, "Transfers", lambda *_a, **_k: object())
+    existing = [{"version": "3.0.1", "promoted_at": "2026-11-04T10:00:00Z"}]
+    written: list[list[dict[str, str]]] = []
+    monkeypatch.setattr(port.stable, "read_history", lambda _run, _root: list(existing))
+    monkeypatch.setattr(
+        port.stable, "write_history", lambda _run, rows, _root: written.append(rows)
+    )
+    assert port.main(["--backfill"]) == 0
+    assert written == [
+        [
+            {"version": "2.4.0", "promoted_at": "2026-10-20T10:00:00Z"},
+            {"version": "3.0.1", "promoted_at": "2026-11-04T10:00:00Z"},
+        ]
+    ]
+
+
+def test_backfill_writes_nothing_when_the_record_already_holds_every_row(monkeypatch) -> None:
+    _fake_gh(
+        monkeypatch, {1: ("R2 promotion complete: edge v2.4.0 -> stable\n", "2026-10-20T10:00:00Z")}
+    )
+    monkeypatch.setattr(
+        port.stable, "environment", lambda: {"CLOUDFLARE_R2_ENDPOINT": "https://r2.example.invalid"}
+    )
+    monkeypatch.setattr(port.r2_promote, "Transfers", lambda *_a, **_k: object())
+    monkeypatch.setattr(
+        port.stable,
+        "read_history",
+        lambda _run, _root: [{"version": "2.4.0", "promoted_at": "2026-10-20T10:00:00Z"}],
+    )
+    written: list[object] = []
+    monkeypatch.setattr(port.stable, "write_history", lambda *_a: written.append(1))
+    assert port.main(["--backfill"]) == 0
+    assert written == []
