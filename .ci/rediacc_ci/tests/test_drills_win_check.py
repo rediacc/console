@@ -426,3 +426,19 @@ def test_prune_keeps_newest(tmp_path: pathlib.Path) -> None:
     names = sorted(p.name for p in tmp_path.iterdir())
     assert names[0] == "winc-05"
     assert len(names) == 20
+
+
+# --------------------------------------------------------------------------- the suites in the tree
+
+
+def test_every_suite_in_the_tree_keeps_the_contract() -> None:
+    """Each suite the driver can run exists, dot-sources common.ps1, names itself, and ends with the RDC-SUITE line; the files stay ASCII, since Windows PowerShell 5.1 reads a script without a BOM in the ANSI code page."""
+    suites = win_check.repo_root() / win_check.SUITES_DIR
+    for name in ("common.ps1", "vscode.cmd", *(s + ".ps1" for s in win_check.SUITE_ORDER)):
+        text = (suites / name).read_text(encoding="utf-8")
+        assert text.isascii(), name
+    for suite in win_check.SUITE_ORDER:
+        text = (suites / (suite + ".ps1")).read_text(encoding="utf-8")
+        assert ". (Join-Path $PSScriptRoot 'common.ps1')" in text, suite
+        assert "Initialize-RdcSuite '%s'" % suite in text, suite
+        assert text.rstrip().endswith("Complete-RdcSuite"), suite
