@@ -104,6 +104,63 @@ describe('keyring mode', () => {
     expect((error as SealKeyLostError).reason).toBe('auth');
   });
 
+  it('a damaged blob under a key that opens the others is not key loss', async () => {
+    const keyringId = await mintKey();
+    const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
+    const fields = sealed.encryption!.encryptedFields!;
+    const flipped = Buffer.from(fields['/credentials/ssh/privateKey'].data, 'base64');
+    flipped[flipped.length - 1] ^= 0xff;
+    const damaged: RdcConfig = {
+      ...sealed,
+      encryption: {
+        ...sealed.encryption!,
+        encryptedFields: {
+          ...fields,
+          '/credentials/ssh/privateKey': { v: 2, data: flipped.toString('base64') },
+        },
+      },
+    };
+    const error = await decryptConfigFields(damaged).catch((e: unknown) => e);
+    expect(error).not.toBeInstanceOf(SealKeyLostError);
+    expect((error as Error).message).toMatch(/damaged/);
+  });
+
+  it('a damaged blob that precedes the openable ones is not key loss either', async () => {
+    const keyringId = await mintKey();
+    const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
+    const fields = sealed.encryption!.encryptedFields!;
+    const first = Buffer.from(fields['/credentials/cfDnsApiToken'].data, 'base64');
+    first[first.length - 1] ^= 0xff;
+    const damaged: RdcConfig = {
+      ...sealed,
+      encryption: {
+        ...sealed.encryption!,
+        encryptedFields: {
+          '/credentials/cfDnsApiToken': { v: 2, data: first.toString('base64') },
+          '/credentials/ssh/privateKey': fields['/credentials/ssh/privateKey'],
+        },
+      },
+    };
+    const error = await decryptConfigFields(damaged).catch((e: unknown) => e);
+    expect(error).not.toBeInstanceOf(SealKeyLostError);
+    expect((error as Error).message).toMatch(/damaged/);
+  });
+
+  it('a truncated ciphertext is damage, never key loss', async () => {
+    const keyringId = await mintKey();
+    const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
+    const truncated: RdcConfig = {
+      ...sealed,
+      encryption: {
+        ...sealed.encryption!,
+        encryptedFields: { '/credentials/ssh/privateKey': { v: 2, data: 'AAAA' } },
+      },
+    };
+    const error = await decryptConfigFields(truncated).catch((e: unknown) => e);
+    expect(error).not.toBeInstanceOf(SealKeyLostError);
+    expect((error as Error).message).toMatch(/damaged/);
+  });
+
   it('raises SealKeyLostError (missing) when secure storage lost the key', async () => {
     const keyringId = await mintKey();
     const sealed = await encryptConfigFields(fixture({ mode: 'keyring', keyringId }));
@@ -180,6 +237,15 @@ describe('master-password and stacked modes', () => {
       encryption: { ...sealed.encryption!, keyringId: other },
     };
     await expect(decryptConfigFields(otherKey, PASSWORD)).rejects.toBeInstanceOf(SealKeyLostError);
+  });
+});
+
+describe('nodeCryptoProvider.deriveKey', () => {
+  it('keeps the legacy 100k default, so a caller that passes no count derives the key it always did', async () => {
+    const { pbkdf2Sync } = await import('node:crypto');
+    const salt = Buffer.alloc(16, 7);
+    const expected = pbkdf2Sync(PASSWORD, salt, 100000, 32, 'sha256').toString('base64');
+    expect(await nodeCryptoProvider.deriveKey(PASSWORD, salt)).toBe(expected);
   });
 });
 

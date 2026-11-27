@@ -181,7 +181,9 @@ describe('synchronous key load (D9, the api-token reader)', () => {
     const { getSecureStorage } = await import('../../utils/secure-storage.js');
     const storage = getSecureStorage();
     stand.unprotects = 0;
-    expect(() => storage.getSync('bad key; rm -rf /')).toThrow();
+    expect(() => storage.getSync('bad key; rm -rf /')).toThrow(
+      /Refusing unsafe secure-storage key/
+    );
     expect(stand.unprotects).toBe(0);
   });
 });

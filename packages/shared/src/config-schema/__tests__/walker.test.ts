@@ -170,4 +170,29 @@ describe('setByPointer', () => {
     expect(setByPointer({ a: [] }, '/a/3/b', 1)).toEqual({ a: [] });
     expect(setByPointer({ a: [{}] }, '/a/0/b', 1)).toEqual({ a: [{ b: 1 }] });
   });
+
+  it('creates an array, not an object, for a missing parent that an index descends into', () => {
+    const out = setByPointer({}, '/list/0/secret', 's') as { list: unknown };
+    expect(Array.isArray(out.list)).toBe(true);
+    expect(out).toEqual({ list: [{ secret: 's' }] });
+    expect(setByPointer({ list: [{ a: 1 }] }, '/list/1/secret', 's')).toEqual({
+      list: [{ a: 1 }, { secret: 's' }],
+    });
+    expect(setByPointer({}, '/list/2/secret', 's')).toEqual({ list: [] });
+  });
+
+  it('a leaf index past the end of an array extends it, as documented', () => {
+    const out = setByPointer({ a: [] }, '/a/3', 1) as { a: unknown[] };
+    expect(out.a.length).toBe(4);
+    expect(out.a[3]).toBe(1);
+  });
+
+  it('never reaches Object.prototype through a __proto__ segment', () => {
+    setByPointer({}, '/a/__proto__/polluted', true);
+    setByPointer({ a: {} }, '/a/__proto__/polluted', true);
+    setByPointer({}, '/__proto__/polluted', true);
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    expect(getByPointer({ a: {} }, '/a/__proto__')).toBeUndefined();
+    expect(getByPointer({}, '/constructor')).toBeUndefined();
+  });
 });

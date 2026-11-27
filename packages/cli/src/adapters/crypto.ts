@@ -67,11 +67,11 @@ class NodeCryptoProvider implements ICryptoProvider {
     return decrypted.toString('utf8');
   }
 
-  /** PBKDF2-SHA256 of `password` over `salt`, base64; `ENCRYPTION_CONFIG.ITERATIONS` (600k) unless told otherwise. */
+  /** PBKDF2-SHA256 of `password` over `salt`, base64; the legacy count (100k, what this method always used) unless told otherwise, so an existing caller derives the same key. */
   async deriveKey(
     password: string,
     salt: Uint8Array,
-    iterations: number = ENCRYPTION_CONFIG.ITERATIONS
+    iterations: number = ENCRYPTION_CONFIG.LEGACY_ITERATIONS
   ): Promise<string> {
     const key = await this.deriveKeyBuffer(password, Buffer.from(salt), iterations);
     return key.toString('base64');

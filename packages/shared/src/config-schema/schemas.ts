@@ -47,8 +47,8 @@ import { StateSchema } from './state-schema.js';
  * A single AES-GCM ciphertext, one entry per concrete leaf pointer.
  *
  * - `v: 2` (PLAN-config-sealed-local.md D2): `data` is base64(iv + ciphertext + tag) under the
- *   config's field key, with `pointer|keyringId` as additional authenticated data, so a blob moved
- *   to another field or sealed under another key fails to open.
+ *   config's field key, with `pointer|keyringId` as additional authenticated data (`keyringId` is empty, so `pointer|`, in a mode without the keyring key such as
+ *   master-password), so a blob moved to another field or sealed under another key fails to open.
  * - No `v` (legacy): `data` is base64(salt + iv + ciphertext + tag) from
  *   `nodeCryptoProvider.encrypt`, a per-blob PBKDF2 at the legacy iteration count. Read-only: the
  *   next write re-seals it as v2.

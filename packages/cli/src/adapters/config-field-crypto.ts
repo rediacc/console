@@ -37,6 +37,7 @@ import {
   usesMasterPassword,
   walkSensitive,
 } from '@rediacc/shared/config-schema';
+import { ENCRYPTION_CONFIG } from '@rediacc/shared/encryption';
 import {
   deriveFieldKey,
   newSealKdf,
@@ -233,17 +234,77 @@ async function openBlob(
     return nodeCryptoProvider.decrypt(blob.data, password);
   }
   const keyringId = usesKeyring(encryption?.mode) ? encryption?.keyringId : undefined;
+  if (!hasBlobShape(blob.data)) {
+    throw new Error(
+      `sealed field ${pointer} is damaged: its ciphertext is truncated or not base64`
+    );
+  }
   const key = await fieldKey();
   try {
     return await openString(key, blob.data, blobAad(pointer, keyringId));
   } catch {
-    // Under a key that includes the keyring key, a failure the password cannot explain is key loss
-    // (the caller checks the password against its verifier before unsealing).
+    // Under a key that includes the keyring key, a failure the password cannot explain is key loss (the caller checks the password against its verifier before unsealing). decryptConfigFields narrows it to a damaged blob when the same key opens another one.
     if (keyringId !== undefined) throw new SealKeyLostError(config.id, keyringId, 'auth');
     throw new Error(
       `sealed field ${pointer} did not open: wrong master password or a damaged file`
     );
   }
+}
+
+/** `openBlob`, with an auth failure under a good key reported as a damaged blob instead of key loss. */
+async function openOrExplain(
+  config: RdcConfig,
+  pointer: string,
+  blob: EncryptedBlob,
+  fieldKey: () => Promise<CryptoKey>,
+  password: string | undefined,
+  opened: number
+): Promise<string> {
+  try {
+    return await openBlob(config, pointer, blob, fieldKey, password);
+  } catch (error) {
+    const keyLoss = error instanceof SealKeyLostError && error.reason === 'auth';
+    const blobs = config.encryption?.encryptedFields ?? {};
+    if (
+      keyLoss &&
+      (await damagedUnderGoodKey(config, pointer, blobs, fieldKey, password, opened))
+    ) {
+      throw new Error(
+        `sealed field ${pointer} is damaged: the seal key opens the other fields but not this one`
+      );
+    }
+    throw error;
+  }
+}
+
+/** A v2 blob is base64(iv + ciphertext + tag): anything shorter, or not base64, is damage and no key can explain it. */
+function hasBlobShape(data: string): boolean {
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(data)) return false;
+  return (
+    Buffer.from(data, 'base64').length >= ENCRYPTION_CONFIG.IV_LENGTH + ENCRYPTION_CONFIG.TAG_LENGTH
+  );
+}
+
+/** An auth failure under a keyring key is key loss only when the key opens nothing: if it opens another v2 blob of this config, the key is right and the failing blob is damaged. */
+async function damagedUnderGoodKey(
+  config: RdcConfig,
+  failed: string,
+  blobs: Blobs,
+  fieldKey: () => Promise<CryptoKey>,
+  password: string | undefined,
+  alreadyOpened: number
+): Promise<boolean> {
+  if (alreadyOpened > 0) return true;
+  for (const [pointer, blob] of Object.entries(blobs)) {
+    if (pointer === failed || blob.v !== 2) continue;
+    try {
+      await openBlob(config, pointer, blob, fieldKey, password);
+      return true;
+    } catch {
+      // This blob fails too, so keep probing.
+    }
+  }
+  return false;
 }
 
 /**
@@ -253,8 +314,9 @@ async function openBlob(
  * when there is nothing to decrypt. The field key is derived only when a v2 blob
  * is present, and at most once per call.
  *
- * Throws SealKeyLostError when the keyring key is missing, or a v2 blob fails
- * under a key that includes it.
+ * Throws SealKeyLostError when the keyring key is missing, or when every v2 blob
+ * fails under a key that includes it. A blob that fails while the same key opens
+ * another one, or whose ciphertext is truncated, is a plain "damaged" Error.
  */
 export async function decryptConfigFields(
   config: RdcConfig,
@@ -269,8 +331,10 @@ export async function decryptConfigFields(
   const fieldKey = () => (derived ??= deriveFieldKey(config, password));
 
   let result: RdcConfig = config;
+  let opened = 0;
   for (const [pointer, blob] of Object.entries(encryptedFields)) {
-    const json = await openBlob(config, pointer, blob, fieldKey, password);
+    const json = await openOrExplain(config, pointer, blob, fieldKey, password, opened);
+    opened++;
     result = setByPointer(result, pointer, JSON.parse(json)) as RdcConfig;
   }
 

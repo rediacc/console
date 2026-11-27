@@ -28,23 +28,7 @@ export function stripComments(jsonc: string): string {
     .join('\n');
 }
 
-/**
- * Detect modified `<redacted:...>` stubs by comparing each sensitive path's
- * value in the edited config against the current config's stub.
- *
- * Rules:
- *   - Unchanged stub  (stub matches current digest)  → substitute real value back.
- *   - Stub replaced with a DIFFERENT stub             → hard failure (meaningless edit).
- *   - Stub replaced with real plaintext               → rotation intent.
- *     - If knowledge[pointer] supplied (via --current-secrets) and it matches the
- *       current value: accept the new value; a mismatch is a hard failure.
- *     - Otherwise: surface on `rotations` so the caller can prompt or reject.
- *   - A sensitive value with no current value (newly added)  → accepted as is.
- *
- * Returning `rotations` (instead of immediately failing) lets interactive mode
- * show a single confirmation prompt for all rotations; non-interactive `--apply`
- * keeps strict behavior by converting `rotations` to `failures` at the call site.
- */
+/** What `classifyStub` decided for one sensitive path; the rules are documented on `reconcileStubs`. */
 type StubOutcome =
   | { kind: 'untouched'; currentValue: unknown }
   | { kind: 'bad-stub' }
@@ -100,6 +84,23 @@ const FAILURE_TEXT = {
   'bad-knowledge': 'the --current-secrets value does not match the current value',
 };
 
+/**
+ * Detect modified `<redacted:...>` stubs by comparing each sensitive path's
+ * value in the edited config against the current config's stub.
+ *
+ * Rules:
+ *   - Unchanged stub  (stub matches current digest)  → substitute real value back.
+ *   - Stub replaced with a DIFFERENT stub             → hard failure (meaningless edit).
+ *   - Stub replaced with real plaintext               → rotation intent.
+ *     - If knowledge[pointer] supplied (via --current-secrets) and it matches the
+ *       current value: accept the new value; a mismatch is a hard failure.
+ *     - Otherwise: surface on `rotations` so the caller can prompt or reject.
+ *   - A sensitive value with no current value (newly added)  → accepted as is.
+ *
+ * Returning `rotations` (instead of immediately failing) lets interactive mode
+ * show a single confirmation prompt for all rotations; non-interactive `--apply`
+ * keeps strict behavior by converting `rotations` to `failures` at the call site.
+ */
 export function reconcileStubs(
   edited: unknown,
   currentConfig: RdcConfig,

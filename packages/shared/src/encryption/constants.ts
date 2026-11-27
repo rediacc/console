@@ -5,7 +5,7 @@
 export const ENCRYPTION_CONFIG = {
   /** Salt length in bytes */
   SALT_LENGTH: 16,
-  /** PBKDF2 iteration count of a password-derived key (PLAN-config-sealed-local.md D2): derived once per process, never per blob. */
+  /** PBKDF2 iteration count of a NEWLY derived password key (PLAN-config-sealed-local.md D2): derived once per process, never per blob. Existing data is not read at this count: a sealed config records its own count in `encryption.kdf.iterations`, and a blob or verifier with no recorded count was made at LEGACY_ITERATIONS. */
   ITERATIONS: 600000,
   /** PBKDF2 iteration count of the legacy per-blob encryption; read-only, a blob that does not record its count was made with it. */
   LEGACY_ITERATIONS: 100000,
