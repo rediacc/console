@@ -101,6 +101,7 @@ export function renderGo(lock: Lockfile): string {
     lines.push(`\t\tLicense:           ${goString(c.license)},`);
     lines.push(`\t\tUpstreamSourceURL: ${goString(c.upstreamSourceUrl)},`);
     lines.push(`\t\tMirrorURL:         ${goString(c.mirrorUrl ?? '')},`);
+    lines.push(`\t\tSourceSHA256:      ${goString(c.sourceSha256)},`);
     if (c.notes) lines.push(`\t\tNotes:             ${goString(c.notes)},`);
     lines.push('\t},');
   }
