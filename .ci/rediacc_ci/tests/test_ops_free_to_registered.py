@@ -477,7 +477,8 @@ def test_dry_run_touches_nothing(capsys):
 
 def test_community_limits_parse_the_shared_constants():
     assert LIMITS["maxRepositorySizeGb"] == 10
-    assert LIMITS["storageQuotaBytes"] == 10 * 1024**3
+    # COMMUNITY carries no hosted storage (PM2): the parsed constant is 0, not a quota.
+    assert LIMITS["storageQuotaBytes"] == 0
 
 
 def test_token_file_of_the_throwaway_config_is_dropped():
