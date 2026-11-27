@@ -4,7 +4,9 @@ The pruning is only sound if it never drops a node a scanner would accept, so th
 """
 
 import ast
+import gc
 import subprocess
+import weakref
 
 import pytest
 
@@ -35,6 +37,7 @@ def _carrying(tree, source):
     for node in ast.walk(tree):
         if not isinstance(node, ast.expr | ast.stmt):
             continue
+        assert node.end_lineno is not None
         first, last = node.lineno - 1, node.end_lineno - 1
         if first == last:
             raw = rows[first][node.col_offset : node.end_col_offset]
@@ -133,3 +136,20 @@ def test_the_prune_holds_on_a_slice_of_the_real_tree():
     assert checked >= 50, (
         "only %d token-bearing modules found; the slice is not seeing the tree" % checked
     )
+
+
+class _Cycle:
+    """Garbage with a reference cycle, so only the cyclic collector can free it."""
+
+    def __init__(self):
+        self.me = self
+
+
+def test_a_parse_does_not_freeze_unreachable_cycles():
+    """`gc.freeze` moves every live object of the process to the permanent generation (e3578f81.1), so an unreachable cycle alive at a parse would never be collected. A cycle dropped before a fresh parse must be gone after it."""
+    gc.collect()
+    probe = weakref.ref(_Cycle())
+    env_ast.parse("fresh_cycle_probe = %d\n" % id(probe))
+    assert probe() is None, "the parse froze an unreachable cycle instead of collecting it"
+    gc.collect()
+    assert probe() is None

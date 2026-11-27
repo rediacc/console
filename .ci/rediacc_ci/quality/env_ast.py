@@ -57,12 +57,13 @@ def parse(source: str, filename: str = "<unknown>") -> ast.Module:
     """`ast.parse`, memoised per process on the source text. Failures are never cached."""
     tree = _TREES.get(source)
     if tree is None:
-        # The cyclic collector re-scans the whole retained heap while a few million nodes are built and again on every later allocation, and that alone cost 3 to 5 s of a 10 s scan (tracked tree, measured). It is paused while the tree is built, and the finished tree is frozen out of later collections: a parse tree holds no cycle, so refcounting still frees it. `release` thaws.
+        # The cyclic collector re-scans the whole retained heap while a few million nodes are built and again on every later allocation, and that alone cost 3 to 5 s of a 10 s scan (tracked tree, measured). It is paused while the tree is built, and the process's surviving objects are then frozen out of later collections (`gc.freeze` moves EVERY live object of the process, not only the tree, to the permanent generation, e3578f81.1). Two things keep that from enshrining garbage: a collection runs just before the freeze (a full scan on the first parse, then only the objects allocated since the last freeze, because the frozen ones are skipped), so no unreachable cycle is ever frozen; and `release` thaws. What stays true: an object alive at a freeze that later becomes cyclic garbage is not collected until `release`.
         was_enabled = gc.isenabled()
         gc.disable()
         try:
             tree = ast.parse(source, filename=filename)
             lines = _token_lines(source)
+            gc.collect()
             gc.freeze()
         finally:
             if was_enabled:
