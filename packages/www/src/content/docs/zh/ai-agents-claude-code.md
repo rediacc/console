@@ -8,11 +8,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: zh
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code 通过 `rdc` CLI 与 Rediacc 原生集成。本指南涵盖设置、权限和常见工作流程。
+
+> **安全第一**：在把智能体接入任何涉及密钥的内容之前，请先阅读 [AI 智能体安全与防护机制](/zh/docs/ai-agents-safety)。在 `rdc` 下运行的 Claude Code 会被检测为智能体。敏感变更对人类和智能体一视同仁，都需要 `--current <previous-value>`（passwd 风格的前提条件）；`--rotate-secret`（经确认并审计的轮换）只对终端前的人类有效。`rdc config edit`（交互式、`--apply`、`--reveal`）会被拒绝且没有任何覆盖方式，grand 仓库和直接的机器 SSH 保持关闭，除非人类在策略允许的范围内主动授权。当前提条件失败时，JSON 信封中的 `errors[].next.options[].run` 字段会告诉智能体应建议用户运行的确切 CLI 命令。请原样转达。
 
 ## 快速设置
 
@@ -36,7 +38,7 @@ Claude Code 在启动时读取 `CLAUDE.md`，并将其作为所有交互的持�
 - Deploy: rdc repo up <repo>@<machine> --yes
 - Containers: rdc machine status <machine> --containers -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term connect <machine> [repo]
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -84,7 +86,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 
