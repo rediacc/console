@@ -692,7 +692,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # version of its own, so a bump here moves the devbox and CI together. A devbox that
 # disagreed with CI would be worse than one that is merely behind, because it answers
 # confidently.
-ARG AGENT_BROWSER_VERSION=0.44.0
+ARG AGENT_BROWSER_VERSION=0.45.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --allow-scripts=agent-browser --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
