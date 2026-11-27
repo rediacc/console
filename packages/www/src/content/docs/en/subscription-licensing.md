@@ -61,9 +61,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Machine slots (server-side)
 
-Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota. Registered (free) and free Professional include one machine slot. Professional and Business carry one machine slot per floating license (1 to 5 and 1 to 39 self-serve); larger deployments are an Enterprise setup sized with our partners. A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. Because a slot is only held while you are actively provisioning, a single slot can still cover several machines over the course of a month.
+Machine slot tracking is enforced server-side. When the CLI issues a repo license, the account server checks the subscription's machine slot quota. Registered (free) and free Professional include one machine slot. Professional and Business carry one machine slot per floating license (1 to 5 and 1 to 39 self-serve); larger deployments are an Enterprise setup sized with our partners. A slot is held for 5 hours from the last repo license issuance on that machine and auto-releases after inactivity. Because a slot is only held during active provisioning, a single slot can still cover several machines over the course of a month.
 
-The ceiling is read from your subscription record, not from a hard-coded plan constant, so a negotiated activation count is honored as soon as it is set on the subscription. The plan tier only decides the starting value.
+The ceiling is read from the subscription record, not from a hard-coded plan constant, so a negotiated activation count is honored as soon as it is set on the subscription. The plan tier only decides the starting value.
 
 Issuance and renewal are enforced differently, and the difference matters:
 

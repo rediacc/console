@@ -811,9 +811,8 @@ def evaluate_tree(
         return Outcome(CANNOT_RUN, [], ["✗ instrument: %s" % exc])
 
     problems += rule_ii(cfg.classes, mapped, requested, cfg_label)
-    # Rule (iii) exemptions: a grant whose call chain ENDS at an exempted job is held on purpose. A caller job that
-    # carries the same grant for it is exempted by naming it too (a called workflow holds no more than its caller).
-    # An exemption no grant matches is a dead entry and refused, so a deleted job cannot leave a standing pass.
+    # Rule (iii) exemptions: a grant whose call chain ENDS at an exempted job is held on purpose. A caller job that carries the
+    # same grant for it is exempted by naming it too (a called workflow holds no more than its caller). An exemption no grant matches is a dead entry and refused, so a deleted job cannot leave a standing pass.
     matched = {
         j for j in cfg.id_token_exemptions for g in scan.grants if _chain_ends_at(g.chain, j)
     }

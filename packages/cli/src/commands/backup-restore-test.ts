@@ -226,9 +226,7 @@ function compareVerdict(
   snapshotId: string
 ): Verdict {
   const passphraseCheck = record?.passphraseCheck;
-  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the
-  // restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that
-  // inventory against the manifest's root.
+  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that inventory against the manifest's root.
   const heldToSnapshot = verdict.heldTo === 'snapshot';
   const comparedSnapshot = heldToSnapshot ? verdict.snapshotId : verdict.anchorSnapshotId;
   if (comparedSnapshot !== snapshotId) {
