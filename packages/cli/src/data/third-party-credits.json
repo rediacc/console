@@ -10,7 +10,8 @@
       "spdx": "GPL-2.0-only",
       "license": "GNU General Public License, version 2 (some libraries LGPL-2.1); conveyed as an unmodified binary, invoked via exec.",
       "upstreamSourceUrl": "https://github.com/checkpoint-restore/criu/archive/v4.3.1/criu-4.3.1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/criu-4.3.1.tar.gz"
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/criu-4.3.1.tar.gz",
+      "sourceSha256": "76656dc287aa2e101141052e746cb3816314d9640b973e210505fce85fb42de2"
     },
     {
       "kind": "embedded-binary",
@@ -20,7 +21,8 @@
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
       "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-provisioner/archive/v6.4.1/external-provisioner-6.4.1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.4.1.tar.gz"
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/external-provisioner-6.4.1.tar.gz",
+      "sourceSha256": "818a1a1f210fb3d6a4edd3982a42984f0ba3e62f6e9e01ccaf6d0620b4340d39"
     },
     {
       "kind": "embedded-binary",
@@ -30,7 +32,8 @@
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as a host process in --node-deployment mode (spec 09 §1/§6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
       "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.7.1/external-snapshotter-8.7.1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.1.tar.gz",
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.1.tar.gz",
+      "sourceSha256": "b49e9ddcc0a7e6a866db0e866ae587bcf2ae1e16f7c135b61144981b7e265893",
       "notes": "One upstream source archive (external-snapshotter) builds BOTH csi-snapshotter and snapshot-controller; the embedded VolumeSnapshot v1 CRDs (pkg/kube/csidriver/crds) are vendored verbatim from the same v8.7.1 tag."
     },
     {
@@ -41,7 +44,8 @@
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The k3s Authors / SUSE); conveyed as an unmodified upstream binary (the single static k3s release binary, not the airgap images tarball), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
       "upstreamSourceUrl": "https://github.com/k3s-io/k3s/archive/v1.37.2+k3s1/k3s-1.37.2+k3s1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.37.2+k3s1.tar.gz",
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/k3s-1.37.2+k3s1.tar.gz",
+      "sourceSha256": "f44b64ee2905234200667e3f2467944c9fe3b5be75dcba548482dcb34a5b2d61",
       "notes": "k3s ships no top-level NOTICE file in its release archive as of this version; the Apache-2.0 LICENSE and this attribution satisfy s4. The binary vendors third-party components (containerd, runc, CoreDNS, etc.) under their own licenses, catalogued in the k3s source tree."
     },
     {
@@ -52,8 +56,9 @@
       "spdx": "GPL-3.0-or-later",
       "license": "GNU General Public License, version 3 or later; conveyed as a binary, invoked via exec.",
       "upstreamSourceUrl": "https://download.samba.org/pub/rsync/src/rsync-3.5.2.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.2.tar.gz",
-      "notes": "Built from unmodified upstream source (statically). The 3.4.1-era LinuxFromScratch security_fix patch is no longer applied — 3.4.4 already carries those fixes upstream."
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/rsync-3.5.2.tar.gz",
+      "sourceSha256": "a10d591825251e070f74c98df3daad195def4ed81b4a2de16169026aea33f6c8",
+      "notes": "Built from unmodified upstream source (rsync 3.5.2, no patches applied) and statically linked: the binary carries the static libraries listed below, whose sources travel with it."
     },
     {
       "kind": "embedded-binary",
@@ -63,7 +68,8 @@
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Kubernetes Authors); conveyed as an unmodified upstream binary, run as the CP-node cluster singleton with --enable-distributed-snapshotting (spec 09 §6), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
       "upstreamSourceUrl": "https://github.com/kubernetes-csi/external-snapshotter/archive/v8.7.1/external-snapshotter-8.7.1.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.1.tar.gz"
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/external-snapshotter-8.7.1.tar.gz",
+      "sourceSha256": "b49e9ddcc0a7e6a866db0e866ae587bcf2ae1e16f7c135b61144981b7e265893"
     },
     {
       "kind": "embedded-binary",
@@ -73,17 +79,97 @@
       "spdx": "Apache-2.0",
       "license": "Apache License 2.0 (Copyright The Zot Authors); conveyed as an unmodified upstream binary (full build, with the sync extension), invoked as a subprocess. Apache-2.0 s4 attribution retained.",
       "upstreamSourceUrl": "https://github.com/project-zot/zot/archive/v2.1.23/zot-2.1.23.tar.gz",
-      "plannedMirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.23.tar.gz",
+      "mirrorUrl": "https://releases.rediacc.com/third-party-src/zot-2.1.23.tar.gz",
+      "sourceSha256": "f1a5b9f45459e398330da6bc0a161d18e8c11c6b767932a3ac96622cfe6a5e20",
       "notes": "This is the FULL zot build (zot-linux-<arch>), NOT the -minimal variant. Do not 'optimize' to the minimal build: the pull-through cache depends on the sync extension (sync.onDemand), and zot compiles extensions ONLY into the full binary. The minimal build is distribution-spec-only and cannot mirror upstreams, which defeats the entire purpose (D8)."
+    },
+    {
+      "kind": "static-library",
+      "name": "glibc",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "LGPL-2.1-or-later",
+      "license": "GNU Lesser General Public License, version 2.1 or later; statically linked into the GPL-3.0-or-later rsync binary.",
+      "upstreamSourceUrl": "https://ftp.gnu.org/gnu/glibc/"
+    },
+    {
+      "kind": "static-library",
+      "name": "acl (libacl)",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "LGPL-2.1-or-later",
+      "license": "GNU Lesser General Public License, version 2.1 or later; statically linked into rsync.",
+      "upstreamSourceUrl": "https://download.savannah.nongnu.org/releases/acl/"
+    },
+    {
+      "kind": "static-library",
+      "name": "attr (libattr)",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "LGPL-2.1-or-later",
+      "license": "GNU Lesser General Public License, version 2.1 or later; statically linked into rsync.",
+      "upstreamSourceUrl": "https://download.savannah.nongnu.org/releases/attr/"
+    },
+    {
+      "kind": "static-library",
+      "name": "popt",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "MIT",
+      "license": "MIT License; statically linked into rsync.",
+      "upstreamSourceUrl": "https://ftp.rpm.org/popt/releases/"
+    },
+    {
+      "kind": "static-library",
+      "name": "lz4",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "BSD-2-Clause",
+      "license": "BSD 2-Clause License (library); statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/lz4/lz4/releases"
+    },
+    {
+      "kind": "static-library",
+      "name": "xxHash",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "BSD-2-Clause",
+      "license": "BSD 2-Clause License (library); statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/Cyan4973/xxHash/releases"
+    },
+    {
+      "kind": "static-library",
+      "name": "zstd",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "BSD-3-Clause",
+      "license": "BSD 3-Clause License (dual-licensed with GPL-2.0-only; the BSD option is used); statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/facebook/zstd/releases"
+    },
+    {
+      "kind": "static-library",
+      "name": "jitterentropy-library",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "BSD-3-Clause",
+      "license": "BSD 3-Clause License (dual-licensed with GPL-2.0-only; the BSD option is used); statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/smuellerDD/jitterentropy-library/releases"
+    },
+    {
+      "kind": "static-library",
+      "name": "OpenSSL",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "Apache-2.0",
+      "license": "Apache License 2.0 (OpenSSL 3.x); statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/openssl/openssl/releases"
+    },
+    {
+      "kind": "static-library",
+      "name": "zlib",
+      "version": "Ubuntu 26.10 package, statically linked into rsync",
+      "spdx": "Zlib",
+      "license": "zlib License; statically linked into rsync.",
+      "upstreamSourceUrl": "https://github.com/madler/zlib/releases"
     },
     {
       "kind": "runtime",
       "name": "Node.js",
-      "version": "22.x",
       "spdx": "MIT",
       "license": "MIT License, plus the licenses of its bundled components (V8, OpenSSL, and others). The rdc release binary is a Node.js Single Executable Application: the Node.js runtime is embedded.",
       "upstreamSourceUrl": "https://nodejs.org/dist/",
-      "plannedMirrorUrl": ""
+      "mirrorUrl": ""
     },
     {
       "kind": "bundled-deps",
@@ -92,7 +178,7 @@
       "spdx": "various",
       "license": "The rdc JavaScript bundle links its production npm dependencies. Their individual licenses and versions are enumerated in the THIRD_PARTY_LICENSES file bundled with release builds (rdc credits --licenses).",
       "upstreamSourceUrl": "",
-      "plannedMirrorUrl": ""
+      "mirrorUrl": ""
     }
   ]
 }

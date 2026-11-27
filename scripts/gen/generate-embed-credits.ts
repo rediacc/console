@@ -51,13 +51,24 @@ export interface LockComponent {
   spdx: string;
   license: string;
   upstreamSourceUrl: string;
-  plannedMirrorUrl: string;
+  mirrorUrl: string;
+  sourceSha256: string;
   notes?: string;
+}
+
+/** A static library linked into an embedded binary (no archive of its own to mirror). */
+export interface LockStaticLibrary {
+  name: string;
+  version: string;
+  spdx: string;
+  license: string;
+  upstreamSourceUrl: string;
 }
 
 export interface Lockfile {
   gplWrittenOffer: string;
   components: Record<string, LockComponent>;
+  staticLibraries: LockStaticLibrary[];
 }
 
 /** Components in a stable, declaration-independent order. */
@@ -89,8 +100,21 @@ export function renderGo(lock: Lockfile): string {
     lines.push(`\t\tSPDX:              ${goString(c.spdx)},`);
     lines.push(`\t\tLicense:           ${goString(c.license)},`);
     lines.push(`\t\tUpstreamSourceURL: ${goString(c.upstreamSourceUrl)},`);
-    lines.push(`\t\tPlannedMirrorURL:  ${goString(c.plannedMirrorUrl)},`);
+    lines.push(`\t\tMirrorURL:         ${goString(c.mirrorUrl)},`);
     if (c.notes) lines.push(`\t\tNotes:             ${goString(c.notes)},`);
+    lines.push('\t},');
+  }
+  lines.push('}');
+  lines.push('');
+  lines.push('// staticLibraryCredits attributes the static libraries linked into rsync.');
+  lines.push('var staticLibraryCredits = []Credit{');
+  for (const l of lock.staticLibraries) {
+    lines.push('\t{');
+    lines.push(`\t\tName:              ${goString(l.name)},`);
+    lines.push(`\t\tVersion:           ${goString(l.version)},`);
+    lines.push(`\t\tSPDX:              ${goString(l.spdx)},`);
+    lines.push(`\t\tLicense:           ${goString(l.license)},`);
+    lines.push(`\t\tUpstreamSourceURL: ${goString(l.upstreamSourceUrl)},`);
     lines.push('\t},');
   }
   lines.push('}');
@@ -111,7 +135,9 @@ export function renderJson(lock: Lockfile): string {
 
   // Preserve non-embedded entries (Node.js runtime, bundled npm deps) verbatim
   // and in place; only the embedded-binary set is derived from the lockfile.
-  const passthrough = existing.components.filter((c) => c.kind !== 'embedded-binary');
+  const passthrough = existing.components.filter(
+    (c) => c.kind !== 'embedded-binary' && c.kind !== 'static-library'
+  );
 
   const embedded = orderedComponents(lock).map(([, c]) => {
     const entry: Record<string, unknown> = {
@@ -122,17 +148,27 @@ export function renderJson(lock: Lockfile): string {
       spdx: c.spdx,
       license: c.license,
       upstreamSourceUrl: c.upstreamSourceUrl,
-      plannedMirrorUrl: c.plannedMirrorUrl,
+      mirrorUrl: c.mirrorUrl,
+      sourceSha256: c.sourceSha256,
     };
     if (c.notes) entry.notes = c.notes;
     return entry;
   });
 
+  const libraries = lock.staticLibraries.map((l) => ({
+    kind: 'static-library',
+    name: l.name,
+    version: l.version,
+    spdx: l.spdx,
+    license: l.license,
+    upstreamSourceUrl: l.upstreamSourceUrl,
+  }));
+
   return `${JSON.stringify(
     {
       _comment: existing._comment,
       gplWrittenOffer: lock.gplWrittenOffer,
-      components: [...embedded, ...passthrough],
+      components: [...embedded, ...libraries, ...passthrough],
     },
     null,
     2

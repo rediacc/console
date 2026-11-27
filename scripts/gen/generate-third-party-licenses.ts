@@ -51,7 +51,7 @@ interface Credit {
   spdx: string;
   license: string;
   upstreamSourceUrl?: string;
-  plannedMirrorUrl?: string;
+  mirrorUrl?: string;
   notes?: string;
 }
 interface CreditsData {
@@ -117,7 +117,7 @@ function loadCredits(repoRoot: string): CreditsData {
 function componentBlock(c: Credit): string {
   const lines = [`${c.name} ${c.version}`, `  SPDX:    ${c.spdx}`, `  License: ${c.license}`];
   if (c.upstreamSourceUrl) lines.push(`  Source:  ${c.upstreamSourceUrl}`);
-  if (c.plannedMirrorUrl) lines.push(`  Mirror:  ${c.plannedMirrorUrl} (planned)`);
+  if (c.mirrorUrl) lines.push(`  Mirror:  ${c.mirrorUrl}`);
   if (c.notes) lines.push(`  Note:    ${c.notes}`);
   return lines.join('\n');
 }

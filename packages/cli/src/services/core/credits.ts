@@ -24,11 +24,13 @@ interface Credit {
   /** Embed asset base name (criu/rsync) for renet-embedded binaries. */
   asset?: string;
   name: string;
-  version: string;
+  /** Absent on the runtime row: the version printed is process.version. */
+  version?: string;
   spdx: string;
   license: string;
   upstreamSourceUrl?: string;
-  plannedMirrorUrl?: string;
+  mirrorUrl?: string;
+  sourceSha256?: string;
   notes?: string;
 }
 
@@ -50,12 +52,22 @@ const LICENSES_ASSET_KEY = 'THIRD_PARTY_LICENSES';
 export function loadCreditsData(): CreditsData {
   if (isSEA()) {
     try {
-      return JSON.parse(getEmbeddedAssetText(CREDITS_ASSET_KEY)) as CreditsData;
+      return stampRuntime(JSON.parse(getEmbeddedAssetText(CREDITS_ASSET_KEY)) as CreditsData);
     } catch {
       // Fall back to the bundled inventory below.
     }
   }
-  return bundledCredits;
+  return stampRuntime(bundledCredits);
+}
+
+/** The runtime row carries no version in the inventory: process.version is the embedded Node in a SEA, so it is exact by construction. */
+function stampRuntime(data: CreditsData): CreditsData {
+  return {
+    ...data,
+    components: data.components.map((c) =>
+      c.kind === 'runtime' ? { ...c, version: process.version } : c
+    ),
+  };
 }
 
 /**
@@ -95,19 +107,23 @@ export function loadLicensesText(): string | null {
 }
 
 function renderComponent(c: Credit): string {
-  const lines = [`  ${chalk.bold(`${c.name} ${c.version}`)}`];
+  const lines = [`  ${chalk.bold(c.version ? `${c.name} ${c.version}` : c.name)}`];
   lines.push(`    SPDX:     ${c.spdx}`);
   lines.push(`    License:  ${c.license}`);
   if (c.upstreamSourceUrl) lines.push(`    Source:   ${c.upstreamSourceUrl}`);
-  if (c.plannedMirrorUrl) lines.push(`    Mirror:   ${c.plannedMirrorUrl} (planned)`);
+  if (c.mirrorUrl) lines.push(`    Mirror:   ${c.mirrorUrl}`);
   if (c.notes) lines.push(`    Note:     ${c.notes}`);
   return lines.join('\n');
 }
 
 /** Render the inventory as a human-readable report. */
 export function renderCredits(data: CreditsData): string {
-  const embedded = data.components.filter((c) => c.kind === 'embedded-binary');
-  const rest = data.components.filter((c) => c.kind !== 'embedded-binary');
+  const embedded = data.components.filter(
+    (c) => c.kind === 'embedded-binary' || c.kind === 'static-library'
+  );
+  const rest = data.components.filter(
+    (c) => c.kind !== 'embedded-binary' && c.kind !== 'static-library'
+  );
 
   const sections: string[] = [chalk.bold(t('commands.credits.header')), ''];
 

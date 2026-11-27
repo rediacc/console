@@ -134,7 +134,7 @@ export function digestFor(listing: string, file: string): string | null {
 interface LockComponent {
   version?: string;
   upstreamSourceUrl?: string;
-  plannedMirrorUrl?: string;
+  mirrorUrl?: string;
   source?: {
     tag?: string;
     url?: string;
@@ -284,7 +284,7 @@ export async function upgradeComponent(
   // ---- lockfile version strings (URLs, tag), never the free-text fields ----------
   comp.version = latest;
   comp.upstreamSourceUrl = swap(comp.upstreamSourceUrl, pinned, latest);
-  comp.plannedMirrorUrl = swap(comp.plannedMirrorUrl, pinned, latest);
+  comp.mirrorUrl = swap(comp.mirrorUrl, pinned, latest);
   if (comp.source) {
     comp.source.url = swap(comp.source.url, pinned, latest);
     if (comp.source.tag !== undefined) comp.source.tag = `v${latest}`;
