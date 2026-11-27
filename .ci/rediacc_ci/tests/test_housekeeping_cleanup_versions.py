@@ -3428,7 +3428,7 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
 
 
 def test_phase_10_keeps_the_evidence_sessions_cite_for_the_documented_retention() -> None:
-    """Item #9098405b: runs cited in commits (a main push, a merged PR's runs, a release run, a renamed workflow's last runs) were found 404 days later. Phase 10 is NOT their deleter (the 2026-11-24, 25 and 26 Cleanup jobs each printed `Workflow runs: deleted 0 of 466 / 446 / 390` while the listing kept shrinking), and this pins why: a run younger than its retention is never selected, whatever its event, branch, conclusion or workflow, and only a run past it (the watchdog's own 7 days included) is. Every kept run sits 5 days old, so a selection that applied a 3-day regime, the repository's artifact-and-log retention, would turn this red."""
+    """Item #9098405b: runs cited in commits (a main push, a merged PR's runs, a release run, a renamed workflow's last runs) were found 404 days later. Phase 10 is NOT their deleter (the 2026-11-24, 25 and 26 Cleanup jobs each printed `Workflow runs: deleted 0 of 466 / 446 / 390` while the listing kept shrinking), and this pins why: a run younger than its retention is never selected, whatever its event, branch, conclusion or workflow, and only a run past it (the watchdog's own 7 days included) is. Every kept run except the watchdog's newest hundred (1.5 days old) is older than 3 days, so a selection that applied a 3-day regime, the repository's artifact-and-log retention, would turn this red."""
     ci = _workflow(31, "Console CI", ".github/workflows/ci.yml")
     edge = _workflow(32, "CD - Release to Edge", ".github/workflows/cd-release-edge.yml")
     dog = _workflow(33, "Watchdog: run 9 (gen 2)", ".github/workflows/ops-watchdog-monitor.yml")
@@ -3440,7 +3440,7 @@ def test_phase_10_keeps_the_evidence_sessions_cite_for_the_documented_retention(
 
     fixture = _p10_fixture(
         [ci, edge, dog, renamed],
-        # A main push, a merged PR's runs (red then green), a scheduled run, and one 40 days old inside the floor.
+        # A main push, a merged PR's runs (red then green), a scheduled run, and one 40 days old that is kept by the newest-100-per-workflow floor, not by age (a workflow still on the default branch keeps its newest 100 whatever their age; a removed workflow, run 402 below, has no such floor and keeps only the last 30 days).
         *_pages(31, [run(101, 5), run(102, 5, "failure"), run(103, 5), run(104, 5), run(105, 40)]),
         *_pages(32, [run(201, 5)]),  # the release run
         *_pages(
