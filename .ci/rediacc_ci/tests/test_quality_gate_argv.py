@@ -4,10 +4,14 @@ Every red case below is a shape that once let an entry point exit 0 on an argume
 """
 
 import json
+import os
 import pathlib
+import subprocess
+import sys
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.quality import gate_argv as mod
 
 QUALITY = mod.QUALITY_REL
@@ -34,14 +38,32 @@ KNOWN_ARGS = ARGPARSE.replace("    p.parse_args()\n", "    p.parse_known_args()\
 
 
 def tree(
-    tmp_path: pathlib.Path, files: dict[str, str], scripts: dict[str, str] | None = None
+    tmp_path: pathlib.Path,
+    files: dict[str, str],
+    scripts: dict[str, str] | None = None,
+    runs: list[str] | None = None,
 ) -> pathlib.Path:
+    """A scan root: shims under QUALITY, an optional package.json, and a lock whose gates run `runs` (default: every shim by path)."""
     (tmp_path / QUALITY).mkdir(parents=True)
     for stem, text in files.items():
         (tmp_path / QUALITY / (stem + ".py")).write_text(text, encoding="utf-8")
     if scripts is not None:
         (tmp_path / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+    if runs is None:
+        runs = ["%s/%s.py" % (QUALITY, stem) for stem in files]
+    lock = tmp_path / mod.LOCK_REL
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    lock.write_text(
+        json.dumps([{"id": "g%d" % i, "run": r} for i, r in enumerate(runs)]), encoding="utf-8"
+    )
     return tmp_path
+
+
+def module_file(root: pathlib.Path, dotted: str, text: str) -> pathlib.Path:
+    path = root / ".ci" / (dotted.replace(".", "/") + ".py")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
 
 
 def entry(tmp_path: pathlib.Path, text: str) -> mod.Entry:
@@ -95,7 +117,7 @@ def test_a_declared_flag_nothing_reads_is_named(tmp_path):
 def test_a_registered_call_passing_an_undeclared_flag_is_red(tmp_path, capsys):
     files = {"check_x": SHARED}
     root = tree(tmp_path, files, {"check:ci-x": ".ci/scripts/quality/check_x.py --update"})
-    assert mod.run(root, own={}, floor=1) == 1
+    assert mod.run(root, own={}, floor=1, debt={}) == 1
     err = capsys.readouterr().err
     assert "package.json:1: calls check_x.py with '--update'" in err
 
@@ -104,7 +126,7 @@ def test_a_registered_call_with_declared_flags_is_green(tmp_path, capsys):
     root = tree(
         tmp_path, {"check_x": SHARED}, {"check:ci-x": ".ci/scripts/quality/check_x.py --selftest"}
     )
-    assert mod.run(root, own={}, floor=1) == 0
+    assert mod.run(root, own={}, floor=1, debt={}) == 0
     captured = capsys.readouterr()
     assert "1 registered call(s) checked" in captured.out + captured.err
 
@@ -124,7 +146,7 @@ def test_npm_run_args_append_to_the_last_command(tmp_path):
 
 def test_prose_naming_an_entry_point_is_not_a_call(tmp_path):
     root = tree(tmp_path, {"check_x": SHARED}, {"a": "echo check_x.py"})
-    (root / "scripts" / "ci-runner").mkdir(parents=True)
+    (root / "scripts" / "ci-runner").mkdir(parents=True, exist_ok=True)
     (root / "scripts" / "ci-runner" / "manifest.ts").write_text(
         "// .ci/scripts/quality/check_x.py holds in place.\n", encoding="utf-8"
     )
@@ -134,7 +156,7 @@ def test_prose_naming_an_entry_point_is_not_a_call(tmp_path):
 def test_a_comment_line_naming_an_entry_point_with_a_dash_token_is_not_a_call(tmp_path):
     """8dee6a3b.1: prose ending in a dash token ("for details -h") is not an argument list, while the same text on a code line is still judged."""
     root = tree(tmp_path, {"check_x": SHARED})
-    (root / "scripts" / "ci-runner").mkdir(parents=True)
+    (root / "scripts" / "ci-runner").mkdir(parents=True, exist_ok=True)
     manifest = root / "scripts" / "ci-runner" / "manifest.ts"
     manifest.write_text("// see .ci/scripts/quality/check_x.py for details -h\n", encoding="utf-8")
     assert mod.registered_calls(root) == []
@@ -144,19 +166,173 @@ def test_a_comment_line_naming_an_entry_point_with_a_dash_token_is_not_a_call(tm
 
 def test_fewer_entry_points_than_the_floor_is_refused(tmp_path, capsys):
     root = tree(tmp_path, {"check_x": SHARED})
-    assert mod.run(root, own={}, floor=2) == 1
+    assert mod.run(root, own={}, floor=2, debt={}) == 1
     assert "the scan is not seeing the tree" in capsys.readouterr().err
 
 
-def test_the_real_floor_is_150():
-    assert mod.FLOOR == 150
+def test_an_unreadable_lock_is_refused_not_passed(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED})
+    (root / mod.LOCK_REL).unlink()
+    assert mod.run(root, own={}, floor=0, debt={}) == 1
+    assert "the scan is not seeing the tree" in capsys.readouterr().err
+
+
+def test_the_floor_counts_what_the_lock_runs_on_the_real_tree():
+    """FLOOR is re-derived from the lock's population (206 on 2026-11-27); the real lock must clear it, and the floor must still sit under it."""
+    from_lock = mod.lock_targets(paths.repo_root())
+    assert from_lock is not None
+    assert mod.FLOOR == 180
+    assert len(from_lock) >= mod.FLOOR
+
+
+# -- the module form: the entry the lock really runs ---------------------------------------
+
+MODULE_IGNORES = (
+    "import sys\n\n"
+    'def main(argv):\n    return 1 if argv and argv[0] == "--selftest" else 0\n\n'
+    'if __name__ == "__main__":\n    raise SystemExit(main(sys.argv[1:]))\n'
+)
+MODULE_REFUSES = MODULE_IGNORES.replace(
+    'if __name__ == "__main__":\n',
+    'if __name__ == "__main__":\n    from rediacc_ci.quality import gate_args\n\n'
+    '    gate_args.parse("x.py", sys.argv[1:], switches=("--selftest",))\n',
+)
+DOTTED = "rediacc_ci.quality.planted"
+RUN_MODULE = "PYTHONPATH=.ci python3 -m %s" % DOTTED
+
+
+def test_a_lock_run_module_that_ignores_an_unknown_flag_is_red(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_IGNORES)
+    assert mod.run(root, own={}, floor=1, debt={}) == 1
+    err = capsys.readouterr().err
+    assert "planted.py (python3 -m %s): " % DOTTED in err
+    assert "never refuses what is left" in err or "reaches neither" in err
+
+
+def test_the_old_shim_only_population_never_saw_that_module(tmp_path):
+    """The control the finding needed: the shim scan the gate used to run holds only check_x, which is clean, so it was green over the same tree."""
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_IGNORES)
+    shims = mod.entry_points(root)
+    assert [p.stem for p in shims] == ["check_x"]
+    assert all(mod.analyse(p, root, {}).problems == [] for p in shims)
+
+
+def test_a_lock_run_module_that_parses_first_after_its_import_is_green(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    path = module_file(root, DOTTED, MODULE_REFUSES)
+    got = mod.analyse(path, root, {}, key=DOTTED)
+    assert (got.form, got.problems) == ("parse", [])
+    assert mod.run(root, own={}, floor=1, debt={}) == 0
+    out = capsys.readouterr()
+    assert "1 module, 0 shim, 0 script" in out.err + out.out
+
+
+def test_npm_run_in_the_lock_resolves_through_package_json(tmp_path):
+    root = tree(
+        tmp_path,
+        {"check_x": SHARED},
+        scripts={"check:ci-p": RUN_MODULE + " && .ci/scripts/quality/check_x.py"},
+        runs=["npm run check:ci-p"],
+    )
+    module_file(root, DOTTED, MODULE_REFUSES)
+    got = mod.lock_targets(root)
+    assert got is not None
+    assert sorted((t.key, t.kind) for t in got) == [("check_x", "shim"), (DOTTED, "module")]
+
+
+def test_a_lock_entry_naming_a_missing_module_is_a_finding(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    assert mod.run(root, own={}, floor=1, debt={}) == 1
+    assert "the lock runs it as module, and the file does not exist" in capsys.readouterr().err
+
+
+def test_a_registered_module_call_with_an_undeclared_flag_is_red(tmp_path, capsys):
+    root = tree(
+        tmp_path,
+        {"check_x": SHARED},
+        scripts={"check:ci-p": RUN_MODULE + " --update"},
+        runs=[RUN_MODULE],
+    )
+    module_file(root, DOTTED, MODULE_REFUSES)
+    assert mod.run(root, own={}, floor=1, debt={}) == 1
+    assert "calls %s with '--update'" % DOTTED in capsys.readouterr().err
+
+
+def test_known_bypass_debt_is_printed_and_not_red(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_IGNORES)
+    assert mod.run(root, own={}, floor=1, debt={DOTTED: "BLOCKER: a reason"}) == 0
+    out = capsys.readouterr().out
+    assert "known bypass (shrink-only debt" in out
+    assert DOTTED in out
+
+
+def test_a_debt_entry_that_now_refuses_is_red_until_its_line_goes(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_REFUSES)
+    assert mod.run(root, own={}, floor=1, debt={DOTTED: "BLOCKER: a reason"}) == 1
+    assert "delete its line so the debt list keeps shrinking" in capsys.readouterr().err
+
+
+def test_a_debt_entry_that_is_no_entry_point_is_red(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED})
+    assert mod.run(root, own={}, floor=1, debt={"rediacc_ci.gone": "BLOCKER: x"}) == 1
+    assert "KNOWN_BYPASS names rediacc_ci.gone" in capsys.readouterr().err
+
+
+def test_every_known_bypass_carries_a_blocker_reason():
+    assert all(why.startswith("BLOCKER:") for why in mod.KNOWN_BYPASS.values())
 
 
 def test_an_own_refusal_name_that_is_not_an_entry_point_is_red(tmp_path, capsys):
     root = tree(tmp_path, {"check_x": SHARED})
-    assert mod.run(root, own={"check_gone": "a reason"}, floor=1) == 1
+    assert mod.run(root, own={"check_gone": "a reason"}, floor=1, debt={}) == 1
     assert "OWN_REFUSAL names check_gone" in capsys.readouterr().err
 
 
 def test_selftest_passes():
     assert mod.selftest() == 0
+
+
+# -- the modules #d78d1ae3 moved onto the shared parse ---------------------------------------
+
+REFUSING_MODULES = (
+    "rediacc_ci.setup.port_parity",
+    "rediacc_ci.security.rdc_sh_env_check",
+    "rediacc_ci.release.install_sh_config_check",
+    "rediacc_ci.quality.editorconfig",
+    "rediacc_ci.quality.ci_scans_tracked_paths",
+    "rediacc_ci.quality.cli_contract_coverage",
+    "rediacc_ci.quality.prose_duplication",
+    "rediacc_ci.quality.silent_failure_patterns",
+    "rediacc_ci.quality.swallowed_failures",
+)
+
+
+@pytest.mark.parametrize("dotted", REFUSING_MODULES)
+def test_the_module_form_refuses_an_unknown_flag_before_any_work(dotted):
+    """Run exactly as the lock runs it. The first five exited 0 here before #d78d1ae3 and ran the whole gate; the parse now refuses with exit 2 and names the flag, so nothing else ran."""
+    root = paths.repo_root()
+    proc = subprocess.run(
+        [sys.executable, "-m", dotted, mod.BOGUS],
+        cwd=str(root),
+        env=dict(os.environ, PYTHONPATH=str(root / ".ci")),
+        capture_output=True,
+        text=True,
+        timeout=120,
+        stdin=subprocess.DEVNULL,
+        check=False,
+    )
+    assert proc.returncode == 2, (proc.returncode, proc.stdout[-400:], proc.stderr[-400:])
+    assert "unknown argument '%s'" % mod.BOGUS in proc.stderr
+    assert proc.stdout == "", "a refused run does no work, so it prints nothing on stdout"
+
+
+@pytest.mark.parametrize("dotted", REFUSING_MODULES)
+def test_the_module_form_is_judged_as_a_shared_parse(dotted):
+    root = paths.repo_root()
+    path = root / ".ci" / (dotted.replace(".", "/") + ".py")
+    got = mod.analyse(path, root, {}, key=dotted)
+    assert (got.form, got.problems) == ("parse", [])

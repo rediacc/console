@@ -16,11 +16,19 @@ ROOT = paths.repo_root()
 
 
 def _copy_tree(dst: pathlib.Path) -> pathlib.Path:
-    """The quality entry points copied, the library and the call sources linked, under `dst`."""
+    """The quality entry points copied, the library, the other script directories and the call sources linked, and the lock the gate reads its population from copied, under `dst`."""
     (dst / ".ci" / "scripts").mkdir(parents=True)
     shutil.copytree(ROOT / ".ci" / "scripts" / "quality", dst / ".ci" / "scripts" / "quality")
+    for sibling in (ROOT / ".ci" / "scripts").iterdir():
+        if sibling.is_dir() and sibling.name != "quality":
+            os.symlink(sibling, dst / ".ci" / "scripts" / sibling.name)
     os.symlink(ROOT / ".ci" / "rediacc_ci", dst / ".ci" / "rediacc_ci")
     shutil.copy(ROOT / "package.json", dst / "package.json")
+    (dst / "scripts" / "ci-runner").mkdir(parents=True)
+    shutil.copy(
+        ROOT / "scripts" / "ci-runner" / "gates.lock.json",
+        dst / "scripts" / "ci-runner" / "gates.lock.json",
+    )
     return dst
 
 
