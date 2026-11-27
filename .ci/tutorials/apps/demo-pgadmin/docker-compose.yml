@@ -36,7 +36,7 @@ services:
       - "rediacc.service_name=db"
 
   pgadmin:
-    image: dpage/pgadmin4:9.13
+    image: dpage/pgadmin4:9.19
     container_name: pgadmin
     # The listen address must be this service's loopback IP (wildcard :80
     # collides with the renet router in the shared netns). Resolve it at
