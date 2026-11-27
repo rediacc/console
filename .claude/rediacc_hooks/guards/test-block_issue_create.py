@@ -10,6 +10,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -41,6 +42,8 @@ WORK = pathlib.Path(
     encoding="utf-8",
 )
 (WORK / "body.json").write_text('{"title":"x"}\n', encoding="utf-8")
+# A FIFO with no writer: opening it blocks forever, which is how a `read_text` on any path the command names hung the pre-bash hook (review 81488a75.1).
+os.mkfifo(WORK / "query.fifo")
 
 NEEDLE = "Issues are retired for agents"
 MUTATION = (
@@ -88,6 +91,27 @@ FIRE = [
         False,
     ),
     (
+        "graphql createIssue assembled from a variable",
+        'C=creat; gh api graphql -f query="mutation { ${C}eIssue(input:{repositoryId:\\"R\\"}) { issue { number } } }"',
+        False,
+    ),
+    (
+        "graphql createIssue from a substitution",
+        "Q=$(printf '%s'); gh api graphql -f query=\"$Q\"" % MUTATION.replace('\\"', '"'),
+        False,
+    ),
+    (
+        "graphql query file the same command rewrites",
+        "echo '%s' > read.graphql; gh api graphql -F query=@read.graphql"
+        % MUTATION.replace('\\"', '"'),
+        False,
+    ),
+    (
+        "graphql createIssue on stdin",
+        'gh api graphql --input - <<\'EOF\'\n{"query":"%s"}\nEOF' % MUTATION,
+        False,
+    ),
+    (
         "curl -X POST",
         "curl -X POST -H 'Authorization: token t' https://api.github.com/repos/o/r/issues -d '{\"title\":\"x\"}'",
         False,
@@ -125,6 +149,16 @@ ADMIT = [
     ("api POST to pulls", "gh api repos/o/r/pulls -f title=x -f head=a -f base=main"),
     ("api POST to an issue-ish name", "gh api repos/o/issues/labels -f name=x"),
     ("graphql read of issues", "gh api graphql -F query=@read.graphql"),
+    (
+        "graphql read beside a createIssue grep",
+        "grep -rn createIssue .claude; gh api graphql -F query=@read.graphql",
+    ),
+    (
+        "graphql inline read beside a createIssue grep",
+        "grep -rn createIssue .claude; gh api graphql -f query='query { viewer { login } }'",
+    ),
+    ("graphql query from a FIFO", "gh api graphql -F query=@query.fifo"),
+    ("graphql --input from a FIFO", "gh api graphql --input query.fifo"),
     (
         "graphql resolveReviewThread",
         "gh api graphql -f query='mutation { resolveReviewThread(input:{threadId:\"T\"}) { thread { id } } }'",
@@ -189,9 +223,20 @@ def run(command, broken=False):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = _harness.run(
-        argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(WORK)
-    )
+    try:
+        proc = _harness.run(
+            argv,
+            input=payload,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+            cwd=str(WORK),
+            timeout=30,
+        )
+    except subprocess.TimeoutExpired:
+        # A hung guard is a verdict of its own: neither refused nor admitted.
+        return None, "guard hung past 30 s"
     if proc.returncode not in (0, 2):
         raise SystemExit("guard runner crashed on %r: %s" % (command, proc.stderr[-800:]))
     return proc.returncode != 0, proc.stderr
@@ -201,7 +246,7 @@ fails = 0
 fired = 0
 for name, command, want, _verb in CASES:
     got, err = run(command)
-    fired += got
+    fired += bool(got)
     # A refusal counts only when it is THIS guard's refusal text, so a crash or another message cannot pass a fire case.
     ok = got == want and ((NEEDLE in err) if want else not err.strip())
     fails += not ok

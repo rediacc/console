@@ -6,7 +6,7 @@ WHAT IS REFUSED, in any repository (a submodule's `--repo` included) and under `
 
   * `gh issue create`, and its gh alias `gh issue new`, with the `issue` command's own `-R/--repo` read before the verb as gh reads it;
   * `gh api` to an endpoint ending `repos/<owner>/<repo>/issues` whose method is POST: `-X POST`, `--method POST`, or a field or `--input` making it one (`shellscan.gh_api_method`, the same pflag reader `sanctioned.api_method` wraps);
-  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value, a `query=@<file>` the guard can read, or the command text a `$Q` would expand from;
+  * `gh api graphql` whose query carries a `createIssue` mutation, in a field value as bash expands it (a `$Q` or a `${C}eIssue` this same command assigned), or in a `query=@<file>`/`--input <file>` the guard can read; when any query source is not known (an expansion the walk cannot evaluate, stdin, a file that is missing, not a regular file, or one the same command could write first), the whole command text is searched instead, so an unknown source never admits a mutation the command spells;
   * `curl` or `wget` sending a POST, or a body that makes one, to an `api.github.com/repos/<owner>/<repo>/issues` URL.
 
 WHAT IS ADMITTED: `gh issue list|view|comment|...`, every GET, `issues/<n>/comments` (the PR-comment endpoint `wl_prreview` answers reviews through, so only the CREATE endpoint is refused), and prose that merely names a command (`echo 'gh issue create'`).
@@ -15,8 +15,10 @@ NO ESCAPE VARIABLE, by design: the ruling says ask the operator, and an operator
 """
 
 import itertools
+import os
 import pathlib
 import re
+import stat
 
 from rediacc_hooks import hookio, shellscan
 from rediacc_hooks.guards import tables
@@ -36,7 +38,7 @@ _CREATE_VERBS = ("create", "new")
 # The `issue` command's persistent flags, read before the verb the way gh reads them (`gh issue -R o/r create`).
 _ISSUE_TABLE = {"help": ("h", False), "repo": ("R", True)}
 
-# `repos/<owner>/<repo>/issues` and nothing after it but a slash or a query string; a GitHub Enterprise `api/v3/` prefix is the same endpoint.
+# `repos/<owner>/<repo>/issues` exactly, matched against `shellscan.gh_api_endpoint`'s answer, which has already dropped the scheme and host, the query string and the leading and trailing slashes (so `/repos/o/r/issues/?x=1` reaches this as `repos/o/r/issues`); a GitHub Enterprise `api/v3/` prefix is the same endpoint.
 _ISSUES_PATH = re.compile(r"^(?:api/v3/)?repos/[^/]+/[^/]+/issues$")
 _ISSUES_URL = re.compile(
     r"^(?:https?://)?api\.github\.com/repos/[^/?#]+/[^/?#]+/issues/?(?:[?#].*)?$", re.IGNORECASE
@@ -64,28 +66,49 @@ def _issue_verb(argv):
     return verb[0] if verb else ""
 
 
-def _query_texts(parsed, base):
-    """Every graphql query text a parsed `gh api graphql` call sends: each field value, and the file a `query=@<path>` or `--input <path>` names when it can be read."""
+def _query_texts(parsed, base, cmd, written):
+    """`(texts, known)` for a parsed `gh api graphql` call (parsed from the EXPANDED argv): each field value, and the file a `query=@<path>` or `--input <path>` names when it can be read. `known` is False when any source is not: a value holding an expansion the walk could not evaluate, stdin (`@-`, `--input -`), or a file `_file_text` cannot vouch for."""
     out = []
+    known = True
+    files = []
     for name in ("field", "raw-field"):
         for value in parsed.values(name):
             _key, _eq, val = value.partition("=")
             out.append(val)
-            if name == "field" and val.startswith("@") and val != "@-":
-                out.append(_read(base, val[1:]))
-    out.extend(_read(base, path) for path in parsed.values("input") if path != "-")
-    return out
+            if shellscan._UNRESOLVED in val:
+                known = False
+            elif name == "field" and val.startswith("@"):
+                files.append(val[1:])
+    files.extend(parsed.values("input"))
+    for path in files:
+        text = None if path == "-" else _file_text(base, path, cmd, written)
+        if text is None:
+            known = False
+        else:
+            out.append(text)
+    return out, known
 
 
-def _read(base, path):
+def _file_text(base, path, cmd, written):
+    """The text of a query file, or None when it is not a known source: missing, not a regular file (review 81488a75.1: `/dev/zero` never ends and a FIFO blocks the pre-bash hook on open), or a file this same command could write before gh reads it (its name appears in the command more than once, or a redirect target of the command names it or cannot be known)."""
+    if shellscan._UNRESOLVED in path:
+        return None
+    name = os.path.basename(path.rstrip("/"))
+    if not name or cmd.count(name) > 1:
+        return None
+    if any(shellscan._UNRESOLVED in w or os.path.basename(w) == name for w in written):
+        return None
+    full = pathlib.Path(base) / path
     try:
-        return (pathlib.Path(base) / path).read_text(encoding="utf-8", errors="replace")
+        if not stat.S_ISREG(full.stat().st_mode):
+            return None
+        return full.read_text(encoding="utf-8", errors="replace")
     except OSError:
-        return ""
+        return None
 
 
-def _gh_refusal(argv, cmd, base):
-    """Which create shape a walked `gh` run is, or ""."""
+def _gh_refusal(argv, cmd, base, xargv=None, written=()):
+    """Which create shape a walked `gh` run is, or "". `xargv` is the run's argv as bash expands it (None when the walk has none), `written` every redirect target of the command."""
     if not argv:
         return ""
     if argv[0] == "issue":
@@ -96,10 +119,11 @@ def _gh_refusal(argv, cmd, base):
     parsed = shellscan.gh_args(argv)
     endpoint = shellscan.gh_api_endpoint(parsed)
     if endpoint == "graphql":
-        # GraphQL is always a POST; the query decides. The command text is read too, since `-f query="$Q"` carries the mutation in a variable this same command assigned.
-        if any(_CREATE_ISSUE.search(t) for t in _query_texts(parsed, base)) or _CREATE_ISSUE.search(
-            cmd
-        ):
+        # GraphQL is always a POST; the query decides, read from the EXPANDED argv so `-f query="$Q"` and `${C}eIssue` (variables this same command assigned) are judged by their values (review 81488a75.2). The raw command text is the fallback only when a source is unknown, so a read whose sources are all known is not refused for a `createIssue` mentioned elsewhere in the command (review 81488a75.3).
+        texts, known = _query_texts(shellscan.gh_args(xargv or argv), base, cmd, written)
+        if xargv is None:
+            known = False
+        if any(_CREATE_ISSUE.search(t) for t in texts) or (not known and _CREATE_ISSUE.search(cmd)):
             return "a `gh api graphql` `createIssue` mutation"
         return ""
     if _ISSUES_PATH.match(endpoint) and shellscan.gh_api_method(parsed) == "POST":
@@ -175,11 +199,14 @@ def _wget_refusal(argv):
 
 
 def _refusal(cmd, base):
-    for run_ in shellscan.every_run(cmd):
+    runs = list(shellscan.every_run(cmd))
+    written = [w for run_ in runs for w in (*run_.writes, *run_.xwrites)]
+    for run_ in runs:
         name = shellscan._base(run_.name)
         argv = list(run_.argv)
         if name == "gh":
-            found = _gh_refusal(argv, cmd, base)
+            xargv = list(run_.xargv) if run_.xargv is not None else None
+            found = _gh_refusal(argv, cmd, base, xargv, written)
             if found:
                 return found
         elif name == "curl" and _curl_refusal(argv):
