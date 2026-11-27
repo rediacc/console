@@ -165,6 +165,11 @@ GATED_DIRS = (
     ".ci/scripts/housekeeping",
 )
 
+# THE QUALITY-LANE WORKFLOW, exempt by name from the root `scripts/` half of the `.github/workflows` scan, and only while its premise holds. ci.yml calls it under `full_suite`, which is `github.event_name != 'push'` and reads no path, and none of its jobs is gated on a scope `run_*` key, so no classification can skip a job of it: a `scripts/` path it runs is a quality-lane consumer, the narrowing this gate exists to protect
+# (module docstring, THE INVARIANT). The exemption was named on 2026-11-27, when CR2 moved 29 gates from `npm run <key>` to `npx tsx scripts/gates/<gate>.ts` steps in this file and every one of them read as "reachable from a gated job". A file in this tuple that names a scope key (`SCOPE_KEY`) LOSES the exemption and is scanned like any other workflow, and every run prints what the exemption skipped.
+QUALITY_WORKFLOWS = (".github/workflows/ci-quality.yml",)
+SCOPE_KEY = re.compile(r"\b(?:outputs|inputs)\.run_[a-z0-9_]+")
+
 # `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The Python verb module is here for the reason in the module docstring.
 GATED_FILES = ("run.sh", ".ci/rediacc_ci/core/run_verbs.py")
 
@@ -220,8 +225,8 @@ CI_SCAN_FLOOR = 15
 DISPATCH_FLOOR = 1
 
 
-def walk_text(root: pathlib.Path):
-    """Every file `grep -r` would read under `root`, as text.
+def walk_text(root: pathlib.Path, skip: frozenset[pathlib.Path] = frozenset()):
+    """Every file `grep -r` would read under `root`, as text, less the files in `skip` (resolved paths).
 
     Reproduces GNU grep 3.12 (`/usr/bin/grep`, which is what a SCRIPT resolves `grep` to on this host) as measured 2026-09-06: `-r` does not descend a directory symlink, a file symlink found in the tree is skipped, and a file containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text for a binary file, only the diagnostic `grep: <path>: binary
     file matches`, and that goes to STDERR, which every caller of these extractors sends to /dev/null.
@@ -240,6 +245,8 @@ def walk_text(root: pathlib.Path):
         return
     for path in candidates:
         if path.is_symlink() or not path.is_file():
+            continue
+        if skip and path.resolve() in skip:
             continue
         try:
             data = path.read_bytes()
@@ -276,10 +283,10 @@ def _refs(lines, line_re, command_re, path_re) -> list[str]:
     return sorted(out)
 
 
-def extract_refs(target: pathlib.Path) -> list[str]:
+def extract_refs(target: pathlib.Path, skip: frozenset[pathlib.Path] = frozenset()) -> list[str]:
     """Root `scripts/` paths INVOKED under `target`, sorted and deduplicated."""
     return _refs(
-        (line for text in walk_text(target) for line in text.split("\n")),
+        (line for text in walk_text(target, skip) for line in text.split("\n")),
         ROOT_LINE,
         ROOT_COMMAND,
         ROOT_PATH,
@@ -347,6 +354,31 @@ def python_dispatch_targets(text: str, subcommand: str) -> list[str]:
         if current and current.lower().startswith(subcommand.lower()):
             out.update(ROOT_PATH.findall(line))
     return sorted(out)
+
+
+def quality_exemptions(root: pathlib.Path) -> tuple[frozenset[pathlib.Path], list[str]]:
+    """The `QUALITY_WORKFLOWS` files exempt from the scan right now, and one printable line per named file.
+
+    A named file that names a scope key is NOT exempt, and its line says so. A named file that is absent exempts nothing and prints nothing: that direction is the conservative one (every workflow is judged), and a renamed file shows up as the findings its references raise, never as a pass.
+    """
+    skip: set[pathlib.Path] = set()
+    notes: list[str] = []
+    for rel in QUALITY_WORKFLOWS:
+        path = root / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        keys = sorted(set(SCOPE_KEY.findall(text)))
+        if keys:
+            notes.append("%s: NOT exempt, it names scope key(s) %s" % (rel, ", ".join(keys)))
+            continue
+        refs = extract_refs(path)
+        skip.add(path.resolve())
+        notes.append(
+            "%s: exempt by name (quality lanes, run on full_suite, no scope run_* key); "
+            "%d root scripts/ reference(s) not judged" % (rel, len(refs))
+        )
+    return frozenset(skip), notes
 
 
 def classify_mode(root: pathlib.Path, path: str) -> str:
@@ -484,11 +516,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # ---- the real scan -----------------------------------------------------
+    skip, exemption_notes = quality_exemptions(root)
     for directory in GATED_DIRS:
         target = pathlib.Path(directory)
         if not target.is_dir():
             continue
-        for ref in extract_refs(target):
+        for ref in extract_refs(target, skip):
             check_path(ref, directory)
 
     dispatch_scanned = 0
@@ -510,6 +543,7 @@ def main(argv: list[str] | None = None) -> int:
         target = pathlib.Path(directory)
         if not target.is_dir():
             continue
+        # THE .ci HALF IS NOT EXEMPTED. Every `.ci/scripts/` path classifies `full` today, so judging the quality workflow's references costs nothing, and they are 13 of the references that hold this half above CI_SCAN_FLOOR (measured 2026-11-27: 20 with them, 11 without).
         for ref in extract_ci_refs(target):
             ci_scanned += 1
             check_path(ref, directory)
@@ -551,6 +585,8 @@ def main(argv: list[str] | None = None) -> int:
             "'scripts-gates' rule (first match wins), mirroring 'scripts-license-gen'.",
             file=sys.stderr,
         )
+        for note in exemption_notes:
+            print("  %s" % note, file=sys.stderr)
         return 1
 
     print(
@@ -564,6 +600,8 @@ def main(argv: list[str] | None = None) -> int:
     print("  Blind spot: scanning is workflow-WIDE, not per-job. A path referenced from")
     print("  an ungated job is held to the same rule, which is conservative, and a")
     print("  second-level dependency (a script a scanned script calls) is not followed.")
+    for note in exemption_notes:
+        print("  %s" % note)
     return 0
 
 

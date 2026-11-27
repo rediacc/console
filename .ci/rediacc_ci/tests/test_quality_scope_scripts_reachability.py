@@ -403,3 +403,34 @@ def test_inverse_the_same_path_at_a_command_position_is_a_reference() -> None:
     assert gate._refs(lines, gate.ROOT_LINE, gate.ROOT_COMMAND, gate.ROOT_PATH) == [
         "scripts/ci/write-shard-receipt.cjs"
     ]
+
+
+GATE_STEP = "        run: npx tsx scripts/gates/check-embed-credits.ts\n"
+GATE_FINDING = "scripts/gates/check-embed-credits.ts (referenced from .github/workflows)"
+
+
+def test_the_quality_workflow_running_a_gate_source_is_not_a_violation(tmp_path):
+    """2026-11-27: CR2 moved 29 gates to `npx tsx scripts/gates/<gate>.ts` steps in ci-quality.yml, and each read as reachable from a gated job. The quality lanes run on `full_suite` and carry no scope `run_*` key, so the exemption holds, and the run says what it skipped."""
+    root = build(tmp_path, {".github/workflows/ci-quality.yml": GATE_STEP})
+    returncode, stdout, stderr = run_port(root)
+    assert returncode == 0, stderr
+    assert (
+        ".github/workflows/ci-quality.yml: exempt by name (quality lanes, run on full_suite, "
+        "no scope run_* key); 1 root scripts/ reference(s) not judged"
+    ) in stdout
+
+
+def test_inverse_the_same_step_in_another_workflow_is_a_violation(tmp_path):
+    root = build(tmp_path, {".github/workflows/ci-other.yml": GATE_STEP})
+    returncode, _stdout, stderr = run_port(root)
+    assert returncode == 1
+    assert GATE_FINDING in stderr
+
+
+def test_inverse_a_quality_workflow_that_names_a_scope_key_loses_the_exemption(tmp_path):
+    text = "    if: needs.initialize.outputs.run_package_tests != 'false'\n" + GATE_STEP
+    root = build(tmp_path, {".github/workflows/ci-quality.yml": text})
+    returncode, _stdout, stderr = run_port(root)
+    assert returncode == 1
+    assert GATE_FINDING in stderr
+    assert "NOT exempt, it names scope key(s) outputs.run_package_tests" in stderr
