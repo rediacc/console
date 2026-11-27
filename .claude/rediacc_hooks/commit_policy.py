@@ -694,20 +694,10 @@ def common_dir(directory: str) -> str:
     """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say (no repository, no directory, git not answering)."""
     if not directory or not os.path.isdir(directory):
         return ""
-    # MEMOISED PER PROCESS ON A FOUND ANSWER ONLY. One hook invocation asked this 5 times per `git push` command (landing record, tree top, bound trees, scope), each a `git` process; the answer for a directory does not move while the process lives, and a "" (no repository yet) is never stored, so a repository created after a miss is still found.
-    cached = _COMMON_DIRS.get(directory)
-    if cached:
-        return cached
     got = git(
         ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
     )
-    found = os.path.realpath(got) if got else ""
-    if found:
-        _COMMON_DIRS[directory] = found
-    return found
-
-
-_COMMON_DIRS: dict[str, str] = {}
+    return os.path.realpath(got) if got else ""
 
 
 # A PUSH PUBLISHES TO ITS PUSH URL, not to the directory it runs in (#f2e3507a, measured 2026-11-11): a scratch repository whose `origin` is this checkout's GitHub repository force-pushed `main` past block_git_force_push and block_push_to_protected_branch, which placed it by its directory, while a push to a local bare remote publishes nothing anyone else reads. A verb that can repoint a remote earlier in the same command makes the destination read at hook time stale.

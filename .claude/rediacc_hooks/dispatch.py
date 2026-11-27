@@ -44,7 +44,9 @@ def run_one(stem, payload, cwd=None, env=None):
     """One guard, as (rc, stdout, stderr). Pure enough for the differential."""
     module = guards.load(stem)
     event = hookio.Event(payload, cwd=cwd, env=env)
-    rc = module.run(event)
+    # Inside the chain's own memo (see `run_chain`): a read-only git question is asked once per run, as it is in the real chain. The memo is dropped on leaving, so one case's fixture never answers the next.
+    with _gitmemo.chain_memo():
+        rc = module.run(event)
     return event.result(rc)
 
 
