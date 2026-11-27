@@ -8,9 +8,10 @@ import typing
 import pytest
 
 from rediacc_ci.release import changelog_data as cd
+from rediacc_ci.well_known import GH_REPO
 
 ORIGIN = "https://releases.test"
-REPO = "rediacc/console"
+REPO = GH_REPO
 API = cd.GH_API_BASE
 
 

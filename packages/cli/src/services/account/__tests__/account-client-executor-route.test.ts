@@ -7,6 +7,7 @@
  * function, or through its registered command where the caller is private to the command file.
  */
 
+import { WK_ACCOUNT_EGRESS_HOST } from '@rediacc/shared/config/well-known.generated';
 import {
   EXECUTOR_ACCOUNT_ROUTES,
   type ExecutorAccountRoute,
@@ -16,18 +17,23 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const LINEAGE = vi.hoisted(() => 'aaaaaaaa-1111-4111-8111-111111111111');
 const SNAPSHOT = '20261127T101010Z-0123456789abcdef';
-const SERVER = 'http://account.internal';
+const SERVER = `http://${WK_ACCOUNT_EGRESS_HOST}`;
 const PLACEHOLDER = 'PLACEHOLDER';
 
-vi.mock('../subscription-auth.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../subscription-auth.js')>()),
-  getSubscriptionTokenState: () => ({
-    kind: 'ready',
-    serverUrl: 'http://account.internal',
-    token: { token: 'PLACEHOLDER' },
-  }),
-  getSubscriptionServerUrl: () => 'http://account.internal',
-}));
+vi.mock('../subscription-auth.js', async (importOriginal) => {
+  const { WK_ACCOUNT_EGRESS_HOST: host } = await import(
+    '@rediacc/shared/config/well-known.generated'
+  );
+  return {
+    ...(await importOriginal<typeof import('../subscription-auth.js')>()),
+    getSubscriptionTokenState: () => ({
+      kind: 'ready',
+      serverUrl: `http://${host}`,
+      token: { token: 'PLACEHOLDER' },
+    }),
+    getSubscriptionServerUrl: () => `http://${host}`,
+  };
+});
 vi.mock('../free-license.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../free-license.js')>()),
   assertHostedBackupAccount: () => undefined,
