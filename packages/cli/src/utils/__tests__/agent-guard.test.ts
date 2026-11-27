@@ -25,7 +25,6 @@ vi.mock('../process-ancestry.js', () => ({
   isAncestryVerificationAvailable: mockIsAncestryAvailable,
   _resetAncestryCache: mockResetAncestryCache,
   OVERRIDE_VAR_GRAND: 'REDIACC_ALLOW_GRAND_REPO',
-  OVERRIDE_VAR_CONFIG_EDIT: 'REDIACC_ALLOW_CONFIG_EDIT',
 }));
 
 // The active config the ops VM predicate (ops-vm.ts) reads machine addresses from.
@@ -64,11 +63,11 @@ vi.mock('../../services/config/config-resources.js', () => ({
   configService: { getCurrent: vi.fn(() => Promise.resolve(OPS_CONFIG)) },
 }));
 
+import * as agentGuard from '../agent-guard.js';
 import {
   _resetCache,
   assertAgentMachineAccess,
   assertAgentRepoCreate,
-  configEditOverrideScope,
   isAgentEnvironment,
 } from '../agent-guard.js';
 
@@ -80,7 +79,6 @@ const ALL_AGENT_KEYS = [
   'COPILOT_CLI',
   'CURSOR_TRACE_ID',
   'REDIACC_ALLOW_GRAND_REPO',
-  'REDIACC_ALLOW_CONFIG_EDIT',
 ] as const;
 
 function backupAndClearEnv(backup: Record<string, string | undefined>) {
@@ -421,44 +419,10 @@ describe('ops VM exemption (operator ruling 2026-10-15)', () => {
   });
 });
 
-describe('configEditOverrideScope', () => {
-  const envBackup: Record<string, string | undefined> = {};
-
-  beforeEach(() => {
-    _resetCache();
-    vi.clearAllMocks();
-    mockIsAgentByAncestry.mockReturnValue(false);
-    mockIsOverrideLegitimate.mockReturnValue(true);
-    mockIsAncestryAvailable.mockReturnValue(true);
-    backupAndClearEnv(envBackup);
-  });
-
-  afterEach(() => {
-    restoreEnv(envBackup);
-  });
-
-  it('returns null when the env var is not set', () => {
-    expect(configEditOverrideScope()).toBeNull();
-  });
-
-  it('returns the scope outside agent environments without ancestry checks', () => {
-    process.env.REDIACC_ALLOW_CONFIG_EDIT = '/credentials/*';
-    expect(configEditOverrideScope()).toBe('/credentials/*');
-    expect(mockIsOverrideLegitimate).not.toHaveBeenCalled();
-  });
-
-  it('verifies REDIACC_ALLOW_CONFIG_EDIT itself, not the grand-repo override', () => {
-    process.env.REDIACC_AGENT = '1';
-    process.env.REDIACC_ALLOW_CONFIG_EDIT = '*';
-    mockIsOverrideLegitimate.mockReturnValue(true);
-    expect(configEditOverrideScope()).toBe('*');
-    expect(mockIsOverrideLegitimate).toHaveBeenCalledWith('REDIACC_ALLOW_CONFIG_EDIT');
-  });
-
-  it('rejects an agent-injected config-edit override', () => {
-    process.env.REDIACC_AGENT = '1';
-    process.env.REDIACC_ALLOW_CONFIG_EDIT = '*';
-    mockIsOverrideLegitimate.mockReturnValue(false);
-    expect(configEditOverrideScope()).toBeNull();
+describe('config-edit override removal', () => {
+  it('exports no config-edit override scope or pointer-glob matcher', () => {
+    // The override and its scope matcher were deleted (PLAN-rmcp-config-edit-removal.md, Design 3); no guard may consult them again.
+    expect(Object.keys(agentGuard)).not.toContain('configEditOverrideScope');
+    expect(Object.keys(agentGuard)).not.toContain('scopeAllows');
   });
 });

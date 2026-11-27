@@ -17,7 +17,6 @@ import {
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
   OVERRIDE_VAR_CLUSTER,
-  OVERRIDE_VAR_CONFIG_EDIT,
   readProcEnviron,
   walkAncestors,
 } from '../process-ancestry.js';
@@ -203,13 +202,17 @@ describe.each(['darwin', 'win32'])('helper-based ancestry on %s', (platform) => 
     expect(isOverrideLegitimate()).toBe(true);
   });
 
-  it('verifies each override variable independently (config-edit fix)', () => {
-    mockRunAncestryHelper.mockReturnValue([
-      { pid: 100, env: { CLAUDECODE: '1' } },
-      { pid: 50, env: { CLAUDECODE: '1', REDIACC_ALLOW_CONFIG_EDIT: '*' } }, // boundary
+  it('asks the helper to witness only the agent markers and the two remaining overrides', () => {
+    mockRunAncestryHelper.mockReturnValue([{ pid: 100, env: {} }]);
+    isOverrideLegitimate();
+    const keys = mockRunAncestryHelper.mock.calls[0]?.[0] as readonly string[];
+    expect(keys).toContain('REDIACC_ALLOW_GRAND_REPO');
+    expect(keys).toContain(OVERRIDE_VAR_CLUSTER);
+    // The config-edit override was removed; no ALLOW key beyond the two remaining opt-ins is witnessed.
+    expect(keys.filter((k) => k.startsWith('REDIACC_ALLOW_')).sort()).toEqual([
+      'REDIACC_ALLOW_CLUSTER_OPS',
+      'REDIACC_ALLOW_GRAND_REPO',
     ]);
-    expect(isOverrideLegitimate(OVERRIDE_VAR_CONFIG_EDIT)).toBe(true);
-    expect(isOverrideLegitimate()).toBe(false); // grand override was NOT at the boundary
   });
 
   it('witnesses the cluster-ops override independently at the agent boundary', () => {
@@ -246,7 +249,7 @@ describe.each(['darwin', 'win32'])('helper-based ancestry on %s', (platform) => 
   it('spawns the helper once and caches the walk', () => {
     mockRunAncestryHelper.mockReturnValue([{ pid: 100, env: {} }]);
     isOverrideLegitimate();
-    isOverrideLegitimate(OVERRIDE_VAR_CONFIG_EDIT);
+    isOverrideLegitimate(OVERRIDE_VAR_CLUSTER);
     isAncestryVerificationAvailable();
     walkAncestors();
     expect(mockRunAncestryHelper).toHaveBeenCalledTimes(1);
