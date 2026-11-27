@@ -337,9 +337,13 @@ def _line_of(text: str, offset: int) -> int:
 
 
 @functools.cache
-def _resolved(root: pathlib.Path) -> pathlib.Path:
-    """`root.resolve()` once per root: `_rel` ran it 59,369 times a scan, a realpath walk each time."""
+def _resolved_absolute(root: pathlib.Path) -> pathlib.Path:
     return root.resolve()
+
+
+def _resolved(root: pathlib.Path) -> pathlib.Path:
+    """`root.resolve()`, memoised per ABSOLUTE root: `_rel` ran it 59,369 times a scan, a realpath walk each time. A relative root resolves against the working directory, so it is never memoised (60f2cc15.1): a chdir would leave the old prefix on every later answer."""
+    return _resolved_absolute(root) if root.is_absolute() else root.resolve()
 
 
 def _rel(path: pathlib.Path, root: pathlib.Path) -> str:
@@ -779,13 +783,14 @@ WIDTH_NAME_RE = re.compile(
 )
 FLAG_TAKES_WIDTH = frozenset({"-n", "--numprocesses", "-j", "--jobs", "-P", "--max-procs"})
 PYTEST_MARKERS = ("--dist", "pytest", "xdist")
-#: The text every node-level width rule below needs, so a source without any of it skips the whole-tree walk (a pre-filter that over-accepts: each alternative is a name or literal the AST rule itself tests for). The core probes and the pool-call names are identifiers in the source, a width keyword is a name followed by `=`, and a flag is a quoted string constant, `"-n"` or `'-n'`.
+#: The text every node-level width rule below needs, so a source without any of it skips the whole-tree walk (a pre-filter that over-accepts: each alternative is a name or literal the AST rule itself tests for). The core probes and the pool-call names are identifiers in the source, a width keyword is a name followed by `=` (with whitespace, a backslash continuation or a comment between, d39f0ba2.1), and a flag is a quoted string constant, `"-n"` or `'-n'`.
 WIDTH_WALK_RE = re.compile(
     "|".join(
         [
             *(re.escape(probe.rstrip("(")) for probe in CORE_PROBES),
             *(re.escape(name) for name in sorted(POOL_CALLS)),
-            r"\b(?:%s)\s*=" % "|".join(re.escape(name) for name in sorted(WIDTH_KWARGS)),
+            r"\b(?:%s)(?:\s|\\\s|#[^\n]*)*="
+            % "|".join(re.escape(name) for name in sorted(WIDTH_KWARGS)),
             "[\"'](?:%s)[\"']" % "|".join(re.escape(f) for f in sorted(FLAG_TAKES_WIDTH)),
         ]
     )
