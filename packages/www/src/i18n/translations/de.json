@@ -1327,6 +1327,93 @@
         "lede": "Jeder Partner kann sich kostenlos zertifizieren. Wählen Sie den passenden Track: Vertrieb oder Technik. Das Lernprogramm liegt im Portal, sodass sich Ihr Team vor der Prüfung vorbereiten kann.",
         "title": "Kostenlose Zertifizierung, zwei Tracks"
       },
+      "growth": {
+        "title": "Was Partner bekommen",
+        "lede": "Vier Gründe, warum sich der Vertrieb von Rediacc für Partner lohnt.",
+        "items": [
+          {
+            "title": "Deals, die niemand unterbietet",
+            "body": "Registriert ein Kundengeschäft, und nach der Freigabe kann kein anderer Partner denselben Kunden innerhalb der Schutzfrist registrieren."
+          },
+          {
+            "title": "Marge, die mit dem Deal wächst",
+            "body": "Mehrjahresverträge, Vorauszahlung und größere Deals bringen zusätzliche Marge, und zertifizierte Teams steigen auf der Leiter auf."
+          },
+          {
+            "title": "Kostenlose Zertifizierung",
+            "body": "Vertriebs- und Technikpfad mit kostenloser Prüfung. Gelernt wird im Partnerportal."
+          },
+          {
+            "title": "Enterprise-Testphasen über 30 Tage",
+            "body": "Partner vergeben 30-tägige Enterprise-Testlizenzen direkt an Kunden, ohne auf Rediacc zu warten."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads aus unserem Preisrechner",
+        "body": "Kunden, die ihr Setup im öffentlichen Preisrechner berechnen, können ein Partnerangebot anfragen. Diese Anfragen gehen an gelistete Partner, die das Land und die Sprache des Kunden bedienen."
+      },
+      "stance": "Wir verkaufen nicht an unseren Partnern vorbei. Rediacc verkauft nur dort direkt, wo kein Partner den Kunden betreut.",
+      "directoryCta": {
+        "title": "Im Partnerverzeichnis gelistet werden",
+        "body": "Freigegebene Partner können sich mit Ländern, Sprachen und Leistungen öffentlich listen lassen, damit Kunden sie zuerst finden.",
+        "button": "Verzeichnis ansehen"
+      },
+      "directory": {
+        "meta": {
+          "title": "Rediacc-Partner finden",
+          "description": "Findet einen Rediacc-Partner in Eurem Land und Eurer Sprache für lokalen Support, Rechnungen in Landeswährung und Hilfe bei der Migration."
+        },
+        "hero": {
+          "eyebrow": "Partnerverzeichnis",
+          "title": "Einen Rediacc-Partner in Eurer Nähe finden",
+          "subtitle": "Partner bieten Support in Eurer Sprache, stellen Rechnungen in Eurer Währung aus und helfen bei der Migration. Viele bieten einen Preis unter Liste."
+        },
+        "benefits": {
+          "title": "Warum über einen Partner kaufen",
+          "items": [
+            "Lokaler Support in Eurer Sprache",
+            "Rechnungen in Eurer Landeswährung",
+            "Migrationshilfe von Leuten, die das schon oft gemacht haben",
+            "Oft ein Preis unter Liste, mit kostenlosen Extras, die mit dem Auftrag wachsen"
+          ]
+        },
+        "filters": {
+          "country": "Land",
+          "language": "Sprache",
+          "service": "Leistung",
+          "all": "Alle",
+          "reset": "Filter zurücksetzen"
+        },
+        "services": {
+          "resale": "Wiederverkauf",
+          "migration": "Migration",
+          "managed": "Managed Service",
+          "training": "Schulung"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Zertifikate: {{count}}",
+          "visit": "Website besuchen",
+          "countries": "Länder",
+          "languages": "Sprachen",
+          "services": "Leistungen"
+        },
+        "status": {
+          "loading": "Partner werden geladen...",
+          "empty": "Noch kein Partner passt zu diesen Filtern. Wo kein Partner aktiv ist, betreut Rediacc Kunden direkt.",
+          "error": "Das Verzeichnis konnte nicht geladen werden. Bitte gleich noch einmal versuchen."
+        },
+        "becomePartner": {
+          "text": "Ihr führt ein Reseller- oder Dienstleistungsgeschäft?",
+          "link": "Partner werden"
+        }
+      },
       "finalCta": {
         "button": "Partner werden",
         "note": "Bereits freigeschaltet? Melden Sie sich im Partnerportal an.",

@@ -1321,6 +1321,93 @@
         "lede": "Iga partner saab end tasuta sertifitseerida. Vali inimesele sobiv rada: müük või tehniline. Õppeprogramm asub portaalis, nii et sinu meeskond saab enne eksamile minekut valmistuda.",
         "title": "Tasuta sertifikaat, kaks õpperada"
       },
+      "growth": {
+        "title": "Mida partnerid saavad",
+        "lede": "Neli põhjust, miks Rediacci müümine partnerile tasub.",
+        "items": [
+          {
+            "title": "Tehingud, mida keegi alt ei löö",
+            "body": "Registreeri kliendi tehing ja pärast kinnitamist ei saa ükski teine partner kaitseperioodi jooksul sama klienti registreerida."
+          },
+          {
+            "title": "Marginaal, mis kasvab koos tehinguga",
+            "body": "Mitmeaastased lepingud, ettemaks ja suuremad tehingud annavad lisamarginaali ning sertifitseeritud meeskonnad tõusevad redelil kõrgemale."
+          },
+          {
+            "title": "Tasuta sertifitseerimine",
+            "body": "Müügi- ja tehnikarada, eksam on tasuta. Õppimine toimub partnerite portaalis."
+          },
+          {
+            "title": "30-päevased Enterprise'i prooviversioonid",
+            "body": "Partnerid annavad klientidele 30-päevase Enterprise'i prooviversiooni ise, Rediaccit ootamata."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Liidid meie hinnakalkulaatorist",
+        "body": "Kliendid, kes oma lahenduse avalikus hinnakalkulaatoris läbi arvutavad, saavad küsida partneri pakkumist. Need päringud lähevad nimekirjas olevatele partneritele, kes teenindavad kliendi riiki ja keelt."
+      },
+      "stance": "Me ei müü partnereist mööda. Rediacc müüb otse ainult seal, kus ükski partner klienti ei teeninda.",
+      "directoryCta": {
+        "title": "Partnerite kataloogi pääsemine",
+        "body": "Kinnitatud partnerid võivad valida avaliku kirje oma riikide, keelte ja teenustega, et kliendid leiaksid nad esimesena.",
+        "button": "Vaata kataloogi"
+      },
+      "directory": {
+        "meta": {
+          "title": "Leia Rediacci partner",
+          "description": "Leia oma riigis ja keeles tegutsev Rediacci partner, et saada kohalikku tuge, kohalikus valuutas arveid ja abi üleminekul."
+        },
+        "hero": {
+          "eyebrow": "Partnerite kataloog",
+          "title": "Leia Rediacci partner enda lähedal",
+          "subtitle": "Partnerid pakuvad kohalikku tuge sinu keeles, esitavad arved sinu valuutas ja aitavad üleminekul. Paljud pakuvad hinda, mis on alla hinnakirja."
+        },
+        "benefits": {
+          "title": "Miks osta partneri kaudu",
+          "items": [
+            "Kohalik tugi sinu keeles",
+            "Arved sinu kohalikus valuutas",
+            "Abi üleminekul inimestelt, kes on seda varem teinud",
+            "Sageli hind alla hinnakirja ja tasuta lisad, mis kasvavad koos tehinguga"
+          ]
+        },
+        "filters": {
+          "country": "Riik",
+          "language": "Keel",
+          "service": "Teenus",
+          "all": "Kõik",
+          "reset": "Tühista filtrid"
+        },
+        "services": {
+          "resale": "Edasimüük",
+          "migration": "Üleminek",
+          "managed": "Hallatud teenus",
+          "training": "Koolitus"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Sertifikaate: {{count}}",
+          "visit": "Ava veebileht",
+          "countries": "Riigid",
+          "languages": "Keeled",
+          "services": "Teenused"
+        },
+        "status": {
+          "loading": "Partnereid laaditakse...",
+          "empty": "Neile filtritele ei vasta veel ükski partner. Seal, kus partnerit pole, teenindab Rediacc kliente otse.",
+          "error": "Kataloogi laadimine ebaõnnestus. Proovi hetke pärast uuesti."
+        },
+        "becomePartner": {
+          "text": "Kas juhid edasimüügi- või teenusefirmat?",
+          "link": "Hakka partneriks"
+        }
+      },
       "finalCta": {
         "button": "Saa partneriks",
         "note": "Juba heaks kiidetud? Logi sisse partneriportaali.",

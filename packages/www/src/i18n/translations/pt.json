@@ -1321,6 +1321,93 @@
         "lede": "Qualquer parceiro pode certificar-se sem qualquer custo. Escolha o percurso certo para cada pessoa: vendas ou técnico. O programa de estudo está no portal, para que a sua equipa se possa preparar antes do exame.",
         "title": "Certificação gratuita, dois percursos"
       },
+      "growth": {
+        "title": "O que os parceiros recebem",
+        "lede": "Quatro motivos pelos quais vender o Rediacc compensa para um parceiro.",
+        "items": [
+          {
+            "title": "Negócios que ninguém passa por cima",
+            "body": "Registre o negócio de um cliente e, depois de aprovado, nenhum outro parceiro poderá registrar o mesmo cliente durante o período de proteção."
+          },
+          {
+            "title": "Margem que cresce com o negócio",
+            "body": "Contratos de vários anos, pagamento antecipado e negócios maiores rendem margem extra, e equipes certificadas sobem na escada."
+          },
+          {
+            "title": "Certificação gratuita",
+            "body": "Trilhas comercial e técnica com prova gratuita. O estudo acontece no portal de parceiros."
+          },
+          {
+            "title": "Testes Enterprise de 30 dias",
+            "body": "Os parceiros entregam testes Enterprise de 30 dias aos clientes diretamente, sem esperar pela Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads da nossa calculadora de preços",
+        "body": "Clientes que dimensionam a instalação na calculadora pública podem pedir uma oferta de parceiro. Esses contatos vão para os parceiros listados que atendem o país e o idioma do cliente."
+      },
+      "stance": "Não vendemos por cima dos nossos parceiros. A Rediacc só vende direto onde nenhum parceiro atende o cliente.",
+      "directoryCta": {
+        "title": "Apareça no diretório de parceiros",
+        "body": "Parceiros aprovados podem optar por um perfil público com seus países, idiomas e serviços, para que os clientes os encontrem primeiro.",
+        "button": "Ver o diretório"
+      },
+      "directory": {
+        "meta": {
+          "title": "Encontre um parceiro Rediacc",
+          "description": "Encontre um parceiro Rediacc no seu país e no seu idioma para suporte local, faturamento em moeda local e ajuda com a migração."
+        },
+        "hero": {
+          "eyebrow": "Diretório de parceiros",
+          "title": "Encontre um parceiro Rediacc perto de você",
+          "subtitle": "Os parceiros dão suporte local no seu idioma, faturam na sua moeda e ajudam na migração. Muitos oferecem preço abaixo da tabela."
+        },
+        "benefits": {
+          "title": "Por que comprar por meio de um parceiro",
+          "items": [
+            "Suporte local no seu idioma",
+            "Notas na sua moeda local",
+            "Ajuda na migração de quem já fez isso antes",
+            "Muitas vezes um preço abaixo da tabela, com extras gratuitos que crescem com o negócio"
+          ]
+        },
+        "filters": {
+          "country": "País",
+          "language": "Idioma",
+          "service": "Serviço",
+          "all": "Qualquer",
+          "reset": "Limpar filtros"
+        },
+        "services": {
+          "resale": "Revenda",
+          "migration": "Migração",
+          "managed": "Serviço gerenciado",
+          "training": "Treinamento"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificados: {{count}}",
+          "visit": "Visitar o site",
+          "countries": "Países",
+          "languages": "Idiomas",
+          "services": "Serviços"
+        },
+        "status": {
+          "loading": "Carregando parceiros...",
+          "empty": "Nenhum parceiro corresponde a esses filtros ainda. Onde não há parceiro, a Rediacc atende os clientes diretamente.",
+          "error": "Não foi possível carregar o diretório. Tente de novo em instantes."
+        },
+        "becomePartner": {
+          "text": "Você tem um negócio de revenda ou de serviços?",
+          "link": "Seja um parceiro"
+        }
+      },
       "finalCta": {
         "button": "Tornar-se parceiro",
         "note": "Já foi aprovado? Inicie sessão no portal de parceiros.",

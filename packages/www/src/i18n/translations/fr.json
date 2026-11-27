@@ -1329,6 +1329,93 @@
         "lede": "Tous les partenaires peuvent se certifier gratuitement. Choisissez le parcours adapté à chaque personne : commercial ou technique. Le programme de formation est disponible dans le portail, votre équipe peut donc se préparer avant de passer l'examen.",
         "title": "Certification gratuite, deux parcours"
       },
+      "growth": {
+        "title": "Ce que les partenaires obtiennent",
+        "lede": "Quatre raisons pour lesquelles vendre Rediacc vaut le coup pour un partenaire.",
+        "items": [
+          {
+            "title": "Des affaires que personne ne casse",
+            "body": "Enregistrez l'affaire d'un client et, une fois validée, aucun autre partenaire ne peut enregistrer ce client pendant la période de protection."
+          },
+          {
+            "title": "Une marge qui grandit avec l'affaire",
+            "body": "Les contrats pluriannuels, le paiement d'avance et les affaires plus importantes rapportent une marge supplémentaire, et les équipes certifiées montent d'un échelon."
+          },
+          {
+            "title": "Certification gratuite",
+            "body": "Parcours commercial et technique avec examen gratuit. On se prépare dans le portail partenaire."
+          },
+          {
+            "title": "Essais Enterprise de 30 jours",
+            "body": "Les partenaires remettent eux-mêmes des essais Enterprise de 30 jours à leurs clients, sans attendre Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Des leads issus de notre simulateur de prix",
+        "body": "Les clients qui dimensionnent leur installation dans le simulateur public peuvent demander une offre partenaire. Ces demandes vont aux partenaires référencés qui servent le pays et la langue du client."
+      },
+      "stance": "Nous ne vendons pas par-dessus nos partenaires. Rediacc ne vend en direct que là où aucun partenaire ne sert le client.",
+      "directoryCta": {
+        "title": "Figurer dans l'annuaire des partenaires",
+        "body": "Les partenaires agréés peuvent choisir une fiche publique avec leurs pays, langues et services, pour que les clients les trouvent en premier.",
+        "button": "Parcourir l'annuaire"
+      },
+      "directory": {
+        "meta": {
+          "title": "Trouver un partenaire Rediacc",
+          "description": "Trouvez un partenaire Rediacc dans votre pays et votre langue pour un support local, une facturation en devise locale et de l'aide à la migration."
+        },
+        "hero": {
+          "eyebrow": "Annuaire des partenaires",
+          "title": "Trouvez un partenaire Rediacc près de chez vous",
+          "subtitle": "Les partenaires assurent un support local dans votre langue, facturent dans votre devise et aident à migrer. Beaucoup proposent un prix inférieur au tarif public."
+        },
+        "benefits": {
+          "title": "Pourquoi acheter via un partenaire",
+          "items": [
+            "Un support local dans votre langue",
+            "Des factures dans votre devise locale",
+            "Une aide à la migration par des gens qui l'ont déjà fait",
+            "Souvent un prix sous le tarif public, avec des extras gratuits qui grandissent avec l'affaire"
+          ]
+        },
+        "filters": {
+          "country": "Pays",
+          "language": "Langue",
+          "service": "Prestation",
+          "all": "Tous",
+          "reset": "Effacer les filtres"
+        },
+        "services": {
+          "resale": "Revente",
+          "migration": "Migration",
+          "managed": "Service managé",
+          "training": "Formation"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificats : {{count}}",
+          "visit": "Visiter le site",
+          "countries": "Pays",
+          "languages": "Langues",
+          "services": "Services"
+        },
+        "status": {
+          "loading": "Chargement des partenaires...",
+          "empty": "Aucun partenaire ne correspond encore à ces filtres. Rediacc sert les clients en direct là où il n'y a pas de partenaire.",
+          "error": "L'annuaire n'a pas pu être chargé. Réessayez dans un instant."
+        },
+        "becomePartner": {
+          "text": "Vous dirigez une activité de revente ou de services ?",
+          "link": "Devenir partenaire"
+        }
+      },
       "finalCta": {
         "button": "Devenir partenaire",
         "note": "Déjà approuvé ? Connectez-vous au portail partenaire.",

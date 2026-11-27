@@ -1327,6 +1327,93 @@
         "lede": "Cualquier partner puede certificarse sin coste. Elige el itinerario que encaje con cada persona: ventas o técnico. El programa de estudio está en el portal, así que tu equipo puede prepararse antes de hacer el examen.",
         "title": "Certificación gratuita, dos itinerarios"
       },
+      "growth": {
+        "title": "Lo que obtienen los partners",
+        "lede": "Cuatro razones por las que vender Rediacc compensa a un partner.",
+        "items": [
+          {
+            "title": "Operaciones que nadie recorta",
+            "body": "Registra la operación de un cliente y, una vez aprobada, ningún otro partner podrá registrar al mismo cliente durante el periodo de protección."
+          },
+          {
+            "title": "Un margen que crece con la operación",
+            "body": "Los contratos plurianuales, el pago por adelantado y las operaciones grandes dan más margen, y los equipos certificados suben en la escalera."
+          },
+          {
+            "title": "Certificación gratuita",
+            "body": "Itinerarios comercial y técnico con examen gratuito. El estudio se hace en el portal de partners."
+          },
+          {
+            "title": "Pruebas Enterprise de 30 días",
+            "body": "Los partners entregan pruebas Enterprise de 30 días a sus clientes directamente, sin esperar a Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads de nuestra calculadora de precios",
+        "body": "Los clientes que dimensionan su instalación en la calculadora pública pueden pedir una oferta de un partner. Esos contactos van a los partners listados que atienden el país y el idioma del cliente."
+      },
+      "stance": "No vendemos por encima de nuestros partners. Rediacc vende directamente solo donde ningún partner atiende al cliente.",
+      "directoryCta": {
+        "title": "Aparece en el directorio de partners",
+        "body": "Los partners aprobados pueden optar por un perfil público con sus países, idiomas y servicios, para que los clientes los encuentren primero.",
+        "button": "Ver el directorio"
+      },
+      "directory": {
+        "meta": {
+          "title": "Encuentra un partner de Rediacc",
+          "description": "Encuentra un partner de Rediacc en tu país y tu idioma para soporte local, facturación en moneda local y ayuda con la migración."
+        },
+        "hero": {
+          "eyebrow": "Directorio de partners",
+          "title": "Encuentra un partner de Rediacc cerca de ti",
+          "subtitle": "Los partners dan soporte local en tu idioma, facturan en tu moneda y ayudan con la migración. Muchos ofrecen un precio por debajo de tarifa."
+        },
+        "benefits": {
+          "title": "Por qué comprar a través de un partner",
+          "items": [
+            "Soporte local en tu idioma",
+            "Facturas en tu moneda local",
+            "Ayuda con la migración de gente que ya la ha hecho antes",
+            "A menudo un precio por debajo de tarifa, con extras gratuitos que crecen con la operación"
+          ]
+        },
+        "filters": {
+          "country": "País",
+          "language": "Idioma",
+          "service": "Servicio",
+          "all": "Cualquiera",
+          "reset": "Borrar filtros"
+        },
+        "services": {
+          "resale": "Reventa",
+          "migration": "Migración",
+          "managed": "Servicio gestionado",
+          "training": "Formación"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificados: {{count}}",
+          "visit": "Visitar el sitio web",
+          "countries": "Países",
+          "languages": "Idiomas",
+          "services": "Servicios"
+        },
+        "status": {
+          "loading": "Cargando partners...",
+          "empty": "Todavía ningún partner coincide con estos filtros. Rediacc atiende directamente donde no hay partner.",
+          "error": "No se pudo cargar el directorio. Inténtalo de nuevo en un momento."
+        },
+        "becomePartner": {
+          "text": "¿Tienes un negocio de reventa o de servicios?",
+          "link": "Hazte partner"
+        }
+      },
       "finalCta": {
         "button": "Conviértete en Partner",
         "note": "¿Ya estás aprobado? Accede al portal de partners.",

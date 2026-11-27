@@ -1,0 +1,161 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import PartnerDirectory from '../../../components/partners/PartnerDirectory.astro';
+import { createTranslator } from '../../../i18n/utils';
+import type { Language } from '../../../i18n/types';
+import { getLanguagePaths } from '../../../i18n/language-utils';
+
+export const getStaticPaths = getLanguagePaths;
+
+const { lang } = Astro.params as { lang: Language };
+const { t, ta } = createTranslator(lang);
+
+const ns = 'pages.partners.directory';
+const benefitItems = ta(`${ns}.benefits.items`);
+---
+
+<BaseLayout
+  lang={lang}
+  title={t(`${ns}.meta.title`)}
+  description={t(`${ns}.meta.description`)}
+  ogType="website"
+  structuredDataType="organization"
+>
+  <article class="pf-page">
+    <section class="pf-hero">
+      <div class="container">
+        <span class="pf-eyebrow">{t(`${ns}.hero.eyebrow`)}</span>
+        <h1>{t(`${ns}.hero.title`)}</h1>
+        <p class="pf-hero-sub">{t(`${ns}.hero.subtitle`)}</p>
+        <p class="pf-stance">{t('pages.partners.stance')}</p>
+      </div>
+    </section>
+
+    <section class="pf-section pf-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.benefits.title`)}</h2>
+        <ul class="pf-benefits">
+          {benefitItems.map((item: string) => <li>{item}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="pf-section">
+      <div class="container">
+        <PartnerDirectory lang={lang} />
+      </div>
+    </section>
+
+    <section class="pf-section pf-section--alt pf-become">
+      <div class="container">
+        <p>{t(`${ns}.becomePartner.text`)}</p>
+        <a href={`/${lang}/partners`} class="pf-link">{t(`${ns}.becomePartner.link`)} &rarr;</a>
+      </div>
+    </section>
+  </article>
+</BaseLayout>
+
+<style>
+  .pf-page {
+    color: var(--color-text);
+  }
+
+  .pf-hero {
+    padding: calc(var(--nav-top-offset, 3.5rem) + var(--space-12)) 0 var(--space-12);
+    text-align: center;
+    background: linear-gradient(180deg, var(--color-bg-alt) 0%, var(--color-bg) 100%);
+  }
+
+  .pf-eyebrow {
+    display: inline-block;
+    background: var(--color-brand-fill);
+    color: white;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    letter-spacing: var(--tracking-wide);
+    text-transform: uppercase;
+    margin-bottom: var(--space-4);
+  }
+
+  .pf-hero h1 {
+    font-size: var(--font-size-4xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1;
+    max-width: 880px;
+    margin: 0 auto var(--space-4);
+  }
+
+  .pf-hero-sub {
+    font-size: var(--font-size-lg);
+    color: var(--color-text-secondary);
+    max-width: 720px;
+    margin: 0 auto var(--space-4);
+  }
+
+  .pf-stance {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+
+  .pf-section {
+    padding: var(--space-12) 0;
+  }
+
+  .pf-section--alt {
+    background: var(--color-bg-alt);
+  }
+
+  .pf-section h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-bold);
+    text-align: center;
+    margin-bottom: var(--space-6);
+  }
+
+  .pf-benefits {
+    list-style: none;
+    padding: 0;
+    margin: 0 auto;
+    max-width: 720px;
+    display: grid;
+    gap: var(--space-3);
+  }
+
+  .pf-benefits li {
+    position: relative;
+    padding-inline-start: var(--space-6);
+  }
+
+  .pf-benefits li::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 0.55em;
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-full);
+    background: var(--color-brand-fill);
+  }
+
+  .pf-become {
+    text-align: center;
+  }
+
+  .pf-become p {
+    margin: 0 0 var(--space-3);
+    color: var(--color-text-secondary);
+  }
+
+  .pf-link {
+    color: var(--color-brand-primary);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .pf-link:hover {
+    text-decoration: underline;
+  }
+</style>

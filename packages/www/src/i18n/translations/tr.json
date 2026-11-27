@@ -1317,6 +1317,93 @@
         "lede": "Her ortak ücretsiz sertifika alabilir. Kişiye uygun programı seçin: satış ya da teknik. Çalışma materyalleri portalda yer alır, böylece ekibiniz sınava girmeden önce hazırlanabilir.",
         "title": "Ücretsiz Sertifika, İki Program"
       },
+      "growth": {
+        "title": "İş ortaklarının kazandıkları",
+        "lede": "Rediacc satmanın bir iş ortağına neden değdiğini gösteren dört şey.",
+        "items": [
+          {
+            "title": "Kimsenin fiyat kıramadığı anlaşmalar",
+            "body": "Bir müşteri anlaşmasını kaydedin; onaylandıktan sonra koruma süresi boyunca başka hiçbir iş ortağı aynı müşteriyi kaydedemez."
+          },
+          {
+            "title": "Anlaşmayla birlikte büyüyen kâr payı",
+            "body": "Çok yıllı sözleşmeler, peşin ödeme ve büyük anlaşmalar ek kâr payı getirir; sertifikalı ekipler basamakları tırmanır."
+          },
+          {
+            "title": "Ücretsiz sertifika",
+            "body": "Satış ve teknik yollar, sınav ücretsiz. Çalışma iş ortağı portalında yapılır."
+          },
+          {
+            "title": "30 günlük Enterprise denemeleri",
+            "body": "İş ortakları, Rediacc'ı beklemeden müşterilerine doğrudan 30 günlük Enterprise denemesi verir."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Fiyat hesaplayıcımızdan gelen müşteri adayları",
+        "body": "Kurulumunu herkese açık fiyat hesaplayıcısında boyutlandıran müşteriler iş ortağı teklifi isteyebilir. Bu talepler, müşterinin ülkesine ve diline hizmet veren listelenmiş iş ortaklarına gider."
+      },
+      "stance": "İş ortaklarımızı atlayarak satış yapmayız. Rediacc yalnızca müşteriye hizmet veren iş ortağı bulunmayan yerlerde doğrudan satar.",
+      "directoryCta": {
+        "title": "İş ortağı dizininde yer alın",
+        "body": "Onaylı iş ortakları ülkelerini, dillerini ve hizmetlerini içeren herkese açık bir liste kaydı seçebilir; böylece müşteriler onları ilk bulur.",
+        "button": "Dizine göz atın"
+      },
+      "directory": {
+        "meta": {
+          "title": "Bir Rediacc İş Ortağı Bulun",
+          "description": "Yerel destek, yerel para biriminde fatura ve geçiş yardımı için ülkenizde ve dilinizde bir Rediacc iş ortağı bulun."
+        },
+        "hero": {
+          "eyebrow": "İş ortağı dizini",
+          "title": "Yakınınızda bir Rediacc iş ortağı bulun",
+          "subtitle": "İş ortakları sizin dilinizde yerel destek verir, sizin para biriminizde fatura keser ve geçişe yardım eder. Birçoğu liste fiyatının altında fiyat sunar."
+        },
+        "benefits": {
+          "title": "Neden bir iş ortağından almalı",
+          "items": [
+            "Kendi dilinizde yerel destek",
+            "Yerel para biriminizde faturalar",
+            "Bu işi daha önce yapmış kişilerden geçiş yardımı",
+            "Çoğu zaman liste fiyatının altında bir fiyat ve anlaşmayla birlikte büyüyen ücretsiz ekstralar"
+          ]
+        },
+        "filters": {
+          "country": "Ülke",
+          "language": "Dil",
+          "service": "Hizmet",
+          "all": "Hepsi",
+          "reset": "Filtreleri temizle"
+        },
+        "services": {
+          "resale": "Yeniden satış",
+          "migration": "Geçiş",
+          "managed": "Yönetilen hizmet",
+          "training": "Eğitim"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Sertifika sayısı: {{count}}",
+          "visit": "Web sitesini ziyaret et",
+          "countries": "Ülkeler",
+          "languages": "Diller",
+          "services": "Hizmetler"
+        },
+        "status": {
+          "loading": "İş ortakları yükleniyor...",
+          "empty": "Bu filtrelere uyan iş ortağı henüz yok. İş ortağı bulunmayan yerlerde Rediacc müşterilere doğrudan hizmet verir.",
+          "error": "Dizin yüklenemedi. Biraz sonra yeniden deneyin."
+        },
+        "becomePartner": {
+          "text": "Bayilik veya hizmet işi mi yürütüyorsunuz?",
+          "link": "İş ortağı olun"
+        }
+      },
       "finalCta": {
         "button": "Ortak Olun",
         "note": "Zaten onaylandınız mı? Ortak portalına giriş yapın.",

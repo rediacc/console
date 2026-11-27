@@ -565,6 +565,93 @@
           "generic": "Something went wrong. Please try again."
         }
       },
+      "growth": {
+        "title": "What partners get",
+        "lede": "Four things that make selling Rediacc worth a partner's time.",
+        "items": [
+          {
+            "title": "Deals nobody undercuts",
+            "body": "Register a customer deal and, once approved, no other partner can register the same customer during the protection window."
+          },
+          {
+            "title": "Margin that grows with the deal",
+            "body": "Multi-year terms, upfront payment and larger deals earn extra margin, and certified teams move up the ladder."
+          },
+          {
+            "title": "Free certification",
+            "body": "Sales and technical tracks with a free exam. Study happens in the partner portal."
+          },
+          {
+            "title": "30-day Enterprise trials",
+            "body": "Partners issue 30-day Enterprise trials to customers directly, without waiting on Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads from our pricing calculator",
+        "body": "Customers who size their setup in the public pricing calculator can ask for a partner offer. Those leads go to listed partners that serve the customer's country and language."
+      },
+      "stance": "We don't sell around our partners. Rediacc sells direct only where no partner serves the customer.",
+      "directoryCta": {
+        "title": "Get listed in the partner directory",
+        "body": "Approved partners can opt in to a public listing with their countries, languages and services, so customers find them first.",
+        "button": "Browse the directory"
+      },
+      "directory": {
+        "meta": {
+          "title": "Find a Rediacc Partner",
+          "description": "Find a Rediacc partner in your country and language for local support, local-currency invoicing and migration help."
+        },
+        "hero": {
+          "eyebrow": "Partner directory",
+          "title": "Find a Rediacc partner near you",
+          "subtitle": "Partners give local support in your language, invoice in your currency and help with migration. Many offer a price below list."
+        },
+        "benefits": {
+          "title": "Why buy through a partner",
+          "items": [
+            "Local support in your language",
+            "Invoices in your local currency",
+            "Migration help from people who have done it before",
+            "Often a price below list, with free extras that grow with the deal"
+          ]
+        },
+        "filters": {
+          "country": "Country",
+          "language": "Language",
+          "service": "Service",
+          "all": "Any",
+          "reset": "Clear filters"
+        },
+        "services": {
+          "resale": "Resale",
+          "migration": "Migration",
+          "managed": "Managed service",
+          "training": "Training"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificates: {{count}}",
+          "visit": "Visit website",
+          "countries": "Countries",
+          "languages": "Languages",
+          "services": "Services"
+        },
+        "status": {
+          "loading": "Loading partners...",
+          "empty": "No partner matches these filters yet. Rediacc serves customers directly where no partner does.",
+          "error": "The directory could not be loaded. Try again in a moment."
+        },
+        "becomePartner": {
+          "text": "Run a reseller or services business?",
+          "link": "Become a partner"
+        }
+      },
       "finalCta": {
         "title": "Ready to sell Rediacc?",
         "subtitle": "Join the Partner 1st Program and start protecting every deal.",

@@ -1331,6 +1331,93 @@
         "lede": "Ogni partner può certificarsi senza costi. Scegli il percorso più adatto: vendite o tecnico. Il programma di studio si trova nel portale, così il tuo team può prepararsi prima dell'esame.",
         "title": "Certificazione gratuita, due percorsi"
       },
+      "growth": {
+        "title": "Cosa ottengono i partner",
+        "lede": "Quattro motivi per cui vendere Rediacc vale il tempo di un partner.",
+        "items": [
+          {
+            "title": "Trattative che nessuno scavalca",
+            "body": "Registra la trattativa di un cliente e, una volta approvata, nessun altro partner può registrare lo stesso cliente durante il periodo di protezione."
+          },
+          {
+            "title": "Un margine che cresce con la trattativa",
+            "body": "I contratti pluriennali, il pagamento anticipato e le trattative più grandi danno un margine in più, e i team certificati salgono nella scala."
+          },
+          {
+            "title": "Certificazione gratuita",
+            "body": "Percorsi commerciale e tecnico con esame gratuito. Si studia nel portale partner."
+          },
+          {
+            "title": "Prove Enterprise di 30 giorni",
+            "body": "I partner consegnano ai clienti prove Enterprise di 30 giorni direttamente, senza aspettare Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Lead dal nostro calcolatore dei prezzi",
+        "body": "I clienti che dimensionano la loro installazione nel calcolatore pubblico possono chiedere un'offerta a un partner. Queste richieste vanno ai partner in elenco che servono il paese e la lingua del cliente."
+      },
+      "stance": "Non vendiamo scavalcando i nostri partner. Rediacc vende in diretta solo dove nessun partner serve il cliente.",
+      "directoryCta": {
+        "title": "Entra nell'elenco dei partner",
+        "body": "I partner approvati possono scegliere una scheda pubblica con paesi, lingue e servizi, così i clienti li trovano per primi.",
+        "button": "Sfoglia l'elenco"
+      },
+      "directory": {
+        "meta": {
+          "title": "Trova un partner Rediacc",
+          "description": "Trova un partner Rediacc nel tuo paese e nella tua lingua per assistenza locale, fatturazione in valuta locale e aiuto con la migrazione."
+        },
+        "hero": {
+          "eyebrow": "Elenco dei partner",
+          "title": "Trova un partner Rediacc vicino a te",
+          "subtitle": "I partner offrono assistenza locale nella tua lingua, fatturano nella tua valuta e aiutano con la migrazione. Molti propongono un prezzo sotto il listino."
+        },
+        "benefits": {
+          "title": "Perché acquistare tramite un partner",
+          "items": [
+            "Assistenza locale nella tua lingua",
+            "Fatture nella tua valuta locale",
+            "Aiuto con la migrazione da chi l'ha già fatta",
+            "Spesso un prezzo sotto il listino, con extra gratuiti che crescono con l'ordine"
+          ]
+        },
+        "filters": {
+          "country": "Paese",
+          "language": "Lingua",
+          "service": "Servizio",
+          "all": "Qualsiasi",
+          "reset": "Azzera i filtri"
+        },
+        "services": {
+          "resale": "Rivendita",
+          "migration": "Migrazione",
+          "managed": "Servizio gestito",
+          "training": "Formazione"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificati: {{count}}",
+          "visit": "Visita il sito",
+          "countries": "Paesi",
+          "languages": "Lingue",
+          "services": "Servizi"
+        },
+        "status": {
+          "loading": "Caricamento dei partner...",
+          "empty": "Nessun partner corrisponde ancora a questi filtri. Dove non c'è un partner, Rediacc serve i clienti direttamente.",
+          "error": "Impossibile caricare l'elenco. Riprova tra un attimo."
+        },
+        "becomePartner": {
+          "text": "Hai un'attività di rivendita o di servizi?",
+          "link": "Diventa partner"
+        }
+      },
       "finalCta": {
         "button": "Diventa Partner",
         "note": "Sei già approvato? Accedi al portale partner.",
