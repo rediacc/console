@@ -338,3 +338,87 @@ def test_the_module_form_is_judged_as_a_shared_parse(dotted):
     path = mod.module_path(root, dotted)
     got = mod.analyse(path, root, {}, key=dotted)
     assert (got.form, got.problems) == ("parse", [])
+
+
+# A frozen ceiling for the shrink-only debt list: a key added to KNOWN_BYPASS makes its entry read as "debt" before the file is judged, so a new genuine bypass named there would be green. Deleting a line from the list is the only edit that needs no change here; adding one fails this test until a reviewer edits the frozen set on purpose.
+FROZEN_KNOWN_BYPASS = {
+    ".ci/rediacc_ci/check_pytest.py",
+    ".ci/rediacc_ci/deploy/write_once_guard_check.py",
+    ".ci/rediacc_ci/release/install_script_check.py",
+    ".ci/rediacc_ci/security/ci_workflow_invariants.py",
+    ".ci/scripts/security/check_workflow_gates.py",
+    "rediacc_ci.private.run_account",
+    "rediacc_ci.private.run_renet",
+    "rediacc_ci.proxies.cli_manifest",
+    "rediacc_ci.proxies.docker_prepull",
+    "rediacc_ci.proxies.ensure_nfpm",
+    "rediacc_ci.proxies.go_unit",
+    "rediacc_ci.proxies.license_e2e",
+    "rediacc_ci.proxies.linux_packages",
+    "rediacc_ci.proxies.ops_host_check",
+    "rediacc_ci.proxies.rdc_update",
+    "rediacc_ci.proxies.unit_tests",
+    "rediacc_ci.security.actionlint",
+    "rediacc_ci.security.audit",
+    "rediacc_ci.security.check_commands",
+    "rediacc_ci.security.shellcheck",
+    "rediacc_ci.security.shfmt",
+    "rediacc_ci.setup.tools",
+    "rediacc_ci.testrun.onprem_lane",
+}
+
+
+def test_known_bypass_can_only_shrink():
+    grown = sorted(set(mod.KNOWN_BYPASS) - FROZEN_KNOWN_BYPASS)
+    assert grown == [], (
+        "KNOWN_BYPASS grew: give the entry a parse instead of listing it: %s" % grown
+    )
+
+
+def test_a_malformed_lock_entry_is_refused_not_dropped(tmp_path, capsys):
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    module_file(root, DOTTED, MODULE_REFUSES)
+    lock = root / mod.LOCK_REL
+    for bad in ("not-an-object", {"id": "no-run"}, {"id": "n", "run": 7}, {"id": "e", "run": " "}):
+        gates = [*json.loads(lock.read_text(encoding="utf-8")), bad]
+        lock.write_text(json.dumps(gates), encoding="utf-8")
+        assert mod.lock_targets(root) is None, bad
+        assert mod.run(root, own={}, floor=1, debt={}) == 1
+        assert "the scan is not seeing the tree" in capsys.readouterr().err
+        lock.write_text(json.dumps(gates[:-1]), encoding="utf-8")
+    assert mod.run(root, own={}, floor=1, debt={}) == 0
+
+
+def test_an_npm_chain_deeper_than_six_still_reaches_its_entry_point(tmp_path):
+    scripts = {"s%d" % i: "npm run s%d" % (i + 1) for i in range(9)}
+    scripts["s9"] = RUN_MODULE
+    root = tree(tmp_path, {"check_x": SHARED}, scripts=scripts, runs=["npm run s0"])
+    got = mod.lock_targets(root)
+    assert got is not None
+    assert [(t.key, t.kind) for t in got] == [(DOTTED, "module")]
+    wide = {"w%d" % i: "python3 -m rediacc_ci.quality.m%d" % i for i in range(9)}
+    wide["all"] = " && ".join("npm run w%d" % i for i in range(9))
+    root2 = tree(tmp_path / "wide", {"check_x": SHARED}, scripts=wide, runs=["npm run all"])
+    got2 = mod.lock_targets(root2)
+    assert got2 is not None
+    assert len(got2) == 9
+
+
+def test_a_non_parser_import_before_the_parse_is_work_and_is_named(tmp_path):
+    text = MODULE_REFUSES.replace(
+        "    from rediacc_ci.quality import gate_args\n",
+        "    from rediacc_ci.quality import gate_args\n    import heavy_side_effects\n",
+    )
+    assert text != MODULE_REFUSES
+    root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
+    path = module_file(root, DOTTED, text)
+    got = mod.analyse(path, root, {}, key=DOTTED)
+    assert any("work runs before an unknown argument is refused" in x for x in got.problems), got
+
+
+def test_module_path_of_a_package_is_its_main_file(tmp_path):
+    pkg = tmp_path / ".ci" / "rediacc_ci" / "pkgmod"
+    pkg.mkdir(parents=True)
+    (pkg / "__main__.py").write_text("", encoding="utf-8")
+    assert mod.module_path(tmp_path, "rediacc_ci.pkgmod") == pkg / "__main__.py"
+    assert mod.module_path(tmp_path, "rediacc_ci.plain") == pkg.parent / "plain.py"

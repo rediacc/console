@@ -312,10 +312,29 @@ def _is_parse_call(node: ast.AST | None) -> TypeGuard[ast.Call]:
     )
 
 
+def _inert_import(stmt: ast.stmt) -> bool:
+    """Whether `stmt` is an import that runs no work an unknown argument could ride: the shared parser itself, or a standard-library module (`import sys` before the parse)."""
+    if isinstance(stmt, ast.ImportFrom):
+        if stmt.level or stmt.module is None:
+            return False
+        if stmt.module.split(".")[0] in sys.stdlib_module_names:
+            return True
+        return stmt.module.rsplit(".", 1)[-1] in PARSER_NAMES or all(
+            a.name in PARSER_NAMES for a in stmt.names
+        )
+    if isinstance(stmt, ast.Import):
+        return all(
+            a.name.split(".")[0] in sys.stdlib_module_names
+            or a.name.rsplit(".", 1)[-1] in PARSER_NAMES
+            for a in stmt.names
+        )
+    return False
+
+
 def _first_work(block: ast.If) -> ast.stmt | None:
-    """The first statement of the `__main__` block that is not an import: a module imports the parser inside the block, and an import does no work an unknown argument could ride."""
+    """The first statement of the `__main__` block that is not an inert import: any other import runs module-level code, which an unknown argument could ride before the parse refuses it."""
     for stmt in block.body:
-        if not isinstance(stmt, (ast.Import, ast.ImportFrom)):
+        if not _inert_import(stmt):
             return stmt
     return None
 
@@ -558,27 +577,26 @@ def entry_points(root: pathlib.Path) -> list[pathlib.Path]:
     return found
 
 
-def expand_npm(command: str, scripts: dict[str, str], depth: int = 6) -> str:
-    """`command` with every `npm run <script>` it names replaced by the script's body, recursively; a name package.json lacks, or a cycle, stays as written."""
+def expand_npm(command: str, scripts: dict[str, str]) -> str:
+    """`command` with every `npm run <script>` it names replaced by the script's body, recursively and to any depth (each script expands once, so a cycle ends); a name package.json lacks stays as written."""
     out = command
     seen: set[str] = set()
-    for _ in range(depth):
-        changed = False
-        for m in list(NPM_RUN_RE.finditer(out)):
+    while True:
+        for m in NPM_RUN_RE.finditer(out):
             name = m.group(1)
             if name in scripts and name not in seen:
                 seen.add(name)
                 out = out[: m.start()] + "( " + scripts[name] + " )" + out[m.end() :]
-                changed = True
                 break
-        if not changed:
-            break
-    return out
+        else:
+            return out
 
 
 def module_path(root: pathlib.Path, dotted: str) -> pathlib.Path:
-    """The file `python3 -m <dotted>` runs, with `.ci` on PYTHONPATH."""
-    return root.joinpath(".ci", *dotted.split(".")).with_suffix(".py")
+    """The file `python3 -m <dotted>` runs, with `.ci` on PYTHONPATH: `<dotted>/__main__.py` for a package that has one, else `<dotted>.py`."""
+    base = root.joinpath(".ci", *dotted.split("."))
+    main = base / "__main__.py"
+    return main if base.is_dir() and main.is_file() else base.with_suffix(".py")
 
 
 def targets_of(command: str, root: pathlib.Path) -> list[Target]:
@@ -607,8 +625,11 @@ def lock_targets(root: pathlib.Path) -> list[Target] | None:
     scripts = npm_scripts(root)
     out: dict[str, Target] = {}
     for gate in gates:
-        run_field = gate.get("run", "") if isinstance(gate, dict) else ""
-        for target in targets_of(expand_npm(str(run_field), scripts), root):
+        # A malformed entry would contribute no command and drop its entry points from the population with the gate still green, so it is refused like an unreadable lock.
+        run_field = gate.get("run") if isinstance(gate, dict) else None
+        if not isinstance(run_field, str) or not run_field.strip():
+            return None
+        for target in targets_of(expand_npm(run_field, scripts), root):
             out.setdefault(target.key, target)
     return sorted(out.values(), key=lambda t: (t.kind, t.key))
 
