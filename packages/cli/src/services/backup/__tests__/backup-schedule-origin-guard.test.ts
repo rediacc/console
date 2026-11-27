@@ -144,6 +144,10 @@ describe('a push never silently re-points deployed units at another account serv
     const { pushBackupSchedule } = await import('../backup-schedule.js');
     await expect(pushBackupSchedule('hostinger', { adoptOrigin: true })).resolves.toBe('applied');
     expect(mockRunCommandJob).toHaveBeenCalledTimes(1);
+    const payload = (mockRunCommandJob.mock.calls[0][1] as { commandKind: { payload: string } })
+      .commandKind.payload;
+    expect(payload).toContain(`--expect-account-server ${BENCH}`);
+    expect(payload).not.toContain(EU);
   });
 
   it('pushes when the deployed units already name this config origin', async () => {
