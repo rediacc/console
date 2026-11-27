@@ -78,7 +78,7 @@ def test_none_with_a_short_reason_is_refused():
         "Closes #d778be9d for backup restores",
         "Restores no longer hang (PLAN-release-notes)",
         "The check:ci-pr-task-trailers gate now passes",
-        "Fixed in 334ed40864e0 for every machine",
+        "Fixed in 0badc0de1234 for every machine",
         "The worklist now keeps every item",
         "Fixed packages/cli/src/x.ts",
     ],
