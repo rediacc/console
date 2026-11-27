@@ -1,0 +1,18 @@
+{
+  "EDGE_CASES": [
+    {"//": "refused: each create shape of agent/plans/PLAN-retire-nightlies-and-mentions.md D3"},
+    ["gh issue create", "gh issue create -t x -b y"],
+    ["gh issue new, the alias", "gh issue new -t x"],
+    ["a submodule -R before the verb", "gh issue -R rediacc/renet create -t x"],
+    ["an sh -c wrap", "sh -c 'gh issue create -t x'"],
+    ["gh api POST to repos/o/r/issues", "gh api -X POST repos/o/r/issues -f title=x"],
+    ["a body field makes gh api a POST", "gh api repos/o/r/issues -f title=x"],
+    ["a graphql createIssue mutation", "gh api graphql -f query='mutation { createIssue(input:{repositoryId:\"R\", title:\"x\"}) { issue { number } } }'"],
+    ["curl POST to the issues endpoint", "curl -X POST https://api.github.com/repos/o/r/issues -d x"],
+    {"//": "admitted: comments, reads, other verbs and prose"},
+    ["a comment on issues/<n>/comments", "gh api repos/o/r/issues/12/comments -f body=x"],
+    ["gh issue list", "gh issue list --state open"],
+    ["a GET of repos/o/r/issues", "gh api repos/o/r/issues"],
+    ["echo naming the command", "echo 'gh issue create'"]
+  ]
+}
