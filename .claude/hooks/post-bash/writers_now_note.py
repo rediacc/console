@@ -81,6 +81,7 @@ def note_for(doc, now=None):
     if _recent(me8, now) or _recent_quiet(me8, now):
         return ""
     _load_syspath().on_sys_path(STOP)
+    import wl_boxready
     import wl_core as C
     import wl_planqueue
     import wl_writersnow
@@ -113,10 +114,21 @@ def note_for(doc, now=None):
             _items(doc),
             _live_writers(doc, session),
             lambda: wl_writersnow.promoted_done_sigs(root),
+            live_ids=_live_ids(doc, session),
+            open_sigs=lambda: wl_writersnow.promoted_open_sigs(root),
+            vm_verified=lambda: wl_boxready.vmcheck_admits(root),
         )
     except Exception:
         cap = None
     kind, why = wl_writersnow.assess(fires, facts, cap)
+    if kind == "staff":
+        _touch(me8)
+        f = wl_writersnow.staff_fields(cap, me8)
+        return (
+            "WRITERS-NOW STAFF (%d live target(s) unstaffed, effort high): start the runner(s) now "
+            "from round %s's survey %s, no new survey, then record each with `runner:<target>`:\n%s"
+            % (f["n"], f["round"], f["survey"], f["rows"])
+        )
     if kind == "due" and why == wl_writersnow.WHY_CLOCK:
         _touch(me8)
         age = facts.get("age")
@@ -189,6 +201,16 @@ def _live_writers(doc, session):
 
     rows = wl_roster.live_writers_estimate(doc.get("cwd") or os.getcwd(), session)
     return None if rows is None else len(rows)
+
+
+def _live_ids(doc, session):
+    """The live worker ids the roster sees for this session (the stop check's `_live_worker_ids`), or () when it cannot count."""
+    import wl_roster
+
+    rows = wl_roster.live_writers_estimate(doc.get("cwd") or os.getcwd(), session)
+    return (
+        () if rows is None else tuple(str(r.get("id") or "") for r in rows if isinstance(r, dict))
+    )
 
 
 def render(text):

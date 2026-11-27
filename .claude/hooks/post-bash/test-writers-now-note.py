@@ -87,6 +87,7 @@ def run(
         mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
         mock.patch.object(note, "_items", return_value=list(items)),
         mock.patch.object(note, "_live_writers", return_value=live),
+        mock.patch.object(note, "_live_ids", return_value=()),
         mock.patch.object(note.tempfile, "gettempdir", return_value=stamp_dir),
     ):
         return note.note_for({"session_id": session, "cwd": "/repo"})
@@ -137,6 +138,39 @@ def refill_cases():
         check("an exhausted survey names the next round", got.startswith(want), True)
 
 
+STAFF_SURVEY = (
+    SURVEY
+    + "\n## Staffing\n\n| target | startable | runner |\n|---|---|---|\n| bench | 2 | none |\n"
+)
+BENCH_RUNNER = {
+    "id": "3",
+    "state": ">",
+    "owner": SESSION,
+    "text": "live runner runner:bench",
+    "worker": "w1",
+    "first": "2026-11-25T17:55:00Z",
+    "upd": "2026-11-25T17:55:00Z",
+}
+
+
+def staff_cases():
+    """A live target with startable boxes and no runner prints the STAFF order naming the target, ahead of the clock; once a runner item staffs it the same call prints nothing staff-shaped."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "survey.md"
+        path.write_text(STAFF_SURVEY, encoding="utf-8")
+        got = run(12, stamp_dir=tmp, survey=str(path), items=[LEASED_B, OPEN_A])
+        check("a staff verdict prints the staff note", got.startswith("WRITERS-NOW STAFF ("), True)
+        check("the staff note names the target", "  - bench: 2 startable box(es)" in got, True)
+        check(
+            "the staff note is held by the throttle", run(12, stamp_dir=tmp, survey=str(path)), ""
+        )
+    with tempfile.TemporaryDirectory() as tmp:
+        path = pathlib.Path(tmp) / "survey.md"
+        path.write_text(STAFF_SURVEY, encoding="utf-8")
+        got = run(12, stamp_dir=tmp, survey=str(path), items=[LEASED_B, OPEN_A, BENCH_RUNNER])
+        check("control: a staffed target prints no staff note", "STAFF" in got, False)
+
+
 def quiet_cases():
     """A quiet verdict is reused for QUIET_EVERY_SEC: the store is not read again on the next call (review 7d036d68.3)."""
     with tempfile.TemporaryDirectory() as tmp:
@@ -181,6 +215,7 @@ def run_quiet(survey, tmp, now=None):
         mock.patch.object(wl_writersnow, "promoted_open", return_value=469),
         mock.patch.object(wl_writersnow, "promoted_done_sigs", return_value=set()),
         mock.patch.object(note, "_live_writers", return_value=12),
+        mock.patch.object(note, "_live_ids", return_value=()),
         mock.patch.object(note.tempfile, "gettempdir", return_value=tmp),
     ):
         return note.note_for({"session_id": SESSION, "cwd": "/repo"}, now=now)
@@ -220,6 +255,7 @@ def main():
     with tempfile.TemporaryDirectory() as tmp:
         check("a short session id is silent", run(75, session="d77", stamp_dir=tmp), "")
     refill_cases()
+    staff_cases()
     quiet_cases()
     if FAILURES:
         print("FAILURES: %d" % len(FAILURES))
