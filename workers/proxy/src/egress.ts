@@ -3,7 +3,7 @@
  *
  * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `OrgExecutor` routes here (`interceptOutboundHttp`, to the `AccountEgress` entrypoint). This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
  *
- *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open, the run index events and the three executor licence calls) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
+ *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open, the run index events, and the executor account routes of `EXECUTOR_ACCOUNT_PAIRS`) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
  *   - the unauthenticated calls leave with no Authorization at all;
  *   - the config write-back pair, `POST configs/session` and `PUT configs/<id>`, travel like the config pull (an `X-Config-Token`, no Authorization); a push body past `MAX_CONFIG_PUSH_BODY_BYTES` is answered 413 `body-too-large` and nothing is forwarded;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
@@ -11,7 +11,7 @@
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  *
- * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The licence activation and retire calls of a container dispatch (packages/cli/src/services/account/license.ts, license-batch.ts and license-retire.ts) are container callers too, and fatal to `repo create` and `repo fork`; they travel on three bearer pairs instead, `POST proxy/licenses/activate-repo`, `POST proxy/licenses/activate-repo-batch` and `POST proxy/licenses/repos/<uuid>/retire` (strict lower-case UUID, no query), with the principal named in the body. The other tunnel caller seen (bench `wrangler tail`, 2026-10-28), the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), is skipped in a container, since the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers it.
+ * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. Every account call a served command makes (the hosted backup reads, verify, repair, restore, reconcile, the lineage orphan and purge, the licence report, machine deactivate, and the repository licence activate, batch activate and retire) travels instead to the account server's executor router, `/account/api/v1/proxy/account/<inner>` (private/account/src/routes/executor-account.ts), with the principal named in the `X-Rediacc-On-Behalf-Of` header, which is forwarded untouched. The routes are enumerated once in packages/shared/src/subscription/executor-account-routes.ts (`EXECUTOR_ACCOUNT_ROUTES`, read by the CLI's `accountServerFetch` and the account router too); `EXECUTOR_ACCOUNT_PAIRS` below is this worker's literal copy of that table, each pair with its exact admitted query names, held equal to it by the parity test in __tests__/egress-account-routes.test.ts, since the Worker bundle does not import the table at runtime. The CLI's own paths of the same calls (`/account/api/v1/backups/...`, `/account/api/v1/licenses/...`) stay refused. The other tunnel caller seen (bench `wrangler tail`, 2026-10-28), the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), is skipped in a container, since the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers it.
  *
  * One request is answered here rather than forwarded: `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor.
  */
@@ -36,13 +36,134 @@ const BEARER_ROUTES: ReadonlySet<string> = new Set([
   `POST ${API}/configs/executor-grant`,
   `POST ${API}/configs/agent-session`,
   `POST ${API}/console/runs/events`,
-  `POST ${API}/proxy/licenses/activate-repo`,
-  `POST ${API}/proxy/licenses/activate-repo-batch`,
 ]);
 
-/** The executor licence retire, `POST proxy/licenses/repos/<uuid>/retire`: the repository GUID is a lower-case UUID on the account side, so a strict pattern refuses nothing real. */
-const PROXY_LICENSE_RETIRE_RE =
-  /^\/account\/api\/v1\/proxy\/licenses\/repos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/retire$/;
+/** One executor account route: the method, the full path pattern under `/account/api/v1/proxy/account/`, and the exact query names admitted (each at most once; empty admits no query). */
+interface ExecutorAccountPair {
+  method: 'GET' | 'POST' | 'DELETE';
+  pattern: RegExp;
+  query: readonly string[];
+}
+
+const NO_QUERY: readonly string[] = [];
+
+/**
+ * The executor account routes, classed `bearer`: a literal copy of `EXECUTOR_ACCOUNT_ROUTES` (packages/shared/src/subscription/executor-account-routes.ts), entry for entry and in its order. Typed segments: a lineage or snapshot id is the account `identifierSchema` `[A-Za-z0-9-]{1,64}`; a machine id is the 64 hex characters of `renet machine-id`, the only shape the CLI sends (the account route itself takes 1-200 characters, so another shape is refused here rather than forwarded); a repository GUID is a lower-case UUID.
+ */
+export const EXECUTOR_ACCOUNT_PAIRS: readonly ExecutorAccountPair[] = [
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/usage$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/status$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/manifests$/,
+    query: ['lineage', 'limit', 'before', 'includeDeleted'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/resolve$/,
+    query: [
+      'lineage',
+      'anchorSnapshotId',
+      'anyStream',
+      'storeId',
+      'at',
+      'needIndex',
+      'includeDeleted',
+    ],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/retention$/,
+    query: ['lineage'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/retention\/preview$/,
+    query: ['lineage'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/immutability$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/stores\/lineage\/[A-Za-z0-9-]{1,64}$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/verify$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/[A-Za-z0-9-]{1,64}\/verification$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/[A-Za-z0-9-]{1,64}\/undelete$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/chunks\/repair$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/reconcile$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/lineages\/[A-Za-z0-9-]{1,64}\/orphan$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/lineages\/[A-Za-z0-9-]{1,64}$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/report$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/licenses\/machines\/[A-Fa-f0-9]{64}\/deactivate$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/activate-repo$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/activate-repo-batch$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/licenses\/repos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/retire$/,
+    query: NO_QUERY,
+  },
+];
 
 /** The unauthenticated calls with a fixed path, as `METHOD path`. */
 const OPEN_ROUTES: ReadonlySet<string> = new Set([
@@ -76,45 +197,54 @@ interface Admitted {
   maxBody?: number;
 }
 
+/** The query names a route admits: `TEAM_ID` for the config pull family, else none. */
+const TEAM_ID: readonly string[] = ['teamId'];
+
+/** Every query name is in the route's set and none repeats; a route with an empty set admits no query string at all. */
+function queryAdmitted(admitted: readonly string[], url: URL): boolean {
+  if (admitted.length === 0) return url.search === '';
+  const seen = new Set<string>();
+  for (const name of url.searchParams.keys()) {
+    if (!admitted.includes(name) || seen.has(name)) return false;
+    seen.add(name);
+  }
+  return true;
+}
+
 /** The kind of route a request is, or the reason code it is refused with. */
 function classifyEgress(method: string, url: URL): Admitted | { refused: string } {
   const route = routeOf(method, url.pathname);
   if (route === undefined) return { refused: 'route-not-allowed' };
-  const names = [...url.searchParams.keys()];
-  const allowed =
-    route.query === 'teamId'
-      ? names.length === 0 || (names.length === 1 && names[0] === 'teamId')
-      : url.search === '';
-  if (!allowed) return { refused: 'query-not-allowed' };
+  if (!queryAdmitted(route.query, url)) return { refused: 'query-not-allowed' };
   return route.maxBody === undefined
     ? { kind: route.kind }
     : { kind: route.kind, maxBody: route.maxBody };
 }
 
-/** Whether a method and path are an executor-bearer call: a fixed pair, or the executor licence retire. */
-function isBearerRoute(method: string, path: string): boolean {
-  return (
-    BEARER_ROUTES.has(`${method} ${path}`) ||
-    (method === 'POST' && PROXY_LICENSE_RETIRE_RE.test(path))
-  );
+/** The query names an executor-bearer call admits: none for a fixed pair, the pair's own set for an executor account route, undefined when the call is neither. */
+function bearerQuery(method: string, path: string): readonly string[] | undefined {
+  if (BEARER_ROUTES.has(`${method} ${path}`)) return NO_QUERY;
+  return EXECUTOR_ACCOUNT_PAIRS.find((pair) => pair.method === method && pair.pattern.test(path))
+    ?.query;
 }
 
-/** The allowlisted route a method and path are, with the query it admits. */
+/** The allowlisted route a method and path are, with the query names it admits. */
 function routeOf(
   method: string,
   path: string
-): { kind: Route; query: 'none' | 'teamId'; maxBody?: number } | undefined {
+): { kind: Route; query: readonly string[]; maxBody?: number } | undefined {
   const key = `${method} ${path}`;
-  if (isBearerRoute(method, path)) return { kind: 'bearer', query: 'none' };
-  if (OPEN_ROUTES.has(key)) return { kind: 'open', query: 'none' };
-  if (key === `GET ${CONFIG_LIST_PATH}`) return { kind: 'open', query: 'none' };
-  if (method === 'GET' && CONFIG_POLICY_RE.test(path)) return { kind: 'open', query: 'teamId' };
-  if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: 'teamId' };
+  const bearer = bearerQuery(method, path);
+  if (bearer !== undefined) return { kind: 'bearer', query: bearer };
+  if (OPEN_ROUTES.has(key)) return { kind: 'open', query: NO_QUERY };
+  if (key === `GET ${CONFIG_LIST_PATH}`) return { kind: 'open', query: NO_QUERY };
+  if (method === 'GET' && CONFIG_POLICY_RE.test(path)) return { kind: 'open', query: TEAM_ID };
+  if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: TEAM_ID };
   if (key === `POST ${CONFIG_SESSION_PATH}`) {
-    return { kind: 'open', query: 'none', maxBody: MAX_SESSION_BODY_BYTES };
+    return { kind: 'open', query: NO_QUERY, maxBody: MAX_SESSION_BODY_BYTES };
   }
   if (method === 'PUT' && CONFIG_PULL_RE.test(path) && path !== CONFIG_SESSION_PATH) {
-    return { kind: 'open', query: 'teamId', maxBody: MAX_CONFIG_PUSH_BODY_BYTES };
+    return { kind: 'open', query: TEAM_ID, maxBody: MAX_CONFIG_PUSH_BODY_BYTES };
   }
   return undefined;
 }
