@@ -510,7 +510,7 @@ Run on the lease tree of branch 1104-1, from `PLAN-backup-critical-tier.md` boxe
 Section 9.16 refused to tick `w8` while the four `ACCOUNT_BACKUP_S3_*` secrets were unset and no machine was migrated. Both have since happened, so `CHECKLIST.md` w8 is ticked. The live records are in `agent/plans/PLAN-backup-program.md` Phase Q, and each id below was read back against the tree on 2026-11-27 (the commits with `git cat-file -t`, the snapshot ids as quoted in the plan).
 
 - Q5, probe: `backup snapshot mail:bp-probe` rc 0, snapshot `20261029T074142Z-f7574d9603cd6d0f`, 4,257,218,560 bytes, 1,015 chunks; the second unchanged snapshot (Q6) `20261029T075014Z-46f1913c08bdd19e` added 0 bytes.
-- Q11, R2 download probe (recorded under the seed box): `backup restore --no-seed` fetched all 1,015 chunks (4,257,218,560 bytes) and the image hash matched the source.
+- Q7, R2 download probe (its passing record sits under the Q11 box in the plan): `backup restore --no-seed` fetched all 1,015 chunks (4,257,218,560 bytes) and the image hash matched the source.
 - Q10, schedule: commit `c380c4164`, `rediacc-backup-nightly-hot.timer` bound on hostinger.
 - Q11, first seed: commit `29e66220b`, `backup run nightly-hot -b` started 2026-11-07T09:58:05Z and finished 10:29:42Z, a manifest for all 13 repositories, each newest `totalBytes` equal to its image size, unit Result=success. The per-repository seeds before it ran 2026-10-29 at the capped rate (for example mail `20261029T080754Z-683901b9ca07e5ab`, gitlab `20261029T132423Z-363a9734d756d223`, nextcloud `20261029T154848Z-4960a85b93ae46e0`).
 - Bucket counts: `rediacc-backups-eu` held 105,428 objects, 441.7 GB when read on 2026-11-08 (`PLAN-product-domain-rename.md`, result line of L1).
