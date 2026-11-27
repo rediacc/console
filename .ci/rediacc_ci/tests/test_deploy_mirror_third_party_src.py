@@ -239,3 +239,10 @@ def test_static_library_sources_are_uploaded_from_the_manifest(env, monkeypatch)
 def test_a_malformed_manifest_line_is_refused() -> None:
     with pytest.raises(mirror.MirrorError):
         mirror.parse_dpkg_manifest("only\ttwo\n")
+
+
+def test_a_component_with_only_the_retired_plannedmirrorurl_is_refused() -> None:
+    """Review finding fe575fb7.1: `plannedMirrorUrl` is no longer read, so a component that still carries only it has no mirror key."""
+    legacy = {"name": "CRIU", "version": "1", "plannedMirrorUrl": "https://releases.example/x.tgz"}
+    with pytest.raises(mirror.MirrorError, match="has no mirrorUrl"):
+        mirror.mirror_key(legacy)
