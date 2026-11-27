@@ -447,6 +447,13 @@
         "title": "Muudatuste logi – uusimad uuendused ja väljalasked | Rediacc"
       },
       "subscribeDescription": "Saad teavituse iga kord, kui midagi uut välja tuleb. Ilma reklaamita!",
+      "groupAdded": "Lisatud",
+      "groupFixed": "Parandatud",
+      "groupImproved": "Täiustatud",
+      "stableSince": "Stable'is alates v{{version}}",
+      "noNotes": "Selle versiooni kohta pole kliendimärkmeid",
+      "earlierHistory": "Varasem ajalugu",
+      "viewRelease": "Vaata väljalaset GitHubis",
       "subscribeTitle": "Saa teavitus uutest väljalasetest",
       "subtitle": "Vaata, mida me välja lasime, mida parandasime ja mis tuleb järgmisena.",
       "title": "Muudatuste logi"

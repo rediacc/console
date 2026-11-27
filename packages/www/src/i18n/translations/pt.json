@@ -447,6 +447,13 @@
         "title": "Changelog - Atualizações e Lançamentos | Rediacc"
       },
       "subscribeDescription": "Você receberá um email quando lançarmos algo novo. Sem enrolação de marketing.",
+      "groupAdded": "Novidades",
+      "groupFixed": "Corrigido",
+      "groupImproved": "Melhorado",
+      "stableSince": "No stable desde a v{{version}}",
+      "noNotes": "Nenhuma nota para clientes registrada nesta versão",
+      "earlierHistory": "Histórico anterior",
+      "viewRelease": "Ver a versão no GitHub",
       "subscribeTitle": "Receba notificações de novos lançamentos",
       "subtitle": "Veja o que lançamos, o que corrigimos e o que vem por aí.",
       "title": "Histórico"

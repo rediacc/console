@@ -447,6 +447,13 @@
         "title": "Sürüm Notları - Son Yenilikler & Güncellemeler | Rediacc"
       },
       "subscribeDescription": "Yeni bir şey yayınlandığında seni haberdar ederiz. Pazarlama lafı yok.",
+      "groupAdded": "Eklendi",
+      "groupFixed": "Düzeltildi",
+      "groupImproved": "İyileştirildi",
+      "stableSince": "v{{version}} sürümünden beri kararlı kanalda",
+      "noNotes": "Bu sürüm için müşteri notu kaydedilmedi",
+      "earlierHistory": "Önceki geçmiş",
+      "viewRelease": "Sürümü GitHub'da görüntüle",
       "subscribeTitle": "Yeni sürümleri takip et",
       "subtitle": "Neler yayınlandığını gör, neler düzeltildiğini öğren, neler geliyor takip et.",
       "title": "Sürüm Notları"

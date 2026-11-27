@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 6018,
-    "sourceCommit": "45f6c9e54f94218853caf90662955abd87e91c2e"
+    "keyCount": 6025,
+    "sourceCommit": "ddd7e99e4befddecabe9e305e9732d5074383eee"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -303,13 +303,20 @@
     "pages.blog.title": "6027fe7d",
     "pages.changelog.breadcrumb.changelog": "4ab3a4a2",
     "pages.changelog.breadcrumb.home": "d1e4a3ee",
+    "pages.changelog.earlierHistory": "492f01b1",
+    "pages.changelog.groupAdded": "0a7ebfef",
+    "pages.changelog.groupFixed": "5f08e136",
+    "pages.changelog.groupImproved": "50cd5cf0",
     "pages.changelog.meta.description": "c28d72d0",
     "pages.changelog.meta.keywords": "651c6b54",
     "pages.changelog.meta.title": "2a25187d",
+    "pages.changelog.noNotes": "c692a22f",
+    "pages.changelog.stableSince": "1422a906",
     "pages.changelog.subscribeDescription": "045f70f8",
     "pages.changelog.subscribeTitle": "9619578c",
     "pages.changelog.subtitle": "cecb6f40",
     "pages.changelog.title": "4ab3a4a2",
+    "pages.changelog.viewRelease": "7d4b3487",
     "pages.checkout.success.backToHome": "fba37ee5",
     "pages.checkout.success.description": "7d1ff7eb",
     "pages.checkout.success.getStarted": "8291e2fb",

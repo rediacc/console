@@ -453,6 +453,13 @@
         "title": "سجل التغييرات - آخر التحديثات والإصدارات | Rediacc"
       },
       "subscribeDescription": "نرسل لك رسالة كل مرة نطلق شيئًا جديدًا. بدون رسائل تسويقية.",
+      "groupAdded": "جديد",
+      "groupFixed": "تم الإصلاح",
+      "groupImproved": "تحسينات",
+      "stableSince": "ضمن stable منذ v{{version}}",
+      "noNotes": "لا توجد ملاحظات للعملاء لهذا الإصدار",
+      "earlierHistory": "السجل السابق",
+      "viewRelease": "عرض الإصدار على GitHub",
       "subscribeTitle": "احصل على إشعارات بالإصدارات الجديدة",
       "subtitle": "اكتشف الميزات الجديدة والإصلاحات والتحديثات القادمة.",
       "title": "سجل التغييرات"

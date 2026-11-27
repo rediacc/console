@@ -453,6 +453,13 @@
         "title": "변경사항 - 최신 업데이트 & 릴리스 | Rediacc"
       },
       "subscribeDescription": "새로운 기능이 나올 때마다 알려드려요. 마케팅 이메일은 없습니다.",
+      "groupAdded": "추가됨",
+      "groupFixed": "수정됨",
+      "groupImproved": "개선됨",
+      "stableSince": "v{{version}}부터 stable에 포함",
+      "noNotes": "이 버전에는 고객용 노트가 없습니다",
+      "earlierHistory": "이전 기록",
+      "viewRelease": "GitHub에서 릴리스 보기",
       "subscribeTitle": "새로운 업데이트 소식 받기",
       "subtitle": "새로운 기능, 수정사항, 그리고 앞으로 예정된 업데이트를 확인하세요.",
       "title": "변경사항"

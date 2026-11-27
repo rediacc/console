@@ -455,6 +455,13 @@
         "title": "Changelog - Ultime novità e rilasci | Rediacc"
       },
       "subscribeDescription": "Ricevi una mail ogni volta che rilasciamo qualcosa. Senza fronzoli.",
+      "groupAdded": "Novità",
+      "groupFixed": "Corretto",
+      "groupImproved": "Migliorato",
+      "stableSince": "In stable dalla v{{version}}",
+      "noNotes": "Nessuna nota per i clienti registrata per questa versione",
+      "earlierHistory": "Cronologia precedente",
+      "viewRelease": "Vedi la release su GitHub",
       "subscribeTitle": "Rimani aggiornato sui nuovi rilasci",
       "subtitle": "Scopri le novità, i miglioramenti, le correzioni e i prossimi rilasci.",
       "title": "Cronologia dei rilasci"

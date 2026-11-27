@@ -455,6 +455,13 @@
         "title": "Registro de cambios - Novedades y versiones | Rediacc"
       },
       "subscribeDescription": "Te avisamos cuando lanzamos. Sin spam ni marketing.",
+      "groupAdded": "Novedades",
+      "groupFixed": "Corregido",
+      "groupImproved": "Mejorado",
+      "stableSince": "En stable desde v{{version}}",
+      "noNotes": "No hay notas para clientes de esta versión",
+      "earlierHistory": "Historial anterior",
+      "viewRelease": "Ver la versión en GitHub",
       "subscribeTitle": "Recibe notificaciones de nuevos lanzamientos",
       "subtitle": "Descubre qué lanzamos, qué corregimos y qué viene después.",
       "title": "Registro de cambios"

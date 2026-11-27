@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build",
+    "build": "PYTHONPATH=../../.ci python3 -m rediacc_ci.release.changelog_data && astro build",
     "typecheck": "astro sync && tsc --noEmit",
     "check:cta-bolt": "node scripts/check-cta-bolt-uniqueness.js",
     "probe:region-picker": "tsx scripts/probe-region-picker.ts",

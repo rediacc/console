@@ -2439,7 +2439,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "de": {
       "announcement.text": "6a7bf2ae",
@@ -4855,7 +4863,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "es": {
       "announcement.text": "6a7bf2ae",
@@ -7269,7 +7285,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "fr": {
       "announcement.text": "6a7bf2ae",
@@ -9685,7 +9709,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "it": {
       "announcement.text": "6a7bf2ae",
@@ -12100,7 +12132,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "pt": {
       "announcement.text": "6a7bf2ae",
@@ -14515,7 +14555,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "ar": {
       "announcement.text": "6a7bf2ae",
@@ -16931,7 +16979,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "ru": {
       "announcement.text": "6a7bf2ae",
@@ -19346,7 +19402,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "zh": {
       "announcement.text": "6a7bf2ae",
@@ -21761,7 +21825,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "ja": {
       "announcement.text": "6a7bf2ae",
@@ -24177,7 +24249,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "ko": {
       "announcement.text": "6a7bf2ae",
@@ -26593,7 +26673,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     },
     "et": {
       "announcement.text": "6a7bf2ae",
@@ -29008,7 +29096,15 @@
       "pages.privacyPolicy.hero.effectiveDate": "1f47ef9c",
       "pages.privacyPolicy.sections.dataSharing.items.2": "1f7a3674",
       "pages.telemetryPolicy.hero.effectiveDate": "1f47ef9c",
-      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9"
+      "pages.telemetryPolicy.sections.dataProcessing.items.3": "e8c14ab9",
+      "pages.changelog.meta.keywords": "651c6b54",
+      "pages.changelog.groupAdded": "0a7ebfef",
+      "pages.changelog.groupFixed": "5f08e136",
+      "pages.changelog.groupImproved": "50cd5cf0",
+      "pages.changelog.stableSince": "1422a906",
+      "pages.changelog.noNotes": "c692a22f",
+      "pages.changelog.earlierHistory": "492f01b1",
+      "pages.changelog.viewRelease": "7d4b3487"
     }
   }
 }

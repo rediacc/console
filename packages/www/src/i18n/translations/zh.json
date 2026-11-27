@@ -453,6 +453,13 @@
         "title": "更新日志 - 最新功能、改进、修复及版本发布详情 | Rediacc"
       },
       "subscribeDescription": "新版本上线时邮件通知，只讲干货。",
+      "groupAdded": "新增",
+      "groupFixed": "已修复",
+      "groupImproved": "已改进",
+      "stableSince": "自 v{{version}} 起进入 stable",
+      "noNotes": "此版本没有面向客户的说明",
+      "earlierHistory": "更早的历史",
+      "viewRelease": "在 GitHub 上查看发行版",
       "subscribeTitle": "订阅版本更新通知",
       "subtitle": "看我们发布了什么、修了什么，以及接下来有什么。",
       "title": "更新日志"

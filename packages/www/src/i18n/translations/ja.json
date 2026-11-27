@@ -455,6 +455,13 @@
         "title": "変更履歴 | Rediacc の新機能、改善、セキュリティ修正など最新情報"
       },
       "subscribeDescription": "新機能をリリースしたときだけお知らせ。営業メールなんてありません。",
+      "groupAdded": "追加",
+      "groupFixed": "修正",
+      "groupImproved": "改善",
+      "stableSince": "v{{version}} から stable に反映",
+      "noNotes": "このバージョンには顧客向けのノートがありません",
+      "earlierHistory": "過去の履歴",
+      "viewRelease": "GitHub でリリースを見る",
       "subscribeTitle": "新しいリリースをいち早く知ろう",
       "subtitle": "新機能から修正、これからの予定まで。すべてのアップデートをチェック。",
       "title": "変更履歴"

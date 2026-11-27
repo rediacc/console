@@ -455,6 +455,13 @@
         "title": "Mises à jour et nouveautés | Rediacc"
       },
       "subscribeDescription": "Un email à chaque nouvelle version. Rien que l'essentiel.",
+      "groupAdded": "Ajouté",
+      "groupFixed": "Corrigé",
+      "groupImproved": "Amélioré",
+      "stableSince": "Dans stable depuis v{{version}}",
+      "noNotes": "Aucune note client enregistrée pour cette version",
+      "earlierHistory": "Historique antérieur",
+      "viewRelease": "Voir la version sur GitHub",
       "subscribeTitle": "Restez informé des mises à jour",
       "subtitle": "Découvrez nos nouveautés, correctifs et les prochains projets.",
       "title": "Mises à jour"

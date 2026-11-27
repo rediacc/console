@@ -146,6 +146,10 @@ jobs:
           # per shared runner IP. CI hit it live on run 32223128728; this path had
           # the identical gap and would fail a DEPLOY the same way, which is worse.
           GITHUB_TOKEN: ${{ github.token }}
+          # changelog_data.py (run by the www build script) reads the Releases list
+          # with the token and each version's notes from the releases origin.
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          RELEASES_ORIGIN: ${{ env.WK_RELEASES_ORIGIN }}
           # Single global CDN domain for tutorial/solution videos -- same value
           # for edge, stable, and PR previews. See .ci/docs/r2-media-setup.md.
           PUBLIC_VIDEO_CDN_BASE_URL: ${{ env.WK_MEDIA_ORIGIN }}

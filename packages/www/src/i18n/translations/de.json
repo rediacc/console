@@ -455,6 +455,13 @@
         "title": "Changelog - Neue Features & Updates | Rediacc"
       },
       "subscribeDescription": "Einfach eine E-Mail bei neuen Releases, ohne Marketing-Floskeln.",
+      "groupAdded": "Neu",
+      "groupFixed": "Behoben",
+      "groupImproved": "Verbessert",
+      "stableSince": "Seit v{{version}} in Stable",
+      "noNotes": "Für diese Version sind keine Kundenhinweise erfasst",
+      "earlierHistory": "Frühere Historie",
+      "viewRelease": "Release auf GitHub ansehen",
       "subscribeTitle": "Bleib über neue Releases informiert",
       "subtitle": "Entdecke Releases, Bugfixes und kommende Updates.",
       "title": "Änderungsprotokoll"

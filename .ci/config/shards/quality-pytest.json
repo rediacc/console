@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:13:49.072Z",
+  "generatedAt": "2026-11-27T11:08:07.455Z",
   "legs": [
     {
       "index": 1,
@@ -875,6 +875,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_tree_shape.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_typecheck_workers.py",
         "pytest:.ci/rediacc_ci/tests/test_release_cd_preflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_changelog_data.py",
         "pytest:.ci/rediacc_ci/tests/test_release_resolve_ci_run.py",
         "pytest:.ci/rediacc_ci/tests/test_review_clean_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_aws_cli.py",

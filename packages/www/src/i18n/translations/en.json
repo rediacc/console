@@ -9953,7 +9953,14 @@
       "title": "Changelog",
       "subtitle": "See what we shipped, what we fixed, and what is coming next.",
       "subscribeTitle": "Get notified of new releases",
-      "subscribeDescription": "We will email you when we ship something new. No marketing fluff."
+      "subscribeDescription": "We will email you when we ship something new. No marketing fluff.",
+      "groupAdded": "Added",
+      "groupFixed": "Fixed",
+      "groupImproved": "Improved",
+      "stableSince": "In stable since v{{version}}",
+      "noNotes": "No customer notes recorded for this version",
+      "earlierHistory": "Earlier history",
+      "viewRelease": "View release on GitHub"
     },
     "resourcesNis2Directive": {
       "meta": {
