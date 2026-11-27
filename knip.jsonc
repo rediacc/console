@@ -158,6 +158,8 @@
         "scripts/generate-json.js",
         "scripts/generate-route-manifest.js",
         "scripts/generate-tutorial-video.ts",
+        // Run by .ci/media/pool.sh and the tutorial render-queue gate (manifest run), neither of which knip reads.
+        "scripts/list-tutorial-render-pairs.js",
         "src/scripts/*.ts",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
