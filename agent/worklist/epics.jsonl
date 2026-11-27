@@ -147,3 +147,7 @@
 {"at":"2026-11-27T07:57:56Z","by":"d778be9d","id":"6bae22d7","title":"reggate debt backlog","covers":["05fe6a18","2e840e89","320222db","482d4e6b","48f0cf8a","57a17a94","645b8d97","7203129f","8323638f","95998592"],"order":null}
 {"at":"2026-11-27T09:01:43Z","by":"d778be9d","id":"6bae22d7","title":"reggate debt backlog","covers":["a7015a76"],"order":null}
 {"at":"2026-11-27T09:10:02Z","by":"d778be9d","id":"6bae22d7","title":"reggate debt backlog","covers":["db75514a"],"order":null}
+{"at":"2026-11-27T13:34:55Z","by":"d778be9d","id":"4ff579dd","title":"first release checks: pipeline, stable and soak work that waits on the release","covers":[],"order":null,"plan":"agent/plans/PLAN-first-release-checks.md"}
+{"at":"2026-11-27T13:34:55Z","by":"d778be9d","id":"4ff579dd","title":"first release checks: pipeline, stable and soak work that waits on the release","covers":["63e82a16"],"order":null}
+{"at":"2026-11-27T13:35:22Z","by":"d778be9d","id":"4ff579dd","title":"first release checks: pipeline, stable and soak work that waits on the release","covers":["82602b13"],"order":null}
+{"at":"2026-11-27T13:35:31Z","by":"d778be9d","id":"4ff579dd","title":"first release checks: pipeline, stable and soak work that waits on the release","covers":[],"order":null,"uncovers":["63e82a16"]}
