@@ -4317,11 +4317,13 @@ def _stop_reggate_detect(ns):
         reg_signals, reg_ids, reg_sig, reg_done_tasks, reg_banked = [], [], "", [], []
         if reg_state is None:
             reg_state = {"head": "", "seen_ticks": [], "fixsets": {}, "gate_runs": {}}
-    # ---- REGGATE DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3, D4, D7). Every due capped demand becomes one worklist item, once; the one status line rides every stop while any debt is unpaid. Never breaks gating: a failure is a read-failure note.
+    # ---- REGGATE DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3, D4, D7). Every due capped demand becomes one worklist item, once; a changed named artifact discharges it; the one status line rides every stop while any debt is unpaid. Never breaks gating: a failure is a read-failure note.
     try:
         _rd_me8 = str(ns.get("me8") or (session_id or "")[:8])
         _rd_live = C.git_branch(ns.get("own") or root)
         wl_reggate.materialize(root, worklist, _rd_me8, _rd_live, ns.get("_loop_plans") or ())
+        # Discharge is hook-only (D4): a changed named artifact pays a debt here, and nothing else writes `discharge`.
+        wl_reggate.discharge_scan(root, worklist, _rd_me8, fold.items)
         _rd_open, _rd_legacy, _rd_oldest = wl_reggate.debt_status(root)
         if _rd_open:
             outq_add(

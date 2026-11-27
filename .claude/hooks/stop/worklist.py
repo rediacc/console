@@ -466,6 +466,50 @@ def _read_event():
 
 USAGE_FALLBACK = "worklist.py: see --help (message catalogue unavailable: %s)"
 
+REGGATE_RETIRE_USAGE = (
+    "usage: worklist.py --reggate-retire <me> [<sig8> ASKED:<YYYY-MM-DDTHH:MM>Z <reason...>]\n"
+    "  bare <me>: list the unpaid reggate debts"
+)
+
+
+def _reggate_retire(argv):
+    """--reggate-retire <me> [<sig8> ASKED:<minute>Z <reason...>]: retire one reggate debt whose subject is gone (agent/plans/PLAN-reggate-debt-collection.md D5), or, bare, list the unpaid ones.
+
+    The logic is wl_reggate.retire. This arm parses `<me>` and runs the same identity check as every verb, and supplies `asked_ok`, the `ASKED:` check against the lead transcript that `--review-mark waived` uses, so a retire stands only on a real operator answer.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    import wl_reggate as RG
+
+    if len(argv) < 2:
+        die(REGGATE_RETIRE_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    CLI._identity_or_die(me, die)
+    start = C.project_start()
+    root = C.project_root(start)
+    if len(argv) == 2:
+        print(RG.unpaid_listing(root))
+        sys.exit(0)
+    if len(argv) < 5:
+        die(REGGATE_RETIRE_USAGE)
+    worklist = C.worklist_for(start)
+    items = S.load(worklist, sync=False).items
+
+    def asked_ok(text):
+        return CK._asked_in_transcript(text, CLI._lead_transcript(me))
+
+    rc, text = RG.retire(
+        root, worklist, me[:8], argv[2], argv[3], " ".join(argv[4:]), asked_ok, items
+    )
+    print(text, file=sys.stderr if rc else sys.stdout)
+    sys.exit(rc)
+
+
 # THE VERBS' HOST (wl_cli.bind): handed this module's globals (the probed siblings, `_BROKEN` and the twins above), here at import, after every name it takes is defined. Globals rather than `sys.modules[__name__]`, because a test loads this file under another name with no sys.modules entry. A bind that fails turns wl_cli into a shim like any broken sibling: this line runs at import, OUTSIDE the crash handler below, so raising here would print to stderr and nothing to stdout, which the harness reads as ALLOW.
 if "wl_cli" not in _BROKEN:
     try:
@@ -491,6 +535,9 @@ def main():
     if len(sys.argv) > 1 and sys.argv[1] == "--path":
         # Self-contained: works with every sibling broken (see case 118).
         print(_local_worklist_path(_local_project_start()))
+        return
+    if sys.argv[1:2] == ["--reggate-retire"]:
+        _reggate_retire(sys.argv[1:])
         return
     # EVERY OTHER VERB lives in wl_cli (agent/plans/PLAN-tooling-speed.md D4), bound to this module's probed siblings so a broken one still fails into the crash handler below. `wl_cli.main` answers True when it handled argv (an unknown leading-dash verb exits 2 there); False is the bare hook invocation, which falls through to the Stop path.
     if CLI.main():

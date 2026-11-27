@@ -2449,6 +2449,12 @@ Per-commit reviews (agent/reviews/<branch>/: clean.jsonl, plus <sha40>.md per ot
   --prune-reviews <me> [--write] list review directories past retention;
                                 --write deletes them
 
+Regression-gate debts (agent/reggate/<branch>.jsonl):
+  --reggate-retire <me> [<sig8> ASKED:<YYYY-MM-DDTHH:MM>Z <reason...>]
+                                retire one debt whose subject is gone, on the
+                                operator's answer at that minute; bare, list
+                                the unpaid debts (discharge is the hook's alone)
+
 Session scratchpad (<tmp>/claude-<uid>/<project>/<session>/scratchpad):
   --prune-scratch <me> [--write] [--older-than <min>]
                                 list the scratchpad's directories and why each

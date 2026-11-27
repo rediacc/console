@@ -422,6 +422,166 @@ def debt_status(root=None, legacy=None):
     return len(unpaid), sum(1 for e in unpaid if e["sig"] in legacy), oldest[:10]
 
 
+# A path a session names on the debt's item (`worklist.py --update <me> <id> artifact:<path>`), tried beside the debt's own named artifact.
+_ARTIFACT_TOKEN = re.compile(r"(?<!\S)artifact:(\S+)")
+
+
+def _clean_rel(rel):
+    """A repo-relative path, or "" for anything that climbs out or is absolute (the prefix strip, never `.lstrip("./")`: see prove_named_artifact)."""
+    rel = str(rel or "").strip().strip("`'\"")
+    while rel.startswith("./"):
+        rel = rel[2:]
+    if not rel or rel.startswith("/") or ".." in rel.split("/"):
+        return ""
+    return rel
+
+
+def _dirty_paths(root):
+    """Every path `git status --porcelain` names, or an empty set when git cannot answer. A broken git proves NOTHING here, the opposite of _is_dirty's err-toward-True: that one decides whether to run a gate, this one whether a debt is paid."""
+    status = C._git(root, "status", "--porcelain", "--untracked-files=all") or ""
+    return {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
+
+
+def _committed_after(root, rel, at):
+    """The committer date of the last commit touching `rel` when it is later than `at`, else ""."""
+    out = (C._git(root, "log", "-1", "--format=%cI", "--", rel) or "").strip()
+    if not out:
+        return ""
+    try:
+        when = datetime.datetime.fromisoformat(out)
+    except ValueError:
+        return ""
+    return out if when > at else ""
+
+
+def _artifact_reachable(root, scripts, rel):
+    """True unless `rel` is a check script (CHECK_SCRIPT_GLOBS) that nothing `npm run ci` runs. A unit test, an E2E case or an ops step is not a gate and needs no key; a gate that is defined but never run proves nothing."""
+    if not any(fnmatch.fnmatch(rel, pat) for pat in CHECK_SCRIPT_GLOBS):
+        return True
+    key = _gate_key(scripts, rel)
+    if key and gate_reachable(scripts, key, root):
+        return True
+    if PYTEST_GATE_KEY in scripts and pytest_collects(rel, root):
+        return gate_reachable(scripts, PYTEST_GATE_KEY, root)
+    if _citation_matches_gate(rel, root):
+        return True
+    # The hook suites run in CI without a check:* key (prove_new_gate accepts them on change for the same reason).
+    return rel.startswith(".claude/hooks/")
+
+
+def prove_debt(root, scripts, rel, at, dirty):
+    """(proven, proof) for one candidate path against one debt's `at` (D4).
+
+    Proven when the path exists, changed after the debt (dirty in this tree, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
+    """
+    rel = _clean_rel(rel)
+    when = C.parse_stamp(at)
+    if not rel or when is None or not (pathlib.Path(root) / rel).exists():
+        return False, ""
+    if rel in dirty or any(d.endswith("/") and rel.startswith(d) for d in dirty):
+        proof = "dirty-tree: %s changed in this tree after the debt (%s)" % (rel, at)
+    else:
+        committed = _committed_after(root, rel, when)
+        if not committed:
+            return False, ""
+        proof = (
+            "commit-date: %s last committed %s, after the debt (%s); this shows a case was "
+            "written after the debt, not that it fails on the defect" % (rel, committed, at)
+        )
+    if not _artifact_reachable(root, scripts, rel):
+        return False, ""
+    return True, proof
+
+
+def discharge_scan(root, worklist, me8, items=None):
+    """Discharge every unpaid debt whose named artifact (or an `artifact:<path>` on its item) proves it. -> [(sig, artifact)].
+
+    HOOK-ONLY. No CLI verb writes `discharge`: a hand tick of a debt's item changes nothing in the ledger, so the gate still counts the debt unpaid (C5). On proof the hook appends `{"kind": "discharge", ...}` and ticks the item with `discharge:<sig8> <artifact>`. `items` is the fold's item list, read for the `artifact:` tokens and to skip re-ticking a closed item.
+    """
+    by_id = {r.get("id"): r for r in (items or [])}
+    out = []
+    with _collect_lock(root):
+        unpaid = [e for e in debt_entries(root) if not e["paid"]]
+        if not unpaid:
+            return out
+        scripts = package_scripts(root)
+        dirty = _dirty_paths(root)
+        for e in unpaid:
+            rec = by_id.get(e["item"]) or {}
+            notes = "%s\n%s" % (rec.get("text", ""), rec.get("line", ""))
+            cands = [e["artifact"], *_ARTIFACT_TOKEN.findall(notes)]
+            for cand in dict.fromkeys(c for c in cands if _clean_rel(c)):
+                ok, proof = prove_debt(root, scripts, cand, e["at"], dirty)
+                if not ok:
+                    continue
+                rel = _clean_rel(cand)
+                append_ledger(
+                    e["ledger"],
+                    {"kind": "discharge", "sig": e["sig"], "artifact": rel, "proof": proof},
+                    root=root,
+                )
+                if e["item"] and rec.get("state", " ") != "x":
+                    S.set_state(
+                        worklist, me8, e["item"], "x", "discharge:%s %s" % (e["sig"][:8], rel)
+                    )
+                out.append((e["sig"], rel))
+                break
+    return out
+
+
+def retire(root, worklist, me8, sig8, asked, reason, asked_ok, items=None):
+    """`worklist.py --reggate-retire <me> <sig8> ASKED:<YYYY-MM-DDTHH:MM>Z <reason>` (D5). -> (rc, text).
+
+    The one escape for a debt whose subject is gone. Refused unless the minute matches an operator answer in the lead transcript (`asked_ok`, the check `--review-mark waived` uses), the sig names exactly one unpaid debt, and a reason is given. Writes `retire` with the stamp, which is the only form the gate counts as paid, and closes the debt's item.
+    """
+    if not RETIRE_ASKED_RE.match(str(asked or "")):
+        return 2, "reggate-retire: %r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % (asked,)
+    reason = str(reason or "").strip()
+    if not reason:
+        return 2, "reggate-retire: a reason is required (why the debt's subject is gone)"
+    sig8 = str(sig8 or "").strip().lower()
+    if len(sig8) < 6 or not re.fullmatch(r"[0-9a-f]+", sig8):
+        return 2, "reggate-retire: %r is not a debt sig (6 or more hex characters)" % (sig8,)
+    with _collect_lock(root):
+        hits = [e for e in debt_entries(root) if e["sig"].startswith(sig8)]
+        if not hits:
+            return 2, "reggate-retire: no reggate debt has sig %s" % sig8
+        open_hits = [e for e in hits if not e["paid"]]
+        if not open_hits:
+            return 2, "reggate-retire: debt %s is already paid" % sig8
+        if len({e["sig"] for e in open_hits}) > 1:
+            return 2, "reggate-retire: sig %s is ambiguous (%s)" % (
+                sig8,
+                ", ".join(sorted({e["sig"] for e in open_hits})),
+            )
+        if asked_ok is None or not asked_ok(asked):
+            return 2, (
+                "reggate-retire: %s matches no AskUserQuestion answer in this session's transcript: "
+                "ask the operator first, then retire with that answer's minute" % asked
+            )
+        e = open_hits[0]
+        append_ledger(
+            e["ledger"],
+            {"kind": "retire", "sig": e["sig"], "asked": asked, "reason": reason[:300], "by": me8},
+            root=root,
+        )
+        state = ({r.get("id"): r for r in (items or [])}.get(e["item"]) or {}).get("state", " ")
+        if e["item"] and state != "x":
+            S.set_state(worklist, me8, e["item"], "x", "retire:%s %s" % (e["sig"][:8], asked))
+    return 0, "reggate-retire: debt %s retired (%s)" % (e["sig"], asked)
+
+
+def unpaid_listing(root=None):
+    """The bare `--reggate-retire <me>` answer: every unpaid debt, one line each."""
+    unpaid = [e for e in debt_entries(root) if not e["paid"]]
+    lines = ["reggate-retire: %d unpaid reggate debt(s)" % len(unpaid)]
+    lines += [
+        "  %s  %s  %s  %s" % (e["sig"][:12], e["br"], e["at"][:10], e["blind_spot"][:100])
+        for e in unpaid
+    ]
+    return "\n".join(lines)
+
+
 def save_reggate(path, state):
     # Whole-file rewrite is correct here for the same reason as the handover: the marker is per-session, so there is no second writer to race.
     with contextlib.suppress(OSError):

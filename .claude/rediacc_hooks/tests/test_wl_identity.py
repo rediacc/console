@@ -558,6 +558,8 @@ def drive_l1(fix) -> L1Drive:
         ("--review-run", "--review-run @WHO@", "unreviewed commits"),
         # --prune-reviews runs the archival gate from the project root (PLAN-per-commit-review T5), so the fixture plants a stand-in gate there: the identity check is this table's subject, and the real gate needs a git work tree the fixture does not have.
         ("--prune-reviews", "--prune-reviews @WHO@", "no agent/reviews/<branch>/ directory"),
+        # The reggate retire verb (agent/plans/PLAN-reggate-debt-collection.md D5), driven in its listing mode: a bare `<me>` lists the unpaid debts after the same _identity_or_die its retire mode runs.
+        ("--reggate-retire", "--reggate-retire @WHO@", "unpaid reggate debt"),
         # Listing mode (no --write): the fixture has no git branch, so the accepted run lists nothing, after the same _identity_or_die its --write mode runs.
         (
             "--drop-foreign-reviews",

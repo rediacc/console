@@ -20,6 +20,7 @@ import datetime
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
 
@@ -317,7 +318,159 @@ with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
     )
 
 
-if Tally.count < 30:
+# --- 8. discharge (D4) and retire (D5): only an artifact or an operator minute pays a debt
+def git(root, *args, env=None):
+    full = dict(os.environ, **(env or {}))
+    subprocess.run(
+        ["git", "-C", str(root), "-c", "user.name=t", "-c", "user.email=t@t", *args],
+        check=True,
+        capture_output=True,
+        env=full,
+    )
+
+
+def paid(root, sig):
+    return next(e["paid"] for e in R.debt_entries(root) if e["sig"] == sig)
+
+
+def deny(_text):
+    """An `asked_ok` that finds no operator answer at the minute."""
+    return False
+
+
+def allow(_text):
+    """An `asked_ok` that finds one."""
+    return True
+
+
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    git(root, "init", "-q")
+    (root / "seed").write_text("x\n")
+    git(root, "add", "seed")
+    git(root, "commit", "-q", "-m", "seed")
+    debt("0914-1", "1111aaaa2222", "a case nobody wrote", 60, root, artifact="tests/test_case.py")
+    made = dict(R.materialize(root, wl, "abcd1234", "1121-1", ()))
+    item = made["1111aaaa2222"]
+
+    # C5: a hand tick closes the ITEM and nothing else.
+    S.set_state(wl, "abcd1234", item, "x", "done by hand")
+    items = S.load(wl, sync=False).items
+    check("C5: a hand tick leaves the debt unpaid", paid(root, "1111aaaa2222"), False)
+    check("...and the status still counts it", R.debt_status(root, legacy=set())[0], 1)
+    check(
+        "CONTROL: with no artifact on disk, the scan discharges nothing",
+        R.discharge_scan(root, wl, "abcd1234", items),
+        [],
+    )
+
+    # An artifact last committed BEFORE the debt's `at` proves nothing.
+    (root / "tests").mkdir()
+    (root / "tests" / "test_case.py").write_text("def test(): pass\n")
+    git(root, "add", "tests/test_case.py")
+    before = stamp(120)
+    git(
+        root,
+        "commit",
+        "-q",
+        "-m",
+        "old case",
+        env={"GIT_COMMITTER_DATE": before, "GIT_AUTHOR_DATE": before},
+    )
+    check(
+        "an artifact last committed before the debt does not discharge it",
+        R.discharge_scan(root, wl, "abcd1234", items),
+        [],
+    )
+    check("...so the debt stays unpaid", paid(root, "1111aaaa2222"), False)
+
+    # C6: the same artifact changed after the debt discharges it (dirty-tree proof).
+    (root / "tests" / "test_case.py").write_text("def test(): assert True\n")
+    got = R.discharge_scan(root, wl, "abcd1234", items)
+    check(
+        "C6: a changed named artifact discharges the debt",
+        got,
+        [("1111aaaa2222", "tests/test_case.py")],
+    )
+    recs, _f = R.read_ledger("0914-1", root)
+    proof = next((r.get("proof", "") for r in recs if r.get("kind") == "discharge"), "")
+    check("...with a dirty-tree proof in the record", proof.startswith("dirty-tree:"), True)
+    check("...and the debt is now paid", paid(root, "1111aaaa2222"), True)
+    check("a second scan writes nothing more", R.discharge_scan(root, wl, "abcd1234", items), [])
+
+with tempfile.TemporaryDirectory() as td, scratch_store(td) as wl:
+    root = pathlib.Path(td)
+    git(root, "init", "-q")
+    (root / "tests").mkdir()
+    (root / "tests" / "test_two.py").write_text("x = 1\n")
+    git(root, "add", "tests/test_two.py")
+    git(root, "commit", "-q", "-m", "case")
+    debt(
+        "0914-1",
+        "3333bbbb4444",
+        "a case committed after the debt",
+        60,
+        root,
+        artifact="tests/test_two.py",
+    )
+    debt(
+        "0914-1",
+        "5555cccc6666",
+        "a gate defined but never run",
+        60,
+        root,
+        artifact="scripts/gates/check-x.ts",
+    )
+    (root / "scripts" / "gates").mkdir(parents=True)
+    (root / "scripts" / "gates" / "check-x.ts").write_text("// gate\n")
+    git(root, "add", "scripts/gates/check-x.ts")
+    git(root, "commit", "-q", "-m", "gate")
+    got = dict(R.discharge_scan(root, wl, "abcd1234", []))
+    check(
+        "a commit after the debt discharges it (commit-date proof)",
+        got.get("3333bbbb4444"),
+        "tests/test_two.py",
+    )
+    recs, _f = R.read_ledger("0914-1", root)
+    proof = next(
+        (
+            r.get("proof", "")
+            for r in recs
+            if r.get("sig") == "3333bbbb4444" and r.get("kind") == "discharge"
+        ),
+        "",
+    )
+    check(
+        "...and the proof says it is the weaker one",
+        "not that it fails on the defect" in proof,
+        True,
+    )
+    check(
+        "a check script nothing `npm run ci` runs does not discharge", "5555cccc6666" in got, False
+    )
+
+    # D5: retire needs the operator minute.
+    rc, text = R.retire(
+        root, wl, "abcd1234", "5555cccc", "ASKED:2026-11-20T10:00Z", "subject gone", deny
+    )
+    check("a retire without a matching ASKED minute is refused", rc, 2)
+    check("...and the debt stays unpaid", paid(root, "5555cccc6666"), False)
+    rc, _t = R.retire(root, wl, "abcd1234", "5555cccc", "2026-11-20T10:00", "subject gone", allow)
+    check("a retire without the ASKED: shape is refused", rc, 2)
+    R.append_ledger(
+        "0914-1", {"kind": "retire", "sig": "5555cccc6666", "reason": "hand-written"}, root=root
+    )
+    check("a retire record WITHOUT its stamp pays nothing", paid(root, "5555cccc6666"), False)
+    rc, text = R.retire(
+        root, wl, "abcd1234", "5555cccc", "ASKED:2026-11-20T10:00Z", "subject gone", allow
+    )
+    check("CONTROL: with a matching minute the retire is written", rc, 0)
+    check("...and the debt is paid", paid(root, "5555cccc6666"), True)
+    rc, _t = R.retire(root, wl, "abcd1234", "5555cccc", "ASKED:2026-11-20T10:00Z", "again", allow)
+    check("a paid debt cannot be retired twice", rc, 2)
+
+
+if Tally.count < 61:
     Tally.fails += 1
     print(
         "FAIL  only %d control(s) ran; the file is not being executed as written" % Tally.count,
