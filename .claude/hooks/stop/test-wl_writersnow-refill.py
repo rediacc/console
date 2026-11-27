@@ -460,7 +460,12 @@ def shared_sig_cases(tmp):
     queue.parent.mkdir(parents=True, exist_ok=True)
     queue.write_text("queue\n", encoding="utf-8")
     real = PQ.promoted_numbered
-    PQ.promoted_numbered = lambda _text: [("1", "a.md"), ("2", "b.md"), ("3", "c.md")]
+
+    def three_plans(text: str) -> list[tuple[str, str]]:
+        del text  # the stub ignores the queue text; the parameter name matches the real signature
+        return [("1", "a.md"), ("2", "b.md"), ("3", "c.md")]
+
+    PQ.promoted_numbered = three_plans
     try:
         done = W.promoted_done_sigs(root)
     finally:
