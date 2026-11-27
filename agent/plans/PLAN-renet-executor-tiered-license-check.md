@@ -53,6 +53,7 @@ Follow-ups for the lead: the TierNone flips (setup and daemon verbs, the build-o
   (corrected 2026-11-11, R2) Local-route: hostinger -- run the repo-less tiered call on the real hostinger machine with the branch renet build; the exit 10 LICENSE_REQUIRED is recorded.
     (corrected 2026-11-17, d778be9d) Live call on hostinger 2026-11-17 (`renet functions once --test-mode --function repository_create`, /tmp/live-hostinger/201f331a.log) printed LICENSE_REQUIRED but exited 1 on the deployed renet e2223b7d, which predates this branch. The Accept stays exit 10: re-run after the branch renet reaches hostinger; an exit 1 then is a defect in the functions-once exit mapping.
     (ticked) 2026-11-23T11:10:29Z by ace763dd: commit:03274c2f08 live on hostinger with the released renet 4.0.1: a repo-less repository create exits 10 LICENSE_REQUIRED, reason missing; log /tmp/live-hostinger/201f331a-released.log
+    (corrected 2026-11-27T07:36Z, review 2aac84b3.4) the tick gives the log path /tmp/live-hostinger/201f331a-released.log and exit 10 LICENSE_REQUIRED; the plan-investigation ledger holds the box rows (agent/ledgers/plan-investigation.jsonl:3604), but no live_proof recorder entry for the call is cited, so the Accept's `recorded through the live_proof recorder` clause is not shown.
 
 - [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger

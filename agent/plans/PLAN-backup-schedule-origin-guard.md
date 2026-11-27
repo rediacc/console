@@ -32,8 +32,10 @@ On 2026-11-16 at 07:35Z `./rdc.sh --config eu-bench repo create vscode-spike -m 
 
 ## Boxes
 
-- [ ] G1 [writer] Unit test that fails today: a push whose config origin is bench against deployed units naming eu writes units (red), then refuses with both origins named (green); a repo-change re-render under the same mismatch skips without writing. Accept: `cd packages/cli && npx vitest run src/services/backup/__tests__/backup-schedule-origin-guard.test.ts` rc 0, and the same test against the unfixed tree fails
-- [ ] G2 [writer] Implement Design 1-4 in backup-schedule.ts and backup-schedule-reconcile.ts, add `--adopt-origin` to `backup schedule`, i18n for the new messages across locales. Accept: `npm run ci -- --narrow` rc 0
+- [x] G1 [writer] Unit test that fails today: a push whose config origin is bench against deployed units naming eu writes units (red), then refuses with both origins named (green); a repo-change re-render under the same mismatch skips without writing. Accept: `cd packages/cli && npx vitest run src/services/backup/__tests__/backup-schedule-origin-guard.test.ts` rc 0, and the same test against the unfixed tree fails
+    (ticked) 2026-11-27T07:37:47Z by d778be9d: landed commit:097016485e; investigation row present; the box's accept ran rc 0 in the writer's lease before landing and the landing suite ran rc 0 on the landed tree
+- [x] G2 [writer] Implement Design 1-4 in backup-schedule.ts and backup-schedule-reconcile.ts, add `--adopt-origin` to `backup schedule`, i18n for the new messages across locales. Accept: `npm run ci -- --narrow` rc 0
+    (ticked) 2026-11-27T07:37:47Z by d778be9d: landed commit:6586bfb9c8; investigation row present; the box's accept ran rc 0 in the writer's lease before landing and the landing suite ran rc 0 on the landed tree
 - [ ] G3 [live] On hostinger through eu-bench: a repo create and delete of a scratch repo leave all six units on `https://eu.rediacc.cloud` and print the skip message. Accept: the grep from Context 4 still prints `6 expect-account-server https://eu.rediacc.cloud` after both verbs
 - [x] LP-hostinger [live] Fresh hostinger receipt after G2 lands.
   Accept: live-proof hostinger renet-live

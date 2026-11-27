@@ -212,6 +212,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - [x] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
     (ticked) 2026-11-25T00:50:21Z by d778be9d: LT1 present: V4 passed with Turnstile holding (b0cf03673b), so the conditional box does not apply
+    (corrected 2026-11-27T07:36Z, review dffdcec4.2) LT1 is conditional (`Only if V4 names Turnstile`): V4 passed with Turnstile holding (b0cf03673b), so the condition is false, the widget-domain step does not apply and its Accept (`./run.sh enterprise proof routing --bench`) was not run for LT1; the tick records `does not apply`, not an rc 0.
 - [x] T1 [live] The acme cloud tenant:
   - Run: `bws_env exec --profile deploy-bench -- ./run.sh enterprise add acme --region eu --owner muhammed@rediacc.com --storage-gb 10 --unlisted --bench --bws-project <Q0 id>`.
   - The owner invitation is captured on bench. Read the link with `login_bench mail_token`, then the operator signs in.

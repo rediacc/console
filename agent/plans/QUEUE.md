@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 10 of 115 plans done, 1566 of 2077 boxes done (75%).
+Promoted: 10 of 115 plans done, 1594 of 2077 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -140,11 +140,11 @@ Promoted: 10 of 115 plans done, 1566 of 2077 boxes done (75%).
 | 78 | PLAN-console-ai-credits.md | 11/15 | 4 open |
 | 79 | PLAN-console-ai-feedback.md | 8/9 | 1 open |
 | 80 | PLAN-console-ai-in-pages.md | 8/10 | 2 open |
-| 81 | PLAN-rmcp-config-edit-removal.md | 0/9 | 9 open |
+| 81 | PLAN-rmcp-config-edit-removal.md | 5/9 | 4 open |
 | 82 | PLAN-rmcp-local-mcp.md | 9/13 | 4 open |
 | 83 | PLAN-rmcp-orphan-recovery.md | 4/8 | 4 open |
 | 84 | PLAN-rmcp-remote-worker.md | 17/27 | 10 open |
-| 85 | PLAN-rmcp-docs.md | 9/20 | 11 open |
+| 85 | PLAN-rmcp-docs.md | 10/20 | 10 open |
 | 86 | PLAN-stripe-disable.md | 6/8 | 2 open |
 | 87 | PLAN-forensics-capture.md | 10/13 | 3 open |
 | 88 | PLAN-forensics-shipping.md | 12/16 | 4 open |
@@ -160,17 +160,17 @@ Promoted: 10 of 115 plans done, 1566 of 2077 boxes done (75%).
 | 98 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
 | 99 | PLAN-host-temp-disposal.md | 16/19 | 3 open |
 | 100 | PLAN-cf-token-hardening.md | 0/8 | 8 open |
-| 101 | PLAN-nightly-green.md | 2/15 | 13 open |
-| 102 | PLAN-backup-schedule-origin-guard.md | 1/4 | 3 open |
-| 103 | PLAN-release-credits-compliance.md | 2/10 | 8 open |
+| 101 | PLAN-nightly-green.md | 5/15 | 10 open |
+| 102 | PLAN-backup-schedule-origin-guard.md | 3/4 | 1 open |
+| 103 | PLAN-release-credits-compliance.md | 7/10 | 3 open |
 | 104 | PLAN-reggate-debt-collection.md | 7/11 | 4 open |
-| 105 | PLAN-retire-nightlies-and-mentions.md | 0/16 | 16 open |
+| 105 | PLAN-retire-nightlies-and-mentions.md | 8/16 | 8 open |
 | 106 | PLAN-renet-i18n-baseline-drain.md | 3/16 | 13 open |
-| 107 | PLAN-datastore-migrate-correctness.md | 4/13 | 9 open |
+| 107 | PLAN-datastore-migrate-correctness.md | 6/13 | 7 open |
 | 108 | PLAN-backup-toc-exact-opt-in.md | 3/10 | 7 open |
 | 109 | PLAN-vscode-browser-exposure.md | 3/9 | 6 open |
-| 110 | PLAN-release-notes.md | 0/13 | 13 open |
-| 111 | PLAN-pr-path-ephemeral-credentials.md | 0/13 | 13 open |
+| 110 | PLAN-release-notes.md | 1/13 | 12 open |
+| 111 | PLAN-pr-path-ephemeral-credentials.md | 1/13 | 12 open |
 | 112 | PLAN-plan-verbs.md | 0/3 | 3 open |
 | 113 | PLAN-windows-lane.md | 0/32 | 32 open |
 | 114 | PLAN-config-sealed-local.md | 0/10 | 10 open |

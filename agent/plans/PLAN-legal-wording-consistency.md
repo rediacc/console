@@ -54,6 +54,7 @@ D8. `i18n-stamp-keys.ts --restamp` rewrites an existing ledger entry only where 
     (ticked) 2026-11-26T15:46:36Z by d778be9d: L2 landed, check:ci-mcp-docs-parity and check:ci-cli-contract rc 0 commit:154bfe13fb
 - [x] L3a [writer] D7 deltas for ar, de, es, et after L1. Accept: all seven keys differ from HEAD in each of the four locales and the stamp dry run rc 0.
     (ticked) 2026-11-26T17:08:21Z by d778be9d: L3a landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:394d10666b
+    (corrected 2026-11-27T07:36Z, review 8f1097f9.2) the diff of the L3a/L3b ticks carries no run output, so the stamp dry run rc 0 is taken from the tick. The commits themselves check out on this tree: 394d10666b changes 14 lines (7 keys) in each of ar, de, es and et, and 85335d81b4 changes 14 lines (7 keys) in each of fr, it, ja and ko, which is the `seven keys differ from HEAD` clause.
 - [x] L3b [writer] D7 deltas for fr, it, ja, ko after L1. Accept: as L3a.
     (ticked) 2026-11-26T17:08:22Z by d778be9d: L3b landed, seven keys differ from HEAD in each locale, stamp dry run rc 0 commit:85335d81b4
 - [x] L3c [writer] D7 deltas for pt, ru, tr, zh after L1. Accept: as L3a.

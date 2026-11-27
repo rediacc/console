@@ -205,6 +205,7 @@ A fabricated sha still fails the `rev-parse --verify` step.
   - "judged a different tree" refusals caused by a STATE.md-only diff, against 1;
   - refusals that name no voiding path, against 2.
     (ticked) 2026-11-23T10:42:10Z by ace763dd: commit:6b78fcc55e window 2026-11-23T04:52Z-10:35Z after R.1-R.7 landed, blocklog /tmp/claude-worklist/home_developer_console.blocklog-ace763dd.jsonl, 39 blocked stops: landing-stack while promote would refuse 70->0, halted main-checkout rebases 1->0, judged-different-tree on a STATE.md-only diff 1->0, refusals naming no voiding path 2->0
+    (corrected 2026-11-27T07:36Z, review c3ca980d.1) 6b78fcc55e (`a receipt with no advance names what voided it and the run ci:quick will do`) is cited for both R.5 and R.8: the R.8 numbers come from the blocklog window 2026-11-23T04:52Z-10:35Z, which that commit ended, so it marks the window's close, not the commit that produced each after-state; R.1 to R.7 each carry their own commit.
 
   Test: .claude/rediacc_hooks/tests/test_wl_retro.py.
 

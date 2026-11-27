@@ -68,10 +68,11 @@ D12. Docs. `docs/agent-reference/release-process.md` states that Latest is stabl
 
 ## Tasks
 
-- [ ] RN1 [writer] Grammar module: new `.ci/rediacc_ci/release/release_notes.py` (`parse(msg)`, `required(subject, paths, repo)`, `refusal(msg, paths, repo) -> str`, `collect(start, end, root)` over the console range and each submodule's gitlink delta per D3, `group(notes)` per D4, `render_markdown(doc)`), new `.ci/config/release-notes.json` (internal globs per repo, codename list, `since`), new `.ci/rediacc_ci/tests/test_release_notes.py`.
+- [x] RN1 [writer] Grammar module: new `.ci/rediacc_ci/release/release_notes.py` (`parse(msg)`, `required(subject, paths, repo)`, `refusal(msg, paths, repo) -> str`, `collect(start, end, root)` over the console range and each submodule's gitlink delta per D3, `group(notes)` per D4, `render_markdown(doc)`), new `.ci/config/release-notes.json` (internal globs per repo, codename list, `since`), new `.ci/rediacc_ci/tests/test_release_notes.py`.
   Owns: .ci/rediacc_ci/release/release_notes.py, .ci/config/release-notes.json, .ci/rediacc_ci/tests/test_release_notes.py
   Depends on: none.
   Accept: a `feat(cli):` touching `packages/cli/src/x.ts` with no trailer is refused and passes with `Release-Note: Backups now resume after a dropped connection`; `Release-Note: none -- n/a` is refused (short reason); a note naming `.ci/foo.py` or `#d778be9d` is refused; a `fix(hooks):` touching only `.claude/**` and a `chore(submodules):` gitlink bump are exempt; a fixture repo with a submodule yields each submodule note once although the console bump spans it, and two identical notes collapse to one; `cd .ci && python3 -m pytest rediacc_ci/tests/test_release_notes.py -q` rc 0.
+    (ticked) 2026-11-27T07:37:41Z by d778be9d: landed commit:bdbf06a464; investigation row present; the box's accept ran rc 0 in the writer's lease before landing and the landing suite ran rc 0 on the landed tree
 - [ ] RN2 [writer] Commit-msg check in `.claude/rediacc_hooks/git/githooks.py` `commit_msg()`: refuse a message `release_notes.refusal` rejects, using the staged paths and the repo the hook runs in (console, `private/account`, `private/renet`), loaded by file like `wl_planbox.py`; new `.claude/rediacc_hooks/tests/test_githook_release_note.py`.
   Owns: .claude/rediacc_hooks/git/githooks.py, .claude/rediacc_hooks/tests/test_githook_release_note.py
   Depends on: RN1.

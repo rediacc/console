@@ -62,6 +62,7 @@ D8. **Coverage gate**, in the CR2 header grammar, reads the committed contract a
   Depends on: none.
   Accept: `(cd packages/shared && npx vitest run src/cli-contract)` rc 0 with a fixture per invariant that fails before the fix; `(cd packages/shared && npx tsc --noEmit)` rc 0.
     (ticked) 2026-11-23T15:59:18Z by ace763dd: commit:1d848f8303 landed; shared vitest src/cli-contract 81 passed rc 0, check:ci-cli-contract rc 0, packages/cli tsc --noEmit rc 0 on b671913c7f
+    (corrected 2026-11-27T07:36Z, review 3b307aa2.1) the review cites 60a6c3ca, a lease-side sha that the cherry-pick rewrote; the landed sha in the tick above resolves on this tree (`git cat-file -t` prints commit) and 60a6c3ca does not, so the tick names the right commit; the same holds for the CS2 to CS5, CS10 and CS13 ticks, whose message-side shas (e6e57758, e2825f47, fbe342ae, 6b1532f2, 8281eb42, 96cb3030) likewise do not resolve
 - [x] CS2 [writer] The severity and preview table (D2): `packages/cli/src/config/command-safety.ts` with a drafted severity for every one of the 231 commands, `repo prune` destructive, the preview table for the 23 `--dry-run` commands plus `repo gc` and `repo prune`, and `NOT_PREVIEW` holding `config edit` with its reason.
   Owns: packages/cli/src/config/command-safety.ts, packages/cli/src/config/__tests__/command-safety.test.ts
   Depends on: none.

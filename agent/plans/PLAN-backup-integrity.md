@@ -448,6 +448,7 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
   - Accept: the command rc 0, and the digest's receipt recorded here.
   (corrected 2026-11-11, R2) Local-route: hostinger -- run renet backup report --test from the branch renet build on the real hostinger machine.
     (ticked) 2026-11-23T03:34:04Z by ace763dd: fileline:private/renet/cmd/renet/backup_report_planted.go:16 commit:3a1b56d360 -- `rdc --config eu-bench term connect hostinger -c 'sudo renet backup report --test'` EXIT=0 from the released renet printing {"kind":"alert-test","status":"alert-test","delivered":true,"spooled":false}, no repository involved, /tmp/live-hostinger/run3/h9.txt (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
+    (corrected 2026-11-27T07:36Z, review c9072090.1) the tick ran `renet backup report --test` from the released renet on hostinger, while the 2026-11-05 correction reads the Accept as the branch-built binary. The tick predates the merge (M1 of PLAN-product-domain-rename.md merged to main aa829a19dc and released renet 4.0.1 at 2026-11-23T11:09Z), so the branch-built binary's run is not what the tick shows; a run from the released 4.0.1 renet after the merge is owed to close that reading.
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

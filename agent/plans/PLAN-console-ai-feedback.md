@@ -74,6 +74,7 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF1, PLAN-console-ai-assistant.md#AI7.
   Accept: `(cd private/account/web && npx vitest run src/components/ai/feedback)` rc 0, including a test that the rendered body equals the preview response field for field.
     (ticked) 2026-11-25T19:37:39Z by d778be9d: AF5 feedback preview card with send, edit and decline, 13 locales (account 201bac86); 5 tests passed; landed 5dbdf42e05. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T07:36Z, review a7199a3b.1) the review cites 97fdfb9e, a lease-side sha that the cherry-pick rewrote; the landed sha in the tick above resolves on this tree (`git cat-file -t` prints commit) and 97fdfb9e does not, so the tick names the right commit; 5dbdf42e05 is a lease-landing gitlink commit, so one landed hash legitimately appears in the AF5 tick and the AX5 tick of PLAN-console-ai-in-pages.md
 - [x] AF6 [writer] Settings UI: an "Offer bug reports" toggle in the Settings feedback card and the owner's org-wide override on the Team page, hidden from non-owners, with English strings in `settings.json` and `team.json`.
   Owns: private/account/web/src/pages/Settings.tsx, private/account/web/src/pages/Team.tsx, private/account/web/src/pages/__tests__/FeedbackSettings.test.tsx, private/account/web/src/i18n/locales/en/settings.json, private/account/web/src/i18n/locales/en/team.json
   Depends on: AF3.
@@ -84,6 +85,7 @@ D7. **Source.** `feedbackReportSchema` gains `source: 'cli' | 'console'` with de
   Depends on: AF5, AF6.
   Accept: `npm run check:i18n` and `npm run check:ci-i18n-account-key-usage` rc 0.
     (ticked) 2026-11-25T20:29:23Z by d778be9d: AF7 7 keys into 12 locales (84 values), hashes locked; check:i18n rc 0 on the merged tree; landed b92a65e3a8. DEPS-WAIVED: prerequisites landed
+    (corrected 2026-11-27T07:36Z, review 6b701993.4) the review cites 987389e1, a lease-side sha that the cherry-pick rewrote; the landed sha in the tick above resolves on this tree (`git cat-file -t` prints commit) and 987389e1 does not, so the tick names the right commit
 - [x] AF8 [writer] Playwright spec: a Rediacc-origin failure shows the card and Send files a report, a user-origin failure shows none, Don't send records a decline, the owner override hides the card, and the card is operable by keyboard alone.
   (corrected 2026-11-23, ruling C42) This spec runs against the scripted provider of PLAN-console-ai-providers.md#AP13 under TEST_MODE; no real provider key reaches CI.
   Owns: private/account/e2e/tests/27-console/27-3*-ai-feedback.test.ts
