@@ -1,0 +1,106 @@
+{
+  "$comment": [
+    "THE RELEASE-NOTE TRAILER (agent/plans/PLAN-release-notes.md D1, D2). Read by .ci/rediacc_ci/release/release_notes.py, the one module the commit-msg hook, the land check, the CI range gate, the Release body and the changelog data all import.",
+    "repos: the repositories whose feat, fix and perf commits must carry `Release-Note:`, keyed by the path the console tree knows them by (`console` for the root). A submodule absent from this map is neither required nor collected.",
+    "internal: per repo, the globs whose paths no customer sees. A commit whose every path matches one is exempt; one customer path makes a feat, fix or perf commit owe the trailer. Globs use only ** and *, as .ci/policy/record-paths.json does: ** spans any number of directories, zero included, and * stays inside one segment.",
+    "gitlinks: per repo, the submodule paths that repo records as gitlinks. A commit touching only those is a pointer bump and exempt; the submodule commit it points at carries the note.",
+    "internal_patterns and codenames: what a customer note must not name (D1). A pattern is a Python regex searched in the note; a codename is a word matched case-insensitively on word boundaries.",
+    "since: the first version whose Release body and changelog entry are built from these trailers (D11). Null until the first version cut after the CI range gate (RN4) lands; every older version shows no recorded notes."
+  ],
+  "version": 1,
+  "max_length": 200,
+  "min_reason_length": 12,
+  "since": null,
+  "required_types": ["feat", "fix", "perf"],
+  "groups": {
+    "feat": "Added",
+    "fix": "Fixed",
+    "perf": "Improved"
+  },
+  "fallback_group": "Improved",
+  "repos": {
+    "console": {
+      "internal": [
+        ".claude/**",
+        ".ci/**",
+        ".github/**",
+        ".devcontainer/**",
+        ".husky/**",
+        "agent/**",
+        "scripts/**",
+        "docs/agent-reference/**",
+        "biome-plugins/**",
+        "eslint-rules/**",
+        "CLAUDE.md",
+        "**/CLAUDE.md",
+        "conftest.py",
+        "pyproject.toml",
+        "biome.json",
+        "knip.jsonc",
+        "vitest.config.mjs",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/e2e/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.test.mjs",
+        "**/*.spec.ts",
+        "**/*.spec.tsx",
+        "**/test_*.py",
+        "**/*_test.py",
+        "**/*_test.go"
+      ],
+      "gitlinks": ["private/account", "private/renet", "private/elite", "private/homebrew-tap"]
+    },
+    "private/account": {
+      "internal": [
+        ".claude/**",
+        ".github/**",
+        "CLAUDE.md",
+        "**/CLAUDE.md",
+        "docs/**",
+        "scripts/**",
+        "tests/**",
+        "e2e/**",
+        "test-results/**",
+        "vitest.config.ts",
+        "**/tests/**",
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/*.spec.ts",
+        "**/*.spec.tsx"
+      ],
+      "gitlinks": []
+    },
+    "private/renet": {
+      "internal": [
+        ".claude/**",
+        ".ci/**",
+        ".github/**",
+        "CLAUDE.md",
+        "**/CLAUDE.md",
+        "_scripts/**",
+        "scripts/**",
+        "tests/**",
+        ".golangci.yml",
+        ".deadcode-allowlist",
+        ".govulncheck-allowlist",
+        "pytest.ini",
+        "**/testdata/**",
+        "**/*_test.go",
+        "**/test_*.py"
+      ],
+      "gitlinks": []
+    }
+  },
+  "internal_patterns": [
+    "#[0-9a-fA-F]{6,}\\b",
+    "\\bPLAN-[A-Za-z0-9][A-Za-z0-9._-]*",
+    "\\bcheck:ci-[A-Za-z0-9-]+",
+    "\\b(?:ci:quick|vm:check)\\b",
+    "\\bblock_[a-z0-9]+(?:_[a-z0-9]+)+\\b",
+    "\\b(?=[0-9a-f]*[0-9])(?=[0-9a-f]*[a-f])[0-9a-f]{8,40}\\b"
+  ],
+  "codenames": ["worklist", "Plan-Box", "PR-TASK", "writers-now", "Stop hook", "STATE.md"]
+}
