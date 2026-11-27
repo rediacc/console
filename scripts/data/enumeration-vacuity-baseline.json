@@ -21,7 +21,6 @@
     "scripts/gates/check-translation-hashes.ts",
     "scripts/gates/check-translation-key-usage.ts",
     "scripts/gates/check-tutorial-commands.ts",
-    "scripts/gates/check-tutorial-noninteractive.ts",
     "scripts/gates/check-typecheck-scope-coverage.ts"
   ]
 }

@@ -410,7 +410,7 @@ There are only two states, deliberately. `external_quality` keeps a third, `soft
 | `check:ci-tutorial-parity` | `quality-content` |
 | `check:ci-i18n-media` (transcripts + narration audio + cast output) | `quality-i18n` |
 
-**What it deliberately does NOT hold**, because each still catches a real defect while media is being re-recorded: `check:ci-tutorial-commands`, `check:ci-tutorial-noninteractive`, `check:ci-tutorial-cli-validity` and `check:ci-tutorial-no-skips` (these read the `.sh` scripts and the live command tree, so a red is genuinely new), `check:ci-tutorial-caption-sync` (fetches PUBLISHED
+**What it deliberately does NOT hold**, because each still catches a real defect while media is being re-recorded: `check:ci-tutorial-commands` (storyboards and prompting commands), `check:ci-tutorial-cli-validity` and `check:ci-tutorial-no-skips` (these read the `.sh` scripts and the live command tree, so a red is genuinely new), `check:ci-tutorial-caption-sync` (fetches PUBLISHED
 CDN content, so a red is a production defect until the new media is published), `check:ci-tutorial-card-fonts`, `check:ci-locale-tutorial-assets`, `check:ci-tutorial-healthcheck-headroom`, `check:ci-tutorial-render-queue`, and both solution-video gates (a different asset family entirely). Widening the set is not a convenience, it is coverage nobody asked to lose.
 
 **The label is a HOLD, not an exemption, and the log says so.** A skipped step leaves its job `success` and prints nothing, so both consuming jobs run `rediacc_ci.quality.announce_gate_skips` UNCONDITIONALLY -- it is not behind the mode `if:`. In `skip` it emits a `::warning::` and a step summary naming every gate that did not run plus the instruction to remove the label; in

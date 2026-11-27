@@ -2058,14 +2058,6 @@
       "peak_rss_mb": 52,
       "rank": 277
     },
-    "check:ci-tutorial-noninteractive": {
-      "cpu_s": 0.294,
-      "wall_s": 0.258,
-      "eff_cores": 1.14,
-      "capped": false,
-      "peak_rss_mb": 54,
-      "rank": 201
-    },
     "check:ci-tutorial-parity": {
       "cpu_s": 0.319,
       "wall_s": 0.279,

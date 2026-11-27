@@ -3102,15 +3102,6 @@ export const TRACE_LEDGER: Readonly<Record<string, TraceRow>> = {
     coveragePct: 0.2,
     seconds: 0.4,
   },
-  'check:ci-tutorial-noninteractive': {
-    tracedAt: '2026-11-24T09:15Z',
-    tree: 'dbafcae177477c6154df23d1be9cc8f7f49d6db6',
-    verdict: 'paths',
-    reads: 27,
-    listed: 3,
-    coveragePct: 0.2,
-    seconds: 2.7,
-  },
   'check:ci-tutorial-parity': {
     tracedAt: '2026-11-24T09:15Z',
     tree: 'dbafcae177477c6154df23d1be9cc8f7f49d6db6',

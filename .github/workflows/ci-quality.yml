@@ -1658,10 +1658,7 @@ jobs:
       - name: Validate account onboarding splash against canonical tutorials
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-account-onboarding
-      - name: Validate tutorial commands are non-interactive
-        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
-        run: npm run check:ci-tutorial-noninteractive
-      - name: Validate tutorial storyboard commands against the live CLI
+      - name: Validate tutorial commands against the live CLI and for non-interactive runs
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-tutorial-commands
       - name: Verify NIS2 directive quotations match the official source

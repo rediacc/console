@@ -5555,14 +5555,6 @@
     "22fd1d1d7f5a25d7"
    ]
   },
-  "scripts/gates/check-tutorial-noninteractive.ts": {
-   "R1": [
-    "b1ae4fb9cb05d5d9"
-   ],
-   "R7": [
-    "9f6098be1cc15d8b"
-   ]
-  },
   "scripts/gen/gen-docs.ts": {
    "R2": [
     "02e2fe6c7cd083af",

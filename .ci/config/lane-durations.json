@@ -2237,7 +2237,6 @@
     "check:ci-nis2-quotes": 1.0,
     "check:cli-examples": 28.2,
     "check:ci-tutorial-commands": 1.0,
-    "check:ci-tutorial-noninteractive": 1.0,
     "check:ci-tutorial-parity": 1.0,
     "check:ci-tutorial-casts": 1.0,
     "check:ci-locale-tutorial-assets": 1.0,

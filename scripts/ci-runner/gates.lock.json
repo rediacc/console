@@ -14026,6 +14026,8 @@
     "run": "npm run check:ci-tutorial-commands",
     "gate": true,
     "paths": [
+      ".ci/tutorials/**/*.sh",
+      ".ci/tutorials/*.sh",
       ".npmrc",
       "package.json",
       "packages/cli/scripts/command-tree.json",
@@ -14037,6 +14039,7 @@
       "tsconfig.json"
     ],
     "lists": [
+      ".ci/tutorials",
       "packages/www/scripts",
       "packages/www/scripts/lib",
       "scripts",
@@ -14050,37 +14053,7 @@
       "kind": "step",
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-content",
-      "step": "Validate tutorial storyboard commands against the live CLI"
-    }
-  },
-  {
-    "id": "check:ci-tutorial-noninteractive",
-    "run": "npm run check:ci-tutorial-noninteractive",
-    "gate": true,
-    "paths": [
-      ".ci/tutorials/**/*.sh",
-      ".ci/tutorials/*.sh",
-      ".npmrc",
-      "package.json",
-      "packages/cli/scripts/command-tree.json",
-      "packages/cli/src/i18n/locales/en/cli.json",
-      "scripts/gates/check-tutorial-noninteractive.ts",
-      "tsconfig.json"
-    ],
-    "lists": [
-      ".ci/tutorials",
-      "scripts",
-      "scripts/gates"
-    ],
-    "pathsOrigin": "traced",
-    "leaves": [
-      "scripts/gates/check-tutorial-noninteractive.ts"
-    ],
-    "ci": {
-      "kind": "step",
-      "workflow": ".github/workflows/ci-quality.yml",
-      "job": "quality-content",
-      "step": "Validate tutorial commands are non-interactive"
+      "step": "Validate tutorial commands against the live CLI and for non-interactive runs"
     }
   },
   {

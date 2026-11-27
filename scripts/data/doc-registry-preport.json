@@ -258,7 +258,6 @@
         "check:ci-tutorial-commands",
         "check:ci-tutorial-healthcheck-headroom",
         "check:ci-tutorial-no-skips",
-        "check:ci-tutorial-noninteractive",
         "check:ci-tutorial-parity",
         "check:ci-tutorial-render-queue",
         "check:ci-typecheck-scope-coverage",
