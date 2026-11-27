@@ -60,7 +60,7 @@ export function loadCreditsData(): CreditsData {
   return stampRuntime(bundledCredits);
 }
 
-/** The runtime row carries no version in the inventory: process.version is the embedded Node in a SEA, so it is exact by construction. */
+/** The runtime row carries no version in the inventory: process.version is the embedded Node in a SEA (exact), and the host Node on the bundled non-SEA path (the runtime running the CLI, not a shipped one). */
 function stampRuntime(data: CreditsData): CreditsData {
   return {
     ...data,
