@@ -256,8 +256,8 @@ cases.append(
         "CONTROL: a pytest selection naming the lint module is a mention, not a run",
     )
 )
-# THE OTHER DIRECTION: a gate key that IS still a root npm script keeps the npm route, so the CR2 branch cannot swallow every gate-key hit.
-r = run_full("npm run check:ci-renet", "%s:%s" % (_FAKEBOX, _path_without("go", REAL)))
+# THE OTHER DIRECTION: a gate key that IS still a root npm script keeps the npm route, so the CR2 branch cannot swallow every gate-key hit. `--silent` makes the typed command differ from the npm route, so a guard routing every hit as typed fails here instead of agreeing by accident (a plain `npm run check:ci-renet` is the same string both ways, and that control did not fire).
+r = run_full("npm run check:ci-renet --silent", "%s:%s" % (_FAKEBOX, _path_without("go", REAL)))
 cases.append((2, r.returncode, "CONTROL: check:ci-renet (an npm script) without go -> REFUSED"))
 cases.append(
     (
