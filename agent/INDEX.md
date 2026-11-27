@@ -586,7 +586,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 76 | 13 | 0 | 18781 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 347 | 13 | 24 | 73141 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
-| `agent/plans/PLAN-product-domain-rename.md` | executing | 229 | 3 | 25 | 47302 |
+| `agent/plans/PLAN-product-domain-rename.md` | executing | 229 | 3 | 25 | 47378 |
 | `agent/plans/PLAN-production-key-only.md` | approved | 350 | 2 | 15 | 52146 |
 | `agent/plans/PLAN-promote-mutation-runner.md` | compacted | 39 | 0 | 0 | 2977 |
 | `agent/plans/PLAN-proxy-cd-six-targets.md` | approved | 418 | 2 | 29 | 70833 |
@@ -671,7 +671,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-w7p5a-deploy-release-port.md` | compacted | 53 | 0 | 8 | 3914 |
 | `agent/plans/PLAN-website-routing-and-mail.md` | executing | 145 | 5 | 15 | 27643 |
 | `agent/plans/PLAN-weekly-lessons.md` | approved | 69 | 2 | 6 | 9255 |
-| `agent/plans/PLAN-windows-lane.md` | draft | 133 | 18 | 0 | 31228 |
+| `agent/plans/PLAN-windows-lane.md` | draft | 133 | 18 | 0 | 31416 |
 | `agent/plans/PLAN-wire-account-vitest-ci.md` | compacted | 39 | 0 | 0 | 3063 |
 | `agent/plans/PLAN-wl-report-liveness-oracle.md` | compacted | 52 | 0 | 7 | 3665 |
 | `agent/plans/PLAN-worktree-lease.md` | approved | 357 | 1 | 15 | 59600 |
