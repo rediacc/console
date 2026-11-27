@@ -740,7 +740,7 @@ def _generate_fixture(
         (cli / "src" / "data" / "third-party-licenses" / f"{spdx}.txt").write_text(
             f"TEXT OF {spdx}\n", encoding="utf-8"
         )
-    meta = {"inputs": {path: {} for path in inputs}}
+    meta: dict[str, dict[str, dict[str, object]]] = {"inputs": {path: {} for path in inputs}}
     (cli / "dist" / "cli-bundle.meta.json").write_text(json.dumps(meta), encoding="utf-8")
     for rel, body in (packages or {}).items():
         (cli / rel).mkdir(parents=True)

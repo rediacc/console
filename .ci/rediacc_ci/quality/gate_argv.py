@@ -588,10 +588,10 @@ def lock_targets(root: pathlib.Path) -> list[Target] | None:
     scripts = npm_scripts(root)
     out: dict[str, Target] = {}
     for gate in gates:
-        # A malformed entry would contribute no command and drop its entry points from the population with the gate still green, so it is refused like an unreadable lock.
+        # A malformed entry contributes no command; lock_malformed reports each one as a finding by name, so it cannot leave the population with the gate still green.
         run_field = gate.get("run") if isinstance(gate, dict) else None
         if not isinstance(run_field, str) or not run_field.strip():
-            return None
+            continue
         for target in targets_of(expand_npm(run_field, scripts), root):
             out.setdefault(target.key, target)
     return sorted(out.values(), key=lambda t: (t.kind, t.key))

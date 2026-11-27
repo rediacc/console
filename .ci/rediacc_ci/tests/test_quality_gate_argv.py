@@ -399,16 +399,17 @@ def test_known_bypass_can_only_shrink():
     )
 
 
-def test_a_malformed_lock_entry_is_refused_not_dropped(tmp_path, capsys):
+def test_a_malformed_lock_entry_is_named_not_dropped(tmp_path, capsys):
     root = tree(tmp_path, {"check_x": SHARED}, runs=[RUN_MODULE])
     module_file(root, DOTTED, MODULE_REFUSES)
     lock = root / mod.LOCK_REL
     for bad in ("not-an-object", {"id": "no-run"}, {"id": "n", "run": 7}, {"id": "e", "run": " "}):
         gates = [*json.loads(lock.read_text(encoding="utf-8")), bad]
         lock.write_text(json.dumps(gates), encoding="utf-8")
-        assert mod.lock_targets(root) is None, bad
+        assert mod.lock_targets(root) is not None, bad
+        assert len(mod.lock_malformed(root)) == 1, bad
         assert mod.run(root, own={}, floor=1, debt={}) == 1
-        assert "the scan is not seeing the tree" in capsys.readouterr().err
+        assert "the entry points it runs are not being judged" in capsys.readouterr().err
         lock.write_text(json.dumps(gates[:-1]), encoding="utf-8")
     assert mod.run(root, own={}, floor=1, debt={}) == 0
 

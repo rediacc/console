@@ -51,7 +51,7 @@ MUTATION = (
 )
 
 # (name, command, expect_blocked, is_create_verb) ---- fire ----------------------------------------
-FIRE = [
+FIRE_SPEC = [
     ("gh issue create", "gh issue create -t x -b y", True),
     ("gh issue new (the alias)", "gh issue new -t x", True),
     ("bare gh issue create", "gh issue create", True),
@@ -134,9 +134,9 @@ FIRE = [
         False,
     ),
 ]
-FIRE = [(n, c, True, verb) for n, c, verb in FIRE]
+FIRE = [(n, c, True, verb) for n, c, verb in FIRE_SPEC]
 
-ADMIT = [
+ADMIT_SPEC = [
     ("comment on issues/<n>/comments", "gh api repos/o/r/issues/12/comments -f body=x"),
     ("comment POST explicit", "gh api -X POST repos/o/r/issues/12/comments -f body=x"),
     ("gh issue list", "gh issue list --state open"),
@@ -177,7 +177,7 @@ ADMIT = [
     ("gh pr create", "gh pr create --draft -t x -b y"),
     ("an empty command", ""),
 ]
-ADMIT = [(n, c, False, False) for n, c in ADMIT]
+ADMIT = [(n, c, False, False) for n, c in ADMIT_SPEC]
 
 CASES = FIRE + ADMIT
 

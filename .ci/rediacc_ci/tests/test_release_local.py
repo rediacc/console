@@ -1110,7 +1110,7 @@ def test_a_refused_stable_gate_promotes_nothing(
 def test_the_dry_stable_gates_judge_the_stable_channel_read_only(
     monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
 ) -> None:
-    seen: dict[str, object] = {}
+    seen: dict[str, typing.Any] = {}
 
     def check(root, channel, **kw):
         del root

@@ -634,6 +634,26 @@ def _drop_bash_internal_noise(lines: list[str]) -> list[str]:
     return renumbered
 
 
+_SS_CALL = re.compile(r"^obs \S+ call#\d+\| ss -tlnH")
+
+
+def _collapse_port_probes(lines: list[str]) -> list[str]:
+    """Both sides minus their `ss -tlnH` calls, with the remaining `call#` lines renumbered.
+
+    The twin probed one port per `ss` call; the port reads one listening snapshot for the whole window (dcf868d748). How the window is scanned is not the contract: which port is chosen, what is printed and what docker is asked to do are, and those lines stay compared.
+    """
+    kept = [line for line in lines if not _SS_CALL.match(line)]
+    out = []
+    next_call = 0
+    for line in kept:
+        if re.match(r"^obs \S+ call#\d+\|", line):
+            out.append(re.sub(r"call#\d+\|", "call#%d|" % next_call, line, count=1))
+            next_call += 1
+        else:
+            out.append(line)
+    return out
+
+
 def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
     """The retired twin's observation lines for one case, from the golden. They travel as the golden's `out`, one per line."""
 
@@ -656,8 +676,8 @@ def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
 )
 def test_lifecycle_matches_the_frozen_twin(scenario, case) -> None:
     repo = pathlib.Path(diff.repo())
-    old = _drop_bash_internal_noise(_frozen_lifecycle(scenario, case, repo))
-    new = observe(repo, case)
+    old = _collapse_port_probes(_drop_bash_internal_noise(_frozen_lifecycle(scenario, case, repo)))
+    new = _collapse_port_probes(observe(repo, case))
     assert old == new, "case %s/%s diverged" % (scenario, case.name)
 
 

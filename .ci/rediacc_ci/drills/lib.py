@@ -289,6 +289,10 @@ class Drill:
 
     def probe_env(self) -> dict[str, str]:
         """The environment of a fleet probe (`rdc ops status`) that runs before the sandbox exists: `cli_env` with a config home of its own under the work dir and no REDIACC_CONFIG. The probe reads no config, so the operator's default config (production-bound, possibly a remote config whose token cannot be renewed here) never decides whether the fleet is up, and the config the CLI auto-creates on startup lands in that home, never racing the drill's own `config init` (found live 2026-08-04 and 2026-11-27)."""
+        if self.work is None:
+            raise RuntimeError(
+                "probe_env() before init(): the probe's config home lives under the work dir"
+            )
         env = self.cli_env()
         home = self.work / "probe-home"
         home.mkdir(exist_ok=True)
