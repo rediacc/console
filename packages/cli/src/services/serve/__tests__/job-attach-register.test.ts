@@ -81,6 +81,11 @@ vi.mock('../../machine/machine-connection.js', () => ({
     acquire: vi.fn(() => Promise.resolve({ ensure: vi.fn(), release: vi.fn() })),
   },
 }));
+// These tests cover job attach, not the agent create guard, whose process-ancestry check refuses under an agent parent.
+vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
+  assertAgentRepoCreate: async () => undefined,
+}));
 vi.mock('../../repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn(() => Promise.resolve()),
   removeRepoKeyIfDeployed: vi.fn(() => Promise.resolve()),

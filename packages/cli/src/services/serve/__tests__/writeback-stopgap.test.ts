@@ -20,6 +20,7 @@ import { describe, expect, it, vi } from 'vitest';
 vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
   isAgentEnvironment: () => false,
+  assertAgentRepoCreate: async () => undefined,
 }));
 
 await vi.hoisted(async () => {
