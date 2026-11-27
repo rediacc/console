@@ -22,6 +22,8 @@ Uploads are implicit: once remote is enabled, config writes go to the store. The
 device-code handoff, so it is not available to agents unattended
 - **Member management**: Requires web portal (elevated + 2FA) — not available to agents
 - Agents can read config storage status via the account web API but cannot modify
+- **Config writes**: agents change one field at a time with `rdc config field set --current`; `rdc config edit` (interactive, `--apply`, `--reveal`) has no agent path and no override
+- **Remote MCP**: an agent grant (minted in the portal, one config, 7 days by default, 30 at most) lets a remote agent run tools on the org executor; it is not a key holder and cannot edit the policy record
 
 ## Architecture
 
