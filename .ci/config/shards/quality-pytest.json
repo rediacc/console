@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T04:20:49.840Z",
+  "generatedAt": "2026-11-27T06:15:48.203Z",
   "legs": [
     {
       "index": 1,
@@ -312,8 +312,8 @@
         "pytest:.ci/rediacc_ci/tests/test_release_advance_contract_floor.py",
         "pytest:.ci/rediacc_ci/tests/test_release_backfill_write_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_release_cd_edge_record.py",
-        "pytest:.ci/rediacc_ci/tests/test_release_drift_job_budget.py",
         "pytest:.ci/rediacc_ci/tests/test_release_install_script_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_notes.py",
         "pytest:.ci/rediacc_ci/tests/test_release_rings_decide.py",
         "pytest:.ci/rediacc_ci/tests/test_release_verify_release_assets.py",
         "pytest:.ci/rediacc_ci/tests/test_renet_test_map_stop.py",
@@ -422,6 +422,7 @@
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_jobs.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_last_green.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_slow_wired.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_removed_env_vars.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_agent_browser_pin.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_install_methods_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_ensure_rediacc_user.py",
@@ -503,7 +504,6 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_subscription_schema.py",
         "pytest:.ci/rediacc_ci/tests/test_release_assert_r2_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_release_check_soak_period.py",
-        "pytest:.ci/rediacc_ci/tests/test_release_drift_job.py",
         "pytest:.ci/rediacc_ci/tests/test_release_nightly_tested_edge.py",
         "pytest:.ci/rediacc_ci/tests/test_release_retention_contract.py",
         "pytest:.ci/rediacc_ci/tests/test_release_tag.py",
@@ -797,6 +797,7 @@
         "pytest:.ci/rediacc_ci/tests/test_d1_shard_move.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_bench_repeatability.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_delete_r2_channel.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_mirror_third_party_src.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_proxy_configs.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_landing.py",
