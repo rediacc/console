@@ -10883,7 +10883,7 @@ export const GATES: readonly GateSpec[] = [
       '.npmrc',
       'package.json',
       'packages/cli/src/commands/backup-retention-commands.ts',
-      'packages/shared/src/config-schema/schemas.ts',
+      'packages/shared/src/config-schema/backup-schema.ts',
       'private/account',
       'scripts/gates/check-retention-knob-parity.ts',
       'tsconfig.json',
@@ -15649,7 +15649,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run build:cli',
     gate: false,
     needs: ['build:packages'],
-    mutex: ['build-artifacts'],
+    // check:ci-gate-tree-writes: bundle.mjs writes dist/cli-bundle.meta.json (the esbuild metafile the npm notice generator reads) into the real tree, as tsc and the bundle itself do; the output directory is the product, so the write is declared rather than moved.
+    mutex: ['build-artifacts', 'tree:repo'],
+    writesTree:
+      'writes packages/cli/dist (tsc output, cli-bundle.cjs and cli-bundle.meta.json) in place',
     leaves: ['packages/cli/bundle.mjs', 'tsc'],
     ci: {
       kind: 'local-only',
@@ -15665,7 +15668,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run build:www',
     slow: true, // 131.9s measured
     gate: false,
-    mutex: ['www-dist'],
+    // check:ci-gate-tree-writes: changelog_data.py writes packages/www/.astro/changelog.generated.json (gitignored) before `astro build`, in place because astro reads it from there.
+    mutex: ['www-dist', 'tree:repo'],
+    writesTree:
+      'writes packages/www/.astro/changelog.generated.json (changelog_data.py) and packages/www/dist (astro build) in place',
     leaves: ['.ci/rediacc_ci/release/changelog_data.py', 'astro'],
     ci: {
       kind: 'step',

@@ -11686,7 +11686,7 @@
       ".npmrc",
       "package.json",
       "packages/cli/src/commands/backup-retention-commands.ts",
-      "packages/shared/src/config-schema/schemas.ts",
+      "packages/shared/src/config-schema/backup-schema.ts",
       "private/account",
       "scripts/gates/check-retention-knob-parity.ts",
       "tsconfig.json"
@@ -16801,8 +16801,10 @@
       "build:packages"
     ],
     "mutex": [
-      "build-artifacts"
+      "build-artifacts",
+      "tree:repo"
     ],
+    "writesTree": "writes packages/cli/dist (tsc output, cli-bundle.cjs and cli-bundle.meta.json) in place",
     "leaves": [
       "packages/cli/bundle.mjs",
       "tsc"
@@ -16821,8 +16823,10 @@
     "slow": true,
     "gate": false,
     "mutex": [
-      "www-dist"
+      "www-dist",
+      "tree:repo"
     ],
+    "writesTree": "writes packages/www/.astro/changelog.generated.json (changelog_data.py) and packages/www/dist (astro build) in place",
     "leaves": [
       ".ci/rediacc_ci/release/changelog_data.py",
       "astro"

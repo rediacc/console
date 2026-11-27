@@ -557,9 +557,12 @@ def expand_npm(command: str, scripts: dict[str, str]) -> str:
             return out
 
 
+PYTHONPATH_REL = ".ci"
+
+
 def module_path(root: pathlib.Path, dotted: str) -> pathlib.Path:
     """The file `python3 -m <dotted>` runs, with `.ci` on PYTHONPATH: `<dotted>/__main__.py` for a package that has one, else `<dotted>.py`."""
-    base = root.joinpath(".ci", *dotted.split("."))
+    base = root.joinpath(PYTHONPATH_REL, *dotted.split("."))
     main = base / "__main__.py"
     return main if base.is_dir() and main.is_file() else base.with_suffix(".py")
 
@@ -949,13 +952,18 @@ MODULE_REFUSES = plant(
 MODULE_KEY = "rediacc_ci.quality.gate_argv_fixture"
 
 
+def _plant(root: pathlib.Path, rel: pathlib.Path, text: str) -> None:
+    """Write one fixture file. The path is always under the TemporaryDirectory `fixture_tree` was given."""
+    (root / rel).parent.mkdir(parents=True, exist_ok=True)
+    (root / rel).write_text(text, encoding="utf-8")
+
+
 def fixture_tree(
     root: pathlib.Path, module_text: str, run_field: str | None = None
 ) -> pathlib.Path:
     """A scan root whose lock runs one module by `python3 -m`, and which holds no shim at all."""
     module = module_path(root, MODULE_KEY)
-    module.parent.mkdir(parents=True, exist_ok=True)
-    module.write_text(module_text, encoding="utf-8")
+    _plant(root, module.relative_to(root), module_text)
     (root / QUALITY_REL).mkdir(parents=True, exist_ok=True)
     lock = root / LOCK_REL
     lock.parent.mkdir(parents=True, exist_ok=True)

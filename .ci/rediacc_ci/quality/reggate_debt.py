@@ -209,7 +209,9 @@ def _scratch_ledgers():
 
 def _write(td, branch, records):
     d = pathlib.Path(td) / "reggate"
+    # tree-write: safe _write only ever receives the selftest TemporaryDirectory that WORKLIST_STORE_DIR points at
     d.mkdir(parents=True, exist_ok=True)
+    # tree-write: safe _write only ever receives the selftest TemporaryDirectory that WORKLIST_STORE_DIR points at
     with open(d / ("%s.jsonl" % branch), "a", encoding="utf-8") as fh:
         fh.writelines((rec if isinstance(rec, str) else json.dumps(rec)) + "\n" for rec in records)
 
