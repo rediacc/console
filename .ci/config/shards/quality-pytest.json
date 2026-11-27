@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:05:47.444Z",
+  "generatedAt": "2026-11-27T10:08:34.412Z",
   "legs": [
     {
       "index": 1,
@@ -1002,6 +1002,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_swap_order.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_upgrade_converge.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_vm_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_drills_win_check.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lifecycle.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_names.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
