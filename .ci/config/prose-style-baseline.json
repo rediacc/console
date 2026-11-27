@@ -15,15 +15,15 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2566,
- "files": 629,
+ "count": 2564,
+ "files": 628,
  "by_rule": {
-  "R1": 1384,
+  "R1": 1383,
   "R11": 135,
   "R14": 1,
   "R18": 11,
   "R19": 55,
-  "R2": 577,
+  "R2": 576,
   "R7": 403
  },
  "findings": {
@@ -1380,7 +1380,6 @@
   },
   ".claude/hooks/stop/wl_reggate.py": {
    "R1": [
-    "829138df3fd840cf",
     "8fb40042c4a12eee",
     "a1f52b24c57b2c76",
     "cbb2bae4a401c7c1"
@@ -3857,11 +3856,6 @@
   "packages/cli/src/services/core/audit.ts": {
    "R7": [
     "570ed6b004f12a4e"
-   ]
-  },
-  "packages/cli/src/services/core/mutation-gate.ts": {
-   "R2": [
-    "7bc01db9543641cb"
    ]
   },
   "packages/cli/src/services/executor/daemon/lifecycle.ts": {
