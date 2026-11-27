@@ -1188,7 +1188,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/policy | 28 | (none) 18, .json 9, .md 1 |
 | .ci/prompts | 1 | .md 1 |
 | .ci/rediacc_ci | 18 | .py 18 |
-| .ci/rediacc_ci/build | 18 | .py 18 |
+| .ci/rediacc_ci/build | 19 | .py 19 |
 | .ci/rediacc_ci/catalog | 3 | .py 3 |
 | .ci/rediacc_ci/ci | 35 | .py 35 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
@@ -1220,7 +1220,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 16 | .py 16 |
 | .ci/rediacc_ci/testrun/onprem_suites | 8 | .py 8 |
-| .ci/rediacc_ci/tests | 674 | .py 674 |
+| .ci/rediacc_ci/tests | 675 | .py 675 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

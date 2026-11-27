@@ -43,6 +43,17 @@ on:
         required: false
         type: boolean
         default: false
+      signing:
+        # Which key signs the Linux packages and repositories. `release` fetches
+        # the release key from Bitwarden; `ephemeral` mints a throwaway pair
+        # (rediacc_ci.build.ephemeral_signing_key) and never fetches it, so a
+        # pull-request run, which executes PR-controlled build code, never holds
+        # the release key (PLAN-pr-path-ephemeral-credentials D1). Required with
+        # no default: a caller that forgets it fails at the build step under
+        # RELEASE_SIGNING_REQUIRED instead of silently picking either key.
+        description: 'release | ephemeral: the package-signing key this run uses'
+        type: string
+        required: true
     outputs:
       validation_passed:
         description: 'Whether all validation passed'
@@ -155,9 +166,17 @@ jobs:
           # installs and not the other.
           PYTHONPATH=.ci python3 -m rediacc_ci.build.ensure_nfpm >>"$GITHUB_PATH"
 
+      # PR path (inputs.signing == 'ephemeral'): a throwaway pair instead of the
+      # release key. It exports the same BWS_ names the fetch below would, so the
+      # build step reads one path and the scrub after it blanks the throwaway too.
+      - name: Mint the throwaway signing key for the next step only
+        if: inputs.signing == 'ephemeral'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.ephemeral_signing_key
+
       # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
       # fetch serves the next step only, and the scrub after it blanks the key.
       - name: Fetch the step-scoped signing key(s) for the next step only
+        if: inputs.signing == 'release'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
@@ -170,8 +189,8 @@ jobs:
           NEXT_VERSION: ${{ inputs.next_version }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
           RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
-          # This is the RELEASE path: an absent key here means the fetch failed,
-          # never that signing was not wanted. Without this the build ships an
+          # Both paths sign: an absent key here means the fetch (or the throwaway
+          # mint) failed, never that signing was not wanted. Without this the build ships an
           # unsigned package and goes green, which is what it did while the
           # deleted org secret was resolving to the empty string.
           RELEASE_SIGNING_REQUIRED: '1'
@@ -210,10 +229,16 @@ jobs:
           mkdir -p dist/pages/cli
           cp dist/cli/manifest.json dist/pages/cli/
 
+      # The same throwaway pair again: the module reuses the files it wrote for the
+      # package build, because dnf checks every rpm against this repository's gpg.key.
+      - name: Mint the throwaway signing key for the next step only
+        if: inputs.channel != '' && inputs.signing == 'ephemeral'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.ephemeral_signing_key
+
       # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
       # fetch serves the next step only, and the scrub after it blanks the key.
       - name: Fetch the step-scoped signing key(s) for the next step only
-        if: inputs.channel != ''
+        if: inputs.channel != '' && inputs.signing == 'release'
         uses: ./.github/actions/bws-secrets
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
@@ -240,8 +265,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_GPG_PRIVATE_KEY: ${{ env.BWS_RELEASE_GPG_PRIVATE_KEY }}
           RELEASE_GPG_PASSPHRASE: ${{ env.BWS_RELEASE_GPG_PASSPHRASE }}
-          # This is the RELEASE path: an absent key here means the fetch failed,
-          # never that signing was not wanted. Without this the build ships an
+          # Both paths sign: an absent key here means the fetch (or the throwaway
+          # mint) failed, never that signing was not wanted. Without this the build ships an
           # unsigned package and goes green, which is what it did while the
           # deleted org secret was resolving to the empty string.
           RELEASE_SIGNING_REQUIRED: '1'

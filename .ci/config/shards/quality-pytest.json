@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 6,
-  "generatedAt": "2026-11-27T10:04:41.226Z",
+  "generatedAt": "2026-11-27T10:05:47.444Z",
   "legs": [
     {
       "index": 1,
@@ -774,6 +774,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_env_shell_vars.py",
         "pytest:.ci/rediacc_ci/tests/test_bootstrap_pytest_env_pins.py",
         "pytest:.ci/rediacc_ci/tests/test_build_build_json.py",
+        "pytest:.ci/rediacc_ci/tests/test_build_ephemeral_signing_key.py",
         "pytest:.ci/rediacc_ci/tests/test_build_extract_renet_from_image.py",
         "pytest:.ci/rediacc_ci/tests/test_build_pack_cli_npm.py",
         "pytest:.ci/rediacc_ci/tests/test_catalog_generate.py",

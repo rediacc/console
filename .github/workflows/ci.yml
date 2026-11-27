@@ -1133,6 +1133,9 @@ jobs:
     uses: ./.github/workflows/cd-stage.yml
     with:
       upload_pages: ${{ github.event_name == 'pull_request' }}
+      # A pull request runs PR-controlled build code, so it signs with a throwaway
+      # key and never fetches the release one (PLAN-pr-path-ephemeral-credentials D1).
+      signing: ${{ github.event_name == 'pull_request' && 'ephemeral' || 'release' }}
       channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       # A bump-none commit earns no tag and no GitHub release, so it must not
