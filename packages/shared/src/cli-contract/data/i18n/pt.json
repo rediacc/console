@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "Ficheiro JSON com mapeamento ponteiro→texto simples antigo para barreira de conhecimento em --apply",
   "commands.config.edit.optionDump": "Imprimir a configuração actual como JSONC para stdout (só leitura; seguro para agentes quando redigido)",
   "commands.config.edit.optionEditor": "Substituição do comando do editor (segue precedência git: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Ocultar valores sensíveis na saída de --dump (comportamento predefinido; não pode ser usado com --reveal)",
   "commands.config.edit.optionReveal": "Mostrar texto simples para valores sensíveis (apenas TTY interactivo; auditado)",
   "commands.config.edit.rotateDeclined": "Cancelado; rascunho preservado no ficheiro temporário do editor.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

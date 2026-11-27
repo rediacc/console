@@ -2190,6 +2190,7 @@ Open the active config in $EDITOR as a redacted JSONC projection. Humans only; a
 
 - `--reveal`: Show plaintext for sensitive values (interactive TTY only; audited)
 - `--dump`: Print current config as JSONC to stdout (read-only; safe for agents when redacted)
+- `--redacted`: Redact sensitive values in --dump output (the default; cannot be combined with --reveal)
 - `--apply <file>`: Apply an edited JSONC file (skips $EDITOR launch)
 - `--current-secrets <file>`: JSON file mapping pointer→old plaintext for knowledge-gate on --apply
 - `--editor <cmd>`: Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)

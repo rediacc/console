@@ -2,7 +2,8 @@
  * `rdc config edit`, open the active config in $EDITOR for hand-edit.
  *
  * Flow:
- *   1. Refuse for AI agents unless REDIACC_ALLOW_CONFIG_EDIT scope grants access.
+ *   1. Refuse every AI agent for the interactive editor, --apply and --reveal (no override
+ *      exists); refuse --apply for a human whose stdin is not a TTY.
  *   2. Render the config as redacted JSONC (or full JSONC with --reveal + audit).
  *   3. Spawn $EDITOR; wait for the user to close it.
  *   4. Re-parse the saved file; reject any modified `<redacted:…>` stub
@@ -14,7 +15,8 @@
  *
  * Subcommand: `rdc config edit --dump [--redacted] [--apply <file>]`
  *   --dump            print the current config as JSONC to stdout
- *   --apply <file>    read an edited JSONC from a file and apply it
+ *   --redacted        redact sensitive values (the default; conflicts with --reveal)
+ *   --apply <file>    read an edited JSONC from a file and apply it (human at a TTY only)
  *
  * Audit:
  *   edit_open / edit_apply / edit_abort / reveal_granted are all logged.
@@ -42,7 +44,7 @@ import {
   stringifyConfig,
   walkSensitive,
 } from '@rediacc/shared/config-schema';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
 import { redactClone, shortFingerprint } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
@@ -50,7 +52,7 @@ import { isRemoteConfigFile, updateSyncedConfig } from '../../services/config/sy
 import { auditLog } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
 import { writeStdout } from '../../services/core/request-context.js';
-import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
+import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
 import { parseJsonText } from '../../utils/json-text.js';
@@ -64,10 +66,7 @@ function configDir(): string {
 }
 
 function refuseAgentEdit(): never {
-  const key = process.env.REDIACC_ALLOW_CONFIG_EDIT
-    ? 'errors.agent.configEditAncestry'
-    : 'errors.agent.configEdit';
-  throw new ValidationError(t(key));
+  throw new ValidationError(t('errors.agent.configEdit'));
 }
 
 interface RenderOptions {
@@ -532,27 +531,41 @@ async function handleInteractiveMode(
   );
 }
 
-/** Check agent gate and reveal gate; throws if access should be refused. */
-function checkEditGates(
-  config: RdcConfig,
-  agent: boolean,
-  needsAgentGate: boolean,
-  reveal: boolean
-): void {
-  if (agent && needsAgentGate) {
-    const scope = configEditOverrideScope();
-    if (!scope || scope !== '*') {
-      auditLog(configDir(), {
-        command: 'config edit',
-        paths: [],
-        outcome: 'refused',
-        configId: config.id,
-        configVersion: config.version,
-        reason: 'agent without REDIACC_ALLOW_CONFIG_EDIT=*',
-      });
-      refuseAgentEdit();
-    }
+interface EditGateInput {
+  agent: boolean;
+  /** Interactive editor, --apply or --reveal: every form that writes or exposes plaintext. */
+  needsAgentGate: boolean;
+  reveal: boolean;
+  apply: boolean;
+}
+
+/** Check the agent, apply-TTY and reveal gates; throws if access should be refused. */
+function checkEditGates(config: RdcConfig, gate: EditGateInput): void {
+  // No override exists: a whole-document edit can rewrite the policy that limits the agent and drop a repo's LUKS credential, so every agent is refused.
+  if (gate.agent && gate.needsAgentGate) {
+    auditLog(configDir(), {
+      command: 'config edit',
+      paths: [],
+      outcome: 'refused',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'agent environment',
+    });
+    refuseAgentEdit();
   }
+  // A script an agent drives outside the ancestry check has no TTY on stdin, so --apply is for a human at a terminal only.
+  if (gate.apply && !isatty(process.stdin.fd)) {
+    auditLog(configDir(), {
+      command: 'config edit --apply',
+      paths: [],
+      outcome: 'refused',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'stdin is not a TTY',
+    });
+    throw new ValidationError(t('errors.agent.applyRequiresTty'));
+  }
+  const reveal = gate.reveal;
   if (reveal) {
     if (!isatty(process.stdout.fd))
       throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
@@ -573,6 +586,9 @@ export function registerEditCommands(parent: Command, _program: Command): void {
     .description(t('commands.config.edit.description'))
     .option('--reveal', t('commands.config.edit.optionReveal'))
     .option('--dump', t('commands.config.edit.optionDump'))
+    .addOption(
+      new Option('--redacted', t('commands.config.edit.optionRedacted')).conflicts('reveal')
+    )
     .option('--apply <file>', t('commands.config.edit.optionApply'))
     .option('--current-secrets <file>', t('commands.config.edit.optionCurrentSecrets'))
     .option('--editor <cmd>', t('commands.config.edit.optionEditor'))
@@ -580,6 +596,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
       async (options: {
         reveal?: boolean;
         dump?: boolean;
+        redacted?: boolean;
         apply?: string;
         currentSecrets?: string;
         editor?: string;
@@ -595,7 +612,12 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output, safe for agents.
           const interactive = !options.dump && !options.apply;
           const needsAgentGate = interactive || Boolean(options.apply) || reveal;
-          checkEditGates(config, agent, needsAgentGate, reveal);
+          checkEditGates(config, {
+            agent,
+            needsAgentGate,
+            reveal,
+            apply: Boolean(options.apply),
+          });
 
           const knowledge: Record<string, unknown> | undefined = options.currentSecrets
             ? loadKnowledgeFile(options.currentSecrets)

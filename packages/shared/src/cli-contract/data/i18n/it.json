@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "File JSON che mappa pointer→valore in chiaro precedente per il knowledge-gate su --apply",
   "commands.config.edit.optionDump": "Stampa la configurazione corrente come JSONC su stdout (sola lettura; sicuro per gli agenti se oscurato)",
   "commands.config.edit.optionEditor": "Sovrascrittura del comando dell'editor (segue la precedenza di git: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Oscura i valori sensibili nell'output di --dump (comportamento predefinito; non combinabile con --reveal)",
   "commands.config.edit.optionReveal": "Mostra il testo in chiaro per i valori sensibili (solo TTY interattivo; registrato)",
   "commands.config.edit.rotateDeclined": "Annullato; bozza conservata nel file temporaneo dell'editor.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

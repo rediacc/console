@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "--apply의 지식 게이트를 위한 pointer→이전 평문 매핑 JSON 파일",
   "commands.config.edit.optionDump": "현재 설정을 JSONC로 stdout에 출력합니다 (읽기 전용; 가려진 경우 에이전트에게 안전합니다)",
   "commands.config.edit.optionEditor": "편집기 명령 재정의 (git 우선순위를 따름: 플래그 > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "--dump 출력에서 민감한 값을 가립니다 (기본 동작이며 --reveal과 함께 쓸 수 없습니다)",
   "commands.config.edit.optionReveal": "민감한 값의 평문을 표시합니다 (대화형 TTY 전용; 감사 기록됨)",
   "commands.config.edit.rotateDeclined": "중단됨. 초안이 편집기 임시 파일에 보존되었습니다.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

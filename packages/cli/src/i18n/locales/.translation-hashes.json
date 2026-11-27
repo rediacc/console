@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 3347,
-    "sourceCommit": "9aea9303807987189351d3da1cd51faffc1a7f64"
+    "keyCount": 3348,
+    "sourceCommit": "993b21b06652b080e9c98f0d42367b1141b398e5"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -604,6 +604,7 @@
     "commands.config.edit.optionCurrentSecrets": "c092d14d",
     "commands.config.edit.optionDump": "a378be57",
     "commands.config.edit.optionEditor": "0d1f8784",
+    "commands.config.edit.optionRedacted": "2f2485cd",
     "commands.config.edit.optionReveal": "92552c42",
     "commands.config.edit.rotateDeclined": "2b9d514a",
     "commands.config.edit.rotatePromptBullet": "bc892adb",
@@ -2831,11 +2832,11 @@
     "docs.tableHeaders.flag": "71c644a4",
     "docs.tableHeaders.meaning": "f08cc99e",
     "docs.tableHeaders.required": "19edc75f",
+    "errors.agent.applyRequiresTty": "d003bfe2",
     "errors.agent.clusterOpBlocked": "bed44c0d",
     "errors.agent.clusterOpsDenied": "7134804d",
     "errors.agent.commandBlocked": "50f69976",
-    "errors.agent.configEdit": "e1933233",
-    "errors.agent.configEditAncestry": "429ec590",
+    "errors.agent.configEdit": "295fdb91",
     "errors.agent.confirmationRequired": "d6d7da52",
     "errors.agent.confirmByArgument": "71d37219",
     "errors.agent.confirmDeclined": "6a1d81d7",

@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "指针→旧明文 的 JSON 映射文件,用于 --apply 时的知识门控",
   "commands.config.edit.optionDump": "将当前配置以 JSONC 形式输出到 stdout,不打开编辑器(只读;脱敏时代理也可安全使用)",
   "commands.config.edit.optionEditor": "编辑器命令(遵循 git 优先级:--editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "在 --dump 输出中隐去敏感值(默认行为;不能与 --reveal 同时使用)",
   "commands.config.edit.optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)",
   "commands.config.edit.rotateDeclined": "已中止;草稿已保留在编辑器临时文件中。",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

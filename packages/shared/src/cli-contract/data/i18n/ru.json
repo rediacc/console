@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "JSON-файл, сопоставляющий указатель→старый открытый текст для шлюза знаний при --apply",
   "commands.config.edit.optionDump": "Вывести текущую конфигурацию в stdout как JSONC вместо открытия редактора (только чтение; безопасно для агентов при редактировании)",
   "commands.config.edit.optionEditor": "Команда редактора (следует порядку git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Скрывать чувствительные значения в выводе --dump (по умолчанию; нельзя сочетать с --reveal)",
   "commands.config.edit.optionReveal": "Показать секретные значения в открытом виде (только интерактивный TTY; аудируется)",
   "commands.config.edit.rotateDeclined": "Отменено; черновик сохранён во временном файле редактора.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

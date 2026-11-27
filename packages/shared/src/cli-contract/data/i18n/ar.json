@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "ملف JSON يربط المؤشر → النص الصريح القديم لبوابة المعرفة عند --apply",
   "commands.config.edit.optionDump": "طباعة التكوين الحالي كـ JSONC إلى stdout بدلاً من فتح المحرر (للقراءة فقط؛ آمن للعملاء عند الإخفاء)",
   "commands.config.edit.optionEditor": "أمر المحرر البديل (يتبع تسلسل git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "إخفاء القيم الحساسة في مخرجات --dump (السلوك الافتراضي؛ لا يمكن دمجه مع --reveal)",
   "commands.config.edit.optionReveal": "إظهار النص الصريح للقيم الحساسة (طرفية تفاعلية فقط؛ يُسجَّل)",
   "commands.config.edit.rotateDeclined": "تم الإلغاء؛ تم الحفاظ على المسودة في ملف المحرر المؤقت.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

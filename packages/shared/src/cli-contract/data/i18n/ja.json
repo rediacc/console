@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "ポインタ → 旧平文 のマップ JSON ファイル。--apply 時の知識ゲート用",
   "commands.config.edit.optionDump": "エディタを開かず、現在の設定を JSONC として stdout に出力(読み取り専用。秘匿時はエージェントでも安全)",
   "commands.config.edit.optionEditor": "エディタ コマンドの上書き(git と同じ優先順位: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "--dump の出力で機密値を伏せます(既定の動作。--reveal とは併用できません)",
   "commands.config.edit.optionReveal": "機密値を平文で表示(対話型 TTY のみ、監査ログに記録)",
   "commands.config.edit.rotateDeclined": "中止しました。下書きはエディタの一時ファイルに保持されています。",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

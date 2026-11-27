@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "--apply için bilgi kapısında kullanılan pointer→eski açık metin eşlemesi JSON dosyası",
   "commands.config.edit.optionDump": "Editörü açmak yerine mevcut yapılandırmayı JSONC olarak stdout'a yaz (salt okunur; redakte edildiğinde ajanlar için güvenli)",
   "commands.config.edit.optionEditor": "Editör komutu geçersiz kılma (git önceliğine uyar: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "--dump çıktısında hassas değerleri gizler (varsayılan davranış; --reveal ile birlikte kullanılamaz)",
   "commands.config.edit.optionReveal": "Hassas değerleri açık metin olarak göster (yalnızca etkileşimli TTY; denetlenir)",
   "commands.config.edit.rotateDeclined": "İptal edildi; taslak editör geçici dosyasında korundu.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

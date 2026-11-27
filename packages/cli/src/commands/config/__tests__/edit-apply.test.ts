@@ -16,18 +16,23 @@ const configHome = mkdtempSync(join(tmpdir(), 'rdc-edit-apply-'));
 process.env.XDG_CONFIG_HOME = configHome;
 const NAME = 'edt';
 
-vi.mock('../../utils/agent-guard.js', async (importOriginal) => ({
+// --apply is for a human at a terminal: stdin reads as a TTY here (edit-agent-gate.test.ts covers the refusal without one).
+vi.mock('node:tty', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('node:tty')>()),
+  isatty: () => true,
+}));
+vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   isAgentEnvironment: () => false,
 }));
-vi.mock('../../services/core/output.js', () => ({
+vi.mock('../../../services/core/output.js', () => ({
   outputService: { success: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), print: vi.fn() },
 }));
 
-const { configFileStorage } = await import('../../adapters/config-file-storage.js');
-const { configService } = await import('../../services/config/config-resources.js');
-const { redactClone } = await import('../../schema/fingerprint.js');
-const { registerEditCommands } = await import('../config/edit.js');
+const { configFileStorage } = await import('../../../adapters/config-file-storage.js');
+const { configService } = await import('../../../services/config/config-resources.js');
+const { redactClone } = await import('../../../schema/fingerprint.js');
+const { registerEditCommands } = await import('../edit.js');
 
 async function apply(edited: unknown, knowledge?: Record<string, unknown>): Promise<void> {
   const file = join(configHome, 'edited.json');

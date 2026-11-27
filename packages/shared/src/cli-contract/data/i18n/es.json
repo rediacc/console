@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "Archivo JSON que mapea puntero→texto antiguo en claro para la puerta de conocimiento en --apply",
   "commands.config.edit.optionDump": "Imprimir la configuración actual como JSONC en stdout en lugar de abrir el editor (solo lectura; seguro para agentes cuando está redactado)",
   "commands.config.edit.optionEditor": "Orden de editor (sigue la precedencia de git: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Ocultar los valores sensibles en la salida de --dump (es lo predeterminado; no se combina con --reveal)",
   "commands.config.edit.optionReveal": "Mostrar texto en claro de valores sensibles (solo TTY interactivo; auditado)",
   "commands.config.edit.rotateDeclined": "Cancelado; borrador conservado en el archivo temporal del editor.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

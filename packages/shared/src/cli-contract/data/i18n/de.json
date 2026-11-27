@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "JSON-Datei mit Pointer→alter-Klartext-Zuordnung für den Wissensnachweis bei --apply",
   "commands.config.edit.optionDump": "Aktuelle Konfiguration als JSONC an stdout ausgeben, statt den Editor zu öffnen (schreibgeschützt; für Agenten sicher, wenn zensiert)",
   "commands.config.edit.optionEditor": "Editor-Befehl (folgt git-Reihenfolge: --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Sensible Werte in der --dump-Ausgabe schwärzen (Standard; nicht mit --reveal kombinierbar)",
   "commands.config.edit.optionReveal": "Klartext für sensible Werte anzeigen (nur interaktives TTY; Audit-Log)",
   "commands.config.edit.rotateDeclined": "Abgebrochen; Entwurf in der Editor-Temp-Datei erhalten.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "JSON file mapping pointer→old plaintext for knowledge-gate on --apply",
   "commands.config.edit.optionDump": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)",
   "commands.config.edit.optionEditor": "Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Redact sensitive values in --dump output (the default; cannot be combined with --reveal)",
   "commands.config.edit.optionReveal": "Show plaintext for sensitive values (interactive TTY only; audited)",
   "commands.config.edit.rotateDeclined": "Aborted; draft preserved in editor tempfile.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",

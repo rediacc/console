@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'd2ba170a3b3fec50';
+export const CLI_CONTRACT_VERSION = '450574a813ac1f31';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "d2ba170a3b3fec50",
+  "version": "450574a813ac1f31",
   "languages": [
     "ar",
     "de",
@@ -4348,6 +4348,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.config.edit.optionDump",
           "label": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)"
+        },
+        {
+          "flags": "--redacted",
+          "long": "redacted",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.edit.optionRedacted",
+          "label": "Redact sensitive values in --dump output (the default; cannot be combined with --reveal)"
         },
         {
           "flags": "--apply <file>",

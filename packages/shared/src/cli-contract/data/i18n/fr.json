@@ -596,6 +596,7 @@
   "commands.config.edit.optionCurrentSecrets": "Fichier JSON mappant pointeur→ancien texte en clair pour la porte de connaissance sur --apply",
   "commands.config.edit.optionDump": "Afficher la configuration actuelle en JSONC sur stdout au lieu d'ouvrir l'éditeur (lecture seule ; sûr pour les agents si caviardé)",
   "commands.config.edit.optionEditor": "Commande d'éditeur (suit la priorité git : --editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
+  "commands.config.edit.optionRedacted": "Masquer les valeurs sensibles dans la sortie de --dump (par défaut ; incompatible avec --reveal)",
   "commands.config.edit.optionReveal": "Afficher les valeurs sensibles en clair (TTY interactif uniquement ; audité)",
   "commands.config.edit.rotateDeclined": "Annulé ; brouillon conservé dans le fichier temporaire de l'éditeur.",
   "commands.config.edit.rotatePromptBullet": "  • {{pointer}}",
