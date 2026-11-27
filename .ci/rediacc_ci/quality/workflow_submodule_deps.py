@@ -158,6 +158,43 @@ def named_test_files(cmd: str, workspaces: list[str], repo: pathlib.Path | None 
     return found
 
 
+def config_test_files(
+    cmd: str, workspaces: list[str], repo: pathlib.Path | None = None
+) -> list[pathlib.Path]:
+    """The test files a `--config <file>` vitest config names by literal, or [] when it names none.
+
+    `npx vitest run --config vitest.windows.config.ts` runs the files that config lists and nothing else (the Windows lane lists its tier-A files by name), so sweeping the whole package charged the job with tests it never runs. A quoted string in the config is a test file when `src/<string>.test.ts` exists or the string is itself an existing `*.test.ts(x)` path or glob under a workspace the job named (any package when it named none). A config that lists none gives [], and the caller sweeps as before.
+    """
+    repo = repo or REPO
+    try:
+        tokens = shlex.split(cmd)
+    except ValueError:
+        return []
+    conf = next(
+        (
+            tokens[i + 1] if tok in {"--config", "-c"} else tok.split("=", 1)[1]
+            for i, tok in enumerate(tokens)
+            if (tok in {"--config", "-c"} and i + 1 < len(tokens)) or tok.startswith("--config=")
+        ),
+        None,
+    )
+    if not conf:
+        return []
+    roots = [repo / "packages" / ws for ws in workspaces] or sorted((repo / "packages").glob("*"))
+    found: dict[pathlib.Path, None] = {}
+    for root in roots:
+        cfg = root / conf
+        if not cfg.is_file():
+            continue
+        for lit in re.findall(r"""['"]([\w./@*-]+)['"]""", cfg.read_text(errors="replace")):
+            if re.search(r"\.test\.tsx?$", lit):
+                hits = list(root.glob(lit)) if "*" in lit else [root / lit]
+            else:
+                hits = [root / "src" / f"{lit}.test.ts"]
+            found.update((h, None) for h in hits if h.is_file())
+    return list(found)
+
+
 # Build OUTPUTS are not source. A bundler inlines the paths it read at build time, so dist/cli-bundle.cjs contains the string "private/renet/..." without the job ever opening that file. Flagging those would train a reader to ignore this gate, which is worse than not having it.
 GENERATED = re.compile(r"(^|/)(dist|build|out|coverage|node_modules|\.cache)(/|$)")
 
@@ -279,7 +316,7 @@ def reachable_text(commands: list[str], scripts: dict[str, str]) -> list[tuple[s
         # THE HOP THAT MATTERS. A test runner reaches files no step names. Only a command the job RUNS triggers the sweep. Letting a walked script body trigger it made every job that transitively mentions vitest sweep all 227 test files, which flagged eight jobs that never run a test.
         if scannable and not swept_whole and TEST_RUNNERS.search(cmd):
             workspaces = named_workspaces(seen_cmds)
-            named = named_test_files(cmd, workspaces)
+            named = named_test_files(cmd, workspaces) or config_test_files(cmd, workspaces)
             if named:
                 # A command that names its files sweeps those, and ONLY those: a later whole-workspace runner command in the same job is still swept in full.
                 sweep = [path for path in named if path not in swept_named]
@@ -471,6 +508,21 @@ def run_controls(subs: list[str], scripts: dict[str, str]) -> list[str]:
             failures.append(
                 "a boolean flag before a directory filter hid the filter, narrowing the sweep"
             )
+    # A vitest `--config` that lists its files by name sweeps those files only; one that lists none sweeps as before.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = pathlib.Path(tmp) / "repo"
+        (root / "packages" / "cli" / "src" / "a").mkdir(parents=True)
+        listed = root / "packages" / "cli" / "src" / "a" / "x.test.ts"
+        listed.write_text("// x\n")
+        (root / "packages" / "cli" / "src" / "y.test.ts").write_text("// y\n")
+        (root / "packages" / "cli" / "w.config.ts").write_text("const t = ['a/x'];\n")
+        (root / "packages" / "cli" / "empty.config.ts").write_text("export default {};\n")
+        if config_test_files("npx vitest run --config w.config.ts", [], root) != [listed]:
+            failures.append("a vitest config listing one file was not narrowed to that file")
+        if config_test_files("npx vitest run --config empty.config.ts", [], root) != []:
+            failures.append("a vitest config listing no file narrowed the sweep")
+        if config_test_files("npx vitest run", [], root) != []:
+            failures.append("a runner command with no --config was narrowed")
     # Every spelling of a workspace flag is parsed, `--workspace=@scope/pkg` included.
     spelled = named_workspaces(["npm test -w @rediacc/shared", "npm test --workspace=@rediacc/cli"])
     if spelled != ["cli", "shared"]:
