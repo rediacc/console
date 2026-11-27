@@ -316,6 +316,7 @@ describe('backup verify --restore-test', () => {
       });
       await run(['verify', 'shop', '--restore-test']);
       expect(printed()).toMatchObject({ status: 'failed' });
+      expect(printed().reason).not.toContain('anchor moved');
       expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(
         false
       );

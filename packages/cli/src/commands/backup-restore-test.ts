@@ -234,7 +234,9 @@ function compareVerdict(
   if (comparedSnapshot !== snapshotId) {
     return {
       status: 'failed',
-      reason: `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`,
+      reason: heldToSnapshot
+        ? `the copy was compared against ${verdict.snapshotId ?? '-'}, not the restored snapshot ${snapshotId}, so it cannot be proven`
+        : `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`,
       passphraseCheck,
       compare: verdict,
       postFailed: false,
