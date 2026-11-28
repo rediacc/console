@@ -11,10 +11,6 @@
       "reason": "baseline 2026-11-17: 10.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_ci_runner::test_quick_clone_judges_head_and_leaves_the_live_tree_alone",
-      "reason": "baseline 2026-11-17: 12.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_ci_runner::test_selftest_is_wired_into_the_npm_key",
       "reason": "baseline 2026-11-17: 25.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -79,10 +75,6 @@
       "reason": "baseline 2026-11-17: 40.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_reads::test_a_scan_root_missing_from_the_tree_is_vacuous",
-      "reason": "baseline 2026-11-17: 20.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_reads::test_baseline_is_shrink_only",
       "reason": "baseline 2026-11-17: 78.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -91,28 +83,8 @@
       "reason": "baseline 2026-11-17: 77.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_reads::test_real_tree_is_green_and_not_vacuous",
-      "reason": "baseline 2026-11-17: 18.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_reads::test_unhooking_a_claude_hooks_retry_reds_exactly_its_reads",
-      "reason": "baseline 2026-11-17: 22.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_shell::test_a_shell_tree_with_no_scripts_is_vacuous",
-      "reason": "baseline 2026-11-17: 29.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_shell::test_real_tree_is_green_and_not_vacuous",
-      "reason": "baseline 2026-11-17: 16.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_gh_retry_shell::test_reaper_without_retry_reds_through_the_driver",
       "reason": "baseline 2026-11-17: 35.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_enterprise_lab::test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract",
-      "reason": "measured 2026-11-21: 10.3 s in the ci:quick full run on c45d6ebf5 under 18 workers (the real crypto helper through tsx); drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_incremental_receipt::test_defhash_and_fileshash_equal_ts",
@@ -129,10 +101,6 @@
     {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_pin_cli::test_selftest_is_green",
       "reason": "baseline 2026-11-17: 30.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.gates.test_gate_pin_drivers::test_selftest_is_green[toolchain]",
-      "reason": "baseline 2026-11-17: 11.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.gates.test_gate_plan_folders::test_the_controls_run_before_the_verdict",
@@ -363,20 +331,12 @@
       "reason": "baseline 2026-11-17: 80.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output[a-fixture-install-failing-inside-the-battery-is-ignored]",
-      "reason": "baseline 2026-11-17: 19.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output[arguments-are-ignored]",
       "reason": "baseline 2026-11-17: 43.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output[caller-supplied-master-key]",
       "reason": "baseline 2026-11-17: 41.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output[enforcing-binary-accepts-a-forged-license]",
-      "reason": "baseline 2026-11-17: 17.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output[happy-path-both-controls-fail]",
@@ -419,20 +379,8 @@
       "reason": "baseline 2026-11-17: 30.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_proxies_go_unit::test_a_testutil_only_package_is_excluded_by_both_sides",
-      "reason": "baseline 2026-11-17: 28.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.test_proxies_go_unit::test_real_tree_passes_through_the_port",
       "reason": "baseline 2026-11-17: 66.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_proxies_go_unit::test_the_derived_subset_prints_its_whole_shape",
-      "reason": "baseline 2026-11-17: 34.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_proxies_go_unit::test_the_failing_tests_own_output_is_kept_and_bounded",
-      "reason": "baseline 2026-11-17: 25.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.test_proxies_license_e2e::test_real_tree_passes_through_the_port",
@@ -451,20 +399,8 @@
       "reason": "baseline 2026-11-17: 25.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".ci.rediacc_ci.tests.test_quality_dead_python::test_the_gate_can_fail_on_the_real_tree",
-      "reason": "baseline 2026-11-17: 25.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".ci.rediacc_ci.tests.test_quality_editorconfig::test_the_real_tree_complies",
       "reason": "baseline 2026-11-17: 33.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_a_dangling_proof_site_reds",
-      "reason": "baseline 2026-11-17: 27.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_a_deleted_manifest_is_a_refusal_not_a_pass",
-      "reason": "baseline 2026-11-17: 30.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_a_literal_name_in_the_python_env_registry_must_be_classified",
@@ -505,10 +441,6 @@
     {
       "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_collision_authority_is_word_bounded_not_a_substring",
       "reason": "baseline 2026-11-17: 30.8 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_entry_point_is_green_on_the_real_tree",
-      "reason": "baseline 2026-11-17: 27.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".ci.rediacc_ci.tests.test_quality_env_manifest::test_every_reader_is_live_on_the_real_tree",
@@ -589,14 +521,6 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_every_guard_discriminates[block_backup_unverified_push]",
       "reason": "baseline 2026-11-17: 46.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_every_guard_discriminates[block_renet_untested_push]",
-      "reason": "baseline 2026-11-17: 59.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_every_guard_discriminates[block_settled_questions]",
-      "reason": "baseline 2026-11-17: 19.3 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_guards_differential::test_every_guard_discriminates[block_vm_unverified_push]",
@@ -735,10 +659,6 @@
       "reason": "baseline 2026-11-17: 29.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-ask-00]",
-      "reason": "baseline 2026-11-17: 13.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-bash-00]",
       "reason": "baseline 2026-11-17: 48.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -749,10 +669,6 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-bash-02]",
       "reason": "baseline 2026-11-17: 49.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
-      "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-bash-03]",
-      "reason": "baseline 2026-11-17: 40.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
       "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-bash-04]",
@@ -803,10 +719,6 @@
       "reason": "baseline 2026-11-17: 17.1 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
     {
-      "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-edit-00]",
-      "reason": "baseline 2026-11-17: 31.7 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-    },
-    {
       "test": ".claude.rediacc_hooks.tests.test_settings_collapse::test_verdict_set_is_unchanged[pre-edit-01]",
       "reason": "baseline 2026-11-17: 35.4 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
     },
@@ -837,6 +749,14 @@
     {
       "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-store.py]",
       "reason": "measured 2026-11-21: 10.9 s in PR 605 CI run 44884489459 (Quality / Pytest 4/6, CI runner); the landing-store control suite builds real two-tree repositories; drop the entry once it runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something[stop/test-landing-stack.py]",
+      "reason": "measured 2026-11-28: 15.8 s in ci:quick 38 (re-timed serially by the ratchet, still over 10 s); drop the entry once the test runs under 10 s"
+    },
+    {
+      "test": ".ci.rediacc_ci.tests.test_core_devbox::test_every_container_carries_the_runner_image_variable_equal_to_the_pin",
+      "reason": "measured 2026-11-28: 13.8 s in ci:quick 38 (re-timed serially by the ratchet, still over 10 s); drop the entry once the test runs under 10 s"
     }
   ]
 }
