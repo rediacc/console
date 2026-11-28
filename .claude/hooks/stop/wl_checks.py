@@ -2783,6 +2783,14 @@ def planfid_check(worklist, session_id, event, fold, lines, me8, last_msg):
     )
 
 
+def _soaked_pins_daily(root, role):
+    """The daily local `pins apply-soaked` route (plan K6): claims today's UTC date and starts the verb detached, once per day, in the development tree only. NEVER blocks and never raises."""
+    with contextlib.suppress(Exception):
+        import wl_soakedpins
+
+        wl_soakedpins.run_daily(root, role)
+
+
 def _soaked_pins_report(worklist, session_id, state_doc):
     """Advise that soaked pins are waiting, from the latest pins-soaked report on disk (no network). NEVER blocks and never raises."""
     with contextlib.suppress(Exception):
@@ -3885,6 +3893,7 @@ def _stop_setup(ns):
     fold = S.load(worklist, sync=True)
     state_doc = S.load_state(worklist, session_id)
     _resprofile_report(worklist, session_id, state_doc)
+    _soaked_pins_daily(own, wl_prscope.tree_role(C.landing_record(pathlib.Path(root)), own))
     _soaked_pins_report(worklist, session_id, state_doc)
     _renet_tests_report(worklist, session_id, state_doc)
     if _cfg_problems:

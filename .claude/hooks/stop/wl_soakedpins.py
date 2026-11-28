@@ -7,7 +7,11 @@ The advisory is report-only. Its effort row (`soaked-pins` in .claude/config/eff
 
 import datetime
 import json
+import os
 import pathlib
+import subprocess
+import sys
+import time
 
 REPORT_REL = ".ci/cache/pins-soaked/report.json"
 
@@ -15,6 +19,13 @@ REPORT_REL = ".ci/cache/pins-soaked/report.json"
 MAX_AGE_H = 72
 
 MAX_LISTED = 8
+
+# THE DAILY LOCAL ROUTE (agent/plans/PLAN-ciquick-gate-contract.md K6). The Stop hook of the development tree runs `npm run pins -- apply-soaked` once per UTC day, so a freshness bump lands at a loop boundary and never depends on a GitHub trigger. The verb edits files and never commits; the per-repo commits are the lead's. The stamp is written BEFORE the verb starts (a claim: a second stop on the same day finds it and does nothing, and a verb that dies is not retried until tomorrow), and the detached runner rewrites it with the result.
+STAMP_REL = ".ci/cache/pins-soaked/last-run.json"
+LANDING = "landing"
+VERB = ["npm", "run", "pins", "--", "apply-soaked", "--json", "--out", ".ci/cache/pins-soaked"]
+# The verb's own budget; the Stop hook's is 900 s and the hook only claims and spawns, so it spends milliseconds.
+VERB_TIMEOUT_S = 600
 
 
 def report_path(root):
@@ -73,3 +84,94 @@ def advisory(root, now=None):
         "  Apply on this branch with `npm run pins -- apply-soaked --task <id>`; it never commits. "
         "Report-only: nothing here blocks."
     ) % (len(pins), REPORT_REL, "\n".join(lines))
+
+
+def stamp_path(root):
+    return pathlib.Path(root) / STAMP_REL
+
+
+def _today(now):
+    return (now or datetime.datetime.now(datetime.UTC)).strftime("%Y-%m-%d")
+
+
+def _is_lease(root):
+    return "/.claude/worktrees/" in str(pathlib.Path(root).resolve()).replace(os.sep, "/")
+
+
+def due(root, role, now=None):
+    """True when the daily route should run here now: a development (or record-less) tree, not a lease, with no stamp for today's UTC date. A stamp that is unreadable counts as absent."""
+    if role == LANDING or _is_lease(root):
+        return False
+    try:
+        doc = json.loads(stamp_path(root).read_text(encoding="utf-8"))
+        return not (isinstance(doc, dict) and doc.get("day") == _today(now))
+    except (OSError, ValueError):
+        return True
+
+
+def _write_stamp(root, doc):
+    path = stamp_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(json.dumps(doc, sort_keys=True) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def run_daily(root, role, now=None, spawn=None):
+    """Claim today's run and start the verb, at most once per UTC day. Returns the claim written, or None when nothing was due. `spawn(root)` starts the detached runner and defaults to this file's `--run`; a test passes a fake. Never raises: the route is housekeeping and must not stop a stop."""
+    try:
+        if not due(root, role, now):
+            return None
+        claim = {"day": _today(now), "state": "started", "rc": None}
+        _write_stamp(root, claim)
+        (spawn or _spawn)(str(root))
+        return claim
+    except Exception:
+        return None
+
+
+def _spawn(root):
+    subprocess.Popen(
+        [sys.executable, os.path.abspath(__file__), "--run", str(root)],
+        cwd=str(root),
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True,
+    )
+
+
+def run_verb(root, runner=None, clock=time.monotonic):
+    """Run the verb and record its result (rc, seconds, tail of its output) in the stamp, keeping the claim's day. `runner(root)` returns (rc, text) and defaults to the real verb."""
+    day = _today(None)
+    try:
+        doc = json.loads(stamp_path(root).read_text(encoding="utf-8"))
+        day = doc.get("day", day)
+    except (OSError, ValueError):
+        pass
+    started = clock()
+
+    def real(r):
+        p = subprocess.run(
+            VERB, cwd=r, capture_output=True, text=True, timeout=VERB_TIMEOUT_S, check=False
+        )
+        return p.returncode, p.stdout + p.stderr
+
+    try:
+        rc, text = (runner or real)(str(root))
+    except Exception as exc:
+        rc, text = 1, "%s: %s" % (type(exc).__name__, exc)
+    result = {
+        "day": day,
+        "state": "done",
+        "rc": rc,
+        "seconds": round(clock() - started, 3),
+        "tail": text[-400:],
+    }
+    _write_stamp(root, result)
+    return result
+
+
+if __name__ == "__main__":
+    if len(sys.argv) == 3 and sys.argv[1] == "--run":
+        run_verb(sys.argv[2])
