@@ -56,7 +56,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 12 of 124 plans done, 1633 of 2132 boxes done (76%).
+Promoted: 12 of 124 plans done, 1636 of 2132 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -105,7 +105,7 @@ Promoted: 12 of 124 plans done, 1633 of 2132 boxes done (76%).
 | 43 | PLAN-onprem-relicence-inbox.md | 11/13 | 2 open |
 | 44 | PLAN-d1-eu-jurisdiction.md | 5/22 | 17 open |
 | 45 | PLAN-hostinger-to-bench.md | 15/22 | 7 open |
-| 46 | PLAN-multi-region-bench.md | 17/23 | 6 open |
+| 46 | PLAN-multi-region-bench.md | 18/23 | 5 open |
 | 47 | PLAN-root-api-token.md | 13/15 | 2 open |
 | 48 | PLAN-site-entry-points.md | 8/11 | 3 open |
 | 49 | PLAN-root-grants.md | 11/19 | 8 open |
@@ -160,7 +160,7 @@ Promoted: 12 of 124 plans done, 1633 of 2132 boxes done (76%).
 | 98 | PLAN-native-host-rdc-feedback.md | 7/9 | 2 open |
 | 99 | PLAN-host-temp-disposal.md | 16/19 | 3 open |
 | 100 | PLAN-cf-token-hardening.md | 0/8 | 8 open |
-| 101 | PLAN-nightly-green.md | 5/15 | 10 open |
+| 101 | PLAN-nightly-green.md | 7/15 | 8 open |
 | 102 | PLAN-backup-schedule-origin-guard.md | 3/4 | 1 open |
 | 103 | PLAN-release-credits-compliance.md | 7/10 | 3 open |
 | 104 | PLAN-reggate-debt-collection.md | 7/11 | 4 open |

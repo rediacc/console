@@ -574,10 +574,10 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-lint-rule-matrix-probe.md` | compacted | 50 | 0 | 0 | 3583 |
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 342 | 6 | 17 | 58437 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 344 | 5 | 18 | 59131 |
 | `agent/plans/PLAN-multicluster-local-suite.md` | proposed | 62 | 6 | 0 | 12204 |
 | `agent/plans/PLAN-native-host-rdc-feedback.md` | approved | 49 | 2 | 7 | 10800 |
-| `agent/plans/PLAN-nightly-green.md` | proposed | 82 | 10 | 5 | 19271 |
+| `agent/plans/PLAN-nightly-green.md` | proposed | 86 | 8 | 7 | 20387 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-onprem-relicence-inbox.md` | approved | 80 | 2 | 11 | 13942 |

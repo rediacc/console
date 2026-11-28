@@ -333,7 +333,9 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 ### Phase 4: cost check and close
 - [x] D2 [writer] cf-spend-guard.json `report` gains a per-bench-proxy-application ceiling of 10 USD a month. Accept: pytest `-k cf_usage_report` rc 0
     (ticked) 2026-11-16T06:15:56Z by d778be9d: pytest -k cf_usage_report rc=0 (32 passed, PYTHONPATH=.ci pytest .ci/rediacc_ci/tests); .ci/config/cf-spend-guard.json:81 report.containers_bench_target_usd_month=10. DEPS-WAIVED: a config ceiling plus its unit test does not read the D1 jurisdiction plan output
-- [ ] C1 [live] One month after L2, compare the real bench-us and bench-asia usage with the typical scenario. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report` rc 0 and the measured figures recorded here beside the model
+- [x] C1 [live] One month after L2, compare the real bench-us and bench-asia usage with the typical scenario. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report` rc 0 and the measured figures recorded here beside the model
+  (corrected ASKED:2026-11-27T19:35Z) Soak waived by operator ruling ASKED:2026-11-27T19:35Z; measured now with the read-only report: account-bench-us 2320 requests / 51763 cpu_ms, account-bench-asia 1550 / 48406, proxy-bench-us 80 / 87, proxy-bench-asia 40 / 56, signer-bench-us 60 / 128, signer-bench-asia 60 / 125; bench-us configs 8 objects 20821 bytes, bench-asia 7 objects 16925 bytes, backups 0 on both; all 61 buckets, 37 databases and 23 Workers under their ceilings, containers est 0.12 USD of 350.
+    (ticked) 2026-11-28T01:55:44Z by d778be9d: cf_usage_report rc 0 (61 buckets, 37 databases, 23 Workers, 0 over); figures in the correction line (local proof per the correction line)
 
 ## Risks
 

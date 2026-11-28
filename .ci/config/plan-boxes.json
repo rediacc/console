@@ -2678,10 +2678,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 17,
+      "open": 5,
+      "done": 18,
       "open_sigs": [
-        "3f19e559",
         "4265bd6d",
         "93dc39be",
         "9be3963c",
@@ -2692,6 +2691,7 @@
         "0e4aa275",
         "17c5e0bc",
         "3ddb7a48",
+        "3f19e559",
         "3f42fea0",
         "56f0d883",
         "69ae15c5",
@@ -2751,8 +2751,8 @@
       "owner": "e0f36861",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 10,
-      "done": 5,
+      "open": 8,
+      "done": 7,
       "open_sigs": [
         "007d2063",
         "1226aae7",
@@ -2761,16 +2761,16 @@
         "7d75a029",
         "9f5b850b",
         "da74651d",
-        "ddf56889",
-        "f5a00c43",
-        "fff67a6a"
+        "f5a00c43"
       ],
       "done_sigs": [
         "0e1e0baf",
         "1c67f5f7",
         "748b334f",
         "8ddf8945",
-        "ffd1c3b5"
+        "ddf56889",
+        "ffd1c3b5",
+        "fff67a6a"
       ]
     },
     "agent/plans/PLAN-nightly-retry-and-watchdog-noise.md": {
