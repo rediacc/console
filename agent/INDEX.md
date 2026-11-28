@@ -502,7 +502,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 50 | 0 | 12 | 11811 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
-| `agent/plans/PLAN-cloud-inventory.md` | approved | 151 | 30 | 0 | 43765 |
+| `agent/plans/PLAN-cloud-inventory.md` | approved | 151 | 30 | 0 | 43777 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 458 | 0 | 29 | 66476 |
 | `agent/plans/PLAN-cluster-crosssite-transport.md` | proposed | 61 | 6 | 1 | 14866 |
 | `agent/plans/PLAN-cluster-live-proofs.md` | proposed | 73 | 15 | 1 | 20326 |

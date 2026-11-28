@@ -801,6 +801,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -1057,6 +1065,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -1562,6 +1578,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -1786,6 +1810,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -2208,6 +2240,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -2415,6 +2455,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -2622,6 +2670,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -2865,6 +2921,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -3108,6 +3172,14 @@
         {
           "id": "check:ci-release-note-trailers",
           "reason": "The commit-range gate reads `git log` over the PR range and each submodule's gitlink delta, and reaches .ci/rediacc_ci/release/release_notes.py only for `.ci/config/release-notes.json`; the derivation reads the `agent/**` there as a read of every agent/ record, but that glob is an `internal` pattern a commit path is matched against to decide whether it owes a Release-Note trailer, and no file under agent/ is opened. Its verdict is computed from commit messages and changed paths, never from a record's content."
+        },
+        {
+          "id": "check:ci-paths-origin",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
+        },
+        {
+          "id": "check:ci-runner-selftest",
+          "reason": "It imports scripts/ci-runner/run.ts, whose only citations of the record globs are the planAdvance parity corpus scripts/ci-runner/advance-parity.json (fixture data loaded by run.ts --selftest, scripts/ci-runner/run.ts:6347) and its selftest fixtures; the runner reads .ci/policy/record-paths.json for the globs and never opens a record file."
         }
       ]
     },
@@ -3432,7 +3504,10 @@
         }
       ],
       "notReaders": [
-        {"id": "check:ci-mcp-docs-parity", "reason": "Its only citation the derivation finds is the string 'agent' in RETIRED_FAMILIES (scripts/gates/check-mcp-docs-parity.ts), an MCP tool family name; the gate reads the MCP registry and the docs pages under packages/www, and no file under agent/."},
+        {
+          "id": "check:ci-mcp-docs-parity",
+          "reason": "Its only citation the derivation finds is the string 'agent' in RETIRED_FAMILIES (scripts/gates/check-mcp-docs-parity.ts), an MCP tool family name; the gate reads the MCP registry and the docs pages under packages/www, and no file under agent/."
+        },
         {
           "id": "check:ci-pin-freshness",
           "reason": "Its only citation of agent/ is txn.ts dirtyHashes, which SKIPS every path under agent/ when it hashes the files a pin step changed (a startsWith('agent/') continue, because the hooks and peer sessions append there while a step runs). No file under agent/ is opened or judged, so no file's content can change this gate's verdict."

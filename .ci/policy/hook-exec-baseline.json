@@ -129,7 +129,7 @@
         "block_unsatisfiable_pid_wait": 198,
         "block_unscoped_formatter_run": 724,
         "block_untagged_commit": 378,
-        "block_unverified_push": 2236,
+        "block_unverified_push": 2406,
         "block_user_only_command": 107,
         "block_user_only_command_shell_write": 499,
         "block_vm_unverified_push": 765,

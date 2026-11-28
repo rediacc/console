@@ -1220,7 +1220,8 @@ def carried_over_paths(gates, paths, frm, to, entries_at):
     for gid, e in gates.items():
         if not isinstance(e, dict) or e.get("carriedFrom") is None:
             continue
-        inputs = e.get("inputs") if isinstance(e.get("inputs"), dict) else {}
+        raw_inputs = e.get("inputs")
+        inputs: dict = raw_inputs if isinstance(raw_inputs, dict) else {}
         globs, files = _str_list(inputs.get("globs")), _str_list(inputs.get("files"))
         if any(p in files or any(v2_match_glob(g, p) for g in globs) for p in paths) or (
             named_inputs_moved(inputs, frm, to, entries_at)

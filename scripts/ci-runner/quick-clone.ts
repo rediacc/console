@@ -902,7 +902,8 @@ function readCarry(text: string | undefined):
   }
 }
 
-/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`), or every key the receipt recorded for it is a carried key or matches a pattern still inside its `expires` day (`today`, UTC `YYYY-MM-DD`). Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Like the guard it WARNS and does not refuse on a carried key the run did not report (flapping findings), refuses on any key nothing carries, refuses on a pattern past its expiry anywhere in the file, and refuses on a keyed or whole-gate carry of a gate that is not failing. Pure. */
+/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`), or every key the receipt recorded for it is a carried key or matches a pattern still inside its `expires` day (`today`, UTC `YYYY-MM-DD`).
+ * Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Like the guard it WARNS and does not refuse on a carried key the run did not report (flapping findings), refuses on any key nothing carries, refuses on a pattern past its expiry anywhere in the file, and refuses on a keyed or whole-gate carry of a gate that is not failing. Pure. */
 export function carriedOnly(
   receipt: ReceiptShape | undefined,
   carriedText: string | undefined,

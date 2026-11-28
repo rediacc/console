@@ -57,7 +57,7 @@ A row names where its names come from and never copies a name. The reader (`cf_i
 | `preview` | INV1 `pattern` row | the registry | the registry row | `pr-<n>`, `pv-<w>-<w>-<w>`, the release preview stage of PLAN-preprod-simulation.md |
 | `test-resource` | INV1 row of class test, drill or lab | the registry | the registry row | acme, proof-loss |
 | `global-service` | wrangler config of a single-instance Worker | the config | the config | www, mta-sts-policy, ops-health |
-| `dev` | wrangler config that never reaches production | the config | the config | rediacc-proxy-dev (workers/proxy/wrangler.dev.toml), account-server (private/account/wrangler.toml) |
+| `dev` | wrangler config that never reaches production | the config | the config | the dev proxy Worker that workers/proxy/wrangler.dev.toml names, account-server (private/account/wrangler.toml) |
 | `cron` | cron string in a wrangler config, `schedule:` entry in `.github/workflows/*.yml`, or a Stop-hook duty stamp | the config, the workflow or the stamp path | none | the account crons (workers/account/wrangler.eu.toml:28 and siblings), ops-health `*/10` (workers/ops-health/wrangler.toml:21), 9 scheduled workflows, the daily pins duty |
 
 ### Capability matrix
