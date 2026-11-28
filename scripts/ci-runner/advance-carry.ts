@@ -66,6 +66,9 @@ export function parseCarryDoc(text: string): CarryDoc | string {
         !globs.every((g) => typeof g === 'string' && g !== '')
       )
         return `carried-reds.json entry ${i} (${gate}) has an empty or non-string \`patterns\`.`;
+      // A match-all pattern is a whole-gate carry (block_unverified_push parse_carry_doc, review f3d07ec8.2).
+      if ((globs as string[]).some((g) => /^\*+$/.test(g)))
+        return `carried-reds.json entry ${i} (${gate}) has a pattern that matches every finding key.`;
       if (typeof e.expires !== 'string' || !EXPIRES_RE.test(e.expires))
         return `carried-reds.json entry ${i} (${gate}) carries finding patterns with no \`expires\` date.`;
       shape = 'keys';

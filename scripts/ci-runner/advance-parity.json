@@ -3458,6 +3458,130 @@
       }
     },
     {
+      "name": "a carry file a match-all pattern makes unjudgeable runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            },
+            {
+              "gate": "g:other",
+              "patterns": [
+                "*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2999-12-31"
+            }
+          ]
+        }
+      }
+    },
+    {
       "name": "a carry file absent at the receipt tree runs the lane",
       "receipt": {
         "schema": 2,

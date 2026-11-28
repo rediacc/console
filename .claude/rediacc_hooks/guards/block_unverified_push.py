@@ -286,6 +286,18 @@ def parse_carry_doc(doc):
                         % (i, gate)
                     ),
                 )
+            match_all = sorted(g for g in globs if set(g) == {"*"})
+            if match_all:
+                # A MATCH-ALL PATTERN IS A WHOLE-GATE CARRY (review f3d07ec8.2): it excuses every key the gate will ever print, which `"*"` findings refuse for a gate that emits keys.
+                return (
+                    {},
+                    {},
+                    (
+                        "carried-reds.json entry %d (%s) has a pattern that matches every finding key"
+                        " (%s); a pattern must name a prefix or shape of the keys it carries."
+                        % (i, gate, ", ".join(match_all))
+                    ),
+                )
             expires = entry.get("expires")
             if not (isinstance(expires, str) and EXPIRES_RE.match(expires)):
                 return (
@@ -1535,6 +1547,13 @@ def carried_verdict(receipt, doc, today=None, warnings=None):
             return (
                 "%s reported no parsable findings (or the receipt predates finding keys); a keyed"
                 " carry cannot be verified -- re-run npm run ci:quick" % g
+            ), []
+        if not emitted:
+            # A RED WITH NO NAMED FINDING (review f3d07ec8.1): an empty list is a failure the gate did not name, so no key or pattern can be shown to cover it. Read as "every carried key unreported" it only warned and admitted the red.
+            return (
+                "%s is RED but reported no finding key this run; a keyed or pattern carry covers"
+                " only the findings it names, so this failure is not carried. Fix it, or make the"
+                " gate name its finding." % g
             ), []
         keys = carried[g] if isinstance(carried.get(g), set) else set()
         globs = live.get(g, [])

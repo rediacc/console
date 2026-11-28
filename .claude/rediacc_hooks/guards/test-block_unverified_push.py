@@ -543,6 +543,39 @@ cases.append((True, "no `expires`" in run_err(PUSH), "R3: the refusal names the 
 carry(keyed(K1), pattern("pytest-slow:*"))
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3]})
 cases.append((0, run(PUSH), "R3 CONTROL: the same pattern with a live expiry is admitted"))
+# Review f3d07ec8.1: a RED gate that names no finding ([]) is not carried by keys or patterns; before this it only warned per carried key and admitted the red.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: []})
+cases.append(
+    (2, run(PUSH), "f3d07ec8.1: a keyed+pattern carry of a red gate with NO finding key refuses")
+)
+cases.append(
+    (
+        True,
+        "reported no finding key" in run_err(PUSH),
+        "f3d07ec8.1: the refusal says the red names no key",
+    )
+)
+carry(keyed(K1))
+cases.append((2, run(PUSH), "f3d07ec8.1: a keyed carry of a red gate with NO finding key refuses"))
+carry(pattern("pytest-slow:*"))
+cases.append(
+    (2, run(PUSH), "f3d07ec8.1: a pattern carry of a red gate with NO finding key refuses")
+)
+# Review f3d07ec8.2: a pattern that matches every key is a whole-gate carry in disguise.
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3]})
+carry(keyed(K1), pattern("*"))
+cases.append((2, run(PUSH), "f3d07ec8.2: a match-all pattern '*' is refused"))
+cases.append(
+    (
+        True,
+        "matches every finding key" in run_err(PUSH),
+        "f3d07ec8.2: the refusal names the match-all pattern",
+    )
+)
+carry(keyed(K1), pattern("**"))
+cases.append((2, run(PUSH), "f3d07ec8.2: a match-all pattern '**' is refused"))
+carry(keyed(K1), pattern("pytest-slow:*"))
+cases.append((0, run(PUSH), "f3d07ec8.2 CONTROL: a prefix pattern over the same keys is admitted"))
 carry(keyed(K1, K2))
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 

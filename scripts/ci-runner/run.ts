@@ -4541,6 +4541,7 @@ async function selftest(): Promise<number> {
           { model: parsedModel, classes: [], carried: [], ...extra } as unknown as RunContext,
           { jobs: 4, heavyLimit: 1, durations: fxDurations, sched: 'slots' }
         );
+      // A FAKE CLOCK (review 7de2a5ff.1): every gate starts at 0 and settles at its duration, fed to the stream in settling order; the stop's time is the moment the stream returns it, so a stop that waits on the 600 s gate reads 600 s and fails the 60 s bound.
       const stopsAt = (decision: RankingDecision): { stop?: StageStop; atMs: number } => {
         const st = createStream({
           run: 'r',
@@ -4552,17 +4553,23 @@ async function selftest(): Promise<number> {
           carried: [],
           stopAt: 'preflight',
         });
-        const red: GateResult = {
-          id: 'fx:pin-age',
-          gate: true,
-          status: 'fail',
-          ms: 13_000,
-          exitCode: 1,
-          stdout: '::finding::pin-age:cli-tool:msys2-libzstd\n',
-          stderr: '',
-          rerun: 'npm run fx:pin-age',
-        };
-        return { stop: st.finish(red, 13_000), atMs: 13_000 };
+        const settling = [...fxDurations].sort(([, a], [, b]) => a - b);
+        for (const [id, ms] of settling) {
+          const red = id === 'fx:pin-age';
+          const result: GateResult = {
+            id,
+            gate: true,
+            status: red ? 'fail' : 'ok',
+            ms,
+            exitCode: red ? 1 : 0,
+            stdout: red ? '::finding::pin-age:cli-tool:msys2-libzstd\n' : '',
+            stderr: '',
+            rerun: `npm run ${id}`,
+          };
+          const stop = st.finish(result, ms);
+          if (stop !== undefined) return { stop, atMs: ms };
+        }
+        return { atMs: Math.max(...fxDurations.values()) };
       };
       const floored = rankWith({ floor: reuseFloor(new Map([['fx:pin-age', 'clock']])) });
       const flooredStop = stopsAt(floored);
