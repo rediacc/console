@@ -471,3 +471,39 @@ def test_own_seconds_control_without_cpu_fields_stays_on_wall_time():
     assert split is not None
     own, _ = split
     assert own == pytest.approx(14.3)
+
+
+def test_a_cpu_judged_finding_prints_cpu_and_wall_and_keeps_its_key(tmp_path, capsys):
+    """PLAN-ciquick-gate-contract K4b: the CPU time is judged, the wall time rides beside it, the finding key is unchanged."""
+    junit = _junit(tmp_path / "j.xml", {"test_slow_cpu": 20.0})
+    _phases(
+        junit,
+        {
+            "test_slow_cpu": {
+                "setup": 0.0,
+                "call": 20.0,
+                "teardown": 0.0,
+                "setup_cpu": 0.0,
+                "call_cpu": 12.0,
+                "teardown_cpu": 0.0,
+            }
+        },
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "pkg.test_mod::test_slow_cpu took 12.0 s CPU (wall 20.0 s) (> 10 s)" in out.err
+    assert "::finding::pytest-slow:pkg.test_mod::test_slow_cpu" in out.err
+    assert "(1 on CPU time, 0 on wall time)" in out.out
+
+
+def test_a_wall_only_phase_entry_prints_wall_and_says_so(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_slow_wall": 20.0})
+    _phases(
+        junit,
+        {"test_slow_wall": {"setup": 0.0, "call": 14.0, "teardown": 0.0}},
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "pkg.test_mod::test_slow_wall took 14.0 s wall (> 10 s)" in out.err
+    assert "CPU" not in out.err
+    assert "(0 on CPU time, 1 on wall time)" in out.out

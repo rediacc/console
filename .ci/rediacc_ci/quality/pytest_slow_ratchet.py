@@ -80,13 +80,36 @@ def own_seconds(phases: object) -> tuple[float, float] | None:
     ):
         return None
     # CPU WHEN RECORDED (PLAN-ciquick-gate-contract K4). The plugin records each phase's CPU (the test process plus its waited children) beside the wall time; a test is judged on CPU when its call carries one, so a loaded machine stops reddening a different set of 10-16 s tests on every run (2026-11-28, ci:quick 37-45). An entry without CPU fields (an older phase file) is judged on wall time as before.
-    suffix = "_cpu" if phases.get("call_cpu") is not None else ""
+    return _own_with_suffix(phases, "_cpu" if phases.get("call_cpu") is not None else "")
+
+
+def is_cpu_judged(phases: object) -> bool:
+    """True when `own_seconds` of this phase entry judges CPU time (its call carries a CPU field)."""
+    return isinstance(phases, dict) and phases.get("call_cpu") is not None
+
+
+def wall_seconds(phases: object) -> float | None:
+    """The test's own WALL seconds from one phase entry (the secondary column beside a CPU-judged time), or None when unusable."""
+    split = _own_with_suffix(phases, "") if isinstance(phases, dict) else None
+    return None if split is None else split[0]
+
+
+def _num(value: object) -> float:
+    """`value` as seconds, 0.0 when absent; a non-number raises TypeError or ValueError like `float`."""
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float, str)):
+        return float(value) or 0.0
+    raise TypeError(value)
+
+
+def _own_with_suffix(phases: dict[str, object], suffix: str) -> tuple[float, float] | None:
     try:
-        setup = float(phases.get("setup" + suffix) or 0.0)
-        call = float(phases.get("call" + suffix) or 0.0)
-        teardown = float(phases.get("teardown" + suffix) or 0.0)
-        shared = float(phases.get("shared_setup" + suffix) or 0.0)
-        shared_td = float(phases.get("shared_teardown" + suffix) or 0.0)
+        setup = _num(phases.get("setup" + suffix))
+        call = _num(phases.get("call" + suffix))
+        teardown = _num(phases.get("teardown" + suffix))
+        shared = _num(phases.get("shared_setup" + suffix))
+        shared_td = _num(phases.get("shared_teardown" + suffix))
     except (TypeError, ValueError):
         return None
     shared = min(max(shared, 0.0), setup)
@@ -101,11 +124,18 @@ class Timing:
     durations: dict[str, float]
     shared: dict[str, float]
     notes: list[str]
+    # Secondary column: each test's wall seconds beside the judged time, and whether the judged time is CPU. Never part of the verdict.
+    wall: dict[str, float] = dataclasses.field(default_factory=dict)
+    cpu_judged: set[str] = dataclasses.field(default_factory=set)
+
+
+# One sample per run: (judged seconds, wall seconds, judged on CPU).
+Sample = tuple[float, float, bool]
 
 
 def _read_run(
     junit: pathlib.Path,
-    samples: dict[str, list[float]],
+    samples: dict[str, list[Sample]],
     shared_samples: dict[str, list[float]],
     notes: list[str],
     skip_failed: bool = False,
@@ -133,7 +163,10 @@ def _read_run(
         if node in phases and measured is None:
             malformed += 1
         if measured is not None:
-            samples.setdefault(node, []).append(measured[0])
+            wall = wall_seconds(phases[node])
+            samples.setdefault(node, []).append(
+                (measured[0], measured[0] if wall is None else wall, is_cpu_judged(phases[node]))
+            )
             shared_samples.setdefault(node, []).append(measured[1])
             continue
         try:
@@ -142,7 +175,7 @@ def _read_run(
             continue
         if not unreadable and node not in phases:
             unphased += 1
-        samples.setdefault(node, []).append(seconds)
+        samples.setdefault(node, []).append((seconds, seconds, False))
     if malformed:
         notes.append(
             "%d test(s) in %s have a malformed entry in %s and are judged on their junit time"
@@ -160,18 +193,27 @@ def read_timing(junits: Iterable[pathlib.Path], confirms: Iterable[pathlib.Path]
 
     WHY THE RE-TIMES ARE JUDGED APART (2026-11-18). The parallel run is not an independent vote on a re-timed test: the test was re-timed because that run read it over the threshold, so the median of the parallel run and two re-times was the slower re-time whenever the parallel run was the slowest of the three, and one re-time slowed by the gates `ci:quick` runs beside this one failed the test. `test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-skill-reference]` read 33.5 s in the parallel run and 12.3 s as that median, while its own call took 5.4 s re-run alone. Contention only ever adds time, so the fastest re-time is the closest reading of the test's own cost, and a test whose own cost is over the threshold is over it in every re-time.
     """
-    samples: dict[str, list[float]] = {}
+    samples: dict[str, list[Sample]] = {}
     shared_samples: dict[str, list[float]] = {}
     notes: list[str] = []
     for junit in junits:
         _read_run(junit, samples, shared_samples, notes)
-    retimed: dict[str, list[float]] = {}
+    retimed: dict[str, list[Sample]] = {}
     for junit in confirms:
         _read_run(junit, retimed, shared_samples, notes, skip_failed=True)
-    durations = {node: statistics.median(times) for node, times in samples.items()}
-    durations.update({node: min(times) for node, times in retimed.items()})
+    durations = {node: statistics.median(t[0] for t in times) for node, times in samples.items()}
+    wall = {node: statistics.median(t[1] for t in times) for node, times in samples.items()}
+    cpu_judged = {node for node, times in samples.items() if all(t[2] for t in times)}
+    for node, times in retimed.items():
+        fastest = min(times, key=lambda t: t[0])
+        durations[node], wall[node] = fastest[0], fastest[1]
+        cpu_judged.discard(node)
+        if fastest[2]:
+            cpu_judged.add(node)
     return Timing(
         durations=durations,
+        wall=wall,
+        cpu_judged=cpu_judged,
         shared={node: statistics.median(times) for node, times in shared_samples.items()},
         notes=notes,
     )
@@ -271,6 +313,14 @@ def confirm_candidates(
     return [nodeid for node, _s in slow if (nodeid := nodeid_of(node, root)) is not None]
 
 
+def describe_time(node: str, timing: Timing) -> str:
+    """`11.0 s CPU (wall 14.0 s)` for a CPU-judged test, `11.0 s wall` for one judged on wall time (an older phase file or junit time)."""
+    seconds = timing.durations[node]
+    if node in timing.cpu_judged:
+        return "%.1f s CPU (wall %.1f s)" % (seconds, timing.wall.get(node, seconds))
+    return "%.1f s wall" % seconds
+
+
 def finding_key(rule: str, node: str) -> str:
     key = "%s:%s" % (rule, _KEY_UNSAFE_RE.sub("#", node))
     if len(key) > 200:
@@ -321,10 +371,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     for problem in problems:
         print("pytest-slow-ratchet: %s: %s" % (allow_path, problem), file=sys.stderr)
     slow, stale = over_threshold(durations, allowed, args.threshold)
-    for node, seconds in slow:
+    for node, _seconds in slow:
         print(
-            "pytest-slow-ratchet: %s took %.1f s (> %g s); make it fast, or list it in %s with a reason"
-            % (node, seconds, args.threshold, ALLOW_NAME),
+            "pytest-slow-ratchet: %s took %s (> %g s); make it fast, or list it in %s with a reason"
+            % (node, describe_time(node, timing), args.threshold, ALLOW_NAME),
             file=sys.stderr,
         )
         log.emit_finding(finding_key("pytest-slow", node))
@@ -342,9 +392,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             % (classname, seconds)
         )
     failed = bool(slow or problems or (stale and args.strict_stale))
+    judged_cpu = sum(1 for n in durations if n in timing.cpu_judged)
     print(
-        "pytest-slow-ratchet: %d test(s) judged over %d run(s); %d unlisted over %g s, %d stale entries"
-        % (len(durations), len(junits) + len(args.confirm), len(slow), args.threshold, len(stale))
+        "pytest-slow-ratchet: %d test(s) judged over %d run(s) (%d on CPU time, %d on wall time); %d unlisted over %g s, %d stale entries"
+        % (
+            len(durations),
+            len(junits) + len(args.confirm),
+            judged_cpu,
+            len(durations) - judged_cpu,
+            len(slow),
+            args.threshold,
+            len(stale),
+        )
     )
     return 1 if failed else 0
 
