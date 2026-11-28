@@ -211,3 +211,18 @@ def test_a9_control_fires_with_the_pins_exported(
     assert mod.pin_from_bare_source(mutant, "shellcheck") == ""
     # And the real library still resolves under the same environment.
     assert mod.pin_from_bare_source(library, "shellcheck") != ""
+
+
+def test_pin_from_bare_source_never_raises_on_an_undecodable_pins_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review f1c9b45f.1: a ValueError while building the bare env (a non-UTF-8 pins file) returns "" rather than escaping."""
+
+    def boom() -> dict[str, str]:
+        raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(mod, "bare_env", boom)
+    library = (
+        pathlib.Path(mod.__file__).resolve().parents[3] / ".ci" / "scripts" / "lib" / "toolchain.sh"
+    )
+    assert mod.pin_from_bare_source(library, "shellcheck") == ""
