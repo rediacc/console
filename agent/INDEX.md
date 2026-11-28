@@ -460,10 +460,11 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 318 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 322 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
+| `agent/plans/PLAN-account-api-health.md` | approved | 84 | 12 | 0 | 20815 |
 | `agent/plans/PLAN-account-notices.md` | approved | 160 | 1 | 16 | 44157 |
 | `agent/plans/PLAN-account-sidebar-redesign.md` | approved | 439 | 3 | 12 | 65125 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
@@ -496,10 +497,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 27 | 2 | 0 | 3849 |
 | `agent/plans/PLAN-ciquick-cpu.md` | approved | 218 | 8 | 30 | 39906 |
+| `agent/plans/PLAN-ciquick-gate-contract.md` | approved | 60 | 13 | 0 | 16216 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 35 | 0 | 7 | 7950 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 50 | 0 | 12 | 11811 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5260 |
 | `agent/plans/PLAN-cli-em-dash-lint-gate.md` | compacted | 57 | 0 | 0 | 4340 |
+| `agent/plans/PLAN-cloud-inventory.md` | approved | 41 | 7 | 0 | 9814 |
 | `agent/plans/PLAN-cloudflare-proxy.md` | approved | 458 | 0 | 29 | 66476 |
 | `agent/plans/PLAN-cluster-crosssite-transport.md` | proposed | 61 | 6 | 1 | 14866 |
 | `agent/plans/PLAN-cluster-live-proofs.md` | proposed | 73 | 15 | 1 | 20326 |
@@ -586,6 +589,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-portal-analytics.md` | proposed | 62 | 10 | 0 | 13797 |
 | `agent/plans/PLAN-pr-loop-single-source.md` | approved | 188 | 2 | 7 | 32280 |
 | `agent/plans/PLAN-pr-path-ephemeral-credentials.md` | proposed | 87 | 9 | 4 | 22138 |
+| `agent/plans/PLAN-preprod-simulation.md` | approved | 85 | 11 | 0 | 16974 |
 | `agent/plans/PLAN-preview-signer.md` | approved | 354 | 13 | 24 | 76115 |
 | `agent/plans/PLAN-pricing-billing-upgrade.md` | approved | 57 | 8 | 0 | 9689 |
 | `agent/plans/PLAN-pricing-coupons.md` | approved | 52 | 5 | 0 | 7570 |
@@ -783,7 +787,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-deletion-budget.md` | removed | 418 | 28 | 0 | 55796 |
 
-318 plan(s), 256 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+322 plan(s), 260 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
