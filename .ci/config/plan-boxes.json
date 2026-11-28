@@ -855,27 +855,27 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 5,
+      "open": 9,
+      "done": 9,
       "open_sigs": [
         "0b134fe1",
         "2742b6e8",
         "346cbab8",
-        "604cee2e",
         "80a08587",
-        "87205bae",
         "89758ebc",
         "96f0cbb0",
         "bc5fc7b9",
-        "c1ff0f91",
         "c9036ae7",
-        "dba77edd",
         "e97052b2"
       ],
       "done_sigs": [
         "5a5054ef",
+        "604cee2e",
         "704a83d7",
+        "87205bae",
         "8c3e6284",
+        "c1ff0f91",
+        "dba77edd",
         "dd6b36fd",
         "e0c1e47f"
       ]

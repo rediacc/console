@@ -43,21 +43,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 2598 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2608 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 6 live (session d778be9d): worker:a692c3cbe6fda4ebe, worker:a35c0f557f73042e6, worker:a3a250ab809acd485, worker:a41395f34d6f4059a, worker:a528fb7a301106b28, worker:a0a580ca839d0c8d6.
-- Leased items: 13: #018bb2f9 (worker:bz7hkbl3x, d778be9d), #03c2fdd3 (worker:a3a250ab809acd485, d778be9d), #06df5e87 (worker:a35c0f557f73042e6, d778be9d), #08f2aa8a (worker:bz7hkbl3x, d778be9d), #14e914d4 (worker:bz7hkbl3x, d778be9d), #1e50223f (worker:3510596, d778be9d), #52746509 (worker:a528fb7a301106b28, d778be9d), #8786e784 (worker:bw91np302, d778be9d), #9fcca783 (worker:a692c3cbe6fda4ebe, d778be9d), #c5c2f335 (worker:a0a580ca839d0c8d6, d778be9d), #c935685d (worker:bz7hkbl3x, d778be9d), #cac16822 (worker:bouaan1q5, d778be9d), and 1 more.
+- Writers: 2 live (session d778be9d): worker:a692c3cbe6fda4ebe, worker:a528fb7a301106b28.
+- Leased items: 10: #018bb2f9 (worker:bwiompu6d, d778be9d), #06df5e87 (worker:a692c3cbe6fda4ebe, d778be9d), #08f2aa8a (worker:bz7hkbl3x, d778be9d), #1e50223f (worker:3510596, d778be9d), #52746509 (worker:a528fb7a301106b28, d778be9d), #8786e784 (worker:bw91np302, d778be9d), #9fcca783 (worker:a692c3cbe6fda4ebe, d778be9d), #c5c2f335 (worker:a528fb7a301106b28, d778be9d), #c935685d (worker:bz7hkbl3x, d778be9d), #cac16822 (worker:bouaan1q5, d778be9d).
 - Next plan: agent/plans/PLAN-backup-program.md, Promoted entry 2; starts on the next branch after PR #607 merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 12 of 128 plans done, 1641 of 2180 boxes done (75%).
+Promoted: 12 of 128 plans done, 1645 of 2180 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -188,7 +188,7 @@ Promoted: 12 of 128 plans done, 1641 of 2180 boxes done (75%).
 | 125 | PLAN-account-api-health.md | 0/12 | 12 open |
 | 126 | PLAN-cloud-inventory.md | 0/7 | 7 open |
 | 127 | PLAN-preprod-simulation.md | 0/11 | 11 open |
-| 128 | PLAN-ciquick-gate-contract.md | 5/18 | 13 open |
+| 128 | PLAN-ciquick-gate-contract.md | 9/18 | 9 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
