@@ -1,21 +1,24 @@
-## SESSION d778be9d 2026-11-27T19:36:54Z
+## SESSION d778be9d 2026-11-28T01:58:02Z
 
 ## Next action
-1. ci:quick 23 is running (log /tmp/m/ciquick23.out); on only the carried reds, run `npm run vm:check -- --changed` (expect cli-migrate-23 and k8s-multinode-24 green after the 5b fix and the clean tmux boundary).
-2. VERIFIED: push 1121-1; `RELEASE_ASKED=ASKED:2026-11-27T19:35Z npm run release:local -- --channel edge --branch-release --dry-run`, then the real run (all regions plus the CLI edge channel); then stable dry run and real run with the same RELEASE_ASKED. Record every Worker version id, D1 bookmark and rollback command.
-3. After each release, tick its boxes from agent/d778be9d/release-boxes-r98.json (A push 20, B edge 30, C merge/CD 13, D stable 5, E soak 7) with `(corrected ASKED:2026-11-27T19:35Z)` lines where a local proof replaces a GitHub run, soak waived per the ruling.
+1. On the operator's return, run /ask for #3c6b7a5c (the edge Workers branch release); with the answer minute: `RELEASE_ASKED=ASKED:<minute>Z npm run release:local -- --channel edge --workers-only --branch-release --regions eu,us,asia` (dry run already rc 0 on 575d8906ec; record every Worker version id, D1 bookmark and rollback command from the deploy records).
+2. After it: tick the release-unlocked boxes in /tmp/m/release-box-proofs.md (NEEDS-EDGE-RELEASE rows) and the group B list in agent/d778be9d/release-boxes-r98.json, with correction lines per ruling ASKED:2026-11-27T19:35Z.
+3. Main-only boxes (full edge CLI channel, GitHub Release, stable) stay open with correction lines until a merge; a merge needs CI Complete green, which the three carried reds block.
 
 ## Overnight
-- Ruling ASKED:2026-11-27T19:35Z recorded (round log, #28d883c3): edge+stable releases authorized, local proofs replace GitHub runs, soak waived, merge only where technically required, no production data deletion.
-- Parked [?] #dd34531c: d1-scaling P3/C2 drop migrations (internal GC pin table, envelope column). DEFAULT: allowed after a fresh D1 Time Travel bookmark per database, bench first.
-- Stop hook effort is quiet (commit 79d9cbfc); r98 survey stopped to focus on releases.
-- Landed today: r96/r97 waves, 47-red ci:quick sweep, pricing rulings, VM memory cap and ops-up budget check, Stripe webhooks disabled.
+- 1121-1 pushed: console 6453becc7d..575d8906ec, renet 5f88726d..5718c662, account d4a52a8b..9fcde0d4 (ci:quick 26 carried reds only; vm:check VERIFIED; backup drills 427/427 and 17/17).
+- vm:check --base v4.0.1 VERIFIED (287 assertions, 0 failed, both phases); edge Workers branch-release dry run rc 0.
+- Real edge release blocked by block_unasked_release: RELEASE_ASKED must match an AskUserQuestion answer in the transcript; the 19:35Z ruling was pasted text and the 11-25 answer is no longer in the transcript. Parked [?] #3c6b7a5c.
+- Ticked 12 release-gated boxes on local proofs (commits 25a82db429, c21ab28aef); 15 corrected as main-only or no local route.
+- Fixed: two high review findings (rotation read-back keeps both tokens 9fcde0d4; free-license test), obs_ceph_autobump regression fb371fc903, sampler comment.
+- Parked [?] #dd34531c: d1-scaling drop migrations (DEFAULT allowed after D1 bookmarks).
+- Not run on purpose: rmcp orphan sweep and d1-eu retire (write or delete production data), K10 50 GB suite (seed may exceed the 48 GB fleet disk).
 
 ## Big pieces
-The first push and edge/stable release of 1121-1, and the 75 release-gated boxes it unlocks.
+The edge Workers release of 1121-1 and the release-gated boxes it unlocks.
 
 ## Owed ticks
-The 75 release-gated boxes in agent/d778be9d/release-boxes-r98.json; plus vscode V5 991eacb0 (fleet run) and the live-owed boxes `worklist.py --box-audit d778be9d` lists.
+NEEDS-EDGE-RELEASE and NEEDS-VM rows of /tmp/m/release-box-proofs.md; group B of agent/d778be9d/release-boxes-r98.json; vscode V5 991eacb0.
 
 ## Armed
 #0f42f15e (aid 00a40948): rotation command NOT-BEFORE 2026-12-01T00:00Z.
