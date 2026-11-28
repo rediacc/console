@@ -15,6 +15,8 @@ PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type minor  
 PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type major      # 1.0.0
 ```
 
+A local tag is not authoritative. A fetch does not move a tag that already exists locally, so a stale local `production` tag names the wrong stable version. Read `production` and the newest Release through the GitHub API (`gh release list`, `gh api`), and refresh local tags with `git fetch origin '+refs/tags/*:refs/tags/*'` when a local reading is needed. A tag with no GitHub Release is an orphan and is never a start point for release notes (see [release-process.md](release-process.md) *Release notes*).
+
 ## Injection per component, verified against the real build
 
 | Component | Injection method | Verified at |

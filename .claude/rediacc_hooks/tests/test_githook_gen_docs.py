@@ -25,6 +25,7 @@ import pathlib
 import re
 import shutil
 import subprocess
+import sys
 import time
 
 import pytest
@@ -216,15 +217,54 @@ class World:
         )
 
 
+# ONE WORLD PER SESSION FOR BOTH GIT-HOOK MODULES (PLAN-ciquick-cpu.md W18). This file and `test_githook_generated_artifacts.py` each built a World of their own, and under xdist every worker that drew one of their tests built it again: a checkout of the whole tree at HEAD plus a `gen-docs --write`, measured 2026-11-20 at 20-60 s per build. Both modules now declare
+# the same xdist group, so loadgroup sends all of their tests to one worker, and `shared_world` builds ONE World there. The other module adds what it needs before the build through `WORLD_EXTRAS` (its overlay of registry and checker files, the plan blob prefetch, the linked build products); pytest imports every module before the first test runs, so the extras are always in
+# place before the first build. The cases already reset the World to its starting commit after each run, which is what made sharing it within one module safe; the same reset is what makes sharing it across the two safe.
+XDIST_GROUP = "githook-world"
+
+#: Hooks another module registers at import: `before()` runs ahead of the build, `overlay()` returns working-tree files to lay over HEAD, `after(world)` runs once the World is committed.
+WORLD_EXTRAS: dict[str, list] = {"before": [], "overlay": [], "after": []}
+_SHARED: dict[str, World] = {}
+
+
+#: The modules whose import registers WORLD_EXTRAS; `ensure_extras` imports each, so the World is the same whichever modules a run selects.
+EXTRA_MODULES = ("rediacc_hooks.tests.test_githook_generated_artifacts",)
+
+
+def ensure_extras() -> None:
+    """Import every module of EXTRA_MODULES (cached after the first), so their WORLD_EXTRAS are registered even when only this module is collected (c0cc1b2d.5: a run of this file alone built a World without the artifacts overlay and prefetch, a full run built one with them)."""
+    for name in EXTRA_MODULES:
+        importlib.import_module(name)
+
+
+def shared_world(request, tmp_path_factory) -> World:
+    """The one World of this pytest process, built on first use with every registered extra and removed at session end."""
+    if "world" not in _SHARED:
+        ensure_extras()
+        for before in WORLD_EXTRAS["before"]:
+            before()
+        extra: list[str] = []
+        for overlay in WORLD_EXTRAS["overlay"]:
+            extra += [rel for rel in overlay() if rel not in extra]
+        w = World(tmp_path_factory.mktemp("githook-world"), extra_overlay=tuple(extra))
+        w.build()
+        for after in WORLD_EXTRAS["after"]:
+            after(w)
+        hooks = _load("githooks_under_test", w.real_hooks / "githooks.py")
+        scratch = hooks.scratch_for(_git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
+
+        def _teardown() -> None:
+            shutil.rmtree(scratch, ignore_errors=True)
+            print("\ntimings (s): " + ", ".join("%s %.2f" % (k, v) for k, v in TIMINGS.items()))
+
+        request.session.addfinalizer(_teardown)
+        _SHARED["world"] = w
+    return _SHARED["world"]
+
+
 @pytest.fixture(scope="module")
-def world(tmp_path_factory):
-    w = World(tmp_path_factory.mktemp("githook-gen-docs"))
-    w.build()
-    hooks = _load("githooks_under_test", w.real_hooks / "githooks.py")
-    scratch = hooks.scratch_for(_git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
-    yield w
-    shutil.rmtree(scratch, ignore_errors=True)
-    print("\ntimings (s): " + ", ".join("%s %.2f" % (k, v) for k, v in TIMINGS.items()))
+def world(request, tmp_path_factory):
+    return shared_world(request, tmp_path_factory)
 
 
 # --------------------------------------------------------------------------- the cases ---------------------------------------------------------------------------
@@ -408,3 +448,13 @@ def test_a_js_specifier_in_the_generator_is_named_not_crashed_on(tmp_path):
     proc = _commit_a(repo, tmp_path)
     assert proc.returncode != 0, "a generator whose imports cannot resolve was waved through"
     assert "spell it ../lib/doc-providers.ts" in proc.stderr, proc.stderr
+
+
+def test_the_world_extras_are_registered_whichever_modules_run():
+    """c0cc1b2d.5: a run that collects only this module still registers the artifacts module's extras on THIS module's WORLD_EXTRAS, so the gen-docs cases see one World however a run is selected."""
+    ensure_extras()
+    artifacts = sys.modules[EXTRA_MODULES[0]]
+    assert artifacts.GD is sys.modules[__name__], "the artifacts module registered on another copy"
+    assert artifacts._overlay in WORLD_EXTRAS["overlay"]
+    assert artifacts._prefetch_main_plans in WORLD_EXTRAS["before"]
+    assert len(WORLD_EXTRAS["after"]) >= 1

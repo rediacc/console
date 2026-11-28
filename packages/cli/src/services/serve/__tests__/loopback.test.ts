@@ -258,7 +258,7 @@ describe('proxy loopback', () => {
     ]);
     boot({ executor });
 
-    const { exitCode, stdout } = await runCli(['repo', 'status', 'demo']);
+    const { exitCode, stdout, stderr } = await runCli(['repo', 'status', 'demo']);
 
     expect(exitCode).toBe(0);
 
@@ -269,8 +269,8 @@ describe('proxy loopback', () => {
     expect(calls[0].params).toMatchObject({ repository: 'demo' });
     expect(calls[0].extraMachines).toBeUndefined();
 
-    // The operator sees the same timeline they would have seen locally, because these are renet's own events rendered through the same helpers.
-    expect(stdout).toContain('Snapshot');
+    // The operator sees the same timeline they would have seen locally, because these are renet's own events rendered through the same helpers. The loopback runs the executor in this process and its forced `--output json` sets the process-wide format, so the client renders the timeline to stderr here (a separate laptop process under `-o table` writes it to stdout).
+    expect(stderr).toContain('Snapshot created');
     // renet's raw `output` events are NOT rendered for `repo status`: a local run drops them too, and the verb prints its own record (here the plain-text capture) once, exactly as a local run does.
     expect(stdout).not.toContain('STATUS: running');
     // The record is the one line that is exactly `done`; a substring count would also match any other text containing it.
@@ -357,7 +357,7 @@ describe('proxy loopback', () => {
     boot({ executor });
 
     await expect(runCli(['repo', 'status', 'demo'], MEMBER_TOKEN)).rejects.toThrow(
-      /only owners and admins/i
+      /No policy is configured; members may not run.*An owner or admin must grant access/i
     );
 
     // Policy is enforced BEFORE execution, not after.

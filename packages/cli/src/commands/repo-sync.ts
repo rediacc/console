@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto';
 import type { Command } from 'commander';
 import ora from 'ora';
 import { t } from '../i18n/index.js';
@@ -11,18 +10,19 @@ import {
 import {
   executeRsync,
   type RsyncExecutorOptions,
+  rsyncUnusableReason,
+  rsyncUserHost,
   type SftpUploadSource,
   sftpDownloadDirectory,
   sftpDownloadFile,
   sftpUploadFile,
   sftpUploadPaths,
-  warnSkippedEntries,
 } from '../remote/sync/index.js';
 import type { SyncProgress } from '../remote/types/index.js';
 import { namedDatastoreMount } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
-import { setExitCode, writeStderr, writeStdout } from '../services/core/request-context.js';
+import { writeStderr } from '../services/core/request-context.js';
 import { withPooledSftp } from '../services/machine/machine-connection.js';
 import { getSSHConnectionDetails } from '../services/machine/ssh-connection.js';
 import {
@@ -32,13 +32,18 @@ import {
 } from '../services/renet/renet-execution.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
-import { assertCommandPolicy, CMD, validateRemotePath } from '../utils/command-policy.js';
+import { validateRemotePath } from '../utils/command-policy.js';
 import { handleError } from '../utils/errors.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { oraOptions, withSpinner } from '../utils/spinner.js';
 import {
+  displaySftpDryRunResult,
+  displaySyncResult,
+  SSH_KEY_FAILURE_PATTERN,
+  sshKeyDiagnostic,
+} from './repo-sync-display.js';
+import {
   buildSyncRemotePaths,
-  formatBytes,
   handleConfirmMode,
   handleDryRun,
   isRsyncNotFoundError,
@@ -62,56 +67,6 @@ async function ensureRenetProvisioned(machineName: string, access: RenetAccess):
     // Non-fatal, sync may still work with existing renet on remote
   }
 }
-
-function displaySyncResult(
-  result: {
-    success: boolean;
-    filesTransferred: number;
-    bytesTransferred: number;
-    duration: number;
-    errors: string[];
-    skipped?: string[];
-  },
-  spinner: ReturnType<typeof ora>,
-  mode: 'upload' | 'download'
-): void {
-  if (result.success) {
-    spinner.succeed(t(`commands.sync.${mode}.completed`, { count: result.filesTransferred }));
-    if (result.bytesTransferred > 0) {
-      writeStdout(
-        `${t('commands.sync.totalSize', { size: formatBytes(result.bytesTransferred) })}\n`
-      );
-    }
-    writeStdout(
-      `${t('commands.sync.duration', { seconds: (result.duration / 1000).toFixed(1) })}\n`
-    );
-    warnSkippedEntries(result.skipped ?? [], t, writeStderr);
-  } else {
-    spinner.fail(t(`commands.sync.${mode}.failed`));
-    if (result.errors.length > 0) {
-      writeStderr(`${t('commands.sync.errors')}\n`);
-      for (const err of result.errors) {
-        writeStderr(`  ${err}\n`);
-      }
-    }
-    setExitCode(1);
-  }
-}
-
-/**
- * Non-secret shape summary of the SSH key the rsync leg will write to its temp
- * file: PEM header line, byte length, and a hash prefix. Appended to the error
- * output when the ssh client rejects the key ("Load key … error in libcrypto",
- * observed once in CI with no local reproduction) so the next occurrence
- * identifies WHICH key content was written without leaking any material.
- */
-function sshKeyDiagnostic(privateKey: string): string {
-  const header = privateKey.trimStart().split('\n', 1)[0] ?? '';
-  const digest = createHash('sha256').update(privateKey).digest('hex').slice(0, 12);
-  return `ssh key diagnostic: header="${header}" length=${privateKey.length} sha256=${digest}`;
-}
-
-const SSH_KEY_FAILURE_PATTERN = /load key|libcrypto|permission denied \(publickey/i;
 
 async function executeSyncWithProgress(
   rsyncOptions: RsyncExecutorOptions,
@@ -161,7 +116,6 @@ interface ValidatedSyncOptions {
 async function validateSyncOptions(
   ref: string,
   options: SyncUploadOptions | SyncDownloadOptions,
-  command: typeof CMD.REPO_SYNC_UPLOAD | typeof CMD.REPO_SYNC_DOWNLOAD,
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<ValidatedSyncOptions> {
   // Sync is a plain SSH/rsync/SFTP transfer against a machine's filesystem: no renet function call, so there is no executor sink to thread a kubeCluster marker into (and no control-node rerouting, the executor's kubeCluster override does not apply here). resolveRepoRef derives the machine that actually HOLDS the data (the datastore's attach machine), which is exactly the host
@@ -171,7 +125,6 @@ async function validateSyncOptions(
     resolveOptions
   );
 
-  await assertCommandPolicy(command, repoKey);
   if (options.remote) validateRemotePath(options.remote);
   if (options.remoteFile) validateRemotePath(options.remoteFile);
 
@@ -235,21 +188,15 @@ async function prepareSyncConnection(
   return { details, remotePath, sftpRemotePath, baseRemotePath, sftpConfig };
 }
 
-function displaySftpDryRunResult(result: {
-  filesTransferred: number;
-  bytesTransferred: number;
-}): void {
-  writeStdout(
-    `\nSFTP fallback (rsync not available):\n  Files to transfer: ${result.filesTransferred}\n  Total size: ${formatBytes(result.bytesTransferred)}\n`
-  );
-}
-
 async function withTempSshFiles<T>(
-  details: { privateKey: string; known_hosts: string },
+  details: { privateKey: string; known_hosts: string; host: string; port: number },
   fn: (keyFilePath: string, knownHostsPath: string) => Promise<T>
 ): Promise<T> {
   const keyFilePath = await createTempSSHKeyFile(details.privateKey);
-  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts);
+  const knownHostsPath = await createTempKnownHostsFile(details.known_hosts, {
+    host: details.host,
+    port: details.port,
+  });
   try {
     return await fn(keyFilePath, knownHostsPath);
   } finally {
@@ -262,20 +209,44 @@ function buildSshOptions(knownHostsPath: string, port: number, keyFilePath: stri
   return `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${knownHostsPath}" -p ${port} -i "${keyFilePath}"`;
 }
 
-async function handleDryRunWithSftpFallback(
+export async function handleDryRunWithSftpFallback(
   rsyncOptions: RsyncExecutorOptions,
-  sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>
+  sftpTransfer: () => Promise<{ filesTransferred: number; bytesTransferred: number }>,
+  localOnly = false
 ): Promise<void> {
   try {
-    await handleDryRun(rsyncOptions);
+    if (await warnIfRsyncUnusable()) {
+      displaySftpDryRunResult(await sftpTransfer());
+      noteLocalOnlyUnavailable(localOnly);
+      return;
+    }
+    await handleDryRun(rsyncOptions, { localOnly });
   } catch (err: unknown) {
     if (!isRsyncNotFoundError(err)) throw err;
     const result = await sftpTransfer();
     displaySftpDryRunResult(result);
+    noteLocalOnlyUnavailable(localOnly);
   }
 }
 
-async function executeSyncWithSftpFallback(
+/** True (after warning on stderr with the reason) when rsync is installed but cannot start, so the transfer takes the SFTP path. */
+async function warnIfRsyncUnusable(sftpFallback = true): Promise<boolean> {
+  const reason = await rsyncUnusableReason();
+  if (reason === undefined) return false;
+  // A run that refuses instead of falling back must not announce an SFTP transfer (4f037bc9.3).
+  const key = sftpFallback
+    ? 'commands.sync.rsyncUnusable'
+    : 'commands.sync.rsyncUnusableNoFallback';
+  writeStderr(`${t(key, { reason })}\n`);
+  return true;
+}
+
+/** The SFTP dry run has no local-only comparison, so `status` says so rather than reporting a clean sync (4f037bc9.1). */
+function noteLocalOnlyUnavailable(localOnly: boolean): void {
+  if (localOnly) writeStderr(`${t('commands.sync.status.localOnlyNeedsRsync')}\n`);
+}
+
+export async function executeSyncWithSftpFallback(
   rsyncOptions: RsyncExecutorOptions,
   mode: 'upload' | 'download',
   sftpTransfer: (spinner: ReturnType<typeof ora>) => Promise<{
@@ -288,11 +259,9 @@ async function executeSyncWithSftpFallback(
   keyDiagnostic?: string,
   beforeRsync?: () => Promise<void>
 ): Promise<{ filesTransferred: number; bytesTransferred: number }> {
-  try {
-    await beforeRsync?.();
-    return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
-  } catch (err: unknown) {
-    if (!isRsyncNotFoundError(err)) throw err;
+  const runSftp = async (): Promise<{ filesTransferred: number; bytesTransferred: number }> => {
+    // The SFTP path has no delete step: running it for a mirror would leave the extra files and report a clean sync.
+    if (rsyncOptions.mirror) throw new Error(t('errors.sync.mirrorNeedsRsync'));
     const spinner = ora(
       oraOptions('rsync not available, using SFTP transfer (no delta sync)...')
     ).start();
@@ -302,6 +271,14 @@ async function executeSyncWithSftpFallback(
       filesTransferred: result.filesTransferred,
       bytesTransferred: result.bytesTransferred,
     };
+  };
+  try {
+    await beforeRsync?.();
+    if (await warnIfRsyncUnusable(rsyncOptions.mirror !== true)) return await runSftp();
+    return await executeSyncWithProgress(rsyncOptions, mode, keyDiagnostic);
+  } catch (err: unknown) {
+    if (!isRsyncNotFoundError(err)) throw err;
+    return await runSftp();
   }
 }
 
@@ -324,7 +301,7 @@ export function sftpUploadTransfer(
 
 async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_UPLOAD);
+  const validated = await validateSyncOptions(ref, options);
   const { isFileMode, sources } = validateUploadOptions(options);
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
     isFile: isFileMode,
@@ -348,7 +325,7 @@ async function syncUpload(ref: string, options: SyncUploadOptions): Promise<void
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
         source: rsyncSource,
-        destination: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        destination: `${rsyncUserHost(ctx.details.user, ctx.details.host)}:${ctx.remotePath}`,
         mirror: options.mirror,
         verify: options.verify,
         exclude: options.exclude,
@@ -432,7 +409,7 @@ async function syncDownload(
   resolveOptions: Parameters<typeof resolveRepoRef>[1] = {}
 ): Promise<void> {
   const startTime = Date.now();
-  const validated = await validateSyncOptions(ref, options, CMD.REPO_SYNC_DOWNLOAD, resolveOptions);
+  const validated = await validateSyncOptions(ref, options, resolveOptions);
   const { localPath, isFileMode } = validateDownloadOptions(options);
   // Download (and `sync status`, its dry run) only reads: never replace the machine's renet.
   const ctx = await prepareSyncConnection(validated, options.remoteFile ?? options.remote, {
@@ -449,9 +426,10 @@ async function syncDownload(
     await withTempSshFiles(ctx.details, async (keyFilePath, knownHostsPath) => {
       const rsyncOptions: RsyncExecutorOptions = {
         sshOptions: buildSshOptions(knownHostsPath, ctx.details.port, keyFilePath),
-        source: `${ctx.details.user}@${ctx.details.host}:${ctx.remotePath}`,
+        source: `${rsyncUserHost(ctx.details.user, ctx.details.host)}:${ctx.remotePath}`,
         destination,
-        mirror: options.mirror,
+        // status lists what only the local side holds, which rsync reports only as a deletion of a mirror run.
+        mirror: options.mirror === true || (options.dryRun === true && options.localOnly === true),
         verify: options.verify,
         exclude: options.exclude,
         universalUser: ctx.details.universalUser,
@@ -461,11 +439,14 @@ async function syncDownload(
       if (!shouldContinue) return;
 
       if (options.dryRun) {
-        await handleDryRunWithSftpFallback(rsyncOptions, () =>
-          sftpDownloadTransfer(isFileMode, ctx, localPath, {
-            verify: options.verify,
-            dryRun: true,
-          })
+        await handleDryRunWithSftpFallback(
+          rsyncOptions,
+          () =>
+            sftpDownloadTransfer(isFileMode, ctx, localPath, {
+              verify: options.verify,
+              dryRun: true,
+            }),
+          options.localOnly === true
         );
         return;
       }
@@ -582,7 +563,7 @@ ${t('help.examples')}
     .action(async (ref: string, options: SyncDownloadOptions) => {
       try {
         // Read-only: derive the machine, skip the mutating remote round-trip.
-        await syncDownload(ref, { ...options, dryRun: true }, { readOnly: true });
+        await syncDownload(ref, { ...options, dryRun: true, localOnly: true }, { readOnly: true });
       } catch (error) {
         handleError(error);
       }

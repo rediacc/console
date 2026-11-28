@@ -1,6 +1,6 @@
 """`rediacc_ci.docker.retag_image`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/docker/retag-image.sh` and the port over the same throwaway tree and compared exit code, stdout, stderr and the `docker` call log. The K=5 ledger `.ci/shadow/w7p6-retag-image.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/docker/retag-image.sh` and the port over the same throwaway tree and compared exit code, stdout, stderr and the `docker` call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares
 against `goldens/retag-image/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `docker` ON A SCRATCH PATH built from an explicit symlink list, so a tool nobody named is genuinely absent. Not a formality: an early probe for this port left `/usr/bin` on PATH and the real docker binary contacted `ghcr.io/token` before the twin printed a line. Nothing here can reach a registry.

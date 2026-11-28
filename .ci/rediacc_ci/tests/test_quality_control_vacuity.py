@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.control_vacuity` against the grep pipeline it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-control-vacuity.observations.jsonl` drives the whole gate over five distinct trees carrying each verdict this check can reach. What a ledger row cannot isolate is the CLASSIFIER, which is three chained greps whose answer decides whether a sibling gate is judged at all:
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees carrying each verdict this check can reach. What a ledger row cannot isolate is the CLASSIFIER, which is three chained greps whose answer decides whether a sibling gate is judged at all:
 
     grep -vE '^[[:space:]]*#'                      strip comments
     grep -vE "sed [^&]*[[:punct:]]s[/@|#]\\^[/@|#]"  drop prefix substitutions
@@ -182,7 +182,7 @@ def test_selftest_is_green() -> None:
 def test_the_real_tree_passes_and_the_port_keeps_its_streams_apart() -> None:
     """The real tree, both streams, kept SEPARATE.
 
-    WHILE BOTH COPIES EXISTED this compared the twin's bytes against the port's on every stream, and `.ci/shadow/w7p2-control-vacuity.observations.jsonl` recorded that verdict over five distinct trees. W7 P5 batch C2 retired the twin once the ledger asserted, so the comparison that executed it went with it and what remains is the property the byte comparison was protecting: a
+    WHILE BOTH COPIES EXISTED this compared the twin's bytes against the port's on every stream, and the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees. W7 P5 batch C2 retired the twin once the ledger asserted, so the comparison that executed it went with it and what remains is the property the byte comparison was protecting: a
     green real-tree run whose findings never leak onto the wrong stream.
     """
     root = str(paths.repo_root())

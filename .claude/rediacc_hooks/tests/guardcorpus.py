@@ -25,6 +25,7 @@ import hashlib
 import json
 import re
 
+from rediacc_hooks.guards import RENAMED
 from rediacc_hooks.tests import corpus
 
 SUITE = corpus.SUITE
@@ -180,6 +181,10 @@ def harvest_cases():
         if "\x1e" in payload or "\x1f" in payload:
             continue
         line = src.count("\n", 0, m.start()) + 1
+        # The recording is frozen bytes, so a case naming a retired guard keeps its old key there; it is the case of the guard that carries the policy now (`guards.RENAMED`), whose golden holds it under the same label.
+        renamed = re.fullmatch(r"guards/(\w+)\.py", guard_word)
+        if renamed and renamed.group(1) in RENAMED:
+            guard_word = "guards/%s.py" % RENAMED[renamed.group(1)]
         cases.append((guard_word, payload, "%s@%d" % (m.group(1), line), rc_word))
     stats = {
         "call_sites": sites,
@@ -234,6 +239,20 @@ def cross_sample(payloads, guard, limit=CROSS_SAMPLE):
         scored.append((digest, payload))
     scored.sort()
     return [payload for _, payload in scored[:limit]]
+
+
+def stratified_sample(cases):
+    """One case per `(guard, suite rc)` stratum of `harvest_cases()`-shaped rows: every guard once per verdict its suite asserts.
+
+    The pick is the stratum's lowest payload, so it is the same on every run and every host, and a payload added to the suite moves the sample only when it sorts first in its stratum. Returned in stratum order.
+    """
+    strata: dict[tuple[str, str], tuple] = {}
+    for row in cases:
+        guard, payload, _label, rc = row[:4]
+        key = (guard, rc)
+        if key not in strata or payload < strata[key][1]:
+            strata[key] = row
+    return [strata[key] for key in sorted(strata)]
 
 
 # Event shapes no suite case produces, and every one of them is a shape a guard can be handed by the real harness. The suite's builders always emit a well-formed document; the harness does not promise one, and `jq -r` answers each of these differently (see `hookio._jq_raw`, whose four-way asymmetry is what these pin).

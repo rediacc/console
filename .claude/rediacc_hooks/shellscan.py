@@ -4778,7 +4778,8 @@ def run_copies(run, argv=None, cwd=None):
     sources, dest, into = found
     dests = [dest]
     if run.launch is not None and run.launch.launcher == "find" and "{}" in dest:
-        dests = list(run.launch.starts)
+        # A landing `<dir>/{}` names the walked file INSIDE `<dir>`, the reading `find_starts` gives it: replacing the whole word by the starting points dropped `<dir>`, so `find /tmp -exec cp x agent/reviews/{} \;` landed in /tmp and `find agent/reviews -exec cp x /tmp/out/{} \;` landed under agent/reviews.
+        dests = find_starts(run, [dest])
     if not fed:
         return sources, dests, into
     if into:
@@ -9005,17 +9006,23 @@ def _perl_in_place(argv):
     return in_place, programs, operands
 
 
+def _in_place_parser(run):
+    """The option parse of the in-place editor `run` is (sed, gsed, perl), or None for any other run."""
+    base = run.name.rsplit("/", 1)[-1]
+    if base in ("sed", "gsed"):
+        return _sed_in_place
+    if base.startswith("perl"):
+        return _perl_in_place
+    return None
+
+
 def in_place_edit(run):
     """`(scripts, files)` for a sed or perl run that edits files IN PLACE, or None for any other run. `scripts` are the sed scripts or perl `-e` programs written on the command line; `files` the operands it rewrites.
 
     THE WORDS ARE READ AS TYPED AND AS BASH EXPANDS THEM (#4deea064): `F=-i; sed $F s/a/b/ x` edits `x` in place while the typed `$F` is a script, so the run is in place when either reading says so, and its scripts and files are those of each reading that is in place (an expanded word the walk cannot know is left out, its typed text being in the typed reading). A run with no `xargv` (one a caller builds) is read as typed.
     """
-    base = run.name.rsplit("/", 1)[-1]
-    if base in ("sed", "gsed"):
-        parse = _sed_in_place
-    elif base.startswith("perl"):
-        parse = _perl_in_place
-    else:
+    parse = _in_place_parser(run)
+    if parse is None:
         return None
     argv = list(run.argv)
     readings = [parse(argv)]
@@ -9031,3 +9038,311 @@ def in_place_edit(run):
         scripts.extend(x for x in found_scripts if _UNRESOLVED not in x and x not in scripts)
         files.extend(x for x in found_files if _UNRESOLVED not in x and x not in files)
     return scripts, files
+
+
+# --------------------------------------------------------------------------- the shell-write guards' shared readings (PLAN-tooling-code-reduction CR5, D5) ---------------------------------------------------------------------------
+#
+# block_review_file_shell_write, block_user_only_command_shell_write, block_live_proof_ledger_shell_write and block_suppressions_shell_write were written one from another, and each carried its own copy of the operand filter, the run-directory join, the find-start expansion and the "a write through a link the text never spells" reading; a fix to one copy reached none of the others. Each guard now binds
+# these (`_operands = shellscan.plain_operands`), so its call sites and its DEFECT read as before. NO MATCHER LIVES HERE: the regexes the readings apply (each guard's `_LITERAL` and `WRITE_CODE`) stay in the guard modules and are passed in, because check:ci-guard-mention-anchoring judges the matcher-shaped constants of guard modules only.
+
+# The longest path the kernel resolves; a word longer than this names no file a write can open.
+PATH_MAX = 4096
+
+
+def plain_operands(argv):
+    """`run.argv` is the ARGUMENTS, without the command name; every word that is not an option, a lone `-` kept."""
+    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+
+
+def run_base(where, cwd):
+    """The absolute directory a run in `where` (`write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
+    if not cwd or not os.path.isabs(str(cwd)):
+        return None
+    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+
+
+def find_starts(run, ops):
+    """`ops` with a `{}` read as the starting points of the `find` that launched this run (`Launch.starts`): `find .claude -exec sed -i ... {} +` edits files under `.claude`."""
+    if run.launch is None or run.launch.launcher != "find":
+        return ops
+    out: list[str] = []
+    for a in ops:
+        if a.endswith("/{}") and "{}" not in a[:-3]:
+            # A copy's landing `<dir>/{}`: the `{}` is the NAME the copy gives the walked file inside `<dir>`, so the landing stays under `<dir>` whatever the find walks. Reading it as the starting points dropped `<dir>` and read `cp {} /tmp/` as a write under the walked directory.
+            out.append(a[:-2] + "_")
+        else:
+            out.extend(run.launch.starts if "{}" in a else [a])
+    return out
+
+
+def code_writes_through_disk(code, through_link, write_code, literal, program=None):
+    """Whether interpreter `code` writes to a place `through_link` accepts (a literal that reaches the guarded tree only on disk, through a link the text never spells).
+
+    A Python `program` that parses is judged by its write TARGETS through `python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.1, .2, .3). Other code is read line by line: a line `write_code` matches writes through a link when one of its quoted literals (`literal`, the guard's own pattern, whose first matching group is the body) is accepted, or when it names a variable assigned from such a literal.
+    """
+    if program is not None:
+        verdict = python_writes_to(program, through_link)
+        if verdict is not None:
+            return verdict
+
+    def bodies(text):
+        for m in literal.finditer(text):
+            yield next(g for g in m.groups() if g is not None)
+
+    names = {
+        m.group(1)
+        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
+        if any(through_link(lit) for lit in bodies(m.group(2)))
+    }
+    for line in code.splitlines():
+        if not write_code.search(line):
+            continue
+        if any(through_link(lit) for lit in bodies(line)):
+            return True
+        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
+            return True
+    return False
+
+
+# --------------------------------------------------------------------------- every file a command writes (PLAN-tooling-code-reduction CR5, D5) ---------------------------------------------------------------------------
+#
+# ONE ANSWER TO "DOES THIS COMMAND WRITE P?". Each write guard grew its own reading of the same walk: the redirects, `tee`, `sed -i`/`perl -i`, a copier's landing, a listed command's output option, a destructive git verb's pathspecs and an interpreter program's write calls. Every reading below already lives in this module; `writes` only puts them behind one call, so a guard asks its own path question
+# of one list instead of re-deriving the list. It decides nothing: a caller keeps its own policy for an "unread" landing (a command the tables do not list, whose every word may be a file) and for an "unknown" write (a program the walk cannot read).
+_GIT_PATH_WRITERS = frozenset(("checkout", "restore", "rm", "mv", "reset", "clean"))
+
+
+def _git_pathspecs(words):
+    """The words after a destructive git verb in a git run's `words` that may name a file it writes, options left out and every word after `--` kept; joined onto the run's `-C` directory."""
+    words = list(words)
+    at, directory = _git_verb_at(words)
+    if at is None or words[at] not in _GIT_PATH_WRITERS:
+        return []
+    out, after = [], False
+    for word in words[at + 1 :]:
+        if after or word == "-" or not word.startswith("-"):
+            out.append(
+                os.path.join(directory, word) if directory and not word.startswith("/") else word
+            )
+        elif word == "--":
+            after = True
+    return out
+
+
+def _program_writes(run, cmd, cwd):
+    """`(strings, unknown)` for an interpreter run: every string constant that reaches a Python write call's target, directly or through a name bound to it (each constant on its own, never joined into a path), and whether the program could not be read at all."""
+    text, kind = interpreter_program(run, cmd, cwd)
+    if kind == "unjudgeable":
+        return [], True
+    if not text or not run.name.rsplit("/", 1)[-1].startswith("python"):
+        return [], False
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError, RecursionError, MemoryError):
+        return [], False
+    bound = python_bindings(tree)
+    found: list[str] = []
+
+    def strings(expr, seen):
+        for node in ast.walk(expr):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                found.append(node.value)
+            elif isinstance(node, ast.Name) and node.id not in seen:
+                seen.add(node.id)
+                for value in bound.get(node.id, ()):
+                    strings(value, seen)
+
+    for target in python_write_targets(tree):
+        strings(target, set())
+    return list(dict.fromkeys(found)), False
+
+
+class Write(typing.NamedTuple):
+    """One file a command may write (`write_records`).
+
+    path    absolute and normalized ("" for an "unknown" record: a program the walk cannot read, or a word it cannot expand)
+    how     the reading that found it (`writes` lists them)
+    word    the word as the command hands it over: the typed form, or the form bash expands it to, whichever this record was read from; a guard naming the write in a message or judging the word lexically reads this, never `path`
+    run     the walked run that writes it
+    word_index   the position of the run's own word it was read from (`_word_index`: in `run.argv`, else `run.xargv`; a `{}` that stands for find's starts keeps the `{}`'s position), or None when it is no word of the run (a redirect target, a fed word)
+    append  True when the write keeps what the file holds (`>>`, `&>>`, `tee -a`/`--append`/a bundle holding `a`); every other write may replace it
+    """
+
+    path: str
+    how: str
+    word: str
+    run: typing.Any
+    word_index: int | None
+    append: bool
+
+
+# Options of `truncate` whose value is a size or a reference file it only READS (`-r REF`): the value is not a file it writes.
+_TRUNCATE_VALUED = frozenset(("-s", "--size", "-r", "--reference"))
+
+
+def _truncate_operands(words):
+    """The files `truncate` resizes: its operands, the value of `-s`/`-r` (attached or next) left out."""
+    out, skip, literal = [], False, False
+    for word in words:
+        if skip:
+            skip = False
+            continue
+        # After `--` every word is an operand, `-x` included (review f022c58e.2).
+        if not literal and word == "--":
+            literal = True
+            continue
+        if not literal and word in _TRUNCATE_VALUED:
+            skip = True
+            continue
+        if not literal and word.startswith("-") and len(word) > 1:
+            continue
+        out.append(word)
+    return out
+
+
+def _tee_appends(words):
+    """`tee -a`, `--append`, or a short bundle holding `a` (`-ia`). A long option is never a bundle: the `a` in `--output-error=warn` is no append."""
+    return any(
+        w == "--append" or re.fullmatch(r"-[A-Za-z]*a[A-Za-z]*", w) is not None for w in words
+    )
+
+
+def _word_index(run, word):
+    """The position of the run's own word `word` was read from: the word itself, else an operand carrying it after a first `=` (`dd of=F`, `--output=F`), in `run.argv` and then `run.xargv`; None for a word the run does not hold."""
+    for held in (run.argv, run.xargv):
+        if held is None:
+            continue
+        words = list(held)
+        if word in words:
+            return words.index(word)
+        for i, w in enumerate(words):
+            if "=" in w and w.split("=", 1)[1] == word:
+                return i
+    return None
+
+
+def run_word_writes(run, words, cwd, fed=()):
+    """`(word, how, append)` for every file `run` writes through one reading of its own words, `words` (its `argv`, its `xargv`, or a caller's reading of a word the walk could not expand), in this order: "tee", "in-place", "copy", "truncate", "remove", then "option" and "unread" (`output_landings`). `write_records` asks it of the typed and of the expanded words; a guard asks it of each reading it makes itself.
+
+    A word is handed back as `words` hold it, unplaced, with a `{}` that stands for find's starting points kept (the caller places it, and expands the `{}` by `find_starts`), except a copy's landing: with `cwd` known a copy is placed the way the tool places it (`copy_landings`, into a destination that is a directory), and with `cwd` None (a command a program hands to a shell, which runs wherever that program does) it is the destination word `run_copies` reads. What an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`); `fed` adds words the caller knows arrive the same way (a listing it read on the feed). It decides nothing: a word is not filtered here, so `/dev/null`, a URL and a word the walk could not expand come back as they are, for the caller to judge.
+    """
+    base = _base(run.name)
+    words = list(words)
+    ops = plain_operands(words)
+    out: list[tuple[str, str, bool]] = []
+    if base == "tee":
+        appending = _tee_appends(words)
+        out.extend((w, "tee", appending) for w in [*xargs_fed_operands(run, ops), *fed])
+    parse = _in_place_parser(run)
+    if parse is not None:
+        in_place, _scripts, files = parse(words)
+        if in_place:
+            out.extend((w, "in-place", False) for w in [*xargs_fed_operands(run, files), *fed])
+    if cwd is None:
+        copies = run_copies(run, words)
+        out.extend((d, "copy", False) for d in (copies[1] if copies is not None else ()))
+    else:
+        out.extend((path, "copy", False) for path, _into in copy_landings(run, cwd, argv=words))
+    # `truncate` and `rm` are left out of the output table on purpose (`_LANDS_ELSEWHERE`, `_NON_WRITERS`), so their operands are read here.
+    if base == "truncate":
+        out.extend(
+            (w, "truncate", False)
+            for w in [*xargs_fed_operands(run, _truncate_operands(words)), *fed]
+        )
+    if base == "rm":
+        out.extend((w, "remove", False) for w in [*xargs_fed_operands(run, ops), *fed])
+    out.extend((w, how, False) for w, how in output_landings(run, words, cwd=cwd))
+    return out
+
+
+def write_records(cmd, cwd):
+    """Every file `cmd` may write, as `Write` records in walk order; `writes` is the `(path, how)` view of the same list.
+
+    `how` is one of: "redirect" and "append" (an output redirect, by its operator), "tee", "in-place" (`sed -i`, `perl -i`), "copy" (`cp`/`mv`/`install`/`ln`/`rsync`, placed the way the tool places it), "option" and "unread" (`output_landings`: a listed command's write option, `dd of=` among them, or any word of a command the tables do not list), "truncate" (an operand of `truncate`, its `-s`/`-r` values left out), "remove" (an operand of `rm`), "git" (a pathspec of `checkout`/`restore`/`rm`/`mv`/`reset`/`clean`), "interpreter" (a string target of a Python program's write call) and "unknown" (path "": a program this walk cannot read, `word` ""; or a word it cannot expand, `word` holding it with each unexpanded part an `_UNRESOLVED` marker and `index` its position in the run, None for a redirect target). A `{}` in a word of a command `find -exec` launched stands for find's starting points, and what an xargs feeds a tee, an in-place edit, a truncate or an rm is one of its operands (`xargs_fed_operands`, which over-reads the feed and never under-reads it). A descriptor duplication, `/dev/null` and its kin and a URL are left out; a redirect target and every reading of the run's words (`run_word_writes`) are listed as typed and, where bash expands them differently, as expanded (`redirect_targets`, `_Run.xargv`), each its own record with its own `word`.
+    """
+    analysis = _analyse(cmd)
+    redirects = analysis_redirects(analysis)
+    # A target also written by a truncating redirect elsewhere in the command is never read as kept: `echo a >> f; echo b > f` replaces `f`, and a reading that matches by target name alone cannot tell the two redirects apart, so it takes the safe side for a guard that flags a replacement (review f022c58e.1).
+    truncated = {target for op, target in redirects if op not in (">>", "&>>")}
+    appends = {target for op, target in redirects if op in (">>", "&>>")} - truncated
+    out: list[Write] = []
+    seen: set[tuple[str, str, str, bool, int]] = set()
+
+    def put(word, run, how, append=False):
+        if (
+            not word
+            or word in _NOT_A_FILE
+            or word.startswith("/dev/fd/")
+            or _LANDING_URL.match(word)
+        ):
+            return
+        index = _word_index(run, word)
+        # A WORD THE WALK CANNOT EXPAND IS UNKNOWN, NEVER DROPPED: `rm $(echo x)/y` writes a file no path here names, so it is an "unknown" record holding the word as the walk has it (each part it could not expand an `_UNRESOLVED` marker), for a guard to judge as a pattern or refuse. A guard that takes only the readings it names never sees one.
+        if _UNRESOLVED in word:
+            key = ("", "unknown", word, append, id(run))
+            if key not in seen:
+                seen.add(key)
+                out.append(Write("", "unknown", word, run, index, append))
+            return
+        starts = (
+            run.launch.starts if run.launch is not None and run.launch.launcher == "find" else ()
+        )
+        for named in starts if starts and "{}" in word else (word,):
+            placed = named
+            if not os.path.isabs(named):
+                directory = write_directory(run.cwd, cwd) if run.cwd is not None else ""
+                placed = os.path.join(cwd, directory, named)
+            record = Write(os.path.normpath(placed), how, named, run, index, append)
+            key = (record.path, how, named, append, id(run))
+            if key not in seen:
+                seen.add(key)
+                out.append(record)
+
+    for run in _every_run(analysis):
+        base = _base(run.name)
+        variants = (
+            (run.argv, run.xargv)
+            if run.xargv is not None and list(run.xargv) != list(run.argv)
+            else (run.argv,)
+        )
+        for target in redirect_targets(run):
+            if not re.match(r"^(\d+|-)$", target):
+                appending = target in appends
+                put(target, run, "append" if appending else "redirect", appending)
+        # The typed words and, where bash expands them differently, the expanded ones (`_Run.xargv`): `F=<path>; touch $F`, `sort -o $F` and `cp x $F` write `<path>`, which the typed `$F` never names. Each reading is `run_word_writes`', the one a guard with readings of its own (block_review_file_shell_write's words it cannot expand) asks of each of them.
+        for words in variants:
+            for word, how, appending in run_word_writes(run, words, cwd):
+                put(word, run, how, appending)
+        if base == "git":
+            for words in variants:
+                for word in _git_pathspecs(words):
+                    put(word, run, "git")
+        literals, unknown = _program_writes(run, cmd, cwd)
+        # The program-unknown record is suppressed only by an unknown record of THIS run (a word it could not expand already says it): one from an earlier run of the command is no reading of this program (review 0228ca2d.2).
+        if unknown and not any(w.how == "unknown" and w.run is run for w in out):
+            out.append(Write("", "unknown", "", run, None, False))
+        for word in literals:
+            put(word, run, "interpreter")
+    return out
+
+
+def event_write_records(ev):
+    """`write_records` over a hook Event's command, computed once per Event and held on it; [] for an event with no command. A guard reads the records of the chain's one walk through this, as `hookio.Event.writes` serves the `(path, how)` view.
+
+    PER EVENT, NOT PER COMMAND TEXT, for `Event.writes`' reason: the parse is already memoized by the command string (`_analyse`), and what the records add reads the disk (whether a copy's destination is a directory, a script passed by path), so a memo keyed on the text would answer a long-lived process from a world that has since changed. The paths are placed from the payload's `cwd` when it carries one, else from the event's own directory.
+    """
+    held = getattr(ev, "_write_records", None)
+    if held is None:
+        cmd = ev.field("tool_input", "command")
+        held = write_records(cmd, ev.field("cwd") or ev.cwd) if cmd else []
+        ev._write_records = held
+    return held
+
+
+def writes(cmd, cwd):
+    """Every file `cmd` may write, as `(path, how)` in walk order, each pair once: the view of `write_records` for a caller that asks only where and how. `path` is absolute (relative words placed under `cwd` and the run's own `cd`); the `how` names and what each reading covers are `write_records`'."""
+    out: list[tuple[str, str]] = []
+    for record in write_records(cmd, cwd):
+        pair = (record.path, record.how)
+        if pair not in out:
+            out.append(pair)
+    return out

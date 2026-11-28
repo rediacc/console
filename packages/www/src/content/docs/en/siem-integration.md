@@ -65,8 +65,8 @@ pipeline before routing anywhere expensive.
 
 ### 2. Point the account server at it
 
-In the account server's environment (`private/account/.env` or your
-Docker/Wrangler equivalent):
+In the account server's environment (the Worker's secrets, or the process
+environment of an on-premise server):
 
 ```bash
 OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
@@ -124,8 +124,8 @@ referenced in Rediacc's compliance documentation:
 - **SOC 2 CC6.1 / CC7.2** -- access logging + monitoring
 - **HIPAA 45 CFR 164.312(b)** -- audit controls
 - **PCI DSS Req 10** -- track and monitor all access
-- **NIS2 Art. 21** -- incident reporting capability
-- **DORA Art. 10** -- ICT-related incident detection
+- **NIS2 Art. 21** -- the audit events are an input to incident handling; the incident timeline, clocks and staged reports are separate features
+- **DORA Art. 10** -- the audit events are an input to detection; the anomaly detectors run on the machine and on the server over the forensics flow records, not on this pipeline
 
 ## Reliability
 

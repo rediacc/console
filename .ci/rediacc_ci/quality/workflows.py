@@ -104,7 +104,15 @@ THE AWK BLOCK-SCALAR PARSER IS TRANSLATED, not shelled out. Its two subtleties a
 because the comparison is `ind <= envind`, and an off-by-one there silently
 changes which lines belong to the mapping.
 
-STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason `scripts/lib/shadow-gate.ts` sees one finding per violation rather than three.
+STREAMS. `log_error` is `✗ <msg>` on stderr; every `Line:` / `Fix:` / continuation line is a bare `echo` on stdout. That split is the reason the shadow gate (commit:bf054adcd4) sees one finding per violation rather than three.
+
+---- gate ----
+lane: quality-code
+step: Workflow banned patterns
+needs: node
+selftest: true
+slow: true
+---- end gate ----
 """
 
 import json
@@ -127,6 +135,9 @@ INLINE_MAX_ENV = "INLINE_MAX_LOGIC"
 INLINE_ONLY_ENV = "WORKFLOW_INLINE_ONLY"
 
 DEFAULT_WORKFLOW_DIR = ".github/workflows"
+# Composite actions hold steps too (`runs.steps[*].run`), so every STEP rule reads them as well; the job, trigger and environment rules stay workflow-only. The seam lets a test point at a fixture tree.
+ACTIONS_DIR_ENV = "WORKFLOW_ACTIONS_DIR"
+DEFAULT_ACTIONS_DIR = ".github/actions"
 DEFAULT_INLINE_MAX_LOGIC = 8
 
 # THE RETENTION CAP. GitHub caps every upload at the repository's artifact-and-log retention whatever `retention-days:` asks for (gate-costs-c277f2ab, asked 30, lived 3 days), so a higher value is a promise the platform does not keep. The record is the committed copy of the setting; see its own $comment.
@@ -338,6 +349,30 @@ def check_unpinned_actions(errors: Errors, root: pathlib.Path, files: list[str])
             )
 
 
+def step_targets(
+    root: pathlib.Path, workflow_dir: str, with_actions: bool = True
+) -> list[tuple[str, str, pathlib.Path]]:
+    """`(short label, full label, path)` for every file whose steps a step rule judges.
+
+    Workflows are `<workflow_dir>/*.yml`; composite actions are every `.yml` / `.yaml` under the actions directory, however deep (`profiler/nest-probe/action.yml`). Sorted per group, workflows first.
+    """
+    out: list[tuple[str, str, pathlib.Path]] = []
+    base = root / workflow_dir
+    if base.is_dir():
+        out.extend(
+            (path.name, "%s/%s" % (workflow_dir, path.name), path)
+            for path in sorted(base.glob("*.yml"))
+        )
+    actions_dir = os.environ.get(ACTIONS_DIR_ENV) or DEFAULT_ACTIONS_DIR
+    abase = root / actions_dir
+    if with_actions and abase.is_dir():
+        found = [p for p in abase.rglob("*") if p.is_file() and p.suffix in (".yml", ".yaml")]
+        for path in sorted(found):
+            rel = path.relative_to(abase).as_posix()
+            out.append((rel, "%s/%s" % (actions_dir, rel), path))
+    return out
+
+
 class Block:
     """One `run:` block scalar: where it starts, how much logic, whose step."""
 
@@ -407,27 +442,28 @@ def check_inline_run_blocks(
 
     actual: dict[str, int] = {}
     detail: dict[str, str] = {}
-    base = root / workflow_dir
-    if base.is_dir():
-        for path in sorted(base.glob("*.yml")):
-            name = path.name
-            violations = 0
-            lines_out = ""
-            for block in parse_run_blocks(read_lines(path)):
-                if block.count > max_logic:
-                    violations += 1
-                    lines_out += "      - %s:%d (step: %s) has %d logic lines\n" % (
-                        name,
-                        block.start,
-                        block.step or "<unnamed>",
-                        block.count,
-                    )
-            actual[name] = violations
-            if lines_out:
-                detail[name] = lines_out
+    full_label: dict[str, str] = {}
+    targets = step_targets(root, workflow_dir)
+    for name, full, path in targets:
+        violations = 0
+        lines_out = ""
+        for block in parse_run_blocks(read_lines(path)):
+            if block.count > max_logic:
+                violations += 1
+                lines_out += "      - %s:%d (step: %s) has %d logic lines\n" % (
+                    name,
+                    block.start,
+                    block.step or "<unnamed>",
+                    block.count,
+                )
+        # Keyed by the full path: a workflow `ci.yml` and an action file `.github/actions/ci.yml` share a short label.
+        actual[full] = violations
+        full_label[full] = full
+        if lines_out:
+            detail[full] = lines_out
 
-    # Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run.
-    if not actual:
+    # Anti-vacuity: no workflows parsed means the layout moved and this gate is asserting nothing. Fail loudly rather than report a clean run. Actions alone do not count: the workflow directory is the one that must be seen.
+    if not any(full.startswith(workflow_dir + "/") for _n, full, _p in targets):
         log.error("No workflows found under %s -- this check is blind" % workflow_dir)
         errors.count += 1
         return
@@ -446,8 +482,8 @@ def check_inline_run_blocks(
         )
         body.append("")
         errors.report(
-            "%s/%s: %d inline run: block(s) exceed %d logic lines"
-            % (workflow_dir, name, actual[name], max_logic),
+            "%s: %d inline run: block(s) exceed %d logic lines"
+            % (full_label[name], actual[name], max_logic),
             body,
         )
 
@@ -492,19 +528,13 @@ def check_env_shell_vars(errors: Errors, root: pathlib.Path, workflow_dir: str) 
     """An `env:` value may not carry shell syntax GitHub will not expand."""
     if not require_cmd("awk"):
         raise SystemExit(1)
-    base = root / workflow_dir
-    if not base.is_dir():
-        return
-    for path in sorted(base.glob("*.yml")):
+    for _short, full, path in step_targets(root, workflow_dir):
         hits = env_shell_hits(read_lines(path))
         if not hits:
             continue
         # ONE `ERRORS` INCREMENT PER FILE, not per hit: the twin loops the hits inside a single `if [[ -n "$out" ]]` block and increments once after it. Every hit gets its own `log_error`, so the finding SET is per hit and the COUNT is per file. That asymmetry is the twin's.
         for number, line in hits:
-            log.error(
-                "%s/%s:%d: env: value uses shell syntax GitHub will not expand"
-                % (workflow_dir, path.name, number)
-            )
+            log.error("%s:%d: env: value uses shell syntax GitHub will not expand" % (full, number))
             print("      %s" % line)
         print(
             "  Fix:  use a GitHub context (${{ runner.temp }}, ${{ github.workspace }}), "
@@ -539,18 +569,15 @@ def sudo_preserve_env_hits(lines: list[str]) -> list[tuple[int, str]]:
 
 def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: str) -> None:
     """No run step may rely on `sudo -E`: ubuntu-26.04 ships sudo-rs, where `-E` is a no-op."""
-    base = root / workflow_dir
-    if not base.is_dir():
-        return
-    for path in sorted(base.glob("*.yml")):
+    for short, _full, path in step_targets(root, workflow_dir):
         hits = sudo_preserve_env_hits(read_lines(path))
         if not hits:
             continue
         errors.report(
             "`sudo -E` in %s: ubuntu-26.04 sudo-rs ignores it and drops the whole environment"
-            % path.name,
+            % short,
             [
-                *["    %s:%d: %s" % (path.name, number, line.strip()) for number, line in hits],
+                *["    %s:%d: %s" % (short, number, line.strip()) for number, line in hits],
                 '    Fix: `sudo env "NAME=value" ... cmd`, naming each variable the command reads',
                 "    (PATH, HOME, RENET_DATA_DIR, VM_NET_BASE ...).",
                 "",
@@ -714,20 +741,15 @@ def sudo_env_drop_hits(lines: list[str]) -> list[tuple[int, str, list[str]]]:
 
 def check_sudo_env_drops(errors: Errors, root: pathlib.Path, workflow_dir: str) -> None:
     """A `sudo env` call must name every variable its own step's `env:` block sets."""
-    base = root / workflow_dir
-    if not base.is_dir():
-        return
-    for path in sorted(base.glob("*.yml")):
+    for short, _full, path in step_targets(root, workflow_dir):
         hits = sudo_env_drop_hits(read_lines(path))
         if not hits:
             continue
         errors.report(
-            "`sudo env` drops step env variables in %s: it passes only the names it lists"
-            % path.name,
+            "`sudo env` drops step env variables in %s: it passes only the names it lists" % short,
             [
                 *[
-                    "    %s:%d: missing %s: %s"
-                    % (path.name, number, ", ".join(missing), line.strip())
+                    "    %s:%d: missing %s: %s" % (short, number, ", ".join(missing), line.strip())
                     for number, line, missing in hits
                 ],
                 '    Fix: add `"NAME=$NAME"` for each missing variable to the `sudo env` line.',
@@ -1317,4 +1339,9 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_workflows.py", sys.argv[1:], switches=("--selftest", "--refresh-retention")
+    )
     raise SystemExit(main(sys.argv[1:]))

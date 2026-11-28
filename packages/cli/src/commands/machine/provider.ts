@@ -69,6 +69,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
   provider
     .command('add')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.machine.provider.add.descriptionShort'))
     .description(t('commands.machine.provider.add.description'))
     .option('--provider <source>', t('commands.machine.provider.add.optionProvider'))
     .option('--source <source>', t('commands.machine.provider.add.optionSource'))
@@ -119,6 +120,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
   provider
     .command('remove')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.machine.provider.remove.descriptionShort'))
     .description(t('commands.machine.provider.remove.description'))
     .action(async (name: string) => {
       try {
@@ -131,6 +133,7 @@ export function registerProviderCommands(machine: Command, program: Command): vo
 
   provider
     .command('list')
+    .summary(t('commands.machine.provider.list.descriptionShort'))
     .description(t('commands.machine.provider.list.description'))
     .action(async () => {
       try {

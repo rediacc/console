@@ -82,9 +82,6 @@ POLICY_FILES: tuple[str, ...] = (
     # D0, 2026-09-09. THE ONLY NON-DOTFILE AND THE ONLY .json IN THIS SET, and both are deliberate. It is a pinned MEASUREMENT of what the hook wiring costs, not a list of exempted entries, so a name-per-line dotfile could not hold it; and it is policy by the README's four-part predicate all the same, because every number in it is a claim about the world that a change to
     # .claude/settings.json can stop being true. It is reached through policy_path() from .ci/rediacc_ci/quality/hook_exec_baseline.py and nowhere else.
     "hook-exec-baseline.json",
-    # D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at 183 read sites, with no registry and no schema before this. A typo'd name reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction. Reached through policy_path() from .ci/rediacc_ci/quality/worklist_env_registry.py and nowhere else. JSON for the same reason as the line
-    # above: it holds a table, not a list of entries.
-    "worklist-env-registry.json",
     # 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate.
     "deps-major-exceptions.json",
     # 2026-10-06, PLAN-fast-loop.md Part 1. Gates whose verdict moves without a tracked input moving: the incremental pre-push receipt never carries them. Read by scripts/ci-runner/input-hash.ts and block_unverified_push.py.
@@ -98,6 +95,8 @@ POLICY_FILES: tuple[str, ...] = (
     # 2026-11-17. A TABLE of test nodes allowed to run past the slow threshold, one row per node with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/pytest_slow_ratchet.py.
     "pytest-slow-allow.json",
     "pytest-impact.json",
+    # 2026-11-27. The shrink-only legacy baseline of reggate debt (PLAN-reggate-debt-collection), a JSON object of `sigs` with a `BLOCKER:` reason, which a name-per-line dotfile could not carry. Read by .claude/hooks/stop/wl_reggate.py (legacy_rel) and, through it, .ci/rediacc_ci/quality/reggate_debt.py.
+    "reggate-debt-legacy.json",
 )
 
 _VALID = frozenset(POLICY_FILES)

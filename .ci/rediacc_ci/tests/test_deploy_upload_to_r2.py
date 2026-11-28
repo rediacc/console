@@ -2,15 +2,14 @@
 
 THE TWIN'S SIDE IS FROZEN. Every `"old"` run goes through `differential.twin_run`, so its exit code, both streams and `aws` call log come from `goldens/twins/deploy.upload-to-r2.jsonl` and the `.sh` is never read once it is deleted. A `regolden --source bash` run still drives the live bash while it exists, which is why the fixture copies the twin and its libraries in only when they are on disk. The write-once guard now lives in `deploy.write_once_guard` and has its own differential, `test_deploy_write_once_guard.py`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the two bash libraries it sources, the port, and a `dist/` of its own, then runs both sides against it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real
+A RECORDING FAKE `aws` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches R2, and nothing here reads or writes the real checkout: every case builds a throwaway tree holding the twin, the two bash libraries it sources, the port, and a `dist/` of its own, then runs both sides against it. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real
 production run" clause and says in as many words that a mocked parity ledger is separate, achievable work. This is that work.
 
 WHY THE FIXTURE HAS TO BE A WHOLE TREE. Both sides resolve the repository root
 from their OWN location (`common.sh`'s `../../..` and the port's `../../..`), and
 the port additionally reads `write_once_guard` out of the twin's text at run time. Run either from a scratch directory and it would walk back to this checkout. `.ci/config/constants.sh` and `.devcontainer/toolchain.env` are copied too, because constants.sh `exit 1`s without the latter.
 
-THE FAKE ECHOES ITS OWN ARGV ONTO STDERR, and that is not decoration. Every line this program prints goes through `log_step`/`log_info`, which the shadow-gate classifier treats as CHATTER before any `--finding-re` sees it, so a ledger built on message text would record `VACUOUS_BOTH_EMPTY` for every row. With the fake echoing `call: aws ...`, the compared finding set becomes the
-literal set of external calls the run made, which is the observable that actually matters here. It also means the streams being compared below CARRY the call sequence, in order, interleaved with the script's own lines, so a port that made the right calls in the wrong order fails on stderr rather than needing a second artifact.
+THE FAKE ECHOES ITS OWN ARGV ONTO STDERR, and that is not decoration. Every line this program prints goes through `log_step`/`log_info`, so without the echo a stderr comparison would see only message text and never the calls. With the fake echoing `call: aws ...`, the literal set of external calls the run made is the observable that actually matters here. It also means the streams being compared below CARRY the call sequence, in order, interleaved with the script's own lines, so a port that made the right calls in the wrong order fails on stderr rather than needing a second artifact.
 
 The file log is still kept, and it holds the one thing the stream cannot: the CONTENT written to `cli/<channel>/latest.json` and to `cli/versions.json`. Two implementations can make identical calls and upload a different retention list.
 
@@ -80,7 +79,7 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     if stdin:
         fh.write("STDIN<<<" + stdin + ">>>\\n")
 
-# The distinctly-prefixed line the shadow-gate ledger keys on. stderr, because
+# The distinctly-prefixed line that carries each call. stderr, because
 # stdout is DATA for `r2_get` and a marker there would corrupt the tracker.
 sys.stderr.write("call: aws " + " ".join(argv) + "\\n")
 sys.stderr.flush()

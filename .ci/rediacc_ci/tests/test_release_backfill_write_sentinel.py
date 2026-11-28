@@ -1,7 +1,7 @@
 """`rediacc_ci.release.backfill_write_sentinel`, driven directly.
 
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/backfill-write-sentinel.sh` over the same environment and compared its exit code, stdout and stderr against the port's.
-The K=5 ledger `.ci/shadow/w7p5a-backfill-write-sentinel.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-backfill-write-sentinel --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
 `DRY_RUN=false` STAYS ON THE LOCAL-ARGUMENT-VALIDATION PATH, same design as `test_deploy_upload_media_to_r2.py`'s forwarding-shim cases: `aws` is MADE unreachable below, so the call into `rediacc_ci.deploy.write_release_sentinel` dies at its own `require_cmd aws` -- before any network access, before any R2 credential is read. That failure message is exactly what the case
 asserts, which is the real, unmocked forward this port makes, stopped by the same missing binary the bash twin stopped on.

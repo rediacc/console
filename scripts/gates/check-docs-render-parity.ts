@@ -53,6 +53,7 @@
  * needs: node
  * lane: quality-www-build
  * slow: true
+ * selftest: true
  * ---- end gate ----
  */
 
@@ -60,6 +61,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SITE_LOCALES } from '@rediacc/locales';
+import { foldedControl } from './lib/run-control.js';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const ROOT = process.env.DOCS_RENDER_PARITY_ROOT ?? REPO;
@@ -83,7 +85,7 @@ function bodyOfMarkdown(text: string): string {
  * Markdown inline syntax removed, leaving the text a renderer would emit.
  *
  * Underscores are deliberately NOT treated as emphasis: heading text in this repo
- * carries identifiers like `REDIACC_ALLOW_CONFIG_EDIT`, and stripping `_` would
+ * carries identifiers like `REDIACC_ALLOW_GRAND_REPO`, and stripping `_` would
  * mangle the very string the assertion compares.
  */
 function plainFromMarkdown(heading: string): string {
@@ -391,6 +393,8 @@ function collectPairs(): Pair[] {
 
 function main(): void {
   control();
+  // `--selftest` stops after the in-file controls and the harness that used to be registered as its own gate (PLAN-tooling-code-reduction.md D4), so it needs no built tree.
+  if (foldedControl(() => import('../__tests__/check-docs-render-parity.control.ts'))) return;
 
   const refuse = (why: string, how: string): never => {
     console.error(`${RED}✗${NC} Refusing to run: ${why}`);

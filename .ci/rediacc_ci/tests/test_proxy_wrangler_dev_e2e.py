@@ -262,6 +262,17 @@ def test_fake_account_plants_flip_the_answer(plant: str, who: str, active: bool)
         assert ("orgId" in fake.route(t[who])) is active
 
 
+def test_a_misnamed_dev_worker_finding_names_the_required_name() -> None:
+    """Review cc282088.2: the finding says which side to change, not a regex-style prefix."""
+    found = gate.dev_config_findings(
+        {"name": "other-proxy", "services": [gate.ISSUER_BINDING]}, {"name": "rediacc-proxy"}
+    )
+    assert any(
+        "must be named %r" % gate.DEV_WORKER_NAME in line and "change one" not in line
+        for line in found
+    ), found
+
+
 def test_unknown_plant_is_refused() -> None:
     with pytest.raises(ValueError, match="unknown plant"):
         gate.FakeAccount("e", "c", plant="sometimes")

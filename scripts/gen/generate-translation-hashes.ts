@@ -9,6 +9,7 @@
  * Usage:
  *   npx tsx scripts/gen/generate-translation-hashes.ts
  *   npm run i18n:generate-hashes
+ *   npm run i18n:generate-hashes -- --surface cli   (one surface: www, cli, account-web, account-emails)
  *   npm run i18n:update-hashes (alias)
  */
 
@@ -213,22 +214,63 @@ export function writeHashManifest(
   return outputPath;
 }
 
-async function main(): Promise<void> {
-  console.log('Translation Hash Generation');
-  console.log(''.padEnd(60, '='));
-  console.log();
+/** Surface names accepted by `--surface`, in generation order. */
+export function surfaceNames(configs: LocaleConfig[] = LOCALE_CONFIGS): string[] {
+  return configs.map((c) => c.name);
+}
 
+/** Parse `--surface <name>` / `--surface=<name>` (repeatable). Unknown or empty values are hard errors. */
+export function parseSurfaces(argv: string[], known: string[]): string[] | null {
+  const picked: string[] = [];
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    let value: string | undefined;
+    if (arg === '--surface') value = argv[++i];
+    else if (arg.startsWith('--surface=')) value = arg.slice('--surface='.length);
+    else throw new Error(`unknown argument "${arg}" (only --surface <name> is accepted)`);
+    if (!value || value.startsWith('--')) {
+      throw new Error(`--surface needs a name, one of: ${known.join(', ')}`);
+    }
+    if (!known.includes(value)) {
+      throw new Error(`unknown surface "${value}", one of: ${known.join(', ')}`);
+    }
+    picked.push(value);
+  }
+  return picked.length > 0 ? picked : null;
+}
+
+/** Generate the manifests for the selected surfaces (all when `surfaces` is null). */
+export function generate(
+  configs: LocaleConfig[],
+  surfaces: string[] | null,
+  resolveCommit?: (englishSourcePath: string) => string | null
+): ProcessResult[] {
   const results: ProcessResult[] = [];
-
-  for (const config of LOCALE_CONFIGS) {
+  for (const config of configs) {
+    if (surfaces && !surfaces.includes(config.name)) continue;
     console.log(`Processing ${config.name}...`);
 
     const hashes = processLocaleDir(config);
     if (hashes) {
-      const outputPath = writeHashManifest(config.dir, hashes, config.name, config);
+      const outputPath = writeHashManifest(config.dir, hashes, config.name, config, resolveCommit);
       results.push({ name: config.name, path: outputPath, keyCount: Object.keys(hashes).length });
+    } else if (surfaces) {
+      // An explicitly requested surface that wrote nothing is a failure, never a silent "up-to-date".
+      throw new Error(`--surface ${config.name} wrote no manifest (its English source is missing)`);
     }
   }
+  return results;
+}
+
+async function main(): Promise<void> {
+  const surfaces = parseSurfaces(process.argv.slice(2), surfaceNames());
+
+  console.log('Translation Hash Generation');
+  console.log(''.padEnd(60, '='));
+  console.log(surfaces ? `Surface(s): ${surfaces.join(', ')}` : 'Surface(s): all');
+  console.log();
+
+  const results = generate(LOCALE_CONFIGS, surfaces);
 
   console.log();
   console.log(''.padEnd(60, '='));
@@ -240,6 +282,9 @@ async function main(): Promise<void> {
   }
 
   console.log();
+  console.log(
+    `Manifests written: ${results.map((r) => path.relative(REPO_ROOT, r.path)).join(', ')}`
+  );
   console.log('Hash manifests are now up-to-date.');
   console.log('Commit these files along with your translation changes.');
 }

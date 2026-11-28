@@ -28,7 +28,7 @@ TWO NORMALISED CASES, both named:
   * `generatedAt`, which is `date -u` at the moment of the run.
 Everything else is byte for byte on both streams, the call log included.
 
-K=5 LEDGER: `.ci/shadow/w7p6-dependency-inventory.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

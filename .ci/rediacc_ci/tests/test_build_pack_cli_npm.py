@@ -1,6 +1,6 @@
 """`rediacc_ci.build.pack_cli_npm`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/pack-cli-npm.sh` and the port over the same fixture tree and compared EIGHT observables per case. The ledger `.ci/shadow/w7p6-pack-cli-npm.observations.jsonl` holds 5 rows of that comparison.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/pack-cli-npm.sh` and the port over the same fixture tree and compared EIGHT observables per case. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison.
 
 Every fixture case now compares against `goldens/pack-cli-npm/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha.
 

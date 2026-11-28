@@ -7,12 +7,14 @@
  */
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { assertNoSelfLoop, syncBuilds, syncDependencies } from './quick-clone.js';
+import { cacheDirFor } from './typecheck-cache-dir.js';
 
-/** Far too big to copy and addressed by version, as in quick-clone. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
+/** Far too big to copy: pinned tool installs addressed by version, as in quick-clone, plus `.ci/cache/registry`, the one entry that is NOT addressed by version (Docker Hub tag listings whose answers change upstream), linked so every tree reads the single listing the freshness gate refreshes and re-reads on a mismatch. Spelled `ln -sfn`: a plain `ln -s` onto an existing link plants a self-loop. */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** The workspace packages other packages import from `dist`: without it their tests cannot load in a lease (measured 2026-11-04: 19 CLI test files, on `@rediacc/provisioning`). */
 const BUILT_PACKAGES = ['packages/shared', 'packages/provisioning', 'packages/json'];
@@ -102,6 +104,75 @@ export function seedReceipt(lease: string, live: string): string {
   return `${RECEIPT}: copied from the main checkout for --narrow`;
 }
 
+/**
+ * The incremental typecheck cache is keyed on the checkout path (typecheck-incremental.ts CACHE_DIR), so a fresh lease typechecks cold. The main checkout's tsbuildinfo files are copied into the lease's own cache directory, read-only on the main side: the lease writes only its own directory. A tsbuildinfo names every file relative to its own directory, so the main checkout's prefix is rewritten to the lease's; an entry that stays wrong (a path outside the main tree) only misses, because tsc re-hashes what it reads. Stamps are not copied: they hold absolute paths and mtimes of the other tree and would never match.
+ */
+export function seedTypecheckCache(
+  lease: string,
+  live: string,
+  home: string = os.homedir()
+): string {
+  const from = cacheDirFor(live, home);
+  const to = cacheDirFor(lease, home);
+  if (!fs.existsSync(from))
+    return `typecheck cache: none for the main checkout, the first typecheck is cold`;
+  if (from === to) return 'typecheck cache: the lease is the main checkout';
+  const prefixLive = path.relative(from, live).split(path.sep).join('/');
+  const prefixLease = path.relative(to, lease).split(path.sep).join('/');
+  let copied = 0;
+  let skipped = 0;
+  // A cache that cannot be read only costs a cold typecheck, so no failure here may fail the lease seed (review 91209a47.1).
+  let names: string[];
+  try {
+    names = fs.readdirSync(from);
+  } catch (err) {
+    return `typecheck cache: ${from} cannot be listed (${(err as Error).message}), the first typecheck is cold`;
+  }
+  for (const name of names) {
+    if (!name.endsWith('.tsbuildinfo')) continue;
+    try {
+      const text = fs.readFileSync(path.join(from, name), 'utf8');
+      // tree-write: safe a directory under the home directory, the lease's own typecheck cache, never the main checkout's
+      fs.mkdirSync(to, { recursive: true });
+      // tree-write: safe a file in the lease's own typecheck cache under the home directory
+      fs.writeFileSync(path.join(to, name), text.split(`"${prefixLive}/`).join(`"${prefixLease}/`));
+      copied++;
+    } catch {
+      skipped++;
+    }
+  }
+  return `typecheck cache: ${copied} tsbuildinfo file(s) seeded from the main checkout${skipped === 0 ? '' : `, ${skipped} unreadable and left cold`}`;
+}
+
+/** Public keys only (the account Ed25519 and X25519 public halves: the cache's version header comment and `ACCOUNT_*_PUBLIC_KEY=` lines are kept, any other line, a comment included, is dropped, so the copy holds nothing secret whatever the source file grows), the offline answer `resolve_renet_account_key` reads before Bitwarden. Without it a renet build in a seeded tree depends on a Bitwarden read, which a drill leg's environment cannot always make (2026-11-21: backup drill leg f in the landing tree, "renet needs ACCOUNT_ED25519_PUBLIC_KEY ... not in the public-key cache, and not readable from Bitwarden"). */
+const PUBLIC_KEYS = 'private/account/.cache/public-keys.env';
+
+export function seedPublicKeys(lease: string, live: string): string {
+  const source = path.join(live, PUBLIC_KEYS);
+  if (!fs.existsSync(source))
+    return `${PUBLIC_KEYS}: none in the main checkout, a renet build reads Bitwarden`;
+  const dest = path.join(lease, PUBLIC_KEYS);
+  if (!fs.existsSync(path.join(lease, 'private', 'account')))
+    return `${PUBLIC_KEYS}: no private/account in this tree`;
+  const kept = publicKeyLines(fs.readFileSync(source, 'utf8'));
+  // tree-write: safe a directory inside the lease tree, which is ignored and never the live tree
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  // tree-write: safe a path inside the lease tree, which is ignored and never the live tree
+  fs.writeFileSync(dest, kept.join('\n') + '\n');
+  return `${PUBLIC_KEYS}: copied from the main checkout`;
+}
+
+/** The lines of a public-key cache that may travel: the version header (`resolve_renet_account_key` reads the first line to accept the cache) and `ACCOUNT_*_PUBLIC_KEY=` assignments. A free comment is dropped, since it could carry anything. */
+export function publicKeyLines(text: string): string[] {
+  return text
+    .split('\n')
+    .filter(
+      (line) =>
+        line.startsWith('# rediacc public-key cache') ||
+        /^ACCOUNT_[A-Z0-9_]*_PUBLIC_KEY=/.test(line)
+    );
+}
+
 export function seedLease(lease: string, live: string, commit: string): string[] {
   try {
     const notes = syncDependencies(lease, live, commit);
@@ -110,6 +181,8 @@ export function seedLease(lease: string, live: string, commit: string): string[]
     for (const pkg of BUILT_PACKAGES) notes.push(seedDist(lease, live, pkg));
     copyEnvFiles(lease, live);
     notes.push(seedReceipt(lease, live));
+    notes.push(seedPublicKeys(lease, live));
+    notes.push(seedTypecheckCache(lease, live));
     assertNoSelfLoop(live);
     assertNoSelfLoop(lease);
     return notes;

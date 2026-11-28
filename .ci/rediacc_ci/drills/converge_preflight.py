@@ -10,12 +10,10 @@ The CLI-free pieces (compose bodies, the id probe, and the parsers of the summar
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 import re
 import shlex
 import shutil
-import uuid
 from typing import Any
 
 from rediacc_ci.drills import lib, upgrade_converge, vm_ssh
@@ -331,26 +329,24 @@ class _LiveU2:
         return self.check("stage the current renet build", copied.rc == 0, copied)
 
     def _make_config(self) -> bool:
-        """A copy of the dev config this run seeded, with `renetPath` on a symlink that starts at the CURRENT binary (the CLI creates the repos through renet jobs, which the old binary cannot run) and a fresh identity."""
+        """A copy of the config this run's CLI calls read (`upgrade_converge.run_config_name`), with its token file when that is the run's credential, `renetPath` on a symlink that starts at the CURRENT binary (the CLI creates the repos through renet jobs, which the old binary cannot run) and a fresh identity."""
         self.point_symlink(self.new_bin)
-        dev_json = self.config_path("dev")
-        if not dev_json.exists():
+        target = self.config_path(self.cfg)
+        source = self.ctx.cli_config_name()
+        # Marked before the write, so a half-written pair (config without token) is still torn down.
+        self.created_cfg = True
+        failed = upgrade_converge.seed_throwaway_config(
+            target.parent,
+            source,
+            self.cfg,
+            str(self.symlink),
+            carry_token=not self.ctx.token,
+        )
+        if failed:
             self.check(
-                "the dev config exists to seed the U2 config from",
-                False,
-                evidence="no %s" % dev_json,
+                "the U2 config is seeded from the run's config %s" % source, False, evidence=failed
             )
             return False
-        doc = json.loads(dev_json.read_text())
-        doc["renetPath"] = str(self.symlink)
-        doc["id"] = str(uuid.uuid4())
-        target = self.config_path(self.cfg)
-        # Created 0600 from the first byte, as U1 does: the copy carries the gateway E2E key, and write-then-chmod leaves a window where another local user can read it.
-        fd = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-        os.fchmod(fd, 0o600)
-        with os.fdopen(fd, "w") as handle:
-            handle.write(json.dumps(doc, indent=2) + "\n")
-        self.created_cfg = True
         listed = self.crdc("machine", "list", "-o", "json")
         names = [str(m.get("name")) for m in _data_list(listed.out)] if listed.rc == 0 else []
         if self.ctx.machine not in names:
@@ -581,7 +577,7 @@ class _LiveU2:
         )
         if revert.rc != 0:
             left.append(
-                "worker not reverted to the dev-config renet (machine setup rc=%d: %s)"
+                "worker not reverted to the run's config renet (machine setup rc=%d: %s)"
                 % (revert.rc, _clip(revert.err[-400:] or revert.out[-400:]))
             )
         if self.created_cfg:

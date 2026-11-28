@@ -10,9 +10,11 @@ export const HKDF_INFO = {
   SDK_DERIVE: 'rediacc-config-sdk-v1',
   WRAPPING_KEY: 'rediacc-config-wrapping-key-v1',
   FIELD_COMMITMENT: 'rediacc-config-fck-v1',
-  /** Envelope v3: the key that blinds commitment pointers (commitments.ts `derivePointerBlindingKey`). */
+  /** Envelope v3 and v4: the key that blinds commitment pointers (commitments.ts `derivePointerBlindingKey`). */
   POINTER_BLIND: 'rediacc-config-ptr-v1',
   RECOVERY_SLOT: 'rediacc-recovery-slot-v1',
+  /** A machine secret's wrapping secret (slots.ts `deriveMachineSecretSlotSecret`, D46). */
+  MACHINE_SECRET: 'rediacc-machine-secret-v1',
 } as const;
 
 /**
@@ -32,15 +34,23 @@ export function prfEvalSalt(): Uint8Array {
 }
 
 /**
- * The envelope version every client writes. v3 binds the ciphertext to its config (AES-GCM AAD,
- * selective.ts `envelopeAad`) and blinds the commitment pointers; the server refuses any other
- * version on push.
+ * The envelope version every client writes (D56, config-key.ts): the blob is sealed under the
+ * config's own content key, which the envelope carries wrapped under the CEK (`wrappedConfigKey`,
+ * `configKeyVersion`, `cekGeneration`), and the AES-GCM AAD binds it to its config (selective.ts
+ * `envelopeAadV4`). The server refuses any other version on push.
  */
-export const ENVELOPE_VERSION = 3;
+export const ENVELOPE_VERSION = 4;
 
 /**
- * The previous envelope version, READ for one release (operator ruling D2): a store still holding a
- * v2 envelope opens with its blob HMAC and upgrades to v3 on its next push. Delete the v2 read path
+ * The CEK-bound envelope (selective.ts `envelopeAad`), READ only: a store still holding a v3
+ * envelope opens under the CEK and upgrades to `ENVELOPE_VERSION` on its next push. No client
+ * writes it.
+ */
+export const BOUND_ENVELOPE_VERSION = 3;
+
+/**
+ * The oldest envelope version, READ for one release (operator ruling D2): a store still holding a
+ * v2 envelope opens with its blob HMAC and upgrades on its next push. Delete the v2 read path
  * (selective.ts) the release after.
  */
 export const LEGACY_ENVELOPE_VERSION = 2;

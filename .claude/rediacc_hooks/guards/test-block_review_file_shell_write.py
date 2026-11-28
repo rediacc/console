@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_review_file_shell_write: the shell half of "a review record is never edited by hand".
 
-The cases and the runner live in `test-block_review_file_edit.py` beside this file, so the two halves are judged by one set of rules; this file runs the shell cases through dispatch.py in both directions, then plants the guard's DEFECT and requires the run to fail.
+The cases and the runner live in `_review_file_suite.py` beside this file, so the two halves are judged by one set of rules; this file runs the shell cases through dispatch.py in both directions, then plants the guard's DEFECT and requires the run to fail.
 
 The cases below are this guard's own, added to the shared shell cases: the operand arms read the words as bash expands them (#f6334e52), the glob pre-filter reads only a glob that can spell the review directory as one (#a1852a9e), a redirect target and an in-place option are read as bash expands them (#4deea064), a copied script carries its source (#3ff3bb16), and a word the walk cannot expand is read by where its value comes from (#b53f586d). Each MUTANT plants the defect one of them fixed and must turn at least one row, so neither fix is pinned by a harness that cannot see it.
 
@@ -14,11 +14,12 @@ import importlib.util
 import json
 import pathlib
 import shutil
+import subprocess
 import sys
 import tempfile
 import typing
 
-SHARED = pathlib.Path(__file__).resolve().with_name("test-block_review_file_edit.py")
+SHARED = pathlib.Path(__file__).resolve().with_name("_review_file_suite.py")
 STEM = "block_review_file_shell_write"
 # A line that writes a Python program opening a review file for writing (#3ff3bb16 rows).
 _REVIEW_WRITER = "printf \"open('agent/reviews/x/y.md','w')\\n\" > /tmp/r87s.py"
@@ -40,6 +41,27 @@ atexit.register(shutil.rmtree, str(_DOTTED), True)
 _DOTTED_REVIEWS = str(_DOTTED / "agent" / "revi*s")
 # A listing loop that leaves `f` naming a review file, for the ffbd9211.1 rows.
 _LISTED = "import glob\nfor f in glob.glob('agent/**/*.md', recursive=True):\n    print(f)\n"
+
+# r92 seed S8: a TRACKED generator with an uncommitted edit is judged by what the edit adds. `check_plan_record.py --rendered-only --update` was refused (rc 2) once the script was dirty and allowed (rc 0) while clean: the full reading takes its write of `git ls-files agent` entries into a scratch view for a listed review write. The real script is committed into a scratch checkout, then edited twice: a comment (the measured edit's shape), and in a sibling copy a real write into the review directory.
+_GEN = pathlib.Path(tempfile.mkdtemp(prefix="test-review-generator-"))
+atexit.register(shutil.rmtree, str(_GEN), True)
+_GEN_REL = ".ci/scripts/quality/check_plan_record.py"
+_GEN_SRC = (pathlib.Path(__file__).resolve().parents[3] / _GEN_REL).read_text(encoding="utf-8")
+(_GEN / ".ci/scripts/quality").mkdir(parents=True)
+(_GEN / _GEN_REL).write_text(_GEN_SRC, encoding="utf-8")
+(_GEN / "adds_review.py").write_text(_GEN_SRC, encoding="utf-8")
+subprocess.run(["git", "init", "-q", str(_GEN)], check=True)
+subprocess.run(["git", "-C", str(_GEN), "add", "."], check=True)
+subprocess.run(
+    ["git", "-C", str(_GEN), "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "x"],
+    check=True,
+)
+(_GEN / _GEN_REL).write_text(_GEN_SRC + "# an uncommitted edit\n", encoding="utf-8")
+_SHA_RECORD = "agent/reviews/1127-1/" + "b" * 40 + ".md"
+(_GEN / "adds_review.py").write_text(
+    _GEN_SRC + "\nopen(%r, 'w').write('clean')\n" % _SHA_RECORD, encoding="utf-8"
+)
+_GEN_RUN = "%s --rendered-only --update > /tmp/x/upd.out 2>&1" % _GEN_REL
 
 
 def _py(code):
@@ -68,6 +90,12 @@ OWN_CASES = [
     ),
     ("cp onto a glob that reads as the directory", "cp x agent/revi*s/", True),
     ("sed -i with .* on a globbed review file", "sed -i 's/a.*b/c/' agent/revi*s/x/y.md", True),
+    # CR5: the script of an in-place edit is its program, not a file it writes (`shellscan.run_word_writes`). Refused (rc 2) at f1c4747e0f, where every operand of an in-place run was read as a target and `docs/*/*` reads as `agent/reviews`; measured on a sed that rewrote a test file.
+    (
+        "sed -i whose script globs read as the directory",
+        "sed -i 's#docs/*/*/f.md#x#' notes.md",
+        False,
+    ),
     ("tee onto a glob under cd agent", "cd agent && tee revi*s/y.md", True),
     ("xargs cp fed a glob under cd agent", "cd agent && echo revi*s/x | xargs cp a", True),
     # A glob in the directory the run executes in is read as one in its word is: this was allowed (rc 0) at 5e00d0768.
@@ -1099,9 +1127,34 @@ OWN_CASES = [
         "D=$(grep -rl x $D); grep -rl x $D | xargs sed -i s/a/b/",
         False,
     ),
+    # r92 seed S8: the reported command, with the script dirty, was refused (rc 2) before; the controls stay refused.
+    (
+        "a dirty tracked generator, the reported command",
+        "cd %s && python3 %s" % (_GEN, _GEN_RUN),
+        False,
+    ),
+    ("a dirty tracked generator by absolute path", "python3 %s/%s" % (_GEN, _GEN_RUN), False),
+    (
+        "control: a dirty tracked generator whose edit adds a review write",
+        "python3 %s/adds_review.py --rendered-only --update" % _GEN,
+        True,
+    ),
+    ("control: a hand-write of a per-commit review record", "echo x > %s" % _SHA_RECORD, True),
+    (
+        "control: a python hand-write of a per-commit review record",
+        "python3 -c \"open('%s', 'w').write('x')\"" % _SHA_RECORD,
+        True,
+    ),
 ]
 
 MUTANTS = [
+    (
+        "an edited tracked script never compared with HEAD (r92 seed S8)",
+        (
+            "verdict = verdict if added is None else added",
+            "verdict = verdict",
+        ),
+    ),
     (
         "past the depth cap a root never reads as the review directory (a6ad833c.1)",
         (
@@ -1133,8 +1186,8 @@ MUTANTS = [
     (
         "operands read as typed only (#f6334e52)",
         (
-            "what = _operand_write(run, name, list(words), where, base, cwd)",
-            "what = _operand_write(run, name, argv, where, base, cwd)",
+            "_without_ref_operands(run, list(words))",
+            "_without_ref_operands(run, argv)",
         ),
     ),
     (
@@ -1208,8 +1261,8 @@ MUTANTS = [
     (
         "a Python target bound to a listing not read (d218ebf3)",
         (
-            "if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):",
-            "if False:",
+            "            if _listing_target(t, listed, calls, bound, review_names, parents)\n",
+            "            if False\n",
         ),
     ),
     (
@@ -1402,7 +1455,6 @@ def _shared():
 
 def _planted(shared, old, new):
     """The guard with `old` replaced by `new`, run in-process; None when `old` is not in the guard outside its DEFECT declaration."""
-    shared._syspath.on_sys_path(str(shared.HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards.%s" % STEM)
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")

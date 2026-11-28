@@ -16,7 +16,6 @@ ISOLATION (W12 of the lease plan). An overlap from a spawn the harness isolates 
 SAME-MESSAGE SPAWNS (W13, #105d59a7). `SEQUENCES` drives several spawns against one world with nothing between them, so only the claim file can carry a sibling. `CLAIM_READ_DEFECT` removes the read and the 2026-11-04 shape must stop being refused.
 """
 
-import ast
 import atexit
 import datetime
 import fcntl
@@ -32,6 +31,10 @@ import sys
 import tempfile
 import time
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _edit_suite, _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_concurrency.py"
@@ -60,7 +63,21 @@ def stamp(minutes):
     return t.strftime("%Y-%m-%dT%H:%MZ")
 
 
-def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors=()):
+# Thirty planless live writers, past the old writer cap of 25 that agent/plans/PLAN-unlimited-writers.md removed: they claim no file, so no rule here may refuse a spawn beside them.
+CROWD = 30
+FILL = tuple("idle writer %d, no plan" % i for i in range(CROWD))
+
+
+def world(
+    plans,
+    writers=(),
+    finished=(),
+    items=(),
+    leases=(),
+    editors=(),
+    handovers=(),
+    records=(),
+):
     """A fresh fixture. `plans` maps a name to its X lines (without Priority); `writers`/`finished`/`editors` are first prompts of this session's live/finished/live-and-editing general-purpose agents (an editor's last record is an in-flight Edit call); `items` are (id, owner, text); `leases` are (id, owner, worker, minutes ahead)."""
     if BASE.exists():
         shutil.rmtree(BASE)
@@ -69,12 +86,6 @@ def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors
     (proj / "agent" / "plans").mkdir(parents=True)
     (BASE / "tmp").mkdir()
     (BASE / "store").mkdir()
-    if cap is not None:
-        (proj / "agent" / "plans" / "QUEUE.md").write_text(
-            "# Plan queue\n\n## Settings\n\n```stop-hook\nwriter_cap: %d\n```\n\n## Promoted\n"
-            % cap,
-            encoding="utf-8",
-        )
     for name, x in plans.items():
         (proj / "agent" / "plans" / ("PLAN-%s.md" % name)).write_text(
             PLAN.format(n=name, x=x), encoding="utf-8"
@@ -130,9 +141,28 @@ def world(plans, writers=(), finished=(), items=(), leases=(), cap=None, editors
         }
         for i, o, w, m in leases
     ]
+    # B7: handover events as `worklist.py --handover` and `--handover-answer` write them, and lease records as the `lease` verb writes them, `tree` included.
+    rows += list(handovers)
     (BASE / "store" / "fixture.jsonl").write_text(
         "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8"
     )
+    store = proj / ".git" / "rediacc-worktrees"
+    for lease_id, tree in records:
+        store.mkdir(exist_ok=True)
+        (store / ("%s.json" % lease_id)).write_text(
+            json.dumps(
+                {
+                    "id": lease_id,
+                    "path": str(proj / ".claude" / "worktrees" / lease_id),
+                    "owner": SID[:8],
+                    "agent": "",
+                    "base": {},
+                    "tree": tree,
+                    "created_at": at,
+                }
+            ),
+            encoding="utf-8",
+        )
     return proj
 
 
@@ -168,7 +198,7 @@ CHAIN_ARGV = [sys.executable, DISPATCH, "--chain", "pre-agent"]
 
 
 def run_case(proj, doc, argv=None):
-    proc = subprocess.run(
+    proc = _harness.run(
         argv or GUARD_ARGV,
         input=json.dumps(doc),
         capture_output=True,
@@ -197,7 +227,103 @@ P_ITEM = ("a0a0a0a0", PEER, "edit a PLAN-p.md [a1a1a1a1]")
 
 # (name, world kwargs, payload, want_rc, stderr needles)
 # (name, world kwargs, spawn payload, expected rc, stderr needles)
+HID = "abcd1234"
+
+
+def handover_rows(answer):
+    """One stuck handover, answered `answer` (None leaves it unanswered)."""
+    at = "2026-11-23T08:00:00Z"
+    rows = [
+        {
+            "ev": "handover",
+            "id": HID,
+            "at": at,
+            "by": PEER[:8],
+            "kind": "stuck",
+            "check": "Quality / lint",
+            "evidence": "red after 3 fix rounds",
+        }
+    ]
+    if answer is not None:
+        rows.append({"ev": "handover", "id": HID, "at": at, "by": SID[:8], "answer": answer})
+    return rows
+
+
+HANDOVER_BRIEF = "fix the handed-over red\nHandover: #%s\nOwns: docs/e/**" % HID
+HANDOVER_WORLD = {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]}
+
 CASES: list[tuple[str, dict[str, typing.Any], typing.Any, int, typing.Any]] = [
+    (
+        "h1 a Handover brief for a landing-cut lease is admitted beside a live exclusive overlap (B7)",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF),
+        0,
+        ["serves a handover in lease hx1"],
+    ),
+    (
+        "h1c CONTROL: the same overlapping spawn with no Handover line is refused",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload("fix the handed-over red\nOwns: docs/e/**"),
+        2,
+        ["PLAN-e.md is exclusive"],
+    ),
+    (
+        "h1d CONTROL: a landing-cut Handover brief that also serves an exclusive plan through an item ref keeps that refusal (not a file rule)",
+        {
+            **HANDOVER_WORLD,
+            "writers": ["Plan: PLAN-f.md"],
+            "items": [E_ITEM],
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF + "\nwork #e0e0e0e0"),
+        2,
+        ["PLAN-e.md is exclusive", "cannot start while other plans are live"],
+    ),
+    (
+        "h2 a Handover brief whose lease was cut from the development tree is judged by the plan rules",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "development")],
+        },
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "was not cut with `--tree landing`"],
+    ),
+    (
+        "h3 a Handover brief naming an unknown handover is judged by the plan rules",
+        {**HANDOVER_WORLD, "records": [("hx1", "landing")]},
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "is not in the store"],
+    ),
+    (
+        "h4 a Handover brief whose handover names no lease is judged by the plan rules",
+        {**HANDOVER_WORLD, "handovers": handover_rows("keep"), "records": [("hx1", "landing")]},
+        payload(HANDOVER_BRIEF),
+        2,
+        ["PLAN-e.md is exclusive", "names no lease"],
+    ),
+    (
+        "h5 a Handover brief that also names a plan is judged by the plan rules",
+        {
+            **HANDOVER_WORLD,
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        payload(HANDOVER_BRIEF + "\nPlan: PLAN-o.md"),
+        2,
+        ["PLAN-e.md is exclusive", "also names a plan"],
+    ),
     (
         "m1 a live exclusive writer refuses a plan whose Owns overlap its own",
         {"plans": BASIC, "writers": ["Plan: PLAN-e.md"]},
@@ -706,49 +832,53 @@ SEQUENCES: list[tuple[str, dict[str, typing.Any], list[str], list[tuple[dict, in
         ],
     ),
     (
-        "c1 a cap of 1 refuses the second same-message writer",
-        {"plans": {"p": PAR_A, "q": PAR_C}, "cap": 1},
-        CHAIN_ARGV,
-        [
-            (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md"), 2, ["writer_cap 1", "1 same-message"]),
-        ],
-    ),
-    (
-        "c1b a planless writer counts toward the cap too",
-        {"plans": {}, "cap": 1},
-        CHAIN_ARGV,
-        [
-            (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
-            (payload("fix a typo"), 2, ["writer_cap 1"]),
-        ],
-    ),
-    (
-        "c2 a cap of 2 admits the second and refuses the third",
-        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "cap": 2},
+        "c1 thirty live writers refuse no disjoint spawn, nor its same-message siblings",
+        {"plans": {"p": PAR_A, "q": PAR_C, "z": PAR_Z}, "writers": FILL},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
             (payload("Plan: PLAN-q.md"), 0, []),
-            (payload("Plan: PLAN-z.md"), 2, ["writer_cap 2", "2 same-message"]),
+            (payload("Plan: PLAN-z.md"), 0, []),
         ],
     ),
     (
-        "c3 a reader never reaches the cap",
-        {"plans": {"p": PAR_A}, "cap": 1},
+        "c1c CONTROL: the same crowd still refuses a spawn whose Owns overlap a live writer's plan",
+        {"plans": {"p": PAR_A, "az": PAR_AZ}, "writers": ["Plan: PLAN-p.md", *FILL]},
+        CHAIN_ARGV,
+        [
+            (payload("Plan: PLAN-az.md"), 2, ["both claim `a/b.py`"]),
+        ],
+    ),
+    (
+        "c1h a landing-cut Handover writer beside thirty live writers is admitted twice",
+        {
+            **HANDOVER_WORLD,
+            "writers": ["Plan: PLAN-e.md", *FILL],
+            "handovers": handover_rows("lease:hx1"),
+            "records": [("hx1", "landing")],
+        },
+        CHAIN_ARGV,
+        [
+            (payload(HANDOVER_BRIEF), 0, ["serves a handover in lease hx1"]),
+            (payload(HANDOVER_BRIEF), 0, ["serves a handover in lease hx1"]),
+        ],
+    ),
+    (
+        "c1b planless writers beside thirty live writers are admitted",
+        {"plans": {}, "writers": FILL},
+        CHAIN_ARGV,
+        [
+            (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
+            (payload("fix a typo"), 0, ["declares no `Owns:` line"]),
+        ],
+    ),
+    (
+        "c3 a reader is never refused",
+        {"plans": {"p": PAR_A}},
         CHAIN_ARGV,
         [
             (payload("Plan: PLAN-p.md"), 0, []),
             (payload("Plan: PLAN-p.md", kind="Explore"), 0, []),
-        ],
-    ),
-    (
-        "c4 the cap is per session, as the roster's count is",
-        {"plans": {"p": PAR_A, "q": PAR_C}, "cap": 1},
-        CHAIN_ARGV,
-        [
-            (payload("Plan: PLAN-p.md"), 0, []),
-            (payload("Plan: PLAN-q.md", session=PEER_SID), 0, []),
         ],
     ),
 ]
@@ -804,8 +934,8 @@ def c_expired():
 
 
 def c_started(sibling="the sibling"):
-    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one frees the slot. A sibling spawned with no description is claimed with an empty one and stops holding the same way."""
-    proj = world(plans={"p": PAR_A, "q": PAR_AB}, cap=1)
+    """A sibling whose meta now exists is the roster's to count: its claim stops holding, and a finished one holds nothing. A sibling spawned with no description is claimed with an empty one and stops holding the same way."""
+    proj = world(plans={"p": PAR_A, "q": PAR_AB})
     rc1, _ = run_case(proj, payload("Plan: PLAN-p.md", desc=sibling), CHAIN_ARGV)
     sub = BASE / "claude" / "projects" / munged(proj.resolve()) / SID / "subagents"
     (sub / "agent-a0000000000000099.meta.json").write_text(
@@ -942,23 +1072,7 @@ CLAIM_READ_DEFECT = ("pending = X.unconsumed(claims, metas, session_id)", "pendi
 LOCK_BUDGET_PLANT = ("LOCK_WAIT_S = 30", "LOCK_WAIT_S = 0.2")
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def main():

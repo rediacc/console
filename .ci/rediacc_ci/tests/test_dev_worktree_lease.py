@@ -5,6 +5,7 @@ Nothing here touches a real checkout: `$REDIACC_CI_ROOT` points the verb at a fi
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
@@ -13,6 +14,8 @@ import shutil
 import signal
 import subprocess
 import sys
+import tempfile
+import types
 from typing import Any, NamedTuple
 
 import pytest
@@ -34,7 +37,12 @@ EMPTY_LOCK = {
     "packages": {"": {"name": "fx", "version": "1.0.0"}},
 }
 # Every lease commit of a fixture carries both trailers `land` demands; this one serves no plan box (PLAN-tick-tracking T2).
-TRAILERS = "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n"
+RELEASE_NONE = "Release-Note: none -- fixture commit of the lease tests\n"
+TRAILERS = (
+    "PR-TASK: 1f877343\nPlan-Box: none -- fixture commit that serves no plan box\n" + RELEASE_NONE
+)
+# Past the old tree cap of 25, which agent/plans/PLAN-unlimited-writers.md removed: the lease verb now admits any number of trees.
+CROWD = 30
 BUILD_JS = (
     "const fs = require('fs');\n"
     "fs.mkdirSync('dist', { recursive: true });\n"
@@ -168,9 +176,8 @@ class Done(NamedTuple):
     stdout: str
 
 
-@pytest.fixture(scope="module", autouse=True)
-def hermetic_git(tmp_path_factory):
-    patch = pytest.MonkeyPatch()
+def _hermetic(patch: pytest.MonkeyPatch, tmp_path_factory) -> None:
+    """The identity and config every git call here runs under; `hermetic_git` and the session-scoped `kept` both apply it."""
     identity = {
         "GIT_AUTHOR_NAME": "t",
         "GIT_AUTHOR_EMAIL": "t@example.test",
@@ -179,18 +186,28 @@ def hermetic_git(tmp_path_factory):
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CONFIG_GLOBAL": "/dev/null",
         "HOME": str(tmp_path_factory.mktemp("home")),
+        "REDIACC_LEASE_TMP_BASE": str(tmp_path_factory.mktemp("lease-tmp")),
         "WORKLIST_SESSION_ID": "feedface99",
     }
     for key, value in identity.items():
         patch.setenv(key, value)
     patch.delenv("COMMIT_POLICY_OK", raising=False)
+
+
+@pytest.fixture(scope="module", autouse=True)
+def hermetic_git(tmp_path_factory):
+    patch = pytest.MonkeyPatch()
+    _hermetic(patch, tmp_path_factory)
     yield
     patch.undo()
 
 
 @pytest.fixture(scope="module")
 def done(tmp_path_factory):
-    """One lease from a dirty live tree, read by every test that only looks at it."""
+    """One lease from a dirty live tree, read by every test that only looks at it.
+
+    Module scope, built once per worker that draws a reader; the readers are many and cheap, so they stay spread rather than grouped (PLAN-ciquick-cpu.md W18 groups only `kept`, whose build is the expensive one).
+    """
     repo = make_repo(tmp_path_factory.mktemp("done").resolve())
     spike.write(repo.root / "code.txt", "UNCOMMITTED\n")
     before = shared_state(repo)
@@ -364,19 +381,24 @@ def test_lease_refuses_a_bad_argument_before_any_git(tmp_path, args):
     assert list(missing.iterdir()) == []
 
 
-def test_lease_writer_cap_refuses_the_second_tree(repo):
-    spike.write(
-        repo.root / "agent" / "plans" / "QUEUE.md",
-        "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
-    )
+def fill_to(repo, n):
+    """`n` plain directories in the holder: `trees_on_disk` counts every directory, so they stand in for trees without a git tree each."""
+    holder = repo.root / spike.HOLDER
+    for i in range(n):
+        (holder / ("filler-%02d" % i)).mkdir(parents=True, exist_ok=True)
+
+
+def test_lease_past_the_old_tree_cap_is_admitted(repo):
+    fill_to(repo, CROWD)
     first = run_lease(repo.root, "--name", "one")
     assert first.returncode == 0, first.stderr
     second = run_lease(repo.root, "--name", "two")
-    assert second.returncode == 1
-    assert "writer_cap 1" in second.stderr
-    assert "./run.sh worktree gc" in second.stderr
-    assert second.stdout == ""
-    assert holder_names(repo) == ["one"]
+    assert second.returncode == 0, second.stderr
+    assert pathlib.Path(second.stdout.strip().splitlines()[-1]) == repo.root / spike.HOLDER / "two"
+    names = holder_names(repo)
+    assert "one" in names
+    assert "two" in names
+    assert len(names) == CROWD + 2, names
 
 
 def test_lease_generated_ids_count_up_and_exclude_lines_land_once(repo):
@@ -503,16 +525,14 @@ def test_lease_hook_prints_the_tree_and_records_the_agent(repo):
     assert (record["owner"], record["agent"]) == ("abcd1234", "a123")
 
 
-def test_lease_hook_over_the_cap_exits_non_zero_with_the_message(repo):
-    spike.write(
-        repo.root / "agent" / "plans" / "QUEUE.md",
-        "## Settings\n\n```stop-hook\nwriter_cap: 1 -- fixture\n```\n",
-    )
+def test_lease_hook_past_the_old_tree_cap_prints_the_tree(repo):
     make_tree(repo, "first")
+    fill_to(repo, CROWD)
     done = run_worktree_hook(repo.root, "lease-hook", {"name": "agent-b", "session_id": "abcd1234"})
-    assert done.returncode != 0
-    assert "writer_cap 1" in done.stderr
-    assert done.stdout == ""
+    assert done.returncode == 0, done.stderr
+    assert (
+        pathlib.Path(done.stdout.strip().splitlines()[-1]) == repo.root / spike.HOLDER / "agent-b"
+    )
 
 
 def test_gc_hook_on_a_dirty_tree_exits_non_zero_with_the_tree_intact(repo):
@@ -988,10 +1008,12 @@ def plant_plan(root):
     spike.write(root / "agent" / "ledgers" / "plan-box-progress.jsonl", json.dumps(row) + "\n")
 
 
-def lease_commit(tree, name, trailers):
+def lease_commit(tree, name, trailers, *, subject="feat", note=True):
+    """One new file committed with `trailers`; `note` appends a `Release-Note: none` line (the Release-Note refusal is RN3's, so the other tests carry one)."""
     spike.write(tree / name, "%s\n" % name)
     spike.must(tree, "add", "--", name)
-    spike.must(tree, "commit", "--no-gpg-sign", "-m", "feat: %s\n\n%s" % (name, trailers))
+    body = trailers + (RELEASE_NONE if note else "")
+    spike.must(tree, "commit", "--no-gpg-sign", "-m", "%s: %s\n\n%s" % (subject, name, body))
     return spike.must(tree, "rev-parse", "HEAD")
 
 
@@ -1021,6 +1043,52 @@ def test_land_plan_box_control_without_the_call_the_same_commit_is_admitted(boxe
     monkeypatch.setattr(lease, "_plan_box_problems", lambda _root, _message: [])
     lines = lease.land_plan(boxed.repo.root, LAND_ID)
     assert any(bare in line for line in lines)
+
+
+RN_BOX = "Plan-Box: none -- fixture commit that serves no plan box\n"
+RN_NOTE = "Release-Note: Backups now resume after a dropped connection\n"
+
+
+def test_land_release_note_missing_exits_1_naming_the_sha_and_the_trailer(boxed):
+    bare = lease_commit(boxed.tree, "cust.txt", PR_TASK_ONLY + RN_BOX, note=False)
+    result = run_land(boxed.repo.root, LAND_ID)
+    assert result.returncode == 1
+    assert result.stdout == ""
+    assert bare[:12] in result.stderr
+    assert "Release-Note:" in result.stderr
+
+
+def test_land_release_note_control_without_the_call_the_same_commit_is_admitted(boxed, monkeypatch):
+    bare = lease_commit(boxed.tree, "cust.txt", PR_TASK_ONLY + RN_BOX, note=False)
+    with pytest.raises(lease.LeaseRefusedError, match="Release-Note:"):
+        lease.land_plan(boxed.repo.root, LAND_ID)
+    monkeypatch.setattr(lease.release_notes, "refusal", lambda *_a, **_k: "")
+    assert any(bare in line for line in lease.land_plan(boxed.repo.root, LAND_ID))
+
+
+def test_land_release_note_trailer_and_exempt_test_commit_are_admitted(boxed):
+    noted = lease_commit(boxed.tree, "noted.txt", PR_TASK_ONLY + RN_BOX + RN_NOTE, note=False)
+    exempt = lease_commit(
+        boxed.tree, "exempt.txt", PR_TASK_ONLY + RN_BOX, subject="test", note=False
+    )
+    lines = lease.land_plan(boxed.repo.root, LAND_ID)
+    assert any(noted in line and exempt in line for line in lines)
+
+
+def test_land_release_note_missing_in_a_submodule_commit_is_refused(boxed, monkeypatch):
+    # The fixture's submodule is `private/sub`; the live config knows `private/account` and `private/renet`, so the fixture is added as a repo with no internal paths.
+    config = {
+        **lease.release_notes.load_config(),
+        "repos": {"private/sub": {"internal": [], "gitlinks": []}},
+    }
+    monkeypatch.setattr(lease.release_notes, "load_config", lambda: config)
+    sub = boxed.tree / SUB
+    spike.write(sub / "cust.txt", "x\n")
+    spike.must(sub, "add", "--", "cust.txt")
+    msg = "feat: sub cust\n\n" + PR_TASK_ONLY + RN_BOX
+    spike.must(sub, "commit", "--no-gpg-sign", "-m", msg)
+    with pytest.raises(lease.LeaseRefusedError, match="Release-Note:"):
+        lease.land_plan(boxed.repo.root, LAND_ID)
 
 
 def test_land_plan_box_none_and_an_open_box_are_admitted_and_listed(boxed):
@@ -1171,8 +1239,33 @@ def test_land_ticks_box_with_no_row_gets_the_post_landing_investigate_line(ticke
     assert len(invest) == 1
     assert "commit:%s" % ticked.landed[FX_BARE][:12] in invest[0]
     assert "fileline:bare.txt:1" in invest[0]
-    assert "-- post-landing: " in invest[0]
+    assert "-- 'post-landing: " in invest[0]
     assert not [x for x in block if "--plan-tick" in x]
+
+
+def test_land_ticks_printed_investigate_line_is_one_shell_word_per_argument(ticked):
+    """The note carries `;` and parentheses; printed unquoted, bash split the copied line at the `;` (2026-11-23, six PLAN-rmcp-writeback boxes failed with `line 1: th`)."""
+    block = box_block(run_land(ticked.repo.root, LAND_ID, "--ticks").stdout.splitlines(), FX_BARE)
+    invest = [x for x in block if "--plan-investigate" in x]
+    argv = shlex.split(invest[0])
+    note = argv[argv.index("--") + 1]
+    assert note.startswith("post-landing: ")
+    assert ";" in note
+    assert argv[-1] == "--write"
+    # 438bb998.2: every argument is one word, not just the note and the final flag.
+    sig = FX_BARE
+    assert argv[:-1] == [
+        "worklist.py",
+        "--plan-investigate",
+        "feedface",
+        "agent/plans/%s" % FX_PLAN,
+        sig,
+        "present",
+        "commit:%s" % ticked.landed[FX_BARE][:12],
+        "fileline:bare.txt:1",
+        "--",
+        note,
+    ]
 
 
 def test_land_ticks_run_writes_progress_runs_the_printed_tick_and_no_investigation_row(ticked):
@@ -1326,7 +1419,6 @@ def test_land_unknown_lease_and_bad_arguments_exit_1(landing):
 # One real tree per keep rule, with a clean control deleted in the same run, so a rule that stopped reading anything cannot pass. The hook modules read the fixture's own worklist and transcripts, which `gc_env` points them at.
 
 GC_SESSION = "feedface99"
-CAP_40 = "## Settings\n\n```stop-hook\nwriter_cap: 40 -- fixture\n```\n"
 WORKLIST = paths.CI_DIR.parent / ".claude" / "hooks" / "stop" / "worklist.py"
 IN_FLIGHT = {
     "type": "assistant",
@@ -1335,24 +1427,43 @@ IN_FLIGHT = {
 DAY_S = 86400
 
 
+_GC_TMPS: set[pathlib.Path] = set()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _remove_gc_tmps():
+    """b5b4e569.3: `gc_env` makes its TMPDIR directly under the shared temp root, outside pytest's basetemp pruning, so the session removes what the module made once it is over."""
+    yield
+    for made in _GC_TMPS:
+        shutil.rmtree(made, ignore_errors=True)
+
+
 def gc_env(root):
     base = root.parent
-    (base / "gc-tmp").mkdir(exist_ok=True)
+    # TMPDIR right under the temp root, one per fixture: tsx opens its IPC socket under TMPDIR, and `<basetemp>/popen-gwN/<test name>/gc-tmp/tsx-<uid>/<pid>.pipe` passed the 108-byte socket path limit under xdist (listen EINVAL).
+    gc_tmp = pathlib.Path(tempfile.gettempdir()) / (
+        "gc-" + hashlib.sha256(str(base).encode()).hexdigest()[:10]
+    )
+    gc_tmp.mkdir(exist_ok=True)
+    _GC_TMPS.add(gc_tmp)
     return {
         **os.environ,
         "PYTHONPATH": str(paths.CI_DIR),
         paths.ROOT_ENV: str(root),
         "CLAUDE_PROJECT_DIR": str(root),
         "CLAUDE_CONFIG_DIR": str(base / "claude-config"),
-        "TMPDIR": str(base / "gc-tmp"),
+        "TMPDIR": str(gc_tmp),
     }
 
 
-def run_verb(root, verb, *args):
+def run_verb(root, verb, *args, session=""):
+    env = gc_env(root)
+    if session:
+        env["WORKLIST_SESSION_ID"] = session
     return subprocess.run(
         [sys.executable, "-m", "rediacc_ci.dev.worktree", verb, *args],
         cwd=str(paths.CI_DIR),
-        env=gc_env(root),
+        env=env,
         capture_output=True,
         text=True,
         check=False,
@@ -1514,11 +1625,22 @@ KEPT_RULES = [
 ]
 
 
-@pytest.fixture(scope="module")
+# ONE GC WORLD PER SESSION, ON ONE WORKER (PLAN-ciquick-cpu.md W18). `kept` builds eleven trees, holds a live process in one of them and runs gc twice; its fourteen readers only look. Under xdist every worker that drew one of them built the whole world again (measured 2026-11-20: 16-17 s on each worker for the parametrized case). The readers share one group so
+# loadgroup sends them to one worker, and the session scope builds the world there once.
+KEPT_GROUP = pytest.mark.xdist_group("dev-worktree-lease-kept")
+
+
+@pytest.fixture(scope="session")
 def kept(tmp_path_factory):
+    # A session fixture is set up BEFORE this module's autouse `hermetic_git`, so it applies the same environment itself for the build; without it the world was built under the ambient identity and HOME, and gc kept the clean tree (measured on the first run of this change).
+    with pytest.MonkeyPatch.context() as patch:
+        _hermetic(patch, tmp_path_factory)
+        return _build_kept(tmp_path_factory)
+
+
+def _build_kept(tmp_path_factory):
     repo = make_repo(tmp_path_factory.mktemp("kept").resolve())
     root = repo.root
-    spike.write(root / "agent" / "plans" / "QUEUE.md", CAP_40)
     plant_session(root)
     names = ("clean", "dirty", "dirtysub", "untracked", "unlanded", "unlandedsub", "writer")
     trees = {name: make_tree(repo, name) for name in (*names, "item", "cwd")}
@@ -1556,6 +1678,7 @@ def kept(tmp_path_factory):
     return Kept(repo, trees, before, listing, written)
 
 
+@KEPT_GROUP
 @pytest.mark.parametrize(("name", "rule"), KEPT_RULES)
 def test_gc_keeps_the_tree_by_its_rule_and_leaves_it_byte_identical(kept, name, rule):
     assert kept.listing.returncode == 0, kept.listing.stderr
@@ -1565,6 +1688,7 @@ def test_gc_keeps_the_tree_by_its_rule_and_leaves_it_byte_identical(kept, name, 
     assert snapshot(kept.trees[name]) == kept.before[name]
 
 
+@KEPT_GROUP
 def test_gc_control_the_clean_tree_of_the_same_run_is_listed_and_then_deleted(kept):
     assert row_of(kept.listing.stdout, "clean").split()[0] == "DELETE"
     assert row_of(kept.written.stdout, "clean").split()[0] == "DELETE"
@@ -1572,12 +1696,14 @@ def test_gc_control_the_clean_tree_of_the_same_run_is_listed_and_then_deleted(ke
     assert "deleted 1" in kept.written.stdout.splitlines()[-1]
 
 
+@KEPT_GROUP
 def test_gc_symlink_target_outlives_the_run(kept):
     target = kept.repo.root.parent / "link-target"
     assert snapshot(target) == kept.before["link-target"]
     assert kept.trees["link"].is_symlink()
 
 
+@KEPT_GROUP
 def test_gc_kept_trees_keep_lock_pin_and_record(kept):
     root = kept.repo.root
     tree = kept.trees["unlanded"]
@@ -1672,7 +1798,6 @@ def test_gc_ignored_file_does_not_keep_a_tree_and_the_summary_says_so(gc_repo):
 
 def test_gc_pin_of_a_removed_tree_goes_when_landed_and_stays_when_unlanded(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     landed_tree, unlanded_tree = make_tree(repo, "pl"), make_tree(repo, "pu")
     landed = gc_commit(landed_tree, "landed.txt")
     land(repo, landed)
@@ -1697,7 +1822,6 @@ def test_gc_pin_of_a_removed_tree_goes_when_landed_and_stays_when_unlanded(gc_re
 
 def test_gc_pin_with_no_record_and_no_tree_is_judged_the_same(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     a_tree, b_tree = make_tree(repo, "pa"), make_tree(repo, "pb")
     landed = gc_commit(a_tree, "landed.txt")
     land(repo, landed)
@@ -1897,7 +2021,6 @@ def test_gc_a_record_with_no_readable_time_stays_in_a_sweep(gc_repo):
 
 def test_gc_owner_nothing_can_vouch_for_keeps_the_tree_and_a_cli_owner_does_not(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     assert run_lease(repo.root, "--name", "gh", "--owner", "ghost123").returncode == 0
     assert run_lease(repo.root, "--name", "op", "--owner", lease.DEFAULT_OWNER).returncode == 0
     age_record(repo.root, "gh")
@@ -1920,7 +2043,6 @@ def test_gc_directory_with_no_record_may_be_a_lease_being_made(gc_repo):
 
 def test_gc_unreadable_record_and_broken_git_file_keep_the_tree(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     bad_record, bad_git = make_tree(repo, "br"), make_tree(repo, "bg")
     (repo.root / ".git" / lease.RECORD_DIR / "br.json").write_text("{not json", encoding="utf-8")
     (bad_git / ".git").write_text("gitdir: /no/such/place\n", encoding="utf-8")
@@ -1943,7 +2065,6 @@ def test_gc_record_naming_another_path_is_never_followed(gc_repo):
 
 def test_gc_id_narrows_the_run_and_exits_1_when_that_lease_was_kept(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     clean, dirty = make_tree(repo, "ca"), make_tree(repo, "db")
     spike.write(dirty / "code.txt", "edited\n")
 
@@ -2042,7 +2163,6 @@ def test_leases_json_names_owner_base_dirty_and_unlanded_per_repo(gc_repo):
 
 def test_leases_text_has_one_line_per_lease_and_says_when_the_tree_is_gone(gc_repo):
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     assert run_verb(repo.root, "leases").stdout == "no leases\n"
     tree = make_tree(repo, "lt")
     held = gc_commit(tree, "held.txt")
@@ -2200,7 +2320,6 @@ def test_leases_never_runs_git_in_a_path_its_record_names(gc_repo, monkeypatch):
 def test_gc_removed_tree_named_by_a_live_item_is_kept_though_its_commits_landed(gc_repo):
     """Review 0bc06f7c.5: a landed-commit check does not know that an open item still names the lease."""
     repo = gc_repo
-    spike.write(repo.root / "agent" / "plans" / "QUEUE.md", CAP_40)
     tree = make_tree(repo, "gi")
     land(repo, gc_commit(tree, "landed.txt"))
     plant_leased_item(repo.root, "gc fixture holds the tree named gi")
@@ -2764,6 +2883,73 @@ def test_control_gc_superseded_by_names_an_unreadable_landed_diff_as_unreadable(
     assert "changes no path" not in err
 
 
+def test_du_bytes_is_none_for_a_partly_unreadable_tree_and_measures_a_readable_one(
+    tmp_path, monkeypatch
+):
+    """05003da0.4: du exits non-zero with a partial total when it cannot read part of a tree; that is no measurement."""
+    (tmp_path / "f").write_text("x" * 5000)
+    assert lease._du_bytes(tmp_path) > 0
+    partial = subprocess.CompletedProcess(["du"], 1, stdout="4\t%s\n" % tmp_path, stderr="denied")
+    monkeypatch.setattr(lease.subprocess, "run", lambda *_a, **_k: partial)
+    assert lease._du_bytes(tmp_path) is None
+
+
+def test_gc_drop_refuses_an_unreadable_subject_once_and_keeps_the_tree(
+    gc_repo, monkeypatch, capsys
+):
+    """010ac8a8.1 and .3: a commit whose subject git cannot read is refused, never written with an empty subject, and a sha named twice is refused once for it."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop4")
+    gc_in_process(monkeypatch, gc_repo.root)
+    real = lease._quiet
+    monkeypatch.setattr(lease, "_quiet", lambda cwd, *a: None if a[0] == "log" else real(cwd, *a))
+    rc, _lines = lease.run_gc(
+        gc_repo.root, write=True, only="drop4", reason="replaced by another design entirely",
+        drop=[sha, sha],
+    )  # fmt: skip
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert err.count("could not read commit") == 1, err
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists()
+
+
+def test_control_gc_drop_reads_the_subject_when_git_can(gc_repo, monkeypatch, capsys):
+    """Silent control of 010ac8a8.1: the same drop with a readable subject records it."""
+    _tree, sha, _landed = superseded_fixture(gc_repo, "drop5")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, write=True, only="drop5", reason="replaced by another design entirely",
+        drop=[sha],
+    )  # fmt: skip
+    assert rc == 0, capsys.readouterr().err
+    assert "could not read commit" not in capsys.readouterr().err
+
+
+def test_gc_both_waivers_without_write_name_both_flags(gc_repo, monkeypatch, capsys):
+    """010ac8a8.2: the refusal label joins the two waiver flags when both are given."""
+    _tree, sha, landed = superseded_fixture(gc_repo, "drop6")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, only="drop6", superseded=[(sha, landed)], drop=[sha],
+        reason="replaced by another design entirely",
+    )  # fmt: skip
+    assert rc == 1
+    assert "--superseded-by/--drop records a waiver" in capsys.readouterr().err
+
+
+def test_control_gc_one_waiver_without_write_names_only_its_flag(gc_repo, monkeypatch, capsys):
+    _tree, sha, _landed = superseded_fixture(gc_repo, "drop7")
+    gc_in_process(monkeypatch, gc_repo.root)
+    rc, _lines = lease.run_gc(
+        gc_repo.root, only="drop7", drop=[sha], reason="replaced by another design entirely"
+    )
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "--drop records a waiver" in err
+    assert "--superseded-by/" not in err
+
+
 def test_gc_superseded_by_refuses_a_landed_commit_sharing_only_some_paths(gc_repo):
     """747e14b4.3: a landed commit that changes one of the lease commit's paths (a lockfile, a changelog) and misses another is no duplicate of it."""
     tree = make_tree(gc_repo, "sup10")
@@ -2959,3 +3145,694 @@ def test_gc_superseded_by_retracts_a_ledger_write_that_fails_partway(gc_repo, mo
         )
     assert ledger.read_text() == ""
     assert tree.exists()
+
+
+def test_gc_superseded_by_accepts_twelve_character_prefixes_of_both_shas(gc_repo):
+    """The ids `leases` prints are 12 characters, so a pair typed from that listing names the commit."""
+    tree, sha, landed = superseded_fixture(gc_repo, "pre1")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "pre1", "--superseded-by", "%s=%s" % (sha[:12], landed[:12]),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+
+
+def test_gc_superseded_by_does_not_call_a_refused_pair_unnamed(gc_repo):
+    """A pair refused for its paths already has a problem line; a second line saying the same commit is not named hid the real reason."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "pre2")
+    unrelated = committed(gc_repo.root, "unrelated2.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "pre2", "--superseded-by", "%s=%s" % (sha[:12], unrelated),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1
+    assert "does not change dup.txt" in done.stderr
+    assert "is not named" not in done.stderr
+    assert tree.exists()
+
+
+def test_gc_pick_unlanded_refuses_an_ambiguous_prefix_by_name_and_an_unknown_one():
+    flat = [(".", "ab12" + "0" * 36), (".", "ab34" + "0" * 36), (".", "cd56" + "0" * 36)]
+    hit, why = lease._pick_unlanded(flat, "AB12", "L")
+    assert hit == flat[0], why
+    assert lease._pick_unlanded(flat, "cd", "L")[0] == flat[2]
+    hit, why = lease._pick_unlanded(flat, "ab", "L")
+    assert hit is None
+    assert "ambiguous" in why
+    assert "ab12" in why
+    assert "ab34" in why
+    hit, why = lease._pick_unlanded(flat, "ff", "L")
+    assert hit is None
+    assert "names no unlanded commit" in why
+
+
+def test_gc_drop_removes_the_tree_and_records_the_sha_subject_reason_and_time(gc_repo):
+    """A commit replaced by a different design has no landed twin, so --superseded-by refuses it and --drop gives it up on the record."""
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop1")
+    unrelated = committed(gc_repo.root, "other-design.txt")
+    refused = run_gc(
+        gc_repo.root, "--write", "--id", "drop1", "--superseded-by", "%s=%s" % (sha[:12], unrelated),
+        "--reason", "replaced by another design entirely",
+    )  # fmt: skip
+    assert refused.returncode == 1
+    assert tree.exists()
+    reason = "replaced by another design that already landed"
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "drop1", "--drop", sha[:12], "--reason", reason,
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert "DROP" in done.stdout
+    assert reason in done.stdout
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    rows = [json.loads(ln) for ln in ledger.read_text().splitlines() if ln]
+    assert len(rows) == 1
+    assert rows[0]["sha"] == sha
+    assert rows[0]["subject"] == "feat: dup variant"
+    assert rows[0]["reason"] == reason
+    assert rows[0]["dropped"] is True
+    assert rows[0]["at"].endswith("Z")
+
+
+def test_control_gc_drop_refuses_a_missing_reason_a_sweep_and_an_unnamed_commit(gc_repo):
+    tree, sha, _landed = superseded_fixture(gc_repo, "drop2")
+    plain = run_gc(gc_repo.root, "--write", "--id", "drop2")
+    assert plain.returncode == 1
+    assert tree.exists()
+    short = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha, "--reason", "no")
+    assert short.returncode == 1
+    assert "at least 20 characters" in short.stderr
+    bare = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha)
+    assert bare.returncode == 1
+    assert "at least 20 characters" in bare.stderr
+    reason = "replaced by another design entirely"
+    sweep = run_gc(gc_repo.root, "--write", "--drop", sha, "--reason", reason)
+    assert sweep.returncode == 1
+    assert "needs --write and --id" in sweep.stderr
+    listing = run_gc(gc_repo.root, "--id", "drop2", "--drop", sha, "--reason", reason)
+    assert listing.returncode == 1
+    assert "needs --write" in listing.stderr
+    gc_commit(tree, "second-drop.txt")
+    partial = run_gc(gc_repo.root, "--write", "--id", "drop2", "--drop", sha, "--reason", reason)
+    assert partial.returncode == 1
+    assert "is not named" in partial.stderr
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists() or sha not in ledger.read_text()
+
+
+def test_gc_drop_names_every_unlanded_commit_when_mixed_with_superseded_by(gc_repo):
+    tree, sha, landed = superseded_fixture(gc_repo, "drop3")
+    extra = gc_commit(tree, "second-mix.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "drop3", "--superseded-by", "%s=%s" % (sha, landed),
+        "--drop", extra, "--reason", "first landed as named, second replaced by a new design",
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert "DROP" in done.stdout
+    assert "WAIVE" in done.stdout
+
+
+def test_gc_discard_dirty_names_the_rules_that_still_keep_the_tree(repo):
+    """--discard-dirty waives rule 3's uncommitted paths only; a tree kept by another rule says which, so a kept tree is never a bare '1 kept'."""
+    made = run_lease(repo.root, "--name", "dirty-note", "--owner", "cli")
+    assert made.returncode == 0, made.stderr
+    tree = pathlib.Path(made.stdout.strip())
+    committed(tree, "unlanded-note.txt")
+    spike.write(tree / "scratch.txt", "work\n")
+    done = run_gc(
+        repo.root, "--write", "--id", "dirty-note", "--discard-dirty",
+        "already landed elsewhere, checked",
+    )  # fmt: skip
+    assert done.returncode == 1
+    note = [ln for ln in done.stdout.splitlines() if ln.strip().startswith("NOTE")]
+    assert len(note) == 1, done.stdout
+    assert "waives only rule 3" in note[0]
+    assert "kept by rule 4" in note[0]
+
+
+# --- seedPublicKeys copies public keys only (review findings c29e799f.1 and c29e799f.2) ---
+
+SEED_KEYS = "private/account/.cache/public-keys.env"
+KEYS_SOURCE = (
+    "# rediacc public-key cache v2: production store entries only\n"
+    "# note: BWS_NOTE_SECRET=commented\n"
+    "ACCOUNT_ED25519_PUBLIC_KEY=pubA\n"
+    "ACCOUNT_X25519_PUBLIC_KEY=pubB\n"
+    "ACCOUNT_ED25519_PRIVATE_KEY=secret\n"
+    "BWS_ACCESS_TOKEN=token\n"
+)
+
+
+def _seed_public_keys(live: pathlib.Path, lease: pathlib.Path) -> str:
+    code = (
+        "import { seedPublicKeys } from './scripts/ci-runner/lease-seed.ts';"
+        "process.stdout.write(seedPublicKeys(process.argv[1], process.argv[2]));"
+    )
+    root = pathlib.Path(__file__).resolve().parents[3]
+    done = subprocess.run(
+        ["npx", "tsx", "-e", code, str(lease), str(live)],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    assert done.returncode == 0, done.stderr
+    return done.stdout
+
+
+def test_seed_public_keys_copies_the_public_lines_and_drops_the_rest(tmp_path):
+    live, lease = tmp_path / "live", tmp_path / "lease"
+    (live / pathlib.Path(SEED_KEYS).parent).mkdir(parents=True)
+    (live / SEED_KEYS).write_text(KEYS_SOURCE, encoding="utf-8")
+    (lease / "private" / "account").mkdir(parents=True)
+    assert "copied from the main checkout" in _seed_public_keys(live, lease)
+    copied = (lease / SEED_KEYS).read_text(encoding="utf-8")
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=pubA" in copied
+    assert "ACCOUNT_X25519_PUBLIC_KEY=pubB" in copied
+    assert "secret" not in copied
+    assert "BWS_ACCESS_TOKEN" not in copied
+    assert copied.startswith("# rediacc public-key cache v2")
+    assert "commented" not in copied, "a free comment line may carry a secret and does not travel"
+
+
+def test_seed_public_keys_controls(tmp_path):
+    """CONTROLS: no source file, and no private/account in the lease, each say so and copy nothing."""
+    live, lease = tmp_path / "live", tmp_path / "lease"
+    lease.mkdir()
+    assert "none in the main checkout" in _seed_public_keys(live, lease)
+    (live / pathlib.Path(SEED_KEYS).parent).mkdir(parents=True)
+    (live / SEED_KEYS).write_text(KEYS_SOURCE, encoding="utf-8")
+    assert "no private/account in this tree" in _seed_public_keys(live, lease)
+    assert not (lease / SEED_KEYS).exists()
+
+
+# --------------------------------------------------------------------------- hold ---------------------------------------------------------------------------
+#
+# A lease the lead parks on purpose (`hold`): gc keeps it, `leases` shows it, and the Stop hook's side lives in test-wl_worktrees.py. A hold is only as long as its worklist item is open.
+
+
+def worklist_verb(root, *args, session=GC_SESSION):
+    done = subprocess.run(
+        [sys.executable, str(WORKLIST), *args],
+        env={**gc_env(root), "WORKLIST_SESSION_ID": session},
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stdout + done.stderr
+    return done.stdout
+
+
+def open_item(root, text="preview signer waits on its dependencies"):
+    added = worklist_verb(root, "--add", GC_SESSION[:8], text)
+    return added.split("#", 1)[1].split()[0].strip(":,.)")
+
+
+def hold_file(repo, name):
+    return repo.root / ".git" / lease.RECORD_DIR / ("%s.hold" % name)
+
+
+@pytest.fixture
+def unlanded_tree(gc_repo):
+    """A lease the session `GC_SESSION` owns, with one unlanded commit."""
+    made = run_lease(gc_repo.root, "--name", "parked", "--owner", GC_SESSION[:8])
+    assert made.returncode == 0, made.stderr
+    age_record(gc_repo.root, "parked")
+    gc_commit(pathlib.Path(made.stdout.strip()), "work.txt")
+    return gc_repo
+
+
+def hold_as(repo, item, reason="r", session=GC_SESSION, lease_id="parked"):
+    return run_verb(
+        repo.root, "hold", lease_id, "--item", item, "--reason", reason, session=session
+    )
+
+
+def test_hold_writes_a_record_and_gc_keeps_the_tree_naming_item_and_reason(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    before = run_gc(repo.root)
+    assert "held for" not in row_of(before.stdout, "parked"), (
+        "control: an unheld tree names no hold"
+    )
+    done = hold_as(repo, item, "waits on N2")
+    assert done.returncode == 0, done.stderr
+    record = json.loads(hold_file(repo, "parked").read_text(encoding="utf-8"))
+    assert record["item"] == item
+    assert record["reason"] == "waits on N2"
+    assert record["session"] == GC_SESSION[:8]
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert row.split()[0] == "KEEP", row
+    assert "held for #%s: waits on N2" % record["item"] in row, row
+    written = run_gc(repo.root, "--write", "--id", "parked")
+    assert written.returncode == 1, written.stdout
+    assert (repo.root / spike.HOLDER / "parked").is_dir()
+    shown = run_verb(repo.root, "leases").stdout
+    assert "held for #%s: waits on N2" % record["item"] in shown, shown
+
+
+def test_hold_resolves_a_unique_prefix_to_the_full_id(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    done = hold_as(repo, item[:5])
+    assert done.returncode == 0, done.stderr
+    record = json.loads(hold_file(repo, "parked").read_text(encoding="utf-8"))
+    assert record["item"] == item, "the record carries the full id, never the prefix"
+
+
+def test_hold_refuses_an_ambiguous_prefix():
+    watch = lease._hook_module("wl_worktrees")
+    items = [
+        {"id": "ab01", "state": " ", "owner": "x"},
+        {"id": "ab02", "state": " ", "owner": "x"},
+        {"id": "ab03", "state": "x", "owner": "x"},
+    ]
+    found, why = watch.resolve_open_item(items, "ab")
+    assert found is None
+    assert "ambiguous" in why, why
+    assert "#ab01" in why, why
+    assert "#ab02" in why, why
+    assert "ab03" not in why, "a ticked item is no candidate"
+    found, why = watch.resolve_open_item(items, "ab01")
+    assert found is items[0], "control: a full id resolves"
+    assert why == ""
+    found, why = watch.resolve_open_item(items, "ab0")
+    assert found is None
+    assert "ambiguous" in why
+    found, why = watch.resolve_open_item([items[0]], "ab")
+    assert found is items[0], "control: a unique prefix resolves"
+    assert why == ""
+
+
+def test_hold_refuses_a_session_that_does_not_own_the_lease(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    done = hold_as(repo, item, session="babe0000cafe")
+    assert done.returncode == 1, done.stdout
+    assert "not the lease owner" in done.stderr, done.stderr
+    assert not hold_file(repo, "parked").exists()
+    assert hold_as(repo, item).returncode == 0, "control: the owner holds it"
+
+
+def test_hold_refuses_an_item_of_another_session(unlanded_tree):
+    repo = unlanded_tree
+    done = worklist_verb(
+        repo.root,
+        "--add",
+        "babe0000",
+        "peer work waits on its dependencies",
+        session="babe0000cafe",
+    )
+    peer_item = done.split("#", 1)[1].split()[0].strip(":,.)")
+    refused = hold_as(repo, peer_item)
+    assert refused.returncode == 1, refused.stdout
+    assert "babe0000" in refused.stderr, refused.stderr
+    assert "not the lease owner" in refused.stderr, refused.stderr
+    assert not hold_file(repo, "parked").exists()
+
+
+def test_gc_and_leases_do_not_honour_a_hand_written_foreign_hold(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    store = repo.root / ".git" / lease.RECORD_DIR
+    foreign = {"item": item, "reason": "parked by a peer", "session": "babe0000"}
+    hold_file(repo, "parked").write_text(json.dumps(foreign), encoding="utf-8")
+    assert store.is_dir()
+    shown = run_verb(repo.root, "leases").stdout
+    assert "not honoured" in shown, shown
+    assert "(item closed" not in shown, shown
+    ours = {**foreign, "session": GC_SESSION[:8]}
+    hold_file(repo, "parked").write_text(json.dumps(ours), encoding="utf-8")
+    shown = run_verb(repo.root, "leases").stdout
+    assert "not honoured" not in shown, "control: the owner's own hold is honoured: " + shown
+    assert "held for #%s" % item in shown, shown
+
+
+def test_unreadable_hold_is_kept_by_gc_and_not_reported_as_closed(unlanded_tree):
+    repo = unlanded_tree
+    hold_file(repo, "parked").write_text("{", encoding="utf-8")
+    shown = run_verb(repo.root, "leases").stdout
+    assert "(item closed" not in shown, shown
+    assert "unreadable" in shown, shown
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert row.split()[0] == "KEEP", row
+    assert "could not be read" in row, row
+
+
+def test_a_worklist_that_cannot_be_read_keeps_the_held_tree_and_says_so():
+    held = {"item": "ab01", "reason": "why", "session": "feedface"}
+    world = types.SimpleNamespace(
+        holds={"t": held}, items=None, records={"t": {"owner": "feedface"}}
+    )
+    problem = lease._hold_problem(world, "t")
+    assert "the worklist could not be read" in problem, problem
+    row = lease._hold_row(world, "t")
+    assert row["open"] is True, row
+    assert "unreadable" not in row["reason"], row
+    assert "(item closed" not in lease._lease_line(
+        {
+            "id": "t",
+            "owner": "feedface",
+            "base": {},
+            "dirty": 0,
+            "unlanded": {},
+            "exists": True,
+            "hold": row,
+        }
+    )
+    closed = types.SimpleNamespace(
+        holds={"t": held},
+        items=[{"id": "ab01", "state": "x", "owner": "feedface"}],
+        records={"t": {"owner": "feedface"}},
+    )
+    assert lease._hold_problem(closed, "t") == "", "control: a closed item holds nothing"
+    assert lease._hold_row(closed, "t")["open"] is False
+
+
+def test_hold_ends_with_its_item_and_unhold_removes_it(unlanded_tree):
+    repo = unlanded_tree
+    item = open_item(repo.root)
+    assert hold_as(repo, item).returncode == 0
+    worklist_verb(repo.root, "--tick", GC_SESSION[:8], item, "exit 0 nocommit:no-tracked-change")
+    row = row_of(run_gc(repo.root).stdout, "parked")
+    assert "held for" not in row, "a ticked item no longer holds the tree: %s" % row
+    assert "(item closed" in run_verb(repo.root, "leases").stdout
+    again = hold_as(repo, item)
+    assert again.returncode == 1
+    assert "not an open worklist item" in again.stderr
+    released = run_verb(repo.root, "unhold", "parked")
+    assert released.returncode == 0, released.stderr
+    assert not hold_file(repo, "parked").exists()
+    assert run_verb(repo.root, "unhold", "parked").returncode == 1
+
+
+@pytest.mark.parametrize(
+    ("lease_id", "item", "reason", "message"),
+    [
+        ("nosuch", "open", "why", "no lease named nosuch"),
+        ("parked", "open", "   ", "non-empty --reason"),
+        ("parked", "deadbeef", "why", "not an open worklist item"),
+    ],
+)
+def test_hold_refuses_unknown_lease_empty_reason_and_closed_item(
+    unlanded_tree, lease_id, item, reason, message
+):
+    repo = unlanded_tree
+    real = open_item(repo.root)
+    given = real if item == "open" else item
+    done = hold_as(repo, given, reason, lease_id=lease_id)
+    assert done.returncode == 1, done.stdout
+    assert message in done.stderr, done.stderr
+    assert not hold_file(repo, lease_id).exists()
+
+
+# --------------------------------------------------------------------------- disk floor (#24f87180) ---------------------------------------------------------------------------
+
+
+def fake_free(monkeypatch, free_bytes):
+    frsize = 4096
+    monkeypatch.setattr(
+        lease.os,
+        "statvfs",
+        lambda _path: types.SimpleNamespace(f_bavail=-(-free_bytes // frsize), f_frsize=frsize),
+    )
+
+
+def test_lease_refuses_below_the_disk_floor_and_leaves_nothing(repo, monkeypatch):
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES - 1_000_000)
+    with pytest.raises(lease.LeaseRefusedError) as raised:
+        lease.make_lease(repo.root, name="low")
+    message = str(raised.value)
+    assert "GB free" in message
+    assert "a lease costs about %.1f GB" % (lease.LEASE_ESTIMATE_BYTES / lease.GB) in message
+    assert "./run.sh worktree gc --write" in message
+    assert not (repo.root / spike.HOLDER / "low").exists()
+    assert not (repo.root / ".git" / lease.RECORD_DIR / "low.json").exists()
+
+
+def test_refusal_prints_each_reclaimable_source_with_its_command(repo, monkeypatch):
+    fake_free(monkeypatch, 1_000_000)
+    sizes = {"release": 24 * lease.GB}
+
+    def du(path):
+        return sizes.get(pathlib.Path(path).name)
+
+    lines = lease.reclaim_sources(repo.root, du=du, docker=lambda: "62 GB (61 GB reclaimable)")
+    text = "\n".join(lines)
+    assert "24.0 GB: release:local clones" in text
+    assert "python3 -m rediacc_ci.release.cache_prune" in text
+    assert "go clean -cache" in text
+    assert "docker image prune -a --filter until=168h" in text
+    assert "62 GB (61 GB reclaimable)" in text
+    assert "size not measured: lease trees" in text
+    with pytest.raises(lease.LeaseRefusedError) as raised:
+        lease._check_disk(repo.root, sources=lambda _root: lines)
+    assert "python3 -m rediacc_ci.release.cache_prune" in str(raised.value)
+    assert "./run.sh worktree gc --write" in str(raised.value)
+
+
+def test_lease_is_made_at_the_disk_floor(repo, monkeypatch):
+    """Control: the floor plus two leases, rounded up to a whole 4096-byte block as fake_free does, is enough, so the refusal reads the free space."""
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES)
+    path = lease.make_lease(repo.root, name="ok")
+    assert pathlib.Path(path).is_dir()
+
+
+def test_lease_refuses_one_block_below_the_floor(repo, monkeypatch):
+    """The edge of the control above: one 4096-byte block less than the needed free space is refused, the stated floor in decimal GB."""
+    fake_free(monkeypatch, lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES - 4096)
+    with pytest.raises(lease.LeaseRefusedError, match=r"the 10\.0 GB floor"):
+        lease.make_lease(repo.root, name="edge")
+
+
+def test_the_disk_floor_admits_exactly_the_needed_bytes_and_refuses_one_less(repo, monkeypatch):
+    """13bfe1f8.1: fake_free rounds up to 4096-byte blocks, so only an exact byte count tells `<` from `<=` at the gate."""
+    needed = lease.FREE_FLOOR_BYTES + 2 * lease.LEASE_ESTIMATE_BYTES
+    monkeypatch.setattr(lease, "_free_bytes", lambda _root: needed)
+    lease._check_disk(repo.root)
+    monkeypatch.setattr(lease, "_free_bytes", lambda _root: needed - 1)
+    with pytest.raises(lease.LeaseRefusedError):
+        lease._check_disk(repo.root, sources=lambda _root: [])
+
+
+@pytest.mark.parametrize("flag", ["--run", "--ticks", "-x"])
+def test_land_me_refuses_a_following_flag_as_the_prefix(flag, capsys):
+    """6f2bf605.5: `land <id> --me --run` took `--run` as the session prefix."""
+    assert lease.cmd_land(["abc", "--me", flag]) == 1
+    assert "--me takes a session id prefix" in capsys.readouterr().err
+
+
+def test_failed_seed_removes_the_partial_tree(repo, monkeypatch):
+    """The 2026-11-23 ENOSPC runs: a seed that dies after the trees exist leaves no tree, record or id directory."""
+    fake_free(monkeypatch, 10**12)
+
+    def broken(path, _root, _tip):
+        (pathlib.Path(path) / "partial.txt").write_text("half a copy\n", encoding="utf-8")
+        message = "lease-seed.ts exited 1"
+        raise lease.LeaseRefusedError(message)
+
+    monkeypatch.setattr(lease, "_run_seed", broken)
+    with pytest.raises(lease.LeaseRefusedError, match="lease bad not made"):
+        lease.make_lease(repo.root, name="bad")
+    assert not (repo.root / spike.HOLDER / "bad").exists()
+    assert not (repo.root / ".git" / lease.RECORD_DIR / "bad.json").exists()
+
+
+def _satellites(repo, tree, name):
+    """Plant the temp a lease owns outside its tree and return the three paths: its recorded tmpdir, its typecheck cache dir and its gen-docs pre-commit scratch."""
+    record = json.loads(
+        (repo.root / ".git" / lease.RECORD_DIR / ("%s.json" % name)).read_text(encoding="utf-8")
+    )
+    tmpdir = pathlib.Path(record["tmpdir"])
+    assert tmpdir.is_dir(), "fixture control: the lease made no tmpdir"
+    munged = str(tree).lstrip("/").replace("/", "-")
+    cache = pathlib.Path(os.environ["HOME"]) / ".cache" / "rediacc-typecheck" / munged
+    git_dir = spike.must(tree, "rev-parse", "--absolute-git-dir")
+    key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+    scratch = pathlib.Path(gc_env(repo.root)["TMPDIR"]) / ("gen-docs-precommit-%s" % key)
+    for planted in (cache, scratch):
+        planted.mkdir(parents=True)
+        (planted / "leftover").write_text("x\n", encoding="utf-8")
+    (tmpdir / "leftover").write_text("x\n", encoding="utf-8")
+    return tmpdir, cache, scratch
+
+
+def test_gc_satellite_dirs_go_with_the_tree(repo):
+    plant_session(repo.root)
+    tree = make_tree(repo, "sat")
+    planted = _satellites(repo, tree, "sat")
+    done = run_gc(repo.root, "--write", "--id", "sat")
+    assert done.returncode == 0, done.stderr
+    assert not tree.exists()
+    assert [p.exists() for p in planted] == [False, False, False]
+
+
+def test_gc_removes_the_gen_docs_scratch_under_slash_tmp(repo):
+    """Review 6d1a26a3.4: the second base, /tmp itself, is removed too when TMPDIR names another directory."""
+    plant_session(repo.root)
+    tree = make_tree(repo, "slashtmp")
+    git_dir = spike.must(tree, "rev-parse", "--absolute-git-dir")
+    key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+    scratch = pathlib.Path("/tmp") / ("gen-docs-precommit-%s" % key)
+    assert gc_env(repo.root)["TMPDIR"] != "/tmp", (
+        "fixture control: TMPDIR is /tmp, so the first base covers it"
+    )
+    scratch.mkdir()
+    try:
+        (scratch / "leftover").write_text("x\n", encoding="utf-8")
+        done = run_gc(repo.root, "--write", "--id", "slashtmp")
+        assert done.returncode == 0, done.stderr
+        assert not scratch.exists()
+    finally:
+        shutil.rmtree(scratch, ignore_errors=True)
+
+
+def test_gc_satellite_dirs_of_a_kept_tree_stay(repo):
+    plant_session(repo.root)
+    tree = make_tree(repo, "keep")
+    planted = _satellites(repo, tree, "keep")
+    spike.write(tree / "dirty.txt", "edited\n")
+    done = run_gc(repo.root, "--write", "--id", "keep")
+    assert row_of(done.stdout, "keep").split()[0] == "KEEP", done.stdout
+    assert tree.exists()
+    assert [p.exists() for p in planted] == [True, True, True]
+
+
+def test_lease_tmpdir_is_made_private_and_recorded(repo):
+    tree = make_tree(repo, "agent-0123456789abcdef", fresh=True)
+    record = json.loads(
+        (repo.root / ".git" / lease.RECORD_DIR / "agent-0123456789abcdef.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    tmpdir = pathlib.Path(record["tmpdir"])
+    assert tmpdir == pathlib.Path(os.environ["REDIACC_LEASE_TMP_BASE"]) / "01234567"
+    assert tmpdir.is_dir()
+    assert tmpdir.stat().st_mode & 0o777 == 0o700
+    assert tree.is_dir()
+
+
+def _fail_after_tmpdir(monkeypatch):
+    """Fail the lease at `_write_record`, the step after `_make_tmpdir`, so the rollback has a tmpdir to judge (review 6d1a26a3.3: a failure at `_verify` ran before any tmpdir existed)."""
+    fake_free(monkeypatch, 10**12)
+    monkeypatch.setattr(lease, "_run_seed", lambda *_args: None)
+    monkeypatch.setattr(lease, "_verify", lambda *_args: None)
+
+    def broken(*_args):
+        message = "record unwritable"
+        raise OSError(message)
+
+    monkeypatch.setattr(lease, "_write_record", broken)
+
+
+def test_lease_tmpdir_is_removed_when_the_lease_fails(repo, monkeypatch):
+    made = []
+    real = lease._make_tmpdir
+
+    def recording(lease_id):
+        made.append(real(lease_id))
+        return made[-1]
+
+    monkeypatch.setattr(lease, "_make_tmpdir", recording)
+    _fail_after_tmpdir(monkeypatch)
+    with pytest.raises(lease.LeaseRefusedError, match="record unwritable"):
+        lease.make_lease(repo.root, name="failing")
+    assert made == [(str(lease.lease_tmpdir("failing")), True)], (
+        "fixture control: no tmpdir was made"
+    )
+    assert not lease.lease_tmpdir("failing").exists()
+
+
+def test_lease_tmpdir_found_there_survives_the_failed_lease(repo, monkeypatch):
+    """Control for the test above: a tmpdir this lease did not create (a sibling id with the same first 8 characters) is not the rollback's to remove."""
+    found = lease.lease_tmpdir("sharedid-2")
+    found.mkdir(mode=0o700)
+    (found / "sibling-file").write_text("x\n", encoding="utf-8")
+    _fail_after_tmpdir(monkeypatch)
+    with pytest.raises(lease.LeaseRefusedError, match="record unwritable"):
+        lease.make_lease(repo.root, name="sharedid-2")
+    assert (found / "sibling-file").exists()
+
+
+def test_private_dir_creates_0700_and_accepts_its_own(tmp_path):
+    """Control for the refusals below: a fresh name is made 0700, and this uid's own 0700 dir is accepted as found."""
+    target = tmp_path / "own"
+    assert lease._private_dir(target) is True
+    assert target.stat().st_mode & 0o777 == 0o700
+    assert lease._private_dir(target) is False
+
+
+@pytest.mark.parametrize(
+    ("plant", "problem"),
+    [
+        ("symlink", "is a symlink"),
+        ("file", "is not a directory"),
+        ("loose", "lets group or other in"),
+    ],
+)
+def test_private_dir_refuses_a_planted_name(tmp_path, plant, problem):
+    """Review 6d1a26a3.1: a name another user planted in the sticky /var/tmp is refused, never followed or chmodded."""
+    target = tmp_path / "planted"
+    elsewhere = tmp_path / "theirs"
+    elsewhere.mkdir(mode=0o755)
+    elsewhere.chmod(0o755)
+    if plant == "symlink":
+        target.symlink_to(elsewhere)
+    elif plant == "file":
+        target.write_text("x\n", encoding="utf-8")
+    else:
+        target.mkdir()
+        target.chmod(0o755)
+    with pytest.raises(lease.LeaseRefusedError, match=problem):
+        lease._private_dir(target)
+    assert elsewhere.stat().st_mode & 0o777 == 0o755
+
+
+def test_private_dir_refuses_another_owner(tmp_path, monkeypatch):
+    """The owner check, with this uid made to look like another one, since no test here can chown."""
+    target = tmp_path / "owned"
+    target.mkdir(mode=0o700)
+    real = os.getuid()
+    monkeypatch.setattr(lease.os, "getuid", lambda: real + 1)
+    with pytest.raises(lease.LeaseRefusedError, match="is owned by uid"):
+        lease._private_dir(target)
+
+
+def test_lease_refuses_a_symlinked_tmp_base(repo, monkeypatch, tmp_path):
+    """End to end: a base planted as a symlink refuses the lease, leaves no tree (no holder dir, no record, no git worktree in the console or submodule store: review 2fe49baf.2), and nothing lands in the symlink's target."""
+    theirs = tmp_path / "theirs"
+    theirs.mkdir(mode=0o755)
+    base = tmp_path / "base"
+    base.symlink_to(theirs)
+    monkeypatch.setenv("REDIACC_LEASE_TMP_BASE", str(base))
+    fake_free(monkeypatch, 10**12)
+    monkeypatch.setattr(lease, "_run_seed", lambda *_args: None)
+    monkeypatch.setattr(lease, "_verify", lambda *_args: None)
+    with pytest.raises(lease.LeaseRefusedError, match="is a symlink"):
+        lease.make_lease(repo.root, name="planted")
+    assert list(theirs.iterdir()) == []
+    assert not (repo.root / spike.HOLDER / "planted").exists()
+    leaves_nothing(repo, "planted")
+
+
+def test_gc_keeps_a_tmpdir_another_lease_shares(repo):
+    """Review 6d1a26a3.2: `<owner>-<n>` ids share their first 8 characters and so one tmpdir; gc of one lease leaves it for the other, and gc of the last removes it."""
+    plant_session(repo.root)
+    first = make_tree(repo, "abcdefgh-1")
+    make_tree(repo, "abcdefgh-2")
+    shared = lease.lease_tmpdir("abcdefgh-1")
+    assert shared == lease.lease_tmpdir("abcdefgh-2"), (
+        "fixture control: the ids do not share a tmpdir"
+    )
+    done = run_gc(repo.root, "--write", "--id", "abcdefgh-1")
+    assert done.returncode == 0, done.stderr
+    assert not first.exists()
+    assert shared.is_dir()
+    done = run_gc(repo.root, "--write", "--id", "abcdefgh-2")
+    assert done.returncode == 0, done.stderr
+    assert not shared.exists()

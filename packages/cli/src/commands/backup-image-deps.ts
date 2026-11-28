@@ -18,7 +18,7 @@ import {
   removeTempSSHKeyFile,
 } from '../remote/ssh/index.js';
 import { assertRsyncCapable, runImageRsync } from '../remote/sync/image-rsync.js';
-import { getRsyncSSHCommand } from '../remote/sync/rsync.js';
+import { getRsyncSSHCommand, rsyncUserHost } from '../remote/sync/rsync.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import {
   getSubscriptionServerUrl,
@@ -61,7 +61,7 @@ import { REMOTE_RENET_PATH } from '../services/renet/renet-provisioner.js';
 import { ERROR_CODES } from '../types/errors.js';
 import { assertAgentRepoCreate } from '../utils/agent-guard.js';
 import { CliExitError } from '../utils/cli-exit-error.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -101,10 +101,6 @@ export function parseRetries(value: string | undefined): number {
     throw new ValidationError(t('errors.backupImage.retriesInvalid', { value }));
   }
   return n;
-}
-
-function hostSpec(ip: string): string {
-  return ip.includes(':') ? `[${ip}]` : ip;
 }
 
 function progressLine(text: string): void {
@@ -147,8 +143,10 @@ async function openHelperSession<S>(
     const sftp = await lease.ensure();
     const machine = lease.machine;
     temp.push(await createTempSSHKeyFile(lease.sshPrivateKey));
-    temp.push(await createTempKnownHostsFile(machine.knownHosts));
     const port = machine.port ?? DEFAULT_SSH_PORT;
+    // The rsync ssh dials the address the pooled session reached, which after an IPv6 fallback is not the configured one.
+    const host = sftp.dialedHost;
+    temp.push(await createTempKnownHostsFile(machine.knownHosts, { host, port }));
     const sshCommand = await getRsyncSSHCommand(
       `-o StrictHostKeyChecking=yes -o UserKnownHostsFile="${temp[1]}" -p ${port} -i "${temp[0]}" ` +
         '-o BatchMode=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=4'
@@ -162,7 +160,7 @@ async function openHelperSession<S>(
     return await start({
       handle,
       stderrTail: () => stderr,
-      transport: { sshCommand, userHost: `${machine.user}@${hostSpec(machine.ip)}` },
+      transport: { sshCommand, userHost: rsyncUserHost(machine.user, host) },
       onClosed: cleanup,
     });
   } catch (error) {
@@ -215,7 +213,7 @@ async function targetFor(ref: string, listed: ListedRepo[]): Promise<ImageTarget
   }
   const repo = await configService.getRepository(resolved.repoKey);
   if (!repo) throw new ValidationError(t('errors.backupImage.repoUnknown', { ref }));
-  await assertCommandPolicy(CMD.BACKUP_DOWNLOAD, resolved.repoKey);
+  await enforceResolvedTarget(CMD.BACKUP_DOWNLOAD, { ref: resolved.repoKey });
   const entry = listed.find((r) => r.guid === repo.repositoryGuid);
   return {
     repo: resolved.name,
@@ -419,7 +417,10 @@ export async function realUploadDeps(
     signal,
     datastorePath: (machine, datastore) => machineDatastorePath(machine, datastore),
     assertCreate: async (name, machine) => {
-      await assertCommandPolicy(CMD.BACKUP_UPLOAD, name);
+      await enforceResolvedTarget(CMD.BACKUP_UPLOAD, {
+        ref: name,
+        ...(machine ? { machine } : {}),
+      });
       const placement: Placement = opts.datastore ? { datastore: opts.datastore } : { machine };
       await assertAgentRepoCreate(name, placement);
     },

@@ -188,6 +188,46 @@ def rebase_state(root):
     return None
 
 
+# THE MARKERS a halted history operation leaves in the checkout's OWN git dir (per worktree, never the common dir), in the order they are read. `rebase-apply` is shared by `git am` and the apply backend of `git rebase`; an `applying` file inside it is what makes it `am`. A bare `sequencer` is a multi-commit cherry-pick or revert between picks, and the one marker known to go stale (`git cherry-pick --quit` clears it).
+OPERATION_MARKERS = (
+    ("rebase-merge", "rebase"),
+    ("rebase-apply", "rebase"),
+    ("MERGE_HEAD", "merge"),
+    ("CHERRY_PICK_HEAD", "cherry-pick"),
+    ("REVERT_HEAD", "revert"),
+    ("sequencer", "sequencer"),
+)
+
+
+def operation_in_progress(root):
+    """The history operation halted in `root`'s checkout: "rebase", "am", "merge", "cherry-pick", "revert" or "sequencer"; "" when none is, or when `root` is not in a git checkout.
+
+    THE ONE ANSWER every hook asks before it writes a tracked file (worklist #b07162cf). `git rebase --continue` refuses while ANY tracked path holds an unstaged change, and its message blames unresolved merge conflicts and asks for `git add` with no unmerged entry left (git 2.53.0, measured 2026-11-23 and frozen by test_rebase_standdown.py). So a Stop hook that rewrites agent/plans/QUEUE.md, or a reviewer that appends to agent/reviews/<branch>/clean.jsonl, mid-rebase wedges the rebase behind a message that names the wrong cause. The Stop hook, the post-bash reviewer and the retro ledger all stand down on this answer.
+
+    ONE `git rev-parse --absolute-git-dir`, because the state lives in the per-checkout git dir: `<root>/.git` is a FILE in a linked worktree and in a submodule, the same trap `rebase_state` records. A git that cannot answer is "", the old behaviour, never a guess that some operation is running.
+    """
+    rc, git_dir, _ = run_git(["rev-parse", "--absolute-git-dir"], cwd=str(root), timeout=30)
+    if rc != 0 or not git_dir:
+        return ""
+    for marker, name in OPERATION_MARKERS:
+        path = os.path.join(git_dir, marker)
+        if not os.path.lexists(path):
+            continue
+        if marker == "rebase-apply" and os.path.exists(os.path.join(path, "applying")):
+            return "am"
+        return name
+    return ""
+
+
+def operation_finish_hint(name):
+    """The commands that end operation `name`, for a message that has just said one is in progress."""
+    if name == "rebase":
+        return "`worklist.py --git rebase-continue --execute` (or `git rebase --continue`), or `git rebase --abort`"
+    if name == "sequencer":
+        return "`git cherry-pick --continue` / `git revert --continue`, or `git cherry-pick --quit` when the sequencer is stale"
+    return "`git %s --continue`, or `git %s --abort`" % (name, name)
+
+
 def conflicted_paths(root):
     """Every path with unmerged stages, with its stages BY NUMBER."""
     rc, out, _ = run_git(["ls-files", "-u"], cwd=root)
@@ -596,6 +636,44 @@ def dirty_paths(repo):
             return None
         paths.update(p for p in out.split("\0") if p)
     return sorted(paths)
+
+
+def unstaged_tracked_paths(repo):
+    """The tracked paths whose work-tree copy differs from the index, submodules ignored and untracked files left out, or None when the probe failed.
+
+    THE SET `git rebase --continue` REFUSES OVER (git 2.53.0, measured 2026-11-23, test_rebase_standdown.py): a halted rebase with every conflict staged and `git ls-files -u` empty still exits 1 while one such path exists, and its message blames merge conflicts. A staged path does not count, nor does an untracked one, nor a submodule (git asks `has_unstaged_changes` with submodules ignored).
+    """
+    rc, out, _ = run_git(
+        ["diff", "--name-only", "-z", "--no-renames", "--ignore-submodules=all"], cwd=repo
+    )
+    if rc != 0:
+        return None
+    return sorted(p for p in out.split("\0") if p)
+
+
+def continue_dirt_refusal(repo, staging=()):
+    """None when `git rebase --continue` would get past its work-tree check here, else the reason it would not, naming every path. `staging` are paths this verb stages before it continues, and SETTINGS_LOCAL is skip-worktree'd by it, so neither counts."""
+    unstaged = unstaged_tracked_paths(repo)
+    if unstaged is None:
+        return "could not read the work tree against the index (`git diff` failed); an unread tree is not a clean one"
+    left = [p for p in unstaged if p != SETTINGS_LOCAL and p not in set(staging)]
+    if not left:
+        return None
+    _owners, hook, real = classify_dirt(left)
+    shown = ", ".join(left[:8]) + (" and %d more" % (len(left) - 8) if len(left) > 8 else "")
+    return (
+        "%d tracked path(s) hold unstaged changes (%s), and `git rebase --continue` refuses over any of them with a message about merge conflicts even when none is left. "
+        "%s"
+        "Stage a path only when the change belongs to the commit being replayed; otherwise save its bytes elsewhere, bring it back to its staged content, and re-run"
+        % (
+            len(left),
+            shown,
+            "%d of them are hook records (%s), which the hooks stand down from writing while a rebase is in progress (wl_git.operation_in_progress); one written anyway came from a hook older than that rule or from a verb run by hand. "
+            % (len(hook), ", ".join(hook[:4]))
+            if hook and not real
+            else "",
+        )
+    )
 
 
 def classify_dirt(paths):
@@ -1168,6 +1246,13 @@ def main(argv):
                     for path, (how, payload, ruling) in sorted(resolved.items()):
                         label = "gitlink " + payload[:12] if how == "gitlink" else "registry union"
                         plan.check("%s -> %s" % (path, label), True, ruling)
+                    # THE CHECK GIT DOES, made BEFORE git does it and with the paths named (worklist #b07162cf). Git's own refusal names no path and blames merge conflicts, which on 2026-11-23 held a 273-step rebase at step 26 with `git ls-files -u` empty while hooks had rewritten three tracked records.
+                    dirt = continue_dirt_refusal(root, staging=tuple(resolved))
+                    if dirt:
+                        raise RefusalError(
+                            "halt %d: stopped before `git rebase --continue`, nothing written for this halt: %s. NEVER `git rebase --skip`: it drops the commit."
+                            % (steps, dirt)
+                        )
                     stage_resolution(plan, root, resolved)
                     if settings_local_dirty(root):
                         plan.cmd(["update-index", "--skip-worktree", SETTINGS_LOCAL], root)
@@ -1494,13 +1579,14 @@ def selftest():
         all(v in USAGE for v in EXECUTABLE),
     )
 
+    # The editor is `sleep`, not `tail -f /dev/null`: uutils tail exits 1 at once when the host has no inotify instance left (2026-11-26).
     _ed = tempfile.mkdtemp()
     try:
         for _a in (
             ["init", "-q", "-b", "main"],
             ["config", "user.email", "s@example.invalid"],
             ["config", "user.name", "selftest"],
-            ["config", "core.editor", "tail -f /dev/null"],
+            ["config", "core.editor", "sleep 20; true"],
         ):
             subprocess.run(["git", "-C", _ed, *_a], capture_output=True, check=False)
         with open(os.path.join(_ed, "f.txt"), "w", encoding="utf-8") as _fh:
@@ -1513,7 +1599,7 @@ def selftest():
 
         _clean = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
         _blocked = False
-        # Own process group: a timeout kills git's editor children (sh, tail) too, which subprocess.run's timeout alone leaves running forever.
+        # Own process group: a timeout kills git's editor children (sh, sleep) too, which subprocess.run's timeout alone leaves running forever.
         _proc = subprocess.Popen(
             ["git", "-C", _ed, "commit", "--amend"],
             stdin=subprocess.DEVNULL,

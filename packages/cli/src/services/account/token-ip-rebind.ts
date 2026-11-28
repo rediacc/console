@@ -7,6 +7,10 @@
  * interactive terminal this asks for the token creator's authenticator code and
  * POSTs it to the rebind route. Without a terminal it POSTs the code in
  * REDIACC_IP_REBIND_CODE once, and with that unset it explains the remedies.
+ * REDIACC_IP_REBIND_CODE_COMMAND names a program that prints the current code
+ * (the askpass pattern): when it is set, and REDIACC_IP_REBIND_CODE is not, the
+ * program runs once with the active config name as its one argument, on a
+ * terminal or not, so a vault-held seed answers without anyone typing.
  *
  * `accountServerFetch` is the only caller. It passes the rebind request in as
  * `rebind`, bound to the same token and server as the refused request, so this
@@ -14,6 +18,7 @@
  * carry one token.
  */
 
+import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { STATUS_DEFAULTS } from '@rediacc/shared/config/defaults';
 import {
@@ -25,6 +30,7 @@ import {
 import { t } from '../../i18n/index.js';
 import { askInput } from '../../utils/prompt.js';
 import { suspendSpinner } from '../../utils/spinner.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStderr } from '../core/request-context.js';
 import type { AccountFetchError } from './account-client.js';
 
@@ -35,6 +41,18 @@ const TOTP_PATTERN = /^\d{6}$/;
 
 /** The authenticator code a run without a terminal supplies; read once, never logged. */
 export const IP_REBIND_CODE_ENV = 'REDIACC_IP_REBIND_CODE';
+
+/** A program that prints the current code on stdout; run once, its output never logged. */
+export const IP_REBIND_CODE_COMMAND_ENV = 'REDIACC_IP_REBIND_CODE_COMMAND';
+
+/** The code program's ceiling: it may fetch a vault entry and wait out the end of a 30 s step. */
+const CODE_COMMAND_TIMEOUT_MS = 120_000;
+
+/** How long the pipes may stay open after the program itself exited, before a grandchild holding them is cut loose. */
+const CODE_COMMAND_DRAIN_MS = 2000;
+
+/** The tail of the program's stderr a failure quotes (the program's own diagnostics, never a code). */
+const CODE_COMMAND_STDERR_TAIL = 600;
 
 interface EnsureReboundInput {
   /** The bearer token the server refused. */
@@ -70,6 +88,12 @@ export function resetTokenIpRebindState(): void {
 async function runRebind({ hint, rebind }: EnsureReboundInput): Promise<void> {
   if (hint === 'relogin') {
     throw mismatchError(t('errors.subscription.ipRebind.reloginOnly'));
+  }
+  // A literal read, so the env manifest's reader sees it; IP_REBIND_CODE_COMMAND_ENV names the same variable.
+  const codeCommand = process.env.REDIACC_IP_REBIND_CODE_COMMAND;
+  if (codeCommand && !process.env.REDIACC_IP_REBIND_CODE) {
+    await suspendSpinner(async () => rebindWithCode(rebind, await codeFromCommand(codeCommand)));
+    return;
   }
   if (process.stdin.isTTY !== true || process.stderr.isTTY !== true) {
     await rebindFromEnvironment(rebind);
@@ -109,6 +133,14 @@ async function rebindFromEnvironment(
   if (!TOTP_PATTERN.test(code)) {
     throw mismatchError(t('errors.subscription.ipRebind.envCodeMalformed'));
   }
+  await rebindWithCode(rebind, code);
+}
+
+/** One POST with `code`; a wrong or reused code is final, since nobody is there to supply the next one. */
+async function rebindWithCode(
+  rebind: (code: string) => Promise<ApiTokenIpRebindResponse>,
+  code: string
+): Promise<void> {
   let result: ApiTokenIpRebindResponse;
   try {
     result = await rebind(code);
@@ -118,6 +150,80 @@ async function rebindFromEnvironment(
     throw mismatchError(retryable);
   }
   writeStderr(`${t('errors.subscription.ipRebind.moved', { ip: result.boundIp })}\n`);
+}
+
+type CodeOutcome = { code: string; detail: null } | { code: ''; detail: string };
+
+function judgeCodeOutcome(
+  status: number | null,
+  signal: NodeJS.Signals | null,
+  stdout: string
+): CodeOutcome {
+  if (status !== 0)
+    return { code: '', detail: signal ? `signal ${signal}` : `exit ${String(status)}` };
+  const code = stdout.trim();
+  if (!TOTP_PATTERN.test(code)) {
+    return { code: '', detail: t('errors.subscription.ipRebind.codeCommandMalformed') };
+  }
+  return { code, detail: null };
+}
+
+/**
+ * Run the REDIACC_IP_REBIND_CODE_COMMAND program once with the active config
+ * name and return the six digits it printed. Its stdin is closed, its stdout
+ * is read and never echoed, and its stderr is quoted only when it fails.
+ */
+function codeFromCommand(command: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const fail = (detail: string, stderr: string): void => {
+      const tail = stderr.trim().slice(-CODE_COMMAND_STDERR_TAIL);
+      reject(
+        mismatchError(
+          t('errors.subscription.ipRebind.codeCommandFailed', {
+            command,
+            detail: tail === '' ? detail : `${detail}: ${tail}`,
+          })
+        )
+      );
+    };
+    let stdout = '';
+    let stderr = '';
+    let child: ReturnType<typeof spawn>;
+    try {
+      child = spawn(command, [getEffectiveConfigName()], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: CODE_COMMAND_TIMEOUT_MS,
+      });
+    } catch (error) {
+      fail((error as Error).message, '');
+      return;
+    }
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString('utf8');
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString('utf8');
+    });
+    child.on('error', (error) => fail(error.message, stderr));
+    let settled = false;
+    const settle = (status: number | null, signal: NodeJS.Signals | null): void => {
+      if (settled) return;
+      settled = true;
+      const outcome = judgeCodeOutcome(status, signal, stdout);
+      if (outcome.detail === null) resolve(outcome.code);
+      else fail(outcome.detail, stderr);
+    };
+    child.on('close', settle);
+    // 'close' waits for the pipes to end, and a grandchild that inherited them holds them open past the
+    // timeout, which kills only the direct child. After the program exits the pipes get a short drain, then go.
+    child.on('exit', (status, signal) => {
+      setTimeout(() => {
+        child.stdout?.destroy();
+        child.stderr?.destroy();
+        settle(status, signal);
+      }, CODE_COMMAND_DRAIN_MS).unref();
+    });
+  });
 }
 
 /**

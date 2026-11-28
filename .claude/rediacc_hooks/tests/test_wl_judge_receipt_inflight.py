@@ -1,6 +1,6 @@
 """The judge does not order a main-checkout commit while a receipt is being built (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3, D3).
 
-12 judge blocks in the 2026-11-09/10 window drew a lead reply explaining that a commit would void the receipt a running vm:check or ci:quick was building, and the prompt itself told the judge "unpushed work cannot disturb a run in flight". The hook already knew such a run was live (`wl_checks.vm_check_running`, `ci_quick_running`, which hold the unlanded-lease block); now the judge is told (JUDGE_RECEIPT_IN_FLIGHT) and a main-checkout commit, edit, land or cherry-pick order is rewritten (`wl_judge.RECEIPT_ORDERS`).
+12 judge blocks in the 2026-11-09/10 window drew a lead reply explaining that a commit would void the receipt a running vm:check was building, and the prompt itself told the judge "unpushed work cannot disturb a run in flight". The hook already knew such a run was live (`wl_checks.vm_check_running`, which holds the unlanded-lease block; a ci:quick run no longer holds, since it judges a pinned clone); now the judge is told (JUDGE_RECEIPT_IN_FLIGHT) and a main-checkout commit, edit, land or cherry-pick order is rewritten (`wl_judge.RECEIPT_ORDERS`).
 
 The fixture holds the real fleet lock with a process whose argv is a vm:check run, the way vm_check.Lock.acquire writes it; its inverse is the same lock free.
 """
@@ -43,11 +43,10 @@ STAND_IN = (
 
 @pytest.fixture
 def locks(tmp_path, monkeypatch):
-    """A private runtime dir for the fleet lock and a private ci:quick clone path, so neither reads the operator's."""
+    """A private runtime dir for the fleet lock, so it does not read the operator's."""
     runtime = tmp_path / "runtime"
     runtime.mkdir(mode=0o700)
     monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
-    monkeypatch.setenv("CI_QUICK_CLONE_DIR", str(tmp_path / "ciq-clone"))
     lock = CK.vm_check_lock_path()
     assert lock.startswith(str(runtime)), lock
     return types.SimpleNamespace(root=tmp_path, lock=lock)
@@ -77,27 +76,28 @@ def vm_check(locks):
 
 
 @pytest.mark.usefixtures("vm_check")
-def test_a_held_vm_check_lock_is_the_receipt_run(locks):
-    assert CK._judge_receipt_run(locks.root) == "vm:check"
+def test_a_held_vm_check_lock_is_the_receipt_run():
+    assert CK._judge_receipt_run() == "vm:check"
 
 
 def test_inverse_a_free_lock_is_no_receipt_run(locks):
     with open(locks.lock, "w", encoding="utf-8") as fh:
         fh.write(json.dumps({"pid": os.getpid()}))
-    assert CK._judge_receipt_run(locks.root) is None
+    assert CK._judge_receipt_run() is None
 
 
-def test_a_live_ci_quick_of_this_checkout_is_the_receipt_run(locks, monkeypatch):
-    monkeypatch.setattr(CK, "ci_quick_running", lambda root: root == locks.root)
-    assert CK._judge_receipt_run(locks.root) == "ci:quick"
+def test_there_is_no_ci_quick_reader_to_hold_the_judge():
+    """A ci:quick run judges a pinned clone, so the hook keeps no lock reader for it."""
+    assert not hasattr(CK, "ci_quick_running")
 
 
-def test_a_failed_read_is_no_receipt_run(locks, monkeypatch):
+@pytest.mark.usefixtures("locks")
+def test_a_failed_read_is_no_receipt_run(monkeypatch):
     def boom():
         raise OSError("unreadable")
 
     monkeypatch.setattr(CK, "vm_check_running", boom)
-    assert CK._judge_receipt_run(locks.root) is None
+    assert CK._judge_receipt_run() is None
 
 
 # ---- the prompt and the sanitiser, through a canned claude ---------------------------------------
@@ -144,26 +144,28 @@ def ask(receipt_run):
 
 
 @pytest.mark.usefixtures("vm_check")
-def test_a_running_receipt_puts_the_paragraph_in_and_rewrites_the_order(locks, judge):
+def test_a_running_receipt_puts_the_paragraph_in_and_rewrites_the_order(judge):
     judge.answer(dict(CONTINUE))
-    verdict, err = ask(CK._judge_receipt_run(locks.root))
+    verdict, err = ask(CK._judge_receipt_run())
     assert err is None, err
     assert "RECEIPT IN FLIGHT: a vm:check run" in judge.prompt()
     assert verdict["next_action"].startswith("[rejected by the stop gate"), verdict
     assert "vm:check run is building its receipt" in verdict["next_action"]
 
 
-def test_inverse_a_free_lock_lets_the_order_pass(locks, judge):
+@pytest.mark.usefixtures("locks")
+def test_inverse_a_free_lock_lets_the_order_pass(judge):
     judge.answer(dict(CONTINUE))
-    verdict, err = ask(CK._judge_receipt_run(locks.root))
+    verdict, err = ask(CK._judge_receipt_run())
     assert err is None, err
     assert "RECEIPT IN FLIGHT:" not in judge.prompt()
     assert verdict["next_action"] == ORDER
 
 
 def test_the_cidwait_sentence_is_qualified():
-    assert "unpushed work cannot\ndisturb a run in flight, except while a vm:check or ci:quick" in (
-        M.JUDGE_PROMPT
+    assert (
+        "unpushed work cannot\ndisturb a run in flight, except while a vm:check run is building"
+        in (M.JUDGE_PROMPT)
     )
 
 
@@ -177,9 +179,9 @@ def test_the_cidwait_sentence_is_qualified():
     ],
 )
 def test_main_checkout_orders_are_rewritten_while_a_receipt_runs(order):
-    got = J.sanitize_next_action({"next_action": order}, receipt_run="ci:quick")
+    got = J.sanitize_next_action({"next_action": order}, receipt_run="vm:check")
     assert got["next_action"].startswith("[rejected by the stop gate"), got
-    assert "ci:quick" in got["next_action"]
+    assert "vm:check" in got["next_action"]
 
 
 @pytest.mark.parametrize(
@@ -201,9 +203,9 @@ def test_control_no_receipt_run_rewrites_nothing():
 
 
 def test_settle_by_effort_hands_back_the_order_sanitized_for_the_receipt(monkeypatch):
-    table = {"checks": {"out-of-sync": {"block": "high", "advise": "smart"}}}
+    table = {"checks": {"no-remaining": {"block": "high", "advise": "smart"}}}
     monkeypatch.setattr(J.wl_effort, "load", lambda *_a: (table, ""))
-    out = dict(CONTINUE, basis="out-of-sync")
+    out = dict(CONTINUE, basis="no-remaining")
     got = J.settle_by_effort(out, "smart", table=table, receipt_run="vm:check")
     [(_key, text)] = got["effort_advised"]
     assert "rejected by the stop gate" in text

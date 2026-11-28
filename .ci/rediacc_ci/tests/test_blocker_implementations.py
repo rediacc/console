@@ -288,8 +288,8 @@ def test_the_python_clients_declare_no_rule_of_their_own():
     """
     for rel in (
         ".ci/rediacc_ci/quality/swallowed_failures.py",
-        ".ci/scripts/quality/check_runner_advice.py",
-        ".ci/scripts/quality/check_language_policy.py",
+        ".ci/rediacc_ci/quality/runner_advice.py",
+        ".ci/rediacc_ci/quality/language_policy.py",
     ):
         text = _text(rel)
         hits = quoted_phrase_hits(text)
@@ -304,7 +304,7 @@ def test_the_python_clients_declare_no_rule_of_their_own():
         )
 
     # THE HOP IS GONE: `check_language_policy.blocker_quality_problem` calls `rediacc_ci.core.allowlist` in process (its docstring says so), no longer `.ci/scripts/lib/blocker-validator.sh`. Pinned the other way round, so the shell-out cannot come back unnoticed, and the 'validator cannot be consulted' arm the old pin protected is already gone from test_gate_language_policy.py.
-    policy = _text(".ci/scripts/quality/check_language_policy.py")
+    policy = _text(".ci/rediacc_ci/quality/language_policy.py")
     assert "blocker-validator.sh" not in policy, (
         "check_language_policy shells out to blocker-validator.sh again for the BLOCKER "
         "quality rule; call rediacc_ci.core.allowlist in process instead."

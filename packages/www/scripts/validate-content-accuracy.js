@@ -10,6 +10,7 @@
  * - docs-inline-cli-invalid: rdc commands in markdown prose (outside code fences)
  * - json-cli-command-invalid: rdc commands in translation JSON string values (--strict only)
  * - invalid-rediacc-url: URLs with rediacc domains not in the allowlist
+ * - claim-overstatement: audit-trail wording the product does not back (docs, blog, translation JSON)
  *
  * Usage:
  *   node scripts/validate-content-accuracy.js           # docs + URLs (CI default)
@@ -30,6 +31,7 @@ import { findRegressions, loadBacklog, writeBacklog } from './lib/p7-backlog.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(__dirname, '..');
 const DOCS_DIR = path.join(ROOT_DIR, 'src', 'content', 'docs');
+const BLOG_DIR = path.join(ROOT_DIR, 'src', 'content', 'blog');
 const TRANSLATIONS_DIR = path.join(ROOT_DIR, 'src', 'i18n', 'translations');
 
 const LANGUAGES = SITE_LOCALES;
@@ -40,10 +42,32 @@ const EXCLUDED_DOC_SLUGS = new Set(['cli-application.md']);
 // Commands that exist in the CLI but are not exported to command-tree.json
 const TREE_UNLISTED_COMMANDS = new Set(['shortcuts']);
 
-// Valid *.rediacc.com domains
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
+
+// Product hosts the tracked deploy config defines: each region's account domain (regions.json) and each MCP Worker's custom domain (workers/mcp/wrangler.*.toml routes). Every host found there is accepted in docs and blog prose, so a config change that adds a domain also whitelists it for content. An empty result for either source throws, because a changed JSON shape or pattern would otherwise drop hosts silently.
+export function productHosts(repoRoot = REPO_ROOT) {
+  const hosts = [];
+  const regions = JSON.parse(fs.readFileSync(path.join(repoRoot, 'regions.json'), 'utf8')).regions;
+  for (const region of regions) hosts.push(region.domain);
+  if (hosts.length === 0 || hosts.some((h) => typeof h !== 'string' || !h)) {
+    throw new Error('regions.json yields no usable region domains');
+  }
+  const mcpHosts = [];
+  const mcpDir = path.join(repoRoot, 'workers/mcp');
+  for (const name of fs.readdirSync(mcpDir)) {
+    if (!/^wrangler\..+\.toml$/.test(name)) continue;
+    const toml = fs.readFileSync(path.join(mcpDir, name), 'utf8');
+    for (const m of toml.matchAll(/pattern\s*=\s*"([a-z0-9.-]+)"/g)) mcpHosts.push(m[1]);
+  }
+  if (mcpHosts.length === 0) throw new Error('workers/mcp/wrangler.*.toml yield no route patterns');
+  return [...hosts, ...mcpHosts];
+}
+
+// Valid rediacc hosts: the site, the releases host, and the product hosts above.
 const VALID_REDIACC_DOMAINS = new Set([
   new URL(WK_SITE_ORIGIN).host,
   new URL(WK_RELEASES_ORIGIN).host,
+  ...productHosts(),
 ]);
 
 // Regex to extract rdc commands from inline backticks
@@ -226,6 +250,136 @@ function validateUrls(urls, errors) {
 }
 
 // ---------------------------------------------------------------------------
+// Rule 4: claim-overstatement (docs, blog, translation JSON)
+// ---------------------------------------------------------------------------
+
+// Phrase arms. `forensic trail` and `forensic-grade` are refused outright; `hash-chained` is refused only within one sentence of `audit log` that names neither a per-org-and-day nor a day-file scope, because the server log is chained per org and day (PLAN-console-audit-r2 D5) and the workstation log is chained per file.
+const FORENSIC_TRAIL_RE = /forensic[ -]trail/i;
+const FORENSIC_GRADE_RE = /forensic[ -]grade/i;
+const HASH_CHAINED_RE = /hash-chained/i;
+const AUDIT_LOG_RE = /audit[ -]log/i;
+const CHAIN_SCOPE_RE = /chained per org|per org and (?:per )?day|chained per file|day file/i;
+
+// Each entry exempts one line (file suffix plus a substring of the line) and states why the claim holds there. An entry without a reason exempts nothing.
+export const CLAIM_OVERSTATEMENT_ALLOWLIST = [
+  {
+    file: 'docs/en/ai-agents-safety.md',
+    includes: '~/.config/rediacc/audit.log.jsonl',
+    reason:
+      'describes the local CLI audit file, where each line carries the sha256 of the previous line, which is the chain the sentence defines.',
+  },
+  {
+    file: 'docs/en/ai-agents-safety.md',
+    includes: 'a hash-chained audit log.',
+    reason: 'front-matter summary of the same local CLI audit file.',
+  },
+  {
+    file: 'docs/en/ai-agents-overview.md',
+    includes: 'and the hash-chained audit log.',
+    reason: 'points at the AI Agent Safety page, which documents the local CLI audit file chain.',
+  },
+  {
+    file: 'blog/en/nis2-supply-chain-self-hosted.md',
+    includes: 'rdc config audit verify',
+    reason: 'names the CLI verifier that validates the local chain end to end.',
+  },
+  {
+    file: 'blog/en/nis2-effectiveness-without-theatre.md',
+    includes: 'workstation audit log',
+    reason: 'scoped by the sentence to the operator workstation log, not the server log.',
+  },
+  {
+    file: 'blog/en/nis2-effectiveness-without-theatre.md',
+    includes: 'local workstation log is hash-chained',
+    reason: 'scoped by the sentence to the local workstation log, verified by the CLI.',
+  },
+];
+
+// An allowlist entry exempts only the hash-chained arm, and only when a line the sentence spans carries the substring; the forensic arms are never exempted.
+function isClaimAllowlisted(file, lines, allowlist) {
+  return allowlist.some(
+    (entry) =>
+      entry.reason &&
+      file.endsWith(entry.file) &&
+      lines.some((line) => line.includes(entry.includes))
+  );
+}
+
+function overstatementArms(sentence) {
+  const arms = [];
+  if (FORENSIC_TRAIL_RE.test(sentence)) arms.push('forensic trail');
+  if (FORENSIC_GRADE_RE.test(sentence)) arms.push('forensic-grade');
+  if (
+    HASH_CHAINED_RE.test(sentence) &&
+    AUDIT_LOG_RE.test(sentence) &&
+    !CHAIN_SCOPE_RE.test(sentence)
+  ) {
+    arms.push('hash-chained audit log');
+  }
+  return arms;
+}
+
+// Sentences are cut from each run of non-blank lines joined by single spaces, so a sentence wrapped across physical lines is still one sentence. A hit reports the line the sentence starts on.
+function* sentencesWithLines(lines) {
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].trim() === '') {
+      i++;
+      continue;
+    }
+    const start = i;
+    while (i < lines.length && lines[i].trim() !== '') i++;
+    const block = lines.slice(start, i);
+    const starts = [];
+    let text = '';
+    for (const line of block) {
+      starts.push(text.length);
+      text += `${line} `;
+    }
+    const lineAt = (offset) => {
+      let n = 0;
+      while (n + 1 < starts.length && starts[n + 1] <= offset) n++;
+      return n;
+    };
+    let from = 0;
+    for (const piece of text.split(/(?<=[.!?])\s+/)) {
+      const at = text.indexOf(piece, from);
+      from = at + piece.length;
+      const first = lineAt(at + (piece.length - piece.trimStart().length));
+      const last = lineAt(Math.max(at, from - 1));
+      yield { sentence: piece, line: start + first + 1, spanned: block.slice(first, last + 1) };
+    }
+  }
+}
+
+export function findClaimOverstatements(content, file, allowlist = CLAIM_OVERSTATEMENT_ALLOWLIST) {
+  const found = [];
+  const lines = content.split(/\r?\n/);
+  for (const { sentence, line, spanned } of sentencesWithLines(lines)) {
+    const allowed = isClaimAllowlisted(file, spanned, allowlist);
+    for (const arm of overstatementArms(sentence)) {
+      if (allowed && arm === 'hash-chained audit log') continue;
+      found.push({ file, line, arm, text: sentence.trim().slice(0, 160) });
+    }
+  }
+  return found;
+}
+
+function validateClaims(content, file, errors) {
+  for (const hit of findClaimOverstatements(content, file)) {
+    addError(
+      errors,
+      'claim-overstatement',
+      file,
+      hit.line,
+      `Overstated claim (${hit.arm})`,
+      hit.text,
+      'State the scope (per org and day for the server log, local file for the CLI log) or drop the claim'
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -355,6 +509,7 @@ Options:
 Rules (always enforced):
   docs-inline-cli-invalid   rdc commands in markdown prose must be valid
   invalid-rediacc-url       rediacc URLs must use valid domains
+  claim-overstatement       no forensic trail, forensic-grade or unscoped hash-chained audit log
 
 Rules (--strict only — otherwise warnings):
   json-cli-command-invalid  rdc commands in translation JSON strings must be valid
@@ -383,6 +538,14 @@ Rules (--strict only — otherwise warnings):
 
       const urls = extractRediaccUrls(content, file);
       validateUrls(urls, errors);
+
+      validateClaims(content, file, errors);
+    }
+
+    const blogLangDir = path.join(BLOG_DIR, lang);
+    for (const slug of listMarkdownFiles(blogLangDir)) {
+      const content = fs.readFileSync(path.join(blogLangDir, slug), 'utf-8');
+      validateClaims(content, `blog/${lang}/${slug}`, errors);
     }
   }
 
@@ -402,9 +565,19 @@ Rules (--strict only — otherwise warnings):
     // URLs: always enforced
     const urls = extractRediaccUrls(content, file);
     validateUrls(urls, errors);
+
+    validateClaims(content, file, errors);
   }
 
   process.exit(printSummary(errors, warnings));
 }
 
-main();
+// Compares real paths so a symlinked start still runs main(). A path that cannot be resolved throws, so the process exits non-zero instead of passing without checking anything.
+export function invokedDirectly(argv1 = process.argv[1], metaUrl = import.meta.url) {
+  if (!argv1) return false;
+  return fs.realpathSync(fileURLToPath(metaUrl)) === fs.realpathSync(argv1);
+}
+
+if (invokedDirectly()) {
+  main();
+}

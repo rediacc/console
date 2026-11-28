@@ -14,13 +14,13 @@ import importlib.util
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import tempfile
 
 import _hookpath
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import _edit_suite, _harness
 from rediacc_hooks.wellknown import GH_REPO, IMAGE_REGISTRY
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -42,29 +42,7 @@ RUN_TMP = runtmp.run_dir("guard-unasked-release-")
 
 def transcript(answer_ts):
     """A lead transcript holding one AskUserQuestion and its answer at `answer_ts`."""
-    path = pathlib.Path(tempfile.mkdtemp(prefix="transcript-", dir=RUN_TMP)) / "lead.jsonl"
-    records = [
-        {
-            "type": "assistant",
-            "timestamp": "2026-01-01T00:00:10Z",
-            "message": {
-                "content": [
-                    {"type": "tool_use", "name": "AskUserQuestion", "id": "toolu_fixture_ask"}
-                ]
-            },
-        },
-        {
-            "type": "user",
-            "timestamp": answer_ts,
-            "message": {
-                "content": [
-                    {"type": "tool_result", "tool_use_id": "toolu_fixture_ask", "content": "a"}
-                ]
-            },
-        },
-    ]
-    path.write_text("".join(json.dumps(r) + "\n" for r in records), encoding="utf-8")
-    return str(path)
+    return _edit_suite.transcript(answer_ts, RUN_TMP)
 
 
 def workspace_fixture(prefix="npm-ws-"):
@@ -94,12 +72,13 @@ DEVBOX = "./run.sh devbox exec --"
 WWW = "%s rediacc_ci.deploy.deploy_www" % PY
 PROMOTE = "%s rediacc_ci.deploy.promote_r2_to_stable" % PY
 ACCT_SECRETS = "rediacc_ci.deploy.set_account_worker_secrets"
+STABLE_RUN = "gh workflow run cd-release-stable.yml"
 
 B, A = True, False
 
 # (name, command, transcript, expect_blocked, stderr needle; "!x" means x must be absent)
 CASES = [
-    # ------------------------------------------------------------- the entry: edge free, stable refused outright
+    # ------------------------------------------------------------- the entry: edge free, stable asked (its dry run too)
     ("entry: edge, no ASKED", ENTRY, None, A, "!BLOCKED"),
     ("entry: edge, dry run", ENTRY + " --dry-run", None, A, ""),
     ("entry: edge, --channel=edge", "npm run release:local -- --channel=edge", None, A, ""),
@@ -135,28 +114,63 @@ CASES = [
         "npm run release:local -- --channel stable",
         None,
         B,
-        "promoted through CI/CD only",
+        "release:local --channel stable (a promotion",
     ),
     (
         "entry: stable channel, dry run",
         "npm run release:local -- --channel stable --dry-run",
         None,
         B,
-        "promoted through CI/CD only",
+        "carries no RELEASE_ASKED",
     ),
     (
         "entry: stable channel with a proven ASKED",
         "%s npm run release:local -- --channel stable" % ASK,
         TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel, dry run with a proven ASKED",
+        "%s npm run release:local -- --channel stable --dry-run" % ASK,
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel, ASKED matching no answer",
+        "%s npm run release:local -- --channel stable" % ASK_ELSEWHERE,
+        TR,
         B,
-        "RELEASE_ASKED does not admit it",
+        "matches no AskUserQuestion answer",
+    ),
+    (
+        "entry: stable channel, ASKED with no transcript",
+        "%s npm run release:local -- --channel stable --dry-run" % ASK,
+        None,
+        B,
+        "matches no AskUserQuestion answer",
     ),
     (
         "entry: stable by module with a proven ASKED",
         "%s %s rediacc_ci.release.local --channel stable" % (ASK, PY),
         TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: stable by module, no ASKED",
+        "%s rediacc_ci.release.local --channel stable --dry-run" % PY,
+        None,
         B,
-        "promoted through CI/CD only",
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "entry: stable channel before the separator",
+        "%s npm run release:local --channel stable" % ASK,
+        TR,
+        B,
+        "names no --channel edge",
     ),
     # ------------------------------------------------------------- the entry: a branch release asks, its dry run stays free
     ("entry: branch release, no ASKED", BRANCH, None, B, "carries no RELEASE_ASKED=ASKED:"),
@@ -241,6 +255,175 @@ CASES = [
         TR,
         A,
         "admitted",
+    ),
+    # ------------------------------------------------------------- a stable dispatch asks, its dry run is free (PLAN-retire-nightlies-and-mentions G2)
+    (
+        "dispatch: stable by file, no ASKED",
+        STABLE_RUN,
+        None,
+        B,
+        "a dispatch of cd-release-stable.yml",
+    ),
+    (
+        "dispatch: stable with force, no ASKED",
+        STABLE_RUN + " -f force=true",
+        None,
+        B,
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "dispatch: stable by display name, no ASKED",
+        "gh workflow run 'CD - Release to Stable' --ref main",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable by display name in another case",
+        "gh workflow run 'cd - release to stable'",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable by workflow path",
+        "gh workflow run .github/workflows/cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: --repo before the verb",
+        "gh workflow -R o/r run cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: fields before the workflow",
+        "gh workflow run -f force=true --ref main cd-release-stable.yml",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    ("dispatch: stable, dry run", STABLE_RUN + " -f dry_run=true", None, A, "!BLOCKED"),
+    (
+        "dispatch: stable, dry run with force",
+        STABLE_RUN + " --ref 1121-1 -f force=true -F dry_run=true",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    ("dispatch: stable, dry run attached", STABLE_RUN + " -fdry_run=true", None, A, "!BLOCKED"),
+    ("dispatch: stable, dry run long", STABLE_RUN + " --raw-field=dry_run=true", None, A, ""),
+    (
+        "dispatch: stable, dry run overridden by a later field",
+        STABLE_RUN + " -f dry_run=true -f dry_run=false",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, dry run not exactly true",
+        STABLE_RUN + " -f dry_run=yes",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, inputs on stdin",
+        'echo \'{"dry_run":"true"}\' | %s --json -f dry_run=true' % STABLE_RUN,
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: stable, proven ASKED",
+        "%s %s" % (ASK, STABLE_RUN),
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "dispatch: stable, ASKED matching no answer",
+        "%s %s" % (ASK_ELSEWHERE, STABLE_RUN),
+        TR,
+        B,
+        "matches no AskUserQuestion answer",
+    ),
+    ("dispatch: stable inside bash -c", "bash -c '%s'" % STABLE_RUN, None, B, "stable promotion"),
+    (
+        "dispatch: a numeric workflow id asks",
+        "gh workflow run 123456",
+        None,
+        B,
+        "an id this guard cannot resolve",
+    ),
+    ("dispatch: ci.yml is untouched", "gh workflow run ci.yml --ref main", None, A, "!BLOCKED"),
+    (
+        "dispatch: another workflow's dry_run is untouched",
+        "gh workflow run ops-local-release-assist.yml -f dry_run=false",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    ("dispatch: listing workflows", "gh workflow list", None, A, "!BLOCKED"),
+    (
+        "dispatch: viewing the stable workflow",
+        "gh workflow view cd-release-stable.yml",
+        None,
+        A,
+        "",
+    ),
+    ("dispatch: help on the stable dispatch", STABLE_RUN + " --help", None, A, "!BLOCKED"),
+    ("dispatch: prose naming it", "echo 'gh workflow run cd-release-stable.yml'", None, A, ""),
+    (
+        "dispatch: the REST endpoint, no ASKED",
+        "gh api repos/o/r/actions/workflows/cd-release-stable.yml/dispatches -f ref=main",
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: the REST endpoint, dry run",
+        (
+            "gh api -X POST repos/o/r/actions/workflows/cd-release-stable.yml/dispatches "
+            "-f ref=main -F 'inputs[dry_run]=true'"
+        ),
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
+        "dispatch: the REST endpoint, body from a file",
+        (
+            "gh api repos/o/r/actions/workflows/cd-release-stable.yml/dispatches --input b.json "
+            "-F 'inputs[dry_run]=true'"
+        ),
+        None,
+        B,
+        "the stable promotion",
+    ),
+    (
+        "dispatch: the REST endpoint by id",
+        "gh api repos/o/r/actions/workflows/987/dispatches -f ref=main",
+        None,
+        B,
+        "an id this guard cannot resolve",
+    ),
+    (
+        "dispatch: the REST endpoint of ci.yml",
+        "gh api repos/o/r/actions/workflows/ci.yml/dispatches -f ref=main",
+        None,
+        A,
+        "!BLOCKED",
+    ),
+    (
+        "dispatch: reading the stable workflow's runs",
+        "gh api repos/o/r/actions/workflows/cd-release-stable.yml/runs",
+        None,
+        A,
+        "!BLOCKED",
     ),
     # ------------------------------------------------------------- wrangler: a shared region config free, bench refused for its module, any other config asked
     (
@@ -1309,7 +1492,7 @@ def run(command, transcript_path, broken=None):
         ]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv,
         input=json.dumps(doc),
         capture_output=True,
@@ -1359,6 +1542,7 @@ MUST_FLIP = {
     "asked-always-true": "stable: ASKED matching no answer",
     "channel-before-separator": "entry: channel before the separator",
     "any-channel-admitted": "entry: stable channel",
+    "stable-entry-free": "entry: stable channel, dry run",
     "branch-release-free": "entry: branch release, no ASKED",
     "branch-release-dry-run-ignored": "entry: branch release, dry run",
     "unshared-config-unasked": "wrangler deploy on a config outside the region set, no ASKED",
@@ -1386,6 +1570,13 @@ MUST_FLIP = {
     "region-dir-ignored": "wrangler deploy on a region config in an arbitrary dir, no ASKED",
     "bind-verb-unwrapped": "_bind wrapping a stable promote",
     "package-enterprise-ignored": "rings: package enterprise release, real",
+    "stable-dispatch-free": "dispatch: stable by file, no ASKED",
+    "dispatch-dry-run-ignored": "dispatch: stable, dry run",
+    "dispatch-display-name-ignored": "dispatch: stable by display name, no ASKED",
+    "dispatch-json-stdin-trusted": "dispatch: stable, inputs on stdin",
+    "dispatch-last-field-ignored": "dispatch: stable, dry run overridden by a later field",
+    "dispatch-api-ignored": "dispatch: the REST endpoint, no ASKED",
+    "workflow-repo-before-verb": "dispatch: --repo before the verb",
 }
 # A control passes when the planted copy breaks its case's verdict: the refusal flips to allowed, the admission to refused, or the named reason goes missing.
 for label, mutant in CONTROLS:
@@ -1400,6 +1591,30 @@ for label, mutant in CONTROLS:
             "%s control: planted %r; %r broke (got %s)"
             % (label, mutant[1], must, "BLOCKED" if got else "allowed")
         )
+
+print()
+# THE STABLE SELECTOR SET (review 1c35b2e6.1-.3): the name read from the workflow file and the recorded name, always both; the recorded name alone when the file is missing or is not UTF-8. A non-UTF-8 file raised UnicodeDecodeError out of every `gh workflow run` the guard judged.
+_RECORDED = G.STABLE_WORKFLOW_NAME.casefold()
+for label, content in (
+    ("renamed file", b"name: Stable Promote\non: workflow_dispatch\n"),
+    ("non-UTF-8 file", b"name: \xff\xfe Stable\non: workflow_dispatch\n"),
+    ("missing file", None),
+):
+    root = pathlib.Path(tempfile.mkdtemp(prefix="stable-name-", dir=RUN_TMP))
+    if content is not None:
+        (root / ".github" / "workflows").mkdir(parents=True)
+        (root / G.STABLE_WORKFLOW_REL).write_bytes(content)
+    try:
+        got_names = G._stable_workflow_names(root)
+    except (OSError, ValueError) as exc:
+        got_names = "raised %s" % type(exc).__name__
+    want_names = {_RECORDED, "stable promote"} if label == "renamed file" else {_RECORDED}
+    ok = got_names == want_names
+    fails += not ok
+    print(
+        "%-62s %s"
+        % ("stable selector names: %s" % label, "ok" if ok else "*** FAIL *** got %r" % got_names)
+    )
 
 print()
 if len(CASES) < 100 or blocked < 40 or len(CASES) - blocked < 40:

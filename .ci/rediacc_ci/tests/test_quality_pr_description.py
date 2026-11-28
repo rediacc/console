@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.pr_description`, driven directly.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pr-description.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-pr-description.observations.jsonl`, which licensed the port at K=5; the twin was retired in
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pr-description.sh` over a specimen with a stubbed `gh` on PATH, stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which licensed the port at K=5; the twin was retired in
 W7 P5 and the stubbed cases were retired with it.
 
 WHAT THOSE CASES SAID THAT THE LEDGER DOES NOT, recorded rather than dropped without trace. A fresh description and a two-commit PR both exit 0 printing only chatter, so the comparator scores them VACUOUS_BOTH_EMPTY and refuses to record them; they were still the negative half of this gate. And the twin died silently when `gh api graphql` failed, because pipefail plus `set -e`

@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import importlib.util
 import io
 import json
@@ -26,14 +27,15 @@ from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
-from rediacc_ci import paths, well_known
+from rediacc_ci import paths, runtmp, well_known
 from rediacc_ci.core import prepare_lock, run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.proof import vm_tier as receipt_mod
-from rediacc_ci.well_known import DATASTORE_PATH
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, DATASTORE_PATH
 
 if TYPE_CHECKING:
     import types
+    from collections.abc import Callable
 
 TREE = "a" * 40
 HEAD = "e" * 40
@@ -224,6 +226,11 @@ class World(vm_check.Host):
         self.dev_list_err = over.pop("dev_list_err", "")
         self.os_release = over.pop("os_release", "ubuntu 24.04")
         self.stored_ok = over.pop("stored_ok", False)
+        # /proc/mounts as the host reads it: /tmp on the root disk unless a test mounts a tmpfs there; `mounts_error` makes the read fail.
+        self.mounts = over.pop("mounts", "/dev/sda1 / ext4 rw 0 0\n")
+        self.mounts_error = over.pop("mounts_error", "")
+        # The account server the default config names; the dev gateway unless a test plants a production origin.
+        self.stored_server = over.pop("stored_server", "http://localhost:%s" % GATEWAY_PORT)
         self.repos: dict[str, str] = {g: "guid-" + g for g in over.pop("grands", (PARENT,))}
         # The worker's renet lists the grands; an `extra_repos` entry is a config entry only (the P5 sweep's input), and a leftover on the worker is planted with `worker_extra`.
         self.worker_grands = set(self.repos)
@@ -346,6 +353,14 @@ class World(vm_check.Host):
 
     def drive_root(self) -> str:
         return str(self.mnt)
+
+    def stored_account_server(self, _environ: Any) -> str:
+        return self.stored_server
+
+    def proc_mounts(self) -> str:
+        if self.mounts_error:
+            raise OSError(self.mounts_error)
+        return self.mounts
 
     def vm_net_address(self, net_base: str) -> str | None:
         assert net_base == NET
@@ -1883,6 +1898,24 @@ def test_a_valid_stored_token_mints_nothing_and_keeps_the_default_config(
     assert world.dev_machines == []
     assert "dev" not in world.written_in
     assert ["machine", "scan-keys", "vm11"] in world.rdc_calls()
+
+
+def test_a_valid_stored_production_token_takes_the_dev_config_path(
+    tmp_path: pathlib.Path,
+) -> None:
+    """A production token stored in the default config is no proof the dev gateway works: P4 mints and P2 registers the worker in the dev config."""
+    world = make_world(
+        tmp_path,
+        stored_ok=True,
+        stored_server=ACCOUNT_DEFAULT_ORIGIN,
+        machines=[{"name": "prod-1", "ip": PROD_IP}],
+    )
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 1
+    assert any(e.get("RDC_DEV") == "1" for e in world.envs)
+    assert "dev" in world.written_in
 
 
 def _rdc_envs(world: World) -> list[tuple[list[str], dict[str, str]]]:
@@ -5457,3 +5490,339 @@ def test_plan_disk_need_arithmetic_for_basic_other_bridges_and_overrides() -> No
     assert vm_check.plan_disk_need(other_bridge, []) == int((8 + 16) * 0.25 * gib)
     env = {"VM_DSK": "10", "VM_CEPH_DISK_SIZE": "20", "VM_WORKERS": "11", "VM_CEPH_NODES": "21 22"}
     assert vm_check.plan_disk_need(env, []) == int((8 + 10 * 3 + 20 * 2) * 0.25 * gib)
+
+
+# --------------------------------------------------------------------------- --commit: a pinned run from the kept clone (PLAN-push-decoupling R5)
+
+
+def _pinned_run(
+    tmp_path: pathlib.Path,
+    before: Callable[[pathlib.Path], None] | None = None,
+) -> tuple[int, str, World, pathlib.Path, pathlib.Path]:
+    live = tmp_path / "live"
+    clone = tmp_path / "clone"
+    live.mkdir()
+    clone.mkdir()
+    if before is not None:
+        before(live)
+    (live / ".account-state").write_text("gateway_port=4111\n")
+    world = World(clone)
+    out = io.StringIO()
+    environ = {
+        "HOME": str(tmp_path / "home"),
+        "PATH": "%s/node_modules/.bin:/usr/bin" % live,
+        "CLAUDE_PROJECT_DIR": str(live),
+        "npm_config_user_agent": "npm",
+        "VM_NET_BASE": NET,
+    }
+    rc = vm_check.main(
+        ["--commit", "abc1234", "--keep-work", "--wait", "0"],
+        pin_fn=lambda _live, _spec, _env: (clone, HEAD),
+        root=live,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ=environ,
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
+    )
+    return rc, out.getvalue(), world, live, clone
+
+
+def test_a_pinned_run_builds_and_reads_only_clone_paths_and_files_the_receipt_under_the_tree(
+    tmp_path: pathlib.Path,
+) -> None:
+    rc, out, world, live, clone = _pinned_run(tmp_path)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    # Every rdc call, the renet build check and the CLI build go through the clone's own files.
+    assert world.rdc_calls()
+    leaked = [c for c in world.calls if str(live) in " ".join(c)]
+    assert not leaked, leaked
+    for env in world.envs:
+        assert not [v for v in env.values() if str(live) in v]
+        assert not [k for k in env if k.startswith("npm_")]
+    # The receipt: the clone holds its own latest, the main checkout gets only the pinned tree's archive.
+    archive = live / receipt_mod.CACHE_DIR / ("%s.json" % TREE)
+    assert archive.is_file()
+    assert json.loads(archive.read_text())["tree"] == TREE
+    assert not (live / receipt_mod.CACHE_DIR / receipt_mod.LATEST).exists()
+    assert (clone / receipt_mod.CACHE_DIR / receipt_mod.LATEST).is_file()
+    # The main checkout's gateway record and state are untouched.
+    assert not (live / receipt_mod.CACHE_DIR / vm_check.GATEWAY_RECORD).exists()
+    assert (live / ".account-state").read_text() == "gateway_port=4111\n"
+
+
+def test_a_pinned_receipt_that_cannot_be_filed_ends_the_run_not_verified(
+    tmp_path: pathlib.Path,
+) -> None:
+    """9387f6ba.1: a failed copy into the main checkout left VERIFIED and EXIT_VERIFIED with no archive for the push guard. A plain file where the receipt folder's first component goes makes the copy raise OSError."""
+
+    def block(live: pathlib.Path) -> None:
+        (live / pathlib.PurePath(receipt_mod.CACHE_DIR).parts[0]).write_text("not a folder")
+
+    rc, out, _world, live, _clone = _pinned_run(tmp_path, before=block)
+    assert "could not be filed" in out, out
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "vm:check VERIFIED" not in out, out
+    assert not (live / receipt_mod.CACHE_DIR / ("%s.json" % TREE)).exists()
+    # ef59d037.2: the receipt the clone keeps carries the downgrade, so it never contradicts the exit code.
+    kept = json.loads((_clone / receipt_mod.CACHE_DIR / receipt_mod.LATEST).read_text())
+    assert kept["status"] == receipt_mod.NOT_VERIFIED, kept["status"]
+    assert kept["reason"]["class"] == "pinned-receipt-not-filed", kept["reason"]
+
+
+def test_a_pinned_only_merge_files_the_receipt_in_the_main_checkout(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """9387f6ba.2: the merge path of an `--only` run calls `_publish_pinned` after writing the merged receipt, and a failed filing downgrades its VERIFIED."""
+    calls: list[str] = []
+    answers = iter([True, False])
+
+    def publish(_self: Any) -> bool:
+        calls.append("publish")
+        return next(answers)
+
+    monkeypatch.setattr(vm_check.VmCheck, "_publish_pinned", publish)
+    rc, out = run_merge(tmp_path, make_world(tmp_path, ro_breach=True))
+    assert rc == vm_check.EXIT_FAILED, out
+    calls.clear()
+    world_merge = make_world(tmp_path)
+    rc, out = run_merge(tmp_path, world_merge, "--only", "V1.2")
+    assert calls == ["publish"], calls
+    # The second answer is False, so the merge's VERIFIED is downgraded.
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    # ef59d037.3: the unfiled merge leaves the FAILED receipt on disk, never the merged VERIFIED one.
+    assert archived(world_merge)["status"] == receipt_mod.FAILED
+    assert not archived(world_merge).get("merged")
+    assert vm_check.VmCheck._unfiled(receipt_mod.VERIFIED, None)[0] == receipt_mod.NOT_VERIFIED
+    assert vm_check.VmCheck._unfiled(receipt_mod.FAILED, None) == (receipt_mod.FAILED, None)
+
+
+def test_a_pin_that_cannot_run_is_refused_before_the_lock_or_the_fleet(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path)
+    out = io.StringIO()
+    rc = vm_check.main(
+        ["--commit", "abc1234", "--keep-work", "--wait", "0"],
+        pin_fn=lambda _live, _spec, _env: "the kept clone sits at nothing",
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=vm_check.Lock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ={"HOME": str(tmp_path / "home"), "VM_NET_BASE": NET},
+    )
+    assert rc == vm_check.EXIT_FAILED
+    assert world.calls == []
+    assert lock_is_free(tmp_path)
+
+
+def test_a_lease_is_still_refused_with_or_without_a_pin(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main_tree = tmp_path / "main"
+    fake = SimpleNamespace(lease_main=lambda _root: main_tree)
+    real = vm_check.importlib.import_module
+    monkeypatch.setattr(
+        vm_check.importlib, "import_module", lambda n: fake if n == "wl_core" else real(n)
+    )
+    for argv in (["--commit", "abc1234"], []):
+        refusal = vm_check.lease_refusal(tmp_path / "lease", argv)
+        assert refusal is not None
+        assert "is a lease of" in refusal
+    assert vm_check.lease_refusal(tmp_path / "lease", ["--dry-run"]) is None
+
+
+def test_the_fleet_lock_file_name_is_unchanged() -> None:
+    assert vm_check.LOCK_NAME == "rediacc-vm-check.lock"
+    assert vm_check.lock_path({"XDG_RUNTIME_DIR": "/nonexistent-dir"}).name in {
+        "rediacc-vm-check.lock",
+        "rediacc-vm-check-%d.lock" % os.getuid(),
+    }
+
+
+def test_commit_does_not_combine_with_dry_run_or_changed() -> None:
+    for extra in ("--dry-run", "--changed"):
+        with pytest.raises(SystemExit):
+            vm_check.parse_args(["--commit", "abc1234", extra], {})
+    assert vm_check.parse_args(["--commit", " abc1234 "], {}).commit == "abc1234"
+    assert vm_check.parse_args([], {}).commit == ""
+
+
+def test_kept_clone_dir_follows_the_ci_quick_formula(tmp_path: pathlib.Path) -> None:
+    live = tmp_path / "live"
+    live.mkdir()
+    key = hashlib.sha256(str(live.resolve()).encode()).hexdigest()[:8]
+    got = vm_check.kept_clone_dir(live, {"XDG_CACHE_HOME": str(tmp_path / "c")})
+    assert got == tmp_path / "c" / "rediacc" / "ci-quick-clones" / ("live-%s" % key)
+    assert vm_check.kept_clone_dir(live, {"CI_QUICK_CLONE_DIR": str(tmp_path / "x")}) == (
+        tmp_path / "x"
+    )
+
+
+def test_resolve_pin_refuses_a_clone_not_at_the_commit_and_a_non_ancestor(
+    tmp_path: pathlib.Path,
+) -> None:
+    def vcs(cwd: pathlib.Path, *args: str) -> str:
+        return subprocess.run(
+            ["git", "-C", str(cwd), "-c", "user.email=t@t", "-c", "user.name=t", *args],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+
+    live = tmp_path / "live"
+    live.mkdir()
+    vcs(live, "init", "-q")
+    for name in ("a", "b"):
+        (live / name).write_text(name)
+        vcs(live, "add", name)
+        vcs(live, "commit", "-q", "-m", name)
+    first = vcs(live, "rev-parse", "HEAD~1")
+    tip = vcs(live, "rev-parse", "HEAD")
+    clone = tmp_path / "clone"
+    subprocess.run(["git", "clone", "-q", str(live), str(clone)], check=True)
+    env = {"CI_QUICK_CLONE_DIR": str(clone)}
+    vcs(clone, "checkout", "-q", "--detach", first)
+    assert vm_check.resolve_pin(live, first, env) == (clone, first)
+    assert "sits at" in str(vm_check.resolve_pin(live, tip, env))
+    assert "names no commit" in str(vm_check.resolve_pin(live, "f" * 40, env))
+    vcs(live, "checkout", "-q", "--detach", first)
+    assert "not an ancestor" in str(vm_check.resolve_pin(live, tip, env))
+
+
+TMPFS_MOUNTS = "/dev/sda1 / ext4 rw 0 0\ntmpfs /tmp tmpfs rw,usrquota 0 0\n"
+
+
+def _tmpdirs(world: World) -> set[str | None]:
+    return {e.get("TMPDIR") for e in world.envs}
+
+
+def test_a_tmpfs_tmp_gives_every_child_a_disk_tmpdir(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    dirs = _tmpdirs(world)
+    assert len(dirs) == 1, dirs
+    (chosen,) = dirs
+    assert chosen
+    cache = world.root / receipt_mod.CACHE_DIR
+    assert pathlib.Path(chosen).parent == cache
+    assert pathlib.Path(chosen).name.startswith("vm-check-tmp-")
+    assert pathlib.Path(chosen).is_dir()
+
+
+def test_the_disk_tmpdir_is_removed_at_exit_and_a_dead_one_is_swept(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    registered: list[tuple[Any, tuple[Any, ...], dict[str, Any]]] = []
+    monkeypatch.setattr(
+        "rediacc_ci.runtmp.atexit.register",
+        lambda fn, *a, **kw: registered.append((fn, a, kw)),
+    )
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    cache = world.root / receipt_mod.CACHE_DIR
+    cache.mkdir(parents=True, exist_ok=True)
+    dead = subprocess.Popen(["true"])
+    dead.wait()
+    stale = cache / runtmp.stamp("vm-check-tmp-", dead.pid)
+    stale.mkdir()
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    (chosen,) = _tmpdirs(world)
+    assert chosen
+    assert pathlib.Path(chosen).is_dir()
+    assert not stale.exists(), "the next run sweeps a killed run's directory"
+    assert [a[0] for _, a, _ in registered] == [chosen], registered
+    for fn, a, kw in registered:
+        fn(*a, **kw)
+    assert not pathlib.Path(chosen).exists(), "the exit handler removes the run directory"
+
+
+def test_a_disk_tmp_leaves_tmpdir_unset(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path)
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _tmpdirs(world) == {None}
+
+
+def test_an_exported_tmpdir_wins_over_the_tmpfs_rule(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, mounts=TMPFS_MOUNTS)
+    rc, out, _ = run_check(tmp_path, world, env={"TMPDIR": "/var/tmp/mine"})
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert _tmpdirs(world) == {"/var/tmp/mine"}
+
+
+def test_an_unreadable_proc_mounts_is_named_and_leaves_tmpdir_unset(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, mounts_error="Permission denied")
+    rc, out, _ = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert "/proc/mounts is unreadable (Permission denied)" in out, out
+    assert _tmpdirs(world) == {None}
+
+
+def test_tmp_is_tmpfs_follows_the_longest_mount_point() -> None:
+    assert vm_check.tmp_is_tmpfs(TMPFS_MOUNTS)
+    assert not vm_check.tmp_is_tmpfs("/dev/sda1 / ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs("tmpfs /run tmpfs rw 0 0\n/dev/sda1 / ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs(TMPFS_MOUNTS + "/dev/sdb1 /tmp ext4 rw 0 0\n")
+    assert not vm_check.tmp_is_tmpfs("tmpfs /tmpx tmpfs rw 0 0\n/dev/sda1 / ext4 rw 0 0\n")
+
+
+def test_a_stored_dev_token_on_the_wrong_gateway_port_is_not_the_dev_gateway(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.2: a loopback server on another port is no proof; P4 mints."""
+    world = make_world(tmp_path, stored_ok=True, stored_server="http://localhost:1")
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 1
+
+
+def test_a_stored_token_on_the_vm_network_address_is_the_dev_gateway(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.2 control: the VM-network address on the gateway port keeps the stored token."""
+    world = make_world(
+        tmp_path, stored_ok=True, stored_server="http://%s:%s" % (HOST_ADDR, GATEWAY_PORT)
+    )
+    account = FakeAccount()
+    rc, out, _ = run_check(tmp_path, world, account=account)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert account.minted == 0
+
+
+class _GatewayNeverHealthyForP4(FakeAccount):
+    """A0 sees a running gateway (`gateway_state`); P4's own health ask fails."""
+
+    def gateway_healthy(self) -> bool:
+        return False
+
+
+def test_a_valid_token_on_a_foreign_server_with_no_gateway_does_not_call_the_token_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """e8cecd5e.1: the token was accepted; only its server is wrong."""
+    world = make_world(tmp_path, stored_ok=True, stored_server=ACCOUNT_DEFAULT_ORIGIN)
+    rc, out, receipt = run_check(tmp_path, world, account=_GatewayNeverHealthyForP4())
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    detail = json.dumps(receipt["reason"])
+    assert "stored token is valid but its account server is not the dev gateway" in detail
+    assert "is refused" not in detail
+
+
+def test_a_refused_stored_token_with_no_gateway_still_says_refused(tmp_path: pathlib.Path) -> None:
+    world = make_world(tmp_path, stored_ok=False)
+    rc, out, receipt = run_check(tmp_path, world, account=_GatewayNeverHealthyForP4())
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert "the stored token is refused and no healthy dev gateway" in json.dumps(receipt["reason"])

@@ -71,7 +71,7 @@ vi.mock('../repo-backup.js', () => ({
 }));
 
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: { REPO_PUSH: 'repo push' },
 }));
 

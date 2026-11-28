@@ -197,7 +197,7 @@ CONFIG_FILE = pathlib.Path(__file__).resolve().parents[2] / "config" / "aws-cli.
 
 
 def r2_env(env: Mapping[str, str] | None = None) -> dict[str, str]:
-    """The environment an aws call runs under: `env` (or the process environment) with R2_CHECKSUM_ENV and AWS_CONFIG_FILE (the repo's aws-cli.cfg) filled in where unset."""
+    """The environment an aws call runs under: `env` (or the process environment) with R2_CHECKSUM_ENV and AWS_CONFIG_FILE (the repo's aws-cli.cfg) filled in where unset. AWS_REGION and AWS_DEFAULT_REGION are the exception: a value that is not an R2 location hint is OVERWRITTEN with `auto`, so a runner's own region never reaches R2."""
     out = dict(os.environ if env is None else env)
     for key, value in R2_CHECKSUM_ENV.items():
         out.setdefault(key, value)

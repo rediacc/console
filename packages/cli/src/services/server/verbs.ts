@@ -6,7 +6,7 @@ import { delegationCertId } from '@rediacc/shared/subscription';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../core/output.js';
 import { locateRepo, rdcMust, readBundle, readPublicFacts, ServerError, setBoxEnv } from './box.js';
-import { serverImageOf } from './bundle/manifest.js';
+import { type BundleManifest, serverImageOf } from './bundle/manifest.js';
 import { uploadBundleImages } from './bundle/offline.js';
 import { verifyBundle } from './bundle/verify.js';
 import { decodeCert } from './cert.js';
@@ -127,6 +127,8 @@ export interface UpgradeOptions {
   localImage?: boolean;
   /** The directory `rdc server bundle` wrote: its server image replaces a pull. */
   bundle?: string;
+  /** The fingerprint `rdc server bundle` printed; required with `--bundle`. */
+  signer?: string;
   /** Apply a newer template over local edits to the deployed one. */
   force?: boolean;
 }
@@ -202,6 +204,19 @@ async function reapplyTemplate(
   await writeTemplateSums(deps, where);
 }
 
+/** The verified `--bundle` manifest, or undefined without one; a bundle beside an image option, or without a signer, is refused. */
+function upgradeBundle(
+  deps: ServerDeps,
+  opts: UpgradeOptions
+): Promise<BundleManifest | undefined> {
+  if (!opts.bundle) return Promise.resolve(undefined);
+  if (opts.image || opts.imageFile || opts.localImage) {
+    throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
+  }
+  if (!opts.signer) throw new ServerError(t('commands.server.offline.needsSigner'));
+  return verifyBundle(deps, opts.bundle, opts.signer);
+}
+
 /**
  * Fork first (the rollback point), then the new image (pulled, or from `--bundle`), the template
  * again only when the built-in one is newer than the deployed `VERSION` (and the deployed files
@@ -216,10 +231,7 @@ export async function serverUpgrade(
   const where = await locateRepo(record.repo, record.machine);
   const repoRef = `${record.repo}@${record.machine}`;
   const facts = await readPublicFacts(deps, where);
-  if (opts.bundle && (opts.image || opts.imageFile || opts.localImage)) {
-    throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
-  }
-  const manifest = opts.bundle ? await verifyBundle(deps, opts.bundle) : undefined;
+  const manifest = await upgradeBundle(deps, opts);
   const builtin = builtinTemplateVersion();
   const reapply = builtin > facts.templateVersion;
   if (reapply) await assertTemplateUnedited(deps, where, opts.force);
@@ -277,6 +289,31 @@ export interface LicenceUpgradeResult {
   via: 'inbox' | 'already-current';
 }
 
+type BootRefusal = Awaited<ReturnType<typeof readBootRejected>>;
+
+/** A boot refusal naming the missing upstream key stops the upgrade; any other is warned about. */
+function reportBootRefusal(refused: BootRefusal, domain: string): void {
+  if (refused?.reason === NO_UPSTREAM_KEY) {
+    throw new ServerError(t('commands.server.licence.noUpstreamKey', { domain }));
+  }
+  if (refused) {
+    outputService.warn(
+      t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
+    );
+  }
+}
+
+/** After the cert is applied, a boot refusal that is still recorded means the cert did not clear it. */
+async function assertBootRefusalGone(
+  deps: ServerDeps,
+  where: Parameters<typeof readBootRejected>[1]
+): Promise<void> {
+  const still = await readBootRejected(deps, where);
+  if (still) {
+    throw new ServerError(t('commands.server.licence.bootRefusalStays', { reason: still.reason }));
+  }
+}
+
 /**
  * From the free tier to a cert, or to a newer one: the logged-in config mints one for the box's key
  * (or `--cert` brings it), it goes into the box's cert inbox, and the running server validates and
@@ -296,24 +333,12 @@ export async function serverLicence(
   if (!boxKey) throw new ServerError(t('commands.server.errors.keygenNoKey'));
 
   const refused = await readBootRejected(deps, where);
-  if (refused?.reason === NO_UPSTREAM_KEY) {
-    throw new ServerError(t('commands.server.licence.noUpstreamKey', { domain: record.domain }));
-  }
-  if (refused) {
-    outputService.warn(
-      t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
-    );
-  }
-  const live = await readLiveCert(deps, where);
-  const result = await obtainLicence(deps, {
-    mode: 'auto',
-    certFile,
-    boxPublicKey: boxKey,
-    interactive: false,
-  });
-  if (result.kind !== 'cert') {
+  reportBootRefusal(refused, record.domain);
+  if (!certFile && !deps.hasAccountLogin()) {
     throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
   }
+  const live = await readLiveCert(deps, where);
+  const result = await obtainLicence(deps, { mode: 'auto', certFile, boxPublicKey: boxKey });
   const tier = (cert: { planCode?: string } | undefined) => cert?.planCode ?? DEFAULT_TIER;
 
   const certId = await delegationCertId(result.signed);
@@ -332,14 +357,7 @@ export async function serverLicence(
   outputService.info(t('commands.server.licence.droppedCert', { certId: drop.certId }));
   await awaitInboxResult(deps, where, drop.requestId);
   await confirmCertId(deps, await boxTarget(deps, record), record.domain, drop.certId);
-  if (refused) {
-    const still = await readBootRejected(deps, where);
-    if (still) {
-      throw new ServerError(
-        t('commands.server.licence.bootRefusalStays', { reason: still.reason })
-      );
-    }
-  }
+  if (refused) await assertBootRefusalGone(deps, where);
   if (Object.keys(result.env).length > 0) await setBoxEnv(deps, where, result.env);
   outputService.info(t('commands.server.licence.viaInbox'));
 

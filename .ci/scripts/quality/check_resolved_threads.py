@@ -8,18 +8,17 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-resolved-threads.sh` carries none either: this pair is hand-registered in `.github/workflows/ci.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a different
 change from moving which file the step runs.
 
-THE TWIN IS GONE. W7 P5 batch G1 deleted `.ci/scripts/quality/check-resolved-threads.sh` after `.ci/shadow/w7p2-resolved-threads.observations.jsonl` asserted equivalence over six distinct trees; its recorded output lives in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha it was captured from.
+THE TWIN IS GONE. W7 P5 batch G1 deleted `.ci/scripts/quality/check-resolved-threads.sh` after the shadow ledger asserted equivalence over six distinct trees (the ledger was deleted in commit:936280cd35); its recorded output lives in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha it was captured from.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-resolved-threads --assert --k 5
-    -> equivalence holds over 6 distinct trees
+THE LEDGER CONDITION WAS MET on 2026-09-08 (equivalence over 6 distinct trees); the shadow gate itself was deleted in commit:936280cd35.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import resolved_threads
 
 if __name__ == "__main__":
+    _gate_args.parse("check_resolved_threads.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(resolved_threads.main(sys.argv[1:]))

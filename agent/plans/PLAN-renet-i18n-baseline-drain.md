@@ -35,10 +35,13 @@ console#606 lists "Renet i18n baseline (`private/renet/pkg/i18n/baseline.json`, 
 
 ## Boxes
 
-- [ ] G1 [writer] Shrink-only baseline: `--prune-baseline` replaces `--update-baseline`, the ceiling constant equals today's count, a Go test fails when the count differs from the ceiling, and `i18n.sh`'s remedy lines lose the exemption. Accept: `cd private/renet && go test ./pkg/i18n/... ./cmd/renet/ -run 'Baseline|Extract'` rc 0, `make i18n-check` rc 0, and `git -C private/renet grep -n update-baseline` prints nothing.
-- [ ] G2 [writer] Extractor non-prose rule for unit suffixes and identifier paths, with tests both ways (a `%dGiB` format is not a finding, `failed to open %s` still is), then `--prune-baseline`. Accept: `cd private/renet && go test ./pkg/i18n/...` rc 0, `make i18n-check` rc 0, and the entry count falls by the entries the rule covers (number in the tick evidence).
+- [x] G1 [writer] Shrink-only baseline: `--prune-baseline` replaces `--update-baseline`, the ceiling constant equals today's count, a Go test fails when the count differs from the ceiling, and `i18n.sh`'s remedy lines lose the exemption. Accept: `cd private/renet && go test ./pkg/i18n/... ./cmd/renet/ -run 'Baseline|Extract'` rc 0, `make i18n-check` rc 0, and `git -C private/renet grep -n update-baseline` prints nothing.
+    (ticked) 2026-11-27T07:17:47Z by d778be9d: renet 0cf333aa via 1d26cd9d66, test flag 2c6e6b6209; go test ./pkg/i18n/... rc 0, make i18n-check rc 0, planted growth fails i18n.sh rc 1, git grep update-baseline empty outside docs
+- [x] G2 [writer] Extractor non-prose rule for unit suffixes and identifier paths, with tests both ways (a `%dGiB` format is not a finding, `failed to open %s` still is), then `--prune-baseline`. Accept: `cd private/renet && go test ./pkg/i18n/...` rc 0, `make i18n-check` rc 0, and the entry count falls by the entries the rule covers (number in the tick evidence).
+    (ticked) 2026-11-27T07:17:47Z by d778be9d: renet 28fbf9ad via 1d26cd9d66; 45 entries pruned, ceiling 2945; go test ./pkg/i18n/... rc 0; rules off fails 4 tests rc 1
 - [ ] B01 [writer] `cmd/renet/repository_*` (227 entries). Accept: `cd private/renet && make i18n-check && go test ./cmd/renet/...` rc 0 and `jq '[.entries[] | select(.file | startswith("cmd/renet/repository_"))] | length' pkg/i18n/baseline.json` prints 0.
-- [ ] B02 [writer] `cmd/renet` backup, snapshot, checkpoint, datastore and thin files (173). Accept: `cd private/renet && make i18n-check && go test ./cmd/renet/...` rc 0 and the same `jq` count over those file prefixes prints 0.
+- [x] B02 [writer] `cmd/renet` backup, snapshot, checkpoint, datastore and thin files (173). Accept: `cd private/renet && make i18n-check && go test ./cmd/renet/...` rc 0 and the same `jq` count over those file prefixes prints 0.
+    (ticked) 2026-11-27T13:42:31Z by d778be9d: commit:392486eab4; B02 drain (renet 5269259c); renet go test ./pkg/i18n/... ./cmd/renet/ rc 0 landed
 - [ ] B03 [writer] `cmd/renet` ops, ceph, kube and setup files (252). Accept: `cd private/renet && make i18n-check && go test ./cmd/renet/...` rc 0 and the `jq` count over those prefixes prints 0.
 - [ ] B04 [writer] The rest of `cmd/renet` (about 290: daemon, system, dev, i18n, job, sandbox, hub, helpers and the small files). Accept: `cd private/renet && make i18n-check && go test ./cmd/renet/...` rc 0 and `jq '[.entries[] | select(.file | startswith("cmd/renet/"))] | length' pkg/i18n/baseline.json` prints 0.
 - [ ] B05 [writer] `pkg/infra` (265). Accept: `cd private/renet && make i18n-check && go test ./pkg/infra/...` rc 0 and the `jq` count for `pkg/infra/` prints 0.
@@ -50,8 +53,9 @@ console#606 lists "Renet i18n baseline (`private/renet/pkg/i18n/baseline.json`, 
 - [ ] B11 [writer] `pkg/license`, `pkg/proxy`, `pkg/hub`, `pkg/dockergrant`, `pkg/dockerproxy`, `pkg/dockerpolicy`, `pkg/subscription`, `pkg/sandbox`, `pkg/dns` (230). Accept: `cd private/renet && make i18n-check && go test` over those packages rc 0 and the `jq` count for those prefixes prints 0.
 - [ ] B12 [writer] Every remaining entry (about 150 across the small packages). Accept: `cd private/renet && make i18n-check && go test ./...` rc 0 and `jq '.entries | length' pkg/i18n/baseline.json` prints 0.
 - [ ] D1 [writer] Delete the baseline mechanism (Design, fourth bullet) and update `.claude/agents/pr-babysitter.md:217`. Accept: `cd private/renet && go test ./pkg/i18n/... ./cmd/renet/... && make i18n-check` rc 0, `git -C private/renet grep -n -e 'baseline.json' -e FilterAgainstBaseline -- ':!pkg/i18n/locale_quality*'` prints nothing, and a planted `fmt.Errorf("planted english text")` in a scratch copy makes `make i18n-check` exit 1 (control recorded in the tick).
-- [ ] LP-hostinger [live] Fresh hostinger receipt after D1, with renet built from the drained tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after D1, with renet built from the drained tree.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:07Z by ace763dd: live-proof lp-d0b076c4756a VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-renet-i18n-baseline-drain.md box 6a441214 proven live on hostinger
 
 ## Risks
 

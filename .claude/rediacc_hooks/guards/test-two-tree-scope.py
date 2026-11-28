@@ -16,6 +16,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 CLAUDE = HERE.parents[1]
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -152,7 +156,7 @@ def run(stem, command, pair, planted=False):
         if planted
         else [sys.executable, DISPATCH, stem]
     )
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(main)
     )
     if proc.returncode not in (0, 2):

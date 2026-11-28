@@ -5,7 +5,7 @@ Aggregates the six per-platform install-method jobs into one verdict and renders
 
 LIVE CALLER: `.github/workflows/ct-install-methods.yml:257` `run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_install_methods_complete`. The bash twin has been retired and its observable results are frozen in `.ci/rediacc_ci/tests/goldens/assert-install-methods-complete/`.
 
-Ledger: `.ci/shadow/w7p6-assert-install-methods-complete.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-install-methods-complete --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE SUMMARY FILE IS OPENED ONCE, NOT ONCE PER LINE

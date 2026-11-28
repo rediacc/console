@@ -36,11 +36,13 @@ vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) 
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({

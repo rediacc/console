@@ -1,6 +1,6 @@
 # PLAN: Orphan recovery: find every volume and fork the hosted executor created without a saved config record, and settle each one
 
-Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); not in QUEUE.md ## Promoted until the operator promotes it
+Status: approved -- operator ruling 2026-11-20 in session 6c87d631 ("approved but do not promote", agent/programs/remote-mcp/02-decisions.md D51); promoted by the operator 2026-11-23
 Depends-On: PLAN-rmcp-writeback.md#WB0, PLAN-rmcp-executor-hardening.md#EHOP2 -- the sweep is final only once WB0 stops new orphans from appearing; OR-OP-L1 runs on the on-premise harness and scenario runner EHOP2 ships
 Owner: 6c87d631
 Priority: P1 -- every proxied `repo create` or `repo fork` before WB0 may have left an image on a host with no config entry and no key
@@ -37,10 +37,14 @@ D49 and D50 (detection works against an on-premise account server too), D3 (fixe
 
 ## Boxes
 
-- [ ] OR1 [writer] `executor_orphans` tool (Design 1) with its `secret-supply.json` consumer. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py` rc 0, the test running the tool's SQL against a seeded sqlite with executor and non-executor events and a control row that must not appear.
-- [ ] OR2 [writer] Tool output contract: one JSON line per event with `org`, `machine`, `repo`, `guid`, `at`, `function`; `--json` and the human table. Accept: the same pytest file rc 0 with the contract case.
-- [ ] OR3 [writer] `--executor-events` join in `repo admin orphan list` (Design 2), i18n reason in 13 locales. Accept: `(cd packages/cli && npx vitest run src/services/repo/__tests__/orphan-repos-executor.test.ts)` rc 0: a matched orphan carries the executor reason, an unmatched one keeps its old reason, a protected image stays protected.
-- [ ] OR-OP1 [writer] On-premise source for the tool and the `orphan` suite (Design 5). Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py .ci/rediacc_ci/tests/test_onprem_suite_orphan.py` rc 0, with an on-premise SQLite fixture and a control where the planted orphan is absent and the suite must fail.
+- [x] OR1 [writer] `executor_orphans` tool (Design 1) with its `secret-supply.json` consumer. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py` rc 0, the test running the tool's SQL against a seeded sqlite with executor and non-executor events and a control row that must not appear.
+    (ticked) 2026-11-23T18:17:54Z by ace763dd: commit:8ce7981337 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] OR2 [writer] Tool output contract: one JSON line per event with `org`, `machine`, `repo`, `guid`, `at`, `function`; `--json` and the human table. Accept: the same pytest file rc 0 with the contract case.
+    (ticked) 2026-11-23T18:17:55Z by ace763dd: commit:8ce7981337 landed; writer accept rc=0, lead re-verified on the landed tree
+- [x] OR3 [writer] `--executor-events` join in `repo admin orphan list` (Design 2), i18n reason in 13 locales. Accept: `(cd packages/cli && npx vitest run src/services/repo/__tests__/orphan-repos-executor.test.ts)` rc 0: a matched orphan carries the executor reason, an unmatched one keeps its old reason, a protected image stays protected.
+    (ticked) 2026-11-24T09:11:47Z by d778be9d: landed 2edbf3c93e; box Accept tests rc 0 on the landed tree. DEPS-WAIVED: prerequisite plan holds only tail boxes (translations, gates, docs, e2e); survey f8c0541b
+- [x] OR-OP1 [writer] On-premise source for the tool and the `orphan` suite (Design 5). Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_executor_orphans.py .ci/rediacc_ci/tests/test_onprem_suite_orphan.py` rc 0, with an on-premise SQLite fixture and a control where the planted orphan is absent and the suite must fail.
+    (ticked) 2026-11-24T09:11:51Z by d778be9d: landed 6bb1e3c010; box Accept tests rc 0 on the landed tree. DEPS-WAIVED: prerequisite plan holds only tail boxes (translations, gates, docs, e2e); survey f8c0541b
 - [ ] LP-bench [live] Build the CLI from this tree and read the subscription through the eu-bench config, so OR-L1 lists orphans with the listing this branch builds.
   Accept: live-proof bench cli-bench
 - [ ] OR-L1 [live] eu bench: create one orphan on purpose with a pre-WB0 build (or by deleting a fresh repo's config entry), run the tool and the listing, settle it by Design 3. Accept: the transcript recorded in `## Outcome` and `rdc repo admin orphan list --machine <m>` printing no orphan afterwards. Local-route: deploy-bench, bench-cli -- the eu bench account Worker holds the event and the CLI from this tree lists and deletes on a bench machine

@@ -2,9 +2,10 @@
 
 THE BUILDER IS PYTHON NOW. This gate used to read the bash `build-linux-pkg.sh` with a `sed` BRE (the format list) and an eleven-line `awk` program (the per-format signing guard), and this file ran those two pipelines for real against the port's reimplementation of them, on every awkward input. When the bash builder was retired (PLAN-retire-bash-oracles B3) the gate was retargeted to its successor, `rediacc_ci.build.build_linux_pkg`, read through `ast`: the format list is the module's `FORMATS` tuple and the guard is a `raise` naming `RELEASE_SIGNING_REQUIRED` inside the format's own branch of `_report_unsigned`. The tables below are the same questions, one expected answer per awkward shape, and each shape is a property of the `ast` reading rather than of a shell pipeline.
 
-The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-signing-coverage.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The tally the gate prints its verdict through came from `.ci/scripts/lib/gate-controls.sh`, which has since been retired, so that half is compared against `goldens/gate-controls-tally/` rather than against a live library. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
+import ast
 import contextlib
 import io
 
@@ -276,3 +277,46 @@ def test_selftest_passes() -> None:
     Cheap, and it is the only thing that fails when someone edits a plant into a shape that no longer fires.
     """
     assert rsc.selftest() == 0
+
+
+def test_resolve_root_honours_a_scratch_override_and_ignores_one_outside_temp(
+    monkeypatch, tmp_path
+):
+    """321c4189.2: the override is honoured inside private scratch only; elsewhere the git toplevel answers."""
+    scratch = tmp_path.resolve()
+    monkeypatch.setenv("SIGNING_COVERAGE_ROOT", str(scratch))
+    assert rsc.resolve_root() == str(scratch)
+    monkeypatch.setenv("SIGNING_COVERAGE_ROOT", "/usr")
+    assert rsc.resolve_root() != "/usr"
+
+
+def test_a_raise_inside_a_nested_def_is_no_guard() -> None:
+    """A branch whose only raise sits in a nested def refuses nothing until that def runs, so it is not a guard."""
+    body = ast.parse(
+        "def later():\n    raise SystemExit('RELEASE_SIGNING_REQUIRED')\nx = 'RELEASE_SIGNING_REQUIRED'\n"
+    ).body
+    assert rsc._guards(body) is False
+
+
+def test_a_raise_in_the_branch_itself_is_a_guard() -> None:
+    """Control: the raise and the name in the branch's own scope still make a guard."""
+    body = ast.parse("raise SystemExit('RELEASE_SIGNING_REQUIRED')\n").body
+    assert rsc._guards(body) is True
+
+
+def test_a_raise_in_a_class_body_runs_at_definition_so_it_is_a_guard() -> None:
+    """3746819d.1: a class body executes when the class statement does, so a raise there is in the branch's own scope."""
+    body = ast.parse("class C:\n    raise SystemExit('RELEASE_SIGNING_REQUIRED')\n").body
+    assert rsc._guards(body) is True
+
+
+def test_the_name_in_a_def_default_or_decorator_is_seen() -> None:
+    """3746819d.2: argument defaults and decorators run at definition time, so the name there is still read (the raise stays in the branch)."""
+    default = ast.parse("raise SystemExit\ndef f(a='RELEASE_SIGNING_REQUIRED'):\n    pass\n").body
+    decorated = ast.parse(
+        "raise SystemExit\n@d('RELEASE_SIGNING_REQUIRED')\ndef f():\n    pass\n"
+    ).body
+    inside = ast.parse("raise SystemExit\ndef f():\n    x = 'RELEASE_SIGNING_REQUIRED'\n").body
+    assert rsc._guards(default) is True
+    assert rsc._guards(decorated) is True
+    assert rsc._guards(inside) is False

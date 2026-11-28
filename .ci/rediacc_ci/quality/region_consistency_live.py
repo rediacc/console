@@ -27,8 +27,6 @@ from rediacc_ci.deploy import set_account_worker_secrets as pusher
 from rediacc_ci.ops import cf_auth
 from rediacc_ci.ops.prune_worker_secrets import ARCHIVE_PREFIX, TEXT_BINDING
 from rediacc_ci.quality.region_consistency_offline import (
-    BENCH,
-    BENCH_ONLY_PAYLOAD,
     Finding,
     Inputs,
     Target,
@@ -66,7 +64,7 @@ def credential_headers(env: dict[str, str]) -> tuple[dict[str, str], str, list[s
     else:
         raise LiveError(
             "no Cloudflare credential: set CLOUDFLARE_API_TOKEN (Workers Scripts Read, D1 Read, Workers R2 "
-            "Storage Read), e.g. `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile bench-access -- ...`"
+            "Storage Read) from a dedicated CF_TOKEN_REGION_AUDIT token, e.g. `CLOUDFLARE_API_TOKEN=$CF_TOKEN_REGION_AUDIT ...`"
         )
     account = env.get("CLOUDFLARE_ACCOUNT_ID", "")
     if not account:
@@ -174,10 +172,9 @@ def d1_databases(get: Get, account: str) -> dict[str, str]:
     return out
 
 
-def pushed_names(target: Target) -> set[str]:
-    """The secret names a deploy of `target` pushes: the regional keys, plus the bench-only ones on bench."""
-    names = {k for k, _var, _src in pusher.KEYS}
-    return names | BENCH_ONLY_PAYLOAD.keys() if target.channel == BENCH else names
+def pushed_names() -> set[str]:
+    """The secret names a deploy of any account Worker pushes: the regional keys, on every target."""
+    return {k for k, _var, _src in pusher.KEYS}
 
 
 def judge(
@@ -203,7 +200,7 @@ def judge(
         except LiveError as exc:
             unchecked.append(("secrets", t.id, "%s: %s" % (t.account_worker, exc)))
             continue
-        pushed = pushed_names(t)
+        pushed = pushed_names()
         found.extend(
             Finding(
                 t.id, "secrets", "%s lacks %s, which every deploy pushes" % (t.account_worker, n)

@@ -3,7 +3,6 @@ import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -135,8 +134,6 @@ export function registerShortcuts(program: Command): void {
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(async (options) => {
       try {
-        await assertCommandPolicy(CMD.RUN);
-
         const functionName = options.function;
         await runLocalMode(functionName, options);
       } catch (error) {

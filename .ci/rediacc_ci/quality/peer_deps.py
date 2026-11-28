@@ -1,6 +1,6 @@
 """`npm ls` must not report an invalid peer dependency.
 
-Ported from `.ci/scripts/quality/check-peer-deps.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-peerdeps.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-peer-deps.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN SAYS, carried whole because it is the entire statement of intent the original ever made:
 
@@ -45,6 +45,13 @@ TWO PLACES THIS IS DELIBERATELY STRONGER THAN THE TWIN, both of them cases where
      This port refuses in the repository's own vocabulary instead.
 
 WHAT NEITHER IMPLEMENTATION CAN SEE: whether the peer ranges are RIGHT. `npm ls` reports what the installed tree violates, so a dependency nobody installed, a workspace nobody linked, and an `overrides` entry that papers over a genuine conflict are all invisible here.
+
+---- gate ----
+step: Verify no peer dependency conflicts
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -249,4 +256,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_peer_deps.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

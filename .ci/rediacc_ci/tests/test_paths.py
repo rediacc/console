@@ -348,14 +348,14 @@ def test_the_identical_file_outside_that_path_is_collected(tmp_path):
 
 
 def test_ci_cache_is_pruned_but_other_ci_dirs_are_walked(tmp_path):
-    """`.ci/cache` is untracked machine-local state; a walker that reads it judges a tree nobody else has. `.ci/shadow` (tracked) must still be walked, so the prune is the pair, not the name."""
+    """`.ci/cache` is untracked machine-local state; a walker that reads it judges a tree nobody else has. a tracked `.ci/<other>` directory must still be walked, so the prune is the pair, not the name."""
     (tmp_path / ".ci" / "cache").mkdir(parents=True)
     (tmp_path / ".ci" / "cache" / "go.mod").write_text("x\n", encoding="utf-8")
-    (tmp_path / ".ci" / "shadow").mkdir(parents=True)
-    (tmp_path / ".ci" / "shadow" / "go.mod").write_text("x\n", encoding="utf-8")
+    (tmp_path / ".ci" / "other").mkdir(parents=True)
+    (tmp_path / ".ci" / "other" / "go.mod").write_text("x\n", encoding="utf-8")
     (tmp_path / "cache").mkdir()
     (tmp_path / "cache" / "go.mod").write_text("x\n", encoding="utf-8")
-    assert collect(tmp_path) == {".ci/shadow/go.mod", "cache/go.mod"}
+    assert collect(tmp_path) == {".ci/other/go.mod", "cache/go.mod"}
 
 
 def test_a_root_inside_a_worktrees_path_still_walks(tmp_path):

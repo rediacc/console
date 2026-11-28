@@ -1,0 +1,12 @@
+{
+  "EDGE_CASES": [
+    ["the plain shape", "git commit --allow-empty -m x"],
+    ["after a separator", "true; git commit --allow-empty -m x"],
+    ["after a logical and", "git fetch && git commit --allow-empty -m retrigger"],
+    {"//": "The two mention-versus-target classes, quoted and unquoted."},
+    ["quoted prose is not a command", "echo 'git commit --allow-empty -m x'"],
+    ["an unquoted sentence advising against it", "echo do not git commit --allow-empty to retrigger"],
+    ["a wrapper payload is still scanned", "sh -c 'git commit --allow-empty -m x'"],
+    ["an ordinary commit", "git commit -m 'fix(cli): x'"]
+  ]
+}

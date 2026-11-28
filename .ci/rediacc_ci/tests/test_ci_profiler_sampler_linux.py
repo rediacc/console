@@ -30,7 +30,7 @@ WHAT IS DELIBERATELY NOT COMPARED, and why each is a fact rather than a convenie
   * The bash redirection diagnostics the twin emits for an unguarded
     `read < missing`, which carry the twin's own path and line number.
 
-K=5 LEDGER: `.ci/shadow/w7p6-profiler-sampler.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

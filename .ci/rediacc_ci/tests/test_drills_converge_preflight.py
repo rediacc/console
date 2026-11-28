@@ -10,7 +10,7 @@ import types
 import pytest
 
 from rediacc_ci.drills import converge_preflight as c
-from rediacc_ci.drills import vm_check
+from rediacc_ci.drills import upgrade_converge, vm_check
 from rediacc_ci.well_known import OPT_DIR, RUNTIME_DIR
 
 GUID_R = "11111111-1111-4111-8111-111111111111"
@@ -265,3 +265,50 @@ def test_summary_skips_unmanaged_reads_the_reason_and_the_whole_token() -> None:
     assert not c.summary_skips_unmanaged(text, "base:u2r")
     assert not c.summary_skips_refused(text, "base:u2u")
     assert not c.summary_skips_unmanaged("  base:u2u-b  skipped (unmanaged_containers)\n", "u2u")
+
+
+def _u2_ctx(tmp_path: pathlib.Path, *, minted: bool) -> types.SimpleNamespace:
+    """The VmCheck surface `_make_config` reads: P4's credential state and the run's config name."""
+    rows: list[tuple[str, bool, str]] = []
+
+    def check(_step: str, desc: str, ok: bool, _res: object = None, evidence: str = "") -> bool:
+        rows.append((desc, ok, evidence))
+        return ok
+
+    ctx = types.SimpleNamespace(
+        run_id="vmc-11230811-bb4659",
+        work=tmp_path,
+        machine="ops-worker",
+        worker_ip="192.168.111.12",
+        ssh_user="u",
+        environ={},
+        token="minted" if minted else None,
+        dev_config=minted,
+        rows=rows,
+        check=check,
+        rdc=lambda *_a, **_k: types.SimpleNamespace(rc=0, out='{"data": []}', err=""),
+    )
+    ctx.cli_config_name = lambda: upgrade_converge.run_config_name(ctx.environ, ctx.dev_config)
+    return ctx
+
+
+@pytest.mark.parametrize(
+    ("minted", "marker", "token"), [(False, "default", True), (True, "dev", False)]
+)
+def test_u2_config_is_seeded_from_the_runs_config(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, minted: bool, marker: str, token: bool
+) -> None:
+    """vmc-11230811-bb4659: on P4's stored-token path U2 copied `dev`, which holds no token, and `create grand` met the Free License terms refusal. The minted row is the control."""
+    home = tmp_path / "home"
+    base = home / ".config" / "rediacc"
+    base.mkdir(parents=True)
+    (base / "dev.json").write_text('{"id": "a", "marker": "dev"}')
+    (base / "rediacc.json").write_text('{"id": "b", "marker": "default"}')
+    (base / "api-token-rediacc.json").write_text('{"token": "stored"}')
+    monkeypatch.setattr(pathlib.Path, "home", lambda: home)
+    ctx = _u2_ctx(tmp_path, minted=minted)
+    live = c._LiveU2(ctx)
+    live.tmp.mkdir(parents=True)
+    assert live._make_config(), ctx.rows
+    assert json.loads((base / ("%s.json" % live.cfg)).read_text())["marker"] == marker
+    assert (base / ("api-token-%s.json" % live.cfg)).exists() is token

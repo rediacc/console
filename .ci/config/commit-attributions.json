@@ -30,6 +30,16 @@
       "sha": "f07996f4f00e4b3fde43bed77030a4d7feff4bd9",
       "epic": "09b8bdfa",
       "reason": "Landed from a worktree lease whose commit-msg hook admitted the malformed trailer `PR-TASK: tracked finding #d31b4054` (a finding id, not an epic); the work is the proxied -b background job path of epic 09b8bdfa, and the no-amend rule forbids rewriting it."
+    },
+    {
+      "sha": "74b506cc9146eaeed240361695fb8fd3966f8f1d",
+      "epic": "79b7e92e",
+      "reason": "its PR-TASK trailer names 58a674f6, the release worklist item, not an epic; the commit belongs to the ci:quick repair batch of epic 79b7e92e and history is never rewritten"
+    },
+    {
+      "sha": "6bc1dc17807861c737cb0688a6357ae450a1b14e",
+      "epic": "79b7e92e",
+      "reason": "its PR-TASK trailer names 58a674f6, the release worklist item, not an epic; the commit belongs to the ci:quick repair batch of epic 79b7e92e and history is never rewritten"
     }
   ]
 }

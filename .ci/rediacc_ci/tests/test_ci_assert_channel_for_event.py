@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.assert_channel_for_event`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/assert-channel-for-event.sh` and the port over the same argv under the same tiny environment and compared exit code, stdout and stderr. The K=5 ledger `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/assert-channel-for-event.sh` and the port over the same argv under the same tiny environment and compared exit code, stdout and stderr. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that
 executed it compares against `goldens/assert-channel-for-event/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 NOTHING IS FAKED, because there is nothing to fake: the twin took argv and nothing else -- no subprocess, no file, no network, no environment beyond the colour decision. Inventing a stub would prove the stub works, not that the port does.
@@ -194,6 +194,15 @@ def test_the_pr_anchor_is_end_of_string_not_end_of_line() -> None:
     assert recorded("pull-request-a-trailing-newline")[0] == 1
     assert port.PR_CHANNEL.match("pr-1\n") is not None, "the divergence this pins is gone"
     assert port.PR_CHANNEL.fullmatch("pr-1\n") is None
+
+
+def test_a_pull_request_refuses_the_derived_preview_name() -> None:
+    """The staging channel must stay `pr-<n>` (PLAN-preview-signer N2).
+
+    cd-stage.yml retags the rdc and server images to the channel, and ghcr.io/rediacc/rdc answers an anonymous tag listing, so a `pv-<w>-<w>-<w>` channel would publish the secret-derived preview host. The guard refuses one.
+    """
+    assert port.main(["pull_request", "pv-amber-castle-river"]) == 1
+    assert port.main(["pull_request", "pr-42"]) == 0
 
 
 @pytest.mark.parametrize("name", FAIL_CLOSED_DELTAS)

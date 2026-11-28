@@ -486,7 +486,7 @@ def test_release_control_the_message_stays_byte_identical(wl):
 
 def test_release_writes_and_lists_the_live_owed_row_through_the_cli_helper(world, capsys):
     """Review 0e0808a5.1, CONTROL half: the helper the `--lease ... release` branch calls writes the row and lists it, rc 0."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
     assert wl._release_live_owed(world.root, "box %s" % SIG["live"], ME, "beef0001") == 0
     got = capsys.readouterr()
     assert "live-owed %s#%s clause all" % (PLAN, SIG["live"]) in got.out
@@ -495,7 +495,7 @@ def test_release_writes_and_lists_the_live_owed_row_through_the_cli_helper(world
 
 def test_release_names_a_failed_live_owed_write_and_exits_1(world, capsys, monkeypatch):
     """Review 0e0808a5.1: an audit or ledger failure was swallowed by `contextlib.suppress(Exception)`, so the release read as complete with the half unscheduled. It is said now, with the command that lists what is owed."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
 
     def broken(*_a, **_k):
         raise OSError("ledger is read-only")
@@ -509,14 +509,14 @@ def test_release_names_a_failed_live_owed_write_and_exits_1(world, capsys, monke
 
 def test_state_owed_demand_reads_the_cached_audit(world, capsys):
     """Review a94cd7a7.2: the `--state` wiring hands `agent_state_shape` exactly what the cached audit answers, silently."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
     assert wl._owed_for_state(world.root, ME) == BA.owned_owed_cached(world.root, ME)
     assert capsys.readouterr().err == ""
 
 
 def test_state_owed_demand_says_when_the_audit_cannot_run(world, capsys, monkeypatch):
     """Review a94cd7a7.2: a failing audit demands nothing (the document is never locked), and says the demand went unchecked rather than reading as nothing owed."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
 
     def broken(*_a, **_k):
         raise ValueError("bad ledger row")
@@ -664,3 +664,29 @@ def test_stopcheck_the_key_is_in_the_effort_table_and_off_at_quiet():
     assert effort.verdict("plan-box-owed", "quiet") == "off"
     assert effort.verdict("plan-box-owed", "low") != "block"
     assert effort.verdict("plan-box-owed", "smart") == "block"
+
+
+def test_latest_investigations_keeps_the_later_row_and_skips_unhashable_keys():
+    """Review cd51d482.1: the per-(plan, sig) index keeps the LATER row, which is `investigation_for`'s answer, and skips a row whose plan or sig cannot be a key instead of raising."""
+    rows = [
+        {"plan": REL, "sig": "aaaa0001", "verdict": "partial"},
+        {"plan": REL, "sig": "bbbb0002", "verdict": "partial"},
+        {"plan": ["not", "hashable"], "sig": "aaaa0001", "verdict": "bad"},
+        {"plan": REL, "sig": {"no": "key"}, "verdict": "bad"},
+        {"plan": REL, "sig": "aaaa0001", "verdict": "complete"},
+    ]
+    got = BA.latest_investigations(rows)
+    assert got[(REL, "aaaa0001")]["verdict"] == "complete"
+    assert got[(REL, "bbbb0002")]["verdict"] == "partial"
+    assert len(got) == 2
+    for sig in ("aaaa0001", "bbbb0002"):
+        assert got[(REL, sig)] is R.investigation_for(None, REL, sig, rows=rows)
+
+
+def test_control_latest_investigations_an_earlier_row_does_not_win():
+    """The control: reversed, the other row is the latest, so the index follows order, not the verdict."""
+    rows = [
+        {"plan": REL, "sig": "aaaa0001", "verdict": "complete"},
+        {"plan": REL, "sig": "aaaa0001", "verdict": "partial"},
+    ]
+    assert BA.latest_investigations(rows)[(REL, "aaaa0001")]["verdict"] == "partial"

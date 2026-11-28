@@ -23,6 +23,16 @@ from rediacc_ci.quality import dead_python as dp
 
 ENTRY = ".ci/scripts/quality/check_dead_python.py"
 
+# PLAN-ciquick-cpu.md W17. Three cases read `dp.scan` over the real tree and none mutates the report, so the scan runs ONCE per session and is shared; the module is one xdist group so the once is real. The entry-point case keeps its own subprocess run, which is the claim it makes.
+XDIST_GROUP = "dead-python-real-tree"
+_REAL: dict[str, dp.Report] = {}
+
+
+def _real_scan(root):
+    if str(root) not in _REAL:
+        _REAL[str(root)] = dp.scan(root)
+    return _REAL[str(root)]
+
 
 def test_entry_point_runs_and_agrees_with_the_module():
     """The shim exits 0 on the real tree, which is the only claim CI will read."""
@@ -57,7 +67,7 @@ def test_real_tree_every_route_carries_something_or_says_why():
     A typed floor ("at least 500 reached") becomes a false red on the first legitimate deletion. What is actually invariant is that the corpus equals what git reports and that reached plus findings equals the corpus.
     """
     root = paths.repo_root()
-    report = dp.scan(root)
+    report = _real_scan(root)
     tracked = {
         f
         for f in subprocess.run(
@@ -84,7 +94,7 @@ def test_the_gate_can_fail_on_the_real_tree(tmp_path):
     Planted into a COPY of the tree rather than the tree itself: this suite runs beside other sessions' uncommitted work and a gate test that writes to the real checkout is the failure `check:ci-pool-writer-safety` exists for. The copy is made with `git ls-files`, so it is the same corpus the gate scans.
     """
     root = paths.repo_root()
-    report = dp.scan(root)
+    report = _real_scan(root)
     assert report.findings == []
 
     # A file the gate can see, in a directory it scans, that nothing names. THE PROBE'S NAME IS GENERATED, never written down. A fixed name spelled in this file would be a mention from a pytest-collected file, which is a real admission route: the first attempt at the real-tree version of this control planted `check_<fixed>.py`, the gate admitted it because this docstring named it,
@@ -105,32 +115,11 @@ def test_prose_is_not_an_admission_route_on_the_real_tree():
     """
     assert dp.is_prose("agent/plans/PLAN-tooling-transformation.md")
     assert dp.is_prose("docs/agent-reference/ci-gates.md")
-    assert dp.is_prose(".ci/shadow/twin-parity.ledger.jsonl")
     assert not dp.is_prose("package.json")
     assert not dp.is_prose(".ci/media/r2.sh")
 
 
-def test_shadow_route_is_parsed_from_the_real_ledger():
-    """The route exists and reads the real files, whether or not it carries anyone today.
-
-    It carries ZERO on this tree, and that is a measurement rather than a bug: every port named as the new side of an EQUIVALENT record is ALSO registered, so the stronger route claims it first. The assertion is therefore about the parse, not about the count, and it is here so that the day a port lands unregistered the route is known to work.
-    """
-    root = paths.repo_root()
-    pyset = frozenset(f for f in dp.tracked_files(root) if f.endswith(".py"))
-    admitted, expired, records = dp.shadow_admissions(root, pyset)
-    assert records > 0
-    assert admitted, "no EQUIVALENT record names a live port; the parser or the ledger moved"
-
-    # `expired` IS NOT A FAILURE, AND ASSERTING IT EMPTY WAS A FINISH-LINE BUG.
-    #
-    # A route expires when the ledger's bash twin is GONE, which is not a defect: it is
-    # what a COMPLETED cutover looks like. This assertion read `expired == {}` and so held
-    # only while no port had finished, then went red on 2026-09-09 the moment E1 deleted `.ci/lib/setup.sh` -- reporting the programme's first successful bash deletion as a broken parser. That is the same shape E3 found in `test-run-sh.sh`, where an anti-vacuity floor of `n_legacy > 0` would have redded at the exact moment the migration it guarded succeeded.
-    #
-    # WHAT IS STILL WORTH ASSERTING is that an expired route never leaves a file unreachable: the shadow route is one of several, and `check:ci-dead-python` is the gate that judges reachability overall. So every expired port must still be reached, which is a claim about the ESTATE and not about how long a cutover has been running.
-    report = dp.scan(root)
-    for port, why in sorted(expired.items()):
-        assert port in report.routes, (
-            "%s expired out of the shadow route (%s) and no other route reaches it" % (port, why)
-        )
+def test_the_real_tree_has_no_unreached_python_file():
+    """The ledger route is gone, so reachability on the real tree is judged by the remaining routes alone."""
+    report = _real_scan(paths.repo_root())
     assert report.findings == [], report.findings

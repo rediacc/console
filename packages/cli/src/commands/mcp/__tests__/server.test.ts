@@ -12,6 +12,9 @@ vi.mock('../executor.js', () => ({
     duration_ms: 50,
   }),
   resolveRdcBinary: () => ({ command: 'node', prefixArgs: ['index.js'] }),
+  runUnderPolicy: async (_call: unknown, run: (confirm: undefined) => Promise<unknown>) => ({
+    result: await run(undefined),
+  }),
 }));
 
 const TOOLS = buildAllTools();

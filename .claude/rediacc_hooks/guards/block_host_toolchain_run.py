@@ -33,13 +33,17 @@ A different bash could hash differently. That is a property of the ORIGINAL, not
 """
 
 import glob as globmod
+import json
 import os
 import pathlib
 import re
 import sys
 
 from rediacc_hooks import hookio, shellscan, syspath
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import IMAGE_REGISTRY
+
+__getattr__ = tables("block_host_toolchain_run", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 34
@@ -95,6 +99,8 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.housekeeping.cleanup_versions", "aws"),
     ("rediacc_ci.deploy.sync_media_to_r2", "aws"),
     ("rediacc_ci.deploy.sync_media_from_r2", "aws"),
+    # The AI10 model publisher (5dc50111a5): it uploads the pinned Whisper files to the media bucket through `aws s3`.
+    ("rediacc_ci.ops.publish_models", "aws"),
     ("rediacc_ci.deploy.upload_to_r2", "aws"),
     ("rediacc_ci.ops.scrub_sentinel", "aws"),
     # PLAN-cd-errors-in-ci W4: ci.yml and cd-v2.yml run it as a module, and it lists R2 through `aws s3api` (cd_preflight.py:286).
@@ -107,6 +113,16 @@ NEEDS_SCRIPT = (
     ("rediacc_ci.deploy.deploy_record", "aws"),
     # PLAN-product-domain-rename W1 (865c2f7f23): the R2 inventory and cross-bucket copy run `aws s3api` through `awscli` from the module; the coverage scan found it without a row.
     ("rediacc_ci.ops.r2_bucket_copy", "aws"),
+    # The detector model bundle upload (5dc50111a5) reads and writes R2 through `awscli.AWS` from the module (publish_models.py:87, :111); the coverage scan found it without a row.
+    ("rediacc_ci.ops.publish_models", "aws"),
+    # The third-party source mirror (30af24f253) uploads to the releases bucket through `awscli.run` (mirror_third_party_src.py:222) after `awscli.require()`; the coverage scan found it without a row.
+    ("rediacc_ci.deploy.mirror_third_party_src", "aws"),
+    # The shared Windows evaluation image upload and download (windows_image.py:217, the `s3 cp` argv) and the GitHub release asset check against R2 (create_github_release.py:219, :241) both put `awscli.AWS` at the head of an argv from inside the module; the coverage scan found them without a row.
+    ("rediacc_ci.ops.windows_image", "aws"),
+    ("rediacc_ci.release.create_github_release", "aws"),
+    # THE MODULE SPELLINGS OF check:ci-python-lint (PLAN-tooling-code-reduction CR2). The gate lost its npm key, so the runner and CI run `PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness`, which runs the ruff lint (`python_lint.main`) first; `python_lint` is runnable on its own too. Both refuse with 77 when ruff is absent, which is this table's entry test. The NEEDS row keeps the gate id for `npm run ci -- --only check:ci-python-lint`.
+    ("rediacc_ci.quality.lint_config_liveness", "ruff"),
+    ("rediacc_ci.quality.python_lint", "ruff"),
 )
 
 # CREDENTIALS THAT LIVE IN A FILE, NOT IN YOUR SHELL. Measured 2026-08-28.
@@ -123,7 +139,7 @@ NEEDS_ENV = (
     ("rediacc_ci.deploy.sync_media_to_r2", "CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID"),
 )
 
-# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
+# BARE INVOCATIONS. The table above matches only a GATE KEY (`check:ci-python-lint` in the command), so a session running the tool directly -- `ruff format <files>`, not `npm run ci -- --only check:ci-python-lint` -- was invisible to it. That gap is real independent of the npx incident above: this catches the correctly-shaped direct command too, when the host genuinely lacks the tool.
 #
 # `aws`, `bw` and `bws` joined on 2026-09-23. All three are baked into `.devcontainer/Dockerfile` (aws at 467-490, bw at 509-553 pinned to 2026.9.0, bws at 555-587 pinned to 2.1.0), so a bare host that lacks one has somewhere to route to. Nothing in the tree invokes `bw`, and only `.ci/rediacc_ci/setup/tools.py:566-584` registers `bws`, so neither earns a NEEDS_SCRIPT row -- but a
 # session typing either by hand on a host without it gets the same wrong lesson, which is what this array is for.
@@ -195,73 +211,6 @@ DEVBOX_GAP_ABSENCE = (
 )
 
 DEVBOX_GAP_OBJECTS = ("tool", "toolchain", "binary", "cli", "command", "package", "install")
-
-# The three docker worlds this guard's tail distinguishes, driven rather than described. Without them the differential only ever sees whichever devbox this machine happens to be running, and the two NOTE branches plus the refusal are a coin toss decided by another session's `devbox up`.
-ENVS = [
-    ("no-devbox", {}, {"docker": "#!/bin/sh\nexit 0\n"}),
-    (
-        "devbox-without-tool",
-        {},
-        {"docker": '#!/bin/sh\ncase "$1" in ps) echo rediacc-devbox-x ;; exec) exit 1 ;; esac\n'},
-    ),
-    (
-        "devbox-with-tool",
-        {},
-        {"docker": '#!/bin/sh\ncase "$1" in ps) echo rediacc-devbox-x ;; exec) exit 0 ;; esac\n'},
-    ),
-]
-
-EDGE_CASES = [
-    # Already routed through the devbox, or driving the devbox itself.
-    ("already routed", "./run.sh devbox exec -- npm run check:ci-python-lint"),
-    ("a docker exec", "docker exec -u vscode box bash -lc 'ruff check .'"),
-    # The npx arm fires on SHAPE, whatever the host has.
-    ("npx ruff", "npx ruff format packages/cli"),
-    ("npx --yes shfmt", "npx --yes shfmt -w run.sh"),
-    ("npx on an npm package is not this guard's business", "npx tsx scripts/gen/gen-docs.ts"),
-    # #0c331972: npm's own option grammar, so an option the guard never listed and the `x` alias still reach the tool.
-    ("npx with a value option before the tool", "npx --logl silent --yes ruff check"),
-    ("npm x -y ruff", "npm x -y ruff check"),
-    ("npm exec -- shfmt", "npm exec -- shfmt -d run.sh"),
-    ("npx -c runs a shell, not a package", "npx -c 'ruff check a.py'"),
-    ("prose naming npm x ruff", "echo 'npm x -y ruff check'"),
-    # The bare-tool arm.
-    ("a bare shfmt", "shfmt -w run.sh"),
-    ("a bare shellcheck", "shellcheck .ci/media/tools/upload-r2.sh"),
-    ("a bare actionlint", "actionlint"),
-    ("a bare tool after a separator", "cd packages/cli && shfmt -d ."),
-    ("a tool named in prose", "echo 'run shfmt -w on it'"),
-    # The gate-key arm, including the substring pair whose hash order decides $HIT.
-    ("a gate key", "npm run check:ci-renet"),
-    ("the longer gate key matches both", "npm run check:ci-renet-tiers"),
-    # The host-bound arm.
-    ("a host-bound pipeline", "shfmt -w private/growth/video_pipeline/run.sh"),
-    ("a host-bound submodule", "shellcheck private/account/scripts/ops.sh"),
-    # The python -m arm: a port's module is its target, and the same key handed to pytest is a mention.
-    ("a python -m port", "PYTHONPATH=.ci python3 -m rediacc_ci.ops.scrub_sentinel v1.0.5"),
-    ("a python -m port by script path", "python3 .ci/rediacc_ci/deploy/upload_to_r2.py"),
-    ("a port named to pytest", "python3 -m pytest -k rediacc_ci.ops.scrub_sentinel"),
-    # Parse-only shells and text bash never runs (2026-10-02): judged by run, not by text.
-    ("a parse-only bash -n", "bash -n .ci/media/tools/upload-r2.sh"),
-    ("a parse-only -o noexec", "sh -o noexec .ci/media/tools/upload-r2.sh"),
-    ("a noexec shell's -c payload", "bash -n -c 'aws s3 ls'"),
-    ("a tool named in a comment", "echo hi # then; aws s3 ls"),
-    (
-        "a heredoc comment, then a syntax check",
-        (
-            "python3 - <<'EOF'\n# aws matches the whole key\nEOF\n"
-            "bash -n .ci/media/tools/upload-r2.sh"
-        ),
-    ),
-    (
-        "a script run after a parse-only one",
-        "bash -n x.sh && bash .ci/media/tools/upload-r2.sh",
-    ),
-    ("a tool in a -c payload", "bash -c 'aws s3 ls'"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    ("npx ruff launched by find -exec", "find . -name '*.py' -exec npx ruff format {} +"),
-    ("prose naming a launched npx ruff", "echo find . -name x -exec npx ruff format {} +"),
-]
 
 
 def _command_v(tool):
@@ -407,6 +356,17 @@ def _npx_runs(tool, runs):
 def _bare_runs(tool, runs):
     """Does a judged run open with the bare tool name?"""
     return any(run_.name == tool for run_ in runs)
+
+
+def _root_script_absent(repo_root, name):
+    """True only when the root package.json is readable and has no `name` script; any read or parse failure answers False, so the caller keeps its npm form."""
+    try:
+        scripts = json.loads(
+            pathlib.Path(repo_root, "package.json").read_text(encoding="utf-8")
+        ).get("scripts")
+    except (OSError, ValueError, AttributeError):
+        return False
+    return isinstance(scripts, dict) and name not in scripts
 
 
 def _is_invoked(key, cmd, runs=None):
@@ -708,13 +668,17 @@ def run(ev):
         if hostbound != "":
             break
 
-    # LABEL and ROUTE differ for a gate-key hit ("check:ci-python-lint needs 'ruff'", routed as "npm run check:ci-python-lint") versus a bare-tool hit ("go needs 'go'" read wrong, and "npm run go" is not a command that exists). BARE is set above by whichever of the two loops matched.
+    # LABEL and ROUTE differ for a gate-key hit ("check:ci-renet needs 'go'", routed as "npm run check:ci-renet") versus a bare-tool hit ("go needs 'go'" read wrong, and "npm run go" is not a command that exists). BARE is set above by whichever of the two loops matched.
+    # A GATE KEY IS NOT ALWAYS AN NPM SCRIPT. Since CR2 (PLAN-tooling-code-reduction) the runner calls a gate's module directly and its package.json key goes, so `npm run check:ci-python-lint` is a command that no longer exists and block_missing_npm_script refuses it. A key the root package.json positively lacks is routed as the command typed (`npm run ci -- --only <id>` names the id and still runs); an unreadable package.json keeps the npm form.
     if bare:
         label = "this command"
         route = "./run.sh devbox exec -- %s" % cmd
     else:
         label = "gate '%s'" % hit
-        route = "./run.sh devbox exec -- npm run %s" % hit
+        if _root_script_absent(repo_root, hit):
+            route = "./run.sh devbox exec -- %s" % cmd
+        else:
+            route = "./run.sh devbox exec -- npm run %s" % hit
 
     if hostbound:
         ev.warn_raw(

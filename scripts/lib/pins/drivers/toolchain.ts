@@ -24,6 +24,10 @@
  *   cli-tool:opentofu  GitHub releases for the version; every sha256 from the release SHA256SUMS
  *                   after its cosign keyless signature verified (scripts/pins/signed-release.ts),
  *                   which is recorded beside the pin, into the generated constants rdc ships.
+ *   cli-tool:msys2-*  packages.msys2.org for the version and build instant of each MSYS2 package
+ *                   `rdc tools install rsync` places on Windows (rsync and the runtime its
+ *                   rsync.exe imports), and each package archive downloaded from repo.msys2.org
+ *                   and hashed, into packages/cli/src/services/tools/msys2-rsync-pin.generated.ts.
  *
  * `toolchain:node` has a `none` source (the Node major is the operator's), and answers "not compared".
  */
@@ -38,6 +42,7 @@ import {
   verifySignedRelease,
 } from '../../../pins/signed-release.js';
 import { NotCompared, UnreadableListing } from '../../upstream.js';
+import { fileLedger } from '../first-seen.js';
 import {
   type DriverContext,
   type FileWrite,
@@ -57,6 +62,7 @@ import {
   byNewest,
   type Dated,
   githubReleases,
+  msys2Versions,
   newerThan,
   npmVersions,
   pypiVersions,
@@ -134,7 +140,9 @@ export function createToolchainDriver(
   up: Upstream,
   mutant: ToolchainMutant | null = null,
   /** Runs cosign for a pin whose checksums are signed (scripts/pins/signed-release.ts); a selftest passes a stand-in. */
-  cosign: CosignRunner = systemCosign()
+  cosign: CosignRunner = systemCosign(),
+  /** The clock first sight is recorded at; a selftest plants one. */
+  clock: () => number = Date.now
 ): PinDriver {
   async function goReleases(entry: PinEntry, current: string | null): Promise<Found[]> {
     const who = entry.name;
@@ -171,13 +179,20 @@ export function createToolchainDriver(
     return newer;
   }
 
-  async function foundFor(entry: PinEntry, current: string | null): Promise<Found[]> {
+  async function foundFor(entry: PinEntry, current: string | null, root: string): Promise<Found[]> {
     const s = entry.source;
     const who = entry.name;
     const bare = (l: Dated[]): Found[] => l.map((d) => ({ ...d, digests: new Map() }));
     if (s.type === 'go-dl') return goReleases(entry, current);
     if (s.type === 'npm-registry' && s.package) return bare(await npmVersions(up, s.package, who));
     if (s.type === 'pypi' && s.package) return bare(await pypiVersions(up, s.package, who));
+    if (s.type === 'msys2-repo' && s.package)
+      return bare(
+        await msys2Versions(up, s.package, who, {
+          ledger: fileLedger(root),
+          nowMs: clock(),
+        })
+      );
     if (s.type === 'github-release' && s.repo)
       return githubReleases(up, s.repo, s.tagPrefix ?? '', who, current);
     if (s.type === 'none') throw new Error(s.reason ?? 'the registry names no source');
@@ -186,7 +201,7 @@ export function createToolchainDriver(
 
   async function inspect(entry: PinEntry, ctx: DriverContext): Promise<Inspection> {
     const current = leafCurrent(entry, ctx);
-    const all = await foundFor(entry, current);
+    const all = await foundFor(entry, current, ctx.root);
     return {
       current,
       releases: newerThan(byNewest(all), current).map(
@@ -271,7 +286,9 @@ export function createToolchainDriver(
       const signed = signedReleaseOf(entry.id);
       const evidence: FileWrite[] = [];
       if (hashed.length > 0) {
-        const hit = (await foundFor(entry, current)).find((r) => r.version === to.version);
+        const hit = (await foundFor(entry, current, ctx.root)).find(
+          (r) => r.version === to.version
+        );
         const digests = new Map(hit?.digests ?? []);
         if (signed) {
           const assets = [
@@ -329,7 +346,14 @@ export function createToolchainDriver(
             ]
           : []),
       ];
-      return { entry, from: current, to, writes, steps: stepsFor(entry, to, ctx), changes };
+      return {
+        entry,
+        from: current,
+        to,
+        writes,
+        steps: stepsFor(entry, to, ctx),
+        changes,
+      };
     } catch (err) {
       throw refusal(err);
     }

@@ -253,8 +253,9 @@ async function repairRepo(
   const inWindow = inMaintenanceWindow(machine?.maintenanceWindow, new Date());
   const deps = repoRepairDeps({ repoKey, machineName, datastore }, options.debug);
   const outcome = await runRepoRepair(options, inWindow, deps);
-  printOutcome(outcome, name, getOutputFormat());
+  // Set before the print, so the JSON envelope of a failed repair says success:false.
   if (outcome.exitCode !== 0) setExitCode(outcome.exitCode);
+  printOutcome(outcome, name, getOutputFormat());
 }
 
 export function registerRepoRepairCommand(repo: Command): void {
@@ -274,8 +275,8 @@ export function registerRepoRepairCommand(repo: Command): void {
       } catch (error) {
         if (getOutputFormat() === 'json') {
           const message = error instanceof Error ? error.message : String(error);
-          outputService.print({ repository: ref, error: message, exitCode: 2 }, 'json');
           setExitCode(2);
+          outputService.print({ repository: ref, error: message, exitCode: 2 }, 'json');
           return;
         }
         handleError(error);

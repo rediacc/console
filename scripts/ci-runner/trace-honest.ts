@@ -13,28 +13,43 @@
  * NEVER GREEN ON NOTHING. Zero candidates in the lock is a failure (the gate is not seeing the estate). A selection of zero is green only in `--quick`, and says how many candidates it saw and against which base. A red gate is a finding: its trace may be partial and its sparse verdict is meaningless.
  *
  * Usage:
- *   tsx scripts/ci-runner/trace-honest.ts [--mode trace|sparse|both] [--quick [--base <ref>]] [--rotation <i>/<n>|auto] [--gate <id> ...] [--origin declared|traced] [--sparse-top N] [--jobs N] [--list]
+ *   tsx scripts/ci-runner/trace-honest.ts [--mode trace|sparse|both] [--quick [--base <ref>]] [--rotation <i>/<n>|auto] [--gate <id> ...] [--origin declared|traced] [--sparse-top N] [--jobs N] [--max-log-mb N] [--list]
  *   tsx scripts/ci-runner/trace-honest.ts --selftest
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { shared as runRoot } from '../lib/runtmp.js';
+import { spawnWatched } from './exec.js';
+import { GateCores, gateCoresSelftest } from './gate-cores.js';
 import { CARRY_EXEMPT_REL, exemptIdsOf, GLOBAL_INPUTS, matchGlob } from './input-hash.js';
+import { openLease, type RunnerLease } from './lease-client.js';
 import {
   attribute,
+  DEFAULT_MAX_LOG_MB,
+  installEntrySignals,
   LOCK_REL,
   type LockEntry,
+  liveGroupCount,
+  logCapCases,
   needsClosure,
+  pidRunning,
   REPO_ROOT,
   type RepoView,
   repoView,
+  type TraceRun,
+  tempDisposalCases,
   traceCommand,
   traceRefusal,
+  trackLiveGroup,
   uncoveredBuildOutput,
+  waitPidGone,
+  writeStraceStub,
 } from './path-trace.js';
 import { leafClosure, resolvePushBase } from './quick-select.js';
 
@@ -263,17 +278,20 @@ function git(root: string, args: readonly string[]): string | undefined {
 function runPlain(
   cmd: string,
   cwd: string,
-  timeoutS: number
+  timeoutS: number,
+  env: NodeJS.ProcessEnv = process.env
 ): Promise<{ exit: number; tail: string }> {
   return new Promise((resolve) => {
     const chunks: string[] = [];
-    const child = spawn('bash', ['-c', cmd], {
+    // Its own group (the timeout and the signal handler kill it whole), with the runner-death watch: a SIGKILLed trace-honest runs no handler, and the gate would otherwise outlive it.
+    const child = spawnWatched('bash', ['-c', cmd], {
       cwd,
+      env,
       stdio: ['ignore', 'pipe', 'pipe'],
-      detached: true,
     });
-    child.stdout.on('data', (d) => chunks.push(String(d)));
-    child.stderr.on('data', (d) => chunks.push(String(d)));
+    child.stdout?.on('data', (d) => chunks.push(String(d)));
+    child.stderr?.on('data', (d) => chunks.push(String(d)));
+    const untrack = trackLiveGroup(child.pid);
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
@@ -285,13 +303,100 @@ function runPlain(
     }, timeoutS * 1000);
     child.on('exit', (code, signal) => {
       clearTimeout(timer);
+      untrack();
       resolve({
         exit: timedOut ? 124 : (code ?? (signal ? 128 : 1)),
         tail: chunks.join('').split('\n').slice(-12).join('\n'),
       });
     });
-    child.on('error', () => resolve({ exit: 127, tail: 'spawn failed' }));
+    child.on('error', () => {
+      // A pid assigned before the error must not stay registered: a later signal would kill -pid, a group that may have been reused.
+      clearTimeout(timer);
+      untrack();
+      resolve({ exit: 127, tail: 'spawn failed' });
+    });
   });
+}
+
+/** Runs a gate under its core grant: the grant's environment (the width every gate is told) is the one the child sees. */
+function runGate(
+  cmd: string,
+  cwd: string,
+  timeoutS: number,
+  grant: { env: NodeJS.ProcessEnv }
+): Promise<{ exit: number; tail: string }> {
+  return runPlain(cmd, cwd, timeoutS, grant.env);
+}
+
+/** The options one traced gate runs under: the grant's environment, never the launcher's own. */
+export function traceOptionsFor(
+  id: string,
+  args: { timeoutS: number; maxLogMb: number },
+  grant: { env: NodeJS.ProcessEnv }
+): { timeoutS: number; label: string; env: NodeJS.ProcessEnv; maxLogMb: number } {
+  return { timeoutS: args.timeoutS, label: id, env: grant.env, maxLogMb: args.maxLogMb };
+}
+
+/** Removes a sparse tree and then hands the grant back: a removal that throws must not keep the tokens held, since the next take would wait on them with no deadline. */
+export async function finishSparse(
+  dir: string | undefined,
+  remove: (dir: string) => void,
+  give: () => Promise<void>
+): Promise<void> {
+  try {
+    if (dir !== undefined) remove(dir);
+  } finally {
+    await give();
+  }
+}
+
+/** The finding for a trace the log limit killed: its read set is partial, so it is never a pass and says how to proceed. */
+export function capFindings(
+  id: string,
+  run: Pick<TraceRun, 'capped' | 'logBytes'>,
+  maxLogMb: number
+): Finding[] {
+  if (!run.capped) return [];
+  return [
+    {
+      id,
+      mode: 'trace',
+      what: `trace-log-cap: strace logs passed ${maxLogMb} MB (${Math.round(run.logBytes / 1048576)} MB written) and the trace was killed, so its read set is partial`,
+      fix: `split the gate or raise --max-log-mb (now ${maxLogMb})`,
+    },
+  ];
+}
+
+/** Free bytes on the filesystem holding `dir` (fs.statfsSync). */
+function freeBytes(dir: string): number {
+  const st = fs.statfsSync(dir);
+  return Number(st.bavail) * Number(st.bsize);
+}
+
+const GIB = 1024 ** 3;
+
+/** What one trace needs free before it starts: its log limit per parallel job, and 20 GiB beside them (D4). */
+export function requiredFreeBytes(jobs: number, maxLogMb: number): number {
+  return jobs * maxLogMb * 1024 * 1024 + 20 * GIB;
+}
+
+/**
+ * Waits until `need` bytes are free on the log filesystem, polling, and gives up after `maxWaitMs` (10 minutes). `statfs` and `pollMs` are seams for the selftest.
+ */
+export async function waitForFreeSpace(
+  dir: string,
+  need: number,
+  opts: { statfs?: (dir: string) => number; pollMs?: number; maxWaitMs?: number } = {}
+): Promise<{ ok: boolean; free: number; waitedMs: number }> {
+  const statfs = opts.statfs ?? freeBytes;
+  const started = Date.now();
+  for (;;) {
+    const free = statfs(dir);
+    const waitedMs = Date.now() - started;
+    if (free >= need) return { ok: true, free, waitedMs };
+    if (waitedMs >= (opts.maxWaitMs ?? 600_000)) return { ok: false, free, waitedMs };
+    await new Promise((r) => setTimeout(r, opts.pollMs ?? 15_000));
+  }
 }
 
 /** Every `node_modules` directory of the tree, outside other `node_modules`, to depth 4. */
@@ -350,7 +455,7 @@ export function buildSparse(
   entry: LockEntry,
   leafFiles: ReadonlySet<string>
 ): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sparse-'));
+  const dir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'sparse-'));
   try {
     return fillSparse(dir, view, entry, leafFiles);
   } catch (err) {
@@ -673,6 +778,8 @@ interface Args {
   jobs: number;
   root: string;
   timeoutS: number;
+  /** `--max-log-mb`: the size limit on one trace's strace logs, MB (D4). */
+  maxLogMb: number;
   selftest: boolean;
   /** Print the selection, one `<id>\t<why>` per line, and exit without running anything. */
   list: boolean;
@@ -689,10 +796,10 @@ function count(flag: string, text: string, min: number): number {
 }
 
 /** A finite number of at least `min`, fractions allowed: a NaN or an infinity would arm no timer or one that never fires. */
-function seconds(flag: string, text: string, min: number): number {
+function seconds(flag: string, text: string, min: number, unit = 'seconds'): number {
   const n = Number(text);
   if (text.trim() === '' || !Number.isFinite(n) || n < min)
-    throw new Error(`${flag} takes a number of seconds >= ${min}, got ${text}`);
+    throw new Error(`${flag} takes a number of ${unit} >= ${min}, got ${text}`);
   return n;
 }
 
@@ -705,6 +812,7 @@ function parseArgs(argv: string[]): Args {
     jobs: Math.max(1, Math.floor(os.cpus().length / 4)),
     root: REPO_ROOT,
     timeoutS: 1800,
+    maxLogMb: DEFAULT_MAX_LOG_MB,
     selftest: false,
     list: false,
   };
@@ -728,6 +836,7 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--jobs') a.jobs = count(t, val(), 1);
     else if (t === '--root') a.root = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = seconds(t, val(), 1);
+    else if (t === '--max-log-mb') a.maxLogMb = seconds(t, val(), 1, 'MB');
     else if (t === '--selftest') a.selftest = true;
     else if (t === '--list') a.list = true;
     else if (t === '--origin') a.origin = val();
@@ -758,6 +867,9 @@ async function pool<T>(
     })
   );
 }
+
+/** The broker main opened, closed by the entry point so a live broker never holds the event loop (or its tokens) past the run. */
+let openedLease: RunnerLease | undefined;
 
 async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
@@ -875,17 +987,45 @@ async function main(argv: string[]): Promise<number> {
   const findings: Finding[] = [];
   let traced = 0;
   let sparsed = 0;
+  // Every gate draws its width from the machine-wide core lease (gate-cores.ts): without it six traced vitest gates each took all 24 cores at load 134 (PR-TASK 79b7e92e).
+  const warn = (text: string): void => {
+    process.stderr.write(text);
+  };
+  openedLease = await openLease({ root: REPO_ROOT, warn });
+  console.error(`trace-honest: ${openedLease.note}`);
+  const cores = new GateCores(openedLease, args.jobs, { warn });
   if (args.mode !== 'sparse') {
     await pool(selected, args.jobs, async ({ id, why }) => {
       const e = byId.get(id) as LockEntry;
-      const run = await traceCommand(e.run, view.root, { timeoutS: args.timeoutS, label: id });
-      const f = traceFindings(
-        e,
-        attribute(run.access, view),
-        run.exit,
-        leafFilesOf(e),
-        needsClosure(e.id, lockById)
+      // Wait for room for every parallel trace's logs before each one starts; refuse rather than fill the disk.
+      const space = await waitForFreeSpace(
+        runRoot('path-trace-'),
+        requiredFreeBytes(args.jobs, args.maxLogMb)
       );
+      if (!space.ok) {
+        traced++;
+        findings.push({
+          id,
+          mode: 'trace',
+          what: `not traced: free space on the log filesystem stayed at ${Math.round(space.free / GIB)} GiB for ${Math.round(space.waitedMs / 60_000)} min, below the ${Math.round(requiredFreeBytes(args.jobs, args.maxLogMb) / GIB)} GiB (jobs x --max-log-mb + 20 GiB) a trace needs`,
+          fix: 'free disk space (the host-temp sweep, or remove old path-trace-* run dirs) or lower --jobs or --max-log-mb, then re-run',
+        });
+        console.error(`  trace  FAIL  ${id} (refused: free space)`);
+        return;
+      }
+      const grant = await cores.take(id);
+      const run = await traceCommand(e.run, view.root, traceOptionsFor(id, args, grant)).finally(
+        () => cores.give(grant)
+      );
+      const f = run.capped
+        ? capFindings(id, run, args.maxLogMb)
+        : traceFindings(
+            e,
+            attribute(run.access, view),
+            run.exit,
+            leafFilesOf(e),
+            needsClosure(e.id, lockById)
+          );
       traced++;
       findings.push(...f);
       console.error(
@@ -897,13 +1037,15 @@ async function main(argv: string[]): Promise<number> {
   if (args.mode !== 'trace') {
     const cost = costOf(args.root);
     const top = [...selected].sort((a, b) => cost(b.id) - cost(a.id)).slice(0, args.sparseTop);
+    const serialCores = new GateCores(openedLease, 1, { warn });
     for (const { id } of top) {
       const e = byId.get(id) as LockEntry;
-      const real = await runPlain(e.run, view.root, args.timeoutS);
+      const grant = await serialCores.take(id);
+      const real = await runGate(e.run, view.root, args.timeoutS, grant);
       let dir: string | undefined;
       try {
         dir = buildSparse(view, e, leafFilesOf(e));
-        const sparse = await runPlain(e.run, dir, args.timeoutS);
+        const sparse = await runGate(e.run, dir, args.timeoutS, grant);
         sparsed++;
         const mutated = verifyLinked(dir);
         if (mutated.length > 0) {
@@ -950,7 +1092,7 @@ async function main(argv: string[]): Promise<number> {
           fix: 'fix the declared paths or the build output the gate needs',
         });
       } finally {
-        if (dir !== undefined) removeSparse(dir);
+        await finishSparse(dir, removeSparse, () => serialCores.give(grant));
       }
     }
   }
@@ -1184,7 +1326,7 @@ async function selftest(): Promise<number> {
     'a network connection is a finding'
   );
   {
-    const pdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-place-'));
+    const pdir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'place-'));
     try {
       const pview: RepoView = {
         root: '/nowhere',
@@ -1259,7 +1401,7 @@ async function selftest(): Promise<number> {
     console.log(`  FAIL  this host cannot trace, so the fixture half cannot run: ${refusal}`);
     return 1;
   }
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-self-'));
+  const dir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'self-'));
   try {
     const files: Record<string, string> = {
       'a.txt': 'a',
@@ -1418,8 +1560,7 @@ async function selftest(): Promise<number> {
       full.status === 0 && full.err.includes('selected (rotation 1/7)'),
       `CONTROL: a non-empty rotation bucket still lists and exits 0 (rc=${full.status})`
     );
-    const tmpSparse = (): number =>
-      fs.readdirSync(os.tmpdir()).filter((f) => f.startsWith('trace-honest-sparse-')).length;
+    const tmpSparse = (): number => fs.readdirSync(runRoot('trace-honest-')).length;
     const sparseBefore = tmpSparse();
     let threw = false;
     try {
@@ -1443,7 +1584,7 @@ async function selftest(): Promise<number> {
       threw && tmpSparse() === sparseBefore,
       `a sparse build that throws after mkdtemp removes its directory (threw ${threw}, leaked ${tmpSparse() - sparseBefore})`
     );
-    const sdir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sym-'));
+    const sdir = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'sym-'));
     try {
       const real = path.join(sdir, 'real.txt');
       fs.writeFileSync(real, 'one');
@@ -1544,18 +1685,231 @@ async function selftest(): Promise<number> {
   } finally {
     fs.rmSync(dir, { recursive: true, force: true });
   }
+  // Temp disposal: real children, a signal mid-build and a SIGKILL.
+  await tempDisposalCases(import.meta.filename, 'trace-honest-', check, false);
+  await plainGroupCases(check);
+  await grantCases(check);
+  await capCases(check);
+  const coreFailures = await gateCoresSelftest();
+  check(
+    coreFailures.length === 0,
+    `gate-cores: per-gate grants out of the machine-wide lease (4 tokens, third take waits until a give; an unleased run still names each width)${coreFailures.length === 0 ? '' : `: ${coreFailures.join('; ')}`}`
+  );
   console.log(`trace-honest selftest: ${n - bad}/${n} passed`);
   return bad === 0 ? 0 : 1;
 }
 
-if (isEntryPoint(import.meta.filename)) {
-  main(process.argv.slice(2)).then(
-    (code) => {
-      process.exitCode = code;
+/**
+ * D5 and review a7298eaa.1: `runPlain` registers its group with the signal handler, and carries the runner-death watch. A child runs a fixture gate that forks a sleeper (inside the gate's own detached group, not the child's), reports how many groups are registered, and is SIGKILLed; the sleeper must be gone 3 s later.
+ */
+async function plainGroupCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  const aux = fs.mkdtempSync(path.join(fs.existsSync('/tmp') ? '/tmp' : os.tmpdir(), 'th-plain-'));
+  try {
+    const pidFile = path.join(aux, 'sleeper.pid');
+    const script = path.join(aux, 'child.mts');
+    fs.writeFileSync(
+      script,
+      `import { tempProbeChild } from ${JSON.stringify(pathToFileURL(import.meta.filename).href)};\ntempProbeChild('plain');\n`
+    );
+    const child: ChildProcess = spawn(process.execPath, [...process.execArgv, script], {
+      env: { ...process.env, TH_SLEEPER_PIDFILE: pidFile },
+      stdio: ['ignore', 'pipe', 'inherit'],
+    });
+    let seen = '';
+    await new Promise<void>((resolve, reject) => {
+      child.stdout?.on('data', (d: Buffer) => {
+        seen += String(d);
+        if (seen.includes('ready')) resolve();
+      });
+      child.on('exit', () => reject(new Error('plain probe child exited before it was ready')));
+    });
+    const live = /live=(\d+)/.exec(seen);
+    let sleeper = 0;
+    for (let i = 0; i < 60 && sleeper === 0; i++) {
+      if (fs.existsSync(pidFile)) sleeper = Number(fs.readFileSync(pidFile, 'utf8').trim()) || 0;
+      else await new Promise((r) => setTimeout(r, 50));
+    }
+    check(
+      live !== null && Number(live[1]) === 1,
+      `runPlain registers its group with the signal handler (registered groups ${live?.[1] ?? 'unread'}, expected 1)`
+    );
+    const aliveBefore = sleeper !== 0 && pidRunning(sleeper);
+    child.kill('SIGKILL');
+    await new Promise<void>((resolve) => child.on('exit', () => resolve()));
+    const gone = sleeper !== 0 && (await waitPidGone(sleeper, 3000));
+    check(
+      aliveBefore && gone,
+      `death watch: a SIGKILLed trace-honest leaves no process of its fixture gate (sleeper pid ${sleeper} alive before ${aliveBefore}, gone within 3 s ${gone})`
+    );
+  } finally {
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+}
+
+/** 2cefaa4d.1/.2, a7298eaa.3, b1bcc098.2: the grant reaches each gate, a failing removal still gives the tokens back, a spawn error unregisters its group, and a bad `--max-log-mb` names MB. */
+async function grantCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  const grant = { cores: 3, env: { ...process.env, TH_GRANT_PROBE: 'width-3' } };
+  const plain = await runGate('printf %s "$TH_GRANT_PROBE"', process.cwd(), 30, grant);
+  const bare = await runPlain('printf %s "${TH_GRANT_PROBE:-none}"', process.cwd(), 30);
+  check(
+    plain.exit === 0 && plain.tail === 'width-3' && bare.tail === 'none',
+    `runGate passes the grant's environment to the gate (saw ${JSON.stringify(plain.tail)}); CONTROL: a run with no grant sees ${JSON.stringify(bare.tail)}`
+  );
+  const opts = traceOptionsFor('g:x', { timeoutS: 5, maxLogMb: 7 }, grant);
+  check(
+    opts.env.TH_GRANT_PROBE === 'width-3' && opts.label === 'g:x' && opts.maxLogMb === 7,
+    `the traced run's options carry the grant's environment, label and log limit (env ${opts.env.TH_GRANT_PROBE})`
+  );
+  let given = 0;
+  let threw = false;
+  try {
+    await finishSparse(
+      '/x',
+      () => {
+        throw new Error('rm failed');
+      },
+      async () => {
+        given++;
+      }
+    );
+  } catch {
+    threw = true;
+  }
+  check(
+    threw && given === 1,
+    `a sparse removal that throws still gives the grant back (threw ${threw}, given ${given})`
+  );
+  let removed = 0;
+  let given2 = 0;
+  await finishSparse(
+    '/x',
+    () => {
+      removed++;
     },
-    (err: unknown) => {
-      console.error(`trace-honest: ${(err as Error).stack ?? String(err)}`);
-      process.exitCode = 1;
+    async () => {
+      given2++;
     }
   );
+  check(removed === 1 && given2 === 1, 'CONTROL: a clean removal removes once and gives once');
+  const failed = await runPlain('true', '/nonexistent-cwd-for-th-selftest', 30);
+  check(
+    failed.exit === 127 && liveGroupCount() === 0,
+    `a spawn error resolves 127 and leaves no registered group (exit ${failed.exit}, registered ${liveGroupCount()})`
+  );
+  let msg = '';
+  try {
+    parseArgs(['--max-log-mb', '0']);
+  } catch (err) {
+    msg = (err as Error).message;
+  }
+  let msgS = '';
+  try {
+    parseArgs(['--timeout-s', '0']);
+  } catch (err) {
+    msgS = (err as Error).message;
+  }
+  check(
+    msg.includes('MB') && !msg.includes('seconds') && msgS.includes('seconds'),
+    `a bad --max-log-mb names MB, not seconds (${msg}); CONTROL: --timeout-s still says seconds`
+  );
+}
+
+/** D4: a trace the stub pushed past the limit is a `trace-log-cap` finding and never a pass; the free-space wait waits, then refuses. */
+async function capCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  await logCapCases(check);
+  const aux = fs.mkdtempSync(path.join(fs.existsSync('/tmp') ? '/tmp' : os.tmpdir(), 'th-cap-'));
+  try {
+    const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
+    const run = await traceCommand('true', process.cwd(), {
+      straceBin: stub,
+      env: { ...process.env, STUB_BYTES: '2000000', STUB_SLEEP: '15' },
+      maxLogMb: 1,
+      capPollMs: 100,
+    });
+    const f = capFindings('g:cap', run, 1);
+    check(
+      f.length === 1 && f[0].what.startsWith('trace-log-cap:') && f[0].fix.includes('--max-log-mb'),
+      `a capped trace is the trace-log-cap finding naming the gate and the way out (${f.map((x) => x.what.slice(0, 40)).join('|')})`
+    );
+    check(
+      capFindings('g:ok', { capped: false, logBytes: 10 }, 1).length === 0,
+      'CONTROL: an uncapped trace gives no trace-log-cap finding'
+    );
+  } finally {
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+  const need = requiredFreeBytes(2, 100);
+  check(
+    need === 2 * 100 * 1048576 + 20 * 1024 ** 3,
+    `the free-space need is jobs x max-log-mb + 20 GiB (${need})`
+  );
+  const refused = await waitForFreeSpace('/x', need, {
+    statfs: () => 1024,
+    pollMs: 10,
+    maxWaitMs: 60,
+  });
+  check(
+    !refused.ok && refused.waitedMs >= 60,
+    `free space below the need refuses after the wait (ok ${refused.ok}, waited ${refused.waitedMs} ms)`
+  );
+  const reads = [1024, 1024, need];
+  let at = 0;
+  const waited = await waitForFreeSpace('/x', need, {
+    statfs: () => reads[Math.min(at++, reads.length - 1)],
+    pollMs: 10,
+    maxWaitMs: 5000,
+  });
+  check(
+    waited.ok && at === 3,
+    `CONTROL: free space that appears after two polls ends the wait ok (ok ${waited.ok}, polls ${at})`
+  );
+  const enough = await waitForFreeSpace('/x', need, { statfs: () => need, pollMs: 10 });
+  check(enough.ok && enough.waitedMs < 50, 'CONTROL: enough free space starts at once');
+}
+
+/** The child side of `tempDisposalCases`: builds one real sparse tree in the run dir, installs the entry hook, then idles (mode `noop` only touches the run dir and exits; mode `plain` runs a fixture gate through `runPlain`). */
+export function tempProbeChild(mode: string): void {
+  installEntrySignals();
+  if (mode === 'noop') {
+    runRoot('trace-honest-');
+    return;
+  }
+  if (mode === 'plain') {
+    // The fixture gate backgrounds a sleeper inside the gate's own group and records its pid.
+    void runPlain(
+      'sleep 15 & echo $! > "$TH_SLEEPER_PIDFILE"; wait',
+      process.cwd(),
+      600,
+      process.env
+    );
+    console.log(`live=${liveGroupCount()}`);
+    console.log('ready');
+    setInterval(() => undefined, 1000);
+    return;
+  }
+  const empty = fs.mkdtempSync(path.join(runRoot('trace-honest-'), 'probe-root-'));
+  fs.writeFileSync(path.join(empty, 'a.txt'), 'x');
+  buildSparse(
+    { ...repoView(REPO_ROOT), root: empty, files: ['a.txt'] },
+    { id: 'g:probe', run: 'true', gate: true, paths: ['a.txt'], pathsOrigin: 'traced', leaves: [] },
+    new Set<string>()
+  );
+  console.log('ready');
+  setInterval(() => undefined, 1000);
+}
+
+if (isEntryPoint(import.meta.filename)) {
+  // A SIGTERM or SIGINT kills the traced groups and exits 130, which removes the run dir with every sparse tree and trace log under it.
+  installEntrySignals();
+  main(process.argv.slice(2))
+    .then(
+      (code) => {
+        process.exitCode = code;
+      },
+      (err: unknown) => {
+        console.error(`trace-honest: ${(err as Error).stack ?? String(err)}`);
+        process.exitCode = 1;
+      }
+    )
+    .finally(() => openedLease?.close());
 }

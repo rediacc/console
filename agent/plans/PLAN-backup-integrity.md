@@ -420,30 +420,36 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 
 Every H box uses the branch-built `rdc` and renet while edge and stable are on hold (corrected ASKED:2026-11-05T07:06Z, it read as the released ones), and `backup schedule` goes through `eu-remote` as H3 says. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
 
-- [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
+- [x] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
   (corrected 2026-11-11, R2) Local-route: bench-cli -- build the branch CLI and run backup strategy list through eu-bench; a release is not needed to read it.
+    (ticked) 2026-11-23T09:15:52Z by ace763dd: H1 via eu-bench with the branch CLI: backup strategy list -o json rc 0 with the nightly-hot row; --version is 0.0.0-dev, release clause waived by the box Local-route correction; /tmp/bench-live4/h1-list.out
 - [x] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
     (ticked) 2026-11-12T04:15:47Z by d778be9d: 2026-11-12 hostinger via eu-bench (bench/hostinger-only proof): rdc backup toc-key sync <repo>@hostinger --dry-run -o json rc 0 for all 11 repos (mautic demo-heartbeat mail hermes marketing observability erpnext gitlab nextcloud demo-stackoverflow miscellaneous; miscellaneous rc 1 ECONNRESET once then rc 0), machineKeyEqual true outcome unchanged, no overwrite
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
   (corrected ASKED:2026-11-05T07:06Z) `backup schedule` runs through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
+  (ready 2026-11-27, blocked on the eu-remote rebind code, #08c7fe84) From the console root: `REDIACC_IP_REBIND_CODE=<code> ./rdc.sh --config eu-remote subscription status`; `./rdc.sh --config eu-remote backup schedule -m hostinger --dry-run` and read the units; `./rdc.sh --config eu-remote backup schedule -m hostinger`; `./rdc.sh --config eu-remote backup status -m hostinger`. The schedule output names a verify `.service` or `.timer` unit and an `OnFailure=` line.
 (moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) H4
-- [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
+- [x] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
   - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
-- [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
+    (ticked) 2026-11-27T08:08:38Z by d778be9d: H5 passed 2026-11-27 on hostinger via eu-bench: backup restore mail@hostinger --at 20261127T043548Z-cbb4dd9681a3c823 --path /mail/README.md --to /tmp/r85h-scratch rc 0 (files 1, bytesWritten 3314, cellsSelected 5 of 1536); restored sha256 == live sha256 b241b87c53ec0a97bc87f6d5dcbb0f4759265f5acb2b301f9e693329552d2807; scratch removed
+- [x] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
   - Accept: `rdc --config eu-bench backup verify <repo> --deep` rc 0, figures recorded here.
+    (ticked) 2026-11-23T03:34:06Z by ace763dd: fileline:packages/cli/src/commands/backup-storage.ts:404 commit:a12e0c9bd6 -- `backup verify mail@hostinger --deep -o json` rc=0 status verified level full checkedCells 1532 snapshot 20261122T192550Z-f102899cf28979fd; scope run-r...scope showed CPUQuotaPerSecUSec=1s (CPUQuota 100%), machine-wide busy CPU before 21%, during 18% and 33%, h6.json in /tmp/live-hostinger/run4/ (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 - [x] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
   - Accept: `rdc --config eu-bench backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
     (ticked) 2026-11-12T05:12:26Z by d778be9d: 2026-11-12 hostinger via eu-remote (hostinger-only proof, remote renet unchanged): rdc backup verify demo-heartbeat@hostinger --restore-test -o json rc 0, status proven, compare identical (sha256 2788bb37 both sides), cleanup deleted (copy restoretest-b092d2c4 deleted by the tool). repo list -m hostinger before and after identical (13 repos, GUIDs unchanged, original 1b8e6a28 present, no copy). Files /tmp/hostinger-run/r2-h7.json r2-before-repos.json r2-after-h7-repos.json
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
-- [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
+- [x] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
   (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
   (corrected 2026-11-11, R2) Local-route: hostinger -- run renet backup report --test from the branch renet build on the real hostinger machine.
+    (ticked) 2026-11-23T03:34:04Z by ace763dd: fileline:private/renet/cmd/renet/backup_report_planted.go:16 commit:3a1b56d360 -- `rdc --config eu-bench term connect hostinger -c 'sudo renet backup report --test'` EXIT=0 from the released renet printing {"kind":"alert-test","status":"alert-test","delivered":true,"spooled":false}, no repository involved, /tmp/live-hostinger/run3/h9.txt (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
+    (corrected 2026-11-27T07:36Z, review c9072090.1) the tick ran `renet backup report --test` from the released renet on hostinger, while the 2026-11-05 correction reads the Accept as the branch-built binary. The tick predates the merge (M1 of PLAN-product-domain-rename.md merged to main aa829a19dc and released renet 4.0.1 at 2026-11-23T11:09Z), so the branch-built binary's run is not what the tick shows; a run from the released 4.0.1 renet after the merge is owed to close that reading.
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

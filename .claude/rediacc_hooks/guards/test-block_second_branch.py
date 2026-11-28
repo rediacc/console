@@ -20,6 +20,7 @@ import _hookpath
 
 from rediacc_hooks import commit_policy as CP
 from rediacc_hooks.guards import _backup_push as BP
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -340,7 +341,7 @@ def run(command, root, gh, broken=False, pair=None):
         ]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
+    proc = _harness.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
     if broken and proc.returncode not in (0, 2):
         raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
     return proc.returncode != 0, proc.stderr

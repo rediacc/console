@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.scope_scripts_reachability`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl`. The twin has now been deleted and every case that
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-scope-scripts-reachability.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35). The twin has now been deleted and every case that
 executed it compares against `goldens/scope-scripts-reachability/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 THE FIXTURE CARRIES THE REAL `scope-map.cjs`, and it has to. The gate's verdict is whatever `classify()` says, and that file's rule ORDER is semantics (first match wins, driver contract section 3). A stubbed classifier would make these cases assert that the port agrees with the stub.
@@ -9,7 +9,7 @@ TWO CASES HERE ARE NOT IN THE LEDGER, and both are the interesting ones.
 
   * THE DISPATCH-FLOOR REFUSAL EXITS 127, not 1, because the twin called
     `log_fail` and never sourced the library that defines it. Both sides printed a
-    single shell diagnostic and no finding, so `scripts/lib/shadow-gate.ts` scored
+    single shell diagnostic and no finding, so the shadow gate (commit:bf054adcd4) scored
     the pair VACUOUS_BOTH_EMPTY and refused to record it. Byte equality can rule
     on it, so it lives here, and it is now the one recorded case whose LINE NUMBER
     had to be frozen into the port: `dispatch_floor_refusal` used to read the twin
@@ -76,7 +76,7 @@ def build(tmp_path: pathlib.Path, extra: dict[str, str], *, runsh: bool = True) 
         src / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    for name in ("__init__.py", "%s.py" % MODULE):
+    for name in ("__init__.py", "gate_args.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,
             root / ".ci" / "rediacc_ci" / "quality" / name,
@@ -403,3 +403,34 @@ def test_inverse_the_same_path_at_a_command_position_is_a_reference() -> None:
     assert gate._refs(lines, gate.ROOT_LINE, gate.ROOT_COMMAND, gate.ROOT_PATH) == [
         "scripts/ci/write-shard-receipt.cjs"
     ]
+
+
+GATE_STEP = "        run: npx tsx scripts/gates/check-embed-credits.ts\n"
+GATE_FINDING = "scripts/gates/check-embed-credits.ts (referenced from .github/workflows)"
+
+
+def test_the_quality_workflow_running_a_gate_source_is_not_a_violation(tmp_path):
+    """2026-11-27: CR2 moved 29 gates to `npx tsx scripts/gates/<gate>.ts` steps in ci-quality.yml, and each read as reachable from a gated job. The quality lanes run on `full_suite` and carry no scope `run_*` key, so the exemption holds, and the run says what it skipped."""
+    root = build(tmp_path, {".github/workflows/ci-quality.yml": GATE_STEP})
+    returncode, stdout, stderr = run_port(root)
+    assert returncode == 0, stderr
+    assert (
+        ".github/workflows/ci-quality.yml: exempt by name (quality lanes, run on full_suite, "
+        "no scope run_* key); 1 root scripts/ reference(s) not judged"
+    ) in stdout
+
+
+def test_inverse_the_same_step_in_another_workflow_is_a_violation(tmp_path):
+    root = build(tmp_path, {".github/workflows/ci-other.yml": GATE_STEP})
+    returncode, _stdout, stderr = run_port(root)
+    assert returncode == 1
+    assert GATE_FINDING in stderr
+
+
+def test_inverse_a_quality_workflow_that_names_a_scope_key_loses_the_exemption(tmp_path):
+    text = "    if: needs.initialize.outputs.run_package_tests != 'false'\n" + GATE_STEP
+    root = build(tmp_path, {".github/workflows/ci-quality.yml": text})
+    returncode, _stdout, stderr = run_port(root)
+    assert returncode == 1
+    assert GATE_FINDING in stderr
+    assert "NOT exempt, it names scope key(s) outputs.run_package_tests" in stderr

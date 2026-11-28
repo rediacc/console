@@ -30,7 +30,7 @@ ONLY CODE COUNTS FOR R1 AND R2. Each candidate file is lexed for its language an
 
 NORMALIZATION decides what "the same literal" means. A URL is reduced to scheme, host and path: the host is lower-cased, userinfo, the default port, the query and the fragment are dropped, the path is cut at the first template marker (`${`, `{`, `%s`, `$`, `<`) and its trailing slash is stripped. A URL-valued entry matches by host (and by path prefix when the entry has a path), a path entry by prefix, everything else exactly. Without this, `https://Releases.rediacc.com/` and `releases.rediacc.com` would be three unrelated strings and the drift would hide in the spelling.
 
-WHAT IS NOT IN SCOPE, and why, is in `scripts/data/literal-sources.json` next to each exemption: history (agent/, *.jsonl, changelogs), recorded bytes (.ci/shadow/, goldens), generated outputs (police the generator instead), vendored trees, version pins (`toolchain_pins.py` owns them). Markdown and translations are not CODE, but R5 still reads them. Tests ARE in scope: an assertion composes its expectation from the symbol, or it is one more copy that agrees with itself.
+WHAT IS NOT IN SCOPE, and why, is in `scripts/data/literal-sources.json` next to each exemption: history (agent/, *.jsonl, changelogs), recorded bytes (the ledger (deleted in commit:936280cd35) goldens), generated outputs (police the generator instead), vendored trees, version pins (`toolchain_pins.py` owns them). Markdown and translations are not CODE, but R5 still reads them. Tests ARE in scope: an assertion composes its expectation from the symbol, or it is one more copy that agrees with itself.
 
 ANTI-VACUITY. The in-scope file count has a floor (`floor` in the policy) and the gate REFUSES below it, so a broken `git ls-files` cannot read as a clean tree. Zero candidate hits is a refusal for the same reason. Every registry entry must have a consumer, which makes the registry its own known-positive floor. `--selftest` runs first and builds every control of the plan by construction in a temporary repository; a failed control refuses the verdict (exit 2).
 
@@ -45,6 +45,14 @@ USAGE
     check_literal_sources.py --write              render the TS and bash projections
 
 Exit 0 clean, 1 on a finding or a refusal, 2 on a failed control.
+
+---- gate ----
+step: Literal sources
+needs: none
+lane: quality-static
+selftest: true
+why: every origin, bucket, slug, image registry, owned path, address and port is written once in .ci/config/well-known.env and read everywhere else; a registered value typed out in code, or an owned literal spreading across files unregistered, is a finding.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -149,8 +157,12 @@ def entry_for(key: str, value: str) -> Entry:
 def region_entries(regions: dict[str, Any]) -> list[Entry]:
     out = []
     for region in regions.get("regions", []):
-        for field in ("domain",):
-            host = str(region.get(field) or "").lower()
+        # `bench.host` is the region's bench account host, which regions.json alone defines; the bench wrangler TOMLs carry it.
+        for field in ("domain", "bench.host"):
+            value: Any = region
+            for part in field.split("."):
+                value = value.get(part) if isinstance(value, dict) else None
+            host = str(value or "").lower()
             if host:
                 out.append(
                     Entry(
@@ -2584,4 +2596,12 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_literal_sources.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write", "--report"),
+        variadic=("--paths",),
+    )
     raise SystemExit(main(sys.argv[1:]))

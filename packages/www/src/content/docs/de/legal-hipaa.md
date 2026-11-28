@@ -8,8 +8,8 @@ tags:
 subcategory: regulations
 order: 3
 language: de
-sourceHash: "1a0a2df716f6628b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "3fa7dcd465e26d0b"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Der Health Insurance Portability and Accountability Act (HIPAA) ist ein US-amerikanisches Bundesgesetz, das Standards zum Schutz sensibler Gesundheitsinformationen von Patienten (PHI) festlegt. Es gilt für betroffene Einrichtungen (Gesundheitsdienstleister, Krankenversicherungen, Clearingstellen) und deren Geschäftspartner.
@@ -35,7 +35,7 @@ HIPAA erfordert administrative, technische und physische Schutzmaßnahmen. Die f
 | Anforderung | Rediacc-Fähigkeit |
 |-------------|-------------------|
 | Zugriffsverwaltung für Mitarbeiter | API-Tokens mit bereichsbezogenen Berechtigungen. Teambasierte Zugriffskontrolle. Automatischer Token-Widerruf bei Team-Entfernung. |
-| Sicherheitsvorfallverfahren | Audit-Logs bieten forensischen Trail aller Operationen. Repository-Isolation begrenzt den Wirkungsradius. |
+| Sicherheitsvorfallverfahren | Audit-Logs halten fest, wer bei den von ihnen erfassten Operationen was getan hat. Netzwerk-Flow-Records pro Repository (kostenpflichtige Pläne, in der pro Repository gewählten Stufe) und die Untersuchungs-Timeline liefern Nachweise für einen Vorfall; Flow-Records zeigen Volumen und Ziel, nicht Inhalt. Es wird kein HIPAA-spezifischer Bericht erzeugt. Repository-Isolation begrenzt den Wirkungsradius. |
 | Notfallplanung | `rdc repo push/pull` unterstützt verschlüsselte Multi-Destination-Backups. CoW-Snapshots ermöglichen sofortige Wiederherstellung. |
 
 ### Physische Schutzmaßnahmen

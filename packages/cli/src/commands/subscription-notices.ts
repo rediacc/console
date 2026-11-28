@@ -7,6 +7,7 @@
  */
 
 import type { RepoNameEntry } from '@rediacc/shared/config-schema';
+import { forensicsTimelinePath } from '@rediacc/shared/forensics/links';
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { licenceDisplayName, readRepoNames } from '../services/account/license-retire.js';
@@ -129,6 +130,66 @@ function licenceSummary(notice: NoticeWire, names: Map<string, RepoNameEntry>): 
   });
 }
 
+/** One literal key per server state, so the CLI key-usage gate sees each one referenced. */
+const FORENSICS_STATE_KEYS = {
+  warning: 'commands.subscription.notices.summary.forensicsQuota.warning',
+  level_capped: 'commands.subscription.notices.summary.forensicsQuota.levelCapped',
+  refused: 'commands.subscription.notices.summary.forensicsQuota.refused',
+} as const;
+
+/** One literal key per incident stage, so the CLI key-usage gate sees each one referenced. */
+const SECURITY_INCIDENT_STAGE_KEYS = {
+  early_warning: 'commands.subscription.notices.summary.securityIncident.earlyWarning',
+  notification: 'commands.subscription.notices.summary.securityIncident.notification',
+  final: 'commands.subscription.notices.summary.securityIncident.final',
+} as const;
+
+/**
+ * One anomaly finding: the detector, the short repository GUID, the detection date and the
+ * timeline path. A finding imported late says so, since its date is the original detection time.
+ */
+function forensicsAnomalySummary(p: Record<string, unknown>): string {
+  const guid = text(p.repoGuid);
+  const detectedAt = text(p.detectedAt);
+  const key =
+    p.delayed === true
+      ? 'commands.subscription.notices.summary.forensicsAnomaly.delayed'
+      : 'commands.subscription.notices.summary.forensicsAnomaly.live';
+  return t(key, {
+    detector: text(p.detector),
+    repo: guid.slice(0, 8),
+    date: day(p.detectedAt),
+    path: guid === '-' || detectedAt === '-' ? '-' : forensicsTimelinePath(guid, detectedAt),
+  });
+}
+
+/** Bytes as decimal gigabytes with one fractional digit, the unit the quota is sold in. */
+function gb(value: unknown): string {
+  return typeof value === 'number' ? (value / 1e9).toFixed(1) : '-';
+}
+
+/** The state is the server's three-way enum; a state this CLI does not know prints as the bare kind. */
+function forensicsQuotaSummary(p: Record<string, unknown>): string {
+  const state = p.state;
+  if (state !== 'warning' && state !== 'level_capped' && state !== 'refused') {
+    return 'forensics_quota';
+  }
+  return t(FORENSICS_STATE_KEYS[state], {
+    used: gb(p.usedBytes),
+    quota: gb(p.quotaBytes),
+    locked: gb(p.lockedBytes),
+  });
+}
+
+/** The stage is the server's three-way enum; a stage this CLI does not know prints as the bare kind. */
+function securityIncidentSummary(p: Record<string, unknown>): string {
+  const stage = p.stage;
+  if (stage !== 'early_warning' && stage !== 'notification' && stage !== 'final') {
+    return 'security_incident';
+  }
+  return t(SECURITY_INCIDENT_STAGE_KEYS[stage], { date: day(p.publishedAt) });
+}
+
 /** The one line a table row carries for a notice. A kind this CLI does not know prints as its own name. */
 function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): string {
   const p = notice.payload;
@@ -160,6 +221,12 @@ function summarize(notice: NoticeWire, names: Map<string, RepoNameEntry>): strin
         version: text(p.version),
         date: day(p.effective),
       });
+    case 'forensics_quota':
+      return forensicsQuotaSummary(p);
+    case 'security_incident':
+      return securityIncidentSummary(p);
+    case 'forensics_anomaly':
+      return forensicsAnomalySummary(p);
     default:
       return notice.kind;
   }

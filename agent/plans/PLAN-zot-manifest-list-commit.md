@@ -57,8 +57,9 @@ No plan covers it: `grep -rlI zot agent/plans` hits only `_done/` plans about th
 - [ ] Z6 [live] Suite 15 green on the local KVM fleet with Z3-Z5 landed (same shared-fleet rule as Z1). Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test tests/kube/15-k8s-repo.test.ts` rc 0
 - [ ] Z7 [writer] Conditional: only when Z1/Z6 leave a residue that a zot release newer than 2.1.23 fixes, `npm run pins -- bump embed:zot` and re-run Z4 and Z6; otherwise tick with the measured reason no bump was taken. Accept: `npm run pins -- verify` rc 0 and either the bump commit or the recorded no-bump reason
 - [ ] V1 [live] VM tier for the renet surface before the live receipt. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V1 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V1 on the same tree; provisioning a branch renet restarts the router and daemons on hostinger.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:02Z by ace763dd: live-proof lp-fb948c6f894f VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-zot-manifest-list-commit.md box 677924f9 proven live on hostinger
 
 ## Risks
 

@@ -21,3 +21,7 @@
 {"kind":"charge","sig":"3c7ecc10ae3d","why":"proven","at":"2026-09-10T11:26:26Z","br":"0906-1"}
 {"kind":"debt","sig":"dbf46e5a4ba4","blind_spot":"Exit code alone cannot detect silent jq type errors; jq may return null or empty without failing when given mismatched types, so gates checking only exit status miss corrupted output.","surface":"gates","artifact":".github/workflows/ci-quality.yml","charged":19,"at":"2026-09-10T11:58:15Z","br":"0906-1"}
 {"kind":"charge","sig":"dbf46e5a4ba4","why":"capped","at":"2026-09-10T11:58:15Z","br":"0906-1"}
+{"kind":"materialize","sig":"d95acc3ab2b9","item":"5af270c3","at":"2026-11-27T07:57:56Z","br":"0906-1"}
+{"kind":"materialize","sig":"b49739dccf14","item":"d7dc17c1","at":"2026-11-27T07:57:56Z","br":"0906-1"}
+{"kind":"materialize","sig":"dbf46e5a4ba4","item":"638e4c5d","at":"2026-11-27T07:57:56Z","br":"0906-1"}
+{"kind":"discharge","sig":"dbf46e5a4ba4","artifact":".github/workflows/ci-quality.yml","proof":"commit-date: .github/workflows/ci-quality.yml last committed 2026-11-27T08:11:03+01:00, after the debt (2026-09-10T11:58:15Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:57:56Z","br":"0906-1"}

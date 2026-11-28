@@ -19,20 +19,37 @@ FAILS OPEN ONLY WHEN THE ROSTER CANNOT BE READ, and says so on stderr. A session
 
 MEASURED COST, 2026-10-08, on a session with 1,090 subagent metas and a 597 MB lead transcript: the liveness pass reads only each transcript's bounded tail (about one second warm), and full transcripts are read only for the agents that pass it. The lead transcript itself is never read, which is why the harness's completion notifications (`wl_roster._completed_since`) are not consulted: that read covers the whole file from offset 0. On the same session every one of the 1,088 finished agents was already proven finished by its own tail, and the two left were the two writers really running.
 
-NO ENVIRONMENT READ OF ITS OWN. The payload's `cwd` and `session_id` locate the session, as in `block_agent_cap`. The stop-hook modules are loaded by `importlib` inside `run`, after the command is known to be a commit, so the other Bash calls of the chain never pay for them.
+CACHED ACROSS COMMITS (PR-TASK 79b7e92e). By 2026-11-24 the lead session held 4,472 finished agents, and re-proving each one from its tail cost 1.33 s of every commit, with 0.79 s more re-parsing live writers' whole transcripts. Both now go through `wl_roster.RosterCache`, one file per session under the git common dir (shared by every lease): a durable finished verdict is kept against the transcript's (inode, size, mtime_ns) and the offset of its final line, and served only after that line, re-read from the transcript itself, still proves it (review 05db4e68.1: the cache file is writable by any Bash-capable agent, so an entry is a hint and never a verdict; measured on the same session at 4,494 finished agents, 0.19 s per commit against 1.55 s uncached), and a live writer's edit set is kept with the byte offset it was read to, so only the appended lines are parsed. A transcript that grew is judged again, which is how a resumed writer stays live.
+
+NO ENVIRONMENT READ OF ITS OWN. The payload's `cwd` and `session_id` locate the session, as in `block_plan_concurrency`. The stop-hook modules are loaded by `importlib` inside `run`, after the command is known to be a commit, so the other Bash calls of the chain never pay for them.
 """
 
 import importlib
-import json
 import os
-import pathlib
 import time
 
 from rediacc_hooks import commit_policy, hookio, syspath
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables(
+    "block_commit_of_live_writer_file",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "DONE_AGENT",
+    "FIXTURE_DIR",
+    "FIXTURE_SESSION",
+    "LIVE_AGENT",
+    "_payload",
+    "_record",
+    "_tool",
+    "_writer_world",
+    "write_session",
+)
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 59
+ORDER = 58
 
 # The overlap test itself. With it never matching, a live writer's file rides a commit again, which is the 252e5e1d1 shape.
 DEFECT = (
@@ -53,115 +70,6 @@ ROSTER_ERRORS = (
     AttributeError,
 )
 
-# THE DIFFERENTIAL'S WORLD. A repository of its own holding a config directory with one session that has a live and a finished writer, so `test_guards_differential` sees this guard refuse and sees its DEFECT stop the refusal: a payload without a locatable session only ever reaches the fail-open branch.
-#
-# ITS OWN REPOSITORY, NOT THE ONE RUNNING PYTEST, found 2026-11-06 (#d7056e06). The world used to be planted under the munged path of the running checkout, and the cases ran there. From a lease tree that can never refuse: `wl_core.project_root` answers a lease with the main checkout (6fd1f6511), so the session was looked up under a directory nothing planted, and every case took the fail-open branch, where the DEFECT cannot bite. A lease writer's own edits are also dropped by `wl_roster.in_lease_tree`, so no planting from inside a lease could have made a lease commit refusable. So the root is named twice: `CLAUDE_PROJECT_DIR` in the `writers` variant, which is where `wl_core.project_start` starts (above the hook file's own repository and the cwd), and the harness's `CWD_WORLDS` for the cwd the commit's repository is resolved from; the payloads carry no `cwd`, so the guard reads `ev.cwd`.
-FIXTURE_SESSION = "f1x7ure0-live-writer-guard-000000000000"
-FIXTURE_DIR = "zz-live-writer-fixture"
-LIVE_AGENT = "afixturelivewriter0001"
-DONE_AGENT = "afixturedonewriter0002"
-
-
-def _record(stop_reason, content, cwd):
-    return json.dumps(
-        {
-            "type": "assistant",
-            "cwd": cwd,
-            "message": {"role": "assistant", "stop_reason": stop_reason, "content": content},
-        }
-    )
-
-
-def _tool(name, tool_input, n):
-    return {"type": "tool_use", "id": "toolu_fixture_%d" % n, "name": name, "input": tool_input}
-
-
-def write_session(config_dir, root, session_id, agents):
-    """Plant a session under `<config_dir>/projects/<munged root>/<session_id>/subagents`.
-
-    `agents` is `[(agent_id, description, [calls], live, parent)]`, each call an absolute path planted as an Edit of it, or a `(tool name, tool input)` pair planted as written (a Bash command a writer or a reader ran). A live agent's transcript ends on a tool call still in flight; a finished one ends its turn and is back-dated an hour, well past `wl_roster.FINISHED_QUIET_S`. Shared by the differential fixture and `test-block_commit_of_live_writer_file.py`, so the two cannot drift apart on what a live transcript looks like.
-    """
-    munged = "".join(ch if ch.isalnum() else "-" for ch in str(root))
-    sub = pathlib.Path(config_dir) / "projects" / munged / session_id / "subagents"
-    sub.mkdir(parents=True, exist_ok=True)
-    for aid, desc, paths, live, parent in agents:
-        lines = []
-        for n, p in enumerate(paths):
-            name, tool_input = p if isinstance(p, tuple) else ("Edit", {"file_path": p})
-            lines.append(_record("tool_use", [_tool(name, tool_input, n)], str(root)))
-        if live:
-            lines.append(
-                _record("tool_use", [_tool("Bash", {"command": "sleep 1"}, len(paths))], str(root))
-            )
-        else:
-            lines.append(_record("end_turn", [{"type": "text", "text": "done"}], str(root)))
-        jsonl = sub / ("agent-%s.jsonl" % aid)
-        jsonl.write_text("\n".join(lines) + "\n", encoding="utf-8")
-        meta = {"agentType": "general-purpose", "description": desc}
-        if parent:
-            meta["parentAgentId"] = parent
-        (sub / ("agent-%s.meta.json" % aid)).write_text(json.dumps(meta), encoding="utf-8")
-        if not live:
-            old = time.time() - 3600
-            os.utime(jsonl, (old, old))
-    return sub
-
-
-def _writer_world(target):
-    # Imported here: only this fixture builder spawns a process, and the guard itself pays nothing for it on a Bash call.
-    import subprocess
-
-    root = pathlib.Path(target)
-    root.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["git", "init", "-q", str(root)], check=True, capture_output=True)
-    write_session(
-        root / "config",
-        root,
-        FIXTURE_SESSION,
-        [
-            (LIVE_AGENT, "fixture live writer", [str(root / FIXTURE_DIR / "live.txt")], True, ""),
-            (
-                DONE_AGENT,
-                "fixture finished writer",
-                [str(root / FIXTURE_DIR / "done.txt")],
-                False,
-                "",
-            ),
-        ],
-    )
-    return str(root)
-
-
-FIXTURES = {"live-writer-world": _writer_world}
-
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    ("default", {}, {}),
-    (
-        "writers",
-        {
-            "CLAUDE_CONFIG_DIR": "{FIXTURE:live-writer-world}/config",
-            "CLAUDE_PROJECT_DIR": "{FIXTURE:live-writer-world}",
-        },
-        {},
-    ),
-]
-
-
-def _payload(command):
-    return {
-        "tool_name": "Bash",
-        "session_id": FIXTURE_SESSION,
-        "tool_input": {"command": command},
-    }
-
-
-EDGE_CASES = [
-    ("a live writer's file", _payload("git commit -F m -- %s/live.txt" % FIXTURE_DIR)),
-    ("a directory covering a live writer's file", _payload("git commit -F m -- %s/" % FIXTURE_DIR)),
-    ("a finished writer's file", _payload("git commit -F m -- %s/done.txt" % FIXTURE_DIR)),
-    ("a file no writer touched", _payload("git commit -F m -- %s/other.txt" % FIXTURE_DIR)),
-    ("not a commit", _payload("git status --short")),
-]
 
 REFUSED = (
     "BLOCKED: this `git commit` would take %(count)d file(s) that a LIVE writer subagent of this\n"
@@ -212,20 +120,22 @@ def live_writers(cwd, session_id, now=None):
         return root, []
     now = time.time() if now is None else now
     kids = roster.children_map(metas)
+    cache = roster.roster_cache(root, sub_dir)
     out = []
     for aid, meta in sorted(metas.items()):
         jsonl = meta.get("jsonl")
         if jsonl is None or not jsonl.exists():
             continue
-        if roster.proven_finished(jsonl, now, meta.get("name", ""), cwd, session_id):
+        if roster.finished_cached(cache, jsonl, now, meta.get("name", ""), cwd, session_id):
             continue
         paths = set()
         for member in [aid, *roster.descendants(aid, kids)]:
             member_jsonl = (metas.get(member) or {}).get("jsonl")
             if member_jsonl is not None:
-                paths |= roster.edit_paths(member_jsonl, root, strict=True)
+                paths |= roster.edit_paths_cached(member_jsonl, root, cache, strict=True)
         if paths:
             out.append((aid, meta, {os.path.normpath(os.path.join(root, p)) for p in paths}))
+    cache.save()
     return root, out
 
 

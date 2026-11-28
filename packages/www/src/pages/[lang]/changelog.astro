@@ -5,6 +5,7 @@ import NewsletterSignup from '../../components/NewsletterSignup';
 import { createTranslator } from '../../i18n/utils';
 import { getLanguagePaths } from '../../i18n/language-utils';
 import type { Language } from '../../i18n/types';
+import generated from '../../../.astro/changelog.generated.json';
 
 export const getStaticPaths = getLanguagePaths;
 
@@ -16,9 +17,25 @@ const breadcrumbItems = [
   { name: t('pages.changelog.breadcrumb.changelog'), url: `/${lang}/changelog` },
 ];
 
-// Changelog entries are date-anchored, not version-anchored — the published
-// product is on its own version track (e.g. 1.1.1+) and tying entries to a
-// specific number is more maintenance than it's worth.
+// Version entries come from `.ci/rediacc_ci/release/changelog_data.py`, run
+// by the www build script: groups from each version's Release-Note trailers
+// (English only) and the stable marker from the stable record.
+type VersionEntry = {
+  version: string;
+  published_at: string;
+  url: string;
+  groups: Record<string, string[]> | null;
+  stable_since: string | null;
+};
+const versions = generated.versions as VersionEntry[];
+const groupTitles: Record<string, string> = {
+  Added: t('pages.changelog.groupAdded'),
+  Fixed: t('pages.changelog.groupFixed'),
+  Improved: t('pages.changelog.groupImproved'),
+};
+
+// The entries below are the pre-trailer history. They are date-anchored, not
+// version-anchored, and render under "Earlier history".
 const releases = [
   {
     date: '2026-05-04',
@@ -35,7 +52,7 @@ const releases = [
     date: '2026-04-21',
     highlights: [
       'Enterprise config-edit surface: pointer-addressed `rdc config field {get,set,unset,rotate,list}` plus validated `rdc config edit` with a redacted JSONC projection',
-      'AI-safety firewalls: agent detection via env vars + Linux /proc ancestry, knowledge-gate (`--current`) on sensitive writes, redaction by default, ancestry-verified REDIACC_ALLOW_CONFIG_EDIT override',
+      'AI-safety firewalls: agent detection via env vars + Linux /proc ancestry, knowledge-gate (`--current`) on sensitive writes, redaction by default, and `rdc config edit` refused for agents',
       'Hash-chained JSONL audit log of every config mutation, refusal, and `--reveal` grant — inspect with `rdc config audit {log, tail, verify}`',
       'Server-side envelope v2 with per-field HMAC commitments — zero-knowledge preserved; precondition + anti-downgrade enforced at the config store',
       'Config schema v2: bucketed under `resources`, `credentials`, `account`, `infra`, `encryption`; per-field encryption-at-rest replaces the coarse `encryptedResources` blob',
@@ -107,6 +124,47 @@ const releases = [
       </div>
 
       <div class="changelog-timeline">
+        {versions.map((entry) => (
+          <article class="changelog-entry" id={`v${entry.version}`}>
+            <div class="changelog-entry-marker" />
+            <div class="changelog-entry-content">
+              <div class="changelog-entry-header">
+                <h2 class="changelog-date-heading">v{entry.version}</h2>
+                {entry.published_at && (
+                  <time datetime={entry.published_at}>{entry.published_at.slice(0, 10)}</time>
+                )}
+                {entry.stable_since && (
+                  <span class="changelog-stable">
+                    {t('pages.changelog.stableSince', { version: entry.stable_since })}
+                  </span>
+                )}
+              </div>
+              {entry.groups && Object.keys(entry.groups).length > 0 ? (
+                Object.entries(entry.groups).map(([name, notes]) => (
+                  <>
+                    <h3 class="changelog-group">{groupTitles[name] ?? name}</h3>
+                    <ul class="changelog-highlights">
+                      {notes.map((item) => (
+                        <li>{item}</li>
+                      ))}
+                    </ul>
+                  </>
+                ))
+              ) : (
+                <p class="changelog-none">
+                  {t('pages.changelog.noNotes')}
+                  {entry.url && (
+                    <>
+                      {' '}
+                      <a href={entry.url}>{t('pages.changelog.viewRelease')}</a>
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+          </article>
+        ))}
+        <h2 class="changelog-earlier" id="earlier-history">{t('pages.changelog.earlierHistory')}</h2>
         {releases.map((release) => (
           <article class="changelog-entry" id={release.date}>
             <div class="changelog-entry-marker" />
@@ -210,6 +268,28 @@ const releases = [
     font-weight: var(--font-weight-semibold);
     color: var(--color-text);
     margin: 0;
+  }
+
+  .changelog-stable {
+    font-size: var(--font-size-sm);
+    color: var(--color-brand-primary);
+  }
+
+  .changelog-group {
+    margin: var(--space-3) 0 var(--space-2);
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text);
+  }
+
+  .changelog-none {
+    color: var(--color-text-secondary);
+  }
+
+  .changelog-earlier {
+    margin: var(--space-6) 0 var(--space-6);
+    font-size: var(--font-size-2xl);
+    color: var(--color-text);
   }
 
   .changelog-highlights {

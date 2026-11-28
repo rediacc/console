@@ -55,6 +55,8 @@ COMPANY_KEY_ID = "company-key-id"
 KEYPAIR_ENTRY = "%s_ACCOUNT_BACKUP_S3_KEYPAIR" % ACME
 CONFIGS_KEY_ID = "configs-key-id"
 CONFIGS_ENTRY = "%s_COMPANY_CONFIGS_S3_KEYPAIR" % ACME
+AUDIT_KEY_ID = "audit-key-id"
+AUDIT_ENTRY = "%s_COMPANY_AUDIT_S3_KEYPAIR" % ACME
 
 
 class FakeStore:
@@ -62,9 +64,17 @@ class FakeStore:
 
     without_pair = False
     without_configs_pair = False
+    without_audit_pair = False
 
     def read(self, names: Any) -> dict[str, str]:
         out = dict.fromkeys(names, "value")
+        if AUDIT_ENTRY in out:
+            if self.without_audit_pair:
+                del out[AUDIT_ENTRY]
+            else:
+                out[AUDIT_ENTRY] = json.dumps(
+                    dict(zip(secrets.AUDIT_PAIR, (AUDIT_KEY_ID, "audit-secret"), strict=True))
+                )
         if CONFIGS_ENTRY in out:
             if self.without_configs_pair:
                 del out[CONFIGS_ENTRY]
@@ -232,6 +242,40 @@ def test_export_without_the_configs_key_names_the_bucket_and_the_mint_command(
     assert "configs-secret" not in said
 
 
+def test_export_lists_the_audit_bucket_with_the_audit_key_and_not_the_shared_pair(rig):
+    """Review a5c0581a.1: the shared pair is scoped to the releases bucket and configs-bench, so audit-<name> needs its own key."""
+    assert _export(rig, CF_ENV) == 0
+    assert rig.company_key_ids.count(AUDIT_KEY_ID) == 1
+    assert any(m == "GET" and p.startswith("audit-acme") for m, p in rig.company_s3_calls)
+    assert not any(p.startswith("audit-acme") for _m, p in rig.s3_calls), rig.s3_calls
+
+
+def test_export_without_the_audit_key_refuses_naming_the_mint_command(rig, capsys, monkeypatch):
+    store = FakeStore()
+    store.without_audit_pair = True
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    assert _export(rig, CF_ENV) == 1
+    said = _said(capsys)
+    assert "audit-acme" in said
+    assert AUDIT_ENTRY in said
+    assert "enterprise audit-key acme --bws-project <id>" in said
+    assert "audit-secret" not in said
+    # no silent fallback: the shared pair never touched the audit bucket
+    assert not any(p.startswith("audit-acme") for _m, p in rig.s3_calls), rig.s3_calls
+
+
+def test_company_s3_refuses_a_bucket_that_is_not_the_companys():
+    target = cli.lifecycle.Target(id=ACME, name="acme", region="eu", state="active", unlisted=False)
+    for_company = cli._company_s3(RuntimeError, FakeStore(), "https://r2", cli.LiveSeams())
+    with pytest.raises(RuntimeError, match="not one of its buckets"):
+        for_company(target, "releases")
+    # be6b372b.2: another company's label is never echoed into the refusal.
+    with pytest.raises(RuntimeError) as raised:
+        for_company(target, "audit-globex")
+    assert "globex" not in str(raised.value)
+    assert ACME in str(raised.value)
+
+
 def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys, monkeypatch):
     store = FakeStore()
     store.without_pair = True
@@ -338,10 +382,15 @@ def test_export_without_a_credential_refuses_naming_it(rig, missing, capsys):
 
 
 def test_export_does_not_need_the_shared_r2_pair(rig):
-    # Both company buckets are read with the company's own keys, so the shared pair (scoped to releases and configs-bench) is not required.
+    # All three company buckets are read with the company's own keys, so the shared pair (scoped to releases and configs-bench) is never reached.
     env = {k: v for k, v in CF_ENV.items() if "R2" not in k}
     assert _export(rig, env) == 0
     assert rig.s3_calls == []
+    assert sorted({p.split("?")[0] for _m, p in rig.company_s3_calls}) == [
+        "audit-acme",
+        "backups-acme",
+        "configs-acme",
+    ]
 
 
 def test_remove_without_a_bws_project_refuses_naming_the_flag(rig, capsys):
@@ -551,9 +600,48 @@ def test_configs_key_lets_a_programming_error_surface(rig, monkeypatch, error):
     def broken(*_args, **_kwargs):
         raise error
 
-    monkeypatch.setattr(cli.secrets, "ensure_configs_key", broken)
+    monkeypatch.setattr(cli.secrets, "ensure_bucket_key", broken)
     with pytest.raises(type(error)):
         _configs_key(rig, monkeypatch, MintStore(holds_configs=False), RecordingMinter())
+
+
+def test_audit_key_mints_the_audit_only_key_for_a_company_without_one(rig, monkeypatch, capsys):
+    store = MintStore(holds_configs=True)
+    store.without_audit_pair = True
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    rc = cli.main(["audit-key", "acme", "--bws-project", PROJECT], context=rig.context(CF_ENV))
+    assert rc == 1  # control: without CF_MANAGEMENT_TOKEN the verb refuses before minting
+    assert "CF_MANAGEMENT_TOKEN" in _said(capsys)
+    assert store.created == []
+    minter = RecordingMinter()
+    assert (
+        cli.audit_key_main(
+            ["acme", "--bws-project", PROJECT],
+            context=rig.context(CF_ENV),
+            minter=minter,
+            env=CF_ENV,
+        )
+        == 0
+    )
+    assert [n for n, _v in store.created] == [AUDIT_ENTRY]
+    ((token_name, resource),) = minter.calls
+    assert token_name.endswith("-audit")
+    assert resource.endswith("_audit-acme")
+    said = _said(capsys)
+    assert "audit key minted" in said
+    assert "minted-value" not in said
+
+
+def test_audit_key_is_idempotent_when_the_store_holds_the_key(rig, monkeypatch, capsys):
+    store, minter = MintStore(holds_configs=True), RecordingMinter()
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    rc = cli.audit_key_main(
+        ["acme", "--bws-project", PROJECT], context=rig.context(CF_ENV), minter=minter, env=CF_ENV
+    )
+    assert rc == 0
+    assert store.created == []
+    assert minter.calls == []
+    assert "audit key already stored" in _said(capsys)
 
 
 def test_configs_key_without_the_management_token_refuses_naming_it(rig, monkeypatch, capsys):

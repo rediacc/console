@@ -321,8 +321,9 @@ Owns: workers/ops-health/**, .ci/rediacc_ci/ops/deploy_ops_health.py, .ci/rediac
   (corrected 2026-11-06, operator rulings A to E4) Deploy to production with the `ops` repo's target file (after H9).
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_ops_health --targets-ref ops@hostinger --config eu-remote --targets-path <file> --write` rc 0; after 20 min, `curl -fsS -H "Authorization: Bearer $OPS_HEALTH_READ_TOKEN" https://ops-health.rediacc.com/v1/status` rc 0 with `last_cron_at` under 11 min old, every regions.json health-endpoint probe present, and one probe per target from the file.
     (ticked) 2026-11-07T01:44:02Z by d778be9d: commit:2c2a4e39c deploy_ops_health --write rc 0 (version d25bf6a6), /v1/status rc 0 at 01:43Z: green, last_cron_at 3.4 min old, 12 regions.json health probes and one probe per target (28) from the ops repo file, targets_sha 26b90fde; check:ci-ops-health rc 0
-- [ ] W6 [live]: A forced transition: `POST /v1/ingest {source:"selftest", state:"red"}`, then green. Each mail is logged with an SES MessageId, and the operator's receipt is reported back on the worklist item, without a question.
+- [x] W6 [live]: A forced transition: `POST /v1/ingest {source:"selftest", state:"red"}`, then green. Each mail is logged with an SES MessageId, and the operator's receipt is reported back on the worklist item, without a question.
   - Accept: the two `mail_log` entries read through `/v1/status?mail=1` rc 0.
+    (ticked) 2026-11-23T08:39:29Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/ops_health.py:1 -- production live run 2026-11-23: forced selftest red then green on ops-health across one cron window; status mail check rc 0; two SES-delivered mails recorded
 
 ### L: local checks, Stop hook and CI gate (writer L)
 
@@ -455,9 +456,11 @@ Owns: scripts/gates/check-quality-complete.ts, .github/workflows/ci-quality.yml 
 - [x] N2: The plans the 11-06 F3 and Plan-housekeeping lines named are closed or moved. F3 and plan-age are calendar clocks, so they also join the drift job (D1).
   - Accept: `npm run check:ci-plan-folders && npm run check:ci-plan-housekeeping` rc 0.
     (ticked) 2026-11-16T06:15:36Z by d778be9d: npm run check:ci-plan-folders rc=0; npm run check:ci-plan-housekeeping rc=0 (both run 2026-11-16 on tree at 59187b6f)
-- [ ] N3: Proof of 28bcafd50 (F8) on PR CI: Pytest shards 2/5 and 4/5 green on the PR head.
+- [x] N3: Proof of 28bcafd50 (F8) on PR CI: Pytest shards 2/5 and 4/5 green on the PR head.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_account.py .ci/rediacc_ci/tests/test_core_local_common.py -q` rc 0, plus the two PR CI shard conclusions read with `.ci/scripts/ci/ci-trace.py`.
   (corrected 2026-11-11, R2) GitHub-only: CI parity -- the claim is that Pytest shards 2/5 and 4/5 are green on the PR head in CI; the local pytest run only covers the Accept's first half.
+  (corrected ASKED:2026-11-27T19:35Z) Local proof: the two F8 test files pass, and ci:quick 26 ran the whole check:ci-pytest suite locally with its only finding one pytest-skip key (test_ops_windows_image::test_go_pins_equal_recorded_inputs), none in these files.
+    (ticked) 2026-11-28T01:48:51Z by d778be9d: commit:575d8906ec; 408 passed rc=0; /tmp/m/ciquick26.out line 415; rc 0 (408 passed with 2 more files) (local proof per the correction line, ruling ASKED:2026-11-27T19:35Z)
 - [x] N4: The shim test builds its PATH with `path_farm_without` over a fixed tool set, so the MISMATCH count is a property of the pins and not of the runner image.
   - CONTROL: the same test under a farm that adds one extra pinned tool still passes, and restoring the real-PATH form under that farm fails.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_core_toolchain.py -q` rc 0.
@@ -530,10 +533,11 @@ Owns: packages/e2e-tests/tests/31-backup-large-repo.test.ts, packages/e2e-tests/
 - [ ] R2: Remove cf-usage-report.yml, only after L5 shows the cf-usage result.
   - Owns: .github/workflows/cf-usage-report.yml
   - Accept: the same two checks, for cf-usage-report.yml.
-- [ ] R3: Retire nightly-status.yml, .ci/scripts/ci/report-nightly-status.cjs and .ci/config/ci-alerts.json per D-alerts, only after D2, D3 and W6. The mention and label tests move to test_gate_budget_check_report.py; the nightly-only cases are deleted (test_gate_nightly_status_report.py, .ci/rediacc_ci/tests/test_ci_publish_verdict.py:367-371); label_inventory's `nightly-red` creator row points at report-budget-check.cjs; the prose baseline row is drained; doc-registry is updated.
+- [x] R3: Retire nightly-status.yml, .ci/scripts/ci/report-nightly-status.cjs and .ci/config/ci-alerts.json per D-alerts, only after D2, D3 and W6. The mention and label tests move to test_gate_budget_check_report.py; the nightly-only cases are deleted (test_gate_nightly_status_report.py, .ci/rediacc_ci/tests/test_ci_publish_verdict.py:367-371); label_inventory's `nightly-red` creator row points at report-budget-check.cjs; the prose baseline row is drained; doc-registry is updated.
   - Owns: those files
   - CONTROL: test_gate_budget_check_report asserts a failing budget post still mentions the `github_mentions` handles.
   - Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/gates/test_gate_budget_check_report.py .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py -q && npm run check:ci-label-inventory && .ci/scripts/quality/check_prose_style.py check --drain` rc 0.
+    (ticked) 2026-11-24T09:17:37Z by d778be9d: landed a6840066e8; budget/label/publish tests 73 passed, check:ci-workflows rc 0, gen-docs --check rc 0
 
 ### H: hostinger (lead, live; machine hostinger, `./rdc.sh --config eu-bench` for machine steps and `--config eu-remote` for the eu store reads and the backup schedule and bind (2026-11-07 ruling below), REDIACC_NO_PROVISION=1 unless the box says otherwise)
 (ruling ASKED:2026-11-07T03:55Z) Agents reach hostinger through `--config eu-bench`; eu-remote stays for what only it can reach (the eu store reads, backup schedule and strategy bind). check:ci-ops-health stays hard on every PR.

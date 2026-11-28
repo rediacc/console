@@ -17,7 +17,7 @@
 # Pinned by digest (the multi-arch index of the tag beside it), so a rebuild of one
 # release is the same base. `npm run pins -- bump image:proxy-node` moves the tag
 # and the digest together, and check:ci-docker-image-freshness fails when they disagree.
-FROM node:26.13.0-slim@sha256:5adad64f9a1fca2d51972caa65983634c8a774eb300d72b20f7f2a0f60368072
+FROM node:26.13.1-slim@sha256:abe7e5a82b61a8ef67b315b85497c9e65173387ccf2f4a029248184b8e020be5
 # Drill marker (PLAN-executor-durable-object-policy L0 drill 3, operator ruling 2026-10-29): a label change forces a new image upload.
 LABEL com.rediacc.drill="l0-drill3-20261029"
 

@@ -61,8 +61,9 @@ The test first asserts all four exist while the pod runs, so the "gone" assertio
 - [ ] V3 [live] VM tier before the live receipts. Accept: `npm run vm:check -- --changed` rc 0 with a VERIFIED receipt
 - [ ] LP-bench [live] Fresh bench receipt for the regenerated renet contract under packages/shared.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Fresh hostinger receipt after V3 on the same tree.
+- [x] LP-hostinger [live] Fresh hostinger receipt after V3 on the same tree.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:02:58Z by ace763dd: live-proof lp-fc8441cde8f7 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-csi-staging-redesign.md box f01e742a proven live on hostinger
 
 ## Risks
 

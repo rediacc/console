@@ -57,7 +57,7 @@ PIN_REL = ".ceph-image-pin"
 LIVE_BRANCH_RE = re.compile(r"^[0-9]{4}-[0-9]+$")
 TASK_RE = re.compile(r"^`?PR-TASK:\s*([0-9a-f]{6,32})`?\s*$", re.MULTILINE)
 BUMP_RE = re.compile(r"^%s: (\S+) -> (\S+)$" % re.escape(ENTRY_ID), re.MULTILINE)
-CURRENT_RE = re.compile(r"^REFUSED %s: current\b" % re.escape(ENTRY_ID), re.MULTILINE)
+CURRENT_RE = re.compile(r"^REFUSED %s: already current\b" % re.escape(ENTRY_ID), re.MULTILINE)
 # Not one of rediacc_ci.ci.initialize.BOT_AUTHORS: those skip a push run's downstream jobs, and this commit is tested like any other.
 GIT_NAME = "rediacc obs-ceph-autobump"
 GIT_EMAIL = "obs-ceph-autobump@users.noreply.github.com"

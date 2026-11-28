@@ -157,7 +157,7 @@ false, so every gate SKIPS while the job reports green. So this gate carries no 
 
 THE COMMITTED BYTES ARE JUDGED TOO (RC), because the working tree is not what CI reads. The worklist verbs re-render `agent/plans/QUEUE.md` and `agent/INDEX.md` in the WORKING TREE, and a session that commits the plans and not the renders leaves this gate green locally over files nobody pushed: PR 600's run 38381096702 went red on exactly that, on a tree whose local receipt was green (worklist #c99e9a5f, fixed for the instance by 5b84734de). So every full run exports `agent/` as HEAD holds it (a scratch index, never `git archive`, which honours the `export-ignore` on `agent/` and exports nothing) and repeats R8, RQ and RQ-SETTINGS there, and a disagreement names the files to commit. In a clean CI checkout the two readings are the same bytes and the second costs about a second. A checkout with no HEAD has no committed bytes and says so; an export that fails, or that holds fewer plans than the floor, is a finding and never a pass.
 
-`--rendered-only` RUNS R8, RQ AND RQ-SETTINGS AND NOTHING ELSE, with no selftest and no git history: the three verdicts that are a pure function of the tracked files under `agent/`. It is the commit-time check of `.ci/config/generated-artifacts.json` (entries `plan-queue` and `plan-index`), run by the git-level pre-commit hook from a checkout of the commit's index in about a second, where the whole gate takes more than a minute. It says on every run what it did not judge.
+`--rendered-only` RUNS R8, RQ AND RQ-SETTINGS AND NOTHING ELSE, with no selftest and no git history: the three verdicts that are a pure function of the tracked files under `agent/`. It is the commit-time check of `.ci/config/generated-artifacts.json` (entries `plan-queue` and `plan-index`), run by the git-level pre-commit hook from a checkout of the commit's index in about a second, where the whole gate takes more than a minute. It says on every run what it did not judge. It reads the plans from the same place the full gate does, the working tree (worklist #e01814e8); `--rendered-only --staged` reads them as the git index holds them instead.
 
 Exit 0 green, 1 findings or vacuous input, 2 instrument control failed.
 """
@@ -178,6 +178,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci import paths
 from rediacc_ci.controls import git_isolated, plant
 from rediacc_ci.quality import plan_lifecycle as PL
@@ -208,8 +209,8 @@ try:
     import wl_planqueue as PQ
     import wl_planrec as R
     import wl_store
-    from check_plan_citations import citations as _citations
-    from check_plan_citations import unresolved as _unresolved
+    from rediacc_ci.quality.plan_citations import citations as _citations
+    from rediacc_ci.quality.plan_citations import unresolved as _unresolved
 except ImportError as _exc:  # pragma: no cover -- exercised by `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`
     # A check that cannot see must SAY it cannot see. The record grammar lives in wl_planrec and there is deliberately no second copy of it here: a gate that re-implemented the parser would drift from the writer, and the first symptom would be a green run over records it was reading wrong.
     print(
@@ -1152,6 +1153,24 @@ def problems_for(root, rel, text, current_ledger):
     return out
 
 
+def first_difference(got, want, width=160):
+    """The first line where the file on disk and the render part, both sides shown, so a refusal names the row that moved (a plan's census byte size, most often) instead of two byte totals."""
+    have, need = got.splitlines(), want.splitlines()
+    for n, (a, b) in enumerate(zip(have, need, strict=False), 1):
+        if a != b:
+            return "First difference, line %d: present `%s`, derived `%s`." % (
+                n,
+                a[:width],
+                b[:width],
+            )
+    n = min(len(have), len(need)) + 1
+    if len(have) > len(need):
+        return "First difference, line %d: present `%s`, derived ends." % (n, have[n - 1][:width])
+    if len(need) > len(have):
+        return "First difference, line %d: present ends, derived `%s`." % (n, need[n - 1][:width])
+    return "The lines agree; the two differ only in line endings."
+
+
 def index_problems(root, rows, census="", update=False):
     """R8. `agent/INDEX.md` is a second reading of the records, so it is checked
     for EQUALITY rather than for containment: a stale row is exactly as wrong as
@@ -1203,6 +1222,7 @@ def index_problems(root, rows, census="", update=False):
             f"{R.INDEX_REL} disagrees with what is on disk "
             f"({len(got)} bytes present, {len(want)} bytes derived from "
             f"{len(rows)} record(s) and {n_census} plan census row(s)). "
+            f"{first_difference(got, want)} "
             f"SessionStart reads the census section, so a stale one puts every "
             f"session on the slow fallback. Regenerate and commit it:\n"
             f"      npm run check:ci-plan-record -- --update\n"
@@ -1584,6 +1604,7 @@ def census_report(root, out=sys.stdout, err=sys.stderr):
 #
 # R8, RQ and RQ-SETTINGS are a pure function of the tracked files under `agent/`: no history, no ledger. That is what lets them run from a bare export of a tree, which is how the same three rules judge the working tree, HEAD's bytes (`committed_problems`) and a commit's index (`--rendered-only`, from the pre-commit hook).
 RENDERED_ONLY = "--rendered-only"
+STAGED = "--staged"
 EFFORT_TABLE = "--effort-table"
 
 
@@ -1694,8 +1715,8 @@ def selftest_effort():
     )
     planted(
         "RE: a bundle switch of the wrong type reds",
-        lambda t: t["bundles"]["smart"].__setitem__("turbo", "on"),
-        "bundles.smart.turbo: expected bool",
+        lambda t: t["bundles"]["smart"].__setitem__("cadence", "on"),
+        "bundles.smart.cadence: expected bool",
     )
     return bad
 
@@ -2320,8 +2341,8 @@ def selftest():
             PQ.problems(root) != [],
             "a stale section was accepted",
         )
-        # RQ-SETTINGS: a clean block is silent, `turbo: onn` is a finding, and `--update` keeps the block byte for byte.
-        with_block = PQ.set_settings(fresh, {"turbo": "on"})
+        # RQ-SETTINGS: a clean block is silent, `effort: highh` is a finding, and `--update` keeps the block byte for byte.
+        with_block = PQ.set_settings(fresh, {"effort": "high"})
         ck("RQ-SETTINGS CONTROL: a block is created above Promoted", "```stop-hook" in with_block)
         R.write_atomic(queue_path, with_block)
         ck(
@@ -2329,21 +2350,21 @@ def selftest():
             PQ.settings_for(root)[1] == [],
             f"got {PQ.settings_for(root)[1]}",
         )
-        bad_block = with_block.replace("turbo: on", "turbo: onn", 1)
+        bad_block = with_block.replace("effort: high", "effort: highh", 1)
         ck(
             "RQ-SETTINGS CONTROL: the perturbation actually changes the file",
             bad_block != with_block,
         )
         R.write_atomic(queue_path, bad_block)
         ck(
-            "RQ-SETTINGS: `turbo: onn` is reported",
+            "RQ-SETTINGS: `effort: highh` is reported",
             PQ.settings_for(root)[1] != [],
             "a malformed value was accepted",
         )
         PQ.problems(root, update=True)
         ck(
             "RQ-SETTINGS CONTROL: --update keeps the block byte for byte",
-            "turbo: onn" in queue_path.read_text(encoding="utf-8"),
+            "effort: highh" in queue_path.read_text(encoding="utf-8"),
             f"{queue_path.read_text(encoding='utf-8')[:200]!r}",
         )
         # RQ-MOVED, red first: the same entry is silent while its plan is live, and a finding once the file is a moved stub. The live half comes first so a moved_problems that fired on everything cannot pass.
@@ -3203,22 +3224,40 @@ def selftest_committed():
 
 
 def _index_entries(root):
-    """[(path, blob sha)] of every tracked file under agent/ as the INDEX holds it, or None when `root` is not a git checkout or git cannot list it."""
+    """[(path, blob sha)] of every tracked file under agent/ as the INDEX holds it, or None when `root` is not a git checkout or git cannot list it.
+
+    An intent-to-add entry (`git add -N`) is left out: `ls-files -s` lists it with the empty blob, and the index holds no bytes for it, so neither a plain commit nor any render of the index carries it. `git diff --diff-filter=A` between the index and the working tree lists exactly those entries."""
     try:
         done = subprocess.run(
             ["git", "-C", str(root), "ls-files", "-s", "-z", "--", AGENT_DIR],
             capture_output=True,
             check=False,
         )
+        ita = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(root),
+                "diff",
+                "--name-only",
+                "--diff-filter=A",
+                "-z",
+                "--",
+                AGENT_DIR,
+            ],
+            capture_output=True,
+            check=False,
+        )
     except OSError:
         return None
-    if done.returncode != 0:
+    if done.returncode != 0 or ita.returncode != 0:
         return None
+    skip = {n for n in ita.stdout.split(b"\0") if n}
     out = []
     for raw in done.stdout.split(b"\0"):
         meta, _tab, name = raw.partition(b"\t")
         fields = meta.split()
-        if len(fields) == 3 and fields[0] != b"160000" and fields[2] == b"0":
+        if len(fields) == 3 and fields[0] != b"160000" and fields[2] == b"0" and name not in skip:
             out.append((name.decode("utf-8", "surrogateescape"), fields[1].decode()))
     return out
 
@@ -3275,10 +3314,14 @@ def index_view(root):
                 (root / rel).write_bytes(made.read_bytes())
 
 
-def rendered_only(root, update=False):
+def rendered_only(root, update=False, staged=False):
     """`--rendered-only`: R8, RQ, RQ-SETTINGS, RQ-MOVED, RQ-DEPS, RF and RP for `root`, no selftest, no history. With `update` the two renders are written first, which is the fast regeneration (about 3 s against the full gate's 77 s). Exit 0 or 1.
 
-    The plans are read as the git index holds them (`index_view`), so a plan another session is editing, and has not staged, does not change the render."""
+    THE SAME INPUTS AS THE FULL GATE: every tracked plan as the working tree holds it. From a838898379 to worklist #e01814e8 this mode read each plan as the git index held it while the full gate and the plan verbs read the working tree, so the named generator rendered the plan a session had just edited at its OLD size, and the `git commit -F <msg> -- <paths>` form every commit here uses (it commits the working-tree bytes of the paths it names) was refused by the commit-time `plan-renders` check until the full `--update` ran (measured twice on 2026-11-27, 93434 against 93437 bytes). An intent-to-add plan (`git add -N`) was rendered as an empty file the same way.
+
+    `staged` (`--staged`) renders the index instead (`index_view`): the escape for a tree where another session's unstaged plan edit would otherwise enter this commit's render. Stage this commit's own plans first (`git add -- <plans>`), then regenerate with it."""
+    if not staged:
+        return _rendered_only(pathlib.Path(root), update=update)
     with index_view(root) as (view, _indexed):
         return _rendered_only(view, update=update)
 
@@ -3334,8 +3377,11 @@ def main(argv):
     # A PURE READER, and it runs before anything else on purpose. `--census-report` answers "has the window elapsed" from the recorded rows and must stay usable on a tree whose R1..R8 verdict is red -- the window is about the CANDIDATE rules and has nothing to say about the enforced ones.
     if "--census-report" in argv:
         return census_report(ROOT)
+    if STAGED in argv and RENDERED_ONLY not in argv:
+        print(f"✗ {STAGED} narrows {RENDERED_ONLY} and means nothing without it", file=sys.stderr)
+        return 2
     if RENDERED_ONLY in argv:
-        return rendered_only(ROOT, update=update)
+        return rendered_only(ROOT, update=update, staged=STAGED in argv)
     if WRITE_BASELINE in argv:
         return write_rp_baseline(ROOT, CK.plan_records(ROOT, tracked_only=True))
     if EFFORT_TABLE in argv:
@@ -3490,4 +3536,19 @@ def main(argv):
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_plan_record.py",
+        sys.argv[1:],
+        switches=(
+            "--selftest",
+            "--update",
+            "--census-report",
+            "--rendered-only",
+            "--staged",
+            "--write-baseline",
+            "--census",
+            "--effort-table",
+        ),
+        positional="<path>",
+    )
     sys.exit(main(sys.argv[1:]))

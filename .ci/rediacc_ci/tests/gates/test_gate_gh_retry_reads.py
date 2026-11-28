@@ -40,9 +40,10 @@ def _planted_one_shot_read(tag):
 
 
 def _run(*args: str, root: pathlib.Path | None = None) -> harness.RunResult:
+    """PLAN-ciquick-cpu.md W17: a run over a copied tree skips the gate's `controls_first` (`harness.without_controls`); the `--selftest` case and the one real-tree run keep them, as check:ci-gh-retry-reads does."""
     argv = [sys.executable, SCRIPT, "--quiet-writes", *args]
     if root is not None:
-        argv += ["--root", str(root)]
+        argv = harness.without_controls([*argv, "--root", str(root)])
     return harness.run(argv, timeout=180)
 
 
@@ -178,6 +179,27 @@ def test_unhooking_a_claude_hooks_retry_reds_exactly_its_reads(gate, tmp_path):
     verbs = sorted(line.split(": a one-shot gh ", 1)[1].split(" (", 1)[0] for line in found)
     gate.assert_eq(verbs, ["pr list", "pr view", "repo view"], "the unhooked hook's findings")
     gate.ok("unhooking refresh_pr_body's retry reds exactly its three reads, not its PATCH")
+
+
+def test_the_entry_refuses_an_unknown_or_unvalued_flag_and_names_every_accepted_one(gate):
+    """e88766cd.2: the entry's `switches` and `valued` lists decide which argv reaches the gate, so a flag dropped from them (or a bogus one) must be named, not silently ignored."""
+    accepted = (
+        "--selftest",
+        "--quiet-writes",
+        "--init-baseline",
+        "--write-baseline",
+        "--root <value>",
+        "--shell-root <value>",
+    )
+    bogus = _run("--bogus-flag")
+    gate.assert_exit(2, bogus, "an unknown flag")
+    gate.assert_contains(bogus.err, "unknown argument '--bogus-flag'")
+    unvalued = _run("--root")
+    gate.assert_exit(2, unvalued, "--root with no value")
+    gate.assert_contains(unvalued.err, "--root needs a value")
+    for flag in accepted:
+        gate.assert_contains(bogus.err, flag)
+    gate.ok("an unknown flag and a missing value exit 2 naming the six accepted flags")
 
 
 def test_a_scan_root_missing_from_the_tree_is_vacuous(gate, tmp_path):

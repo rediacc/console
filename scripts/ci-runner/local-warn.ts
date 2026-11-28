@@ -17,6 +17,8 @@ import type { GateSpec } from './gate-spec';
 export const LOCAL_WARN: Readonly<Record<string, string>> = {
   'check:ci-external-links':
     'outbound HTTP to third-party sites is flaky from a developer machine (13 of 34 ci:quick receipts on 1104-1 failed on it); CI still blocks on it in the ci-quality.yml External links step',
+  'check:ci-windows-image-expiry':
+    'a clock gate: the shared Windows evaluation image enters its re-bake window on a date, not on a change in the tree, so a local receipt warns while CI blocks; the remedy is `PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image rebake` under `bws_env exec --profile windows-image`, then a commit of .ci/config/windows-image.json',
 };
 
 /** Gate id to the `warned` text of this run, filled by `softenLocalWarn` and read when the receipt is written. */

@@ -6,10 +6,10 @@ The twin, `.ci/lib/local-common.sh`, is DELETED (PLAN-retire-bash-oracles B3): i
 --------------------------------------------------------------------------
 TWO HALVES, TWO DIFFERENTIALS
 --------------------------------------------------------------------------
-THE PURE HALF (2026-09-23), nine functions whose whole answer is computation over a local file or a local git read: `_sha256sum`, `_sed_i`, `compute_hash_for_package_dirs`, `_git_tree_fingerprint`, `compute_tree_hash`, `read_stamp_hash`, `write_stamp_hash`, `_version_gte` and `has_npm_script`. Proved by `core/local_common_shadow_driver.py`, ledger `w7p5b-local-common`.
+THE PURE HALF (2026-09-23), nine functions whose whole answer is computation over a local file or a local git read: `_sha256sum`, `_sed_i`, `compute_hash_for_package_dirs`, `_git_tree_fingerprint`, `compute_tree_hash`, `read_stamp_hash`, `write_stamp_hash`, `_version_gte` and `has_npm_script`. Proved by `tests/harness_local_common.py`, ledger `w7p5b-local-common`.
 
 THE MACHINE-MUTATING HALF (2026-09-24), the other twenty-four: the installers and builders (`ensure_cpu_features_gypi`, `_deps_hash`, `deps_are_current`, `ensure_deps`, `ensure_packages_built`, `ensure_cli_built`, `run_npm_script`, `ensure_go_installed`, `ensure_bashcov_sup`, `ensure_host_tools`, `ensure_docker_installed`, `_ensure_docker_group`, `ensure_renet_built`), the interactive and session-altering ones (`prompt_continue`, `open_browser`, `reexec_with_docker_group`, `_reset_docker_memo`), the checks (`check_node_version`, `check_go_installed`), renet's two fingerprints (`_renet_source_hash`, `_renet_artifact_fp`) and the three lane functions (`gate_lane_decide`, `gate_lane_should_route`, `gate_lane_run`), which reach devbox through `core.devbox`, the port of `.ci/lib/devbox.sh`.
-Proved by `core/local_common_actions_shadow_driver.py`, ledger `w7p5b-local-common-actions`, by the STUB-FARM TRANSCRIPT technique (`core/stubfarm.py`): every external program the function would run is a stub that logs its argv, and the comparison covers rc, both streams, the ordered call list and the sandbox tree afterwards. See the section note above `ensure_cpu_features_gypi` for what that forces on the code.
+Proved by `tests/harness_local_common_actions.py`, ledger `w7p5b-local-common-actions`, by the STUB-FARM TRANSCRIPT technique (`core/stubfarm.py`): every external program the function would run is a stub that logs its argv, and the comparison covers rc, both streams, the ordered call list and the sandbox tree afterwards. See the section note above `ensure_cpu_features_gypi` for what that forces on the code.
 
 `check_node_version` exists TWICE in Python: here, and an older copy in `core/account.py` with its own version compare. `account.py` was under another writer's live rewrite when this landed, so removing its copy is handed over; `test_check_node_version_agrees_with_the_account_copy` pins the two together meanwhile.
 
@@ -63,7 +63,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox, prepare_lock, toolchain
+from rediacc_ci.core import bws_env, devbox, dockerx, prepare_lock, toolchain
 from rediacc_ci.release import renet_key_gate
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -610,7 +610,7 @@ def has_npm_script(script_name: str, env: dict[str, str] | None = None) -> bool:
 
 # --------------------------------------------------------------------------- the machine-mutating half ---------------------------------------------------------------------------
 #
-# EVERYTHING BELOW CHANGES THE MACHINE OR TALKS TO A PERSON, and is proved by the STUB-FARM TRANSCRIPT differential (`core/stubfarm.py`, driven by `core/local_common_shadow_driver.py`): both sides run with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker`, `sg` and the rest replaced by stubs that log their argv, and the comparison is rc, both streams, the files written AND the ordered call list.
+# EVERYTHING BELOW CHANGES THE MACHINE OR TALKS TO A PERSON, and is proved by the STUB-FARM TRANSCRIPT differential (`core/stubfarm.py`, driven by `tests/harness_local_common.py`): both sides run with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker`, `sg` and the rest replaced by stubs that log their argv, and the comparison is rc, both streams, the files written AND the ordered call list.
 # That is why the port calls PROGRAMS where a Python programmer would reach for a library: `uname`, `mktemp` and `go version` are the twin's questions, and a scenario answers them through the stubs. A port that asked `platform.system()` instead could not be put on the other branch at all.
 #
 # ERREXIT. Every sourcer arms `set -euo pipefail`, so a bare command that fails ENDS THE PROCESS rather than returning. `_must()` is that: it raises `LocalCommonError` with the command's own status, and `main()` exits with it.
@@ -620,6 +620,11 @@ def _flush() -> None:
     """Flush both streams before a child writes to the same descriptors, so the twin's line order survives."""
     sys.stdout.flush()
     sys.stderr.flush()
+
+
+def _cwd_is_missing(cwd: str | None) -> bool:
+    """True when a FileNotFoundError came from a `cwd` that is no directory: the program exists, and "command not found" would hide the real error (review 5fb9ea9e.1, .2)."""
+    return cwd is not None and not os.path.isdir(cwd)
 
 
 def _run(
@@ -634,14 +639,23 @@ def _run(
     """A bare command line of the twin's: streams inherited unless it redirects them."""
     _flush()
     out = subprocess.DEVNULL if quiet_out else stdout
-    return subprocess.run(
-        argv,
-        cwd=cwd,
-        stdout=out,
-        stderr=subprocess.DEVNULL if quiet_err else None,
-        env=env,
-        check=False,
-    ).returncode
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            stdout=out,
+            stderr=subprocess.DEVNULL if quiet_err else None,
+            env=env,
+            check=False,
+        ).returncode
+    except FileNotFoundError:
+        if _cwd_is_missing(cwd):
+            raise
+        # The shell twin answers a missing program with status 127 ("command not found"), so a probe
+        # such as `docker version` on a host without docker reaches its install branch instead of crashing.
+        if not quiet_err:
+            print(f"{argv[0]}: command not found", file=sys.stderr)
+        return 127
 
 
 def _must(argv: list[str], **kwargs) -> None:
@@ -656,14 +670,22 @@ def _capture(
 ) -> subprocess.CompletedProcess:
     """`$(argv)`: stdout captured, stderr inherited unless the twin discards it."""
     _flush()
-    return subprocess.run(
-        argv,
-        cwd=cwd,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL if quiet_err else None,
-        text=True,
-        check=False,
-    )
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL if quiet_err else None,
+            text=True,
+            check=False,
+        )
+    except FileNotFoundError:
+        if _cwd_is_missing(cwd):
+            raise
+        # `$(missing)` in the shell twin yields empty output and status 127.
+        if not quiet_err:
+            print(f"{argv[0]}: command not found", file=sys.stderr)
+        return subprocess.CompletedProcess(argv, 127, stdout="", stderr=None)
 
 
 def _subst(text: str) -> str:
@@ -1270,14 +1292,17 @@ def reexec_with_docker_group(args: list[str]) -> bool:
         return True
     if _run(["docker", "version"], quiet_out=True, quiet_err=True) == 0:
         return True
-    if shutil.which("docker") is None or shutil.which("sg") is None:
+    if shutil.which("docker") is None:
         return True
     if _run(["getent", "group", "docker"], quiet_out=True, quiet_err=True) != 0:
         return True
     members = _docker_group_members() or ""
     if ",%s," % _required("USER", os.environ.get("USER")) not in ",%s," % members:
         return True
-    if _run(["sg", "docker", "-c", "docker version"], quiet_out=True, quiet_err=True) != 0:
+    user = _required("USER", os.environ.get("USER"))
+    guard = {"REDIACC_DOCKER_GROUP_REEXEC": "1"}
+    check = dockerx.group_command("docker version", user=user, extra_env=guard)
+    if check is None or _run(check, quiet_out=True, quiet_err=True) != 0:
         return True
     log.info("Applying your docker group membership to this run (no logout needed)")
     os.environ["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
@@ -1286,7 +1311,9 @@ def reexec_with_docker_group(args: list[str]) -> bool:
         for word in [_required("SCRIPT_ENTRYPOINT", os.environ.get("SCRIPT_ENTRYPOINT")), *args]
     )
     _flush()
-    proc.exec_replace(["sg", "docker", "-c", command])
+    wrapped = dockerx.group_command(command, user=user, extra_env=guard)
+    if wrapped is not None:
+        proc.exec_replace(wrapped)
     return True  # pragma: no cover -- exec_replace does not return
 
 

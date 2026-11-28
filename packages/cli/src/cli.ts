@@ -3,17 +3,25 @@ import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
 import { Command } from 'commander';
 import { registerBackupCommands } from './commands/backup.js';
 import { registerClusterCommands } from './commands/cluster/index.js';
+import {
+  createCompleteProgram,
+  isCompleteInvocation,
+  registerCompletionCommand,
+} from './commands/completion.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerCreditsCommand } from './commands/credits.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
 import { registerFeedbackCommand } from './commands/feedback.js';
+import { registerForensicsCommand } from './commands/forensics.js';
+import { registerIncidentCommand } from './commands/incident.js';
 import { registerJobCommands } from './commands/job.js';
 import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
+import { printPreviewBanner, registerPreviewCommand } from './commands/preview.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
 import { registerServerCommands } from './commands/server.js';
@@ -32,7 +40,11 @@ import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
 import { outputService } from './services/core/output.js';
-import { currentRequestContext, exitProcess } from './services/core/request-context.js';
+import {
+  commandOutcome,
+  currentRequestContext,
+  exitProcess,
+} from './services/core/request-context.js';
 import { setBackgroundRequested } from './services/executor/executor-factory.js';
 import {
   assertDetachable,
@@ -61,6 +73,12 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
+import {
+  CONFIRM_GRAND_FLAG,
+  enforceProxiedAgentCommand,
+  enforceRootCommand,
+  setConfirmGrand,
+} from './utils/command-policy.js';
 import { getOutputFormat, handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
@@ -221,6 +239,7 @@ export function createCli(): Command {
     .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
     .option('-q, --quiet', t('options.quiet'))
     .option('-y, --yes', t('options.yes'))
+    .option(`${CONFIRM_GRAND_FLAG} <name>`, t('options.confirmGrand'))
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
     .option('--license-region <id>', t('options.licenseRegion'))
@@ -242,6 +261,8 @@ export function createCli(): Command {
         // subcommand's own -y/--yes never fires; hand the value down.
         actionCommand.setOptionValue('yes', true);
       }
+      // The confirmation a destructive change to a grand repo asks an agent for (PLAN-rmcp-decide.md D21). Not --yes: the local MCP server passes --yes on every call.
+      setConfirmGrand(opts.confirmGrand as string | undefined);
       // Set --quiet mode to suppress informational output
       if (opts.quiet) {
         outputService.setQuiet(true);
@@ -265,6 +286,9 @@ export function createCli(): Command {
 
       // Initialize or update i18n language. Before the proxy branch: a proxied run still renders here, so it needs its strings.
       await ensureI18n(opts.lang ?? (await configService.getLanguage()), opts.lang);
+
+      // While the config is on a preview, every command names it, its licence end and the way back (PLAN-preview-signer.md D8). stderr, so a machine-readable stdout is untouched.
+      if (currentRequestContext() === undefined) printPreviewBanner();
 
       // Fire-and-forget: start the machine work as a detached job and return the instant it starts, leaving it running (finding #2 of the detach handoff). Refuse it up front for a command that cannot become a job, so the operator gets a clear message rather than a flag that silently did nothing. Set before the proxy branch, which never returns.
       if (opts.background) {
@@ -303,6 +327,10 @@ export function createCli(): Command {
         const commandPath = commandPathOf(actionCommand);
         const entry = getCommand(commandPath);
         assertProxyCapable(commandPath, entry?.proxyCapable ?? false, entry?.proxyBlockedReason);
+        // The executor cannot tell an agent from a human, so the agent's opt-in is judged here, before the request leaves (PLAN-rmcp-decide.md D22).
+        // A refusal renders the way an action's own error does (handleError), so a JSON caller gets the envelope.
+        if (entry)
+          await enforceProxiedAgentCommand(commandPath, entry, actionCommand).catch(handleError);
 
         // Never returns: it ends the process with the executor's exit code.
         await runCommandThroughProxy(commandPath, actionCommand, {
@@ -319,6 +347,14 @@ export function createCli(): Command {
             return Promise.resolve(state.token.token);
           },
         });
+      }
+
+      // The CLI's one enforcement point (PLAN-rmcp-decide.md Design 3): every local command is judged once here, before its action runs. A command whose action resolves its own target is named on ACTION_RESOLVED_TARGETS and judged there instead.
+      {
+        const commandPath = commandPathOf(actionCommand);
+        await enforceRootCommand(commandPath, getCommand(commandPath), actionCommand).catch(
+          handleError
+        );
       }
 
       // Telemetry must never gate the user's command. The OTLP credential fetch (unauthenticated, ~100-300ms to the account server) used to be
@@ -389,26 +425,14 @@ export function createCli(): Command {
       const duration = ctx ? Date.now() - ctx.startTime : 0;
 
       // A command that reported failure through setExitCode() returns normally and reaches this hook, so its span takes that exit status rather than an unconditional success (inside a dispatch the code lives on the request, on a laptop on process.exitCode).
-      const requested = currentRequestContext()?.exitCode ?? process.exitCode;
-      const exitCode = Number(requested ?? 0) || 0;
-      telemetryService.endCommand(
-        commandName,
-        exitCode === 0
-          ? { success: true, exitCode: 0, duration }
-          : {
-              success: false,
-              exitCode,
-              error: `The command exited with code ${exitCode}.`,
-              duration,
-            },
-        ctx?.spanKey ?? commandName
-      );
+      const outcome = commandOutcome(duration);
+      telemetryService.endCommand(commandName, outcome, ctx?.spanKey ?? commandName);
 
       // The redacted ring buffer behind `rdc feedback report --last`; a failed write never reaches the command.
-      recordCommand({ argv: process.argv.slice(2), exitCode });
+      recordCommand({ argv: process.argv.slice(2), exitCode: outcome.exitCode });
       // JSON mode carries the hint as the envelope's `next` option, so stderr stays clean for the parser.
       if (getOutputFormat() !== 'json')
-        printFeedbackHint({ argv: process.argv.slice(2), exitCode });
+        printFeedbackHint({ argv: process.argv.slice(2), exitCode: outcome.exitCode });
 
       const scope = currentRequestTelemetry();
       if (scope?.open && scope.open.spanKey === ctx?.spanKey) scope.open = undefined;
@@ -429,12 +453,16 @@ export function createCli(): Command {
   registerCreditsCommand(cli);
   registerLegalCommand(cli);
   registerFeedbackCommand(cli);
+  registerIncidentCommand(cli);
+  registerForensicsCommand(cli);
   registerVersionCommand(cli);
+  registerCompletionCommand(cli);
   registerClusterCommands(cli);
   registerTermCommands(cli);
   registerVSCodeCommands(cli);
   registerToolsCommands(cli);
   registerUpdateCommand(cli);
+  registerPreviewCommand(cli);
   registerOpsCommands(cli);
   registerDatastoreCommands(cli);
   registerSubscriptionCommands(cli);
@@ -511,5 +539,9 @@ export function createCli(): Command {
   return cli;
 }
 
-/** The CLI process's program. One process, one parse. */
-export const cli = createCli();
+/**
+ * The CLI process's program. One process, one parse. `rdc __complete` (the shell
+ * completion name lookup) gets a program holding only that command, so it never
+ * builds the full tree and stays out of the contract.
+ */
+export const cli = isCompleteInvocation(process.argv) ? createCompleteProgram() : createCli();

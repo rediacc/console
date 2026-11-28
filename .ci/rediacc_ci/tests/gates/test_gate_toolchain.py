@@ -50,6 +50,16 @@ def with_path(bindir) -> dict:
     return {"PATH": "%s%s%s" % (bindir, os.pathsep, os.environ.get("PATH", ""))}
 
 
+def without_tool(bindir, tool: str) -> dict:
+    """PATH with `bindir` first and every REAL PATH directory holding `tool` dropped: a host install (~/.local/bin/shfmt at the pin, measured 2026-11-25) would otherwise answer an "absent" case."""
+    keep = [
+        d
+        for d in os.environ.get("PATH", "").split(os.pathsep)
+        if d and not os.path.exists(os.path.join(d, tool))
+    ]
+    return {"PATH": os.pathsep.join([str(bindir), *keep])}
+
+
 def probe(tmp_path, tool, stdout) -> str:
     """Write a fake `tool` printing `stdout`, and return `toolchain_probe_version`'s output."""
     fake(tmp_path, tool, stdout)
@@ -126,7 +136,7 @@ def test_toolchain_check_match_mismatch_absent(gate, tmp_path):
 
     empty = tmp_path / "empty"
     empty.mkdir()
-    result = source_run("toolchain_check shfmt >/dev/null 2>&1", env=with_path(empty))
+    result = source_run("toolchain_check shfmt >/dev/null 2>&1", env=without_tool(empty, "shfmt"))
     if result.rc == 0:
         gate.log_fail("CONTROL: an absent tool was accepted")
     gate.ok("CONTROL: an absent tool is rejected")

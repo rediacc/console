@@ -20,6 +20,10 @@
  *   5. a locale lacks a `legal.consent` key, carries it empty, or carries a different set of
  *      `{{tokens}}` than English
  *   6. terms-of-service.astro does not render the version line from the shared legal module
+ *   7. line 2 of an archive (the hero line) is not `Effective Date: ` plus its registry
+ *      `effective` as an en-US long date in UTC, or the SUPERSEDED_ARCHIVES record is not the
+ *      frozen set of the three archives published with a stale hero before this check existed
+ *      (agent/plans/PLAN-legal-wording-consistency.md D4); every exemption is printed on every run
  *
  * Checks 5 and 6 turn on with the legal rewrite: they are INACTIVE while en.json carries no
  * `legal.consent` at all (the rewrite, boxes L1/L2, has not landed), and the run says so by name
@@ -82,6 +86,93 @@ export interface Verdict {
   versions: number;
 }
 
+export interface SupersededArchive {
+  /** The registry version that corrects the archive's hero line. */
+  supersededBy: string;
+  defects: readonly string[];
+}
+
+/** Archives versioned on or after this date carry their own hero date; none of them is exempt. */
+export const CHECK7_SINCE = '2026-11-26';
+/** The record only shrinks: the three archives below are the whole of it. */
+export const SUPERSEDED_LIMIT = 3;
+/** The three names the record may hold; swapping one for another pre-check-7 archive is a finding even at the same count. */
+export const FROZEN_ARCHIVE_NAMES: readonly string[] = Object.freeze([
+  'privacy-policy-2026-11-24.txt',
+  'data-processing-agreement-2026-11-24.txt',
+  'data-processing-agreement-2026-11-25.txt',
+]);
+
+/**
+ * Archives are immutable, so the three published with a stale "Effective Date: November 11, 2026"
+ * hero stay as they are and are exempted from check 7 by name. Frozen: a fourth entry, or one for
+ * an archive versioned on or after CHECK7_SINCE, is a finding.
+ */
+export const SUPERSEDED_ARCHIVES: Readonly<Record<string, SupersededArchive>> = Object.freeze({
+  'privacy-policy-2026-11-24.txt': Object.freeze({
+    supersededBy: '2026-11-26',
+    defects: Object.freeze([
+      '75bdcc72.1: the hero reads November 11, 2026 against the registry effective 2026-11-24',
+    ]),
+  }),
+  'data-processing-agreement-2026-11-24.txt': Object.freeze({
+    supersededBy: '2026-11-26',
+    defects: Object.freeze([
+      '75bdcc72.2: the hero reads November 11, 2026 against the registry effective 2026-11-24',
+    ]),
+  }),
+  'data-processing-agreement-2026-11-25.txt': Object.freeze({
+    supersededBy: '2026-11-26',
+    defects: Object.freeze([
+      'a473201c.2: the hero reads November 11, 2026 against the registry effective 2026-11-25',
+    ]),
+  }),
+});
+
+/** `Effective Date: November 26, 2026` for `2026-11-26`, read in UTC. */
+export function heroLine(effective: string): string {
+  const long = new Date(`${effective}T00:00:00Z`).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+  return `Effective Date: ${long}`;
+}
+
+/** Findings on the shape of the exemption record alone, independent of any tree. */
+export function supersededRecordFindings(
+  record: Readonly<Record<string, SupersededArchive>>,
+  frozen?: readonly string[]
+): string[] {
+  const findings: string[] = [];
+  const names = Object.keys(record);
+  if (names.length > SUPERSEDED_LIMIT) {
+    findings.push(
+      `7: SUPERSEDED_ARCHIVES holds ${names.length} entries; it is frozen at the ${SUPERSEDED_LIMIT} archives published before check 7, so a new archive must carry its own hero date`
+    );
+  }
+  for (const name of names) {
+    if (frozen !== undefined && !frozen.includes(name)) {
+      findings.push(
+        `7: SUPERSEDED_ARCHIVES entry ${name} is not one of the ${frozen.length} frozen archives (${frozen.join(', ')})`
+      );
+    }
+    const m = /-(\d{4}-\d{2}-\d{2})\.txt$/.exec(name);
+    if (!m) {
+      findings.push(`7: SUPERSEDED_ARCHIVES entry ${name} is not an archive file name`);
+    } else if (m[1] >= CHECK7_SINCE) {
+      findings.push(
+        `7: SUPERSEDED_ARCHIVES entry ${name} is versioned on or after ${CHECK7_SINCE}; an archive made since check 7 is never exempt`
+      );
+    }
+    if (record[name].defects.length === 0) {
+      findings.push(`7: SUPERSEDED_ARCHIVES entry ${name} names no defect`);
+    }
+  }
+  return findings;
+}
+
 function validDate(s: string): boolean {
   return DATE.test(s) && new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10) === s;
 }
@@ -92,7 +183,11 @@ function consentOf(catalog: Record<string, unknown>): Record<string, unknown> | 
   return consent && typeof consent === 'object' ? (consent as Record<string, unknown>) : undefined;
 }
 
-export function check(root: string, locales: readonly string[] = LOCALES): Verdict {
+export function check(
+  root: string,
+  locales: readonly string[] = LOCALES,
+  superseded: Readonly<Record<string, SupersededArchive>> = SUPERSEDED_ARCHIVES
+): Verdict {
   const findings: string[] = [];
   const notes: string[] = [];
   const manifest = JSON.parse(fs.readFileSync(path.join(root, MANIFEST_REL), 'utf8')) as Manifest;
@@ -120,6 +215,57 @@ export function check(root: string, locales: readonly string[] = LOCALES): Verdi
           );
       }
     });
+  }
+
+  // 7. the hero line of every archive, and the frozen exemption record
+  // Fixture records in the selftest are judged on shape alone; only the real record is held to the frozen names.
+  findings.push(
+    ...supersededRecordFindings(
+      superseded,
+      superseded === SUPERSEDED_ARCHIVES ? FROZEN_ARCHIVE_NAMES : undefined
+    )
+  );
+  const exempt = new Set<string>();
+  for (const [name, entry] of Object.entries(superseded)) {
+    const owner = docs.find(([id, doc]) =>
+      doc.versions.some((v) => `${id}-${v.version}.txt` === name)
+    );
+    if (!owner) {
+      findings.push(`7: SUPERSEDED_ARCHIVES entry ${name} names no version in ${MANIFEST_REL}`);
+      continue;
+    }
+    const [id, doc] = owner;
+    const version = name.slice(id.length + 1, -'.txt'.length);
+    if (!doc.versions.some((v) => v.version === entry.supersededBy && v.version > version)) {
+      findings.push(
+        `7: SUPERSEDED_ARCHIVES entry ${name}: supersededBy ${entry.supersededBy} is not a later ${id} version in ${MANIFEST_REL}`
+      );
+    }
+    exempt.add(name);
+    notes.push(
+      `check 7 exempts ${name}: superseded by ${entry.supersededBy} (${entry.defects.join('; ')})`
+    );
+  }
+  for (const [id, doc] of docs) {
+    for (const v of doc.versions) {
+      const rel = archiveRel(id, v.version);
+      const file = path.join(root, rel);
+      if (!fs.existsSync(file) || !validDate(v.effective)) continue; // checks 2 and 4 report these
+      const line2 = fs.readFileSync(file, 'utf8').split('\n')[1] ?? '';
+      const want = heroLine(v.effective);
+      const name = path.basename(rel);
+      if (exempt.has(name)) {
+        if (line2 === want) {
+          findings.push(
+            `7: ${rel} is exempted by SUPERSEDED_ARCHIVES but its hero line is correct; drop the stale entry`
+          );
+        }
+      } else if (line2 !== want) {
+        findings.push(
+          `7: ${rel} line 2 reads '${line2}', its registry effective ${v.effective} wants '${want}'; set pages.${doc.catalogKey}.hero.effectiveDate and declare a new version`
+        );
+      }
+    }
   }
 
   let src: ReturnType<typeof loadSources> | undefined;
@@ -288,16 +434,18 @@ function report(v: Verdict): number {
 // --------------------------------------------------------------------------- selftest
 
 const FIXTURE_LOCALES = ['en', 'de'] as const;
+const FIXTURE_HERO = 'Effective Date: January 1, 2026';
 
 function fixtureCatalog(
   paragraph: string,
   consent: boolean,
-  locale: string
+  locale: string,
+  hero = FIXTURE_HERO
 ): Record<string, unknown> {
   const cat: Record<string, unknown> = {
     pages: {
       termsOfService: {
-        hero: { title: 'Terms', effectiveDate: 'Effective 2026-01-01' },
+        hero: { title: 'Terms', effectiveDate: hero },
         sections: {
           parties: {
             id: 'parties',
@@ -328,7 +476,7 @@ function fixtureCatalog(
 
 function writeFixture(
   dir: string,
-  opts: { consent: boolean; page: boolean | 'comment-only' }
+  opts: { consent: boolean; page: boolean | 'comment-only'; hero?: string }
 ): void {
   const put = (rel: string, content: string) => {
     // tree-write: safe dir is the fixture dir run() made with mkdtemp under os.tmpdir()
@@ -344,7 +492,13 @@ function writeFixture(
           'terms-of-service': {
             page: 'terms-of-service',
             catalogKey: 'termsOfService',
-            versions: [{ version: '2026-01-01', effective: '2026-01-01', material: true }],
+            versions: [
+              {
+                version: '2026-01-01',
+                effective: '2026-01-01',
+                material: true,
+              },
+            ],
           },
         },
       },
@@ -355,7 +509,7 @@ function writeFixture(
   for (const locale of FIXTURE_LOCALES) {
     put(
       `${TRANSLATIONS_REL}/${locale}.json`,
-      JSON.stringify(fixtureCatalog('Agreement with', opts.consent, locale))
+      JSON.stringify(fixtureCatalog('Agreement with', opts.consent, locale, opts.hero))
     );
   }
   put(
@@ -392,12 +546,13 @@ function selftest(): number {
   const run = (
     label: string,
     setup: (dir: string) => void,
-    expect: (v: Verdict, rc: number) => boolean
+    expect: (v: Verdict, rc: number) => boolean,
+    superseded: Readonly<Record<string, SupersededArchive>> = {}
   ) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'terms-version-'));
     try {
       setup(dir);
-      const v = check(dir, FIXTURE_LOCALES);
+      const v = check(dir, FIXTURE_LOCALES, superseded);
       const rc = verdictRc(v);
       const ok = expect(v, rc);
       console.log(
@@ -498,6 +653,103 @@ function selftest(): number {
     (d) => writeFixture(d, { consent: true, page: 'comment-only' }),
     (v, rc) => rc === 1 && has(v, '6:')
   );
+  const control = (label: string, ok: boolean) => {
+    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
+    if (!ok) failures += 1;
+  };
+  const wrongHero = 'Effective Date: February 2, 2026';
+  // A wrong-hero archive 2026-01-01, then a corrected version 2026-02-01 that supersedes it.
+  const supersededFixture = (d: string) => {
+    writeFixture(d, { consent: false, page: false, hero: wrongHero });
+    for (const locale of FIXTURE_LOCALES) {
+      edit(d, `${TRANSLATIONS_REL}/${locale}.json`, (s) =>
+        s.replace(wrongHero, 'Effective Date: February 1, 2026')
+      );
+    }
+    edit(d, MANIFEST_REL, (s) => {
+      const m = JSON.parse(s);
+      m.documents['terms-of-service'].versions.push({
+        version: '2026-02-01',
+        effective: '2026-02-01',
+        material: false,
+      });
+      return JSON.stringify(m, null, 2);
+    });
+    const out = buildOutputs(loadSources(d, { locales: FIXTURE_LOCALES }));
+    for (const [rel, content] of out.files) {
+      // tree-write: safe d is the fixture dir run() made with mkdtemp under os.tmpdir()
+      fs.writeFileSync(path.join(d, rel), content);
+    }
+  };
+  const fixtureExemption: Record<string, SupersededArchive> = {
+    'terms-of-service-2026-01-01.txt': {
+      supersededBy: '2026-02-01',
+      defects: ['fixture: the hero reads February 2, 2026'],
+    },
+  };
+  run(
+    'an archive whose hero date differs from its registry effective is red (check 7)',
+    (d) => writeFixture(d, { consent: false, page: false, hero: wrongHero }),
+    (v, rc) => rc === 1 && has(v, `7: ${archive} line 2 reads '${wrongHero}'`)
+  );
+  run(
+    'CONTROL: a superseded wrong-hero archive named in the exemption record is green and printed',
+    supersededFixture,
+    (v, rc) =>
+      rc === 0 &&
+      v.notes.some((n) => n.startsWith('check 7 exempts terms-of-service-2026-01-01.txt')),
+    fixtureExemption
+  );
+  run(
+    'the same superseded archive without an exemption is red',
+    supersededFixture,
+    (v, rc) => rc === 1 && has(v, `7: ${archive} line 2 reads`)
+  );
+  run(
+    'an exemption for an archive whose hero is correct is red (stale entry)',
+    (d) => writeFixture(d, { consent: false, page: false }),
+    (v, rc) => rc === 1 && v.findings.some((f) => f.includes('drop the stale entry')),
+    fixtureExemption
+  );
+  const fourth: Record<string, SupersededArchive> = {
+    ...SUPERSEDED_ARCHIVES,
+    'terms-of-service-2026-03-15.txt': {
+      supersededBy: '2026-11-11',
+      defects: ['a fourth exemption'],
+    },
+  };
+  control(
+    'CONTROL: the frozen SUPERSEDED_ARCHIVES record has no finding of its own',
+    supersededRecordFindings(SUPERSEDED_ARCHIVES, FROZEN_ARCHIVE_NAMES).length === 0
+  );
+  const swapped = Object.fromEntries(
+    Object.entries(SUPERSEDED_ARCHIVES).map(([n, e], i) => [
+      i === 0 ? 'terms-of-service-2026-03-15.txt' : n,
+      e,
+    ])
+  );
+  control(
+    'swapping one frozen archive for another pre-check-7 archive is red even at the same count',
+    swapped !== SUPERSEDED_ARCHIVES &&
+      Object.keys(swapped).length === SUPERSEDED_LIMIT &&
+      supersededRecordFindings(swapped, FROZEN_ARCHIVE_NAMES).some((f) =>
+        f.includes('is not one of the 3 frozen archives')
+      ) &&
+      supersededRecordFindings(swapped).length === 0
+  );
+  control(
+    'a fourth SUPERSEDED_ARCHIVES entry is red (the record is frozen)',
+    supersededRecordFindings(fourth).some((f) => f.includes('holds 4 entries'))
+  );
+  control(
+    'an exemption for an archive versioned on or after CHECK7_SINCE is red',
+    supersededRecordFindings({
+      [`privacy-policy-${CHECK7_SINCE}.txt`]: {
+        supersededBy: '2026-12-01',
+        defects: ['x'],
+      },
+    }).some((f) => f.includes('is never exempt'))
+  );
   run(
     'an empty manifest cannot run (77)',
     (d) => {
@@ -507,10 +759,6 @@ function selftest(): number {
     },
     (_v, rc) => rc === 77
   );
-  const control = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? 'PASS' : 'FAIL'}  ${label}`);
-    if (!ok) failures += 1;
-  };
   const evalNotice = (src: string) =>
     new Function('WK_SITE_ORIGIN', 'LEGAL_ENTITY', `return ${src};`)(
       'https://www.example.invalid',

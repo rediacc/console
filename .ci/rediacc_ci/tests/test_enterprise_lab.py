@@ -26,6 +26,7 @@ from rediacc_ci.deploy import deploy_signer
 from rediacc_ci.enterprise import cli, lab, onboarding, proof, registry
 from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import enterprise_lookup
+from rediacc_ci.release import rings_run
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
 REAL_URLOPEN = https.urlopen
@@ -1563,7 +1564,12 @@ class AccountV6:
         early_rival=False,
         terms_accepted=False,
         accept_status=201,
+        step_up="confirm",
+        step_up_status=200,
     ):
+        # A server-minted owner link has no browser binding, so the verify answers a step-up (`None` is a trusted click, the control).
+        self.step_up = step_up
+        self.step_up_status = step_up_status
         # A fresh owner has never accepted the Terms, and every gated route answers 403 until it does (private/account/src/middleware/terms.ts).
         self.terms_accepted = terms_accepted
         self.accept_status = accept_status
@@ -1613,6 +1619,12 @@ class AccountV6:
         self.mailed = self.mail_status == 200
         return self.mail_status, {}
 
+    def session_answer(self):
+        cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
+        if self.cookie:
+            cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
+        return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+
     def call(self, method, url, headers, body):
         doc = json.loads(body or b"{}")
         self.calls.append((method, url, headers, doc))
@@ -1623,10 +1635,16 @@ class AccountV6:
             self.mailed = False  # the link is spent: a later company's baseline sees no mail
             if self.two_factor:
                 return lab.HttpAnswer(200, (), b'{"requiresTwoFactor": true}')
-            cookies = [("Set-Cookie", "refresh_token=r-1; Path=/")]
-            if self.cookie:
-                cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
-            return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+            if self.step_up:
+                challenge = {"requiresStepUp": True, "method": self.step_up, "stepUpToken": "su-1"}
+                return lab.HttpAnswer(200, (), json.dumps(challenge).encode())
+            return self.session_answer()
+        if path == lab.STEP_UP_PATH:
+            if doc != {"stepUpToken": "su-1", "confirm": True}:
+                return lab.HttpAnswer(400)
+            if self.step_up_status != 200:
+                return lab.HttpAnswer(self.step_up_status)
+            return self.session_answer()
         if path == lab.TERMS_PATH:
             if headers.get("Cookie") != "access_token=sess-a":
                 return lab.HttpAnswer(401)
@@ -1719,7 +1737,13 @@ def test_the_owner_sign_in_accepts_the_terms_so_a_token_can_be_minted():
     )
     assert token == "rdt_proxy:exec"
     paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
-    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH, lab.TERMS_ACCEPT_PATH, lab.TOKENS_PATH]
+    assert paths == [
+        lab.VERIFY_PATH,
+        lab.STEP_UP_PATH,
+        lab.TERMS_PATH,
+        lab.TERMS_ACCEPT_PATH,
+        lab.TOKENS_PATH,
+    ]
 
 
 def test_an_owner_who_accepted_the_terms_is_not_asked_again():
@@ -1727,7 +1751,7 @@ def test_an_owner_who_accepted_the_terms_is_not_asked_again():
     acct = AccountV6(terms_accepted=True)
     assert session_v6(acct) == "sess-a"
     paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
-    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH]
+    assert paths == [lab.VERIFY_PATH, lab.STEP_UP_PATH, lab.TERMS_PATH]
 
 
 def test_a_refused_terms_acceptance_is_a_lab_error_naming_the_code():
@@ -1825,6 +1849,40 @@ def test_a_refused_owner_mail_signs_in_nothing():
 def test_a_verify_without_a_session_cookie_is_a_lab_error(kw, match):
     with pytest.raises(proof.LabError, match=match):
         session_v6(AccountV6(**kw))
+
+
+def test_the_owner_confirms_the_step_up_from_the_same_address():
+    acct = AccountV6()
+    assert session_v6(acct) == "sess-a"
+    method, url, _headers, doc = acct.calls[1]
+    assert (method, url, doc) == (
+        "POST",
+        "https://%s%s" % (HOST_A, lab.STEP_UP_PATH),
+        {"stepUpToken": "su-1", "confirm": True},
+    )
+
+
+def test_a_trusted_verify_needs_no_step_up():
+    """Control: a verify that answers the session directly posts no step-up."""
+    acct = AccountV6(step_up=None)
+    assert session_v6(acct) == "sess-a"
+    assert [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls][:2] == [
+        lab.VERIFY_PATH,
+        lab.TERMS_PATH,
+    ]
+
+
+@pytest.mark.parametrize("method", ["password", "totp", "passkey"])
+def test_a_step_up_the_lab_cannot_answer_is_refused_without_a_second_call(method):
+    acct = AccountV6(step_up=method)
+    with pytest.raises(proof.LabError, match="cannot answer"):
+        session_v6(acct)
+    assert [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls] == [lab.VERIFY_PATH]
+
+
+def test_a_refused_step_up_signs_in_nothing():
+    with pytest.raises(proof.LabError, match="step-up answered HTTP 400"):
+        session_v6(AccountV6(step_up_status=400))
 
 
 def minter_v6(acct: AccountV6):
@@ -2026,6 +2084,7 @@ def test_the_api_key_needs_the_enterprise_project():
 
 HOST_B = "proof-b.%s" % PRODUCT_DOMAIN
 SEED = "JBSWY3DPEHPK3PXP"
+RECOVERY = "RC1-TESTTEST-TESTTEST-TESTTEST-TESTTEST"
 CEK = "cek-a"
 EXEC_VERSION = "1.2.3"
 
@@ -2040,13 +2099,8 @@ class FakeCrypto:
     def __call__(self, request):
         self.ops.append(request)
         op = request["op"]
-        if op == "setup":
-            return {
-                "cek": CEK,
-                "body": {"slots": [{"method": "password"}], "pw": request["password"]},
-            }
         if op == "unwrap":
-            if request["wrappedCek"] != "wrapped:%s" % request["password"]:
+            if request["wrappedCek"] != "wrapped:%s" % request["recoveryCode"]:
                 raise proof.LabError("the crypto helper (unwrap) exited 1")
             return {"cek": CEK}
         if op == "push":
@@ -2069,10 +2123,9 @@ class StoreV6(AccountV6):
     def __init__(
         self,
         *,
-        configured=False,
+        configured=True,
         configs=0,
         tfa=False,
-        setup_status=201,
         bootstrap_status=200,
         exec_lines=None,
         **kw,
@@ -2082,13 +2135,12 @@ class StoreV6(AccountV6):
         self.configured = configured
         self.configs = configs
         self.tfa = tfa
-        self.setup_status = setup_status
         self.elevated = False
         self.reauth_mailed = False
         self.enable_code = ""
         self.disabled_with = ""
         self.config_tokens = {HOST_A: {"rct-old"}, HOST_B: set()}
-        self.password = ""
+        self.recovery_code = RECOVERY
         self.pushed: list[dict] = []
         self.granted: dict | None = None
         self.execs: list[dict] = []
@@ -2142,7 +2194,6 @@ class StoreV6(AccountV6):
             lab.TFA_SETUP_PATH,
             lab.TFA_ENABLE_PATH,
             lab.TFA_DISABLE_PATH,
-            lab.SETUP_PATH,
             lab.BOOTSTRAP_PATH,
         )
         if path in own or path.startswith(lab.CONSOLE_PATH):
@@ -2182,24 +2233,16 @@ class StoreV6(AccountV6):
                 return self._json(400, {"error": "spent"})
             self.tfa, self.disabled_with = False, doc["code"]
             return self._json(200, {"disabled": True})
-        if path == lab.SETUP_PATH:
-            assert self.tfa, "setup is 2FA gated"
-            assert self.elevated, "setup is elevated gated"
-            if self.setup_status != 201:
-                return self._json(self.setup_status, {"error": "boom"})
-            self.configured, self.password = True, doc["pw"]
-            self.config_tokens[HOST_A].add("rct-init")
-            return self._json(201, {"store": {"id": "st-a"}, "initialToken": "rct-init"})
         if path == lab.BOOTSTRAP_PATH:
-            assert doc == {"storeId": "st-a", "method": "password"}
+            assert doc == {"storeId": "st-a", "method": "recovery"}
             if not self.tfa or self.bootstrap_status == 403:
                 # private/account/src/middleware/require-2fa.ts `requireTwoFactor`, on `POST /configs/bootstrap-session`; `bootstrap_status=403` is a Worker that refuses even with the factor on (V7 bench, proxy-1.log:1226).
                 return self._json(403, {"error": TFA_REQUIRED, "twoFactorRequired": True})
             if self.bootstrap_status != 200:
                 return self._json(self.bootstrap_status, {"error": "boom"})
             self.config_tokens[HOST_A].add("rct-boot")
-            slot = {"token": "rct-boot", "serverSecret": "ss", "kdfParams": {"method": "password"}}
-            return self._json(200, {**slot, "wrappedCek": "wrapped:%s" % self.password})
+            slot = {"token": "rct-boot", "serverSecret": "ss", "kdfParams": {"method": "recovery"}}
+            return self._json(200, {**slot, "wrappedCek": "wrapped:%s" % self.recovery_code})
         return self._console(path, headers, doc)
 
     def _console(self, path, headers, doc):
@@ -2227,6 +2270,11 @@ class StoreV6(AccountV6):
         raise AssertionError(path)
 
 
+@pytest.fixture(autouse=True)
+def _recovery_code_env(monkeypatch):
+    monkeypatch.setenv(lab.RECOVERY_CODE_ENV, RECOVERY)
+
+
 def store_minter(acct: StoreV6, crypto: FakeCrypto):
     def minter(company, kind):
         return lab.live_minter(
@@ -2249,35 +2297,8 @@ def store_present(acct: StoreV6):
     return functools.partial(lab.present, send=acct.send, call=acct.call, companies=companies_proxy)
 
 
-def test_a_config_token_sets_the_store_up_under_a_second_factor_that_is_dropped_again():
-    acct, crypto = StoreV6(), FakeCrypto()
-    token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
-    assert token == "rct-init"
-    order = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls if "magic-link" not in c[1]]
-    assert order == [
-        lab.TERMS_PATH,
-        lab.TERMS_ACCEPT_PATH,
-        lab.STORE_INFO_PATH,
-        lab.REAUTH_PATH,
-        lab.REAUTH_VERIFY_PATH,
-        lab.TFA_STATUS_PATH,
-        lab.TFA_SETUP_PATH,
-        lab.TFA_ENABLE_PATH,
-        lab.SETUP_PATH,
-        lab.TFA_DISABLE_PATH,
-    ]
-    assert acct.tfa is False, (
-        "the owner's magic-link sign-in must not be left asking for a second factor"
-    )
-    assert acct.disabled_with
-    assert acct.enable_code not in ("", acct.disabled_with)
-    assert acct.password == lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
-    assert ("account-proof-a", lab.REAUTH_SQL, ["owner@proof-a.example"]) in acct.queries
-
-
-def test_an_existing_store_is_opened_through_its_password_slot_under_a_second_factor_dropped_again():
+def test_a_config_token_opens_the_store_through_its_recovery_slot_under_a_second_factor_dropped_again():
     acct, crypto = StoreV6(configured=True), FakeCrypto()
-    acct.password = lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
     token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
     assert token == "rct-boot"
     order = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls if "magic-link" not in c[1]]
@@ -2298,6 +2319,10 @@ def test_an_existing_store_is_opened_through_its_password_slot_under_a_second_fa
     )
     assert lab.SETUP_PATH not in order
     assert [o["op"] for o in crypto.ops] == ["unwrap"]
+    assert crypto.ops[0]["recoveryCode"] == RECOVERY
+    assert acct.disabled_with
+    assert acct.enable_code not in ("", acct.disabled_with)
+    assert ("account-proof-a", lab.REAUTH_SQL, ["owner@proof-a.example"]) in acct.queries
 
 
 def test_a_refused_bootstrap_still_drops_the_second_factor_and_names_the_refusal():
@@ -2316,21 +2341,21 @@ def test_a_failing_bootstrap_still_drops_the_second_factor_and_names_the_status(
     assert acct.tfa is False
 
 
-class InterruptedCrypto(FakeCrypto):
-    """The crypto helper interrupted mid-setup, as Ctrl-C or a SystemExit would leave it."""
+class InterruptedBootstrap(StoreV6):
+    """A Worker call interrupted mid-bootstrap, as Ctrl-C or a SystemExit would leave it: the second factor is on by then."""
 
-    def __init__(self, interrupt: type[BaseException]):
-        super().__init__()
+    def __init__(self, interrupt: type[BaseException], **kw):
+        super().__init__(**kw)
         self.interrupt = interrupt
 
-    def __call__(self, request):
-        if request["op"] == "setup":
+    def _owned(self, path, headers, doc):
+        if path == lab.BOOTSTRAP_PATH:
             raise self.interrupt
-        return super().__call__(request)
+        return super()._owned(path, headers, doc)
 
 
-class StoreV6DisableFails(StoreV6):
-    """A Worker whose `/auth/2fa/disable` answers 500, so the factor cannot be dropped."""
+class InterruptedBootstrapDisableFails(InterruptedBootstrap):
+    """The same interrupt on a Worker whose `/auth/2fa/disable` answers 500, so the factor cannot be dropped."""
 
     def _owned(self, path, headers, doc):
         if path == lab.TFA_DISABLE_PATH:
@@ -2339,26 +2364,20 @@ class StoreV6DisableFails(StoreV6):
 
 
 @pytest.mark.parametrize("interrupt", [KeyboardInterrupt, SystemExit])
-def test_an_interrupted_setup_still_drops_the_second_factor(interrupt):
+def test_an_interrupted_bootstrap_still_drops_the_second_factor(interrupt):
     """Review 4e605596.1: the factor is dropped on an interrupt or exit too, and the interrupt is what propagates."""
-    acct = StoreV6()
+    acct = InterruptedBootstrap(interrupt)
     with pytest.raises(interrupt):
-        lab.mint(
-            "c0000000a", "config-token", minter=store_minter(acct, InterruptedCrypto(interrupt))
-        )
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
     assert acct.tfa is False
     assert acct.disabled_with
 
 
 def test_a_failing_drop_after_an_interrupt_is_a_note_on_the_interrupt():
     """The drop's failure never replaces the action's error: the interrupt propagates and names the factor left on."""
-    acct = StoreV6DisableFails()
+    acct = InterruptedBootstrapDisableFails(KeyboardInterrupt)
     with pytest.raises(KeyboardInterrupt) as caught:
-        lab.mint(
-            "c0000000a",
-            "config-token",
-            minter=store_minter(acct, InterruptedCrypto(KeyboardInterrupt)),
-        )
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
     notes = getattr(caught.value, "__notes__", [])
     assert any("disabling the owner's second factor of company" in n for n in notes), notes
     assert acct.tfa is True
@@ -2373,32 +2392,37 @@ def test_an_owner_with_a_second_factor_already_is_refused_before_the_bootstrap()
 
 
 def test_a_store_whose_slot_the_proof_cannot_open_is_a_lab_error():
-    """Control: a store set up by someone else (another password) never yields a token."""
+    """Control: a store whose recovery kit is someone else's never yields a token."""
     acct, crypto = StoreV6(configured=True), FakeCrypto()
-    acct.password = "someone-elses"
+    acct.recovery_code = "someone-elses"
     with pytest.raises(proof.LabError, match="unwrap"):
         lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
 
 
-def test_an_owner_with_a_second_factor_already_is_refused_before_setup():
-    acct = StoreV6(tfa=True)
-    with pytest.raises(proof.LabError, match="already has a second factor"):
+def test_a_company_without_a_store_is_refused_before_any_second_factor_or_setup_call():
+    """Setup needs a passkey registration the lab cannot make, so the refusal names the portal step and touches nothing."""
+    acct = StoreV6(configured=False)
+    with pytest.raises(proof.LabError, match="has no config store: setup needs a passkey slot"):
         lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
-    assert not acct.configured
+    paths_called = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
+    assert lab.TFA_ENABLE_PATH not in paths_called
+    assert lab.BOOTSTRAP_PATH not in paths_called
+    assert lab.SETUP_PATH not in paths_called
 
 
-def test_a_failed_setup_still_drops_the_second_factor():
-    acct = StoreV6(setup_status=500)
-    with pytest.raises(proof.LabError, match="config store setup answered HTTP 500"):
+def test_a_missing_recovery_code_is_refused_before_the_bootstrap(monkeypatch):
+    """Control for the unset variable: the bootstrap never runs without the code that opens its answer."""
+    monkeypatch.delenv(lab.RECOVERY_CODE_ENV)
+    acct = StoreV6(configured=True)
+    with pytest.raises(proof.LabError, match=lab.RECOVERY_CODE_ENV):
         lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
     assert acct.tfa is False
 
 
-def test_the_store_password_is_derived_from_the_server_key_and_differs_per_company():
-    first = lab.store_password("c0000000a", api_key=lambda _c: "key-1")
-    assert first == lab.store_password("c0000000a", api_key=lambda _c: "key-1")
-    assert first != lab.store_password("c0000000b", api_key=lambda _c: "key-2")
-    assert "key-1" not in first
+def test_the_recovery_code_is_read_from_the_environment_and_trimmed():
+    assert lab.store_recovery_code(env={lab.RECOVERY_CODE_ENV: " RC1-X \n"}) == "RC1-X"
+    with pytest.raises(proof.LabError, match=lab.RECOVERY_CODE_ENV):
+        lab.store_recovery_code(env={lab.RECOVERY_CODE_ENV: "  "})
 
 
 def test_a_config_token_is_admitted_by_its_own_company_and_refused_by_the_other():
@@ -2555,7 +2579,6 @@ def test_a_console_command_runs_through_a_granted_executor_session():
 
 def test_a_store_that_holds_a_config_is_not_pushed_to_again():
     acct, crypto = StoreV6(configured=True, configs=1), FakeCrypto()
-    acct.password = lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
     assert console_v7(acct, crypto) == proof.Answer(True)
     assert acct.pushed == []
 
@@ -2673,19 +2696,29 @@ def tsx_only(monkeypatch):
 @pytest.mark.skipif(not TSX.exists(), reason="the repository's tsx is not installed")
 def test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract():
     """The shared package's own functions, driven through `ts_crypto` with no network."""
-    made = lab.ts_crypto({"op": "setup", "password": "pw-proof-1"})
+    made = lab.ts_crypto({"op": "setup"})
     slot = made["body"]["slots"][0]
-    assert (slot["method"], made["body"]["requirePasskey"]) == ("password", False)
+    assert (slot["method"], made["body"]["requirePasskey"]) == ("recovery", False)
     opened = lab.ts_crypto(
         {
             "op": "unwrap",
-            "password": "pw-proof-1",
+            "recoveryCode": made["recoveryCode"],
             "kdfParams": slot["kdfParams"],
             "wrappedCek": slot["wrappedCek"],
             "serverSecret": made["body"]["serverSecret"],
         }
     )
     assert opened["cek"] == made["cek"]
+    by_machine_secret = lab.ts_crypto(
+        {
+            "op": "unwrap",
+            "machineSecret": made["machineSecret"],
+            "kdfParams": made["machineSecretKdfParams"],
+            "wrappedCek": made["machineSecretWrappedCek"],
+            "serverSecret": made["body"]["serverSecret"],
+        }
+    )
+    assert by_machine_secret["cek"] == made["cek"]
     key = made["body"]["x25519PublicKey"]
     sealed = lab.ts_crypto(
         {
@@ -2717,8 +2750,10 @@ def test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract():
             "sdkDerived": made["body"]["serverSecret"],
             "cek": made["cek"],
             "storeId": "st-1",
+            "cekGeneration": 1,
         }
     )
+    assert pushed["envelope"]["cekGeneration"] == 1
     assert pushed["encryptedBlob"]
     assert isinstance(pushed["envelope"], dict)
 
@@ -2726,21 +2761,22 @@ def test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract():
 @pytest.mark.usefixtures("tsx_only")
 @pytest.mark.skipif(not TSX.exists(), reason="the repository's tsx is not installed")
 def test_a_failing_crypto_operation_is_a_lab_error_that_quotes_no_input():
-    """Control: a wrong password fails the unwrap, and the error carries neither the password nor stderr."""
-    made = lab.ts_crypto({"op": "setup", "password": "pw-right"})
+    """Control: another store's recovery code fails the unwrap, and the error carries neither the code nor stderr."""
+    made = lab.ts_crypto({"op": "setup"})
+    other = lab.ts_crypto({"op": "setup"})
     slot = made["body"]["slots"][0]
     with pytest.raises(proof.LabError) as raised:
         lab.ts_crypto(
             {
                 "op": "unwrap",
-                "password": "pw-wrong-never-shown",
+                "recoveryCode": other["recoveryCode"],
                 "kdfParams": slot["kdfParams"],
                 "wrappedCek": slot["wrappedCek"],
                 "serverSecret": made["body"]["serverSecret"],
             }
         )
     assert str(raised.value).startswith("the crypto helper (unwrap) exited ")
-    assert "pw-wrong" not in str(raised.value)
+    assert other["recoveryCode"] not in str(raised.value)
 
 
 def test_egress_ips_read_cloudflares_view_of_each_family():
@@ -3008,6 +3044,130 @@ def test_the_body_start_is_eighty_characters_not_eighty_bytes():
         lab.request_from("c0000000a", method="GET", path="/", call=plain, companies=companies_proxy)
     assert "x" * 80 in str(e.value)
     assert "x" * 81 not in str(e.value)
+
+
+# --- release reset ------------------------------------------------------
+# The rehearsal reset (box V5): a version's rollout and re-smoke rows taken out of each bench control database, proof companies only, over a recording fake.
+
+
+ROWS_RESET = [
+    {"id": "c00000001", "name": "proof-ring-canary", "state": "active"},
+    {"id": "c00000002", "name": "proof-ring-small", "state": "active"},
+    {"id": "c00000003", "name": "acme", "state": "active"},
+]
+
+
+class ResetDb:
+    def __init__(self, held: dict[str, list[str]], resmoke: dict[str, list[str]] | None = None):
+        self.held = held
+        self.resmoke = resmoke or {}
+        self.asked: list[tuple[str, str, list]] = []
+
+    def __call__(self, database, sql, params):
+        self.asked.append((database, sql, list(params)))
+        if sql == lab.RESET_ROLLOUT_SQL:
+            return [{"company_id": c} for c in self.held.get(database, [])]
+        if sql == lab.RESET_RESMOKE_SQL:
+            return [{"company_id": c} for c in self.resmoke.get(database, [])]
+        return []
+
+    def deletes(self) -> list[tuple[str, str, list]]:
+        return [a for a in self.asked if a[1].startswith("DELETE")]
+
+
+def test_reset_release_takes_the_version_out_of_every_bench_control_database():
+    db = ResetDb({"control-bench-eu": ["c00000001", "c00000002"], "control-bench-us": []})
+    got = lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert got == ["c00000001", "c00000002"]
+    assert db.deletes() == [
+        ("control-bench-eu", lab.RESET_DELETE_ROLLOUT_SQL, ["4.0.1"]),
+        ("control-bench-eu", lab.RESET_DELETE_RESMOKE_SQL, ["ring-resmoke", "4.0.1"]),
+        ("control-bench-us", lab.RESET_DELETE_ROLLOUT_SQL, ["4.0.1"]),
+        ("control-bench-us", lab.RESET_DELETE_RESMOKE_SQL, ["ring-resmoke", "4.0.1"]),
+    ]
+    # The deploy records `proof cost` reads are never deleted.
+    assert all("deploy-record" not in sql for _db, sql, _p in db.deletes())
+
+
+@pytest.mark.parametrize("cid", ["c00000003", "c0000000f"], ids=["not-proof", "unknown"])
+def test_reset_release_refuses_a_row_of_a_company_the_lab_did_not_create(cid):
+    db = ResetDb({"control-bench-eu": ["c00000001"], "control-bench-us": [cid]})
+    with pytest.raises(proof.LabError, match=cid):
+        lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert db.deletes() == []
+
+
+@pytest.mark.parametrize("cid", ["c00000003", "c0000000f"], ids=["not-proof", "unknown"])
+def test_reset_release_refuses_a_resmoke_audit_row_of_a_company_the_lab_did_not_create(cid):
+    # No rollout row names the company; only its ring-resmoke audit row of the version does (review c2a8357f.1).
+    db = ResetDb({}, resmoke={"control-bench-us": [cid]})
+    with pytest.raises(proof.LabError, match=cid):
+        lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert db.deletes() == []
+
+
+def test_reset_release_takes_a_proof_companys_resmoke_audit_row_out_with_the_rest():
+    # CONTROL for the refusal above: a proof company's re-smoke row alone is reset, and reported.
+    db = ResetDb({}, resmoke={"control-bench-eu": ["c00000002"]})
+    got = lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert got == ["c00000002"]
+    assert len(db.deletes()) == 4
+
+
+class StatefulControlDb:
+    """The control databases as rows: reset_release's deletes change what the ring runner's `versions` reads."""
+
+    def __init__(self, rollout: list[dict]):
+        self.rollout = rollout
+
+    def __call__(self, _database, sql, params):
+        if sql == lab.RESET_ROLLOUT_SQL:
+            return [
+                {"company_id": r["company_id"]} for r in self.rollout if r["version"] == params[0]
+            ]
+        if sql == lab.RESET_DELETE_ROLLOUT_SQL:
+            self.rollout[:] = [r for r in self.rollout if r["version"] != params[0]]
+            return []
+        if sql == rings_run.ROLLOUT_SQL:
+            return list(self.rollout)
+        if sql in (lab.RESET_RESMOKE_SQL, lab.RESET_DELETE_RESMOKE_SQL):
+            return []
+        raise AssertionError(sql)
+
+
+def test_a_finished_rehearsal_is_reset_so_no_ring_company_runs_the_target_afterwards():
+    # Review c2a8357f.2: the live reset deletes rollout rows only, and the verb's "no ring company runs the target" check reads versions derived from those same rows (rings_run.versions), so a finished earlier rehearsal does not end the next one.
+    history = [("c00000001", "4.0.0"), ("c00000001", "4.0.1"), ("c00000002", "4.0.1")]
+    rows = [
+        {
+            "company_id": cid,
+            "status": "deployed",
+            "version": version,
+            "ring": "",
+            "release_id": f"r{n}",
+            "finished_at": n,
+        }
+        for n, (cid, version) in enumerate(history)
+    ]
+    db = StatefulControlDb(rows)
+    world = cast("rings_run.World", types.SimpleNamespace(query=db))
+    targets = ["c00000001", "c00000002"]
+    # CONTROL: before the reset both ring companies run the target, so the check below can fail.
+    assert rings_run.versions(targets, world=world) == {"c00000001": "4.0.1", "c00000002": "4.0.1"}
+    lab.reset_release("4.0.1", query=db, companies=lambda _bench: ROWS_RESET)
+    assert rings_run.versions(targets, world=world) == {"c00000001": "4.0.0"}
+
+
+def test_reset_release_is_bound_on_the_live_lab(monkeypatch):
+    seen: list[str] = []
+
+    def reset(version: str) -> list[str]:
+        seen.append(version)
+        return []
+
+    monkeypatch.setattr(lab, "reset_release", reset)
+    assert _lab().reset_release("4.0.1") == []
+    assert seen == ["4.0.1"]
 
 
 # --- cost ---------------------------------------------------------------

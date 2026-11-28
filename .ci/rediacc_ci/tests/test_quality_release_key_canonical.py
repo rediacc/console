@@ -1,13 +1,13 @@
 """`rediacc_ci.quality.release_key_canonical`, driven directly.
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-release-key-canonical.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The twin's own `RELEASE_KEY_ROOT` seam pointed both implementations at the fixture; the twin was copied in anyway, because the committed ledger
-(`.ci/shadow/w7p2-release-key.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations. That ledger licensed the port at K=5 and the twin was retired in W7 P5, so the fixture cases were retired with it.
+(the ledger (deleted in commit:936280cd35)) records a tree id that has to be a claim about BOTH implementations. That ledger licensed the port at K=5 and the twin was retired in W7 P5, so the fixture cases were retired with it.
 
 WHAT THOSE CASES ESTABLISHED, recorded rather than dropped without trace. Each side generated its OWN throwaway key, so the two runs were not byte-identical in general: the fingerprint differed. Every fixture was therefore built so that the controls naming a fingerprint PASSED (printed as ` ok ...` without the value) and only the two `grep`-counting controls failed, which
-is what made a byte comparison meaningful rather than merely noisy. The one residual divergence was the twin's own `grep: ... No such file` warning on stderr, chatter to `scripts/lib/shadow-gate.ts`. The fixtures varied build-linux-pkg.sh and never the key, because that file is the only input a test can move without a secret: quality jobs do not have
+is what made a byte comparison meaningful rather than merely noisy. The one residual divergence was the twin's own `grep: ... No such file` warning on stderr, chatter to the shadow gate (commit:bf054adcd4). The fixtures varied build-linux-pkg.sh and never the key, because that file is the only input a test can move without a secret: quality jobs do not have
 RELEASE_GPG_PRIVATE_KEY and must not.
 
-THREE OF THIS GATE'S EXITS ARE REFUSALS in `scripts/lib/shadow-gate.ts`'s vocabulary -- "nothing here was verified" (no gpg), "so NOTHING was verified" (key generation failed) and "the battery is not being executed as written" (short battery). A refusal suspends the comparison rather than colouring it, so no ledger row could ever be recorded over one. They are asserted below
+THREE OF THIS GATE'S EXITS ARE REFUSALS in the shadow gate (commit:bf054adcd4)'s vocabulary -- "nothing here was verified" (no gpg), "so NOTHING was verified" (key generation failed) and "the battery is not being executed as written" (short battery). A refusal suspends the comparison rather than colouring it, so no ledger row could ever be recorded over one. They are asserted below
 through the message-shape case, which reads the strings without driving the state, and by the port's own selftest.
 """
 

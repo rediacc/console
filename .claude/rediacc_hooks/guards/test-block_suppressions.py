@@ -24,6 +24,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve()
 _SYSPATH = importlib.util.spec_from_file_location(
     "rediacc_hooks_syspath", HERE.parent.parent / "syspath.py"
@@ -563,7 +567,7 @@ SHELL_CASES = [
 
 
 def via_dispatch(stem, payload):
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, stem],
         input=json.dumps(payload),
         capture_output=True,

@@ -19,6 +19,9 @@ import posixpath
 import re
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_protected_files", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 3
@@ -42,184 +45,6 @@ VERB_AND_PATH = (
 
 MESSAGE = "❌ BLOCKED: Cannot delete or restore protected hook files"
 
-EDGE_CASES = [
-    ("a restore of the settings file", "git restore .claude/settings.json"),
-    ("a checkout of the settings file", "git checkout .claude/settings.json"),
-    ("an rm of the pre-commit script", "rm scripts/pre-commit-check.sh"),
-    ("rm after a separator", "true; rm .claude/settings.json"),
-    # The over-block the clause fix exists for.
-    (
-        "checking out a branch then READING the file",
-        "git checkout main && cat .claude/settings.json",
-    ),
-    ("reading the file on its own", "cat .claude/settings.json"),
-    ("a restore of an unprotected path", "git restore packages/cli/src/x.ts"),
-    ("a wrapper payload is still scanned", "sh -c 'git restore .claude/settings.json'"),
-    # Command position on every arm: these sentences were refused before 2026-10-09.
-    (
-        "a sentence naming the restore is not running it",
-        "echo the docs say never to run git restore .claude/settings.json in this repo",
-    ),
-    ("a sentence naming rm is not running it", "echo never rm .claude/settings.json here"),
-    ("git global flags before the verb", "git -C . restore .claude/settings.json"),
-    ("a prefix command still reaches rm", "sudo rm .claude/settings.json"),
-    (
-        "find -exec is a launcher shellscan walks",
-        r"find . -exec rm .claude/settings.json \;",
-    ),
-    (
-        "every find -exec is walked, not only the first",
-        r"find . -name x -exec true {} \; -exec rm .claude/settings.json \;",
-    ),
-    # The path on the producer side of a pipe into xargs (#ec63ff8c): each was allowed before 2026-10-09.
-    ("xargs rm fed the path on stdin", "echo .claude/settings.json | xargs rm"),
-    (
-        "xargs git restore fed the path on stdin",
-        "printf '%s' scripts/pre-commit-check.sh | xargs git restore",
-    ),
-    ("xargs -I with the path on stdin", "echo .claude/settings.json | xargs -I{} rm -f {}"),
-    (
-        "an earlier stage of the pipe feeds xargs too",
-        "echo .claude/settings.json | sort | xargs git checkout --",
-    ),
-    # ... and the consumer has to be destructive, and fed by THIS pipe.
-    ("piping the path to cat reads it", "echo .claude/settings.json | cat"),
-    ("xargs cat reads it", "echo .claude/settings.json | xargs cat"),
-    ("xargs rm of an unprotected path", "echo packages/cli/src/x.ts | xargs rm"),
-    ("a separator ends the pipe before xargs", "echo .claude/settings.json; ls | xargs rm"),
-    ("xargs behind sudo", "echo .claude/settings.json | sudo xargs rm"),
-    ("xargs git rm", "git ls-files .claude/settings.json | xargs git rm"),
-    ("a tee between the producer and xargs", "echo .claude/settings.json | tee /tmp/l | xargs rm"),
-    (
-        "git reads its pathspec from stdin",
-        "echo .claude/settings.json | git restore --pathspec-from-file=-",
-    ),
-    ("a heredoc fed to xargs", "cat <<'EOF' | xargs rm\n.claude/settings.json\nEOF"),
-    ("inside a wrapper payload", "sh -c 'echo .claude/settings.json | xargs rm'"),
-    ("find -exec rm of the path find names", r"find .claude/settings.json -exec rm {} \;"),
-    ("xargs echo prints it", "grep -n .claude/settings.json docs/x.md | xargs echo"),
-    ("xargs ls lists it", "echo .claude/settings.json | xargs ls -l"),
-    ("find -exec cat reads it", r"find .claude/settings.json -exec cat {} \;"),
-    (
-        "git restore of stdin with no protected path",
-        "echo packages/x.ts | git restore --pathspec-from-file=-",
-    ),
-    # A shell payload xargs or find -exec launches inherits the feed (#32e75fa4): each refusal was allowed before.
-    (
-        "an xargs-fed sh -c payload removes $0",
-        """echo .claude/settings.json | xargs sh -c 'rm "$0"'""",
-    ),
-    (
-        "an xargs-fed bash -c payload removes $@",
-        """echo .claude/settings.json | xargs bash -c 'rm "$@"' _""",
-    ),
-    ("xargs -I into a sh -c payload", "echo .claude/settings.json | xargs -I{} sh -c 'rm {}'"),
-    (
-        "a nested shell inside the fed payload",
-        """echo .claude/settings.json | xargs sh -c 'bash -c "git checkout -- \\"\\$0\\"" "$0"'""",
-    ),
-    ("find -exec sh -c removes $0", r"""find .claude/settings.json -exec sh -c 'rm "$0"' {} \;"""),
-    (
-        "an xargs-fed sh -c payload that only reads",
-        """echo .claude/settings.json | xargs sh -c 'cat "$0"'""",
-    ),
-    (
-        "an xargs-fed sh -c rm of an unprotected path",
-        """echo packages/x.ts | xargs sh -c 'rm "$0"'""",
-    ),
-    (
-        "a piped sh -c payload names no fed command",
-        """echo .claude/settings.json | sh -c 'rm -f /tmp/x'""",
-    ),
-    (
-        "a piped sh -c payload's xargs rm reads its stdin",
-        "echo .claude/settings.json | sh -c 'xargs rm'",
-    ),
-    ("through cat inside the payload", "echo .claude/settings.json | bash -c 'cat | xargs rm'"),
-    (
-        "a piped sh -c payload's xargs only reads",
-        "echo .claude/settings.json | bash -c 'xargs cat'",
-    ),
-    # A group's stdin is every member's, and a read loop turns the feed into a variable (#31ed6c5f): each refusal was allowed before.
-    ("a subshell consumer is fed", "echo .claude/settings.json | (xargs rm)"),
-    ("a brace-group consumer is fed", "echo .claude/settings.json | { xargs rm; }"),
-    ("a here-string on a subshell feeds it", "(xargs rm) <<< .claude/settings.json"),
-    (
-        "a read loop removes the read variable",
-        'echo .claude/settings.json | while read f; do rm "$f"; done',
-    ),
-    (
-        "a read loop restores REPLY",
-        'echo .claude/settings.json | while read; do git restore "${REPLY}"; done',
-    ),
-    (
-        "a read loop that only reads",
-        'echo .claude/settings.json | while read -r f; do cat "$f"; done',
-    ),
-    ("a subshell consumer fed an unprotected path", "echo packages/x.ts | (xargs rm)"),
-    (
-        "a read loop removing another path",
-        "echo .claude/settings.json | while read f; do rm /tmp/x; done",
-    ),
-    # A loop fed through `done` feeds its body (review e085085d.1): each refusal was allowed before, the first pinned as a KNOWN GAP.
-    (
-        "a read loop fed through done <<<",
-        'while read f; do rm "$f"; done <<< .claude/settings.json',
-    ),
-    (
-        "a read loop fed through done < <(...)",
-        'while read f; do rm "$f"; done < <(echo .claude/settings.json)',
-    ),
-    ("a piped loop's body is fed", "echo .claude/settings.json | while true; do xargs rm; done"),
-    (
-        "a loop fed through done that only reads",
-        'while read f; do cat "$f"; done <<< .claude/settings.json',
-    ),
-    # The path in a shape the prose view drops (e085085d.1 sweep): each refusal was allowed before.
-    ("a quoted path", 'rm ".claude/settings.json"'),
-    ("a variable holding the path", 'f=.claude/settings.json; rm "$f"'),
-    ("a for list holding the path", 'for f in scripts/pre-commit-check.sh; do rm "$f"; done'),
-    ("a path relative to a cd", "cd scripts && rm pre-commit-check.sh"),
-    ("a recursive rm above the path", "rm -rf .claude"),
-    ("a recursive rm beside the path", "rm -rf .claude/tmp-scratch"),
-    ("a variable holding the path, read", 'f=.claude/settings.json; cat "$f"'),
-    # A wrapper is a command the walk found, not a quoted word that spells one (#31ed6c5f): both were refused before.
-    (
-        "a quoted sh -c is an echo argument",
-        """echo "sh -c 'rm x'" "x .claude/settings.json | y\"""",
-    ),
-    ("a quoted eval is an echo argument", """echo "eval rm" ".claude/settings.json\""""),
-    (
-        "a real sh -c after a quoted mention",
-        """echo "sh -c 'rm x'"; sh -c 'rm .claude/settings.json'""",
-    ),
-    # #c9c8c18e: a glob under a variable the same command set to a literal is judged as that literal (allowed); unset, set from a substitution, or set into a protected root, it is still refused.
-    (
-        "a glob under a variable this command set",
-        "D=agent/d778be9d/b6-replay; git rm -q -- $D/*.py $D/*.json",
-    ),
-    ("a glob under a variable never set", "rm $D/*.json"),
-    ("a glob under a variable set to .claude", "D=.claude; git rm -q -- $D/*.json"),
-    ("a glob under a variable set by a substitution", "D=$(echo .claude); rm $D/*.json"),
-    ("a glob under a variable set then unset", "D=agent/x; unset D; rm $D/*.json"),
-    # acc34f73.1/.2: a `$D` that bash does not expand (single quotes, an escaped dollar) names a literal directory `$D`, so the typed text is judged, not the assigned value.
-    ("a single-quoted variable under a recursive rm", "D=agent/x; rm -r '$D/../.claude'"),
-    ("an escaped dollar in double quotes", 'D=agent/x; rm -r "\\$D/../.claude"'),
-    ("an escaped braced dollar in double quotes", 'D=agent/x; rm -r "\\${D}/../.claude"'),
-    ("a variable that bash expands under a recursive rm", "D=agent/x; rm -r $D/../.claude"),
-    # 335d582f.1: an empty expansion shifts `xargv` out of line with `argv`; the assigned reading still holds for an expanded word and the typed one for a quoted word.
-    ("misaligned argv, an expanded variable", "E=; D=agent/x; rm -r $E $D/../.claude"),
-    ("misaligned argv, a single-quoted variable", "E=; D=agent/x; rm -r $E '$D/../.claude'"),
-    (
-        "misaligned argv, a single-quoted twin of an expanded word (review a62c7d11.1)",
-        "E=; D=agent/x; rm -r $E $D/../.claude '$D/../.claude'",
-    ),
-    (
-        "a glob under a variable set only on one branch",
-        "D=agent/x; [ -n y ] && D=.claude; rm $D/*.json",
-    ),
-]
-
 
 def run(ev):
     cmd = ev.raw("tool_input", "command")
@@ -231,7 +56,11 @@ def run(ev):
         cwd = ev.default(("cwd",), str(hookio.repo_root()))
     except RuntimeError:
         cwd = ev.cwd
-    if hookio.grep_q(VERB_AND_PATH, scan) or fed_by_stdin(cmd) or names_by_run(cmd, cwd):
+    if (
+        hookio.grep_q(VERB_AND_PATH, scan)
+        or fed_by_stdin(cmd)
+        or names_by_run(cmd, cwd, shellscan.event_write_records(ev))
+    ):
         ev.warn(MESSAGE)
         return hookio.DENY
     return hookio.ALLOW
@@ -566,61 +395,71 @@ def _assigned(run_, word):
     return None if "$" in out else out
 
 
-def _unset_ref(run_, word):
-    """Is `word` a lone `$NAME`/`${NAME}` the walk knows is unset (`unset NAME` earlier in the command)? Bash drops such a word from the expanded argv, as it drops an empty one, so it holds no position in `xargv` (an unknown name keeps one, as an unresolved placeholder)."""
-    m = _PLAIN_REF.fullmatch(word)
-    if not m:
+# THE OPERANDS ARE THE WALK'S RECORDS (PLAN-tooling-code-reduction CR5). `shellscan.write_records` lists every operand of an `rm` ("remove") and every pathspec of a destructive git verb ("git"), each as typed and as bash expands it, joined onto the verb's `-C`, with what xargs feeds the run and, for a `find -exec` run, find's starting points in a `{}`'s place (neither is taken here, `_held`); a word the walk cannot expand is an "unknown" record holding its
+# unexpanded parts as `_UNRESOLVED` markers, which this guard reads as a backtick span, "any text" to `_wildcarded`. An unknown record that is no word of the run (a redirect target, `index` None) is not an operand either. A typed word whose every `$NAME` this command assigned is judged as that value, and only when bash's own expansion of it (an expanded record of the same run) IS that value (review acc34f73.1): `'$D/..'` stays `$D/..` there and `"\$D/.."` is unknown, and both name a literal `$D` directory, so they keep the typed text.
+# A word bash drops (`unset X; rm $X ...`, `X=; rm $X ...`) holds no position the value could be lent from, since the test is the value among the expanded records, never a position (reviews d95ab97d.1, 335d582f.1); a typed word that bash also hands over as written (`'$D/../.claude'` beside `$D/../.claude`, one record for both texts) keeps its literal reading (review a62c7d11.1).
+def _held(write):
+    """Is `write` read from a word its run holds itself (its argv or its expanded argv, at the record's index)? A word xargs feeds (`index` None) and a find start standing in a `{}`'s place are not: what reaches the command on stdin is `fed_by_stdin`'s, read from the feed's own text, and a find start is no operand of the rm (`find . -name '*.pyc' -exec rm -rf {} +` removes what the find matched, never the tree it walks)."""
+    if write.word_index is None:
         return False
-    name = m.group(1) or m.group(2)
-    held = (run_.vars or {}).get(name)
-    return name not in run_.loop_vars and isinstance(held, tuple) and held[0] is None
+    return any(
+        held is not None and write.word_index < len(held) and held[write.word_index] == write.word
+        for held in (write.run.argv, write.run.xargv)
+    )
 
 
-def _operand_words(run_):
-    """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
-    # A typed word is read as its assigned value only when bash's own expansion of it (`xargv`, aligned by position) IS that value: `'$D/..'` stays `$D/..` there and `"\$D/.."` is unresolved, and both name a literal `$D` directory, so they keep the typed text (review acc34f73.1).
-    # `xargv` drops a word that expands to nothing (`E=; rm $E x`), so `rm $E $D/..` must still read `$D` as its value while `'$D/..'` (bash leaves it `$D/..`) stays typed (review 335d582f.1).
-    # The two lists are walked in step (review a62c7d11.1): a typed word matches only the expanded word at its own position, and a word whose assigned value is empty consumes none, so another word that happens to expand to the same value can never lend it.
-    xargv = run_.xargv
-    words = []
-    j = 0
-    for a in run_.argv:
-        value = _assigned(run_, a)
-        seen = False
-        if xargv is not None:
-            if j < len(xargv) and value is not None and value == xargv[j]:
-                seen = True
-                j += 1
-            elif value != "" and not _unset_ref(run_, a):
-                j += 1
-        words.append((seen and value) or a)
-    # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).
-    words += [w.replace(shellscan._UNRESOLVED, "`_`") for w in (run_.xargv or [])]
+def _operands_by_run(records):
+    """`[(run, [word, ...]), ...]` in walk order: the operand records of each run (`_held`, and every git pathspec, which carries the verb's `-C`), an unknown word read with its unexpanded parts as backtick spans."""
+    runs: dict[int, tuple] = {}
+    for write in records:
+        if write.how == "git" or (write.how == "remove" and _held(write)):
+            word = write.word
+        elif write.how == "unknown" and _held(write):
+            word = write.word.replace(shellscan._UNRESOLVED, "`_`")
+        else:
+            continue
+        runs.setdefault(id(write.run), (write.run, []))[1].append(word)
+    return list(runs.values())
+
+
+def _operand_words(run_, words):
+    """Every word an operand of `run_` could be: its operand records `words`, a typed word whose assigned value is one of them dropped in its favour unless the expanded argv holds the typed text too (`_assigned`), and each word of a `for` list a `$NAME` in the argv names."""
+    held = set(words)
+    literal = set(run_.xargv or ())
+    out = []
+    for word in words:
+        value = _assigned(run_, word)
+        if value is not None and value != word and value in held and word not in literal:
+            continue
+        out.append(word)
     for name, values in run_.loop_vars.items():
         ref = re.compile(r"\$\{?%s\b" % re.escape(name))
         if any(ref.search(a) for a in run_.argv):
-            words += values
-    return words
+            out += values
+    return out
 
 
-def names_by_run(cmd, cwd):
-    """True when a walked `rm` or destructive git verb names a protected file, or recursively removes a directory holding one."""
+def names_by_run(cmd, cwd, records=None):
+    """True when a walked `rm` or destructive git verb names a protected file, or recursively removes a directory holding one. `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
     here_root = posixpath.normpath(str(cwd) if cwd else "/")
     try:
         root = posixpath.normpath(str(hookio.repo_root()))
     except RuntimeError:
         root = here_root
-    for run_ in shellscan.every_run(cmd):
+    if records is None:
+        records = shellscan.write_records(cmd, here_root)
+    for run_, words in _operands_by_run(records):
         destructive, git_verb = _destructive(run_)
         if not destructive:
             continue
-        here = run_.git_dir if git_verb else run_.cwd
-        base = _resolve(here, here_root) if here else here_root
+        # A git pathspec record already carries the verb's `-C`, so every word resolves from the directory the run executes in; the directory git runs in (`git_dir`) is where a pathspec `x/..` folds to.
+        base = _resolve(run_.cwd, here_root) if run_.cwd else here_root
+        run_dir = _resolve(run_.git_dir, here_root) if git_verb and run_.git_dir else base
         # `rm -r` and `git rm -r` remove what a directory holds; a restore or checkout of a directory is block_destructive_git_restore's to judge.
         recursive = (not git_verb or run_.git_sub == "rm") and any(
             a == "--recursive" or re.match(r"^-[A-Za-z]*[rR]", a) for a in run_.argv
         )
-        for word in _operand_words(run_):
+        for word in _operand_words(run_, words):
             if word.startswith("-") or word == "":
                 continue
             if ("$(" in word or "`" in word) and _names_protected_text(word, base, root, recursive):
@@ -633,7 +472,7 @@ def names_by_run(cmd, cwd):
             # normalises the pathspec `x/..` to the run's directory, so a recursive `git rm` of such a word is refused when that directory holds a protected file.
             pattern_text = _wildcarded(word)
             if pattern_text is not None and _wild_path(pattern_text, base)[2]:
-                if git_verb and recursive and _holds_protected(base, root):
+                if git_verb and recursive and _holds_protected(run_dir, root):
                     return True
                 continue
             path = _resolve(word, base)

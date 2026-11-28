@@ -2,7 +2,7 @@
 
 Both-ways test for `rediacc_ci.core.bws_env`, the shared Bitwarden fetcher local scripts use instead of reading `private/account/.env`.
 
-THE SUBJECT MOVED WHEN ITS BASH TWIN WENT. This file drove `.ci/lib/bws-env.sh` until that helper was retired: it had zero sourcers, its equivalence with the port is recorded over five distinct trees in `.ci/shadow/w7p5b-bws-env.observations.jsonl`, and the helper's own bytes are frozen under `goldens/bws-env/`. The assertions below are UNCHANGED, which is the point of naming
+THE SUBJECT MOVED WHEN ITS BASH TWIN WENT. This file drove `.ci/lib/bws-env.sh` until that helper was retired: it had zero sourcers, its equivalence with the port is recorded over five distinct trees in the ledger (deleted in commit:936280cd35), and the helper's own bytes are frozen under `goldens/bws-env/`. The assertions below are UNCHANGED, which is the point of naming
 them after behaviour rather than after an implementation: every refusal, every count and every "rc=" line is the same string it was when a shell printed it.
 
 WHY THIS CLASS NEEDS A TEST. Every failure mode of a credential fetcher is quiet by nature: an empty value exports cleanly, a missing token looks like a network blip, and a silent fallback to a local file makes a broken fetch work on the author's machine and nowhere else. So the cases here are mostly REFUSALS, and each is planted rather than described.
@@ -15,7 +15,7 @@ WHY THE SUBJECT IS DRIVEN IN A SUBPROCESS. `bws_env_load` EXPORTED into the shel
 `run_load` produced, so the assertions transfer unchanged.
 """
 
-import importlib.util
+import importlib
 import json
 import os
 import shutil
@@ -24,27 +24,6 @@ import stat
 from rediacc_ci import paths
 from rediacc_ci.core import bws_env
 from rediacc_ci.tests.gates import harness
-
-
-def load_gate_module(name: str):
-    """Load a `.ci/scripts/quality` script by PATH, without putting it on sys.path.
-
-    BY PATH AND NOT BY A `sys.path` HOP, for two separate reasons. The tree has exactly one canonical way onto `sys.path`, guarded by `test_canonical_sys_path_hop.py`, so a hand-written hop here would be a finding in its own right.
-
-    And a directory of forty gate scripts on `sys.path` makes every one of their module names importable from every test, which is how a test comes to depend on a neighbour it never meant to name.
-
-    THE CANONICAL HOP IS STILL NEEDED, and that is not a contradiction of the paragraph above. These scripts open with `import _cipath`, which resolves only because running one from PATH puts its own directory on `sys.path[0]`; loading by path does no such thing, so without the hop the subject dies at its first import line.
-    `paths.on_sys_path` is this repo's one sanctioned spelling for it, so the hop is declared rather than hand-written, and the by-path load still keeps the module name explicit.
-    """
-    paths.on_sys_path(paths.quality_dir())
-    src = paths.from_root(".ci", "scripts", "quality", "%s.py" % name)
-    spec = importlib.util.spec_from_file_location(name, src)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
 
 SUBJECT = paths.from_root(".ci", "rediacc_ci", "core", "bws_env.py")
 
@@ -331,7 +310,7 @@ def test_b7_grammar_parity_with_the_gate_that_reads_the_same_blocks(gate):
 
     The fixture deliberately includes every edge the two must agree on: a bare name, an alias, an alias with ragged spacing, a full-line comment, a trailing comment, a blank line, and a line that is nothing but whitespace.
     """
-    check_bws_map = load_gate_module("check_bws_map")
+    check_bws_map = importlib.import_module("rediacc_ci.quality.bws_map")
     lines = [
         "ALPHA_TOKEN",
         "BETA_TOKEN > LOCAL_BETA",

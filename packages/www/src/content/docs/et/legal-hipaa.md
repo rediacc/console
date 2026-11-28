@@ -8,8 +8,8 @@ tags:
 subcategory: regulations
 order: 3
 language: et
-sourceHash: "1a0a2df716f6628b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "3fa7dcd465e26d0b"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Tervisekindlustuse ülekantavuse ja vastutuse seadus (HIPAA) on Ameerika Ühendriikide föderaalseadus, mis kehtestab standardid tundlike patsientide terviseandmete (PHI) kaitseks. See kehtib kaetud üksustele (tervishoiuteenuse osutajad, tervisekavad, tervishoiu kliiringukojad) ja nende äripartneritele.
@@ -35,7 +35,7 @@ HIPAA nõuab haldus-, tehnilisi ja füüsilisi kaitsemeetmeid. Alljärgnev tabel
 | Nõue | Rediacc'i võimekus |
 |-------------|-------------------|
 | Tööjõu juurdepääsu haldamine | API-žetoonid ulatusega piiratud õigustega. Meeskonnapõhine juurdepääsukontroll. Žetooni automaatne tühistamine meeskonnast eemaldamisel. |
-| Turvaincidendi menetlused | Auditlogid pakuvad kõigi toimingute kohtuekspertiisi rada. Hoidlapõhine eraldus piirab kahjustuse ulatust. |
+| Turvaincidendi menetlused | Auditlogid salvestavad, kes mida tegi, nende toimingute osas, mida need katavad. Hoidlapõhised võrgu voo kirjed (tasulised plaanid, hoidla kohta valitud tasemel) ja uurimise ajajoon annavad intsidendi kohta tõendeid; voo kirjed näitavad mahtu ja sihtkohta, mitte sisu. HIPAA-spetsiifilist aruannet ei genereerita. Hoidlapõhine eraldus piirab kahjustuse ulatust. |
 | Hädaolukorra planeerimine | `rdc repo push/pull` toetab mitme sihtkoha krüptitud varukoopiat. CoW-hetktõmmised võimaldavad koheselt taastuda. |
 
 ### Füüsilised kaitsemeetmed

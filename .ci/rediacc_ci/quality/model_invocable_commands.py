@@ -12,7 +12,17 @@ ONE PREDICATE, ONE LOADER. What a command or skill file is, what "disables model
 
 NOT IN SCOPE: `user-invocable:` in `.claude/skills/*/SKILL.md`. That key decides whether a skill is in the USER's slash menu, not whether the model may invoke it.
 
-WHAT IS SCANNED. Every TRACKED `.md` under a `.claude/commands/` or `.claude/skills/` directory, at any depth, in the console and in each of the four submodules (`private/account` tracks `.claude/commands/update-tax-rates.md`; Claude Code discovers nested `.claude` trees). A submodule that is not checked out is a FAILURE, never a skip: its commands would be unchecked, and an unchecked file is not a passing one. Zero files scanned in the console is a failure too, because a scan that sees nothing has lost its file list and its silence would read like a clean tree.
+WHAT IS SCANNED. Every TRACKED `.md` under a `.claude/commands/` or `.claude/skills/` directory, at any depth, in the console and in each of the four submodules (a submodule such as `private/account` is scanned for its own `.claude/commands/<name>.md` files, though none tracks one at present; Claude Code discovers nested `.claude` trees). A submodule that is not checked out is a FAILURE, never a skip: its commands would be unchecked, and an unchecked file is not a passing one. Zero files scanned in the console is a failure too, because a scan that sees nothing has lost its file list and its silence would read like a clean tree.
+
+---- gate ----
+step: Model-invocable commands
+needs: submodules
+lane: quality-code
+selftest: true
+why: no slash command or skill is user-only (operator ruling 2026-10-09); a tracked file
+     declaring disable-model-invocation fails, except an entry on the operator's exception
+     list, which holds operator rulings only and is refused when stale
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -327,3 +337,7 @@ def main(argv: list[str], root: pathlib.Path | None = None) -> int:
     for line in err:
         print(line, file=sys.stderr)
     return 1 if report.failed() else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

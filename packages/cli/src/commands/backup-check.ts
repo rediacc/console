@@ -319,6 +319,7 @@ export function registerBackupCheck(backup: Command): void {
   backup
     .command('check')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.check.descriptionShort'))
     .description(t('commands.backup.check.description'))
     .option('--path <file>', t('commands.backup.check.optionPath'))
     .option('--debug', t('options.debug'))
@@ -326,8 +327,8 @@ export function registerBackupCheck(backup: Command): void {
       try {
         const result = await runBackupCheck(repoRef, options);
         const format = getOutputFormat();
-        outputService.print(result, format === 'table' ? 'json' : format);
         if (result.status !== 'proven') setExitCode(1);
+        outputService.print(result, format === 'table' ? 'json' : format);
       } catch (error) {
         handleError(error);
       }

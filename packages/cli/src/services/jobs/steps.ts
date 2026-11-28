@@ -254,6 +254,8 @@ const DEFINITIONS: StepDefinition[] = [
         const parsed = parseVerifyVerdict(ctx.output);
         const verdict = parsed ?? { status: STATUS_UNKNOWN, level: optStr(ctx.params, 'level') };
         const format = getOutputFormat();
+        // An unreadable verdict fails the run; set before the print so the JSON envelope says so.
+        if (!parsed) setExitCode(1);
         outputService.print(verdict, format === 'table' ? 'json' : format);
         if (!parsed) {
           outputService.error(
@@ -261,7 +263,6 @@ const DEFINITIONS: StepDefinition[] = [
               name: optStr(ctx.params, 'repo') ?? ctx.machine,
             })
           );
-          setExitCode(1);
         }
         return Promise.resolve();
       };

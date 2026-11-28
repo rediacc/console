@@ -19,6 +19,7 @@ import time
 import pytest
 
 from rediacc_ci import xdist_groups
+from rediacc_ci.testrun import account_e2e
 from rediacc_ci.testrun import start_account as sa
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests import testrun_support as ts
@@ -546,7 +547,14 @@ def test_advertise_host_names_the_published_url(
     assert gh_out.read_text() == "server-url=http://192.168.111.254:4911\n"
 
 
-FAKE_KEYS = {"edPriv": "GEN-PRIV", "edPub": "GEN-PUB", "xPriv": "GEN-XPRIV", "xPub": "GEN-XPUB"}
+FAKE_KEYS = {
+    "edPriv": "GEN-PRIV",
+    "edPub": "GEN-PUB",
+    "xPriv": "GEN-XPRIV",
+    "xPub": "GEN-XPUB",
+    "reportPriv": "GEN-RPRIV",
+    "reportPub": "GEN-RPUB",
+}
 
 
 def drive_run(
@@ -928,3 +936,164 @@ def test_ensure_two_factor_does_nothing_when_already_enabled() -> None:
     api = ScriptApi({"/auth/2fa/status": (200, json.dumps({"enabled": True}))})
     sa.ensure_two_factor(api, "owner@example.test")
     assert api.paths == ["/auth/2fa/status"]
+
+
+def test_the_server_holds_a_report_signing_pair_that_verifies(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """TEST_MODE report generation stopped at REPORT_KEY_NOT_CONFIGURED: the server needs both REPORT_ED25519_* names, PKCS8/SPKI base64, and a signature by the private half must verify under the public one."""
+    for name in (
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+    keys = sa.server_keys()
+    seen: dict[str, str] = {}
+    with monkeypatch.context() as patch:
+        patch.setattr(sa.subprocess, "Popen", lambda _a, **kw: seen.update(kw["env"]))
+        sa.start_server(sa.Options(), tmp_path, tmp_path / "log", tmp_path / "db.sqlite", keys)
+    priv, pub = seen["REPORT_ED25519_PRIVATE_KEY"], seen["REPORT_ED25519_PUBLIC_KEY"]
+    assert priv != seen["ACCOUNT_ED25519_PRIVATE_KEY"]
+    program = (
+        'const c=require("crypto");'
+        'const k=c.createPrivateKey({key:Buffer.from(process.env.P,"base64"),format:"der",type:"pkcs8"});'
+        'const u=c.createPublicKey({key:Buffer.from(process.env.U,"base64"),format:"der",type:"spki"});'
+        'const m=Buffer.from("report");const s=c.sign(null,m,k);'
+        "process.exit(c.verify(null,m,u,s)?0:1)"
+    )
+    done = subprocess.run(
+        ["node", "-e", program],
+        env={**os.environ, "P": priv, "U": pub},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    assert sa.server_keys()["reportPriv"] != keys["reportPriv"]
+
+
+def _clear_signing_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in (
+        "REPORT_ED25519_PRIVATE_KEY",
+        "REPORT_ED25519_PUBLIC_KEY",
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+        "ACCOUNT_ED25519_PUBLIC_KEY",
+    ):
+        monkeypatch.delenv(name, raising=False)
+
+
+def test_a_caller_report_pair_is_passed_on_as_given(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The caller's REPORT_ED25519_* pair (real node, a matching pair) replaces the minted one, whitespace stripped."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"] + "\n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", pair["edPub"])
+    keys = sa.server_keys()
+    assert (keys["reportPriv"], keys["reportPub"]) == (pair["edPriv"], pair["edPub"])
+    # control: with no caller pair a throwaway is minted, so equality above is the pass-through
+    _clear_signing_env(monkeypatch)
+    assert sa.server_keys()["reportPriv"] != pair["edPriv"]
+
+
+def test_account_e2e_strips_a_whitespace_padded_caller_report_pair(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """c097d824.1: start_account strips both halves, so account_e2e must too: a matching pair padded with a newline or space is passed on trimmed, not refused as not one pair."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"] + "\n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", " " + pair["edPub"] + "\n")
+    assert run.report_pair() == (pair["edPriv"], pair["edPub"])
+    # control: a padded public half of a different key is still refused
+    other = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", other["edPub"] + "\n")
+    with pytest.raises(account_e2e.RefusedError, match="not one pair"):
+        run.report_pair()
+
+
+def test_account_e2e_treats_a_whitespace_only_report_half_as_unset(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review 7d609282.1: a blank REPORT_ED25519_* name is unset, as in start_account's server_keys, so a throwaway pair is minted; a real pair beside it is still checked."""
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", " \n")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "\t ")
+    minted = run.report_pair()
+    assert minted[0].strip()
+    assert minted[1].strip()
+    # a blank half beside a real one is half a pair: ignored, never passed on
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"])
+    assert run.report_pair()[0] != pair["edPriv"]
+    # control: both halves real and matching are passed on
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", pair["edPub"])
+    assert run.report_pair() == (pair["edPriv"], pair["edPub"])
+
+
+def test_a_mismatched_caller_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_signing_env(monkeypatch)
+    first, second = sa.generate_keys(), sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", first["edPriv"])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", second["edPub"])
+    with pytest.raises(
+        sa.LegError, match="REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY"
+    ):
+        sa.server_keys()
+
+
+def test_half_a_caller_report_pair_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    _clear_signing_env(monkeypatch)
+    pair = sa.generate_keys()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", pair["edPriv"])
+    keys = sa.server_keys()
+    assert keys["reportPriv"] != pair["edPriv"]
+
+
+def _report_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sa, "generate_keys", lambda: {"edPriv": "g", "edPub": "g"})
+    for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "REPORT-PRIV")
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", "REPORT-PUB")
+
+
+def test_a_matching_report_pair_is_taken(monkeypatch: pytest.MonkeyPatch) -> None:
+    """153d0c38.4: the report key's own value is what gets derived."""
+    _report_env(monkeypatch)
+    seen: list[str | None] = []
+
+    def derive(private: str | None = None, label: str = "signing") -> str:
+        del label
+        seen.append(private)
+        return "REPORT-PUB"
+
+    monkeypatch.setattr(sa, "derived_public_key", derive)
+    keys = sa.server_keys()
+    assert seen == ["REPORT-PRIV"]
+    assert (keys["reportPriv"], keys["reportPub"]) == ("REPORT-PRIV", "REPORT-PUB")
+
+
+def test_a_mismatched_report_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
+    _report_env(monkeypatch)
+
+    def derive(private: str | None = None, label: str = "signing") -> str:
+        del private, label
+        return "OTHER"
+
+    monkeypatch.setattr(sa, "derived_public_key", derive)
+    with pytest.raises(sa.LegError, match="REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC"):
+        sa.server_keys()
+
+
+def test_an_underivable_report_key_is_named_as_the_report_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """153d0c38.5: the error names the report key, not the signing key."""
+    _report_env(monkeypatch)
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "not-a-key")
+    with pytest.raises(sa.LegError, match="report signing private key"):
+        sa.server_keys()

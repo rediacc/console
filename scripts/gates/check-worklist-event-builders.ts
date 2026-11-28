@@ -144,7 +144,7 @@ function selftest(): void {
       ].join('\n')
     );
     const found = scan([planted]);
-    if (found.length !== 1 || found[0]?.fn !== 'some_other_rebuild' || found[0]?.ev !== kind) {
+    if (found.length !== 1 || found[0]?.fn !== 'some_other_rebuild' || found[0].ev !== kind) {
       console.error(
         `  FAIL  the planted "${kind}" builder was NOT caught: ${JSON.stringify(found)}`
       );

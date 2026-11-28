@@ -113,9 +113,11 @@ In scope: ACCOUNT_ED25519_PRIVATE_KEY, ACCOUNT_X25519_PRIVATE_KEY, RELEASE_GPG_P
     (ticked) 2026-10-30T23:24:12Z by d778be9d: commit:f39c7fbd .ci/config/bws-step-scoped.json:1; follow-up item #a3910bfd added under epic 9f92c43e
 
   Accept: `.claude/hooks/stop/worklist.py --list | grep -F bws-step-scope-followup`
-- [ ] S9 Live proof, branch push: on "Console CI" for the PR head, the "Console CT - Tests" legs test-e2e-workers, test-renet-go and test-account-e2e, plus stripe-sandbox and deploy-preview, all pass, and each scrub step shows in the job log.
+- [x] S9 Live proof, branch push: on "Console CI" for the PR head, the "Console CT - Tests" legs test-e2e-workers, test-renet-go and test-account-e2e, plus stripe-sandbox and deploy-preview, all pass, and each scrub step shows in the job log.
   (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CI parity -- the scrub steps run only inside the GitHub Actions jobs of the PR head, and their job logs are the evidence
     Needs: pushed-head
+  (corrected ASKED:2026-11-27T19:35Z) Local proof: the static gate proves every fetch window is fetch, consumers, then an always() scrub (7 windows, 7 consumer steps, 159 jobs) and the legs themselves ran locally (renet Go and account e2e through ci:quick 26 and vm:check VERIFIED); the GitHub job-log scrub lines are not reproduced.
+    (ticked) 2026-11-28T01:48:52Z by d778be9d: commit:575d8906ec; gate output "bws step scope: 4 name(s)... 7 fetch window(s) (floor 7), 7 consumer step(s)" rc=0; selftest rc=0; pytest 408 passed; rc 0 / 0 / 0 (local proof per the correction line, ruling ASKED:2026-11-27T19:35Z)
 
   Accept: `.ci/scripts/ci/ci-trace.py --wait --until-final`
 - [ ] S10 POST-MERGE: on main, "Deploy Account Workers" (job deploy), "Deploy WWW Worker" (job deploy) and "CD - Stage Artifacts (Reusable)" pass on the edge CD run. "CI - OPS Tests" (job ops-vm-provision) passes on its next dispatch.

@@ -28,13 +28,25 @@ interface HostCheckResponse {
 // Helpers
 // ============================================================================
 
+/** Where the QEMU installer puts qemu-img on Windows; it does not add that folder to PATH. */
+export const WINDOWS_QEMU_IMG = 'C:\\Program Files\\qemu\\qemu-img.exe';
+
+/** The command to run for a tool: its name when PATH has it, else a known install path on Windows, else null. */
+export function resolveToolCommand(cmd: string): string | null {
+  if (commandExists(cmd)) return cmd;
+  if (process.platform === 'win32' && cmd === 'qemu-img' && existsSync(WINDOWS_QEMU_IMG)) {
+    return WINDOWS_QEMU_IMG;
+  }
+  return null;
+}
+
 function buildToolCheck(cmd: string, hint: string): CheckResult {
-  const exists = commandExists(cmd);
+  const resolved = resolveToolCommand(cmd);
   return {
     name: cmd,
-    value: exists ? getCommandVersion(cmd) : 'not found',
-    status: exists ? 'ok' : 'fail',
-    hint: exists ? undefined : hint,
+    value: resolved ? getCommandVersion(resolved) : 'not found',
+    status: resolved ? 'ok' : 'fail',
+    hint: resolved ? undefined : hint,
   };
 }
 
@@ -124,7 +136,7 @@ function checkMacOSPrereqs(): CheckResult[] {
   ];
 }
 
-function checkWindowsPrereqs(): CheckResult[] {
+export function checkWindowsPrereqs(): CheckResult[] {
   // Hyper-V check
   let hypervStatus: CheckResult;
   try {
@@ -159,7 +171,7 @@ function checkWindowsPrereqs(): CheckResult[] {
 
   return [
     hypervStatus,
-    buildToolCheck('qemu-img', 'Install QEMU: winget install SoftwareFreedomConservancy.QEMU'),
+    buildToolCheck('qemu-img', 'Install QEMU: rdc ops setup'),
     buildToolCheck('ssh', 'Install OpenSSH: Settings > Apps > Optional Features > OpenSSH Client'),
   ];
 }
@@ -240,6 +252,7 @@ function getLocalCheckData(): HostCheckResponse {
 export function registerOpsCheckCommand(ops: Command, program: Command): void {
   ops
     .command('check')
+    .summary(t('commands.ops.check.descriptionShort'))
     .description(t('commands.ops.check.description'))
     .action(async () => {
       try {

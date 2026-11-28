@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-06T04:46:37.970Z",
+  "generatedAt": "2026-11-27T14:19:32.718Z",
   "legs": [
     {
       "index": 1,
@@ -47,12 +47,15 @@
         "github.com/rediacc/renet/pkg/toolexec",
         "github.com/rediacc/renet/pkg/toolexec/devicemapper",
         "github.com/rediacc/renet/pkg/vaultcrypto",
-        "github.com/rediacc/renet/pkg/systemctl"
+        "github.com/rediacc/renet/pkg/systemctl",
+        "github.com/rediacc/renet/pkg/infra/vm/windows"
       ]
     },
     {
       "index": 2,
       "ids": [
+        "github.com/rediacc/renet/cmd/detectwasm",
+        "github.com/rediacc/renet/cmd/modelsign",
         "github.com/rediacc/renet/pkg/atomicjson",
         "github.com/rediacc/renet/pkg/backuphook",
         "github.com/rediacc/renet/pkg/bwrate",
@@ -64,6 +67,10 @@
         "github.com/rediacc/renet/pkg/convergeguard",
         "github.com/rediacc/renet/pkg/credentials",
         "github.com/rediacc/renet/pkg/datastore",
+        "github.com/rediacc/renet/pkg/detect",
+        "github.com/rediacc/renet/pkg/detect/errcode",
+        "github.com/rediacc/renet/pkg/detect/errtext",
+        "github.com/rediacc/renet/pkg/detect/kernels",
         "github.com/rediacc/renet/pkg/dns",
         "github.com/rediacc/renet/pkg/dockergrant",
         "github.com/rediacc/renet/pkg/dockerpolicy",
@@ -85,6 +92,9 @@
         "github.com/rediacc/renet/pkg/infra/image",
         "github.com/rediacc/renet/pkg/infra/opsconfig",
         "github.com/rediacc/renet/pkg/infra/pkgset",
+        "github.com/rediacc/renet/pkg/infra/qemuimg",
+        "github.com/rediacc/renet/pkg/infra/renetsource",
+        "github.com/rediacc/renet/pkg/infra/sshexec",
         "github.com/rediacc/renet/pkg/infra/vm/cloudinit",
         "github.com/rediacc/renet/pkg/infra/vm/imagedl",
         "github.com/rediacc/renet/pkg/infra/vm/qemu",
@@ -96,6 +106,14 @@
         "github.com/rediacc/renet/pkg/license",
         "github.com/rediacc/renet/pkg/list",
         "github.com/rediacc/renet/pkg/loop",
+        "github.com/rediacc/renet/pkg/models",
+        "github.com/rediacc/renet/pkg/models/keys",
+        "github.com/rediacc/renet/pkg/netaudit",
+        "github.com/rediacc/renet/pkg/netaudit/collector",
+        "github.com/rediacc/renet/pkg/netaudit/internal/atomicfile",
+        "github.com/rediacc/renet/pkg/netaudit/ship",
+        "github.com/rediacc/renet/pkg/netaudit/spool",
+        "github.com/rediacc/renet/pkg/netaudit/trigger",
         "github.com/rediacc/renet/pkg/orchestration",
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",

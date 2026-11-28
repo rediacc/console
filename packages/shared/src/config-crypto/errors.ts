@@ -6,8 +6,9 @@
 import { ENVELOPE_VERSION, LEGACY_ENVELOPE_VERSION } from './constants.js';
 
 /**
- * The CEK layer refused the blob: its GCM tag does not verify under this CEK and the envelope's
- * binding (envelope v3 AAD), or the v2 blob HMAC does not match. Either the server answered with a
+ * The CEK layer refused the blob: its GCM tag does not verify under the envelope's binding (the v4
+ * AAD under the config's content key, or the v3 AAD under the CEK), the v4 content-key wrap does
+ * not open under this CEK, or the v2 blob HMAC does not match. Either the server answered with a
  * blob sealed for another config, version or team, or the blob was sealed under a different CEK.
  */
 export class ConfigIntegrityError extends Error {
@@ -26,7 +27,7 @@ export class ConfigIntegrityError extends Error {
 export class ConfigEnvelopeTooNewError extends Error {
   constructor(public readonly envelopeVersion: number) {
     super(
-      `Written by a newer rdc (envelope v${envelopeVersion}); this build reads v${LEGACY_ENVELOPE_VERSION} and v${ENVELOPE_VERSION}. Upgrade rdc.`
+      `Written by a newer rdc (envelope v${envelopeVersion}); this build reads v${LEGACY_ENVELOPE_VERSION} to v${ENVELOPE_VERSION}. Upgrade rdc.`
     );
     this.name = 'ConfigEnvelopeTooNewError';
   }

@@ -30,6 +30,12 @@ export const VM_NETWORK = {
   /** Worker VM IPs */
   WORKER_IPS: ['192.168.111.11', '192.168.111.12'] as const,
 
+  /**
+   * Hyper-V NAT of an ops host that runs inside a Windows VM (192.168.113.0/24).
+   * Admitted by the agent guard beside the bridge /24; 192.168.112 stays protected.
+   */
+  HYPERV_NAT_NET: '192.168.113.0',
+
   /** Default SSH user for VMs */
   VM_USER: 'muhammed',
 } as const;

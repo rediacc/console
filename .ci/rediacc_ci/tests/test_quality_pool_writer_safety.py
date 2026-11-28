@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.pool_writer_safety`, driven directly.
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pool-writer-safety.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The twin had TWO environment seams of its own -- `POOL_SAFETY_GATES_DIR` and `POOL_SAFETY_LOCK` -- so the gate battery and the registration were pointed at the
-fixture; the twin itself was copied in anyway, because the committed ledger (`.ci/shadow/w7p2-pool-writer.observations.jsonl`) records a tree id that has to be a claim about BOTH implementations. That ledger licensed the port at K=5 and the twin was retired in W7 P5, so the whole-gate cases were retired with it.
+fixture; the twin itself was copied in anyway, because the committed ledger (the ledger (deleted in commit:936280cd35)) records a tree id that has to be a claim about BOTH implementations. That ledger licensed the port at K=5 and the twin was retired in W7 P5, so the whole-gate cases were retired with it.
 
 RETARGETED 2026-09-09 (W7P3-BAT) WITH ITS SUBJECT. The registration used to be the `WRITER_TESTS` / `WRITER_TESTS_FALLBACK` arrays in `.ci/scripts/test/run-all.sh`; `battery.py` replaced that runner and classifies
 from `scripts/ci-runner/gates.lock.json`'s `mutex: ["tree:..."]` declarations

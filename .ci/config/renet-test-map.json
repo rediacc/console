@@ -59,6 +59,20 @@
   ],
   "entries": [
     {
+      "glob": "cmd/detectwasm/**",
+      "packages": [
+        "cmd/detectwasm"
+      ],
+      "dependents": []
+    },
+    {
+      "glob": "cmd/modelsign/**",
+      "packages": [
+        "cmd/modelsign"
+      ],
+      "dependents": []
+    },
+    {
       "glob": "cmd/renet/**",
       "packages": [
         "cmd/renet"
@@ -78,6 +92,11 @@
         "pkg/chunkstore",
         "pkg/functions",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/restorepath"
       ]
     },
@@ -131,6 +150,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -185,6 +209,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -249,6 +278,7 @@
         "pkg/infra/image",
         "pkg/infra/mesh",
         "pkg/infra/opsconfig",
+        "pkg/infra/renetsource",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
@@ -265,6 +295,11 @@
         "pkg/list",
         "pkg/locking",
         "pkg/luks",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/nodeteardown",
         "pkg/orchestration",
         "pkg/output",
@@ -346,6 +381,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -371,6 +411,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/reporuntime",
@@ -390,6 +435,73 @@
         "pkg/functions",
         "pkg/repodiff",
         "pkg/restorepath"
+      ]
+    },
+    {
+      "glob": "pkg/detect/**",
+      "packages": [
+        "pkg/detect"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "cmd/renet",
+        "pkg/detect/errtext",
+        "pkg/models",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger"
+      ]
+    },
+    {
+      "glob": "pkg/detect/errcode/**",
+      "packages": [
+        "pkg/detect/errcode"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "cmd/renet",
+        "pkg/detect",
+        "pkg/detect/errtext",
+        "pkg/detect/kernels",
+        "pkg/models",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger"
+      ]
+    },
+    {
+      "glob": "pkg/detect/errtext/**",
+      "packages": [
+        "pkg/detect/errtext"
+      ],
+      "dependents": [
+        "cmd/modelsign",
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/detect/kernels/**",
+      "packages": [
+        "pkg/detect/kernels"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "cmd/renet",
+        "pkg/detect",
+        "pkg/detect/errtext",
+        "pkg/models",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger"
       ]
     },
     {
@@ -422,6 +534,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/proxy",
         "pkg/prune",
@@ -458,6 +575,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/proxy",
         "pkg/prune",
@@ -509,6 +631,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -538,6 +665,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -598,6 +730,11 @@
         "pkg/kubevolume",
         "pkg/license",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -605,6 +742,7 @@
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/storage",
         "pkg/subscription",
         "pkg/trim"
@@ -645,6 +783,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -674,6 +817,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -704,6 +852,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/proxy",
         "pkg/prune",
@@ -731,6 +884,8 @@
         "pkg/i18n/locales"
       ],
       "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
         "cmd/renet",
         "pkg/atomicjson",
         "pkg/backuphook",
@@ -747,6 +902,7 @@
         "pkg/daemon",
         "pkg/datastore",
         "pkg/delta",
+        "pkg/detect/errtext",
         "pkg/dns",
         "pkg/dockergrant",
         "pkg/dockerproxy",
@@ -768,10 +924,14 @@
         "pkg/infra/image",
         "pkg/infra/mesh",
         "pkg/infra/opsconfig",
+        "pkg/infra/renetsource",
+        "pkg/infra/sshexec",
+        "pkg/infra/vm",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
         "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows",
         "pkg/infra/worker",
         "pkg/jobs",
         "pkg/kernel",
@@ -785,6 +945,12 @@
         "pkg/list",
         "pkg/locking",
         "pkg/luks",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/internal/atomicfile",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/nodeteardown",
         "pkg/orchestration",
         "pkg/output",
@@ -821,6 +987,9 @@
         "pkg/infra/image",
         "pkg/infra/opsconfig",
         "pkg/infra/pkgset",
+        "pkg/infra/qemuimg",
+        "pkg/infra/renetsource",
+        "pkg/infra/sshexec",
         "pkg/infra/worker"
       ],
       "dependents": [
@@ -829,10 +998,12 @@
         "pkg/functions/commands",
         "pkg/infra/ceph",
         "pkg/infra/mesh",
+        "pkg/infra/vm",
         "pkg/infra/vm/hyperv",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
-        "pkg/infra/vm/terraform"
+        "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows"
       ]
     },
     {
@@ -872,7 +1043,8 @@
         "pkg/infra/vm/imagedl",
         "pkg/infra/vm/kvm",
         "pkg/infra/vm/qemu",
-        "pkg/infra/vm/terraform"
+        "pkg/infra/vm/terraform",
+        "pkg/infra/vm/windows"
       ],
       "dependents": [
         "cmd/renet",
@@ -961,16 +1133,31 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/restorepath"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -1004,6 +1191,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1038,8 +1230,12 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
         "pkg/credentials",
+        "pkg/daemon",
         "pkg/functions",
         "pkg/hub",
         "pkg/kube/csidriver",
@@ -1048,15 +1244,104 @@
         "pkg/kubevolume",
         "pkg/license",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
+        "pkg/ps",
         "pkg/repodiff",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/storage",
         "pkg/subscription",
         "pkg/trim"
+      ]
+    },
+    {
+      "glob": "pkg/models/**",
+      "packages": [
+        "pkg/models"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "cmd/renet",
+        "pkg/netaudit/collector"
+      ]
+    },
+    {
+      "glob": "pkg/models/keys/**",
+      "packages": [
+        "pkg/models/keys"
+      ],
+      "dependents": [
+        "cmd/detectwasm",
+        "cmd/modelsign",
+        "cmd/renet",
+        "pkg/models",
+        "pkg/netaudit/collector"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/**",
+      "packages": [
+        "pkg/netaudit",
+        "pkg/netaudit/ship"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/collector/**",
+      "packages": [
+        "pkg/netaudit/collector"
+      ],
+      "dependents": [
+        "cmd/renet"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/internal/atomicfile/**",
+      "packages": [
+        "pkg/netaudit/internal/atomicfile"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/spool/**",
+      "packages": [
+        "pkg/netaudit/spool"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship"
+      ]
+    },
+    {
+      "glob": "pkg/netaudit/trigger/**",
+      "packages": [
+        "pkg/netaudit/trigger"
+      ],
+      "dependents": [
+        "cmd/renet",
+        "pkg/netaudit/collector"
       ]
     },
     {
@@ -1076,6 +1361,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/rbd",
@@ -1150,6 +1440,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1211,6 +1506,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1237,6 +1537,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/reporuntime",
@@ -1323,6 +1628,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1408,6 +1718,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1444,6 +1759,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/proxy",
         "pkg/prune",
@@ -1531,6 +1851,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1566,7 +1891,11 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
         "pkg/hub",
         "pkg/kube/csidriver",
@@ -1575,11 +1904,18 @@
         "pkg/kubevolume",
         "pkg/license",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
+        "pkg/router",
         "pkg/subscription",
         "pkg/trim"
       ]
@@ -1592,17 +1928,32 @@
       "dependents": [
         "cmd/renet",
         "pkg/backuphook",
+        "pkg/certexport",
         "pkg/chunkstore",
+        "pkg/compose",
+        "pkg/convergeguard",
+        "pkg/daemon",
         "pkg/functions",
+        "pkg/hub",
         "pkg/kube/csidriver",
         "pkg/kube/distro",
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/license",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
+        "pkg/prune",
+        "pkg/ps",
         "pkg/reporuntime",
-        "pkg/restorepath"
+        "pkg/repository",
+        "pkg/restorepath",
+        "pkg/router",
+        "pkg/trim"
       ]
     },
     {
@@ -1629,6 +1980,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
@@ -1692,11 +2048,17 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/nodeteardown",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/ps",
         "pkg/rbd",
+        "pkg/repodiff",
         "pkg/reporuntime",
         "pkg/repository",
         "pkg/restorepath",
@@ -1723,6 +2085,11 @@
         "pkg/kubecsi",
         "pkg/kubevolume",
         "pkg/list",
+        "pkg/netaudit",
+        "pkg/netaudit/collector",
+        "pkg/netaudit/ship",
+        "pkg/netaudit/spool",
+        "pkg/netaudit/trigger",
         "pkg/orchestration",
         "pkg/prune",
         "pkg/rbd",

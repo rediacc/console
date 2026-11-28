@@ -33,7 +33,6 @@ import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import type { ExecuteOptions, ExecuteResult } from '../services/executor/types.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -248,7 +247,6 @@ export function registerRepoContainerCommands(repo: Command): void {
       ) => {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_EXEC, repoKey);
           const container = resolveContainer(repoKey, machineName, kubeCluster, options.container);
 
           const call: ExecuteOptions = {

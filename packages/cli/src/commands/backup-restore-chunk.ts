@@ -6,7 +6,6 @@ import {
   HOME_STORE,
   storeParam,
 } from '../services/backup/backup-store-pick.js';
-import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -17,7 +16,6 @@ import {
 } from '../services/jobs/command-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
-import { compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
@@ -28,6 +26,7 @@ import {
   parseVerifyVerdict,
   type RestoreStats,
 } from './backup-storage-parser.js';
+import { dropRegistrationAfterFailure } from './registration-cleanup.js';
 
 /**
  * A snapshot id as `MintSnapshotID` writes it: RFC3339-basic UTC, a dash, and
@@ -302,7 +301,7 @@ export async function runChunkRestore(args: {
     await deployRepoKeyIfNeeded(targetName, targetMachine);
   } catch (error) {
     // The job never started, so its rollback step never runs: drop the registration here, as the pull route does.
-    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
+    await dropRegistrationAfterFailure(targetName);
     throw error;
   }
   const outcome = await runCommandJob(

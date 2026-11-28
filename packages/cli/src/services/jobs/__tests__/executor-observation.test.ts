@@ -76,4 +76,62 @@ describe('observeTerminalPoll', () => {
       )
     ).resolves.toBeUndefined();
   });
+
+  describe('a create job whose ticket was lost with the container disk', () => {
+    const GUID = '11111111-2222-4333-8444-555555555555';
+    const lost = { function: 'repository_create', repoGuid: GUID };
+
+    function rebuild(repoRef: string | undefined) {
+      const { deps } = setup();
+      const handler = vi.fn(() => Promise.resolve());
+      const repoRefForGuid = vi.fn(() => Promise.resolve(repoRef));
+      return {
+        handler,
+        repoRefForGuid,
+        deps: { ...deps, resolve: () => Promise.resolve(handler), repoRefForGuid },
+      };
+    }
+    const UNKNOWN_JOB = 'j0000000000000000-aaaaaaaa';
+
+    it.each(['failed', 'cancelled'] as const)(
+      'rolls the registration back from the job record when the job %s',
+      async (state) => {
+        const { deps, handler } = rebuild('shop');
+        await observeTerminalPoll(UNKNOWN_JOB, { state, exitCode: 1, ...lost }, deps);
+        expect(handler).toHaveBeenCalledOnce();
+        expect(handler).toHaveBeenCalledWith(
+          expect.objectContaining({ params: { repo: 'shop', guid: GUID }, state })
+        );
+      }
+    );
+
+    it('keeps the registration of a create that succeeded', async () => {
+      const { deps, handler, repoRefForGuid } = rebuild('shop');
+      await observeTerminalPoll(UNKNOWN_JOB, { state: 'succeeded', exitCode: 0, ...lost }, deps);
+      expect(handler).not.toHaveBeenCalled();
+      expect(repoRefForGuid).not.toHaveBeenCalled();
+    });
+
+    it('leaves a failed job of any other function alone', async () => {
+      const { deps, handler } = rebuild('shop');
+      await observeTerminalPoll(
+        UNKNOWN_JOB,
+        { state: 'failed', exitCode: 1, function: 'repository_up', repoGuid: GUID },
+        deps
+      );
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the config holds no repository with that GUID', async () => {
+      const { deps, handler } = rebuild(undefined);
+      await observeTerminalPoll(UNKNOWN_JOB, { state: 'failed', exitCode: 1, ...lost }, deps);
+      expect(handler).not.toHaveBeenCalled();
+    });
+
+    it('does not rebuild when the executor still holds the ticket', async () => {
+      const { deps, handler } = rebuild('shop');
+      await observeTerminalPoll(JOB, { state: 'failed', exitCode: 1, ...lost }, deps);
+      expect(handler).not.toHaveBeenCalled();
+    });
+  });
 });

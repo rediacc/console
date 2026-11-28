@@ -7,7 +7,8 @@
  * Three rules shape it. The copy is a fresh repository (fresh GUID, never the source's), and the
  * only delete this verb issues names that copy. The credential is the repository's own and reaches
  * renet through the vault and stdin, never argv or the step plan. And a verdict is only posted when
- * the comparison was about the snapshot restored: an anchor that moved mid-run says nothing about it.
+ * the comparison was about the snapshot restored: an anchor that moved mid-run says nothing about it, so
+ * renet then holds the copy to the restored snapshot's own inventory, which the restore root-checked.
  */
 
 import { randomBytes, randomUUID } from 'node:crypto';
@@ -15,6 +16,7 @@ import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
+import { settleDeletedRepoLicense } from '../services/account/license-retire.js';
 import { configService } from '../services/config/config-resources.js';
 import { targetFloor } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
@@ -36,6 +38,7 @@ import {
   type RestoreStats,
 } from './backup-storage-parser.js';
 import { postVerification, type VerificationAnswer } from './backup-verification.js';
+import { dropRegistrationAfterFailure } from './registration-cleanup.js';
 
 /** The copy needs the image plus headroom for the staging file's metadata and the filesystem. */
 const SPACE_FACTOR = 1.2;
@@ -118,7 +121,9 @@ async function deleteCopy(
     ok = false;
   }
   if (ok) {
-    await configService.removeRepository(compositeKey(name, 'latest')).catch(() => undefined);
+    await dropRegistrationAfterFailure(name);
+    // The copy ran under its own GUID, so its licence would otherwise stay tracked and hard-expire on the account.
+    await settleDeletedRepoLicense(name, copyGuid);
     return 'deleted';
   }
   outputService.warn(
@@ -203,43 +208,58 @@ async function restoreAndCompare(args: {
     probe: true,
   });
   const verdict = parseCompareRecord(compare.stdout);
-  const passphraseCheck = record?.passphraseCheck;
   if (!verdict) {
     return {
       status: 'failed',
       reason: compare.error ?? REASON_COMPARE_UNREADABLE,
-      passphraseCheck,
+      passphraseCheck: record?.passphraseCheck,
       postFailed: false,
     };
   }
-  if (verdict.anchorSnapshotId !== snapshotId) {
-    return {
-      status: 'failed',
-      reason: `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test, so the copy cannot be compared; run it again`,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: false,
-    };
-  }
-  if (verdict.status !== 'identical') {
-    return {
-      status: 'failed',
-      reason: verdict.reason,
-      passphraseCheck,
-      compare: verdict,
-      postFailed: verdict.status === 'different',
-    };
-  }
+  return compareVerdict(verdict, record, snapshotId);
+}
+
+/** The verdict of a copy renet compared, held to the anchor or to the restored snapshot's inventory. */
+function compareVerdict(
+  verdict: CompareRecord,
+  record: RestoreStats | undefined,
+  snapshotId: string
+): Verdict {
+  const passphraseCheck = record?.passphraseCheck;
+  const heldToSnapshot = verdict.heldTo === 'snapshot';
+  const failed = (reason: string | undefined, postFailed = false): Verdict => ({
+    status: 'failed',
+    reason,
+    passphraseCheck,
+    compare: verdict,
+    postFailed,
+  });
+  const unproven = comparedUnproven(verdict, record, snapshotId);
+  if (unproven) return failed(unproven);
+  if (verdict.status !== 'identical') return failed(verdict.reason, verdict.status === 'different');
   if (passphraseCheck !== 'opened') {
-    return {
-      status: 'failed',
-      reason: 'the copy matches the anchor but the passphrase did not open it, so it is not proven',
-      passphraseCheck,
-      compare: verdict,
-      postFailed: false,
-    };
+    return failed(
+      `the copy matches the ${heldToSnapshot ? 'snapshot' : 'anchor'} but the passphrase did not open it, so it is not proven`
+    );
   }
   return { status: 'proven', passphraseCheck, compare: verdict, postFailed: false };
+}
+
+/** Why the compared copy cannot be tied to the restored snapshot, or undefined when it can. */
+function comparedUnproven(
+  verdict: CompareRecord,
+  record: RestoreStats | undefined,
+  snapshotId: string
+): string | undefined {
+  // A backup loop faster than the restore moves the anchor past the snapshot; renet then holds the copy to the restored snapshot's own inventory (heldTo snapshot), which proves it only when the restore verified that inventory against the manifest's root.
+  if (verdict.heldTo === 'snapshot') {
+    if (verdict.snapshotId !== snapshotId) {
+      return `the copy was compared against ${verdict.snapshotId ?? '-'}, not the restored snapshot ${snapshotId}, so it cannot be proven`;
+    }
+    return record?.cellsRoot === 'verified' ? undefined : REASON_ROOT_NOT_VERIFIED;
+  }
+  if (verdict.anchorSnapshotId === snapshotId) return undefined;
+  return `the anchor moved from ${snapshotId} to ${verdict.anchorSnapshotId ?? '-'} during the test and the copy holds no readable record of ${snapshotId}, so the copy cannot be compared`;
 }
 
 const STATE_UNRECORDED = 'unrecorded';
@@ -397,6 +417,6 @@ export async function runRestoreTest(
 
   const result = buildResult(plan, copy, verdict, answer?.verificationState, cleanup);
   const format = getOutputFormat();
-  outputService.print(result, format === 'table' ? 'json' : format);
   if (result.status !== 'proven') setExitCode(1);
+  outputService.print(result, format === 'table' ? 'json' : format);
 }

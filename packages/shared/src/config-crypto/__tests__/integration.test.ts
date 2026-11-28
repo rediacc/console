@@ -7,6 +7,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { ConfigContentKey } from '../config-key.js';
+import { generateConfigKey } from '../config-key.js';
 import {
   blindPointer,
   cekHandoffDecrypt,
@@ -35,6 +37,11 @@ import {
   toBase64,
 } from '../index.js';
 import type { EncryptedConfigPayload, FullConfig } from '../types.js';
+
+/** A fresh content key at version 1: every push is sealed as envelope v4 under one. */
+async function contentKey(): Promise<ConfigContentKey> {
+  return { key: await generateConfigKey(), version: 1, cekGeneration: 1 };
+}
 
 // ─── AES-256-GCM ────────────────────────────────────────────────────────────
 
@@ -361,6 +368,7 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: epoch,
       commitEntries: [],
     });
@@ -381,6 +389,7 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 5913166,
       commitEntries: [],
     });
@@ -388,7 +397,7 @@ describe('Selective Encryption', () => {
     expect(payload.envelope.version).toBe(42);
     expect(payload.envelope.sdkEpoch).toBe(5913166);
     expect(payload.envelope.teamId).toBe('team-xyz');
-    expect(payload.envelope.envelopeVersion).toBe(3);
+    expect(payload.envelope.envelopeVersion).toBe(4);
     expect(payload.envelope.commitments.alg).toBe('HMAC-SHA256');
   });
 
@@ -398,6 +407,7 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 5913166,
       commitEntries: [],
     });
@@ -412,6 +422,7 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 5913166,
       commitEntries: [],
     });
@@ -436,6 +447,7 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(minimalConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 1,
       commitEntries: [],
     });
@@ -446,12 +458,14 @@ describe('Selective Encryption', () => {
     expect(result.ssh).toBeUndefined();
   });
 
-  it('envelope v3 stores field commitments under blinded pointers', async () => {
+  it('envelope v4 stores field commitments under pointers blinded by the content key', async () => {
     const sdkKey = await generateAesKey();
     const cek = await generateCek();
+    const configKey = await contentKey();
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey,
       sdkEpoch: 1,
       commitEntries: [
         { pointer: '/machines/server1/ip', value: '10.0.0.1' },
@@ -459,7 +473,7 @@ describe('Selective Encryption', () => {
       ],
     });
 
-    const blinding = await derivePointerBlindingKey(cek, sampleConfig.id);
+    const blinding = await derivePointerBlindingKey(configKey.key, sampleConfig.id);
     const ipKey = await blindPointer(blinding, '/machines/server1/ip');
     expect(payload.envelope.commitments.fields[ipKey]).toBeDefined();
     expect(
@@ -477,13 +491,14 @@ describe('Selective Encryption', () => {
 
     const payload = await selectiveEncrypt(sampleConfig, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 1,
       commitEntries: [],
     });
     // Simulate a v1 envelope arriving from the wire.
     const v1Payload = {
       ...payload,
-      envelope: { ...payload.envelope, envelopeVersion: 1 as unknown as 2 },
+      envelope: { ...payload.envelope, envelopeVersion: 1 as unknown as 4 },
     };
     await expect(selectiveDecrypt(v1Payload, cek, sdkKey, bindingOf(payload))).rejects.toThrow(
       /Unsupported envelope version/
@@ -526,6 +541,7 @@ describe('Full Lifecycle', () => {
 
     const payload = await selectiveEncrypt(config, sdkDerived, unwrappedCek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: epoch,
       commitEntries: [{ pointer: '/machines/prod/ip', value: '192.168.1.1' }],
     });
@@ -615,6 +631,7 @@ describe('Full Lifecycle', () => {
 
     const payload = await selectiveEncrypt(config, sdkKey, cek, {
       storeId: STORE,
+      configKey: await contentKey(),
       sdkEpoch: 12345,
       commitEntries: [],
     });

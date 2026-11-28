@@ -19,22 +19,34 @@ moved. `ORDER` in each guard module is that position, and `tests/test_dispatch.p
 
 WHY `sys.path` IS MANIPULATED HERE AND NOWHERE ELSE. `.claude/settings.json` invokes hooks as plain scripts, so there is no package context and no `pythonpath` from `pyproject.toml` (pytest supplies that, the harness does not). One hop, in the one file that is an entry point, is the alternative to every guard module carrying its own -- which is the arrangement `.claude/hooks/stop`
 has and the arrangement `rediacc_hooks/__init__.py` says this package exists to end.
+
+THE FIRE AND COST LEDGER (agent/plans/PLAN-tooling-code-reduction.md CR7). Before it, a refusal returned without the refusing guard's name and nothing timed a guard, so "which guard never fires" and "which guard is slow" were questions only a transcript dig could answer. `run_chain` now times every guard and, when handed a ledger path, appends ONE line per chain run:
+
+    {"chain", "refused_by", "rc", "ms", "slow": [[stem, ms], ...], "crashed": [stem, ...], "session", "ts"}
+
+`refused_by` is the refusing guard's stem or null; `slow` lists the guards over SLOW_MS. Only `main` hands a path (LEDGER_REL under the checkout holding this file), so the differential and every in-process test record nothing. The append is one O_APPEND `os.write` of one line, atomic below PIPE_BUF without a lock, and a failed append is named on stderr without changing the chain's answer: a cache directory that cannot be written must never refuse a tool call.
 """
 
+import datetime
+import json
+import os
 import pathlib
 import sys
+import time
 import traceback
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 
-from rediacc_hooks import guards, hookio
+from rediacc_hooks import _gitmemo, guards, hookio
 
 
 def run_one(stem, payload, cwd=None, env=None):
     """One guard, as (rc, stdout, stderr). Pure enough for the differential."""
     module = guards.load(stem)
     event = hookio.Event(payload, cwd=cwd, env=env)
-    rc = module.run(event)
+    # Inside the chain's own memo (see `run_chain`): a read-only git question is asked once per run, as it is in the real chain. The memo is dropped on leaving, so one case's fixture never answers the next.
+    with _gitmemo.chain_memo():
+        rc = module.run(event)
     return event.result(rc)
 
 
@@ -55,7 +67,70 @@ EMPTY_CHAIN = (
 )
 
 
-def run_chain(chain, payload, cwd=None, env=None):
+# Where `main` appends, relative to the checkout holding this file; `.ci/cache/` is gitignored local state. PLAN-tooling-code-reduction.md CR8 reads it and commits a snapshot as `.ci/config/hook-ledger.json`.
+LEDGER_REL = (".ci", "cache", "hook-ledger", "chains.jsonl")
+# A guard slower than this, in milliseconds, is listed under `slow` (D6 of the plan above).
+SLOW_MS = 20
+
+
+def ledger_path():
+    """The ledger `main` appends to. `repo_root` looks for the tree holding `.claude` and `.ci` and forks nothing, which matters on a path every tool call takes."""
+    return hookio.repo_root().joinpath(*LEDGER_REL)
+
+
+def _stem(module):
+    return module.__name__.rsplit(".", 1)[-1]
+
+
+def _session(payload):
+    try:
+        doc = json.loads(payload)
+    except (ValueError, TypeError):
+        return None
+    got = doc.get("session_id") if isinstance(doc, dict) else None
+    return got if isinstance(got, str) and got else None
+
+
+def append_ledger(path, record):
+    """ONE `os.write` of ONE line on an O_APPEND handle, so concurrent sessions interleave whole lines. Raises OSError; the caller decides what a failure means."""
+    line = (json.dumps(record, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+    path = pathlib.Path(path)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_BINARY", 0)
+    try:
+        fd = os.open(str(path), flags, 0o644)
+    except FileNotFoundError:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(str(path), flags, 0o644)
+    try:
+        os.write(fd, line)
+    finally:
+        os.close(fd)
+
+
+def _record(chain, payload, rc, refused_by, timings, crashed, started, ledger, err):
+    """Build the chain's ledger line and append it; a failed append becomes one stderr line, never a different rc."""
+    if ledger is None:
+        return
+    record = {
+        "chain": chain,
+        "refused_by": refused_by,
+        "rc": rc,
+        "ms": round((time.perf_counter() - started) * 1000, 2),
+        "slow": [[stem, ms] for stem, ms in timings if ms > SLOW_MS],
+        "crashed": crashed,
+        "session": _session(payload),
+        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    try:
+        append_ledger(ledger, record)
+    except OSError as exc:
+        err.append(
+            "hook ledger: append to %s failed (%s); the chain's answer is unchanged\n"
+            % (ledger, exc)
+        )
+
+
+def run_chain(chain, payload, cwd=None, env=None, ledger=None):
     """A chain in one process, stopping at the first refusal.
 
     STOPPING IS THE HARNESS'S BEHAVIOUR, NOT A SHORTCUT. Claude Code runs the commands of a block in order and a non-zero exit refuses the tool call; the guards behind it never get to speak, which is why the chain head's whole contract is about being FIRST. Reproducing that here means a chain run and 38 separate runs deny the same events for the same reasons.
@@ -64,31 +139,50 @@ def run_chain(chain, payload, cwd=None, env=None):
     those 20 would silently never run -- a bug in one guard quietly disarming the rest, which is a strictly larger blast radius than the arrangement it replaced. So a crash is caught, named loudly on stderr, and counted; the chain continues, and the process exits 1 rather than 0 so the failure is visible.
 
     Returns (rc, stdout, stderr). rc is 2 if any guard REFUSED (a refusal always wins, since that is a decision and a crash is not), 1 if any guard crashed and none refused, 0 otherwise.
+
+    `ledger`, when given, receives one line for this run (see the module docstring); None records nothing.
+
+    The guards run inside `_gitmemo.chain_memo()`, so a read-only git question (`rev-parse`, a reading `symbolic-ref`) is asked once per chain run however many guards ask it (68 forks to 8 on an `echo hi` payload, PR-TASK 79b7e92e).
     """
+    with _gitmemo.chain_memo():
+        return _run_chain(chain, payload, cwd, env, ledger)
+
+
+def _run_chain(chain, payload, cwd, env, ledger):
+    started = time.perf_counter()
     modules = guards.by_chain(chain)
     if not modules:
-        return hookio.DENY, "", EMPTY_CHAIN % (chain, chain)
+        err = [EMPTY_CHAIN % (chain, chain)]
+        _record(chain, payload, hookio.DENY, None, [], [], started, ledger, err)
+        return hookio.DENY, "", "".join(err)
     out = []
     err = []
-    crashed = 0
+    crashed = []
+    timings = []
     for module in modules:
         event = hookio.Event(payload, cwd=cwd, env=env)
+        t0 = time.perf_counter()
         try:
             rc = module.run(event)
         except Exception:
-            crashed += 1
+            timings.append((_stem(module), round((time.perf_counter() - t0) * 1000, 2)))
+            crashed.append(_stem(module))
             err.append(
                 "HOOK GUARD CRASHED: %s (chain %s) raised, so it decided nothing.\n"
                 "The rest of the chain still ran. Fix the module; do not delete the\n"
                 "guard to make this quiet.\n%s" % (module.__name__, chain, traceback.format_exc())
             )
             continue
+        timings.append((_stem(module), round((time.perf_counter() - t0) * 1000, 2)))
         _, one_out, one_err = event.result(rc)
         out.append(one_out)
         err.append(one_err)
         if rc != 0:
+            _record(chain, payload, rc, _stem(module), timings, crashed, started, ledger, err)
             return rc, "".join(out), "".join(err)
-    return (1 if crashed else 0), "".join(out), "".join(err)
+    rc = 1 if crashed else 0
+    _record(chain, payload, rc, None, timings, crashed, started, ledger, err)
+    return rc, "".join(out), "".join(err)
 
 
 def main(argv):
@@ -120,7 +214,7 @@ def main(argv):
         return 0
     payload = sys.stdin.read()
     if argv[0] == "--chain":
-        rc, out, err = run_chain(argv[1], payload)
+        rc, out, err = run_chain(argv[1], payload, ledger=ledger_path())
     else:
         rc, out, err = run_one(argv[0], payload)
     sys.stdout.write(out)

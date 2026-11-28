@@ -455,6 +455,13 @@
         "title": "Mises à jour et nouveautés | Rediacc"
       },
       "subscribeDescription": "Un email à chaque nouvelle version. Rien que l'essentiel.",
+      "groupAdded": "Ajouté",
+      "groupFixed": "Corrigé",
+      "groupImproved": "Amélioré",
+      "stableSince": "Dans stable depuis v{{version}}",
+      "noNotes": "Aucune note client enregistrée pour cette version",
+      "earlierHistory": "Historique antérieur",
+      "viewRelease": "Voir la version sur GitHub",
       "subscribeTitle": "Restez informé des mises à jour",
       "subtitle": "Découvrez nos nouveautés, correctifs et les prochains projets.",
       "title": "Mises à jour"
@@ -666,7 +673,7 @@
       },
       "hero": {
         "title": "Accord de traitement des données",
-        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026"
+        "effectiveDate": "Date d'entrée en vigueur : 26 novembre 2026"
       },
       "toc": {
         "title": "Table des matières"
@@ -678,7 +685,7 @@
           "content": [
             "Le présent Accord de traitement des données (le « DPA ») fait partie des <a href=\"terms-of-service\">Conditions d'utilisation</a> entre {{legalName}} (« Rediacc », le « Sous-traitant ») et le Client, lorsque le Client utilise les Services à titre professionnel et que Rediacc traite des Données personnelles du Client pour le compte du Client. Les termes définis dans les Conditions d'utilisation ont la même signification ici. Le présent DPA est rédigé en anglais ; les traductions sont fournies à titre indicatif uniquement et, en cas de divergence, la version anglaise prévaut.",
             "Pour les Données personnelles du Client, le Client est le responsable de traitement (ou un sous-traitant agissant pour son propre responsable de traitement) et Rediacc est le sous-traitant (ou sous-traitant ultérieur). Pour les enregistrements de Compte, de facturation et d'acceptation et pour les Données de télémétrie, Rediacc est un responsable de traitement indépendant, comme décrit dans la <a href=\"privacy-policy\">Politique de confidentialité</a>, et le présent DPA ne s'applique pas à ce traitement.",
-            "Les Données client présentes sur les Machines du Client ne sont pas traitées par Rediacc. Le stockage chiffré des configurations et les sauvegardes hébergées sont chiffrés avec des clés que Rediacc ne détient pas ; Rediacc stocke donc ces blocs de données mais ne peut pas en lire le contenu."
+            "À l'exception des preuves de criminalistique réseau décrites à la Section 4, que Rediacc ne reçoit que pour un dépôt sur lequel le Client active la criminalistique, Rediacc ne traite pas les Données client présentes sur les Machines du Client. Le stockage chiffré des configurations et les sauvegardes hébergées sont chiffrés avec des clés que Rediacc ne détient pas ; Rediacc stocke donc ces blobs mais ne peut pas en lire le contenu."
           ]
         },
         "definitions": {
@@ -703,12 +710,15 @@
           "id": "details",
           "title": "4. Détails du traitement",
           "items": [
-            "<strong>Objet et finalité :</strong> fourniture de la Plateforme, y compris la gestion des Comptes et des équipes, la délivrance de licences, le stockage chiffré des configurations, le stockage hébergé de sauvegardes et l'assistance",
+            "<strong>Objet et finalité :</strong> fourniture de la Plateforme, y compris la gestion des Comptes et des équipes, la délivrance de licences, le stockage chiffré des configurations, le stockage hébergé de sauvegardes et l'assistance et, sur les offres payantes où le Client l'active pour un dépôt, des preuves réseau d'investigation numérique qui servent la sécurité de ce dépôt et l'investigation des incidents",
             "<strong>Durée :</strong> la durée des Conditions d'utilisation, augmentée du délai de suppression prévu à la Section 11",
             "<strong>Nature du traitement :</strong> collecte, stockage, transmission, consultation et suppression",
-            "<strong>Catégories de personnes concernées :</strong> les Utilisateurs autorisés du Client, les membres d'équipe invités et les contacts de partenaires",
-            "<strong>Catégories de données personnelles :</strong> noms, adresses e-mail, organisation et fonction, données d'authentification (hachages de mots de passe, clés publiques de passkeys), adresses réseau et agents utilisateurs des sessions, et toute donnée personnelle contenue dans les données chiffrées que le Client stocke sur la Plateforme",
-            "<strong>Catégories particulières :</strong> aucune prévue ; le Client ne doit pas stocker de catégories particulières de données non chiffrées sur la Plateforme"
+            "<strong>Catégories de personnes concernées :</strong> les Utilisateurs autorisés du Client, les membres d'équipe invités et les contacts de partenaires et les personnes dont les adresses réseau figurent dans les enregistrements de flux réseau d'un dépôt, comme les clients qui se connectent à un service que le Client exécute",
+            "<strong>Catégories de données personnelles :</strong> noms, adresses e-mail, organisation et fonction, données d'authentification (hachages de mots de passe, clés publiques de passkeys), adresses réseau et agents utilisateurs des sessions, et toute donnée personnelle contenue dans les données chiffrées que le Client stocke sur la Plateforme ; pour les preuves d'investigation, les métadonnées de flux réseau (adresses, ports, nombres d'octets et de paquets, horodatages), les noms et réponses DNS, les noms et identifiants de processus, et les chemins de fichiers sensibles ouverts par un processus",
+            "<strong>Catégories particulières :</strong> aucune prévue ; le Client ne doit pas stocker de catégories particulières de données non chiffrées sur la Plateforme",
+            "<strong>Preuves d'investigation, adresses :</strong> les adresses de destination des flux sortants sont conservées entières, car elles constituent la preuve. L'adresse du client d'un flux entrant est écrite dans l'enregistrement tronquée à sa partie réseau (/24 en IPv4, /48 en IPv6), et l'adresse complète voyage dans une section distincte du même lot",
+            "<strong>Preuves d'investigation, conservation :</strong> les preuves sont conservées dans la limite du quota de stockage de l'offre du Client ; une fois le quota atteint, les plus anciens fichiers journaliers sont supprimés en premier. Un lot est verrouillé contre la suppression pendant 7 jours, et les preuves d'un incident déclaré par le Client sont conservées jusqu'à 30 jours après sa clôture",
+            "<strong>Preuves d'investigation, base :</strong> Rediacc ne les traite que sur instruction documentée du Client, lorsque celui-ci active la fonction d'investigation pour un dépôt"
           ]
         },
         "confidentiality": {
@@ -745,7 +755,8 @@
           ],
           "content2": [
             "Rediacc prévient au moins trente (30) jours à l'avance avant d'ajouter ou de remplacer un Sous-traitant ultérieur, en mettant à jour cette page et en notifiant l'adresse e-mail du Compte. Le Client peut s'y opposer dans ce délai pour des motifs raisonnables de protection des données. Si les parties ne parviennent pas à résoudre l'objection, le Client peut résilier les Services concernés et obtenir le remboursement des frais prépayés pour la période postérieure à la résiliation.",
-            "L'analyse d'audience du site web (Plausible) ne traite pas de Données personnelles du Client et relève de la Politique de confidentialité."
+            "L'analyse d'audience du site web (Plausible) ne traite pas de Données personnelles du Client et relève de la Politique de confidentialité.",
+            "Un fournisseur de modèle que le Client connecte à un agent IA n'est pas un sous-traitant ultérieur, car Rediacc ne le choisit ni ne lui donne d'instructions. La sortie des outils envoyée à ce fournisseur relève de l'accord propre du Client avec lui."
           ]
         },
         "transfers": {
@@ -1317,6 +1328,93 @@
         ],
         "lede": "Tous les partenaires peuvent se certifier gratuitement. Choisissez le parcours adapté à chaque personne : commercial ou technique. Le programme de formation est disponible dans le portail, votre équipe peut donc se préparer avant de passer l'examen.",
         "title": "Certification gratuite, deux parcours"
+      },
+      "growth": {
+        "title": "Ce que les partenaires obtiennent",
+        "lede": "Quatre raisons pour lesquelles vendre Rediacc vaut le coup pour un partenaire.",
+        "items": [
+          {
+            "title": "Des affaires que personne ne casse",
+            "body": "Enregistrez l'affaire d'un client et, une fois validée, aucun autre partenaire ne peut enregistrer ce client pendant la période de protection."
+          },
+          {
+            "title": "Une marge qui grandit avec l'affaire",
+            "body": "Les contrats pluriannuels, le paiement d'avance et les affaires plus importantes rapportent une marge supplémentaire, et les équipes certifiées montent d'un échelon."
+          },
+          {
+            "title": "Certification gratuite",
+            "body": "Parcours commercial et technique avec examen gratuit. On se prépare dans le portail partenaire."
+          },
+          {
+            "title": "Essais Enterprise de 30 jours",
+            "body": "Les partenaires remettent eux-mêmes des essais Enterprise de 30 jours à leurs clients, sans attendre Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Des leads issus de notre simulateur de prix",
+        "body": "Les clients qui dimensionnent leur installation dans le simulateur public peuvent demander une offre partenaire. Ces demandes vont aux partenaires référencés qui servent le pays et la langue du client."
+      },
+      "stance": "Nous ne vendons pas par-dessus nos partenaires. Rediacc ne vend en direct que là où aucun partenaire ne sert le client.",
+      "directoryCta": {
+        "title": "Figurer dans l'annuaire des partenaires",
+        "body": "Les partenaires agréés peuvent choisir une fiche publique avec leurs pays, langues et services, pour que les clients les trouvent en premier.",
+        "button": "Parcourir l'annuaire"
+      },
+      "directory": {
+        "meta": {
+          "title": "Annuaire des partenaires Rediacc par pays",
+          "description": "Trouvez un partenaire Rediacc dans votre pays et votre langue pour un support local, une facturation en devise locale et de l'aide à la migration."
+        },
+        "hero": {
+          "eyebrow": "Annuaire des partenaires",
+          "title": "Trouvez un partenaire Rediacc près de chez vous",
+          "subtitle": "Les partenaires assurent un support local dans votre langue, facturent dans votre devise et aident à migrer. Beaucoup proposent un prix inférieur au tarif public."
+        },
+        "benefits": {
+          "title": "Pourquoi acheter via un partenaire",
+          "items": [
+            "Un support local dans votre langue",
+            "Des factures dans votre devise locale",
+            "Une aide à la migration par des gens qui l'ont déjà fait",
+            "Souvent un prix sous le tarif public, avec des extras gratuits qui grandissent avec l'affaire"
+          ]
+        },
+        "filters": {
+          "country": "Pays",
+          "language": "Langue",
+          "service": "Prestation",
+          "all": "Tous",
+          "reset": "Effacer les filtres"
+        },
+        "services": {
+          "resale": "Revente",
+          "migration": "Aide à la migration",
+          "managed": "Service managé",
+          "training": "Formation"
+        },
+        "tiers": {
+          "registered": "Enregistré",
+          "silver": "Argent",
+          "gold": "Or",
+          "platinum": "Platine"
+        },
+        "card": {
+          "certificates": "Certificats : {{count}}",
+          "visit": "Visiter le site",
+          "countries": "Pays",
+          "languages": "Langues",
+          "services": "Prestations"
+        },
+        "status": {
+          "loading": "Chargement des partenaires...",
+          "empty": "Aucun partenaire ne correspond encore à ces filtres. Rediacc sert les clients en direct là où il n'y a pas de partenaire.",
+          "error": "L'annuaire n'a pas pu être chargé. Réessayez dans un instant."
+        },
+        "becomePartner": {
+          "text": "Vous dirigez une activité de revente ou de services ?",
+          "link": "Devenir partenaire"
+        }
       },
       "finalCta": {
         "button": "Devenir partenaire",
@@ -2392,7 +2490,7 @@
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "100",
-            "repositories": "Illimité",
+            "repositories": "5",
             "repoSize": "10 GB",
             "usersTeams": "Illimité"
           },
@@ -2467,7 +2565,7 @@
         "title": "Questions ?"
       },
       "hero": {
-        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026",
+        "effectiveDate": "Date d'entrée en vigueur : 26 novembre 2026",
         "title": "Notre engagement en matière de confidentialité"
       },
       "meta": {
@@ -2516,8 +2614,9 @@
           "items": [
             "<strong>Prestataires de services (sous-traitants ultérieurs)</strong> qui hébergent et exploitent notre plateforme, envoient les e-mails et traitent les paiements, et qui sont tenus par contrat de protéger vos données. La liste actuelle, avec le rôle et la localisation de chaque prestataire, figure dans notre <a href=\"data-processing-agreement\">Accord de traitement des données</a>",
             "<strong>Plausible Analytics</strong> pour des analyses web anonymes",
-            "<strong>Traitement de la télémétrie</strong> — les données d'utilisation anonymisées des produits sont transmises à notre propre point de terminaison de télémétrie au sein de l'UE pour agrégation et analyse. Aucune donnée de télémétrie n'est partagée avec des tiers (voir notre <a href=\"telemetry-policy\">Politique de télémétrie</a>)",
-            "<strong>Autorités légales</strong> lorsque la loi l'exige"
+            "<strong>Traitement de la télémétrie</strong> pour les données d'utilisation anonymisées du produit, envoyées à notre propre point de terminaison de télémétrie dans l'Union européenne à des fins d'agrégation et d'analyse. Ce point de terminaison s'exécute sur des serveurs virtuels fournis par Hostinger, qui héberge les données pour notre compte en tant que notre sous-traitant, mentionné dans notre <a href=\"data-processing-agreement\">Accord de traitement des données</a>, et ne les utilise pas pour ses propres finalités. Nous ne vendons pas les données de télémétrie et ne les partageons avec personne d'autre (voir notre <a href=\"telemetry-policy\">Politique de télémétrie</a>)",
+            "<strong>Autorités légales</strong> lorsque la loi l'exige",
+            "<strong>Le fournisseur de modèle que vous connectez</strong>, sur votre instruction, lorsque vous utilisez un agent IA via MCP distant : la sortie des outils renvoyée à l'agent est transmise à ce fournisseur, qui la traite selon votre propre accord avec lui. Ce fournisseur n'est ni notre sous-traitant ni notre sous-traitant ultérieur, car Rediacc ne le choisit pas et ne lui donne pas d'instructions. Certains connecteurs, comme le connecteur MCP de l'API Claude, ne sont pas éligibles à la rétention zéro des données"
           ],
           "title": "4. Partage de données et tiers"
         },
@@ -3177,7 +3276,7 @@
             "title": "L'Article 21(2)(d) : la question du fournisseur"
           },
           {
-            "blurb": "Articles 21(2)(e), (f) et 23 lus ensemble. La duplication instantanée des infrastruc qui rend les exercices hebdomadaires réalistes, et le calendrier Article 23 impossible à tenir sans traces d'enquête. Pour les SRE et chefs des opérations.",
+            "blurb": "Articles 21(2)(e), (f) et 23 lus ensemble. La duplication instantanée des infrastructures qui rend les exercices hebdomadaires réalistes, et le calendrier Article 23 impossible à tenir sans preuves vérifiables. Pour les SRE et chefs des opérations.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Efficacité continue, sans mise en scène"
           },
@@ -9845,7 +9944,7 @@
         "title": "Questions ?"
       },
       "hero": {
-        "effectiveDate": "Date d'effet : 1er février 2026",
+        "effectiveDate": "Date d'effet : 26 novembre 2026",
         "title": "Nos pratiques de télémétrie"
       },
       "meta": {
@@ -9946,7 +10045,7 @@
             "<strong>Chiffrement :</strong> Toutes les données sont chiffrées en transit via TLS. Le Renet Agent utilise en outre la compression gzip.",
             "<strong>Conservation :</strong> Les traces de télémétrie brutes sont stockées pendant 90 jours maximum pour le débogage et l'investigation d'incidents. Les métriques agrégées sont conservées pendant 12 mois maximum, puis supprimées.",
             "<strong>Accès :</strong> Les données de télémétrie ne sont accessibles qu'au personnel d'ingénierie et d'exploitation de Rediacc, sur la base du besoin d'en connaître.",
-            "<strong>Pas de partage avec des tiers :</strong> Les données de télémétrie ne sont pas partagées avec, vendues à, ou accessibles par des tiers.",
+            "<strong>Aucun partage avec des tiers :</strong> Les données de télémétrie ne sont pas vendues et ne sont partagées avec personne pour son propre usage. Elles sont stockées sur des serveurs virtuels situés dans l'Union européenne, fournis par Hostinger, qui les héberge pour notre compte en tant que notre sous-traitant (voir notre <a href=\"data-processing-agreement\">Accord de traitement des données</a>).",
             "<strong>Infrastructure :</strong> Toutes les données de télémétrie sont traitées et stockées sur une infrastructure située au sein de l'Union européenne."
           ],
           "title": "6. Traitement et stockage des données"
@@ -9961,7 +10060,7 @@
         "introduction": {
           "content": [
             "Les produits logiciels Rediacc collectent des données de télémétrie d'utilisation anonymisées pour nous aider à améliorer la qualité des produits, diagnostiquer les problèmes et comprendre comment nos outils sont utilisés. Cette Politique de Télémétrie décrit exactement quelles données sont collectées, pourquoi, comment elles sont traitées, et comment vous pouvez vous désinscrire.",
-            "Cette politique couvre deux produits : le <strong>CLI Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. Les statistiques du site web (Plausible) sont traitées séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
+            "Cette politique couvre deux produits : le <strong>CLI Rediacc</strong> et le <strong>Renet Agent Rediacc</strong>. La capture d'investigation de l'activité réseau d'un dépôt n'est pas de la télémétrie ; elle est traitée comme Données personnelles du Client au titre de l'<a href=\"data-processing-agreement\">Accord de traitement des données</a>. Les statistiques du site web (Plausible) sont traitées séparément dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a> et notre <a href=\"cookie-policy\">Politique de Cookies</a>."
           ],
           "id": "introduction",
           "title": "1. Introduction"

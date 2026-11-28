@@ -44,6 +44,7 @@ import pathlib
 import re
 
 from rediacc_ci import gitx, paths, proc
+from rediacc_ci.quality import seams
 from rediacc_ci.shacite import citable_token, skip_as_number
 
 # --------------------------------------------------------------------------- The layout, in one place.
@@ -92,9 +93,11 @@ STUB_PROBE_BYTES = 1024
 #: The corpus floor, shared with `check_plan_boxes` and `check_plan_record`
 #: rather than re-typed: below this the enumeration has lost the tree and no
 #: verdict about folders would mean anything.
-MIN_PLAN_FILES = int(os.environ.get("PLAN_FOLDERS_MIN_PLANS", "20"))
-
 ROOT_ENV = "PLAN_FOLDERS_ROOT"
+_SEAM = seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV))
+MIN_PLAN_FILES = seams.floor(
+    "PLAN_FOLDERS_MIN_PLANS", os.environ.get("PLAN_FOLDERS_MIN_PLANS"), 20, honoured=bool(_SEAM)
+)
 
 # --------------------------------------------------------------------------- Line grammars. Anchored, every one of them.
 
@@ -793,9 +796,14 @@ def load_config(root: pathlib.Path) -> dict:
     return json.loads((root / DEFAULT_CONFIG_REL).read_text(encoding="utf-8"))
 
 
-def repo_root() -> pathlib.Path:
-    override = os.environ.get(ROOT_ENV)
-    return pathlib.Path(override) if override else paths.repo_root()
+def resolve_root() -> tuple[pathlib.Path, bool]:
+    """The scan root, and whether a set PLAN_FOLDERS_ROOT was refused, so the repository stands in for the tree the caller named.
+
+    A read-only caller may scan the repository instead; a writing one must refuse, or a test fixture whose scratch path the seam refuses (a TMPDIR outside /tmp) deletes and moves the real plans.
+    """
+    raw = os.environ.get(ROOT_ENV)
+    override = seams.scratch_root(ROOT_ENV, raw)
+    return (override or paths.repo_root(), bool(raw) and override is None)
 
 
 def enumerate_plans(root: pathlib.Path) -> tuple[list[str], str]:

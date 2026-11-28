@@ -301,9 +301,12 @@ def _adopt_hint(owner, projects_dir, rel):
     """The adoption sentence for a foreign checklist whose owner is dead, "" otherwise."""
     try:
         age = S.owner_age_hours(owner, projects_dir)
-    except Exception:
-        age = None
-    if age is None or age < float(os.environ.get("WORKLIST_DEAD_HOURS", "24")):
+    except Exception as exc:
+        return (
+            " Its owner's transcript age could not be read (%s: %s), so adoption is not suggested."
+            % (type(exc).__name__, exc)
+        )
+    if age is None or age < S.dead_hours():
         return ""
     return (
         " That session's transcript has been idle %dh, so the handoff is very "

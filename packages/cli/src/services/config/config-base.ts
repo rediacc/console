@@ -1,5 +1,6 @@
-import type { Placement } from '@rediacc/shared/config-schema';
+import { type Placement, usesKeyring } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
+import type { SealKdf } from '../../adapters/config-seal-key.js';
 import type { RemoteConfigAdapter } from '../../adapters/remote-config-adapter.js';
 import type { RdcConfig } from '../../types/index.js';
 import { hasRemoteConfig } from '../../types/index.js';
@@ -9,8 +10,41 @@ import {
   isLanguageSupported as isLanguageSupportedCheck,
   normalizeLanguage,
 } from '../core/context-language.js';
-import { getEffectiveConfigName, setConfigNameOverride } from './config-name.js';
+import { newPasswordRecord, rememberMasterPassword } from '../core/master-password.js';
+import { getEffectiveConfigName, rdcCommand, setConfigNameOverride } from './config-name.js';
 import type { ResourceState } from './resource-state.js';
+
+/**
+ * `config` with its master password set to `record` (a kdf and a v2 verifier) or removed
+ * (`undefined`); a keyring key, when the config has one, stays part of the seal.
+ */
+function withMasterPassword(
+  config: RdcConfig,
+  record: { kdf: SealKdf; verifier: string } | undefined
+): RdcConfig {
+  const keyring = usesKeyring(config.encryption?.mode);
+  const credentials = { ...(config.credentials ?? {}) };
+  if (record) {
+    credentials.masterPasswordVerifier = record.verifier;
+    return {
+      ...config,
+      credentials,
+      encryption: {
+        ...config.encryption,
+        mode: keyring ? 'keyring+master-password' : 'master-password',
+        kdf: record.kdf,
+      },
+    };
+  }
+  delete credentials.masterPasswordVerifier;
+  const encryption = { ...config.encryption };
+  delete encryption.kdf;
+  return {
+    ...config,
+    credentials,
+    encryption: { ...encryption, mode: keyring ? 'keyring' : 'plaintext' },
+  };
+}
 
 /**
  * Service for managing CLI config files.
@@ -211,6 +245,7 @@ export class ConfigServiceBase {
           t('commands.config.remote.offlineNoCache', {
             server: error.apiUrl,
             config: configName,
+            cmd: rdcCommand('config remote refresh', configName),
           }),
           { cause: error }
         );
@@ -303,19 +338,34 @@ export class ConfigServiceBase {
   // Credential Helpers
   // ============================================================================
 
-  async getMasterPassword(): Promise<string | null> {
-    const config = await this.getCurrent();
-    return config?.credentials?.masterPasswordVerifier ?? null;
+  /** The device-local master-password verifier of config `name` (the active one by default), or null. */
+  async getMasterPasswordVerifier(name = this.getEffectiveConfigName()): Promise<string | null> {
+    if (!(await configFileStorage.exists(name))) return null;
+    const config = await configFileStorage.load(name);
+    return config.credentials?.masterPasswordVerifier ?? null;
   }
 
-  async setMasterPassword(password: string): Promise<void> {
-    const name = this.getEffectiveConfigName();
-    const exists = await configFileStorage.exists(name);
-    if (!exists) return;
-    await configFileStorage.update(name, (cfg) => ({
-      ...cfg,
-      credentials: { ...(cfg.credentials ?? {}), masterPasswordVerifier: password },
-    }));
+  /**
+   * Set or change (`password` given) or remove (`null`) the master password of config `name`, in
+   * one locked write that re-seals every field (PLAN-config-sealed-local.md D8). A new password gets
+   * a fresh 600k kdf salt and a v2 verifier, and is remembered for that verifier so the write seals
+   * under it; the old password, when there is one, opens the current fields first. Modes:
+   * `plaintext` <-> `master-password`, `keyring` <-> `keyring+master-password`. Returns the written
+   * at-rest config, or undefined when there is no such config file. Refusals (local remove without
+   * confirmation, a set over an existing password) belong to the command.
+   */
+  async setMasterPassword(
+    password: string | null,
+    name = this.getEffectiveConfigName()
+  ): Promise<RdcConfig | undefined> {
+    if (!(await configFileStorage.exists(name))) return undefined;
+    let record: { kdf: SealKdf; verifier: string } | undefined;
+    if (password !== null) {
+      const { id } = await configFileStorage.load(name);
+      record = await newPasswordRecord(id, password);
+      rememberMasterPassword(id, record.verifier, password);
+    }
+    return configFileStorage.update(name, (cfg) => withMasterPassword(cfg, record));
   }
 
   async getUserEmail(): Promise<string | null> {

@@ -16,6 +16,7 @@ import pytest
 
 from rediacc_ci import workflows
 from rediacc_ci.ci import ci_diagnose as D
+from rediacc_ci.core import ghx
 
 FIX = pathlib.Path(__file__).resolve().parent / "fixtures" / "ci_diagnose"
 RUN = 36953549081
@@ -447,6 +448,18 @@ SIG_CASES = {
         "\u2717 1 devcontainer pin(s) are behind upstream:",
         "\u2713 Every devcontainer pin is current or deferred (5 of 5 compared with upstream, 0 held).",
     ),
+    "auth-401": (
+        "gh: Bad credentials (HTTP 401)",
+        "retrying after 4013 ms",
+    ),
+    "secret-expired": (
+        "Error: the BWS access token has expired",
+        "token expiry is 2027-01-01, 41 days left",
+    ),
+    "billing-refused": (
+        "The job was not started because recent account payments have failed or your spending limit needs to be increased.",
+        "billing report written to billing.json",
+    ),
 }
 
 
@@ -693,6 +706,62 @@ def test_the_retry_note_exclusion_is_what_keeps_that_verdict(monkeypatch):
     """The plant: with the exclusion switched off the same log reads as infrastructure, so the case above is testing the exclusion and not the row order."""
     monkeypatch.setattr(D, "RETRY_NOTE_RE", re.compile(r"(?!)"))
     assert D.classify([PIN_RETRY % (1, "HTTP 503", 2)]) == ("infra-likely", "bitwarden-5xx")
+
+
+# OPERATOR-ONLY (agent/plans/PLAN-simple-two-tree-loop.md B6): a red no rerun fixes. Each shape is the line a real refusal prints, and the 429 and 403 controls stay infrastructure, since a throttle IS retried.
+@pytest.mark.parametrize(
+    ("lines", "want"),
+    [
+        (
+            [
+                "##[group]Run npm run check:ci-pins",
+                "gh: Bad credentials (HTTP 401)",
+                "Error: gh api exited 1",
+                "##[error]Process completed with exit code 1.",
+            ],
+            ("operator-only", "auth-401"),
+        ),
+        (
+            ["curl: (22) The requested URL returned error: 401 Unauthorized"],
+            ("operator-only", "auth-401"),
+        ),
+        (
+            [
+                "Error: The CLOUDFLARE_API_TOKEN secret has expired",
+                "read tcp 10.0.0.1:443: read: ECONNRESET",
+            ],
+            ("operator-only", "secret-expired"),
+        ),
+        (
+            ["Error: 402 Payment Required: credit balance is too low"],
+            ("operator-only", "billing-refused"),
+        ),
+        (
+            ["error pulling image: 429 Too Many Requests", "Error: pull failed"],
+            ("infra-likely", "registry-refused"),
+        ),
+        (
+            ["unexpected status code 403 from registry"],
+            ("infra-likely", "registry-refused"),
+        ),
+    ],
+)
+def test_operator_only_ranks_ahead_of_infra_and_a_429_stays_infra(lines, want):
+    assert D.classify(lines) == want
+
+
+def test_operator_only_is_a_declared_category_ahead_of_infra():
+    assert "operator-only" in D.CATEGORIES
+    assert D.CATEGORIES.index("operator-only") < D.CATEGORIES.index("infra-likely")
+
+
+def test_a_401_inside_go_test_output_is_not_the_operators():
+    """A `t.Logf` line in a log with a test verdict is what a test chose to print: an auth test asserting a 401 must not read as a refused credential."""
+    lines = [
+        "    auth_test.go:41: got HTTP 401 as expected",
+        "--- FAIL: TestRenew (0.01s)",
+    ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
 
 
 @pytest.mark.parametrize(
@@ -1424,3 +1493,110 @@ def test_a_real_bitwarden_5xx_still_reads_infra_beside_the_audit_lines():
         *SECURITY_AUDIT_RUN[5:],
     ]
     assert D.classify(lines) == ("infra-likely", "bitwarden-5xx")
+
+
+def test_hub_token_exchange_warning_is_no_auth_401():
+    warn = (
+        "DOCKERHUB_TOKEN is set without DOCKERHUB_USERNAME, so it cannot be exchanged for a Hub API token "
+        "(a raw token is always HTTP 401); reading anonymously"
+    )
+    dependency = "dependency check failed: nginx pin is stale"
+    assert D.classify([warn]) == ("unknown", "")
+    assert D.classify([warn, dependency]) == D.classify([dependency])
+    assert D.classify([warn, dependency])[1] != "auth-401"
+    assert D.classify([warn, "request failed: HTTP 401"])[1] == "auth-401"
+
+
+def test_an_expiry_the_log_reports_as_handled_is_no_operator_verdict():
+    """Review 65dcaec1.2 and b74a99a2.6: `cache token is expired, refreshing` is no refused credential."""
+    handled = "cache token is expired, refreshing it"
+    assert (
+        D.classify([handled, "dependency check failed: nginx pin is stale"])[1] != "secret-expired"
+    )
+    assert D.classify([handled])[0] != "operator-only"
+    # Control: the refusal itself still reads operator-only.
+    assert D.classify(["Error: the BWS access token has expired"]) == (
+        "operator-only",
+        "secret-expired",
+    )
+
+
+def test_a_refused_expiry_that_advises_rotation_or_was_retried_stays_operator_only():
+    """Review a30dc02b.1 and .2: `rotate it` is advice and no handling word, and `retried` is a retry word."""
+    assert D.classify(["Error: token has expired, rotate it"]) == (
+        "operator-only",
+        "secret-expired",
+    )
+    assert D.classify(["Error: token expired, retried 3 times"])[0] != "operator-only"
+    assert D.classify(["Error: token expired, retrying in 5s"])[0] != "operator-only"
+    assert D.classify(["Error: token expired, rotated automatically"])[0] != "operator-only"
+
+
+def test_ordinary_application_text_about_balance_is_no_billing_refusal():
+    """Review b74a99a2.5: an `insufficient balance` line with no failure word is application output."""
+    assert (
+        D.classify(["ledger: insufficient balance for the fixture transfer"])[0] != "operator-only"
+    )
+    assert D.classify(["Error: Insufficient credits to run this job"]) == (
+        "operator-only",
+        "billing-refused",
+    )
+
+
+# ---- the escape-sequences flag and the first-error-line text -----------------------
+
+
+def _text_with_flag_support(monkeypatch, flags, reply):
+    calls: list = []
+
+    def fake_run(argv, **_kw):
+        calls.append(argv)
+        return reply
+
+    monkeypatch.setattr(ghx, "api_escape_flags", lambda: list(flags))
+    monkeypatch.setattr(D.subprocess, "run", fake_run)
+    return D.GhFetcher("o/r"), calls
+
+
+def test_text_passes_the_escape_flag_when_gh_has_it(monkeypatch):
+    f, calls = _text_with_flag_support(monkeypatch, ["--allow-escape-sequences"], _Proc(0, "x"))
+    assert f.text("actions/jobs/1/logs") == ("x", "")
+    assert calls[0][-1] == "--allow-escape-sequences"
+
+
+def test_text_omits_the_flag_for_an_older_gh_and_job_log_strips_escapes(monkeypatch, tmp_path):
+    f, calls = _text_with_flag_support(monkeypatch, [], _Proc(0, "\x1b[31mred\x1b[0m line\n"))
+    log, err = D.job_log(f, 7, completed=False, cache_dir=tmp_path)
+    assert (log, err) == ("red line\n", "")
+    assert "--allow-escape-sequences" not in calls[0]
+
+
+def test_text_error_keeps_the_whole_first_error_line(monkeypatch):
+    usage = "unknown flag: --allow-escape-sequences\n\nUsage:  gh api <endpoint> [flags]\n" + (
+        "  --some-flag   print the response body\n" * 12
+    )
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(1, "", usage))
+    data, err = f.text("actions/jobs/1/logs")
+    assert data is None
+    assert err == "unknown flag: --allow-escape-sequences"
+
+
+def test_text_error_falls_back_to_stdout_when_stderr_is_only_blank_lines(monkeypatch):
+    f, _calls = _text_with_flag_support(
+        monkeypatch, [], _Proc(1, "HTTP 502: bad gateway\n", "\n  \n")
+    )
+    data, err = f.text("actions/jobs/1/logs")
+    assert data is None
+    assert err == "HTTP 502: bad gateway"
+    # control: a real stderr line still wins over stdout
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(1, "from stdout\n", "from stderr\n"))
+    assert f.text("actions/jobs/1/logs") == (None, "from stderr")
+    # control: both blank still reads as the exit code
+    f, _calls = _text_with_flag_support(monkeypatch, [], _Proc(4, " \n", "\n"))
+    assert f.text("actions/jobs/1/logs") == (None, "gh exited 4")
+
+
+def test_first_error_line_clips_a_very_long_line_with_an_ellipsis():
+    out = D._first_error_line("\n  " + "e" * 400 + "\nsecond", 1)
+    assert out == "e" * 299 + "…"
+    assert D._first_error_line("", 3) == "gh exited 3"

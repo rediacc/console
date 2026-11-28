@@ -15,13 +15,14 @@ two output streams are identically empty.
 
 TIME IS NOT PINNED, AND THE FIXTURES ARE BUILT AROUND THAT. The two sides run seconds apart and each calls `date -u +%s` for itself, so every fixture timestamp is placed FAR from a decision boundary (days, or half-hours where the twin prints hours). `test_the_two_sides_agree_on_ages_that_are_not_near_a_ boundary` is the control that this discipline is actually being followed.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`, recorded in a
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded in a
 disposable scratch git repository outside this checkout.
 """
 
 from __future__ import annotations
 
 import ast
+import base64
 import datetime
 import inspect
 import json
@@ -37,6 +38,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect, ghx
+from rediacc_ci.deploy import preview_name
 from rediacc_ci.housekeeping import cleanup_versions as cv
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET, RENET_REPO
@@ -95,7 +97,7 @@ if NAME == "curl" and "-K" in ARGV:
 
 with open(os.environ["FAKE_LOG"], "a", encoding="utf-8") as fh:
     fh.write(NAME + "\\t" + "\\t".join(ARGV) + "\\n")
-# The `call:` prefix is what the shadow-gate ledger scopes its --finding-re to.
+# The `call:` prefix is what the shadow gate ledger scopes its --finding-re to.
 # Without it every line this program prints is a log_step/log_info, which the
 # comparator classifies as CHATTER before any message regex can see it, and
 # every ledger row reads VACUOUS_BOTH_EMPTY.
@@ -3425,6 +3427,47 @@ def test_delta_phase_10_the_watchdog_line_names_its_own_7d_retention() -> None:
     assert norm[3] == old[3]
 
 
+def test_phase_10_keeps_the_evidence_sessions_cite_for_the_documented_retention() -> None:
+    """Item #9098405b: runs cited in commits (a main push, a merged PR's runs, a release run, a renamed workflow's last runs) were found 404 days later. Phase 10 is NOT their deleter (the 2026-11-24, 25 and 26 Cleanup jobs each printed `Workflow runs: deleted 0 of 466 / 446 / 390` while the listing kept shrinking), and this pins why: a run younger than its retention is never selected, whatever its event, branch, conclusion or workflow, and only a run past it (the watchdog's own 7 days included) is. Every kept run except the watchdog's newest hundred (1.5 days old) is older than 3 days, so a selection that applied a 3-day regime, the repository's artifact-and-log retention, would turn this red."""
+    ci = _workflow(31, "Console CI", ".github/workflows/ci.yml")
+    edge = _workflow(32, "CD - Release to Edge", ".github/workflows/cd-release-edge.yml")
+    dog = _workflow(33, "Watchdog: run 9 (gen 2)", ".github/workflows/ops-watchdog-monitor.yml")
+    # Renamed on 2026-11-08: the old path is gone from the default branch, the new one holds the file.
+    renamed = _workflow(34, "Release to Production", ".github/workflows/release-old.yml")
+
+    def run(run_id: int, age: float, conclusion: str = "success") -> dict:
+        return {"id": run_id, "created_at": ago(age), "conclusion": conclusion}
+
+    fixture = _p10_fixture(
+        [ci, edge, dog, renamed],
+        # A main push, a merged PR's runs (red then green), a scheduled run, and one 40 days old that is kept by the newest-100-per-workflow floor, not by age (a workflow still on the default branch keeps its newest 100 whatever their age; a removed workflow, run 402 below, has no such floor and keeps only the last 30 days).
+        *_pages(31, [run(101, 5), run(102, 5, "failure"), run(103, 5), run(104, 5), run(105, 40)]),
+        *_pages(32, [run(201, 5)]),  # the release run
+        *_pages(
+            33, [*_runs(100, start=5000, age=1.5), run(301, 6.5), run(302, 8.5)]
+        ),  # past the floor: inside and past the watchdog's 7 days
+        *_pages(34, [run(401, 5), run(402, 35)]),  # a renamed workflow's last runs
+        rule("runs?status=completed", json_body={"workflow_runs": []}),
+        files=_files(ci["path"], edge["path"], dog["path"]),
+    )
+    # The port alone: the twin is gone, and a new twin case would need a golden recorded from the port itself.
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        code, _out, err, _calls = _run(
+            "python", "cleanup_workflow_runs", ("--dry-run",), fixture, {}, base
+        )
+    new_err = err.decode("utf-8")
+    assert code == 0
+    for kept in (101, 102, 103, 104, 105, 201, 301, 401):
+        assert "Would delete run: %d " % kept not in new_err, (
+            "run %d is inside its retention" % kept
+        )
+    for gone in (302, 402):
+        assert "Would delete run: %d (" % gone in new_err, "run %d is past its retention" % gone
+    assert "Workflow runs: would delete 2 of 110 (across 4 workflows)" in new_err
+
+
 def test_phase_10_warns_when_its_scan_window_can_never_reach_the_threshold() -> None:
     """THE VACUOUS-GREEN CHECK. This phase deleted nothing for the watchdog for months while reporting success, because ten pages of runs never reached back as far as the retention threshold. The warning fires only when the window was TRUNCATED, so a young low-volume workflow stays quiet."""
     result = _p10_sides(
@@ -4445,3 +4488,141 @@ def test_gh_read_does_not_retry_a_4xx(monkeypatch, capsys) -> None:
     assert cv.gh_read(["api", "x"])[0] == 1
     assert script.calls == 1
     assert "still failing" not in capsys.readouterr().err
+
+
+# --------------------------------------------------------------------------- WORD-NAMED PREVIEWS (PLAN-preview-signer N3). Port only: the twin predates the `pv-<w>-<w>-<w>` names, so there is no golden to compare and each case asserts the port's call log directly. ---------------------------------------------------------------------------
+
+# base64 of 32 bytes of "A"; authenticates nothing.
+PREVIEW_KEY = "QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUE="
+
+
+def _pv(pr: int) -> str:
+    return preview_name.preview_name(pr, base64.b64decode(PREVIEW_KEY))
+
+
+def _port(phase: str, fixture: dict, env: dict, argv: tuple[str, ...] = ()):
+    with tempfile.TemporaryDirectory() as td:
+        base = pathlib.Path(td) / "python"
+        base.mkdir(parents=True)
+        return _run("python", phase, argv, fixture, dict(env), base)
+
+
+def _workers_fixture(open_prs: list[int], names: list[str]) -> dict:
+    return {
+        "gh": [rule("pr", "list", json_body=[{"number": n} for n in open_prs])],
+        "curl": [
+            rule("-X DELETE", json_body={"success": True}),
+            rule(
+                "workers/scripts",
+                json_body={"success": True, "result": [{"id": n} for n in names]},
+            ),
+        ],
+    }
+
+
+def _deleted_workers(calls: list[str]) -> list[str]:
+    urls = [
+        c for argv in calls_of(calls, "curl") if "DELETE" in argv for c in argv if "/scripts/" in c
+    ]
+    return sorted(u.split("/scripts/")[1].split("?")[0] for u in urls)
+
+
+def test_phase_5b_deletes_a_word_named_preview_no_open_pr_derives_and_keeps_the_live_one() -> None:
+    live, dead = _pv(7), _pv(3)
+    names = [live, live + "-signer", dead, dead + "-signer", "signer-bench-eu", "signer-eu"]
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([7], names),
+        cf_env(PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    assert _deleted_workers(result[3]) == sorted([dead, dead + "-signer"])
+    err = result[2].decode()
+    assert "Deleted Worker: %s (no open PR derives it)" % dead in err
+    assert "Workers: 6 script(s) seen, 2 orphan(s) deleted" in err
+
+
+def test_phase_5b_keeps_every_word_named_preview_without_the_key() -> None:
+    """Fails closed: without PREVIEW_NAME_KEY no name can be proved an orphan, so none is deleted and the line says why."""
+    dead = _pv(3)
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([], [dead, "pr-4"]),
+        cf_env(PREVIEW_NAME_KEY=""),
+    )
+    assert _deleted_workers(result[3]) == ["pr-4"]
+    assert "KEEP Worker %s: PREVIEW_NAME_KEY is required" % dead in result[2].decode()
+
+
+def test_phase_5b_without_a_word_named_preview_needs_no_key() -> None:
+    """The control: the pr-N path is unchanged, and no key is read when no Worker has the word shape."""
+    result = _port(
+        "cleanup_preview_workers",
+        _workers_fixture([], ["pr-4", "signer-bench-eu"]),
+        cf_env(PREVIEW_NAME_KEY=""),
+    )
+    err = result[2].decode()
+    assert "KEEP" not in err
+    assert "Deleted Worker: pr-4 (PR #4 closed)" in err
+    assert _deleted_workers(result[3]) == ["pr-4"]
+
+
+def test_phase_8b_reaps_a_word_named_channel_no_open_pr_derives_and_keeps_the_live_one() -> None:
+    live, dead = _pv(7), _pv(3)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line(live + "/") + pre_line(dead + "/"),
+            ),
+            rule("--prefix cli/%s/" % live, raw="%s\n" % ago(1.5)),
+            rule("--prefix cli/%s/" % dead, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", json_body=[{"number": 7}]), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    err = result[2].decode()
+    assert ("Deleted s3://%s/cli/%s/ (no open PR derives it)" % (RELEASES_BUCKET, dead)) in err
+    assert "8b: deleted 1 PR channel prefix(es)" in err
+    rms = [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]]
+    assert [c[2] for c in rms] == ["s3://%s/cli/%s/" % (RELEASES_BUCKET, dead)]
+    assert len([c for c in calls_of(result[3], "gh") if c[:2] == ["pr", "list"]]) == 1, (
+        "listed once"
+    )
+
+
+def test_phase_8b_keeps_a_word_named_channel_when_the_open_pr_list_is_unreadable() -> None:
+    dead = _pv(3)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(("ls s3://" + RELEASES_BUCKET + "/cli/ "), raw=pre_line(dead + "/")),
+            rule("--prefix cli/%s/" % dead, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", rc=1), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=PREVIEW_KEY),
+    )
+    assert "KEEP R2 prefix %s: the open PR list is unreadable" % dead in result[2].decode()
+    assert [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]] == []
+
+
+def test_phase_8b_age_branch_deletes_a_stale_word_named_channel_without_the_key() -> None:
+    """Reviews dc4708fc.1 and .3: the age limit applies to a word-named channel like any PR channel, key and PR list or not; the same channel, fresh, is kept (the control)."""
+    stale, fresh = _pv(3), _pv(4)
+    result = _port(
+        "cleanup_r2",
+        r2_fixture(
+            rule(
+                ("ls s3://" + RELEASES_BUCKET + "/cli/ "),
+                raw=pre_line(stale + "/") + pre_line(fresh + "/"),
+            ),
+            rule("--prefix cli/%s/" % stale, raw="%s\n" % ago(5.5)),
+            rule("--prefix cli/%s/" % fresh, raw="%s\n" % ago(1.5)),
+            gh=[rule("pr", "list", rc=1), rule("tags", raw="")],
+        ),
+        dict(R2_ENV, PREVIEW_NAME_KEY=""),
+    )
+    err = result[2].decode()
+    assert ("Deleted s3://%s/cli/%s/ (stale 5d)" % (RELEASES_BUCKET, stale)) in err
+    rms = [c for c in calls_of(result[3], "aws") if c[:2] == ["s3", "rm"]]
+    assert [c[2] for c in rms] == ["s3://%s/cli/%s/" % (RELEASES_BUCKET, stale)]

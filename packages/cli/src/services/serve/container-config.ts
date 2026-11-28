@@ -28,30 +28,14 @@
  * independently-rotating tokens keep the two apart.
  */
 
-import type { EncryptedConfigPayload } from '@rediacc/shared/config-crypto';
-import { ENVELOPE_VERSION, fromBase64, importAesKey } from '@rediacc/shared/config-crypto';
-import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
+import type { AiConfigs } from '@rediacc/shared/ai';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
-import { decryptConfigPullPayload } from '@rediacc/shared/config-schema';
+import { memoryPolicyHighWater } from '../config/policy-record.js';
 import { deadlineFetch } from './account-fetch.js';
+import type { AgentGrantSessions } from './agent-grant-session.js';
 import { AuthError } from './auth.js';
+import { ConfigChain, type ExecutorGrant, SessionConfigStore } from './config-writeback.js';
 import { SessionError, type SessionPrincipal, SessionStore } from './sessions.js';
-
-/** What the account server hands an executor so it can fetch a member's config. */
-interface ExecutorGrant {
-  token: string;
-  storeId: string;
-  serverSecret: string;
-  configs: { configId: string; teamId: string | null; version: number }[];
-}
-
-interface PullResponse {
-  newServerToken: string;
-  sdk_derived: string;
-  configData: string;
-  envelope: EncryptedConfigPayload['envelope'];
-  hmac: string | null;
-}
 
 export interface ContainerConfigLoaderOptions {
   /** Account server base URL, e.g. https://eu.rediacc.cloud */
@@ -66,30 +50,86 @@ export interface ContainerConfigLoaderOptions {
 /**
  * Build the `loadConfig` the container tier injects into ServeDeps.
  *
- * The decrypted config is cached PER SESSION, which is the entire economic
- * argument for a warm container: the second command in a session pays no pull,
- * no decrypt, and no round trip. It is dropped when the session is, so a config
- * never outlives the key that opened it.
+ * The decrypted config is cached PER (SESSION, TEAM), which is the entire
+ * economic argument for a warm container: the second command in a session pays
+ * no pull and no decrypt. The team is part of the key because one user's
+ * session can serve requests under two teams, and each team has its own config
+ * (Design 4 of PLAN-rmcp-executor-hardening): keyed by session alone, a team-B
+ * request would run against team A's config. Every request after the first
+ * revalidates the cached version against the store with one metadata read and
+ * re-pulls on a mismatch (Design 5), so another device's push is seen on the
+ * next command. It is dropped when the session is, so a config never outlives
+ * the key that opened it.
+ *
+ * The config it returns is bound to the session's writeback
+ * (config-writeback.ts): a command dispatched against it pushes its config
+ * changes back to config storage through a writable chain, and the next command
+ * of the session reads the pushed version (agent/plans/PLAN-rmcp-writeback.md).
  */
 export function createContainerConfigLoader(
   options: ContainerConfigLoaderOptions
-): (principal: SessionPrincipal) => Promise<RdcConfig> {
-  const accountUrl = options.accountUrl.replace(/\/+$/, '');
-  const doFetch = deadlineFetch(options.fetchImpl ?? globalThis.fetch);
+): (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig> {
+  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
   const { sessions, executorToken } = options;
 
-  /** sessionId -> decrypted config. RAM only; never serialized, never written. */
-  const cache = new Map<string, RdcConfig>();
+  /**
+   * storeKey(sessionId, teamId) -> that session's config store for that team
+   * (the decrypted config and its writeback, config-writeback.ts). RAM only;
+   * never serialized, never written. The promise is cached, so concurrent first
+   * requests share one pull and one store, and with it one write serialization.
+   */
+  const stores = new Map<string, Promise<SessionConfigStore>>();
+  const storeKey = (sessionId: string, teamId: string | null): string =>
+    `${sessionId}\u0000${teamId ?? ''}`;
+  /** `${userId}\0${teamId}` -> the one config-token chain this container holds for that user and team. */
+  const chains = new Map<string, ConfigChain>();
+  /** The newest version of each policy record this container opened: an older one is a replay. */
+  const policyHighWater = memoryPolicyHighWater();
 
   /** Drop cached configs whose session has gone. Nothing decrypted outlives its key. */
   const pruneDeadSessions = (): void => {
-    for (const sessionId of cache.keys()) {
+    for (const key of stores.keys()) {
+      const sessionId = key.slice(0, key.indexOf('\u0000'));
       try {
         sessions.principal(sessionId);
       } catch {
-        cache.delete(sessionId);
+        stores.delete(key);
       }
     }
+  };
+
+  const chainFor = (principal: SessionPrincipal): ConfigChain => {
+    const key = `${principal.userId}\u0000${principal.teamId ?? ''}`;
+    let chain = chains.get(key);
+    if (!chain) {
+      chain = new ConfigChain({
+        accountUrl: options.accountUrl,
+        executorToken,
+        userId: principal.userId,
+        fetchImpl,
+      });
+      chains.set(key, chain);
+    }
+    return chain;
+  };
+
+  const openStore = async (
+    principal: SessionPrincipal,
+    sessionId: string,
+    cek: CryptoKey
+  ): Promise<SessionConfigStore> => {
+    const chain = chainFor(principal);
+    // Minted for THIS principal under THIS session. The account server checks they are in the executor's org, an active config-store member, and the recorded grantor of the session (recordGrant below) before answering.
+    const grant = await chain.mint(sessionId);
+    const target = pickConfig(grant.configs, principal.teamId);
+    return SessionConfigStore.open({
+      chain,
+      sessionId,
+      cek,
+      target: { storeId: grant.storeId, ...target },
+      orgConfigId: grant.configs.find((entry) => entry.teamId === null)?.configId ?? null,
+      policyHighWater,
+    });
   };
 
   return async function loadConfig(
@@ -110,65 +150,62 @@ export function createContainerConfigLoader(
     // Touches the session (keeping it alive) and fails loudly if the key is gone.
     const cek = sessions.requireCek(sessionId);
 
-    const cached = cache.get(sessionId);
-    if (cached) return cached;
-
-    // Minted for THIS principal under THIS session. The account server checks they are in the executor's org, an active config-store member, and the recorded grantor of the session (recordGrant below) before answering.
-    const grant = await mintExecutorGrant(principal.userId, sessionId);
-    const target = pickConfig(grant.configs, principal.teamId);
-
-    const pull = await pullConfig(grant.token, target.configId, target.teamId);
-
-    const payload: EncryptedConfigPayload = {
-      envelope: pull.envelope,
-      encryptedBlob: pull.configData,
-      hmac: pull.hmac,
-    };
-
-    // The key is the SESSION's, never the executor's, it has none of its own. The binding is the config the executor asked for: a blob the server serves for another store, config or team does not open (envelope v3 AAD).
-    const decrypted = await decryptConfigPullPayload(payload, {
-      cek,
-      sdkDerived: await importAesKey(fromBase64(pull.sdk_derived)),
-      binding: { storeId: grant.storeId, configId: target.configId, teamId: target.teamId },
+    const key = storeKey(sessionId, principal.teamId);
+    const cached = stores.get(key);
+    if (cached) {
+      // A warm store is checked against the store's current version first; a push from another device re-pulls here.
+      return (await cached).revalidate();
+    }
+    const store = openStore(principal, sessionId, cek);
+    stores.set(key, store);
+    // A failed open is not cached: the next request tries again.
+    store.catch(() => {
+      if (stores.get(key) === store) stores.delete(key);
     });
-
-    const config = fullConfigToRdcConfig(decrypted);
-    cache.set(sessionId, config);
-    return config;
+    // The store's current document, bound to its writeback: a request scope built around it pushes its writes back to config storage.
+    return (await store).config;
   };
+}
 
-  async function mintExecutorGrant(userId: string, sessionId: string): Promise<ExecutorGrant> {
-    const response = await doFetch(`${accountUrl}/account/api/v1/configs/executor-token`, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${executorToken}`,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ userId, sessionId }),
-    });
-    if (!response.ok) {
-      throw new SessionError(await describe(response, 'could not obtain a config token'));
-    }
-    return (await response.json()) as ExecutorGrant;
-  }
+/**
+ * Route an agent-grant principal to its own grant session instead of the user-keyed `loadConfig`
+ * (PLAN-rmcp-agent-grants.md Design 4). The principal of a grant (`agentGrantId` set) names a session of
+ * `agentSessions`, which holds the one config the grant opens; every other principal goes to `userLoader`.
+ * A grant principal never reaches the user-keyed loader, even when the grant sessions are absent: it is
+ * refused, because that loader would look up the grant's synthetic user and say nothing useful.
+ */
+export function routeAgentPrincipals(
+  userLoader: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>,
+  agentSessions: AgentGrantSessions | undefined
+): (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig> {
+  return async (principal, configSessionId) => {
+    if (!principal.agentGrantId) return await userLoader(principal, configSessionId);
+    if (!agentSessions) throw new SessionError('This executor does not serve agent grants.');
+    return agentSessions.currentConfig(principal);
+  };
+}
 
-  async function pullConfig(
-    configToken: string,
-    configId: string,
-    teamId: string | null
-  ): Promise<PullResponse> {
-    const query = teamId ? `?teamId=${encodeURIComponent(teamId)}` : '';
-    const response = await doFetch(
-      `${accountUrl}/account/api/v1/configs/${encodeURIComponent(configId)}${query}`,
-      {
-        headers: { 'X-Config-Token': configToken, 'x-config-envelope': String(ENVELOPE_VERSION) },
-      }
-    );
-    if (!response.ok) {
-      throw new SessionError(await describe(response, 'could not fetch the config'));
-    }
-    return (await response.json()) as PullResponse;
-  }
+/**
+ * The AI profile sources of a chat, team over shared (D3 of PLAN-console-ai-providers): the config
+ * the request runs against, and the org's shared config beside it, opened through the same loader
+ * under the same session. A principal with no team runs against the shared config already, and an
+ * agent grant's principal has only its grant's config, so both get the one source. A team with no
+ * config of its own falls back to the shared one in `pickConfig`, which makes both sources the same
+ * document and changes nothing. A shared config that cannot be opened fails the request, as the
+ * team config would: a profile is never resolved against half of what the store holds.
+ */
+export function teamOverSharedAiConfigs(
+  loadConfig: (principal: SessionPrincipal, configSessionId?: string) => Promise<RdcConfig>
+): (
+  principal: SessionPrincipal,
+  config: RdcConfig,
+  configSessionId?: string
+) => Promise<AiConfigs> {
+  return async (principal, config, configSessionId) => {
+    if (principal.agentGrantId || !principal.teamId) return { team: config.ai };
+    const shared = await loadConfig({ ...principal, teamId: null }, configSessionId);
+    return { team: config.ai, shared: shared.ai };
+  };
 }
 
 export interface ExecutorGrantRecorderOptions {

@@ -26,6 +26,7 @@ DRAIN_FLAG = "--write-" + "baseline"
 
 ROOT = paths.repo_root()
 GATE = ROOT / ".ci" / "scripts" / "quality" / "check_language_policy.py"
+SUBJECT = ROOT / ".ci" / "rediacc_ci" / "quality" / "language_policy.py"
 
 # A reason long enough and specific enough to satisfy the canonical validator (30 characters after normalisation, no banned phrase). Held in one constant so a case that means to test something ELSE cannot fail on the reason by accident.
 GOOD_REASON = (
@@ -537,12 +538,12 @@ def test_selftest_can_fail(gate):
     """
     with harness.temp_dir() as d:
         fixture(d)
-        source = GATE.read_text(encoding="utf-8")
+        source = SUBJECT.read_text(encoding="utf-8")
         needle = "    known = set(old)\n    return [entry for entry in new if entry not in known]\n"
         if needle not in source:
             gate.log_fail(
                 "CONTROL COULD NOT PLANT: baseline_additions body not found as written in %s"
-                % paths.relative_to_root(GATE)
+                % paths.relative_to_root(SUBJECT)
             )
         mutant = d / "mutant.py"
         mutant.write_text(source.replace(needle, "    return []\n"), encoding="utf-8")
@@ -589,7 +590,7 @@ def test_real_tree_seam_free(gate):
 
 def test_the_three_seams_still_exist_in_the_subject(gate):
     """ADDED BY THE PORT. Twenty-two of the twenty-three cases point the subject at a fixture through `LANGUAGE_POLICY_ROOT`, `_BASELINE` and `_ALLOWLIST`. If a seam were renamed the subject would silently judge the REAL tree instead, and most of those cases expect a non-zero exit -- so several would keep passing while asserting something about the wrong corpus."""
-    source = GATE.read_text(encoding="utf-8")
+    source = SUBJECT.read_text(encoding="utf-8")
     for seam in (
         "LANGUAGE_POLICY_ROOT",
         "LANGUAGE_POLICY_BASELINE",
@@ -618,11 +619,11 @@ def test_this_port_is_not_a_shrink_only_offender(gate):
         )
     # AND THE CONSTANT MUST STILL BE THE REAL FLAG. A control that only checks for absence is satisfied by a typo, which would make every case above drive the subject with an argument it ignores. CHECKED AGAINST THE SUBJECT, which is where the argument is really parsed, rather than against a literal written here, which would be a tautology or a second thing to keep rendered. The
     # oracle was the bash twin until W7 P5 retired it; the subject is the better one, because a flag the subject stopped accepting is the failure this guards against and the twin only ever passed the flag along.
-    subject = GATE.read_text(encoding="utf-8")
+    subject = SUBJECT.read_text(encoding="utf-8")
     if DRAIN_FLAG not in subject:
         gate.log_fail(
             "the rendered flag %r does not appear in %s, so it is a typo and every case "
             "above drove the subject with an argument it ignores"
-            % (DRAIN_FLAG, paths.relative_to_root(GATE))
+            % (DRAIN_FLAG, paths.relative_to_root(SUBJECT))
         )
     gate.log_pass("the drain flag is rendered, so this port cannot flag itself (%r)" % DRAIN_FLAG)

@@ -565,6 +565,93 @@
           "generic": "Something went wrong. Please try again."
         }
       },
+      "growth": {
+        "title": "What partners get",
+        "lede": "Four things that make selling Rediacc worth a partner's time.",
+        "items": [
+          {
+            "title": "Deals nobody undercuts",
+            "body": "Register a customer deal and, once approved, no other partner can register the same customer during the protection window."
+          },
+          {
+            "title": "Margin that grows with the deal",
+            "body": "Multi-year terms, upfront payment and larger deals earn extra margin, and certified teams move up the ladder."
+          },
+          {
+            "title": "Free certification",
+            "body": "Sales and technical tracks with a free exam. Study happens in the partner portal."
+          },
+          {
+            "title": "30-day Enterprise trials",
+            "body": "Partners issue 30-day Enterprise trials to customers directly, without waiting on Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads from our pricing calculator",
+        "body": "Customers who size their setup in the public pricing calculator can ask for a partner offer. Those leads go to listed partners that serve the customer's country and language."
+      },
+      "stance": "We don't sell around our partners. Rediacc sells direct only where no partner serves the customer.",
+      "directoryCta": {
+        "title": "Get listed in the partner directory",
+        "body": "Approved partners can opt in to a public listing with their countries, languages and services, so customers find them first.",
+        "button": "Browse the directory"
+      },
+      "directory": {
+        "meta": {
+          "title": "Rediacc Partner Directory by Country",
+          "description": "Find a Rediacc partner in your country and language for local support, local-currency invoicing and migration help."
+        },
+        "hero": {
+          "eyebrow": "Partner directory",
+          "title": "Find a Rediacc partner near you",
+          "subtitle": "Partners give local support in your language, invoice in your currency and help with migration. Many offer a price below list."
+        },
+        "benefits": {
+          "title": "Why buy through a partner",
+          "items": [
+            "Local support in your language",
+            "Invoices in your local currency",
+            "Migration help from people who have done it before",
+            "Often a price below list, with free extras that grow with the deal"
+          ]
+        },
+        "filters": {
+          "country": "Country",
+          "language": "Language",
+          "service": "Service",
+          "all": "Any",
+          "reset": "Clear filters"
+        },
+        "services": {
+          "resale": "Resale",
+          "migration": "Migration",
+          "managed": "Managed service",
+          "training": "Training"
+        },
+        "tiers": {
+          "registered": "Registered",
+          "silver": "Silver",
+          "gold": "Gold",
+          "platinum": "Platinum"
+        },
+        "card": {
+          "certificates": "Certificates: {{count}}",
+          "visit": "Visit website",
+          "countries": "Countries",
+          "languages": "Languages",
+          "services": "Services"
+        },
+        "status": {
+          "loading": "Loading partners...",
+          "empty": "No partner matches these filters yet. Rediacc serves customers directly where no partner does.",
+          "error": "The directory could not be loaded. Try again in a moment."
+        },
+        "becomePartner": {
+          "text": "Run a reseller or services business?",
+          "link": "Become a partner"
+        }
+      },
       "finalCta": {
         "title": "Ready to sell Rediacc?",
         "subtitle": "Join the Partner 1st Program and start protecting every deal.",
@@ -808,7 +895,7 @@
           "community": {
             "jobsPerMonth": "100",
             "repoSize": "10 GB",
-            "repositories": "Unlimited",
+            "repositories": "5",
             "floatingLicenses": "1",
             "usersTeams": "Unlimited"
           },
@@ -1061,7 +1148,7 @@
       },
       "hero": {
         "title": "Our Privacy Commitment",
-        "effectiveDate": "Effective Date: November 11, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -1152,8 +1239,9 @@
           "items": [
             "<strong>Service providers (subprocessors)</strong> who host and operate our platform, deliver email and process payments, bound by contractual obligations to protect your data. The current list, with each provider's role and location, is in our <a href=\"data-processing-agreement\">Data Processing Agreement</a>",
             "<strong>Plausible Analytics</strong> for cookieless, anonymized website analytics (no personal data is shared)",
-            "<strong>Telemetry processing</strong> for anonymized product usage data, which is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
-            "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process"
+            "<strong>Telemetry processing</strong> for anonymized product usage data, which is sent to our own telemetry endpoint in the European Union for aggregation and analysis. The endpoint runs on virtual servers provided by Hostinger, which hosts the data for us as our processor, listed in our <a href=\"data-processing-agreement\">Data Processing Agreement</a>, and does not use it for its own purposes. We do not sell telemetry data or share it with anyone else (see our <a href=\"telemetry-policy\">Telemetry Policy</a>)",
+            "<strong>Law enforcement</strong> if required by law, regulation, or valid legal process",
+            "<strong>The model provider you connect</strong>, at your direction, when you use an AI agent through remote MCP: tool output returned to the agent goes to that provider, which processes it under your own agreement with it. That provider is not our processor or subprocessor, because Rediacc neither selects it nor instructs it. Some connectors, such as the Claude API MCP connector, are not eligible for zero data retention"
           ]
         },
         "dataRetention": {
@@ -1913,7 +2001,7 @@
       },
       "hero": {
         "title": "Our Telemetry Practices",
-        "effectiveDate": "Effective Date: February 1, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -1924,7 +2012,7 @@
           "title": "1. Introduction",
           "content": [
             "Rediacc software products collect anonymized usage telemetry to help us improve product quality, diagnose issues, and understand how our tools are used. This Telemetry Policy describes exactly what data is collected, why, how it is processed, and how you can opt out.",
-            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Renet Agent</strong>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
+            "This policy covers two products: the <strong>Rediacc CLI</strong> and the <strong>Rediacc Renet Agent</strong>. Forensics capture of a repository's network activity is not telemetry; it is processed as Customer Personal Data under the <a href=\"data-processing-agreement\">Data Processing Agreement</a>. Website analytics (Plausible) are covered separately in our <a href=\"privacy-policy\">Privacy Policy</a> and <a href=\"cookie-policy\">Cookie Policy</a>."
           ]
         },
         "principles": {
@@ -2018,7 +2106,7 @@
             "<strong>Encryption:</strong> All data is encrypted in transit using TLS. The Renet Agent additionally uses gzip compression.",
             "<strong>Retention:</strong> Raw telemetry traces are stored for up to 90 days for debugging and incident investigation. Aggregated metrics are retained for up to 12 months and then deleted.",
             "<strong>Access:</strong> Telemetry data is accessible only to Rediacc engineering and operations staff on a need-to-know basis.",
-            "<strong>No third-party sharing:</strong> Telemetry data is not shared with, sold to, or accessible by any third party.",
+            "<strong>No third-party sharing:</strong> Telemetry data is not sold, and not shared with anyone for their own use. It is stored on virtual servers in the European Union provided by Hostinger, which hosts it for us as our processor (see our <a href=\"data-processing-agreement\">Data Processing Agreement</a>).",
             "<strong>Infrastructure:</strong> All telemetry data is processed and stored on infrastructure located within the European Union."
           ]
         },
@@ -2338,7 +2426,7 @@
       },
       "hero": {
         "title": "Data Processing Agreement",
-        "effectiveDate": "Effective Date: November 11, 2026"
+        "effectiveDate": "Effective Date: November 26, 2026"
       },
       "toc": {
         "title": "Table of Contents"
@@ -2350,7 +2438,7 @@
           "content": [
             "This Data Processing Agreement (\"DPA\") forms part of the <a href=\"terms-of-service\">Terms of Service</a> between {{legalName}} (\"Rediacc\", the \"Processor\") and the Customer, where the Customer uses the Services as a business and Rediacc processes Customer Personal Data on the Customer's behalf. Terms defined in the Terms of Service have the same meaning here.",
             "For Customer Personal Data, the Customer is the controller (or a processor acting for its own controller) and Rediacc is the processor (or subprocessor). For Account, billing and acceptance records and for Telemetry Data, Rediacc is an independent controller, as described in the <a href=\"privacy-policy\">Privacy Policy</a>, and this DPA does not apply to that processing.",
-            "Customer Data on the Customer's Machines is not processed by Rediacc. Encrypted configuration storage and hosted backups are encrypted with keys Rediacc does not hold, so Rediacc stores those blobs but cannot read their contents."
+            "Apart from the network forensics evidence described in Section 4, which Rediacc receives only for a repository on which the Customer turns forensics on, Rediacc does not process Customer Data on the Customer's Machines. Encrypted configuration storage and hosted backups are encrypted with keys Rediacc does not hold, so Rediacc stores those blobs but cannot read their contents."
           ]
         },
         "definitions": {
@@ -2375,12 +2463,15 @@
           "id": "details",
           "title": "4. Details of Processing",
           "items": [
-            "<strong>Subject matter and purpose:</strong> providing the Platform, including Account and team management, license issuance, encrypted configuration storage, hosted backup storage and support",
+            "<strong>Subject matter and purpose:</strong> providing the Platform, including Account and team management, license issuance, encrypted configuration storage, hosted backup storage and support, and, on paid plans where the Customer turns it on for a repository, network forensics evidence that serves the security of that repository and the investigation of incidents",
             "<strong>Duration:</strong> the term of the Terms of Service, plus the deletion period in Section 11",
             "<strong>Nature of processing:</strong> collection, storage, transmission, retrieval and deletion",
-            "<strong>Categories of data subjects:</strong> the Customer's Authorized Users, invited team members and partner contacts",
-            "<strong>Categories of personal data:</strong> names, email addresses, organization and role, authentication data (password hashes, passkey public keys), network addresses and user agents of sessions, and any personal data inside encrypted data the Customer stores on the Platform",
-            "<strong>Special categories:</strong> none intended; the Customer must not store special categories of data on the Platform unencrypted"
+            "<strong>Categories of data subjects:</strong> the Customer's Authorized Users, invited team members and partner contacts, and people whose network addresses appear in the network flow records of a repository, such as clients that connect to a service the Customer runs",
+            "<strong>Categories of personal data:</strong> names, email addresses, organization and role, authentication data (password hashes, passkey public keys), network addresses and user agents of sessions, and any personal data inside encrypted data the Customer stores on the Platform; for forensics evidence, network flow metadata (addresses, ports, byte and packet counts, times), DNS names and answers, process names and process identifiers, and the paths of sensitive files that a process opened",
+            "<strong>Special categories:</strong> none intended; the Customer must not store special categories of data on the Platform unencrypted",
+            "<strong>Forensics evidence, addresses:</strong> destination addresses of outbound flows are kept whole because they are the evidence. The client address of an inbound flow is written to the record truncated to its network part (/24 for IPv4, /48 for IPv6), and the whole address travels in a separate section of the same batch",
+            "<strong>Forensics evidence, retention:</strong> evidence is kept up to the storage quota of the Customer's plan, and the oldest day files are removed first once the quota is full. A batch is locked against removal for 7 days, and evidence of an incident the Customer declares is held until 30 days after the incident is closed",
+            "<strong>Forensics evidence, basis:</strong> Rediacc processes it only on the Customer's documented instruction, by the Customer enabling forensics for a repository"
           ]
         },
         "confidentiality": {
@@ -2417,7 +2508,8 @@
           ],
           "content2": [
             "Rediacc gives at least thirty (30) days' notice before adding or replacing a Subprocessor, by updating this page and notifying the Account email. The Customer may object on reasonable data protection grounds within that period. If the parties cannot resolve the objection, the Customer may terminate the affected Services and receive a refund of prepaid fees for the period after termination.",
-            "Website analytics (Plausible) do not process Customer Personal Data and are covered by the Privacy Policy."
+            "Website analytics (Plausible) do not process Customer Personal Data and are covered by the Privacy Policy.",
+            "A model provider that the Customer connects to an AI agent is not a Subprocessor, because Rediacc neither selects it nor instructs it. Tool output sent to that provider is governed by the Customer's own agreement with it."
           ]
         },
         "transfers": {
@@ -9948,7 +10040,14 @@
       "title": "Changelog",
       "subtitle": "See what we shipped, what we fixed, and what is coming next.",
       "subscribeTitle": "Get notified of new releases",
-      "subscribeDescription": "We will email you when we ship something new. No marketing fluff."
+      "subscribeDescription": "We will email you when we ship something new. No marketing fluff.",
+      "groupAdded": "Added",
+      "groupFixed": "Fixed",
+      "groupImproved": "Improved",
+      "stableSince": "In stable since v{{version}}",
+      "noNotes": "No customer notes recorded for this version",
+      "earlierHistory": "Earlier history",
+      "viewRelease": "View release on GitHub"
     },
     "resourcesNis2Directive": {
       "meta": {
@@ -10002,7 +10101,7 @@
           {
             "title": "Continuous effectiveness without theatre",
             "slug": "nis2-effectiveness-without-theatre",
-            "blurb": "Article 21(2)(e), (f), and 23 read together. The constant-time fork that makes weekly drills realistic, and the Article 23 reporting timeline you cannot meet without forensic-grade artefacts. For SRE and ops leads."
+            "blurb": "Article 21(2)(e), (f), and 23 read together. The constant-time fork that makes weekly drills realistic, and the Article 23 reporting timeline you cannot meet without evidence you can verify. For SRE and ops leads."
           },
           {
             "title": "What buyers told us in the first NIS2 audit cycle",

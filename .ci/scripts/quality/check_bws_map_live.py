@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-"""Entry point for the live Bitwarden map comparison.
+"""Run `rediacc_ci.quality.bws_map_live` by path, with the same argument check its own entry makes.
 
-The logic and the controls live in `rediacc_ci.quality.bws_map_live`; this file exists so the registry can invoke it BY PATH. Why it is local-only, and why a missing token is exit 77 rather than a pass, is argued in that module's docstring.
-
----- gate ----
-kind: local-only
-blocker: BLOCKER: no CI job has the bws CLI. The quality-security job holds the BWS token, but bitwarden/sm-action fetches by UUID through its own client and nothing installs the CLI, so a step would print SKIP on every run and could never fail. Locally the token file and the CLI exist, and the gate exits 77 (blocked, counted in the receipt) where they do not.
-needs: none
-why: a secret deleted from Bitwarden lingers in .ci/config/bws-secret-map.json until a
-     job that requests it fails at run time, and check:ci-bws-map is offline by design.
-     This compares the map's names with the live store, by name and UUID, never a value.
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/bws_map_live.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import bws_map_live
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bws_map_live.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(bws_map_live.main(sys.argv[1:]))

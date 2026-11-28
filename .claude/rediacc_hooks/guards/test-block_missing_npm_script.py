@@ -6,12 +6,12 @@ Both directions, because a one-sided control is satisfiable by a broken guard: o
 
 import json
 import pathlib
-import subprocess
 import sys
 
 import _hookpath
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.guards import block_missing_npm_script as guard
 
 HERE = pathlib.Path(__file__).resolve()
@@ -25,15 +25,15 @@ CASES = [
     ("a name no package.json defines", "npm run " + MISSING, True),
     ("run-script spelling", "npm run-script " + MISSING, True),
     ("a manifest id with no root script", "npm run test:write-once-guard", True),
-    ("a root script typed into a package", "cd packages/cli && npm run check:ci-python-lint", True),
-    ("--prefix governs", "npm --prefix packages/cli run check:ci-python-lint", True),
-    ("-w by path governs", "npm -w packages/cli run check:ci-python-lint", True),
+    ("a root script typed into a package", "cd packages/cli && npm run gen:gates", True),
+    ("--prefix governs", "npm --prefix packages/cli run gen:gates", True),
+    ("-w by path governs", "npm -w packages/cli run gen:gates", True),
     ("behind a pipe and a redirect", "npm run --silent " + MISSING + " 2>&1 | tail -5", True),
     ("inside bash -c", "bash -c 'npm run " + MISSING + "'", True),
     # --- controls: each must be allowed ---
     ("a real script in the cd'd package", "cd packages/cli && npm run test", False),
     ("a computed name fails open", 'npm run "$GATE"', False),
-    ("a real root script", "npm run check:ci-python-lint", False),
+    ("a real root script", "npm run gen:gates", False),
     ("a real script under -w by name", "npm -w @rediacc/cli run test", False),
     ("--if-present exits 0 on a miss", "npm run --if-present " + MISSING, False),
     ("--workspaces fails open", "npm run --workspaces " + MISSING, False),
@@ -47,7 +47,7 @@ CASES = [
 
 
 def answer(cmd):
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}, "cwd": str(ROOT)}),
         capture_output=True,

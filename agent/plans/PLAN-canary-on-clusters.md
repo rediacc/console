@@ -53,8 +53,9 @@ Source: https://github.com/rediacc/console/issues/523
 - [ ] C4 [live] Lab proof on a fresh cluster: after `npm run vm:check -- --changed` is VERIFIED for the tree with C1-C3, run suite 15 against the free VM from C0. Accept: the suite-15 run passes the C3 test, with the run log path and the observed canary count recorded under this box; the VM is left with no `ds-control-*` datastore.
 - [ ] C5 [writer] `canary` phase (D5) in `.ci/rediacc_ci/ops/linode_cluster_validation.py`, added to `PHASES` and to `idempotency`, refusing without `--yes`; tests in `test_ops_linode_cluster_validation.py` pin the argv sequence, the Host header, the 30 plus or minus 10 window and the refusal. Accept: `PYTHONPATH=.ci python3 -m pytest .ci/rediacc_ci/tests/test_ops_linode_cluster_validation.py -q` rc 0.
 - [ ] C6 [operator] Linode run, billable (prior full topology run $0.27), from the operator's shell with `REDIACC_ALLOW_CLUSTER_OPS=1` exported before the session: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.linode_cluster_validation preflight provision canary destroy verify --yes`. Accept: rc 0, the canary phase prints the observed split at 30 and 100, and `verify` reports zero surviving instances and volumes in both tofu state and the Linode API (the zero-billable-survivor check), with the Linode ids and the teardown time recorded under this box.
-- [ ] LP-hostinger [live] Fresh hostinger receipt through `--config eu-bench`, after a VERIFIED `npm run vm:check -- --changed` on the same tree; hostinger runs docker repos only, so the receipt proves the router change left docker routing intact.
+- [x] LP-hostinger [live] Fresh hostinger receipt through `--config eu-bench`, after a VERIFIED `npm run vm:check -- --changed` on the same tree; hostinger runs docker repos only, so the receipt proves the router change left docker routing intact.
   Accept: live-proof hostinger renet-live
+    (ticked) 2026-11-24T00:03:04Z by ace763dd: live-proof lp-eef14bc988f1 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-canary-on-clusters.md box f4faea90 proven live on hostinger
 
 ## Risks
 

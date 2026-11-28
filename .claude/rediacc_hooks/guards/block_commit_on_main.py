@@ -27,6 +27,9 @@ import subprocess
 import typing
 
 from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_commit_on_main", "EDGE_CASES", "ENVS", "HOTFIX")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -34,13 +37,6 @@ ORDER = 45
 
 # The `main` arm is the guard. With it gone every commit on `main` passes, which is the drift the ruling exists to stop.
 DEFECT = ('if branch == "main":', "if False:")
-
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    ("main-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
-    ("feature-branch", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
-]
-
-HOTFIX = 'git commit -m "fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678" -- a.ts'
 
 
 # Every git subcommand that writes a commit onto a ref. Their no-commit forms stay refused too (`cherry-pick -n`, `revert --no-commit`, `merge --squash`): each applies another commit's change to the main checkout, which is landing, and landing is the lead's (`WRITER_COMMIT`); `merge --no-commit` still fast-forwards HEAD. `fast-import`, `filter-branch`, `filter-repo` and `replay` write commits onto refs as well (review 547cb159.1). `stash` is not here: it writes no branch commit, and its own guard refuses it.
@@ -442,29 +438,6 @@ def _writer_message(agent_type, write):
         chain = " -> ".join("`%s`" % step for step in write.via)
         text = "`git %s` resolves through %s.\n%s" % (write.typed, chain, text)
     return text
-
-
-EDGE_CASES = [
-    ("a plain commit", 'git commit -m "feat(x): y" -- a.ts'),
-    ("a valid hotfix", HOTFIX),
-    (
-        "a hotfix above the file limit",
-        'git commit -m "fix: x [hotfix]\n\nHotfix-Evidence: 12345678" -- a b c d e f',
-    ),
-    ("a hotfix with no evidence", 'git commit -m "fix: x [hotfix]" -- a.ts'),
-    (
-        "a hotfix whose evidence has no known shape",
-        'git commit -m "fix: x [hotfix]\n\nHotfix-Evidence: trust me" -- a.ts',
-    ),
-    (
-        "the ASKED evidence form",
-        'git commit -m "fix: x [hotfix]\n\nHotfix-Evidence: ASKED:2026-09-25T10:00Z" -- a.ts',
-    ),
-    ("a wrapper payload is still judged", "sh -c 'git commit -m \"feat: y\" -- a.ts'"),
-    ("a commit in a scratch repo", 'git -C /tmp commit -m "x" -- a'),
-    ("prose about committing", "echo 'git commit on main'"),
-    ("git log is not a commit", "git log -n 5"),
-]
 
 
 def _message(branch, main_hint):

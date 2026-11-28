@@ -298,7 +298,7 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     assert "OPEN worklist item" not in got.out
     assert wl.cli("--list", "--open", wlfix.ME).rc == 0  # verbs unaffected
     # A settings problem rides the stop as an advisory, at every level that advises it.
-    queue_with(wl, "effort: high\nturbo: onn")
+    queue_with(wl, "effort: high\nturbo: on")
     wl.newturn()
     wl.say("working\n\n## Remaining\n- the item")
     got = wl.run()
@@ -309,7 +309,7 @@ def test_l6_the_queue_switch_turns_the_stop_path_off_and_only_it(wl):
     assert '"decision": "block"' in got.out, got.out[
         :300
     ]  # open-items blocks at high, so the advisory queued
-    assert any("SETTINGS PROBLEM" in t and "turbo: expected on|off" in t for t in texts), texts
+    assert any("SETTINGS PROBLEM" in t and "'turbo' is not a setting" in t for t in texts), texts
 
 
 # ---- R20260925.5: an expired queue lease on a waiting item reads as waiting ---------------------------
@@ -398,23 +398,23 @@ def test_l7d_an_expired_worker_lease_that_took_the_named_remedy_reads_as_waiting
 
 
 def test_l7c_the_queue_slot_block_names_blocked_by_as_the_remedy(wl):
-    """V_QUEUE_SLOT: a free slot and a startable queued item; the block says how to mark one that is really waiting."""
+    """V_QUEUE_SLOT: a queued item no plan holds; the block says how to mark one that is really waiting."""
     ready(wl)
     mk_sub(wl, W1, "general-purpose", 1)
     plant_lease(wl, "b10c0001", W1)
     plant_queued(wl, "q0000new", "(deadbeef) independent writer work", 10)
     wl.say("working\n\n## Remaining\n- #b10c0001 on the writer, #q0000new queued")
     out = wl.run().out
-    assert "QUEUED WORK AND A FREE WRITER SLOT" in out, out[:1200]
+    assert "QUEUED WORK NOTHING HOLDS" in out, out[:1200]
     assert "start #q0000new" in out, out[:1200]
     assert "--update deadbeef <id> 'BLOCKED_BY:#<blocker>'" in out, out[:1600]
 
 
-# ---- agent/plans/PLAN-plan-priority-concurrency.md section 5b (T9): a queue lease beside a free slot, for an item a live plan holds ----
+# ---- agent/plans/PLAN-plan-priority-concurrency.md section 5b (T9): a queue lease is only for an item a live plan holds (agent/plans/PLAN-unlimited-writers.md) ----
 
 
 def held_world(fix, f_owns: str = "src/e/golden/**") -> tuple[str, str]:
-    """A PEER's fresh lease on an item of EXCLUSIVE plan E (the cross-session holder), and two open items of this session: one on plan F, which E's mutex holds, and one on E itself, which it does not. No writer of this session is live, so every slot is free.
+    """A PEER's fresh lease on an item of EXCLUSIVE plan E (the cross-session holder), and two open items of this session: one on plan F, which E's mutex holds, and one on E itself, which it does not. No writer of this session is live.
 
     F's Owns overlap E's by default, since an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28); `f_owns` sets a disjoint F for the twin."""
     ready(fix)
@@ -426,11 +426,11 @@ def held_world(fix, f_owns: str = "src/e/golden/**") -> tuple[str, str]:
     return add(fix, linked(f, "held work")), add(fix, linked(e, "free work"))
 
 
-def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):
+def test_l8_a_queue_lease_is_accepted_for_a_held_item(wl):
     held, _free = held_world(wl)
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue", "waiting on E")
     assert got.rc == 0, got.err[:600]
-    assert "queued beside a free writer slot: PLAN-e.md is exclusive" in got.err, got.err[:600]
+    assert "queued behind a live plan: PLAN-e.md is exclusive" in got.err, got.err[:600]
     notes = [
         json.loads(line).get("note", "")
         for line in wl.wl_events().splitlines()
@@ -443,18 +443,18 @@ def test_l8_a_queue_lease_beside_a_free_slot_is_accepted_for_a_held_item(wl):
 
 
 def test_l8d_inverse_a_disjoint_plans_item_is_not_held_and_is_refused(wl):
-    """The overlap rule's twin of l8 (711841c55): F disjoint from the live exclusive E is startable, so a queue lease beside a free slot is refused."""
+    """The overlap rule's twin of l8 (711841c55): F disjoint from the live exclusive E is startable, so a queue lease on it is refused."""
     held, _free = held_world(wl, f_owns="src/f/**")
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue", "waiting on E")
     assert got.rc != 0, got.out[:300]
     assert "#%s stays OPEN (not leased)" % held in got.err, got.err[:600]
 
 
-def test_l8b_inverse_an_unheld_item_is_still_refused_with_a_free_slot(wl):
+def test_l8b_inverse_an_unheld_item_is_refused(wl):
     _held, free = held_world(wl)
     got = wl.cli("--lease", wlfix.ME, free, "+60", "worker:queue")
     assert got.rc != 0, got.out[:300]
-    assert "worker:queue is only for writer work the cap forbids starting" in got.err, got.err[:600]
+    assert "no live plan holds it: start the work instead" in got.err, got.err[:600]
     # R20260925.7: the refusal says the item is still open, naming it.
     assert "#%s stays OPEN (not leased)" % free in got.err, got.err[:600]
 
@@ -508,7 +508,7 @@ def test_l8c_inverse_an_expired_peer_lease_holds_nothing(wl):
 
 def test_l8m_without_the_held_branch_l8_is_refused_again(wl):
     held, _free = held_world(wl)
-    stop = private_stop(wl, "worklist.py", "                and not _held_by\n", "")
+    stop = private_stop(wl, "wl_cli.py", "            if not _held_by:\n", "            if True:\n")
     wl.hook = stop / "worklist.py"
     got = wl.cli("--lease", wlfix.ME, held, "+60", "worker:queue")
     assert got.rc != 0, "l8m: l8 does not depend on the held branch: %s" % got.err[:400]

@@ -5,7 +5,8 @@
 
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
-import { writeStderr, writeStdout } from '../services/core/request-context.js';
+import { writeProgress } from '../services/core/progress-output.js';
+import { writeStderr } from '../services/core/request-context.js';
 import { type ExecuteResult, type RenetEvent } from '../services/executor/executor-factory.js';
 import { localExecutorService } from '../services/executor/local-executor.js';
 import { CLAIM_TIMING, type StepRunReport } from '../services/jobs/run-job.js';
@@ -22,14 +23,14 @@ import type { ForkActionOptions, ForkPlan } from './repo-fork.js';
 
 /** Print one completed-step line in the streamed timeline format. */
 function printStepLine(step: TimelineStep): void {
-  writeStdout(
+  writeProgress(
     `✔ ${getDoneLine(step.name, step.detail)} (${formatStepDuration(step.duration_ms)})\n`
   );
 }
 
 /** Print "Total: <wall>" once at the true end and mark the timeline rendered. */
 function renderTimelineTotal(wallMs: number): void {
-  writeStdout(`\nTotal: ${formatStepDuration(wallMs)}\n`);
+  writeProgress(`\nTotal: ${formatStepDuration(wallMs)}\n`);
   outputService.setTimelineRendered();
 }
 
@@ -47,7 +48,7 @@ function handleStepDoneEvent(
   startedAtMs?: number
 ): void {
   if (!event.name || event.duration_ms === undefined) return;
-  writeStdout(
+  writeProgress(
     `\r✔ ${getDoneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
   );
   allSteps.push({
@@ -69,7 +70,7 @@ export function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetE
         break;
       case 'step_start':
         if (event.name) stepStarts.set(event.name, Date.now());
-        writeStdout(`⠋ ${getActiveLabel(event.name ?? '')}...`);
+        writeProgress(`⠋ ${getActiveLabel(event.name ?? '')}...`);
         break;
       case 'step_done': {
         const startedAtMs = event.name ? stepStarts.get(event.name) : undefined;
@@ -82,7 +83,7 @@ export function createForkEventHandler(allSteps: TimelineStep[]): (event: RenetE
           event.msg &&
           (event.msg.includes('✔') || event.msg.includes('✗') || event.msg.includes('Error'))
         ) {
-          writeStdout(`  ${event.msg}`);
+          writeProgress(`  ${event.msg}`);
         }
         break;
     }
@@ -99,7 +100,7 @@ function printTimingSummary(plan: ForkPlan, steps: TimelineStep[], wallMs: numbe
     epochMs: plan.startedAt,
     suggestDetach: Boolean(plan.options.up && !plan.options.detach),
   });
-  if (summary) writeStdout(`\n${summary}\n`);
+  if (summary) writeProgress(`\n${summary}\n`);
 }
 
 /**

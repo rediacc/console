@@ -8,13 +8,12 @@ import json
 import pathlib
 import shutil
 import sys
+import tomllib
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import proxy_configs
-from rediacc_ci.quality import region_consistency_controls as ctl
-from rediacc_ci.quality import region_consistency_live as live
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BENCH_RETIRING_HOST
@@ -106,15 +105,57 @@ PLANTS = [
     (
         "account-executor",
         "workers/account/wrangler.us.toml",
-        'service = "proxy-us"',
-        'service = "proxy-eu"',
+        'binding = "EXECUTOR"\nservice = "proxy-us"',
+        'binding = "EXECUTOR"\nservice = "proxy-eu"',
         "us          account",
+    ),
+    (
+        "account-grant-revoker",
+        "workers/account/wrangler.us.toml",
+        'binding = "AGENT_GRANT_REVOKER"\nservice = "proxy-us"',
+        'binding = "AGENT_GRANT_REVOKER"\nservice = "proxy-eu"',
+        "us          account",
+    ),
+    (
+        "account-audit-bucket",
+        "workers/account/wrangler.us.toml",
+        'binding = "AUDIT_BUCKET"\nbucket_name = "audit-us"',
+        'binding = "AUDIT_BUCKET"\nbucket_name = "audit-eu"',
+        "us          account",
+    ),
+    (
+        "account-audit-jurisdiction",
+        "workers/account/wrangler.eu.toml",
+        'bucket_name = "audit-eu"\njurisdiction = "eu"',
+        'bucket_name = "audit-eu"',
+        "eu          account",
+    ),
+    (
+        "account-forensics-queue",
+        "workers/account/wrangler.asia.toml",
+        'binding = "FORENSICS_COMPACT_QUEUE"\nqueue = "forensics-compact-asia"',
+        'binding = "FORENSICS_COMPACT_QUEUE"\nqueue = "forensics-compact-us"',
+        "asia        account",
+    ),
+    (
+        "account-forensics-bucket-var",
+        "workers/account/wrangler.bench-eu.toml",
+        f'WEBAUTHN_ORIGIN = "{BENCH_ORIGIN}"',
+        f'WEBAUTHN_ORIGIN = "{BENCH_ORIGIN}"\nACCOUNT_FORENSICS_S3_BUCKET = "forensics-bench"',
+        "bench-eu    account",
+    ),
+    (
+        "regions-audit-bucket",
+        "regions.json",
+        '"auditR2": { "name": "audit-asia" },',
+        '"auditR2": { "name": "audit-eu" },',
+        "asia        regions",
     ),
     (
         "account-shape",
         "workers/account/wrangler.us.toml",
-        'crons = ["17 * * * *", "0 3 * * *"]',
-        'crons = ["17 * * * *", "0 4 * * *"]',
+        'crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]',
+        'crons = ["17 * * * *", "0 4 * * *", "*/5 * * * *"]',
         "us          account",
     ),
     (
@@ -156,7 +197,7 @@ PLANTS = [
     (
         "bench-payload",
         ".ci/rediacc_ci/ops/deploy_bench.py",
-        '        "STRIPE_WEBHOOK_SECRET": "",\n',
+        '        "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],\n',
         "",
         "bench-eu    profile",
     ),
@@ -170,6 +211,35 @@ def test_one_plant_per_class_turns_the_run_red(tmp_path, rule, rel, old, new, li
     result = _gate("--root", str(root))
     assert result.rc == 1, "plant %s: %s" % (rule, result.combined)
     assert line in result.err, "plant %s: %s" % (rule, result.err)
+
+
+def _detect_cron() -> str:
+    text = (ROOT / "private/account/src/services/forensics-detect/index.ts").read_text(
+        encoding="utf-8"
+    )
+    return text.split("FORENSICS_DETECT_CRON = '", 1)[1].split("'", 1)[0]
+
+
+@pytest.mark.parametrize("stem", STEMS)
+def test_every_account_config_schedules_the_crons_the_entry_dispatches_on(stem):
+    """4d3b455a.2: the cron-wiring assertion. `scheduled` in cloudflare.ts branches on the hourly, 03:00 and detector strings, so a config that lacks one never runs that duty; the gate's `CRONS` and the entry's own constants must agree, and every toml must carry all three."""
+    entry = (ROOT / "private/account/src/entry/cloudflare.ts").read_text(encoding="utf-8")
+    assert "controller.cron === FORENSICS_DETECT_CRON" in entry, (
+        "scheduled() no longer dispatches the detector cron"
+    )
+    for const, cron in (
+        ("BACKUP_SWEEP_CRON", rco.CRONS[0]),
+        ("BACKUP_AUDIT_CRON", rco.CRONS[1]),
+    ):
+        assert "%s = '%s'" % (const, cron) in entry, const
+    assert _detect_cron() == rco.CRONS[2]
+    doc = tomllib.loads((ROOT / ("workers/account/wrangler.%s.toml" % stem)).read_text("utf-8"))
+    assert doc["triggers"]["crons"] == list(rco.CRONS)
+
+
+def test_the_enterprise_template_schedules_the_same_crons():
+    text = (ROOT / "workers/account/enterprise.template.toml").read_text(encoding="utf-8")
+    assert "crons = %s" % json.dumps(list(rco.CRONS)) in text
 
 
 def test_a_missing_toml_is_no_verdict(tmp_path):
@@ -190,11 +260,9 @@ def test_live_without_a_credential_is_unchecked_not_green(tmp_path, monkeypatch)
     assert "consistent" not in result.out
 
 
-def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
-    """594bf5b2.1: the sandbox pair is the bench-only exemption; any other payload key no regional Worker gets is a finding."""
-    pushed = sorted({k for k, _var, _src in rco.pusher.KEYS})
-    base = [*pushed, *rco.BENCH_ONLY_PAYLOAD]
-    assert rco.BENCH_ONLY_PAYLOAD
+def test_an_unknown_payload_key_is_a_finding():
+    """594bf5b2.1: any payload key no regional Worker gets is a finding, since bench has no bench-only secret."""
+    base = sorted({k for k, _var, _src in rco.pusher.KEYS})
     assert not [f for f in rco.check_profiles([], {}, base) if "pushes" in f.message]
     extra = rco.check_profiles([], {}, [*base, "ZZZ_UNKNOWN_KEY"])
     assert [f.message for f in extra if "ZZZ_UNKNOWN_KEY" in f.message]
@@ -479,28 +547,3 @@ def test_a_regional_bench_routing_the_retiring_host_fires(proxy: bool) -> None:
         return f
 
     assert ("bench-us", "proxy" if proxy else "account") in _new(inputs, targets, found, mutate)
-
-
-# The live check shares the offline gate's bench-only set: bench pushes the Stripe sandbox pair, the production Workers never do.
-def _live_findings(worker: str, extra: list[str]):
-    inputs, targets, _found = _loaded()
-    target = next(t for t in targets if t.account_worker == worker)
-    names = sorted(live.pushed_names(target) - rco.BENCH_ONLY_PAYLOAD.keys()) + extra
-    secrets = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
-    secrets.update({t.proxy_worker: [] for t in targets})
-    secrets[worker] = names
-    get = ctl.fake_get(inputs, targets, secrets=secrets)
-    return [f.message for f in live.judge(targets, inputs, get, "acct")[0] if f.cls == "secrets"]
-
-
-def test_live_bench_worker_holding_the_sandbox_pair_is_consistent():
-    assert _live_findings("account-bench", sorted(rco.BENCH_ONLY_PAYLOAD)) == []
-
-
-def test_live_bench_worker_lacking_the_sandbox_pair_is_flagged():
-    assert [m for m in _live_findings("account-bench", []) if "lacks STRIPE_SANDBOX" in m]
-
-
-def test_live_production_worker_holding_the_sandbox_pair_is_flagged():
-    found = _live_findings("account-eu", sorted(rco.BENCH_ONLY_PAYLOAD))
-    assert len([m for m in found if "which no deploy pushes" in m]) == 2

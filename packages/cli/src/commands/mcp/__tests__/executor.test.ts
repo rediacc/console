@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { executeRdcCommand, resolveRdcBinary } from '../executor.js';
 
 // Mock child_process.execFile
@@ -234,9 +234,15 @@ describe('executeRdcCommand', () => {
 describe('resolveRdcBinary', () => {
   const originalArgv = process.argv;
   const originalExecPath = process.execPath;
+  const originalExecArgv = process.execArgv;
+
+  beforeEach(() => {
+    process.execArgv = [];
+  });
 
   afterEach(() => {
     process.argv = originalArgv;
+    process.execArgv = originalExecArgv;
     Object.defineProperty(process, 'execPath', { value: originalExecPath, writable: true });
   });
 
@@ -256,5 +262,37 @@ describe('resolveRdcBinary', () => {
     const result = resolveRdcBinary();
     expect(result.command).toBe('/usr/bin/node');
     expect(result.prefixArgs).toEqual(['/home/user/project/src/index.ts']);
+  });
+
+  it('carries the tsx loader flags to the child, and drops a debugger flag', () => {
+    Object.defineProperty(process, 'execPath', { value: '/usr/bin/node', writable: true });
+    process.argv = ['/usr/bin/node', '/home/user/project/src/index.ts'];
+    process.execArgv = [
+      '--require',
+      '/x/tsx/preflight.cjs',
+      '--import',
+      'file:///x/tsx/loader.mjs',
+      '--inspect=9229',
+    ];
+
+    expect(resolveRdcBinary().prefixArgs).toEqual([
+      '--require',
+      '/x/tsx/preflight.cjs',
+      '--import',
+      'file:///x/tsx/loader.mjs',
+      '/home/user/project/src/index.ts',
+    ]);
+  });
+
+  it('drops a debugger port given as a separate token with its value (review 32ea940f.1)', () => {
+    Object.defineProperty(process, 'execPath', { value: '/usr/bin/node', writable: true });
+    process.argv = ['/usr/bin/node', '/home/user/project/src/index.ts'];
+    process.execArgv = ['--require', '/x/preflight.cjs', '--inspect-port', '9230', '--inspect'];
+
+    expect(resolveRdcBinary().prefixArgs).toEqual([
+      '--require',
+      '/x/preflight.cjs',
+      '/home/user/project/src/index.ts',
+    ]);
   });
 });

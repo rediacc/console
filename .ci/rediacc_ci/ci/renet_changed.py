@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Decide whether the `private/renet` gitlink moved in this push or pull request (PLAN-backup-program J9).
 
-The answer feeds `renet_changed`, which runs the renet go (BTRFS tier) and integration jobs without `full_suite`. A push compares `$BEFORE_SHA` with HEAD. A pull request compares the merge base of `$BASE_SHA` and HEAD with HEAD. Any other event answers false.
+The answer feeds `renet_changed`, which runs the renet go (BTRFS tier) and integration jobs without `full_suite`. A push compares `$BEFORE_SHA` with HEAD, except a push to the default branch, which answers false: it ships a tree its pull request already tested (the rebase or fast-forward merge keeps the tree), and the nightly (`full_suite`) covers main. A pull request compares the merge base of `$BASE_SHA` and HEAD with HEAD. Any other event answers false.
 
 Fail open: a branch-creating push, a missing or unreachable base, or a git failure answers true, so every renet leg runs rather than none. A gitlink diff needs only the two commits, no submodule checkout.
 
@@ -40,8 +40,21 @@ def _moved(base: str) -> bool:
     return rc != 0
 
 
-def decide(event: str, before_sha: str, base_sha: str) -> bool:
+def on_default_branch(ref: str, default_branch: str) -> bool:
+    """True for a push whose ref is the repository's default branch; an unset ref or default never matches, so the decision stays fail-open."""
+    return bool(ref) and bool(default_branch) and ref == f"refs/heads/{default_branch}"
+
+
+def decide(
+    event: str, before_sha: str, base_sha: str, ref: str = "", default_branch: str = ""
+) -> bool:
     if event == "push":
+        if on_default_branch(ref, default_branch):
+            print(
+                "a push to the default branch ships a tree its PR CI already tested; "
+                "the nightly covers main, so no renet leg runs for this push"
+            )
+            return False
         if before_sha.strip("0") == "":
             print("a push that creates the branch has no base, so every renet leg runs")
             return True
@@ -67,6 +80,8 @@ def main() -> int:
         os.environ.get("EVENT_NAME", ""),
         os.environ.get("BEFORE_SHA", ""),
         os.environ.get("BASE_SHA", ""),
+        os.environ.get("REF", ""),
+        os.environ.get("DEFAULT_BRANCH", ""),
     )
     print(
         f"private/renet changed in this {os.environ.get('EVENT_NAME', 'event')}: {str(changed).lower()}"

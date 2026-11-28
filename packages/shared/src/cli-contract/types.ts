@@ -124,6 +124,46 @@ export type FormatHint =
 export type OptionTier = 'common' | 'advanced';
 
 /**
+ * How much a command can cost the operator if run by mistake, so a console can
+ * pick its confirmation step. `destructive` deletes or overwrites state that is
+ * not trivially undone; `caution` changes state reversibly; `none` only reads.
+ * Curated for every command in packages/cli/src/config/command-safety.ts.
+ */
+export type CommandSeverity = 'none' | 'caution' | 'destructive';
+
+/**
+ * Which way a command's preview flag points. `opt-in`: giving the flag makes
+ * the run a preview (`--dry-run`). `default`: the command previews unless the
+ * flag is given (`--apply`).
+ */
+export type PreviewPolarity = 'opt-in' | 'default';
+
+/** The switch that turns a command's preview on or off (see {@link PreviewPolarity}). */
+export interface CommandPreview {
+  /** Long name of a boolean option of the same command, e.g. "dry-run". */
+  flag: string;
+  polarity: PreviewPolarity;
+}
+
+/**
+ * Who an error is down to. `user`: input, auth, permission or plan limits.
+ * `environment`: the network, a machine, SSH, Docker or disk. `rediacc`: a
+ * defect or outage on Rediacc's side.
+ */
+export type ErrorOrigin = 'user' | 'environment' | 'rediacc';
+
+/**
+ * One CLI error code with its origin. A consumer of the served stream reads the
+ * `code` from an error envelope and looks its origin up here, so the wire schema
+ * carries no origin of its own.
+ */
+export interface ContractErrorCode {
+  /** The envelope code or a named code, e.g. "SSH_ERROR". */
+  code: string;
+  origin: ErrorOrigin;
+}
+
+/**
  * A worked example of a command, e.g. `rdc repo fork shop --tag test`.
  *
  * `command` is the full argv a laptop would type (concrete dummy values such as
@@ -252,6 +292,24 @@ export interface ContractCommand {
   descriptionKey: string | null;
   /** English description, always present. */
   label: string;
+  /**
+   * i18n key of the one-line summary (`commands.<path>.descriptionShort`), or
+   * null when the summary could not be traced back to a key.
+   */
+  summaryKey: string | null;
+  /**
+   * English one-line summary from Commander's `.summary()`, always present.
+   * At most 100 characters (SUMMARY_MAX_LENGTH, checked by checkContractInvariants).
+   */
+  summary: string;
+  /** How costly a mistaken run is; the console's confirmation step reads this. */
+  severity: CommandSeverity;
+  /**
+   * The command's preview switch, when it has one. `flag` names a boolean
+   * option of this command (checkContractInvariants). Absent when the command
+   * cannot preview.
+   */
+  preview?: CommandPreview;
   options: ContractOption[];
   /**
    * Positional arguments, in declared order. Empty for the options-only leaves
@@ -286,7 +344,11 @@ export interface ContractCommand {
   output?: OutputHints;
 
   // ── Policy and agent annotations (from COMMAND_METADATA) ────────────────
-  /** Mutates state in a way that is not trivially undone. Undefined when unannotated. */
+  /**
+   * The MCP `destructiveHint` annotation. Undefined when the command has no MCP
+   * annotation; {@link ContractCommand.severity} is the field that covers every
+   * command. A command annotated `true` is never severity `none`.
+   */
   destructive?: boolean;
   /** Re-running with the same arguments converges. Undefined when unannotated. */
   idempotent?: boolean;
@@ -325,6 +387,12 @@ export interface ContractCommand {
    * exactly when `proxyCapable` is false, so a refusal always has a message.
    */
   proxyBlockedReason?: string;
+  /**
+   * i18n key of `proxyBlockedReason` under `commands.proxyBlocked.*`, so a
+   * console can show the refusal translated. Present only beside a
+   * `proxyBlockedReason`.
+   */
+  proxyBlockedReasonKey?: string;
   /**
    * Safe to run as a DETACHED renet job: start it under a transient unit and
    * follow its spool, so a dropped connection does not lose the work.
@@ -379,6 +447,8 @@ export interface CliContract {
   /** Languages with a bundle under ./data/i18n. */
   languages: string[];
   commands: ContractCommand[];
+  /** Every CLI error code with its origin; codes are unique. */
+  errorCodes: ContractErrorCode[];
 }
 
 /** A flattened i18n bundle: key -> translated string. */

@@ -28,20 +28,20 @@ Each level has a distinct owner: this invocation > this shell/CI job > the persi
 
 | Variable | Purpose |
 |---|---|
-| `REDIACC_TOKEN` | The account api-token, for every flow that needs one: subscription auth, config-store password enrollment, `rdc serve` executor auth. Scopes live inside the token; the server enforces them. Replaces the former `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, and `REDIACC_EXECUTOR_TOKEN`. |
-| `REDIACC_STORE_MASTER_PASSWORD` | The config store's master password, which opens its password slot for headless `rdc config remote enable --master-password`. |
-| `REDIACC_NEW_STORE_MASTER_PASSWORD` | The new store master password for `rdc config remote master-password change` when `--new-master-password-stdin` is not given. |
+| `REDIACC_TOKEN` | The account api-token, for every flow that needs one: subscription auth, config-store machine-secret enrollment, `rdc serve` executor auth. Scopes live inside the token; the server enforces them. Replaces the former `REDIACC_SUBSCRIPTION_TOKEN`, `REDIACC_API_TOKEN`, and `REDIACC_EXECUTOR_TOKEN`. |
+| `REDIACC_MACHINE_SECRET` | The machine secret (`RM1-...`, minted in the portal) that `rdc config remote enable --machine-secret <id>` unwraps the config store's key with, for headless enrollment. Read from the environment, else standard input, else a hidden prompt; never from the command line. |
 | `REDIACC_MASTER_PASSWORD` | Master password for configs encrypted at rest. |
 
 Tokens obtained interactively are stored per config at `<configDir>/api-token-<config>.json`. There is no shared token file.
 
 ## Agent gates (ancestry-validated; set them BEFORE starting an agent)
 
+Each opt-in is the local half of one decision: an agent acts only where its opt-in AND the policy ceiling allow it (`packages/shared/src/policy/decide.ts`). The ceiling is the org policy narrowed by the team policy, read from the policy record; an opt-in never widens it.
+
 | Variable | Purpose |
 |---|---|
-| `REDIACC_ALLOW_GRAND_REPO` | Grants grand-repo / direct machine access. |
-| `REDIACC_ALLOW_CONFIG_EDIT` | Pointer-glob scope allowing agent config edits. |
-| `REDIACC_ALLOW_CLUSTER_OPS` | Gates destructive cluster operations. |
+| `REDIACC_ALLOW_GRAND_REPO` | Opt-in for grand-repo / direct machine access, within the policy's `allowGrandRepos`. |
+| `REDIACC_ALLOW_CLUSTER_OPS` | Opt-in for destructive cluster operations, within the policy's `allowClusterOps`. |
 | `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI`, `CURSOR_TRACE_ID` | Agent-environment detection (set by the agent runtime, not by you). |
 
 ## Test-infra gates and escape hatches
@@ -51,7 +51,7 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_SKIP_FILE_WRITE_GUARD` | Disables the repo-context file-write guard. Tutorial/test infra only. |
 | `REDIACC_YES` | Assume-yes prompt bypass (mirror of `--yes`). |
 | `REDIACC_NO_DAEMON` | Forces the direct execution path (no executor daemon). |
-| `REDIACC_SECRET_STORE` | `file` keeps the config-storage device key in `secure-keys.json` (mode 0600) in the state directory instead of the native secret store of the OS (kernel keyring, Keychain, DPAPI). Unset, the native store is required and the CLI refuses when it cannot be used. No other value is accepted. |
+| `REDIACC_SECRET_STORE` | `file` keeps the config-storage device key in `secure-keys.json` (mode 0600) in the state directory instead of the native secret store of the OS (selection order below). Unset, the native store is required and the CLI refuses when it cannot be used. No other value is accepted. |
 | `REDIACC_DISABLE_AUTOUPDATE` | Disables the background auto-updater. |
 | `REDIACC_UPDATE_INTERVAL_HOURS` | Auto-update check cooldown. |
 | `REDIACC_SSH_LINGER_MS` | SSH connection-pool idle linger. |
@@ -65,6 +65,17 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_FEEDBACK_HINT` | `0` turns off the `Unexpected? rdc feedback report --last` line a failing command prints (stderr in text mode, a `next` option in the JSON envelope). |
 | `REDIACC_TELEMETRY_DISABLED` / `REDIACC_TELEMETRY_ENDPOINT` | Telemetry opt-out / dev endpoint. |
 | `NO_COLOR` | Disables ANSI color (informal standard; any non-empty value). |
+
+### Secret store selection
+
+The config-storage device key goes to the first store that stores, reads back and removes a throwaway key in the running process:
+
+1. `REDIACC_SECRET_STORE=file` selects the file store, and nothing else is tried.
+2. Linux with a session bus (`DBUS_SESSION_BUS_ADDRESS`, or `$XDG_RUNTIME_DIR/bus`): the Secret Service through `secret-tool` (package `libsecret-tools`; GNOME Keyring or KWallet), which keeps the key across restarts.
+3. Linux otherwise, or when the Secret Service fails its round trip (no `secret-tool`, no service on the bus, a locked keyring nobody unlocks within 10 seconds): the kernel user keyring through `keyctl` (package `keyutils`), which every restart empties.
+4. macOS: the Keychain. Windows: DPAPI.
+
+When the last native store fails, the CLI refuses and names the missing tool; it never falls back to the file store on its own.
 
 ## Debugging
 
@@ -124,5 +135,5 @@ These names are gone; a CI test (`env-tombstones.test.ts`) fails if they reappea
 | `RDC_DEBUG_RENET_PROVISION`, `RDC_TIMING_CHART`, `REDIACC_DAEMON_DEBUG`, `DEBUG` | `REDIACC_DEBUG` scopes |
 | `REDIACC_NO_COLOR` | `NO_COLOR` |
 | `REDIACC_TEAM` | none (a config field; the env override was unused) |
-| `REDIACC_CONFIG_PASSWORD` / `REDIACC_NEW_CONFIG_PASSWORD` | `REDIACC_STORE_MASTER_PASSWORD` / `REDIACC_NEW_STORE_MASTER_PASSWORD` |
+| `REDIACC_CONFIG_PASSWORD` / `REDIACC_NEW_CONFIG_PASSWORD` | none (config store password slots were removed; headless enrollment uses `REDIACC_MACHINE_SECRET`) |
 | `server.json` (file, not env) | `account.*` fields in the active config |

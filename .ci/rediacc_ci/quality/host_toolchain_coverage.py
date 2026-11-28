@@ -1,6 +1,6 @@
 """Every pinned gate tool must have a RUNTIME guard, not just a definition.
 
-Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
+Ported from `.ci/scripts/quality/check-host-toolchain-coverage.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under the ledger directory (deleted in commit:936280cd35) is what licensed the retirement.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -52,7 +52,7 @@ requires both inputs sorted in the same collation. Python's `sorted()` on `str` 
 TWO STREAM DIVERGENCES, both deliberate, neither changing a verdict:
 
   1. The twin's `fail()` prints `✗␣␣␣<msg>` (three spaces); `rediacc_ci.log`
-     prints `✗␣<msg>`. `scripts/lib/shadow-gate.ts` strips the marker and
+     prints `✗␣<msg>`. the shadow gate (commit:bf054adcd4) strips the marker and
      collapses whitespace runs before comparing, so the two normalize to the
      same finding. The port uses the house logger rather than reproducing an
      ad-hoc one.
@@ -63,10 +63,19 @@ TWO STREAM DIVERGENCES, both deliberate, neither changing a verdict:
      produces uncoloured output and the reverse writes escapes into the file.
      The port tests the stream it writes to. Reported, not reproduced.
 
-THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they are the twin's continuation lines under a finding header and `scripts/lib/shadow-gate.ts` folds an indented unmarked line into the finding above it. Sending them through `log.error` would give each its own `✗`, which is the same finding text after normalization but a noisier thing for a human to read
+THE INDENTED ADVICE LINES ARE PRINTED RAW, not through the logger, because they are the twin's continuation lines under a finding header and the shadow gate (commit:bf054adcd4) folds an indented unmarked line into the finding above it. Sending them through `log.error` would give each its own `✗`, which is the same finding text after normalization but a noisier thing for a human to read
 next to the twin's output.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it compares two literal lists. A guard that names a tool in its arrays but never reaches the branch that uses them still passes, because presence in an array is all that is checked. That is the same class of blindness `rediacc_ci.quality.toolchain_pins` has at definition time, one layer further out.
+
+---- gate ----
+lane: quality-code
+step: Host toolchain runtime coverage
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -190,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         failures += 1
 
     def ok(message: str) -> None:
-        # STDOUT, matching the twin's `pass()`. `scripts/lib/shadow-gate.ts` classifies `ok␣␣` as chatter, which is what a progress line is.
+        # STDOUT, matching the twin's `pass()`. the shadow gate (commit:bf054adcd4) classifies `ok␣␣` as chatter, which is what a progress line is.
         print("ok   %s" % message)
 
     # --- controls first: a gate nobody has watched fail is not a gate --------
@@ -463,4 +472,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_host_toolchain_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

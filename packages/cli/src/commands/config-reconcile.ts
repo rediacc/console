@@ -161,6 +161,10 @@ function printReconcileReport(
   dryRun: boolean,
   format: OutputFormat
 ): void {
+  // Exit 6 (NETWORK) when nothing was reachable but machines were tried; set before the print, so the JSON envelope says success:false.
+  if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
+    setExitCode(6);
+  }
   outputService.print(
     {
       dryRun,
@@ -185,10 +189,6 @@ function printReconcileReport(
         machine: d.machine,
       })
     );
-  }
-  // Exit 6 (NETWORK) when nothing was reachable but machines were tried.
-  if (report.machinesSeen.length === 0 && report.machinesUnreachable.length > 0) {
-    setExitCode(6);
   }
 }
 

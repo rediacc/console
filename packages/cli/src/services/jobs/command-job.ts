@@ -23,11 +23,11 @@ import { invocationMinter } from './attach.js';
 import {
   type JobCall,
   type JobStartOutcome,
-  liveStepRunnerDeps,
   runJob,
   type StepRunnerDeps,
   type StepRunReport,
 } from './run-job.js';
+import { liveStepRunnerDeps } from './run-job-live.js';
 import type { PlannedStep } from './steps.js';
 import { type Ticket, TicketStore } from './ticket-store.js';
 

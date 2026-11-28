@@ -26,7 +26,7 @@
  * blocklist) is left out of the plan, as the gate leaves it out of its verdict. The
  * allowlist file is the repository's committed copy of a GitHub SETTING: after a bump of a
  * pattern pinned there the setting itself must be refreshed by the operator
- * (`npm run check:ci-actions-allowlist -- --refresh` reads it), and the plan says so.
+ * (`PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_allowlist --refresh` reads it), and the plan says so.
  */
 
 import { isWithinFreshnessWindow } from '../../release-age.js';
@@ -347,7 +347,7 @@ export function actionsDriver(
         for (const s of sites)
           if (s.file.endsWith('actions-allowlist.json'))
             changes.push(
-              `${s.file}: REFRESH the repository's actions allowlist setting by hand after this merges (\`npm run check:ci-actions-allowlist -- --refresh\` reads it); the committed copy only mirrors it`
+              `${s.file}: REFRESH the repository's actions allowlist setting by hand after this merges (\`PYTHONPATH=.ci python3 -m rediacc_ci.quality.actions_allowlist --refresh\` reads it); the committed copy only mirrors it`
             );
       }
 

@@ -1,4 +1,5 @@
 import { WK_RENET_REPO } from '@rediacc/shared/config/well-known.generated';
+import { isPreviewVersion } from '../preview/slot.js';
 import { compareVersions } from '../update/updater.js';
 
 /**
@@ -113,7 +114,8 @@ export function decideRenetReplacement(
       message: `${r.host} runs the dev build renet v${r.running}, and a release (v${r.local}) cannot be shown to be newer than it. Deploy a fresh dev build with ./rdc.sh, or, to move the machine back to the release, ${override}.`,
     };
   }
-  if (compareVersions(r.local, r.running) < 0) {
+  // A preview renet (`X.Y.Z-preview.<sha7>`, D7) is what `rdc preview leave` replaces with the published release, which may sort below it: that replacement is the way back, so the downgrade refusal does not apply to it. Every other refusal still does.
+  if (!isPreviewVersion(r.running) && compareVersions(r.local, r.running) < 0) {
     return {
       code: 'RENET_DOWNGRADE_REFUSED',
       message: `${r.host} runs renet v${r.running}, newer than the local binary v${r.local}. Run \`rdc update\` to upgrade this CLI, or ${override}.`,

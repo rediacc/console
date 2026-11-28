@@ -22,6 +22,24 @@ import wl_ci as W
 
 _SCRATCH = tempfile.mkdtemp(prefix="ci-rerun-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
+# ONE PRIVATE TMPDIR: wl_ci records a landing-rounds row through wl_longred, whose flock sidecar lives under `$TMPDIR/claude-worklist/.judge` (read at call time), and test_hooks_delegates fails a standalone suite that leaves an entry in the shared one.
+_PRIOR_ENV = {k: os.environ.get(k) for k in ("TMPDIR", "XDG_CACHE_HOME")}
+_PRIOR_TEMPDIR = tempfile.tempdir
+
+
+def _restore_env():
+    """Put the process back as it was at interpreter exit (registered with atexit): TMPDIR, tempdir and the cache dir point at the private scratch for the whole run and return to their prior values when the process ends."""
+    tempfile.tempdir = _PRIOR_TEMPDIR
+    for key, value in _PRIOR_ENV.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+atexit.register(_restore_env)
+os.environ["TMPDIR"] = _SCRATCH
+tempfile.tempdir = _SCRATCH
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
 
 
@@ -143,5 +161,21 @@ first, second = trouble_twice(
     [ctx(SUB, A1_SUB, "SUCCESS"), COMPLETE_OK], [ctx(SUB, A2_SUB, "FAILURE"), COMPLETE_OK], 400
 )
 check("cache control: a final GREEN keeps the long TTL (no extra read)", second, "ok")
+
+# ---- ENV RESTORE: `_restore_env` reinstates the prior TMPDIR, tempdir and cache dir, and the scratch is put back after ----
+_swap = {k: os.environ.get(k) for k in ("TMPDIR", "XDG_CACHE_HOME")}
+_swap_tempdir = tempfile.tempdir
+_restore_env()
+check(
+    "restore: the prior TMPDIR, XDG_CACHE_HOME and tempdir return",
+    (os.environ.get("TMPDIR"), os.environ.get("XDG_CACHE_HOME"), tempfile.tempdir),
+    (_PRIOR_ENV["TMPDIR"], _PRIOR_ENV["XDG_CACHE_HOME"], _PRIOR_TEMPDIR),
+)
+for _k, _v in _swap.items():
+    if _v is None:
+        os.environ.pop(_k, None)
+    else:
+        os.environ[_k] = _v
+tempfile.tempdir = _swap_tempdir
 
 T.exit()

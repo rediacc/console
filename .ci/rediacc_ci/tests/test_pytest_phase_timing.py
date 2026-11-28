@@ -48,7 +48,15 @@ def test_own_teardown(slow_exit):
 
 class TestSlow:
     def test_slow_call(self):
-        time.sleep(0.45)
+        # Burns 0.5 s of CPU, measured on the CPU clock so a loaded machine cannot shrink it (the ratchet judges CPU time, K4).
+        end = time.process_time() + 0.5
+        while time.process_time() < end:
+            pass
+
+
+def test_sleepy_call():
+    # Slow on the wall clock only: under K4 this is no longer a slow test.
+    time.sleep(0.45)
 """
 THRESHOLD = "0.4"
 
@@ -100,6 +108,11 @@ def test_a_real_run_writes_phases_keyed_like_its_junit(tmp_path, workers):
     slow = tests["t.test_heavy.TestSlow::test_slow_call"]
     assert slow["shared_setup"] == pytest.approx(0.0, abs=0.05)
     assert slow["call"] >= 0.45
+    assert slow["call_cpu"] >= 0.45, slow
+    sleepy = tests["t.test_heavy::test_sleepy_call"]
+    assert sleepy["call"] >= 0.45, sleepy
+    assert sleepy["call_cpu"] < 0.2, sleepy
+    assert first["shared_setup_cpu"] < first["shared_setup"], first
     junit_nodes = set(ratchet.read_durations([junit]))
     assert junit_nodes == set(tests), "every junit case joins its phase entry on one key"
 
@@ -116,6 +129,8 @@ def test_the_ratchet_passes_the_fixture_heavy_test_and_fails_the_slow_call(
     assert rc == 1
     assert "TestSlow::test_slow_call took" in out.err
     assert "test_first_takes_the_module_fixture" not in out.err, out.err
+    # K4: a test slow only on the wall clock (it sleeps) is judged on its CPU and passes.
+    assert "test_sleepy_call" not in out.err, out.err
     assert "note:" not in out.out
 
 
@@ -178,7 +193,8 @@ def test_teardown_is_split_into_the_tests_own_and_the_shared_fixtures(tmp_path, 
     shared_total = sum(t["shared_teardown"] for t in tests.values())
     assert shared_total >= 0.45, tests
     assert own["teardown"] - own["shared_teardown"] >= 0.25, own
-    split = ratchet.own_seconds(own)
+    # The split is checked on the wall fields; the fixtures sleep, so their CPU is near zero and K4 judges CPU when present.
+    split = ratchet.own_seconds({k: v for k, v in own.items() if not k.endswith("_cpu")})
     assert split is not None, own
     _own, _shared = split
     assert _own >= 0.3

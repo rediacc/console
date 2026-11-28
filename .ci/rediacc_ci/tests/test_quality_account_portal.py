@@ -3,7 +3,7 @@ r"""`rediacc_ci.quality.account_portal` against the shell it replaces.
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate reaches every one of its verdicts from an external tool's EXIT STATUS, so the only thing a port can get wrong is which command it runs, where it runs it, in what order, and what it does with each status. All four of those are properties of a process, not of a string, and a table of expected strings would be a table
 of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-account-portal.observations.jsonl` compares the WHOLE gate over five distinct trees, with `npx` and `npm` stubbed so every phase is deterministic. What it cannot show is the ARGV -- both sides would agree perfectly while both ran `tsc` without `--noEmit`, which would emit JavaScript into the tree and still exit 0. This file records the argv
+The committed ledger the ledger (deleted in commit:936280cd35) compares the WHOLE gate over five distinct trees, with `npx` and `npm` stubbed so every phase is deterministic. What it cannot show is the ARGV -- both sides would agree perfectly while both ran `tsc` without `--noEmit`, which would emit JavaScript into the tree and still exit 0. This file records the argv
 vectors and the working directories a run actually produces.
 
 THE STUBS BELOW ARE THE MODULE'S OWN (`account_portal.write_stubs`), not a second copy, so a change to them cannot make the test and the selftest disagree about what "running the gate" means.

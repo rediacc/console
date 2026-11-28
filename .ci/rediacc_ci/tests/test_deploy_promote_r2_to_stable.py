@@ -13,6 +13,7 @@ The twin `.ci/scripts/deploy/promote-r2-to-stable.sh` still downloads and re-upl
 from __future__ import annotations
 
 import ast
+import json
 import os
 import shutil
 import subprocess
@@ -81,6 +82,14 @@ PHASE_FILTERED = ("cli/edge/latest-linux.yml", "rpm/edge/repodata/comps.xml")
 PROMOTED_EDGE_KEYS = sorted(k for k in DEFAULT_BUCKET if "/edge/" in k and k not in PHASE_FILTERED)
 
 
+# THE STABLE RECORD (PLAN-release-notes D9): every promote ends by writing `cli/stable/history.json`, which is not a channel pointer and not a copy of an edge object, so the pointer and fetch contracts below read around it and its own tests (`test_the_stable_record_*`) read it.
+HISTORY = RELEASES_BUCKET + "/cli/stable/history.json"
+
+
+def _ops(records, op):
+    return [r for r in fake.ops(records, op) if r["key"] != HISTORY]
+
+
 def run(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw: typing.Any):
     root = tmp_path / "fx"
     fake.make_bucket(root, DEFAULT_BUCKET if bucket is None else bucket)
@@ -124,10 +133,10 @@ def test_happy_path_prints_the_twins_lines_and_purges_once(tmp_path) -> None:
 def _bulk_is_server_side(records) -> list[str]:
     """What breaks the contract, as sentences; empty when it holds."""
     problems = []
-    gets = sorted(r["key"] for r in fake.ops(records, "GET"))
+    gets = sorted(r["key"] for r in _ops(records, "GET"))
     if gets != sorted(fake.EDGE_POINTERS):
         problems.append("fetched to the runner: %s" % gets)
-    puts = sorted(r["key"] for r in fake.ops(records, "PUT"))
+    puts = sorted(r["key"] for r in _ops(records, "PUT"))
     if puts != sorted(fake.STABLE_POINTERS):
         problems.append("uploaded from the runner: %s" % puts)
     for argv in fake.aws_calls(records):
@@ -271,7 +280,7 @@ def test_the_pointers_are_written_after_the_rest_of_their_tree(tmp_path) -> None
     assert port.BULK_IS_SERVER_SIDE is True
     _root, proc, records = run(tmp_path)
     assert proc.returncode == 0, proc.stderr
-    writes = [r["key"] for r in records if r.get("op") in ("COPY", "PUT")]
+    writes = [r["key"] for r in records if r.get("op") in ("COPY", "PUT") and r["key"] != HISTORY]
     for pointer in fake.STABLE_POINTERS:
         tree = pointer.rsplit("/", 1)[0] + "/"
         last_copy = max(
@@ -289,7 +298,7 @@ def test_an_installer_the_stamp_cannot_reach_is_refused_before_any_write(tmp_pat
     assert "install.sh" in proc.stderr, proc.stderr
     assert "stable" in proc.stderr, proc.stderr
     assert fake.ops(records, "COPY") == []
-    assert fake.ops(records, "PUT") == []
+    assert _ops(records, "PUT") == []
 
 
 def test_an_absent_pointer_is_skipped(tmp_path) -> None:
@@ -300,8 +309,8 @@ def test_an_absent_pointer_is_skipped(tmp_path) -> None:
     }
     _root, proc, records = run(tmp_path, stripped)
     assert proc.returncode == 0, proc.stderr
-    assert fake.ops(records, "GET") == []
-    assert fake.ops(records, "PUT") == []
+    assert _ops(records, "GET") == []
+    assert _ops(records, "PUT") == []
 
 
 def test_a_run_that_dies_after_cli_leaves_the_stable_default_in_place(tmp_path) -> None:
@@ -380,7 +389,7 @@ def test_a_second_promote_of_the_same_edge_copies_nothing(tmp_path) -> None:
     again, records = fake.run_port(root, MODULE, BASE_ENV, HOME)
     assert again.returncode == 0, again.stderr
     assert fake.ops(records, "COPY") == []
-    assert sorted(r["key"] for r in fake.ops(records, "PUT")) == sorted(fake.STABLE_POINTERS)
+    assert sorted(r["key"] for r in _ops(records, "PUT")) == sorted(fake.STABLE_POINTERS)
     assert fake.purge_urls(records) == _expected_urls()
 
 
@@ -529,7 +538,7 @@ def test_every_channel_directory_has_a_phase_two_arm() -> None:
     """A DIRECTORY MISSING FROM THE TABLE WOULD PROMOTE ITS BYTES AND NONE OF ITS METADATA."""
     assert set(port.PHASE_TWO) == set(port.CHANNEL_DIRS)
     assert [len(v) for v in (port.PHASE_TWO[d] for d in port.CHANNEL_DIRS)] == [1, 2, 2, 1, 1]
-    assert port.phases("apt")[0] == port.META_EXCLUDES
+    assert port.phases("apt")[0] == port.META_EXCLUDES + port.HISTORY_EXCLUDE
 
 
 def test_the_phase_one_excludes_are_the_twins_list_in_the_twins_order() -> None:
@@ -584,7 +593,7 @@ def test_the_purge_is_the_in_process_cf_purge_urls_port() -> None:
 
 
 def test_every_variable_is_read_with_a_literal_os_environ_get() -> None:
-    """`check:ci-python-env-registry` derives a module's inputs from its AST; ask ITS scanner, in both directions."""
+    """`check:ci-env-registry (python_reads)` derives a module's inputs from its AST; ask ITS scanner, in both directions."""
     source = PORT_FILE.read_text(encoding="utf-8")
     names = set(port.environment())
     assert names == {
@@ -763,3 +772,140 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.promote_r2_to_stable"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- The stable record (PLAN-release-notes D9) ---------------------------------------------------------------------------
+
+
+def _history(root: pathlib.Path) -> list[dict[str, str]]:
+    return json.loads(fake.bucket_keys(root, "")[HISTORY])
+
+
+def test_the_stable_record_gets_one_row_and_a_repeat_promote_adds_none(tmp_path) -> None:
+    root, proc, records = run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    rows = _history(root)
+    assert [row["version"] for row in rows] == ["1.2.3"]
+    assert rows[0]["promoted_at"].endswith("Z")
+    assert [r["key"] for r in fake.ops(records, "PUT") if r["key"] == HISTORY] == [HISTORY]
+    again, records = fake.run_port(root, MODULE, BASE_ENV, HOME)
+    assert again.returncode == 0, again.stderr
+    assert _history(root) == rows
+    assert [r for r in fake.ops(records, "PUT") if r["key"] == HISTORY] == []
+
+
+def test_the_stable_record_keeps_older_rows_and_appends_the_new_version(tmp_path) -> None:
+    older = '[{"version": "1.0.0", "promoted_at": "2026-01-01T00:00:00Z"}]\n'
+    root, proc, _records = run(tmp_path, {**DEFAULT_BUCKET, "cli/stable/history.json": older})
+    assert proc.returncode == 0, proc.stderr
+    assert [row["version"] for row in _history(root)] == ["1.0.0", "1.2.3"]
+
+
+def test_the_stable_record_is_absent_from_the_copy_plan(tmp_path) -> None:
+    """An edge tree that held a `history.json` still never copies it: the record is stable's own."""
+    bucket = {
+        **DEFAULT_BUCKET,
+        "cli/edge/history.json": '[{"version": "9.9.9", "promoted_at": "x"}]\n',
+    }
+    root, proc, records = run(tmp_path, bucket)
+    assert proc.returncode == 0, proc.stderr
+    assert [r for r in fake.ops(records, "COPY") if r["key"] == HISTORY] == []
+    assert [row["version"] for row in _history(root)] == ["1.2.3"]
+    for dir_name in port.CHANNEL_DIRS:
+        assert not r2_promote.keep("history.json", port.phases(dir_name)[0])
+        for arm in port.phases(dir_name)[1:]:
+            assert not r2_promote.keep("history.json", arm)
+
+
+def test_a_damaged_stable_record_is_refused_and_left_untouched(tmp_path) -> None:
+    root, proc, _records = run(tmp_path, {**DEFAULT_BUCKET, "cli/stable/history.json": "not json"})
+    assert proc.returncode == 1
+    assert "left untouched" in proc.stderr
+    assert fake.bucket_keys(root, "")[HISTORY] == "not json"
+
+
+def test_stable_since_is_the_oldest_recorded_version_at_or_above_the_edge_version() -> None:
+    rows = [
+        {"version": "3.0.1", "promoted_at": "a"},
+        {"version": "10.0.0", "promoted_at": "b"},
+        {"version": "4.0.1", "promoted_at": "c"},
+    ]
+    assert port.stable_since(rows, "v3.0.0") == "3.0.1"
+    assert port.stable_since(rows, "4.0.0") == "4.0.1"
+    assert port.stable_since(rows, "10.0.1") == ""
+    assert port.stable_since([], "1.0.0") == ""
+
+
+def test_append_row_normalises_the_leading_v_and_keeps_the_first_promoted_at() -> None:
+    rows, added = port.append_row([], "v1.2.3", "t1")
+    assert added
+    assert rows == [{"version": "1.2.3", "promoted_at": "t1"}]
+    again, added = port.append_row(rows, "1.2.3", "t2")
+    assert not added
+    assert again == rows
+
+
+# --------------------------------------------------------------------------- The record write is compare-and-swap (review 9ba3c0c1.1) ---------------------------------------------------------------------------
+
+OLDER = '[{"version": "1.0.0", "promoted_at": "2026-01-01T00:00:00Z"}]\n'
+RACER = (
+    '[{"version": "1.0.0", "promoted_at": "2026-01-01T00:00:00Z"},'
+    ' {"version": "1.1.0", "promoted_at": "2026-02-01T00:00:00Z"}]\n'
+)
+
+
+def _race_run(tmp_path: pathlib.Path, **kw: typing.Any):
+    """A promote whose read of the record is followed by a concurrent writer adding 1.1.0 before this run's write lands."""
+    body = tmp_path / "racer.json"
+    body.write_text(RACER, encoding="utf-8")
+    extra = {
+        "FAKE_RACE_ONCE_MATCH": "history.json",
+        "FAKE_RACE_DONE": str(tmp_path / "race.done"),
+        "FAKE_RACE_BODY": str(body),
+    }
+    return run(tmp_path, {**DEFAULT_BUCKET, "cli/stable/history.json": OLDER}, extra=extra, **kw)
+
+
+def test_a_concurrent_record_write_is_a_412_and_the_retry_keeps_both_versions(tmp_path) -> None:
+    root, proc, records = _race_run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert [r["key"] for r in fake.ops(records, "PUT412")] == [HISTORY]
+    assert [row["version"] for row in _history(root)] == ["1.0.0", "1.1.0", "1.2.3"]
+    assert "re-reading (1/5)" in proc.stderr
+
+
+def test_the_record_race_control_loses_a_version_without_the_conditional_put(tmp_path) -> None:
+    """PROVE THE TEST ABOVE CAN FAIL: with the `--if-match` dropped from the write the racing writer's row is overwritten."""
+    planted = fake.plant(
+        tmp_path,
+        '*(["--if-match", etag] if etag else ["--if-none-match", "*"]),',
+        "",
+    )
+    root, proc, records = _race_run(tmp_path, plant=planted)
+    assert proc.returncode == 0, proc.stderr
+    assert fake.ops(records, "PUT412") == []
+    assert [row["version"] for row in _history(root)] == ["1.0.0", "1.2.3"]
+
+
+def test_a_record_that_keeps_changing_fails_loudly_instead_of_dropping_a_version(
+    monkeypatch, tmp_path
+) -> None:
+    attempts: list[int] = []
+
+    class FakeRun:
+        self_name = "t"
+
+    def write(_run, _rows, _root, _etag):
+        attempts.append(1)
+        return False
+
+    monkeypatch.setattr(port, "read_history", lambda _run, _root: ([], '"e"'))
+    monkeypatch.setattr(port, "write_history", write)
+    with pytest.raises(r2_promote.PromoteError) as raised:
+        port.update_history(
+            typing.cast("r2_promote.Transfers", FakeRun()),
+            lambda rows: ([*rows, {}], 1),
+            str(tmp_path),
+        )
+    assert raised.value.status == 1
+    assert len(attempts) == port.HISTORY_CAS_ATTEMPTS

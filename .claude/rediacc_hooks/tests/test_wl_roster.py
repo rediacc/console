@@ -24,7 +24,7 @@ import pytest
 from rediacc_hooks.tests import wlfix
 
 ROSTER_PY = wlfix.STOP_DIR / "wl_roster.py"
-GUARD_PY = wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "guards" / "block_agent_cap.py"
+R = wlfix.import_wl("wl_roster")
 
 # The subprocess that computes one verdict. It folds the fixture store exactly as the Stop hook does and prints the verdict as JSON.
 VERDICT_SNIPPET = r"""
@@ -311,6 +311,16 @@ W1, W2, W3, W4, W5 = (
     "a1000000000000005",
 )
 P1, P2 = "a2000000000000001", "a2000000000000002"
+# There is no writer limit (agent/plans/PLAN-unlimited-writers.md). `pad` plants a crowd of OLDER leased writers mid tool call, so a world can hold more writers than the old cap of 25 did; no filler is silent or owes a status.
+CROWD = 30
+
+
+def pad(fix, n: int = CROWD) -> tuple[str, ...]:
+    ids = tuple("a9%015d" % (i + 1) for i in range(n))
+    for i, aid in enumerate(ids):
+        mk_sub(fix, aid, "general-purpose", 60 + i)
+        plant_lease(fix, "pad%02d" % i, aid)
+    return ids
 
 
 def honest_world(fix) -> None:
@@ -330,7 +340,7 @@ def test_r1_an_honest_roster_is_honest_and_unleasing_one_item_makes_it_dishonest
     assert v["state"] == "HONEST", v
     assert sorted(v["writers"]) == [W1, W2, W3], v["writers"]
     assert v["readers"] == [P1]
-    for key in ("unleased", "leased_dead", "over_cap", "status_due", "silent"):
+    for key in ("unleased", "leased_dead", "status_due", "silent"):
         assert v[key] == [], "%s: %r" % (key, v[key])
     # POSITIVE CONTROL, one planted fact: release one lease and that writer is unleased.
     plant_unlease(wl, "it01")
@@ -412,19 +422,18 @@ def plant_shell_wait(fix, aid: str, shell_id: str, running: bool = True) -> None
         fix.bg = json.dumps(rows)
 
 
-def test_r3d_an_agent_waiting_on_its_own_running_shell_is_live_and_fills_a_slot(wl):
-    """The 2026-09-24 flicker: the babysitter ended its turn waiting on receipt shell bp0oujd2w, the event listed only the shell, and the roster called it finished while a queued item read a free slot."""
+def test_r3d_an_agent_waiting_on_its_own_running_shell_is_a_live_writer(wl):
+    """The 2026-09-24 flicker: the babysitter ended its turn waiting on receipt shell bp0oujd2w, the event listed only the shell, and the roster called it finished and its lease dead."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     mk_sub(wl, W4, "pr-babysitter", 30, last="end_turn", running=False)
     plant_shell_wait(wl, W4, "bshell01")
     plant_lease(wl, "wait1", W4)
-    plant_lease(wl, "queued1", "queue")
     v = verdict(wl)
     assert v["leased_dead"] == [], v["leased_dead"]
     assert W4 in v["writers"], v["writers"]
-    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
     # P1.7 (agent/plans/PLAN-stop-hook-continuity.md): a waiter ended its turn by definition, so its 30-minute-quiet transcript is not silence and it owes no status while its shell runs.
     assert W4 not in v["silent"], v["silent"]
     assert W4 not in v["status_due"], v["status_due"]
@@ -534,53 +543,56 @@ def test_r9c_the_roster_line_reads_a_workflow_by_its_agents_too(wl):
     assert "output quiet 1m" in line or "output quiet 0m" in line, line
 
 
-def test_r4_five_leased_writers_exceed_the_cap_and_the_newest_is_the_excess(wl):
+def test_r4_thirty_five_leased_writers_and_two_readers_are_honest(wl):
+    """No writer limit (agent/plans/PLAN-unlimited-writers.md): a crowd past the old cap of 25 is supervised, never refused, so a fully leased one is HONEST and the verdict carries no limit at all."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
-    v = verdict(wl)
-    assert len(v["writers"]) == 5, v["writers"]
-    assert v["over_cap"] == [W5], v["over_cap"]
-    assert v["state"] == "DISHONEST"
-
-
-def test_r4b_four_writers_and_two_plan_agents_are_within_the_cap(wl):
-    for i, aid in enumerate((W1, W2, W3, W4)):
-        mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     mk_sub(wl, P1, "Plan", 1)
     mk_sub(wl, P2, "Explore", 1)
     v = verdict(wl)
-    assert v["over_cap"] == [], v["over_cap"]
+    assert len(v["writers"]) == CROWD + 5, v["writers"]
     assert sorted(v["readers"]) == [P1, P2]
+    assert v["state"] == "HONEST", v["state"]
+    assert not [k for k in v if k.endswith("_cap")], sorted(v)
+    # POSITIVE CONTROL, one planted fact: release one lease and the same crowd is DISHONEST.
+    plant_unlease(wl, "live4")
+    v = verdict(wl)
+    assert v["state"] == "DISHONEST", v["state"]
+    assert v["unleased"] == [W5], v["unleased"]
 
 
-def test_r4q_a_queued_item_is_covered_only_while_the_cap_is_full(wl):
-    """`worker:queue` holds writer work the cap forbids starting; it must never park work behind a cap that is not full."""
+def test_r4q_a_queued_item_nothing_holds_is_named_to_start_beside_any_crowd(wl):
+    """`worker:queue` holds writer work a live plan refuses; with no plan holding it, it is a defect naming the item to start, however many writers run."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     plant_lease(wl, "queued1", "queue")
     v = verdict(wl)
-    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
+    assert v["queue_start"] == ["queued1"], v["queue_start"]
+    assert ("queued1", "queue", "queue") not in [tuple(c) for c in v["covered"]], v["covered"]
     assert v["leased_dead"] == [], v["leased_dead"]
+    assert v["state"] == "DISHONEST"
 
 
 def test_r4q3_a_queued_item_never_owes_a_status(wl):
     """`queue` has no transcript and cannot report, so an old queue lease must not raise WORKER STATUS DUE (2026-09-24: it blocked a stop with no remedy)."""
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     plant_lease(wl, "queued1", "queue", lease_age_min=25)
     v = verdict(wl)
     assert "queue" not in v["status_due"], v["status_due"]
-    assert ("queued1", "queue", "queue") in [tuple(c) for c in v["covered"]], v["covered"]
+    assert v["queue_start"] == ["queued1"], v["queue_start"]
 
 
-def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):
+def test_r4q2_a_queued_item_beside_three_writers_is_a_defect(wl):
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     plant_lease(wl, "queued1", "queue")
     v = verdict(wl)
     # Its own key since agent/plans/PLAN-stop-hook-retro-20260924.md R.5: a queue is not a finished worker.
@@ -589,13 +601,15 @@ def test_r4q2_a_queued_item_with_a_free_slot_is_a_defect(wl):
     assert v["state"] == "DISHONEST"
 
 
-def test_r4c_a_depth_two_writer_child_counts_toward_the_cap(wl):
+def test_r4c_a_depth_two_writer_child_is_a_writer_that_inherits_its_parents_lease(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4)):
         mk_sub(wl, aid, "general-purpose", 10 - i)
-        plant_lease(wl, "cap%d" % i, aid)
+        plant_lease(wl, "live%d" % i, aid)
     mk_sub(wl, W5, "general-purpose", 1, parent=W1)
     v = verdict(wl)
-    assert v["over_cap"] == [W5], v["over_cap"]
+    assert W5 in v["writers"], v["writers"]
+    assert W5 not in v["unleased"], v["unleased"]
 
 
 def test_r4d_a_plan_agent_that_edits_is_a_writer(wl):
@@ -677,12 +691,12 @@ def test_r5d_a_quiet_transcript_with_nothing_in_flight_is_silent_and_a_long_tool
     assert v["silent"] == [], "a 25-minute tool call is not silence: %r" % v["silent"]
 
 
-def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):
+def test_r6_no_environment_variable_moves_the_ping(wl):
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
-        plant_lease(wl, "cap%d" % i, aid, lease_age_min=21)
+        plant_lease(wl, "live%d" % i, aid, lease_age_min=21)
     hatches = {
-        "WORKLIST_WRITER_CAP": "99",
         "WORKLIST_STATUS_PING_MIN": "999",
         "WORKLIST_ROSTER": "off",
         "WORKLIST_LADDER_PING_MIN": "9999",
@@ -694,38 +708,22 @@ def test_r6_no_environment_variable_moves_the_cap_or_the_ping(wl):
         "WORKLIST_TEAMMATE_TAIL_BYTES": "0",
     }
     v = verdict(wl, hatches)
-    assert v["over_cap"] == [W5], v["over_cap"]
     assert len(v["status_due"]) == 5, v["status_due"]
 
 
-def test_r6c_writer_cap_is_the_queue_settings_line_and_defaults_to_four(wl):
-    """D12: `writer_cap:` in QUEUE.md moves the cap; with the block absent or the value bad it is 4. The env hatch stays inert."""
-    for i, aid in enumerate((W1, W2, W3)):
-        mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
-        plant_lease(wl, "cap%d" % i, aid, lease_age_min=5)
-    assert verdict(wl)["writer_cap"] == 4
-    assert verdict(wl)["over_cap"] == []
-    wl.settings(writer_cap=2)
-    v = verdict(wl, {"WORKLIST_WRITER_CAP": "99"})
-    assert v["writer_cap"] == 2, v["writer_cap"]
-    assert v["over_cap"] == [W3], v["over_cap"]
-    queue = wl.proj / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(queue.read_text(encoding="utf-8").replace("writer_cap: 2", "writer_cap: lots"))
-    assert verdict(wl)["writer_cap"] == 4
-
-
-def test_r6b_the_sealed_modules_read_no_environment_and_the_limits_are_literals():
-    for path in (ROSTER_PY, GUARD_PY):
-        src = path.read_text(encoding="utf-8")
-        tree = ast.parse(src)
-        names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
-        attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
-        assert not ({"environ", "getenv"} & (names | attrs)), "%s reads the environment" % path
+def test_r6b_the_sealed_roster_reads_no_environment_and_its_ping_is_a_literal():
+    """The ping stays a literal; no writer limit is left to pin (agent/plans/PLAN-unlimited-writers.md), so no module-level `WRITER*` name exists either."""
+    src = ROSTER_PY.read_text(encoding="utf-8")
+    tree = ast.parse(src)
+    names = {n.id for n in ast.walk(tree) if isinstance(n, ast.Name)}
+    attrs = {n.attr for n in ast.walk(tree) if isinstance(n, ast.Attribute)}
+    assert not ({"environ", "getenv"} & (names | attrs)), "%s reads the environment" % ROSTER_PY
     consts = {}
-    for stmt in ast.parse(ROSTER_PY.read_text(encoding="utf-8")).body:
+    for stmt in tree.body:
         if isinstance(stmt, ast.Assign) and isinstance(stmt.targets[0], ast.Name):
             consts[stmt.targets[0].id] = stmt.value
-    for name, want in (("DEFAULT_WRITER_CAP", 4), ("STATUS_PING_MIN", 20)):
+    assert not [n for n in consts if n.startswith("WRITER")], sorted(consts)
+    for name, want in (("STATUS_PING_MIN", 20),):
         node = consts.get(name)
         shown = ast.unparse(node) if node is not None else "absent"
         assert isinstance(node, ast.Constant), "%s is %s" % (name, shown)
@@ -789,7 +787,7 @@ def test_s1_an_honest_roster_allows_with_the_roster_and_without_the_old_pushes(w
     stop_world(wl)
     got = overdue(wl)
     assert got.decision == "allow", wl.why("s1", "allow", got, "ROSTER HONEST")
-    assert "ROSTER HONEST: 3 writer(s)/4, 1 reader(s)" in got.out, got.out[:600]
+    assert "ROSTER HONEST: 3 writer(s), 1 reader(s)" in got.out, got.out[:600]
     for needle in ("PURE BACKGROUND WAIT", "IN-FLIGHT WORK", "NOTHING HAS MOVED"):
         assert needle not in got.out, "s1: %r still pushed: %s" % (needle, got.out[:600])
     # POSITIVE CONTROL, one planted fact: release one lease and the same stop blocks, naming the writer.
@@ -802,14 +800,15 @@ def test_s1_an_honest_roster_allows_with_the_roster_and_without_the_old_pushes(w
     assert W2 in got.out, got.out[:800]
 
 
-def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):
+def test_s2_thirty_five_writers_draw_no_limit_block_and_no_variable_silences_the_ping(wl):
+    """No writer limit (agent/plans/PLAN-unlimited-writers.md): a crowd past the old cap of 25 draws no limit block at Stop, while the 21-minute ping still fires on the quiet ones whatever the environment says."""
     wl.brief_now()
     wl.hand_now()
+    pad(wl)
     for i, aid in enumerate((W1, W2, W3, W4, W5)):
         mk_sub(wl, aid, "general-purpose", 30 - i, last="text")
-        plant_lease(wl, "cap%d" % i, aid, lease_age_min=21)
+        plant_lease(wl, "live%d" % i, aid, lease_age_min=21)
     hatches = {
-        "WORKLIST_WRITER_CAP": "99",
         "WORKLIST_STATUS_PING_MIN": "999",
         "WORKLIST_ROSTER": "off",
         "WORKLIST_LADDER_PING_MIN": "9999",
@@ -822,27 +821,11 @@ def test_s2_five_writers_block_on_the_cap_and_no_variable_lifts_it(wl):
         wl.say(SAID)
         got = wl.run(extra)
         label = "s2 (%s)" % ("hatches" if extra else "plain")
-        assert got.decision == "block", wl.why(label, "block", got, "CAP")
-        assert "PARALLEL-WRITER CAP EXCEEDED: 5 writer agent(s)" in got.out, got.out[:600]
-        for aid in (W1, W2, W3, W4, W5):
-            assert aid in got.out, "%s: the cap block does not name %s" % (label, aid)
-        assert "TaskStop %s" % W5 in got.out, "%s: the newest writer is not the excess" % label
+        assert got.decision == "block", wl.why(label, "block", got, "SILENT WORKER")
         assert "SILENT WORKER" in got.out, "%s: the 21-minute ping is missing" % label
+        assert "PARALLEL-WRITER" not in got.out, got.out[:600]
+        assert "TaskStop %s" % W5 not in got.out, "%s: a writer was named as excess" % label
         wl.newturn()
-
-
-def test_s2b_four_writers_and_two_readers_draw_no_cap_block(wl):
-    wl.brief_now()
-    wl.hand_now()
-    for i, aid in enumerate((W1, W2, W3, W4)):
-        mk_sub(wl, aid, "general-purpose", 0)
-        plant_lease(wl, "cap%d" % i, aid)
-    mk_sub(wl, P1, "Plan", 0)
-    mk_sub(wl, P2, "Explore", 0)
-    wl.say(SAID)
-    got = wl.run()
-    assert "PARALLEL-WRITER CAP" not in got.out, got.out[:600]
-    assert got.out.strip(), "the hook produced no output at all: %r" % got.err[:300]
 
 
 def test_s3_evidence_answers_the_ping_with_no_status_call(wl):
@@ -956,19 +939,14 @@ def lastevent_file(fix):
     return fix.wl.with_suffix(".lastevent-deadbeef.json")
 
 
-def waiting_since_the_event(fix) -> str:
-    """Three live writers, plus W4: listed running when the last Stop event was written, and since then ended its turn to wait on shell `bshell09`, which that event never saw. Returns an open item id to lease."""
+def waiting_since_the_event(fix) -> None:
+    """Three live writers, plus W4: listed running when the last Stop event was written, and since then ended its turn to wait on shell `bshell09`, which that event never saw."""
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 1)
-        plant_lease(fix, "cap%d" % i, aid)
+        plant_lease(fix, "live%d" % i, aid)
     mk_sub(fix, W4, "pr-babysitter", 3, last="end_turn")
     lastevent_file(fix).write_text(fix.event(), encoding="utf-8")
     plant_shell_wait(fix, W4, "bshell09", running=False)
-    added = fix.cli("--add", wlfix.ME, "(deadbeef) writer work held behind the cap")
-    assert added.rc == 0, added.err[:300]
-    found = re.search(r"#([0-9a-f]+)", added.out)
-    assert found, added.out[:200]
-    return found.group(1)
 
 
 ESTIMATE_SNIPPET = r"""
@@ -979,28 +957,15 @@ print(json.dumps([r["id"] for r in R.live_writers_estimate(sys.argv[2], sys.argv
 """
 
 
-def test_q1_a_writer_waiting_since_the_last_event_still_fills_its_slot(wl):
-    """The lead's note of 2026-09-24: `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4, because the estimate read a waiting agent as finished until the next stop refreshed the event. Both callers read `live_writers_estimate`; the lease is the real verb driven here."""
-    item = waiting_since_the_event(wl)
-    got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
-    assert got.rc == 0, "the queue lease was refused with the cap full: %s %s" % (
-        got.out[:300],
-        got.err[:300],
-    )
-    proc = subprocess.run(
-        [sys.executable, "-c", ESTIMATE_SNIPPET, str(wlfix.STOP_DIR), str(wl.proj), wlfix.SID],
-        capture_output=True,
-        text=True,
-        env=wl.stop_env(),
-        check=False,
-    )
-    assert proc.returncode == 0, proc.stderr[-600:]
-    assert W4 in json.loads(proc.stdout), proc.stdout
+def test_q1_a_writer_waiting_since_the_last_event_is_still_estimated_live(wl):
+    """The lead's note of 2026-09-24: the estimate read a waiting agent as finished until the next stop refreshed the event. `live_writers_estimate` is what a verb with no Stop event reads."""
+    waiting_since_the_event(wl)
+    assert W4 in estimate(wl), "the waiting agent dropped out of the estimate"
 
 
-def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):
-    """CONTROL: the same agent whose transcript carries the shell's completion notification is finished, so the slot is free and the queue lease is refused with the reservation hint."""
-    item = waiting_since_the_event(wl)
+def test_q1b_control_a_shell_already_reported_back_finishes_the_agent(wl):
+    """CONTROL: the same agent whose transcript carries the shell's completion notification is finished, so the estimate drops it."""
+    waiting_since_the_event(wl)
     tx = subagents_dir(wl) / ("agent-%s.jsonl" % W4)
     st = tx.stat()
     lines = tx.read_text(encoding="utf-8").splitlines(keepends=True)
@@ -1012,10 +977,9 @@ def test_q1b_control_a_shell_already_reported_back_frees_the_slot(wl):
     }
     tx.write_text("".join(lines[:-1]) + json.dumps(note) + "\n" + lines[-1], encoding="utf-8")
     os.utime(tx, (st.st_atime, st.st_mtime))
-    got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
-    assert got.rc != 0, got.out[:300]
-    assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
-    assert "spawn that writer first" in got.err, got.err[:400]
+    got = estimate(wl)
+    assert W4 not in got, got
+    assert W1 in got, got
 
 
 def _shell_stream(wl, text):
@@ -1033,28 +997,27 @@ def _shell_stream(wl, text):
     return d.parent
 
 
-def test_q1c_a_shell_whose_stream_ended_frees_the_slot_without_a_notification(wl):
-    """A shell killed or exited AFTER its agent finished never reports back into that transcript. Its own stream's terminal marker is the proof (2026-09-25: a finished writer held a slot 67 minutes on a `[killed]` shell)."""
-    item = waiting_since_the_event(wl)
+def test_q1c_a_shell_whose_stream_ended_finishes_the_agent_without_a_notification(wl):
+    """A shell killed or exited AFTER its agent finished never reports back into that transcript. Its own stream's terminal marker is the proof (2026-09-25: a finished writer read as live 67 minutes on a `[killed]` shell)."""
+    waiting_since_the_event(wl)
     for marker in ("partial output\n[killed]\n", "done\n\n[exited with code 0]\n"):
         planted = _shell_stream(wl, marker)
         try:
-            got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
+            got = estimate(wl)
         finally:
             shutil.rmtree(planted, ignore_errors=True)
-        assert got.rc != 0, (marker, got.out[:300])
-        assert "3 of 4 writer slots are busy" in got.err, got.err[:400]
+        assert W4 not in got, (marker, got)
 
 
 def test_q1d_control_a_stream_still_growing_keeps_the_agent_waiting(wl):
-    """INVERSE: a stream with no terminal marker is a shell still running, so the agent still fills its slot."""
-    item = waiting_since_the_event(wl)
+    """INVERSE: a stream with no terminal marker is a shell still running, so the agent is still live."""
+    waiting_since_the_event(wl)
     planted = _shell_stream(wl, "step 3 of 9 ...\n")
     try:
-        got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "held for the cap")
+        got = estimate(wl)
     finally:
         shutil.rmtree(planted, ignore_errors=True)
-    assert got.rc == 0, got.err[:400]
+    assert W4 in got, got
 
 
 def estimate(fix) -> list:
@@ -1069,13 +1032,13 @@ def estimate(fix) -> list:
     return json.loads(proc.stdout)
 
 
-def test_q3_a_stopped_agent_quiet_since_the_event_frees_its_slot(wl):
+def test_q3_a_stopped_agent_quiet_since_the_event_drops_out_of_the_estimate(wl):
     """#b9d4dcb2, 2026-09-24: after TaskStop on the pr-babysitter, the spawn guard kept counting it for WAIT_HORIZON_MIN. The event no longer listed it or its shell, yet its transcript still ended "waiting on a shell" that had died with it. A transcript that has not moved since the event was written is the event's to judge."""
     mk_sub(wl, W4, "pr-babysitter", 5, last="end_turn", running=False)
     plant_shell_wait(wl, W4, "bshell77", running=False)
     lastevent_file(wl).write_text(wl.event(), encoding="utf-8")
     assert W4 not in estimate(wl)
-    # CONTROL: the same waiter whose transcript moved AFTER the event armed its shell after it, which the event cannot know, so it still fills a slot.
+    # CONTROL: the same waiter whose transcript moved AFTER the event armed its shell after it, which the event cannot know, so it is still estimated live.
     tx = subagents_dir(wl) / ("agent-%s.jsonl" % W4)
     future = time.time() + 60
     os.utime(tx, (future, future))
@@ -1172,8 +1135,8 @@ def test_q3b_control_a_workflow_whose_agents_went_quiet_is_not_covered(wl):
     assert [tuple(u)[:2] for u in v["unknown"]] == [("wf1", "wtest0001")], v["unknown"]
 
 
-def test_q3c_a_workflow_agent_that_edits_counts_toward_the_cap(wl):
-    """P1.9's second half: `load_metas` reads `subagents/workflows/<runId>/` too, so a workflow agent is visible to the writer cap."""
+def test_q3c_a_workflow_agent_that_edits_is_visible_to_the_roster(wl):
+    """P1.9's second half: `load_metas` reads `subagents/workflows/<runId>/` too, so a workflow agent is visible to the roster."""
     workflow_world(wl, 1)
     run = subagents_dir(wl) / "workflows" / "wf_abc123-def"
     (run / "agent-a3000000000000001.meta.json").write_text(
@@ -1249,10 +1212,10 @@ def plant_queued(fix, item_id: str, text: str, age_min: float, expired: bool = F
 
 
 def blocked_queue_world(fix, blocker_open: bool = True, expired: bool = False) -> None:
-    """3 live writers (1 free slot), an open blocker item, and two queued items: the OLDER one declares BLOCKED_BY the blocker (#bea10927 on 2026-09-24, waiting on A3's golden files)."""
+    """3 live writers, an open blocker item, and two queued items: the OLDER one declares BLOCKED_BY the blocker (#bea10927 on 2026-09-24, waiting on A3's golden files)."""
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 10 - i)
-        plant_lease(fix, "cap%d" % i, aid)
+        plant_lease(fix, "live%d" % i, aid)
     plant_lease(fix, BLOCKER, W1)
     if not blocker_open:
         with fix.events.open("a", encoding="utf-8") as fh:
@@ -1274,7 +1237,7 @@ def blocked_queue_world(fix, blocker_open: bool = True, expired: bool = False) -
 
 
 def test_r25_5_a_queued_item_waiting_on_an_open_blocker_is_skipped_for_the_next(wl):
-    """CONTROL: queue_start took the K oldest with no waiting check, so the one free slot named the blocked item."""
+    """CONTROL: queue_start once took the oldest with no waiting check, and so named the blocked item."""
     blocked_queue_world(wl)
     v = verdict(wl)
     assert v["queue_start"] == ["q0000new"], v["queue_start"]
@@ -1285,7 +1248,7 @@ def test_r25_5_a_queued_item_waiting_on_an_open_blocker_is_skipped_for_the_next(
 def test_r25_5_inverse_the_blocker_closed_and_the_oldest_is_named_again(wl):
     blocked_queue_world(wl, blocker_open=False)
     v = verdict(wl)
-    assert v["queue_start"] == ["q0000old"], v["queue_start"]
+    assert v["queue_start"] == ["q0000old", "q0000new"], v["queue_start"]
     assert v["queue_skipped"] == [], v["queue_skipped"]
 
 
@@ -1314,11 +1277,10 @@ recs = [
 by_id = {r["id"]: r for r in recs}
 held = lambda r, _b, _s: "held by PLAN-y.md" if r["id"] == "b" else ""
 out = {
-    "default": R.queue_pick(recs, 1, by_id, "deadbeef")["start"],
-    "order_key": R.queue_pick(recs, 1, by_id, "deadbeef", order_key=lambda r: r["id"] != "b")["start"],
-    "skip": R.queue_pick(recs, 2, by_id, "deadbeef", order_key=lambda r: r["id"] != "b", skips=(*R.QUEUE_SKIPS, held)),
+    "default": R.queue_pick(recs, by_id, "deadbeef")["start"],
+    "order_key": R.queue_pick(recs, by_id, "deadbeef", order_key=lambda r: r["id"] != "b")["start"],
+    "skip": R.queue_pick(recs, by_id, "deadbeef", order_key=lambda r: r["id"] != "b", skips=(*R.QUEUE_SKIPS, held)),
 }
-out["skip"]["hold"] = None
 print(json.dumps(out))
 """
 
@@ -1333,8 +1295,8 @@ def test_r25_5_queue_pick_takes_an_order_key_and_more_skips():
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     got = json.loads(proc.stdout)
-    assert got["default"] == ["a"], got
-    assert got["order_key"] == ["b"], got
+    assert got["default"] == ["a", "b"], got
+    assert got["order_key"] == ["b", "a"], got
     assert got["skip"]["start"] == ["a"], got
     assert got["skip"]["skipped"] == [["b", "held by PLAN-y.md"]], got
 
@@ -1348,7 +1310,7 @@ def parity(fix) -> tuple[list, list]:
 
 
 def test_r25_8_parity_a_killed_agent_is_in_neither(wl):
-    """#b9d4dcb2: a TaskStop-ped writer whose transcript still ends waiting on a shell that died with it. The Stop roster freed its slot while the spawn guard refused three spawns at 19:40:09, 19:44:30 and 19:52:58 on 2026-09-24."""
+    """#b9d4dcb2: a TaskStop-ped writer whose transcript still ends waiting on a shell that died with it. The Stop roster dropped it while the spawn guard counted it and refused three spawns at 19:40:09, 19:44:30 and 19:52:58 on 2026-09-24."""
     mk_sub(wl, W1, "general-purpose", 1)
     mk_sub(wl, W4, "pr-babysitter", 5, last="end_turn", running=False)
     plant_shell_wait(wl, W4, "bshell77", running=False)
@@ -1528,7 +1490,7 @@ def test_q1s_queue_slot_names_the_held_item_on_a_held_back_line(wl):
     mutex_world(wl)
     wl.say("working\n\n## Remaining\n- the queue")
     got = wl.run()
-    assert "QUEUED WORK AND A FREE WRITER SLOT" in got.out, got.out[:1500]
+    assert "QUEUED WORK NOTHING HOLDS" in got.out, got.out[:1500]
     assert "start #e1000002." in got.out, got.out[:1500]
     assert "held back: #f1000001 [P-] -- PLAN-e.md is exclusive" in got.out, got.out[:2000]
 
@@ -2328,3 +2290,31 @@ def test_a_generator_run_from_outside_the_repository_writes_the_main_checkouts_o
     )
     assert proc.returncode == 0, proc.stderr[-600:]
     assert json.loads(proc.stdout)[0] == ["scripts/data/doc-registry.md"]
+
+
+def test_a_coverer_less_row_is_not_pingable_and_an_armed_one_is_not_either():
+    """11e2a380.1: a None or empty coverer (an item no live agent covers) and an `armed:` coverer are skipped by the status ping, the test the supervised and verified sets apply. Control: a real coverer is pingable."""
+    covered = [
+        ("i1", "w-none", None),
+        ("i2", "w-empty", ""),
+        ("i3", "w-armed", R.ARMED_COVERER + "a1"),
+        ("i4", "w-real", "agent-cov"),
+    ]
+    assert R._pingable_workers(covered) == {"w-real"}
+
+
+@pytest.mark.parametrize("last", ["end_turn", "text", "tool_use"])
+@pytest.mark.parametrize("quiet_s", [0, 1, 5, 400, 3600])
+def test_the_full_proof_and_the_cache_recheck_share_one_durable_predicate(wl, last, quiet_s):
+    """6c13743a.1: `_finished_verdict` answers True durably exactly when `_durable_finished` does, for each last-record shape and quiet time, so a cached finish cannot disagree with the full proof."""
+    mk_sub(wl, W1, "general-purpose", 0, last=last)
+    jsonl = subagents_dir(wl) / ("agent-%s.jsonl" % W1)
+    mtime = jsonl.stat().st_mtime
+    now = mtime + quiet_s
+    rec = R.last_record(jsonl)
+    durable = R._durable_finished(rec, mtime, now)
+    verdict, is_durable = R._finished_verdict(jsonl, now)
+    if durable:
+        assert (verdict, is_durable) == (True, True)
+    else:
+        assert verdict is False

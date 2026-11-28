@@ -58,6 +58,8 @@
 # at least 70 percent, and probably somewhat more.
 
 set -euo pipefail
+# comm needs its input in the order sort produced; under a UTF-8 locale the uutils sort and comm disagree (comm: file 1 is not in sorted order), so collate bytewise.
+export LC_ALL=C
 
 MEDIA_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$MEDIA_DIR/../.." && pwd)"

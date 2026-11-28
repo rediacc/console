@@ -10,7 +10,7 @@
  * The token value is never logged and never handed to the container (src/egress.ts swaps it in on the way out).
  */
 
-import type { RelocateAnswer } from './org-executor';
+import type { RelocateAnswer } from './org-executor-support';
 
 /** What `ExecutorIssuer.issue()` answers: the token and its expiry as an ISO 8601 instant. */
 export interface IssuedToken {
@@ -31,6 +31,8 @@ export interface ExecutorIssuerRpc extends Rpc.WorkerEntrypointBranded {
   relocate(orgId: string, fromPlacement: number): Promise<RelocateAnswer>;
   /** Writes nothing: whether the issuer env parses and D1 answers, and what a token it issues would carry. */
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }>;
+  /** Whether `credential` is a live internal credential the account Worker minted for its occupancy read (D52): true only for an authentic, unexpired one, false for anything else. */
+  verifyInternal(credential: string): Promise<boolean>;
 }
 
 /** The share of a token's life after which it is renewed. */

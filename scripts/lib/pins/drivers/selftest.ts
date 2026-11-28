@@ -22,10 +22,11 @@ import { policyPath } from '../../policy-paths.js';
 import { REPO_ROOT } from '../../repo-root.js';
 // driver.js first: the driver modules use its exports only inside functions, but a driver as
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
-import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
+import { type DriverContext, type PinPlan, PlanRefused, registerDrivers } from '../driver.js';
+import { lineOf } from '../lines.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
 import { soakClearsAt, iso as soakIso } from '../soak.js';
-import { majorLineOf } from '../status.js';
+import { viewOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
 import { dockerDriver } from './docker.js';
@@ -33,6 +34,7 @@ import { gomodDriver } from './gomod.js';
 import {
   deferredCount,
   deferredNames,
+  fileLinkedDependents,
   inRangePlan,
   inRangeReleases,
   judgeOverrides,
@@ -954,10 +956,44 @@ async function dockerCases(
     detail: JSON.stringify(uw),
   });
   const line26 = ui.releases.map((r) => (r as { lineFirstMs?: number | null }).lineFirstMs);
+  // ubuntu reads depth 2 (the `lines` row): 26.04 and 26.10 are two lines, each dated by its own oldest tag.
   out.push({
-    name: "docker: a re-pushed tag's line is dated by the oldest push among tags created after the line began, not by its own stamp",
-    ok: line26.length === 2 && line26.every((ms) => ms === NOW - 268 * DAY),
+    name: "docker: a re-pushed tag's line is dated by the oldest push among tags created after the line began, not by its own stamp, and 26.10 is its own line",
+    ok: line26.length === 2 && line26[0] === NOW - 26 * DAY && line26[1] === NOW - 268 * DAY,
     detail: JSON.stringify(ui.releases),
+  });
+  // A version line deeper than the first number (plan #ef324e18): python 3.15 is dated by the 3.15 tags, never by a decade of 3.x tags beside it.
+  const py = entry('image:cloud-switch-python');
+  const pyRoot = tree({
+    'packages/json/templates/networking/cloud-switch/web/Dockerfile':
+      'FROM python:3.9-slim\nCMD ["python"]\n',
+    'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+  });
+  const pyInsp = await dockerDriver(
+    () =>
+      deps({
+        json: () => ({
+          results: [
+            { name: '3.15-slim', id: 9000, last_updated: iso(NOW - 2 * DAY) },
+            { name: '3.15.0-slim', id: 9001, last_updated: iso(NOW - 20 * DAY) },
+            { name: '3.10-slim', id: 200, last_updated: iso(NOW - 3 * DAY) },
+            { name: '3.10.0-slim', id: 201, last_updated: iso(NOW - 1800 * DAY) },
+            { name: '3.9-slim', id: 100, last_updated: iso(NOW - 3 * DAY) },
+          ],
+          next: null,
+        }),
+      }).deps,
+    mutant
+  ).inspect(py, ctxOf(pyRoot));
+  const pyLine = (v: string) =>
+    (pyInsp.releases.find((r) => r.version === v) as { lineFirstMs?: number | null } | undefined)
+      ?.lineFirstMs;
+  out.push({
+    name: 'docker: a young python 3.15 line inside an old 3.x reads young (dated by its own 3.15 tags), and the 3.10 line reads old',
+    ok:
+      pyLine('python:3.15-slim') === NOW - 20 * DAY &&
+      pyLine('python:3.10-slim') === NOW - 1800 * DAY,
+    detail: JSON.stringify(pyInsp.releases),
   });
   // CONTROL, the other direction: a line that genuinely began last week reads last week.
   const fresh = await dockerDriver(
@@ -1095,7 +1131,7 @@ async function dockerCases(
       ri.releases.length === 1 &&
       redig?.verdict?.eligible === true &&
       !redig.verdict.why.includes('--major') &&
-      majorLineOf(rdLabel) === 26,
+      lineOf(rdLabel, 1)?.key === '26',
     detail: JSON.stringify(ri),
   });
   const rp = redig ? await rd.plan(pn, redig, rc).catch((e: Error) => e) : null;
@@ -1155,6 +1191,65 @@ async function dockerCases(
       freshRd.releases[0].verdict.why.includes(soakIso(clears)),
     detail: JSON.stringify({ clears, releases: freshRd.releases }),
   });
+  // A patch of the pinned line is no major (2026-11-27: `pins status` listed image:proxy-node as major-only with node:26.13.1-slim offered, because the core read the label `node:26.13.1-slim` whole and found no leading number). Through viewOf, the classifier the CLI runs.
+  const patchTree = tree({
+    'workers/proxy/Dockerfile': `FROM node:26.13.0-slim AS build\nFROM node:26.13.0-slim@${dA}\nCMD ["node"]\n`,
+    'scripts/data/docker-image-freshness-baseline.json': '[]\n',
+  });
+  const patchHub = (u: string): unknown =>
+    u.includes('/tags/26.13.0-slim')
+      ? { digest: dA, tag_last_pushed: iso(OLD) }
+      : {
+          results: [
+            { name: '27.0.0-slim', last_updated: iso(OLD) },
+            { name: '26.13.1-slim', last_updated: iso(OLD) },
+            { name: '26.13.0-slim', last_updated: iso(OLD) },
+          ],
+          next: null,
+        };
+  registerDrivers({ docker: dockerDriver(() => deps({ json: patchHub }).deps, mutant) });
+  const patchWorld = {
+    root: patchTree,
+    reg: REG,
+    fixture: null,
+    mutant: null,
+    nowMs: NOW,
+    windowMs: DAY,
+  };
+  const patchView = await viewOf(patchWorld, ctxOf(patchTree), pn);
+  out.push({
+    name: 'docker: a patch of the pinned line (node:26.13.1-slim over 26.13.0-slim) is bumpable and takes no major, the 27 series beside it stays a major',
+    ok:
+      patchView.state === 'bumpable' &&
+      patchView.target?.version === 'node:26.13.1-slim' &&
+      patchView.takesMajor === false,
+    detail: JSON.stringify(patchView),
+  });
+  // CONTROL, the other direction: with only the next series offered, the pin is major-only, so the fix did not turn every candidate into a patch.
+  registerDrivers({
+    docker: dockerDriver(
+      () =>
+        deps({
+          json: (u: string) =>
+            u.includes('/tags/26.13.0-slim')
+              ? { digest: dA, tag_last_pushed: iso(OLD) }
+              : {
+                  results: [
+                    { name: '27.0.0-slim', last_updated: iso(OLD) },
+                    { name: '26.13.0-slim', last_updated: iso(OLD) },
+                  ],
+                  next: null,
+                },
+        }).deps,
+      mutant
+    ),
+  });
+  const majorView = await viewOf(patchWorld, ctxOf(patchTree), pn);
+  out.push({
+    name: 'docker: CONTROL only the next series offered (node:27.0.0-slim over 26.13.0-slim) is major-only',
+    ok: majorView.state === 'major-only',
+    detail: JSON.stringify(majorView),
+  });
   return out;
 }
 
@@ -1212,6 +1307,78 @@ function biomeSchemaCases(): Array<{ name: string; ok: boolean; detail?: string 
     {
       name: 'biome schema: a schema already at the planned version is not rewritten',
       ok: same === null,
+    },
+  ];
+}
+
+// ---- npm: lockfiles of file: dependents follow a changed manifest (2026-11-27) ---------------
+
+function fileDependentCases(): Array<{ name: string; ok: boolean; detail?: string }> {
+  const pkg = (deps: Record<string, string> = {}, field = 'dependencies'): string =>
+    JSON.stringify({ name: 'x', version: '0.0.0-dev', [field]: deps });
+  const shared = '{"name":"@rediacc/shared","version":"0.0.0-dev"}';
+  const root = tree({
+    'package.json': '{"name":"root","workspaces":["packages/*"]}',
+    'package-lock.json': '{}',
+    'packages/shared/package.json': shared,
+    'workers/proxy/package.json': pkg(),
+    'workers/proxy/package-lock.json': '{}',
+    'private/account/package.json': pkg({ '@rediacc/shared': 'file:../../packages/shared' }),
+    'private/account/package-lock.json': '{}',
+    'private/account/e2e/package.json': pkg(
+      { '@rediacc/shared': 'file:../../../packages/shared' },
+      'devDependencies'
+    ),
+    'private/account/e2e/package-lock.json': '{}',
+    'private/account/web/package.json': pkg({ react: '19.0.0' }),
+    'private/account/web/package-lock.json': '{}',
+  });
+  const plan = (cwd: string, args: string[]) =>
+    stepsOf(
+      ctxOf(root),
+      entry('npm'),
+      [
+        { cwd, args, label: 'step', packages: [{ name: 'a', current: '1.0.0', latest: '1.1.0' }] },
+      ] as never,
+      '11.0.0'
+    ).steps;
+  const passes = (steps: ReturnType<typeof plan>): string[] =>
+    steps
+      .filter((s) => s.label.startsWith('lockfile pass for a file: dependent'))
+      .map((s) => s.cwd);
+  const sharedRun = passes(plan(root, ['install', '-w=packages/shared', 'a@1.1.0']));
+  const proxyRun = passes(plan(path.join(root, 'workers/proxy'), ['update', 'a']));
+  const pure = fileLinkedDependents(
+    [path.join(root, 'packages/shared')],
+    [
+      {
+        abs: path.join(root, 'private/account'),
+        manifest: pkg({ s: 'file:../../packages/shared' }),
+      },
+      {
+        abs: path.join(root, 'private/account/web'),
+        manifest: pkg({ s: 'file:../../packages/www' }),
+      },
+      { abs: path.join(root, 'private/account/e2e'), manifest: pkg({ s: '^1.0.0' }) },
+      { abs: path.join(root, 'workers/proxy'), manifest: null },
+      { abs: path.join(root, 'workers/www'), manifest: '{not json' },
+    ]
+  );
+  return [
+    {
+      name: 'file: dependents: a project linking the changed directory is named, one linking another directory, a registry range, an absent and an unreadable manifest are not',
+      ok: JSON.stringify(pure) === JSON.stringify([path.join(root, 'private/account')]),
+      detail: JSON.stringify(pure),
+    },
+    {
+      name: 'file: dependents: a run writing packages/shared/package.json ends with a lockfile pass in each project linking it (dependencies and devDependencies alike), and none in the unlinked one',
+      ok: JSON.stringify(sharedRun) === JSON.stringify(['private/account', 'private/account/e2e']),
+      detail: JSON.stringify(sharedRun),
+    },
+    {
+      name: 'file: dependents (control): a run writing only a manifest nothing links adds no such pass',
+      ok: proxyRun.length === 0,
+      detail: JSON.stringify(proxyRun),
     },
   ];
 }
@@ -1547,6 +1714,7 @@ async function allCases(mutant?: T8Mutant) {
     ...(await realProviderCases()),
     ...(await dockerCases(mutant)),
     ...biomeSchemaCases(),
+    ...fileDependentCases(),
     ...(await npmOverrideCases()),
   ];
 }

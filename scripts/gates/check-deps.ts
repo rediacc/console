@@ -181,6 +181,11 @@ function categorizePackages(
     const latest = info.latest;
 
     if (!current || current === 'undefined' || !latest || current === latest) continue;
+    // A PRE-RELEASE current AHEAD of `latest` (a pre-release of the next major, miniflare 5.x-beta while `latest` is 4.x) is not outdated: proposing `latest` would be a downgrade. Only two parsed versions are compared; an unparseable one keeps the breaking path below.
+    // A STABLE current ahead of `latest` is not skipped and falls through to the breaking path: that is a registry or dist-tag anomaly worth reading.
+    const parsedCurrent = parseVersion(current);
+    if (parsedCurrent?.prerelease && parseVersion(latest) && compareVersions(latest, current) < 0)
+      continue;
 
     // SCOPED ENTRIES, `<dir>:<package>`, and the reason they had to exist. private/account is under an operator freeze, so seven of its dependencies cannot be upgraded here. Blocking them by bare name was the obvious move and is WRONG: this list is keyed on the package name alone, and FOUR of those seven -- @biomejs/biome, typescript, vitest, hono -- are also console's own
     // dependencies. A bare entry would have silently stopped this gate ever reporting them for the console tree again, which is weakening a live check to record a constraint in a different repository.
@@ -1937,6 +1942,7 @@ function preparePinsFixture(root: string): void {
     submodules: { scanned: ['private/account'], unscanned: [] },
     entries: real.entries.filter((e) => e.driver === 'npm'),
     ignores: [],
+    lines: {},
   };
   w('.ci/config/pins.json', `${JSON.stringify(reg, null, 2)}\n`);
   w(
@@ -2140,6 +2146,37 @@ async function selftest(): Promise<void> {
   for (const [c, l, want] of bumps) {
     expect(`isBreakingBump(${c}, ${l}) === ${want}`, isBreakingBump(c, l) === want);
   }
+
+  // 2b. A current ahead of `latest` is never proposed: the pre-release of the next major is neither must-upgrade nor a held major.
+  const ahead = categorizePackages(
+    {
+      miniflare: { current: '5.20261119.0-beta', latest: '4.20260730.0' },
+      wrangler: { current: '4.166.0', latest: '4.168.0' },
+    },
+    new Map<string, BlocklistEntry>()
+  );
+  expect(
+    'a pre-release ahead of latest is not offered as a downgrade',
+    !ahead.heldMajor.some((p) => p.name === 'miniflare') &&
+      !ahead.mustUpgrade.some((p) => p.name === 'miniflare')
+  );
+  const stableAhead = categorizePackages(
+    {
+      stablepkg: { current: '5.0.0', latest: '4.9.0' },
+      unparsedcur: { current: 'git+https://x/y', latest: '4.9.0' },
+      unparsedlatest: { current: '5.0.0', latest: 'next' },
+    },
+    new Map<string, BlocklistEntry>()
+  );
+  const reported = (n: string) =>
+    [...stableAhead.heldMajor, ...stableAhead.mustUpgrade].some((p) => p.name === n);
+  expect('a STABLE current ahead of latest is still reported', reported('stablepkg'));
+  expect('an unparseable current keeps the breaking path', reported('unparsedcur'));
+  expect('an unparseable latest keeps the breaking path', reported('unparsedlatest'));
+  expect(
+    'CONTROL: a plain minor behind latest is still must-upgrade',
+    ahead.mustUpgrade.some((p) => p.name === 'wrangler')
+  );
 
   // 3. ONE RULE IN EVERY MANIFEST, on the pure categoriser. The fixture mirrors 2026-09-26: majors in private/account/web beside a minor.
   const webOutdated: Record<string, OutdatedPackageInfo> = {

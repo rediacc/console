@@ -95,7 +95,7 @@ CASES = [
     ("block_agent_state_shape", "agent/s1", _state_world),
     ("block_compacted_plan_edit", "agent", _record_world),
     ("block_plan_without_tasks", "agent", _tasks_world),
-    ("block_roundlog_write", "reports", _roundlog_world),
+    ("block_guarded_path_edit", "reports", _roundlog_world),
 ]
 
 

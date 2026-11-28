@@ -59,11 +59,9 @@
  * collation, which differs between machines), and NOTHING here embeds a timestamp, a duration,
  * a hostname or a run id.
  *
- * NO GATE HEADER, DELIBERATELY. scripts/gate-bind.ts treats a `---- gate ----` block as a
- * declaration that four registrations exist (package.json, the ci-runner manifest, the workflow
- * step, the npm key). Those four files have a single writer during this program and this phase
- * is not it, so declaring a header here would register a gate that does not exist and turn
- * check:ci-gate-bind red. Registration is reported to the root driver instead.
+ * NO GATE HEADER: its default (verify) mode is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), and `--write`
+ * is the doc-tables producer of `gen:gates -- --write`.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -75,16 +73,21 @@ import process from 'node:process';
 // `.ts` SPECIFIERS, so plain `node` (type stripping, Node 24) runs this file as well as tsx does. The pre-commit hook runs `--affected` on every commit in this repository, and `node` starts in about 0.1 s where `npx tsx` takes 0.8 s.
 import {
   byCodePoint,
+  firstSentence,
   GATES_LOCK,
   type InputChange,
   isMechanismCandidate,
+  mcpToolsLocalProvider,
+  mcpToolsProvider,
   namerText,
   PROVIDERS,
   type Provider,
   type ProviderRow,
   providerById,
   providersReading,
+  reachability,
   readGatesLock,
+  readMcpRegistryTools,
   type SeamReader,
 } from '../lib/doc-providers.ts';
 import { findRegions, OPEN_RE, rewriteRegions } from '../lib/doc-regions.ts';
@@ -854,6 +857,7 @@ function readStdin(): string {
 /** A glob-looking argument that is really a path: on disk, or tracked (a bracketed route like `[slug].astro`). */
 function isLiteralPath(p: string): boolean {
   if (fs.existsSync(path.join(ROOT, p))) return true;
+  // Tracked-only on purpose: an untracked path already answers through the existsSync above.
   return execFileSync('git', ['ls-files', '-z', '--', `:(literal)${p}`], { cwd: ROOT }).length > 0;
 }
 
@@ -1017,6 +1021,32 @@ function selftest(): number {
       console.log(`\t\t${JSON.stringify(detail)}`);
     }
   };
+
+  // #0f094555.1: a standalone post-bash `test-*.py` is reached through test_hooks_delegates.py's glob; a non-test post-bash file nothing names is not.
+  {
+    const probeRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-docs-reach-'));
+    try {
+      const testRel = '.claude/hooks/post-bash/test-x.py';
+      const plainRel = '.claude/hooks/post-bash/plain-y.py';
+      for (const rel of [testRel, plainRel]) {
+        fs.mkdirSync(path.dirname(path.join(probeRoot, rel)), { recursive: true });
+        fs.writeFileSync(path.join(probeRoot, rel), '# probe\n');
+      }
+      const reached = reachability(probeRoot, new Set<string>(), [testRel, plainRel]);
+      ck(
+        'reachability reaches a post-bash test-*.py through the delegates glob',
+        reached.get(testRel) === 'via test_hooks_delegates.py (glob)',
+        [...reached]
+      );
+      ck(
+        'CONTROL: reachability leaves a non-test post-bash file unreached',
+        !reached.has(plainRel),
+        [...reached]
+      );
+    } finally {
+      fs.rmSync(probeRoot, { recursive: true, force: true });
+    }
+  }
 
   // #4960f2e8: a per-commit review record quoting BLOCKER: is prose, not a suppression mechanism; a real allowlist still is.
   ck(
@@ -1185,6 +1215,47 @@ function selftest(): number {
     }),
     targets(ROOT)
   );
+  {
+    // Control for target discovery in a throwaway repo: an UNTRACKED marker file is a target, a gitignored one is not, and a tracked one still is.
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'gen-docs-targets-'));
+    // A hook run exports GIT_DIR/GIT_INDEX_FILE: left in place they would send the fixture's `git init/add` at the CALLER's repository. The control plants a decoy index to prove the fixture ignores them.
+    const decoyIndex = path.join(repo, 'decoy-index');
+    const gitEnv = ['GIT_DIR', 'GIT_INDEX_FILE', 'GIT_WORK_TREE'];
+    const savedEnv = gitEnv.map((k) => process.env[k]);
+    process.env.GIT_INDEX_FILE = decoyIndex; // the simulated hook environment
+    const hookEnv = { ...process.env };
+    for (const k of gitEnv) delete process.env[k];
+    try {
+      const run = (...a: string[]): void => {
+        execFileSync('git', ['-C', repo, ...a], { stdio: 'ignore' });
+      };
+      run('init', '-q');
+      const marker = '<!-- >>> gen-docs: fixture -->\n<!-- <<< gen-docs: fixture -->\n';
+      fs.writeFileSync(path.join(repo, '.gitignore'), 'ignored.md\n');
+      fs.writeFileSync(path.join(repo, 'tracked.md'), marker);
+      run('add', '.gitignore', 'tracked.md');
+      fs.writeFileSync(path.join(repo, 'untracked.md'), marker);
+      fs.writeFileSync(path.join(repo, 'ignored.md'), marker);
+      const seen = targets(repo);
+      ck(
+        'planted: GIT_INDEX_FILE from a hook environment never reaches the fixture repository (the decoy index is not created)',
+        hookEnv.GIT_INDEX_FILE === decoyIndex && !fs.existsSync(decoyIndex)
+      );
+      ck(
+        'planted: an untracked marker file is discovered as a target, a tracked one still is, a gitignored one is not',
+        seen.includes('untracked.md') &&
+          seen.includes('tracked.md') &&
+          !seen.includes('ignored.md'),
+        seen
+      );
+    } finally {
+      gitEnv.forEach((k, i) => {
+        if (savedEnv[i] === undefined) delete process.env[k];
+        else process.env[k] = savedEnv[i];
+      });
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  }
 
   // --- the gate catalogue's source is a FILE now, so prove it refuses a broken one ---
   const refuses = (label: string, body: string | null): void => {
@@ -1222,6 +1293,7 @@ function selftest(): number {
     ...P,
     rows: (root) => {
       fs.readFileSync(path.join(root, 'package.json'), 'utf-8');
+      // Tracked-only on purpose: a planted undeclared listing for the trace control, not an input read.
       execFileSync('git', ['-C', root, 'ls-files', '-z', '--', '.ci/config'], {
         encoding: 'utf-8',
       });
@@ -1296,19 +1368,23 @@ function selftest(): number {
   );
 
   // --- `--could-affect`, the spawn guard's question (PLAN-experience-feedback P4), controls first ---
-  const www = execFileSync('git', ['ls-files', '-z', 'packages/www/src/**'], {
-    cwd: ROOT,
-    maxBuffer: 256 * 1024 * 1024,
-  })
+  // `--cached --others --exclude-standard`: an unstaged www page may carry a region, so the control's population includes it (same listing as listSubjects and expandGlobs).
+  const www = execFileSync(
+    'git',
+    ['ls-files', '-z', '--cached', '--others', '--exclude-standard', 'packages/www/src/**'],
+    { cwd: ROOT, maxBuffer: 256 * 1024 * 1024 }
+  )
     .toString('utf-8')
     .split('\0')
     .filter((f) => f !== '');
   ck(`could-affect: the www source tree is seen at all (${www.length} path(s))`, www.length > 100);
+  // A www page MAY carry a region (the MCP tool tables of ai-agents-mcp.md do), and a writer owning that page is rightly told so. What must stay true is that NO PROVIDER READS the www tree: every www hit is a marker-bearing target, never an input or the machinery.
   const wwwHits = couldAffect(ROOT, www);
+  const wwwNonTargets = wwwHits.filter((h) => h.why !== 'target');
   ck(
-    'control: an Owns of packages/www/src/** could move no provider and no region',
-    wwwHits.length === 0,
-    wwwHits.slice(0, 6)
+    `control: an Owns of packages/www/src/** could move no provider (${wwwHits.length} region target(s) named, ${wwwNonTargets.length} other hit(s))`,
+    wwwNonTargets.length === 0,
+    wwwNonTargets.slice(0, 6)
   );
   const anyPath: Provider = { ...P, id: 'reads-everything', inputs: { scope: () => true } };
   ck(
@@ -1381,6 +1457,30 @@ function selftest(): number {
     env.length === 1 && env[0]?.why === 'input' && env[0].providers.includes('env-manifest'),
     env
   );
+  // The MCP tool tables: the sentence cut and the remote/local split (review dc9a49b0.3).
+  ck(
+    'firstSentence cuts at a sentence end before an upper-case letter, keeps `e.g. foo` and `0.5 s` whole, and returns a text with no break unchanged',
+    firstSentence('Runs a job. Then waits.') === 'Runs a job.' &&
+      firstSentence('Waits up to 0.5 s, e.g. for a lock. More.') ===
+        'Waits up to 0.5 s, e.g. for a lock.' &&
+      firstSentence('no sentence break here') === 'no sentence break here' &&
+      firstSentence('Is it? Yes.') === 'Is it?',
+    firstSentence('Waits up to 0.5 s, e.g. for a lock. More.')
+  );
+  {
+    const registry = readMcpRegistryTools(ROOT);
+    const remote = mcpToolsProvider.rows(ROOT).map((r) => r.key);
+    const local = mcpToolsLocalProvider.rows(ROOT).map((r) => r.key);
+    ck(
+      'the remote and local MCP tool tables partition the registry: no tool in both, none dropped, local rows are the local surface',
+      remote.length + local.length === registry.length &&
+        !remote.some((k) => local.includes(k)) &&
+        local.length === registry.filter((t) => t.surface === 'local').length &&
+        local.length > 0 &&
+        remote.length > 0,
+      { remote: remote.length, local: local.length, registry: registry.length }
+    );
+  }
   const self = couldAffect(ROOT, ['scripts/lib/doc-providers.ts']);
   ck(
     "the generator's own module could move every provider",

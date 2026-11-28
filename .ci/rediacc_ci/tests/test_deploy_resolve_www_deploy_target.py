@@ -1,7 +1,7 @@
 """`rediacc_ci.deploy.resolve_www_deploy_target`, driven directly.
 
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/deploy/resolve-www-deploy-target.sh` over the same environment and compared its `$GITHUB_OUTPUT` bytes, its stdout and its stderr against the port's. The K=5 ledger
-`.ci/shadow/w7p5a-resolve-www-deploy-target.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-resolve-www-deploy-target --assert --k 5` -> "equivalence holds over 5 distinct trees") and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees (the shadow gate (commit:bf054adcd4) -> "equivalence holds over 5 distinct trees") and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
 THE GOLDEN BYTES BELOW ARE THE TWIN'S, KEPT VERBATIM. Both valid paths were byte-identical on purpose -- pure computation, four `key=value` lines to
 `$GITHUB_OUTPUT`, nothing on stdout or stderr -- so the literals that were once

@@ -1,9 +1,10 @@
 """`.ci/scripts/quality/check_inner_timeout_reachable.py`, driven in-process and as the real entry point.
 
-The in-process half runs the gate's own controls. The entry-point half builds a miniature repository in a temporary directory -- the gate script and `_cipath.py` copied in, `.ci/rediacc_ci` linked to the real package -- because the gate finds its tree from its own file's location, and a fixture tree is the only way to watch the WHOLE invocation go red on a planted step module and green on its clean twin, without touching the working tree.
+The in-process half runs the gate's own controls. The entry-point half builds a miniature repository in a temporary directory -- a real package directory holding a COPY of `rediacc_ci/quality/inner_timeout_reachable.py` and a symlink to every other entry of `.ci/rediacc_ci` -- because the gate finds its tree from its own file's location, and a fixture tree is the only way to watch the WHOLE invocation go red on a planted step module and green on its clean twin, without touching the working tree.
 """
 
-import importlib.util
+import importlib
+import os
 import pathlib
 import shutil
 import subprocess
@@ -14,22 +15,12 @@ import pytest
 
 from rediacc_ci import paths
 
-QUALITY = paths.from_root(".ci", "scripts", "quality")
-GATE = QUALITY / "check_inner_timeout_reachable.py"
 CI_PKG = paths.from_root(".ci", "rediacc_ci")
+GATE_MODULE = "inner_timeout_reachable"
 
 
 def _load() -> types.ModuleType:
-    paths.on_sys_path(QUALITY)
-    try:
-        spec = importlib.util.spec_from_file_location("check_inner_timeout_reachable", GATE)
-        assert spec
-        assert spec.loader
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        return module
-    finally:
-        sys.path.remove(str(QUALITY))
+    return importlib.import_module("rediacc_ci.quality.inner_timeout_reachable")
 
 
 gate = _load()
@@ -93,11 +84,16 @@ jobs:
 
 
 def _tree(tmp_path: pathlib.Path, slow_source: str, workflow: str = _WORKFLOW) -> pathlib.Path:
-    quality = tmp_path / ".ci" / "scripts" / "quality"
-    quality.mkdir(parents=True)
-    shutil.copy(GATE, quality / GATE.name)
-    shutil.copy(QUALITY / "_cipath.py", quality / "_cipath.py")
-    (tmp_path / ".ci" / "rediacc_ci").symlink_to(CI_PKG)
+    # The gate anchors its root on its own file, so the fixture carries a COPY of the module inside a package directory that links every other entry to the real one: a symlink to the whole package would resolve the root back to the real tree.
+    package = tmp_path / ".ci" / "rediacc_ci"
+    (package / "quality").mkdir(parents=True)
+    for entry in CI_PKG.iterdir():
+        if entry.name not in ("quality", "__pycache__"):
+            (package / entry.name).symlink_to(entry)
+    for entry in (CI_PKG / "quality").iterdir():
+        if entry.name not in (f"{GATE_MODULE}.py", "__pycache__"):
+            (package / "quality" / entry.name).symlink_to(entry)
+    shutil.copy(CI_PKG / "quality" / f"{GATE_MODULE}.py", package / "quality" / f"{GATE_MODULE}.py")
     (tmp_path / "scripts" / "ci-runner").mkdir(parents=True)
     (tmp_path / "scripts" / "ci-runner" / "gates.lock.json").write_text(_LOCK)
     (tmp_path / ".github" / "workflows").mkdir(parents=True)
@@ -105,12 +101,18 @@ def _tree(tmp_path: pathlib.Path, slow_source: str, workflow: str = _WORKFLOW) -
     (tmp_path / "tools").mkdir()
     (tmp_path / "tools" / "gate.py").write_text("RUN_TIMEOUT_S = 600\n")
     (tmp_path / "tools" / "slow.py").write_text(slow_source)
-    return quality / GATE.name
+    return tmp_path
 
 
-def _run(script: pathlib.Path) -> subprocess.CompletedProcess[str]:
+def _run(root: pathlib.Path) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
-        [sys.executable, str(script)], capture_output=True, text=True, timeout=120, check=False
+        [sys.executable, "-m", f"rediacc_ci.quality.{GATE_MODULE}"],
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+        cwd=root,
+        env={**os.environ, "PYTHONPATH": str(root / ".ci")},
     )
 
 

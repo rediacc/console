@@ -28,12 +28,6 @@ vi.mock('../../services/core/output.js', () => ({ outputService: out }));
 const mockIsAgent = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/agent-guard.js', () => ({ isAgentEnvironment: mockIsAgent }));
 
-const mockAssertPolicy = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: mockAssertPolicy,
-  CMD: { REPO_PRUNE: 'repo prune' },
-}));
-
 const outputFormat = vi.hoisted(() => ({ value: 'table' }));
 vi.mock('../../utils/errors.js', () => {
   class ValidationError extends Error {}
@@ -169,7 +163,6 @@ describe('repo prune refusals (before any execution)', () => {
 describe('repo prune execution', () => {
   it('runs repository_docker_prune as a dry run with the repo guid', async () => {
     await run('shop');
-    expect(mockAssertPolicy).toHaveBeenCalledWith('repo prune', 'shop');
     const call = mockExecute.mock.calls[0][0];
     expect(call.functionName).toBe('repository_docker_prune');
     expect(call.captureOutput).toBe(true);

@@ -7,7 +7,7 @@ object keyed identically, and the validator refuses a missing reason, a low-effo
 HOW THE FIXTURE CASES REACH THE SUBJECT, and why it is a copy rather than a flag. The validator resolves package.json from ITS OWN location (`__dirname/..`), with no override. There is therefore no seam to point it at a fixture, so the twin copies the whole `scripts/` tree beside a synthetic package.json in a temp directory and runs it there. This port does the same thing for the
 same reason; re-implementing the validator in Python to avoid the copy would be testing a copy.
 
-THE FIRST CASE HAS NO FIXTURE AT ALL. `test_accepts_real_package_json` drives the validator against the repo's own package.json, which is what makes this a real-tree reader rather than a self-contained unit test.
+ONE CASE HAS NO FIXTURE AT ALL. `test_the_real_manifest_declares_overrides_to_check` drives the validator against the repo's own package.json, which is what makes this a real-tree reader rather than a self-contained unit test.
 
 EVERY CASE READS THE WORKING TREE: three of them `cp -r` the entire `scripts/` directory, and the fourth reads
 package.json in place. All are reads, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it, and `xdist_groups.group_for` never read `REAL_TREE_TWIN` to begin with. A pure reader needs no group.
@@ -63,15 +63,7 @@ def run_validator_with_pkg(gate, pkg_content: str) -> harness.RunResult:
         )
 
 
-def test_accepts_real_package_json(gate):
-    """The actual repo package.json should pass."""
-    result = run_validator_on_real_tree(gate)
-    if result.rc != 0:
-        gate.log_fail(
-            "real package.json should pass overrides-reasons validation (rc=%d)\n"
-            "--- stdout ---\n%s\n--- stderr ---\n%s" % (result.rc, result.out, result.err)
-        )
-    gate.log_pass("real package.json passes validation")
+# THE REAL-TREE GREEN CASE `test_accepts_real_package_json` LEFT THIS FILE (PLAN-ciquick-cpu.md W16): `check:ci-overrides-reasons` (ci-quality.yml quality-security) runs this same validator over the real `package.json` on every run, and exit 0 was this case's only assertion.
 
 
 def test_rejects_missing_reason(gate):
@@ -107,7 +99,7 @@ def test_rejects_stale_reason(gate):
 
 
 def test_the_real_manifest_declares_overrides_to_check(gate):
-    """ADDED BY THE PORT. `test_accepts_real_package_json` is the only case that touches the shipping manifest, and it would pass just as green against a
+    """ADDED BY THE PORT. The twin's real-manifest case (exit 0, now `check:ci-overrides-reasons` itself) would pass just as green against a
     package.json with NO overrides at all -- the validator prints
     `All 0 ... overrides have valid BLOCKER reasons` and exits 0. That green says nothing, so this pins the corpus: the count the validator reports must be non-zero AND must equal the number of top-level override keys in the file.
 
@@ -120,7 +112,7 @@ def test_the_real_manifest_declares_overrides_to_check(gate):
     overrides = data.get("overrides") or {}
     if not overrides:
         gate.log_fail(
-            "package.json declares no `overrides`, so the seam-free case above proved "
+            "package.json declares no `overrides`, so the seam-free run below proves "
             "only that a validator can count to zero. Either the manifest lost its "
             "overrides or this port is reading the wrong file."
         )

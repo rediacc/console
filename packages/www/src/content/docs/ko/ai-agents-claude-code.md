@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: ko
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code는 `rdc` CLI를 통해 Rediacc와 기본적으로 연동됩니다. 이 가이드에서는 설정, 권한 및 일반적인 워크플로를 다룹니다.
 
-> **안전 우선**: 시크릿에 접근하는 에이전트를 연결하기 전에 [AI 에이전트 안전 및 가드레일](/en/docs/ai-agents-safety)을 읽어보세요. `rdc` 하에서 실행되는 Claude Code는 에이전트로 감지됩니다. 민감한 변경에는 `--current <previous-value>` (passwd 스타일 전제조건) 또는 `--rotate-secret` (감사된 승인된 교체)이 필요합니다. 사람과 에이전트 모두에게 동일하게 적용됩니다. 대화형 편집기, `--reveal` 및 직접 머신 SSH는 `REDIACC_ALLOW_CONFIG_EDIT`를 통해 명시적으로 열지 않는 한 기본적으로 거부됩니다. 전제조건이 실패하면 JSON 엔벨로프의 `errors[].next.options[].run` 필드가 에이전트에게 사용자에게 제안할 정확한 CLI 명령을 알려줍니다. 그대로 전달하세요.
+> **안전 우선**: 시크릿에 접근하는 에이전트를 연결하기 전에 [AI 에이전트 안전 및 가드레일](/en/docs/ai-agents-safety)을 읽어보세요. `rdc` 하에서 실행되는 Claude Code는 에이전트로 감지됩니다. 민감한 변경에는 사람과 에이전트 모두 `--current <previous-value>` (passwd 스타일 전제조건)가 필요하며, `--rotate-secret` (감사된 승인된 교체)은 터미널의 사람에게만 인정됩니다. `rdc config edit` (대화형, `--apply`, `--reveal`)은 재정의 없이 거부되고, grand 레포지토리와 직접 머신 SSH는 정책이 허용하는 범위 안에서 사람이 옵트인하지 않는 한 닫혀 있습니다. 전제조건이 실패하면 JSON 엔벨로프의 `errors[].next.options[].run` 필드가 에이전트에게 사용자에게 제안할 정확한 CLI 명령을 알려줍니다. 그대로 전달하세요.
 
 ## 빠른 설정
 
@@ -86,7 +86,7 @@ Claude Code 실행: rdc repo up mail@prod-1 --yes
 
 Claude Code 실행: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → 컨테이너 상태 목록
-Claude Code 실행: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
+Claude Code 실행: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → 최근 로그 확인
 ```
 

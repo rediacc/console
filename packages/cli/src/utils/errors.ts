@@ -10,7 +10,14 @@ import {
 import { printFeedbackHint, withFeedbackOption } from '../services/feedback/hint.js';
 import { recordCommand } from '../services/feedback/ring.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
-import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '../types/errors.js';
+import { errorOrigin } from '../types/error-origins.js';
+import {
+  type CliError,
+  ERROR_CODES,
+  isRetryableExitCode,
+  type NextAction,
+  ValidationError,
+} from '../types/errors.js';
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { CliExitError } from './cli-exit-error.js';
 
@@ -29,12 +36,7 @@ export function getOutputFormat(): OutputFormat {
 /** Determine if an error is retryable based on exit code */
 function isRetryable(error: CliError): boolean {
   if (error.retryable !== undefined) return error.retryable;
-  const retryableCodes: number[] = [
-    EXIT_CODES.NETWORK_ERROR,
-    EXIT_CODES.RATE_LIMITED,
-    EXIT_CODES.API_ERROR,
-  ];
-  return retryableCodes.includes(error.exitCode);
+  return isRetryableExitCode(error.exitCode);
 }
 
 /** A CliError that also carries the named machine-readable code of the failure behind it. */
@@ -109,6 +111,7 @@ function getGuidance(error: CliError): string | undefined {
 
 /** Output error in JSON envelope format */
 function outputJsonError(cliError: CliError): void {
+  const origin = errorOrigin(cliError.code, (cliError as NamedCliError).errorCode);
   const envelope = {
     success: false,
     command: outputService.getCommandName() ?? DEFAULTS.TELEMETRY.UNKNOWN,
@@ -116,6 +119,7 @@ function outputJsonError(cliError: CliError): void {
     errors: [
       {
         code: cliError.code,
+        ...(origin && { origin }),
         message: cliError.message,
         ...(cliError.details?.length && { details: cliError.details }),
         ...((cliError as NamedCliError).errorCode && {

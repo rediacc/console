@@ -182,6 +182,11 @@ const baseData = z.object({
   functionName: z.string().min(1).max(100),
   machineName: z.string().min(1).max(200),
   repoName: z.string().min(1).max(200).optional(),
+  // Set by the executor (rdc serve) on a `repository_create` or `repository_fork` event: the GUID of the repository image the call made, so `executor_orphans` joins the event to the image GUID `repo admin orphan list` reports.
+  guid: z
+    .string()
+    .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    .optional(),
   success: z.boolean(),
   exitCode: z.number().int(),
   durationMs: z.number().int().min(0),
@@ -193,6 +198,11 @@ const baseData = z.object({
   // Set by the executor for a command that ran as a job: the job and how its record ended (`started` when the request handed the ticket back before the job finished, else its terminal state). A job's start and its terminal state are two events of one job id.
   jobId: z.string().min(1).max(100).optional(),
   outcome: z.enum(['started', 'succeeded', 'failed', 'cancelled']).optional(),
+  // Set by the executor from the command request: the key the account Worker joins this event to the console run that caused it (`console.command.run`).
+  requestId: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._:@-]{0,199}$/)
+    .optional(),
 });
 
 /**

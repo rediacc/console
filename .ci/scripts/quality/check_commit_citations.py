@@ -51,6 +51,7 @@ import sys
 import tempfile
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import shrink_only
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
@@ -578,4 +579,10 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_commit_citations.py",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--init-baseline"),
+        valued=("--root",),
+    )
     raise SystemExit(main(sys.argv[1:]))

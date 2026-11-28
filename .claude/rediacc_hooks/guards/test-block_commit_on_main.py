@@ -15,6 +15,11 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_commit_on_main"
@@ -256,7 +261,7 @@ def run(command, root, broken=False, mutant=False, agent=None, defect=None):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
+    proc = _harness.run(argv, input=payload, capture_output=True, text=True, check=False, env=env)
     if (broken or mutant) and proc.returncode not in (0, 2):
         raise SystemExit("broken-copy runner crashed: %s" % proc.stderr[-800:])
     return proc.returncode != 0, proc.stderr
@@ -456,51 +461,7 @@ else:
 
 # commit_message_text, driven directly (#64c3e990): a heredoc is a commit's message only when it feeds THAT commit's stdin -- attached to it, or on a `cat` piped into it -- and the commit reads stdin. Before the fix every heredoc in the command was read as the message, so a `python3 - <<EOF` edit chained first became part of it.
 (MAIN / "msgfile").write_text("feat: from the file\n", encoding="utf-8")
-MESSAGE_CASES = [
-    (
-        "a python heredoc chained before -F - yields only the commit's own body",
-        "python3 - <<'EOF'\nprint('PR-TASK: deadbeef')\nEOF\ngit commit -F - -- a <<'EOF'\nfeat: x\nEOF",
-        "feat: x",
-    ),
-    (
-        "a cat heredoc piped into -F - is the message",
-        "cat <<'EOF' | git commit -F -\nfeat: y\nEOF",
-        "feat: y",
-    ),
-    (
-        "-F <file> with an unrelated heredoc earlier yields the file",
-        "cat > other.md <<'EOF'\nnot the message\nEOF\ngit commit -F msgfile -- a",
-        "feat: from the file",
-    ),
-    (
-        "-F /dev/stdin is stdin, never the hook's own",
-        "git commit -F /dev/stdin <<'EOF'\nfeat: d\nEOF",
-        "feat: d",
-    ),
-    ("a here-string on -F -", "git commit -F - <<< 'feat: hs'", "feat: hs"),
-    (
-        "-F <file> ignores its own stray heredoc",
-        "git commit -F msgfile <<'EOF'\nnoise\nEOF",
-        "feat: from the file",
-    ),
-    (
-        "CONTROL: the plain -F - heredoc shape",
-        "git commit -F - -- a <<'EOF'\nfeat: x\nEOF",
-        "feat: x",
-    ),
-    ("CONTROL: a piped stdin stays opaque", "printf 'feat: p' | git commit -F -", ""),
-    # #9888de00: the bytes on disk are an earlier command's, so the file is never read.
-    (
-        "-F <file> this same command writes first is not read",
-        "printf 'feat: new' > msgfile && git commit -F msgfile -- a",
-        "",
-    ),
-    (
-        "CONTROL: -F <file> after a write to another file is read",
-        "printf 'x' > other.md && git commit -F msgfile -- a",
-        "feat: from the file",
-    ),
-]
+MESSAGE_CASES = load_table("block_commit_on_main", "MESSAGE_CASES")
 for name, command, expect in MESSAGE_CASES:
     text = commit_policy.commit_message_text(command, str(MAIN))
     ok = text == expect

@@ -81,7 +81,7 @@ const faqSchema = faqItems ? {
         <!-- Pricing Cards -->
         <div class:list={['cf-pricing-grid', allPlans.length === 2 && 'two-up', allPlans.length === 3 && 'three-up']}>
           {allPlans.map((plan) => (
-            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} useCheckout={true} />
+            <CfPricingCard plan={plan} metrics={buildMetrics(plan.id)} lang={lang} />
           ))}
         </div>
 

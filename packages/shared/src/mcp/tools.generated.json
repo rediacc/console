@@ -1,0 +1,3826 @@
+{
+  "schema": 1,
+  "tools": [
+    {
+      "name": "backup_browse",
+      "command": "backup browse",
+      "description": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Limit the listing to this subtree"
+          },
+          "depth": {
+            "type": "string",
+            "description": "Limit descent to N levels (0 for unlimited)"
+          },
+          "limit": {
+            "type": "string",
+            "description": "Maximum entries to return (0 for unlimited)"
+          },
+          "at": {
+            "type": "string",
+            "description": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)"
+          },
+          "from": {
+            "type": "string",
+            "description": "With --at, read the snapshot from this backup store instead of the best-ranked one"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_cancel",
+      "command": "backup cancel",
+      "description": "Cancel a running backup on a remote machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "description": "Backup strategy name"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_check",
+      "command": "backup check",
+      "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "path": {
+            "type": "string",
+            "description": "The file to restore and compare (default: the smallest non-empty file)"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_immutability_show",
+      "command": "backup immutability show",
+      "description": "Show the delayed-deletion window in force",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_list",
+      "command": "backup list",
+      "description": "List backup artifacts on a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifact-ref": {
+            "type": "string",
+            "description": "Backup artifact reference (repo[:tag][@place])"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Limit the listing to one subdirectory; omit to enumerate the whole datastore"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_manifests",
+      "command": "backup manifests",
+      "description": "List backup snapshot manifests recorded on the server",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "limit": {
+            "type": "string",
+            "description": "Rows per page (default and maximum 500)"
+          },
+          "before": {
+            "type": "string",
+            "description": "Page cursor from a previous listing (nextBefore)"
+          },
+          "include_deleted": {
+            "type": "boolean",
+            "description": "Include snapshots whose delayed delete is pending"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_reconcile",
+      "command": "backup reconcile",
+      "description": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository to reconcile (default: every repository in the token's scope)"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Report the figures without changing the ledger"
+          },
+          "check": {
+            "type": "boolean",
+            "description": "Dry run that exits 1 when the ledger differs from the store"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_repair",
+      "command": "backup repair",
+      "description": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Report what would be deleted and re-uploaded; change nothing"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_restore",
+      "command": "backup restore",
+      "description": "Turn a backup artifact into a live repository. Placement is stated here. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "artifact-ref": {
+            "type": "string",
+            "description": "Backup artifact reference (repo[:tag][@place])"
+          },
+          "as": {
+            "type": "string",
+            "description": "Name for the restored repository (defaults to the artifact name)"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          },
+          "datastore": {
+            "type": "string",
+            "description": "Restore into this named datastore (its attached machine hosts it)"
+          },
+          "at": {
+            "type": "string",
+            "description": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
+          },
+          "from": {
+            "type": "string",
+            "description": "Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)"
+          },
+          "any_stream": {
+            "type": "boolean",
+            "description": "With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)"
+          },
+          "no_seed": {
+            "type": "boolean",
+            "description": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)"
+          },
+          "allow_unopenable": {
+            "type": "boolean",
+            "description": "Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)"
+          },
+          "salvage": {
+            "type": "boolean",
+            "description": "Continue past lost or corrupt chunks and leave their cells as holes (needs --as)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Restore only this file or directory from the snapshot, without restoring the whole repository (needs --at)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Directory to place the restored path under (default: the machine's restores folder for the snapshot)"
+          },
+          "up": {
+            "type": "boolean",
+            "description": "Deploy the restored repository after the transfer"
+          },
+          "health_window": {
+            "type": "string",
+            "description": "Total health-gate window in seconds (default 300)"
+          },
+          "health_timeout": {
+            "type": "string",
+            "description": "Per-attempt health-check timeout in seconds (default 30)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["artifact-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_retention",
+      "command": "backup retention",
+      "description": "Show the snapshot retention policy the server is enforcing.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_retention_preview",
+      "command": "backup retention preview",
+      "description": "Show which snapshots the next sweep would delete and the space it would free.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_run",
+      "command": "backup run",
+      "description": "Run a backup now. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "description": "Backup strategy name"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_snapshot",
+      "command": "backup snapshot",
+      "description": "Upload a chunk-store snapshot: full inventory first, changed cells after. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "reseed": {
+            "type": "boolean",
+            "description": "Distrust the local anchor and upload a full inventory (re-uploads everything and re-charges quota)"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Plan only: no upload. Reports what would move"
+          },
+          "cold": {
+            "type": "boolean",
+            "description": "Stop the containers, freeze, restart, then upload. Costs a short real outage and gives an application-consistent snapshot; cannot be combined with --dry-run"
+          },
+          "accept_identity_change": {
+            "type": "boolean",
+            "description": "Take this image as the new baseline when its LUKS identity changed or it shrank; uploads a full snapshot"
+          },
+          "bwlimit": {
+            "type": "string",
+            "description": "Upload cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+          },
+          "parallelism": {
+            "type": "string",
+            "description": "Number of chunks uploaded at once (default 4)"
+          },
+          "read_bwlimit": {
+            "type": "string",
+            "description": "Read cap for hashing and cell reads: same units as --bwlimit; default 50M, 0 = unlimited"
+          },
+          "hash_parallelism": {
+            "type": "string",
+            "description": "Cells hashed at once (default 1; 0 = one per CPU, up to 16)"
+          },
+          "cpu_limit": {
+            "type": "string",
+            "description": "CPU ceiling for this snapshot: percent of all cores, 1-100 (default 50; 100 = no ceiling)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_status",
+      "command": "backup status",
+      "description": "Show backup status and timer state on a remote machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "description": "Backup strategy name"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "backup_strategy_list",
+      "command": "backup strategy list",
+      "description": "List all backup strategies",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_strategy_show",
+      "command": "backup strategy show",
+      "description": "Show backup strategy details",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "description": "Backup strategy name"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_toc-key_sync",
+      "command": "backup toc-key sync",
+      "description": "Install the repository's listing key on its machine, or replace a different one",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "Replace a different key already on the machine (sends the passphrase to prove it)"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Report what would be done; touch nothing"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_undelete",
+      "command": "backup undelete",
+      "description": "Cancel a delayed snapshot delete before it takes effect",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "snapshot-id": {
+            "type": "string",
+            "description": "Snapshot id (see rdc backup manifests)"
+          }
+        },
+        "required": ["snapshot-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_usage",
+      "command": "backup usage",
+      "description": "Show backup storage quota, stored bytes, and per-repo usage",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "backup_verify",
+      "command": "backup verify",
+      "description": "Verify a repository's backup anchor against the chunk store. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "repo-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "deep": {
+            "type": "boolean",
+            "description": "Re-hash every recorded cell (full verification) instead of a sampled check"
+          },
+          "store": {
+            "type": "boolean",
+            "description": "Have the server re-hash every stored chunk of this repository and name any missing or corrupt one"
+          },
+          "restore_test": {
+            "type": "boolean",
+            "description": "Restore the anchor's snapshot under a throwaway name straight from the store, compare it with the anchor, record the result and delete the copy"
+          },
+          "restore_to": {
+            "type": "string",
+            "description": "With --restore-test, restore the copy on this machine instead of the source's, for a repository larger than the source's free space; the copy is held to the snapshot's manifest root and deleted afterwards"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["repo-ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "cluster_kubeconfig",
+      "command": "cluster kubeconfig",
+      "description": "Fetch the kubeconfig from the cluster control node over SSH and cache it locally (0600) for kubectl.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cluster": {
+            "type": "string",
+            "description": "Cluster name"
+          }
+        },
+        "required": ["cluster"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Writes the kubeconfig to a 0600 file on the caller's own disk and prints that path.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "cluster_snapshot_list",
+      "command": "cluster snapshot list",
+      "description": "List the cluster's group snapshots. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cluster": {
+            "type": "string",
+            "description": "Cluster name"
+          },
+          "debug": {
+            "type": "boolean",
+            "description": "Enable debug output"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["cluster"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "cluster_status",
+      "command": "cluster status",
+      "description": "List all clusters, or pass a cluster name to show that cluster's full config.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cluster": {
+            "type": "string",
+            "description": "Cluster name"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_access_list",
+      "command": "config access list",
+      "description": "List the config's access keys",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_audit_log",
+      "command": "config audit log",
+      "description": "Read the audit log of mutations made through this config.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "since": {
+            "type": "string",
+            "description": "Only show entries newer than (e.g., '24h', '7d', ISO timestamp)"
+          },
+          "path": {
+            "type": "string",
+            "description": "Filter by JSON Pointer glob (e.g., /credentials/*)"
+          },
+          "actor": {
+            "type": "string",
+            "enum": ["human", "agent"],
+            "description": "Filter by actor kind (human|agent)"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Reads the audit log file on the caller's own disk.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_audit_verify",
+      "command": "config audit verify",
+      "description": "Verify the audit log's hash chain has not been tampered with.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Verifies the hash chain of the audit log file on the caller's own disk.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_current",
+      "command": "config current",
+      "description": "Show the active config: name, file, resolved server and channel, token state",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Names the config file the caller's own install selects, with its file path and token file state.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_list",
+      "command": "config list",
+      "description": "List all config files",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Lists the config files on the caller's own disk; a session holds exactly one granted config.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "config_prune",
+      "command": "config prune",
+      "description": "Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dry_run": {
+            "type": "boolean",
+            "description": "Preview what would be removed without modifying the config file. Mirrors the default-off semantics of the other prune commands."
+          },
+          "certs_only": {
+            "type": "boolean",
+            "description": "Restrict to the ACME cert-cache bucket. Skips archive purging and cross-reference cleanup. Mutually exclusive with --archives-only and --refs-only."
+          },
+          "archives_only": {
+            "type": "boolean",
+            "description": "Restrict to expired-archive purging. Skips cert-cache and cross-reference cleanup. Mutually exclusive with --certs-only and --refs-only."
+          },
+          "refs_only": {
+            "type": "boolean",
+            "description": "Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only."
+          },
+          "orphan_repos": {
+            "type": "boolean",
+            "description": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines."
+          },
+          "gone_machine_repos": {
+            "type": "boolean",
+            "description": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given."
+          },
+          "grace_days": {
+            "type": "string",
+            "description": "Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set."
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "config_reconcile",
+      "command": "config reconcile",
+      "description": "Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Limit the reconcile to these machines"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Show what would be done without making changes"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "config_show",
+      "command": "config show",
+      "description": "Show current config details",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "credits",
+      "command": "credits",
+      "description": "Show the remaining credit balance for this account.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "licenses": {
+            "type": "boolean",
+            "description": "Print the full THIRD_PARTY_LICENSES text bundled with release builds"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "datastore_list",
+      "command": "datastore list",
+      "description": "List named datastores, where they are attached, and what they hold.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "place": {
+            "type": "string",
+            "description": "Narrow to one cluster or one machine"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "datastore_snapshot_list",
+      "command": "datastore snapshot list",
+      "description": "List a datastore's snapshots. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datastore": {
+            "type": "string",
+            "description": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["datastore"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "datastore_status",
+      "command": "datastore status",
+      "description": "Show one datastore: its backend, attachment, usage, repositories and snapshots. A detached datastore still reports its record. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "datastore": {
+            "type": "string",
+            "description": "Datastore ref: name, or name:tag for a fork (for example ds-data or ds-data:exp)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["datastore"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "feedback_list",
+      "command": "feedback list",
+      "description": "List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Only these statuses, comma separated (new, screening, quarantined, confirmed, planned, fixed, rejected)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "feedback_report",
+      "command": "feedback report",
+      "description": "Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "last": {
+            "type": "boolean",
+            "description": "Use the newest failed command"
+          },
+          "command": {
+            "type": "string",
+            "description": "Use the recorded command at this index (1 is the newest; see --list-recent)"
+          },
+          "list_recent": {
+            "type": "boolean",
+            "description": "List the recorded commands and exit"
+          },
+          "kind": {
+            "type": "string",
+            "description": "Report kind: bug, feedback or docs"
+          },
+          "message": {
+            "type": "string",
+            "description": "Free-text note to include (scrubbed before sending)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "feedback_show",
+      "command": "feedback show",
+      "description": "Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "id"
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "forensics_verify",
+      "command": "forensics verify",
+      "description": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory (an rdc incident export directory) and list every gap and edit. Batch signatures verify only under machine keys from outside the directory: machine-key entries, else the keys the account server pinned for the incident the directory names. Exits 1 on any gap or edit.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "dir": {
+            "type": "string",
+            "description": "Evidence directory to verify"
+          },
+          "report": {
+            "type": "string",
+            "description": "Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)"
+          },
+          "id": {
+            "type": "string",
+            "description": "Report id, when the file name does not carry it"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: the last day in the directory)"
+          },
+          "machine_key": {
+            "type": "string",
+            "description": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Verifies the hash chains of an evidence directory on the caller's own disk.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "incident_export",
+      "command": "incident export",
+      "description": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident id, or a prefix of it that no other incident shares"
+          },
+          "out": {
+            "type": "string",
+            "description": "Directory to write (default: incident-<id>)"
+          },
+          "stage": {
+            "type": "string",
+            "description": "Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)"
+          },
+          "format": {
+            "type": "string",
+            "description": "Report format with --stage: json (default), stix or pdf"
+          }
+        },
+        "required": ["id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Writes the incident's evidence directory to the caller's own disk.",
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "incident_status",
+      "command": "incident status",
+      "description": "List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Incident id, or a prefix of it that no other incident shares"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "job_cancel",
+      "command": "job cancel",
+      "description": "Cancel a running detached job",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ID"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Target machine name (optional when this config holds a ticket for the job)"
+          }
+        },
+        "required": ["job-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "job_dismiss",
+      "command": "job dismiss",
+      "description": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ids or request ids of the tickets to dismiss"
+          },
+          "stale": {
+            "type": "boolean",
+            "description": "Dismiss every pending ticket older than --older-than (default 24h)"
+          },
+          "older_than": {
+            "type": "string",
+            "description": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "job_gc",
+      "command": "job gc",
+      "description": "Remove finished jobs and their logs",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Target machine name"
+          },
+          "older_than": {
+            "type": "string",
+            "description": "Collect jobs that finished longer ago than this, in hours (default: 168)"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "job_list",
+      "command": "job list",
+      "description": "List detached jobs on a machine, newest first",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Target machine name (omit to list this config's pending job tickets)"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "Include expired and dismissed tickets"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "job_logs",
+      "command": "job logs",
+      "description": "Replay or follow a detached job's event log",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ID"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Target machine name (optional when this config holds a ticket for the job)"
+          },
+          "since_line": {
+            "type": "string",
+            "description": "Resume after this many lines (the count you already received)"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["job-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "job_status",
+      "command": "job status",
+      "description": "Show a detached job's status",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ID"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Target machine name (optional when this config holds a ticket for the job)"
+          }
+        },
+        "required": ["job-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "job_wait",
+      "command": "job status",
+      "description": "Wait up to 50 s for a job to finish. Returns the terminal job status, or the latest status with nextPollSeconds while the job still runs; call job_wait again with the same id to keep waiting.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "job-id": {
+            "type": "string",
+            "description": "Job ID"
+          },
+          "machine": {
+            "description": "Target machine name (optional when this config holds a ticket for the job)",
+            "type": "string"
+          }
+        },
+        "required": ["job-id"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "legal",
+      "command": "legal",
+      "description": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Print machine-readable JSON"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_access_show",
+      "command": "machine access show",
+      "description": "Show the access keys bound to a machine and the ranges each resolves to there",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_add",
+      "command": "machine add",
+      "description": "Register an existing machine you can reach over SSH.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "ip": {
+            "type": "string",
+            "description": "Machine IP address or hostname"
+          },
+          "user": {
+            "type": "string",
+            "description": "SSH username"
+          },
+          "port": {
+            "type": "string",
+            "description": "SSH port"
+          }
+        },
+        "required": ["name", "ip", "user"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_containers",
+      "command": "machine status",
+      "description": "List Docker containers on a machine. JSON includes full container details (labels, port_mappings, image), repository resolved to name (original in repository_guid), domain, and autoRoute ({service}.{repo}.{machine}.{baseDomain})",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Machine name"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_converge",
+      "command": "machine converge",
+      "description": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Print the plan without restarting anything"
+          },
+          "include_unknown": {
+            "type": "boolean",
+            "description": "Also restart stale repositories missing from the local config (their env secrets are unknown)"
+          },
+          "policy": {
+            "type": "string",
+            "enum": ["epoch", "always"],
+            "description": "Restart policy: epoch (layout changes only) or always (also any renet binary change)"
+          },
+          "continue_on_error": {
+            "type": "boolean",
+            "description": "Keep going after a repository fails instead of stopping the pass"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_deprovision",
+      "command": "machine deprovision",
+      "description": "Destroy a cloud-provisioned machine and remove from config",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Skip confirmation prompt"
+          },
+          "archive_repos": {
+            "type": "boolean",
+            "description": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_gpu_list",
+      "command": "machine gpu list",
+      "description": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_health",
+      "command": "machine health",
+      "description": "Check machine health for CI/CD pipelines. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_infra_cert_status",
+      "command": "machine infra cert status",
+      "description": "Show cached certificate inventory",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Reports the certificate cache files under the caller's own config directory; the executor holds no such cache.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_infra_show",
+      "command": "machine infra show",
+      "description": "Show infrastructure configuration for a machine (base domain, public IPs, ports), shared TLS settings (cert email, CF DNS token), and Cloudflare zone ID",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Machine name"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_list",
+      "command": "machine list",
+      "description": "List machines",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Search in name"
+          },
+          "sort": {
+            "type": "string",
+            "enum": ["name", "ip", "user", "port", "datastore"],
+            "description": "Sort by field"
+          },
+          "desc": {
+            "type": "boolean",
+            "description": "Sort in descending order"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_provider_add",
+      "command": "machine provider add",
+      "description": "Add a cloud provider",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Known provider source (e.g., linode/linode, hetznercloud/hcloud)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Custom OpenTofu provider source (e.g., vultr/vultr)"
+          },
+          "token_env": {
+            "type": "string",
+            "description": "Name of the environment variable holding the provider API token; the token itself never goes on the command line"
+          },
+          "region": {
+            "type": "string",
+            "description": "Default region for new machines"
+          },
+          "type": {
+            "type": "string",
+            "description": "Default instance type/size"
+          },
+          "image": {
+            "type": "string",
+            "description": "Default OS image"
+          },
+          "ssh_user": {
+            "type": "string",
+            "description": "SSH username for new VMs (default: root)"
+          },
+          "resource": {
+            "type": "string",
+            "description": "Custom: OpenTofu resource type for VM"
+          },
+          "label_attr": {
+            "type": "string",
+            "description": "Custom: attribute name for VM label"
+          },
+          "region_attr": {
+            "type": "string",
+            "description": "Custom: attribute name for region"
+          },
+          "size_attr": {
+            "type": "string",
+            "description": "Custom: attribute name for instance type"
+          },
+          "image_attr": {
+            "type": "string",
+            "description": "Custom: attribute name for OS image"
+          },
+          "ipv4_output": {
+            "type": "string",
+            "description": "Custom: output attribute for IPv4 address"
+          },
+          "ipv6_output": {
+            "type": "string",
+            "description": "Custom: output attribute for IPv6 address"
+          },
+          "ssh_key_attr": {
+            "type": "string",
+            "description": "Custom: attribute name for SSH keys"
+          },
+          "ssh_key_format": {
+            "type": "string",
+            "enum": ["inline_list", "resource_id"],
+            "description": "Custom: SSH key format (inline_list or resource_id)"
+          },
+          "ssh_key_resource": {
+            "type": "string",
+            "description": "Custom: OpenTofu resource type for SSH keys"
+          }
+        },
+        "required": ["name", "token_env"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_provider_list",
+      "command": "machine provider list",
+      "description": "List configured cloud providers for machine provisioning",
+      "inputSchema": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_provider_remove",
+      "command": "machine provider remove",
+      "description": "Remove a cloud provider configuration",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_provision",
+      "command": "machine provision",
+      "description": "Provision a new machine on a cloud provider using OpenTofu. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Cloud provider name (from machine provider add)"
+          },
+          "region": {
+            "type": "string",
+            "description": "Override default region"
+          },
+          "type": {
+            "type": "string",
+            "description": "Override default instance type"
+          },
+          "image": {
+            "type": "string",
+            "description": "Override default OS image"
+          },
+          "base_domain": {
+            "type": "string",
+            "description": "Base domain for infrastructure (e.g., example.com). Implies --infra"
+          },
+          "no_infra": {
+            "type": "boolean",
+            "description": "Skip infrastructure configuration (proxy + DNS)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name", "provider"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_prune",
+      "command": "machine prune",
+      "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "description": "Show what would be removed without making changes"
+          },
+          "orphaned_repos": {
+            "type": "boolean",
+            "description": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror."
+          },
+          "prune_unknown": {
+            "type": "boolean",
+            "description": "Delete only repos the renet .interim/state mirror cannot classify (not in local config AND no fork-marked mirror). Strictly narrower than --orphaned-repos: forks-without-config are preserved when the mirror identifies them. Pre-mirror legacy orphans and stale grands whose config entry was deleted both fall in this bucket."
+          },
+          "force_delete_mounted": {
+            "type": "boolean",
+            "description": "Override the mount-safety preflight and delete repos even if they are currently mounted or have running Docker containers. Distinct from --force (which only overrides the archive grace period). Applies to both --orphaned-repos and --prune-unknown."
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Skip confirmation prompts"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_remove",
+      "command": "machine remove",
+      "description": "Remove a machine from the config. Does not touch the machine itself.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
+          },
+          "archive_repos": {
+            "type": "boolean",
+            "description": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_repos",
+      "command": "machine status",
+      "description": "List deployed repositories on a machine. JSON includes name (resolved from GUID, original in guid field), nests each repo's containers (with domain, autoRoute, repository resolved) and services for hierarchical view",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Machine name"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_restart-services",
+      "command": "machine restart-services",
+      "description": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "include_docker": {
+            "type": "boolean",
+            "description": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Limit the restart to one repo's supervisor (needs --include-docker)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_scan-keys",
+      "command": "machine scan-keys",
+      "description": "Record the machine's SSH host keys in the local config. Required before any command can reach it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_services",
+      "command": "machine status",
+      "description": "List rediacc-managed systemd services on a machine (name, state, sub-state, restart count, memory, repository resolved to name with original in repository_guid)",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Machine name"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "machine_setup",
+      "command": "machine setup",
+      "description": "Finish onboarding a machine: install renet and prepare it to host repositories. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "datastore_path": {
+            "type": "string",
+            "description": "Datastore path on remote machine"
+          },
+          "datastore_size": {
+            "type": "string",
+            "description": "Datastore size (e.g., 95%, 100G)"
+          },
+          "no_converge": {
+            "type": "boolean",
+            "description": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)"
+          },
+          "offline": {
+            "type": "boolean",
+            "description": "Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "machine_status",
+      "command": "machine status",
+      "description": "Get connection details (ip, user, port, datastore), system info, containers (repository resolved to name, original in repository_guid, domain, autoRoute), services (repository resolved to name), repositories (name resolved from GUID, original in guid), and resource usage for a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "licenses": {
+            "type": "boolean",
+            "description": "Include repository license statuses"
+          },
+          "storage_health": {
+            "type": "boolean",
+            "description": "Show BTRFS reflink savings and (informational) image fragmentation per repository"
+          },
+          "sync_certs": {
+            "type": "boolean",
+            "description": "Also pull the ACME cert cache from the machine after querying"
+          },
+          "strict": {
+            "type": "boolean",
+            "description": "Exit non-zero (code 2) if any container has crossed the health-drift threshold"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_admin_fsck",
+      "command": "repo admin fsck",
+      "description": "Validate config refs (branches/HEAD) against the objects present on a machine; report dangling refs and orphan commits. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Target machine name"
+          },
+          "debug": {
+            "type": "boolean",
+            "description": "Enable debug output"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_cat",
+      "command": "repo cat",
+      "description": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "remote_file": {
+            "type": "string",
+            "description": "File path to read, relative to the repository mount root"
+          },
+          "max_bytes": {
+            "type": "string",
+            "description": "Maximum bytes to read and print (default 1 MiB, hard ceiling 50 MiB)"
+          },
+          "offset": {
+            "type": "string",
+            "description": "Byte offset to start reading from"
+          },
+          "head": {
+            "type": "string",
+            "description": "Print only the first N lines (cannot combine with byte range)"
+          },
+          "tail": {
+            "type": "string",
+            "description": "Print only the last N lines (cannot combine with byte range)"
+          },
+          "stat": {
+            "type": "boolean",
+            "description": "Print only size, type, and modification time; read no content"
+          },
+          "force_binary": {
+            "type": "boolean",
+            "description": "Allow reading binary (NUL-containing) content"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref", "remote_file"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_checkout",
+      "command": "repo checkout",
+      "description": "Reflink-clone an immutable commit (or branch tip) into a fresh writable working fork and point HEAD at it. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "commit-or-branch-ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Name for the new writable working fork"
+          },
+          "from": {
+            "type": "string",
+            "description": "Resolve the positional <commit-or-branch-ref> as a branch name on this working fork"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["commit-or-branch-ref", "tag"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_commit",
+      "command": "repo commit",
+      "description": "Freeze a mounted working fork into a new immutable commit (git-like). Records message/author/parent in the commit and advances the working fork tip. The commit refuses to mount; check it out to get a writable copy. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "message": {
+            "type": "string",
+            "description": "Commit message"
+          },
+          "author": {
+            "type": "string",
+            "description": "Commit author"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref", "message"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_create",
+      "command": "repo create",
+      "description": "Create a new repository. State its home once: a machine or a datastore. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Resource name"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Target machine name"
+          },
+          "datastore": {
+            "type": "string",
+            "description": "Named datastore that holds the repo (docker tiering, or the cluster form)"
+          },
+          "size": {
+            "type": "string",
+            "description": "Repository size (e.g., 10G, 100G, 1T)"
+          },
+          "no_docker": {
+            "type": "boolean",
+            "description": "Skip starting Docker daemon after creation"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["name"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_delete",
+      "command": "repo delete",
+      "description": "Delete a repository and its data. A fork's config entry moves to deletedRepositories, which frees the name and keeps the GUID restorable via 'repo admin archive restore'; a grand repo's entry, or one pushed to other machines, is kept unless --archive-config is passed. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "archive_config": {
+            "type": "boolean",
+            "description": "Move config entry to deletedRepositories for later recovery"
+          },
+          "purge_backups": {
+            "type": "boolean",
+            "description": "Also delete the repository's cloud backups now, instead of letting them expire"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_diff",
+      "command": "repo diff",
+      "description": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "base": {
+            "type": "string",
+            "description": "Repository to diff against (the base / old side); defaults to the parent of <ref>"
+          },
+          "name_only": {
+            "type": "boolean",
+            "description": "Print only changed file paths, one per line (no status letters)"
+          },
+          "stat": {
+            "type": "boolean",
+            "description": "Show per-file change magnitude (byte and block deltas) and totals"
+          },
+          "content": {
+            "type": "string",
+            "description": "Show a unified text diff for a single file (requires a file path)"
+          },
+          "fast": {
+            "type": "boolean",
+            "description": "Trust the block filter; skip content-hash confirmation (may over-report Modified)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_down",
+      "command": "repo down",
+      "description": "Stop repository Docker containers (runs Rediaccfile down). Does NOT unmount the encrypted volume by default -- repo stays mounted and can be restarted with repo_up. Use unmount=true to also close the LUKS container. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "unmount": {
+            "type": "boolean",
+            "description": "Also unmount (close the LUKS container) after stopping. Required before 'repo resize' or to fully secure the volume"
+          },
+          "checkpoint": {
+            "type": "boolean",
+            "description": "Create CRIU checkpoint before stopping (save process memory state for later restore via 'repo up')"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_exec",
+      "command": "repo exec",
+      "description": "Run a command inside a repository container. The command's own exit code is passed straight through, so this works in scripts and conditionals. Docker repositories run it through the repository's Docker daemon; kubernetes repositories run it in the repository's namespace. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "cmd": {
+            "type": "string",
+            "description": "Command to run: everything after -- is sent to the container verbatim, so CLI flags (-c, -i, -u, --debug) must come before --"
+          },
+          "container": {
+            "type": "string",
+            "description": "Container to run in (only needed when the repository runs more than one)"
+          },
+          "user": {
+            "type": "string",
+            "description": "User to run the command as"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref", "cmd"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_flows",
+      "command": "repo flows",
+      "description": "List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: now)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "repo_fork",
+      "command": "repo fork",
+      "description": "Create a near-instant CoW fork of a repository with a NEW GUID and networkId (fully independent copy). FORK IS CONSTANT-TIME regardless of repo size: BTRFS reflink clones the image so 100 GB and 1 GB repos fork in the same ~seconds, never proportional to repo size. Fork shares the parent name with a different tag (name:tag model, like Docker images). Online forking supported (parent can stay running). Fork gets new auto-route domain. After fork, deploy with repo_up. Fork-of-fork allowed (same base name, different tag). CROSS-MACHINE: fork locally first, then use repo_push to transfer fork to target machine, then repo_up on target. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "tag": {
+            "type": "string",
+            "description": "Tag for the fork (creates name:tag)"
+          },
+          "checkpoint": {
+            "type": "boolean",
+            "description": "Create CRIU checkpoint on source before forking (capture process memory state for restore on fork)"
+          },
+          "immutable": {
+            "type": "boolean",
+            "description": "Mark the fork read-only: it refuses to mount, keeping its image byte-stable forever (a frozen commit/base for cross-machine delta push)"
+          },
+          "up": {
+            "type": "boolean",
+            "description": "Mount and start services after forking (fork + mount + up in one command)"
+          },
+          "no_wait": {
+            "type": "boolean",
+            "description": "With --up: return once containers are started; health checks continue in the background (ideal for throwaway forks)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref", "tag"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_gc",
+      "command": "repo gc",
+      "description": "Reachability garbage-collection: delete immutable commit objects on a machine that no branch/HEAD reaches. Dry-run by default; pass --apply to delete. Never touches a mounted object or a working fork. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Target machine name"
+          },
+          "apply": {
+            "type": "boolean",
+            "description": "Actually delete the unreachable commits (default is a dry-run preview)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["machine"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_health",
+      "command": "repo health",
+      "description": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_list",
+      "command": "repo list",
+      "description": "List repositories on a machine. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "machine": {
+            "type": "string",
+            "description": "Target machine name"
+          },
+          "datastore": {
+            "type": "string",
+            "description": "List the repositories in this datastore (resolved to whichever machine currently holds it)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_log",
+      "command": "repo log",
+      "description": "Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_logs",
+      "command": "repo logs",
+      "description": "Show application logs from a repository's containers. Docker repositories read from the repository's own Docker daemon; kubernetes repositories read the pod logs in the repository's namespace. If the repository runs more than one container, name the one you want with --container. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "container": {
+            "type": "string",
+            "description": "Container to read (only needed when the repository runs more than one)"
+          },
+          "lines": {
+            "type": "string",
+            "description": "How many lines of history to show (default: 100)"
+          },
+          "timestamps": {
+            "type": "boolean",
+            "description": "Prefix each line with its timestamp"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "page": {
+            "description": "Page of a result longer than 100000 characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_merge",
+      "command": "repo merge",
+      "description": "Lifecycle-safe merge of a source commit/fork into a target working fork. Refuses a mounted/running target unless --force (which quiesces it first); never mutates a live mount; builds the result in a reflink clone and atomically swaps it in. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source commit or fork to merge from"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Quiesce a mounted/running target first, then merge (never mutates a live mount)"
+          },
+          "resolve": {
+            "type": "string",
+            "enum": ["ours", "theirs"],
+            "description": "Per-file conflict resolution for a three-way merge: 'ours' keeps the target's version, 'theirs' takes the source's. Omit for whole-image fast-forward (take-theirs)."
+          },
+          "base": {
+            "type": "string",
+            "description": "Common-ancestor commit GUID for a three-way merge (used with --resolve). Defaults to the source commit's parent or the target's current commit."
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref", "from"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_migrate",
+      "command": "repo migrate",
+      "description": "Move a repository to another machine with minimal downtime: a two-phase copy (bulk sync while running, then a short stop + delta sync + start on the destination) with DNS cutover. The repo keeps its identity and secrets. Use repo_push for a backup copy that stays on both machines. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Destination machine or cluster"
+          },
+          "provision": {
+            "type": "string",
+            "description": "Auto-provision target via cloud provider (e.g., hetzner, linode)"
+          },
+          "bwlimit": {
+            "type": "string",
+            "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+          },
+          "checkpoint": {
+            "type": "boolean",
+            "description": "CRIU live migration: capture and restore process memory state"
+          },
+          "delta_base": {
+            "type": "string",
+            "description": "Immutable base GUID for the cutover delta (advanced; defaults to the Phase-1 base)"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": ["auto", "physical", "shared"],
+            "description": "Block-delta strategy for the cutover: auto, physical, or shared"
+          },
+          "skip_dns": {
+            "type": "boolean",
+            "description": "Skip DNS record switching after migration"
+          },
+          "keep_source": {
+            "type": "boolean",
+            "description": "Keep the source images after a successful move (by default they are deleted; leftover copies are not addressable by any config record and reconcile flags them as strays)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref", "to"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_opens",
+      "command": "repo opens",
+      "description": "List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "since": {
+            "type": "string",
+            "description": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+          },
+          "until": {
+            "type": "string",
+            "description": "End of the window, in the same forms (default: now)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "repo_pull",
+      "command": "repo pull",
+      "description": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "from": {
+            "type": "string",
+            "description": "Source machine name (auto-detected from config)"
+          },
+          "from_machine": {
+            "type": "string",
+            "description": ""
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Force overwrite existing repository"
+          },
+          "up": {
+            "type": "boolean",
+            "description": "After pull, mount and deploy repository on this machine"
+          },
+          "bwlimit": {
+            "type": "string",
+            "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+          },
+          "delta_base": {
+            "type": "string",
+            "description": "Immutable base GUID present byte-identical on both machines; receive only changed blocks (machine source)"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": ["auto", "physical", "shared"],
+            "description": "Block-delta strategy when using a delta base: auto, physical, or shared"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_push",
+      "command": "repo push",
+      "description": "Push a repository backup to storage or directly to another machine. WARNING: machine-to-machine push copies with the SAME GUID (backup/migration). To create an independent fork on another machine, use repo_fork first, then push the fork. A pushed copy is a backup artifact: boot it with backup_restore, not with push. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "to": {
+            "type": "string",
+            "description": "Destination machine name (auto-detected from config)"
+          },
+          "to_machine": {
+            "type": "string",
+            "description": ""
+          },
+          "provision": {
+            "type": "string",
+            "description": "Auto-provision target machine via cloud provider if it doesn't exist"
+          },
+          "checkpoint": {
+            "type": "boolean",
+            "description": "Create CRIU checkpoint before backup (captures process memory state for live migration)"
+          },
+          "force": {
+            "type": "boolean",
+            "description": "Force overwrite existing backup"
+          },
+          "bwlimit": {
+            "type": "string",
+            "description": "Transfer cap: bytes per second, decimal units (12.5M = 12.5 MB/s), binary units (12Mi) or bits (100Mbps). Unset means unlimited"
+          },
+          "delta_base": {
+            "type": "string",
+            "description": "Immutable base GUID present byte-identical on both machines; transfer only changed blocks (machine target). Omit for hands-free auto-base"
+          },
+          "strategy": {
+            "type": "string",
+            "enum": ["auto", "physical", "shared"],
+            "description": "Block-delta strategy when using a delta base: auto, physical, or shared"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_replicate",
+      "command": "repo replicate",
+      "description": "Provision read replicas of a repository. Declarative: the replica count is the desired state, so re-running with the same count is a no-op. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "replicas": {
+            "type": "string",
+            "description": "Number of read replicas to create"
+          },
+          "image": {
+            "type": "string",
+            "description": "Engine image the replicas run (same engine as the primary)"
+          },
+          "port": {
+            "type": "string",
+            "description": "Port the engine serves on"
+          },
+          "pvc": {
+            "type": "string",
+            "description": "Volume name the engine mounts as its data dir (default: data)"
+          },
+          "primary_app": {
+            "type": "string",
+            "description": "The primary pod's 'app' label value the -rw Service targets (default: the repo name)"
+          },
+          "headless": {
+            "type": "boolean",
+            "description": "Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)"
+          },
+          "refresh": {
+            "type": "string",
+            "description": "Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_replicate_remove",
+      "command": "repo replicate remove",
+      "description": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_replicate_status",
+      "command": "repo replicate status",
+      "description": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "repo_secret_get",
+      "command": "repo secret get",
+      "description": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "key": {
+            "type": "string",
+            "description": "Secret key in UPPER_SNAKE_CASE (max 64 chars). Will be exposed as REDIACC_SECRET_<KEY> for env-mode or /run/secrets/<key> in containers for file-mode."
+          }
+        },
+        "required": ["ref", "key"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "repo_secret_list",
+      "command": "repo secret list",
+      "description": "List secret keys and modes (never values, never digests).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "repo_status",
+      "command": "repo status",
+      "description": "Get repository status (mount state, Docker daemon running, container count, disk usage). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "read",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_trim",
+      "command": "repo trim",
+      "description": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without a ref, trims every mounted repository on -m plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs. Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "docker": {
+            "type": "boolean",
+            "description": "Reclaim Docker space (stopped containers, dangling images, build cache); runs even while a backup snapshot is active"
+          },
+          "report_only": {
+            "type": "boolean",
+            "description": "Show discard state and reclaimable estimate without trimming"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "repo_up",
+      "command": "repo up",
+      "description": "Deploy/update a repository (runs Rediaccfile up via renet compose, starts containers). The machine is derived from the ref placement. Use no-start=true to mount/prepare only (first deploy, after backup pull, or after down --unmount) without running up(). Returns the result, or a job id when the run outlasts about 20 s (follow it with job_status or job_logs).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+          },
+          "no_start": {
+            "type": "boolean",
+            "description": "Mount and prepare the repository without running its up() steps (folds the retired 'repo mount'; LUKS open and, for cluster repos, PV generation)."
+          },
+          "skip_checkpoint": {
+            "type": "boolean",
+            "description": "Skip CRIU checkpoint restore even if checkpoint data exists (force fresh start)"
+          },
+          "tls": {
+            "type": "boolean",
+            "description": "Request dedicated TLS cert for this repo (forks use shared machine cert by default)"
+          },
+          "background": {
+            "description": "Start the job and return its job id at once instead of waiting for it.",
+            "type": "boolean"
+          },
+          "confirm": {
+            "description": "Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.",
+            "type": "string"
+          }
+        },
+        "required": ["ref"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": true,
+        "readOnlyHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "proxy",
+      "localBasis": null,
+      "localReason": null,
+      "timeoutClass": "write",
+      "attachWindow": true
+    },
+    {
+      "name": "server_status",
+      "command": "server status",
+      "description": "Show the health, tier, certificate and image of an installed server",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "string",
+            "description": "Public domain of the installed server"
+          },
+          "machine": {
+            "type": "string",
+            "description": "Machine the server runs on, when this device holds no install record for the domain"
+          },
+          "repo": {
+            "type": "string",
+            "description": "Repository the server runs in (default: elite)"
+          }
+        },
+        "required": ["domain"],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Finds the server through the caller's own local install record.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    },
+    {
+      "name": "version",
+      "command": "version",
+      "description": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (server unreachable)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "json": {
+            "type": "boolean",
+            "description": "Print machine-readable JSON"
+          }
+        },
+        "additionalProperties": false
+      },
+      "annotations": {
+        "destructiveHint": false,
+        "readOnlyHint": true,
+        "idempotentHint": true,
+        "openWorldHint": true
+      },
+      "surface": "local",
+      "localBasis": "caller-disk",
+      "localReason": "Reports the CLI build installed on the caller's own machine and its update channel.",
+      "timeoutClass": "read",
+      "attachWindow": false
+    }
+  ],
+  "contractErrorCodes": [
+    "ACCESS_FILE_CHANGED",
+    "ACCESS_KEY_CONFLICT",
+    "ACCESS_KEY_DUPLICATE_BLOB",
+    "ACCESS_LOCKOUT",
+    "AI_TASK_EXISTS",
+    "AI_TASK_FAILED",
+    "AI_TASK_LIMIT",
+    "AMBIGUOUS",
+    "AUTH_REQUIRED",
+    "BUSY",
+    "CONFIRMATION_REQUIRED",
+    "DETACHED",
+    "EGRESS_UNREACHABLE",
+    "EXECUTION_ERROR",
+    "EXECUTOR_FAILED",
+    "EXECUTOR_SESSION_UNKNOWN",
+    "FEEDBACK_DAILY_LIMIT",
+    "FREE_LICENSE_NO_BACKUP",
+    "GENERAL_ERROR",
+    "GRAND_REPO_DENIED",
+    "HEALTH_GATE_FAILED",
+    "INFRA_FAILED",
+    "INVALID_REQUEST",
+    "LICENSE_REQUIRED",
+    "LOCAL_EXECUTION_FAILED",
+    "NETWORK_ERROR",
+    "NOT_FOUND",
+    "PERMISSION_DENIED",
+    "PRECONDITION_MISMATCH",
+    "RENET_BUILD_UNVERIFIED",
+    "RENET_DEV_ON_MACHINE",
+    "RENET_DOWNGRADE_REFUSED",
+    "RENET_NOT_ON_MACHINE",
+    "RENET_UPLOAD_REFUSED_IN_EXECUTOR",
+    "REPO_LICENSE_DELEGATION_CERT_EXPIRED",
+    "REPO_LICENSE_DELEGATION_CERT_INVALID",
+    "REPO_LICENSE_IDENTITY_MISMATCH",
+    "REPO_LICENSE_INTEGRITY_ERROR",
+    "REPO_LICENSE_ISSUANCE_REQUIRED",
+    "REPO_LICENSE_MACHINE_MISMATCH",
+    "REPO_LICENSE_REFRESH_REQUIRED",
+    "REPO_LICENSE_REPOSITORY_MISMATCH",
+    "SERVER_ERROR",
+    "SSH_AUTH_FAILED",
+    "SSH_HANDSHAKE_TIMEOUT",
+    "SSH_REFUSED",
+    "STATE_MISMATCH",
+    "TIMEOUT",
+    "UNCAUGHT_EXCEPTION",
+    "VALIDATION_ERROR"
+  ]
+}

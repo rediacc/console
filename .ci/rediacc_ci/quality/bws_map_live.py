@@ -23,6 +23,15 @@ NEVER A VALUE. `bws secret list` returns each secret's decrypted value beside it
 WHERE IT RUNS, AND WHY NOT IN CI. The token is present in CI (`secrets.BWS_ACCESS_TOKEN`, which the bws-secrets action hands to bitwarden/sm-action), but the `bws` CLI is not: sm-action fetches by UUID through its own client and no CI job installs the CLI. A CI step would therefore SKIP on every run, a step that cannot fail. So the gate is `local-only` and runs in `npm run ci` and `npm run ci:quick` on a developer machine, where `bws_env.read_token` finds `~/.config/rediacc/bws-access-token` and the CLI sits on PATH or at `~/.local/bin/bws`. That puts it in the pre-push receipt of every push made from such a machine.
 
 NO TOKEN OR NO CLI IS CANNOT RUN, NOT GREEN. The operator asked for it to be advisory without a token, and the runner already has the shape for that: exit 77 is `blocked` in `scripts/ci-runner/pool.ts`, which does not redden the run or the push and IS counted in the footer and recorded in the receipt. Exit 0 would record "the live store agrees" for a comparison that never happened. A token that IS present and a listing that fails (expired credential, rate limit, network) is a FAILURE: the comparison was possible and did not happen, and the rotation notice the refresh prints says which.
+
+---- gate ----
+kind: local-only
+blocker: BLOCKER: no CI job has the bws CLI. The quality-security job holds the BWS token, but bitwarden/sm-action fetches by UUID through its own client and nothing installs the CLI, so a step would print SKIP on every run and could never fail. Locally the token file and the CLI exist, and the gate exits 77 (blocked, counted in the receipt) where they do not.
+needs: none
+why: a secret deleted from Bitwarden lingers in .ci/config/bws-secret-map.json until a
+     job that requests it fails at run time, and check:ci-bws-map is offline by design.
+     This compares the map's names with the live store, by name and UUID, never a value.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -154,7 +163,7 @@ def run(
             "bws map live: SKIP, CANNOT RUN here: missing %s. The %d mapped name(s) were NOT compared "
             "with the live store. Install the token at %s (mode 0600) and bws as "
             ".devcontainer/Dockerfile does (or at ~/.local/bin/bws), then rerun "
-            "`npm run check:ci-bws-map-live`."
+            "`PYTHONPATH=.ci python3 -m rediacc_ci.quality.bws_map_live`."
             % (" and ".join(missing), len(map_ids), bws_env.token_path(environ))
         )
         return CANNOT_RUN
@@ -395,3 +404,10 @@ def selftest() -> bool:
 
 
 __all__ = ["compare", "find_bws", "load_refresh", "main", "run", "selftest"]
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_bws_map_live.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

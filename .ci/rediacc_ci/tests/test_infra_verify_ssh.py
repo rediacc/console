@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/infra/verify-ssh.sh` and the port over one stubbed PATH and compared four things per case: exit code, stdout, stderr and the call SEQUENCE.
 
-The K=5 ledger `.ci/shadow/w7p6-verify-ssh.observations.jsonl` recorded that comparison over five distinct trees, against a disposable scratch git repository outside this checkout, since `shadow-gate.ts --record` refuses a dirty tree and this checkout never is.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, against a disposable scratch git repository outside this checkout, since `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree and this checkout never is.
 
 Every case now compares against `goldens/verify-ssh/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the twin's blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 

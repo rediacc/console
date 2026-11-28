@@ -46,6 +46,13 @@ BOTH `\\u2014` CHARACTERS THE TWIN EMITS ARE WRITTEN AS ESCAPES HERE. The twin's
 because editing the twin is what invariant 5 forbids.
 
 THE ANTI-VACUITY REFUSAL IS ALREADY THERE, and it is the reason this gate is worth porting carefully: zero compose vars is a FAILURE, not a pass, and the success line prints the count so a reader can see the day it collapses. Both are carried unchanged.
+
+---- gate ----
+lane: quality-static
+step: Compose env
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import ast
@@ -413,4 +420,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_compose_env.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -98,7 +98,7 @@ def _read_text(root, rel):
         return ""
 
 
-def first_box(root, rel, reader=None):
+def first_box(root, rel, reader=None, problems=None):
     """(sig, body) of the FIRST open box in one plan, or None. One file read.
 
     The signature is `wl_planrec.box_sig`, which is what the committed ledger, the compaction record and the investigation row all speak. `wl_planfid.TASK_MATCH` and `wl_planfile.match_item`'s token overlap are deliberately NOT used: fuzzy matching has no business in a blocking path, and an exact 8-hex signature is what makes the printed recipe copy-pasteable.
@@ -108,7 +108,9 @@ def first_box(root, rel, reader=None):
         return None
     try:
         boxes = R.open_boxes(text)
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("%s: %s: %s" % (rel, type(exc).__name__, exc))
         return None
     if not boxes:
         return None
@@ -128,7 +130,7 @@ def plan_held(text):
     return found is not None and found.group(1).lower() in OFF_THE_CLOCK
 
 
-def plan_rows(root, scope, reader=None):
+def plan_rows(root, scope, reader=None, problems=None):
     """[(rel, open_count, first_box)] for each plan in `scope`, in scope order, keeping only plans with an open box that can be worked before the merge (`after_merge` boxes are left out of both the count and the choice). `first_box` is (sig, body) or None when the parser resolves none in the plan's own text."""
     out = []
     for rel in scope or ():
@@ -137,7 +139,9 @@ def plan_rows(root, scope, reader=None):
             continue
         try:
             boxes = R.open_boxes(text) if text else []
-        except Exception:
+        except Exception as exc:
+            if problems is not None:
+                problems.append("%s: %s: %s" % (rel, type(exc).__name__, exc))
             boxes = []
         workable = [b for b in boxes if not after_merge(b[2])]
         if workable:
@@ -244,20 +248,27 @@ def gating_deferral(items, session_id, owned_by_me, holds):
 def evaluate(root, scope, session_id, live=False, read_text=None):
     """(state, text, detail) for one stop: `block` while a plan of `scope` has an open box and `live` is False, `advisory` for the same with a background task of this session running, `silent` otherwise.
 
-    `scope` is the PR's plan set, prerequisites first (`LoopState.plans`); () is silent. A plan whose text resolves no open box is skipped, so the named box is the first one the parser can see. Every read failure degrades to silence with a reason in `detail`, never to a block on numbers this could not read.
+    `scope` is the PR's plan set, prerequisites first (`LoopState.plans`); () is silent. A plan whose text resolves no open box is skipped, so the named box is the first one the parser can see. A plan that fails to read is skipped and named, never the cause of a block: when none of the set parses the answer is ADVISORY with the unparsed text (and `detail['reason']`), when some do the text rides at the end of the readable plans' own answer, and SILENT is only ever returned when nothing failed.
     """
     scope = tuple(scope or ())
     detail: dict = {"reason": "", "rows": []}
     if not scope:
         detail["reason"] = "no PR plan set in scope"
         return SILENT, "", detail
-    rows = plan_rows(root, scope, read_text)
+    problems: list[str] = []
+    rows = plan_rows(root, scope, read_text, problems)
     detail["rows"] = [(rel, n) for rel, n, _f in rows]
+    unparsed = (
+        "PLAN ENFORCE: the open boxes of %d plan(s) could not be parsed, so they are skipped and "
+        "whether they hold open work is unknown: %s." % (len(problems), "; ".join(problems))
+        if problems
+        else ""
+    )
     if not rows:
+        if unparsed:
+            detail["reason"] = unparsed
+            return ADVISORY, unparsed, detail
         detail["reason"] = "every plan of the PR's set is ticked"
         return SILENT, "", detail
-    return (
-        (ADVISORY if live else BLOCK),
-        render(rows, scope, session_id, dependency_box(root, rows)),
-        detail,
-    )
+    body = render(rows, scope, session_id, dependency_box(root, rows))
+    return (ADVISORY if live else BLOCK), body + ("\n" + unparsed if unparsed else ""), detail

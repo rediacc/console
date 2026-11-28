@@ -182,49 +182,20 @@ function coordinator(
 }
 
 const liveCount = () => ({ total: 3, heavy: 1, cap: 25, heavyCap: 5, extra: 'org-a' });
-const coordinatorDown = () => {
-  throw new Error('coordinator down');
-};
 
-describe('/v1/ready executors (box L0 drills)', () => {
-  it('adds the coordinator count, only its four integers, from the one capacity:v2 instance', async () => {
-    const names: string[] = [];
-    const capacity = coordinator(liveCount, names);
-    const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
-    expect(await ready(e)).toEqual({
-      status: 200,
-      body: {
-        ready: true,
-        workerVersion: VERSION_ID,
-        executors: { total: 3, heavy: 1, cap: 25, heavyCap: 5 },
-      },
+describe('/v1/ready occupancy (D52, EH8)', () => {
+  it('never carries executors, and never asks the coordinator, even with the binding present', async () => {
+    let counts = 0;
+    const capacity = coordinator(() => {
+      counts += 1;
+      return liveCount();
     });
-    expect(names).toEqual(['capacity:v2']);
-  });
-
-  it('leaves executors out, and stays ready, when the coordinator cannot answer', async () => {
-    const capacity = coordinator(coordinatorDown);
     const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
     expect(await ready(e)).toEqual({
       status: 200,
       body: { ready: true, workerVersion: VERSION_ID },
     });
-  });
-
-  it('leaves executors out, and still answers ready, when the coordinator stalls instead of failing', async () => {
-    vi.useFakeTimers();
-    try {
-      const capacity = coordinator(() => new Promise(() => undefined));
-      const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
-      const pending = readiness(e);
-      await vi.advanceTimersByTimeAsync(COORDINATOR_TIMEOUT_MS + 1);
-      expect(await pending).toEqual({
-        status: 200,
-        body: { ready: true, workerVersion: VERSION_ID },
-      });
-    } finally {
-      vi.useRealTimers();
-    }
+    expect(counts).toBe(0);
   });
 
   it('answers not ready, instead of hanging, when the issuer probe or server-info stalls', async () => {
@@ -255,28 +226,5 @@ describe('/v1/ready executors (box L0 drills)', () => {
     } finally {
       vi.useRealTimers();
     }
-  });
-
-  it('asks the coordinator nothing on a not-ready answer, and at most once per cache window', async () => {
-    let counts = 0;
-    const counting = () => {
-      counts += 1;
-      return liveCount();
-    };
-    const capacity = coordinator(counting);
-    const failing = issuer(() => Promise.reject(new Error('down')));
-    const down = env(failing, account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
-    expect((await ready(down)).status).toBe(503);
-    expect(counts).toBe(0);
-
-    resetReadyCache();
-    let clock = 1_000;
-    const now = () => clock;
-    const e = env(issuer(probeOk), account(), { ...metadata, EXECUTOR_CAPACITY: capacity });
-    const polls = Array.from({ length: 10 }, () => e);
-    await Promise.all(polls.map((poll) => readiness(poll, now)));
-    clock += READY_CACHE_MS - 1;
-    await readiness(e, now);
-    expect(counts).toBe(1);
   });
 });

@@ -1,6 +1,6 @@
 """wl_schedred: a red scheduled workflow on main reaches an agent session, and exactly one session owns it (agent/plans/PLAN-scheduled-red-detector.md, Part A).
 
-WHY THIS EXISTS. Console CI's nightly went red five nights running and Housekeeping four, and no agent saw either: the rolling `nightly-red` issue and the budget-check comment reach a human, the CI-read guards refuse every raw read of the runs list, and `ci-trace.py` listed only Console CI runs. The red held the stable promotion (the promote-stable soak counts only scheduled runs) while every session stopped clean.
+WHY THIS EXISTS. Console CI's nightly went red five nights running and Housekeeping four, and no agent saw either: the mail a human gets reaches nobody else, the CI-read guards refuse every raw read of the runs list, and `ci-trace.py` listed only Console CI runs. The red held the stable promotion (the promote-stable soak counts only scheduled runs) while every session stopped clean.
 
 WHAT IT READS, AND HOW OFTEN.
 - `scheduled_workflows(root)` discovers the workflows from `.github/workflows/*.y*ml`: any uncommented `schedule:` key with `cron:` entries. Never a hardcoded list, so a sixth scheduled workflow is watched the day it lands.
@@ -54,7 +54,6 @@ _OPEN_STATES = (" ", ">", "?")
 # What a red blocks, by workflow stem: the weekly fleet run is the test evidence the stable promotion waives its soak on; every other scheduled workflow is main's own hygiene.
 _BLOCKS = {
     "ci": "the weekly fleet run (the 5-OS stock-image fleet and the full union), which is the test evidence the stable promotion waives its soak on",
-    "ci-drift": "the stable promotion's daily trigger and the operator's drift mail",
 }
 _BLOCKS_DEFAULT = "main hygiene (this workflow's scheduled job is not running clean)"
 
@@ -268,8 +267,25 @@ def _registered_files(root, owner, name):
     return files
 
 
+def undeclared_rows(by_file, declared_files):
+    """One informational row per workflow file that has a scheduled run on main and no uncommented `schedule:` in the tree: its newest scheduled run, `undeclared: True`, never red. A schedule deleted from the tree leaves its old runs on main until they age off the page, so this is how the absence is read through the sanctioned verb (`ci-trace.py --scheduled --json`, box L2 of PLAN-retire-nightlies-and-mentions) instead of a raw runs read. `by_file` maps a workflow file name to its scheduled runs."""
+    out = []
+    for file in sorted(by_file):
+        runs = by_file[file]
+        if not file or file in declared_files or not runs:
+            continue
+        newest = _newest(runs)
+        stem = pathlib.PurePosixPath(file).stem
+        wf = {"stem": stem, "file": file, "name": newest.get("name") or stem, "crons": []}
+        row = _run_row(wf, newest if newest.get("status") == "completed" else None, False)
+        row["undeclared"] = True
+        row["red"] = False
+        out.append(row)
+    return out
+
+
 def _fetch(root, owner, name, workflows, jobs_cache):
-    """(rows, error, jobs_cache). An error string means the verdict could not be read at all."""
+    """(rows, error, jobs_cache, undeclared). An error string means the verdict could not be read at all."""
     data, err = wl_gh.call(
         [
             "api",
@@ -278,7 +294,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
         cwd=root,
     )
     if err or not isinstance(data, dict):
-        return [], err or "no runs document", jobs_cache
+        return [], err or "no runs document", jobs_cache, []
     by_file: dict[str, list[dict]] = {}
     for run in data.get("workflow_runs") or []:
         if run.get("event") not in (None, "schedule"):
@@ -313,7 +329,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                 rows.append(row)
                 continue
             if ferr:
-                return [], ferr, jobs_cache
+                return [], ferr, jobs_cache, []
             done = [
                 r
                 for r in ((more or {}).get("workflow_runs") or [])
@@ -341,7 +357,7 @@ def _fetch(root, owner, name, workflows, jobs_cache):
                     new_jobs[key] = failed
         rows.append(row)
     # Only the jobs of runs that are still somebody's newest red are kept: the map cannot grow without bound.
-    return rows, "", new_jobs
+    return rows, "", new_jobs, undeclared_rows(by_file, {wf["file"] for wf in workflows})
 
 
 def push_workflow(root):
@@ -373,8 +389,12 @@ def _diagnosis(root, owner, name, run_id):
             "%s/%s" % (owner, name), cwd=str(root), timeout=20, attempts=2, pause=2
         )
         d = diag.diagnose(fetch, run_id)
-    except Exception:
-        return {}, False
+    except Exception as exc:
+        # Not cached (ok False), so the next read tries again; the red's line says why its cause is missing meanwhile.
+        return {
+            "cause": "the diagnosis could not be read (%s: %s); --why reads it"
+            % (type(exc).__name__, str(exc)[:120])
+        }, False
     if d.get("verdict") in (None, "unknown"):
         return {}, False
     ff = d.get("first_failure") or {}
@@ -485,8 +505,8 @@ def refresh(root, worklist, force=False, now=None):
         jobs_cache = (cached or {}).get("jobs") or {}
         if not isinstance(jobs_cache, dict):
             jobs_cache = {}
-        rows, err, jobs = (
-            _fetch(root, owner, name, workflows, jobs_cache) if workflows else ([], "", {})
+        rows, err, jobs, undeclared = (
+            _fetch(root, owner, name, workflows, jobs_cache) if workflows else ([], "", {}, [])
         )
         if err:
             doc = {
@@ -495,10 +515,18 @@ def refresh(root, worklist, force=False, now=None):
                 "at": now,
                 # The last known rows ride along for display only; nothing blocks on an unreadable answer.
                 "workflows": (cached or {}).get("workflows") or [],
+                "undeclared": (cached or {}).get("undeclared") or [],
                 "jobs": jobs_cache,
             }
         else:
-            doc = {"state": "ok", "error": "", "at": now, "workflows": rows, "jobs": jobs}
+            doc = {
+                "state": "ok",
+                "error": "",
+                "at": now,
+                "workflows": rows,
+                "undeclared": undeclared,
+                "jobs": jobs,
+            }
         # The push read is independent of the scheduled one: either can be unreadable while the other answers.
         doc["push"], doc["push_error"], doc["push_diag"] = None, "", {}
         if pushwf:
@@ -653,6 +681,7 @@ def _claim_stale(worklist, doc, run_id, now):
 
         limit = S.SESSION_BRIEF_STALE_MIN * 60.0
         when, _t = S.read_briefs(worklist).get(str(doc["sid8"]), (None, ""))
+    # swallowed-failure-ok: False keeps the claim with the session that holds it, the conservative answer when its brief cannot be read; taking a live peer's claim on a guess would race two sessions onto one red.
     except Exception:
         return False
     if when is not None:
@@ -818,13 +847,198 @@ def assess(worklist, items, session_id, doc, now=None):
     return out
 
 
+# --------------------------------------------------------------------------- freshness
+# Did GitHub's scheduler FIRE each scheduled workflow on main recently enough (operator ruling 2026-11-21, worklist #5eb28959)? The red verdict above judges the newest run, so a scheduler that stops firing leaves the last verdict standing: rediacc/console ran no workflow at all from 2026-10-30T13:14Z to 2026-11-18T15:20Z and nothing said so. The judgement, the reads and the
+# advisory text are `rediacc_ci.ops.sched_freshness` (pure; this module hands it `wl_gh.call`); discovery and the shared cache live here. Its own cache, `<worklist>.schedfresh`, under its own TTL, so the red read's call budget and its tests are untouched.
+
+# An hour: staleness is measured in days, so a fresher read buys nothing.
+FRESH_TTL_S = 3600
+FRESH_REF = "origin/main"
+_DISPATCH_KEY = re.compile(r"\bworkflow_dispatch\b")
+
+
+def freshness_path(worklist):
+    return pathlib.Path("%s.schedfresh" % worklist)
+
+
+def _git_out(root, args, stdin=None):
+    """stdout of `git -C root <args>` (bytes), or None when git fails. Read-only verbs only. A query C.git_cacheable admits is answered from the HEAD-keyed cache."""
+    import subprocess
+
+    if stdin is None and C.git_cacheable(args):
+        got = C.git_run(root, args, timeout=20)
+        return got[1] if got is not None and got[0] == 0 else None
+
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), *args],
+            input=stdin,
+            capture_output=True,
+            timeout=20,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return proc.stdout if proc.returncode == 0 else None
+
+
+def _wf_entry(path_name, text):
+    name, crons = _parse_workflow(text)
+    if not crons:
+        return None
+    stem = path_name.rsplit(".", 1)[0]
+    dispatchable = any(_DISPATCH_KEY.search(_strip_comment(ln)) for ln in text.splitlines())
+    return {
+        "stem": stem,
+        "file": path_name,
+        "name": name or stem,
+        "crons": crons,
+        "dispatchable": dispatchable,
+    }
+
+
+def main_scheduled_workflows(root, ref=FRESH_REF):
+    """([{stem, file, name, crons, dispatchable}], source) for the scheduled workflows GitHub actually schedules: the files on `ref` (main), read with two git calls (`ls-tree`, then one `cat-file --batch`). With no such ref the working tree stands in and `source` says so, because a branch can rename a workflow or move its cron (2026-11-21: eight renames and Console CI daily -> weekly on the live branch)."""
+    listing = _git_out(root, ["ls-tree", ref, "--", str(WORKFLOW_DIR) + "/"])
+    if listing is None:
+        out = []
+        for w in scheduled_workflows(root):
+            try:
+                text = (pathlib.Path(root) / WORKFLOW_DIR / w["file"]).read_text(
+                    encoding="utf-8", errors="replace"
+                )
+            except OSError:
+                continue
+            entry = _wf_entry(w["file"], text)
+            if entry:
+                out.append(entry)
+        return out, "working tree (no %s ref)" % ref
+    blobs = []
+    for line in listing.decode("utf-8", "replace").splitlines():
+        meta, _, path = line.partition("\t")
+        parts = meta.split()
+        name = path.rsplit("/", 1)[-1]
+        if len(parts) == 3 and parts[1] == "blob" and name.endswith((".yml", ".yaml")):
+            blobs.append((name, parts[2]))
+    if not blobs:
+        return [], ref
+    raw = _git_out(
+        root, ["cat-file", "--batch"], stdin="".join(s + "\n" for _n, s in blobs).encode()
+    )
+    if raw is None:
+        return [], "%s (cat-file failed)" % ref
+    out = []
+    pos = 0
+    # `cat-file --batch` answers in input order: `<sha> blob <size>` then the bytes and a newline, or `<sha> missing`.
+    for name, _sha in blobs:
+        nl = raw.index(b"\n", pos)
+        header = raw[pos:nl].split()
+        if len(header) != 3 or header[1] != b"blob":
+            pos = nl + 1
+            continue
+        size = int(header[2])
+        text = raw[nl + 1 : nl + 1 + size].decode("utf-8", "replace")
+        pos = nl + 1 + size + 1
+        entry = _wf_entry(name, text)
+        if entry:
+            out.append(entry)
+    out.sort(key=lambda w: w["file"])
+    return out, ref
+
+
+def _freshness_module():
+    return wl_gh.import_ci("rediacc_ci.ops.sched_freshness")
+
+
+def read_freshness(worklist):
+    """The cached freshness document, or None. Zero network, by contract."""
+    doc = wl_gh.cache_load(freshness_path(worklist))
+    if doc is None or not isinstance(doc.get("rows"), list):
+        return None
+    return doc
+
+
+def refresh_freshness(root, worklist, force=False, now=None):
+    """The freshness document, from its cache inside FRESH_TTL_S (an unreadable one inside ERROR_TTL_S), else read from GitHub and cached. `unset` with no origin and an empty `ok` with no scheduled workflow on main, both with zero calls. Never raises: a failure is `unreadable`, never fresh."""
+    now = time.time() if now is None else now
+    root = pathlib.Path(root)
+    try:
+        owner, name = wl_ci.repo_slug(root)
+        if not owner:
+            return {"state": "unset", "error": "", "at": now, "rows": []}
+        workflows, source = main_scheduled_workflows(root)
+        if not workflows:
+            return {"state": "ok", "error": "", "at": now, "rows": [], "source": source}
+        cached = read_freshness(worklist)
+        if cached and not force and wl_gh.cache_fresh(cached, FRESH_TTL_S, ERROR_TTL_S, now):
+            return cached
+        fresh_mod = _freshness_module()
+        doc = fresh_mod.read(
+            lambda argv: wl_gh.call(argv, cwd=root),
+            "%s/%s" % (owner, name),
+            workflows,
+            now,
+        )
+        doc["source"] = source
+        doc["discovered"] = len(workflows)
+        wl_gh.cache_write(freshness_path(worklist), doc)
+        return doc
+    except Exception as exc:
+        return {
+            "state": "unreadable",
+            "error": "%s: %s" % (type(exc).__name__, str(exc)[:160]),
+            "at": now,
+            "rows": [],
+        }
+
+
+def freshness_advisory(doc, me8="<me>"):
+    """The session-addressed advisory for a freshness document ("" when nothing is owed). Never raises."""
+    try:
+        if not doc or doc.get("state") not in ("ok", "unreadable"):
+            return ""
+        return _freshness_module().advisory(doc, me8)
+    except Exception as exc:
+        return (
+            "SCHEDULED-RUN FRESHNESS: the advisory could not be rendered (%s: %s); read it by hand: python3 .claude/hooks/stop/wl_schedred.py --freshness"
+            % (
+                type(exc).__name__,
+                str(exc)[:160],
+            )
+        )
+
+
 # --------------------------------------------------------------------------- SessionStart
 
 
 def session_start_line(worklist):
-    """One line per red from the cache alone ("" when there is nothing to say). Zero network calls, by contract."""
+    """One line per red, then the freshness advisory, from the caches alone ("" when there is nothing to say). Zero network calls, by contract."""
+    parts = [_red_session_start_line(worklist)]
+    try:
+        fdoc = read_freshness(worklist)
+        if fdoc:
+            age_s = max(0.0, time.time() - float(fdoc.get("at") or 0))
+            text = freshness_advisory(fdoc)
+            if text and age_s > SESSION_START_STALE_S:
+                text += "\n  [freshness cache %d h old, stale]" % (age_s // 3600)
+            parts.append(text)
+    except Exception as exc:
+        parts.append("[the freshness cache could not be read (%s: %s)]" % (type(exc).__name__, exc))
+    return "\n".join(p for p in parts if p)
+
+
+def _red_session_start_line(worklist):
     try:
         doc = read_cache(worklist)
+    except Exception as exc:
+        return (
+            "[the scheduled-red cache could not be read (%s: %s), so a red run may be missing here]"
+            % (
+                type(exc).__name__,
+                exc,
+            )
+        )
+    try:
         if not doc:
             return ""
         rows = [w for w in doc.get("workflows") or [] if w.get("red") and w.get("run_id")]
@@ -833,14 +1047,19 @@ def session_start_line(worklist):
             rows.append(push)
         if not rows:
             return ""
+        unread = ""
+        unread_reason = ""
         try:
             import wl_store as S
 
             items = S.load(pathlib.Path(worklist), sync=False).items
-        except Exception:
+        except Exception as exc:
+            # "untracked" below would be a guess: the line says the worklist went unread.
             items = []
+            unread_reason = "%s: %s" % (type(exc).__name__, exc)
+            unread = " [the worklist could not be read (%s), so tracked is unknown]" % unread_reason
         age_s = max(0.0, time.time() - float(doc.get("at") or 0))
-        stale = (
+        stale = unread + (
             " [cache %d h old, stale]" % (age_s // 3600) if age_s > SESSION_START_STALE_S else ""
         )
         import worklist_messages as M
@@ -856,10 +1075,85 @@ def session_start_line(worklist):
                 )
                 % dict(
                     fields(row),
-                    tracked="tracked by #%s" % tracked[0]["id"] if tracked else "untracked",
+                    tracked=(
+                        "tracking unknown (worklist unreadable: %s)" % unread_reason
+                        if unread_reason
+                        else "tracked by #%s" % tracked[0]["id"]
+                        if tracked
+                        else "untracked"
+                    ),
                     stale=stale,
                 )
             )
         return "\n".join(lines)
-    except Exception:
-        return ""
+    except Exception as exc:
+        return (
+            "[the scheduled-red line could not be built from the cache (%s: %s), so a red run may be missing here]"
+            % (
+                type(exc).__name__,
+                exc,
+            )
+        )
+
+
+# --------------------------------------------------------------------------- by hand
+
+
+def _main(argv):
+    """`python3 .claude/hooks/stop/wl_schedred.py --freshness [--json]`: a forced freshness read of the repo this file sits in, refreshing the shared cache. Exit 0 every scheduled workflow fresh or waiting, 1 any actionable verdict, 2 unreadable, unset or a blind row."""
+    import argparse
+    import sys
+
+    ap = argparse.ArgumentParser(prog="wl_schedred.py")
+    ap.add_argument("--freshness", action="store_true", required=True)
+    ap.add_argument("--json", action="store_true")
+    args = ap.parse_args(argv)
+    root = pathlib.Path(__file__).resolve().parents[3]
+    doc = refresh_freshness(root, C.worklist_for(root), force=True)
+    fresh_mod = _freshness_module()
+    rows = doc.get("rows") or []
+    if args.json:
+        print(json.dumps(doc, indent=2, sort_keys=True))
+    else:
+        print(
+            "Scheduled-run freshness on %s (%s): %d scheduled workflows discovered, %d judged, state %s"
+            % (
+                doc.get("slug") or "?",
+                doc.get("source") or "?",
+                int(doc.get("discovered") or 0),
+                len(rows),
+                doc.get("state"),
+            )
+        )
+        for r in rows:
+            last = r.get("last_run_at") or "none"
+            print(
+                "  %-12s %s (%s)  cron %s  last scheduled run %s  window %s"
+                % (
+                    r.get("verdict", "?").upper(),
+                    r.get("name"),
+                    r.get("file"),
+                    ", ".join(r.get("crons") or []),
+                    last,
+                    fresh_mod.age_text(r.get("window_s") or 0) if r.get("window_s") else "?",
+                )
+            )
+        text = freshness_advisory(doc)
+        if text:
+            print()
+            print(text)
+    if doc.get("state") != "ok":
+        if not args.json:
+            print("unreadable: %s" % (doc.get("error") or doc.get("state")), file=sys.stderr)
+        return 2
+    if fresh_mod.actionable(doc):
+        return 1
+    if not rows or any(r.get("verdict") == "unreadable" for r in rows):
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(_main(sys.argv[1:]))

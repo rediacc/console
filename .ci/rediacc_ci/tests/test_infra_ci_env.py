@@ -31,7 +31,7 @@ THREE TWIN BEHAVIOURS PINNED BY NAME, all measured against the live bash on 2026
     the openssl case: a PLAIN assignment propagates, an `export VAR=$(...)`
     does not.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-env.observations.jsonl`, recorded in a disposable scratch git repository outside this checkout. The two callers' cutover from sourcing the bash to calling this module is licensed separately by `w7p5c-ci-start-elite-cutover` and `w7p5c-ci-start-account-cutover`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded in a disposable scratch git repository outside this checkout. The two callers' cutover from sourcing the bash to calling this module is licensed separately by `w7p5c-ci-start-elite-cutover` and `w7p5c-ci-start-account-cutover`.
 """
 
 from __future__ import annotations
@@ -405,7 +405,7 @@ def test_nothing_in_the_tree_sources_or_runs_the_twin_any_more() -> None:
     for hit in hits:
         path, _, rest = hit.partition(":")
         _lineno, _, text = rest.partition(":")
-        if path.startswith((".ci/shadow/", "agent/", "docs/")) or path.endswith(".md"):
+        if path.startswith(("agent/", "docs/")) or path.endswith(".md"):
             continue
         stripped = text.strip()
         if stripped.startswith(("#", "//", "*", '"', "'")):

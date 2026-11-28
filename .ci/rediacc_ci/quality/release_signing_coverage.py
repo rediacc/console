@@ -1,6 +1,6 @@
 """Every release package format is SIGNED, or is declared unsigned on purpose.
 
-Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-signing-coverage.observations.jsonl` asserted equivalence over five distinct trees. It read the bash builder `build-linux-pkg.sh` by `sed` and `awk`; that builder is retired too (PLAN-retire-bash-oracles B3), and the gate now reads its Python successor, `rediacc_ci.build.build_linux_pkg`, through `ast`: the same two questions, asked of the module that actually runs.
+Ported from `.ci/scripts/quality/check-release-signing-coverage.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. It read the bash builder `build-linux-pkg.sh` by `sed` and `awk`; that builder is retired too (PLAN-retire-bash-oracles B3), and the gate now reads its Python successor, `rediacc_ci.build.build_linux_pkg`, through `ast`: the same two questions, asked of the module that actually runs.
 
 WHY THE TWIN EXISTS, carried over from its own header because the incident IS the specification. On 2026-09-05 a deb shipped UNSIGNED and green: the signing
 setup was guarded by `[[ -n "${RELEASE_GPG_PRIVATE_KEY:-}" ]]`, the org secret
@@ -40,6 +40,13 @@ THE ROOT IS RESOLVED THE TWIN'S WAY, AND `$REDIACC_CI_ROOT` IS NOT CONSULTED. Th
 
 THE PARSE IS THE GATE'S BLIND SPOT, AND IT IS PRESERVED. `formats_of` reads the FIRST line in the builder that looks like `<lowercase names>) ;;` and treats it as the validation case. That is a positional assumption: a builder that grew an earlier one-line case arm would have its format list read from the wrong place. The twin's floor (`MIN_FORMATS`) catches the collapse-to-nothing
 case and not this one. Carried unchanged, because widening it would change the verdict.
+
+---- gate ----
+step: Release signing coverage
+needs: none
+selftest: true
+lane: quality-security
+---- end gate ----
 """
 
 import ast
@@ -50,6 +57,7 @@ import sys
 import tempfile
 
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.quality import seams
 
 # The builder, relative to the root. `$SIGNING_COVERAGE_BUILDER` overrides it, which is how the twin's own controls point it at a scratch copy.
 BUILDER_REL = ".ci/rediacc_ci/build/build_linux_pkg.py"
@@ -163,12 +171,29 @@ def _guards(body: list[ast.stmt]) -> bool:
     raises = False
     names = False
     for stmt in body:
-        for node in ast.walk(stmt):
+        for node in _walk_own_scope(stmt):
             if isinstance(node, ast.Raise):
                 raises = True
             if isinstance(node, ast.Constant) and node.value == GUARD_NAME:
                 names = True
     return raises and names
+
+
+def _walk_own_scope(node: ast.AST):
+    """`ast.walk` that does not enter a nested def or lambda BODY: a raise defined there only runs if it is called, so it guards nothing (the swallowed-failures sibling, review 3982781b.4).
+
+    What runs when the definition statement executes is still walked: a def's decorators and argument defaults, a lambda's defaults, and a class's whole body (a class body runs immediately)."""
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        yield node
+        args = node.args
+        for child in [*args.defaults, *[d for d in args.kw_defaults if d is not None]]:
+            yield from _walk_own_scope(child)
+        for child in getattr(node, "decorator_list", []):
+            yield from _walk_own_scope(child)
+        return
+    yield node
+    for inner in ast.iter_child_nodes(node):
+        yield from _walk_own_scope(inner)
 
 
 def guarded_in(fmt: str, text: str) -> str:
@@ -256,13 +281,13 @@ class GateTally:
 
 
 def resolve_root() -> str:
-    """`${SIGNING_COVERAGE_ROOT:-$(git rev-parse --show-toplevel || echo .)}`.
+    """The signing-coverage root: `$SIGNING_COVERAGE_ROOT` inside a private scratch directory, else `git rev-parse --show-toplevel`, else `.`.
 
-    Three rungs, the twin's, and `$REDIACC_CI_ROOT` is not one of them. See the port notes: an environment that pointed the two implementations at two different trees would produce a differential nobody could interpret.
+    Three rungs, and `$REDIACC_CI_ROOT` is not one of them. `$SIGNING_COVERAGE_ROOT` is honoured only when it names a private scratch directory (`seams.scratch_root`); an override anywhere else is ignored and the next rung answers. The bash twin that honoured any value is retired, so no second implementation reads the variable.
     """
-    override = os.environ.get("SIGNING_COVERAGE_ROOT")
+    override = seams.scratch_root("SIGNING_COVERAGE_ROOT", os.environ.get("SIGNING_COVERAGE_ROOT"))
     if override:
-        return override
+        return str(override)
     try:
         proc = subprocess.run(
             ["git", "rev-parse", "--show-toplevel"],
@@ -547,4 +572,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_release_signing_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

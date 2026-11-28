@@ -145,6 +145,8 @@ const MAX_LINES_EXEMPT = [
   // packages.js:22-52 -- the account package's general rules (this one included) are off in eslint; Biome is account's linter for everything but the three i18n rules eslint still carries there.
   'private/account/**/*.ts',
   'private/account/**/*.tsx',
+  // Go's own wasm_exec.js, shipped verbatim beside the forensics detector's WASM build (renet build.sh detect_wasm); generated, never hand-edited. Only this file: a hand-written account .js file stays under the budget.
+  'private/account/src/services/forensics-detect/wasm/wasm_exec.js',
   // tooling.js:46-51 -- a dedicated BLOCKER block turns `max-lines` off for this one file: it is the host-side scope analyzer standing in for `@typescript-eslint/no-unused-vars` during the Biome cutover, and it is deleted at the same cutover that deletes eslint.config itself, so its size is not worth enforcing against. Found live on this HEAD (587 code lines): `npx eslint eslint-rules/no-unused-underscore-var.js --max-warnings 0` exits 0 with `max-lines` resolving to `off` there (`calculateConfigForFile`), while this gate initially had no matching entry and turned red on it -- a real scope-parity gap, not a hypothetical one.
   'eslint-rules/no-unused-underscore-var.js',
 ];
@@ -349,6 +351,15 @@ function selftest(): boolean {
       isMaxLinesExempt('scripts/gates/anything.ts') &&
       !isMaxLinesExempt('packages/cli/src/services/account/license.ts') &&
       !isMaxLinesExempt('node_modules/planted-f3/x.ts')
+  );
+  // The flagged names are fixtures that must NOT exist; they are spelled through `acct` so the dead-path scan (test_gate_paths_exist) reads them as computed, not as references to real files.
+  const acct = 'private/account';
+  check(
+    'the account .js exemption names Go wasm_exec.js alone: it is exempt, a hand-written account .js or .jsx file is flagged',
+    isMaxLinesExempt('private/account/src/services/forensics-detect/wasm/wasm_exec.js') &&
+      !isMaxLinesExempt(`${acct}/src/services/handwritten.js`) &&
+      !isMaxLinesExempt(`${acct}/src/services/forensics-detect/wasm/other.js`) &&
+      !isMaxLinesExempt(`${acct}/web/src/widget.jsx`)
   );
   check(
     'private/account sources are out of scope for max-lines',

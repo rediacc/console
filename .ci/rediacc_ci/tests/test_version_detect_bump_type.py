@@ -14,7 +14,7 @@ from a shrug.
 
 BOTH DIRECTIONS ON THE LABEL MATCH: `bump-major` fires, `bump-majority` and `xbump-major` do not, and an OPEN PR carrying `bump-major` does not either.
 
-K=5 LEDGER: `.ci/shadow/w7p6-detect-bump-type.observations.jsonl` -- five
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) -- five
 distinct trees, `--assert --k 5` prints "equivalence holds over 5 distinct trees". Recorded in a disposable scratch repo outside this checkout (`--record` refuses a dirty tree), one scenario per tree.
 """
 

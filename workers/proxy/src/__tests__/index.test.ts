@@ -13,7 +13,7 @@ const routed = vi.hoisted(() => ({ tenants: [] as string[] }));
 import { forwardAccountEgress as forward } from '../egress';
 import worker, { type Env } from '../index';
 import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
-import { executorEnv as executorEnvVars } from '../org-executor';
+import { executorEnv as executorEnvVars } from '../org-executor-support';
 import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';

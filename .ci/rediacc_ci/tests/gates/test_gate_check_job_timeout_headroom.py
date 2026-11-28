@@ -1,4 +1,4 @@
-"""`.ci/scripts/quality/check_job_timeout_headroom.py` after D-W2/T3.4 (PLAN-ci-time-budget): its baseline moved from its own `job-timeout-baseline.json` into `.ci/config/lane-durations.json`'s `job_max_seconds` section, which carries its OWN `refreshed_at` independent of that file's top-level one.
+"""`.ci/rediacc_ci/quality/job_timeout_headroom.py` after D-W2/T3.4 (PLAN-ci-time-budget): its baseline moved from its own `job-timeout-baseline.json` into `.ci/config/lane-durations.json`'s `job_max_seconds` section, which carries its OWN `refreshed_at` independent of that file's top-level one.
 
 WHY A REAL COPY OF THE SCRIPT AND NOT AN IMPORT. `main()` resolves its root as `pathlib.Path(__file__).resolve().parents[3]`, so a test that imports the module in-process cannot hand it a fake tree: the path is derived from where the FILE lives on disk, not from an argument or the cwd. `.ci/rediacc_ci/tests/gates/test_gate_gate_anti_vacuity.py`'s own `run_against_empty_tree` solves the identical problem by copying the real trees into a temp directory at the same relative depth and running the copy; `_tree()` below does the same, scoped to exactly the two things this script reads (its own file, one workflow file, and `.ci/config/lane-durations.json`).
 
@@ -20,7 +20,7 @@ from rediacc_ci.tests.gates import harness
 if TYPE_CHECKING:
     from pathlib import Path
 
-SCRIPT_REL = ".ci/scripts/quality/check_job_timeout_headroom.py"
+SCRIPT_REL = ".ci/rediacc_ci/quality/job_timeout_headroom.py"
 WORKFLOW_REL = ".github/workflows/ci.yml"
 LANE_DURATIONS_REL = ".ci/config/lane-durations.json"
 REAL_SCRIPT = paths.from_root(SCRIPT_REL)
@@ -67,9 +67,9 @@ exit 0
 
 
 def _copy_imports(tmp: Path) -> None:
-    """What the script imports: the `.ci` hop, the package marker, the registry reader and the registry, and the retrying `gh` reader with what it imports."""
+    """What the script imports: the package markers, the registry reader and the registry, and the retrying `gh` reader with what it imports."""
     for rel in (
-        ".ci/scripts/quality/_cipath.py",
+        ".ci/rediacc_ci/quality/__init__.py",
         ".ci/rediacc_ci/__init__.py",
         ".ci/rediacc_ci/well_known.py",
         ".ci/rediacc_ci/proc.py",
@@ -90,7 +90,7 @@ def _tree(
     workflow_text: str = FIXTURE_WORKFLOW,
     extra_workflows: dict[str, str] | None = None,
 ) -> Path:
-    """A minimal tree at the SAME relative depth the script's own `parents[3]` expects: `<tmp>/.ci/scripts/quality/check_job_timeout_headroom.py`, `<tmp>/.github/workflows/ci.yml` (plus `extra_workflows`, by default the uncalled release workflow holding the baseline jobs), `<tmp>/.ci/config/lane-durations.json`."""
+    """A minimal tree at the SAME relative depth the script's own `parents[3]` expects: `<tmp>/.ci/rediacc_ci/quality/job_timeout_headroom.py`, `<tmp>/.github/workflows/ci.yml` (plus `extra_workflows`, by default the uncalled release workflow holding the baseline jobs), `<tmp>/.ci/config/lane-durations.json`."""
     script_dst = tmp / SCRIPT_REL
     script_dst.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(REAL_SCRIPT, script_dst)
@@ -111,11 +111,11 @@ def _tree(
 def _run(
     tree: Path, args: list[str], env: dict[str, str] | None = None
 ) -> subprocess.CompletedProcess:
-    full_env = {"PATH": "/usr/bin:/bin"}
+    full_env = {"PATH": "/usr/bin:/bin", "PYTHONPATH": str(tree / ".ci")}
     if env:
         full_env.update(env)
     return subprocess.run(
-        [sys.executable, str(tree / SCRIPT_REL), *args],
+        [sys.executable, "-m", "rediacc_ci.quality.job_timeout_headroom", *args],
         capture_output=True,
         text=True,
         cwd=str(tree),

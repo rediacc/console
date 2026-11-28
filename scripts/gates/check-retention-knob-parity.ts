@@ -5,7 +5,7 @@
  * THE DEFECT CLASS. The GFS retention policy (keepLast, keepHourly, keepDaily,
  * keepWeekly, keepMonthly, keepYearly) is spelled independently in FOUR places:
  *
- *   1. packages/shared/src/config-schema/schemas.ts   the declared shape
+ *   1. packages/shared/src/config-schema/backup-schema.ts   the declared shape
  *   2. private/account/src/dto/backup.dto.ts          what PUT /retention accepts
  *   3. private/account/src/services/backup-gc.service.ts
  *                                                     what the sweep HONOURS
@@ -75,7 +75,7 @@ interface Layer {
 const LAYERS: Layer[] = [
   {
     name: 'shared config schema (what the operator declares)',
-    file: 'packages/shared/src/config-schema/schemas.ts',
+    file: 'packages/shared/src/config-schema/backup-schema.ts',
     spell: (k) => `${k}:`,
   },
   {

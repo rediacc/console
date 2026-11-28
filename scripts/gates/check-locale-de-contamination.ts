@@ -48,8 +48,7 @@
  *   tsx scripts/gates/check-locale-de-contamination.ts --write-baseline   (drain/reseed)
  *
  * ---- gate ----
- * kind: shared-step
- * step: i18n cross-locale
+ * step: Locale German contamination
  * needs: node, submodules
  * lane: quality-i18n
  * ---- end gate ----

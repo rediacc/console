@@ -3,7 +3,7 @@ r"""`rediacc_ci.quality.config_migrations` against the shell it replaced.
 WHY A SHELL ORACLE AND NOT A TABLE OF EXPECTED STRINGS. Three of this gate's decisions are made by shell constructs whose behaviour is not inferable from reading them: a two-stage `grep -oE | grep -oE` whose second stage anchors to the FIRST stage's output, a `find | sort` whose order is byte order and not numeric, and -- most consequentially -- an assignment under `set -euo
 pipefail` whose failure kills the script BEFORE the error message written to handle it. A table of expected strings would be a table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-config-migrations.observations.jsonl` compared the WHOLE gate over five distinct trees, with `npx` stubbed so the round-trip path is deterministic. It could not show that the "Could not parse" message is unreachable, because on such a tree BOTH sides print nothing. This file proves that with bash.
+The committed ledger the ledger (deleted in commit:936280cd35) compared the WHOLE gate over five distinct trees, with `npx` stubbed so the round-trip path is deterministic. It could not show that the "Could not parse" message is unreachable, because on such a tree BOTH sides print nothing. This file proves that with bash.
 
 THE FRAGMENTS BELOW WERE LIFTED FROM
 `.ci/scripts/quality/check-config-migrations.sh` lines 45-69 with the variables substituted and nothing else changed. That twin was retired in W7 P5 once the ledger licensed the port at K=5, so bash itself is the oracle now and the case that compared the port's `TSX_SOURCE` against the twin's heredoc was retired with it.

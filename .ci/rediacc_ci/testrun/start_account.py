@@ -40,17 +40,20 @@ KEYGEN_PROGRAM = """
 const crypto = require("crypto");
 const ed = crypto.generateKeyPairSync("ed25519");
 const x = crypto.generateKeyPairSync("x25519");
+const report = crypto.generateKeyPairSync("ed25519");
 const der = (k, t) => k.export({ type: t, format: "der" }).toString("base64");
 console.log(JSON.stringify({
   edPriv: der(ed.privateKey, "pkcs8"),
   edPub: der(ed.publicKey, "spki"),
   xPriv: der(x.privateKey, "pkcs8"),
   xPub: der(x.publicKey, "spki"),
+  reportPriv: der(report.privateKey, "pkcs8"),
+  reportPub: der(report.publicKey, "spki"),
 }));
 """
 DERIVE_PUBLIC_PROGRAM = """
 const crypto = require("crypto");
-const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.ACCOUNT_ED25519_PRIVATE_KEY, "base64"), format: "der", type: "pkcs8" });
+const priv = crypto.createPrivateKey({ key: Buffer.from(process.env.SIGNING_PRIVATE_KEY, "base64"), format: "der", type: "pkcs8" });
 process.stdout.write(crypto.createPublicKey(priv).export({ type: "spki", format: "der" }).toString("base64"));
 """
 SCOPES = ["license:read", "license:activate", "subscription:read"]
@@ -142,14 +145,31 @@ def server_keys() -> dict[str, str]:
             )
         log.info("signing with the ACCOUNT_ED25519_* pair from the environment")
         keys = {**keys, "edPriv": private, "edPub": public}
+    report_private = os.environ.get("REPORT_ED25519_PRIVATE_KEY", "").strip()
+    report_public = os.environ.get("REPORT_ED25519_PUBLIC_KEY", "").strip()
+    if report_private and report_public:
+        if derived_public_key(report_private, label="report signing") != report_public:
+            raise LegError(
+                "REPORT_ED25519_PRIVATE_KEY and REPORT_ED25519_PUBLIC_KEY are not one pair: the server's reports would not verify under the published key",
+                show_log=False,
+            )
+        keys = {**keys, "reportPriv": report_private, "reportPub": report_public}
     return keys
 
 
-def derived_public_key() -> str:
-    """The SPKI base64 public half of ACCOUNT_ED25519_PRIVATE_KEY (PKCS8 base64), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
+def derived_public_key(private: str | None = None, label: str = "signing") -> str:
+    """The SPKI base64 public half of the PKCS8 base64 private key `private` (the ACCOUNT_ED25519_PRIVATE_KEY environment variable when None; `label` names the key in an error), derived by node from the ENVIRONMENT so the private key never reaches argv. A node that cannot run, or cannot parse the key, is a LegError naming node's own error, so it is never misreported as a mismatched pair."""
     try:
         done = subprocess.run(
             ["node", "-e", DERIVE_PUBLIC_PROGRAM],
+            env={
+                **os.environ,
+                "SIGNING_PRIVATE_KEY": (
+                    os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", "")
+                    if private is None
+                    else private
+                ).strip(),
+            },
             capture_output=True,
             text=True,
             check=False,
@@ -161,7 +181,7 @@ def derived_public_key() -> str:
         ) from exc
     if done.returncode != 0:
         raise LegError(
-            f"node could not derive the public half of ACCOUNT_ED25519_PRIVATE_KEY: {done.stderr.strip()}",
+            f"node could not derive the public half of the {label} private key: {done.stderr.strip()}",
             show_log=False,
         )
     return done.stdout.strip()
@@ -270,6 +290,9 @@ def start_server(
         # Delta 10: the node entry refuses to boot with CONFIG_R2_* set and no ACCOUNT_CONFIG_SERVER_KEY (private/account/src/entry/node.ts), and `start_backup_plane` starts RustFS, which exports CONFIG_R2_*, before this server. A throwaway per-run key (or the caller's) keeps that refusal intact and gives the config routes a key.
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY")
         or secrets.token_hex(32),
+        # The incident-report signer (ReportSigningService) wants its own PKCS8/SPKI base64 pair, apart from the licence signer; without it TEST_MODE report generation stops at REPORT_KEY_NOT_CONFIGURED. Minted per start-up with the other throwaway keys, or the caller's when both names are set; the private half never leaves this environment.
+        "REPORT_ED25519_PRIVATE_KEY": keys["reportPriv"],
+        "REPORT_ED25519_PUBLIC_KEY": keys["reportPub"],
         "ROOT_EMAIL": "root@rediacc.invalid",
         "DATABASE_PATH": str(db_path),
         "PORT": opts.port,

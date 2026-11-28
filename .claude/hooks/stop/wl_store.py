@@ -39,6 +39,7 @@ import pathlib
 import re
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 from typing import Any
@@ -647,25 +648,89 @@ def live_intent(worklist, session_id, now=None):
 # ---- per-session state doc --------------------------------------------------
 
 
+# ONE STATE WRITE PER STOP (agent/plans/PLAN-tooling-speed.md D1). A Stop run saved this doc up to 19 times. Inside a batch, save_state serializes the doc at once (so a later mutation the caller did not save is not written) and keeps the text in memory; load_state reads the pending text first; the batch's end writes each pending doc once. A batch is either the
+# `state_batch()` context (its exit flushes on success and on an exception alike), or the whole of a Stop process (worklist.py running with `_RUN["stop"]` set), which flushes from atexit: after the final emit's sys.exit and after an uncaught exception. A process killed by a signal loses that stop's state writes, which load_state's contract already absorbs: a missing key
+# is first sight, never an obligation passed. WORKLIST_READ_MEMO=off writes at once, as before.
+_PENDING_STATE: dict[str, str] = {}
+_STATE_BATCH = {"depth": 0, "atexit": False}
+STATE_FLUSHES = {"n": 0}
+
+
+def _stop_process():
+    """True when this process is worklist.py running a Stop (its `_RUN["stop"]` flag), the one process shape that batches without asking."""
+    run = getattr(sys.modules.get("__main__"), "_RUN", None)
+    return isinstance(run, dict) and bool(run.get("stop"))
+
+
+def _state_deferred():
+    if not C.read_memo_on():
+        return False
+    if _STATE_BATCH["depth"] > 0:
+        return True
+    if _stop_process():
+        if not _STATE_BATCH["atexit"]:
+            import atexit
+
+            atexit.register(flush_state)
+            _STATE_BATCH["atexit"] = True
+        return True
+    return False
+
+
+def _write_state_text(p, text):
+    """tempfile + os.replace: single writer (per-session), atomic on crash."""
+    try:
+        fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix=p.name)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, p)
+    except OSError:
+        pass
+
+
+def flush_state():
+    """Write every pending state doc once. A second call with nothing pending writes nothing."""
+    if not _PENDING_STATE:
+        return
+    pending = dict(_PENDING_STATE)
+    _PENDING_STATE.clear()
+    for path, text in pending.items():
+        _write_state_text(pathlib.Path(path), text)
+    STATE_FLUSHES["n"] += 1
+
+
+@contextlib.contextmanager
+def state_batch():
+    """Collect save_state writes and flush them once when the outermost batch ends, whether it ends normally or by an exception."""
+    _STATE_BATCH["depth"] += 1
+    try:
+        yield
+    finally:
+        _STATE_BATCH["depth"] -= 1
+        if _STATE_BATCH["depth"] == 0:
+            flush_state()
+
+
 def load_state(worklist, session_id):
     """The v10 per-session doc. A corrupt or missing doc is the empty default: every consumer treats absent keys as first sight, which can delay a nudge by one stop but can never fail open on an obligation check."""
+    p = state_path(worklist, session_id)
     try:
-        d = json.loads(state_path(worklist, session_id).read_text(encoding="utf-8"))
+        pending = _PENDING_STATE.get(str(p))
+        d = json.loads(pending if pending is not None else p.read_text(encoding="utf-8"))
         return d if isinstance(d, dict) else {}
     except (OSError, ValueError):
         return {}
 
 
 def save_state(worklist, session_id, doc):
-    """tempfile + os.replace: single writer (per-session), atomic on crash."""
+    """Write the doc, or hold it for the batch's one flush (see ONE STATE WRITE PER STOP)."""
     p = state_path(worklist, session_id)
-    try:
-        fd, tmp = tempfile.mkstemp(dir=str(p.parent), prefix=p.name)
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(doc, f, indent=1)
-        os.replace(tmp, p)
-    except OSError:
-        pass
+    text = json.dumps(doc, indent=1)
+    if _state_deferred():
+        _PENDING_STATE[str(p)] = text
+        return
+    _PENDING_STATE.pop(str(p), None)
+    _write_state_text(p, text)
 
 
 # ---- the event log ----------------------------------------------------------
@@ -711,7 +776,7 @@ def _append_lines(path, lock_path, payloads):
 
     The one implementation is `rediacc_ci.core.jsonl_append.append_lines` (one os.write per batch; a last byte that is not a newline gets one prepended, so a torn fragment stays its own unparseable line). `_flock` is passed so a lockless platform still gets the worklist's own refusal.
     """
-    _jsonl_append().append_lines(path, lock_path, payloads, lock=_flock)
+    _jsonl_append().append_lines(path, lock_path, _redact_payloads(payloads), lock=_flock)
 
 
 # --------------------------------------------------------------------------- THE TRACKED STORE. agent/worklist/<writer8>.jsonl, one append-only file per WRITER identity, committed like every other artifact under agent/.
@@ -725,6 +790,15 @@ def _append_lines(path, lock_path, payloads):
 #
 # ONLY THE LOG MOVED. Every sidecar named in this module's docstring is per-machine runtime state (locks, caches, transcripts, briefs, .lastevent) and stays in TMPDIR. The lock is still the TMPDIR one: one machine, N sessions, one flock, which is exactly the scope a lock can cover.
 STORE_DIR_NAME = "worklist"
+
+
+def dead_hours():
+    """WORKLIST_DEAD_HOURS as a positive number of hours, 24 when unset, not a number, or zero or below: a typo in the variable must not raise on every Stop, and a value of 0 would make every idle, remote or unknown writer qualify as finished at once."""
+    try:
+        hours = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    except ValueError:
+        return 24.0
+    return hours if hours > 0 else 24.0
 
 
 def store_dir(root=None):
@@ -804,6 +878,8 @@ def _journal_append(path, payloads, root=None):
     twin = journal_twin(path, root)
     if twin is None:
         return
+    # Redacted here too, in place and idempotently: the twin is a tracked file, so its own door does not lean on each caller having redacted the same list first.
+    payloads = _redact_payloads(payloads)
     with contextlib.suppress(OSError):
         twin.parent.mkdir(parents=True, exist_ok=True)
         _jsonl_append().append_lines(twin, twin.parent / ".lock", payloads, lock=_flock)
@@ -811,6 +887,7 @@ def _journal_append(path, payloads, root=None):
 
 def append_store_lines(path, lock_path, payloads, root=None):
     """Append JSONL to a tracked store file AND its journal twin. The one write path for any sidecar living in store_dir (epics.jsonl)."""
+    payloads = _redact_payloads(payloads)
     _append_lines(path, lock_path, payloads)
     _journal_append(path, payloads, root)
 
@@ -919,14 +996,11 @@ _BRANCH_CACHE = {}
 
 
 def _branch_of(root):
-    """Cached: git_branch shells out, and this runs on every append."""
+    """Cached: git_branch shells out, and this runs on every append. git_branch already answers "" for a detached HEAD or a git that cannot run, so nothing is caught here: anything else it raises is a defect to see."""
     root = own_tree(root)
     key = str(root)
     if key not in _BRANCH_CACHE:
-        try:
-            _BRANCH_CACHE[key] = C.git_branch(root) or ""
-        except Exception:
-            _BRANCH_CACHE[key] = ""
+        _BRANCH_CACHE[key] = C.git_branch(root) or ""
     return _BRANCH_CACHE[key]
 
 
@@ -952,9 +1026,10 @@ def append_events(worklist, payloads, writer=None, root=None):
         root = C.project_root(C.project_start())
     br = _branch_of(root)
     hh = host_hash()
+    # Redacted BEFORE either write, so the tracked file and its journal twin carry the same clean bytes.
+    payloads = _redact_payloads(payloads)
     for ev in payloads:
         if isinstance(ev, dict):
-            _redact_secret_shapes(ev)
             ev.setdefault("h", hh)
             if br:
                 ev.setdefault("br", br)
@@ -996,6 +1071,79 @@ def _read_events(worklist, root=None):
 
     THE SORT IS LOAD-BEARING. File name order is not time order, and after a merge one file can hold events older than another's first line. Sorting by the stamp (which is `%Y-%m-%dT%H:%M:%SZ`, so lexical order is chronological) is what makes a union of histories fold to the same state as one history.
     """
+    key = _events_sig(worklist, root) if C.read_memo_on() else None
+    if key is not None and key in _EVENTS_MEMO:
+        EVENTS_MEMO_STATS["hit"] += 1
+        return list(_EVENTS_MEMO[key])
+    out = _read_events_uncached(worklist, root)
+    EVENTS_MEMO_STATS["miss"] += 1
+    if key is not None:
+        if len(_EVENTS_MEMO) >= 4:
+            _EVENTS_MEMO.clear()
+        _EVENTS_MEMO[key] = out
+        return list(out)
+    return out
+
+
+# ---- ONE EVENT-LOG READ PER STOP (agent/plans/PLAN-tooling-speed.md D1) ------
+#
+# The Stop run re-read and re-folded the store about ten times (run_stop, wl_roster, wl_planqueue, wl_schedred, wl_prreview, wl_retro), 9 MB each time. The parsed events and the Fold are memoized per process, keyed on the (path, mtime_ns, size) of every file the read touches: each tracked store file, each journal file and the legacy log. Any append moves a size, so a
+# write between two loads is re-read (the control in test_wl_stop_speed_reads.py). A stat that races a write stores newer bytes under the older key, which costs one extra read on the next call and can never serve a stale world. WORKLIST_READ_MEMO=off turns both memos off.
+EVENTS_MEMO_STATS = {"hit": 0, "miss": 0}
+READ_MEMO_STATS = {"hit": 0, "miss": 0}
+_EVENTS_MEMO: dict[tuple, list] = {}
+_FOLD_MEMO: dict[tuple, Any] = {}
+
+
+def clear_read_memo():
+    _EVENTS_MEMO.clear()
+    _FOLD_MEMO.clear()
+    EVENTS_MEMO_STATS.update(hit=0, miss=0)
+    READ_MEMO_STATS.update(hit=0, miss=0)
+    STATE_FLUSHES["n"] = 0
+
+
+def _file_sig(path):
+    try:
+        st = os.stat(path)
+    except OSError:
+        return (str(path), None, None)
+    return (str(path), st.st_mtime_ns, st.st_size)
+
+
+def _events_sig(worklist, root=None):
+    """The memo key of one store read: every file _read_events would open, with its mtime and size."""
+    sigs: list[tuple] = []
+    sd = store_dir(root)
+    with contextlib.suppress(OSError):
+        sigs.extend(_file_sig(f) for f in sorted(sd.glob("*.jsonl")))
+    jd = journal_dir(root)
+    if jd is not None:
+        with contextlib.suppress(OSError):
+            sigs.extend(_file_sig(f) for f in sorted(jd.glob("*.jsonl")))
+    sigs.append(_file_sig(events_path(worklist)))
+    return (str(sd), str(jd), tuple(sigs))
+
+
+def _copy_value(v):
+    if isinstance(v, dict):
+        return dict(v)
+    if isinstance(v, list):
+        return list(v)
+    return v
+
+
+def _copy_fold(fold):
+    """A Fold no caller shares: its item dicts, their nested dicts and lists, the lineage and the statuses are fresh containers (the strings inside are immutable)."""
+    return Fold(
+        [{k: _copy_value(v) for k, v in r.items()} for r in fold.items],
+        fold.md_hash,
+        [dict(e) for e in fold.lineage],
+        statuses={k: _copy_value(v) for k, v in fold.statuses.items()},
+    )
+
+
+def _read_events_uncached(worklist, root=None):
     out = []
     # Tracked files, then the checkout journal's lines they lack (see THE CHECKOUT JOURNAL).
     for text in _store_texts(root):
@@ -1007,29 +1155,6 @@ def _read_events(worklist, root=None):
     # (at, ns): the stamp orders across machines and the nanosecond counter orders within a second on this one. A missing ns sorts first inside its second, which is where an older event belongs.
     out.sort(key=event_order)
     return out
-
-
-# A phase or lineage event line, matched on the raw text so a reader that needs only those two kinds never parses the whole log.
-_PHASE_LINE = re.compile(r'"ev":\s*"(?:phase|lineage)"')
-
-
-def phase_fold(worklist, root=None):
-    """A Fold carrying only the `phase` and `lineage` events: the spawn guard's read (guards/block_focus_spawn.py), which runs on every Agent call and must not pay for a full fold of the log. Same files and same order as _read_events; lines of any other kind are never parsed."""
-    out = []
-    texts = _store_texts(root)
-    legacy = events_path(worklist)
-    if legacy.exists():
-        text = _read_text(legacy)
-        if text is not None:
-            texts.append(text)
-    for text in texts:
-        out.extend(
-            _parse_events("\n".join(ln for ln in text.splitlines() if _PHASE_LINE.search(ln)))
-        )
-    out.sort(key=event_order)
-    phase: dict[Any, Any] = {}
-    _records, _md, _cli, _h, lineage = _fold_events(out, phase=phase)
-    return Fold([], "", lineage, phase=phase)
 
 
 def item_key(owner, text):
@@ -1106,14 +1231,12 @@ def brief_line(rec):
     return line
 
 
-def _fold_events(events, statuses=None, phase=None):
+def _fold_events(events, statuses=None):
     """(records, md_keys, cli_ids, last_md_hash, lineage). Chronological single pass; a later event wins, which is exactly the right answer for the one real conflict (a CLI tick vs a later deliberate markdown re-open).
 
     `lineage` is the list of proven compaction edges, in order. It is a LIST and not a fold-to-latest: a session can compact more than once, and the chain a276391d -> 74de73ca -> ... is only resolvable if every hop survives.
 
-    `statuses`, when a dict is passed, receives the `status` events (`worklist.py --status`) folded per WORKER rather than per item: {worker: {"last": <newest event>, "reset_at": <at of the newest event that was not silent>}}. An out-parameter rather than a sixth return value, so the existing five-way unpacks stay exactly as they are.
-
-    `phase`, when a dict is passed, receives the newest `phase` event per OWNER (`worklist.py --phase`, agent/plans/PLAN-stop-hook-effort.md): {owner8: event}. An event with no owner is dropped, because `owned_by_me(None, ...)` is True and an untagged phase would bind every session."""
+    `statuses`, when a dict is passed, receives the `status` events (`worklist.py --status`) folded per WORKER rather than per item: {worker: {"last": <newest event>, "reset_at": <at of the newest event that was not silent>}}. An out-parameter rather than a sixth return value, so the existing five-way unpacks stay exactly as they are."""
     records, md_keys, cli_ids = {}, set(), set()
     lineage = []
     last_md_hash = ""
@@ -1139,8 +1262,9 @@ def _fold_events(events, statuses=None, phase=None):
                 rec.setdefault("upd", rec["first"])
                 md_keys.add(k)
             for c in ev.get("chg") or []:
-                rec = records.get(c.get("k"))
-                if rec is not None:
+                chg_rec = records.get(c.get("k"))
+                if chg_rec is not None:
+                    rec = chg_rec
                     rec["state"] = c.get("s", rec["state"])
                     rec["md_s"] = c.get("s", rec.get("md_s", " "))
                     rec["upd"] = at
@@ -1174,9 +1298,7 @@ def _fold_events(events, statuses=None, phase=None):
                     slot["reset_at"] = at
             continue
         elif kind == "phase":
-            # THE SESSION PHASE (wl_standdown). About the SESSION, not an item: it never stamps a record. Chronological, so the latest event per owner wins.
-            if phase is not None and ev.get("o"):
-                phase[str(ev["o"])[:8]] = dict(ev)
+            # A session phase from the deleted `--phase` verb (agent/plans/PLAN-simple-two-tree-loop.md B10). The log is append-only, so old ones stay; they never stamp a record and nothing reads them.
             continue
         elif kind == "add":
             rid = ev.get("id")
@@ -1202,17 +1324,69 @@ def _fold_events(events, statuses=None, phase=None):
             if isinstance(ev.get("lw"), list):
                 # COMPACT CARRY-OVER of the lease history below: a compacted log has no lease events for a done item, and the judge's `item-writers` fix-set is joined on exactly that history.
                 records[rid]["lease_workers"] = [str(w) for w in ev["lw"] if w]
+            if isinstance(ev.get("am"), dict) and ev["am"].get("aid"):
+                # COMPACT CARRY-OVER of a live arm (agent/plans/PLAN-armed-actions.md Design 1): the arm, its latch and its start stamp, so an arm survives compact_store with the same `aid`.
+                records[rid]["arm"] = dict(ev["am"])
             cli_ids.add(rid)
+        elif kind in ("arm", "armfire", "armstart", "disarm"):
+            # ARMED ACTIONS (agent/plans/PLAN-armed-actions.md Design 1). `aid` names one arm generation: an `armfire`, `armstart` or `disarm` naming another `aid` than the item's current arm is stale and ignored, an `arm` naming a new `aid` starts a fresh generation (verdict and latch reset, which is how a deliberate re-arm works), a second `armfire` for one `aid` is a no-op (first wins), and an `arm` replayed with the `aid` the item already carries (a compaction's `am` plus a peer's surviving copy) keeps the latch.
+            arm_rec = records.get(ev.get("id"))
+            aid = str(ev.get("aid") or "")
+            if arm_rec is None or not aid:
+                continue
+            rec = arm_rec
+            cur = rec.get("arm") if isinstance(rec.get("arm"), dict) else None
+            if kind == "arm":
+                if cur is not None and cur.get("aid") == aid:
+                    continue
+                rec["arm"] = {
+                    "aid": aid,
+                    "when": [str(t) for t in ev.get("when") or []],
+                    "run": str(ev.get("run") or ""),
+                    "cmd": str(ev.get("cmd") or ""),
+                    "sha": str(ev.get("sha") or ""),
+                    "lease": str(ev.get("lease") or ""),
+                    "exp": str(ev.get("exp") or ""),
+                    "at": at,
+                    "by": str(ev.get("by") or ""),
+                    "fired_at": "",
+                    "verdict": "",
+                    "why": "",
+                    "started_at": "",
+                }
+                rec["upd"] = at
+                continue
+            if cur is None or cur.get("aid") != aid:
+                continue
+            if kind == "armfire":
+                verdict = str(ev.get("v") or "")
+                if not cur.get("verdict") and verdict in ("fired", "expired", "void"):
+                    cur["verdict"] = verdict
+                    cur["why"] = str(ev.get("why") or "")
+                    cur["fired_at"] = at
+                # Hook-written: it never stamps `upd`, so a latch does not reset the liveness ladder.
+                continue
+            if kind == "armstart":
+                if cur.get("verdict") and not cur.get("started_at"):
+                    cur["started_at"] = at
+                    rec["upd"] = at
+                continue
+            # disarm
+            rec.pop("arm", None)
+            rec["upd"] = at
+            continue
         elif kind == "reassign":
             # v19: an item's OWNER moves to a live session. Appended, never rewritten, like every other event here -- that is what makes the lock-free fold sound, and it keeps the log truthful about who actually wrote the item. Only the `o` field moves; `by` on the original events still names the phantom, because it really did write them.
-            rec = records.get(ev.get("id"))
-            if rec is not None:
+            owner_rec = records.get(ev.get("id"))
+            if owner_rec is not None:
+                rec = owner_rec
                 rec["owner"] = ev.get("o")
                 rec["upd"] = at
         elif kind in ("state", "update", "lease", "unlease", "tomb", "triage"):
-            rec = records.get(ev.get("id"))
-            if rec is None:
+            ev_rec = records.get(ev.get("id"))
+            if ev_rec is None:
                 continue
+            rec = ev_rec
             if kind == "state":
                 rec["state"] = ev.get("s", rec["state"])
                 note = str(ev.get("note", "")).strip()
@@ -1247,7 +1421,7 @@ def _fold_events(events, statuses=None, phase=None):
                 # The lease's OWN time, kept apart from `upd`: the roster counts a lease as a fresh status, and `upd` also moves on an --update, which is prose from the lead and deliberately not a status.
                 rec["lease_at"] = at
                 note = str(ev.get("note", "")).strip()
-                # The CURRENT lease's own note, kept apart from `lastnote` (which an --update overwrites): a `HOLD_FOR:#<id>` slot reservation is read from it (wl_roster, agent/plans/PLAN-stop-hook-retro-20260924.md R.5).
+                # The CURRENT lease's own note, kept apart from `lastnote` (which an --update overwrites): the queue lease's `HELD_BY:<plan>` stamp rides it (wl_cli `--lease`, agent/plans/PLAN-plan-priority-concurrency.md section 5b).
                 rec["lease_note"] = note or str(ev.get("lnote", "")).strip()
                 if note:
                     rec["lastnote"] = note
@@ -1283,15 +1457,13 @@ class Fold:
     line (rendered legacy shape), first/upd stamps, origin, until/worker.
     """
 
-    def __init__(self, items, md_hash, lineage=(), statuses=None, phase=None):
+    def __init__(self, items, md_hash, lineage=(), statuses=None):
         self.items = items
         self.md_hash = md_hash
         self.lineage = list(lineage)
         self.by_id = {r["id"]: r for r in items}
         # {worker: {"last", "reset_at"}} from `status` events; see _fold_events.
         self.statuses = dict(statuses or {})
-        # {owner8: newest phase event}; see _fold_events and wl_standdown.active_phase.
-        self.phase = dict(phase or {})
 
     def aliases_of(self, session_id):
         """Every id proven to be the same conversation as `session_id`.
@@ -1333,15 +1505,20 @@ def load(worklist, sync=True):
             md_bytes = b""
     md_hash = hashlib.sha1(md_bytes).hexdigest()[:16]
 
+    # THE FOLD MEMO (see ONE EVENT-LOG READ PER STOP). Keyed on the markdown's hash and the store's file signatures; stored only for a world where the markdown and the log already agree, which is exactly when sync and read-only loads fold to the same items.
+    memo_on = C.read_memo_on()
+    if memo_on:
+        hit = _FOLD_MEMO.get((str(worklist), md_hash, _events_sig(worklist)))
+        if hit is not None:
+            READ_MEMO_STATS["hit"] += 1
+            return _bind_fold(_copy_fold(hit))
+    READ_MEMO_STATS["miss"] += 1
+
     statuses_box: list[dict[Any, Any]] = [{}]
-    phase_box: list[dict[Any, Any]] = [{}]
 
     def build(events):
         statuses_box[0] = {}
-        phase_box[0] = {}
-        records, md_keys, cli_ids, last_h, lin = _fold_events(
-            events, statuses=statuses_box[0], phase=phase_box[0]
-        )
+        records, md_keys, cli_ids, last_h, lin = _fold_events(events, statuses=statuses_box[0])
         return records, md_keys, cli_ids, last_h, lin
 
     def diff(records, md_keys, parsed, at):
@@ -1385,7 +1562,7 @@ def load(worklist, sync=True):
                     try:
                         size = os.fstat(fd).st_size
                         blob = b"" if not size or os.pread(fd, 1, size - 1) == b"\n" else b"\n"
-                        blob += (json.dumps(ev, separators=(",", ":")) + "\n").encode("utf-8")
+                        blob += _store_line(ev).encode("utf-8")
                         os.write(fd, blob)
                     finally:
                         os.close(fd)
@@ -1420,7 +1597,15 @@ def load(worklist, sync=True):
         rec["line"] = _render_line(rec)
         items.append(rec)
     items.sort(key=lambda r: (r.get("first", ""), r["id"]))
-    fold = Fold(items, md_hash, lineage, statuses=statuses_box[0], phase=phase_box[0])
+    fold = Fold(items, md_hash, lineage, statuses=statuses_box[0])
+    if memo_on and last_h == md_hash:
+        if len(_FOLD_MEMO) >= 4:
+            _FOLD_MEMO.clear()
+        _FOLD_MEMO[(str(worklist), md_hash, _events_sig(worklist))] = _copy_fold(fold)
+    return _bind_fold(fold)
+
+
+def _bind_fold(fold):
     # BIND ONCE, HERE, and only for the identity this process actually resolved to. Every ownership question downstream goes through wl_core.owned_by_me, so binding at the single load point is what makes the compaction fix impossible to roll out half-applied. A process with no resolvable identity binds nothing and behaves exactly as it did before lineage existed.
     me = C.resolve_session_id()
     if me:
@@ -1530,35 +1715,73 @@ def status_event(worklist, by, worker, size, mtime, inflight="", silent=False):
     )
 
 
-def phase_event(worklist, by, owner, mode, branch="", pr=None, why="operator", at=None):
-    """Record a phase switch for `owner`: `babysit` or `merge` winds a PR down, `build` ends that (agent/plans/PLAN-stop-hook-effort.md; the wind-down rules are agent/plans/PLAN-stop-hook-focus-mode.md section 1).
+def tomb_item(worklist, by, item_id, why):
+    append_events(
+        worklist,
+        [{"ev": "tomb", "id": item_id, "at": C.stamp_now(), "by": by, "why": why}],
+    )
 
-    `branch` is the PR's head ref, deliberately NOT `br`: append_events stamps `br` with the checkout branch at write time, and writing `build` from `main` after a merge must not rewrite which PR the phase was on. `owner` must be non-empty (see _fold_events). `at` is passed only by the hook's PR-number fill-in (`why: pr-resolved`), which must neither renew the 24-hour cap nor read as a new phase.
-    """
-    owner = str(owner or "")[:8]
-    if not owner:
-        raise ValueError("a phase event needs an owner")
+
+def arm_item(worklist, by, item_id, when, run="", cmd="", sha="", lease="", exp="", at=None):
+    """Append one `arm` event (agent/plans/PLAN-armed-actions.md Design 1) and return its `aid`. `when` is the validated token list (`wl_armed.parse_when`); the caller sets exactly one of `run` (a brief path) and `cmd` (a command line)."""
+    import wl_armed as A
+
+    at = at or C.stamp_now()
+    aid = A.arm_id(item_id, at, list(when))
     append_events(
         worklist,
         [
             {
-                "ev": "phase",
-                "at": at or C.stamp_now(),
-                "by": str(by or owner)[:8],
-                "o": owner,
-                "mode": str(mode),
-                "branch": str(branch or ""),
-                "pr": int(pr) if pr not in (None, "") else None,
-                "why": str(why or "operator"),
+                "ev": "arm",
+                "id": item_id,
+                "at": at,
+                "by": by,
+                "aid": aid,
+                "when": list(when),
+                "run": run,
+                "cmd": cmd,
+                "sha": sha,
+                "lease": lease,
+                "exp": exp,
+            }
+        ],
+    )
+    return aid
+
+
+def armfire_item(worklist, by, item_id, aid, verdict, why):
+    """Append the latch of one arm: `v` is fired, expired or void, `why` the evidence each token read. Written by the Stop hook only (`wl_armed.sweep`); any other verdict raises ValueError."""
+    if verdict not in ("fired", "expired", "void"):
+        raise ValueError("armfire verdict %r is not fired, expired or void" % (verdict,))
+    append_events(
+        worklist,
+        [
+            {
+                "ev": "armfire",
+                "id": item_id,
+                "at": C.stamp_now(),
+                "by": by,
+                "aid": aid,
+                "v": verdict,
+                "why": str(why or ""),
             }
         ],
     )
 
 
-def tomb_item(worklist, by, item_id, why):
+def armstart_item(worklist, by, item_id, aid):
+    """Append the `armstart` that consumes a latched arm."""
     append_events(
         worklist,
-        [{"ev": "tomb", "id": item_id, "at": C.stamp_now(), "by": by, "why": why}],
+        [{"ev": "armstart", "id": item_id, "at": C.stamp_now(), "by": by, "aid": aid}],
+    )
+
+
+def disarm_item(worklist, by, item_id, aid, why):
+    """Append the `disarm` that removes an arm."""
+    append_events(
+        worklist,
+        [{"ev": "disarm", "id": item_id, "at": C.stamp_now(), "by": by, "aid": aid, "why": why}],
     )
 
 
@@ -1697,6 +1920,11 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
     p = str(prefix or "")[:8]
     if not p:
         return "unknown", "no prefix given"
+    # A source that cannot be read is not evidence of absence: each failure is named in the evidence of whatever verdict the remaining sources reach, so "idle" read off a broken brief file says so (agent/plans/PLAN-silent-failure-sweep.md SF4).
+    unread: list[str] = []
+
+    def said(verdict, evidence):
+        return verdict, evidence + ("" if not unread else " (unread: %s)" % "; ".join(unread))
 
     # 1. .lastevent-<p>.json -- written on EVERY full stop, so a running session always has a fresh one.
     le = worklist.with_suffix(".lastevent-%s.json" % p)
@@ -1704,9 +1932,9 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if le.exists():
             age_min = (time.time() - le.stat().st_mtime) / 60.0
             if age_min <= LIVE_MIN:
-                return "live", ".lastevent-%s.json written %d min ago" % (p, age_min)
-    except OSError:
-        pass
+                return said("live", ".lastevent-%s.json written %d min ago" % (p, age_min))
+    except OSError as exc:
+        unread.append(".lastevent-%s.json (%s: %s)" % (p, type(exc).__name__, exc))
 
     # 2. the .sessions brief, the oracle the brief check already forces every live session to refresh.
     try:
@@ -1714,17 +1942,18 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if when is not None:
             age_min = (C.utcnow() - when).total_seconds() / 60.0
             if age_min <= SESSION_BRIEF_STALE_MIN:
-                return "live", "session brief refreshed %d min ago" % age_min
-    except Exception:
-        pass
+                return said("live", "session brief refreshed %d min ago" % age_min)
+    except (OSError, ValueError, TypeError) as exc:
+        unread.append("the session brief (%s: %s)" % (type(exc).__name__, exc))
 
-    # 3. its transcript on this machine.
+    # 3. its transcript on this machine. A transcript removed between the glob and the stat raises OSError.
     try:
         h = owner_age_hours(p, projects_dir)
-    except Exception:
+    except OSError as exc:
         h = None
+        unread.append("its transcript (%s: %s)" % (type(exc).__name__, exc))
     if h is not None and h * 60.0 <= LIVE_MIN:
-        return "live", "transcript written %d min ago" % (h * 60.0)
+        return said("live", "transcript written %d min ago" % (h * 60.0))
 
     # 4. its own newest event, but only when that event came from THIS host -- a foreign host's timestamp says nothing about a process here.
     if events is None:
@@ -1737,22 +1966,23 @@ def session_liveness(worklist, prefix, projects_dir=None, events=None):
         if at > newest:
             newest, newest_host = at, str(ev.get("h") or "")
     if not newest:
-        return "unknown", "no events by %s in the store" % p
+        return said("unknown", "no events by %s in the store" % p)
     if newest_host and newest_host == mine_host:
-        try:
-            age_min = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 60.0
-        except Exception:
-            age_min = None
+        when = C.parse_stamp(newest)
+        age_min = None if when is None else (C.utcnow() - when).total_seconds() / 60.0
+        if when is None:
+            unread.append("its newest event stamp `%s` does not parse" % newest[:40])
         if age_min is not None and age_min <= LIVE_MIN:
-            return "live", "wrote to the store %d min ago on this machine" % age_min
+            return said("live", "wrote to the store %d min ago on this machine" % age_min)
 
     # REMOTE requires POSITIVE evidence of another host. Without a host stamp the honest answer is `idle` (no artifact here), not a claim about a machine this one has never seen.
     if h is None and not le.exists() and newest_host and newest_host != mine_host:
-        return "remote", (
+        return said(
+            "remote",
             "last seen %s on another host; this machine cannot tell whether it "
-            "is still running" % newest
+            "is still running" % newest,
         )
-    return "idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest)
+    return said("idle", "no artifact here newer than %d min (newest event %s)" % (LIVE_MIN, newest))
 
 
 def snapshot_events(fold, by="compact"):
@@ -1818,6 +2048,15 @@ def snapshot_events(fold, by="compact"):
             add_ev["lw"] = list(r["lease_workers"])
         if r.get("mg"):
             add_ev["mg"] = r["mg"]
+        # A LIVE ARM rides its item's `add` (agent/plans/PLAN-armed-actions.md Design 1): the fold drops unknown events and this builder re-emits only what it names, so an arm left out here is lost at the first compaction. A started arm is consumed and a done or tombstoned item makes its arm inert, so neither is carried.
+        _arm = r.get("arm")
+        if (
+            isinstance(_arm, dict)
+            and _arm.get("aid")
+            and not _arm.get("started_at")
+            and r["state"] not in ("x", "~")
+        ):
+            add_ev["am"] = dict(_arm)
         out.append(add_ev)
         # ONLY FOR AN ITEM THAT IS ACTUALLY IN FLIGHT. The fold's lease arm sets
         # state = ">" unconditionally, and a DONE item that was leased at some
@@ -1832,7 +2071,7 @@ def snapshot_events(fold, by="compact"):
                     "by": by,
                     "until": r.get("until", ""),
                     "worker": r.get("worker", ""),
-                    # `lnote`, not `note`: the lease's own note survives compaction (a HOLD_FOR reservation lives in it) without the fold re-appending it to `text` or overwriting a later `lastnote`.
+                    # `lnote`, not `note`: the lease's own note survives compaction (a queue lease's HELD_BY stamp lives in it) without the fold re-appending it to `text` or overwriting a later `lastnote`.
                     **({"lnote": r["lease_note"]} if r.get("lease_note") else {}),
                 }
             )
@@ -1840,14 +2079,23 @@ def snapshot_events(fold, by="compact"):
 
 
 # Shapes that must never reach a TRACKED file. Not an exhaustive secret detector and not sold as one: it catches the classes that have actually turned up in this repo's own artifacts, at the door, where the cost of a false positive is retyping one note.
+#
+# ONE TABLE, (kind, pattern). The kind is what a redaction leaves behind (`[redacted:<kind>]`) and what secret_kinds_in names, so a reader learns WHAT was there and never the value. check:ci-tracked-credentials reads this block textually (each `re.compile(r"...")`, keyed by its literal prefix) and fails when a shape here is one it cannot detect; that gate is in turn wider than this table
+# was until 2026-11-24 (ASIA/AIDA/AROA ids, gho_/ghu_/ghs_/ghr_ tokens, Stripe `sk_live_`/`sk_test_` keys), so those rows are here too. The rows the gate keys on keep a literal prefix (`ghp_`, `AKIA`, ...); the widening rows open with a group, which the gate's prefix read skips rather than mistaking for an untaught shape. Keep every pattern free of a double quote and
+# of a flags argument, or the gate's read stops seeing it.
+#
+# THE PATTERN STRING IS A CONTRACT. secret_shapes_in returns each row's `.pattern`, and the pre-push backup scan (.claude/rediacc_hooks/git/githooks.py) compares one against its own `PEM_SHAPE` to judge a header by the key body after it, so the private-key row's pattern stays the bare header. The redactor consumes the body separately (`_PEM_BLOCK_RE`).
 _SECRET_SHAPES = (
-    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY"),
-    re.compile(r"\bghp_[A-Za-z0-9]{36}\b"),
-    re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}"),
-    re.compile(r"\bAKIA[A-Z0-9]{16}\b"),
-    re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"),
-    re.compile(r"\bwhsec_[A-Za-z0-9]{24,}"),
-    re.compile(r"\bsk-[A-Za-z0-9]{32,}"),
+    ("private-key", re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY")),
+    ("github-token", re.compile(r"\bghp_[A-Za-z0-9]{36}\b")),
+    ("github-token", re.compile(r"\b(gho|ghu|ghs|ghr)_[A-Za-z0-9]{36}\b")),
+    ("github-token", re.compile(r"\bgithub_pat_[A-Za-z0-9_]{20,}")),
+    ("aws-key-id", re.compile(r"\bAKIA[A-Z0-9]{16}\b")),
+    ("aws-key-id", re.compile(r"\b(ASIA|AIDA|AROA)[A-Z0-9]{16}\b")),
+    ("slack-token", re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}")),
+    ("stripe-webhook-secret", re.compile(r"\bwhsec_[A-Za-z0-9]{24,}")),
+    ("api-key", re.compile(r"\bsk-[A-Za-z0-9]{32,}")),
+    ("stripe-key", re.compile(r"\b(sk_live|sk_test)_[A-Za-z0-9]{20,}")),
 )
 
 _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
@@ -1855,28 +2103,80 @@ _CONFLICT_RE = re.compile(r"^(<<<<<<<|=======|>>>>>>>)")
 
 _AWS_KEY_ID_KEEP = re.compile(r"\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{12}([0-9A-Z]{4})\b")
 
+# A private key's header AND BODY. The header alone is a shape; the base64 lines after it are the secret, so this consumes the header (its closing dashes optional, a mangled paste still carries the body), any RFC1421 `Proc-Type:`/`DEK-Info:` lines and every base64 run of 16+ characters (a length no prose word reaches) across real or escaped newlines, plus a shorter final line when the END line follows it, up to an optional END line.
+_PEM_BLOCK_RE = re.compile(
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-*"
+    r"(?:(?:\s|\\[nr])*(?:(?:Proc-Type|DEK-Info):[^\n\\]*|[A-Za-z0-9+/=]{16,}))*"
+    r"(?:(?:\s|\\[nr])*[A-Za-z0-9+/=]{1,15}(?=(?:\s|\\[nr])*-----END))?"
+    r"(?:(?:\s|\\[nr])*-----END [A-Z ]*PRIVATE KEY-----)?"
+)
+
 
 def redact_secret_shapes(text):
-    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart), any other shape becomes `[redacted]`."""
+    """`text` with every secret shape replaced: an AWS key id keeps its prefix and last four characters (enough to tell keys apart, and too short for any detector to read as an id), a private key loses its body with its header, any other shape becomes `[redacted:<kind>]`."""
     out = _AWS_KEY_ID_KEEP.sub(r"\1...\2", str(text))
-    for shape in _SECRET_SHAPES:
-        out = shape.sub("[redacted]", out)
+    out = _PEM_BLOCK_RE.sub("[redacted:private-key]", out)
+    for kind, shape in _SECRET_SHAPES:
+        out = shape.sub("[redacted:%s]" % kind, out)
     return out
 
 
+def _redact_walk(v):
+    """(`v` with every string redacted, whether anything changed). Keys, nested values, lists and tuples are all walked; a changed container comes back as a dict or list, the shape json writes anyway."""
+    if isinstance(v, str):
+        if not secret_shapes_in(v):
+            return v, False
+        return redact_secret_shapes(v), True
+    if isinstance(v, dict):
+        pairs = [(_redact_walk(k), _redact_walk(x)) for k, x in v.items()]
+        if not any(kc or xc for (_, kc), (_, xc) in pairs):
+            return v, False
+        return {k: x for (k, _), (x, _) in pairs}, True
+    if isinstance(v, (list, tuple)):
+        items = [_redact_walk(x) for x in v]
+        if not any(c for _, c in items):
+            return v, False
+        return [x for x, _ in items], True
+    return v, False
+
+
 def _redact_secret_shapes(ev):
-    """Redact one event in place AT THE DOOR, over its serialized JSON so keys, nested values and any container type json writes are all covered: the store is tracked, and on 2026-11-10 an `add` whose text quoted an AWS key id went straight into agent/worklist because only the lint read these shapes. No shape's pattern matches a quote or a backslash, so a match never spans a JSON delimiter or escape, and the replacements carry neither, so the text stays valid JSON."""
-    text = json.dumps(ev)
-    if not secret_shapes_in(text):
-        return
-    clean = json.loads(redact_secret_shapes(text))
-    ev.clear()
-    ev.update(clean)
+    """Redact one event in place. Walks the DECODED strings rather than the serialized JSON: a token right after a newline sits behind a `\\n` escape in JSON text, where `\\b` sees no word boundary, and a private key's body spans newlines only the decoded string shows."""
+    clean, changed = _redact_walk(ev)
+    if changed:
+        ev.clear()
+        ev.update(clean)
+
+
+def _redact_payloads(payloads):
+    """The payload list every tracked append writes: dicts redacted IN PLACE (so a journal twin written from the same list is clean too), a bare string replaced."""
+    out = []
+    for p in payloads:
+        if isinstance(p, dict):
+            _redact_secret_shapes(p)
+            out.append(p)
+        else:
+            out.append(_redact_walk(p)[0])
+    return out
+
+
+def _store_line(ev):
+    """One redacted JSONL line, for every writer that serializes events itself (compaction, the legacy import, the markdown sync) instead of going through `_append_lines`. On 2026-11-10 `compact` re-published an AWS key id from an item added before the door existed, because these writers each called json.dumps on their own."""
+    if isinstance(ev, dict):
+        _redact_secret_shapes(ev)
+    return json.dumps(ev, separators=(",", ":")) + "\n"
 
 
 def secret_shapes_in(text):
-    """Which secret shapes a string carries. Names the SHAPE, never the match: echoing the value back is the thing being prevented."""
-    return [r.pattern for r in _SECRET_SHAPES if r.search(str(text or ""))]
+    """Which secret shapes a string carries, as each row's pattern string (the pre-push scan keys on the private-key one). Names the SHAPE, never the match: echoing the value back is the thing being prevented."""
+    s = str(text or "")
+    return list(dict.fromkeys(r.pattern for _kind, r in _SECRET_SHAPES if r.search(s)))
+
+
+def secret_kinds_in(text):
+    """Which secret KINDS a string carries, each once: the names a redaction leaves behind, for a message a person reads."""
+    s = str(text or "")
+    return list(dict.fromkeys(kind for kind, r in _SECRET_SHAPES if r.search(s)))
 
 
 def compact_store(worklist, root=None, me=None, projects_dir=None):
@@ -1902,10 +2202,13 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
     me8 = agent_session_slug((me or C.resolve_session_id() or "compact")[:8])
     fold = load(worklist, sync=False)
     events = _read_events(worklist, root)
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = dead_hours()
     keep, clear = [], []
     for f in files:
         writer = f.stem
+        # epics.jsonl is a sidecar in this directory, not a writer's event log: the fold never carries it, so clearing it would destroy every epic.
+        if writer == "epics":
+            continue
         if writer == me8 or writer.startswith("_"):
             clear.append(f)
             continue
@@ -1916,10 +2219,14 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
                 newest = str(ev.get("at") or "")
         old_enough = True
         if newest:
-            try:
-                old_enough = (C.utcnow() - C.parse_stamp(newest)).total_seconds() / 3600.0 >= dead_h
-            except Exception:
-                old_enough = False
+            when = C.parse_stamp(newest)
+            # An unparseable stamp cannot prove the writer old, so its sidecar is kept, and the kept row says why.
+            old_enough = when is not None and (C.utcnow() - when).total_seconds() / 3600.0 >= dead_h
+            if when is None:
+                why = "%s; its newest event stamp `%s` does not parse, so its age is unknown" % (
+                    why,
+                    newest[:40],
+                )
         if verdict in ("idle", "remote", "unknown") and old_enough:
             clear.append(f)
         else:
@@ -1946,7 +2253,7 @@ def compact_store(worklist, root=None, me=None, projects_dir=None):
         fd, tmp = tempfile.mkstemp(dir=str(d), prefix="compact")
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in payload:
-                f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+                f.write(_store_line(ev))
         os.replace(tmp, target)
         for f in clear:
             if f == target:
@@ -2042,7 +2349,7 @@ def import_legacy(worklist, again=False, root=None):
     target.parent.mkdir(parents=True, exist_ok=True)
     with open(target, "w", encoding="utf-8") as f:
         for ev in payload:
-            f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+            f.write(_store_line(ev))
     # Journalled too: the legacy log is renamed below, so a branch without this file would otherwise hold no copy of it at all.
     _journal_append(target, payload, root)
     moved = legacy.with_suffix(".jsonl.imported-%s" % re.sub(r"[^0-9A-Za-z]", "", C.stamp_now()))
@@ -2351,17 +2658,53 @@ def migrate_items(worklist, fold, me, prev, projects_dir=None, events=None):
     return moved, refused
 
 
-def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
-    """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns (archived_lines, orphaned_lines, changed)."""
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+#: A worklist item cited from plan prose: `#` and 8 to 12 hex digits, not glued to a longer word. Ids are 8 (CLI) or 12 (migrated markdown) characters.
+PLAN_ITEM_CITE_RE = re.compile(r"(?<![0-9A-Za-z_])#([0-9a-f]{8,12})(?![0-9A-Za-z_])")
+
+
+def plan_cited_item_ids(root):
+    """Every worklist item id a plan under `agent/` cites as `#<id>` (a `Ruling:` header, a `dropped by ruling #<id>` line, a box's new home). Drafts included: a citation in a plan a session is still writing must resolve as much as one in a committed plan. Unreadable files are skipped."""
+    cited = set()
+    for path in agent_plan_files(root):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        cited.update(PLAN_ITEM_CITE_RE.findall(text))
+    return cited
+
+
+def cleanup_dead_sessions(worklist, fold, session_id, projects_dir, root=None):
+    """Tombstone dead sessions' items. Markdown lines are flipped to `~` IN PLACE (os.pwrite of one byte, v4 discipline: file length only grows, so racing appends are safe); CLI-origin items get a `tomb` event. Returns (archived_lines, orphaned_lines, changed).
+
+    AN ITEM A PLAN CITES IS NEVER TOMBSTONED (#28742604).
+    A plan's `Ruling:` and `dropped by ruling #<id>` lines resolve against the store with tombstones dropped (`wl_planfile.store_item_states`), so archiving a closed ruling item turned every box it released back into a binding: the 2026-11-26 archive of 725 dead-session items dropped `#d969cb29`, which `PLAN-ci-quick-cpu-scheduling.md` and `PLAN-stop-hook-refactor-enforcement.md` cite, and check:ci-plan-bindings went red until the ruling was re-recorded under a new id.
+    A cited item is left in place, neither archived nor reported as orphaned.
+    The plan scan runs once, at the first item whose dead owner is past WORKLIST_DEAD_HOURS (an archive or an orphan candidate alike, since a cited item is spared from both), so a stop with no such item reads no plan. A scan that fails (root resolution, the plan listing) fails closed: every item counts as cited and the stop archives and orphans nothing, since an empty citation set would tombstone every ruling item a plan names."""
+    dead_h = dead_hours()
     archive_h = float(os.environ.get("WORKLIST_ARCHIVE_HOURS", "168"))
     archived, orphaned, changed = [], [], False
     ages = {}
+    cited_box: list[set[str] | None] = []
 
     def age_of(owner):
         if owner not in ages:
             ages[owner] = owner_age_hours(owner, projects_dir)
         return ages[owner]
+
+    def cited(item_id):
+        if not cited_box:
+            try:
+                base = root if root is not None else C.project_root(C.project_start())
+                cited_box.append(plan_cited_item_ids(pathlib.Path(base)))
+            except Exception as exc:
+                # Any failure, not only I/O and parse errors: an exception escaping here would leave cleanup_dead_sessions instead of failing closed (review 59c0e156.1).
+                sys.stderr.write(
+                    "worklist: dead-session archive skipped, plan citation scan failed: %s: %s\n"
+                    % (type(exc).__name__, exc)
+                )
+                cited_box.append(None)
+        return cited_box[0] is None or item_id in cited_box[0]
 
     # CLI-origin items: same policy, expressed as events.
     for rec in fold.items:
@@ -2370,6 +2713,8 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             continue
         age = age_of(owner)
         if age is None or age < dead_h:
+            continue
+        if cited(rec["id"]):
             continue
         if rec["state"] == "x" or age >= archive_h:
             tomb_item(
@@ -2404,6 +2749,8 @@ def cleanup_dead_sessions(worklist, fold, session_id, projects_dir):
             age = age_of(owner)
             if age is None or age < dead_h:
                 continue  # unknown or alive
+            if cited(item_key(owner, line[m.end() :].strip())):
+                continue  # a plan cites it: archiving would break that citation
             bracket = raw.find(b"[")
             if bracket < 0 or raw[bracket + 1 : bracket + 2] != state.encode():
                 continue
@@ -2495,7 +2842,7 @@ def compact(worklist):
         fd, tmp = tempfile.mkstemp(dir=str(ep.parent), prefix=ep.name)
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             for ev in out:
-                f.write(json.dumps(ev, separators=(",", ":")) + "\n")
+                f.write(_store_line(ev))
         os.replace(tmp, ep)
         print("events log compacted to %d record(s)" % len(out))
 
@@ -2625,8 +2972,10 @@ def loop_state(worklist, session_id):
 AGENT_OWED_RE = re.compile(r"^##[ \t]+Owed ticks\b", re.MULTILINE | re.IGNORECASE)
 
 
-def agent_state_shape(body, owed=None):
-    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | ok, plus a detail string.
+def agent_state_shape(body, owed=None, armed=None):
+    """Shape verdict for a STATE.md body not yet on disk: thin | bloated | aimless | waitled | unfocused | owing | unarmed | ok, plus a detail string.
+
+    `armed` is the ids of the items this session holds live arms on (`armed_item_ids`, agent/plans/PLAN-armed-actions.md Design 8). When it is non-empty, a body with no `## Armed` section naming each `#<id>` is `unarmed`; None or [] demands nothing. Both the write path and the Stop check's read (`agent_state_state`, given a fold) pass it: an arm is the session's own held work, and the document that survives compaction must name it.
 
     `owed` is the [(plan, sig, verdict)] the box audit finds tickable-now or live-owed in plans this session owns (`wl_boxaudit.owned_owed_cached`, agent/plans/PLAN-tick-tracking.md T12). When it is non-empty, a body with no `## Owed ticks` section is `owing`, refused like `unfocused`; None or [] demands nothing, so every caller that passes no audit keeps today's verdict. Only the write path passes it (`worklist.py --state`, through `_owed_for_state`): the owed demand is a WRITE-TIME rule, and the Stop check's read (`agent_state_state`) deliberately passes none, so a document written before a box became owed is not turned stale by the audit between writes (review a94cd7a7.1).
 
@@ -2638,12 +2987,19 @@ def agent_state_shape(body, owed=None):
 
     The subject is ONE SECTION, not the whole document, so the cap is flat again (see AGENT_STATE_MAX_CHARS).
     """
-    problems = agent_state_problems(body, owed)
+    problems = agent_state_problems(body, owed, armed)
     return problems[0] if problems else ("ok", "%d chars" % len((body or "").strip()))
 
 
-def agent_state_problems(body, owed=None):
-    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing; [] when the body is fine (R20261101.3).
+def armed_item_ids(fold, session_id):
+    """The ids of the items `session_id` owns that carry a live arm (armed, or latched and not started), for the STATE.md `## Armed` demand."""
+    import wl_armed as A
+
+    return [rec["id"] for rec, _arm in A.session_arms(getattr(fold, "items", []), session_id)]
+
+
+def agent_state_problems(body, owed=None, armed=None):
+    """EVERY failing shape verdict of a STATE.md body as [(verdict, detail)], in the order thin, bloated, aimless, waitled, unfocused, owing, unarmed; [] when the body is fine (R20261101.3).
 
     `agent_state_shape` returns the first of these, so the Stop check and the guard keep their one verdict. `--state` prints all of them: a body with two faults reported one per attempt, and four refusals in 20 s were spent while the context was nearly full. A thin body fails nothing else (too short to judge), and a body with no `## Next action` section cannot be `waitled`.
     """
@@ -2694,6 +3050,27 @@ def agent_state_problems(body, owed=None):
                 ),
             )
         )
+    if armed:
+        import wl_armed as A
+
+        missing = A.unnamed_arms(text, list(armed))
+        if missing is None:
+            out.append(
+                (
+                    "unarmed",
+                    "no '## Armed' section, and this session holds %d live arm(s): %s. Name each "
+                    "(`worklist.py --armed-list <me>` prints them)"
+                    % (len(armed), ", ".join("#" + a for a in list(armed)[:8])),
+                )
+            )
+        elif missing:
+            out.append(
+                (
+                    "unarmed",
+                    "the '## Armed' section does not name %d live arm(s): %s"
+                    % (len(missing), ", ".join("#" + a for a in missing[:8])),
+                )
+            )
     return out
 
 
@@ -2814,7 +3191,7 @@ def agent_state_dead(sections, session_id, projects_dir, now=None):
     The caller's own section is NEVER reaped, at any age: a session's own stale section is a nag, not garbage.
     """
     now = time.time() if now is None else now
-    dead_h = float(os.environ.get("WORKLIST_DEAD_HOURS", "24"))
+    dead_h = dead_hours()
     kept, reaped = [], []
     for s in sections:
         if C.same_session(s["owner"], session_id):
@@ -2830,14 +3207,28 @@ def agent_state_dead(sections, session_id, projects_dir, now=None):
 _NEXT_ACTION_ID = re.compile(r"#([0-9a-f]{8,12})\b")
 
 
+_KEYED_HEADINGS = ("## Next action", "## Delegated")
+
+
 def next_action_ids(body):
-    """The `#<id>` item ids named under `## Next action` in one section body, in order."""
-    i = str(body or "").find("## Next action")
-    if i < 0:
-        return []
-    rest = body[i + len("## Next action") :]
-    j = rest.find("\n## ")
-    return _NEXT_ACTION_ID.findall(rest[:j] if j >= 0 else rest)
+    """The `#<id>` item ids named under `## Next action` and `## Delegated` in one section body, each once: the `## Next action` ids first, then the `## Delegated` ids (the order of `_KEYED_HEADINGS`, whichever heading comes first in the document), each group in document order.
+
+    An id that stays open keeps the document "ok" in `agent_state_state` (the documented rule: stale exactly when every named id has left the open states). That is bounded by the item, not by the document: an item whose writer died climbs the 45/90/120 minute liveness ladder and is resolved, which closes it (review 5be6080d.2).
+
+    `## Delegated` counts because the work a writer holds is the next step as surely as the lead's own: a document naming 8 delegated ids, none closed, was re-demanded on every owned-item change because only `## Next action` was read (agent/plans/PLAN-stop-hook-retro-20261125.md friction 2, the 14:09Z rewrite).
+    """
+    text = str(body or "")
+    out = []
+    for heading in _KEYED_HEADINGS:
+        i = text.find(heading)
+        if i < 0:
+            continue
+        rest = text[i + len(heading) :]
+        j = rest.find("\n## ")
+        for found in _NEXT_ACTION_ID.findall(rest[:j] if j >= 0 else rest):
+            if found not in out:
+                out.append(found)
+    return out
 
 
 def state_items_sig(fold, session_id):
@@ -2851,7 +3242,7 @@ def state_items_sig(fold, session_id):
 
 
 def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=None):
-    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'waitled'|'unfocused'|'stale'|'ok', age_min, my_body).
+    """('no-dir'|'missing'|'thin'|'bloated'|'aimless'|'waitled'|'unfocused'|'unarmed'|'stale'|'ok', age_min, my_body). `unarmed` is read only when `fold` is passed (the session's live arms come from it).
 
     WHY THIS EXISTS. Compaction silently drops context, and a session lost a real operator decision that way: the rediacc-autopilot App had already been created, the operator had said so, and after a compact it was reported as blocked-on-operator. The transcript is not the recovery mechanism, because the thing that failed IS the transcript being summarised.
 
@@ -2894,12 +3285,14 @@ def agent_state_state(root, session_id="", cur_sig=None, saved_sig=None, fold=No
             return "missing", None, ""
     body = mine["body"]
     age = max(0.0, (time.time() - mine["ts"]) / 60.0)
-    verdict, _detail = agent_state_shape(body)
+    # The live arms are read only with a fold (agent/plans/PLAN-armed-actions.md Design 8): a caller holding none (the post-compact briefing) judges the shape alone.
+    armed = armed_item_ids(fold, session_id) if fold is not None and session_id else None
+    verdict, _detail = agent_state_shape(body, None, armed)
     if verdict != "ok":
         return verdict, int(age), body
     if age <= AGENT_STATE_STALE_MIN:
         return "ok", int(age), body
-    # JUDGMENT-KEYED (2026-09-24, agent/plans/PLAN-stop-hook-continuity.md P1.2). When `## Next action` names items, the document is stale exactly when every one of them has left the open states: the action it hands a compacted session is then done. When it names none, the owned item set (`state_items_sig`, the caller's `cur_sig`) moving is the trigger.
+    # JUDGMENT-KEYED (2026-09-24, agent/plans/PLAN-stop-hook-continuity.md P1.2). When `## Next action` (or, since 2026-11-25, `## Delegated`) names items, the document is stale exactly when every one of them has left the open states: the action it hands a compacted session is then done. When it names none, the owned item set (`state_items_sig`, the caller's `cur_sig`) moving is the trigger.
     if fold is not None:
         named = next_action_ids(body)
         if named:

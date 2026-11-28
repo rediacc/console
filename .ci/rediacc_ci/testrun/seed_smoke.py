@@ -10,6 +10,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   4. Without `$GITHUB_OUTPUT` the twin failed AFTER seeding with a redirection error. The `SMOKE_TEST_TOKEN=` line goes to stdout instead, so a local run reports the token it just seeded.
   5. The token is announced with `::add-mask::` first. It is a bearer token with a license scope and a step output is not masked on its own.
   6. The twin seeds no Terms of Service acceptance, so every license route answers 403 TERMS_ACCEPTANCE_REQUIRED for the seeded user (`requireCurrentTerms`, private/account/src/middleware/terms.ts:97-111). `terms_sql` appends one `terms_acceptances` row for the Terms version in force, read from `.ci/config/legal-documents.json` (the manifest the Worker reads) so a Terms bump needs no edit here.
+  7. The scratch wrangler config names its Worker by the derived preview name (`PREVIEW_NAME`, `pv-<word>-<word>-<word>`, derived by ci.yml's "Derive the preview name" step) where the twin built `pr-<pr>`; a missing or malformed name is refused, exit 1.
 """
 
 import datetime
@@ -25,6 +26,7 @@ import tempfile
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
+from rediacc_ci.deploy import preview_name
 
 PR_RE = re.compile(r"^[0-9]+$")
 
@@ -33,8 +35,14 @@ def sha256_hex(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def derive(pr: str, jwt_secret: str, now: str) -> dict[str, str]:
-    """Every id, hash and the token for one PR. Pure, so the shape is unit-testable."""
+def derive(pr: str, jwt_secret: str, now: str, name: str = "") -> dict[str, str]:
+    """Every id, hash and the token for one PR. Pure, so the shape is unit-testable.
+
+    With a preview `name` the subscription id is `<name>-<8 hex>` (PLAN-preview-signer D3): the preview signer certifies only a `pv-` subscription of its own name, so the smoke licence needs one. The 8 hex are a hash of the PR and the name only, never the secret: a re-seed lands on the same row even after ACCOUNT_JWT_SECRET rotates, and the seed log (which prints this id) carries nothing an offline guess of the secret could be checked against.
+    """
+    sub_id = f"smoke-sub-pr-{pr}"
+    if name:
+        sub_id = f"{name}-{sha256_hex(f'smoke-sub:{pr}:{name}')[:8]}"
     email = f"smoketest-pr{pr}@rediacc.io"
     token = f"rdt_smoke_{pr}_{sha256_hex(jwt_secret)[:32]}"
     return {
@@ -42,7 +50,7 @@ def derive(pr: str, jwt_secret: str, now: str) -> dict[str, str]:
         "now": now,
         "user_id": f"smoke-user-pr-{pr}",
         "org_id": f"smoke-org-pr-{pr}",
-        "sub_id": f"smoke-sub-pr-{pr}",
+        "sub_id": sub_id,
         "team_id": f"smoke-team-pr-{pr}",
         "token_id": f"smoke-tok-pr-{pr}",
         "membership_id": f"smoke-mem-pr-{pr}",
@@ -121,8 +129,8 @@ def terms_sql(d: dict[str, str]) -> str:
     )
 
 
-def wrangler_config(pr: str, db_name: str, db_uuid: str) -> str:
-    return f"""name = "pr-{pr}"
+def wrangler_config(worker_name: str, db_name: str, db_uuid: str) -> str:
+    return f"""name = "{worker_name}"
 main = "src/index.ts"
 compatibility_date = "2026-01-20"
 [[d1_databases]]
@@ -158,6 +166,12 @@ def main(argv: list[str]) -> int:
     if not PR_RE.match(pr):
         log.error(f"PR_NUMBER must be digits, got '{pr}'")
         return 1
+    preview = os.environ.get("PREVIEW_NAME", "")
+    if not preview_name.is_preview_worker(preview) or preview.endswith("-signer"):
+        log.error(
+            f"PREVIEW_NAME must be a preview Worker name (pv-<word>-<word>-<word>), got '{preview}'"
+        )
+        return 1
     jwt_secret = os.environ.get("ACCOUNT_JWT_SECRET", "")
     if not jwt_secret:
         log.error(
@@ -166,7 +180,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     now = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    d = derive(pr, jwt_secret, now)
+    d = derive(pr, jwt_secret, now, preview)
     worker_dir = paths.repo_root() / "workers" / "www"
 
     print(f"Seeding smoke test data into {d['db_name']}...")
@@ -200,7 +214,7 @@ def main(argv: list[str]) -> int:
 
     with tempfile.TemporaryDirectory(prefix="wrangler-seed-") as tmp:
         config = pathlib.Path(tmp) / "wrangler-seed.toml"
-        config.write_text(wrangler_config(pr, d["db_name"], db_uuid), encoding="utf-8")
+        config.write_text(wrangler_config(preview, d["db_name"], db_uuid), encoding="utf-8")
         sys.stdout.flush()
         executed = subprocess.run(
             [

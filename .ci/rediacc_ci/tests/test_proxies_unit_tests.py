@@ -5,7 +5,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 TWO CASES DRIVE THE REAL WORKSPACES, one per registered gate, so a rename on either side reds here. The rest use a fixture root with a stub `node_modules/.bin/vitest` (the proxy requires it to EXIST and never invokes it) and a workspace whose script prints a canned vitest summary -- which is the only way to drive the mixed-summary defect, since a real suite cannot be asked to print
 `Tests 1 failed | 10 passed (11)` on demand.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-unit-tests.observations.jsonl`. Re-recorded
+K=5 LEDGER: the ledger (deleted in commit:936280cd35). Re-recorded
 2026-09-10 after the ANSI/wrong-token fix (5 rows, 5 distinct trees, 4 distinct finding sets): a clean suite, a COLOURED clean suite (the exact regression this fix closes), a mixed pass/fail suite, a vacuous workspace, and a missing vitest (77).
 """
 
@@ -37,6 +37,9 @@ FIXTURE_FILES = (
     TWIN_REL,
     ".ci/scripts/test/proxies/proxy-lib.sh",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",
     ".ci/rediacc_ci/proxies/__init__.py",
@@ -292,6 +295,25 @@ def test_no_arguments_is_the_usage_refusal(tmp_path: pathlib.Path) -> None:
     assert old.stdout == ""
     assert old.stderr == "usage: proxy-unit-tests.sh <workspace> <npm script key>\n"
     assert_same(old, new)
+
+
+@pytest.mark.parametrize(
+    "args",
+    [["ws", "script", "extra"], ["--selftest", "extra"], ["--selftest", "ws"]],
+)
+def test_an_extra_bare_argument_is_refused_not_dropped(args: list[str]) -> None:
+    """Review finding ec998864.1. The shared parser takes any number of bare arguments and `main` reads two, so the port's own count check refuses the rest at exit 2 before anything runs."""
+    done = subprocess.run(
+        ["python3", "-m", PORT_MODULE, *args],
+        env={**os.environ, "PYTHONPATH": str(ROOT / ".ci")},
+        cwd=str(ROOT),
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert done.returncode == 2, (done.returncode, done.stderr)
+    assert "expected `--selftest` alone or <workspace> <script>" in done.stderr
 
 
 def test_one_argument_is_also_the_usage_refusal(tmp_path: pathlib.Path) -> None:

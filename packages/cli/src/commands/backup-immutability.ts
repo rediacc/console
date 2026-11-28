@@ -124,6 +124,7 @@ export function registerBackupImmutability(backup: Command): void {
     .description(t('commands.backup.immutability.description'));
   immutability
     .command('show')
+    .summary(t('commands.backup.immutability.show.descriptionShort'))
     .description(t('commands.backup.immutability.show.description'))
     .action(async () => {
       try {
@@ -135,6 +136,7 @@ export function registerBackupImmutability(backup: Command): void {
   immutability
     .command('set')
     .argument('<days>', t('commands.backup.immutability.set.daysArgument'))
+    .summary(t('commands.backup.immutability.set.descriptionShort'))
     .description(t('commands.backup.immutability.set.description'))
     .action(async (days: string) => {
       try {
@@ -147,6 +149,7 @@ export function registerBackupImmutability(backup: Command): void {
   backup
     .command('undelete')
     .argument('<snapshot-id>', t('commands.backup.snapshots.snapshotIdArgument'))
+    .summary(t('commands.backup.undelete.descriptionShort'))
     .description(t('commands.backup.undelete.description'))
     .action(async (snapshotId: string) => {
       try {

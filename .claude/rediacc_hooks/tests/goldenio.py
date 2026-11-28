@@ -34,7 +34,7 @@ REPO_ROOT = next(
 )
 
 
-# THE FIXED FIXTURE WORLDS, folded onto one spelling (queued item #c2a39bea). Several guards (`block_roundlog_write`, `block_plan_without_tasks`, and every other `WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-...")`) build a deterministic world under the system temp dir, because their payload names a real file literally and must know the path at import time.
+# THE FIXED FIXTURE WORLDS, folded onto one spelling (queued item #c2a39bea). Several guards (`block_guarded_path_edit` for its round log row, `block_plan_without_tasks`, and every other `WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-...")`) build a deterministic world under the system temp dir, because their payload names a real file literally and must know the path at import time.
 # `tempfile.gettempdir()` follows TMPDIR, so with TMPDIR set elsewhere the payload text changed, every case key hashed from it moved, and `regolden.py` rewrote 28 lines across 5 goldens while reporting "0 changed" (a moved key is new, not changed). Folding the world prefix onto `/tmp/rediacc-guard-` in both the key and the recorded answer makes the golden independent of TMPDIR; under the default TMPDIR it is the identity, so no committed golden moves.
 WORLD_PREFIX = "rediacc-guard-"
 CANONICAL_WORLD_ROOT = "/tmp/" + WORLD_PREFIX
@@ -121,6 +121,27 @@ def rewritten_lines(old_text, new_text):
         if tag != "equal":
             total += max(i2 - i1, j2 - j1)
     return total
+
+
+class ShrinkRefusedError(RuntimeError):
+    """A re-record would write a golden that lost case ids the committed one has."""
+
+
+def refuse_shrink(label, old_silent, old_records, new_silent, new_records, allow_shrink=False):
+    """Raise `ShrinkRefusedError` naming the case ids the old golden holds and the new one lacks.
+
+    A FULL RE-RECORD ENUMERATES THE CASES THAT EXIST NOW, so a committed key it never asked for is a lost case, not a stale one. Dropping it silently let a regolden shrink a golden and only report the line count afterward (finding #569a06ac, sibling of #21c85057 in `.ci/rediacc_ci/tests/differential.py`, which mirrors this). `allow_shrink` is the operator's word that those cases no longer exist. Called before `write_golden`, so a refusal writes nothing.
+    """
+    if allow_shrink:
+        return
+    lost = sorted((set(old_silent) | set(old_records)) - (set(new_silent) | set(new_records)))
+    if lost:
+        msg = "%s would lose %d case(s) the committed golden holds: %s" % (
+            label,
+            len(lost),
+            ", ".join(lost),
+        )
+        raise ShrinkRefusedError(msg)
 
 
 def write_golden(path, header, silent_keys, records):

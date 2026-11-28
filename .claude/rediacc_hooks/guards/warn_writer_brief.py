@@ -20,9 +20,9 @@ DELIVERY, AND WHY IT IS ONE CONSTANT. Whether a PreToolUse hook's `updatedInput`
 
 IT NEVER REFUSES. A brief line is advice, the review history is a heuristic, and the commit hook still owns the gen-docs refusal. `run` returns ALLOW on every path, including every failure.
 
-STDOUT IS EXCLUSIVE ON THIS CHAIN, the same arrangement `warn_staged_shape_duplication` documents for pre-bash: no other pre-agent guard writes to stdout (block_agent_cap, block_focus_spawn and block_plan_concurrency speak on stderr only), so the chain's concatenated stdout is this guard's one JSON document or nothing. A second stdout speaker on this chain would make both unparseable; the suite runs the whole chain and parses its stdout to catch that.
+STDOUT IS EXCLUSIVE ON THIS CHAIN, the same arrangement `warn_staged_shape_duplication` documents for pre-bash: no other pre-agent guard writes to stdout (block_plan_concurrency speaks on stderr only), so the chain's concatenated stdout is this guard's one JSON document or nothing. A second stdout speaker on this chain would make both unparseable; the suite runs the whole chain and parses its stdout to catch that.
 
-LAST IN THE CHAIN (ORDER 6), behind block_plan_concurrency (ORDER 5). A refused spawn never reaches this guard, so no line is computed for a writer that does not start, and block_plan_concurrency stays the last guard that can refuse.
+LAST IN THE CHAIN (ORDER 4), behind block_plan_concurrency (ORDER 3). A refused spawn never reaches this guard, so no line is computed for a writer that does not start, and block_plan_concurrency stays the last guard that can refuse.
 
 NO ENVIRONMENT READ here; `wl_core` resolves the root from the payload as it does for block_plan_concurrency.
 
@@ -31,17 +31,20 @@ OWN_SUITE = True: a guard authored directly, with no bash original. `test-warn_w
 
 import importlib
 import json
-import os
 import pathlib
 import subprocess
-import tempfile
 import time
 
 from rediacc_hooks import hookio, syspath
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables(
+    "warn_writer_brief", "EDGE_CASES", "ENVS", "FIXTURES", "WORLD", "_SID", "_brief_world", "_spawn"
+)
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
-ORDER = 6
+ORDER = 4
 
 # The planted defect: with the lines dropped the guard is silent on every spawn, and the suite's firing cases must turn red.
 DEFECT = ("lines = p1 + p4", "lines = []")
@@ -73,72 +76,7 @@ CONTEXT_HEAD = {
     UPDATED_INPUT: "writer-brief: appended %d line(s) to this %r writer's prompt:",
 }
 PROMPT_HEAD = "From prior reviews and the doc generator (warn_writer_brief):"
-# ---- the differential's world: a tree whose review store holds three fixed doc findings on a/x.py ------
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-writerbrief-world")
-_SID = "c0ffee11-1111-2222-3333-444444444444"
 
-
-def _brief_world(_unused):
-    """WORLD/tree: a project root (a `.git` directory) whose agent/reviews holds three fixed medium doc-contradicts-code findings on a/x.py, rendered by `wl_review` itself. `a/**` matches no file of the real checkout, so the gen-docs half is never asked and the cases answer the same wherever they run."""
-    tree = pathlib.Path(WORLD) / "tree"
-    (tree / ".git").mkdir(parents=True, exist_ok=True)
-    syspath.on_sys_path(STOP_DIR)
-    review_mod = importlib.import_module("wl_review")
-    at = "2026-11-10T00:00:00Z"
-    for n in range(3):
-        sha = ("%08x" % (n + 1)) + "0" * 32
-        finding = review_mod.Finding(
-            "%s.1" % sha[:8],
-            "medium",
-            "a/x.py",
-            1,
-            "in-diff",
-            "The docstring says the guard refuses, but it returns ALLOW on that path.",
-            "fixed %s | abcdef01 %s" % ("f" * 40, at),
-        )
-        review = review_mod.Review(
-            sha=sha,
-            subject="s",
-            branch="1110-1",
-            reviewed_at=at,
-            model="m",
-            verdict="findings",
-            findings=[finding],
-        )
-        target = review_mod.review_path(tree, "1110-1", sha)
-        target.parent.mkdir(parents=True, exist_ok=True)
-        hookio.write_world_file(target, review_mod.render(review))
-    return WORLD
-
-
-FIXTURES = {"writerbrief-world": _brief_world}
-
-# CLAUDE_PROJECT_DIR is read by wl_core's root resolution, never by this guard.
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    ("writerbrief", {"CLAUDE_PROJECT_DIR": "{FIXTURE:writerbrief-world}/tree"}, {})
-]
-
-
-def _spawn(kind, text):
-    return {
-        "tool_name": "Agent",
-        "session_id": _SID,
-        "cwd": "/nonexistent-writer-brief-fixture",
-        "tool_input": {"subagent_type": kind, "description": "fixture", "prompt": text},
-    }
-
-
-EDGE_CASES = [
-    ("writer-on-files-with-three-fixed-findings", _spawn("general-purpose", "work\nOwns: a/**")),
-    ("writer-on-an-untouched-file", _spawn("general-purpose", "work\nOwns: b/untouched/**")),
-    ("reader-on-the-same-files", _spawn("Explore", "read\nOwns: a/**")),
-    (
-        "writer-that-edits-nothing",
-        _spawn("general-purpose", "work\nOwns: none -- this writer only reports what it reads"),
-    ),
-    ("writer-with-no-owns-line", _spawn("general-purpose", "fix the docstring in a/x.py")),
-    ("not-a-spawn", {"tool_name": "Bash", "tool_input": {"command": "true"}}),
-]
 
 NOT_RUN = "writer-brief: did not run (%s), so this %r spawn carries no brief lines.\n"
 # Only the P4 half failed: the review lines, when there are any, still go out, so this note must not say none did.

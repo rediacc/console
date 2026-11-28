@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. This gate is six regexes, two of them extraction patterns whose exact reach decided whether a real defect was found or silently missed. The twin's own history is the argument: an adjacency-requiring extraction pattern (`git[[:space:]]+rev-parse`) passed every synthetic fixture and found ZERO findings on a tree that genuinely
 had one, because the real defect wore `git -C "$dir" rev-parse`. A table of expected strings reproduces exactly that failure -- it asserts what the port does against itself. Running the real greps under bash is the only form that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-git-op-conditionals.sh` lines 101-157 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-gitop.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-git-op-conditionals.sh` lines 101-157 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib

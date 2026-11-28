@@ -3,7 +3,6 @@
 Fail CLOSED by contract: every error path returns an error string, and the caller turns that into a block. See "NO ESCAPE HATCH" in worklist.py.
 """
 
-import contextlib
 import copy
 import datetime
 import hashlib
@@ -72,7 +71,7 @@ JUDGE_SCHEMA = {
         "reason": {"type": "string", "maxLength": 300},
         "next_action": {"type": "string", "maxLength": 200},
         # What a `continue` rests on (JUDGE_BASIS below): required only on a stop whose effort level makes a report key advise-only, so an ordinary call's schema keeps its three required fields.
-        "basis": {"type": "string", "enum": ["work", "no-remaining", "out-of-sync"]},
+        "basis": {"type": "string", "enum": ["work", "no-remaining"]},
         # v7: OPTIONAL at the top level (verified: --json-schema accepts a conditionally-required object and returns cleanly with it omitted, so ONE schema, no variants), but its own properties are all required. On a fix-signal stop a missing or malformed object is a judge error and fails closed, same as an invalid verdict. v11: the admission object, same optional-at-top-level
         # shape as regression_gate above and for the same reason. UNLIKE regression_gate, a missing or malformed object here NEVER fails closed: this detector's only consequence is a tracked item, and a session blocked by a phantom regret learns to phrase things evasively, which costs more than the detection is worth. See wl_admit.py.
         "admission": {
@@ -687,7 +686,7 @@ def apply_defer_audit(rows, batch):
 # NOT A MODEL CALL, and it runs whether or not the judge does. A stop message that says `check:<x> passed` for an id no registry defines is reporting a gate that cannot have run: `npm run <missing>` exits 1, so the "pass" was read off something else (TRAPS.md, manifest-id-is-not-an-npm-script, met here a second time at a different layer). The judge already sees the session's
 # citations; this is the narrow deterministic slice of that review (plan section 5), a backstop to the pre-bash guard block_missing_npm_script rather than the mechanism.
 #
-# REGISTERED MEANS the ci-runner manifest (`scripts/ci-runner/gates.lock.json`, the projection of manifest.ts GATES that check:ci-gates-lock keeps faithful) OR a root package.json script: an aggregate like `check:i18n` is a real npm script with no manifest entry, and calling its pass a phantom would be the false positive that teaches sessions to skim this check. With neither file readable it says nothing.
+# REGISTERED MEANS the ci-runner manifest (`scripts/ci-runner/gates.lock.json`, the projection of manifest.ts GATES that check:ci-gen-gates keeps faithful) OR a root package.json script: an aggregate like `check:i18n` is a real npm script with no manifest entry, and calling its pass a phantom would be the false positive that teaches sessions to skim this check. With neither file readable it says nothing.
 CLAIMED_GATE = re.compile(
     r"(?<![\w:/-])((?:check|gate-test):[A-Za-z0-9][A-Za-z0-9:._-]*[A-Za-z0-9])`?"
     r"[^\n]{0,40}?\b(pass(?:ed|es)?|green|rc\s*=?\s*0|exit(?:ed|s)?\s*(?:code\s*)?0)\b",
@@ -881,7 +880,6 @@ def run_judge(
     fixset_provenance=None,
     transcript=None,
     fixset_instance=None,
-    local_batch=None,
     with_riders=True,
     closed=None,
     effort_level=None,
@@ -894,11 +892,9 @@ def run_judge(
 
     `with_riders` False (`judge: core`, wl_judge.riders) asks no class sweep, proof obligation or brave-default question, fresh or outstanding: the judge answers whether stopping is honest and nothing else. `closed` is the session's recently closed items as (id, text, evidence) rows (`closed_items`): the prompt names them with their tick evidence, and a `continue` whose only order names one of them is read as stop (`settle_closed_reraise`), so finished work is not ordered again.
 
-    `local_batch` is `{"finished": k, "batch": n}` while a turbo batch fills on a no-PR branch (agent/plans/PLAN-turbo-local-first.md D6), else None: the prompt then carries M.JUDGE_LOCAL_BATCH and the sanitiser also strips an order to open a PR (LOCAL_BATCH_ORDERS). With `rows`, `open` and `local` (wl_checks._judge_local_batch, agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2) the paragraph names the boxes and their classes (`local_batch_boxes`), and with `local == 0` a continue that only orders batch work is read as stop (`settle_batch_no_local`).
+    `receipt_run` is `"vm:check"` while an unpinned vm:check run is building a receipt on this tree (wl_checks.vm_check_running), else None (a ci:quick run and a pinned vm:check each judge a kept clone, so neither holds): the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
 
-    `receipt_run` is `"vm:check"` or `"ci:quick"` while such a run is building a receipt on this tree (wl_checks.vm_check_running, ci_quick_running), else None: the prompt carries M.JUDGE_RECEIPT_IN_FLIGHT and the sanitiser rewrites a main-checkout commit, edit, land or cherry-pick order (RECEIPT_ORDERS, R20261110.3).
-
-    `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `missing_ids`, `tracked`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7).
+    `facts` is what the hook measured for the checklist (wl_checks._judge_facts, R20261110.4 and .5): `tracked`, `freshness`, `changes`, `wake_until` and `item_workers`, rendered as M.JUDGE_FACTS (`render_facts`). A continue whose order and reason carry nothing at all is read as stop first (`settle_contentless`, R20261110.7), and one that only demands a status table next (`settle_status_demand`, agent/plans/PLAN-stop-hook-store-status.md D5).
 
     `transcript` is the lead's transcript path: an outstanding sweep or proof demand it already answers is discharged before the prompt is built (wl_classsweep.discharge_if_evidenced, wl_proofcheck.discharge_if_evidenced).
 
@@ -969,7 +965,7 @@ def run_judge(
         "traps": "\n".join("  - " + h for h in (traps or [])) or "  (none recorded)",
     } + (extra or "")
     if closed:
-        # After `extra`, never inside it, for the reason given for the local batch below.
+        # After `extra`, never inside it, for the reason given for the receipt paragraph below.
         prompt += M.JUDGE_CLOSED_ITEMS % "\n".join(
             "  #%s %s\n      closed with: %s"
             % (cid, text[:120], (evidence or "(no evidence recorded)")[:200])
@@ -982,15 +978,8 @@ def run_judge(
         prompt += JUDGE_BASIS
         schema = copy.deepcopy(schema)
         schema["required"] = [*schema["required"], "basis"]
-    if local_batch:
-        # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
-        prompt += M.JUDGE_LOCAL_BATCH % {
-            "finished": int(local_batch.get("finished") or 0),
-            "batch": int(local_batch.get("batch") or 1),
-        }
-        prompt += local_batch_boxes(local_batch)
     if receipt_run:
-        # After `extra` like the local batch: it asks for no schema field.
+        # After `extra`, never inside it: is_fix_stop and judge_schema_for read `extra`, and this paragraph asks for no schema field.
         prompt += M.JUDGE_RECEIPT_IN_FLIGHT % {"run": receipt_run}
     if facts is not None:
         prompt += render_facts(facts)
@@ -1131,76 +1120,15 @@ def run_judge(
     if not fired:
         out = settle_contentless(out)
         out = settle_wait_only_continue(out)
+        out = settle_status_demand(out, (facts or {}).get("tracked"))
         out = settle_closed_reraise(out, [c[0] for c in closed or ()])
-        out = settle_batch_no_local(out, local_batch, (facts or {}).get("tracked"))
-        out = settle_by_effort(
-            out, effort_level, local_batch=bool(local_batch), receipt_run=receipt_run
-        )
-    return sanitize_next_action(out, local_batch=bool(local_batch), receipt_run=receipt_run), None
+        out = settle_by_effort(out, effort_level, receipt_run=receipt_run)
+    return sanitize_next_action(out, receipt_run=receipt_run), None
 
 
-# ---- WHAT THE HOOK MEASURED FOR THE JUDGE (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2, .4, .5) -------------
+# ---- WHAT THE HOOK MEASURED FOR THE JUDGE (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.4, .5) -------------
 # The judge sees the last message only, so a box table or a wake time given two stops earlier no longer exists for it, and its checklist asked it to find, by reading, facts the hook already holds: which ids the message omits (a set difference), whether a wake timer is armed and when it fires (wl_wake's lock), and who already holds an item (the store's lease
 # history). It now gets them as measured facts.
-
-
-def _box_rows(rows):
-    return "\n".join("  %s %s [%s] %s" % (plan, bid, sig, cls) for plan, bid, sig, cls in rows)
-
-
-def live_owed_boxes(root):
-    """{(plan basename, sig): owed kind} for every open box `worklist.py --box-audit` reads `live-owed`, the kind being the unproved halves (`live`, `operator`, or both joined by `+`). {} when the audit cannot run, which leaves the caller's own classing as it was: a failed audit must never take the judge with it.
-
-    THE RESIDUE THIS CLOSES (agent/plans/PLAN-stop-hook-retro-20261110.md, recount after .1 to .7, lesson a6d0391f). `wl_checks._batch_box_facts` read only the newest investigation row, and a `partial` row written before `--owed` existed counts as local (D1). PLAN-backup-program.md A4d, J6 and J9 carried exactly such rows while box-audit already read them live-owed (landed code, an Accept naming a CI run id or a partial verdict on that code), so the judge ordered writers for them six times. The audit is the authority on what a box still owes; this hands its verdict to the judge's facts.
-
-    Cached per HEAD and per `wl_boxaudit.inputs_stamp`, the cache `owned_owed_cached` keeps, under its own key: the judge runs inside a Stop hook."""
-    try:
-        import wl_boxaudit as BA
-
-        root = pathlib.Path(root)
-        head = BA.head_of(root)
-        stamp = BA.inputs_stamp(root)
-        cache = BA.cache_path(root, "lo-%s" % (head or "nohead"))
-        try:
-            doc = json.loads(cache.read_text(encoding="utf-8"))
-            if doc.get("stamp") == stamp and doc.get("head") == head:
-                return {(p, s): k for p, s, k in doc.get("rows") or []}
-        except (OSError, ValueError, AttributeError, TypeError):
-            pass
-        audited, _head, _base = BA.audit(root, "judge")
-        rows = [
-            [
-                a.plan.rsplit("/", 1)[-1],
-                a.sig,
-                "+".join(sorted({str(h) for _c, h in a.owed})) or "live",
-            ]
-            for a in audited
-            if a.verdict == "live-owed"
-        ]
-        with contextlib.suppress(OSError):
-            cache.write_text(
-                json.dumps({"stamp": stamp, "head": head, "rows": rows}), encoding="utf-8"
-            )
-        return {(p, s): k for p, s, k in rows}
-    except Exception:
-        return {}
-
-
-def local_batch_boxes(local_batch):
-    """The box paragraph that follows M.JUDGE_LOCAL_BATCH: M.JUDGE_LOCAL_BATCH_NO_LOCAL when no open box is local work, M.JUDGE_LOCAL_BATCH_LOCAL naming the local ones otherwise, "" when the hook could not class the boxes (no `rows`) or the batch has none open."""
-    rows = (local_batch or {}).get("rows")
-    if not rows:
-        return ""
-    local = [r for r in rows if r[3] == "local"]
-    if not local:
-        return M.JUDGE_LOCAL_BATCH_NO_LOCAL % {"open": len(rows), "rows": _box_rows(rows)}
-    other = [r for r in rows if r[3] != "local"]
-    return M.JUDGE_LOCAL_BATCH_LOCAL % {
-        "local": len(local),
-        "open": len(rows),
-        "local_rows": _box_rows(local),
-        "other_rows": _box_rows(other) or "  (none)",
-    }
 
 
 def _stamp(epoch):
@@ -1212,9 +1140,37 @@ def _stamp(epoch):
         return None
 
 
+def _render_freshness(fresh):
+    """The STORE FRESHNESS value: the class counts, then one line per stale or orphaned item."""
+    fresh = fresh or {}
+    counts = fresh.get("counts") or {}
+    total = int(fresh.get("open") or 0)
+    if not total:
+        return "no open, in-flight or deferred item is owned by this session"
+    head = "%d open (%s)" % (total, ", ".join("%d %s" % (n, k) for k, n in counts.items()))
+    stale = fresh.get("stale") or ()
+    if not stale:
+        return head + "; none stale"
+    return head + "".join("\n    #%s %dm: %s" % (i, age, why) for i, age, why in stale)
+
+
+def _render_changes(changes):
+    """The CHANGES SINCE LAST STOP value: none, no snapshot yet, or one line per changed item with the `+N more` count."""
+    changes = changes or {}
+    if changes.get("first"):
+        return "no snapshot yet (first stop of this session id)"
+    rows = changes.get("rows") or ()
+    if not rows:
+        return "none"
+    out = "".join(
+        "\n    #%s %s%s" % (i, kind, " (%s)" % detail if detail else "") for i, kind, detail in rows
+    )
+    more = int(changes.get("more") or 0)
+    return out + ("\n    +%d more" % more if more else "")
+
+
 def render_facts(facts):
     """M.JUDGE_FACTS for `facts` (see run_judge)."""
-    missing = list(facts.get("missing_ids") or ())
     until = _stamp(facts.get("wake_until")) if facts.get("wake_until") else None
     rows = [
         "  #%s: %s %s (%s%s)%s"
@@ -1230,38 +1186,11 @@ def render_facts(facts):
         for w in workers
     ]
     return M.JUDGE_FACTS % {
-        "missing": ", ".join("#" + i for i in missing)
-        if missing
-        else "none: the message names every tracked id",
+        "freshness": _render_freshness(facts.get("freshness")),
+        "changes": _render_changes(facts.get("changes")),
         "wake": "armed, fires at %s" % until if until else "none armed",
         "workers": "\n".join(rows) or "  (no remaining item has had a worker)",
     }
-
-
-BATCH_WORDS = re.compile(r"turbo|batch|open\s+boxes|locally", re.IGNORECASE)
-
-
-def settle_batch_no_local(out, local_batch, tracked_ids=None):
-    """`out` with a `continue` read as `stop` when the hook classed the batch's open boxes and none is local work (`local == 0`), the continue's reason or order is about the batch (BATCH_WORDS), and it names no tracked item (`#<id>` in `tracked_ids`, or any `#<id>` when the caller passed none). Anything else unchanged."""
-    lb = local_batch or {}
-    if out.get("verdict") != "continue" or not lb.get("rows") or int(lb.get("local") or 0) != 0:
-        return out
-    text = "%s %s" % (out.get("reason") or "", out.get("next_action") or "")
-    if not BATCH_WORDS.search(text):
-        return out
-    refs = set(_ITEM_REF.findall(text))
-    if tracked_ids is not None:
-        refs &= {str(t) for t in tracked_ids}
-    if refs:
-        return out
-    out = dict(out)
-    out["verdict"] = "stop"
-    out["reason"] = (
-        "%s [read as stop: the judge said continue about the batch, and the hook measured no "
-        "local work in any of its %d open box(es)]" % (out.get("reason", ""), len(lb["rows"]))
-    )[:400]
-    out["next_action"] = ""
-    return out
 
 
 # ---- A CONTENT-FREE VERDICT (R20261110.7). On 2026-11-09T21:21:05Z the judge returned continue with reason "Duplicate call ignored." and next action "Ignore.", which blocked the stop and drew a restated Remaining list. A continue carries an order. One whose order is empty or a non-order word (CONTENTLESS_ORDERS) is read as stop whatever its reason names, and so is one with a short reason and a short order that both name nothing; either is reported as the `judge-contentless` advisory.
@@ -1357,12 +1286,12 @@ def settle_closed_reraise(out, closed_ids):
     return out
 
 
-# ---- THE JUDGE OBEYS THE EFFORT TABLE (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md). At effort smart .claude/config/effort.json makes `no-remaining` and `out-of-sync` advise-only, and the judge still blocked on exactly those demands ("the message omits open items by id", "no loop schedule"): a second door to a block the table
+# ---- THE JUDGE OBEYS THE EFFORT TABLE (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md). At effort smart .claude/config/effort.json made `no-remaining` and `out-of-sync` advise-only, and the judge still blocked on exactly those demands ("the message omits open items by id", "no loop schedule"): a second door to a block the table
 # had closed. The judge now names what its `continue` rests on, and a continue resting only on a report key that does not block at this level is read as stop, its order queued under that key's own threshold (wl_checks hands `effort_advised` to outq_add, which drops it where the key is off). A continue resting on `work`, a rule's order, or a level where the key blocks stands.
-REPORT_BASES = ("no-remaining", "out-of-sync")
+# `out-of-sync` left the bases with the missing-ids fact (agent/plans/PLAN-stop-hook-store-status.md J1): the store is the status channel, and a continue that demands the list is read as stop by settle_status_demand at every level.
+REPORT_BASES = ("no-remaining",)
 JUDGE_BASIS = (
-    "\nBASIS. Fill `basis` with what a `continue` rests on: `out-of-sync` when the only gap is "
-    "that the message omits open tracked items by id, so the report disagrees with the tracked list; "
+    "\nBASIS. Fill `basis` with what a `continue` rests on: "
     "`no-remaining` when the only gap is the report's form (no '## Remaining' section, no schedule, "
     "a missing label or designation); `work` when any gap is work the session can still start or "
     "finish, including a report gap that comes with such work. With `stop`, fill `work`.\n"
@@ -1376,7 +1305,7 @@ def report_bases_quiet(level, table=None):
     return tuple(k for k in REPORT_BASES if wl_effort.verdict(k, level, table) != wl_effort.BLOCK)
 
 
-def settle_by_effort(out, level, table=None, local_batch=False, receipt_run=None):
+def settle_by_effort(out, level, table=None, receipt_run=None):
     """`out` with a `continue` whose `basis` is a report key that does not block at `level` read as `stop`, the judge's reason and order moved to `effort_advised` as one (key, text) pair; anything else unchanged.
 
     The order is sanitized on the way in (`sanitize_next_action`), because the field is blanked here and the sanitizer that closes `judge_verdict` never sees it again."""
@@ -1385,9 +1314,9 @@ def settle_by_effort(out, level, table=None, local_batch=False, receipt_run=None
     basis = out.get("basis")
     if basis not in report_bases_quiet(level, table):
         return out
-    order = sanitize_next_action(
-        {"next_action": out.get("next_action")}, local_batch, receipt_run=receipt_run
-    )["next_action"]
+    order = sanitize_next_action({"next_action": out.get("next_action")}, receipt_run=receipt_run)[
+        "next_action"
+    ]
     advised = "Stop-gate judge, advised at effort %s (%s does not block at this level): %s%s" % (
         level,
         basis,
@@ -1426,6 +1355,61 @@ def settle_wait_only_continue(out):
     return out
 
 
+# ---- A CONTINUE THAT DEMANDS A STATUS TABLE (agent/plans/PLAN-stop-hook-store-status.md D5). The hook renders the store's table for the operator and hands the judge STORE FRESHNESS, so an order to list, restate or table items asks the message to copy what the hook already holds. The checklist no longer asks for it; this is the backstop against prompt drift, because the judge
+# still sees the remaining list. The shape is the tuner's status-table shape (wl_effort_tune counts it through this constant). A continue of that shape whose order names a file, a command or verb, or an open item stands: that is work.
+STATUS_SHAPE = r"(?i)\b(?:## Remaining|status table|the (?:message|status|report|table) omits|by id|loop schedule|restate)"
+_STATUS_RE = re.compile(STATUS_SHAPE)
+# A verb in an order: a CLI flag (`--tick`), a backticked command, or a command word that runs something.
+_ORDER_VERB = re.compile(
+    r"(?<![\w-])--[a-z][\w-]+|`[^`]+`|\b(?:npm|npx|pytest|python3?|git|gh|worklist\.py|rdc)\b",
+    re.IGNORECASE,
+)
+_ORDER_FILE = re.compile(
+    r"[\w.-]+/[\w./-]+|\b[\w-]+\.(?:py|ts|js|json|md|go|sh|ya?ml|toml)\b", re.IGNORECASE
+)
+
+
+# An order that only asks for the table, phrased as one: "list every open item with its state", "under the Remaining heading". The verb opens a sentence (after any run of softeners, "please", "kindly", "now", "just", "first" or "also", reviews bc4ca9e5.1 and c4b38c55.1) and its noun follows within the same clause (no comma, semicolon, "and" or "then" between), so an order that finishes work and then lists items is a work order and does not match (review 7e85a025.2).
+_STATUS_ORDER_RE = re.compile(
+    r"(?i)(?:^|(?<=[.!?]\s))\s*(?:(?:please|kindly|now|just|first|also)\s+)*"
+    r"(?:list|enumerate|restate|report|name)\b"
+    r"(?:(?!,|;|\band\b|\bthen\b)[^.]){0,60}\b(?:open items?|items?|ids?|states?)\b"
+    r"|\bRemaining (?:heading|section)\b"
+)
+
+
+def settle_status_demand(out, open_ids=None):
+    """`out` with a `continue` that only demands a status table read as `stop`, its text kept as `status_demand` (wl_checks queues it under `judge-status-demand`); anything else unchanged.
+
+    It fires when the ORDER matches STATUS_SHAPE or _STATUS_ORDER_RE, or when there is no order and the reason matches STATUS_SHAPE (a status-shaped reason beside a non-empty order never fires by itself), and the order names no file, no verb (a flag, a backticked command, a command word) and no open item (`open_ids`, the facts' `tracked`; with none given, any `#<hex>` counts as one, so the rule fails toward letting the continue stand)."""
+    if out.get("verdict") != "continue":
+        return out
+    reason = str(out.get("reason") or "")
+    action = str(out.get("next_action") or "")
+    # The ORDER decides: a status-shaped reason alone never downgrades a real work order such as "Finish the migration";
+    # only an order that itself asks for a status table, or no order at all beside a status-shaped reason, reads as one (review 3660ae77.1).
+    if not (
+        _STATUS_RE.search(action)
+        or _STATUS_ORDER_RE.search(action)
+        or (not action.strip() and _STATUS_RE.search(reason))
+    ):
+        return out
+    if _ORDER_FILE.search(action) or _ORDER_VERB.search(action):
+        return out
+    refs = set(_ITEM_REF.findall(action))
+    if refs and (open_ids is None or refs & {str(i) for i in open_ids}):
+        return out
+    out = dict(out)
+    out["verdict"] = "stop"
+    out["status_demand"] = M.N_JUDGE_STATUS_DEMAND % (reason[:200], action[:200])
+    out["reason"] = (
+        "%s [read as stop: the judge said continue, but its only order is a status table the hook renders from the store]"
+        % reason
+    )[:400]
+    out["next_action"] = ""
+    return out
+
+
 # The judge advises; it does not get to order the three acts with their own guarded paths (merging and moving main go through /pr-merge at a plan's finish line, operator ruling 2026-10-02; releasing goes through CD). On 2026-08-09 it read a session sitting on four green stacked PRs and returned next_action "merge PRs 563, 565 and 566". The session declined, which is the right outcome but the wrong MECHANISM: it survived on the model's judgment at the moment of reading, and the whole point of this program is
 # that judgment at the moment of reading is the faculty that fails. A later session, or a more tired one, reads an authoritative-sounding instruction from its own stop gate and complies.
 #
@@ -1444,13 +1428,7 @@ FORBIDDEN_ORDERS = (
 DS.check_catalog(FORBIDDEN_ORDERS)
 
 
-# The orders a filling turbo batch forbids (agent/plans/PLAN-turbo-local-first.md D6): the PR opens once, when the batch completes, and the hook's own LOOP NEXT block says when. Applied only while `local_batch` is set, so under `turbo_push: pr` (and turbo off) "open the draft PR" stays a legitimate next action.
-LOCAL_BATCH_ORDERS = (
-    (re.compile(r"\bgh\s+pr\s+create\b", re.IGNORECASE), "opening a PR"),
-    (re.compile(r"\bopen\s+(?:a|the)\s+(?:draft\s+)?PR\b", re.IGNORECASE), "opening a PR"),
-)
-
-# The orders a receipt run in flight forbids (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3, D3): vm:check rebuilds the CLI from the live tree on each rdc call, and the ci:quick receipt is keyed on the tree, so a main-checkout commit, edit, land or cherry-pick voids the run. Applied only while `receipt_run` is set; an order that names a lease or a worktree is a
+# The orders a receipt run in flight forbids (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.3, D3): vm:check rebuilds the CLI from the live tree on each rdc call, so a main-checkout commit, edit, land or cherry-pick voids the run. Applied only while `receipt_run` is set; an order that names a lease or a worktree is a
 # writer's own tree and passes. The lead declined this order 12 times in one window, so it is rewritten, not advised against.
 RECEIPT_ORDERS = re.compile(r"\b(?:commit|edit|land|cherry-pick)\w*\b", re.IGNORECASE)
 RECEIPT_ORDER_OK = re.compile(r"\b(?:lease|worktree)s?\b", re.IGNORECASE)
@@ -1491,8 +1469,8 @@ def _release_age_message(action):
 ADVICE_RULES = ((_PIN_ORDER, _release_age_message),)
 
 
-def sanitize_next_action(out, local_batch=False, receipt_run=None):
-    """Strip an operator-only directive from a judge verdict, in place, then an order a repo rule decides (ADVICE_RULES: a version pin inside the release-age soak), with `local_batch` an order to open a PR before the batch completes (LOCAL_BATCH_ORDERS), and with `receipt_run` a main-checkout commit or edit while that run builds its receipt (RECEIPT_ORDERS).
+def sanitize_next_action(out, receipt_run=None):
+    """Strip an operator-only directive from a judge verdict, in place, then an order a repo rule decides (ADVICE_RULES: a version pin inside the release-age soak), and with `receipt_run` a main-checkout commit or edit while that run builds its receipt (RECEIPT_ORDERS).
 
     Matches on the ORDER, not on politeness: "merge 563" and "you should probably merge 563" are the same instruction. Deliberately narrow about `release`, since "release notes" and "the release channel" are ordinary nouns a legitimate next action may name, while "cut the release" is an order.
     """
@@ -1507,11 +1485,6 @@ def sanitize_next_action(out, local_batch=False, receipt_run=None):
         if pattern.search(action):
             out["next_action"] = message(action)
             return out
-    if local_batch:
-        for pattern, _label in LOCAL_BATCH_ORDERS:
-            if pattern.search(action):
-                out["next_action"] = M.V_JUDGE_BATCH_ORDER_REJECTED % (action[:120],)
-                return out
     if receipt_run and RECEIPT_ORDERS.search(action) and not RECEIPT_ORDER_OK.search(action):
         out["next_action"] = M.V_JUDGE_RECEIPT_ORDER_REJECTED % (receipt_run, action[:120])
         return out

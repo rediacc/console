@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL. A1's detector is a three-stage grep pipeline whose behaviour on a comment, on a line that READS the pin, and on a line that restates it is decided by grep's `-F`/`-v` semantics rather than by anything a reader could infer, and the twin's own comments record two false positives it produced. A6's detector is four chained greps with three exemptions, each added
 after a measured false positive with a run id attached. Both are run for real here.
 
-The whole gate is covered by `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` over five distinct trees.
+The whole gate is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import os
@@ -188,3 +188,41 @@ def test_a1_reports_a_coincidence_entry_that_excuses_nothing(
     fails, text = _a1(_a1_tree(tmp_path, "2.3.1", TMATE), capsys)
     assert fails == 1, text
     assert "the A1 coincidence entry for MYPY_VERSION excuses nothing" in text
+
+
+def test_a9_control_fires_with_the_pins_exported(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A CI job exports the pins before the gate; the bare source must not inherit them (Console CI run 46109550206)."""
+    root = pathlib.Path(mod.__file__).resolve().parents[3]
+    library = root / ".ci" / "scripts" / "lib" / "toolchain.sh"
+    mutant = tmp_path / "toolchain.sh"
+    mutant.write_text(
+        library.read_text(encoding="utf-8") + "\ntoolchain_load() { return 0; }\n", encoding="utf-8"
+    )
+    for line in (root / mod.PINS_REL).read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, _, value = line.partition("=")
+            monkeypatch.setenv(
+                key.strip().removeprefix("export ").strip(), value.strip().strip("'\"")
+            )
+    assert os.environ.get("SHELLCHECK_VERSION")
+    # The control: the mutant skips the load, so with the pins exported it must still resolve nothing.
+    assert mod.pin_from_bare_source(mutant, "shellcheck") == ""
+    # And the real library still resolves under the same environment.
+    assert mod.pin_from_bare_source(library, "shellcheck") != ""
+
+
+def test_pin_from_bare_source_returns_empty_when_bare_env_raises_value_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review f1c9b45f.1 and d21a9ba8.1: a ValueError out of bare_env returns "" rather than escaping. The stub stands in for it because read_lines decodes with errors="replace", so a real pins file cannot raise one today; the catch guards a future reader."""
+
+    def boom() -> dict[str, str]:
+        raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+    monkeypatch.setattr(mod, "bare_env", boom)
+    library = (
+        pathlib.Path(mod.__file__).resolve().parents[3] / ".ci" / "scripts" / "lib" / "toolchain.sh"
+    )
+    assert mod.pin_from_bare_source(library, "shellcheck") == ""

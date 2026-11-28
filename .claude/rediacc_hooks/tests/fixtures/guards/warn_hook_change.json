@@ -1,0 +1,11 @@
+{
+  "EDGE_CASES": [
+    ["the plain commit", "git commit -m 'fix a guard'"],
+    {"//": "`case \"$CMD\" in *\"git commit\"*)` is an UNANCHORED glob, so a commit in a later clause, in a wrapper, or inside quoted prose all reach the check. That is the original's behaviour and the port must keep it, warts and all."},
+    ["a commit in a later clause", "git add -A && git commit -m x"],
+    ["quoted prose still counts as a commit", "echo 'then git commit -m x'"],
+    ["git commit-tree is a substring match too", "git commit-tree HEAD^{tree}"],
+    ["a non-commit git verb", "git status"],
+    ["no git at all", "ls -la"]
+  ]
+}

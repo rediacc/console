@@ -44,7 +44,7 @@ vi.mock('../../utils/repo-target.js', () => ({
     Promise.resolve({ machineName: target.machine ?? 'm1' }),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn(),
+  enforceResolvedTarget: vi.fn(),
   CMD: new Proxy({}, { get: (_t, key) => String(key) }),
 }));
 vi.mock('../../services/config/network-id-discovery.js', async (orig) => ({

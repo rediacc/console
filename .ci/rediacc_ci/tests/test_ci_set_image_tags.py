@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.set_image_tags`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/set-image-tags.sh` and the port over the same fixture and compared exit code, stdout, stderr and the bytes appended to `$GITHUB_ENV`. The K=5 ledger `.ci/shadow/w7p6-set-image-tags.observations.jsonl` recorded that comparison over five distinct trees. Both the twin and its sibling `derive-image-tag.sh` have now been
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/set-image-tags.sh` and the port over the same fixture and compared exit code, stdout, stderr and the bytes appended to `$GITHUB_ENV`. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. Both the twin and its sibling `derive-image-tag.sh` have now been
 deleted -- they had to go together, since the twin's whole first half was a call to the sibling -- and every case that executed them compares against `goldens/set-image-tags/`, which holds the twin's OWN recorded bytes, captured from the tracked scripts on their last day in the tree. Each golden's provenance header carries the twin's blob sha, so `git cat-file -p <sha>`
 still yields the program that produced them.
 

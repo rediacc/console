@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: et
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 `rdc` on agenditega arvestav juba põhimõtteliselt. Claude Code, Cursor, Cline: iga AI-assistent, mis kutsub `rdc` alamshell'is, saab struktureeritud JSON-väljundi, masintöötlemiseks sobivad veateated ja turvamehhanismid, mida autonoomseks Rediacc infrastruktuuri haldamiseks vajatakse. Nii integreerimine toimib.
@@ -77,7 +77,7 @@ Veastavused sisaldavad välju `retryable` ja `guidance`:
 
 ## Ohutus ja turvamehhanismid
 
-CLI ei kohtle agente samamoodi nagu inimest terminali taga. Tundlikud toimingud nõuavad tõendit, et tead juba praegust olekut (lipp `--current`), interaktiivsed redigeerimisvoood lükatakse vaikimisi tagasi ja iga tagasilükkamine logitakse auditisse. Viide [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety) katab täieliku tulemüüri tabeli, teadmisvärava mudeli, `REDIACC_ALLOW_CONFIG_EDIT` ulatuse ülekattena ja räsiahelaga auditi logi.
+CLI ei kohtle agente samamoodi nagu inimest terminali taga. Tundlikud toimingud nõuavad praeguse oleku tõendit (lipp `--current`), kogu konfiguratsiooni muutmine lükatakse tagasi ilma ülekatteta ja iga tagasilükkamine logitakse auditisse. Viide [AI agendi ohutus ja turvamehhanismid](/et/docs/ai-agents-safety) katab täieliku tulemüüri tabeli, teadmisvärava mudeli, sõnaselge nõusoleku JA poliitika lae reegli ja räsiahelaga auditi logi.
 
 ## Järgmised sammud
 

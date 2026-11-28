@@ -22,6 +22,15 @@ The prompt names a session prefix and a context epoch (`run <me8> <epoch>`). The
 4. Write `<run dir>/clusters.md` (one section per cluster: the proposal ids, the verdict, the reasoning, and the ready diff, brief or resolve lines), `<run dir>/hints.diff` and `<run dir>/traps.diff` as unified diffs against the current files (empty when no cluster lands there), and `<run dir>/resolve.sh` with the `--hint-resolve` lines.
 5. When the prompt asks for a lesson sweep, run `python3 .claude/hooks/stop/worklist.py --lessons-sweep <me8> --json > <run dir>/sweep.json`. Its retire-now rows are mechanical (a live, tested enforcer) and need no judgment; for each `basis: curator` row, choose encode-as-guard, encode-as-CI-gate, fix-the-tool or keep-as-prose, with the reason and, for the first three, the brief, in `<run dir>/sweep.md`. A memory note judged retire-now names the refusal text its why moves into before the lead deletes it.
 
+## Weekly plan
+
+When the prompt reads `weekly <me8> <epoch> <YYYYMMDD>` (the Stop hook's `lessons-weekly` check issues it; design agent/plans/PLAN-weekly-lessons.md), the deliverable is `<run dir>/PLAN-lessons-<YYYYMMDD>.md`, a plan in the box format of PLAN-weekly-lessons.md:
+
+1. Generate the skeleton, never retype it: `python3 -c 'import sys; sys.path.insert(0, ".claude/hooks/stop"); import wl_hints; print(wl_hints.weekly_plan_text(wl_hints.pending_proposals("."), "<YYYYMMDD>", "<me8>"))' > <run dir>/PLAN-lessons-<YYYYMMDD>.md`. It holds the header, a `## Cluster table` with one row per source family of 3 or more pending proposals (box `L1`, `L2`, ...) plus one `SINGLES` row, and one `[writer]` box per cluster. Every pending proposal id appears in exactly one row; a row may be split or merged by lesson, never dropped.
+2. Complete each box: replace the `Owns:` and `Accept:` placeholders with the real files, the control that fires and the one that stays silent, and the accept command. Each box is a code change (guard, gate, check or tool fix) that makes the lesson unnecessary. A cluster that something already enforces is not a box: delete the box and its table row, and write the `worklist.py --hint-resolve <me8> <id> <kind>:<token>` lines for those ids in `<run dir>/resolve.sh` with each pointer checked first. The `SINGLES` ids get the same treatment, or are folded into a box whose lesson they share (move the id to that box's row).
+3. Keep the table and the boxes in step: a box with no row resolves nothing when ticked, and a row with no box is never worked.
+4. Do not touch agent/plans/ or QUEUE.md. The lead saves the file verbatim as `agent/plans/PLAN-lessons-<YYYYMMDD>.md`, runs `worklist.py --promote <me8> PLAN-lessons-<YYYYMMDD>.md '<who ordered it and why>'`, and commits both in one commit. Ticking a box with `worklist.py --plan-tick` then resolves every id its table row lists against the evidence's commit.
+
 ## Output
 
 The final message, and nothing else: the run directory, the pending count, one line per cluster (ids, verdict, the artifact that carries it), and every pointer that did not resolve.

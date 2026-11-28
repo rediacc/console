@@ -1,25 +1,25 @@
 """wl_standdown: the Stop hook's stand-down profiles, the keep-lists that decide which checks still block while the session is told to wait.
 
-THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check added later stands down by default, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
+THREE STATES STAND THE BATTERY DOWN, and all share one mechanism. A KEEP-list rather than a drop-list, deliberately: a check that is not kept stands down, which is what "should not be invoked" means, and it matches `check_tier`'s rule that an unknown key is hygiene.
 
-  CAP_WAIT  every writer slot is verified live and nothing this session could start (operator 2026-09-24: "the stop hook should not be invoked (or should skip the order) when writer slots are full! There could be exceptions like 2% compaction etc."; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). `wl_roster.cap_saturated_wait` decides it, because it needs the writer cap (`wl_roster.writer_cap`, QUEUE.md `writer_cap:`).
-  FOCUS     the session declared a PR wind-down with `worklist.py --phase <me> babysit|merge` (operator 2026-09-25, spec Y: "Finish, don't start"; agent/plans/PLAN-stop-hook-focus-mode.md; the verb was `--focus` until agent/plans/PLAN-stop-hook-effort.md made it a phase). A phase only parks work and never adds a block. What stays is what protects the PR: CI red, a dead watch, unread reports, STATE.md near compaction and hook integrity.
+PR_LOOP PARKS NOTHING SILENTLY. Every effort.json key that blocks at `high` or below (a FLOOR key included) is either kept by PR_LOOP or named in PARKED_BY_DESIGN with the reason it stands down; test_wl_standdown_class.py fails on a key that is neither. The keep-list alone let `writers-now-due` (operator ruling #ac2de21f: a /writers-now round at least hourly at effort high) block nowhere: the development tree stops under PR_LOOP, which named it in no set, and 81 stops in a row parked it ("Stood down: ... writers-now-due x81", session ace763dd, 2026-11-23). A new check has to be placed in a keep set or argued into PARKED_BY_DESIGN before the class guard passes.
+
+  CONC_WAIT  every queued item is held by a live plan's mutex or Owns and nothing this session could start (operator 2026-09-24, first given for a full writer cap: stand the order down while nothing can start, with "exceptions like 2% compaction"; agent/plans/PLAN-stop-hook-cap-saturated-wait.md, narrowed to file-clash queues when the writer limit was removed, agent/plans/PLAN-unlimited-writers.md). `wl_roster.concurrency_wait` decides it, because it needs the roster's queue holds.
 
 THE EFFORT LEVEL RUNS FIRST (wl_effort, agent/plans/PLAN-stop-hook-effort.md): it turns each check into a block, an advisory or nothing, and these profiles then park what remains. The FLOOR that blocks at every level lives in wl_floor, beside CORE, and is sealed the same way.
 
   PR_LOOP   the checkout is on the one-plan-per-PR loop (`wl_prscope.loop_state`, kind other than off-loop; operator ruling 2026-10-03, agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4). The hook blocks only on the live PR's plan set, its CI and reviews, the items on that set's epics and the loop's own duties; every other check is parked and named in one queued line.
 
-FOCUS governs over CAP_WAIT, and both over PR_LOOP: each is a narrower declaration. FOCUS is the operator's explicit one, and its judge skip already covers the cap wait's.
+  LANDING_TREE  the stop runs in the landing tree (agent/plans/PLAN-simple-two-tree-loop.md B2). The landing tree's job is to land the one PR, so it keeps the PR protection (_PR_GUARD) plus the loop's duties (the landing state machine's step rides `loop-next`) and parks the checks that start new work.
 
-A TURBO BATCH BUILDING LOCALLY narrows PR_LOOP by one check, the red CI (operator ruling 2026-10-13). That set and its predicate live in wl_checks beside the turbo arm (`TURBO_BUILD_PARKS`, `turbo_build_parks`), as `TURBO_KEEPS` does, because the predicate reads the queue settings and the plan boxes and this module reads nothing. FOCUS governs there too: an active focus parks nothing of it.
+`profile_for` picks one: LANDING_TREE by the tree role first, then CONC_WAIT over PR_LOOP, the narrower declaration. The development tree always builds. The phase verb and its FOCUS profile were deleted with agent/plans/PLAN-simple-two-tree-loop.md B10; the tree role replaced them.
 
-SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_BATCH_MIN` / `FOCUS_MAX_HOURS` are pinned as literals. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
+SEALED. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`: it reads no environment variable and imports only the standard library, and `FOCUS_PR_TTL_S` is pinned as a literal. A knob that retuned a keep-list would be exactly the escape hatch the roster rules out.
 
-EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 / test_wl_focus.py f13 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired` likewise through `_DEFER_EXPIRED`.
+EACH KEY LITERAL APPEARS EXACTLY ONCE IN THIS FILE, so every mutation control that removes one line (`mutated_hook` asserts the count is 1) is unambiguous, and the producer scan in test_wl_cap_wait.py c9 stays meaningful. `pr-finish` is kept by several profiles in different tiers, so it is named once through `_PR_FINISH`; `defer-expired`, `queue-slot` and `undefaulted` likewise through `_DEFER_EXPIRED`, `_QUEUE_SLOT` and `_UNDEFAULTED`.
 """
 
-import datetime
-import re
+import types
 from typing import NamedTuple
 
 
@@ -33,7 +33,7 @@ class Profile(NamedTuple):
     compaction_keys: frozenset  # kept only when compaction is imminent
 
 
-# The pr-babysit finish line. FOCUS keeps it outright; CAP_WAIT keeps only its always-tier HOOK BUG branch (finding 3 of the focus plan: a blind finish line must say so even in a cap wait).
+# The pr-babysit finish line. PR_LOOP and LANDING_TREE keep it outright; CONC_WAIT keeps only its always-tier HOOK BUG branch (a blind finish line must say so even in a concurrency wait).
 _PR_FINISH = "pr-finish"
 
 # Shared by both profiles: what the lead CAN and MUST act on even while told to wait.
@@ -49,22 +49,28 @@ CORE = frozenset(
         "agent-bootstrap",
         # Owed to a party that cannot see this session's silence.
         "unread-reports",
+        # The other tree waits on this one (wl_handover): an unanswered stuck or churn handover in the development tree, an answered lease the landing tree has not landed.
+        "handover-open",
+        "handover-land",
         # Ledger honesty: one-turn exits that start nothing.
         "completion",
         "found-not-fixed",
         "deferred-finding",
         "deflected-finding",
-        # The roster: each means a slot is free, a lease is on nobody, or a running writer owes liveness.
-        "roster-cap",
+        # The roster: each means a lease is on nobody, or a running writer owes liveness.
         "roster-silent",
         "roster-unleased",
         "roster-dead",
+        # A sub-agent an API error killed (wl_roster_resume): only the lead's SendMessage restarts it, and a saturated wait is exactly when its silence would read as a writer still running.
+        "resume-dead-agent",
         # A wait on background work with no wake-up timer (wl_wake): every profile stands the session down to WAIT, which is exactly when a hung task would never wake it.
         "wake-timer",
         # The operator's ownership question for a checklist whose owner is not live: parking it would turn it back into the advisory nobody settles.
         "cl-owner",
         # Two live writers already breaking a plan mutex or sharing files (agent/plans/PLAN-plan-priority-concurrency.md section 5c): waiting does not resolve it.
         "roster-concurrency",
+        # A shell command stuck past its limit holds the turn itself: standing down to WAIT would sit behind the very command that never returns.
+        "stuck-shell",
         "ladder-gone",
         "ladder-idle",
         # Per-commit reviews (agent/plans/PLAN-per-commit-review.md section 7): an open high finding or a hand-edited record protects the PR, and waiting on writers resolves neither, so both profiles keep them.
@@ -72,6 +78,8 @@ CORE = frozenset(
         "commit-review-malformed",
         # The context is past ctx_budget.WISDOM_FRACTION with its in-flight work not handed over (wl_checks.wisdom_due): waiting on writers does not write the briefs, and the window closes at compaction.
         "wisdom-due",
+        # A trapguard rule raised and was skipped (wl_trapfires): a FLOOR key (wl_floor.FLOOR), which no effort level turns off, so no profile parks it either.
+        "trapguard-errors",
     }
 )
 # Kept whatever their suffix: `agent-pushback:<id>`, `giveup-claim:<id>` (one-shot latches, as above).
@@ -84,18 +92,22 @@ COMPACTION_KEYS = frozenset(
     }
 )
 
-# An expired `[?]` DEFAULT is an order to execute it: both the cap wait and the PR loop keep it.
+# An expired `[?]` DEFAULT is an order to execute it: both the concurrency wait and the PR loop keep it.
 _DEFER_EXPIRED = "defer-expired"
-# The cap wait's own additions: a queue lease with a free slot, and deferrals that must execute.
-_CAP_WAIT_ONLY = frozenset(
+# Queued writer work nothing holds any more: the concurrency wait keeps it, and so does the development tree's PR loop, whose writers it queued.
+_QUEUE_SLOT = "queue-slot"
+# A `[?]` with no DEFAULT can never expire into `defer-expired`, so both profiles that keep the expiry keep this too. A deferral is never queued out of the PR loop's scope (wl_store.classify_items).
+_UNDEFAULTED = "undefaulted"
+# The concurrency wait's own additions: a queue lease nothing holds any more, and deferrals that must execute.
+_CONC_WAIT_ONLY = frozenset(
     {
-        "queue-slot",
+        _QUEUE_SLOT,
         _DEFER_EXPIRED,
-        "undefaulted",
+        _UNDEFAULTED,
     }
 )
-# Focus's own additions: the checks that protect the PR itself.
-_FOCUS_ONLY = frozenset(
+# The checks that protect the PR itself, kept by both loop profiles.
+_PR_GUARD = frozenset(
     {
         "ci-red",
         "ci-unreadable",
@@ -103,39 +115,125 @@ _FOCUS_ONLY = frozenset(
         "pr-stale",
         "diverged",
         "bg-report",
-        "focus-pr-items",
-        # Review Complete is a required check again (operator ruling 2026-10-03): an unanswered PR review or a failed review run holds the merge, so it blocks during a PR wind-down too.
+        # Review Complete is a required check again (operator ruling 2026-10-03): an unanswered PR review or a failed review run holds the merge, so it blocks in the landing tree too.
         "pr-review",
     }
 )
 
-# The PR loop's own additions (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): the scoped open list and the checks that read it, the PR plan's own pushes, and the post-merge continuation.
-_PR_LOOP_ONLY = frozenset(
+# The loop's duties both loop profiles keep (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 4): the scoped open list, the loop's next step (in the landing tree, the state machine's step), and an expired DEFAULT.
+_LOOP_DUTIES = frozenset(
     {
         "open-items",
+        "loop-next",
+        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. CONC_WAIT still parks it, as its plan's hygiene table lists it.
+        "bg-orphan",
+    }
+) | {_DEFER_EXPIRED}
+# The checks that start, adopt, schedule or settle plan work (writers-now-due, plan-box-owed and the queue slot sit beside the starters): the development tree's PR loop keeps them, the landing tree ("finish, don't start") parks them.
+_BUILD_ONLY = frozenset(
+    {
         "idle-stall",
         "unblocked-claim",
         "plan-unimplemented",
         "plan-adopted",
-        "loop-next",
-        # Session hygiene, not plan scope (2026-10-24): twelve hung wait loops a sub-agent armed lived for hours while every stop printed "Stood down: bg-orphan x158". The shells are this session's own process tree on every PR, so the loop keeps the check. FOCUS and CAP_WAIT still park it, as their plans' hygiene tables list it.
-        "bg-orphan",
+        # No /writers-now round of this session in the last hour while Promoted boxes are open (operator ruling #ac2de21f, wl_writersnow.due): the round is how the development tree starts writers.
+        "writers-now-due",
+        # An armed action of this session fired, expired or went void (agent/plans/PLAN-armed-actions.md Design 10): it starts held development work the moment its trigger fires; the landing tree finishes and does not start (ruling B2), and it owns no development arms.
+        "armed-action-due",
+        # A commit landed on the live branch names a still-open box with no investigation row (wl_boxaudit): the tick duty of the plan the branch builds. Kept by the development tree, which builds the plans and commits each verified unit with its box ticked; parked in the landing tree on purpose, whose role is to babysit the PR to green and merge it ("finish, don't start"), so a tick owed there is carried by the development tree's next commit rather than started from the landing tree (e8e49cc0.2).
+        "plan-box-owed",
+        # Box ticks finished writers reported, their commits landed (wl_planbox's pending-tick queue): the same tick duty as plan-box-owed, applied with `worklist.py --apply-ticks`.
+        "ready-ticks",
+        _QUEUE_SLOT,
     }
-) | {_DEFER_EXPIRED}
-
-CAP_WAIT = Profile(
-    "cap-wait", CORE | _CAP_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
 )
-FOCUS = Profile("focus", CORE | _FOCUS_ONLY | {_PR_FINISH}, PREFIXES, frozenset(), COMPACTION_KEYS)
+# The development tree's own duties beyond the plan set (agent/plans/PLAN-stop-hook-one-plan-scope.md ruling 1d: dead watches, findings this session raised): the PR loop keeps them, the landing tree parks them with the rest of the work it does not start.
+_DEV_DUTIES = frozenset(
+    {
+        _UNDEFAULTED,
+        # The stops that end the turn with work in hand: three stops with nothing moving, a wait with nothing to wake it, a question announced and not asked (CLAUDE.md rule 2, the ten-stop loop).
+        "stuck",
+        "idle",
+        "pending-ask",
+        # The session's work loop: its crons died, or one carries a schedule nothing can parse (and so counts as no loop).
+        "loop-died",
+        "broken-schedule",
+        # A production fault this session claimed or ticked without evidence (wl_schedred, wl_opshealth), and the off-box alerter whose silence would hide one.
+        "scheduled-red",
+        "ops-health-red",
+        "ops-health-offbox-stale",
+    }
+)
+# The PR loop's own additions: the loop's duties, the PR plan's own pushes, the build checks and the development tree's duties.
+_PR_LOOP_ONLY = _LOOP_DUTIES | _BUILD_ONLY | _DEV_DUTIES
+
+CONC_WAIT = Profile(
+    "concurrency-wait", CORE | _CONC_WAIT_ONLY, PREFIXES, frozenset({_PR_FINISH}), COMPACTION_KEYS
+)
 # STATE.md freshness is a loop duty at every band (ruling 1d), so the compaction keys are full keeps here rather than late-band ones.
 PR_LOOP = Profile(
     "pr-loop",
-    CORE | _FOCUS_ONLY | _PR_LOOP_ONLY | COMPACTION_KEYS | {_PR_FINISH},
+    CORE | _PR_GUARD | _PR_LOOP_ONLY | COMPACTION_KEYS | {_PR_FINISH},
     PREFIXES,
     frozenset(),
     frozenset(),
 )
-PROFILES = (CAP_WAIT, FOCUS, PR_LOOP)
+# THE LANDING TREE (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree's standing profile, read from the tree role. It keeps what protects the PR and the loop's duties (the landing state machine's step rides `loop-next`), and parks what starts new work. STATE.md freshness is a loop duty, as in PR_LOOP.
+LANDING_TREE = Profile(
+    "landing",
+    CORE | _PR_GUARD | _LOOP_DUTIES | COMPACTION_KEYS | {_PR_FINISH},
+    PREFIXES,
+    frozenset(),
+    frozenset(),
+)
+PROFILES = (CONC_WAIT, PR_LOOP, LANDING_TREE)
+
+# THE CHECKS PR_LOOP PARKS ON PURPOSE, each with its reason. Every effort.json key that blocks at `high` or below is kept by PR_LOOP (here, or through wl_checks' IDLE_KEEPS, WORKTREE_KEEPS and LANDING_KEEPS, which `wl_checks.stand_down_keeps` folds in) or named here; test_wl_standdown_class.py refuses a key that is neither, and a key that is both. The scope reasons cite agent/plans/PLAN-stop-hook-one-plan-scope.md ruling 2: every item and plan outside the PR's plan set is one queued line.
+_ITEM_SCOPE = "a ladder over every owned open item; items outside the PR plan's epic are one queued line (ruling 2), and in-epic ones block through open-items"
+_JUDGE = "the judge's audit of the closing message's evidence wording, not a duty of the plan set; Design 4 parks the judge battery (SC5 names no-remaining)"
+_HYGIENE = "session or repository hygiene with no bearing on the PR's plan set"
+_PROGRAMS = "an agent/programs checklist is work outside the PR's plan set (ruling 2)"
+PARKED_BY_DESIGN = types.MappingProxyType(
+    {
+        "wl-stale": _ITEM_SCOPE,
+        "ladder-investigate": _ITEM_SCOPE,
+        "ladder-resolve": _ITEM_SCOPE,
+        "unconfirmed": "the wording of a [?] item's operator claim, a judge-side honesty check; the deferral itself still blocks through defer-expired and undefaulted",
+        "ci-waiting": "forces the aged [?] backlog while a CI watch is the only work in flight; that backlog is the queued work ruling 2 parks",
+        "unjustified": _JUDGE,
+        "uncited": _JUDGE,
+        "unstated": _JUDGE,
+        "mislabelled": _JUDGE,
+        "phantom-gate": _JUDGE,
+        "no-remaining": _JUDGE,
+        "plan-fidelity": _JUDGE,
+        "intent-expired": "a stated intent's horizon, a claim of the message rather than a box of the plan set; open work it covered still blocks through open-items",
+        "cl-producing": _PROGRAMS,
+        "cl-flip": _PROGRAMS,
+        "cl-waves": _PROGRAMS,
+        "lessons-weekly": _HYGIENE,
+        "many-work-crons": _HYGIENE
+        + " (a second work cron costs turns; loop-died and broken-schedule are kept)",
+        "sweep-moment": _HYGIENE,
+        "stale-local": _HYGIENE + " (a stale local branch, not the live one)",
+        "submodule": _HYGIENE + " (rulable, wl_ruling.RULABLE_CHECKS)",
+        "bigpieces": _HYGIENE + " (rulable, wl_ruling.RULABLE_CHECKS)",
+        "plan-drift": "Design 4's own example of a stood-down check; drift is a docs question, not a box of the plan set",
+        "solo-grind": "Design 4 SC5 stands it down by name; the PR loop's writer cadence is writers-now-due, which it keeps",
+    }
+)
+# The tree roles of wl_prscope, repeated here because this module imports nothing.
+ROLE_LANDING = "landing"
+ROLE_DEVELOPMENT = "development"
+
+
+def profile_for(role, conc_wait, on_loop):
+    """The stand-down profile of one stop, None for the full battery. The tree role decides first (agent/plans/PLAN-simple-two-tree-loop.md B2): the landing tree always stands down to LANDING_TREE. Then the concurrency wait, then the PR loop."""
+    if role == ROLE_LANDING:
+        return LANDING_TREE
+    if conc_wait:
+        return CONC_WAIT
+    return PR_LOOP if on_loop else None
 
 
 def keeps(profile, key, always, compaction_due):
@@ -149,7 +247,7 @@ def keeps(profile, key, always, compaction_due):
 
 
 def parked_line(counts, cap=6):
-    """The parked keys in one phrase: the top `cap` by stops parked (`key xN`), then "+N more"; "nothing" when none. Shared by focus mode's end summary and the PR loop's queued line."""
+    """The parked keys in one phrase: the top `cap` by stops parked (`key xN`), then "+N more"; "nothing" when none. The PR loop's queued line."""
     counts = counts if isinstance(counts, dict) else {}
     ranked = sorted(counts.items(), key=lambda kv: (-int(kv[1] or 0), kv[0]))
     names = ", ".join("%s x%d" % (k, int(n or 0)) for k, n in ranked[:cap]) or "nothing"
@@ -158,93 +256,5 @@ def parked_line(counts, cap=6):
     return names
 
 
-# ---- the wind-down phases (`--phase babysit|merge`; `build` is the default and parks nothing) ----
-
-PHASE_MODES = ("babysit", "merge")
-# The phase every session is in until it declares a wind-down, and the value `--phase <me> build` writes to end one.
-BUILD = "build"
-# Advisories outside FOCUS_ADVISORY_KEYS are held and released as one digest at most this often.
-FOCUS_BATCH_MIN = 30
-# A focus older than this ends on its own (`why: expired`); re-issuing the verb renews it.
-FOCUS_MAX_HOURS = 24
-# The merged/closed read is cached this long per session.
+# The one PR read (wl_ci.pr_link) is cached this long per branch.
 FOCUS_PR_TTL_S = 180
-# Advisories released in full on every focused stop: they are about the PR or owed to someone else. `focus-pr-unreadable` (the merged/closed read went blind) is added to the plan's list: holding the one note that says focus may never end on its own would defeat it.
-FOCUS_ADVISORY_KEYS = frozenset(
-    {"ci-queue", "ci-report", "unread-reports", "ladder", "focus-ended", "focus-pr-unreadable"}
-) | frozenset({"commit-remind", "receipt-behind", "ci-hold"})
-# The second set above is the loop-speed reminders (agent/plans/PLAN-fast-loop.md Parts 2-4). None blocks, and a focused PR wind-down is exactly when a commit or a held push is owed. They are NOT in CORE.
-# A spawn declares babysit/merge fix work with `focus-fix:#<item-id>`.
-FOCUS_FIX_RE = re.compile(r"\bfocus-fix:#?([0-9a-f]{6,})\b")
-
-
-def advisory_kept(key):
-    """True when an advisory queue key is released in full on every focused stop (its base, before any `:<subject>`, is in FOCUS_ADVISORY_KEYS)."""
-    return str(key).split(":", 1)[0] in FOCUS_ADVISORY_KEYS
-
-
-def active_phase(focus_map, owned):
-    """The newest phase event over every owner key `owned(key)` accepts, or None when there is none or it is `build`.
-
-    `focus_map` is `Fold.phase` ({owner8: event}); `owned` is `lambda o: C.owned_by_me(o, session_id)`, so a proven lineage edge carries focus across compaction. An event without an owner never applies (the fold drops it too): `owned_by_me(None, ...)` is True, and an untagged focus would bind every session.
-    """
-    best = None
-    for owner, ev in (focus_map or {}).items():
-        if not owner or not isinstance(ev, dict) or not owned(owner):
-            continue
-        if best is None or (str(ev.get("at") or ""), int(ev.get("ns") or 0)) >= (
-            str(best.get("at") or ""),
-            int(best.get("ns") or 0),
-        ):
-            best = ev
-    if best is None or best.get("mode") not in PHASE_MODES:
-        return None
-    return best
-
-
-def pr_token(focus):
-    """`pr:<n>` for the focus's PR, or "" while the PR is not known yet."""
-    pr = (focus or {}).get("pr")
-    return "pr:%s" % pr if pr not in (None, "", 0) else ""
-
-
-def pr_linked(text, focus):
-    """True when an item's text carries the focus PR's `pr:<n>` token (as a whole token: pr:54 is not pr:543)."""
-    tok = pr_token(focus)
-    if not tok:
-        return False
-    if isinstance(text, dict):
-        text = text.get("text") or text.get("line") or ""
-    return re.search(r"(?<![\w:])%s(?![0-9])" % re.escape(tok), str(text or "")) is not None
-
-
-def _parse(stamp):
-    try:
-        dt = datetime.datetime.fromisoformat(str(stamp))
-    except ValueError:
-        return None
-    return dt if dt.tzinfo else dt.replace(tzinfo=datetime.UTC)
-
-
-def age_hours(focus, now=None):
-    """Hours since the focus event was written, or None when its stamp does not parse."""
-    at = _parse((focus or {}).get("at") or "")
-    if at is None:
-        return None
-    now = now or datetime.datetime.now(datetime.UTC)
-    return (now - at).total_seconds() / 3600.0
-
-
-def expired(focus, now=None):
-    """True when the focus is older than FOCUS_MAX_HOURS."""
-    h = age_hours(focus, now)
-    return h is not None and h >= FOCUS_MAX_HOURS
-
-
-def batch_due(sd, now=None):
-    """True when the held advisories are due as one digest: the last release is FOCUS_BATCH_MIN old. The hook seeds `batch_at` when focus starts, so an unseeded doc holds rather than releasing everything on the first stop."""
-    at = _parse((sd or {}).get("batch_at") or "")
-    if at is None:
-        return False
-    now = now or datetime.datetime.now(datetime.UTC)
-    return (now - at).total_seconds() >= FOCUS_BATCH_MIN * 60

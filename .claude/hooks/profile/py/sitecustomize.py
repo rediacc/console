@@ -12,7 +12,9 @@ CONTRACTS, and they are not optional because this runs on every interpreter: nev
 cwd is outside the repo. `WORKLIST_PROFILE=off` disables it. A root that resolves to
 `/` is REFUSED -- that is how a module copied to a fixture path once made every cwd on the machine in scope, and the stray `~/.claude/resprofile/<day>/` folder it left is still there.
 
-ONE RECORD PER PROCESS. `_WL_SITEPROFILE` marks the interpreter as armed; wl_core's own `install()` is idempotent by `atexit` but would double-count, so it checks the same marker.
+ONE RECORD PER PROCESS, ONE PER CHILD. `_WL_SITEPROFILE` names the pid of the process that armed it: `<pid>` when this file armed it, `super:<pid>` when wl_resprofile (the richer recorder a hook process imports through wl_core) took it over. The environment is inherited, so a marker naming ANOTHER pid is a parent's and arms this process anew; the marker stands this process down only when it names this pid. A marker without a pid made every child of a profiled Python skip its row (agent/plans/PLAN-tooling-speed.md D6).
+
+TWO WAYS IN. `bash_env.sh` prepends this directory to PYTHONPATH, and a command that sets its own PYTHONPATH (`PYTHONPATH=.ci python3 -m ...`) replaces it. So the same file also writes a `.pth` loader into the user site directory (`../pth_loader.py`), which runs this file by path for a cwd under a registered repo. A process reached both ways is armed once: the second arrival finds its own pid in the marker.
 """
 
 import atexit
@@ -96,8 +98,8 @@ def _esc(s):
 
 def _on_exit(root, day_dir):
     try:
-        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms wl_resprofile with PSI, cgroup scope and availability flags this file deliberately does not pay for. It stamps the marker "super" when it does, and the check happens HERE, at exit, so atexit ordering cannot decide it.
-        if os.environ.get(_ARMED) == "super":
+        # THE RICHER RECORDER WINS. A hook process imports wl_core, which arms wl_resprofile with PSI, cgroup scope and availability flags this file deliberately does not pay for. It stamps the marker "super:<pid>" when it does, and the check happens HERE, at exit, so atexit ordering cannot decide it.
+        if os.environ.get(_ARMED) == "super:%d" % os.getpid():
             return
         rs = resource.getrusage(resource.RUSAGE_SELF)
         rc = resource.getrusage(resource.RUSAGE_CHILDREN)
@@ -136,7 +138,8 @@ def _install():
     try:
         if os.environ.get("WORKLIST_PROFILE") == "off":
             return
-        if os.environ.get(_ARMED):
+        pid = os.getpid()
+        if os.environ.get(_ARMED) in (str(pid), "super:%d" % pid):
             return
         root = _root()
         if root is None or not _in_scope(root):
@@ -145,7 +148,7 @@ def _install():
         day = time.strftime("%Y-%m-%d")
         d = os.path.join(os.path.expanduser("~"), ".claude", "resprofile", slug, day)
         os.makedirs(d, exist_ok=True)
-        os.environ[_ARMED] = "1"
+        os.environ[_ARMED] = str(pid)
         atexit.register(_on_exit, root, d)
     except BaseException:
         pass

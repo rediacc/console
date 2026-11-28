@@ -33,6 +33,18 @@
           "effective": "2026-11-11",
           "material": true,
           "sha256": "1354e308c761a5c7fa0006d98de124e7d0141d440d6331a11cae7ebd25c7fd57"
+        },
+        {
+          "version": "2026-11-24",
+          "effective": "2026-11-24",
+          "material": false,
+          "sha256": "068e820e3db21b955d9c6551df30dc231ca2c1302d171989edcdcb5ae18daf8c"
+        },
+        {
+          "version": "2026-11-26",
+          "effective": "2026-11-26",
+          "material": false,
+          "sha256": "508897a4c9be709583a833322618b81fe039abab5d0ac5307002e7ef435aa27f"
         }
       ]
     },
@@ -57,6 +69,24 @@
           "effective": "2026-11-11",
           "material": true,
           "sha256": "644c3e8ddb8c7200d509d339c3f444e67960c84da314bdba7e8cf74fc4df31ff"
+        },
+        {
+          "version": "2026-11-24",
+          "effective": "2026-11-24",
+          "material": false,
+          "sha256": "fef0fbce8ac7d153913786b1c1c7f815720fe6db930fe25beb2c195b36972310"
+        },
+        {
+          "version": "2026-11-25",
+          "effective": "2026-11-25",
+          "material": false,
+          "sha256": "93e0837eaf9baa2567682cdf65c4c6a9650f43fdfcad48579d201e84aa75d312"
+        },
+        {
+          "version": "2026-11-26",
+          "effective": "2026-11-26",
+          "material": false,
+          "sha256": "c864bbe69f96a1ef0c4c772913d09e217647345bdfeac91576de01bdc1533798"
         }
       ]
     },

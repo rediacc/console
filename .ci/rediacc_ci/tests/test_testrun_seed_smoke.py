@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import typing
 
 from rediacc_ci.testrun import seed_smoke
@@ -26,8 +27,16 @@ LISTING = json.dumps(
 NEW_LISTING = LISTING.replace("account-db-pr-", "account-pr-")
 
 
+PREVIEW = "pv-amber-falcon-river"
+
+
 def as_twin_name(text: str) -> str:
-    return text.replace("account-pr-", "account-db-pr-")
+    # The twin names its scratch Worker `pr-<n>`; the port names it by the derived preview name (a delta, test_delta_scratch_config_is_named_by_the_preview_name).
+    return (
+        re.sub(rf"{PREVIEW}-[0-9a-f]{{8}}", "smoke-sub-pr-12", text)
+        .replace("account-pr-", "account-db-pr-")
+        .replace(f'name = "{PREVIEW}"', 'name = "pr-12"')
+    )
 
 
 def env_for(tmp_path: pathlib.Path, **extra: str) -> dict[str, str]:
@@ -48,7 +57,13 @@ def both(tmp_path: pathlib.Path, **extra: str) -> tuple[ts.Outcome, ts.Outcome, 
         directory.mkdir()
         env = env_for(directory, **extra)
         if side == "py":
-            env = ts.py_env({**env, "FAKE_OUT_NPX": extra.get("FAKE_OUT_NPX", NEW_LISTING)})
+            env = ts.py_env(
+                {
+                    "PREVIEW_NAME": PREVIEW,
+                    **env,
+                    "FAKE_OUT_NPX": extra.get("FAKE_OUT_NPX", NEW_LISTING),
+                }
+            )
         gh = directory / "gh_output"
         if side == "bash":
             outcome = ts.twin_run(TWIN, runner, directory, ("npx",), env, files=(gh,))
@@ -122,15 +137,30 @@ def test_delta_terms_acceptance_row_names_the_version_in_force() -> None:
     assert "INSERT OR IGNORE INTO terms_acceptances" in sql
     assert "'smoke-user-pr-7'" in sql
     assert "'smoke-terms-pr-7'" in sql
-    assert "'2026-11-11'" in sql
-    assert "f4e7d87cb789c0b60443f2f96a5b1170b542cd8c6a57b0c1b6446c845e3a7502" in sql
+    # Read from the manifest, so the next Terms bump moves the expectation with the seed.
+    in_force = seed_smoke.terms_in_force("2026-11-21")
+    assert "'%s'" % in_force["version"] in sql
+    assert in_force["sha256"] in sql
     # Before the second version took effect, the first one is the one in force.
     assert seed_smoke.terms_in_force("2026-06-01")["version"] == "2026-03-15"
+    # Review b2d6daab.1: the expectation above reads the lookup under test, so the in-force version is also pinned to literals. A published version's archive is immutable (legal-documents.json `$comment`), so its hash never changes; a Terms bump adds a version and moves only a later date.
+    assert seed_smoke.terms_in_force("2026-03-14")["version"] == "2026-03-15"
+    assert seed_smoke.terms_in_force("2026-11-10")["version"] == "2026-03-15"
+    on_the_day = seed_smoke.terms_in_force("2026-11-11")
+    assert on_the_day["version"] == "2026-11-11"
+    assert (
+        on_the_day["sha256"] == "f4e7d87cb789c0b60443f2f96a5b1170b542cd8c6a57b0c1b6446c845e3a7502"
+    )
+    assert in_force == on_the_day
+    assert "'2026-11-11'" in sql
+    assert on_the_day["sha256"] in sql
 
 
 def test_delta_port_seeds_terms_after_the_twins_batch(tmp_path: pathlib.Path) -> None:
     (tmp_path / "py").mkdir()
-    env = ts.py_env({**env_for(tmp_path / "py"), "FAKE_OUT_NPX": NEW_LISTING})
+    env = ts.py_env(
+        {"PREVIEW_NAME": PREVIEW, **env_for(tmp_path / "py"), "FAKE_OUT_NPX": NEW_LISTING}
+    )
     new = ts.run_side(ts.py_cmd(MODULE), tmp_path / "py", ("npx",), env)
     assert new.code == 0
     command = new.calls[1]["argv"][-1]
@@ -164,7 +194,9 @@ def test_delta_failed_list_names_the_failure_not_a_missing_database(
         FAKE_RCWHEN_NPX="list",
         FAKE_ERR_NPX="npx canceled",
     )
-    new = ts.run_side(ts.py_cmd(MODULE), tmp_path, ("npx",), ts.py_env(env))
+    new = ts.run_side(
+        ts.py_cmd(MODULE), tmp_path, ("npx",), ts.py_env({"PREVIEW_NAME": PREVIEW, **env})
+    )
     assert new.code == 1
     assert "Database account-pr-12 not found" not in new.err
     assert "wrangler d1 list failed (rc 1): npx canceled" in new.err
@@ -200,3 +232,41 @@ def test_delta_token_is_masked(tmp_path: pathlib.Path) -> None:
     old, new, _, _ = both(tmp_path)
     assert "::add-mask::" not in old.out
     assert "::add-mask::rdt_smoke_12_" in new.out
+
+
+def test_delta_scratch_config_is_named_by_the_preview_name(tmp_path: pathlib.Path) -> None:
+    env = ts.py_env({"PREVIEW_NAME": PREVIEW, **env_for(tmp_path), "FAKE_OUT_NPX": NEW_LISTING})
+    new = ts.run_side(ts.py_cmd(MODULE), tmp_path, ("npx",), env)
+    assert new.code == 0
+    assert f'name = "{PREVIEW}"' in new.calls[1]["config"]
+    assert 'name = "pr-12"' not in new.calls[1]["config"]
+
+
+def test_delta_missing_or_malformed_preview_name_is_refused(tmp_path: pathlib.Path) -> None:
+    for value in ("", "pr-12", f"{PREVIEW}-signer"):
+        directory = tmp_path / (value or "empty")
+        directory.mkdir()
+        env = ts.py_env({**env_for(directory, PREVIEW_NAME=value), "FAKE_OUT_NPX": NEW_LISTING})
+        new = ts.run_side(ts.py_cmd(MODULE), directory, ("npx",), env)
+        assert new.code == 1, value
+        assert not new.calls, value
+        assert "PREVIEW_NAME must be a preview Worker name" in new.err
+
+
+def test_wrangler_config_names_the_worker_it_is_given() -> None:
+    """e5bc9ef7.1: the parameter is `worker_name`, so it no longer shadows the `preview_name` module."""
+    text = seed_smoke.wrangler_config("rediacc-account-pr-7", "db", "uuid-1")
+    assert 'name = "rediacc-account-pr-7"' in text
+    assert "preview_name" not in seed_smoke.wrangler_config.__code__.co_varnames
+
+
+def test_delta_smoke_subscription_is_a_preview_subscription() -> None:
+    """T1 (PLAN-preview-signer D3): the seed's subscription id is `<name>-<8 hex>`, stable across re-seeds, so the preview signer can certify it."""
+    d = seed_smoke.derive("12", "s3cret", "NOW", PREVIEW)
+    assert re.fullmatch(rf"{PREVIEW}-[0-9a-f]{{8}}", d["sub_id"])
+    assert d == seed_smoke.derive("12", "s3cret", "NOW", PREVIEW)
+    assert seed_smoke.derive("13", "s3cret", "NOW", PREVIEW)["sub_id"] != d["sub_id"]
+    assert seed_smoke.derive("12", "s3cret", "NOW")["sub_id"] == "smoke-sub-pr-12"
+    # Reviews 94c6aa36.1 and .2: a rotated secret lands on the same row, and the id is no function of the secret.
+    assert seed_smoke.derive("12", "rotated", "NOW", PREVIEW)["sub_id"] == d["sub_id"]
+    assert f"'{d['sub_id']}'" in seed_smoke.seed_sql(d)

@@ -16,12 +16,14 @@ import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { recordBackupRun } from '../services/backup/backup-runs-state.js';
 import { outputService } from '../services/core/output.js';
-import { setExitCode } from '../services/core/request-context.js';
+import { setExitCode, writeStderr } from '../services/core/request-context.js';
 import { planStep } from '../services/jobs/steps.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createGuidResolver, loadGuidMap } from '../utils/guid-resolver.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
-import { resolveRepoRef, resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { registerBackupCheck } from './backup-check.js';
 import { registerBackupChurn } from './backup-churn.js';
 import { registerBackupImmutability } from './backup-immutability.js';
@@ -100,6 +102,7 @@ export interface BackupManifestsResponse {
 function registerBackupUsage(backup: Command): void {
   backup
     .command('usage')
+    .summary(t('commands.backup.usage.descriptionShort'))
     .description(t('commands.backup.usage.description'))
     .action(async () => {
       try {
@@ -208,6 +211,7 @@ function registerBackupManifests(backup: Command): void {
   backup
     .command('manifests')
     .argument('[repo-ref]', t('options.repoRef'))
+    .summary(t('commands.backup.manifests.descriptionShort'))
     .description(t('commands.backup.manifests.description'))
     .option('--limit <n>', t('commands.backup.manifests.optionLimit'))
     .option('--before <cursor>', t('commands.backup.manifests.optionBefore'))
@@ -400,6 +404,7 @@ function registerBackupVerify(backup: Command): void {
   backup
     .command('verify')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.verify.descriptionShort'))
     .description(t('commands.backup.verify.description'))
     .option('--deep', t('commands.backup.verify.optionDeep'))
     .option('--store', t('commands.backup.verify.optionStore'))
@@ -438,25 +443,25 @@ function registerBackupVerify(backup: Command): void {
             const { repoKey } = await resolveRepoRefLocal(repoRef);
             const verdict = await runStoreVerify(await resolveLineage(repoRef));
             const format = getOutputFormat();
+            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
+            // An empty or unclean verdict fails the run; set before the print so the JSON envelope says success:false.
+            if (verdict.checked === 0 || !clean) setExitCode(1);
             outputService.print(verdict, format === 'table' ? 'json' : format);
             // A lineage with no stored chunks verified nothing: it is not recorded or reported as verified.
             if (verdict.checked === 0) {
               outputService.warn(t('commands.backup.verify.storeEmpty', { name: repoKey }));
               await recordBackupRun(repoKey, { kind: 'verify', status: 'empty' });
-              setExitCode(1);
               return;
             }
-            const clean = verdict.missing.length === 0 && verdict.corrupt.length === 0;
             await recordBackupRun(repoKey, {
               kind: 'verify',
               status: clean ? 'verified' : 'mismatch',
             });
-            if (!clean) setExitCode(1);
             return;
           }
           const { repoKey, machineName } = await resolveRepoRef(repoRef);
           const level = options.deep ? 'full' : 'spot';
-          await executeRepoFunction(
+          const result = await executeRepoFunction(
             'backup_verify',
             repoKey,
             machineName,
@@ -465,6 +470,8 @@ function registerBackupVerify(backup: Command): void {
             {
               debug: options.debug,
               captureOutput: true,
+              // The failure is rendered below, after the records: renet's "see records above" points at the per-repository records it wrote to stdout, which the captured run hides from the generic rendering.
+              failureIsAnswer: true,
               // The verdict print and the run record are steps on the job's ticket, so nothing says "verified" before the job has verified anything (PLAN-detached-jobs J4). The verdict is structured data, printed as structured data in every mode. On a failure executeRepoFunction renders the failure (envelope and exit code), and renet's
               // verdict rides its output tail; printing the verdict too would put a SECOND JSON document on stdout, so no failure step prints.
               job: {
@@ -483,6 +490,15 @@ function registerBackupVerify(backup: Command): void {
               failed: t('commands.backup.verify.failed', { name: repoKey }),
             }
           );
+          if (!result.success && result.state !== 'running') {
+            // On stderr, so a JSON run keeps exactly one document (the failure envelope) on stdout.
+            const records = result.stdout?.trim();
+            if (records) writeStderr(`${records}\n`);
+            renderLocalExecutionFailure(
+              result,
+              result.error ?? t('commands.backup.verify.failed', { name: repoKey })
+            );
+          }
         } catch (error) {
           handleError(error);
         }

@@ -2,7 +2,7 @@
 title: Stockage de configuration
 description: >-
   Synchronisation chiffrée côté client des configurations, avec
-  déverrouillage par passkey, mot de passe principal ou code de récupération
+  déverrouillage par passkey ou kit de récupération
 category: Guides
 tags:
   - account
@@ -10,8 +10,8 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "060357b48d8c7154"
-sourceCommit: "aee63ccd11bc025872eb1192b448e790b67f4489"
+sourceHash: "3972742d77ac9e63"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Stockage de configuration
@@ -24,35 +24,50 @@ Chaque store possède une seule CEK, enveloppée indépendamment pour chaque mé
 
 | Méthode | Ce que c'est | Remarques |
 |--------|-----------|-------|
-| **Passkey** | Passkey WebAuthn avec l'extension PRF | L'option la plus robuste, adossée au matériel |
-| **Mot de passe principal** | Un mot de passe de votre choix, étiré avec PBKDF2-SHA256 (600 000 itérations) | Fonctionne sans matériel compatible PRF ; permet aussi l'enrôlement CLI sans interface |
-| **Code de récupération** | Un code généré au format `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX` | Affiché une seule fois à la création, conservez-le en lieu sûr |
+| **Passkey** | Passkey WebAuthn avec l'extension PRF, sur cet appareil ou sur un téléphone via un code QR | L'option la plus robuste, adossée au matériel |
+| **Kit de récupération** | Un code généré au format `RC1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX`, enregistré sous forme de kit imprimé ou téléchargé | Obligatoire pour chaque membre ; le code n'est affiché que pendant l'enregistrement du kit, conservez donc le kit en lieu sûr |
 
-Chaque méthode alimente le même mécanisme : l'emplacement produit un secret qui se combine à un secret détenu par le serveur pour déballer la CEK. Aucune des deux moitiés ne suffit seule, et le secret de l'emplacement n'atteint jamais le serveur. Un emplacement mot de passe principal est le plus faible des trois : le serveur détient tout ce qu'il faut pour tester des mots de passe hors ligne, d'où l'exigence d'un mot de passe robuste. Les emplacements passkey et code de récupération n'ont pas cette faiblesse.
+Un **secret machine** n'est pas un emplacement : il enrôle une machine sans interface (voir [Enrôlement CLI sans interface](#headless-cli-enrollment)) et ne compte pas comme un moyen de déverrouiller le stockage pour une personne.
+
+Chaque méthode alimente le même mécanisme : l'emplacement produit un secret qui se combine à un secret détenu par le serveur pour déballer la CEK. Aucune des deux moitiés ne suffit seule, et le secret de l'emplacement n'atteint jamais le serveur. Les deux secrets ont assez d'entropie pour que le serveur, qui détient la clé enveloppée et sa moitié de la clé d'enveloppement, n'ait rien à deviner hors ligne.
 
 Les emplacements se gèrent depuis le portail, sur la page Stockage de configuration. Les organisations qui souhaitent un déverrouillage exclusivement matériel peuvent activer la politique **exiger une passkey**, qui refuse et révoque les emplacements non-passkey pour tout le store.
 
-Le déverrouillage se fait par appareil : vous déverrouillez une fois sur un nouvel appareil, après quoi les opérations CLI quotidiennes (push/pull) fonctionnent sans toucher à une passkey ni saisir de mot de passe.
+Le déverrouillage se fait par appareil : vous déverrouillez une fois sur un nouvel appareil, après quoi les opérations CLI quotidiennes (push/pull) fonctionnent sans toucher à une passkey ni saisir de code de récupération.
 
 ## Prérequis
 
 - **Authentification à deux facteurs** activée sur votre compte
-- Pour la méthode **passkey** : un fournisseur de passkey avec support PRF, comme une clé de sécurité FIDO2 (ex. YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane
+- Pour la méthode **passkey** : un fournisseur de passkey avec support PRF, comme une clé de sécurité FIDO2 (ex. YubiKey), iCloud Keychain, Google Password Manager, 1Password ou Dashlane, sur l'appareil ou sur un téléphone via QR
 - **Navigateur** : Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+
 
-L'exigence PRF ne s'applique qu'à l'emplacement passkey. Les méthodes mot de passe principal et code de récupération fonctionnent avec n'importe quel navigateur pris en charge.
+L'exigence PRF ne s'applique qu'à l'emplacement passkey. Le kit de récupération fonctionne avec n'importe quel navigateur pris en charge.
 
 ## Configuration
 
 1. Accédez à **Stockage de configuration** dans la barre latérale, puis cliquez sur **Configurer le stockage de configuration**
 2. La liste de vérification des prérequis vérifie votre navigateur, la 2FA et l'état de la session
-3. Choisissez la première méthode de déverrouillage, puis cliquez sur **Créer l'espace de configuration** :
-   - **Passkey**, si votre fournisseur prend en charge PRF : vous touchez votre clé de sécurité deux fois, une fois pour l'enregistrer et une fois pour dériver les clés de chiffrement.
-   - **Mot de passe maître**, qui fonctionne avec n'importe quel navigateur, y compris les fournisseurs de passkeys sans PRF comme Bitwarden.
-   - En option, un **code de récupération**, affiché une seule fois et à conserver avant la création du stockage.
+3. Enregistrez une passkey, puis cliquez sur **Créer l'espace de configuration**. Le fournisseur doit prendre en charge PRF : vous touchez votre clé de sécurité deux fois, une fois pour l'enregistrer et une fois pour dériver les clés de chiffrement.
+   - Un **code de récupération** est généré avec le stockage et affiché une seule fois, dans un kit de récupération. Enregistrez le kit avant la création du stockage ; la configuration ne se termine pas sans lui.
 4. La configuration est terminée. La CLI conserve le secret de déverrouillage dans le trousseau de votre système.
 
-Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez au moins deux méthodes de déverrouillage, pour qu'un authentificateur perdu ou non pris en charge ne vous bloque pas.
+Une passkey peut être ajoutée plus tard depuis la page Config Storage.
+
+### Téléphone via QR
+
+Un poste de bureau sans authentificateur PRF local peut utiliser un téléphone : le navigateur affiche un code QR, le téléphone approuve la demande de passkey via WebAuthn hybride, et le résultat PRF déverrouille le stockage comme le ferait une passkey locale. L'emplacement passkey mémorise l'identifiant et le transport avec lesquels il a été enrôlé. Si un résultat PRF ne déballe pas la clé, par exemple parce qu'un téléphone a renvoyé une sortie PRF différente de celle de l'appareil qui a enrôlé la passkey, la page demande d'enrôler de nouveau la passkey au lieu d'afficher une erreur de déchiffrement. Le PRF hybride nécessite iOS 18.4+ ou un Android récent.
+
+### Kit de récupération
+
+Chaque membre reçoit un kit de récupération lors de son enrôlement, et la configuration ne se termine pas tant qu'il n'est pas enregistré. Le kit contient le nom du stockage, l'e-mail du compte, la date de création, le code en groupes, un QR du code et les étapes de récupération. Une vérification d'enregistrement demande les 4 derniers caractères du code, ou le scan de son QR, avant de poursuivre l'enrôlement. Il est impossible d'ignorer le kit, et conserver l'exemplaire imprimé en lieu sûr relève de la responsabilité du membre.
+
+- Une **passkey perdue** se récupère avec le kit, puis une nouvelle passkey est enrôlée.
+- Un **kit perdu** est régénéré depuis une passkey fonctionnelle ; l'ancien exemplaire imprimé cesse de fonctionner.
+- **Les deux perdus** : un propriétaire ou un administrateur réajoute le membre par le transfert de membre.
+
+### Filet de sécurité
+
+Le serveur refuse de supprimer un emplacement, de retirer un membre ou d'accepter le départ d'un membre lorsque le stockage se retrouverait avec moins de deux détenteurs de clé et sans emplacement de récupération. Un détenteur de clé est un utilisateur distinct disposant d'un emplacement passkey ou de récupération à la génération de clé actuelle ; les secrets machine et les délégations d'agent ne comptent pas. Un exemplaire imprimé perdu est invisible pour le serveur, c'est pourquoi la page Stockage de configuration conseille un second détenteur de clé tant que le stockage n'en a qu'un. Si le dernier détenteur de clé perd à la fois la passkey et le kit, le stockage ne peut pas être récupéré.
 
 ## Compatibilité des fournisseurs PRF
 
@@ -63,23 +78,24 @@ Une passkey peut être ajoutée plus tard depuis la page Config Storage. Gardez 
 | Google Password Manager | ✅ | Android |
 | 1Password | ✅ | Android, iOS |
 | Dashlane | ✅ | Multiplateforme |
-| Extension Bitwarden | ❌ | Utilisez plutôt un mot de passe principal |
+| Extension Bitwarden | ❌ | Utilisez une clé matérielle ou un autre fournisseur de passkeys |
 | Windows Hello | ❌ | Non supporté |
 
 ## Enrôlement CLI sans interface
 
-Une machine sans navigateur (un serveur, un runner CI, un démon executor) peut s'enrôler dans un store existant grâce à la méthode du mot de passe principal :
+Une machine sans navigateur (un serveur, un runner CI, un démon executor) peut s'enrôler dans un store existant grâce à un secret machine :
 
 ```bash
-rdc config remote enable --master-password
+export REDIACC_MACHINE_SECRET=RM1-XXXXXXXX-XXXXXXXX-XXXXXXXX-XXXXXXXX
+rdc config remote enable --machine-secret <id>
 ```
 
 Prérequis :
 
-- Un **emplacement mot de passe principal** déjà provisionné via le portail (le navigateur détient la clé pendant le provisionnement, cette étape ne peut donc pas elle-même se faire sans interface)
+- Un **secret machine** créé via le portail (le navigateur détient la clé pendant qu'il l'enveloppe sous le secret, cette étape ne peut donc pas elle-même se faire sans interface). Le portail affiche le secret `RM1-` une seule fois, avec son id ; le secret est limité à l'organisation, à une équipe ou à une configuration
 - Un **token API avec le scope `config:enroll`** pour authentifier l'appel
 
-L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de l'emplacement ainsi que la clé enveloppée, dérive localement le secret du mot de passe, puis déballe la CEK sur l'appareil. Cela donne à l'appareil la capacité de déchiffrer et de synchroniser la configuration ; cela ne modifie pas le store.
+Le secret provient de `REDIACC_MACHINE_SECRET`, sinon de l'entrée standard lorsqu'elle est redirigée, sinon d'une invite masquée ; il n'est jamais un argument de ligne de commande. L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics du secret ainsi que la clé enveloppée, dérive localement le secret d'enveloppement, puis déballe la CEK sur l'appareil. Cela donne à l'appareil la capacité de déchiffrer et de synchroniser la configuration ; cela ne modifie pas le store. Révoquer le secret dans le portail empêche tout nouvel enrôlement avec lui.
 
 ## Comment les clés parviennent à votre CLI
 
@@ -89,7 +105,7 @@ L'enrôlement est une lecture : le CLI récupère les paramètres KDF publics de
 2. Le CLI crée une demande de courte durée et affiche un lien ainsi qu'un **code d'appairage** tel que `7KQ2-M9XD-P4RT`. Le lien garde tout ce qu'il transporte après le `#`, que les navigateurs n'envoient jamais à un serveur.
 3. Ouvrez le lien dans n'importe quel navigateur connecté avec le même compte. Une demande issue d'un autre compte est refusée.
 4. Saisissez le code d'appairage affiché dans votre terminal lorsque la page le demande. Le bouton de déverrouillage reste désactivé tant qu'il ne correspond pas.
-5. Déverrouillez avec votre passkey ou votre mot de passe principal. Le navigateur scelle la clé pour le CLI, et le serveur relaie un blob qu'il ne peut pas lire.
+5. Déverrouillez avec une passkey (sur cet appareil ou sur un téléphone via QR) ou avec le kit de récupération. Le navigateur scelle la clé pour le CLI, et le serveur relaie un blob qu'il ne peut pas lire.
 6. Le CLI déchiffre le blob, stocke le secret dans le trousseau du système (keyring) et confirme la réussite.
 
 La demande expire au bout de 10 minutes. Appuyez sur **Ctrl+C** dans le CLI pour l'annuler : le CLI demande au serveur de supprimer le lien, qui cesse aussitôt de fonctionner, et la page indique de relancer la commande. Si cette requête n'aboutit pas, le lien reste utilisable jusqu'à l'expiration de la demande. Si le lien est ouvert après son expiration, ou si une redirection de connexion a supprimé la partie après le `#`, relancez la commande.
@@ -128,8 +144,7 @@ Une restauration publie l'ancien contenu comme une nouvelle version par-dessus l
 
 Faire tourner la CEK du store la réenveloppe sous une nouvelle génération :
 
-- **Les codes de récupération sont toujours invalidés** par la rotation, générez-en et sauvegardez-en un nouveau ensuite
-- Un **emplacement mot de passe principal** ne survit que si le mot de passe est ressaisi pendant l'assistant de rotation
+- **Les kits de récupération sont toujours invalidés** par la rotation, générez-en et sauvegardez-en un nouveau ensuite
 - Un emplacement resté sur une ancienne génération est signalé comme obsolète plutôt que d'échouer avec une erreur de déchiffrement obscure
 - Les tokens de configuration des autres membres sont révoqués, et un appareil qui détient encore l'ancienne clé est invité à se réactiver avec `rdc config remote enable`
 
@@ -156,7 +171,6 @@ Les configurations du store sont en outre limitées par équipe, mais cette limi
 | Voir les ids de configuration, les équipes, les numéros de version, les horodatages, la taille des blobs, le nombre de champs qu'une configuration engage et le type de chacun, ainsi que les adresses IP des clients | Voir les noms de machines, de dépôts ou de stores (ils sont aveuglés), ni aucune valeur de configuration |
 | Refuser, retarder ou supprimer des configurations et leur historique | Servir le contenu d'une configuration comme s'il s'agissait d'une autre, ou le modifier, sans que l'appareil le détecte |
 | Servir une ancienne version à un appareil qui n'en a jamais vu de plus récente | Servir au CLI une version plus ancienne qu'une autre déjà vue : le CLI la refuse |
-| Tester des mots de passe principaux hors ligne | Ouvrir un emplacement passkey ou code de récupération |
 
 Autres garanties :
 
@@ -169,16 +183,17 @@ Autres garanties :
 
 | Erreur | Cause | Solution |
 |-------|-------|-----|
-| PRF not supported | L'authentificateur ne dispose pas de l'extension PRF | Utilisez YubiKey, iCloud Keychain, 1Password ou Dashlane, ou ajoutez un emplacement mot de passe principal |
+| PRF not supported | L'authentificateur ne dispose pas de l'extension PRF | Utilisez YubiKey, iCloud Keychain, 1Password, Dashlane ou un téléphone via QR |
 | X25519 not supported | Version du navigateur trop ancienne | Mettez à jour vers Chrome 133+, Edge 133+, Firefox 130+ ou Safari 17+ |
 | Already configured | Un stockage existe déjà pour votre organisation | Visitez /account/config-storage pour gérer |
 | Config storage not configured | Le serveur ne dispose pas de stockage blob | Contactez votre administrateur pour configurer R2/RustFS |
 | Token expired | Aucune activité pendant 7 jours, ou la machine a changé de réseau | Renouvelé automatiquement via la connexion ; si aucune connexion n'est enregistrée, exécutez `rdc subscription login` ou `rdc config remote enable` |
 | Config came back at an older version | Le serveur a renvoyé une copie plus ancienne que celle déjà vue par cet appareil | Rien n'a changé localement ; réessayez, et signalez-le si cela persiste |
 | Cannot remove last member | Verrouillerait le stockage de façon permanente | Ajoutez d'abord un autre membre |
-| Stale slot | L'emplacement date d'avant la dernière rotation de clé | Réajoutez l'emplacement (les codes de récupération doivent être régénérés après chaque rotation) |
+| Stale slot | L'emplacement date d'avant la dernière rotation de clé | Réajoutez l'emplacement (le kit de récupération doit être régénéré après chaque rotation) |
 
 ## Voir aussi
 
+- [Modèle de sécurité](/fr/docs/security-model), qui peut voir quoi, portée des clés, agents et ce qui est récupérable
 - [Console Web](/fr/docs/web-console), déverrouiller le store dans le navigateur pour exécuter des commandes
 - [Proxy et executor](/fr/docs/proxy-and-executor), comment la clé déverrouillée est accordée à un executor

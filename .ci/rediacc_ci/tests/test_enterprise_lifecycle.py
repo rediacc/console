@@ -52,6 +52,7 @@ class World:
         self.buckets = {
             "configs-acme": {"a/one": b"1", "two": b"22"},
             "backups-acme": {"snap": b"333"},
+            "audit-acme": {"2026/11/e1": b"4444"},
         }
         self.out: list[str] = []
         self.ctx = lifecycle.Context(
@@ -308,8 +309,8 @@ def test_export_writes_dump_objects_and_a_verified_manifest_last(w):
     assert manifest["company_id"] == ACME
     assert (path / "d1.sql").read_text() == "-- dump of %s\n" % ACME
     objs = manifest["objects"]
-    assert sorted(o["key"] for o in objs) == ["a/one", "snap", "two"]
-    assert {o["bucket"] for o in objs} == {"configs-acme", "backups-acme"}
+    assert sorted(o["key"] for o in objs) == ["2026/11/e1", "a/one", "snap", "two"]
+    assert {o["bucket"] for o in objs} == {"configs-acme", "backups-acme", "audit-acme"}
     for o in objs:
         assert (path / o["file"]).read_bytes() == w.buckets[o["bucket"]][o["key"]]
     company = lifecycle.load_company(w.ctx, "acme")
@@ -463,7 +464,7 @@ def test_export_accepting_a_missing_bucket_records_the_gap(w):
     assert manifest["missing_buckets"] == [
         {"bucket": "configs-acme", "reason": "missing at export", "at": NOW}
     ]
-    assert {o["bucket"] for o in manifest["objects"]} == {"backups-acme"}
+    assert {o["bucket"] for o in manifest["objects"]} == {"backups-acme", "audit-acme"}
     company = lifecycle.load_company(w.ctx, "acme")
     assert lifecycle.verify_export(w.ctx, company) == NOW
 
@@ -653,7 +654,11 @@ def test_remove_with_delete_data_deletes_everything_after_undeploy(w):
     assert w.mutating()[0] == ("undeploy", ACME)
     assert ("delete_d1", ACME) in w.calls
     assert ("revoke_tokens", ACME) in w.calls
-    assert {c[1] for c in w.calls if c[0] == "delete_bucket"} == {"configs-acme", "backups-acme"}
+    assert {c[1] for c in w.calls if c[0] == "delete_bucket"} == {
+        "configs-acme",
+        "backups-acme",
+        "audit-acme",
+    }
     assert w.secrets == {}
     assert w.state("eu", ACME) == "removed"
     assert json.loads(w.audit("eu")[-1]["detail"])["data_deleted"] is True
@@ -970,3 +975,25 @@ def test_cmd_wrappers_map_errors_to_rc_1(w):
     assert lifecycle.cmd_export(w.ctx, "nobody", out=w.out.append) == 1
     assert lifecycle.cmd_suspend(w.ctx, "acme", out=w.out.append) == 0
     assert lifecycle.cmd_export(w.ctx, "acme", out=w.out.append) == 0
+
+
+def test_export_carries_the_audit_bucket_objects(w):
+    folder = lifecycle.export(w.ctx, "acme")
+    manifest = json.loads((folder / "manifest.json").read_text())
+    audit = [o for o in manifest["objects"] if o["bucket"] == "audit-acme"]
+    assert [o["key"] for o in audit] == ["2026/11/e1"]
+    assert (folder / audit[0]["file"]).read_bytes() == b"4444"
+
+
+def test_remove_without_delete_data_deletes_no_bucket_and_no_audit_bucket(w):
+    _exported(w)
+    lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert not [c for c in w.calls if c[0] == "delete_bucket"]
+    assert "audit-acme" in w.buckets
+
+
+def test_remove_deletes_the_audit_bucket_only_after_the_other_buckets_are_exported(w):
+    _exported(w)
+    lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    deleted = [c[1] for c in w.calls if c[0] == "delete_bucket"]
+    assert deleted == ["configs-acme", "backups-acme", "audit-acme"]

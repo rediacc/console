@@ -1,166 +1,145 @@
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { Placement } from '@rediacc/shared/config-schema';
-import { COMMAND_METADATA, type CommandMeta } from '../../config/command-metadata.js';
-import { t } from '../../i18n/index.js';
-import { isRepoAllowedByGrandEnv } from '../../utils/grand-env.js';
-import {
-  isAncestryVerificationAvailable,
-  isOverrideLegitimate,
-} from '../../utils/process-ancestry.js';
+import type {
+  CallToolResult,
+  InputRequiredResult,
+  McpServer,
+  ServerContext,
+} from '@modelcontextprotocol/server';
+import { getCommand } from '@rediacc/shared/cli-contract';
+import { z } from 'zod';
+import { pageOf, RESULT_PAGE_CHARS } from '../../services/serve/result-page.js';
 import { CUSTOM_TOOLS } from './custom-tools.js';
-import { executeRdcCommand } from './executor.js';
+import { type ExecutionResult, executeRdcCommand, runUnderPolicy } from './executor.js';
 import type { McpServerOptions } from './server.js';
-import { buildToolsFromContract, type ToolDef } from './tool-factory.js';
+import {
+  buildToolsFromContract,
+  type ToolDef,
+  type ToolPoll,
+  toolAnnotations,
+} from './tool-factory.js';
 
 export type { ToolDef } from './tool-factory.js';
 
-type ToolResult = { content: [{ type: 'text'; text: string }]; isError: boolean };
+export { RESULT_PAGE_CHARS };
+
+/** The tools whose long output an agent reads in full, page by page; each takes a `page` argument. */
+const PAGEABLE_TOOLS = new Set(['job_logs', 'repo_logs', 'config_audit_log']);
+
+/** The `page` field of a pageable tool: 1 (the default) is the first page, the cursor of a page names the next. */
+const PAGE_FIELD = z
+  .number()
+  .int()
+  .min(1)
+  .optional()
+  .describe(
+    `Page of a result longer than ${RESULT_PAGE_CHARS} characters, from 1; pass the cursor a page returned to read the next one. Each page re-runs the command, so a log that grows between pages can repeat or skip text at a page boundary.`
+  );
+
+function withPaging(tool: ToolDef): ToolDef {
+  if (!PAGEABLE_TOOLS.has(tool.name)) return tool;
+  if ('page' in tool.schema) throw new Error(`MCP tool ${tool.name} already has a page field`);
+  return { ...tool, schema: { ...tool.schema, page: PAGE_FIELD }, pageable: true };
+}
+
+/** The `confirm` field of a destructive grand-guarded tool: the value a `needs_confirmation` refusal names, for a client that cannot elicit. */
+const CONFIRM_FIELD = z
+  .string()
+  .optional()
+  .describe(
+    'Confirmation value a refusal of this tool named (the repository it would change); pass it to run the command on a grand repository.'
+  );
+
+function withConfirm(tool: ToolDef): ToolDef {
+  if (!tool.isDestructive || getCommand(tool.commandPath)?.grandGuard !== true) return tool;
+  if ('confirm' in tool.schema)
+    throw new Error(`MCP tool ${tool.name} already has a confirm field`);
+  return { ...tool, schema: { ...tool.schema, confirm: CONFIRM_FIELD } };
+}
 
 /** Build the complete list of MCP tools (contract-derived + custom). */
 export function buildAllTools(): ToolDef[] {
-  return [...buildToolsFromContract(), ...CUSTOM_TOOLS];
+  return [...buildToolsFromContract(), ...CUSTOM_TOOLS].map(withPaging).map(withConfirm);
 }
 
-function guardError(msg: string): ToolResult {
-  return { content: [{ type: 'text', text: msg }], isError: true };
+/** What a polling tool returns: the last run's result, how long the call waited, and the hint when it hit the ceiling. */
+interface PolledResult extends Omit<ExecutionResult, 'next'> {
+  next?: ExecutionResult['next'] | 'job_wait';
+  waited_ms: number;
+  nextPollSeconds?: number;
 }
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /**
- * Derive the CLI command path from a tool definition.
- * e.g., repo_up → "repo up", backup_push → "backup push"
+ * Repeat one tool's command until its data is final, it fails, or the next run would pass the ceiling. Each run
+ * gets the time left before the ceiling and no more, so the call never outlasts it; a run that would get less
+ * than half an interval is not started, and the latest result answers with the poll hint.
  */
-function getToolCommandPath(tool: ToolDef): string {
-  const argv = tool.command({
-    name: 'x',
-    machine: 'x',
-    size: '1G',
-    command: 'x',
-    parent: 'x',
-    tag: 'x',
-    repo: 'x',
-    storage: 'x',
-    storageName: 'x',
-  });
-  const cmdParts: string[] = [];
-  for (const part of argv) {
-    if (part === 'x' || part.startsWith('-')) break;
-    cmdParts.push(part);
-  }
-  return cmdParts.join(' ');
-}
-
-/** Check if a fork repo is running a fork-blocked command. */
-function checkForkBlocked(tool: ToolDef): ToolResult | null {
-  const cmdPath = getToolCommandPath(tool);
-  const meta = COMMAND_METADATA[cmdPath] as CommandMeta | undefined;
-  if (meta?.forkBlocked) {
-    return guardError(t('errors.agent.forkBlocked', { command: cmdPath }));
-  }
-  return null;
-}
-
-/**
- * Fetch repository config for guard checks.
- * Uses dynamic import to avoid loading config service at module level.
- */
-async function getRepoInfo(
-  repoName: string,
-  configName?: string
-): Promise<{ repositoryGuid: string; grandGuid?: string; placement?: Placement } | null> {
-  try {
-    const { configService } = await import('../../services/config/config-resources.js');
-    if (configName) {
-      configService.setRuntimeConfig(configName);
-    }
-    return (await configService.getRepository(repoName)) ?? null;
-  } catch {
-    return null; // config not available — let the command proceed
+async function runPolled(
+  poll: ToolPoll,
+  run: (timeoutMs: number) => Promise<ExecutionResult>
+): Promise<PolledResult> {
+  const started = Date.now();
+  let last: ExecutionResult | undefined;
+  for (;;) {
+    const remaining = poll.ceilingMs - (Date.now() - started);
+    if (last && remaining < poll.intervalMs / 2) return hinted(last, poll, Date.now() - started);
+    const result = await run(remaining);
+    last = result;
+    const waited = Date.now() - started;
+    if (!result.success || poll.done(result.data)) return { ...result, waited_ms: waited };
+    if (waited + poll.intervalMs >= poll.ceilingMs) return hinted(result, poll, waited);
+    await sleep(poll.intervalMs);
   }
 }
 
-/** Determine if a repo is a fork based on its config. */
-function isForkRepo(repoInfo: { repositoryGuid: string; grandGuid?: string }): boolean {
-  return !!(repoInfo.grandGuid && repoInfo.grandGuid !== repoInfo.repositoryGuid);
-}
-
-/** Check if an env override is present but not legitimate, returning an error if so. */
-function checkOverrideLegitimacy(
-  guardErrorKey: string,
-  guardErrorKeyNonLinux: string,
-  templateVars: Record<string, string>
-): ToolResult | null {
-  if (isOverrideLegitimate()) return null;
-
-  const errorKey = isAncestryVerificationAvailable() ? guardErrorKey : guardErrorKeyNonLinux;
-  return guardError(t(errorKey, { ...templateVars, platform: process.platform }));
-}
-
-/** Guard a grand (non-fork) repo, block unless a legitimate override is present. */
-function guardGrandRepo(repoName: string): ToolResult | null {
-  if (!isRepoAllowedByGrandEnv(repoName)) {
-    return guardError(t('errors.agent.mcpGrandGuard', { name: repoName }));
-  }
-  return checkOverrideLegitimacy(
-    'errors.agent.mcpGrandGuardOverride',
-    'errors.agent.mcpGrandGuardOverrideNonLinux',
-    { name: repoName }
-  );
-}
-
-/** Guard a named repo, block grand repos or fork-blocked commands. */
-async function guardNamedRepo(
-  tool: ToolDef,
-  repoName: string,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  const repoInfo = await getRepoInfo(repoName, options.configName);
-  if (!repoInfo) return null;
-
-  if (isForkRepo(repoInfo)) return checkForkBlocked(tool);
-
-  // The development-only ops VM fleet is exempt, the same predicate the CLI's own grand guard reads.
-  const { isOpsVmPlacement } = await import('../../utils/ops-vm.js');
-  if (await isOpsVmPlacement(repoInfo.placement)) return null;
-
-  return guardGrandRepo(repoName);
-}
-
-/**
- * Block destructive ops on non-fork repos unless --allow-grand or env override.
- * Also blocks fork-incompatible commands on fork repos.
- */
-function applyGrandRepoGuard(
-  tool: ToolDef,
-  args: Record<string, unknown>,
-  options: McpServerOptions
-): Promise<ToolResult | null> {
-  if (!tool.repoArgField) return Promise.resolve(null);
-
-  const repoName = args[tool.repoArgField] as string | undefined;
-  if (repoName) return guardNamedRepo(tool, repoName, options);
-
-  return Promise.resolve(null);
-}
-
-/** Execute a tool call via the rdc child process and format the MCP response. */
-async function executeTool(
-  tool: ToolDef,
-  args: Record<string, unknown>,
-  options: McpServerOptions
-): Promise<ToolResult> {
-  const guardResult = await applyGrandRepoGuard(tool, args, options);
-  if (guardResult) return guardResult;
-
-  const argv = tool.command(args);
-  const result = await executeRdcCommand(argv, {
-    ...options,
-    timeoutMs: tool.timeoutMs ?? options.defaultTimeoutMs,
-    ...(tool.attachWindowMs !== undefined && args.background === true ? { background: true } : {}),
-  });
+/** A still-running result with the hint to call the tool again. */
+function hinted(result: ExecutionResult, poll: ToolPoll, waited: number): PolledResult {
   return {
-    content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
-    isError: !result.success,
+    ...result,
+    waited_ms: waited,
+    next: 'job_wait',
+    nextPollSeconds: poll.intervalMs / 1000,
   };
+}
+
+/**
+ * Execute a tool call via the rdc child process and format the MCP response.
+ *
+ * No repo guard runs here (agent/plans/PLAN-rmcp-decide.md Design 3): the child runs with
+ * `REDIACC_AGENT=1` (executor.ts) and meets the CLI's own command-policy check, so an MCP call and
+ * the same command typed by an agent get one check and one answer. A polling tool (job_wait) runs
+ * the same child call each time.
+ */
+async function executeTool(
+  server: McpServer,
+  tool: ToolDef,
+  args: Record<string, unknown>,
+  ctx: ServerContext,
+  options: McpServerOptions
+): Promise<CallToolResult | InputRequiredResult> {
+  const argv = tool.command(args);
+  const run = (timeoutMs: number, confirm?: string) =>
+    executeRdcCommand(argv, {
+      ...options,
+      timeoutMs,
+      ...(confirm === undefined ? {} : { confirm }),
+      ...(tool.attachWindowMs !== undefined && args.background === true
+        ? { background: true }
+        : {}),
+    });
+  const timeoutMs = tool.timeoutMs ?? options.defaultTimeoutMs;
+  let result: ExecutionResult | PolledResult;
+  if (tool.poll) {
+    result = await runPolled(tool.poll, run);
+  } else {
+    const outcome = await runUnderPolicy({ server, ctx, tool: tool.name, args }, (confirm) =>
+      run(timeoutMs, confirm)
+    );
+    if ('answer' in outcome) return outcome.answer;
+    result = outcome.result;
+  }
+  const page = tool.pageable && typeof args.page === 'number' ? args.page : 1;
+  return pageOf(JSON.stringify(result, null, 2), page, tool.pageable === true, !result.success);
 }
 
 export function registerAllTools(server: McpServer, options: McpServerOptions): void {
@@ -171,15 +150,11 @@ export function registerAllTools(server: McpServer, options: McpServerOptions): 
       tool.name,
       {
         description: tool.description,
-        inputSchema: tool.schema,
-        annotations: {
-          destructiveHint: tool.isDestructive,
-          readOnlyHint: !tool.isDestructive,
-          idempotentHint: tool.isIdempotent,
-          openWorldHint: true,
-        },
+        inputSchema: z.object(tool.schema),
+        annotations: toolAnnotations(tool),
       },
-      async (args: Record<string, unknown>) => executeTool(tool, args, options)
+      async (args: Record<string, unknown>, ctx: ServerContext) =>
+        executeTool(server, tool, args, ctx, options)
     );
   }
 }

@@ -2,8 +2,9 @@ import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { debugLog } from '../../utils/debug.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
-import { decodeSSHKey } from './keyManager.js';
+import { decodeSSHKey } from '../utils/sshKeyText.js';
 
 /**
  * Default timeout for SSH agent operations in milliseconds (10 seconds)
@@ -12,7 +13,17 @@ import { decodeSSHKey } from './keyManager.js';
 const SSH_AGENT_TIMEOUT_MS = 10000;
 
 /**
- * SSH agent result containing socket path and agent PID
+ * Why rdc never uses an ssh-agent on win32. The Win32-OpenSSH agent service persists every added key
+ * DPAPI-encrypted under HKCU\Software\OpenSSH\Agent\Keys, and the key survives a service stop, Disabled
+ * and a reboot (measured on a Windows 11 VM), so each team and repo key rdc added would stay in the user's
+ * agent for good; `ssh-agent -s` does not run there either. Win32 passes the key file to ssh with -i and
+ * IdentitiesOnly instead, which every caller supports.
+ */
+const WINDOWS_AGENT_REFUSAL =
+  'rdc does not use the Windows ssh-agent service: it keeps every added key in the registry';
+
+/**
+ * SSH agent result containing socket path and agent PID.
  */
 export interface SSHAgentResult {
   socketPath: string;
@@ -26,14 +37,9 @@ export interface SSHAgentResult {
  * @returns Promise resolving to agent socket path and PID
  * @throws Error if SSH agent cannot be started or times out
  */
-export async function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<SSHAgentResult> {
-  const platform = getPlatform();
-
-  if (platform === 'windows') {
-    // On Windows, check if ssh-agent is available
-    if (!(await commandExists('ssh-agent'))) {
-      throw new Error('ssh-agent not found. Ensure OpenSSH is installed.');
-    }
+export function startSSHAgent(timeoutMs = SSH_AGENT_TIMEOUT_MS): Promise<SSHAgentResult> {
+  if (getPlatform() === 'windows') {
+    return Promise.reject(new Error(WINDOWS_AGENT_REFUSAL));
   }
 
   return new Promise((resolve, reject) => {
@@ -114,6 +120,10 @@ export async function addKeyToAgent(
   socketPath: string,
   timeoutMs = SSH_AGENT_TIMEOUT_MS
 ): Promise<void> {
+  if (getPlatform() === 'windows') {
+    throw new Error(WINDOWS_AGENT_REFUSAL);
+  }
+
   // Create a temporary file for the key
   const tempDir = join(tmpdir(), 'rediacc-ssh');
   if (!existsSync(tempDir)) {
@@ -225,5 +235,9 @@ export async function stopSSHAgent(agentPid: string, gracePeriodMs = 1000): Prom
  * @returns True if ssh-agent is available
  */
 export function isSSHAgentAvailable(): Promise<boolean> {
+  if (getPlatform() === 'windows') {
+    debugLog('win32: file-based keys, since the ssh-agent service would persist them');
+    return Promise.resolve(false);
+  }
   return commandExists('ssh-agent');
 }

@@ -15,6 +15,8 @@
  */
 
 import { promises as fs } from 'node:fs';
+import { join } from 'node:path';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { assertThrowawayDir } from '../../__tests__/throwaway-dir.js';
@@ -129,9 +131,9 @@ vi.mock('../../services/account/account-client.js', () => ({
         configServiceAvailable: true,
       });
     }
-    if (path.endsWith('/configs/password-enroll')) {
+    if (path.endsWith('/configs/machine-enroll')) {
       account.enrollCalls += 1;
-      if (!account.enroll) return Promise.reject(new Error('the test armed no password slot'));
+      if (!account.enroll) return Promise.reject(new Error('the test armed no machine secret'));
       return Promise.resolve(account.enroll);
     }
     return Promise.reject(new Error(`unexpected account request: ${path}`));
@@ -186,8 +188,9 @@ vi.mock('../../utils/errors.js', async (importOriginal) => {
 });
 
 import {
-  derivePasswordSlotSecret,
-  newPasswordSlotParams,
+  deriveMachineSecretSlotSecret,
+  generateMachineSecret,
+  newMachineSecretParams,
   toBase64,
 } from '@rediacc/shared/config-crypto';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
@@ -287,6 +290,7 @@ async function enrolledDevice(): Promise<void> {
     },
   });
   secureMem.set(PASSKEY_KEY_ID, SLOT_SECRET);
+  await remoteTokenStorage.recordEnrollment(active.name);
 }
 
 /** The reboot: the kernel keyring is empty again, everything on disk is as it was. */
@@ -326,7 +330,7 @@ beforeEach(async () => {
   relay.runs = 0;
   account.enroll = null;
   account.enrollCalls = 0;
-  delete process.env.REDIACC_STORE_MASTER_PASSWORD;
+  delete process.env.REDIACC_MACHINE_SECRET;
   Object.assign(server, {
     storeId: STORE_ID,
     configId: CONFIG_ID,
@@ -365,7 +369,7 @@ describe('config remote enable on a linked config: controls', () => {
 
     expect(relay.runs).toBe(0);
     expect(account.enrollCalls).toBe(0);
-    const named = /rdc config remote (\w+)/.exec(error.message)?.[1];
+    const named = /rdc (?:--config \S+ )?config remote (\w+)/.exec(error.message)?.[1];
     expect(named).toBe('disable');
     await rdc(named as string);
     expect((await readConfigFile()).remote).toBeUndefined();
@@ -410,7 +414,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
     relay.payload = handoff();
 
     const error = await refusal('refresh');
-    const named = /rdc config remote (\w+)/.exec(error.message)?.[1];
+    const named = /rdc (?:--config \S+ )?config remote (\w+)/.exec(error.message)?.[1];
     expect(named).toBeDefined();
 
     await rdc(named as string);
@@ -433,7 +437,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
     expect(written.remote).toMatchObject({ cachedVersion: 7 });
     // Host-local sections come from the local copy; the pull carries none of them.
     expect(written.renetPath).toBe('/opt/dev/renet');
-    expect(written.encryption).toEqual({ mode: 'plaintext' });
+    expect(written.encryption).toMatchObject({ mode: 'keyring' });
     expect(written.account).toMatchObject({
       accountServer: API_URL,
       e2ePublicKey: 'device-synced-key',
@@ -484,7 +488,7 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
 
     const error = await refusal('enable');
     expect(error.message).toContain(CONFIG_ID);
-    expect(error.message).toContain('rdc config remote disable --local');
+    expect(error.message).toContain(`rdc --config ${active.name} config remote disable --local`);
     expect(pushSpy).not.toHaveBeenCalled();
     expect(secureMem.size).toBe(0);
   });
@@ -501,17 +505,19 @@ describe('config remote enable on a linked config whose slot secret is gone', ()
   });
 });
 
-describe('config remote enable --master-password on a linked config whose slot secret is gone', () => {
-  const PASSWORD = 'correct horse battery staple';
+describe('config remote enable --machine-secret on a linked config whose slot secret is gone', () => {
+  const SECRET = generateMachineSecret();
+  const SECRET_ID = '55555555-5555-4555-8555-555555555555';
 
-  async function passwordSlot(): Promise<void> {
-    const kdfParams = newPasswordSlotParams();
-    server.slotSecrets.add(toBase64(await derivePasswordSlotSecret(PASSWORD, kdfParams)));
+  async function machineSecret(): Promise<void> {
+    const kdfParams = newMachineSecretParams();
+    server.slotSecrets.add(toBase64(await deriveMachineSecretSlotSecret(SECRET, kdfParams)));
     account.enroll = {
-      method: 'password',
+      machineSecretId: SECRET_ID,
       kdfParams,
       wrappedCek: WRAPPED_CEK,
-      token: 'rct_password',
+      cekGeneration: 1,
+      token: 'rct_machine',
       storeId: STORE_ID,
       configId: CONFIG_ID,
       teamId: null,
@@ -521,58 +527,46 @@ describe('config remote enable --master-password on a linked config whose slot s
   it('enrolls again under a new key id, same store and config, and drops the old key id', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = SECRET;
 
-    await rdc('enable', '--master-password');
+    await rdc('enable', '--machine-secret', SECRET_ID);
 
     const pointer = (await readConfigFile()).remote;
     expect(pointer).toMatchObject({ storeId: STORE_ID, configId: CONFIG_ID, cachedVersion: 7 });
-    expect(pointer?.storageKeyId).toMatch(/^rdc:pw:/);
-    expect([...secureMem.keys()]).toEqual([pointer?.storageKeyId]);
+    expect(pointer?.storageKeyId).toMatch(/^rdc:ms:/);
+    const keys = [...secureMem.keys()];
+    expect(keys).toHaveLength(2);
+    expect(keys).toContain(pointer?.storageKeyId);
+    expect(keys.filter((k) => k.startsWith('rdc:seal:'))).toHaveLength(1);
+    expect(account.enrollCalls).toBe(1);
     await rdc('refresh');
   });
 
-  it('refuses --config-id naming another config than the linked one, before any enrollment', async () => {
+  it('refuses --config-id beside --machine-secret, before any enrollment', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = SECRET;
     const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
 
-    const error = await refusal(
-      'enable',
-      '--master-password',
-      '--config-id',
-      'someone-elses-config'
-    );
+    const error = await refusal('enable', '--machine-secret', SECRET_ID, '--config-id', CONFIG_ID);
 
-    expect(error.message).toContain('someone-elses-config');
-    expect(error.message).toContain(CONFIG_ID);
+    expect(error.message).toMatch(/--config-id cannot be combined with --machine-secret/);
     expect(account.enrollCalls).toBe(0);
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
   });
 
-  it('accepts --config-id naming the linked config and re-enrolls', async () => {
+  it('reports a wrong machine secret and leaves the device as it was', async () => {
     await enrolledDevice();
     reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = PASSWORD;
-
-    await rdc('enable', '--master-password', '--config-id', CONFIG_ID);
-
-    expect(account.enrollCalls).toBe(1);
-    expect((await readConfigFile()).remote?.storageKeyId).toMatch(/^rdc:pw:/);
-  });
-
-  it('reports a wrong password and leaves the device as it was', async () => {
-    await enrolledDevice();
-    reboot();
-    await passwordSlot();
-    process.env.REDIACC_STORE_MASTER_PASSWORD = 'not the password';
+    await machineSecret();
+    process.env.REDIACC_MACHINE_SECRET = generateMachineSecret();
     const before = await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8');
 
-    expect((await refusal('enable', '--master-password')).message).toMatch(/password/i);
+    expect((await refusal('enable', '--machine-secret', SECRET_ID)).message).toMatch(
+      /machine secret/i
+    );
 
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
     expect(secureMem.size).toBe(0);
@@ -670,7 +664,7 @@ describe('config remote enable on a linked config: other lost and not-lost enrol
     relay.payload = handoff();
 
     const error = await refusal('enable');
-    expect(error.message).toContain('rdc config remote disable --local');
+    expect(error.message).toContain(`rdc --config ${active.name} config remote disable --local`);
     expect(error.message).toContain(CONFIG_ID);
     expect(error.message).toContain(STORE_ID);
     expect(error.message).not.toBe('Config not found');
@@ -696,7 +690,7 @@ describe('config remote status: can this device open the store', () => {
     await enrolledDevice();
     await rdc('status');
     expect(printed()).toMatchObject({ status: 'connected', deviceCanOpen: true });
-    expect(messages.join('\n')).not.toContain('rdc config remote enable');
+    expect(messages.join('\n')).not.toContain('config remote enable');
   });
 
   it('reads device-key-missing with deviceCanOpen false, and names enable, once the keyring is empty', async () => {
@@ -709,7 +703,24 @@ describe('config remote status: can this device open the store', () => {
       deviceCanOpen: false,
       storeId: STORE_ID,
     });
-    expect(messages.join('\n')).toContain('rdc config remote enable');
+    expect(messages.join('\n')).toContain(`rdc --config ${active.name} config remote enable`);
+    expect(messages.join('\n')).toContain('its key is gone');
+  });
+
+  // A config copied from another machine carries no marker of this device's: the key was never here, so no restart emptied it.
+  it('reads a config this device never enrolled as not enrolled here, not as a lost key', async () => {
+    await enrolledDevice();
+    await fs.writeFile(
+      join(getConfigDir(), '.tokens', `${active.name}.enrolled`),
+      JSON.stringify({ deviceId: 'another-machine', enrolledAt: '2026-01-01T00:00:00.000Z' })
+    );
+    reboot();
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'device-key-missing', deviceCanOpen: false });
+    const text = messages.join('\n');
+    expect(text).toContain('has not enrolled this config');
+    expect(text).not.toContain('its key is gone');
+    expect(text).toContain(`rdc --config ${active.name} config remote enable`);
   });
 
   // A healthy local key says nothing about the server, so "connected" still needs the session probe.
@@ -738,7 +749,7 @@ describe('config remote status: can this device open the store', () => {
     await rdc('status');
     expect(printed()).toMatchObject({ status: 'device-cannot-open', deviceCanOpen: false });
     const text = messages.join('\n');
-    expect(text).toContain('rdc config remote enable');
+    expect(text).toContain(`rdc --config ${active.name} config remote enable`);
     expect(text).not.toContain('key is gone');
   });
 

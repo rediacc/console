@@ -41,7 +41,8 @@ export interface Reach {
   via: string[];
 }
 
-const IMPORT_RE = /(?:from\s+|import\s*\(\s*)['"]([^'"]+)['"]/g;
+// `from '...'` (import and re-export), `import('...')`, and a bare side-effect `import '...'`, which loads the module as surely as a named import.
+const IMPORT_RE = /(?:from\s+|import\s*\(\s*|^\s*import\s+)['"]([^'"]+)['"]/gm;
 
 /** Resolve a relative specifier (ESM .js) to a real .ts file under src/. */
 function resolveSpecifier(fromFile: string, spec: string): string | null {

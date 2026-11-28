@@ -3,8 +3,8 @@ title: >-
   Yıllık Sızma Testiniz Uyum Tiyatrosu. NIS2 Article 21(2)(f) Bunu Sorun Haline
   Getirdi.
 description: >-
-  Sürekli etkinlik değerlendirmesi, bunu ucuzlatan sabit-zamanlı fork ve adli
-  kalitede kanıt olmadan karşılanamayacak Article 23 raporlama takvimi.
+  Sürekli etkinlik değerlendirmesi, bunu ucuzlatan sabit-zamanlı fork ve
+  doğrulanabilir kanıt olmadan karşılanamayacak Article 23 raporlama takvimi.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -16,8 +16,8 @@ tags:
   - incident-reporting
 featured: false
 language: tr
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -26,7 +26,7 @@ translatedFrom: en
 > - Direktife göre: 21(2)(e) ve (f) birlikte, gerçekten işleyen, talep üzerine, güncel üretime karşı kurtarma ve güvenlik testi yapılmasını zorunlu kılar.
 > - Delphix sınıfı araçlar, Veeam Instant Recovery veya Rubrik Live Mount ile doğru yapmanın maliyeti, çoğu ekibin sessizce staging'i tercih etmesinin nedenidir.
 > - Üretim fork'u yedi saniye sürdüğünde ekonomi tersine döner. Haftalık tatbikatlar gerçekçi hale gelir. Sürekli etkinlik belgelenebilir.
-> - Article 23 raporlaması (24 saatlik erken uyarı, 72 saatlik bildirim, bir aylık rapor), adli kalitede kanıt olmadan karşılanamaz. Kanıtlar bizde; SOC, SIEM ve ENISA başvuru iş akışı hala sizin sorumluluğunuzdadır.
+> - Article 23 raporlaması (24 saatlik erken uyarı, 72 saatlik bildirim, bir aylık rapor) kanıt olmadan karşılanamaz. Rediacc, ücretli planlarda depo başına akış kayıtları ve imzalı aşamalı raporlar sağlar; SOC, SIEM ve yetkili makama yapılan başvuru hala sizin sorumluluğunuzdadır.
 
 Herhangi bir orta ölçekli SRE ekibine gidin ve tek bir soru sorun: son tam uçtan uca kurtarma işlemini ne zaman yaptınız; yedek dosya doğrulaması değil, kurtarılan sistemi uygulamalar, veritabanları ve yapılandırmalarla gerçekten ayağa kaldırıp çalıştığını doğruladığınız bir test? Çoğu ekipteki dürüst cevap "geçen yılki masa başı tatbikatında" olacaktır. Sonra herkes işe geri döner.
 
@@ -161,7 +161,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Hash zincirine bağlıdır. Operatörün iş istasyonundaki `rdc config audit verify`, olaylar yazıldığından bu yana zincirin değiştirilmediğini doğrular. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
+Denetim günlüğü her adımı yakalar (fork oluşturma, repo up, term oturumları, yedek çekme, repo yıkma). Yerel iş istasyonu günlüğü hash zincirine bağlıdır ve operatörün iş istasyonundaki `rdc config audit verify`, olaylar yazıldığından bu yana bu zincirin değiştirilmediğini doğrular. Bu komut yalnızca iş istasyonu günlüğünü kapsar. Sunucu tarafı konsol denetimi, kuruluş ve gün başına zincirlenir. Denetim modeli için bkz. [Hesap Güvenliği § Yapay Zeka Ajanları için CLI Güvenlik Duruşu](/tr/docs/account-security).
 
 Rutinin 128 GB'lık bir depo için toplam gerçek zamanlı süresi 15 dakikanın altındadır. Bunun büyük çoğunluğu duman testi ve yedek çekme için ağ gidiş-dönüş süresidir. Fork işlemlerinin kendisi saniyeler alır.
 
@@ -195,15 +195,15 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Trafiği DNS veya rota sunucusu üzerinden yeni sunum fork'una yönlendir.
 ```
 
-Adli fork, 60. saatte denetçinin sorusunu yanıtlar: "uzlaşma anındaki sistemlerinizin tam durumunu gösterin." Sunum fork'u müşterinin sorusunu yanıtlar. 70'ten fazla olay denetim günlüğü, hash zincirine bağlı, doğrulanabilir bir şekilde "kim ne yaptı, ne zaman" sorusunu yanıtlar.
+Adli fork, 60. saatte denetçinin sorusunu yanıtlar: "uzlaşma anındaki sistemlerin tam durumunu gösterin." Sunum fork'u müşterinin sorusunu yanıtlar. 70'ten fazla olaylı denetim günlüğü "kim ne yaptı, ne zaman" sorusunu yanıtlar; forensics akış kayıtları ve olay zaman çizelgesi (ücretli planlar, depo başına seçilen yakalama düzeyinde) ise deponun ağ trafiğinin ne yaptığını ekler: imzalı, zincirli paketler tarayıcıda doğrulanır. Akış kayıtları hacmi ve hedefi gösterir, içeriği değil.
 
 Rediacc'ın operatöre verdiği budur. Vermediklerimiz:
 
-- **SIEM**. Splunk, Datadog, Sentinel veya kendi altyapınıza yayın yapmıyoruz. Denetim günlüğü operatörün iş istasyonunda yerel JSONL'dir; bunu bir SIEM'e yönlendirmek operatörün entegrasyon işidir.
-- **SOC**. 7/24 tespit kapasitesi işletmiyoruz. Uyarı üretmiyoruz. Önceliklendirme yapmıyoruz.
-- **Yönetilen raporlama**. ENISA raporunu sunmuyoruz. Erken uyarı taslağı hazırlamıyoruz. Ulusal CSIRT ile sizin adınıza koordinasyon yapmıyoruz.
+- **SIEM**. Splunk, Datadog veya Sentinel için bağlayıcı sunmuyoruz. Hesap sunucusunun denetim olayları, operatörün çalıştırdığı bir toplayıcının iletebileceği OpenTelemetry günlük kayıtları olarak yayımlanır; iş istasyonundaki denetim günlüğü ise yerel JSONL'dir. İkisinden birini SIEM'e bağlamak operatörün entegrasyon işidir.
+- **SOC**. 7/24 tespit kapasitesi işletmiyoruz ve önceliklendirme yapmıyoruz. Ücretli planlarda, yakalama açık depoların adli akış kayıtları üzerindeki anomali dedektörleri, depo başına öğrenilen bir taban çizgisine göre güvenlik bildirimleri üretir. Bildirim bir soruşturma çağrısıdır, ihlal kanıtı değildir ve onu yine bir kişinin okuması gerekir.
+- **Yönetilen raporlama**. Declare incident sayaçları ve aşamalı rapor taslakları süreleri görünür tutar; ancak ENISA raporunu sunmuyor, erken uyarıyı göndermiyor ve ulusal CSIRT ile koordinasyon yapmıyoruz. Bir olayın bildirime tabi olup olmadığı müşterinin değerlendirmesinde kalır.
 
-Rakiplerin bize karşı kullanacağı kaldıraç budur. Coveware entegrasyonlarıyla Veeam Data Platform, yönetilen hizmetler koluyla Rubrik ve birkaç özel IR-taahhüt firması (Avrupa'da Mandiant, Kroll, S-RM), tam olarak Rediacc'ın sağlamadığı operasyonel katmanı satıyor. Bunun tersini iddia etmek, bizi zor duruma düşürecek pazarlama hamlesinin ta kendisidir. Savunulabilir konum şudur: Rediacc, o hizmetlerin kendi başlarına üretemediği adli kalitede kanıtları size verir; o hizmetler, Rediacc'ın sağlayamadığı operasyonel raporlama katmanını size verir. Tamamlayıcıdırlar. Bir NIS2 programı ikisine de ihtiyaç duyar.
+Rakiplerin bize karşı kullanacağı kaldıraç budur. Coveware entegrasyonlarıyla Veeam Data Platform, yönetilen hizmetler koluyla Rubrik ve birkaç özel IR-taahhüt firması (Avrupa'da Mandiant, Kroll, S-RM), tam olarak Rediacc'ın sağlamadığı operasyonel katmanı satıyor. Bunun tersini iddia etmek, bizi zor duruma düşürecek pazarlama hamlesinin ta kendisidir. Savunulabilir konum şudur: Rediacc, o hizmetlerin kendi başlarına üretemediği doğrulanabilir fork anlık görüntülerini, imzalı akış kayıtlarını ve olay zaman çizelgesini operatöre verir; o hizmetler, Rediacc'ın sağlayamadığı operasyonel raporlama katmanını size verir. Tamamlayıcıdırlar. Bir NIS2 programı ikisine de ihtiyaç duyar.
 
 ## Rediacc'ın sizin yerinize yapmadıkları
 
@@ -223,7 +223,7 @@ Bunların doğru okunması şudur: Rediacc bir araç katmanıdır, güvenlik pro
 
 **Kanıt 1: fork tatbikat kadansı**. Yuvarlanan on iki ay boyunca haftalık veya iki haftada bir kadansla yürütülen etkinlik tatbikatlarının zaman damgalı günlüğü. Her giriş, üst depoyu, fork etiketini, test altındaki yamayı veya değişikliği, duman testi sonucunu ve yıkma zaman damgasını gösterir. `rdc config audit log --since` tarafından üretilen denetim günlüğü bunların tümünü yakalar.
 
-**Kanıt 2: hash zincirine bağlı denetim günlüğü**. Denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc config audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
+**Kanıt 2: tatbikatların hash zincirine bağlı iş istasyonu denetim günlüğü**. İş istasyonu denetim günlüğündeki hash zinciri, "geçen yıl 47 tatbikat yaptık" iddiasını kanıta dönüştüren şeydir. `rdc config audit verify`, zinciri uçtan uca doğrular. Doğrulama sonucu, bir denetçinin yeniden çalıştırabileceği tek bir komut çıktısıdır.
 
 **Kanıt 3: yedek doğrulama izi**. Zamanlanmış her yedekleme stratejisi için systemd birimi, depo başına çalışma başına `/var/run/rediacc/cold-backup-<guid>.status.json` konumunda bir durum yan dosyası ve son bir özet günlük satırı üretir. `rdc backup status` her ikisini de ortaya çıkarır. Yukarıdaki rutinin 4. Adımındaki haftalık geri yükleme tatbikatıyla birleştirildiğinde, bu denetçiye yalnızca "yedek alındı" izi değil, "yedek alındı ve geri yükleme test edildi" izi sunar. Tanılama yüzeyi için bkz. [İzleme](/tr/docs/monitoring).
 

@@ -11,7 +11,9 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  generate,
   type LocaleConfig,
+  parseSurfaces,
   processLocaleDir,
   writeHashManifest,
 } from '../gen/generate-translation-hashes.ts';
@@ -29,10 +31,12 @@ const put = (rel: string, text: string) => {
 };
 put('www/en.json', '{"a":"one","b":"two"}\n');
 put('cli/en/cli.json', '{"x":"ex"}\n');
+put('web/en/common.json', '{"w":"web"}\n');
 
 const configs: LocaleConfig[] = [
   { name: 'www', dir: path.join(root, 'www'), multipleNamespaces: false, flatFiles: true },
   { name: 'cli', dir: path.join(root, 'cli'), multipleNamespaces: false },
+  { name: 'account-web', dir: path.join(root, 'web'), multipleNamespaces: true },
 ];
 const manifestPath = (c: LocaleConfig) => path.join(c.dir, '.translation-hashes.json');
 
@@ -78,6 +82,57 @@ try {
   const before = snapshot();
   run(preFix);
   if (same(before, snapshot())) fail('control did not detect restamping: the test cannot fail');
+
+  // --surface cli: only the cli manifest changes; account-web and www stay untouched.
+  put('www/en.json', '{"a":"one","b":"again"}\n');
+  put('cli/en/cli.json', '{"x":"changed"}\n');
+  put('web/en/common.json', '{"w":"changed"}\n');
+  const names = configs.map((c) => c.name);
+  const baseline = snapshot();
+  generate(configs, parseSurfaces(['--surface', 'cli'], names), nextCommit);
+  const after = snapshot();
+  if (after[1] === baseline[1]) fail('--surface cli did not rewrite the cli manifest');
+  if (after[0] !== baseline[0]) fail('--surface cli rewrote the www manifest');
+  if (after[2] !== baseline[2]) fail('--surface cli rewrote the account-web manifest');
+  // A requested surface whose English source is missing is an error, not a silent pass.
+  {
+    let message: string | null = null;
+    try {
+      generate(
+        [{ ...configs[0], dir: path.join(root, 'absent-surface') }],
+        [configs[0].name],
+        nextCommit
+      );
+    } catch (e) {
+      message = e instanceof Error ? e.message : String(e);
+    }
+    if (message === null) fail('--surface with no English source exited clean');
+    else if (!message.includes('wrote no manifest')) {
+      fail(`--surface with no English source threw an unrelated error: ${message}`);
+    }
+  }
+  // No surface: every stale manifest is rewritten.
+  generate(configs, parseSurfaces([], names), nextCommit);
+  const all = snapshot();
+  if (all[0] === after[0] || all[2] === after[2]) {
+    fail('the no-argument form did not rewrite every changed surface');
+  }
+  // Success forms: the `=` spelling and a repeated flag both pick exactly the named surfaces.
+  const eq = parseSurfaces(['--surface=cli'], names);
+  if (eq?.join(',') !== 'cli') fail(`--surface=cli parsed as ${JSON.stringify(eq)}`);
+  const twice = parseSurfaces(['--surface', 'cli', '--surface=www'], names);
+  if (twice?.join(',') !== 'cli,www') fail(`repeated --surface parsed as ${JSON.stringify(twice)}`);
+  if (parseSurfaces([], names) !== null) fail('no --surface did not select every surface');
+  // Unknown surface and malformed flags are hard errors.
+  for (const bad of [['--surface', 'nope'], ['--surface'], ['--bogus']]) {
+    let threw = false;
+    try {
+      parseSurfaces(bad, names);
+    } catch {
+      threw = true;
+    }
+    if (!threw) fail(`parseSurfaces accepted ${bad.join(' ')}`);
+  }
 } catch (e) {
   console.log = quiet;
   console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);

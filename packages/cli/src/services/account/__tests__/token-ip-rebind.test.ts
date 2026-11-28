@@ -4,6 +4,9 @@
  * terminal path stays the prompt loop.
  */
 
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   API_TOKEN_IP_REBIND_ERROR_CODES,
   TOKEN_IP_MISMATCH,
@@ -19,12 +22,18 @@ vi.mock('../../../utils/prompt.js', () => ({ askInput: mockAskInput }));
 vi.mock('../../../utils/spinner.js', () => ({
   suspendSpinner: <T>(fn: () => Promise<T>): Promise<T> => fn(),
 }));
+vi.mock('../../config/config-name.js', () => ({ getEffectiveConfigName: () => 'eu-bench' }));
 vi.mock('../../core/request-context.js', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../core/request-context.js')>()),
   writeStderr: mockWriteStderr,
 }));
 
-import { ensureRebound, IP_REBIND_CODE_ENV, resetTokenIpRebindState } from '../token-ip-rebind.js';
+import {
+  ensureRebound,
+  IP_REBIND_CODE_COMMAND_ENV,
+  IP_REBIND_CODE_ENV,
+  resetTokenIpRebindState,
+} from '../token-ip-rebind.js';
 
 const CODE = '123456';
 let tokenSeq = 0;
@@ -155,5 +164,104 @@ describe('ensureRebound', () => {
     expect(mockAskInput).toHaveBeenCalledTimes(1);
     expect(rebind).toHaveBeenCalledTimes(1);
     expect(rebind).toHaveBeenCalledWith(CODE);
+  });
+
+  describe('the code program', () => {
+    let dir: string;
+
+    function program(body: string): string {
+      const path = join(dir, 'code.sh');
+      writeFileSync(path, `#!/bin/sh\n${body}\n`);
+      chmodSync(path, 0o755);
+      process.env[IP_REBIND_CODE_COMMAND_ENV] = path;
+      return path;
+    }
+
+    beforeEach(() => {
+      dir = mkdtempSync(join(tmpdir(), 'rdc-rebind-cmd-'));
+    });
+
+    afterEach(() => {
+      delete process.env[IP_REBIND_CODE_COMMAND_ENV];
+      rmSync(dir, { recursive: true, force: true });
+    });
+
+    it('POSTs the code the program prints for the active config, on a terminal too', async () => {
+      setTty(true);
+      program('[ "$1" = eu-bench ] && echo 246810');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      await ensureRebound(input(rebind));
+
+      expect(rebind).toHaveBeenCalledTimes(1);
+      expect(rebind).toHaveBeenCalledWith('246810');
+      expect(mockAskInput).not.toHaveBeenCalled();
+      expect(stderrText()).not.toContain('246810');
+    });
+
+    it('a failing program is a named refusal quoting its stderr, with no POST', async () => {
+      const path = program('echo "BENCH_ROOT_TOTP_SEED is unset" >&2; exit 2');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      const error = await ensureRebound(input(rebind)).catch((e: unknown) => e);
+
+      expect(rebind).not.toHaveBeenCalled();
+      expect(error).toMatchObject({ status: 403, code: TOKEN_IP_MISMATCH });
+      const message = (error as Error).message;
+      expect(message).toContain(IP_REBIND_CODE_COMMAND_ENV);
+      expect(message).toContain(path);
+      expect(message).toContain('exit 2');
+      expect(message).toContain('BENCH_ROOT_TOTP_SEED is unset');
+    });
+
+    it('a program printing something other than six digits is refused without echoing it', async () => {
+      program('echo 12345x');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      const error = await ensureRebound(input(rebind)).catch((e: unknown) => e);
+
+      expect(rebind).not.toHaveBeenCalled();
+      expect((error as Error).message).toContain('something other than a 6-digit code');
+      expect((error as Error).message).not.toContain('12345x');
+    });
+
+    it('a missing program is a named refusal, not a hang', async () => {
+      process.env[IP_REBIND_CODE_COMMAND_ENV] = join(dir, 'absent');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      const error = await ensureRebound(input(rebind)).catch((e: unknown) => e);
+
+      expect(rebind).not.toHaveBeenCalled();
+      expect((error as Error).message).toContain('ENOENT');
+    });
+
+    it('a program that leaves a grandchild holding the pipe open still settles', async () => {
+      program('sleep 15 &\necho 246810');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      await ensureRebound(input(rebind));
+
+      expect(rebind).toHaveBeenCalledWith('246810');
+    }, 15_000);
+
+    it('a failing program that leaves a grandchild holding the pipe is still a refusal', async () => {
+      program('sleep 15 &\necho boom >&2\nexit 3');
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      const error = await ensureRebound(input(rebind)).catch((e: unknown) => e);
+
+      expect(rebind).not.toHaveBeenCalled();
+      expect((error as Error).message).toContain('exit 3');
+    }, 15_000);
+
+    it('an explicit REDIACC_IP_REBIND_CODE wins over the program (control)', async () => {
+      program('echo 999999');
+      process.env[IP_REBIND_CODE_ENV] = CODE;
+      const rebind = vi.fn(() => Promise.resolve({ boundIp: '203.0.113.7' }));
+
+      await ensureRebound(input(rebind));
+
+      expect(rebind).toHaveBeenCalledWith(CODE);
+    });
   });
 });

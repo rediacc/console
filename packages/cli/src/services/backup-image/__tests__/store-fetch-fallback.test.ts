@@ -90,6 +90,20 @@ describe('backup download --store fallback', () => {
     expect(result.store).toBe('home');
   });
 
+  it('throws the last store failure when every store is unreachable, and reads no header', async () => {
+    const d = deps({
+      'eu-west': httpError(502, 'bad gateway'),
+      home: httpError(503, 'service unavailable'),
+    });
+    const readHead = vi.fn(d.base.readHead);
+    await expect(
+      runStoreFetch({ ref: 'mail', dest: '/d/x.img' }, { ...d.base, readHead })
+    ).rejects.toMatchObject({ status: 503 });
+    expect(minted(d)).toEqual(['eu-west', undefined]);
+    expect(d.runRenet).not.toHaveBeenCalled();
+    expect(readHead).not.toHaveBeenCalled();
+  });
+
   it('does not fall back when the snapshot is missing', async () => {
     const d = deps({}, async () => ({
       code: 1,

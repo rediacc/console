@@ -53,13 +53,19 @@ NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST: `.ci/rediacc_ci/tests/test_depl
 from __future__ import annotations
 
 import dataclasses
+import datetime
+import json
 import os
 import shutil
 import sys
 import tempfile
+from typing import TYPE_CHECKING
 
 from rediacc_ci.core import awscli, common
 from rediacc_ci.deploy import cf_purge_urls, channel_snapshot, channel_stamp, r2_promote
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.promote_r2_to_stable"
@@ -207,6 +213,14 @@ INSTALL_SED = channel_stamp.INSTALL_SED
 CHANNEL_SED = channel_stamp.CHANNEL_SED
 REWRITES = channel_stamp.REWRITES
 
+# THE STABLE RECORD (PLAN-release-notes D9). `cli/stable/history.json` is a list of `{version, promoted_at}` rows, one per version a promote put on stable, oldest first. It exists on stable only: it is written by `record_stable` after a promote has landed, never copied from edge, so `HISTORY_EXCLUDE` keeps it out of every copy phase (the soak lane's phase 1, and the hotfix lane's catch-all) even if an edge tree ever held a file of that name.
+HISTORY_NAME = "history.json"
+# Compare-and-swap attempts for one record update before it fails loudly.
+HISTORY_CAS_ATTEMPTS = 5
+HISTORY_KEY = "cli/stable/" + HISTORY_NAME
+HISTORY_EXCLUDE: tuple[str, ...] = ("--exclude", HISTORY_NAME)
+STABLE_HISTORY_IS_NEVER_COPIED_FROM_EDGE = True
+
 # The four `${VAR:?msg}` guards (twin :58-61), in order, as (name, message).
 REQUIRED_ENV: tuple[tuple[str, str], ...] = (
     ("AWS_ACCESS_KEY_ID", "%s: AWS_ACCESS_KEY_ID must be set" % SELF),
@@ -274,13 +288,139 @@ def endpoint_args(endpoint: str) -> list[str]:
 
 
 def phases(dir_name: str) -> tuple[tuple[str, ...], ...]:
-    """Phase 1 (`META_EXCLUDES`) then the directory's phase-2 arms, in order."""
-    return (META_EXCLUDES, *PHASE_TWO.get(dir_name, ()))
+    """Phase 1 (`META_EXCLUDES`, then `HISTORY_EXCLUDE`) then the directory's phase-2 arms, in order. Every phase-2 arm opens with `--exclude *`, so the history record is kept out of those by construction."""
+    return (META_EXCLUDES + HISTORY_EXCLUDE, *PHASE_TWO.get(dir_name, ()))
 
 
 def channel_url(dir_name: str, relative: str) -> str:
     """`https://releases.rediacc.com/<dir>/stable/<relative>` (twin :168)."""
     return r2_promote.channel_url(dir_name, relative)
+
+
+def normalise_version(version: str) -> str:
+    """`v1.2.3` and `1.2.3` are one version; the record keeps the manifest's bare form."""
+    return version.strip().removeprefix("v")
+
+
+def now_utc() -> str:
+    return datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def parse_history(text: str) -> list[dict[str, str]]:
+    """The rows of a `history.json` text; empty text is no history. Raises ValueError (or TypeError for a non-list) on anything that is not a list of `{version, promoted_at}` objects, so a damaged record is refused rather than overwritten."""
+    if not text.strip():
+        return []
+    rows = json.loads(text)
+    if not isinstance(rows, list):
+        raise TypeError("expected a JSON list of {version, promoted_at} rows")
+    parsed: list[dict[str, str]] = []
+    for row in rows:
+        if not isinstance(row, dict) or not row.get("version") or not row.get("promoted_at"):
+            raise ValueError("expected {version, promoted_at} per row, got %r" % (row,))
+        parsed.append(
+            {
+                "version": normalise_version(str(row["version"])),
+                "promoted_at": str(row["promoted_at"]),
+            }
+        )
+    return parsed
+
+
+def append_row(
+    rows: list[dict[str, str]], version: str, promoted_at: str
+) -> tuple[list[dict[str, str]], bool]:
+    """`rows` with one `{version, promoted_at}` appended, and whether it was. A version already in the record appends nothing: a repeat promote (a rerun, a hotfix after the soak lane) keeps the first `promoted_at`."""
+    wanted = normalise_version(version)
+    if any(row["version"] == wanted for row in rows):
+        return rows, False
+    return [*rows, {"version": wanted, "promoted_at": promoted_at}], True
+
+
+def render_history(rows: list[dict[str, str]]) -> str:
+    return json.dumps(rows, indent=2) + "\n"
+
+
+def read_history(
+    run: r2_promote.Transfers, stage_root: str
+) -> tuple[list[dict[str, str]], str | None]:
+    """The stable record and the ETag of the exact bytes read (None, with no rows, when `cli/stable/history.json` does not exist yet), so the write can be conditional on nothing having changed since. Raises `PromoteError(1)` for a record that does not parse."""
+    target = os.path.join(stage_root, HISTORY_NAME)
+    etag = run.get_with_etag(HISTORY_KEY, target)
+    if etag is None:
+        return [], None
+    with open(target, encoding="utf-8") as handle:
+        text = handle.read()
+    try:
+        return parse_history(text), etag
+    except (TypeError, ValueError) as exc:
+        print(
+            "%s: %s is not a valid record, left untouched: %s" % (run.self_name, HISTORY_KEY, exc),
+            file=sys.stderr,
+        )
+        raise r2_promote.PromoteError(1) from exc
+
+
+def write_history(
+    run: r2_promote.Transfers, rows: list[dict[str, str]], stage_root: str, etag: str | None
+) -> bool:
+    """Compare-and-swap: write `rows` only if the record is still the version `etag` names. False means a concurrent writer (the soak promote and the hotfix publish both read-modify-write this one object) changed it first and nothing was written."""
+    target = os.path.join(stage_root, "history-out.json")
+    with open(target, "w", encoding="utf-8") as handle:
+        handle.write(render_history(rows))
+    return run.put_if_match(target, HISTORY_KEY, etag)
+
+
+def update_history(
+    run: r2_promote.Transfers,
+    merge: Callable[[list[dict[str, str]]], tuple[list[dict[str, str]], int]],
+    stage_root: str,
+) -> int:
+    """Read the record, apply `merge` (rows -> (rows, number added)) and write it back with compare-and-swap. On a lost race the record is re-read and the merge re-applied, up to `HISTORY_CAS_ATTEMPTS` times, so a version a concurrent writer added is kept; exhausting them raises `PromoteError(1)` rather than dropping a version. A merge that adds nothing writes nothing."""
+    for attempt in range(1, HISTORY_CAS_ATTEMPTS + 1):
+        rows, etag = read_history(run, stage_root)
+        merged, added = merge(rows)
+        if not added:
+            return 0
+        if write_history(run, merged, stage_root, etag):
+            return added
+        print(
+            "%s: %s changed under the write, re-reading (%d/%d)"
+            % (run.self_name, HISTORY_KEY, attempt, HISTORY_CAS_ATTEMPTS),
+            file=sys.stderr,
+            flush=True,
+        )
+    print(
+        "%s: %s still changing after %d attempts; the stable record was not updated"
+        % (run.self_name, HISTORY_KEY, HISTORY_CAS_ATTEMPTS),
+        file=sys.stderr,
+    )
+    raise r2_promote.PromoteError(1)
+
+
+def record_stable(run: r2_promote.Transfers, version: str, promoted_at: str = "") -> bool:
+    """Append `version` to the stable record after its promote has landed. Returns whether a row was added; a version already recorded writes nothing. It prints nothing to stdout, so the promote's own stdout is unchanged; a lost CAS race prints its `re-reading (n/5)` line to stderr."""
+    stage_root = tempfile.mkdtemp(prefix="promote-history-")
+    stamp = promoted_at or now_utc()
+
+    def merge(rows: list[dict[str, str]]) -> tuple[list[dict[str, str]], int]:
+        merged, added = append_row(rows, version, stamp)
+        return merged, int(added)
+
+    try:
+        return bool(update_history(run, merge, stage_root))
+    finally:
+        shutil.rmtree(stage_root, ignore_errors=True)
+
+
+def stable_since(rows: list[dict[str, str]], edge_version: str) -> str:
+    """The oldest recorded stable version at or above `edge_version`, or "" when none is (D9)."""
+
+    def key(version: str) -> tuple[int, ...]:
+        return tuple(int(part) for part in normalise_version(version).split("."))
+
+    wanted = key(edge_version)
+    later = [row["version"] for row in rows if key(row["version"]) >= wanted]
+    return min(later, key=key) if later else ""
 
 
 def _flush() -> None:
@@ -419,6 +559,18 @@ def main(argv: list[str]) -> int:
         return exc.code
 
     print("R2 promotion complete: edge v%s -> stable" % values["EDGE_VERSION"])
+
+    try:
+        record_stable(
+            r2_promote.Transfers(
+                SELF,
+                values["CLOUDFLARE_R2_ENDPOINT"],
+                float(env["PROMOTE_RETRY_DELAY_S"] or "0"),
+            ),
+            values["EDGE_VERSION"],
+        )
+    except r2_promote.PromoteError as exc:
+        return exc.status
 
     if purge_urls:
         try:

@@ -639,6 +639,69 @@ def test_retro(hooks_dir):
 # -------------------------------------------------------------------------- precompact floor --------------------------------------------------------------------------
 
 
+RETRO_OP_WAITS = "retro-op: no order while a merge is halted in the project"
+
+
+def test_retro_operation(hooks_dir):
+    """worklist #b07162cf: the order is a row of the TRACKED agent/ledgers/stop-hook-retros.jsonl, and one unstaged tracked change makes `git rebase --continue` refuse. While a merge or rebase is halted in the project the order waits; the first tool call after the operation ends places it."""
+    print("\n[retro order during a git operation] %s" % hooks_dir)
+    sb = Sandbox(hooks_dir)
+    try:
+        subprocess.run(["git", "init", "-q", str(sb.project)], check=True, capture_output=True)
+        marker = sb.project / ".git" / "MERGE_HEAD"
+        marker.write_text("0" * 40 + "\n", encoding="utf-8")
+        sb.write_state_md()
+        sb.write_transcript(400_000)
+        sb.post_tool()
+        sb.write_transcript(670_000)
+        sb.post_tool()
+        touch_state_md(sb, 5)
+        ctx = fired(sb.post_tool()) or ""
+        check(
+            RETRO_OP_WAITS,
+            "--retro-brief" not in ctx and retro_rows(sb) == [],
+            "%r rows=%s" % (ctx[:200], retro_rows(sb)),
+        )
+        marker.unlink()
+        ctx = fired(sb.post_tool()) or ""
+        check(
+            "retro-op: the order is placed on the first tool call after the merge ends",
+            "--retro-brief %s early" % SLUG in ctx and len(retro_rows(sb)) == 1,
+            "%r rows=%s" % (ctx[:200], retro_rows(sb)),
+        )
+    finally:
+        sb.cleanup()
+
+
+def test_retro_operation_mutant():
+    """The control on the control: with the guard removed from band-notice.py the waiting check goes RED, and an unmutated copy of the same layout stays green, so the red is the guard's. The layout is `<d>/context` beside `<d>/stop/wl_git.py`, which `ctx_budget.operation_in_progress` loads by path; `mutate()`'s flat copy has no `stop/`."""
+    print("\n[retro order during a git operation: mutation control]")
+    guard = "            and not B.operation_in_progress(project)\n"
+    for label, strip, want_red in (("unmutated copy", False, False), ("guard removed", True, True)):
+        d = Path(tempfile.mkdtemp(prefix="ctxband-opmutant-"))
+        try:
+            (d / "context").mkdir()
+            (d / "stop").mkdir()
+            for f in ("ctx_budget.py", "band-notice.py", "epoch-reset.py", "precompact-floor.py"):
+                shutil.copy2(HERE / f, d / "context" / f)
+            shutil.copy2(HERE.parent / "stop" / "wl_git.py", d / "stop" / "wl_git.py")
+            p = d / "context" / "band-notice.py"
+            src = p.read_text(encoding="utf-8")
+            if src.count(guard) != 1:
+                raise AssertionError("mutation anchor missing in band-notice.py: %r" % guard)
+            if strip:
+                p.write_text(src.replace(guard, ""), encoding="utf-8")
+            failed = run_isolated(test_retro_operation, d / "context")
+            check(
+                "retro-op mutant (%s) %s"
+                % (label, "turns the waiting check red" if want_red else "stays green"),
+                (RETRO_OP_WAITS in failed) == want_red,
+                "failed checks: %s" % sorted(failed),
+            )
+        finally:
+            shutil.rmtree(d, ignore_errors=True)
+
+
 def test_precompact(hooks_dir):
     print("\n[precompact floor] %s" % hooks_dir)
     sb = Sandbox(hooks_dir)
@@ -861,8 +924,8 @@ MUTANTS = [
         "retro ordered at the crossing",
         "band-notice.py",
         (
-            '        if due and mtime is not None and mtime > float(due.get("at") or 0):',
-            "        if due:",
+            '            and mtime is not None\n            and mtime > float(due.get("at") or 0)\n',
+            "",
         ),
         None,
         ["retro: a crossing with no STATE.md write orders nothing"],
@@ -1135,6 +1198,8 @@ def main():
     test_arithmetic_in(HERE)
     test_bands(HERE)
     test_retro(HERE)
+    test_retro_operation(HERE)
+    test_retro_operation_mutant()
     test_precompact(HERE)
     test_compact_boundary(HERE)
     test_mutations()

@@ -4,6 +4,7 @@
  */
 
 import type { RenetArch } from '../core/embedded-assets.js';
+import type { PreviewTouch } from '../preview/slot-ops.js';
 
 /** Result of a provisioning operation */
 export interface ProvisionResult {
@@ -60,6 +61,11 @@ export interface ProvisionOptions {
    */
   deferRouterRefresh?: boolean;
   debug?: boolean;
+  /**
+   * Set while a preview overlay is active: the config name of the machine being provisioned, so the first
+   * replacement of its renet is recorded under `preview.touched` and its slot pinned (D9).
+   */
+  previewTouch?: PreviewTouch;
   /**
    * Called only when the remote hash differs from the local one, immediately
    * before the binary is staged. A throw aborts the provision before anything

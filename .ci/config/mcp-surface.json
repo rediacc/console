@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "about": "PLAN-rmcp-local-mcp LM2 and LM10 (decision D57): one verdict per MCP tool whose contract command is not proxyCapable. After LM10 every executor and in-memory tool of the LM2 table is served on the hosted executor (proxyCapable, marker proxy) and left this table; what remains is local = never served remotely, admitted only on basis caller-disk (it reads or writes the caller's own disk) or terminal (it needs one). COMMAND_METADATA mcpSurface carries the same kind, basis and reason; packages/cli/src/commands/mcp/__tests__/mcp-coverage.test.ts holds the two equal and refuses a missing tool.",
+  "tools": {
+    "cluster kubeconfig": {
+      "plane": "machine",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Writes the kubeconfig to a 0600 file on the caller's own disk and prints that path."
+    },
+    "config audit log": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reads the audit log file on the caller's own disk."
+    },
+    "config audit verify": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Verifies the hash chain of the audit log file on the caller's own disk."
+    },
+    "config current": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Names the config file the caller's own install selects, with its file path and token file state."
+    },
+    "config list": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Lists the config files on the caller's own disk; a session holds exactly one granted config."
+    },
+    "forensics verify": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Verifies the hash chains of an evidence directory on the caller's own disk."
+    },
+    "incident export": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Writes the incident's evidence directory to the caller's own disk."
+    },
+    "machine infra cert status": {
+      "plane": "config",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reports the certificate cache files under the caller's own config directory; the executor holds no such cache."
+    },
+    "server status": {
+      "plane": "machine",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Finds the server through the caller's own local install record."
+    },
+    "version": {
+      "plane": "other",
+      "verdict": "local",
+      "basis": "caller-disk",
+      "reason": "Reports the CLI build installed on the caller's own machine and its update channel."
+    }
+  }
+}

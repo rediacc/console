@@ -1,17 +1,18 @@
 """The weekly fleet run as the test evidence for the stable promotion (PLAN-health-checks-local D4, design D-promote).
 
-CONTROLS: a cancelled drift run never triggers a promotion; a weekly run 9 days old is no evidence (the soak decides); the newest qualifying scheduled run is the one read, never an older green one hiding a newer red.
+CONTROLS: a weekly run 9 days old is no evidence (the soak decides); the newest qualifying scheduled run is the one read, never an older green one hiding a newer red.
 """
 
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from typing import Any
-
-import pytest
+from typing import TYPE_CHECKING, Any
 
 from rediacc_ci.core import ghx
 from rediacc_ci.release import nightly_tested_edge as nte
+
+if TYPE_CHECKING:
+    import pytest
 
 NOW = datetime(2026, 11, 8, 6, 0, tzinfo=UTC)
 
@@ -33,20 +34,6 @@ def run(
         "updated_at": stamp,
         "head_sha": f"{run_id:040x}",
     }
-
-
-@pytest.mark.parametrize("conclusion", ["success", "failure"])
-def test_a_drift_run_that_succeeded_or_failed_triggers(conclusion: str) -> None:
-    assert nte.drift_run_qualifies(conclusion)[0] is True
-
-
-@pytest.mark.parametrize(
-    "conclusion", ["cancelled", "startup_failure", "timed_out", "skipped", "neutral", ""]
-)
-def test_control_any_other_drift_conclusion_never_triggers(conclusion: str) -> None:
-    ok, reason = nte.drift_run_qualifies(conclusion)
-    assert ok is False
-    assert "never triggers a promotion" in reason
 
 
 def test_the_newest_qualifying_run_is_the_evidence() -> None:

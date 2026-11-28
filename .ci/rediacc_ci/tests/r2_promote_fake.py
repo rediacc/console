@@ -45,6 +45,7 @@ INCOMPLETE_READ = (
 FAKE_AWS = r"""#!/usr/bin/env python3
 import datetime
 import fcntl
+import hashlib
 import json
 import os
 import shutil
@@ -104,6 +105,11 @@ def body(path):
         return fh.read()
 
 
+def etag_of(path):
+    with open(path, "rb") as fh:
+        return '"%s"' % hashlib.md5(fh.read()).hexdigest()
+
+
 def touch_now(path):
     now = time.time()
     os.utime(path, (now, now))
@@ -146,6 +152,47 @@ if service == "s3api" and verb == "copy-object":
           "cache_control": opt("--cache-control"), "content_type": opt("--content-type"),
           "directive": opt("--metadata-directive")})
     print(json.dumps({"CopyObjectResult": {"ETag": "\"fake\""}}))
+    sys.exit(0)
+
+if service == "s3api" and verb == "get-object":
+    bucket, key, target = opt("--bucket"), opt("--key"), argv[argv.index("--key") + 2]
+    src_path = path_of(bucket + "/" + key)
+    if not os.path.isfile(src_path):
+        fail("An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.\n", 254)
+    os.makedirs(os.path.dirname(target) or ".", exist_ok=True)
+    shutil.copyfile(src_path, target)
+    emit({"op": "GET", "key": bucket + "/" + key})
+    print(json.dumps({"ETag": etag_of(src_path)}))
+    sys.exit(0)
+
+if service == "s3api" and verb == "put-object":
+    bucket, key, source = opt("--bucket"), opt("--key"), opt("--body")
+    dst = path_of(bucket + "/" + key)
+    race = env.get("FAKE_RACE_ONCE_MATCH", "")
+    if race and race in key and not os.path.exists(env["FAKE_RACE_DONE"]):
+        # A concurrent writer lands between this run's read and its write.
+        with open(env["FAKE_RACE_DONE"], "w") as fh:
+            fh.write("x")
+        with open(env["FAKE_RACE_BODY"], encoding="utf-8") as src:
+            racing = src.read()
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(dst, "w", encoding="utf-8") as fh:
+            fh.write(racing)
+        emit({"op": "RACE", "key": bucket + "/" + key, "content": racing})
+    if "--if-match" in argv:
+        ok = os.path.isfile(dst) and etag_of(dst) == opt("--if-match")
+    elif "--if-none-match" in argv:
+        ok = not os.path.isfile(dst)
+    else:
+        ok = True
+    if not ok:
+        emit({"op": "PUT412", "key": bucket + "/" + key})
+        fail("An error occurred (PreconditionFailed) when calling the PutObject operation: At least one of the pre-conditions you specified did not hold\n", 254)
+    os.makedirs(os.path.dirname(dst), exist_ok=True)
+    shutil.copyfile(source, dst)
+    touch_now(dst)
+    emit({"op": "PUT", "key": bucket + "/" + key, "content": body(source), "cache_control": opt("--cache-control")})
+    print(json.dumps({"ETag": etag_of(dst)}))
     sys.exit(0)
 
 if service == "s3api" and verb == "delete-objects":

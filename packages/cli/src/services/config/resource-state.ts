@@ -180,6 +180,15 @@ export interface ResourceState {
   setRepositories(repos: Record<string, RepositoryConfig>): Promise<void>;
   getDeletedRepositories(): ArchivedRepository[];
   setDeletedRepositories(repos: ArchivedRepository[]): Promise<void>;
+  /**
+   * Replace the repository map and the archive list in ONE write. An archive or a restore moves a
+   * record between the two; two writes left a window (and, on a remote config, a version) in which
+   * the record was in both or in neither, and a failure between them kept that half-state.
+   */
+  setRepositoriesAndArchive(
+    repos: Record<string, RepositoryConfig>,
+    archive: ArchivedRepository[]
+  ): Promise<void>;
   getSSH(): SSHContent | null;
   setSSH(ssh: SSHContent): Promise<void>;
 }
@@ -292,6 +301,16 @@ export class LocalResourceState implements ResourceState {
 
   async setDeletedRepositories(repos: ArchivedRepository[]): Promise<void> {
     this.state.deletedRepositories = repos;
+    await this.persist();
+  }
+
+  async setRepositoriesAndArchive(
+    repos: Record<string, RepositoryConfig>,
+    archive: ArchivedRepository[]
+  ): Promise<void> {
+    this.state.repositories = repos;
+    this.state.deletedRepositories = archive;
+    // persist() rebases every bucket, so both land in the one write.
     await this.persist();
   }
 
@@ -483,6 +502,15 @@ export class RemoteResourceState implements ResourceState {
     await this.persist('deletedRepositories');
   }
 
+  async setRepositoriesAndArchive(
+    repos: Record<string, RepositoryConfig>,
+    archive: ArchivedRepository[]
+  ): Promise<void> {
+    this.state.repositories = repos;
+    this.state.deletedRepositories = archive;
+    await this.persist('repositories', 'deletedRepositories');
+  }
+
   async setSSH(ssh: SSHContent): Promise<void> {
     this.state.sshContent = ssh;
     await this.persist('sshContent');
@@ -504,13 +532,16 @@ export class RemoteResourceState implements ResourceState {
     return pushed;
   }
 
-  /** Push one bucket's mutation, replaying version conflicts per the class doc. */
-  private async persist(mutated: keyof LocalState): Promise<void> {
+  /** Push the mutation of one or more buckets, replaying version conflicts per the class doc. */
+  private async persist(...mutated: (keyof LocalState)[]): Promise<void> {
     await this.pushWithReplay(
       (base) => persistPatch(this.state, base),
       (view) => {
         const fresh = loadLocalState(view);
-        this.state = rebaseBucket(mutated, fresh, this.base, this.state);
+        let rebased = fresh;
+        for (const bucket of mutated)
+          rebased = rebaseBucket(bucket, rebased, this.base, this.state);
+        this.state = rebased;
         this.base = structuredClone(fresh);
       }
     );

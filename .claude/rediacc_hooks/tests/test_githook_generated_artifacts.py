@@ -48,7 +48,10 @@ def _load(name: str, path: pathlib.Path):
     return module
 
 
-GD = _load("githook_gen_docs_fixture", pathlib.Path(__file__).with_name("test_githook_gen_docs.py"))
+# The canonical module, not a private copy: the shared World lives in its module state, so a second copy would build a second World (PLAN-ciquick-cpu.md W18).
+GD = importlib.import_module("rediacc_hooks.tests.test_githook_gen_docs")
+
+XDIST_GROUP = GD.XDIST_GROUP
 GA = _load("githook_artifacts_under_test", HOOKS / "artifacts.py")
 
 
@@ -71,6 +74,14 @@ def _planted_hooks(dest: pathlib.Path) -> pathlib.Path:
     shutil.copy2(HOOKS.parent / "commit_policy.py", hooks.parent / "commit_policy.py")
     shutil.copy2(HOOKS.parent / "syspath.py", hooks.parent / "syspath.py")
     shutil.copy2(HOOKS.parent / "pr_freeze.py", hooks.parent / "pr_freeze.py")
+    # The commit-msg hook loads the release-note module by file from the checkout it lives in, with that checkout's config, so the planted tree carries both.
+    for rel in (
+        ".ci/rediacc_ci/release/release_notes.py",
+        ".ci/config/release-notes.json",
+        ".ci/policy/record-paths.json",
+    ):
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(REPO_ROOT / rel, dest / rel)
     planted = hooks / "githooks.py"
     text = planted.read_text(encoding="utf-8")
     assert text.count(GD.PLANT_OLD) == 1, "the always-allow plant no longer applies"
@@ -556,16 +567,15 @@ def _prefetch_main_plans() -> int:
         return 0
 
 
+# What this module needs from the one shared World, registered before any World is built (see `test_githook_gen_docs.shared_world`).
+GD.WORLD_EXTRAS["before"].append(_prefetch_main_plans)
+GD.WORLD_EXTRAS["overlay"].append(_overlay)
+GD.WORLD_EXTRAS["after"].append(lambda w: _link_build_products(w.repo))
+
+
 @pytest.fixture(scope="module")
-def world(tmp_path_factory):
-    _prefetch_main_plans()
-    w = GD.World(tmp_path_factory.mktemp("githook-artifacts"), extra_overlay=_overlay())
-    w.build()
-    _link_build_products(w.repo)
-    hooks = _load("githooks_for_world", w.real_hooks / "githooks.py")
-    scratch = hooks.scratch_for(GD._git(w.repo, "rev-parse", "--absolute-git-dir").stdout.strip())
-    yield w
-    shutil.rmtree(scratch, ignore_errors=True)
+def world(request, tmp_path_factory):
+    return GD.shared_world(request, tmp_path_factory)
 
 
 def _plant(w, entry: dict) -> str:
@@ -855,3 +865,82 @@ def test_prefetch_still_fetches_when_the_lock_file_cannot_be_opened(monkeypatch,
     assert script.fetches == 1
     assert len(PREFETCH_REPORT) == 1
     assert "ran without its lock" in PREFETCH_REPORT[0]
+
+
+def test_a_stale_detail_shows_the_verdict_not_the_trailing_warnings():
+    """check_plan_record prints its verdict above a run of RF WARNING paragraphs; the refusal's 14-line tail once showed only warnings and named no problem (2026-11-27)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk"
+    warnings = "\n".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked\n      Then: close it." % i
+        for i in range(12)
+    )
+    shown = GA._indent(verdict + "\n" + warnings)
+    assert "agent/INDEX.md disagrees" in shown
+    assert "WARNING" not in shown
+    # control: warnings alone are still shown rather than nothing
+    assert "WARNING" in GA._indent(warnings)
+
+
+def test_a_stale_detail_drops_the_blank_lines_between_warning_paragraphs():
+    """Blank-separated WARNING paragraphs each left their blank line in the tail, so 14 or more pushed the verdict out again as blanks (review 63ba8d75.1)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk"
+    warnings = "\n\n".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked\n      Then: close it." % i
+        for i in range(20)
+    )
+    shown = GA._indent(verdict + "\n\n" + warnings + "\n")
+    assert "agent/INDEX.md disagrees" in shown
+    assert "WARNING" not in shown
+    # Only the one blank line between the verdict and the first warning survives.
+    assert sum(1 for line in shown.splitlines() if not line.strip()) == 1
+
+
+def test_a_stale_detail_shows_the_stderr_verdict_past_long_stdout_warnings():
+    """check_plan_record writes its ✗ verdict to stderr and its RF WARNING paragraphs to stdout. Joined stderr first and cut to the last TAIL_CHARS, the cut kept only the warnings' tail and the refusal showed one continuation fragment and no problem (worklist #e01814e8, 2026-11-27)."""
+    verdict = "✗ plan records (rendered files only): 1 problem(s):\n    agent/INDEX.md disagrees with what is on disk\n"
+    warnings = "".join(
+        "  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked (9 of 9) on this branch, not yet on main;\n"
+        "      close it on the next branch, after the merge, and 1 plan(s) depend on it until it closes.\n"
+        % i
+        for i in range(20)
+    )
+    assert len(warnings) > GA.TAIL_CHARS
+    # CONTROL: the old join (stderr first) loses the verdict under the same cut.
+    old = (verdict + warnings).strip()[-GA.TAIL_CHARS :]
+    assert "agent/INDEX.md disagrees" not in GA._indent(old)
+    shown = GA._indent(GA.said_tail(warnings, verdict))
+    assert "agent/INDEX.md disagrees" in shown
+    assert "✗ plan records" in shown
+    assert "until it closes" not in shown, "a cut WARNING fragment survived as the first line"
+
+
+def test_run_check_hands_the_stale_verdict_the_stderr_words(tmp_path):
+    """The same refusal through `run_check` itself, with a real checker process: stdout floods with WARNING paragraphs, stderr carries the verdict, exit is the stale code."""
+    checker = tmp_path / "checker.py"
+    checker.write_text(
+        "import sys\n"
+        "for i in range(20):\n"
+        "    print('  WARNING agent/plans/PLAN-x%d.md: RF every box is ticked on this branch;' % i)\n"
+        "    print('      close it after the merge; 1 plan(s) depend on it until it closes.')\n"
+        "sys.stdout.flush()\n"
+        "print('x plan records: 1 problem(s):', file=sys.stderr)\n"
+        "print('    agent/INDEX.md disagrees with what is on disk', file=sys.stderr)\n"
+        "sys.exit(1)\n",
+        encoding="utf-8",
+    )
+    artifact = GA.Artifact(
+        id="t",
+        title="t",
+        when=GA.WHEN_COMMIT,
+        inputs=("x",),
+        inputs_exclude=(),
+        outputs=("y",),
+        generator="gen",
+        gate="gate",
+        check=("python3", str(checker)),
+        stale_exit=1,
+        budget_s=60,
+    )
+    verdict = GA.run_check(str(tmp_path), str(tmp_path), dict(os.environ), artifact, ("x",))
+    assert verdict.kind == "stale"
+    assert "agent/INDEX.md disagrees" in GA._indent(verdict.detail)

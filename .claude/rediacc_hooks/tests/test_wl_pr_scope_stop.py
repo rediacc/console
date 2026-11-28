@@ -15,7 +15,7 @@ import shlex
 import subprocess
 import sys
 
-from rediacc_hooks.tests import test_wl_focus as F
+from rediacc_hooks.tests import prloop_world as F
 from rediacc_hooks.tests import wlfix
 from rediacc_hooks.tests.test_wl_cap_wait import mutated_hook
 from rediacc_hooks.tests.test_wl_roster import plant_item, stamp, write_plan
@@ -190,7 +190,7 @@ def test_classify_scope_guide_lists_in_scope_items_only(wl):
 
 # ---- SC5 / SC6: the PR_LOOP profile through the real hook (Design 4 and 5) ------------------------------------
 #
-# A fixture checkout on the MMDD-N branch 1003-1 whose one PR read (wl_ci.pr_link) answers from the shared gh shim of test_wl_focus, so `wl_prscope.loop_state` resolves a real `live` state: the PR body's `Plan:` line names the PR plan, and QUEUE.md holds it and one queued plan. Every fire case has a control that differs by one planted fact; the mutation controls run a PRIVATE COPY of the hook with one line removed.
+# A fixture checkout on the MMDD-N branch 1003-1 whose one PR read (wl_ci.pr_link) answers from the shared gh shim of prloop_world, so `wl_prscope.loop_state` resolves a real `live` state: the PR body's `Plan:` line names the PR plan, and QUEUE.md holds it and one queued plan. Every fire case has a control that differs by one planted fact; the mutation controls run a PRIVATE COPY of the hook with one line removed.
 
 
 BRANCH = "1003-1"
@@ -418,7 +418,7 @@ def test_sc5_a_dead_lease_outside_the_epic_still_blocks(wl):
 
 
 def test_sc5_a_missing_state_doc_blocks_at_the_early_band(wl):
-    """STATE.md freshness is a loop duty at every band (ruling 1d): kept in full by PR_LOOP, where the cap wait keeps it only in the late band (test_wl_cap_wait c3)."""
+    """STATE.md freshness is a loop duty at every band (ruling 1d): kept in full by PR_LOOP, where the concurrency wait keeps it only in the late band (test_wl_cap_wait c3)."""
     own = loop_world(wl)
     plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
     epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
@@ -431,7 +431,7 @@ def test_sc5_dropped_checks_stand_down_and_are_named(wl):
     """Every key the full battery raises off the loop and the PR_LOOP profile does not keep is absent on the loop and named in the Stood down phrase."""
     std = wlfix.import_wl("wl_standdown")
     loop_world(wl, branch="feature-x")
-    # A deferral with no DEFAULT raises `undefaulted`, which only the cap wait keeps.
+    # A deferral with no DEFAULT raises `undefaulted`, which both PR_LOOP and the concurrency wait keep: it is in the run so the comparison covers a kept key beside the dropped ones.
     with wl.events.open("a", encoding="utf-8") as fh:
         fh.write(
             json.dumps(
@@ -482,15 +482,6 @@ def test_sc5_control_off_the_loop_runs_todays_battery(wl):
     got = run_stop(wl)
     assert "open-items" in keys_of(wl, got), reason(got)[:1500]
     assert PR_SCOPE not in got.out, got.out[:1500]
-
-
-def test_sc5_control_focus_on_still_uses_the_focus_profile(wl):
-    own = loop_world(wl)
-    plant_item(wl, "aaaa0001", "(deadbeef) the PR plan's own item")
-    epic_for(wl, own.rsplit("/", 1)[-1], "aaaa0001")
-    F.focus_on(wl)
-    got = run_stop(wl)
-    assert "open-items" not in keys_of(wl, got), "FOCUS parks open-items: %s" % reason(got)[:1500]
 
 
 def test_sc5_m1_without_open_items_in_the_keep_list_the_epic_item_stands_down(wl):
@@ -640,35 +631,8 @@ def test_inflight_a_live_pr_with_a_plan_line_shows_the_pr_and_its_plan(wl):
         "- Next plan: agent/plans/PLAN-queued-next.md, Promoted entry 2; starts on the next branch after PR #543 merges."
         in body
     ), body
-    assert "- Phase: build." in body
+    assert "- Phase:" not in body
     assert mode_ok(wl), body
-
-
-def test_inflight_turbo_on_shows_turbo_and_the_named_picks(wl):
-    # test_wl_loop_next imports this module, so it is imported here, not at the top.
-    loop_next = importlib.import_module("rediacc_hooks.tests.test_wl_loop_next")
-
-    _own, one, two = loop_next.turbo_world(wl)
-    loop_next.stop(wl)
-    body = inflight_of(wl)
-    assert "turbo on; turbo_push pr; batch_size 2; plan_concurrency 9; writer_cap 4" in body, body
-    assert mode_ok(wl), body
-    for rel in (one, two):
-        assert "  - %s -- 0 of 2 boxes ticked, a turbo pick named by the Stop hook" % rel in body, (
-            body
-        )
-    assert "- Writers: 0 live of writer_cap 4" in body, body
-
-
-def test_inflight_focus_on_is_shown_and_off_again_after_focus_off(wl):
-    loop_world(wl)
-    F.focus_on(wl, mode="merge")
-    body = inflight_of(wl)
-    assert "- Phase: merge on PR #543 (branch pub, session %s" % wlfix.ME[:8] in body, body
-    run_stop(wl)
-    assert "- Phase: merge on PR #543" in inflight_of(wl)
-    F.focus_off(wl)
-    assert "- Phase: build." in inflight_of(wl)
 
 
 def test_inflight_no_pr_names_the_queue_head_the_first_push_binds(wl):
@@ -716,51 +680,27 @@ def test_inflight_m1_a_renderer_that_flips_a_switch_fails_the_mode_check(wl):
     loop_world(wl)
     run_stop(wl)
     body = inflight_of(wl)
-    assert "; turbo on;" in body, body
+    assert "; cadence off" in body, body
     assert not mode_ok(wl), body
 
 
-# ---- turbo: the queued line must not claim "One plan per PR" (operator, 2026-10-07) ----
-
-TURBO_ON = "Turbo is on (batch_size 3, writer_cap 15): the PR's plan set blocks,"
+# ---- one plan per PR: the queued line says so whatever QUEUE.md carries (agent/plans/PLAN-simple-two-tree-loop.md B4) ----
 
 
-def write_turbo_queue(fix, *rels: str, solo: str = "") -> None:
-    """QUEUE.md with `turbo: on` in its `## Settings` block and `rels` Promoted, `solo` carrying the ` -- solo` note."""
+def write_solo_queue(fix, *rels: str, solo: str = "") -> None:
+    """QUEUE.md with `rels` Promoted, `solo` carrying the ` -- solo` note: the marker is shown and decides nothing now that every plan rides its own PR."""
     entries = "".join(
         "%d. %s -- fixture entry%s\n" % (i + 1, r, " -- solo" if r == solo else "")
         for i, r in enumerate(rels)
     )
     text = (
-        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\nturbo: on\nbatch_size: 3\nwriter_cap: 15\n```\n\n"
-        "## Promoted\n\n" + entries
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\n```\n\n## Promoted\n\n"
+        + entries
     )
     (fix.proj / "agent" / "plans" / "QUEUE.md").write_text(text, encoding="utf-8")
 
 
-def test_turbo_the_queued_line_says_turbo_not_one_plan_per_pr(wl):
-    own = loop_world(wl)
-    write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md")
-    got = run_stop(wl)
-    out = reason(got) + got.out
-    assert TURBO_ON in out, out[:2000]
-    assert PR_SCOPE not in out, out[:2000]
-    assert "PR #543 works PLAN-pr-own.md." in out, out[:2000]
-
-
-def test_turbo_a_solo_plan_in_the_set_is_named_as_why_no_plan_joins(wl):
-    own = loop_world(wl)
-    write_turbo_queue(wl, own, "agent/plans/PLAN-queued-next.md", solo=own)
-    got = run_stop(wl)
-    out = reason(got) + got.out
-    assert TURBO_ON in out, out[:2000]
-    assert (
-        "but PLAN-pr-own.md is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR" in out
-    ), out[:2000]
-    assert PR_SCOPE not in out, out[:2000]
-
-
-def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):
+def test_the_queued_line_says_one_plan_per_pr(wl):
     loop_world(wl)
     got = run_stop(wl)
     out = reason(got) + got.out
@@ -768,18 +708,11 @@ def test_turbo_control_turbo_off_keeps_the_one_plan_line(wl):
     assert "Turbo is on" not in out, out[:2000]
 
 
-def test_turbo_a_solo_queue_head_on_a_branch_with_no_pr_is_not_called_a_joining_pick(wl):
-    """The live defect of 2026-10-07: on branch 1007-1 with no PR the plan set is empty, the solo queue head arrived as a turbo pick, and the line said it would JOIN this PR. It is the plan the first push binds, and it runs alone."""
-    F.world(wl, ci=True)
-    wl.git("switch", "-q", "-c", BRANCH)
-    head = loop_plan(wl, "solo-head", opened=2, done=0)
-    write_turbo_queue(wl, head, loop_plan(wl, "queued-next", opened=2, done=0), solo=head)
-    F.merged_nodes(wl, [])
+def test_a_solo_entry_changes_nothing_in_the_queued_line(wl):
+    """The ` -- solo` note once kept a batch PR to one plan; with one plan per PR the line is the plain one, solo or not."""
+    own = loop_world(wl)
+    write_solo_queue(wl, own, "agent/plans/PLAN-queued-next.md", solo=own)
     got = run_stop(wl)
     out = reason(got) + got.out
-    assert "has no PR yet. Turbo is on" in out, out[:2000]
-    assert (
-        "but PLAN-solo-head.md is a ` -- solo` entry in QUEUE.md, so it runs alone in this PR"
-        in out
-    ), out[:2000]
-    assert "free writer slots start PLAN-solo-head.md" not in out, out[:2000]
+    assert PR_SCOPE in out, out[:2000]
+    assert "is a ` -- solo` entry in QUEUE.md" not in out, out[:2000]

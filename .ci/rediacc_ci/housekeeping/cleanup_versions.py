@@ -11,7 +11,7 @@ THIS PORT IS WHAT RUNS NIGHTLY; THE BASH TWIN IS THE PARITY REFERENCE.
 `.github/workflows/ops-housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
-    K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
+    K=5 ledger:   the ledger (deleted in commit:936280cd35)
 
 -----------------------------------------------------------------------------
 THE SEAM THAT MAKES ONE PHASE DRIVABLE, AND WHY IT IS SHAPED LIKE THIS
@@ -119,6 +119,7 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import awscli, common, curl_stdin, gh_retry
 from rediacc_ci.core import release_state_validator as rsv
+from rediacc_ci.deploy import preview_name
 from rediacc_ci.housekeeping.cleanup_pr_environments import PrStateReader
 from rediacc_ci.release import check_stable_manifest, retention_contract
 from rediacc_ci.well_known import CF_API_BASE, GH_REPO, RELEASES_BUCKET
@@ -785,6 +786,8 @@ _INT_RE = re.compile(r"^[+-]?[0-9]+$")
 # The three awk line filters in Phase 8. `[[:space:]]` and the literal `PRE` are the twin's; `aws s3 ls` prints ` PRE <name>/`.
 _PRE_DRYRUN_RE = re.compile(r"^[ \t]*PRE[ \t]dryrun-")
 _PRE_PR_RE = re.compile(r"^[ \t]*PRE[ \t]pr-[0-9]+/")
+# A word-named preview channel `pv-<w>-<w>-<w>/` (PLAN-preview-signer D5); no twin counterpart.
+_PRE_PV_RE = re.compile(r"^[ \t]*PRE[ \t]pv-[a-z]+-[a-z]+-[a-z]+/")
 _PRE_VERSION_RE = re.compile(r"^[ \t]*PRE[ \t]v[0-9]+\.")
 
 # `if (fname !~ /^rediacc-cli[-_]/)` and the semver match in the 8f awk program.
@@ -1220,6 +1223,11 @@ class Housekeeping:
         self.housekeeping_failed = 0
         # Every PR-state read goes through this one fail-safe reader (PLAN-gh-retry G10).
         self.pr_states = PrStateReader()
+        # The preview-name key and the open-PR list, read once and only when a word-named preview is seen (PLAN-preview-signer N3), so a run with no such preview makes no extra call and needs no key.
+        self._preview_key: bytes | None = None
+        self._preview_key_error = ""
+        self._open_pr_text: str | None = None
+        self._open_pr_read = False
 
     # -- shared helpers -----------------------------------------------------
 
@@ -1241,6 +1249,83 @@ class Housekeeping:
     def record_delete(self) -> None:
         """`DELETES_THIS_RUN=$((DELETES_THIS_RUN + 1))` (:157-159)."""
         self.deletes_this_run += 1
+
+    # -- word-named previews (PLAN-preview-signer N3) -------------------------
+
+    def preview_key(self) -> bytes | None:
+        """`PREVIEW_NAME_KEY`, read once. None when it is missing or malformed; the reason is kept for the KEEP line."""
+        if self._preview_key is None and not self._preview_key_error:
+            try:
+                self._preview_key = preview_name.load_key()
+            except preview_name.PreviewNameError as exc:
+                self._preview_key_error = str(exc)
+        return self._preview_key
+
+    def open_pr_text(self) -> str | None:
+        """The open PR numbers, one per line, listed once; None when the list could not be read."""
+        if not self._open_pr_read:
+            self._open_pr_read = True
+            code, text = gh_read(
+                [
+                    "pr",
+                    "list",
+                    "--repo",
+                    RELEASE_REPO,
+                    "--state",
+                    "open",
+                    "--limit",
+                    "200",
+                    "--json",
+                    "number",
+                    "--jq",
+                    ".[].number",
+                ]
+            )
+            self._open_pr_text = text if code == 0 else None
+        return self._open_pr_text
+
+    def preview_orphan(self, name: str, open_prs: str | None, what: str = "Worker") -> str | None:
+        """Whether the word-named preview `name` (`pv-<w>-<w>-<w>`, its `-signer`, or an R2 channel of that name) is an orphan: the delete reason, or None to keep it.
+
+        FAILS CLOSED, as Phase 5b does for an unreadable PR list: without the key or the open-PR list no name can be proved an orphan, so it is kept and the line says why. Only a name no open PR derives is an orphan; `signer-<r>` and `signer-bench-<r>` never have the preview shape and never reach this.
+        """
+        if open_prs is None:
+            log.warn("  KEEP %s %s: the open PR list is unreadable" % (what, name))
+            return None
+        key = self.preview_key()
+        if key is None:
+            log.warn("  KEEP %s %s: %s" % (what, name, self._preview_key_error))
+            return None
+        numbers = [int(line) for line in records(open_prs) if line.isdigit()]
+        try:
+            pr = preview_name.match_worker(name, numbers, key)
+        except preview_name.PreviewNameError as exc:
+            log.warn("  KEEP %s %s: %s" % (what, name, exc))
+            return None
+        if pr is not None:
+            return None
+        return "no open PR derives it"
+
+    def reap_preview_channel(self, prefix: str, name: str, now_epoch: int, max_age: int) -> bool:
+        """Phase 8b for one word-named channel prefix: deleted when older than the PR-channel age limit or when no open PR derives its name. True when it was (or would be) deleted.
+
+        The age branch is deliberately not fail-closed: a channel idle past `R2_PR_MAX_AGE_DAYS` is deleted whatever PR derives it, as every `pr-N` channel is, so a missing key or an unreadable PR list cannot keep it. Only the orphan branch needs the key and the list, and keeps the channel without them (`preview_orphan`)."""
+        last = self.r2_prefix_last_modified(prefix)
+        if last == "":
+            return False
+        last_epoch = arith(date_epoch_utc(last))
+        if last_epoch == 0:
+            return False
+        age = now_epoch - last_epoch
+        if age > max_age:
+            reason = "stale %dd" % bash_div(age, 86400)
+        else:
+            verdict = self.preview_orphan(name, self.open_pr_text(), "R2 prefix")
+            if verdict is None:
+                return False
+            reason = verdict
+        self.r2_rm_recursive(prefix, reason)
+        return True
 
     def housekeeping_fail(self, title: str, message: str) -> None:
         """The run-spanning failure latch (:179-189). ALWAYS RETURNS NONE.
@@ -2135,6 +2220,8 @@ class Housekeeping:
         FAILS CLOSED. An unreadable open-PR list SKIPS the phase, because the worst case here is deleting a live preview and that cannot be undone by the next run. The twin's banner says so at length, and names the run that made it necessary: `Cleanup PR Preview` 32903006150 died on GitHub's own internal DNS before checkout, leaking a Worker with nothing to notice.
 
         HAZARD 3 IS HERE: no `record_delete` on the success arm, so Workers are deleted without being charged to the global budget.
+
+        WORD-NAMED PREVIEWS (PLAN-preview-signer N3, no twin counterpart): a `pv-<w>-<w>-<w>` Worker or its `-signer` is deleted only when no open PR derives its name (`preview_orphan`); without `PREVIEW_NAME_KEY` each one is kept with a KEEP line. `signer-<r>` and `signer-bench-<r>` never have that shape. The `pr-<n>` arm stays for leftovers of the old naming.
         """
         log.step("Phase 5b: Cleaning up orphaned per-PR preview Workers")
 
@@ -2192,10 +2279,18 @@ class Housekeeping:
                 continue
             seen += 1
             match = _PR_ENV_RE.match(name)
-            if not match:
-                continue
-            pr_number = match.group(1)
-            if _grep_qx(pr_number, open_prs):
+            if match:
+                pr_number = match.group(1)
+                if _grep_qx(pr_number, open_prs):
+                    continue
+                why = "PR #%s closed" % pr_number
+            elif preview_name.is_preview_worker(name):
+                # A word-named preview (`pv-<w>-<w>-<w>`) or its signer: an orphan only when no open PR derives the name.
+                verdict = self.preview_orphan(name, open_prs)
+                if verdict is None:
+                    continue
+                why = verdict
+            else:
                 continue
 
             if not self.deletes_budget_ok():
@@ -2206,7 +2301,7 @@ class Housekeeping:
                 break
 
             if self.dry_run:
-                log.warn("  [DRY-RUN] Would delete Worker: %s (PR #%s closed)" % (name, pr_number))
+                log.warn("  [DRY-RUN] Would delete Worker: %s (%s)" % (name, why))
                 deleted += 1
                 continue
 
@@ -2216,7 +2311,7 @@ class Housekeeping:
             if code != 0:
                 delete_response = '{"success":false}'
             if _success_text(delete_response) == "true":
-                log.info("  Deleted Worker: %s (PR #%s closed)" % (name, pr_number))
+                log.info("  Deleted Worker: %s (%s)" % (name, why))
                 deleted += 1
             else:
                 log.warn("  Failed to delete Worker: %s" % name)
@@ -2726,6 +2821,14 @@ class Housekeeping:
                     break
                 sub = _awk_pre_field(line, _PRE_PR_RE)
                 if sub == "":
+                    pv_sub = _awk_pre_field(line, _PRE_PV_RE)
+                    if pv_sub != "" and self.reap_preview_channel(
+                        "%s/%s" % (directory, pv_sub),
+                        pv_sub.removesuffix("/"),
+                        now_epoch,
+                        pr_age_max,
+                    ):
+                        pr_deleted += 1
                     continue
                 pr_num = sub.removeprefix("pr-")
                 pr_num = pr_num.removesuffix("/")

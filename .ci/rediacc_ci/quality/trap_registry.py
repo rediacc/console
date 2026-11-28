@@ -126,7 +126,7 @@ US (0x1f) RATHER THAN TAB as the field separator: tab is IFS whitespace in bash,
 A SUITE CASE IS ATTRIBUTED TO A RULE when the string it asserts on appears in that rule's body: the needle is text the rule PRODUCES, so matching it is evidence the case exercises that rule and not a neighbour. Attribution by section order alone would credit any rule with its neighbour's coverage. Firing cases carry the needle as their last quoted argument; silent cases carry no
 needle at all, so they are attributed to the most recent firing case that resolved to a rule. That is the file's actual layout (one rule per contiguous block) and it fails SAFE: an unattributable silent case credits nobody rather than crediting the wrong rule. The suite writes them across continuation lines, so an unjoined read would see every needle as belonging to no call at all.
 
-TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script, gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file (a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives). A deeper closure would eventually call anything reachable from
+TWO HOPS IS THE WHOLE RULE for `file:` liveness, deliberately: hop 1 is a file named in settings.json or the manifest (registered hook, gate script, gate-test), so something runs it directly; hop 2 is a file named by a hop-1 file (a lib a guard sources, a case file a suite runner globs in, a gate a gate-test drives), or, for a `.py` target, a module a hop-1 Python file loads by its stem (`import <stem>`, `from <stem> import`, `from <pkg> import <stem>`, read from the parsed source), since Python never names the file it imports. A deeper closure would eventually call anything reachable from
 anything "live", which is how a liveness check stops meaning anything.
 
 F1 IS CHECKED LAST so a truncated corpus reports its content problems too. Zero entries is a FAILURE, never a pass: a gate that saw nothing has verified nothing.
@@ -167,8 +167,28 @@ for a `gate:` pointer.
 as non-blank. Carried unchanged, because narrowing it would re-decide which `file:` pointers resolve.
 
 STREAMS. `err()` is `log_error` (stderr, `✗ <msg>`) plus a counter; the shape line and the ratchet advisory are `log_info` (stderr, `✓ <msg>`). `rediacc_ci.log` reproduces both.
+
+---- gate ----
+step: Trap registry dispositions
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: TRAPS.md is a REGISTRY, not prose: every `## ` entry names the instrument
+     that enforces it, and the gate proves that pointer RESOLVES and is LIVE.
+     Presence alone would be worse than nothing -- the cheapest thing to name
+     under a coverage gate is a check that cannot fire -- so a gate: pointer
+     must be scheduled by `npm run ci`, a hook: rule must have both a firing
+     and a silent case, and a file: pointer must be reachable from something
+     that runs it. No `paths`, deliberately: pointers resolve against the
+     manifest, package.json, the dispatcher, the hook suite and settings.json,
+     so almost any change can dangle one, and a half-populated path table
+     would drop the gate from --changed exactly when it was needed.
+---- end gate ----
 """
 
+import ast
 import difflib
 import hashlib
 import importlib.util
@@ -181,6 +201,7 @@ import tempfile
 from rediacc_ci import gitx, log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.quality import plan_lifecycle
+from rediacc_ci.quality import seams as scratch
 
 # The package whose guards rediacc_hooks/dispatch.py loads by glob (see Registry.dispatched_guards).
 GUARDS_PACKAGE_REL = ".claude/rediacc_hooks/guards"
@@ -231,7 +252,7 @@ SHAPE_RULE = "shape-lessons"
 PROBE_FLAG = "--probe-payload"
 
 # THE RATCHET. A written number, moved by hand; see the header for why it is not derived and for the two occasions an unratcheted floor disarmed F1's control. Must equal the floor frozen in `goldens/twins/quality.check-trap-registry.jsonl` unless re-recorded with a reason.
-TRAP_FLOOR_DEFAULT = 113
+TRAP_FLOOR_DEFAULT = 114
 
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,48}$")
 
@@ -427,6 +448,27 @@ def nearest(word: str, pool: list[str]) -> str:
     return ", ".join("'%s'" % c for c in close) if close else "none close"
 
 
+def python_loaded_names(text: str) -> frozenset[str]:
+    """Every module name a Python source loads by an `import` statement: each dotted component of `import a.b, c`, of `from a.b import c` (the module path AND each imported name, since `from pkg import mod` loads `pkg/mod.py`), and nothing else.
+
+    A Python module is reached by its STEM, never by its file name, so the basename search alone misses the commonest hop 2 there is. `file:.claude/hooks/stop/wl_planbind.py` passed only while the manifest listed that path under the plan-bindings gate's hand-declared `paths`; 9a66691457 traced those sets away, and the gate that imports the module on every run (`import wl_planbind as B` in rediacc_ci.quality.plan_bindings, a hop-1 leaf) was then judged unreachable. The source is parsed, so text inside a comment, a docstring or a string literal is not a load, and a multi-name `import os, wl_planbind` or a `from pkg import wl_planbind` is. A name matches whole, never as a prefix. A source that does not parse loads nothing: it cannot run, so it reaches nothing. Components are over-counted on purpose (a dead-code gate's false positive keeps a file alive, which costs less than deleting a live one).
+    """
+    try:
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return frozenset()
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                names.update(alias.name.split("."))
+        elif isinstance(node, ast.ImportFrom):
+            if node.module:
+                names.update(node.module.split("."))
+            names.update(alias.name for alias in node.names)
+    return frozenset(names)
+
+
 class Registry:
     """The artifacts a pointer resolves against, resolved once.
 
@@ -449,16 +491,81 @@ class Registry:
         self.memory_dir = memory_dir
         self._shapes: tuple[dict, dict] | None = None
         self._live_l1: list[pathlib.Path] | None = None
+        self._loaded: dict[pathlib.Path, frozenset[str]] = {}
         self._stems: list[str] | None = None
         self._markdown: list[str] | None = None
 
     # -- F4/F5 for `gate:` --------------------------------------------------
 
     def gate_resolves(self, gate_id: str) -> bool:
-        """The manifest declares this id AND package.json defines the script."""
-        return "id: '%s'," % gate_id in read_text(self.manifest) and (
-            '"%s":' % gate_id in read_text(self.package_json)
-        )
+        """The manifest declares this id AND its run can start: an `npm run <script>` hop needs package.json to define the script, a direct run (`tsx <file>`, `PYTHONPATH=.ci python3 -m <module>`, the D2 form a header-declared gate takes with no npm key) needs the file or module it names to exist."""
+        run = self.entry_run(gate_id)
+        if run is None:
+            return False
+        if not run.startswith("npm run "):
+            return self.run_resolves(run)
+        return '"%s":' % run.split()[2] in read_text(self.package_json)
+
+    def run_resolves(self, run: str) -> bool:
+        """A direct run can start: every path-form script it names is a file, and every `-m` module is `.ci/a/b.py`, the package `.ci/a/b/__init__.py`, or a module outside `.ci` that the interpreter can import (`-m pytest`), judged by its top-level name (17f9d3d7.1), so `-m json.nosuch` resolves. That importability is asked of the interpreter running THIS check (the gate's, or the hook's when a hook calls it), not of the one the run names (747c7fe6.3)."""
+        if not all((self.file_root / rel).is_file() for rel in self.path_tokens(run)):
+            return False
+        for module in self.direct_run_modules(run):
+            # An empty dotted segment (`a.`, `a..b`) names no module: the interpreter refuses it, so it never probes a path.
+            if "" in module.split("."):
+                return False
+            # Stat-only: no file under .ci is opened, so the probe is built from path
+            # segments and never names the `.ci/` tree as one scan-root literal.
+            base = self.file_root.joinpath(".ci", *module.split("."))
+            if base.with_name(base.name + ".py").is_file() or (base / "__init__.py").is_file():
+                continue
+            top = module.split(".")[0]
+            if (self.file_root / ".ci" / top).exists() or (
+                self.file_root / ".ci" / (top + ".py")
+            ).exists():
+                return False
+            try:
+                if importlib.util.find_spec(top) is None:
+                    return False
+            except (ImportError, ValueError):
+                return False
+        return True
+
+    @staticmethod
+    def direct_run_modules(run: str) -> list[str]:
+        """The dotted module names of every `-m <module>` in a direct run."""
+        return re.findall(r"\s-m\s+([A-Za-z_][\w.]*)", run)
+
+    @staticmethod
+    def path_tokens(run: str) -> list[str]:
+        """The path-form script tokens of a direct run (`.ci/x/y.py`, `scripts/z.ts`); a bare command word (`tsx`, `bash`) names no file."""
+        return [
+            token
+            for token in run.split()
+            if "/" in token and token.endswith((".py", ".ts", ".sh", ".mjs", ".js"))
+        ]
+
+    @staticmethod
+    def direct_run_files(run: str) -> list[str]:
+        """The repo-relative files a direct run names: a `python3 -m a.b` module (`.ci/a/b.py`) and any path-form script token (`.ci/x/y.py`, `scripts/z.ts`)."""
+        return [
+            ".ci/%s.py" % module.replace(".", "/") for module in Registry.direct_run_modules(run)
+        ] + Registry.path_tokens(run)
+
+    def entry_run(self, gate_id: str) -> str | None:
+        """The `run:` of THIS id's manifest entry, None when no entry declares the id or its block has no run."""
+        want = "id: '%s'," % gate_id
+        in_block = False
+        for line in read_text(self.manifest).split("\n"):
+            if not in_block:
+                in_block = want in line
+                continue
+            if "id: '" in line:
+                return None
+            hit = re.match(r"""\s*run:\s*(['"])(.*)\1,?\s*$""", line)
+            if hit:
+                return hit.group(2)
+        return None
 
     def gate_is_live(self, gate_id: str) -> bool:
         """`gate: true` inside THIS entry's block, not a neighbour's."""
@@ -609,14 +716,28 @@ class Registry:
             return True
         if self.manifest.is_file() and base in read_text(self.manifest):
             return True
+        stem = pathlib.PurePosixPath(path).stem if path.endswith(".py") else None
         for candidate in self.live_l1_files():
             if candidate == self.file_root / path:
                 continue
-            if base in read_text(candidate):
+            text = read_text(candidate)
+            if base in text:
+                return True
+            if (
+                stem is not None
+                and candidate.suffix == ".py"
+                and stem in self.loaded_names(candidate, text)
+            ):
                 return True
         return path.endswith(".py") and pathlib.PurePosixPath(path).stem in self.dispatched_guards(
             path
         )
+
+    def loaded_names(self, candidate: pathlib.Path, text: str) -> frozenset[str]:
+        """`python_loaded_names(text)` for a hop-1 file, parsed once per registry."""
+        if candidate not in self._loaded:
+            self._loaded[candidate] = python_loaded_names(text)
+        return self._loaded[candidate]
 
     def dispatched_guards(self, path: str) -> list[str]:
         """Guard stems the pre-tool dispatcher loads by GLOB, for a `file:` inside its guards package.
@@ -1164,6 +1285,28 @@ CONTROL_MANIFEST = """export const GATES = [
     run: 'npm run check:ctl-dark',
     gate: false,
     leaves: ['nothing.sh'],
+  },
+  {
+    id: 'check:ctl-direct',
+    run: 'python3 sub/ctl_direct.py',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh', 'sub/ctl_gate.py', 'sub/ctl_broken_gate.py', 'sub/ctl_parsed_gate.py'],
+  },
+  {
+    id: 'check:ctl-direct-gone',
+    run: 'python3 sub/ctl_deleted.py',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh'],
+  },
+  {
+    id: 'check:ctl-lastkey',
+    run: 'npm run check:ctl-lastkey'
+  },
+  {
+    id: 'check:ctl-keyless',
+    run: 'npm run check:ctl-keyless',
+    gate: true,
+    leaves: ['sub/ctl-guard.sh'],
   },
 ];
 """
@@ -1874,6 +2017,10 @@ def resolve_seams(root: pathlib.Path, env: dict[str, str] | None = None) -> dict
     out: dict[str, pathlib.Path] = {}
     for name, parts in SEAMS.items():
         override = environ.get(name, "")
+        # The process environment is a seam any caller can set, so a path that is not a private scratch path in the temp directory is ignored there; an `env` handed in by a test is the caller's own statement and is taken as given.
+        if env is None:
+            honoured = scratch.scratch_root(name, override)
+            override = str(honoured) if honoured else ""
         out[name] = pathlib.Path(override) if override else root.joinpath(*parts)
     return out
 
@@ -1885,8 +2032,15 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    registry = Registry(resolve_seams(root))
-    floor = int(os.environ.get("TRAP_FLOOR", "") or TRAP_FLOOR_DEFAULT)
+    resolved = resolve_seams(root)
+    registry = Registry(resolved)
+    # TRAP_FLOOR lowers the floor only together with a scratch corpus: against the real corpus the floor is always TRAP_FLOOR_DEFAULT.
+    floor = scratch.floor(
+        "TRAP_FLOOR",
+        os.environ.get("TRAP_FLOOR", ""),
+        TRAP_FLOOR_DEFAULT,
+        honoured=resolved["TRAP_CORPUS"] != root.joinpath(*SEAMS["TRAP_CORPUS"]),
+    )
 
     # `--scan-only` runs the scan WITHOUT the controls. Nothing in package.json or CI uses it, deliberately.
     if args[:1] != ["--scan-only"]:
@@ -2045,9 +2199,36 @@ def selftest() -> int:
         (files / "sub" / "ctl-guard.sh").write_text("#!/bin/bash\necho real\n", encoding="utf-8")
         (files / "sub" / "ctl-orphan.sh").write_text("x\n", encoding="utf-8")
         (files / "sub" / "blank.sh").write_text("a\n\nc\n", encoding="utf-8")
+        # A hop-1 Python leaf that LOADS one module by its stem and only MENTIONS another.
+        (files / "sub" / "ctl_gate.py").write_text(
+            "import os, ctl_multi\nimport ctl_lib as L\nfrom ctl_from import thing\nfrom ctl_pkg import ctl_sub\nimport ctl_pre_longer\n"
+            "# ctl_mention is named here, never loaded\nX = 'import ctl_quoted'\n"
+            '"""\nimport ctl_doc\n"""\n',
+            encoding="utf-8",
+        )
+        # Two hop-1 leaves with the same shape: one that does not parse, one that does.
+        (files / "sub" / "ctl_broken_gate.py").write_text(
+            "import ctl_unparsed\nthis is ( not python\n", encoding="utf-8"
+        )
+        (files / "sub" / "ctl_parsed_gate.py").write_text("import ctl_parsed\n", encoding="utf-8")
+        (files / "sub" / "ctl_direct.py").write_text("X = 1\n", encoding="utf-8")
+        for stem in (
+            "ctl_unparsed",
+            "ctl_parsed",
+            "ctl_lib",
+            "ctl_from",
+            "ctl_mention",
+            "ctl_quoted",
+            "ctl_multi",
+            "ctl_sub",
+            "ctl_doc",
+            "ctl_pre",
+            "ctl_pre_longer",
+        ):
+            (files / "sub" / ("%s.py" % stem)).write_text("X = 1\n", encoding="utf-8")
         (base / "manifest.ts").write_text(CONTROL_MANIFEST, encoding="utf-8")
         (base / "package.json").write_text(
-            '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true" } }\n',
+            '{ "scripts": { "check:ctl-live": "true", "check:ctl-dark": "true", "check:ctl-lastkey": "true" } }\n',
             encoding="utf-8",
         )
         (base / "settings.json").write_text('{ "hooks": {} }\n', encoding="utf-8")
@@ -2074,6 +2255,50 @@ def selftest() -> int:
             registry.gate_resolves("check:ctl-live"),
         )
         ctl.falsy("PLANT: an id in neither does not resolve", registry.gate_resolves("check:nope"))
+        ctl.truthy(
+            "CONTROL: a direct-run gate (no npm hop, no package.json key) resolves",
+            registry.gate_resolves("check:ctl-direct"),
+        )
+        ctl.falsy(
+            "PLANT: a direct run whose module file is gone does not resolve",
+            registry.gate_resolves("check:ctl-direct-gone"),
+        )
+        ctl.truthy(
+            "CONTROL: a module run names its `.ci/<dotted path>.py` file",
+            registry.direct_run_files("PYTHONPATH=.ci python3 -m rediacc_ci.quality.trap_registry")
+            == [".ci/rediacc_ci/quality/trap_registry.py"],
+        )
+        (files / ".ci" / "ctlpkg").mkdir(parents=True)
+        (files / ".ci" / "ctlpkg" / "__init__.py").write_text("X = 1\n", encoding="utf-8")
+        (files / ".ci" / "ctlmod.py").write_text("X = 1\n", encoding="utf-8")
+        ctl.truthy(
+            "CONTROL: a `-m` module that is a package (`__init__.py`) resolves",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlpkg"),
+        )
+        ctl.truthy(
+            "CONTROL: a `-m` module file under .ci resolves",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlmod"),
+        )
+        ctl.truthy(
+            "CONTROL: a `-m` module outside .ci that imports (`json.tool`) resolves",
+            registry.run_resolves("python3 -m json.tool"),
+        )
+        ctl.falsy(
+            "PLANT: a `-m` module inside a .ci package that is gone does not resolve",
+            registry.run_resolves("PYTHONPATH=.ci python3 -m ctlpkg.gone"),
+        )
+        ctl.falsy(
+            "PLANT: a `-m` module nothing provides does not resolve",
+            registry.run_resolves("python3 -m ctl_no_such_top_level"),
+        )
+        ctl.truthy(
+            "CONTROL: a run that is the entry's last property, with no trailing comma, resolves",
+            registry.gate_resolves("check:ctl-lastkey"),
+        )
+        ctl.falsy(
+            "PLANT: an npm hop whose script package.json lacks does not resolve",
+            registry.gate_resolves("check:ctl-keyless"),
+        )
         ctl.truthy(
             "CONTROL: `gate: true` inside the entry's own block is live",
             registry.gate_is_live("check:ctl-live"),
@@ -2127,6 +2352,59 @@ def selftest() -> int:
         ctl.falsy(
             "PLANT: a file nothing names is not live", registry.file_is_live("sub/ctl-orphan.sh")
         )
+        ctl.truthy(
+            "CONTROL: a module a hop-1 Python leaf imports by its stem is live at hop 2",
+            registry.file_is_live("sub/ctl_lib.py"),
+        )
+        ctl.truthy(
+            "CONTROL: a `from <stem> import` load is live at hop 2",
+            registry.file_is_live("sub/ctl_from.py"),
+        )
+        ctl.falsy(
+            "PLANT: a stem only mentioned in a comment is not a load",
+            registry.file_is_live("sub/ctl_mention.py"),
+        )
+        ctl.falsy(
+            "PLANT: a stem inside a string literal mid-line is not a load",
+            registry.file_is_live("sub/ctl_quoted.py"),
+        )
+        ctl.truthy(
+            "CONTROL: `import os, <stem>` (a later name on one line) is a load",
+            registry.file_is_live("sub/ctl_multi.py"),
+        )
+        ctl.truthy(
+            "CONTROL: `from <pkg> import <stem>` is a load",
+            registry.file_is_live("sub/ctl_sub.py"),
+        )
+        ctl.falsy(
+            "PLANT: `import <stem>` inside a docstring is not a load",
+            registry.file_is_live("sub/ctl_doc.py"),
+        )
+        ctl.truthy(
+            "CONTROL: the longer name is itself loaded, so the prefix fixture is real",
+            registry.file_is_live("sub/ctl_pre_longer.py"),
+        )
+        ctl.falsy(
+            "PLANT: `import ctl_pre_longer` does not load the shorter stem `ctl_pre`",
+            registry.file_is_live("sub/ctl_pre.py"),
+        )
+
+        ctl.truthy(
+            "CONTROL: a module a parsing hop-1 leaf imports is live (the unparsed plant's twin)",
+            registry.file_is_live("sub/ctl_parsed.py"),
+        )
+        ctl.falsy(
+            "PLANT: a module only a hop-1 leaf that does not parse imports is not live",
+            registry.file_is_live("sub/ctl_unparsed.py"),
+        )
+        ctl.check(
+            "CONTROL: an unparseable source loads nothing, a parseable one its names",
+            (
+                python_loaded_names("import a\n("),
+                python_loaded_names("import a\n"),
+            ),
+            (frozenset(), frozenset({"a"})),
+        )
 
         # -- the whole scan, both directions --------------------------------
         shape = Shape()
@@ -2171,4 +2449,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_trap_registry.py", sys.argv[1:], switches=("--selftest", "--scan-only"))
     raise SystemExit(main(sys.argv[1:]))

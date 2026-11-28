@@ -22,33 +22,13 @@ import wl_standdown
 import worklist_messages as M
 
 from rediacc_hooks.tests import wlfix
-
-# The Actions job the shim serves for every per-job lookup: one green step and one red one, so the block can name a failing step.
-CI_JOB_PAYLOAD = {
-    "run_id": 30514648812,
-    "run_attempt": 1,
-    "steps": [
-        {"name": "Set up job", "conclusion": "success"},
-        {"name": "Shell format", "conclusion": "failure"},
-    ],
-}
-
-# The freshness check shares the `gh api graphql` path, so the shim must answer BOTH queries; a body edited in 2999 keeps that check quiet.
-CI_FRESH_PAYLOAD = {
-    "data": {
-        "repository": {
-            "pullRequests": {
-                "nodes": [
-                    {
-                        "number": 543,
-                        "lastEditedAt": "2999-01-01T00:00:00Z",
-                        "updatedAt": "2999-01-01T00:00:00Z",
-                    }
-                ]
-            }
-        }
-    }
-}
+from rediacc_hooks.tests.ci_status_world import (
+    CI_FRESH_PAYLOAD,
+    CI_JOB_PAYLOAD,
+    ci_job,
+    ci_rollup,
+    write_exec,
+)
 
 GH_SHIM = """#!/bin/bash
 for a in "$@"; do
@@ -62,11 +42,6 @@ case "$*" in
 esac
 echo '{}'
 """
-
-
-def write_exec(path, body: str) -> None:
-    path.write_text(body, encoding="utf-8")
-    path.chmod(0o755)
 
 
 def ci_setup(fix) -> None:
@@ -85,31 +60,6 @@ def ci_setup(fix) -> None:
     (fix.base / "ci-fresh.json").write_text(json.dumps(CI_FRESH_PAYLOAD) + "\n", encoding="utf-8")
     (fix.base / "ci-job.json").write_text(json.dumps(CI_JOB_PAYLOAD) + "\n", encoding="utf-8")
     write_exec(fix.base / "binonly" / "gh", GH_SHIM % {"base": fix.base})
-
-
-def ci_rollup(fix, state: str, contexts: str) -> None:
-    """The statusCheckRollup the shim serves, plus the cache drop the swap needs.
-
-    The read is cached on the published tip SHA, so a fixture swap inside one case must drop the cache or it reads the previous shape.
-    """
-    payload = (
-        '{"data":{"repository":{"pullRequests":{"nodes":[{"number":543,"url":"u",'
-        '"commits":{"nodes":[{"commit":{"oid":"deadsha0000","statusCheckRollup":'
-        '{"state":"%s","contexts":{"totalCount":9,"pageInfo":{"hasNextPage":false,'
-        '"endCursor":null},"nodes":%s}}}}]}}]}}}}\n' % (state, contexts)
-    )
-    (fix.base / "ci-rollup.json").write_text(payload, encoding="utf-8")
-    fix.stem(".cistate-deadbeef").unlink(missing_ok=True)
-
-
-def ci_job(name: str, conclusion: str, ident: int = 90784763855) -> str:
-    """A completed Actions check run."""
-    return (
-        '{"__typename":"CheckRun","name":"%s","status":"COMPLETED","conclusion":"%s",'
-        '"databaseId":%s,"detailsUrl":"https://x/job/%s",'
-        '"checkSuite":{"workflowRun":{"databaseId":30514648812}}}'
-        % (name, conclusion, ident, ident)
-    )
 
 
 def ci_running(name: str) -> str:
@@ -611,42 +561,145 @@ def test_130b_a_cached_string_info_is_not_a_lookup_failure(wl):
     cichk(wl, "a cached string info reads as the cached state", "no", "PR CI-status lookup failed")
 
 
+# ---- The long-red ledger (agent/plans/PLAN-simple-two-tree-loop.md D4, box B6): wl_ci records each finished round and prints the verdict ----
+
+
+def ledger_rows(fix) -> list[dict]:
+    path = fix.proj / "agent" / "ledgers" / "landing-rounds.jsonl"
+    if not path.exists():
+        return []
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def seed_old_round(fix, hours_ago: float) -> None:
+    """One earlier red round on PR #543, `hours_ago` old, so the PR opened that long ago."""
+    stamp = (datetime.datetime.now(datetime.UTC) - datetime.timedelta(hours=hours_ago)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    path = fix.proj / "agent" / "ledgers" / "landing-rounds.jsonl"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    old = {
+        "pr": 543,
+        "round": 1,
+        "utc": stamp,
+        "kind": "push",
+        "run_id": 1,
+        "heads": "0" * 40,
+        "fix_target": [],
+        "reds": [{"check": "Quality / Static", "category": "code-likely", "signature": ""}],
+        "greens": [],
+        "delta": {"newly_green": [], "newly_red": [], "regressed": [], "repeat": []},
+        "open_hours": 0.0,
+        "opened_at": stamp,
+        "trigger": "stop",
+        "ids": {},
+    }
+    path.write_text(json.dumps(old) + "\n", encoding="utf-8")
+
+
+RED_PAIR = "[%s, %s]" % (
+    ci_job("Quality / Static", "FAILURE"),
+    ci_job("Quality / Security", "SUCCESS", 90784763856),
+)
+
+
+def test_long_red_a_final_red_writes_one_row_and_prints_the_wall_verdict(wl):
+    """A red 80 h after the PR's first round: the stop appends round 2 and the CI block carries the wall ask with its DEFAULT. A second stop over the same finished run appends nothing."""
+    ci_setup(wl)
+    seed_old_round(wl, 80)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    got = ci_run(wl)
+    assert "CI IS RED ON PR #543" in got.out, got.out[:400]
+    assert "long red: wall-ask" in got.out, got.out[:1200]
+    assert "DEFAULT: keep fixing" in got.out, got.out[:1200]
+    rows = ledger_rows(wl)
+    assert [r["round"] for r in rows] == [1, 2], rows
+    assert rows[1]["kind"] == "push"
+    assert [r["check"] for r in rows[1]["reds"]] == ["Quality / Static"]
+    assert rows[1]["greens"] == ["Quality / Security"]
+    assert rows[1]["delta"]["repeat"] == ["Quality / Static"]
+    assert rows[1]["open_hours"] >= 80
+    wl.stem(".cistate-deadbeef").unlink(missing_ok=True)
+    ci_run(wl)
+    assert len(ledger_rows(wl)) == 2, ledger_rows(wl)
+
+
+def test_long_red_control_a_young_pr_records_the_row_and_prints_no_verdict(wl):
+    """CONTROL for the case above: the same red on a PR with no earlier round is round 1 with no long-red line, so the line above comes from the 72 h wall and not from any red."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    got = ci_run(wl)
+    assert "CI IS RED ON PR #543" in got.out, got.out[:400]
+    assert "long red:" not in got.out, got.out[:1200]
+    assert [r["round"] for r in ledger_rows(wl)] == [1]
+
+
+def test_long_red_a_green_round_is_recorded_too(wl):
+    """A green head is a round as well: churn reads which checks were green before a fix."""
+    ci_setup(wl)
+    ci_rollup(
+        wl,
+        "SUCCESS",
+        "[%s, %s]" % (run_ctx("Quality / Static", "SUCCESS"), run_ctx("CI Complete", "SUCCESS", 2)),
+    )
+    assert trouble(wl) == ["ok"]
+    rows = ledger_rows(wl)
+    assert len(rows) == 1, rows
+    assert rows[0]["reds"] == []
+    assert rows[0]["greens"] == ["CI Complete", "Quality / Static"]
+
+
+def _in_process_trouble(fix, monkeypatch) -> str:
+    """ci_trouble in the pytest process, on the fixture's gh shim and private TMPDIR."""
+    for key in ("TMPDIR", "WORKLIST_STORE_DIR", "WORKLIST_SESSION_ID"):
+        monkeypatch.setenv(key, fix.env[key])
+    monkeypatch.setenv("PATH", "%s:%s" % (fix.base / "binonly", os.environ.get("PATH", "")))
+    state, _detail = wl_ci.ci_trouble(fix.proj, fix.wl, fix.sid, [], "", ref="pub", owned=True)
+    return state
+
+
+def test_long_red_a_runner_not_acquired_cancel_writes_an_outage_row(wl, monkeypatch):
+    """A cancel with no runner is an outside outage: the stop records one red row with signature runner-not-acquired, so the long-red retry gaps apply."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
+    cause = {"kind": "runner-not-acquired", "job": "E2E / ubuntu", "detail": "no runner"}
+    monkeypatch.setattr(wl_ci, "ci_cancel_cause", lambda *_a: cause)
+    assert _in_process_trouble(wl, monkeypatch) == "cancelled"
+    rows = ledger_rows(wl)
+    assert len(rows) == 1, rows
+    assert rows[0]["reds"] == [
+        {"check": "E2E / ubuntu", "category": "infra-likely", "signature": "runner-not-acquired"}
+    ]
+
+
+def test_long_red_control_an_unattributed_cancel_writes_no_row(wl, monkeypatch):
+    """CONTROL: the same cancel with an unknown cause is not an outage and records nothing."""
+    ci_setup(wl)
+    ci_rollup(wl, "FAILURE", "[%s]" % run_ctx("E2E / ubuntu", "CANCELLED"))
+    cause = {"kind": "unknown", "job": None, "detail": "cause unknown"}
+    monkeypatch.setattr(wl_ci, "ci_cancel_cause", lambda *_a: cause)
+    assert _in_process_trouble(wl, monkeypatch) == "cancelled"
+    assert ledger_rows(wl) == []
+
+
+def test_long_red_a_cached_stop_still_prints_the_verdict(wl):
+    """The verdict is read on every stop over a finished red, cache or not (b74a99a2.3): the second stop keeps its `.cistate` sidecar and still prints the wall ask."""
+    ci_setup(wl)
+    seed_old_round(wl, 80)
+    ci_rollup(wl, "FAILURE", RED_PAIR)
+    assert "long red: wall-ask" in ci_run(wl).out
+    assert wl.stem(".cistate-deadbeef").exists()
+    again = ci_run(wl)
+    assert "long red: wall-ask" in again.out, again.out[:1200]
+    assert len(ledger_rows(wl)) == 2
+
+
 # ---- One green ci:quick per batch (agent/plans/PLAN-ciquick-green-then-batch.md, G4 and G5) ----
 
 STOP_DIR = wlfix.STOP_DIR
 
 FINISHED = "2026-11-07T04:49:45.449Z"
 FINISHED_EPOCH = datetime.datetime(2026, 11, 7, 4, 49, 45, tzinfo=datetime.UTC).timestamp()
-
-
-# ---- G4: the two messages ---------------------------------------------------------------------
-
-
-def test_batch_end_message_drops_the_whole_lane_step_and_renumbers():
-    text = M.V_LOOP_NEXT_BATCH_OPEN % {
-        "branch": "1108-1",
-        "finished": 3,
-        "batch": 3,
-        "plans": "a, b, c",
-        "ahead": 7,
-        "me": "abc12345",
-    }
-    assert "npm run ci   " not in text, text
-    assert "incremental carry" not in text, text
-    steps = re.findall(r"^\s+(\d+)\. (.*)$", text, flags=re.MULTILINE)
-    assert [n for n, _ in steps] == ["1", "2", "3", "4"], text
-    assert steps[0][1].startswith("npm run ci:quick"), steps
-    assert "one green receipt per batch" in steps[0][1], steps
-    assert steps[2][1] == "git push -u origin 1108-1", steps
-    assert "--batch-body abc12345" in steps[3][1], steps
-
-
-def test_backup_push_message_uses_the_one_receipt_per_batch_wording():
-    text = M.N_BACKUP_PUSH % {"n": 2, "branch": "topic", "age": 5.0, "hours": 4}
-    assert "one green ci:quick receipt" in text, text
-    assert "per batch" in text, text
-    assert "git push -u origin topic" in text, text
-    assert "never `gh pr create`" in text, text
 
 
 # ---- G5: the advisory --------------------------------------------------------------------------

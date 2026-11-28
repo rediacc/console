@@ -52,7 +52,7 @@ was already green-for-the-wrong-reason once for this class of reason (the `../..
 It is NOT repaired in this port, because a port that changes the verdict on any tree is not a port: a floor added here would make the two implementations disagree on an empty tree, and the shadow ledger would be attesting to something that is no longer true of the twin CI actually runs. The fix belongs in a change that touches BOTH files. `selftest()` below carries a control that
 pins the CURRENT behaviour and names it as the defect it is, so the day someone fixes the twin the control tells them this file needs the same edit.
 
-THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in readdir order and the twin never sorts, so the printed finding ORDER is filesystem-dependent. `os.walk` gives the same class of order. `scripts/lib/shadow-gate.ts` compares findings as an unordered multiset, so this cannot make the two sides disagree; it is stated because a reader diffing the raw streams may
+THE FIND ORDER IS DIRECTORY ORDER, NOT SORTED. `find ... -print0` walks in readdir order and the twin never sorts, so the printed finding ORDER is filesystem-dependent. `os.walk` gives the same class of order. the shadow gate (commit:bf054adcd4) compares findings as an unordered multiset, so this cannot make the two sides disagree; it is stated because a reader diffing the raw streams may
 see the same findings in a different order and should not go looking for a bug.
 
 `[+\\-]` IS A THREE-CHARACTER CLASS, and it is worth pausing on. Inside a POSIX bracket expression a backslash is LITERAL, so the twin's `^set [+\\-]e` matches `set +e`, `set -e` and a backslash-e that is nonsense nothing writes. It is is carried across rather than tidied to `[+-]`, because tidying it is a change to the matcher, and a matcher change is the one thing a differential
@@ -64,6 +64,14 @@ THE FILE-LEVEL PRE-FILTER AND THE PER-LINE TRACKER ARE DIFFERENT TESTS, and that
 only says `set -e` qualifies on neither. Reproduced exactly, including the fact that `set -e` alone (with no trailing space) fails the pre-filter.
 
 STREAMS. The twin's findings go through `log_error`, so they are `✗ <text>` on stderr, and its clean verdict through `log_info`. `rediacc_ci.log` produces byte-identical lines for both. The `--json` output is a bare `printf` on stdout and stays there.
+
+---- gate ----
+lane: quality-static
+step: Silent-failure patterns
+needs: none
+id: check:ci-silent-failures
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -395,4 +403,11 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_silent_failure_patterns.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json", "--help", "-h"),
+    )
     raise SystemExit(main(sys.argv[1:]))

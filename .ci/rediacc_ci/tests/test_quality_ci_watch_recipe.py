@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.ci_watch_recipe` against the awk, grep and bash it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-watch-recipe.observations.jsonl` drives the whole gate over five distinct trees, one per broken check. What a ledger row cannot isolate is the four detectors, and this gate is ALL detector: check A is an awk block extractor, checks B and C are three greps whose false-positive boundaries were each argued over, and the
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees, one per broken check. What a ledger row cannot isolate is the four detectors, and this gate is ALL detector: check A is an awk block extractor, checks B and C are three greps whose false-positive boundaries were each argued over, and the
 whole file exists because ONE of those greps was racing its own pipe and reporting a clean bill of health over a real offender.
 
 So each detector is re-run as the twin's own bash, over the twin's own fixtures, and compared. The negative cases carry as much weight as the positive ones: three of the twin's controls exist only to prove the detectors do NOT fire on the sanctioned invocation, on a JSON value, or on a test assertion.

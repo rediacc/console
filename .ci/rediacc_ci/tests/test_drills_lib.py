@@ -1154,3 +1154,29 @@ def test_a_backup_scope_mint_needs_a_jar_account_session_logged_in(
     del second
     gc.collect()
     assert len(drill.session_emails) == before - 1
+
+
+def test_a_fleet_probe_runs_in_a_config_home_of_its_own(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """vm:check A2.3 (2026-11-27): `rdc ops status` ran under the operator's default config, a remote config whose token could not be renewed here, and the license drill stopped at its preflight. The probe gets a config home under the work dir and no REDIACC_CONFIG; `cli_env` (the control) still carries both as the sandbox set them."""
+    monkeypatch.setenv("REDIACC_CONFIG", "rediacc")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "operator-home"))
+    drill = lib.Drill("t")
+    drill.work = tmp_path / "work"
+    drill.work.mkdir()
+    probe = drill.probe_env()
+    assert probe["XDG_CONFIG_HOME"] == str(drill.work / "probe-home")
+    assert (drill.work / "probe-home").is_dir()
+    assert "REDIACC_CONFIG" not in probe
+    control = drill.cli_env()
+    assert control["XDG_CONFIG_HOME"] == str(tmp_path / "operator-home")
+    assert control["REDIACC_CONFIG"] == "rediacc"
+
+
+def test_a_fleet_probe_before_init_is_refused() -> None:
+    """a38c35e9.1: the probe's config home lives under the work dir, so `probe_env` before `init` refuses instead of building a home under an unset path."""
+    drill = lib.Drill("t")
+    assert drill.work is None
+    with pytest.raises(RuntimeError, match="probe_env\\(\\) before init\\(\\)"):
+        drill.probe_env()

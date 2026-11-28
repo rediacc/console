@@ -1,6 +1,6 @@
 """`rediacc_ci.infra.wait_for_vm_ssh`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/wait-for-vm-ssh.sh` and the port over one stubbed PATH and compared FIVE things per case: exit code, stdout, stderr, the call SEQUENCE and the bytes of `~/.ssh/known_hosts`. The K=5 ledger `.ci/shadow/w7p6-wait-for-vm-ssh.observations.jsonl` recorded that comparison over five distinct trees.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/wait-for-vm-ssh.sh` and the port over one stubbed PATH and compared FIVE things per case: exit code, stdout, stderr, the call SEQUENCE and the bytes of `~/.ssh/known_hosts`. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees.
 
 THE TWIN HAS NOW BEEN DELETED, and every case compares against `goldens/wait-for-vm-ssh/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree. Each provenance header carries the twin's blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 

@@ -7,7 +7,7 @@ WHY THE COMPOSE CASES ARE DIFFERENTIALS. Two of the gate's three extractions are
 
 THE THIRD, THE PERSISTED SET, IS NO LONGER A PIPELINE (W7P5-c). It was a `sed` range over the deleted `ci-env.sh` heredoc; it is now an `ast` read of the `PERSISTED` tuple in `.ci/rediacc_ci/infra/ci_env.py`, so its cases below are a table of literal sources with the answer each must produce, in both directions, plus the refusals.
 
-The whole gate is compared end to end by `.ci/shadow/w7p2-compose-env.observations.jsonl` over five distinct trees.
+The whole gate is compared end to end by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import pathlib

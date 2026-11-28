@@ -36,6 +36,7 @@ THE LADDER, and why it cannot deadlock (the lesson fixed by operator decision in
 import json
 import os
 import re
+import sys
 import tempfile
 import time
 from typing import Any
@@ -298,8 +299,8 @@ def live_teammate_transcripts(cwd, fresh_min=None, session_id=""):
     return fresh
 
 
-def live_worker_ids(event, live_bg, cwd, session_id):
-    """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`).
+def live_worker_ids(event, live_bg, cwd, session_id, problems=None):
+    """Every worker id that is live this stop: the running background tasks, PLUS each agent waiting on a shell it armed (`wl_roster.shell_waiters`), minus a waiter `wl_stuckshell` calls stuck (its final report captured, or its shell past STUCK_SHELL_MIN; agent/plans/PLAN-writers-now-cadence.md WN4).
 
     A waiter ended its turn, so the event lists only its shell and calls the agent completed; the harness resumes it when that shell exits. Before 2026-09-24 (agent/plans/PLAN-stop-hook-continuity.md P1.8) an expired lease on a waiter therefore failed closed into an open item, and the stuck detector did not count the lease as supervision, while the roster called the same agent live."""
     import wl_roster as R
@@ -311,9 +312,15 @@ def live_worker_ids(event, live_bg, cwd, session_id):
             for b in (event.get("background_tasks") or [])
             if isinstance(b, dict) and b.get("status") == "running"
         ]
-        ids |= set(R.shell_waiters(running, R.load_metas(R.session_subagents_dir(cwd, session_id))))
-    except Exception:
-        pass
+        metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
+        ids |= set(R.shell_waiters(running, metas, None, C.project_start({"cwd": cwd})))
+    except Exception as exc:
+        # The shell waiters are missing from `ids`. A caller that passes `problems` collects the failure; one that does not (the Stop hook's own call) gets it on stderr, never silence (review 91ecf84b.1).
+        note = "shell waiters: %s: %s" % (type(exc).__name__, exc)
+        if problems is not None:
+            problems.append(note)
+        else:
+            print("wl_liveness: %s" % note, file=sys.stderr)
     ids.discard("")
     return ids
 
@@ -693,7 +700,24 @@ def _age_min(stamp):
     return a if a is not None else 0.0
 
 
-def ladder(fold, session_id, event, state_doc):
+def _arm_covers(rec, armed_blocks=True):
+    """True when the item carries an arm (with an `aid`) that covers it right now. `armed_blocks` is whether `armed-action-due` blocks at this stop's effort level: a fired arm covers only then, the same reading the roster takes. A wl_armed that is not installed (ModuleNotFoundError on that module) covers nothing; any other import failure is a defect and propagates."""
+    arm = rec.get("arm")
+    if not isinstance(arm, dict) or not arm.get("aid"):
+        return False
+    import datetime
+
+    try:
+        import wl_armed as A
+    except ModuleNotFoundError as exc:
+        if exc.name != "wl_armed":
+            raise
+        return False
+    # An error inside covers() is a defect to surface, not a reason to read the arm as not covering (swallowed-failures gate).
+    return A.covers(arm, datetime.datetime.now(datetime.UTC), armed_blocks)
+
+
+def ladder(fold, session_id, event, state_doc, armed_blocks=True, shell_work=None):
     """(pings, investigates, resolves, gones, idles, doc_changed).
 
     `gones` is kept apart from `investigates` because a verifiably dead worker needs a different remedy than a merely quiet one; see the gone branch.
@@ -731,9 +755,12 @@ def ladder(fold, session_id, event, state_doc):
             continue
         if C.lease_state(rec["line"]) != "fresh":
             continue  # expired leases are open items already
+        # AN ARMED HOLD IS NOT A QUIET WORKER (agent/plans/PLAN-armed-actions.md Design 6): while the item's arm covers it, the arm's own check owns the nag, so no rung fires.
+        if _arm_covers(rec, armed_blocks):
+            continue
         wm = C.WORKER.search(rec["line"])
         wid = rec.get("worker") or (wm.group(1) if wm else "")
-        # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind the writer cap, which wl_roster reports (`queue-slot` names it when a slot frees), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while the cap was full.
+        # A QUEUE LEASE IS NOT A WORKER THAT CAN GO QUIET (agent/plans/PLAN-stop-hook-cap-saturated-wait.md step 1). Nothing runs it: it waits behind a live plan's mutex or Owns, which wl_roster reports (`queue-slot` names it once the holder finishes), and its own lease expiry fails it closed into an open item. On the age ladder it read as "unverifiable" and was ordered to be investigated every 90 minutes while it waited.
         if wid and (wid in roster_ids or wid == queue_w):
             continue
         # GONE means DROPPED, not merely unconfirmable. A worker only counts as gone if the harness could see it when the lease was taken and cannot see it now. An Agent leased by NAME never appears in a background-task list at all, and reporting that as "finished or stopped" sent this session chasing a worker that was actively writing files. Unverifiable workers fall through to
@@ -771,6 +798,24 @@ def ladder(fold, session_id, event, state_doc):
             )
 
     pings, investigates, resolves, gones, idles = [], [], [], [], []
+    # A RUNNING SHELL DOING REAL WORK IS NOT A STALL (the wl_bgsweep live-work rule, the sibling of the stuck-shell owned-work guard). An item leased to a shell the harness lists as running, with a descendant process doing real work, stays at the ping rung: quiet output is how a long hash verify looks, and the resolve rung's TaskStop remedy would kill it.
+    _bg_wids = sorted({wid for _k, _l, _a, _s, _g, wid in subjects if wid and wid in now_bg})
+    working = set()
+    if _bg_wids:
+        try:
+            if shell_work is None:
+                import wl_stuckshell
+
+                shell_work = wl_stuckshell.shell_work
+            working = set(shell_work(_bg_wids) or ())
+        except Exception as exc:
+            # Fail toward the age ladder (no shell counts as working), and say so: a silent empty set would read as "no shell does real work".
+            print(
+                "wl_liveness: shell-work read failed (%s: %s); quiet shells stay on the age ladder"
+                % (type(exc).__name__, exc),
+                file=sys.stderr,
+            )
+            working = set()
     for key, label, age, stampkey, gone, wid in subjects:
         rung_rec = fired.get(key) or {}
 
@@ -819,6 +864,12 @@ def ladder(fold, session_id, event, state_doc):
                         % (label, wid, quiet)
                     )
                 continue
+        if wid and wid in working:
+            if age >= LADDER_PING_MIN:
+                pings.append(
+                    "%s   (no update for %dm; its shell is doing real work)" % (label, age)
+                )
+            continue
         if age >= LADDER_RESOLVE_MIN:
             if fire_once("resolve"):
                 resolves.append("%s   (no update for %dm)" % (label, age))

@@ -57,7 +57,9 @@ CAUSE_KINDS = (
 )
 # `watchdog-cancel` and `timeout-cancel` name a job that was STOPPED rather than one that failed: the Watchdog Monitor's enforced budget (its `CI BUDGET VIOLATION: '<job>' ran <m>m (budget <b>m)` annotation) or GitHub's own `timeout-minutes` kill (`The job has exceeded the maximum execution time`). They are read from cancel_cause's evidence, and only when the job's log carries no infra or code signature of
 # its own, since a log that says WHY the job ran long (a slow renet setup phase) is the deeper answer.
+# `operator-only` names a red no rerun and no code change can fix: a credential the run presented was refused (HTTP 401), a secret has expired, or a provider refused on billing or quota. It is asked of the operator at once (agent/plans/PLAN-simple-two-tree-loop.md D4); a retry only repeats it, which is why it ranks ahead of `infra-likely`.
 CATEGORIES = (
+    "operator-only",
     "infra-likely",
     "code-likely",
     "watchdog-cancel",
@@ -97,8 +99,48 @@ ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[A-Za-z]")
 TS_RE = re.compile(r"^\ufeff?(\d{4}-\d\d-\d\dT(\d\d:\d\d:\d\d))(\.\d+)?Z ?")
 STREAM_RE = re.compile(r"\bvm=(\S+)\s*$")
 
-# SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Infra rows are checked before code rows, so a test that failed BECAUSE a mirror was down reads as infra. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
+# SIGNATURES: (id, category, pattern, label, minimum seconds or 0). Operator rows are checked first, then infra rows, then code rows, so a test that failed BECAUSE a mirror was down reads as infra and an upstream gate whose token was refused reads as the operator's. Order inside a category matters too: a Bitwarden 503 must not read as a registry 503.
 SIGNATURES = (
+    # OPERATOR-ONLY rows (agent/plans/PLAN-simple-two-tree-loop.md D4). A 401 is a refused credential, never a rate limit: a bare `429 Too Many Requests` stays on the registry-refused row below (a 429 whose body says `exceeded your current quota` is a billing refusal and reads operator-only on the billing row, which is checked first), and a 403 stays there too, since registries answer 403 for a throttled anonymous pull.
+    (
+        "auth-401",
+        "operator",
+        re.compile(
+            r"\b401 Unauthorized\b|\(HTTP 401\)|\bHTTP(?:/[\d.]+)? 401\b"
+            r"|\bstatus(?: code)?:? 401\b|\bBad credentials\b"
+        ),
+        "a credential was refused with HTTP 401 (rotate the secret; a rerun repeats it)",
+        0,
+    ),
+    (
+        "secret-expired",
+        "operator",
+        # A line that reports the expiry as handled (`cache token is expired, refreshing`) is no refused credential: the line must carry a failure word and no word saying the expiry is handled (refresh, renew, rotated or rotating, any form of retry, `will expire`); the advice `rotate it` is no such word, so a refused `token has expired, rotate it` stays operator-only.
+        re.compile(
+            r"(?i)^(?!.*\b(?:refresh|renew|rotated|rotating|retr(?:y|ies|ied|ying)|will expire)\w*)"
+            r"(?=.*\b(?:error|fail|failed|denied|refus|reject|invalid|unauthori[sz]ed|cannot|could not|unable)\w*)"
+            r".*(?:"
+            r"\b(?:token|secret|credential|password|api[ _-]?key|certificate)s?\b[^\n]{0,40}?"
+            r"\b(?:has|have|is|are) expired\b"
+            r"|\bexpired (?:token|secret|credential|password|api[ _-]?key|certificate)s?\b"
+            r")"
+        ),
+        "a secret or credential has expired (rotate it; a rerun repeats it)",
+        0,
+    ),
+    (
+        "billing-refused",
+        "operator",
+        re.compile(
+            r"(?i)recent account payments have failed|spending limit needs to be increased"
+            r"|\b402 Payment Required\b|\(HTTP 402\)|\bbilling (?:issue|problem|error|hard limit)\b"
+            r"|^(?=.*\b(?:error|fail|failed|denied|refus|reject|unauthori[sz]ed|cannot|could not|unable|http 4\d\d)\w*)"
+            r".*\binsufficient (?:credits?|funds|balance)\b|exceeded your current quota"
+            r"|credit balance is too low"
+        ),
+        "a provider refused on billing or quota (the account needs the operator)",
+        0,
+    ),
     # An external gate that could not ask its upstream (scripts/lib/upstream.ts `reportUnreachable`, and its Python copy `rediacc_ci.core.upstream`). Every external gate is hard on the nightly since the operator rulings of 2026-10-13 and 2026-10-14 ("Extend to all seven"), so this red reaches main's scheduled run, and it must read as the upstream's failure rather than as an unknown or as a defect in the tree. FIRST, because its finding lines name a pin, a link or a record beside a status: `Bitwarden CLI (pinned 2026.9.0): GET api.github.com/... -> HTTP 503, after 3 attempt(s)` would otherwise read as the Bitwarden secrets row below, and one that ends on ECONNREFUSED as the generic network row.
     (
         "upstream-unreachable",
@@ -292,6 +334,15 @@ def _gh_retry():
     return gh_retry
 
 
+def _first_error_line(text, returncode):
+    """gh's first non-blank error line, whole (clipped at 300 characters with an ellipsis). The old `[-200:]` tail cut mid-word and kept the end of gh's usage text instead of the error."""
+    for raw in (text or "").splitlines():
+        line = raw.strip()
+        if line:
+            return line if len(line) <= 300 else line[:299] + "\u2026"
+    return "gh exited %d" % returncode
+
+
 class GhFetcher:
     """Reads through the local `gh` CLI. Never raises: every error comes back as a string.
 
@@ -319,9 +370,9 @@ class GhFetcher:
         except (OSError, subprocess.SubprocessError) as exc:
             return None, str(exc)[:200]
         if out.returncode != 0:
-            return None, (
-                (out.stderr or out.stdout or "").strip() or "gh exited %d" % out.returncode
-            )[-200:]
+            # A stderr of only blank lines is truthy but says nothing: fall through to stdout.
+            text = out.stderr if (out.stderr or "").strip() else out.stdout
+            return None, _first_error_line(text, out.returncode)
         return out.stdout, ""
 
     def _run(self, args):
@@ -344,8 +395,8 @@ class GhFetcher:
             return None, "non-JSON from %s: %r" % (path, raw[:80])
 
     def text(self, path):
-        # --allow-escape-sequences IS REQUIRED: job logs carry ANSI colour, and without it gh writes nothing to stdout and exits 1 (measured 2026-08-28 and again 2026-10-02 on job 110680194371).
-        return self._run([_full(self.repo, path), "--allow-escape-sequences"])
+        # --allow-escape-sequences IS REQUIRED on a gh that has it: job logs carry ANSI colour, and without it gh writes nothing to stdout and exits 1 (measured 2026-08-28 and again 2026-10-02 on job 110680194371). An older gh (2.46.0) rejects the flag as unknown, so `ghx.api_escape_flags` adds it only when `gh api --help` lists it; job_log strips the escapes either way.
+        return self._run([_full(self.repo, path), *_gh_retry().ghx.api_escape_flags()])
 
 
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
@@ -800,6 +851,8 @@ TEST_LOG_LINE_RE = re.compile(r"^\s*[\w.-]+_test\.go:\d+: ")
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 # An external gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
+# The Hub reader's own warning that a token without a username is read anonymously; it quotes "HTTP 401" as the reason and is no refused credential.
+TOKEN_EXCHANGE_NOTE_RE = re.compile(r"cannot be exchanged for a Hub API token")
 
 
 # A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line (the -rA form) or `path::case PASSED|FAILED` (the -v form) or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
@@ -825,7 +878,7 @@ def _has_test_verdict(lines):
 def _sig_hit(line, test_verdict=False):
     """`test_verdict`: the log holds a test runner verdict (`_has_test_verdict`), so its `_test.go:<n>:` lines are test output and no infra row reads them."""
     body = _body(line)
-    if RETRY_NOTE_RE.search(body):
+    if RETRY_NOTE_RE.search(body) or TOKEN_EXCHANGE_NOTE_RE.search(body):
         return None
     # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
     # A line that carries a failure mark after its pass mark is read from that mark on: the pass part (and any count in it) is no signature, the failure part is.
@@ -835,7 +888,7 @@ def _sig_hit(line, test_verdict=False):
         body = body[body.index("\u2717") :]
     test_log = test_verdict and bool(TEST_LOG_LINE_RE.match(body))
     for sid, cat, rx, label, min_s in SIGNATURES:
-        if test_log and cat == "infra":
+        if test_log and cat in ("infra", "operator"):
             continue
         m = rx.search(body)
         if not m:
@@ -847,9 +900,10 @@ def _sig_hit(line, test_verdict=False):
 
 
 def classify(lines):
-    """(category, signature id). A test runner's failure line wins over everything, any other infra hit over any other code hit; nothing at all is `unknown`."""
+    """(category, signature id). A test runner's failure line wins over everything, then any operator-only hit, then any other infra hit over any other code hit; nothing at all is `unknown`."""
     code = None
     infra = None
+    operator = None
     verdict = _has_test_verdict(lines)
     for line in lines or []:
         hit = _sig_hit(line, verdict)
@@ -857,10 +911,14 @@ def classify(lines):
             continue
         if hit[0] in TEST_FAILURE_SIGS:
             return "code-likely", hit[0]
-        if hit[1] == "infra":
+        if hit[1] == "operator":
+            operator = operator or hit[0]
+        elif hit[1] == "infra":
             infra = infra or hit[0]
         else:
             code = code or hit[0]
+    if operator:
+        return "operator-only", operator
     if infra:
         return "infra-likely", infra
     return ("code-likely", code) if code else ("unknown", "")

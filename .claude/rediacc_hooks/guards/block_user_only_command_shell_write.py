@@ -22,14 +22,18 @@ Read through `model_invocation.exceptions_for`, the one loader the edit half and
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_user_only_command.py` (the shared harness for both halves) and against its own DEFECT.
 """
 
+import functools
 import os
 import re
 
 from rediacc_hooks import hookio, model_invocation, shellscan
+from rediacc_hooks.guards import _write_rules, tables
+
+__getattr__ = tables("block_user_only_command_shell_write", "EDGE_CASES", "_C", "_K")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 61
+ORDER = 60
 
 # The target test every shape goes through. With it answering no, every redirect, tee, sed -i, copy and interpreter write into a command directory passes.
 DEFECT = ("    if not word:\n        return False", "    if True:\n        return False")
@@ -73,64 +77,6 @@ LIST_MESSAGE = (
     "%s\n"
 )
 
-_K = "disable-model-invocation"
-_C = ".claude/commands/x.md"
-
-EDGE_CASES = [
-    ("a heredoc writing the key", "cat > %s <<'EOF'\n---\n%s: true\n---\nEOF" % (_C, _K)),
-    ("an append of another spelling", "echo 'Disable_Model_Invocation: yes' >> %s" % _C),
-    (
-        "tee into a skill",
-        "printf -- '---\\n%s: false\\n---\\n' | tee .claude/skills/s/SKILL.md" % _K,
-    ),
-    ("sed -i adding the key", "sed -i 's/^description:/%s: true\\ndescription:/' %s" % (_K, _C)),
-    ("sed -i appending the key", "sed -i '1a %s: true' %s" % (_K, _C)),
-    # #5077391c: xargs appends its feed, so under `-t` a fed word is a SOURCE (the commands directory once read as the source here, and a flagged command copied into a skill passed).
-    (
-        "xargs feeds a flagged command to cp -t a skill",
-        "echo .claude/commands/handoff.md | xargs cp -t .claude/skills/demo",
-    ),
-    (
-        "xargs feeds a flagged command to cp -t elsewhere",
-        "echo .claude/commands/handoff.md | xargs cp -t /tmp",
-    ),
-    (
-        "xargs feeds the exception list to cp -t elsewhere",
-        "echo .ci/config/model-invocation-exceptions.json | xargs cp -t /tmp",
-    ),
-    (
-        "xargs feeds cp the exception list as its destination",
-        "echo /tmp/x.json .ci/config/model-invocation-exceptions.json | xargs cp",
-    ),
-    (
-        "python writing the key",
-        "python3 - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('---\\n%s: true\\n---\\n')\nEOF"
-        % (_C, _K),
-    ),
-    ("after cd", "cd .claude/commands && echo '%s: on' >> x.md" % _K),
-    ("inside sh -c", "sh -c \"echo '%s: 1' >> %s\"" % (_K, _C)),
-    ("cp -t names where the copy lands", "cp -t .claude/skills .claude/commands/handoff.md"),
-    # CONTROLS.
-    ("sed -i deleting the key line", "sed -i '/^%s:/d' %s" % (_K, _C)),
-    ("sed -i substituting the key away", "sed -i 's/^%s: true$//' %s" % (_K, _C)),
-    ("echo to the terminal", "echo '%s: true is banned'" % _K),
-    ("grep for the key", "grep -rn '%s' .claude/commands" % _K),
-    ("a heredoc into a doc", "cat > docs/x.md <<'EOF'\n%s: true\nEOF" % _K),
-    (
-        "a commit message heredoc naming the key",
-        "git commit -F - <<'EOF'\nfix: drop %s: true\nEOF" % _K,
-    ),
-    ("a command file without the key", "printf -- '---\\ndescription: x\\n---\\n' > %s" % _C),
-    ("an unrelated redirect", "echo hello > /tmp/out.txt"),
-    ("cp -t copies a command out", "cp -t /tmp .claude/commands/handoff.md"),
-    # The exception list itself.
-    (
-        "a redirect into the exception list",
-        "echo '{}' > .ci/config/model-invocation-exceptions.json",
-    ),
-    ("reading the exception list", "cat .ci/config/model-invocation-exceptions.json"),
-]
-
 
 def _is_target(word, cwd=None, base=None):
     if not word:
@@ -159,14 +105,10 @@ def _is_list(word, prefix="", base=None):
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93, as block_review_file_shell_write reads it). With `clink` a link to `.claude/commands/sub`, `cd clink && ... | tee x.md` and `echo ... > clink/x.md` wrote the key into a command file while no word, and no directory text the walk keeps, spells a command directory: the lexical reading allowed both (rc 0). `base` is the absolute directory the run executes in.
 # Read only for a word short enough to be a path: a heredoc body is not one, and resolving it would only spend system calls.
-_PATH_MAX = 4096
+_PATH_MAX = shellscan.PATH_MAX
 
 
-def _base(here, cwd):
-    """The absolute directory a run in `here` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
-    if not cwd or not os.path.isabs(str(cwd)):
-        return None
-    return os.path.join(str(cwd), str(here)) if here else str(cwd)
+_base = shellscan.run_base
 
 
 def _on_disk(word, base):
@@ -213,60 +155,31 @@ def _reaches_scope(cmd, cwd):
 _LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*)`")
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = functools.partial(_write_rules.literals, pattern=_LITERAL)
+
+
+def _names_scope_or_list(value):
+    return model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2).
-
-    A literal that spells the directory or the list is the precise readings' to judge; this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.2). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
-    """
-
-    def through_link(value):
-        return (
-            isinstance(value, str)
-            and not (
-                model_invocation.names_scope_dir(value) or model_invocation.is_exception_list(value)
-            )
-            and _in_scope_on_disk(value, base)
-        )
-
-    if program is not None:
-        verdict = shellscan.python_writes_to(program, through_link)
-        if verdict is not None:
-            return verdict
-    names = {
-        m.group(1)
-        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
-        if any(through_link(lit) for lit in _literals(m.group(2)))
-    }
-    for line in code.splitlines():
-        if not WRITE_CODE.search(line):
-            continue
-        if any(through_link(lit) for lit in _literals(line)):
-            return True
-        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
-            return True
-    return False
+    """Interpreter code that writes, through a link, into a command or skill directory or the exception list while its text spells none of them: `open('clink/x.md','w')` with `clink` a link into one (review 84fdeff8.2). The shared reading, `_write_rules.code_writes_through_disk`, with this guard's spelling and landing tests."""
+    return _write_rules.code_writes_through_disk(
+        code,
+        spells=_names_scope_or_list,
+        lands=lambda value: _in_scope_on_disk(value, base),
+        write_code=WRITE_CODE,
+        literal=_LITERAL,
+        program=program,
+    )
 
 
-def _operands(argv):
-    """`run.argv` is the ARGUMENTS, without the command name."""
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = shellscan.plain_operands
 
 
 def _run_operands(run, argv):
-    """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8)."""
-    ops = _operands(argv)
-    if run.launch is None or run.launch.launcher != "find":
-        return ops
-    out: list[str] = []
-    for a in ops:
-        out.extend(run.launch.starts if "{}" in a else [a])
-    return out
+    """`_operands`, with a `find -exec` run's `{}` read as the starting points of the find that launched it (`shellscan.find_starts`)."""
+    return shellscan.find_starts(run, _operands(argv))
 
 
 def _lands(source, dest, into):
@@ -330,27 +243,34 @@ def _listed(target_abs):
 _redirects = shellscan.analysis_redirects
 
 
-def _list_write(runs, analysis, cmd, cwd):
-    """A short description of the first write to the exception list itself, or ""."""
+# The `shellscan.write_records` readings that write the exception list through a word of the run: a redirect, a `tee`, a `truncate`, an in-place `sed -i`/`perl -i` (their own option parse, review 3f53e99e.2) and `dd of=` (the output key of `dd`, the one "option" record this guard takes).
+_LIST_WRITES = {
+    "redirect": "a redirect into %(word)s",
+    "append": "a redirect into %(word)s",
+    "tee": "%(name)s on %(word)s",
+    "truncate": "%(name)s on %(word)s",
+    "in-place": "%(name)s on %(word)s",
+}
+
+
+def _list_write(runs, analysis, cmd, cwd, records):
+    """A short description of the first write to the exception list itself, or "". `records` is the chain's one walk (`shellscan.write_records`); the copy and interpreter shapes keep their own readings, and a redirect is also tested here as typed, ahead of the records, which read it expanded."""
     for _op, target in _redirects(analysis):
         if _is_list(target, base=_base(None, cwd)):
             return "a redirect into %s" % target
     for run in runs:
         name = run.name.rsplit("/", 1)[-1]
-        argv = list(run.argv)
         # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), as block_review_file_shell_write reads it.
         here = shellscan.write_directory(run.cwd, cwd)
         base = _base(here, cwd)
-        operands = _run_operands(run, argv)
         prefix = str(here).rstrip("/") + "/" if here else ""
-        on_list = [a for a in operands if _is_list(a, prefix, base)]
-        for target in shellscan.redirect_targets(run):
-            if _is_list(target, prefix, base):
-                return "a redirect into %s" % target
-        # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` are in place.
-        in_place = shellscan.in_place_edit(run) is not None
-        if on_list and (name in ("tee", "truncate") or in_place):
-            return "%s on %s" % (name, on_list[0])
+        for write in records:
+            if write.run is not run or not _is_list(write.word, prefix, base):
+                continue
+            if write.how in _LIST_WRITES:
+                return _LIST_WRITES[write.how] % {"name": name, "word": write.word}
+            if write.how == "option" and name == "dd":
+                return "dd of= the exception list"
         copies = shellscan.run_copies(run, None, cwd)
         if copies is not None:
             sources, dests, into = copies
@@ -358,10 +278,6 @@ def _list_write(runs, analysis, cmd, cwd):
                 for landed in [dest] + [_lands(src, dest, into) for src in sources]:
                     if _is_list(landed, prefix, base):
                         return "%s onto %s" % (name, landed)
-        if name == "dd" and any(
-            a.startswith("of=") and _is_list(a[3:], prefix, base) for a in argv
-        ):
-            return "dd of= the exception list"
         # A script run DIRECTLY by its shebang is the interpreter it names (#7ab88f34, as in block_review_file_shell_write): no interpreter word stands in the command, and the program would otherwise run unread.
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
@@ -396,20 +312,21 @@ def _program(run, cmd, cwd, holds):
     return code, shellscan.python_writes_to(text, holds), kind
 
 
-def _offending(cmd, cwd):
-    """(kind, description) of the first refused write, kind "list" or "flag", or None."""
+def _offending(cmd, cwd, records=None):
+    """(kind, description) of the first refused write, kind "list" or "flag", or None. `records` is the chain's one walk (`shellscan.event_write_records(ev)`, the once-per-Event form of `shellscan.write_records`); without it the walk is made here by `write_records`."""
+    if records is None:
+        records = shellscan.write_records(cmd, cwd)
     analysis = shellscan._analyse(cmd)
     # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
     bodies = shellscan.heredoc_bodies(cmd)
     runs = shellscan.every_run(cmd)
-    listed_write = _list_write(runs, analysis, cmd, cwd)
+    listed_write = _list_write(runs, analysis, cmd, cwd, records)
     if listed_write:
         return "list", listed_write
     written = "\n".join(
         bodies + [a for r in runs if r.name.rsplit("/", 1)[-1] in WRITERS for a in r.argv]
     )
     flagged = model_invocation.flag_in_text(written)
-    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
 
     def redirect_refusal(target, run_cwd, appending, base=None):
         """A refusal for a write of `written` into `target`, or "". A LISTED file overwritten whole is judged by `verdict` on the text written; any other write carrying the key is refused."""
@@ -428,14 +345,10 @@ def _offending(cmd, cwd):
         here = shellscan.write_directory(run.cwd, cwd)
         base = _base(here, cwd)
         operands = _run_operands(run, argv)
-        for target in shellscan.redirect_targets(run):
-            why = redirect_refusal(target, here, target in appends, base)
-            if why:
-                return "flag", why
-        if name == "tee":
-            appending = "-a" in argv or "--append" in argv
-            for target in operands:
-                why = redirect_refusal(target, here, appending, base)
+        # A redirect or a `tee` writes the command's text (`written`), each target as typed and as bash expands it, with its own append flag (`shellscan.write_records`, #7b3f34ae).
+        for write in records:
+            if write.run is run and write.how in ("redirect", "append", "tee"):
+                why = redirect_refusal(write.word, here, write.append, base)
                 if why:
                     return "flag", why
         # In place is sed's or perl's own option parse (review 3f53e99e.2): `sed -Ei`, `sed -ni` and `perl -pi -e` rewrote the key into a command file unrefused. Its scripts join the non-option words, so the scripts read can only grow.
@@ -531,7 +444,7 @@ def run(ev):
         and not _reaches_scope(cmd, cwd)
     ):
         return hookio.ALLOW
-    found = _offending(cmd, cwd)
+    found = _offending(cmd, cwd, shellscan.event_write_records(ev))
     if found is None:
         return hookio.ALLOW
     kind, what = found

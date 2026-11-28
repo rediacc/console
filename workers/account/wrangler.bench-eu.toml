@@ -28,6 +28,8 @@ ENVIRONMENT = "bench"
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
 WEBAUTHN_RP_ID = "bench-eu.rediacc.cloud"
 WEBAUTHN_ORIGIN = "https://bench-eu.rediacc.cloud"
+# No forensics vars: the Worker throws on a partly set store, so bench carries all of them or none. deploy_bench pushes the bucket, region, endpoint and keys
+# together as secrets, or all blank (rediacc_ci/ops/deploy_bench.py).
 # Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
 # empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
 TURNSTILE_ENABLED = "false"
@@ -36,19 +38,15 @@ TURNSTILE_ENABLED = "false"
 # ruling 2026-10-13, "Bench-only email capture in D1"). No route exposes the table. The account
 # server refuses to start with this switch unless ENVIRONMENT is "bench". Never add to a production config.
 EMAIL_CAPTURE_D1 = "true"
-# Stripe Checkout asks for Terms of Service consent on bench, which bills only the sandbox pair
-# (STRIPE_SANDBOX_*), so the PLAN-terms-acceptance X2 checkout reads it here first. Pinned by
-# test_ops_deploy_bench.py, which also refuses the switch in any other account config.
-STRIPE_CONSENT_COLLECTION = "1"
 
 # Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
 # Handled by `scheduled` in src/index.ts, which forwards to the account app in
 # private/account/src/entry/cloudflare.ts. Without this block the handler ships
 # but is never invoked and event_log grows without bound.
 [triggers]
-# Hourly backup maintenance, then the daily audit sweep and reminders.
-# private/account/src/entry/cloudflare.ts dispatches on these exact strings.
-crons = ["17 * * * *", "0 3 * * *"]
+# Hourly backup maintenance and forensics compaction, the daily audit sweep and reminders at 03:00, and the five-minute forensics detector.
+# private/account/src/entry/cloudflare.ts dispatches on these three exact strings.
+crons = ["17 * * * *", "0 3 * * *", "*/5 * * * *"]
 
 [observability]
 enabled = true
@@ -93,6 +91,12 @@ bucket_name = "configs-bench"
 binding = "BACKUP_BUCKET"
 bucket_name = "backups-bench"
 
+# Console audit objects, one per event (private/account/src/services/audit-store.ts; agent/plans/PLAN-console-audit-r2.md D3). The bucket is an
+# operator/provision step with a 730-day expiry rule: create it before deploying with this binding.
+[[r2_buckets]]
+binding = "AUDIT_BUCKET"
+bucket_name = "audit-bench"
+
 # The web console reaches the executor proxy through this binding, not a public fetch: both Workers
 # share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
 # EXECUTOR_MODE as a secret only after proxy-bench passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
@@ -113,6 +117,13 @@ service = "signer-bench-eu"
 entrypoint = "LicenseSigner"
 props = { tier = "shared", region = "eu" }
 
+# Pushed agent-grant revocation (agent/plans/PLAN-rmcp-agent-grants.md AG-S5): the account reaches the proxy Worker's GrantRevoker
+# entrypoint through this binding, so the proxy Worker must exist first, as for EXECUTOR.
+[[services]]
+binding = "AGENT_GRANT_REVOKER"
+service = "proxy-bench"
+entrypoint = "GrantRevoker"
+
 # Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
 # rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
 # per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
@@ -129,15 +140,36 @@ max_batch_size = 10
 max_retries = 5
 dead_letter_queue = "backup-replicate-bench-dlq"
 
+# Forensics compaction (private/account/src/entry/cloudflare.ts; PLAN-forensics-shipping.md D5): the hourly and 03:00 crons enqueue one message per
+# machine-hour and machine-day, and the `queue` handler in src/index.ts routes the `forensics-compact-` prefix to the account app. The queue is a provision
+# step and must exist before the first deploy of this block (`wrangler queues create forensics-compact-bench`).
+[[queues.producers]]
+binding = "FORENSICS_COMPACT_QUEUE"
+queue = "forensics-compact-bench"
+
+[[queues.consumers]]
+queue = "forensics-compact-bench"
+max_batch_size = 10
+max_retries = 5
+
 [[durable_objects.bindings]]
 name = "BACKUP_REPLICATOR"
 class_name = "BackupReplicator"
+
+# The per-org AI credit ledger (workers/account/src/credit-ledger.ts, PLAN-console-ai-credits.md D4): the proxy reaches it only through its CreditLedgerGate entrypoint.
+[[durable_objects.bindings]]
+name = "CREDIT_LEDGER"
+class_name = "CreditLedger"
 
 # Each Worker script has its own Durable Object namespace, so this migration applies afresh to
 # every target.
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["BackupReplicator"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["CreditLedger"]
 
 # Telemetry mirror (PLAN-d1-scaling Z3): EventLogService writes telemetry event types to this Analytics
 # Engine dataset as well as D1. The portal's reads use the SQL API with ACCOUNT_AE_READ_TOKEN.

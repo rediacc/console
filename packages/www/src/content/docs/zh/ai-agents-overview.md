@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: zh
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 说真的，`rdc` 从设计之初就考虑到了代理场景。Claude Code、Cursor、Cline：任何在子 shell 中调用 `rdc` 的 AI 助手，都能获得结构化 JSON 输出、机器可读的错误信息，以及自主管理 Rediacc 基础设施所需的安全防护机制。下面介绍集成的具体方式。
@@ -77,7 +77,7 @@ Rediacc 的架构天然适合代理使用：
 
 ## 安全与防护机制
 
-CLI 对代理和终端前的人类操作员采用不同的处理方式。敏感操作需要提供已知当前状态的证明（`--current` 标志），交互式编辑器流程默认拒绝执行，每次拒绝都会记录审计日志。[AI 代理安全与防护机制](/zh/docs/ai-agents-safety)文档涵盖完整的权限防火墙表、知识门控模型、`REDIACC_ALLOW_CONFIG_EDIT` 作用域覆盖，以及哈希链式审计日志的详细说明。
+CLI 对代理和终端前的人类操作员采用不同的处理方式。敏感操作需要提供当前状态的证明（`--current` 标志），整份配置的编辑会被拒绝且没有任何覆盖方式，每次拒绝都会记录审计日志。[AI 代理安全与防护机制](/zh/docs/ai-agents-safety)文档涵盖完整的权限防火墙表、知识门控模型、主动授权与策略上限缺一不可的规则，以及哈希链式审计日志的详细说明。
 
 ## 后续步骤
 

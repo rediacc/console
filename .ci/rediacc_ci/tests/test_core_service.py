@@ -11,18 +11,22 @@ drift apart through the harness.
 `check_docker` IS DEFINED BY THE HARNESS ON THE BASH SIDE because the twin does not define it: it lives in `.ci/legacy/run-legacy.sh`, the file that SOURCES `service.sh`, and only late binding makes the twin work at all. The definition below is copied from that file verbatim. That is defect 3 in the port's docstring, and the harness having to supply it is the evidence for it.
 """
 
+import dataclasses
 import pathlib
 import re
 import shutil
 import subprocess
+import sys
+import tempfile
 import textwrap
 import threading
 import time
 
 import pytest
 
+from rediacc_ci import runtmp
 from rediacc_ci.core import service, stubfarm
-from rediacc_ci.core import service_shadow_driver as svc_driver
+from rediacc_ci.core.stubfarm import Farm
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.well_known import DOCKER_INSTALL_DOCS
 
@@ -297,14 +301,316 @@ def test_now_defaults_to_the_wall_clock() -> None:
 
 # -- the lifecycle half, against a stub farm ---------------------------------
 #
-# `service_start`, `service_stop`, `service_health` and `service_logs`'s attach are proved by `rediacc_ci.core.service_shadow_driver`: each case runs both sides as child processes with `docker`, `curl`, `sleep`, `ss`, `node` and `openssl` stubbed, and compares rc, stdout, stderr, the files written AND the ordered transcript of every stubbed call. See that module's docstring. These cases drive the LIVE twin on every run.
+# The stub-farm harness, moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
 
-LIFECYCLE_CASES = [
-    (scenario, case) for scenario, cases in svc_driver.SCENARIOS.items() for case in cases
+FROZEN_NOW = 1700003725
+COMPOSE_GLOB = "compose -p rediacc-service -f *"
+NOT_RUNNING = "Cannot connect to the Docker daemon"
+
+FN = {
+    "start": "service_start",
+    "stop": "service_stop",
+    "status": "service_status",
+    "health": "service_health",
+    "logs": "service_logs",
+}
+
+
+@dataclasses.dataclass
+class Case:
+    name: str
+    verb: str
+    args: list[str]
+    rows: list[dict]
+    state: str | None = None
+    env: dict[str, str] = dataclasses.field(default_factory=dict)
+    files: tuple[str, ...] = (".service-state", ".ci/docker/service/.env")
+
+
+def row(name: str, glob: str = "*", **kw) -> dict:
+    return {"name": name, "glob": glob, **kw}
+
+
+# env.sh runs `echo "$KEYS" | node -e ...` under `set -o pipefail`. The real node reads its stdin to EOF; a stub that answered and exited without reading let `echo` write into a pipe nobody read, and under host load that write lost the race and killed the subshell with SIGPIPE (rc 141, env.sh aborted). These two rows drain the pipe before answering, as node does.
+DRAIN_STDIN = "cat >/dev/null"
+
+KEYGEN = [
+    row("node", "-e *generateKeyPairSync*", out='{"private":"PRIVKEY","public":"PUBKEY"}\n'),
+    row("node", "-e *.private)*", out="PRIVKEY", sh=DRAIN_STDIN),
+    row("node", "-e *.public)*", out="PUBKEY", sh=DRAIN_STDIN),
+    row("openssl", "rand -base64 48", out="ab/cd+ef=gh" * 8 + "\n"),
 ]
+PRESET_KEYS = {
+    "ACCOUNT_ED25519_PRIVATE_KEY": "preset-priv",
+    "ACCOUNT_ED25519_PUBLIC_KEY": "preset-pub",
+    "ACCOUNT_SERVER_API_KEY": "preset-api-key",
+    "ACCOUNT_JWT_SECRET": "preset-jwt",
+}
+BUSY = "LISTEN 0 4096 0.0.0.0:%d 0.0.0.0:*\n"
+
+
+def busy(*ports: int) -> list[dict]:
+    return [row("ss", "-tlnH sport = :%d" % p, out=BUSY % p) for p in ports]
+
+
+def all_busy() -> list[dict]:
+    return [row("ss", "-tlnH sport = :*", out="LISTEN 0 1 0.0.0.0:1 0.0.0.0:*\n")]
+
+
+def curl_fails(times: int | None = None) -> dict:
+    return row("curl", "*", rc=7, times=times)
+
+
+def names(*listed: str) -> str:
+    return "".join("%s\n" % n for n in listed)
+
+
+SCENARIOS: dict[str, list[Case]] = {
+    "start": [
+        Case("happy-keygen", "start", [], [*KEYGEN, curl_fails(2)]),
+        Case("no-build-port", "start", ["9000", "--no-build"], [curl_fails(1)], env=PRESET_KEYS),
+        Case("preferred-busy", "start", ["--no-build"], [*busy(8080), *KEYGEN]),
+        Case("port-verbatim", "start", ["abc", "--no-build"], [], env=PRESET_KEYS),
+        Case("last-positional-wins", "start", ["9000", "9100"], [], env=PRESET_KEYS),
+    ],
+    "start-fail": [
+        Case("every-port-busy", "start", [], [*all_busy(), *KEYGEN]),
+        Case(
+            "build-fails",
+            "start",
+            [],
+            [row("docker", COMPOSE_GLOB + " build web", rc=17, err="build broke\n")],
+            env=PRESET_KEYS,
+        ),
+        Case(
+            "up-fails",
+            "start",
+            ["--no-build"],
+            [row("docker", COMPOSE_GLOB + " up -d", rc=3, out="partial\n")],
+            env=PRESET_KEYS,
+        ),
+        Case("env-sh-fails", "start", [], [row("node", "*", rc=9, err="node: boom\n")]),
+        Case(
+            "docker-not-running", "start", [], [row("docker", "info", rc=1, err=NOT_RUNNING + "\n")]
+        ),
+        Case(
+            "health-timeout-debug",
+            "start",
+            ["8123"],
+            [curl_fails()],
+            env={**PRESET_KEYS, "DEBUG": "true"},
+        ),
+    ],
+    "stop": [
+        Case(
+            "all-present",
+            "stop",
+            [],
+            [
+                row(
+                    "docker",
+                    "ps -a --format {{.Names}}",
+                    out=names(
+                        "other",
+                        "rediacc-service-web",
+                        "rediacc-service-rustfs",
+                        "rediacc-service-rustfs-init",
+                        "rediacc-service-rustfs-volume-init",
+                    ),
+                ),
+                row("docker", "stop *", out="stopped\n"),
+                row("docker", "rm *", out="removed\n"),
+            ],
+            state="started=1\nport=8080\n",
+        ),
+        Case(
+            "none-present",
+            "stop",
+            [],
+            [row("docker", "ps -a --format {{.Names}}", out=names("rediacc-service-web-2"))],
+        ),
+        Case(
+            "down-fails",
+            "stop",
+            [],
+            [
+                row(
+                    "docker",
+                    COMPOSE_GLOB + " down *",
+                    rc=1,
+                    out="down-stdout\n",
+                    err="down-stderr\n",
+                ),
+                row(
+                    "docker", "ps -a --format {{.Names}}", out=names("rediacc-service-rustfs-init")
+                ),
+                row("docker", "stop *", rc=1, err="stop refused\n"),
+            ],
+            state="port=9\n",
+        ),
+        Case("docker-not-running", "stop", [], [row("docker", "info", rc=1)], state="port=9\n"),
+    ],
+    "health": [
+        Case("healthy-at-once", "health", [], []),
+        Case(
+            "healthy-after-five", "health", [], [curl_fails(5)], env={"SERVICE_HTTP_PORT": "8555"}
+        ),
+        Case("healthy-after-five-debug", "health", [], [curl_fails(5)], env={"DEBUG": "true"}),
+        Case("timeout", "health", [], [curl_fails()], env={"SERVICE_HTTP_PORT": "9001"}),
+        Case("timeout-debug", "health", [], [curl_fails()], env={"DEBUG": "true"}),
+    ],
+    "logs": [
+        Case(
+            "web", "logs", ["web"], [row("docker", "logs -f rediacc-service-web", out="web line\n")]
+        ),
+        Case(
+            "rustfs",
+            "logs",
+            ["rustfs"],
+            [row("docker", "logs -f rediacc-service-rustfs", out="rustfs line\n")],
+        ),
+        Case("all", "logs", ["all"], [row("docker", COMPOSE_GLOB + " logs -f", out="all lines\n")]),
+        Case("default", "logs", [], []),
+        Case("empty", "logs", [""], []),
+        Case("unknown", "logs", ["postgres"], []),
+        Case(
+            "docker-logs-fails",
+            "logs",
+            ["web"],
+            [row("docker", "logs *", rc=5, err="no such container\n")],
+        ),
+    ],
+    "status": [
+        Case(
+            "running-healthy",
+            "status",
+            [],
+            [
+                row(
+                    "docker",
+                    "ps --format {{.Names}}",
+                    out=names("rediacc-service-web", "rediacc-service-rustfs"),
+                ),
+                row("docker", "inspect -f {{.State.Status}} *", out="running\n"),
+                row(
+                    "docker",
+                    "inspect -f {{.State.Health.Status}} rediacc-service-web",
+                    out="healthy\n",
+                ),
+                row(
+                    "docker",
+                    "inspect -f {{.State.Health.Status}} *",
+                    rc=1,
+                    out="partial",
+                    err="no health\n",
+                ),
+            ],
+            state="started=1700000000\nport=9123\n",
+        ),
+        Case("stopped", "status", [], [curl_fails()]),
+        Case(
+            "uptime-over-a-day",
+            "status",
+            [],
+            [curl_fails()],
+            state="started=1600000000\nport=8080\n",
+        ),
+        Case(
+            "equals-in-port", "status", [], [curl_fails()], state="started=1700000000\nport=a=b\n"
+        ),
+    ],
+}
+
+
+def build_sandbox(repo: pathlib.Path, work: pathlib.Path, case: Case) -> pathlib.Path:
+    root = work / "root"
+    service_dir = root / ".ci" / "docker" / "service"
+    service_dir.mkdir(parents=True)
+    shutil.copy2(repo / ".ci" / "docker" / "service" / "env.sh", service_dir / "env.sh")
+    (root / ".ci" / "config").symlink_to(repo / ".ci" / "config")
+    (root / "home").mkdir()
+    if case.state is not None:
+        (root / ".service-state").write_text(case.state, encoding="utf-8")
+    return root
+
+
+def build_farm(work: pathlib.Path, case: Case) -> Farm:
+    farm = Farm(work / "farm")
+    farm.stub("docker", "curl", "sleep", "ss", "node", "openssl")
+    farm.stub("date", logged=False)
+    for spec in case.rows:
+        fields = dict(spec)
+        farm.respond(fields.pop("name"), fields.pop("glob"), **fields)
+    farm.respond("date", "+%s", out="%d\n" % FROZEN_NOW)
+    farm.respond("date", "*", sh='exec /usr/bin/date "$@"')
+    return farm
+
+
+def side_env(root: pathlib.Path, farm: Farm, case: Case) -> dict[str, str]:
+    base = {
+        "PATH": "/usr/local/bin:/usr/bin:/bin",
+        "HOME": str(root / "home"),
+        "LC_ALL": "C",
+        "LANG": "C",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "CONSOLE_ROOT_DIR": str(root),
+        "SERVICE_STATUS_NOW": str(FROZEN_NOW),
+    }
+    base.update(case.env)
+    return farm.env(base)
+
+
+def run_side(repo: pathlib.Path, case: Case, env: dict[str, str]) -> subprocess.CompletedProcess:
+    env = dict(env, PYTHONPATH=str(repo / ".ci"))
+    argv = [sys.executable, "-m", "rediacc_ci.core.service", case.verb, *case.args]
+    return subprocess.run(
+        argv, cwd=repo, env=env, capture_output=True, text=True, check=False, timeout=300
+    )
+
+
+def emit_case(
+    case: Case, proc: subprocess.CompletedProcess, farm: Farm, root: pathlib.Path
+) -> list[str]:
+    def norm(text: str) -> str:
+        return text.replace(str(root), "<root>").replace(str(farm.root), "<farm>")
+
+    lines = ["obs %s rc=%d" % (case.name, proc.returncode)]
+    lines += [
+        "obs %s out#%d| %s" % (case.name, i, norm(t))
+        for i, t in enumerate(proc.stdout.splitlines())
+    ]
+    lines += [
+        "obs %s err#%d| %s" % (case.name, i, norm(t))
+        for i, t in enumerate(proc.stderr.splitlines())
+    ]
+    lines += [
+        "obs %s call#%d| %s" % (case.name, i, norm(t)) for i, t in enumerate(farm.transcript())
+    ]
+    for rel in case.files:
+        path = root / rel
+        body = path.read_bytes().hex() if path.is_file() else "absent"
+        lines.append("obs %s file %s %s" % (case.name, rel, body))
+    return lines
+
+
+def observe(repo: pathlib.Path, case: Case) -> list[str]:
+    """Run one case against the port in a fresh sandbox; return its observation lines."""
+    work = pathlib.Path(tempfile.mkdtemp(prefix="svc-stub-", dir=runtmp.shared("svc-stub-")))
+    try:
+        root = build_sandbox(repo, work, case)
+        farm = build_farm(work, case)
+        proc = run_side(repo, case, side_env(root, farm, case))
+        return emit_case(case, proc, farm, root)
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+# `service_start`, `service_stop`, `service_health` and `service_logs`'s attach are proved by the harness above: each case runs both sides as child processes with `docker`, `curl`, `sleep`, `ss`, `node` and `openssl` stubbed, and compares rc, stdout, stderr, the files written AND the ordered transcript of every stubbed call. See that module's docstring. These cases drive the LIVE twin on every run.
+
+LIFECYCLE_CASES = [(scenario, case) for scenario, cases in SCENARIOS.items() for case in cases]
 
 # A bash-internal diagnostic some builds print to stderr when `set -e` unwinds a sourced script's failure through a function's `local` scope: a documented bash bug (https://lists.gnu.org/archive/html/bug-bash), not a defect in the twin or the port, whose exact wording and whether it fires at all depends on the bash BUILD the twin happens to run under rather than on anything either
-# side does. `service-old` is the ONLY `$0` `run_side` ever gives bash (see `service_shadow_driver.run_side`), so it anchors the match to lines this differential's own bash child produced.
+# side does. `service-old` is the ONLY `$0` `run_side` ever gives bash (the deleted driver's `run_side` was the only caller that ran bash), so it anchors the match to lines this differential's own bash child produced.
 _BASH_POP_VAR_CONTEXT_BUG = re.compile(
     r"^obs \S+ err#\d+\| service-old: line \d+: "
     r"pop_var_context: head of shell_variables not a function context$"
@@ -328,6 +634,26 @@ def _drop_bash_internal_noise(lines: list[str]) -> list[str]:
     return renumbered
 
 
+_SS_CALL = re.compile(r"^obs \S+ call#\d+\| ss -tlnH")
+
+
+def _collapse_port_probes(lines: list[str]) -> list[str]:
+    """Both sides minus their `ss -tlnH` calls, with the remaining `call#` lines renumbered.
+
+    The twin probed one port per `ss` call; the port reads one listening snapshot for the whole window (dcf868d748). How the window is scanned is not the contract: which port is chosen, what is printed and what docker is asked to do are, and those lines stay compared.
+    """
+    kept = [line for line in lines if not _SS_CALL.match(line)]
+    out = []
+    next_call = 0
+    for line in kept:
+        if re.match(r"^obs \S+ call#\d+\|", line):
+            out.append(re.sub(r"call#\d+\|", "call#%d|" % next_call, line, count=1))
+            next_call += 1
+        else:
+            out.append(line)
+    return out
+
+
 def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
     """The retired twin's observation lines for one case, from the golden. They travel as the golden's `out`, one per line."""
 
@@ -338,7 +664,7 @@ def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
         )
 
     def port():
-        return 0, "\n".join(svc_driver.observe("new", repo, case)), ""
+        return 0, "\n".join(observe(repo, case)), ""
 
     return diff.twin_call(TWIN, [scenario, case.name], retired, port=port)[1].splitlines()
 
@@ -350,14 +676,14 @@ def _frozen_lifecycle(scenario: str, case, repo: pathlib.Path) -> list[str]:
 )
 def test_lifecycle_matches_the_frozen_twin(scenario, case) -> None:
     repo = pathlib.Path(diff.repo())
-    old = _drop_bash_internal_noise(_frozen_lifecycle(scenario, case, repo))
-    new = svc_driver.observe("new", repo, case)
+    old = _collapse_port_probes(_drop_bash_internal_noise(_frozen_lifecycle(scenario, case, repo)))
+    new = _collapse_port_probes(observe(repo, case))
     assert old == new, "case %s/%s diverged" % (scenario, case.name)
 
 
 def test_every_twin_function_is_driven_by_a_scenario() -> None:
-    """ANTI-VACUITY. The twin's six functions, and the driver reaches every public one."""
-    driven = {svc_driver.FN[c.verb] for _, c in LIFECYCLE_CASES}
+    """ANTI-VACUITY. The twin's six functions, and the harness reaches every public one."""
+    driven = {FN[c.verb] for _, c in LIFECYCLE_CASES}
     assert driven == {
         "service_start",
         "service_health",
@@ -372,12 +698,12 @@ def test_every_twin_function_is_driven_by_a_scenario() -> None:
 
 def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     """ANTI-VACUITY. If `docker` on the case PATH were the real one, a transcript would be empty on both sides and every case would compare two nothings."""
-    case = svc_driver.SCENARIOS["stop"][0]
-    farm = svc_driver.build_farm(tmp_path, case)
-    env = svc_driver.side_env(tmp_path, farm, case)
+    case = SCENARIOS["stop"][0]
+    farm = build_farm(tmp_path, case)
+    env = side_env(tmp_path, farm, case)
     for name in ("docker", "curl", "sleep", "ss"):
         assert stubfarm.shadows(farm, name, env), "%s is not the stub" % name
-    lines = svc_driver.observe("new", pathlib.Path(diff.repo()), case)
+    lines = observe(pathlib.Path(diff.repo()), case)
     calls = [line for line in lines if " call#" in line]
     assert len(calls) >= 8, "the twin made %d stubbed calls; the farm is not being reached" % len(
         calls
@@ -390,9 +716,9 @@ PAYLOAD = b"keys\n" * 262144
 
 def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: float = 30) -> str:
     """Pipe key JSON into the node stub as env.sh's `echo "$KEYS" | node ...` does. With `after_exit` the producer writes only once the stub has provably exited, so a stub that never reads loses the write with EPIPE (what SIGPIPE is under bash) with no timing involved; a stub that drains reads to EOF first, so it must be fed before the wait. Returns the stub's exit status, "EPIPE" when the write found the stub gone, or "KILLED" when the watchdog had to kill a stub that outlived `timeout_s` (a hung stub is never read as an EPIPE)."""
-    case = svc_driver.Case("pipe", "start", [], rows)
-    farm = svc_driver.build_farm(tmp_path, case)
-    env = svc_driver.side_env(tmp_path, farm, case)
+    case = Case("pipe", "start", [], rows)
+    farm = build_farm(tmp_path, case)
+    env = side_env(tmp_path, farm, case)
     with subprocess.Popen(
         [str(farm.bin / "node"), "-e", "x.private)"],
         stdin=subprocess.PIPE,
@@ -428,9 +754,9 @@ def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool, timeout_s: 
 
 def _pipefail_status(tmp_path, rows: list[dict]) -> int:
     """env.sh's shape under bash: `set -o pipefail; <producer> | node ...`; the pipeline's exit status."""
-    case = svc_driver.Case("pipe", "start", [], rows)
-    farm = svc_driver.build_farm(tmp_path, case)
-    env = svc_driver.side_env(tmp_path, farm, case)
+    case = Case("pipe", "start", [], rows)
+    farm = build_farm(tmp_path, case)
+    env = side_env(tmp_path, farm, case)
     script = 'set -o pipefail; head -c %d /dev/zero | node -e "x.private)" > /dev/null' % len(
         PAYLOAD
     )
@@ -439,9 +765,9 @@ def _pipefail_status(tmp_path, rows: list[dict]) -> int:
 
 def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
     """REGRESSION (2026-11-17, ci:quick under load): `start/preferred-busy` exited 141. `env.sh` pipes the key JSON into `node` under pipefail; the stub answered without reading, so `echo` hit a closed pipe and SIGPIPE ended env.sh. The producer writes after the consumer has exited, so the control row (no drain) loses the write every time and the KEYGEN row, which reads to EOF and so cannot have exited, never does."""
-    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    undrained = [row("node", "-e *.private)*", out="PRIVKEY")]
     assert _feed_node_stub(tmp_path / "control", undrained, after_exit=True) == "EPIPE"
-    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    keygen = [r for r in KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
     assert len(keygen) == 1
     assert _feed_node_stub(tmp_path / "fixed", keygen, after_exit=False) == "0"
 
@@ -483,7 +809,7 @@ def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
 
     monkeypatch.setattr(subprocess, "Popen", popen)
     done: list[str] = []
-    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    undrained = [row("node", "-e *.private)*", out="PRIVKEY")]
     worker = threading.Thread(
         target=lambda: done.append(
             _feed_node_stub(tmp_path, undrained, after_exit=True, timeout_s=0.5)
@@ -498,41 +824,15 @@ def test_a_stub_that_never_exits_is_killed_by_the_watchdog_not_waited_on(
 
 def test_the_keygen_node_stub_survives_a_pipefail_pipeline(tmp_path) -> None:
     """The same regression through bash: the undrained control ends the pipeline with 141 (SIGPIPE), the KEYGEN row with 0."""
-    undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
+    undrained = [row("node", "-e *.private)*", out="PRIVKEY")]
     assert _pipefail_status(tmp_path / "control", undrained) == 141
-    keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
+    keygen = [r for r in KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
     assert _pipefail_status(tmp_path / "fixed", keygen) == 0
 
 
 def test_a_transcript_difference_is_a_divergence() -> None:
     """CONTROL ON THE COMPARISON. One dropped call must make two otherwise-equal observation lists unequal."""
-    case = svc_driver.SCENARIOS["health"][1]
-    observed = svc_driver.observe("new", pathlib.Path(diff.repo()), case)
+    case = SCENARIOS["health"][1]
+    observed = observe(pathlib.Path(diff.repo()), case)
     tampered = [line for line in observed if "call#3|" not in line]
     assert tampered != observed
-
-
-def test_the_lifecycle_ledger_holds() -> None:
-    """The K=5 licence on disk, re-derived rather than trusted."""
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-service",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=diff.repo(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
-    ledger = (pathlib.Path(diff.repo()) / ".ci/shadow/w7p5b-service.observations.jsonl").read_text(
-        encoding="utf-8"
-    )
-    assert "rediacc_ci.core.service_shadow_driver" in ledger

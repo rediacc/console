@@ -16,9 +16,9 @@ import { assertHostedBackupAccount } from '../services/account/free-license.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import type { OutputFormat } from '../types/index.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 import type { BackupManifestsResponse } from './backup-storage.js';
 import { lineageOf } from './backup-storage-browse.js';
 
@@ -141,7 +141,7 @@ async function resolvePurgeTarget(repoRef: string): Promise<PurgeTarget> {
   if (!repo) {
     throw new ValidationError(t('commands.backup.purge.notFound', { name: repoKey }));
   }
-  await assertCommandPolicy(CMD.BACKUP_PURGE, repoKey);
+  await enforceResolvedTarget(CMD.BACKUP_PURGE, { ref: repoKey });
   // A fork's lineage is its parent's: purging it would take the parent's backups with it.
   if (repo.grandGuid && repo.grandGuid !== repo.repositoryGuid) {
     throw new ValidationError(t('commands.backup.purge.forkRefused', { name: repoKey }));
@@ -166,7 +166,7 @@ async function resolveLineageTarget(lineage: string, cancel: boolean): Promise<P
       t('commands.backup.purge.lineageOwned', { lineage, name: owner.name })
     );
   }
-  await assertCommandPolicy(CMD.BACKUP_PURGE, undefined, lineage);
+  await enforceResolvedTarget(CMD.BACKUP_PURGE, { ref: lineage });
   return { repoKey: lineage, lineage, byLineage: true };
 }
 

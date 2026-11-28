@@ -42,6 +42,10 @@ export type MutationScope = (typeof MUTATION_SCOPES)[number];
 export const ORG_ROLES = ['owner', 'admin', 'member'] as const;
 export type PolicyOrgRole = (typeof ORG_ROLES)[number];
 
+/** AI assistant autonomy modes an org or team policy can disable. `ask` is always available. */
+export const AI_DISABLEABLE_MODES = ['auto', 'skip'] as const;
+export type AiDisableableMode = (typeof AI_DISABLEABLE_MODES)[number];
+
 /**
  * One tier of permissions. Every field is optional: an omitted field means
  * "this tier says nothing about that dimension", which lets a user rule refine
@@ -63,15 +67,37 @@ export const PolicyRuleSchema = z.object({
   machines: z.array(z.string().min(1)).optional(),
   /** Repo-name globs this rule is confined to. Omitted means every repo. */
   repos: z.array(z.string().min(1)).optional(),
-  /** Permit operations targeting a grand (root) repo. Omitted means no. */
-  allowGrandRepos: z.boolean().optional(),
+  /**
+   * Permit operations targeting a grand (root) repo: `true` for every grand repo (the same as
+   * `['*']`), or a list of repo-name globs matched with the `commands` matcher. Omitted or `false`
+   * means no.
+   */
+  allowGrandRepos: z.union([z.boolean(), z.array(z.string().min(1))]).optional(),
   /** Permit cluster lifecycle operations. Omitted means no. */
   allowClusterOps: z.boolean().optional(),
   /** Mutation classes permitted. Omitted means mutations are unrestricted. */
   mutationScopes: z.array(z.enum(MUTATION_SCOPES)).optional(),
+  /**
+   * AI assistant autonomy modes this tier disables. Omitted means none. Across the org ceiling and a
+   * team policy the lists union (`disabledAiModes` in merge.ts), so a team only disables more.
+   */
+  aiModesDisabled: z.array(z.enum(AI_DISABLEABLE_MODES)).optional(),
 });
 type PolicyRule = z.infer<typeof PolicyRuleSchema>;
+
 export type { PolicyRule };
+
+/** The keys of a rule, which an org policy may lock against team policies (`locked`). */
+export const POLICY_RULE_KEYS = [
+  'commands',
+  'machines',
+  'repos',
+  'allowGrandRepos',
+  'allowClusterOps',
+  'mutationScopes',
+  'aiModesDisabled',
+] as const satisfies readonly (keyof PolicyRule)[];
+export type PolicyRuleKey = (typeof POLICY_RULE_KEYS)[number];
 
 /**
  * The whole policy for one organization.
@@ -85,6 +111,13 @@ export const PolicyDocumentSchema = z.object({
   defaults: PolicyRuleSchema,
   teams: z.record(z.string().min(1), PolicyRuleSchema).optional(),
   users: z.record(z.string().min(1), PolicyRuleSchema).optional(),
+  /**
+   * Org policy only: rule keys a team policy may not set. A team policy that sets a locked key
+   * keeps it in storage (so the editor can show it) and `mergePolicies` (merge.ts) ignores it and
+   * reports it. A `locked` list inside a team policy is itself ignored and reported.
+   */
+  locked: z.array(z.enum(POLICY_RULE_KEYS)).optional(),
 });
 type PolicyDocument = z.infer<typeof PolicyDocumentSchema>;
+
 export type { PolicyDocument };

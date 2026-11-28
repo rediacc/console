@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.delete_r2_channel` against its twin `.ci/scripts/deploy/delete-r2-channel.sh`.
 
-A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches R2: the fake logs its exact argv and answers from the environment, and every case pins a fixture bucket, endpoint and credential, so even a bypassed fake would not name a real bucket. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked
+A RECORDING FAKE `aws` ON A SCRATCH PATH. Nothing here reaches R2: the fake logs its exact argv and answers from the environment, and every case pins a fixture bucket, endpoint and credential, so even a bypassed fake would not name a real bucket. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked
 parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE EVIDENCE HERE, MORE THAN THE STREAMS, and the fake is built to make that true rather than to hide it: its stdout line is CONSTANT, not derived from the prefix it was handed. So a port that deleted `s3://bucket/cli/pr-1_promoted/` instead of `s3://bucket/cli/pr-1-promoted/` would produce identical stdout, identical stderr and an identical exit code, and only the

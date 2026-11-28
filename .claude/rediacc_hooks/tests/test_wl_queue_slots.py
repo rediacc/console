@@ -1,6 +1,6 @@
-"""Queued writer work against free writer slots, and an honest cap estimate (agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and R.6).
+"""Queued writer work, and an honest live-writer estimate (agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and R.6).
 
-R.5. Every `worker:queue` item read as a lease on a finished worker the moment one slot was free: at 15:08:58 on 2026-09-24 a block carried 15 "a slot is free now: start it" lines for 1 free slot, and at 13:34 the lead was forced to fill a slot it was holding for a writer about to be spawned. Queued items now have their own key naming only the K oldest, and ONE `HOLD_FOR:#<id>` reservation may hold a slot.
+R.5. Every `worker:queue` item read as a lease on a finished worker: at 15:08:58 on 2026-09-24 a block carried 15 "a slot is free now: start it" lines under roster-dead. Queued items have their own key, `queue-slot`. With no writer limit (agent/plans/PLAN-unlimited-writers.md) the key names every queued item no live plan holds, however many writers run, and the one-slot `HOLD_FOR:#<id>` reservation went with the slots.
 
 R.6. The spawn guard counted a writer that had finished (15:08:28, a9130421): its transcript had already received its shell's `<task-id>` notification, yet `shell_waiters` still called it a waiter because the event listed that shell. And the estimate trusted the previous Stop event even after the harness's completion notification reached the lead.
 
@@ -22,8 +22,10 @@ from rediacc_hooks.tests.test_wl_roster import (
     W2,
     W3,
     W4,
+    W5,
     backdate,
     mk_sub,
+    pad,
     plant_lease,
     plant_shell_wait,
     subagents_dir,
@@ -32,11 +34,13 @@ from rediacc_hooks.tests.test_wl_roster import (
 
 
 def three_writers(fix) -> None:
+    """Three of W1..W4 plus the `pad` crowd: thirty-three live writers, past the old cap of 25."""
     fix.brief_now()
     fix.hand_now()
+    pad(fix)
     for i, aid in enumerate((W1, W2, W3)):
         mk_sub(fix, aid, "general-purpose", 1)
-        plant_lease(fix, "cap%d" % i, aid)
+        plant_lease(fix, "live%d" % i, aid)
 
 
 def queue(fix, count: int) -> list[str]:
@@ -47,35 +51,38 @@ def queue(fix, count: int) -> list[str]:
     return ids
 
 
-# ---- R.5 (a): only the K oldest queued items are named ------------------------------------------
+# ---- R.5 (a): every queued item no plan holds is named, whatever the crowd --------------------------
 
 
-def test_r5a_one_free_slot_names_one_queued_item(wl):
-    """CONTROL: before R.5 the stop carried twelve "start it" lines under roster-dead for one free slot."""
+def test_r5a_every_queued_item_nothing_holds_is_named_under_its_own_key(wl):
+    """CONTROL: before R.5 the stop carried "start it" lines under roster-dead, and before agent/plans/PLAN-unlimited-writers.md a full cap named none."""
     three_writers(wl)
     ids = queue(wl, 12)
     v = verdict(wl)
-    assert v["queue_start"] == [ids[0]], v.get("queue_start")
+    assert v["queue_start"] == ids, v.get("queue_start")
     assert v["leased_dead"] == [], v["leased_dead"]
     wl.say("working\n\n## Remaining\n- the queue")
     got = wl.run()
     assert "a slot is free now: start it" not in got.out, got.out[:1500]
-    assert "1 slot(s) free, 12 queued: start #q00." in got.out, got.out[:1500]
-    for later in ids[1:]:
-        assert "#%s" % later not in got.out.split("QUEUED WORK", 1)[1][:400], got.out[:1500]
+    assert "QUEUED WORK NOTHING HOLDS: 12 of 12 queued item(s)" in got.out, got.out[:1500]
+    assert "start #q00, #q01," in got.out, got.out[:1500]
 
 
-def test_r5a_inverse_a_full_cap_names_no_queued_item(wl):
+def test_r5a_inverse_one_more_writer_still_names_the_whole_queue(wl):
+    """The old full-cap case, one planted writer added: the count of live writers no longer hides a queued item."""
     three_writers(wl)
     mk_sub(wl, W4, "general-purpose", 1)
-    plant_lease(wl, "cap3", W4)
-    queue(wl, 12)
+    plant_lease(wl, "live3", W4)
+    mk_sub(wl, W5, "general-purpose", 1)
+    plant_lease(wl, "live4", W5)
+    ids = queue(wl, 12)
     v = verdict(wl)
-    assert v["queue_start"] == [], v["queue_start"]
-    assert v["state"] != "DISHONEST", v
+    assert len(v["writers"]) == 35, v["writers"]
+    assert v["queue_start"] == ids, v["queue_start"]
+    assert v["state"] == "DISHONEST", v["state"]
 
 
-# ---- R.5 (b): one HOLD_FOR reservation ------------------------------------------------------------
+# ---- R.5 (b): a queue lease is only for work a live plan holds ------------------------------------
 
 
 def added(fix, text: str) -> str:
@@ -85,34 +92,17 @@ def added(fix, text: str) -> str:
     return found.group(1)
 
 
-def test_r5b_a_hold_for_an_open_item_holds_the_slot(wl):
-    """CONTROL: before R.5 a queue lease with a free slot was refused outright, so the slot could not be held."""
+def test_r5b_a_hold_for_note_reserves_nothing_and_an_unheld_item_is_refused(wl):
+    """The `HOLD_FOR:#<id>` reservation held one free slot; with no slots it is gone, so such a note admits nothing. CONTROL: the plain lease is refused the same way, naming why."""
     three_writers(wl)
     item = added(wl, "(deadbeef) writer work whose writer is about to be spawned")
-    got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "HOLD_FOR:#%s" % item)
-    assert got.rc == 0, got.err[:400]
+    for note in ("HOLD_FOR:#%s" % item, "plain"):
+        got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", note)
+        assert got.rc != 0, (note, got.out[:300])
+        assert "#%s stays OPEN (not leased)" % item in got.err, got.err[:400]
+        assert "no live plan holds it" in got.err, got.err[:400]
     v = verdict(wl)
-    assert v["queue_start"] == [], v["queue_start"]
-    assert v["queue_held"] == item, v
-    assert v["state"] != "DISHONEST", v
-
-
-def test_r5b_inverse_a_hold_for_a_closed_item_or_a_second_hold_is_refused(wl):
-    three_writers(wl)
-    closed = added(wl, "(deadbeef) already done")
-    assert wl.cli("--tick", wlfix.ME, closed, "landed, exit 0 nocommit:research").rc == 0
-    item = added(wl, "(deadbeef) writer work")
-    got = wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "HOLD_FOR:#%s" % closed)
-    assert got.rc != 0, got.out[:300]
-    assert "names no open or in-flight item" in got.err, got.err[:400]
-    assert wl.cli("--lease", wlfix.ME, item, "+30", "worker:queue", "HOLD_FOR:#%s" % item).rc == 0
-    second = added(wl, "(deadbeef) more writer work")
-    got = wl.cli("--lease", wlfix.ME, second, "+30", "worker:queue", "HOLD_FOR:#%s" % second)
-    assert got.rc != 0, got.out[:300]
-    assert "a slot is already held" in got.err, got.err[:400]
-    # And a plain queue lease with a slot free is still refused: the reservation is the only door.
-    got = wl.cli("--lease", wlfix.ME, second, "+30", "worker:queue", "plain")
-    assert got.rc != 0, got.out[:300]
+    assert "queue_held" not in v, sorted(v)
 
 
 # ---- R.6 (c): a shell already reported back does not make a waiter --------------------------------
@@ -255,7 +245,7 @@ TOOL_IN_FLIGHT = {
 
 
 def test_2a252641_an_interrupted_transcript_frees_the_slot(wl):
-    """CONTROL: a workflow agent cut by the harness ends in the interrupt marker, and before the fix it held a writer slot until the next Stop event."""
+    """CONTROL: a workflow agent cut by the harness ends in the interrupt marker, and before the fix it counted as a live writer until the next Stop event."""
     dead_world(wl, INTERRUPT, 1)
     assert W4 not in estimate(wl)
 

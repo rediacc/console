@@ -356,6 +356,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // subscription login
   sub
     .command('login')
+    .summary(t('commands.subscription.login.descriptionShort'))
     .description(t('commands.subscription.login.description'))
     .option('-t, --token <token>', t('options.apiToken'))
     .option('--password-stdin', t('commands.subscription.login.optionPasswordStdin'))
@@ -407,6 +408,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // subscription register --email <addr>
   sub
     .command('register')
+    .summary(t('commands.subscription.register.descriptionShort'))
     .description(t('commands.subscription.register.description'))
     .requiredOption('--email <address>', t('commands.subscription.register.optionEmail'))
     .option('--server <url>', t('options.serverUrl'))
@@ -443,6 +445,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // subscription logout
   sub
     .command('logout')
+    .summary(t('commands.subscription.logout.descriptionShort'))
     .description(t('commands.subscription.logout.description'))
     .action(async () => {
       try {
@@ -472,6 +475,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // only the token (with --json, the token and its expiresAt), so `$(...)` captures it whole.
   sub
     .command('proxy-token')
+    .summary(t('commands.subscription.proxyToken.descriptionShort'))
     .description(t('commands.subscription.proxyToken.description'))
     .option('--json', t('commands.subscription.proxyToken.jsonOption'))
     .action(async (options: { json?: boolean }) => {
@@ -489,6 +493,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // per-repo license table (what `activation status` and `repo status` used to be).
   sub
     .command('status')
+    .summary(t('commands.subscription.status.descriptionShort'))
     .description(t('commands.subscription.status.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--all', t('commands.subscription.status.optionAll'))
@@ -507,6 +512,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // subscription notices [--all] [--unread] [--mark-read]
   sub
     .command('notices')
+    .summary(t('commands.subscription.notices.descriptionShort'))
     .description(t('commands.subscription.notices.description'))
     .option('--all', t('commands.subscription.notices.optionAll'))
     .option('--unread', t('commands.subscription.notices.optionUnread'))
@@ -519,14 +525,15 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  // subscription retire <guid> [--force] | --expired [--dry-run]; -y/--yes is the global option.
+  // subscription retire <guid> [--force] | --expired [--apply]; -y/--yes is the global option (the single-GUID prompt).
   sub
     .command('retire')
+    .summary(t('commands.subscription.retire.descriptionShort'))
     .description(t('commands.subscription.retire.description'))
     .argument('[guid]', t('commands.subscription.retire.argGuid'))
     .option('--force', t('commands.subscription.retire.optionForce'))
     .option('--expired', t('commands.subscription.retire.optionExpired'))
-    .option('--dry-run', t('commands.subscription.retire.optionDryRun'))
+    .option('--apply', t('commands.subscription.retire.optionApply'))
     .action(async (guid: string | undefined, options) => {
       try {
         await executeSubscriptionRetire(guid, options);
@@ -541,6 +548,7 @@ export function registerSubscriptionCommands(program: Command): void {
   // Scope is chosen by flags now: none = account, -m = machine, --repo = one repo.
   sub
     .command('refresh')
+    .summary(t('commands.subscription.refresh.descriptionShort'))
     .description(t('commands.subscription.refresh.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--repo <ref>', t('options.repoRef'))

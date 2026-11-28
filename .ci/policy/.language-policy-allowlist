@@ -105,7 +105,7 @@ file:.ci/docker/run-in-tts.sh
 # that ran on the host instead. Nothing about either was structurally bash, so they
 # stayed in the baseline where a drain could reach them, and the drain reached them:
 # both are gone, replaced by .ci/rediacc_ci/docker/run_in_image.py behind the K=5
-# ledgers .ci/shadow/w7p5c-run-in-{web,render}.observations.jsonl and the recorded
+# ledgers (deleted in commit:936280cd35) and the recorded
 # bytes under .ci/rediacc_ci/tests/goldens/docker-run-in-image/. Kept here because
 # "the five .ci/docker entrypoints" is the phrase a future reader will arrive with,
 # and three is now the whole of it.

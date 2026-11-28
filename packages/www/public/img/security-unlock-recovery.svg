@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 400" width="640" height="400">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <polygon points="0 0, 10 5, 0 10" fill="#556b2f"/>
+    </marker>
+  </defs>
+  <rect width="640" height="400" fill="#f5f5f5"/>
+  <text x="320" y="30" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1a1a1a">Every way in ends at the CEK</text>
+  <rect x="20" y="60" width="112" height="60" rx="8" fill="#ffffff" stroke="#6f8243" stroke-width="2"/>
+  <text x="76.0" y="87.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Passkey</text>
+  <text x="76.0" y="104.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">On the device</text>
+  <line x1="76" y1="120" x2="76" y2="200" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="144" y="60" width="112" height="60" rx="8" fill="#ffffff" stroke="#6f8243" stroke-width="2"/>
+  <text x="200.0" y="87.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Phone</text>
+  <text x="200.0" y="104.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">Over QR</text>
+  <line x1="200" y1="120" x2="200" y2="200" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="268" y="60" width="112" height="60" rx="8" fill="#ffffff" stroke="#6f8243" stroke-width="2"/>
+  <text x="324.0" y="87.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Recovery kit</text>
+  <text x="324.0" y="104.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">Mandatory</text>
+  <line x1="324" y1="120" x2="324" y2="200" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="392" y="60" width="112" height="60" rx="8" fill="#ffffff" stroke="#6f8243" stroke-width="2"/>
+  <text x="448.0" y="87.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Machine secret</text>
+  <text x="448.0" y="104.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">Headless</text>
+  <line x1="448" y1="120" x2="448" y2="200" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="516" y="60" width="112" height="60" rx="8" fill="#ffffff" stroke="#b7791f" stroke-width="2" stroke-dasharray="6 4"/>
+  <text x="572.0" y="87.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Agent grant</text>
+  <text x="572.0" y="104.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">One config</text>
+  <line x1="572" y1="120" x2="572" y2="200" stroke="#b7791f" stroke-width="2" stroke-dasharray="6 4" marker-end="url(#arrow)"/>
+  <rect x="20" y="200" width="600" height="60" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="320.0" y="227.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Unwrap the CEK</text>
+  <text x="320.0" y="244.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" fill="#666666">Slot secret on the device plus a server-held secret</text>
+  <line x1="320" y1="260" x2="320" y2="318" stroke="#556b2f" stroke-width="2" marker-end="url(#arrow)"/>
+  <rect x="250" y="320" width="140" height="50" rx="8" fill="#ffffff" stroke="#556b2f" stroke-width="3"/>
+  <text x="320.0" y="350.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">CEK</text>
+</svg>

@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench-eu --profile bench-login-eu -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.licence_expiry_drill [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless both are already bound. The `bench-login-eu` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (it needs `CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` and `CF_EMAIL` when no token is set, for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless both are already bound. The `bench-login-eu` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 

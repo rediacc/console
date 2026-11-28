@@ -35,7 +35,7 @@ description: >
       bitwarden/sm-action@1238aae8fc64b212641190a9227c8a734ab1a793
 
   So bumping the pin below is a THREE-PLACE change: this file's `uses:` line,
-  the checksum table in the prewarm step, and
+  the CHECKSUMS table in prewarm.py, and
   /repos/<owner>/<repo>/actions/permissions/selected-actions. The allowlist is
   recorded here because it is invisible in the tree -- the failure surfaces only
   after a push, and only as an action-resolution error that names no secret at
@@ -61,7 +61,7 @@ inputs:
       One secret per line, by NAME as spelled in .ci/config/bws-secret-map.json.
       Optionally `NAME > ENV_NAME` to export under a different variable name,
       which is how one Bitwarden secret serves several regional slots
-      (STRIPE_SECRET_KEY > STRIPE_SECRET_KEY_EU). Without `>` the env var is
+      (AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID). Without `>` the env var is
       the name itself.
     required: true
 
@@ -74,46 +74,8 @@ runs:
       env:
         REQUESTED: ${{ inputs.secrets }}
         MAP: ${{ github.action_path }}/../../../.ci/config/bws-secret-map.json
-      run: |
-        set -euo pipefail
-        [[ -f "$MAP" ]] || { echo "::error::bws-secret-map.json not found at $MAP"; exit 1; }
-        # ubuntu-slim does not ship jq (ops-backfill-release-sentinel.yml and ci.yml both
-        # install it for that reason), and 11 slim jobs run this action. Install it
-        # here rather than in every caller; macOS and Windows runner images carry it.
-        if ! command -v jq >/dev/null 2>&1; then
-          sudo apt-get install -y -qq jq >/dev/null || { echo "::error::jq is missing and could not be installed"; exit 1; }
-        fi
-        lines=""
-        n=0
-        while IFS= read -r raw; do
-          line="$(echo "$raw" | sed -e 's/#.*$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          [[ -z "$line" ]] && continue
-          name="${line%%>*}"; name="${name%"${name##*[![:space:]]}"}"
-          if [[ "$line" == *">"* ]]; then
-            env_name="${line#*>}"; env_name="${env_name#"${env_name%%[![:space:]]*}"}"
-          else
-            env_name="$name"
-          fi
-          if ! [[ "$name" =~ ^[A-Za-z0-9_.=:-]+$ && "$env_name" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
-            echo "::error::malformed secrets line: '$raw' (want NAME or NAME > ENV_NAME)"; exit 1
-          fi
-          uuid="$(jq -r --arg n "$name" '.secrets[$n].id // empty' "$MAP")"
-          if [[ -z "$uuid" ]]; then
-            echo "::error::secret '$name' is not in .ci/config/bws-secret-map.json. Add it to ci-shared and regenerate the map."
-            exit 1
-          fi
-          lines+="${uuid} > ${env_name}"$'\n'
-          n=$((n + 1))
-        done <<<"$REQUESTED"
-        if (( n == 0 )); then
-          echo "::error::no secrets requested -- a fetch that fetches nothing is a wiring mistake"; exit 1
-        fi
-        echo "resolved $n secret(s)"
-        {
-          echo "mapping<<BWS_EOF"
-          printf '%s' "$lines"
-          echo "BWS_EOF"
-        } >> "$GITHUB_OUTPUT"
+        BWS_RESOLVE: ${{ github.action_path }}/resolve.py
+      run: python3 "$BWS_RESOLVE"
 
     # WHY THIS STEP EXISTS, paid for on 2026-09-03 (run 33753814832, job
     # "Initialize"). sm-action ships no binary: index.js downloads
@@ -127,7 +89,7 @@ runs:
     #
     # index.js:213-224 checks `<action_dir>/target/<triple>/release/sm-action`
     # FIRST and returns it if present, so placing the file there skips its
-    # download entirely. That is what this does, with curl's retry and a pinned
+    # download entirely. That is what this does, with a retrying download and a pinned
     # checksum.
     #
     # THE VERSION IS DERIVED, NOT PINNED, and that is the load-bearing choice.
@@ -143,78 +105,9 @@ runs:
     - name: Pre-place the sm-action binary (its own download has no retry)
       id: prewarm
       shell: bash
-      run: |
-        set -uo pipefail
-        skip() { echo "::warning::bws-secrets prewarm skipped: $1"; exit 0; }
-
-        # The action checkout lives beside the workspace, never inside it.
-        actions_root="${RUNNER_WORKSPACE:-}/../_actions"
-        dir="$(find "$actions_root" -maxdepth 3 -type d -path '*/bitwarden/sm-action/*' 2>/dev/null | head -1)"
-        [[ -n "$dir" && -d "$dir" ]] || skip "sm-action checkout not found under _actions"
-
-        case "${RUNNER_OS:-}/${RUNNER_ARCH:-}" in
-          Linux/X64)     triple=x86_64-unknown-linux-gnu;  ext="" ;;
-          Linux/ARM64)   triple=aarch64-unknown-linux-gnu; ext="" ;;
-          macOS/X64)     triple=x86_64-apple-darwin;       ext="" ;;
-          macOS/ARM64)   triple=aarch64-apple-darwin;      ext="" ;;
-          Windows/X64)   triple=x86_64-pc-windows-msvc;    ext=".exe" ;;
-          Windows/ARM64) triple=aarch64-pc-windows-msvc;   ext=".exe" ;;
-          *) skip "unmapped runner ${RUNNER_OS:-?}/${RUNNER_ARCH:-?}" ;;
-        esac
-
-        dest="$dir/target/$triple/release/sm-action$ext"
-        if [[ -f "$dest" ]]; then
-          echo "sm-action binary already present; nothing to do"
-          echo "binary=$dest" >>"$GITHUB_OUTPUT"
-          exit 0
-        fi
-
-        version="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$dir/version.json" 2>/dev/null | head -1)"
-        [[ -n "$version" ]] || skip "cannot read a version from $dir/version.json"
-
-        # Checksums of the v3.0.1 release assets, taken from the release itself.
-        # Bumping the sm-action pin is now a FOUR-place change: this table, the
-        # `uses:` line below, the org action allowlist (see the header), and
-        # nothing else -- the version and URL follow from version.json.
-        want=""
-        if [[ "$version" == "3.0.1" ]]; then
-          case "$triple" in
-            x86_64-unknown-linux-gnu)  want=fa998e9db775d5c7bdbc0fd8840ac6474a8348cdc989176c5ce24c3d09045752 ;;
-            aarch64-unknown-linux-gnu) want=35dde396e46be03c2b8f711d8ea4c3c75a3b42ab6681a260d614b17fca726989 ;;
-            x86_64-apple-darwin)       want=9dfeab4d83b0347f9b5a04e8ca57f816c390b0f1c58a3d3bd7919ebfd3ab1124 ;;
-            aarch64-apple-darwin)      want=a426480977db65e7ae0d50c5e0ba70508ff15bb1fc803a9b9048e5ccda8d1b73 ;;
-            x86_64-pc-windows-msvc)    want=ae9cf1f9c400200cf889f17a44d7b3c9c525b9f462c0acd3cda76efab74e0174 ;;
-            aarch64-pc-windows-msvc)   want=be716878c305707b7141e9581cdbf292c785f3aa3f7fbb42ac9c5e5460c09dba ;;
-          esac
-        fi
-        [[ -n "$want" ]] || skip "no pinned checksum for sm-action $version/$triple (pin bumped without updating this table)"
-
-        url="https://github.com/bitwarden/sm-action/releases/download/v${version}/sm-action-${triple}${ext}"
-        tmp="$(mktemp)"
-        if ! curl -fsSL --retry 5 --retry-all-errors --retry-delay 2 \
-                  --connect-timeout 10 --max-time 180 -o "$tmp" "$url"; then
-          rm -f "$tmp"
-          skip "download failed after 5 retries. sm-action will now try ONCE itself; if that also fails it reports a Cargo.toml error, which is its broken source fallback, not a repo problem"
-        fi
-
-        if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp" | cut -d" " -f1)"
-        elif command -v shasum >/dev/null 2>&1; then got="$(shasum -a 256 "$tmp" | cut -d" " -f1)"
-        else rm -f "$tmp"; skip "no sha256sum or shasum to verify the download with"
-        fi
-        if [[ "$got" != "$want" ]]; then
-          rm -f "$tmp"
-          echo "::error::sm-action $version/$triple checksum mismatch: got $got, pinned $want. The bytes at a pinned release changed; do not route around this."
-          exit 1
-        fi
-
-        # No `set -e` here (skip() must be able to exit 0 from a failed test), so
-        # the install is chained explicitly rather than trusting three bare commands.
-        if ! { mkdir -p "$(dirname "$dest")" && mv "$tmp" "$dest" && chmod +x "$dest"; }; then
-          rm -f "$tmp"
-          skip "could not install the binary at $dest"
-        fi
-        echo "pre-placed sm-action $version/$triple (sha256 verified)"
-        echo "binary=$dest" >>"$GITHUB_OUTPUT"
+      env:
+        BWS_PREWARM: ${{ github.action_path }}/prewarm.py
+      run: python3 "$BWS_PREWARM"
 
     # THE FETCH IS A PAIR, AND EXACTLY ONE HALF RUNS. The prewarm step sets `binary` only when a verified binary sits at the path sm-action's index.js would use, and every skip leaves it empty.
     # With the binary, fetch.sh runs it directly with sm-action's own INPUT_* contract and retries a transient failure (5xx, 429, connection, timeout), which a `uses:` step cannot do and a later step cannot do for it.

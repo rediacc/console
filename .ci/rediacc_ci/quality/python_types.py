@@ -107,6 +107,14 @@ mypy refuses a file list containing two files that resolve to the same module na
 
 There are four such collisions in this tree today (`_cipath`, and `sanctioned` / `wl_planfid` / `worklist`, which exist under both `.claude/hooks/` and `.claude/oracles/`). The obvious fixes are both wrong: `--exclude` drops real files from the corpus silently, and `--explicit-package-bases` cannot name a root whose directory begins with a dot.
 So the corpus is PARTITIONED into the fewest groups in which no module name repeats, and every group is checked. Today that is two groups of 1,122 and 4. A new collision grows a group rather than dropping a file, and the file count is printed on the success line so the split is visible.
+
+---- gate ----
+step: Python types (mypy)
+needs: python-mypy
+lane: quality-static
+selftest: true
+why: ruff does no type inference at all, so the Python half of `tsc --noEmit` did not exist; shrink-only over a frozen baseline of the 935 findings that were already there
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -617,7 +625,10 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
         print("    uv tool install mypy@%s" % want, file=sys.stderr)
         print("    bash .ci/bootstrap.sh        # provisions uv on a pipless host", file=sys.stderr)
         print("  or point MYPY_BIN at an existing binary AT THAT VERSION:", file=sys.stderr)
-        print("    MYPY_BIN=/path/to/mypy npm run check:ci-python-types", file=sys.stderr)
+        print(
+            "    MYPY_BIN=/path/to/mypy PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types",
+            file=sys.stderr,
+        )
         print(
             "  NOT skipping: a type checker that cannot run is a gate that cannot fail.",
             file=sys.stderr,
@@ -750,7 +761,10 @@ def _main(root: pathlib.Path, baseline_path: pathlib.Path, *, write: bool, first
             print("    ... and %d more" % (len(drained) - 20), file=sys.stderr)
         print(file=sys.stderr)
         print("%d baselined finding(s) no longer fire. Drain them:" % len(drained), file=sys.stderr)
-        print("    npm run check:ci-python-types -- --write-baseline", file=sys.stderr)
+        print(
+            "    PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_types --write-baseline",
+            file=sys.stderr,
+        )
         print(
             "  A baseline that keeps rows nobody can reproduce freezes last year's debt",
             file=sys.stderr,
@@ -1047,4 +1061,4 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    raise SystemExit(main(sys.argv[1:]))

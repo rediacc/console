@@ -324,8 +324,42 @@ def test_an_unreachable_upstream_is_red(gate, tmp_path):
     gate.log_pass("unreachable upstreams are red after three attempts")
 
 
+def samba_in_code(source: str) -> bool:
+    """Whether samba.org appears anywhere after the file's leading header comment (template literals and inline comments included); with no closing */ the whole file is scanned, header included."""
+    body = source
+    start = body.find("/**")
+    if start != -1 and body[:start].strip() in ("", "#!/usr/bin/env node"):
+        end = body.find("*/", start)
+        # An unterminated header is not a header: the whole file stays in scope, so the scan fails closed.
+        body = body[end + 2 :] if end != -1 else body
+    return "samba.org" in body
+
+
+def test_the_samba_scan_controls(gate):
+    """Controls for samba_in_code: a host in a code line or a template literal is caught; a header-only mention is not."""
+    header = "#!/usr/bin/env node\n/**\n * download.samba.org is not asked.\n */\n"
+    gate.assert_eq(samba_in_code(header + "const A = 1;\n"), False, "a header-only mention passes")
+    gate.assert_eq(
+        samba_in_code(header + "const U = 'https://download.samba.org/pub/';\n"),
+        True,
+        "a code URL is caught",
+    )
+    gate.assert_eq(
+        samba_in_code(header + "const T = `\n * download.samba.org\n`;\n"),
+        True,
+        "a template literal line starting with * is caught",
+    )
+    unterminated = (
+        "#!/usr/bin/env node\n/**\n * no close\nconst U = 'https://download.samba.org/';\n"
+    )
+    gate.assert_eq(
+        samba_in_code(unterminated), True, "an unterminated header leaves the whole file scanned"
+    )
+    gate.log_pass("the samba scan catches code and passes the header")
+
+
 def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
-    """GitHub answering for the other pins does not make rsync optional, and no host but api.github.com is asked."""
+    """GitHub answering for the other pins does not make rsync optional; every request reaching the stub is a GitHub API route, and the gate source names no samba host that could bypass the stub."""
     require_submodule(gate)
     script = current_script(gate)
     route = latest_route(by_base(gate, "rsync"))
@@ -333,6 +367,19 @@ def test_the_rsync_release_alone_failing_is_red(gate, tmp_path):
     with stub_upstream(script) as stub:
         result = run_gate_over_http(tmp_path, stub.base)
         gate.assert_eq(stub.asked(route), 3, "a 5xx is asked three times and no more")
+        # Every upstream points at this one stub, so a samba-style read would arrive as `/pub/rsync/...`; only GitHub API routes may appear.
+        foreign = sorted(
+            {seen for _verb, seen, _auth in stub.requests if not seen.startswith("/repos/")}
+        )
+        gate.assert_eq(foreign, [], "no route outside the GitHub API is asked")
+    source = (paths.repo_root() / "scripts" / "gates" / "check-embed-asset-freshness.ts").read_text(
+        encoding="utf-8"
+    )
+    gate.assert_eq(
+        samba_in_code(source),
+        False,
+        "no samba host in the gate's code bypasses the stub (the header comment may name it)",
+    )
     gate.assert_exit(1, result, "the rsync release not answering fails closed")
     gate.assert_contains(result.err, "1 embed-asset pin(s) were NOT compared", "one finding")
     gate.assert_contains(

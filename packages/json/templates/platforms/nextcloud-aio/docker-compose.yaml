@@ -27,9 +27,9 @@ services:
   # The image entrypoint is coolwsd; command is appended to its arguments.
   # security.capabilities=false skips the chroot (landlock isolation instead),
   # and mount_jail_tree=false drops the bind-mount helper that needs SYS_ADMIN.
-  # Tag matches collabora/code:26.04.5.1.1 (options verified in its coolwsd.xml).
+  # Options verified in coolwsd.xml of collabora/code:26.04.5.1.1; the tag moved to 26.04.6.2.1 by a patch pin bump.
   collabora:
-    image: collabora/code:26.04.5.1.1
+    image: collabora/code:26.04.6.2.1
     restart: always
     labels:
       - "rediacc.service_port=9980"

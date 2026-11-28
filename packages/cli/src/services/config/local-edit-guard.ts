@@ -36,6 +36,7 @@ import {
 import { t } from '../../i18n/index.js';
 import type { RdcConfig } from '../../types/index.js';
 import { outputService } from '../core/output.js';
+import { rdcCommand } from './config-name.js';
 import { describeChange, isNoopPush } from './push-visibility.js';
 import { mergeRemoteIntoCache } from './remote-cache.js';
 
@@ -55,6 +56,7 @@ export class RemoteLocalEditConflictError extends Error {
             cached: String(cachedVersion),
             server: String(serverVersion),
             changes,
+            cmd: rdcCommand('config remote refresh', configName),
           })
         : t('commands.config.remote.localEditsUnverifiable', {
             config: configName,
@@ -62,6 +64,7 @@ export class RemoteLocalEditConflictError extends Error {
             server: String(serverVersion),
             changes,
             reason,
+            cmd: rdcCommand('config remote refresh', configName),
           })
     );
     this.name = 'RemoteLocalEditConflictError';

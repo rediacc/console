@@ -8,22 +8,21 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import json
+import pathlib
 import shutil
 import subprocess
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import awscli, common
+from rediacc_ci.core import wrangler as wrangler_cmd
 from rediacc_ci.deploy import console_executor as ce
 from rediacc_ci.deploy import deploy_account as da
 from rediacc_ci.deploy import deploy_proxy as dp
 from rediacc_ci.deploy import deploy_record as dr
 from rediacc_ci.deploy import executor_artifacts
-
-if TYPE_CHECKING:
-    import pathlib
 
 NAME = "acmecorp"
 COMPANY_ID = "c0a1b2c3d4e5f607"
@@ -547,6 +546,96 @@ def test_a_bench_company_record_goes_to_the_bench_control_database(root, fakes, 
     assert fakes["control"][0][0] == "control-bench-eu"
 
 
+def bench_before_args(root: pathlib.Path, out: pathlib.Path, bench: bool) -> argparse.Namespace:
+    return dr._parser().parse_args(
+        [
+            "before",
+            *account_args(root),
+            *(["--company-bench"] if bench else []),
+            "--proxy-config",
+            str(proxy_cfg(root)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+
+
+@pytest.fixture
+def no_r2(fakes, monkeypatch):
+    """The real R2 reader with no R2 credentials, as the bench profile deploy-proxy-bench-eu binds them."""
+    for name in ("CLOUDFLARE_R2_ENDPOINT", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setattr(dr, "read_json_object", READ_JSON_OBJECT)
+    return fakes
+
+
+READ_JSON_OBJECT = dr.read_json_object
+
+
+def test_a_bench_company_before_hashes_the_staged_tree_and_never_reads_r2(root, no_r2, tmp_path):
+    """The 2026-11-25 bench rerun failed `before` on `CLOUDFLARE_R2_ENDPOINT must be set`: a bench company's image is built from the tree, so its before record reads the staged tree manifest and never the release's."""
+    stage = root / "workers" / "proxy" / "stage"
+    stage.mkdir()
+    files = {name: {"sha256": "e" * 64, "size": 1} for name in MANIFEST_FILES}
+    (stage / executor_artifacts.MANIFEST).write_text(
+        json.dumps({"version": executor_artifacts.LOCAL_VERSION, "git_sha": "abc", "files": files})
+    )
+    out = tmp_path / "before.json"
+    assert dr.cmd_before(bench_before_args(root, out, bench=True), root) == 0
+    manifest = json.loads(out.read_text())["executor_manifest"]
+    assert manifest["sha256"] == dict.fromkeys(MANIFEST_FILES, "e" * 64)
+    assert manifest["source"] == "tree"
+    assert no_r2["aws"] == []
+
+
+@pytest.mark.usefixtures("no_r2")
+def test_a_bench_company_before_with_nothing_staged_records_an_empty_table(root, tmp_path):
+    out = tmp_path / "before.json"
+    assert dr.cmd_before(bench_before_args(root, out, bench=True), root) == 0
+    assert json.loads(out.read_text())["executor_manifest"]["sha256"] == {}
+
+
+@pytest.mark.usefixtures("no_r2")
+def test_a_stable_company_before_without_r2_still_fails_loudly(root, tmp_path):
+    """Control: a stable company's image is the release's, so its before record reads the release manifest and refuses without R2."""
+    with pytest.raises(dr.RecordError, match="CLOUDFLARE_R2_ENDPOINT must be set"):
+        dr.cmd_before(bench_before_args(root, tmp_path / "before.json", bench=False), root)
+
+
+@pytest.mark.parametrize(("bench", "rc", "status"), [(True, 0, "deployed"), (False, 1, "failed")])
+def test_only_a_bench_company_skips_the_staged_manifest_comparison(
+    root, fakes, tmp_path, bench, rc, status
+):
+    """A bench company's image is built from the tree, so its staged manifest differing from the release's is not a failure (the 2026-11-22 proof-ring-canary deploy failed on exactly that); a stable company's still is (control)."""
+    out = tmp_path / "before.json"
+    flags = ["--company-bench"] if bench else []
+    ns = dr._parser().parse_args(
+        [
+            "before",
+            *account_args(root),
+            *flags,
+            "--proxy-config",
+            str(proxy_cfg(root)),
+            "--version",
+            VERSION,
+            "--out",
+            str(out),
+        ]
+    )
+    dr.cmd_before(ns, root)
+    staged = tmp_path / "staged.json"
+    tree = {name: {"sha256": "f" * 64} for name in MANIFEST_FILES}
+    staged.write_text(json.dumps({"files": tree}))
+    args = after_args(out, tmp_path, "--sink", "control", "--ring", "small")
+    args.manifest = str(staged)
+    assert dr.cmd_after(args, root) == rc
+    record = json.loads((tmp_path / "record.json").read_text())
+    assert record["executor_manifest"]["fetched_sha256"] == dict.fromkeys(MANIFEST_FILES, "f" * 64)
+    assert "'%s'" % status in fakes["control"][0][1]
+
+
 @pytest.mark.parametrize("sink", [[], ["--sink", "r2", "--channel", "edge"]])
 def test_a_company_record_refuses_every_sink_but_control(root, fakes, tmp_path, sink):
     before = company_before(root, tmp_path)
@@ -623,8 +712,13 @@ def test_the_control_transport_runs_wrangler_d1_execute_remote_from_a_neutral_di
         return subprocess.CompletedProcess(argv, 0, "[]", "")
 
     monkeypatch.setattr(subprocess, "run", fake)
+    pinned = pathlib.Path("/pinned/node_modules/.bin/wrangler")
+    monkeypatch.setattr(wrangler_cmd, "binary", lambda _cwd, _env=None: pinned)
     dr.wrangler_control_write("control-eu", "SELECT 1;")
     argv, kw = calls[0]
+    # The pinned binary by its absolute path: npx reads no PATH from a temporary directory (finding e69747ea).
+    assert argv[0] == str(pinned)
+    assert "npx" not in argv
     assert argv[-7:] == [
         "d1",
         "execute",
@@ -637,7 +731,18 @@ def test_the_control_transport_runs_wrangler_d1_execute_remote_from_a_neutral_di
     assert kw["cwd"] != str(paths.repo_root())
 
 
+def test_the_control_transport_names_a_missing_wrangler_before_any_child(monkeypatch):
+    def missing(_cwd, _env=None):
+        raise wrangler_cmd.WranglerNotInstalledError("wrangler is not installed for /tmp/x")
+
+    monkeypatch.setattr(wrangler_cmd, "binary", missing)
+    monkeypatch.setattr(subprocess, "run", lambda *_a, **_k: pytest.fail("a child ran"))
+    with pytest.raises(dr.RecordError, match="control-eu could not run: wrangler is not installed"):
+        dr.wrangler_control_write("control-eu", "x")
+
+
 def test_the_control_transport_maps_a_duplicate_row_to_write_once(monkeypatch):
+    monkeypatch.setattr(wrangler_cmd, "binary", lambda _cwd, _env=None: pathlib.Path("/w"))
     monkeypatch.setattr(
         subprocess,
         "run",

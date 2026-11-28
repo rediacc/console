@@ -72,10 +72,10 @@ Fixing any of them changes what a live CI job prints, which is outside this port
 -----------------------------------------------------------------------------
 ONE NAMED DIVERGENCE THAT IS NOT REPRODUCED
 -----------------------------------------------------------------------------
-`$0`. bash prints the path it was invoked with in the `command not found` line; `sys.argv[0]` is this file, whose name ends `.py` and not `.sh`. There is no way for two files to have one name, so the differential MASKS the two paths to `<SELF>` and asserts everything else byte-for-byte. `scripts/lib/shadow-gate.ts` files that line as chatter on both sides (no
+`$0`. bash prints the path it was invoked with in the `command not found` line; `sys.argv[0]` is this file, whose name ends `.py` and not `.sh`. There is no way for two files to have one name, so the differential MASKS the two paths to `<SELF>` and asserts everything else byte-for-byte. the shadow gate (commit:bf054adcd4) files that line as chatter on both sides (no
 `✗`/`ERROR:`/`::error::` marker and no `<path>:<line>:` shape, because bash writes `: line 18:` with a space), so it plays no part in any recorded ledger verdict either.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-www.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -13,14 +13,15 @@ ONE VERDICT FROM THREE SOURCES THE LEAD CANNOT EDIT. The Stop event (the harness
   UNKNOWN    anything the roster cannot judge (a teammate leased by name, a suspect shell, an
              open item, a store it cannot see). UNKNOWN changes nothing: the battery runs as before.
 
-THE CAP AND THE PING ARE COMPUTED IN EVERY STATE. Honesty only decides whether some pushes are dropped; it never turns enforcement off.
+THE PING IS COMPUTED IN EVERY STATE. Honesty only decides whether some pushes are dropped; it never turns enforcement off.
 
 NO ESCAPE HATCHES, and this module is where that is enforced. It reads NO environment variable, and every threshold is a module-level literal. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`, so an environment read added here is CI red that registering the variable cannot clear. Thresholds borrowed from `wl_liveness` would inherit its `WORKLIST_*` overrides, so
 the few this module needs are restated here as literals rather than imported: `FINISHED_QUIET_S` stands in for `IDLE_EDGE_EPSILON_S`, and every tail read passes an explicit byte bound instead of `TEAMMATE_TAIL_BYTES`. An override that made no transcript ever "proven finished" would turn every dead lease into a covered one, which is an escape hatch by another name.
 
-WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 transcripts (plan F6), so their type is enough. Every other type is a writer, and so is ANY agent whose transcript shows an edit tool call, whatever its type claims. A reader promoted by evidence is never demoted again, which is the conservative direction for a cap.
+WHAT IS AND IS NOT A WRITER. Plan and Explore agents never wrote across 131 transcripts (plan F6), so their type is enough. Every other type is a writer, and so is ANY agent whose transcript shows an edit tool call, whatever its type claims. A reader promoted by evidence is never demoted again, which is the conservative direction for supervision.
 """
 
+import contextlib
 import datetime
 import functools
 import json
@@ -37,23 +38,11 @@ import wl_leasehelp as LH
 
 # ---- the sealed constants ---------------------------------------------------
 
-# The operator's number, now the `writer_cap:` line of agent/plans/QUEUE.md (default 4 when the block is missing or malformed). A writer beyond it is refused at spawn (guards/block_agent_cap.py) and blocked at Stop (`roster-cap`).
-DEFAULT_WRITER_CAP = 4
-
-
-def writer_cap(root) -> int:
-    """The writer cap in force at `root`: QUEUE.md's `writer_cap:`, else 4. Any read trouble keeps the default."""
-    try:
-        import wl_planqueue
-
-        return int(wl_planqueue.settings_for(root)[0].writer_cap)
-    except Exception:
-        return DEFAULT_WRITER_CAP
-
+# NO WRITER LIMIT (operator ruling #3ca908ee, 2026-11-23; agent/plans/PLAN-unlimited-writers.md): the roster counts writers to supervise them, never to refuse one. The harness's own concurrent-subagent ceiling is the only bound, and file ownership (block_plan_concurrency) still decides who edits what.
 
 # The operator's number. A leased worker whose newest evidence (a transcript write, a tool call in flight, a lease, a --status, its own SendMessage or SubagentStop) is this old is `roster-silent`. Evidence counts as status since 2026-09-24 (operator ruling "Evidence counts as status"), so the separate `roster-status` ping is merged into it.
 STATUS_PING_MIN = 20
-# A lease on `worker:queue` holds writer work the cap forbids starting. It is covered ONLY while every writer slot is taken; the moment one frees it is a defect naming the item to start, so it can never park work behind a cap that is not full.
+# A lease on `worker:queue` holds writer work block_plan_concurrency refuses (a live plan's mutex or Owns). It is covered ONLY while such a hold exists; the moment the holder finishes it is a defect naming the item to start, so it can never park work nothing holds.
 QUEUE_WORKER = LH.QUEUE_WORKER
 # The tool calls that prove an agent writes, whatever its declared type says.
 EDIT_TOOLS = frozenset({"Edit", "Write", "MultiEdit", "NotebookEdit"})
@@ -64,7 +53,6 @@ READ_ONLY_AGENT_TYPES = frozenset({"Plan", "Explore"})
 ROSTER_SUPPRESSES = frozenset({"bg-report", "stuck", "idle-stall", "solo-grind", "agent-state"})
 # The defect keys. `roster-status` was merged into `roster-silent` on 2026-09-24 ("Evidence counts as status"). `roster-concurrency` is the Stop-side backstop of the plan-concurrency spawn guard (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers whose plans already break a mutex or share files.
 ROSTER_KEYS = (
-    "roster-cap",
     "roster-silent",
     "roster-unleased",
     "roster-dead",
@@ -72,22 +60,21 @@ ROSTER_KEYS = (
     "roster-concurrency",
 )
 
-# THE CAP-SATURATED WAIT (operator 2026-09-24; agent/plans/PLAN-stop-hook-cap-saturated-wait.md). Its keep-list lives in wl_standdown.CAP_WAIT beside the focus profile that generalises it; the predicate stays here because it needs the writer cap.
+# THE CONCURRENCY-SATURATED WAIT (agent/plans/PLAN-stop-hook-cap-saturated-wait.md, narrowed to file-clash queues by agent/plans/PLAN-unlimited-writers.md). Its keep-list lives in wl_standdown.CONC_WAIT beside the focus profile that generalises it; the predicate stays here because it needs the roster's queue holds.
 
 
-def cap_saturated_wait(verdict, open_items, actionable_tasks):
-    """True when every writer slot is verified live, or every queued item is held by a live plan, and this session has nothing it could start.
+def concurrency_wait(verdict, open_items, actionable_tasks):
+    """True when every queued item is held by a live plan and this session has nothing it could start.
 
-    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CAP_WAIT), so an exception arrives as one focused block rather than the whole battery.
+    `verdict` is this stop's `roster()` result; `open_items` is `classify_items`' open list (a plain `[ ]`, an expired lease, a `worker:lead` lease with nothing live); `actionable_tasks` is the harness tasks the session could do now. Every other disallowed item state surfaces as a KEPT key instead (see wl_standdown.CONC_WAIT), so an exception arrives as one focused block rather than the whole battery.
     """
     if not verdict or verdict.get("blind") or open_items or actionable_tasks:
         return False
-    cap = verdict.get("writer_cap", DEFAULT_WRITER_CAP)
-    return len(verdict.get("writers") or ()) >= cap or concurrency_saturated(verdict)
+    return concurrency_saturated(verdict)
 
 
 def concurrency_saturated(verdict):
-    """True when a slot is free but EVERY queued item is held by a live plan's mutex or Owns (agent/plans/PLAN-plan-priority-concurrency.md section 5c): the concurrency-saturated wait. A queued item that is waiting on a blocker, or reserved by HOLD_FOR, is not held, so one of those keeps the ordinary battery."""
+    """True when EVERY queued item is held by a live plan's mutex or Owns (agent/plans/PLAN-plan-priority-concurrency.md section 5c). A queued item that is waiting on a blocker is not held, so one of those keeps the ordinary battery."""
     held = verdict.get("queue_conc_held") or ()
     return (
         bool(held)
@@ -109,25 +96,10 @@ SCAN_STEP_BYTES = 8 * 1024 * 1024
 STATUS_TEXT_MAX = 600
 # Rows printed in the HONEST summary before a counted remainder line.
 SUMMARY_ROWS_MAX = 8
-
-
-# A `worker:queue` lease whose note carries `HOLD_FOR:#<id>` holds ONE free writer slot for that item (agent/plans/PLAN-stop-hook-retro-20260924.md R.5, operator default 2026-09-24): at most one per session, it must name an open or in-flight item the session owns, and it lasts exactly as long as its own lease (at most 120 minutes).
-HOLD_FOR = re.compile(r"\bHOLD_FOR:#?([0-9a-f]{6,})\b")
-HOLD_MAX = 1
-
-
-def hold_target(rec):
-    """The item id a queue lease reserves a slot for, or ""."""
-    m = HOLD_FOR.search(str((rec or {}).get("lease_note") or ""))
-    return m.group(1) if m else ""
-
-
-def hold_valid(target, by_id, session_id):
-    """True when `target` is an open or in-flight item this session owns: the only thing a slot may be held for."""
-    rec = by_id.get(target)
-    if not isinstance(rec, dict):
-        return False
-    return rec.get("state") in (" ", ">") and C.owned_by_me(rec.get("owner"), session_id)
+# The directory under the git COMMON dir holding one `RosterCache` file per session, shared by the main checkout and every lease of it.
+ROSTER_CACHE_DIR = "rediacc-roster-cache"
+# Bumped when the file's shape changes; a file of another schema is read as empty, never migrated.
+ROSTER_CACHE_SCHEMA = 2
 
 
 def queue_order(rec):
@@ -141,7 +113,7 @@ def queue_waiting(rec, by_id, _session_id):
     return "waiting on %s" % ", ".join("#" + b for b in blockers) if blockers else ""
 
 
-# The reasons a queued item is NOT startable although a slot is free, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path: `roster` appends `queue_held_skip(...)`, which needs this stop's live plans.
+# The reasons a queued item is NOT startable, tried in order; the first non-empty reason wins. Each is `(rec, by_id, session_id) -> reason or ""`. A concurrency hold (agent/plans/PLAN-plan-priority-concurrency.md section 5c) is one more entry, not a new code path: `roster` appends `queue_held_skip(...)`, which needs this stop's live plans.
 QUEUE_SKIPS = (queue_waiting,)
 
 
@@ -169,36 +141,25 @@ def queue_held_skip(live, xinfo, held):
     return skip
 
 
-def queue_pick(queued, free, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
+def queue_pick(queued, by_id, session_id, order_key=None, skips=QUEUE_SKIPS):
     """Which queued items to start now. THE QUEUE IS NOT A FINISHED WORKER.
 
-    agent/plans/PLAN-stop-hook-retro-20260924.md R.5: every queued item used to read as `leased_dead` the moment one slot was free, so 15 "start it" lines were printed for 1 free slot. Only the first K startable items are named, K being the free slots less at most one HOLD_FOR reservation; the rest stay covered behind the cap.
+    With no writer limit (agent/plans/PLAN-unlimited-writers.md) a queue lease exists only for work a `skips` predicate still refuses: a live plan's mutex or Owns, or an open BLOCKED_BY blocker. Every queued item no predicate refuses is named to start; a refused one stays covered, waiting rather than dead or open (R20260925.5, agent/plans/PLAN-stop-hook-retro-20260925.md).
 
-    R20260925.5 (agent/plans/PLAN-stop-hook-retro-20260925.md): an item a `skips` predicate refuses is never named, and the NEXT startable one takes its slot. On 2026-09-24 queue-slot twice named an item the lead could not start because another writer held what it needed (#bea10927 waiting on A3), and each naming was overridden by hand.
-
-    Returns {"start": [id], "free": K, "hold": rec or None, "covered": [id], "skipped": [(id, reason)]}. A skipped item stays covered: it is waiting, not dead and not open.
+    Returns {"start": [id], "covered": [id], "skipped": [(id, reason)]}, each in queue order.
     """
     order_key = order_key or queue_order
-    ordered = sorted(queued, key=order_key)
-    hold = next((r for r in ordered if hold_valid(hold_target(r), by_id, session_id)), None)
-    slots = max(0, max(0, free) - (HOLD_MAX if hold is not None else 0))
     start: list[str] = []
     covered: list[str] = []
     skipped: list[tuple[str, str]] = []
-    for r in ordered:
-        if r is hold:
-            continue
+    for r in sorted(queued, key=order_key):
         reason = next((why for why in (fn(r, by_id, session_id) for fn in skips) if why), "")
         if reason:
             skipped.append((r["id"], reason))
             covered.append(r["id"])
-        elif len(start) < slots:
-            start.append(r["id"])
         else:
-            covered.append(r["id"])
-    if hold is not None:
-        covered.append(hold["id"])
-    return {"start": start, "free": slots, "hold": hold, "covered": covered, "skipped": skipped}
+            start.append(r["id"])
+    return {"start": start, "covered": covered, "skipped": skipped}
 
 
 # ---- locating the session's agents -------------------------------------------
@@ -236,17 +197,26 @@ def session_subagents_dir(cwd, session_id):
     return hits[0] / "subagents"
 
 
+# {meta path: ((st_mtime_ns, st_size), (agent id, entry) or None)}: one parse per meta file per process. A stop called load_metas seven times over 4,334 metas, about 1 s of reads and JSON (agent/plans/PLAN-tooling-speed.md SP8, measured 2026-11-24); a file whose mtime, size, inode or ctime moved is read again, so a rewritten meta (a resume, a finish) is not served stale. The ctime is the part a same-size rewrite cannot hide: it moves on every write and no utime call can set it back, where mtime and size alone miss a same-size rewrite on a coarse-timestamp filesystem (review 6d74ad12.1).
+_META_MEMO: dict[str, Any] = {}
+
+
+def _pingable_workers(covered):
+    """The workers of `covered` ((item, worker, coverer) rows) a status ping can reach: a coverer-less row (None or "") and an armed-action coverer (`ARMED_COVERER`) are skipped, the same test the supervised and verified sets apply (review 11e2a380.1)."""
+    return {w for _i, w, c in covered if c and not c.startswith(ARMED_COVERER)}
+
+
 def load_metas(sub_dir):
-    """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop.
+    """{agent_id: meta} for every `agent-<id>.meta.json` in the directory, read once per stop and again only when the file's (mtime, size, inode, ctime) moved.
 
     Each meta carries `type`, `parent` (the `parentAgentId`, or ""), `depth`, `desc`, `name`, the `jsonl` path and `spawned`: the meta file's mtime, which is the agent's last (re)START rather than its first spawn. Measured 2026-09-24: an agent listed in a 07:16Z Stop event carried a meta mtime of 08:05Z, because the harness rewrites the meta when an agent is resumed. That is the right clock for both
-    consumers -- the newest (re)started writer is the excess the cap names, and an agent (re)started after the last Stop event is exactly one that event cannot list.
+    consumers -- the newest (re)started writer is the last row the roster lists, and an agent (re)started after the last Stop event is exactly one that event cannot list.
     """
     out: dict[Any, Any] = {}
     if sub_dir is None:
         return out
     try:
-        # WORKFLOW AGENTS TOO (agent/plans/PLAN-stop-hook-continuity.md P1.9): a workflow's agents write under `subagents/workflows/<runId>/`, and a workflow agent that edits is a writer the cap must count.
+        # WORKFLOW AGENTS TOO (agent/plans/PLAN-stop-hook-continuity.md P1.9): a workflow's agents write under `subagents/workflows/<runId>/`, and a workflow agent that edits is a writer the roster must supervise.
         paths = list(sub_dir.glob("agent-*.meta.json")) + list(
             sub_dir.glob("workflows/*/agent-*.meta.json")
         )
@@ -254,11 +224,22 @@ def load_metas(sub_dir):
         return out
     for meta in paths:
         try:
+            st = meta.stat()
+        except OSError:
+            continue
+        sig = (st.st_mtime_ns, st.st_size, st.st_ino, st.st_ctime_ns)
+        hit = _META_MEMO.get(str(meta))
+        if hit is not None and hit[0] == sig:
+            if hit[1] is not None:
+                out[hit[1][0]] = dict(hit[1][1])
+            continue
+        try:
             info = json.loads(meta.read_text(encoding="utf-8", errors="replace"))
-            spawned = meta.stat().st_mtime
         except (OSError, ValueError):
             continue
+        spawned = st.st_mtime
         if not isinstance(info, dict):
+            _META_MEMO[str(meta)] = (sig, None)
             continue
         aid = meta.name[len("agent-") : -len(".meta.json")]
         out[aid] = {
@@ -274,6 +255,7 @@ def load_metas(sub_dir):
             # The harness's own mark, written as an agent ends and gone from the meta it rewrites on a resume.
             "finished": info.get("finished") is True,
         }
+        _META_MEMO[str(meta)] = (sig, (aid, dict(out[aid])))
     return out
 
 
@@ -403,27 +385,210 @@ def interrupted(rec):
     return False
 
 
+class RosterCache:
+    """What one session's transcripts already proved, kept across processes so a hot guard reads only what changed (PR-TASK 79b7e92e, operator 2026-11-24: load 134 on 24 cores).
+
+    MEASURED on the lead session of 2026-11-24 (8,767 roster files, 4.8 GB of subagent transcripts, a 1.9 GB lead transcript): block_commit_of_live_writer_file spent 1.33 s of every `git commit` re-proving 4,472 finished agents finished by reading each tail, and 0.79 s re-parsing live writers' whole transcripts; block_plan_concurrency spent 7.0 s of every spawn re-reading the lead transcript for completion notifications.
+
+    THREE MAPS, each keyed by the transcript's path:
+      `finished`   [inode, size, mtime_ns, offset] at which `proven_finished` said a DURABLE True (`_finished_verdict`), the offset being where the transcript's final line starts. Only that is kept: a True resting on the transcript and the clock stays True while the bytes do not move, since the clock only advances; a False can turn True with time alone, and a True resting on a teammate's idle edge rests on a file outside the transcript. A transcript that grew, shrank or was replaced has a new signature and is judged again, so a resumed agent is never served a stale "finished".
+                   THE ENTRY IS A HINT, NEVER A VERDICT (review 05db4e68.1). The file sits under the git common dir, where any Bash-capable agent can write it, so an entry that alone said "finished" would let a live writer mark itself finished and get its files committed past block_commit_of_live_writer_file. Every use re-reads the final line from the offset the entry names (`_verified_finished`: the transcript's own bytes, `[offset - 1, size)`, pinned to a line start and to the end of the file) and re-applies the same durable predicate the full proof used (`_durable_finished`). A forged or stale entry fails that and is dropped, and the transcript is judged in full. What the entry saves is locating that line and the bounded tail read, not the judgement.
+      `edits`      the incremental `edit_paths` state: byte offset, inode, the reading (`root`, `strict`, the generator registry's signature) and the raw paths of the complete lines already read.
+      `delivered`  the `wl_report.delivered_ids` cursor of the lead transcript, per `require_result` reading; that function already restarts at 0 on a shrink or a new inode.
+
+    WHERE. `<git common dir>/rediacc-roster-cache/<session dir name>.json`: the common dir is shared by the main checkout and every lease, so a writer's commit in a lease reuses what the lead's guards proved. A tree with no git dir keeps the cache in memory for the one process.
+
+    CONCURRENT WRITERS. The write is a temp file in the same directory and an `os.replace`, so a reader sees a whole old file or a whole new one. Two processes that both add entries race and the later replace wins; the loser's entries are simply proved again next time, since every entry is an optimisation whose absence only costs a read. A file that does not parse is read as empty.
+    """
+
+    def __init__(self, path=None):
+        self.path = path
+        self.dirty = False
+        self.doc: dict[str, Any] = {
+            "v": ROSTER_CACHE_SCHEMA,
+            "finished": {},
+            "edits": {},
+            "delivered": {},
+        }
+        if path is None:
+            return
+        try:
+            doc = json.loads(pathlib.Path(path).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return
+        if isinstance(doc, dict) and doc.get("v") == ROSTER_CACHE_SCHEMA:
+            for key in ("finished", "edits", "delivered"):
+                if isinstance(doc.get(key), dict):
+                    self.doc[key] = doc[key]
+
+    @staticmethod
+    def signature(st):
+        return [st.st_ino, st.st_size, st.st_mtime_ns]
+
+    def finished_hint(self, jsonl, st):
+        """The final-line offset an entry claims for this exact transcript state, else None. A claim only: `_verified_finished` decides."""
+        ent = self.doc["finished"].get(str(jsonl))
+        if not isinstance(ent, list) or len(ent) != 4 or ent[:3] != self.signature(st):
+            return None
+        off = ent[3]
+        return off if type(off) is int else None
+
+    def mark_finished(self, jsonl, st, off):
+        self.doc["finished"][str(jsonl)] = [*self.signature(st), off]
+        self.dirty = True
+
+    def forget_finished(self, jsonl):
+        if self.doc["finished"].pop(str(jsonl), None) is not None:
+            self.dirty = True
+
+    def get(self, kind, key):
+        return self.doc[kind].get(key)
+
+    def put(self, kind, key, value):
+        if self.doc[kind].get(key) != value:
+            self.doc[kind][key] = value
+            self.dirty = True
+
+    def save(self):
+        """Write the file when anything changed. An OSError (no directory, no space, no permission) costs only the next process a re-read, so it is swallowed and the doc stays dirty. Any other error means the doc holds something unserialisable, a bug in the writer, so it propagates after the temp file is removed."""
+        if not self.dirty or self.path is None:
+            return
+        path = pathlib.Path(self.path)
+        try:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=str(path.parent))
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                    json.dump(self.doc, fh, separators=(",", ":"))
+                os.replace(tmp, path)
+            except BaseException:
+                with contextlib.suppress(OSError):
+                    os.unlink(tmp)
+                raise
+        except OSError:
+            return
+        self.dirty = False
+
+
+def roster_cache(root, sub_dir):
+    """The `RosterCache` of the session whose `subagents/` directory is `sub_dir`, persisted under `root`'s git common dir; an in-memory one when either cannot be located."""
+    if sub_dir is None:
+        return RosterCache()
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return RosterCache()
+    return RosterCache(dirs[1] / ROSTER_CACHE_DIR / ("%s.json" % pathlib.Path(sub_dir).parent.name))
+
+
+def finished_cached(cache, jsonl, now, name="", cwd="", session_id=""):
+    """`proven_finished`, answered from `cache` when the transcript has not moved since it was last proven finished AND its final line still proves it, and recorded there when it is proven now.
+
+    A cache entry is never trusted on its own (review 05db4e68.1): `_verified_finished` re-reads the final line the entry points at and re-applies the durable predicate. An entry that fails is dropped and the transcript is judged in full, so a forged entry costs one read and changes no verdict.
+    """
+    try:
+        st = jsonl.stat()
+    except (OSError, AttributeError):
+        return False
+    off = cache.finished_hint(jsonl, st)
+    if off is not None and _verified_finished(jsonl, st, off, now):
+        return True
+    # Stale, malformed or forged: whatever the entry said is dropped before the full judgement.
+    cache.forget_finished(jsonl)
+    done, durable = _finished_verdict(jsonl, now, name, cwd, session_id)
+    if done and durable:
+        # Recorded only when the bounded check that will serve it agrees NOW, on the signature taken before the tail was read: a transcript that grew in between carries a newer one and misses next time.
+        off = _final_line_offset(jsonl, st.st_size)
+        if off is not None and _verified_finished(jsonl, st, off, now):
+            cache.mark_finished(jsonl, st, off)
+    return done
+
+
+def _final_line_offset(jsonl, size):
+    """Where the transcript's final non-blank line starts, looked for within the last TAIL_BYTES; None when it starts earlier or cannot be read."""
+    start = max(0, size - TAIL_BYTES)
+    try:
+        with jsonl.open("rb") as fh:
+            fh.seek(start)
+            blob = fh.read(size - start)
+    except OSError:
+        return None
+    body = blob.rstrip()
+    if not body:
+        return None
+    cut = body.rfind(b"\n")
+    if cut < 0:
+        return 0 if start == 0 else None
+    return start + cut + 1
+
+
+def _verified_finished(jsonl, st, off, now):
+    """Whether the transcript, read from its own bytes, is still durably finished: the line starting at `off` is the file's final line and `_durable_finished` holds for it.
+
+    Reads `[off - 1, size)` of a file whose (inode, size, mtime_ns) still equal `st`'s, checked on the open descriptor. The byte before `off` must be a newline (or `off` is 0) and the slice must hold exactly one line, so an offset into the middle of a record or before the end of the file proves nothing.
+    """
+    if type(off) is not int or off < 0:
+        return False
+    try:
+        with jsonl.open("rb") as fh:
+            now_st = os.fstat(fh.fileno())
+            if RosterCache.signature(now_st) != RosterCache.signature(st):
+                return False
+            size = now_st.st_size
+            if off >= size or size - off > TAIL_BYTES:
+                return False
+            lead = 1 if off else 0
+            fh.seek(off - lead)
+            blob = fh.read(size - off + lead)
+    except OSError:
+        return False
+    if lead and blob[:1] != b"\n":
+        return False
+    line = blob[lead:].strip()
+    if not line or b"\n" in line:
+        return False
+    try:
+        rec = json.loads(line)
+    except ValueError:
+        return False
+    return isinstance(rec, dict) and _durable_finished(rec, now_st.st_mtime, now)
+
+
 def proven_finished(jsonl, now, name="", cwd="", session_id=""):
     """True only when the transcript's last record ENDED THE TURN and nothing was written after.
 
-    The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the cap.
+    The same one-directional test `wl_liveness._record_is_idle` makes: every ambiguous shape reads as working, because a false "finished" would hide a live writer from the roster.
     """
+    return _finished_verdict(jsonl, now, name, cwd, session_id)[0]
+
+
+def _finished_verdict(jsonl, now, name="", cwd="", session_id=""):
+    """(`proven_finished`'s answer, whether a True answer is DURABLE). Durable means it rests on the transcript and the clock alone, so it holds for as long as the bytes do not move (`RosterCache`); a True resting on a teammate's idle edge, a file outside the transcript, is not."""
     import wl_liveness as L
 
     mtime = _mtime(jsonl)
     if mtime is None:
-        return False
+        return False, False
     rec = last_record(jsonl)
+    # ONE durable predicate, the cache re-check's own (`_durable_finished`), so the full proof and the re-check cannot disagree. An idle or interrupted last record is durable whichever way it answers.
+    if _durable_finished(rec, mtime, now):
+        return True, True
     if L._record_is_idle(rec) or interrupted(rec):
-        return now - mtime >= FINISHED_QUIET_S
-    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still held nine writer slots at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
-    if not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60:
-        return True
+        return False, True
     if name:
         edge = L.idle_edge(cwd, session_id, name)
         if edge is not None and mtime <= edge + FINISHED_QUIET_S:
-            return True
-    return False
+            return True, False
+    return False, False
+
+
+def _durable_finished(rec, mtime, now):
+    """The part of `_finished_verdict` that rests on the last record and the clock alone, shared with the cache's re-check so the two cannot drift."""
+    import wl_liveness as L
+
+    if L._record_is_idle(rec) or interrupted(rec):
+        return now - mtime >= FINISHED_QUIET_S
+    # KILLED MID-TURN: a transcript whose last record is not a tool call in flight (a tool_result nobody answered, a streaming partial) and that has not moved for WAIT_HORIZON_MIN is a dead agent. No live turn sits that long between records without a tool running; on 2026-09-27 nine workflow agents killed at 17:48Z the day before still counted as nine live writers at 02:08Z, because the last Stop event (the hook was off) predated all of them (#2a252641).
+    return not inflight_tool(rec) and now - mtime > WAIT_HORIZON_MIN * 60
 
 
 def scan_transcript(jsonl, ent):
@@ -475,7 +640,7 @@ def scan_transcript(jsonl, ent):
     return ent
 
 
-def subagent_stop_at(start, aid):
+def subagent_stop_at(start, aid, problems=None):
     """Epoch of the newest SubagentStop capture for this agent in the report store, or None."""
     import wl_report as RPT
 
@@ -483,7 +648,9 @@ def subagent_stop_at(start, aid):
     newest = None
     try:
         entries = RPT.read_index(RPT.store_root(start))
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("report index: %s: %s" % (type(exc).__name__, exc))
         return None
     for e in entries:
         ident = str(e.get("id") or "")
@@ -511,10 +678,25 @@ def _running(event):
     ]
 
 
-def shell_waiters(running, metas, now=None):
+def shell_waiters(running, metas, now=None, start=None):
+    """{agent id: shell id} for every LIVE shell waiter: the `armed_waiters` minus each agent `wl_stuckshell` calls stuck.
+
+    A waiter whose final report is already captured, or whose shell has run past `wl_stuckshell.STUCK_SHELL_MIN`, is stuck and not live (agent/plans/PLAN-writers-now-cadence.md WN4): on 2026-11-23 writer a7f511c739e4aa739 reported a final TICK block and still counted live for hours behind its own narrow-CI shell. `start` is the project start the report store is found from; with None only the runtime bound applies.
+    """
+    import wl_stuckshell as S
+
+    out = armed_waiters(running, metas, now)
+    if out:
+        entries = S.report_entries(start)
+        for aid in S.classify(out, metas, entries, now):
+            out.pop(aid)
+    return out
+
+
+def armed_waiters(running, metas, now=None):
     """{agent id: shell id} for every agent the event does NOT list as running whose own transcript launched a shell that still runs.
 
-    An agent that armed a background command and ended its turn is WAITING, not finished: the harness resumes it when that shell exits, yet the event reports the agent itself as completed. Its launch leaves `"backgroundTaskId":"<id>"` in the agent's transcript, and that is the only link between the two, since the event's shell rows carry no owner.
+    An agent that armed a background command and ended its turn is WAITING, not finished: the harness resumes it when that shell exits, yet the event reports the agent itself as completed. Its launch leaves `"backgroundTaskId":"<id>"` in the agent's transcript, and that is the only link between the two, since the event's shell rows carry no owner. Stuck waiters are included; `shell_waiters` is the live subset.
     """
     listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"}
     shell_ids = [
@@ -568,14 +750,14 @@ _SHELL_END = re.compile(rb"\[(?:killed|exited with code -?\d+)\]\s*$")
 def shell_ended(jsonl, sid):
     """True when shell `sid`'s own output stream ends with the harness's terminal marker.
 
-    THE STREAM IS THE AUTHORITY, not the agent's transcript. A shell that ends after its agent already finished never gets its `<task-id>` notification into that transcript, so `armed_shells` read it as armed forever and the agent held a writer slot: on 2026-09-25 the finished harness writer a9fb71e0 (quiet 67 minutes) blocked a spawn at 4 of 4 on `br7n2v42t`, whose stream read `[killed]`. The stream sits at `<tmp>/claude-<uid>/<project>/<session>/tasks/<id>.output`, and the agent transcript at `<projects>/<project>/<session>/subagents/agent-<id>.jsonl` names both segments. A stream that cannot be found or read proves nothing, so the shell stays armed (the safe side for a cap).
+    THE STREAM IS THE AUTHORITY, not the agent's transcript. A shell that ends after its agent already finished never gets its `<task-id>` notification into that transcript, so `armed_shells` read it as armed forever and the agent counted as a live writer: on 2026-09-25 the finished harness writer a9fb71e0 (quiet 67 minutes) blocked a spawn at 4 of 4 on `br7n2v42t`, whose stream read `[killed]`. The stream sits at `<tmp>/claude-<uid>/<project>/<session>/tasks/<id>.output`, and the agent transcript at `<projects>/<project>/<session>/subagents/agent-<id>.jsonl` names both segments. A stream that cannot be found or read proves nothing, so the shell stays armed (the safe side for a cap).
     """
     try:
         path = pathlib.Path(jsonl)
         session, project = path.parents[1].name, path.parents[2].name
     except (IndexError, TypeError):
         return False
-    # No environment override, on purpose: this module is sealed against env reads (test_r6b), so no knob can free a writer slot.
+    # No environment override, on purpose: this module is sealed against env reads (test_r6b), so no knob can hide a live writer.
     bases = [
         os.path.join(tempfile.gettempdir(), "claude-%d" % os.getuid(), project, session, "tasks"),
         os.path.join(tempfile.gettempdir(), project, session, "tasks"),
@@ -597,6 +779,10 @@ def transcript_waiting(jsonl, now):
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
     import wl_liveness as L
 
+    # THE HORIZON FIRST, from one stat: `transcript_armed` answers "" past it whatever the tail says, and the spawn guard asks this of every agent the event does not list (8,944 tail reads, 2.7 s per spawn on the 2026-11-24 lead session, nearly all of them agents quiet for hours).
+    mt = _mtime(jsonl)
+    if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
+        return ""
     if not L._record_is_idle(last_record(jsonl)):
         return ""
     return transcript_armed(jsonl, now)
@@ -613,13 +799,37 @@ def transcript_armed(jsonl, now):
     return armed[-1] if armed else ""
 
 
-def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None):
-    """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN."""
+ARMED_COVERER = "armed:"
+
+
+def armed_coverer(rec, worker, start, now, armed_blocks=True):
+    """`armed:<aid>` for a finished worker's item whose arm still covers it AND whose final report is captured, else "" (agent/plans/PLAN-armed-actions.md Design 6).
+
+    The report is the evidence the work was handed over, so a worker that died without one stays `leased_dead`; an expired, void or started arm covers nothing (`wl_armed.covers`)."""
+    import wl_armed as A
+    import wl_stuckshell as S
+
+    arm = rec.get("arm")
+    if not isinstance(arm, dict) or not arm.get("aid"):
+        return ""
+    if not A.covers(arm, datetime.datetime.fromtimestamp(now, datetime.UTC), armed_blocks):
+        return ""
+    entries = S.report_entries(start)
+    if not entries or latest_report(entries, worker) is None:
+        return ""
+    return ARMED_COVERER + str(arm["aid"])
+
+
+def roster(
+    event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now=None, armed_blocks=True
+):
+    """The roster verdict for one stop. Never raises for a missing input; it degrades to UNKNOWN.
+
+    `armed_blocks` is whether `armed-action-due` blocks at the current effort level; it bounds how long a FIRED arm still covers its item."""
     now = time.time() if now is None else now
     cwd = cwd or event.get("cwd") or ""
     start = C.project_start({"cwd": cwd})
     root = C.project_root(start)
-    cap = writer_cap(root)
     sub_dir = session_subagents_dir(cwd, session_id)
     blind = sub_dir is None
     metas = load_metas(sub_dir)
@@ -628,7 +838,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     running = _running(event)
     shells = {str(b.get("id") or ""): b for b in running if b.get("type") == "shell"}
     workflows = {str(b.get("id") or ""): b for b in running if b.get("type") == "workflow"}
-    waiters = shell_waiters(running, metas)
+    waiters = shell_waiters(running, metas, now, start)
     running = running + [{"id": aid, "type": "subagent", "status": "running"} for aid in waiters]
 
     # LIVE: the harness lists it AND its transcript is not proven finished. The `--reap` list is not consulted: a reaped id whose transcript is not proven finished is still a live writer, and one that is proven finished is excluded here anyway.
@@ -705,7 +915,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         ls = C.lease_state(r.get("line") or "")
         w = _worker_of(r)
         if w == LH.LEAD_WORKER:
-            # worker:lead (P2.1) is no agent and fills no writer slot; it is covered exactly while a task of this session is live, the same fact classify_items reads.
+            # worker:lead (P2.1) is no agent and counts as no writer; it is covered exactly while a task of this session is live, the same fact classify_items reads.
             if verdicts is None:
                 import wl_liveness as L
 
@@ -780,15 +990,12 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     queued = list(leases.get(QUEUE_WORKER, ()))
     pick = queue_pick(
         queued,
-        cap - len(writers),
         by_id,
         session_id,
         order_key=order_key,
         skips=(*QUEUE_SKIPS, queue_held_skip(plan_holders, xinfo, conc_held)),
     )
     queue_start = pick["start"]
-    slots = pick["free"]
-    hold = pick["hold"]
     covered.extend((i, QUEUE_WORKER, QUEUE_WORKER) for i in pick["covered"])
     for w, recs in leases.items():
         if w == LH.LEAD_WORKER:
@@ -799,7 +1006,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         if w and (w in metas or w in live):
             coverer = covered_by(w)
             for r in recs:
-                (covered if coverer else leased_dead).append((r["id"], w, coverer))
+                own = coverer or armed_coverer(r, w, start, now, armed_blocks)
+                (covered if own else leased_dead).append((r["id"], w, own))
         elif w and w in workflows:
             # A WORKFLOW LEASE is covered by its agents' stream (agent/plans/PLAN-stop-hook-continuity.md P1.9). It is in the event, so "no meta and not in the event" was simply false and dropped the roster to UNKNOWN.
             import wl_liveness as L
@@ -821,11 +1029,11 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
     # A writer is leased when it, or any ancestor, holds one of the session's leases.
     unleased = [a for a in writers if not any(x in leases for x in [a, *ancestors(a, metas)])]
-    over_cap = writers[cap:] if len(writers) > cap else []
 
     # Status time, per leased worker, over its whole lineage.
     statuses = getattr(fold, "statuses", None) or {}
     stop_cache = {}
+    stop_problems: list[str] = []
 
     def status_at(w):
         family = [w, *ancestors(w, metas), *descendants(w, kids)]
@@ -846,7 +1054,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             if at is not None and (best is None or at > best):
                 best, src = at, "SendMessage from %s" % f
             if f not in stop_cache:
-                stop_cache[f] = subagent_stop_at(start, f)
+                stop_cache[f] = subagent_stop_at(start, f, stop_problems)
             at = stop_cache[f]
             if at is not None and (best is None or at > best):
                 best, src = at, "SubagentStop of %s" % f
@@ -866,12 +1074,15 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                     at = now - row_f["quiet_min"] * 60
                     if best is None or at > best:
                         best, src = at, "transcript growth of %s" % f
+        if stop_problems:
+            # The SubagentStop store could not be read, so its evidence may be newer than `best`: say so in the source label the status rows print.
+            src = "%s [SubagentStop evidence unreadable: %s]" % (src, stop_problems[0])
         return best, src
 
     status_due, status_rows = [], {}
-    # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while the cap is full, so its own lease expiry bounds it.
+    # `worker:queue` is a placeholder, not an agent: nothing can report for it, and it is covered only while a live plan holds it, so its own lease expiry bounds it.
     # A workflow lease is covered only while its agents' stream is fresh, which is its evidence already.
-    for w in sorted({w for _i, w, _c in covered} - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
+    for w in sorted(_pingable_workers(covered) - {QUEUE_WORKER, LH.LEAD_WORKER} - set(workflows)):
         at, src = status_at(w)
         age = None if at is None else max(0.0, (now - at) / 60.0)
         status_rows[w] = (age, src)
@@ -879,7 +1090,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
             status_due.append(w)
 
     # Silence: a supervised live agent whose transcript stopped growing with nothing in flight, or whose last --status found no growth.
-    supervised = set(writers) | {c for _i, _w, c in covered if c}
+    supervised = set(writers) | {
+        c for _i, _w, c in covered if c and not c.startswith(ARMED_COVERER)
+    }
     silent = []
     for aid in sorted(supervised):
         row = live.get(aid)
@@ -904,11 +1117,15 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         and live[a]["quiet_min"] is not None
         and live[a]["quiet_min"] < STATUS_PING_MIN
     }
-    verified = sorted((({c for _i, _w, c in covered if c} | leased_live) - owing) | fresh_readers)
-
-    defects = bool(
-        unleased or leased_dead or over_cap or status_due or silent or queue_start or plan_conflicts
+    verified = sorted(
+        (
+            ({c for _i, _w, c in covered if c and not c.startswith(ARMED_COVERER)} | leased_live)
+            - owing
+        )
+        | fresh_readers
     )
+
+    defects = bool(unleased or leased_dead or status_due or silent or queue_start or plan_conflicts)
     if defects:
         state = "DISHONEST"
     elif blind or open_ids or unknown or not covered:
@@ -946,21 +1163,17 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         "blind": blind,
         "rows": live,
         "writers": writers,
-        "writer_cap": cap,
         "readers": readers,
         "finished": sorted(finished),
         "unleased": unleased,
         "leased_dead": leased_dead,
         "queue_start": queue_start,
-        "queue_free": slots,
-        "queue_held": hold["id"] if hold is not None else "",
         "queue_skipped": pick["skipped"],
         "queue_conc_held": [(i, conc_held[i]) for i, _why in pick["skipped"] if i in conc_held],
         "plan_holders": plan_holders,
         "plan_conflicts": plan_conflicts,
         "plan_error": plan_error,
         "queued": len(queued),
-        "over_cap": over_cap,
         "status_due": status_due,
         "status_rows": status_rows,
         "silent": silent,
@@ -1207,6 +1420,7 @@ def _script_args(run, shellscan):
     try:
         kind, value = shellscan.program_parse(posixpath.basename(str(run.name or "")), argv)
     except Exception:
+        # Safe to ignore: a command the lexer cannot parse names no script argument, the contract of `bash_write_paths` ("an unlexable command writes nothing it can prove"); the fix-set subtraction it feeds only shrinks.
         return []
     anchor = "-" if kind == "stdin" else value
     if kind not in ("file", "inline", "stdin") or anchor not in argv:
@@ -1577,10 +1791,13 @@ def _python_text(shellscan, run, cmd, cwd):
     try:
         text, _kind = shellscan.interpreter_program(run, cmd, cwd)
     except Exception:
+        # Safe to ignore, for the reason in `_script_args`: an unparseable program proves no write, and the writer-path subtraction it feeds only shrinks.
         return ""
     return text or ""
 
 
+# Once per process: every Bash call of every transcript asks for the lexer, and each uncached ask re-executed syspath.py from disk (415 loads, 0.12 s of one commit-guard run, measured 2026-11-24).
+@functools.lru_cache(maxsize=1)
 def _shellscan():
     """`rediacc_hooks.shellscan`, the guards' lexer, reached with `.claude` on sys.path the way that package expects."""
     import importlib.util
@@ -1613,6 +1830,11 @@ def edit_paths(jsonl, root, strict=False):
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
         return set()
+    return {p for p in _edit_paths_in(data, root, strict) if not in_lease_tree(p)}
+
+
+def _edit_paths_in(data, root, strict):
+    """The raw `edit_paths` set of the JSONL bytes `data`, before the lease-tree filter."""
     base = str(root).rstrip("/") + "/"
     out = set()
     for rec in wl_common.records(data.splitlines(), need=b'"tool_use"'):
@@ -1638,7 +1860,63 @@ def edit_paths(jsonl, root, strict=False):
                 # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
                 # A relative spelling is normalized too: a `..` path that climbs back into a lease tree dodged the lease filter the same way.
                 out.add(os.path.normpath(path).removeprefix(base))
-    return {p for p in out if not in_lease_tree(p)}
+    return out
+
+
+def _registry_signature(root):
+    """What `bash_write_paths`' regenerate route reads besides the transcript (the generator registry and the root package.json), as mtimes; a cached edit set read under another registry is read again."""
+    base = pathlib.Path(root)
+    sig: list[int | None] = []
+    for rel in (GENERATED_ARTIFACTS, "package.json"):
+        try:
+            sig.append((base / rel).stat().st_mtime_ns)
+        except OSError:
+            sig.append(None)
+    return sig
+
+
+def edit_paths_cached(jsonl, root, cache, strict=False):
+    """`edit_paths`, reading only the bytes appended since `cache` last read this transcript.
+
+    The complete lines already read are kept as their raw path set with the byte offset after them; a transcript that shrank or was replaced, or one read under another `root`, `strict` or generator registry, is read again from 0. A trailing line with no newline yet is read every time and never consumed, exactly as the whole-file read sees it."""
+    try:
+        st = jsonl.stat()
+    except (OSError, AttributeError):
+        return set()
+    key = str(jsonl)
+    reading = [str(root), bool(strict), _registry_signature(root)]
+    ent = cache.get("edits", key)
+    if (
+        not isinstance(ent, dict)
+        or ent.get("ino") != st.st_ino
+        or not isinstance(ent.get("off"), int)
+        or ent["off"] > st.st_size
+        or ent.get("reading") != reading
+    ):
+        ent = {"ino": st.st_ino, "off": 0, "reading": reading, "paths": []}
+    paths = set(ent.get("paths") or ())
+    off = ent["off"]
+    tail = b""
+    if off < st.st_size:
+        try:
+            with jsonl.open("rb") as fh:
+                fh.seek(off)
+                blob = fh.read()
+        except OSError:
+            return set()
+        cut = blob.rfind(b"\n")
+        if cut >= 0:
+            paths |= _edit_paths_in(blob[: cut + 1], root, strict)
+            off += cut + 1
+        tail = blob[cut + 1 :]
+        cache.put(
+            "edits",
+            key,
+            {"ino": st.st_ino, "off": off, "reading": reading, "paths": sorted(paths)},
+        )
+    if tail.strip():
+        paths |= _edit_paths_in(tail, root, strict)
+    return {p for p in paths if not in_lease_tree(p)}
 
 
 class WriterPaths(set):
@@ -1675,11 +1953,11 @@ def live_writer_paths(cwd, session_id, event, now=None, fold=None):
             return WriterPaths()
         kids = children_map(metas)
         running = _running(event or {})
-        waiters = shell_waiters(running, metas)
+        start = C.project_start({"cwd": cwd})
+        waiters = shell_waiters(running, metas, now, start)
         listed = {str(b.get("id") or "") for b in running if b.get("type") == "subagent"} | set(
             waiters
         )
-        start = C.project_start({"cwd": cwd})
         root = C.project_root(start)
         cache: dict[str, set] = {}
 
@@ -1751,19 +2029,58 @@ def lastevent_path(cwd, session_id):
     return wl.with_suffix(".lastevent-%s.json" % (session_id or "unknown")[:8])
 
 
+# {(cwd, session_id): (rows, metas)} while a `pinned_estimate` block is open.
+_PINNED: dict[Any, Any] = {}
+
+
+@contextlib.contextmanager
+def pinned_estimate(cwd, session_id):
+    """Compute `live_estimate(cwd, session_id)` once and serve it to every clock-free call for the same session inside the block.
+
+    block_plan_concurrency asks twice per spawn, once itself and once through `wl_planconc.live_plans`, and each ask cost 5 to 8 s on the 2026-11-24 lead session. The pin lives exactly as long as the `with`, so nothing outside the one guard run is ever answered from it; a call passing its own `now` is a different question and is computed."""
+    key = (str(cwd), str(session_id))
+    est = live_estimate(cwd, session_id)
+    _PINNED[key] = est
+    try:
+        yield est
+    finally:
+        _PINNED.pop(key, None)
+
+
 def live_estimate(cwd, session_id, now=None):
     """(rows, metas) for every agent the session is running right now, readers included; rows is None when it cannot tell.
 
     A PreToolUse payload or a CLI call carries no background-task list, so this ESTIMATES: the last Stop event's running subagents, plus every agent whose meta was written after that event (started this turn, which the event cannot know yet), minus any whose transcript is proven finished. With no event on disk at all, an agent counts when its transcript moved in the last STATUS_PING_MIN minutes.
     Each row carries `id`, `type`, `desc` and `writer`, by type only: there is no state doc here to cache an evidence scan in. The Stop hook recomputes from the authoritative event on the next stop either way.
+    The lead-transcript read and the durable finished verdicts go through the session's `RosterCache`.
     """
+    if now is None:
+        pinned = _PINNED.get((str(cwd), str(session_id)))
+        if pinned is not None:
+            return pinned
     now = time.time() if now is None else now
     sub_dir = session_subagents_dir(cwd, session_id)
     if sub_dir is None:
         return None, {}
     metas = load_metas(sub_dir)
-    ro_types = read_only_types(C.project_root(C.project_start({"cwd": cwd})))
+    start = C.project_start({"cwd": cwd})
+    root = C.project_root(start)
+    ro_types = read_only_types(root)
+    cache = roster_cache(root, sub_dir)
     types, since, waiters = {}, None, {}
+    stuck_memo: dict[Any, Any] = {}
+
+    def live_wait(aid, m):
+        """The shell `aid` waits on per its transcript alone, or "" when none is armed or `wl_stuckshell` calls the wait stuck (WN4)."""
+        wshell = transcript_waiting(m["jsonl"], now)
+        if not wshell:
+            return ""
+        import wl_stuckshell as S
+
+        if "entries" not in stuck_memo:
+            stuck_memo["entries"] = S.report_entries(start)
+        return "" if S.classify({aid: wshell}, metas, stuck_memo["entries"], now) else wshell
+
     try:
         p = lastevent_path(cwd, session_id)
         doc = json.loads(p.read_text(encoding="utf-8"))
@@ -1771,7 +2088,7 @@ def live_estimate(cwd, session_id, now=None):
         for b in _running(doc):
             if b.get("type") == "subagent" and b.get("id"):
                 types[str(b["id"])] = str(b.get("agent_type") or "")
-        waiters = shell_waiters(_running(doc), metas)
+        waiters = shell_waiters(_running(doc), metas, now, start)
         for aid in waiters:
             types.setdefault(aid, metas[aid]["type"])
     except (OSError, ValueError, AttributeError, TypeError):
@@ -1786,15 +2103,15 @@ def live_estimate(cwd, session_id, now=None):
             types[aid] = m["type"]
         elif aid not in types and aid not in waiters:
             # WAITING SINCE THE EVENT: the last Stop event may already call it completed while the shell it armed after that event still runs. Its own transcript says so.
-            wshell = transcript_waiting(m["jsonl"], now)
-            # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, holding a writer slot the Stop hook already saw free (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
+            wshell = live_wait(aid, m)
+            # "After that event" is checked, not assumed: a transcript that has not moved since the event was written armed its shell BEFORE it, and the event (which lists every running shell) did not list the agent's. A TaskStop-ped agent is exactly that shape -- its transcript still ends waiting on a shell that died with it -- and this branch kept it live for WAIT_HORIZON_MIN, counting a writer the Stop hook already saw finished (2026-09-24, pr-babysitter a149262d8b6a1601f, #b9d4dcb2).
             mt_agent = _mtime(m["jsonl"])
             if wshell and since is not None and (mt_agent is None or mt_agent <= since):
                 wshell = ""
             if wshell:
                 waiters[aid] = wshell
                 types[aid] = m["type"]
-    done = _completed_since(sub_dir, since)
+    done = _completed_since(sub_dir, since, cache=cache)
     rows = []
     for aid, typ in sorted(types.items()):
         m = metas.get(aid) or {}
@@ -1803,12 +2120,12 @@ def live_estimate(cwd, session_id, now=None):
             m
             and aid not in waiters
             and (
-                proven_finished(m["jsonl"], now, m.get("name", ""), cwd, session_id)
+                finished_cached(cache, m["jsonl"], now, m.get("name", ""), cwd, session_id)
                 or _done_after(done.get(_short(aid)), m)
             )
         ):
             # ONE NUMBER FOR BOTH CALLERS: an agent listed as running by the last event that has since ended its turn to wait on a shell is a live writer, not a finished one. The spawn guard and `--lease worker:queue` both read this function, so they now agree.
-            wshell = transcript_waiting(m["jsonl"], now)
+            wshell = live_wait(aid, m)
             if not wshell:
                 continue
             waiters[aid] = wshell
@@ -1821,6 +2138,7 @@ def live_estimate(cwd, session_id, now=None):
                 "waiting": waiters.get(aid, ""),
             }
         )
+    cache.save()
     return rows, metas
 
 
@@ -1830,19 +2148,30 @@ def _short(aid):
     return RPT.short_id(aid)
 
 
-def _completed_since(sub_dir, since):
+def _completed_since(sub_dir, since, problems=None, cache=None):
     """{short agent id: epoch} of every COMPLETED task notification that reached the LEAD's transcript after `since` (the last Stop event's mtime), result or not. {} when there is no event or no transcript.
 
     The lead transcript sits beside the session's `subagents/` directory as `<session>.jsonl`. Reuses `wl_report.delivered_ids` without its non-empty `<result>` filter (agent/plans/PLAN-stop-hook-retro-20260924.md R.6).
+
+    INCREMENTAL through `cache` (a `RosterCache`): the cursor `delivered_ids` returns ({"ino", "off", "ids"}) is saved, so the next call reads only the bytes appended since. The lead transcript reached 1.9 GB on 2026-11-24 and a whole read cost 3.5 s, twice per spawn. `delivered_ids` itself restarts from 0 when the file shrank below the saved offset or carries another inode, so a replaced transcript is never answered from the old one's ids.
     """
     if since is None or sub_dir is None:
         return {}
     import wl_report as RPT
 
+    lead = sub_dir.parent.with_suffix(".jsonl")
+    key = "%s|all" % lead
+    cursor = cache.get("delivered", key) if cache is not None else None
     try:
-        ids, _cur = RPT.delivered_ids(sub_dir.parent.with_suffix(".jsonl"), require_result=False)
-    except Exception:
+        ids, cur = RPT.delivered_ids(
+            lead, cursor=cursor if isinstance(cursor, dict) else None, require_result=False
+        )
+    except Exception as exc:
+        if problems is not None:
+            problems.append("lead transcript: %s: %s" % (type(exc).__name__, exc))
         return {}
+    if cache is not None and cur.get("ino") is not None:
+        cache.put("delivered", key, cur)
     return {k: v for k, v in ids.items() if v > since}
 
 
@@ -1852,7 +2181,7 @@ def _done_after(done_at, meta):
 
 
 def live_writers_estimate(cwd, session_id, now=None):
-    """The live WRITER rows the PreToolUse guard counts, or None when it cannot count. See `live_estimate`."""
+    """The live WRITER rows a verb with no Stop event estimates (the QUEUE.md in-flight block), or None when it cannot count. See `live_estimate`."""
     rows, _metas = live_estimate(cwd, session_id, now=now)
     if rows is None:
         return None
@@ -2105,7 +2434,7 @@ def item_box_citations(text, entries, store):
 
 
 def defect_rows(verdict):
-    """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
+    """{"writers", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
 
     def lines(ids):
@@ -2133,7 +2462,7 @@ def defect_rows(verdict):
         if w not in silent_ids
     ]
     return {
-        "cap": lines(verdict.get("writers") or []),
+        "writers": lines(verdict.get("writers") or []),
         "silent": "\n".join(silent_rows) or "    (none)",
         "unleased": lines(verdict.get("unleased") or []),
         "dead": "\n".join(dead) or "    (none)",
@@ -2180,11 +2509,10 @@ def explain_lastevent(prefix):
     state_doc = S.load_state(worklist, sid)
     v = roster(event, fold, sid, state_doc=state_doc, cwd=event.get("cwd") or str(start))
     lines = [
-        "ROSTER %s: %d writer(s)/%d, %d reader(s), %d finished-but-listed, %d open item(s), from %s"
+        "ROSTER %s: %d writer(s), %d reader(s), %d finished-but-listed, %d open item(s), from %s"
         % (
             v["state"],
             len(v["writers"]),
-            v["writer_cap"],
             len(v["readers"]),
             len(v["finished"]),
             len(v["open"]),
@@ -2193,7 +2521,6 @@ def explain_lastevent(prefix):
     ]
     lines.extend(summary_lines(v, limit=len(v["rows"]) or 1))
     for label, items in (
-        ("over cap", v["over_cap"]),
         ("unleased writers", v["unleased"]),
         ("silent or no evidence", sorted(set(v["silent"]) | set(v["status_due"]))),
     ):

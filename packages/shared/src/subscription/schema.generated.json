@@ -103,6 +103,11 @@
           "type": "number",
           "jsonKey": "maxRepoLicenseIssuancesPerMonth"
         },
+        "maxCpusPerMachine": {
+          "type": "number",
+          "jsonKey": "maxCpusPerMachine",
+          "optional": true
+        },
         "features": {
           "type": "object",
           "jsonKey": "features",
@@ -221,27 +226,32 @@
       "FREE": {
         "maxRepositorySizeGb": 3,
         "maxRepoLicenseIssuancesPerMonth": 0,
-        "storageQuotaBytes": 0
+        "storageQuotaBytes": 0,
+        "forensicsQuotaBytes": 0
       },
       "COMMUNITY": {
         "maxRepositorySizeGb": 10,
         "maxRepoLicenseIssuancesPerMonth": 100,
-        "storageQuotaBytes": 10737418240
+        "storageQuotaBytes": 0,
+        "forensicsQuotaBytes": 0
       },
       "PROFESSIONAL": {
         "maxRepositorySizeGb": 100,
         "maxRepoLicenseIssuancesPerMonth": 2000,
-        "storageQuotaBytes": 107374182400
+        "storageQuotaBytes": 107374182400,
+        "forensicsQuotaBytes": 26843545600
       },
       "BUSINESS": {
         "maxRepositorySizeGb": 500,
         "maxRepoLicenseIssuancesPerMonth": 5000,
-        "storageQuotaBytes": 536870912000
+        "storageQuotaBytes": 536870912000,
+        "forensicsQuotaBytes": 134217728000
       },
       "ENTERPRISE": {
         "maxRepositorySizeGb": 1024,
         "maxRepoLicenseIssuancesPerMonth": 15000,
-        "storageQuotaBytes": 2199023255552
+        "storageQuotaBytes": 2199023255552,
+        "forensicsQuotaBytes": 549755813888
       }
     },
     "planFeatures": {

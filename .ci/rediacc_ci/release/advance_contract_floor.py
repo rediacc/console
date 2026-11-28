@@ -44,7 +44,7 @@ TWO DIVERGENCES, BOTH IN REFUSAL TEXT NOBODY PARSES, plus one deliberate change 
      same order. Identical ruling to `release/tag_submodules.py`.
   2. `${VAR:?}` fires on set-but-EMPTY as well as unset, and so does this.
 
-K=5 LEDGER: `.ci/shadow/w7p6-advance-contract-floor.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

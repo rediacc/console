@@ -22,7 +22,7 @@ THE TAB SPLIT IS NOT A TAB SPLIT, and `read_fields` exists because of it. The
 twin reads with `IFS=$'\\t'`, and TAB IS AN IFS WHITESPACE CHARACTER in bash, so
 runs of tabs collapse into one delimiter and leading and trailing tabs are dropped. A run whose `.name` is null therefore does NOT yield an empty second field: every later field shifts left by one, and the script reads the workflow PATH as the name. Driven against real bash, reproduced rather than repaired, and pinned in both directions by `test_read_fields_collapses_runs_of_tabs`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-retry-failed-runs.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: de
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Architektur
@@ -240,6 +240,8 @@ rdc config audit verify
 > Diese Datei enthält sensible Daten (SSH-Privatschlüssel, LUKS-Credentials, Cloudflare-Token). Sie wird mit `0600`-Berechtigungen gespeichert (nur Eigentümer lesen/schreiben). Teilen Sie sie nicht und committen Sie sie nicht in die Versionsverwaltung. Wenn ein `rdc`-Befehl sie liest, werden sensible Felder standardmäßig [redaktiert](/en/docs/ai-agents-safety): Klartext erscheint nur mit `--reveal` auf einem interaktiven menschlichen TTY.
 
 ### Envelope v2 und serverseitige Durchsetzung
+
+Wer was sehen kann und wie Schlüssel abgegrenzt sind, steht im [Sicherheitsmodell](/de/docs/security-model).
 
 Wenn die Konfiguration mit dem [verschlüsselten Config-Store](/en/docs/config-storage) synchronisiert wird, wickelt die CLI jedes sensible Feld in eine Per-Feld-HMAC-Verpflichtung ein und trägt diese Verpflichtungen in der Klartext-Hülle. Der Server sieht nur Hex-Digests: Niemals die Werte: Kann aber Wissens-Gates auf jeden Schreibzugriff durchsetzen:
 

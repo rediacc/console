@@ -7,7 +7,7 @@ cancels a run on a Review Gate failure. Answering by hand is slow and easy to ge
 THE MODES.
 
   --status [--pr N]          the newest summary, its head, its findings, the inline finding threads and whether each is answered
-  --wait [--timeout S]       wait until Review Complete on the PR head carries a terminal title token; exit 0 reviewed, 4 failed-run, 3 timeout;
+  --wait [--timeout S]       wait until Review Complete on the PR head carries a terminal title token; exit 0 reviewed, 4 failed-run, 3 timeout, 2 the branch has no PR (no --pr);
                              on failed-run, exhausted, outage or a timeout it also names the head's review-attempt comment, its class and its action (wl_prsignals)
   --draft                    print a dispositions file, one line per finding
   --answer <file>            validate the dispositions, then post one top-level reply, an in-thread reply per inline finding, and resolve each thread
@@ -132,6 +132,8 @@ RESOLVE_MUTATION = (
 )
 
 Runner = Callable[[list[str]], tuple[int, str, str]]
+# gh's reply to `pr view` on a branch with no PR, which is deterministic (not a 5xx), so --wait stops on it.
+NO_PR_RE = re.compile(r"no pull requests found")
 Items = Callable[[], dict[str, tuple[str, ...]]]
 AskedOk = Callable[[str], bool]
 
@@ -142,8 +144,19 @@ class UnreadableError(RuntimeError):
 
 # The CLI's own per-call bound: `--answer` and `--wait` run outside the Stop hook, which passes its budgeted runner instead (wl_checks.prreview_runner).
 RUN_GH_TIMEOUT_S = 120
-# (rc, stdout, stderr) of one `gh` call from the console root, stdin closed; rc 124 on a timeout and 127 when gh could not run.
-run_gh: Runner = wl_gh.runner(CONSOLE_ROOT, timeout=RUN_GH_TIMEOUT_S)
+
+
+def command_root() -> pathlib.Path:
+    """The tree a verb typed in the process's cwd acts on: the bound tree the cwd lies in, else this file's own tree (`wl_review.review_root`).
+
+    TWO TREES, ONE SCRIPT COPY (worklist #9be9bec1, measured 2026-11-22). The landing loop runs `wl_prreview.py` by the development tree's path with the shell in the landing tree, so `gh` ran in the development tree, resolved ITS branch (`1121-1`, no PR) and `--wait` timed out on `no pull requests found`. The `gh` cwd and the ancestry checks of `--answer` both start here, and the worklist store stays where it was.
+    """
+    return wl_review.review_root(CONSOLE_ROOT)
+
+
+def run_gh(argv: list[str]) -> tuple[int, str, str]:
+    """(rc, stdout, stderr) of one `gh` call from `command_root()`, stdin closed; rc 124 on a timeout and 127 when gh could not run. The tree is read per call, so a runner bound at import cannot outlive a `chdir`."""
+    return wl_gh.runner(command_root(), timeout=RUN_GH_TIMEOUT_S)(argv)
 
 
 def _read(what: str, result: tuple[Any, str]) -> Any:
@@ -626,6 +639,13 @@ def cmd_wait(
             number, head = read_pr_head(runner, pr)
             token, title = read_review_title(runner, repo, head)
         except UnreadableError as exc:
+            if pr is None and NO_PR_RE.search(str(exc)):
+                # A branch with no open PR stays that way while this loop sleeps: gh's answer is a fact about the branch, not a fault to ride out, so waiting the full timeout only hid it.
+                print(
+                    "wl_prreview --wait: %s; open the PR or pass --pr <number>" % exc,
+                    file=sys.stderr,
+                )
+                return RC_UNREADABLE
             last = "unreadable: %s" % exc
         else:
             last = "token %r on %s" % (token or "none", head[:12])
@@ -889,10 +909,11 @@ def cmd_answer(
     pr: int | None,
     path: pathlib.Path,
     runner: Runner,
-    repo_root: pathlib.Path = CONSOLE_ROOT,
+    repo_root: pathlib.Path | None = None,
     items: Items = default_items,
     asked_ok: AskedOk | None = default_asked_ok,
 ) -> int:
+    repo_root = command_root() if repo_root is None else repo_root
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as exc:
@@ -1035,7 +1056,7 @@ def build_parser() -> argparse.ArgumentParser:
     mode.add_argument(
         "--wait",
         action="store_true",
-        help="wait for a terminal Review Complete on the PR head (0 reviewed, 4 failed-run, 3 timeout)",
+        help="wait for a terminal Review Complete on the PR head (0 reviewed, 4 failed-run, 3 timeout, 2 the branch has no PR)",
     )
     mode.add_argument(
         "--draft", action="store_true", help="print a dispositions file, one line per finding"

@@ -8,5 +8,5 @@ exit: 77
     pip install ruff==0.17.0
     uv tool install ruff@0.17.0
   or point RUFF_BIN at an existing binary:
-    RUFF_BIN=/path/to/ruff npm run check:ci-python-lint
+    RUFF_BIN=/path/to/ruff PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness
   NOT skipping: a linter that cannot run is a gate that cannot fail.

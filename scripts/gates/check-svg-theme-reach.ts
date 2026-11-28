@@ -30,6 +30,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { globSync } from 'glob';
 import { GREEN, NC, RED } from '../lib/console.js';
+import { type ControlCase, runControls, summarizeControls } from '../lib/controls.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..', '..');
 const WWW = path.join(ROOT, 'packages/www');
@@ -62,12 +63,9 @@ function resolve(ref: string): string | null {
   return null;
 }
 
-function selftest(): number {
-  let bad = 0;
-  const check = (label: string, ok: boolean) => {
-    console.log(`  ${ok ? `${GREEN}PASS${NC}` : `${RED}FAIL${NC}`}  ${label}`);
-    if (!ok) bad++;
-  };
+function selftest(): ControlCase[] {
+  const cases: ControlCase[] = [];
+  const check = (name: string, ok: boolean) => cases.push({ name, ok });
   check(
     'an <img src=*.svg> is collected',
     externalSvgRefs('<img src="/a/b.svg" alt="">').length === 1
@@ -88,19 +86,15 @@ function selftest(): number {
     'CONTROL: a literal-colour svg is NOT flagged',
     !wantsHostTokens('<svg><rect fill="#f5f5f5"/></svg>')
   );
-  return bad;
+  return cases;
 }
 
 function main(): void {
   if (process.argv.includes('--selftest')) {
     console.log('SVG theme-reach gate selftest');
-    const bad = selftest();
-    console.log(
-      bad === 0 ? '\n${GREEN}✓${NC} 5/5 controls pass' : `\n${RED}✗${NC} ${bad} control(s) failed`
-    );
-    process.exit(bad === 0 ? 0 : 1);
+    process.exit(summarizeControls(selftest()));
   }
-  if (selftest() !== 0) {
+  if (runControls(selftest()) !== 0) {
     console.error('controls failed; the gate cannot be trusted');
     process.exit(1);
   }

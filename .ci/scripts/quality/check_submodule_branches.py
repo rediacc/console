@@ -11,16 +11,15 @@ different change from moving which file the step runs.
 
 INVARIANT 5 IS INTACT: `.ci/scripts/quality/check-submodule-branches.sh` is NOT deleted by this change. It stays on disk as the twin this port is proven against; deleting it is W7 P5's job, in a later change.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-submodule-branches --assert --k 5
-    -> equivalence holds over 14 distinct trees
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08 with the shadow gate (deleted in commit:bf054adcd4): equivalence holds over 14 distinct trees.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import submodule_branches
 
 if __name__ == "__main__":
+    _gate_args.parse("check_submodule_branches.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(submodule_branches.main(sys.argv[1:]))

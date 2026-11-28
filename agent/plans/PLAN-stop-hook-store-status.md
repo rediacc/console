@@ -77,7 +77,7 @@ The table has one row per owned open, in-flight or deferred item:
 The columns are id, state, worker with its live and verified state (`live`, `suspect`, `gone`, `queue`, `lead` or `-`), minutes since the last update, freshness class, and the latest note.
 
 - The table is capped at 40 rows. A cut table ends with a `+N more: worklist.py --status <me>` tail, so the cut is never silent.
-- An allow with no owned open, in-flight or deferred item stays silent, as v18 ruled (.claude/hooks/stop/wl_checks.py:7351-7354).
+- An allow with no owned open, in-flight or deferred item stays silent, as v18 ruled (.claude/hooks/stop/wl_checks.py).
 
 The block `reason` does not get the table, so the model's context does not pay for it. It gets two things:
 
@@ -152,7 +152,7 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     (ticked) 2026-11-18T21:00:38Z by d778be9d: commit:75924946f3 -- S2/S3 landed: test_wl_store_status.py 52 passed, dead-code test_143 passed, stop-hook test scripts rc 0, effort-table rc 0. DEPS-WAIVED: S1 landed as e8329fa3
 
     `python3 .ci/scripts/quality/check_plan_record.py --effort-table` and `python3 .claude/hooks/stop/test-always-tier.py` exit 0.
-- [ ] J1 [writer] The judge reads STORE FRESHNESS and CHANGES SINCE LAST STOP: the MISSING IDS fact, its checklist rule and the `out-of-sync` basis are removed, and a continue that demands a status table is read as stop (D5)
+- [x] J1 [writer] The judge reads STORE FRESHNESS and CHANGES SINCE LAST STOP: the MISSING IDS fact, its checklist rule and the `out-of-sync` basis are removed, and a continue that demands a status table is read as stop (D5)
     Owns: .claude/hooks/stop/wl_judge.py, .claude/hooks/stop/worklist_messages.py, .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/wl_effort.py, .claude/hooks/stop/wl_effort_tune.py, .claude/rediacc_hooks/tests/test_wl_judge_facts.py, .claude/rediacc_hooks/tests/test_wl_judge_effort.py, .claude/rediacc_hooks/tests/test_wl_judge_local_batch.py, .claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py
     Depends on: S2, S3.
     Needs: none
@@ -161,9 +161,10 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     - `_judge_facts` returns no `missing_ids`, and `basis` no longer accepts `out-of-sync`;
     - a continue whose reason is "the message omits open items by id; restate the status table" is read as stop and queued. Control: a continue ordering a named file fix stands. Control: a continue ordering work on an open item stands;
     - the settle chain still applies `settle_by_effort` to `no-remaining`.
+    (ticked) 2026-11-24T05:42:36Z by ace763dd: commit:e60b367ffd54 landed for box 148d8826; investigation present@13373b2b33
 
     The docstring at .claude/hooks/stop/wl_effort.py:5 and the `where` text at .claude/hooks/stop/wl_effort_tune.py:419 no longer name `out-of-sync`.
-- [ ] R1 [writer] Retire the `out-of-sync` producer and its effort row after a recorded proposal, and reword `no-remaining` to the D6 contract with its opening clause unchanged (D6, D7 second half)
+- [x] R1 [writer] Retire the `out-of-sync` producer and its effort row after a recorded proposal, and reword `no-remaining` to the D6 contract with its opening clause unchanged (D6, D7 second half)
     Owns: .claude/hooks/stop/wl_checks.py, .claude/hooks/stop/worklist_messages.py, .claude/config/effort.json, .claude/rediacc_hooks/tests/test_wl_core_blocking.py, .claude/rediacc_hooks/tests/test_wl_remaining_bank.py
     Depends on: J1.
     Needs: none
@@ -171,11 +172,13 @@ Order: the module, then the verb and the hook wiring in parallel, then the judge
     - `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .claude/rediacc_hooks/tests/test_wl_core_blocking.py .claude/rediacc_hooks/tests/test_wl_remaining_bank.py .claude/rediacc_hooks/tests/test_wl_ci_queue_and_mail.py .claude/rediacc_hooks/tests/test_wl_agent_docs_and_focus.py .claude/rediacc_hooks/tests/test_wl_continuity_surface.py` exits 0;
     - the case at .claude/rediacc_hooks/tests/test_wl_core_blocking.py:173 is inverted: an omitted task id no longer blocks. Its control: a missing `## Remaining` heading on a changed item set still blocks with `no-remaining`, whose text lists no item;
     - `python3 .ci/scripts/quality/check_plan_record.py --effort-table` exits 0, and `out-of-sync` appears in neither `checks` nor `tuned`.
-- [ ] D1 [writer] CLAUDE.md and the loop prompt describe the D6 message contract and the hook-rendered table, in place of "base the `## Remaining` section on that guide" and "naming every open task by id"
+    (ticked) 2026-11-24T05:42:37Z by ace763dd: commit:45d6f6a48f68 landed for box b1053da4; investigation present@13373b2b33
+- [x] D1 [writer] CLAUDE.md and the loop prompt describe the D6 message contract and the hook-rendered table, in place of "base the `## Remaining` section on that guide" and "naming every open task by id"
     Owns: CLAUDE.md, docs/agent-reference/loop-prompt.md
     Depends on: J1.
     Needs: none
     Accept: CLAUDE.md:64-65 and docs/agent-reference/loop-prompt.md:30 name `worklist.py --status <me>` and the D6 contract. `grep -n "every open task by id" CLAUDE.md docs/agent-reference/loop-prompt.md` prints nothing. CLAUDE.md:102-103 (what may appear under `## Remaining`) is unchanged.
+    (ticked) 2026-11-23T08:11:47Z by ace763dd: commit:008ae77f91 fileline:docs/agent-reference/loop-prompt.md:30 -- CLAUDE.md:66 and docs/agent-reference/loop-prompt.md:30 name worklist.py --status <me> and the D6 message contract; grep "every open task by id" prints nothing; check:ci-prose-style, doc-region-parity, scope-mirrors rc 0
 - [ ] X1 [lead] Record in PLAN-stop-hook-retro-20261117.md that J1 replaces R20261117.1, keeping the box line byte-identical
     Owns: agent/plans/PLAN-stop-hook-retro-20261117.md
     Depends on: J1.

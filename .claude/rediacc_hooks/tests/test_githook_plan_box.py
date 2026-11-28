@@ -37,7 +37,7 @@ Status: approved
     (ticked) 2026-01-01 by x: commit:abc
 """
 OPEN_SIG, DONE_SIG = "fd66592c", "074be283"
-BODY = "feat(x): a subject\n\nA body paragraph.\n\n"
+BODY = "chore(x): a subject\n\nA body paragraph.\n\n"
 
 
 def _load(name: str, path: pathlib.Path):

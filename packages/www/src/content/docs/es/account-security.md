@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: es
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### Autenticación
@@ -79,6 +79,8 @@ Para configuración cifrada y sincronizada con el servidor, consulta [Config Sto
 - Derivación de claves basada en passkey (WebAuthn + PRF)
 - Tokens rotativos con rotación por solicitud
 
+La página [Modelo de seguridad](/es/docs/security-model) explica quién puede ver qué, cómo se acotan las claves y qué se puede recuperar.
+
 ### Seguridad de sesión
 
 | Tipo de token | Duración | Almacenamiento | Actualización |
@@ -117,6 +119,6 @@ rdc update --status            # Mostrar canal actual
 
 ### Postura de seguridad de la CLI para agentes de IA
 
-Los agentes de código que invocan `rdc` son una superficie de amenaza real, por lo que los tratamos como un principal separado. Cada invocación de `rdc` se clasifica al inicio como **humano** o **agente** según señales del entorno (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) más un recorrido de ascendencia Linux `/proc`. La detección es de mejor esfuerzo. Un wrapper determinado puede falsificar variables de entorno, por eso importa la ascendencia. Los agentes obtienen un conjunto de permisos reducido: las mutaciones de configuración sensibles requieren la compuerta de conocimiento (`--current <antiguo>`), el editor interactivo se rechaza sin una anulación `REDIACC_ALLOW_CONFIG_EDIT` verificada por ascendencia, y `--reveal` en cualquier comando de visualización está bloqueado. Cada decisión (permitir, rechazar o conceder `--reveal`) escribe una línea JSONL encadenada por hash en `~/.config/rediacc/audit.log.jsonl`. Ejecuta `rdc config audit verify` para comprobar la integridad de la cadena.
+Los agentes de código que invocan `rdc` son una superficie de amenaza real, por lo que los tratamos como un principal separado. Cada invocación de `rdc` se clasifica al inicio como **humano** o **agente** según señales del entorno (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) más un recorrido de ascendencia Linux `/proc`. La detección es de mejor esfuerzo. Un wrapper determinado puede falsificar variables de entorno, por eso importa la ascendencia. Los agentes obtienen un conjunto de permisos reducido: las mutaciones de configuración sensibles requieren la compuerta de conocimiento (`--current <antiguo>`), `rdc config edit` (interactivo, `--apply`, `--reveal`) se rechaza sin ninguna anulación, y `--reveal` en cualquier comando de visualización está bloqueado. Un agente solo actúa donde la aceptación explícita de un humano y el techo de política lo permiten ambos ([Seguridad de agentes de IA](/es/docs/ai-agents-safety)). Cada decisión (permitir, rechazar o conceder `--reveal`) escribe una línea JSONL encadenada por hash en `~/.config/rediacc/audit.log.jsonl`. Ejecuta `rdc config audit verify` para comprobar la integridad de la cadena.
 
 Consulta [Seguridad y salvaguardas de agentes de IA](/es/docs/ai-agents-safety) para la matriz completa de lo que los agentes pueden y no pueden hacer, ejemplos de la compuerta de conocimiento y la mecánica de anulación de alcance.

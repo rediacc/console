@@ -18,7 +18,7 @@ LIVE. `rediacc_ci.ci.initialize` calls `main` in process (its step 4), and `init
 
 NOT A REGISTERED GATE. It carries no `---- gate ----` header (checked with `scripts/lib/gate-header.ts`'s own OPEN pattern, not by eye), so nothing in `scripts/ci-runner` selects it; it is a workflow STEP that writes two outputs. This port carries no header either, for the same reason.
 
-Ledger: `.ci/shadow/w7p6-detect-pointer-bump.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-detect-pointer-bump --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 `git`, `gh`, `jq` AND `sed` ARE CALLED, NOT REIMPLEMENTED

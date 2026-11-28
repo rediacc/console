@@ -1,6 +1,6 @@
-"""The gate test for `check:ci-python-env-registry`, which has no bash twin.
+"""The process test for the `python_reads` section of check:ci-env-registry (`python_env_registry.py`).
 
-NEW GATE, NOT A PORT, so there is no `.ci/scripts/test/gates/test-*.sh` to name here. What this file tests is the thing a selftest structurally cannot: the gate as a PROCESS, invoked the way CI invokes it -- by path, through `_cipath`, with its own argv parsing and its own exit codes -- and once against the REAL tree and the REAL registry.
+What this file tests is the thing a selftest structurally cannot: the section's check and its writer as PROCESSES, with their own argv parsing and their own exit codes, and once against the REAL tree through the real gate, check:ci-env-registry (`python3 -m rediacc_ci.quality.env_registry`). A fixture tree carries only the `python_reads` section, so fixture runs drive the section's own `check()` in a child process rather than the whole gate, whose `shards` readers need a real tree.
 
 WHY BOTH TAMPER DIRECTIONS ARE DRIVEN AS A PROCESS AND NOT ONLY IN THE SELFTEST.
 The selftest calls `run()` and `write_baseline()` directly, so every one of its controls would still pass if `main()` mis-parsed `--write` `-baseline`, if the entry point imported the wrong module, or if a refusal returned 1 from a
@@ -15,6 +15,8 @@ import pathlib
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
@@ -22,8 +24,16 @@ from rediacc_ci.tests.gates import harness
 # alternative that was tried and rejected: excluding test trees wholesale lets a REAL writer hide in one, proven by planting exactly that.
 WRITE_BASELINE = "--write-" + "baseline"
 
-GATE = paths.from_root(".ci", "scripts", "quality", "check_python_env_registry.py")
-BASELINE_REL = ".ci/config/python-env-registry.json"
+CI_DIR = str(paths.from_root(".ci"))
+GATE = [sys.executable, "-m", "rediacc_ci.quality.env_registry"]
+WRITER = [sys.executable, "-m", "rediacc_ci.quality.python_env_registry"]
+CHECK = [
+    sys.executable,
+    "-c",
+    "from rediacc_ci.quality import python_env_registry as m; raise SystemExit(m.check())",
+]
+BASELINE_REL = ".ci/config/env-manifest.json"
+SECTION = "python_reads"
 
 SRC = """import os
 
@@ -37,9 +47,18 @@ os.environ["GATETEST_WRITE"] = "x"
 CLEAN = {"src.py": ["GATETEST_A", "GATETEST_TOKEN"]}
 
 
+# PLAN-ciquick-cpu.md W17. The bare real-tree run (no root, no flag) is a read of an unchanging tree that two cases share, so it runs once per session through `harness.run_once`, controls first, exactly as check:ci-env-registry runs it; those two cases share an xdist group so the once is real. Every fixture-root run drives the section's `check()`, which runs no controls; the `--selftest` case below proves them on their own.
+REAL_TREE = pytest.mark.xdist_group("python-env-registry-real-tree")
+
+
 def _run(root=None, *args) -> harness.RunResult:
-    env = {"REDIACC_CI_ROOT": str(root)} if root else {}
-    return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root(), env=env)
+    env = {"PYTHONPATH": CI_DIR}
+    if root is None and not args:
+        return harness.run_once(GATE, cwd=paths.repo_root(), env=env)
+    if root:
+        env["REDIACC_CI_ROOT"] = str(root)
+    argv = [*WRITER, *args] if args else CHECK
+    return harness.run(argv, cwd=paths.repo_root(), env=env)
 
 
 def _fixture(tmp: pathlib.Path, *, src: str = SRC, modules=CLEAN) -> pathlib.Path:
@@ -47,32 +66,34 @@ def _fixture(tmp: pathlib.Path, *, src: str = SRC, modules=CLEAN) -> pathlib.Pat
     baseline = tmp / BASELINE_REL
     baseline.parent.mkdir(parents=True, exist_ok=True)
     if modules is not None:
-        baseline.write_text(json.dumps({"modules": modules}, indent=2), encoding="utf-8")
+        baseline.write_text(json.dumps({SECTION: {"modules": modules}}, indent=2), encoding="utf-8")
     for args in (["init", "-q"], ["add", "-A", "-f"]):
         subprocess.run(["git", "-C", str(tmp), *args], check=False, capture_output=True)
     return tmp
 
 
 def _modules(root: pathlib.Path):
-    return json.loads((root / BASELINE_REL).read_text(encoding="utf-8"))["modules"]
+    return json.loads((root / BASELINE_REL).read_text(encoding="utf-8"))[SECTION]["modules"]
 
 
 def _write_modules(root: pathlib.Path, modules) -> None:
-    (root / BASELINE_REL).write_text(json.dumps({"modules": modules}, indent=2), encoding="utf-8")
+    (root / BASELINE_REL).write_text(
+        json.dumps({SECTION: {"modules": modules}}, indent=2), encoding="utf-8"
+    )
 
 
+@REAL_TREE
 def test_the_real_tree_is_green_through_the_real_entry_point(gate):
     gate.log_test("the real tree, the real registry, the real process")
-    if not GATE.is_file():
-        gate.log_fail("the gate entry point is missing at %s" % GATE)
     if not (paths.repo_root() / BASELINE_REL).is_file():
         gate.log_fail("the registry is missing at %s" % BASELINE_REL)
     result = _run()
     gate.assert_eq(result.rc, 0, "the gate reds on the tree it was seeded from:\n%s" % result.err)
-    gate.assert_contains(result.out + result.err, "python env registry:")
+    gate.assert_contains(result.out + result.err, "python_reads:")
     gate.log_pass("the registered gate exits 0 on the tree it was seeded from")
 
 
+@REAL_TREE
 def test_the_success_line_prints_the_shape_not_just_a_verdict(gate):
     """`OK` cannot show a reader that a number collapsed. The counts can."""
     gate.log_test("the success line carries pairs, modules, names and the scan size")
@@ -80,7 +101,9 @@ def test_the_success_line_prints_the_shape_not_just_a_verdict(gate):
     text = result.out + result.err
     for token in ("pair(s) across", "module(s)", "distinct name(s)", "tracked .py file(s) scanned"):
         gate.assert_contains(text, token)
-    live = json.loads((paths.repo_root() / BASELINE_REL).read_text(encoding="utf-8"))["modules"]
+    live = json.loads((paths.repo_root() / BASELINE_REL).read_text(encoding="utf-8"))[SECTION][
+        "modules"
+    ]
     pairs = sum(len(v) for v in live.values())
     gate.assert_contains(text, "%d pair(s)" % pairs)
     if pairs < 100:
@@ -129,7 +152,7 @@ def test_deleting_the_registry_file_itself_reds_rather_than_passing(gate, tmp_pa
     root = _fixture(tmp_path, modules=None)
     result = _run(root)
     gate.assert_eq(result.rc, 1, "a missing registry passed, so the file is optional")
-    gate.assert_contains(result.err, "does not exist")
+    gate.assert_contains(result.err, "has no `python_reads` section")
     gate.log_pass("deleting the registry file reds; the file is not optional")
 
 

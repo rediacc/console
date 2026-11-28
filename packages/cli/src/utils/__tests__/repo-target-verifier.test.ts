@@ -67,7 +67,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.clearAllMocks());
 
-describe('resolveRepoRef — default step-5 verifier (R6)', () => {
+describe('resolveRepoRef: default step-5 verifier (R6)', () => {
   it('hands a mutating verb the repo_present precondition instead of probing', async () => {
     const resolved = await resolveRepoRef('shop');
     expect(resolved.machineName).toBe('m1');
@@ -123,14 +123,29 @@ describe('resolveRepoRef — default step-5 verifier (R6)', () => {
   });
 });
 
-// #92 (found live by the B1 window, the datastore arm's first-ever execution): probeRepoPresent rides repository_list, which is docker-world-only, so probing the DATASTORE arm false-refused every mutating verb on a cluster repo with exit 12. The arm now passes verification through to dispatch. Mutation control: re-point the datastore arm at the probe and the first test goes red
-// (h.present=false would refuse).
-describe('resolveRepoRef — datastore arm skips the docker probe (#92)', () => {
-  it('never consults the probe nor records a precondition for a datastore-placed ref', async () => {
+// #92 (found live by the B1 window): probeRepoPresent rides repository_list, which is docker-world-only, so probing the DATASTORE arm false-refused every mutating verb on a cluster repo with exit 12. The arm now defers to the job precondition `expect: repo_present` (renet's probeRepoState reads <ds>/repos/<guid>) and carries the named mount so the job's machine vault points there. Mutation control: re-point the datastore arm at the probe and the first test goes red.
+describe('resolveRepoRef: datastore arm defers to the job precondition (#92)', () => {
+  it('records repo_present with the named mount and never runs the repository_list probe', async () => {
+    h.present = false;
+    const resolved = await resolveRepoRef('kshop');
+    expect(resolved.machineName).toBe('cp1');
+    expect(resolved.kubeCluster).toBe('c1');
+    expect(probeRepoPresent).not.toHaveBeenCalled();
+    expect(expectRepoState).toHaveBeenCalledOnce();
+    expect(expectRepoState).toHaveBeenCalledWith(
+      expect.objectContaining({
+        machine: 'cp1',
+        repoGuid: h.GUID,
+        expect: 'repo_present',
+        datastore: '/mnt/rediacc-ds/ds1',
+      })
+    );
+  });
+
+  it('a converge-to-absent verb dispatches without the probe or a precondition', async () => {
     h.present = false;
     const resolved = await resolveRepoRef('kshop', { absentOk: true });
     expect(resolved.machineName).toBe('cp1');
-    expect(resolved.kubeCluster).toBe('c1');
     expect(probeRepoPresent).not.toHaveBeenCalled();
     expect(expectRepoState).not.toHaveBeenCalled();
   });

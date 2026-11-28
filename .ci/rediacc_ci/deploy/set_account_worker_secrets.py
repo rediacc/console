@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes thirty-nine runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty-nine `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes forty runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not forty `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, four times over, and every decision is a place a port can be quietly wrong:
+THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, three times over, and every decision is a place a port can be quietly wrong:
 
-  1. CHANNEL. `TARGET=stable` takes the Stripe key and the region's webhook
-     secret; anything else is the edge channel, where Stripe is deliberately
-     blank because billing is disabled there. The two Stripe guards are
-     therefore demanded on stable ONLY.
-  2. REGION FAN-IN. Four values are read through a CONSTRUCTED name:
-     `AWS_SES_ACCESS_KEY_ID_<SUFFIX>`, `AWS_SES_SECRET_ACCESS_KEY_<SUFFIX>`,
-     `OBS_OTLP_CREDENTIALS_<SUFFIX>` and `STRIPE_WEBHOOK_SECRET_<SUFFIX>`, and
+  1. CHANNEL. `TARGET=stable` selects the stable half of the backup plane's bucket, key pair, config server key and store KEK; anything else is the edge channel and takes the edge half.
+  2. REGION FAN-IN. Six values are read through a CONSTRUCTED name:
+     `AWS_SES_ACCESS_KEY_ID_<SUFFIX>`, `AWS_SES_SECRET_ACCESS_KEY_<SUFFIX>` and
+     `OBS_OTLP_CREDENTIALS_<SUFFIX>`, plus the forensics triple
+     `ACCOUNT_FORENSICS_S3_{ENDPOINT,ACCESS_KEY_ID,SECRET_ACCESS_KEY}_<SUFFIX>`
+     (`FORENSICS_PREFIXES`, `forensics_triple`), and
      the suffix is DROPPED on the way into the Worker, which has no concept of
      the other region's credential. The twin resolves them with bash
      indirection (`${!var}`), so a find-and-replace cannot see these names and
@@ -68,10 +67,9 @@ SO NEITHER CAN BE "FIXED" INTO AGREEMENT BY ACCIDENT.
   B. A SUFFIX THAT IS NOT AN IDENTIFIER. `${!var}` refuses a constructed name
      bash cannot parse: `SUFFIX=EU-1` ends the run at
      `AWS_SES_ACCESS_KEY_ID_EU-1: invalid variable name`, exit 1, and WHICH name
-     it happens to be depends on the channel, because on stable the Stripe
-     webhook indirection is evaluated first (:115) and on edge the first one
-     reached is the SES key (:124). Reproduced, prefix and all, minus bash's file
-     and line.
+     it happens to be depends on the order of the indirections: the first one
+     reached is the SES key. Reproduced, prefix and all, minus bash's file and
+     line.
 
      THE ONE SHAPE THIS PORT DOES NOT REPRODUCE, said out loud rather than left
      to be discovered: bash also accepts `${!var}` where the constructed name is
@@ -96,7 +94,7 @@ WHAT THE SIBLINGS' KNOWN DEFECTS DO HERE, checked one by one because this file i
     twin ends on the pipe into wrangler (:278). `SUCCESS_IS_SILENT` names that.
   * THE DOUBLED SCRIPT NAME IS HERE, three times over. Divergence A.
 
-K=5 LEDGER: `.ci/shadow/w7p6-set-account-worker-secrets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -117,7 +115,7 @@ if TYPE_CHECKING:
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_account_worker_secrets"
 
-# The channel that takes Stripe. Every other value of TARGET is the edge
+# The stable channel. Every other value of TARGET is the edge
 # channel: the twin tests `[[ "$TARGET" == "stable" ]]` and has no third arm.
 STABLE = "stable"
 
@@ -129,12 +127,18 @@ MISSING_MESSAGES: tuple[tuple[str, str], ...] = (
     ("SUFFIX", "SUFFIX: %s: SUFFIX must be set" % SELF),
 )
 
-# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the order the twin evaluates them. STRIPE_WEBHOOK_SECRET is first and is reached on the stable channel only; the other three are reached on both.
+# The four PREFIXES read through a constructed `<PREFIX>_<SUFFIX>` name, in the order the twin evaluates them.
 SUFFIXED_PREFIXES: tuple[str, ...] = (
-    "STRIPE_WEBHOOK_SECRET",
     "AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY",
     "OBS_OTLP_CREDENTIALS",
+)
+
+# The forensics evidence bucket's connection (PLAN-forensics-shipping FS12), one triple per REGION: the bucket `forensics-<region>` serves both channels, so the names carry the suffix only, `<PREFIX>_<SUFFIX>`. The bucket name and region are plain vars in workers/account/wrangler.*.toml. The endpoint is the evidence account's own S3 host, so no jurisdiction label is spliced into it.
+FORENSICS_PREFIXES: tuple[str, ...] = (
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
 )
 
 # What bash will accept as the target of `${!var}`. Divergence B: bash also
@@ -199,9 +203,9 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The thirty-nine `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name, the sales-digest recipient and the four contact and alerts sender and recipient addresses) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
+# The forty `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name, the sales-digest recipient the four contact and alerts sender and recipient addresses and the three forensics store values) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
-# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the ten values this script COMPUTES rather than reads, and those ten are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
+# (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the twelve values whose source is not a plain name: nine this script COMPUTES rather than reads, and the three forensics values, which it reads under a CONSTRUCTED name (`<PREFIX>_<SUFFIX>`, `forensics_triple`). Those twelve are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
     ("ACCOUNT_X25519_PRIVATE_KEY", "x25519_priv", "ACCOUNT_X25519_PRIVATE_KEY"),
@@ -210,11 +214,10 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ACCOUNT_JWT_SECRET", "jwt", "ACCOUNT_JWT_SECRET"),
     ("FREE_LICENSE_HMAC_KEY", "free_license_hmac", "FREE_LICENSE_HMAC_KEY"),
     ("ACCOUNT_AE_READ_TOKEN", "ae_read_token", "ACCOUNT_AE_READ_TOKEN"),
+    ("AI_GATEWAY_LOGS_TOKEN", "ai_gateway_logs", "AI_GATEWAY_LOGS_TOKEN"),
     ("CLOUDFLARE_ACCOUNT_ID", "cf_account_id", "CLOUDFLARE_ACCOUNT_ID"),
     ("ACCOUNT_CONFIG_SERVER_KEY", "config_server_key", ""),
     ("ACCOUNT_BACKUP_STORE_KEK", "backup_store_kek", ""),
-    ("STRIPE_SECRET_KEY", "stripe", ""),
-    ("STRIPE_WEBHOOK_SECRET", "stripe_wh", ""),
     ("ROOT_EMAIL", "admin", "ROOT_EMAIL"),
     ("AWS_SES_ACCESS_KEY_ID", "ses_key", ""),
     ("AWS_SES_SECRET_ACCESS_KEY", "ses_secret", ""),
@@ -242,6 +245,9 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("ALERTS_FROM_EMAIL", "alerts_from", "ALERTS_FROM_EMAIL"),
     ("CONTACT_NOTIFY_EMAIL", "contact_notify", "CONTACT_NOTIFY_EMAIL"),
     ("ALERTS_NOTIFY_EMAIL", "alerts_notify", "ALERTS_NOTIFY_EMAIL"),
+    ("ACCOUNT_FORENSICS_S3_ENDPOINT", "forensics_endpoint", ""),
+    ("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID", "forensics_akid", ""),
+    ("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY", "forensics_secret", ""),
 )
 
 # The unconditional `_require_nonempty` calls (the twin's fifteen at :198-212, plus the port's own: the config server key, the store KEK, the free-licence key, the Analytics Engine pair and the four contact and alerts addresses), in order. The FIRST empty one ends the run, so the order is observable in the message.
@@ -249,7 +255,7 @@ KEYS: tuple[tuple[str, str, str], ...] = (
 # WHY THESE, in the twin's own words (:167-197): the Worker schema marks most of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off -- email stops with requests still returning 200, Turnstile disables itself, telemetry goes dark, backups 503. `required: true` on the GitHub side used to be the guard, and a job-start
 # Bitwarden fetch has no equivalent: a correct UUID pointing at an empty value injects "" without complaint.
 #
-# THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO LOOKING FOR. For the four fan-ins the store holds `<NAME>_<SUFFIX>`, so "Check the secret store for that name" is one suffix short of the truth on AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, OBS_OTLP_CREDENTIALS and STRIPE_WEBHOOK_SECRET. Reproduced, and reported to the driver rather than repaired
+# THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO LOOKING FOR. For the three fan-ins the store holds `<NAME>_<SUFFIX>`, so "Check the secret store for that name" is one suffix short of the truth on AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY and OBS_OTLP_CREDENTIALS. Reproduced, and reported to the driver rather than repaired
 # here.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -275,12 +281,6 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ALERTS_FROM_EMAIL",
     "CONTACT_NOTIFY_EMAIL",
     "ALERTS_NOTIFY_EMAIL",
-)
-
-# The two demanded on the stable channel only (:213-216). On edge the twin has already blanked both, so demanding them there would refuse every edge deploy.
-REQUIRED_NONEMPTY_STABLE: tuple[str, ...] = (
-    "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET",
 )
 
 # THE ONE VALUE THE WORKER JSON.PARSES rather than reads (the twin's shape guard, after the `_require_nonempty` block). private/account/src/routes/telemetry.ts parses OBS_OTLP_CREDENTIALS and answers {otlp: null} for anything but {"user": string, "pass": string}, so a non-empty value of the wrong shape passes every guard above and turns telemetry off as silently as an empty
@@ -335,7 +335,7 @@ class GuardError(ScriptRefusalError):
 def read_env() -> dict[str, str]:
     """Every variable the twin reads, ONE EXPLICIT `os.environ.get` PER NAME.
 
-    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads forty-one names by hand plus the eight it constructs.
+    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads forty-three names by hand.
 
     UNSET AND EMPTY ARE THE SAME CASE THROUGHOUT, so a plain `str` per name is
     faithful: every read in the twin is `"${NAME:-}"`, `"${NAME:?...}"` or a
@@ -346,7 +346,6 @@ def read_env() -> dict[str, str]:
         "WORKER_NAME": os.environ.get("WORKER_NAME", ""),
         "TARGET": os.environ.get("TARGET", ""),
         "SUFFIX": suffix,
-        "STRIPE_SECRET_KEY": os.environ.get("STRIPE_SECRET_KEY", ""),
         "AWS_SES_ACCESS_KEY_ID_EU": os.environ.get("AWS_SES_ACCESS_KEY_ID_EU", ""),
         "AWS_SES_SECRET_ACCESS_KEY_EU": os.environ.get("AWS_SES_SECRET_ACCESS_KEY_EU", ""),
         "BACKUP_BUCKET_STABLE": os.environ.get("BACKUP_BUCKET_STABLE", ""),
@@ -359,6 +358,8 @@ def read_env() -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY", ""),
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN", ""),
+        # The logs-read token of the nightly AI credit reconcile (PLAN-console-ai-credits D8); optional, the reconcile skips while it is empty.
+        "AI_GATEWAY_LOGS_TOKEN": os.environ.get("AI_GATEWAY_LOGS_TOKEN", ""),
         # The account whose Analytics Engine datasets the SQL API reads (PLAN-d1-scaling A2).
         "CLOUDFLARE_ACCOUNT_ID": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),
@@ -405,6 +406,10 @@ def read_env() -> dict[str, str]:
     for prefix in SUFFIXED_PREFIXES:
         name = "%s_%s" % (prefix, suffix)
         env[name] = os.environ.get(name, "")
+    # The forensics triple of this region, read by the same constructed-name rule.
+    for prefix in FORENSICS_PREFIXES:
+        name = "%s_%s" % (prefix, suffix)
+        env[name] = os.environ.get(name, "")
     # BOTH channels' config server key names for this region, so that `resolve` can REFUSE the other one.
     for prefix in SUFFIXED_CHANNEL_PREFIXES:
         for channel in (CHANNEL_STABLE, CHANNEL_EDGE):
@@ -422,6 +427,24 @@ def indirect(env: dict[str, str], prefix: str, suffix: str) -> str:
     if not IDENTIFIER.match(name):
         raise ScriptRefusalError(INVALID_VARIABLE_NAME % name)
     return env.get(name, "")
+
+
+def forensics_triple(env: dict[str, str], suffix: str) -> tuple[str, str, str]:
+    """The (endpoint, key id, secret) of SUFFIX's forensics bucket, all empty when the region has none yet.
+
+    The Worker reads all three or none (`forensicsStoreFromEnv` throws on a half-configured store), so a partly set triple is refused here rather than deployed as a Worker whose forensics routes fail at request time. All empty is a valid push: the routes answer 503 FORENSICS_NOT_CONFIGURED until the store entries exist.
+    """
+    values = tuple(indirect(env, prefix, suffix) for prefix in FORENSICS_PREFIXES)
+    if any(values) and not all(values):
+        unset = [
+            "%s_%s" % (p, suffix) for p, v in zip(FORENSICS_PREFIXES, values, strict=True) if not v
+        ]
+        raise ScriptRefusalError(
+            "%s: the forensics store of SUFFIX=%s is half configured, %s unset."
+            % (SELF, suffix, ", ".join(unset)),
+            "  Set all three of the region's forensics names or none of them.",
+        )
+    return values[0], values[1], values[2]
 
 
 def apply_jurisdiction(endpoint: str, jurisdiction: str) -> str:
@@ -487,24 +510,14 @@ def _channel_key(env: dict[str, str], prefix: str, label: str, target: str, suff
 
 
 def resolve(env: dict[str, str]) -> dict[str, str]:
-    """The four decisions, in the twin's order, as jq variable -> value.
+    """The three decisions, in the twin's order, as jq variable -> value.
 
-    ORDER IS OBSERVABLE and it is the reason this is one function rather than four: an invalid SUFFIX is refused at the FIRST indirection reached, which is the Stripe webhook on stable (:115) and the SES key on edge (:124), and the bucket refusal (:150) comes before every `_require_nonempty` guard.
+    ORDER IS OBSERVABLE and it is the reason this is one function rather than four: an invalid SUFFIX is refused at the FIRST indirection reached, the SES key, and the bucket refusal (:150) comes before every `_require_nonempty` guard.
     """
     target = env.get("TARGET", "")
     suffix = env.get("SUFFIX", "")
 
-    # 1. Stripe. The KEY is account-wide (one Stripe account, acct_1ONIroAH2UKrsSNm);
-    # only the WEBHOOK signing secret is per-endpoint, hence per-region.
-    if target == STABLE:
-        stripe_key = env.get("STRIPE_SECRET_KEY", "")
-        stripe_webhook = indirect(env, "STRIPE_WEBHOOK_SECRET", suffix)
-    else:
-        # Edge (beta channel): no Stripe, billing disabled.
-        stripe_key = ""
-        stripe_webhook = ""
-
-    # 2. SES region fan-in, and 3. the ASIA borrow, which happens AFTER the suffixed pair has been read.
+    # 1. SES region fan-in, and 2. the ASIA borrow, which happens AFTER the suffixed pair has been read.
     ses_access_key_id = indirect(env, "AWS_SES_ACCESS_KEY_ID", suffix)
     ses_secret_access_key = indirect(env, "AWS_SES_SECRET_ACCESS_KEY", suffix)
     if suffix == ASIA:
@@ -512,8 +525,9 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
         ses_secret_access_key = env.get(ASIA_BORROWS[1], "")
 
     otlp_creds = indirect(env, "OBS_OTLP_CREDENTIALS", suffix)
+    forensics = forensics_triple(env, suffix)
 
-    # 4. The backup plane. The bucket follows the CHANNEL and is refused when empty: backup-chunk-store.ts reads `env.ACCOUNT_BACKUP_S3_BUCKET ?? ''`, so an empty value does NOT throw there. It mints presigned URLs against bucket "" and every backup upload 404s at runtime.
+    # 3. The backup plane. The bucket follows the CHANNEL and is refused when empty: backup-chunk-store.ts reads `env.ACCOUNT_BACKUP_S3_BUCKET ?? ''`, so an empty value does NOT throw there. It mints presigned URLs against bucket "" and every backup upload 404s at runtime.
     bucket_var = BUCKET_VAR_STABLE if target == STABLE else BUCKET_VAR_EDGE
     backup_bucket = env.get(bucket_var, "")
     if not backup_bucket:
@@ -533,8 +547,6 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
     values = {var: env.get(source, "") for _key, var, source in KEYS if source}
     values.update(
         {
-            "stripe": stripe_key,
-            "stripe_wh": stripe_webhook,
             "ses_key": ses_access_key_id,
             "ses_secret": ses_secret_access_key,
             "otlp_creds": otlp_creds,
@@ -544,6 +556,9 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "backup_secret": backup_secret,
             "config_server_key": config_key,
             "backup_store_kek": store_kek,
+            "forensics_endpoint": forensics[0],
+            "forensics_akid": forensics[1],
+            "forensics_secret": forensics[2],
         }
     )
     return values
@@ -557,10 +572,7 @@ def check_nonempty(values: dict[str, str], env: dict[str, str]) -> None:
     """
     by_key = {key: values[var] for key, var, _source in KEYS}
     target = env.get("TARGET", "")
-    demanded = REQUIRED_NONEMPTY
-    if target == STABLE:
-        demanded = REQUIRED_NONEMPTY + REQUIRED_NONEMPTY_STABLE
-    for name in demanded:
+    for name in REQUIRED_NONEMPTY:
         if not by_key[name]:
             raise GuardError(name, env.get("WORKER_NAME", ""), target, env.get("SUFFIX", ""))
 

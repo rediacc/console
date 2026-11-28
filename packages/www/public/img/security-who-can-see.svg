@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 380" width="640" height="380">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <polygon points="0 0, 10 5, 0 10" fill="#556b2f"/>
+    </marker>
+  </defs>
+  <rect width="640" height="380" fill="#f5f5f5"/>
+  <text x="320" y="26" text-anchor="middle" font-family="Arial, sans-serif" font-size="15" font-weight="700" fill="#1a1a1a">Who can see config content</text>
+  <rect x="40" y="50" width="300" height="48" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="190.0" y="79.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Database copy only</text>
+  <rect x="360" y="50" width="240" height="48" rx="8" fill="#ffffff" stroke="#556b2f" stroke-width="3"/>
+  <text x="480.0" y="79.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">No</text>
+  <rect x="40" y="112" width="300" height="48" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="190.0" y="141.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Database + object storage</text>
+  <rect x="360" y="112" width="240" height="48" rx="8" fill="#ffffff" stroke="#556b2f" stroke-width="3"/>
+  <text x="480.0" y="141.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">No</text>
+  <rect x="40" y="174" width="300" height="48" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="190.0" y="203.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Full server compromise</text>
+  <rect x="360" y="174" width="240" height="48" rx="8" fill="#ffffff" stroke="#556b2f" stroke-width="3"/>
+  <text x="480.0" y="203.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">No, without a slot secret</text>
+  <rect x="40" y="236" width="300" height="48" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="190.0" y="265.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Removed member's device</text>
+  <rect x="360" y="236" width="240" height="48" rx="8" fill="#ffffff" stroke="#b7791f" stroke-width="3"/>
+  <text x="480.0" y="265.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Only what was pulled</text>
+  <rect x="40" y="298" width="300" height="48" rx="8" fill="#ffffff" stroke="#1a1a1a" stroke-width="1"/>
+  <text x="190.0" y="327.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">Leaked agent URL</text>
+  <rect x="360" y="298" width="240" height="48" rx="8" fill="#ffffff" stroke="#b7791f" stroke-width="3"/>
+  <text x="480.0" y="327.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" font-weight="700" fill="#1a1a1a">One config, as that user</text>
+</svg>

@@ -15,6 +15,11 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_unproven_bulk_transform"]
 
@@ -26,7 +31,7 @@ def run(command, cwd):
     # runner happened to hold, which was inert only while no case named a different repo via `-C`/`cd`.
     env = dict(os.environ)
     env["CLAUDE_PROJECT_DIR"] = cwd
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
         capture_output=True,
@@ -908,7 +913,7 @@ both_arms(
 MSG_69B1 = """\
 chore(plans): lift the 2026-09-26 holds and run-alone markers that turbo cannot see past
 
-With turbo on and writer_cap 10, plan_gate.next_turbo picked one plan out of the whole queue. Two temporary rulings from 2026-09-26 stood in the way:
+With turbo on and a writer cap of 10, plan_gate.next_turbo picked one plan out of the whole queue. Two temporary rulings from 2026-09-26 stood in the way:
 - 30 plans read "Status: held -- ... held until CI is green".
 - 40 plans read "Concurrency: exclusive -- ... every plan runs alone while the token budget is limited (for the next few days)".
 
@@ -1189,51 +1194,7 @@ for (message, want), got in zip(PROOF_CASES, json.loads(proof_proc.stdout), stri
         )
     )
 
-# ---- A REDIRECT TARGET IS READ AS TYPED AND AS BASH EXPANDS IT (#7b3f34ae) --
-# `names` (the top-level assignments before the commit) expands a typed target, and `if true; then D=src; fi` is not top-level: `D=other` stayed the value there, `echo x > $D/a.md` read as `other/a.md`, and the clause that writes `src/a.md` under the pathspec was not named (`[]` at e76fe1061). The expanded form (`shellscan.redirect_targets`) names it. Each ROW is (label, command, writers wanted); the MUTANT plants the typed-only read and must turn the first row.
-REDIRECT_ROWS = [
-    (
-        "an assignment inside an if, redirect through the variable",
-        "D=other; if true; then D=src; fi; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "a top-level assignment, redirect into the pathspec",
-        "D=src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "a variable holding another directory (control)",
-        "D=other; echo x > $D/a.md; git commit -m x -- src",
-        False,
-    ),
-    (
-        "a variable the walk cannot know stays a writer",
-        "echo x > $UNSET_DIR/a.md; git commit -m x -- src",
-        True,
-    ),
-    # #97ed76a7: each was `[]` at 434eb6c5f, because the lexical `NAME=value` lookup read `other` where bash assigned `src` (`for`, `read`, `printf -v`); the walk leaves the value unknown, so the clause counts as a writer.
-    (
-        "a for loop assigns the variable",
-        "D=other; for D in src; do echo x > $D/a.md; done; git commit -m x -- src",
-        True,
-    ),
-    (
-        "read assigns the variable",
-        "D=other; read D <<< src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "printf -v assigns the variable",
-        "D=other; printf -v D src; echo x > $D/a.md; git commit -m x -- src",
-        True,
-    ),
-    (
-        "printf -v of another name keeps the value (control)",
-        "D=other; printf -v E src; echo x > $D/a.md; git commit -m x -- src",
-        False,
-    ),
-]
+REDIRECT_ROWS = load_table("block_unproven_bulk_transform", "REDIRECT_ROWS")
 REDIRECT_CHILD = """
 import importlib.util, json, sys
 guard, repo, path = sys.argv[1:4]

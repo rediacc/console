@@ -1,6 +1,6 @@
 """Behaviour suite for `rediacc_ci.security.audit`, the live gate `check:ci-security-audit`.
 
-THIS WAS A DIFFERENTIAL AGAINST `.ci/scripts/security/audit.sh` UNTIL W7P5-b, and the twin it compared against is now deleted. The differential did its job: it licensed the deletion, alongside the K=5 ledger in `.ci/shadow/w7p6-audit.observations.jsonl`. What survives here is every expectation it established, restated as a LITERAL.
+THIS WAS A DIFFERENTIAL AGAINST `.ci/scripts/security/audit.sh` UNTIL W7P5-b, and the twin it compared against is now deleted. The differential did its job: it licensed the deletion, alongside the K=5 ledger in the ledger (deleted in commit:936280cd35). What survives here is every expectation it established, restated as a LITERAL.
 
 A CASE THAT COULD ONLY EVER SAY "the port matches the bash" says nothing once the bash is gone. The three cases that COMPUTED their expectation by running the twin were therefore rewritten rather than carried over: `describe_fix`'s seven answers and the three jq programs are now written out in full, captured from the twin at deletion time. The control was rewritten the same way,
 and runs each plant against the unplanted gate.
@@ -58,7 +58,7 @@ NPM_PIN = toolchain.pin_for("npm", toolchain.load_pins(ROOT / ".devcontainer" / 
 PORT_REL = ".ci/rediacc_ci/security/audit.py"
 PORT = ROOT / PORT_REL
 
-# THE FAKES RECORD BEFORE THEY ANSWER, and they record TWICE: once into `$FAKE_LOG` (which the call-log channel compares) and once onto stderr with the same `call: ` prefix (which the shadow-gate ledger's `--finding-re` scopes to). The second copy is not decoration: `shadow-gate.ts` classifies `-> ` and `v ` lines as CHATTER before any message regex sees them, so a gate that
+# THE FAKES RECORD BEFORE THEY ANSWER, and they record TWICE: once into `$FAKE_LOG` (which the call-log channel compares) and once onto stderr with the same `call: ` prefix (which the shadow gate ledger's `--finding-re` scopes to). The second copy is not decoration: the shadow gate (commit:bf054adcd4) classifies `-> ` and `v ` lines as CHATTER before any message regex sees them, so a gate that
 # reports mostly through log_info would record VACUOUS_BOTH_EMPTY rows forever.
 FAKE_NPM = r"""#!/bin/bash
 printf 'call: npm %s\n' "$*" >>"$FAKE_LOG"

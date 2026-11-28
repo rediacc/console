@@ -8,11 +8,13 @@ So each helper is driven twice: once with an input that must be accepted, once w
 THE SUBJECT IS AN INNER `Harness`; the outer `gate` fixture is the instrument. Two instances, so a control recorded on the subject cannot satisfy the instrument's own anti-vacuity floor and vice versa.
 """
 
+import concurrent.futures
 import json
 import os
 import pathlib
 import shutil
 import subprocess
+import sys
 
 import pytest
 
@@ -439,3 +441,67 @@ def test_a_signal_is_named_rather_than_left_as_a_number(gate):
     gate.ok("control: the naming reaches the failure text, not just the helper")
 
     gate.tally_finish("exit-code naming")
+
+
+# `harness.nested_pytest_argv`, both directions. Moved here byte for byte from the deleted test_twin_parity.py (PLAN-tooling-code-reduction.md CR1), whose nested runs were the first caller; test_pytest_phase_timing.py is the live one.
+# What one nested pytest of the basetemp race test may cost; a run past it is a
+# verdict (rc NESTED_TIMED_OUT), never a TimeoutExpired traceback.
+NESTED_PYTEST_TIMEOUT = 120
+NESTED_TIMED_OUT = -1
+
+
+def _run_nested(argv, root, cwd):
+    try:
+        return subprocess.run(
+            argv,
+            cwd=cwd,
+            env={**os.environ, "PYTEST_DEBUG_TEMPROOT": str(root)},
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=NESTED_PYTEST_TIMEOUT,
+        ).returncode
+    except subprocess.TimeoutExpired:
+        return NESTED_TIMED_OUT
+
+
+def _two_nested_runs(tmp_path, own_basetemp):
+    """Run two nested pytests at once with a scratch temp root; return (rcs, every path they left under that root)."""
+    root = tmp_path / "temproot"
+    root.mkdir()
+    jobs = []
+    for n in range(2):
+        work = tmp_path / ("work%d" % n)
+        work.mkdir()
+        (work / "pytest.ini").write_text("[pytest]\n", encoding="utf-8")
+        (work / "test_one.py").write_text(
+            "def test_one(tmp_path):\n    assert tmp_path.is_dir()\n", encoding="utf-8"
+        )
+        if own_basetemp:
+            argv = harness.nested_pytest_argv(work / "bt", "-q", "-p", "no:cacheprovider")
+        else:
+            argv = [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider"]
+        jobs.append((argv, root, work))
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+        rcs = list(pool.map(lambda job: _run_nested(*job), jobs))
+    return rcs, sorted(root.rglob("*"))
+
+
+def test_a_nested_run_past_its_timeout_is_a_verdict_not_a_traceback(tmp_path, monkeypatch):
+    monkeypatch.setitem(globals(), "NESTED_PYTEST_TIMEOUT", 0.2)
+    argv = [sys.executable, "-c", "import time; time.sleep(30)"]
+    assert _run_nested(argv, tmp_path, tmp_path) == NESTED_TIMED_OUT
+
+
+def test_nested_pytest_with_own_basetemp_never_touches_the_shared_root(tmp_path):
+    rcs, shared = _two_nested_runs(tmp_path, own_basetemp=True)
+    assert rcs == [0, 0]
+    assert shared == [], "a nested pytest wrote under the shared pytest-of-<user> root"
+
+
+def test_control_nested_pytest_without_basetemp_uses_the_shared_root(tmp_path):
+    """CONTROL: the old spawn form does land in the shared root, which is what the race is made of."""
+    _rcs, shared = _two_nested_runs(tmp_path, own_basetemp=False)
+    assert shared, (
+        "the old spawn form no longer touches the shared root; the test above proves nothing"
+    )

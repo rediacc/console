@@ -10,11 +10,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: fr
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code fonctionne nativement avec Rediacc via le CLI `rdc`. Ce guide couvre la configuration, les permissions et les flux de travail courants.
+
+> **La sécurité d'abord** : Avant de brancher un agent sur quoi que ce soit qui touche à des secrets, lisez [Sécurité et garde-fous des agents IA](/fr/docs/ai-agents-safety). Claude Code exécuté sous `rdc` est détecté comme un agent. Les mutations sensibles exigent `--current <previous-value>` (précondition de style passwd) pour les humains comme pour les agents ; `--rotate-secret` (rotation reconnue, auditée) ne compte que pour un humain dans un terminal. `rdc config edit` (interactif, `--apply`, `--reveal`) est refusé sans aucune dérogation, et les dépôts grand et le SSH direct vers la machine restent fermés tant qu'un humain n'y adhère pas explicitement dans les limites de la politique. Lorsqu'une précondition échoue, le champ `errors[].next.options[].run` de l'enveloppe JSON indique à l'agent la commande CLI exacte à suggérer à l'utilisateur. Transmettez-la telle quelle.
 
 ## Configuration rapide
 
@@ -38,7 +40,7 @@ Placez ceci à la racine de votre projet. Consultez le [modèle AGENTS.md](/fr/d
 - Deploy: rdc repo up <repo>@<machine> --yes
 - Containers: rdc machine status <machine> --containers -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term connect <machine> [repo]
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -86,7 +88,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 

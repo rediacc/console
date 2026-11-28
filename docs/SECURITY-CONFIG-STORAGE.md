@@ -147,6 +147,12 @@ CEK distribution uses X25519 key exchange between browsers — server only relay
 
 Even if a removed member saved an `sdk_derived`, they can only decrypt configs from that specific time window. All configs pushed after removal use new epoch keys they never received.
 
+## Agent Grants and Policy Records
+
+An agent grant is a key-holder type beside passkey slots, recovery slots and machine secrets. It carries one config's content key and the policy keys of the grant's own team config and of the org-level config, so an agent reads exactly what its person reads and never receives the CEK. A grant lives 7 days by default and 30 days at most, reaches one config in one region, and does not count as a key holder for the safety net. A leaked bearer acts as its user on that one config until it expires or is revoked.
+
+Each config entry's authorization policy is a separate record sealed under a key derived from the CEK and the record's pointer (store, config, team, CEK generation), with AAD v2 binding store, config, team, version and CEK generation. A v1 policy blob is refused. Org owners and admins write the org policy, and a team's `team_admin` or an org owner or admin writes a team policy; the write needs 2FA and an elevated session. Details are in [DESIGN-CONFIG-STORAGE.md](DESIGN-CONFIG-STORAGE.md#policy-record).
+
 ## Threat Model
 
 | Attack | What Attacker Gets | What They Need | Result |
@@ -156,6 +162,7 @@ Even if a removed member saved an `sdk_derived`, they can only decrypt configs f
 | Token file stolen | storageKeyId + serverToken | passkey_secret (in secure storage) | Reference only, no secrets |
 | Passkey compromised alone | passkey_secret | server_secret (requires valid token) | Can't derive CEK |
 | Rogue server code | clientEnc(sdkEnc(values)) at most | CEK (never on server) | Still encrypted |
+| Leaked agent bearer | One config's content key and two policy keys while the executor holds the bearer and the server's answer | Nothing beyond that config and the two policy records, and no CEK; expires within 30 days | Bounded to one config and its two policy records |
 | Former employee with CEK | Can remove CEK layer | sdk_derived (server refuses) | Blocked within 30 seconds |
 
 ## Platform-Specific Security

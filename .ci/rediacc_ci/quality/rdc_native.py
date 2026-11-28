@@ -20,6 +20,20 @@ ANTI-VACUITY. Every probe is a real subprocess and its exit code is checked; a p
 
 THE CONTROL RUNS AGAINST A MUTATED COPY OF THE PACKAGE, not against a mutated copy of the gate. `plan()` resolves its root from `native.py`'s own location and this gate points the subprocess at the copy with `PYTHONPATH`, so the control exercises the same delegation the real run does, over a package whose darwin mapping has been re-keyed. The plant is asserted to have landed before
 its result is believed: a substitution that matched nothing would otherwise produce an identical copy, a control that "fires" on unmutated source, and a green that means nothing. Both directions are covered, because a differential that always reports a mismatch is as useless as one that never does.
+
+---- gate ----
+step: rdc.sh wrapper budget and --native arms
+needs: none
+selftest: true
+lane: quality-static
+why: the `--native` SEA build left rdc.sh for rediacc_ci.native, and two things
+     undo that invisibly. The wrapper re-absorbs logic one special case at a
+     time, which only a line ceiling catches; and the mac and win arms of that
+     build have never been executed by anything in this repository, so a
+     re-keyed artefact name would be found by a person with a Mac rather than
+     by CI. plan() takes system and machine as arguments, so all three arms are
+     driven here against a literal table read off the deleted bash
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -336,4 +350,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_rdc_native.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

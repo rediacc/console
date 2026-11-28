@@ -53,7 +53,7 @@ public/assets/tutorials/*.mp4
 **Every prompting command needs its confirmation bypass.** A prompt inside a recording hangs forever; `2>/dev/null` hides the question and `|| true` cannot rescue a command that never returns. **Enforced in CI** — no need to audit by hand:
 
 ```bash
-npm run check:ci-tutorial-noninteractive
+npm run check:ci-tutorial-commands
 ```
 
 It derives the prompting commands from the CLI's own command tree (an option described as "Skip confirmation …" *is* the command admitting it prompts), so a new one is covered the day it lands and a renamed flag cannot silently drop coverage. Currently 18 commands, e.g. `repo delete`, `backup restore`, `datastore delete`, `machine remove` → `-y/--yes`; `machine prune`, `machine

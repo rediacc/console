@@ -17,7 +17,7 @@ from rediacc_ci.deploy import deploy_proxy
 from rediacc_ci.enterprise import proof
 from rediacc_ci.ops import deploy_bench, reset_bench
 from rediacc_ci.tests.test_deploy_deploy_proxy import _fixture_root
-from rediacc_ci.tests.test_ops_reset_bench_region import _world
+from rediacc_ci.tests.test_ops_reset_bench_region import ARMED, _world
 
 CI_ROOT = pathlib.Path(__file__).resolve().parents[2]
 
@@ -176,7 +176,7 @@ def test_a_busy_error_raised_by_the_proof_run_is_not_reported_as_a_lock_refusal(
 def test_reset_bench_waits_on_its_region_and_names_the_holder(hold, monkeypatch, capsys) -> None:
     holder = hold("bench-us")
     asked: list[tuple] = []
-    _world(monkeypatch, [], asked)
+    _world(monkeypatch, ARMED, asked)
 
     def resolve(_account: str) -> Any:
         raise ReachedError
@@ -184,13 +184,14 @@ def test_reset_bench_waits_on_its_region_and_names_the_holder(hold, monkeypatch,
     monkeypatch.setattr(reset_bench.cf_auth, "resolve", resolve)
     assert reset_bench.main(["--region", "us", "--yes"]) == 1
     _names_holder(capsys.readouterr().err, holder)
-    assert asked == []
+    # The static wipe-target check reads the bench names before the lock; nothing past it ran.
+    assert [step for step in asked if step[0] != "names"] == []
 
 
 def test_reset_of_one_region_does_not_wait_on_another(hold, monkeypatch) -> None:
     hold("bench-eu")
     asked: list[tuple] = []
-    _world(monkeypatch, [], asked)
+    _world(monkeypatch, ARMED, asked)
     assert reset_bench.main(["--region", "us", "--yes"]) == 0
     assert ("wipe_d1", "us") in asked
 

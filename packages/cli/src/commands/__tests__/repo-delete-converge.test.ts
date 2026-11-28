@@ -40,7 +40,7 @@ vi.mock('../../services/config/network-id-discovery.js', () => ({
 }));
 vi.mock('../../utils/repo-executor.js', () => ({ recordedDatastoreMount: () => undefined }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn(),
+  enforceResolvedTarget: vi.fn(),
   CMD: { REPO_DELETE: 'repo.delete' },
 }));
 vi.mock('../../remote/vscode/index.js', () => ({

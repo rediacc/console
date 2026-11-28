@@ -2673,38 +2673,38 @@ def test_remote_drift_and_the_round_log_guards(tmp_path):
         "## Wave header\nx\n## STATUS (round 1, t)\ny\n## Rounds\nhistory\n", encoding="utf-8"
     )
     block.check(
-        "check 2 guards/block_roundlog_write.py",
+        "check 2 guards/block_guarded_path_edit.py",
         tool_json("Write", str(real), "content", "x"),
         "roundlog: a whole-file Write over an EXISTING log is blocked",
         env=env,
     )
     # The exemption, and the reason it is safe: nothing to swallow.
     block.check(
-        "check 0 guards/block_roundlog_write.py",
+        "check 0 guards/block_guarded_path_edit.py",
         tool_json("Write", RLOG, "content", "x"),
         "roundlog CONTROL: CREATING one passes -- a file that does not exist has no appendix",
         env=env,
     )
     block.check(
-        "check 0 guards/block_roundlog_write.py",
+        "check 0 guards/block_guarded_path_edit.py",
         tool_json("Edit", str(real), "new_string", "x"),
         "roundlog: a targeted Edit of an existing log passes",
         env=env,
     )
     block.check(
-        "check 0 guards/block_roundlog_write.py",
+        "check 0 guards/block_guarded_path_edit.py",
         tool_json("Edit", RLOG, "new_string", "x"),
         "roundlog: a targeted Edit passes (it cannot swallow an unnamed appendix)",
         env=env,
     )
     block.check(
-        "check 0 guards/block_roundlog_write.py",
+        "check 0 guards/block_guarded_path_edit.py",
         tool_json("Write", "/r/reports/pr-babysit-0818-1-briefing.md", "content", "x"),
         "roundlog: a briefing has its own contract, not this guard's",
         env=env,
     )
     block.check(
-        "check 0 guards/block_roundlog_write.py",
+        "check 0 guards/block_guarded_path_edit.py",
         tool_json("Write", "packages/www/src/x.astro", "content", "x"),
         "roundlog: an unrelated file is untouched",
         env=env,
@@ -2939,7 +2939,7 @@ def _deadlock_probe(block, tmp_path) -> None:
     log.parent.mkdir(parents=True, exist_ok=True)
     log.unlink(missing_ok=True)  # must NOT exist: creation is the case under test
     guard_rc, _ = hookcases.run_guard(
-        "guards/block_roundlog_write.py",
+        "guards/block_guarded_path_edit.py",
         tool_json("Write", str(log), "content", "x"),
         want_stderr=False,
     )

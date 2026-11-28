@@ -32,6 +32,8 @@ export function runContainerHealthCheck(
   outputService.error(
     t('commands.machine.status.containersUnhealthyFound', { count: unhealthy.length })
   );
+  // Set before the print, so the JSON envelope carrying these says success:false.
+  setExitCode(2);
   if (format === 'json') {
     outputService.print(
       unhealthy.map((c) => ({
@@ -46,7 +48,6 @@ export function runContainerHealthCheck(
       outputService.info(`  - ${c.name} (${resolve(c.repository)})`);
     }
   }
-  setExitCode(2);
 }
 
 /** `--stability-check`: gate on unstable services, exit 2 if any. */
@@ -65,6 +66,8 @@ export function runServiceStabilityCheck(
   outputService.error(
     t('commands.machine.status.servicesUnstableFound', { count: unstable.length })
   );
+  // Set before the print, so the JSON envelope carrying these says success:false.
+  setExitCode(2);
   if (format === 'json') {
     outputService.print(
       unstable.map((s) => ({
@@ -81,7 +84,6 @@ export function runServiceStabilityCheck(
       );
     }
   }
-  setExitCode(2);
 }
 
 /** `--search <text>`: filter the repositories section by name / mount path. */

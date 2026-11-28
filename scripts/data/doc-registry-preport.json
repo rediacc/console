@@ -24,7 +24,7 @@
   "recorded_at_commit": "ac817a647322c219763e22d93c970d96beec886f",
   "providers": {
     "gates": {
-      "rows": 409,
+      "rows": 408,
       "keys": [
         "build:packages",
         "build:www",
@@ -258,7 +258,6 @@
         "check:ci-tutorial-commands",
         "check:ci-tutorial-healthcheck-headroom",
         "check:ci-tutorial-no-skips",
-        "check:ci-tutorial-noninteractive",
         "check:ci-tutorial-parity",
         "check:ci-tutorial-render-queue",
         "check:ci-typecheck-scope-coverage",
@@ -692,7 +691,9 @@
       "check:ci-review-prompt-render": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the prompt templates under .ci/scripts/review/prompts/, was deleted with the review job that rendered them.",
       "check:ci-review-turn-capacity": "retired with the PR-level Claude review on 2026-10-02 (agent/plans/PLAN-per-commit-review.md section 11.6, WP-3): its subject, the diff-sized turn budget the review job routed through, was deleted with that job; control_vacuity's control moved to quality/renet_tier_map.py.",
       "check:ci-shell-declared-commands": "retired in 32b264edc (W11-B, 2026-10-08) with common.sh: its only subject was scripts sourcing common.sh, and its baseline held exactly those three rows. That commit dropped the key from this snapshot instead of retiring it here, which left rows 409 against 408 keys; the key is restored and explained (2026-10-08).",
-      "check:ci-gate-id-convention": "retired with its subject on 2026-10-08: it held every manifest entry that runs a .ci/scripts/test/gates/test-*.sh to the gate-test:<name> id, and W11-A/B/C and section 12 U1-U3 deleted the last such script and entry, so the lock carries zero gate-test: ids and the gate refused an empty corpus."
+      "check:ci-gate-id-convention": "retired with its subject on 2026-10-08: it held every manifest entry that runs a .ci/scripts/test/gates/test-*.sh to the gate-test:<name> id, and W11-A/B/C and section 12 U1-U3 deleted the last such script and entry, so the lock carries zero gate-test: ids and the gate refused an empty corpus.",
+      "check:ci-i18n-command-parity": "retired in 5a22be5e2e (CR4, PLAN-tooling-code-reduction.md) with the cross-locale aggregate: the command-parity alias only re-ran a leg its own gate already held, so no check left the estate.",
+      "check:ci-i18n-cross-locale": "retired in 5a22be5e2e (CR4, PLAN-tooling-code-reduction.md): the aggregate entry only ran its sibling gates in one step; check:ci-i18n-cross-locale-core and the other siblings stay registered on their own steps."
     },
     "ci-tree": {
       ".ci/docker/tts": "removed in 8243c3a97 (registry spine, gate and hook ports, three lane cutovers); confirmed with `git log --diff-filter=D -- .ci/docker/tts`.",

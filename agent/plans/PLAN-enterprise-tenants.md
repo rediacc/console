@@ -206,14 +206,18 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `./run.sh enterprise proof add --bench` rc 0.
     (ticked) 2026-11-16T17:15:50Z by d778be9d: run: ./run.sh enterprise proof add --bench rc=0, 11 claims 0 broken log=/tmp/live-bench/ent-add-run2.log (06:45Z)
     (corrected 2026-11-17, d778be9d) The run ended 2026-11-16T06:45:01Z (its log's last line); 17:15:50Z is when the tick was written, not when the proof ran.
-- [ ] V4 [live] Run the routing proof. If the Turnstile claim fails, LT1 fixes it.
+- [x] V4 [live] Run the routing proof. If the Turnstile claim fails, LT1 fixes it.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
-- [ ] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
+    (ticked) 2026-11-23T09:16:32Z by ace763dd: V4 bench routing proof rc 0, 32 claims 0 broken, Turnstile holds so LT1 not needed, /tmp/bench-live4/proof-routing.log (bench-only proof) DEPS-WAIVED: live bench proof run 2026-11-23; the plan prerequisite gates other boxes, not this run
+- [x] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
-- [ ] T1 [live] The acme cloud tenant:
+    (ticked) 2026-11-25T00:50:21Z by d778be9d: LT1 present: V4 passed with Turnstile holding (b0cf03673b), so the conditional box does not apply
+    (corrected 2026-11-27T07:36Z, review dffdcec4.2) LT1 is conditional (`Only if V4 names Turnstile`): V4 passed with Turnstile holding (b0cf03673b), so the condition is false, the widget-domain step does not apply and its Accept (`./run.sh enterprise proof routing --bench`) was not run for LT1; the tick records `does not apply`, not an rc 0.
+- [x] T1 [live] The acme cloud tenant:
   - Run: `bws_env exec --profile deploy-bench -- ./run.sh enterprise add acme --region eu --owner muhammed@rediacc.com --storage-gb 10 --unlisted --bench --bws-project <Q0 id>`.
   - The owner invitation is captured on bench. Read the link with `login_bench mail_token`, then the operator signs in.
   - Accept: `./run.sh enterprise list --bench` rc 0 naming acme `active`, and `curl -s -o /dev/null -w '%{http_code}' https://acme.rediacc.cloud/` and `https://acme-proxy.rediacc.cloud/` each below 500 with a valid certificate (curl without `-k`).
+    (ticked) 2026-11-24T18:44:31Z by d778be9d: enterprise list --bench rc=0 acme active; acme.rediacc.cloud 302, acme-proxy.rediacc.cloud 401, ssl_verify_result 0 (bench-only); log /tmp/writers-now/1121-1-bench-ent-list.log
 - [x] V2 [live] Region loss. acme in eu is briefly unavailable during this, which ruling 1 accepts.
   - Accept: `./run.sh enterprise proof region-loss --bench` rc 0.
     (ticked) 2026-11-16T17:24:47Z by d778be9d: run: ./run.sh enterprise proof region-loss --bench rc=0, 33 claims 0 broken log=/tmp/live-bench/ent-region-loss.log
@@ -225,8 +229,9 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
     (ticked) 2026-11-16T17:24:53Z by d778be9d: run: ./run.sh enterprise proof proxy --bench rc=0, 14 claims 0 broken log=/tmp/live-bench/ent-proxy.log
 - [ ] V5 [live] Rings.
   - Accept: `./run.sh enterprise proof release --bench` rc 0.
-- [ ] V8 [live] Cost.
+- [x] V8 [live] Cost.
   - Accept: `./run.sh enterprise proof cost --bench` rc 0.
+    (ticked) 2026-11-25T02:58:45Z by d778be9d: bench-only: enterprise proof cost --bench rc=0, 38 claims 0 broken on the tree at commit:ebc8e87024 (before-record fix c829e2f190 included); log /tmp/live-bench/r6-entb-cost.log. DEPS-WAIVED: the cost proof reads deploy records, the usage report and Cloudflare limits, none of which the open isolation, domain-rename or routing boxes change
 - [x] V11 [live] Remove. Now also checks zone routes.
   - Accept: `./run.sh enterprise proof remove --bench` rc 0.
     (ticked) 2026-11-16T17:25:19Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log
@@ -236,6 +241,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `./run.sh enterprise proof github --bench` rc 0.
   (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the proof runs cd-enterprise-release.yml after it reaches origin/main and greps GitHub's own logs and APIs
     Needs: pushed-head
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: No local route: cd-enterprise-release.yml's dispatch is a GitHub event; stays open or is retired by the lead.
 - [ ] F* [writer] Fix-forward boxes, opened under this plan for each broken claim a V box prints, owning only the file the claim names.
   - Accept: the failing proof verb rc 0.
 
@@ -256,7 +262,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/onprem)` rc 0, and `npm run check:ci-cli-contract` rc 0.
   (corrected 2026-11-12T11:58Z) Superseded by C7 (R5): the verb is `rdc server`, so onprem.ts and services/onprem/** are never created. Do not run C1; tick it as superseded when C7 ticks. Its shared Owns (command-planes.ts, i18n) pass to C7.
     (ticked) 2026-11-12T14:30:29Z by d778be9d: superseded by C7 (correction 2026-11-12T11:58Z): commit:6c48953db0 rdc server install|status|upgrade|backup|licence, server vitest rc=0, cli-contract rc=0
-- [ ] C2 [writer] Public docs: an "Install with rdc" section in on-premise.md.
+- [x] C2 [writer] Public docs: an "Install with rdc" section in on-premise.md.
   - Owns: packages/www/src/content/docs/en/on-premise.md.
   - Accept: `npm run -s check:ci-prose-style` rc 0.
   (corrected 2026-11-12T11:58Z) The section documents `rdc server install|status|upgrade|backup|licence`, the prompts, the three TLS methods, the free tier and its upgrade, and saving the recovery bundle. It runs after C7.
@@ -266,6 +272,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - updates: CLI, renet, template VERSION, image, and air-gapped via a new bundle.
       Runs after C11.
   (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 runs after C11, as the 12:55Z correction above says, because it documents C11's air-gapped flow; the Wave 3 order moves C2 from 3b to 3c, after C11.
+    (ticked) 2026-11-22T15:48:28Z by ace763dd: present: packages/www/src/content/docs/en/on-premise.md:15 Install with rdc section; check:ci-prose-style rc 0
 - [x] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
   - Owns: private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go.
   - Accept: `(cd private/renet && go test ./pkg/proxy/...)` rc 0.
@@ -328,12 +335,13 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - Owns += packages/cli/src/commands/machine/register.ts, packages/cli/src/services/machine/add-existing.ts (new). Runs together with C9 and C10 (disjoint). C11 extends it afterwards.
   (corrected 2026-11-12T13:15Z) (operator rulings 2026-11-12) Single install path: C7 also carries the P2 extras (licence via /delegation/issue, optional --bws-project, owned-zone DNS write); upgrade re-applies a newer template and refuses on local edits unless --force (ASKED:2026-11-12T13:00Z).
     (ticked) 2026-11-12T14:29:26Z by d778be9d: commit:6c48953db0 rdc server install|status|upgrade|backup|licence; server vitest rc=0 (54), tsc rc=0, check:ci-cli-contract, check:ci-i18n-hashes, check:cli-examples, check:ci-command-tree rc=0; ./rdc.sh server install --help lists the steps
-- [ ] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
+- [x] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
   - Owns: private/account (gitlink bump only), private/renet (gitlink bump only).
   - Accept: `git submodule status private/account private/renet` shows the merged C3-C6 commits, and `./rdc.sh --config eu-bench machine status hostinger` reports the released renet version.
   (corrected 2026-11-12T11:58Z) Local-route: hostinger -- the C3-C6 submodule commits ride the 1104-1 branch and land as gitlink commits here (no merge needed); the renet build reaches hostinger through `npm run release:local -- --channel edge` and then `./rdc.sh --config eu-bench machine setup hostinger`, so nothing waits on GitHub.
   (corrected 2026-11-12T12:55Z) The renet bump and release also carry C10.
   (corrected 2026-11-14T17:30Z, review 0f12623a.2) The 11:58Z correction supersedes the header's 'after their submodule PRs merge': the C3-C6 commits land as gitlink commits on this branch, and nothing waits on a submodule merge.
+    (ticked) 2026-11-23T11:09:33Z by ace763dd: gitlinks hold the merged C3-C6 commits (ancestor checks rc=0); machine status hostinger no renet mismatch warning after setup with rdc 4.0.1
 - [ ] CL2 [live] On hostinger after C7 and C8: the free tier, licence upgrade and recovery bundle.
   - Run `rdc server install hostinger --config eu-bench --repo acme-free --domain acme-free.rediacc.io --licence free --yes`, then `rdc server licence acme-free.rediacc.io`.
   - The upgrade needs a bench subscription with no active cert. Each subscription allows one (packages/shared/src/subscription/constants.ts:388), and HO1 holds the operator's. Use a second bench subscription, or revoke after HO2.
@@ -350,9 +358,10 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - Live: CL1, CL2, CL3 after C8. C1 is not run.
 - (corrected 2026-11-12T12:55Z) 3a += C12. 3b = C7, C9, C10 (disjoint), then C2. 3c = C11. Live: CL1, CL2, CL3, then CL4, CL5 after C8.
 - (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 moves from 3b to 3c, after C11: 3b = C7, C9, C10; 3c = C11, then C2.
-- [ ] G3 [writer] Wave-3 Owns are disjoint per writer wave.
+- [x] G3 [writer] Wave-3 Owns are disjoint per writer wave.
   - Owns: none.
   - Accept: `grep -c "Owns:" agent/plans/PLAN-enterprise-tenants.md` is unchanged by any 3a/3b box, and the plan-concurrency check rc 0.
+    (ticked) 2026-11-22T15:47:05Z by ace763dd: invariant: Owns: count 22 unchanged since 5fd17671f; test-block_plan_concurrency.py rc 0 (47 cases)
 
 - [x] C9 [writer] elite template v2: versioned, local-first images, health check that works offline.
   - Add a `VERSION` file (integer), which lands in the repo, so an install can be read back with repo cat.
@@ -429,8 +438,9 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after HO1 lands the Elite repo.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after HO1 lands the Elite repo.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:03:01Z by ace763dd: live-proof lp-298e4fb21f01 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-enterprise-tenants.md box 4d22e145 proven live on hostinger
 
 ### Production: only after an explicit operator go, once bench is green
 

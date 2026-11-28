@@ -19,6 +19,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 CLAUDE_DIR = HERE.parents[1]
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -84,6 +88,18 @@ CASES = [
         REFUSED,
     ),
     (
+        "CONTROL: grepping the docs for the trailer authors no message (the verb gate)",
+        "grep -rn '%s' docs/" % TRAILER,
+        False,
+        "",
+    ),
+    (
+        "CONTROL: a log audit naming the trailer authors no message (the verb gate)",
+        "git log --oneline --grep='%s' | head -5" % TRAILER,
+        False,
+        "",
+    ),
+    (
         "CONTROL: a gh body file this command writes is not a commit",
         "printf 'prose\\n' > body.md; gh pr create --title t --body-file body.md",
         False,
@@ -113,7 +129,7 @@ def run(command, mutant=False):
         env["PYTHONPATH"] = str(CLAUDE_DIR)
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(WORK)
     )
     if mutant and proc.returncode not in (0, 2):
@@ -309,7 +325,7 @@ def run_session(command, mutant=False):
         env["PYTHONPATH"] = str(CLAUDE_DIR)
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(WORK)
     )
     if mutant and proc.returncode not in (0, 2):
@@ -461,6 +477,8 @@ p = git(
     "-q",
     "-m",
     "fix(hooks): refuse the %s trailer and claude.ai/code/session_<id> links" % SESSION_HEAD,
+    "-m",
+    "Release-Note: none -- fixture commit for the hook test",
     check=False,
 )
 fails += layer("CONTROL commit-msg admits a message naming the rule", p.returncode == 0, p.stderr)
@@ -479,7 +497,7 @@ fails += layer(
 git("-c", "core.hooksPath=/dev/null", "push", "-q", "origin", "0101-1")
 (REPO / "c").write_text("c\n", encoding="utf-8")
 git("add", "c")
-git("commit", "-q", "-m", "fix: y")
+git("commit", "-q", "-m", "fix: y", "-m", "Release-Note: none -- fixture commit for the hook test")
 p = git("push", "-q", "origin", "0101-1", check=False)
 fails += layer(
     "CONTROL pre-push does not re-block a commit a remote already has", p.returncode == 0, p.stderr

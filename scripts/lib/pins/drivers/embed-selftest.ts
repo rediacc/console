@@ -48,6 +48,8 @@ function treeFiles(): string[] {
     'private/renet/embed-assets.lock.json',
     'private/renet/pkg/embed/embed.go',
     'private/renet/pkg/embed/credits_data.go',
+    'private/renet/pkg/infra/docker/service.go',
+    'private/renet/pkg/infra/opsconfig/config.go',
     ...liveFiles('private/renet/pkg/kube/csidriver'),
     'docs/design/spec/09-csi-driver.md',
     'packages/cli/src/data/third-party-credits.json',
@@ -305,6 +307,11 @@ async function build(mutant: EmbedMutant | null): Promise<ControlCase[]> {
         out.includes(`ARG ZOT_SHA256_AMD64=${hex('a')}`) &&
         out.includes(`ARG ZOT_SHA256_ARM64=${hex('b')}`),
       r.refused
+    );
+    add(
+      'zot bump: the plan says the lockfile sourceSha256 still digests the old archive (0fa9be43.3)',
+      !!r.plan && r.plan.changes.some((c) => c.includes('components.zot.sourceSha256 is still')),
+      r.refused ?? (r.plan?.changes ?? []).join(' | ')
     );
     const rv = patchOf(dockerArg(df, 'RSYNC_VERSION'));
     const rs = await planOf('embed:rsync', rv, {}, mutant);

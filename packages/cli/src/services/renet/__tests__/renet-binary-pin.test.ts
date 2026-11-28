@@ -5,9 +5,14 @@ import * as path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const rsyncMock = vi.hoisted(() => vi.fn());
-vi.mock('../../../remote/sync/index.js', () => ({
+vi.mock('../../../remote/sync/index.js', async () => ({
   executeRsync: rsyncMock,
   getRsyncCommand: vi.fn(),
+  rsyncUserHost: (
+    await vi.importActual<typeof import('../../../remote/sync/rsync.js')>(
+      '../../../remote/sync/rsync.js'
+    )
+  ).rsyncUserHost,
 }));
 
 import { buildDeltaSshOptions, deltaSyncBinary } from '../renet-binary-transfer.js';
@@ -43,8 +48,28 @@ describe('deltaSyncBinary host-key pinning', () => {
     expect(seen?.opts).not.toContain('StrictHostKeyChecking=no');
     expect(seen?.opts).not.toContain('UserKnownHostsFile=/dev/null');
     expect(seen?.mode).toBe(0o600);
-    expect(seen?.content).toBe(`${KNOWN}\n`);
+    // Re-keyed under the dialed host: OpenSSH looks a port-22 pin up under the bare address.
+    expect(seen?.content).toBe(`${KNOWN.replace('[203.0.113.9]:22', '203.0.113.9')}\n`);
     expect(fs.existsSync(seen?.file ?? '')).toBe(false);
+  });
+
+  it('an IPv6 host is bracketed in the rsync destination and pins its keys under the bare address', async () => {
+    const v6 = '2a02:4780:c:e9b5::1';
+    let seen: { destination: string; content: string } | undefined;
+    rsyncMock.mockImplementation((o: { sshOptions: string; destination: string }) => {
+      const file = /UserKnownHostsFile="([^"]+)"/.exec(o.sshOptions)?.[1] ?? '';
+      seen = { destination: o.destination, content: fs.readFileSync(file, 'utf8') };
+      return { success: true, errors: [] };
+    });
+    await deltaSyncBinary(
+      { host: v6, username: 'u', privateKey: KEY, knownHosts: KNOWN },
+      Buffer.from('x'),
+      '/tmp/stage',
+      '/usr/bin/rsync'
+    );
+    // Unbracketed, rsync splits the address at its first colon and reads the rest as the path.
+    expect(seen?.destination).toBe(`u@[${v6}]:/tmp/stage`);
+    expect(seen?.content.startsWith(`${v6} ssh-ed25519 `)).toBe(true);
   });
 
   it('removes the known_hosts file when the transfer fails', async () => {

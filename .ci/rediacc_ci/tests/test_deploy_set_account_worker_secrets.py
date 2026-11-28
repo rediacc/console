@@ -1,12 +1,12 @@
 """Differential: `rediacc_ci.deploy.set_account_worker_secrets` against its twin `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
 
 THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, exactly as for the www sibling: the twin prints nothing of its own when it succeeds. On THIS script that matters more, because this one DECIDES rather than marshals. A port that picked the edge bucket on stable, kept the ASIA region's SES credential instead of borrowing EU's, or shipped an endpoint without its jurisdiction label
 would exit 0 with byte-identical streams and break a region at runtime. Every case that reaches wrangler therefore asserts the recorded stdin.
 
-THE GUARD NAME IS NOT ALWAYS THE VARIABLE TO BLANK, and `GUARD_SOURCE` below is where that is written down. Four of the seventeen guards report a Worker key (`AWS_SES_ACCESS_KEY_ID`) whose value came from a suffixed name (`AWS_SES_ACCESS_KEY_ID_EU`), so a test that blanked the reported name would drive nothing at all and pass while proving nothing.
+THE GUARD NAME IS NOT ALWAYS THE VARIABLE TO BLANK, and `GUARD_SOURCE` below is where that is written down. Three of the fifteen guards report a Worker key (`AWS_SES_ACCESS_KEY_ID`) whose value came from a suffixed name (`AWS_SES_ACCESS_KEY_ID_EU`), so a test that blanked the reported name would drive nothing at all and pass while proving nothing.
 
 THE BASH SIDE OF EVERY CASE IS ANSWERED FROM ITS FROZEN GOLDEN (`goldens/twins/deploy.set-account-worker-secrets.jsonl`), so the twin file is not needed to run this module.
 """
@@ -41,7 +41,7 @@ TWIN_REL = ".ci/scripts/deploy/set-account-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_account_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# A complete stable EU deploy: the seventeen values the twin refuses to go without on that channel, plus the three control variables and the bucket.
+# A complete stable EU deploy: the fifteen values the twin refuses to go without on that channel, plus the three control variables and the bucket.
 FIXTURE_ENV = {
     "WORKER_NAME": "rediacc-account-eu",
     "TARGET": "stable",
@@ -53,6 +53,7 @@ FIXTURE_ENV = {
     "ACCOUNT_JWT_SECRET": "jw",
     "FREE_LICENSE_HMAC_KEY": "hm",
     "ACCOUNT_AE_READ_TOKEN": "ae",
+    "AI_GATEWAY_LOGS_TOKEN": "ai",
     "CLOUDFLARE_ACCOUNT_ID": "acct",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
@@ -66,8 +67,6 @@ FIXTURE_ENV = {
     "BACKUP_BUCKET_STABLE": "rediacc-backups-eu",
     "BACKUP_BUCKET_EDGE": "edge-rediacc-backups-eu",
     "R2_JURISDICTION": "eu",
-    "STRIPE_SECRET_KEY": "sk_live_fixture",
-    "STRIPE_WEBHOOK_SECRET_EU": "whsec_eu",
     # Port-only: the twin ignores them, `_without_config_key` takes their lines out of the port's document.
     "CONTACT_FROM_EMAIL": "cf@example.invalid",
     "ALERTS_FROM_EMAIL": "af@example.invalid",
@@ -76,7 +75,7 @@ FIXTURE_ENV = {
 }
 
 # The variable to BLANK in order to make a given guard fire, under SUFFIX=EU.
-# For four of them it is not the name the guard prints; see the module docstring.
+# For three of them it is not the name the guard prints; see the module docstring.
 GUARD_SOURCE = {
     "ACCOUNT_ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
@@ -92,8 +91,6 @@ GUARD_SOURCE = {
     "ACCOUNT_BACKUP_S3_ENDPOINT": "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
-    "STRIPE_SECRET_KEY": "STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET": "STRIPE_WEBHOOK_SECRET_EU",
 }
 
 FAKE_NPX = """#!/usr/bin/python3
@@ -209,14 +206,15 @@ PORT_ONLY_ADDRESSES = (
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient and the four contact and alerts addresses (the document's last five keys, so their lines and the comma before them go)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the AI gateway logs token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient, the four contact and alerts addresses and the three forensics store values (the document's last eight keys, so their lines and the comma before them go)."""
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
+    calls = calls.replace('  "AI_GATEWAY_LOGS_TOKEN": "ai",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
     calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
-    tail = "|".join(("SALES_NOTIFY_EMAIL", *PORT_ONLY_ADDRESSES))
+    tail = "|".join(("SALES_NOTIFY_EMAIL", *PORT_ONLY_ADDRESSES, *port.FORENSICS_PREFIXES))
     return re.sub(r'(,\n  "(?:%s)": "[^\n]*")+\n\}' % tail, "\n}", calls)
 
 
@@ -306,7 +304,7 @@ def document(calls: str) -> str:
 
 
 def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Path) -> None:
-    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's order, on the stable EU channel: the Stripe pair present, the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and the STABLE bucket rather than the edge one."""
+    """ONE CALL, PINNED AGAINST LITERAL BYTES. Twenty-nine keys in the twin's order, on the stable EU channel: the SES pair fanned in from the EU names, the endpoint carrying its `eu` jurisdiction label, and the STABLE bucket rather than the edge one."""
     old, new, old_calls, new_calls = run_both(tmp_path)
     assert old.returncode == 0
     assert old_calls.splitlines()[0] == (
@@ -319,8 +317,6 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
         '  "ACCOUNT_SERVER_API_KEY": "ak",\n'
         '  "ACCOUNT_JWT_SECRET": "jw",\n'
-        '  "STRIPE_SECRET_KEY": "sk_live_fixture",\n'
-        '  "STRIPE_WEBHOOK_SECRET": "whsec_eu",\n'
         '  "ROOT_EMAIL": "root@example.invalid",\n'
         '  "AWS_SES_ACCESS_KEY_ID": "sk-eu",\n'
         '  "AWS_SES_SECRET_ACCESS_KEY": "ss-eu",\n'
@@ -356,24 +352,20 @@ def test_a_successful_run_says_nothing_of_its_own(tmp_path: pathlib.Path) -> Non
     _assert_agree(old, new, "silent-success", old_calls, new_calls)
 
 
-def test_the_edge_channel_blanks_both_stripe_values(tmp_path: pathlib.Path) -> None:
-    """DECISION 1. Billing is disabled on edge, so the key and the webhook secret are written as EMPTY STRINGS rather than omitted, and neither is demanded. The regional webhook secret is in the environment and must NOT reach the document."""
+def test_the_edge_channel_takes_the_edge_bucket(tmp_path: pathlib.Path) -> None:
+    """DECISION 1. The channel picks the backup bucket: `edge` takes the edge bucket and never the stable one."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="edge")
     assert old.returncode == 0
     doc = document(old_calls)
-    assert '"STRIPE_SECRET_KEY": ""' in doc
-    assert '"STRIPE_WEBHOOK_SECRET": ""' in doc
-    assert "sk_live_fixture" not in doc, "the stable Stripe key leaked onto edge"
-    assert "whsec_eu" not in doc, "the regional webhook secret leaked onto edge"
     assert '"ACCOUNT_BACKUP_S3_BUCKET": "edge-rediacc-backups-eu"' in doc
-    _assert_agree(old, new, "edge-blanks-stripe", old_calls, new_calls)
+    assert 'rediacc-backups-eu"' not in doc.replace("edge-rediacc-backups-eu", "")
+    _assert_agree(old, new, "edge-bucket", old_calls, new_calls)
 
 
 def test_any_target_that_is_not_stable_is_the_edge_channel(tmp_path: pathlib.Path) -> None:
     """THE `if` HAS TWO ARMS AND NO THIRD. A typo in TARGET does not refuse; it deploys the edge shape, which is worth knowing and is why the port compares against the literal `stable` rather than testing for `edge`."""
     old, new, old_calls, new_calls = run_both(tmp_path, TARGET="Stable")
     assert old.returncode == 0
-    assert '"STRIPE_SECRET_KEY": ""' in document(old_calls)
     assert '"ACCOUNT_BACKUP_S3_BUCKET": "edge-rediacc-backups-eu"' in document(old_calls)
     _assert_agree(old, new, "target-typo-is-edge", old_calls, new_calls)
 
@@ -385,7 +377,6 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
         "AWS_SES_ACCESS_KEY_ID_ASIA": "sk-asia",
         "AWS_SES_SECRET_ACCESS_KEY_ASIA": "ss-asia",
         "OBS_OTLP_CREDENTIALS_ASIA": '{"user":"u-asia","pass":"p-asia"}',
-        "STRIPE_WEBHOOK_SECRET_ASIA": "whsec_asia",
         "BACKUP_BUCKET_STABLE": "rediacc-backups-asia",
         "R2_JURISDICTION": "",
     }
@@ -394,9 +385,8 @@ def test_asia_borrows_the_eu_ses_credential(tmp_path: pathlib.Path) -> None:
     assert '"AWS_SES_ACCESS_KEY_ID": "sk-eu"' in doc, "asia did not borrow the EU key"
     assert '"AWS_SES_SECRET_ACCESS_KEY": "ss-eu"' in doc
     assert "sk-asia" not in doc, "the asia SES key reached the Worker"
-    # Only SES is borrowed: OTLP and the webhook secret stay regional.
+    # Only SES is borrowed: OTLP stays regional.
     assert '"OBS_OTLP_CREDENTIALS": "{\\"user\\":\\"u-asia\\"' in doc
-    assert '"STRIPE_WEBHOOK_SECRET": "whsec_asia"' in doc
     _assert_agree(old, new, "asia-borrow", old_calls, new_calls)
 
 
@@ -409,7 +399,6 @@ def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathli
         "AWS_SES_ACCESS_KEY_ID_US": "sk-us",
         "AWS_SES_SECRET_ACCESS_KEY_US": "ss-us",
         "OBS_OTLP_CREDENTIALS_US": '{"user":"u-us","pass":"p-us"}',
-        "STRIPE_WEBHOOK_SECRET_US": "whsec_us",
     }
     old, new, old_calls, new_calls = run_both(tmp_path, **us)
     doc = document(old_calls)
@@ -477,14 +466,10 @@ PORT_ONLY_GUARDS = (
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """SIXTEEN CASES ON STABLE, ONE PER TWIN GUARD (the port-only guards in PORT_ONLY_GUARDS have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
+    """FOURTEEN CASES ON STABLE, ONE PER TWIN GUARD (the port-only guards in PORT_ONLY_GUARDS have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
     # The config server key is the port's own sixteenth guard; the twin has no golden for it, and `test_an_empty_config_server_key_is_refused_by_its_worker_key` drives it.
-    demanded = tuple(
-        name
-        for name in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
-        if name not in PORT_ONLY_GUARDS
-    )
-    assert len(demanded) == 16
+    demanded = tuple(name for name in port.REQUIRED_NONEMPTY if name not in PORT_ONLY_GUARDS)
+    assert len(demanded) == 14
     for name in demanded:
         case = tmp_path / f"guard-{name}"
         case.mkdir()
@@ -499,25 +484,6 @@ def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
         )
         assert old_calls == "", f"{name}: a refused run still called wrangler"
         _assert_agree(old, new, f"guard-{name}", old_calls, new_calls)
-
-
-def test_the_two_stripe_guards_are_demanded_on_stable_only(tmp_path: pathlib.Path) -> None:
-    """THE CONDITIONAL HALF OF THE GUARD LIST, pinned in BOTH directions: the same blank value refuses on stable and deploys on edge."""
-    for name in port.REQUIRED_NONEMPTY_STABLE:
-        blank = {GUARD_SOURCE[name]: ""}
-
-        on_stable = tmp_path / f"stripe-{name}-stable"
-        on_stable.mkdir()
-        old, new, old_calls, new_calls = run_both(on_stable, **blank)
-        assert old.returncode == 1
-        assert f"{name} is EMPTY" in old.stderr
-        _assert_agree(old, new, f"stripe-stable-{name}", old_calls, new_calls)
-
-        on_edge = tmp_path / f"stripe-{name}-edge"
-        on_edge.mkdir()
-        old, new, old_calls, new_calls = run_both(on_edge, TARGET="edge", **blank)
-        assert old.returncode == 0, f"{name}: edge refused a value it deliberately blanks"
-        _assert_agree(old, new, f"stripe-edge-{name}", old_calls, new_calls)
 
 
 def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Path) -> None:
@@ -603,11 +569,8 @@ def test_an_empty_control_variable_refuses_exactly_as_an_absent_one(
 
 def test_divergence_b_a_suffix_that_is_not_an_identifier(tmp_path: pathlib.Path) -> None:
     """THE SECOND DIVERGENCE. `${!var}` refuses a constructed name bash cannot
-    parse, and WHICH name it is depends on the channel: the Stripe webhook is evaluated first on stable, the SES key first on edge. Both sides exit 1 with the same sentence; only bash's file-and-line prefix differs."""
-    cases = (
-        ("stable", "STRIPE_WEBHOOK_SECRET_EU-1", 115),
-        ("edge", "AWS_SES_ACCESS_KEY_ID_EU-1", 124),
-    )
+    parse, and the SES key is the first indirection reached. Both sides exit 1 with the same sentence; only bash's file-and-line prefix differs."""
+    cases = (("edge", "AWS_SES_ACCESS_KEY_ID_EU-1", 124),)
     for target, name, line in cases:
         case = tmp_path / f"badsuffix-{target}"
         case.mkdir()
@@ -649,11 +612,11 @@ def test_a_wrangler_failure_ends_the_run_with_its_status(tmp_path: pathlib.Path)
 
 
 def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path) -> None:
-    awkward = {"SELLER_ADDRESS_LINE1": 'a"b\nc\\d', "STRIPE_WEBHOOK_SECRET_EU": "wh\tsec"}
+    awkward = {"SELLER_ADDRESS_LINE1": 'a"b\nc\\d', "SELLER_CITY": "wh\tsec"}
     old, new, old_calls, new_calls = run_both(tmp_path, **awkward)
     doc = document(old_calls)
     assert '"SELLER_ADDRESS_LINE1": "a\\"b\\nc\\\\d"' in doc
-    assert '"STRIPE_WEBHOOK_SECRET": "wh\\tsec"' in doc
+    assert '"SELLER_CITY": "wh\\tsec"' in doc
     _assert_agree(old, new, "escaping", old_calls, new_calls)
 
 
@@ -664,17 +627,24 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
     _assert_agree(old, new, "non-ascii", old_calls, new_calls)
 
 
+def test_the_keys_with_no_plain_source_name_are_the_twelve_the_comment_lists() -> None:
+    """Review 464878df.1 and .2: nine computed values plus the three forensics values read under a constructed name have an empty third field, as the KEYS comment and the module docstring say."""
+    empty = {key for key, _var, source in port.KEYS if not source}
+    forensics = set(port.FORENSICS_PREFIXES)
+    assert len(empty) == 12
+    assert forensics <= empty
+    assert len(empty - forensics) == 9
+
+
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 39
-    assert len(www.KEYS) == 24
-    assert len(preview.KEYS) == 14
+    assert len(port.KEYS) == 41
+    assert len(www.KEYS) == 22
+    assert len(preview.KEYS) == 12
     assert len(port.REQUIRED_NONEMPTY) == 23
-    assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
+    assert not hasattr(port, "REQUIRED_NONEMPTY_STABLE")
     # 8c715164.2: the ten SELLER_* entries (the register name included) are optional here by design: the legal-entity profile and check_bws_map own their completeness, so none is in a non-empty guard list.
-    assert not [
-        n for n in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE if n.startswith("SELLER_")
-    ]
+    assert not [n for n in port.REQUIRED_NONEMPTY if n.startswith("SELLER_")]
     assert "SELLER_REGISTER_NAME" in {key for key, _var, _src in port.KEYS}
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
@@ -727,7 +697,7 @@ def test_pure_helpers() -> None:
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
     assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
-    assert argv[-1].endswith("ALERTS_NOTIFY_EMAIL: .alerts_notify}")
+    assert argv[-1].endswith("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY: .forensics_secret}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
@@ -976,7 +946,6 @@ def test_the_config_server_key_follows_the_region(tmp_path: pathlib.Path) -> Non
         AWS_SES_ACCESS_KEY_ID_US="sk-us",
         AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
         OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
-        STRIPE_WEBHOOK_SECRET_US="whsec_us",
         ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
         ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE="key-eu",
         ACCOUNT_BACKUP_STORE_KEK_US_STABLE=KEK_VALUE,
@@ -1052,7 +1021,6 @@ def test_the_backup_store_kek_follows_the_region(tmp_path: pathlib.Path) -> None
         AWS_SES_ACCESS_KEY_ID_US="sk-us",
         AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
         OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
-        STRIPE_WEBHOOK_SECRET_US="whsec_us",
         ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
         ACCOUNT_BACKUP_STORE_KEK_US_STABLE="kek-us",
         ACCOUNT_BACKUP_STORE_KEK_EU_STABLE="kek-eu",
@@ -1256,3 +1224,69 @@ def test_the_contact_and_alerts_addresses_are_pushed_and_demanded(
     assert "%s is EMPTY for" % name in proc.stderr
     assert proc.stdout == ""
     assert port.REQUIRED_NONEMPTY.count(name) == 1
+
+
+FORENSICS_EU = {
+    "ACCOUNT_FORENSICS_S3_ENDPOINT_EU": "https://evidence.example.invalid",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID_EU": "fkey-eu",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY_EU": "fsecret-eu",
+}
+
+
+def test_the_forensics_triple_is_pushed_under_the_worker_names(tmp_path: pathlib.Path) -> None:
+    """The region's three suffixed names reach the Worker as the unsuffixed binding names, and no suffixed name is pushed."""
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR, **FORENSICS_EU)
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    assert doc["ACCOUNT_FORENSICS_S3_ENDPOINT"] == "https://evidence.example.invalid"
+    assert doc["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] == "fkey-eu"
+    assert doc["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] == "fsecret-eu"
+    assert not [name for name in doc if name.endswith("_EU")]
+
+
+def test_the_forensics_triple_follows_the_region(tmp_path: pathlib.Path) -> None:
+    """With SUFFIX=US the EU triple is ignored and the US one is pushed."""
+    proc, calls = _port_raw(
+        tmp_path,
+        SUFFIX="US",
+        **STABLE_PAIR,
+        AWS_SES_ACCESS_KEY_ID_US="sk-us",
+        AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
+        OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
+        ACCOUNT_CONFIG_SERVER_KEY_US_STABLE=CONFIG_KEY,
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE=KEK_VALUE,
+        ACCOUNT_FORENSICS_S3_ENDPOINT_US="https://evidence-us.example.invalid",
+        ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID_US="fkey-us",
+        ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY_US="fsecret-us",
+        **FORENSICS_EU,
+    )
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    assert doc["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] == "fkey-us"
+    assert doc["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] == "fsecret-us"
+
+
+def test_a_region_without_forensics_names_pushes_them_empty(tmp_path: pathlib.Path) -> None:
+    """No store entries yet is a valid push: the Worker answers 503 FORENSICS_NOT_CONFIGURED for empty values."""
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR)
+    assert proc.returncode == 0, proc.stderr
+    doc = json.loads(document(calls))
+    for name in port.FORENSICS_PREFIXES:
+        assert doc[name] == ""
+
+
+@pytest.mark.parametrize("missing", sorted(FORENSICS_EU))
+def test_a_half_configured_forensics_triple_is_refused(
+    tmp_path: pathlib.Path, missing: str
+) -> None:
+    """The Worker throws on a half-configured store, so the push is refused by NAME before wrangler runs, with no value echoed."""
+    partial = {k: v for k, v in FORENSICS_EU.items() if k != missing}
+    proc, calls = _port_raw(tmp_path, **STABLE_PAIR, **partial)
+    assert proc.returncode == 1
+    assert calls == "", "a refused run still called wrangler"
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith("%s: the forensics store of SUFFIX=EU is half configured" % port.SELF)
+    assert first.endswith("%s unset." % missing)
+    for value in partial.values():
+        assert value not in proc.stderr
+        assert value not in proc.stdout

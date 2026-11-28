@@ -1,8 +1,9 @@
 /**
  * `rdc backup status` prints one row per destination store (multi-target S1).
  *
- * A unit runs every destination of its strategy in turn, so its last run and outcome are the unit's; the store, its
- * newest snapshot, its last verify and its clean-up state are the destination's. A row without a store is `home`, and
+ * Each row is one unit-target: the store, its last run and outcome, its newest snapshot, its last verify and its
+ * clean-up state are the destination's own (`-` when it has none). Only a store the status route did not list keeps
+ * the unit's own run columns. A row without a store is `home`, and
  * a store without a clean-up state is `enabled`.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -157,8 +158,36 @@ describe('expandStatusRows', () => {
       ['eu-west', '-', 'failed', 'disabled -- x'],
     ]);
     expect(out.every((r) => r.status === 'scheduled')).toBe(true);
-    // A store the account has a run for says its own outcome; one with none keeps the unit's.
-    expect(out.map((r) => r.result)).toEqual(['success', 'failed']);
+    // Each store says its own outcome; a store the account has no run for shows '-', not the unit's.
+    expect(out.map((r) => r.result)).toEqual(['-', 'failed']);
+  });
+
+  it("shows each unit-target its own last run, never another target's", () => {
+    const unitRows = [
+      {
+        strategy: 'nightly',
+        unit: 'nightly',
+        status: 'scheduled',
+        lastRun: 'unit-run',
+        result: 'success',
+      },
+    ];
+    const out = expandStatusRows(unitRows, {
+      byStrategy: { nightly: ['home', 'eu-west', 'offsite'] },
+      stores: {
+        home: known({ lastRunAt: '2026-11-07T01:00:00Z', lastRunStatus: 'ok' }),
+        'eu-west': known({ lastRunAt: '2026-11-06T00:00:00Z', lastRunStatus: 'failed' }),
+        offsite: known(),
+      },
+    });
+    expect(out.map((r) => [r.store, r.lastRun, r.result])).toEqual([
+      ['home', '2026-11-07T01:00:00Z', 'ok'],
+      ['eu-west', '2026-11-06T00:00:00Z', 'failed'],
+      ['offsite', '-', '-'],
+    ]);
+    // A store the status route did not list (older account server) keeps the unit's own columns.
+    const unlisted = expandStatusRows(unitRows, { byStrategy: { nightly: ['home'] }, stores: {} });
+    expect(unlisted.map((r) => [r.lastRun, r.result])).toEqual([['unit-run', 'success']]);
   });
 });
 
@@ -229,7 +258,7 @@ describe('renderBackupScheduleStatus', () => {
     renderBackupScheduleStatus('m1', [UNIT], SHOW, {
       byStrategy: { nightly: ['home', 'offsite'] },
       stores: {
-        home: known(),
+        home: known({ lastRunAt: '2026-11-07T01:00:00Z', lastRunStatus: 'ok' }),
       },
     });
     const printed = mockPrint.mock.calls[0][0] as Record<string, string>[];
@@ -238,7 +267,7 @@ describe('renderBackupScheduleStatus', () => {
       strategy: 'nightly',
       unit: 'nightly',
       status: 'scheduled',
-      result: 'success',
+      result: 'ok',
       newestSnapshot: '2026-11-07T01:00:00Z',
       verify: 'ok',
       cleanup: 'enabled',

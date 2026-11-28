@@ -21,7 +21,7 @@ from rediacc_ci.tests.gates import harness
 
 # THE SUBJECT IS THE PYTHON GATE NOW. It was `.ci/scripts/quality/check-dead-case-arms.sh`
 # (blob `19c18e3f491528ad54c0e1fb8832f626b0eade9d`), retired in W7P5-c on its K=5 `EQUIVALENT`
-# ledger `.ci/shadow/w7p2-dead-case-arms.observations.jsonl`. See the identical note in
+# ledger the ledger (deleted in commit:936280cd35). See the identical note in
 # `test_gate_dead_case_arms.py` for the differential that was driven before the deletion.
 GATE = paths.from_root(".ci", "scripts", "quality", "check_dead_case_arms.py")
 MEDIA = paths.from_root(".ci", "media")

@@ -80,6 +80,16 @@ read healthy.
 
 THE `${actors:-none}`-STYLE DETAIL IN CHECK D: the twin interpolates the helper's
 stdout into the pass line through `$(cat ...)`, which strips the trailing newline. Carried, because `ok D. registry: 3 row(s) self-consistent` is the line a reader recognises.
+
+---- gate ----
+step: CI-watch recipe has one source
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+id: check:ci-watch-recipe
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import importlib.util
@@ -651,4 +661,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_ci_watch_recipe.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -1,6 +1,6 @@
 """No stop-hook RUNTIME sidecar may be tracked by git.
 
-Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what licensed the retirement.
+Ported from `.ci/scripts/quality/check-tracked-sidecars.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under the ledger directory (deleted in commit:936280cd35) is what licensed the retirement.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. Every date and every named file below is the original's, not a paraphrase of it.
@@ -35,7 +35,7 @@ said: ...`, so stderr is DATA on this path rather than a stream to
 discard. `subprocess.run(..., stderr=STDOUT)` reproduces that exactly.
 
 STREAMS, AND WHY `log.error` IS THE WRONG TOOL HERE. This gate is the one in the batch that sources NO logger at all: every line it emits is a bare `echo ... >&2`, with the `✗` TYPED INTO the first string of each block and the continuation lines carrying no glyph, plus deliberate blank `echo >&2` lines between the header, the path list and the advice. Routing those through
-`log.error` would prefix a `✗` onto lines the twin leaves bare and would drop the blanks, which changes the shape a reader sees and, more sharply, changes which lines `scripts/lib/shadow-gate.ts` counts as findings: a blank line ends a continuation block, and an unmarked indented line after one is chatter. A port that "improved" the streams here would be non-equivalent to its twin
+`log.error` would prefix a `✗` onto lines the twin leaves bare and would drop the blanks, which changes the shape a reader sees and, more sharply, changes which lines the shadow gate (commit:bf054adcd4) counts as findings: a blank line ends a continuation block, and an unmarked indented line after one is chatter. A port that "improved" the streams here would be non-equivalent to its twin
 while
 looking tidier. So every message goes through `print(..., file=sys.stderr)` and
 the blanks are preserved exactly.
@@ -43,6 +43,13 @@ the blanks are preserved exactly.
 The final success line is a bare `echo` on STDOUT in the twin, printing the derived pattern COUNT. It is data a reader is meant to see collapse, so it stays on stdout through `print()`.
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port: it globs only under `.claude/hooks/stop`. A sidecar written anywhere else, or one whose name does not appear in wl_store.py's docstring, is invisible. Widening it would change the verdict, so it is preserved and stated instead.
+
+---- gate ----
+lane: quality-static
+step: Tracked runtime sidecars
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import fnmatch
@@ -325,4 +332,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_tracked_sidecars.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

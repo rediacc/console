@@ -7,7 +7,7 @@ CONFIGURATION and are exempt; the exemption is a case here rather than a comment
 
 STALENESS IS NOT THIS GATE'S JOB, and the twin says so out loud: an ignore entry that no longer suppresses anything is reported by knip itself under `--treat-config-hints-as-errors`. Two gates asking different questions.
 
-`test_accepts_real_config` DRIVES THE VALIDATOR SEAM-FREE over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
+`test_the_real_config_declares_a_non_trivial_corpus` DRIVES THE VALIDATOR SEAM-FREE over the REAL `knip.jsonc` at the repo root, and the validator additionally shells out to `git grep` across the working tree and the `private/account` submodule to collect `@public` tags. It is a read, and no `XDIST_GROUP` is declared: this file's bash twin is retired, so `real_tree_admission` in `test_twin_parity.py` (which only runs against modules that still declare a `BASH_TWIN`) never looks at it. A pure reader needs no group.
 
 THE SUBJECT IS NEVER REIMPLEMENTED. Every verdict comes from a real `npx tsx scripts/gates/check-knip-blockers.ts` run. The fixtures are the twin's, string
 for string.
@@ -22,7 +22,7 @@ import re
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-# test_accepts_real_config runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags; both reads, no group needed. See the docstring.
+# test_the_real_config_declares_a_non_trivial_corpus runs the validator over the real knip.jsonc, and the validator git-greps the whole working tree for @public tags; both reads, no group needed. See the docstring.
 
 SUBJECT_REL = "scripts/gates/check-knip-blockers.ts"
 SUBJECT = paths.from_root(*SUBJECT_REL.split("/"))
@@ -86,13 +86,7 @@ def validated_count(gate, output: str) -> int:
 # ---------------------------------------------------------------------------
 
 
-def test_accepts_real_config(gate):
-    """THE REAL-TREE CASE. Real `knip.jsonc`, real `git grep` over the tree and the `private/account` submodule, no seams."""
-    if not REAL_CONFIG.is_file():
-        gate.log_fail("knip.jsonc missing at repo root")
-    result = run_validator(gate)
-    gate.assert_exit(0, result, "real knip.jsonc should pass BLOCKER validation")
-    gate.log_pass("real knip.jsonc passes validation")
+# THE REAL-TREE GREEN CASE `test_accepts_real_config` LEFT THIS FILE (PLAN-ciquick-cpu.md W16): `check:ci-knip-blockers` (ci-quality.yml quality-code, step `knip BLOCKER reasons`) runs this same validator over the real `knip.jsonc` and the real `git grep` on every run, and exit 0 was this case's only assertion.
 
 
 def test_accepts_group_blocker(gate):
@@ -188,7 +182,7 @@ def test_entry_project_exempt(gate):
 def test_the_real_config_declares_a_non_trivial_corpus(gate):
     """ADDED BY THE PORT: print the shape, so a collapse is visible rather than silent.
 
-    `test_accepts_real_config` asserts exit 0 and nothing else, and exit 0 is also what a validator that parsed ZERO entries returns. The reader is a line-based JSONC walk over four hand-written regexes -- put an array on one line, change the quoting, let a formatter through, and `keyOpenArray` stops matching while the gate keeps reporting green over a corpus of nothing.
+    The twin's real-config case (now `check:ci-knip-blockers` itself) asserts exit 0 and nothing else, and exit 0 is also what a validator that parsed ZERO entries returns. The reader is a line-based JSONC walk over four hand-written regexes -- put an array on one line, change the quoting, let a formatter through, and `keyOpenArray` stops matching while the gate keeps reporting green over a corpus of nothing.
 
     So the count is READ from the validator's own verdict line and required to be non-trivial. Zero is a failure; so is a number that has fallen under the floor.
     """

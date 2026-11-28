@@ -128,8 +128,7 @@
       "gates": [
         "check:actions",
         "check:ci-actions-allowlist",
-        "check:ci-gate-bind",
-        "check:ci-gates-lock"
+        "check:ci-gen-gates"
       ],
       "scope": [
         {
@@ -406,6 +405,22 @@
           "file": "embed-assets.lock.json",
           "role": "version",
           "json": "/components/zot/version",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/docker/service.go",
+          "role": "version",
+          "match": "zot-linux-amd64:v(?<value>\\d+\\.\\d+\\.\\d+)\"",
+          "label": "pkg/infra/docker/service.go zot container image",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/infra/opsconfig/config.go",
+          "role": "version",
+          "match": "zot-linux-amd64:v(?<value>\\d+\\.\\d+\\.\\d+)\"",
+          "label": "pkg/infra/opsconfig/config.go zot container image",
           "expect": 1
         },
         {
@@ -1072,6 +1087,39 @@
       "literals": []
     },
     {
+      "id": "devcontainer:go-licenses",
+      "kind": "leaf",
+      "name": "go-licenses",
+      "driver": "devcontainer",
+      "source": {
+        "type": "go-list",
+        "module": "github.com/google/go-licenses"
+      },
+      "goModule": "github.com/google/go-licenses",
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.devcontainer-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": ".ci/rediacc_ci/infra/build_renet.py",
+          "role": "version",
+          "match": "^GO_LICENSES_VERSION = \"(?<value>v[0-9][^\"]*)\"",
+          "label": ".ci/rediacc_ci/infra/build_renet.py GO_LICENSES_VERSION",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "devcontainer:codex",
       "kind": "leaf",
       "name": "Codex CLI",
@@ -1311,6 +1359,57 @@
       "literals": []
     },
     {
+      "id": "cli-tool:code-server",
+      "kind": "leaf",
+      "name": "code-server release rdc installs for the browser VS Code (moves with image:vscode-code-server)",
+      "driver": "toolchain",
+      "source": {
+        "type": "github-release",
+        "repo": "coder/code-server",
+        "tagPrefix": "v"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "version",
+          "match": "^const VERSION = '(?<value>[^']+)';$",
+          "label": "code-server.ts VERSION",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "sha256:x64",
+          "match": "^  'linux-x64': \\{\\n    url: [^\\n]+\\n    sha256: '(?<value>[0-9a-f]{64})',$",
+          "label": "code-server.ts ARTIFACTS['linux-x64'].sha256",
+          "asset": "code-server-{version}-linux-amd64.tar.gz",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/remote/vscode-server/code-server.ts",
+          "role": "sha256:arm64",
+          "match": "^  'linux-arm64': \\{\\n    url: [^\\n]+\\n    sha256: '(?<value>[0-9a-f]{64})',$",
+          "label": "code-server.ts ARTIFACTS['linux-arm64'].sha256",
+          "asset": "code-server-{version}-linux-arm64.tar.gz",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "toolchain:go",
       "kind": "leaf",
       "name": "Go toolchain",
@@ -1378,7 +1477,16 @@
           "expect": 1
         }
       ],
-      "derive": [],
+      "derive": [
+        {
+          "run": "./build.sh detect_wasm ../account/src/services/forensics-detect/wasm",
+          "cwd": "private/renet",
+          "writes": [
+            { "repo": "private/account", "file": "src/services/forensics-detect/wasm/detect.wasm" },
+            { "repo": "private/account", "file": "src/services/forensics-detect/wasm/detect-wasm.json" }
+          ]
+        }
+      ],
       "literals": [
         {
           "re": "(?<![\\w.])(?:go ?|GO_VERSION=)?(?<value>1\\.\\d+\\.\\d+)(?![\\w.])"
@@ -2162,6 +2270,457 @@
           "match": "^(?<value>[0-9a-f]{64})  tofu_[^_]+_windows_arm64\\.zip$",
           "label": "the recorded signed SHA256SUMS, windows-arm64",
           "asset": "tofu_{version}_windows_arm64.zip",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-rsync",
+      "kind": "leaf",
+      "name": "MSYS2 rsync (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "rsync"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'rsync', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN rsync version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'rsync', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN rsync sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/rsync-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-msys2-runtime",
+      "kind": "leaf",
+      "name": "MSYS2 MSYS2 runtime (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "msys2-runtime"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'msys2-runtime', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN msys2-runtime version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'msys2-runtime', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN msys2-runtime sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/msys2-runtime-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libiconv",
+      "kind": "leaf",
+      "name": "MSYS2 libiconv (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libiconv"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libiconv', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libiconv version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libiconv', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libiconv sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libiconv-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libidn2",
+      "kind": "leaf",
+      "name": "MSYS2 libidn2 (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libidn2"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libidn2', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libidn2 version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libidn2', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libidn2 sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libidn2-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libintl",
+      "kind": "leaf",
+      "name": "MSYS2 libintl (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libintl"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libintl', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libintl version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libintl', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libintl sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libintl-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-liblz4",
+      "kind": "leaf",
+      "name": "MSYS2 liblz4 (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "liblz4"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'liblz4', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN liblz4 version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'liblz4', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN liblz4 sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/liblz4-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libopenssl",
+      "kind": "leaf",
+      "name": "MSYS2 libopenssl (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libopenssl"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libopenssl', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libopenssl version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libopenssl', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libopenssl sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libopenssl-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libunistring",
+      "kind": "leaf",
+      "name": "MSYS2 libunistring (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libunistring"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libunistring', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libunistring version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libunistring', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libunistring sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libunistring-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libxxhash",
+      "kind": "leaf",
+      "name": "MSYS2 libxxhash (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libxxhash"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libxxhash', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libxxhash version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libxxhash', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libxxhash sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libxxhash-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-libzstd",
+      "kind": "leaf",
+      "name": "MSYS2 libzstd (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "libzstd"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'libzstd', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN libzstd version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'libzstd', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN libzstd sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/libzstd-{version}-x86_64.pkg.tar.zst",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
+      "id": "cli-tool:msys2-popt",
+      "kind": "leaf",
+      "name": "MSYS2 popt (rdc tools install rsync)",
+      "driver": "toolchain",
+      "source": {
+        "type": "msys2-repo",
+        "package": "popt"
+      },
+      "safety": {
+        "mode": "release-age",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "version",
+          "match": "^    \\{ name: 'popt', version: '(?<value>[^']+)', sha256: '[0-9a-f]{64}' \\},$",
+          "label": "MSYS2_RSYNC_PIN popt version",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/tools/msys2-rsync-pin.generated.ts",
+          "role": "sha256:x86-64",
+          "match": "^    \\{ name: 'popt', version: '[^']+', sha256: '(?<value>[0-9a-f]{64})' \\},$",
+          "label": "MSYS2_RSYNC_PIN popt sha256",
+          "asset": "https://repo.msys2.org/msys/x86_64/popt-{version}-x86_64.pkg.tar.zst",
           "expect": 1
         }
       ],
@@ -3705,6 +4264,46 @@
       "literals": []
     },
     {
+      "id": "image:vscode-code-server",
+      "kind": "leaf",
+      "name": "codercom/code-server image renet runs for the browser-exposed VS Code (the tag and its multi-arch index digest; moves with cli-tool:code-server)",
+      "driver": "docker",
+      "source": {
+        "type": "dockerhub",
+        "image": "codercom/code-server"
+      },
+      "safety": {
+        "mode": "assisted",
+        "major": "assisted"
+      },
+      "holds": [
+        ".ci/policy/.pins-upgrade-blocklist"
+      ],
+      "gates": [
+        "check:ci-pin-registry"
+      ],
+      "sites": [
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/repository_vscode.go",
+          "role": "version",
+          "match": "^\\tvscodeImage = \"(?<value>codercom/code-server:[^@\"]+)@sha256:[0-9a-f]{64}\"$",
+          "label": "cmd/renet/repository_vscode.go vscodeImage tag",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "cmd/renet/repository_vscode.go",
+          "role": "digest",
+          "match": "^\\tvscodeImage = \"codercom/code-server:[^@\"]+@(?<value>sha256:[0-9a-f]{64})\"$",
+          "label": "cmd/renet/repository_vscode.go vscodeImage digest",
+          "expect": 1
+        }
+      ],
+      "derive": [],
+      "literals": []
+    },
+    {
       "id": "image:renet-ubuntu",
       "kind": "leaf",
       "name": "ubuntu image for the renet target and its rsync, zot and k3s stages",
@@ -4699,6 +5298,13 @@
           "role": "version",
           "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>collabora/code:v?\\d[^\\s\"'@#]*)",
           "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "pkg/compose/testdata/nextcloud-aio.compose.yaml",
+          "role": "version",
+          "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>collabora/code:v?\\d[^\\s\"'@#]*)",
+          "expect": 1
         }
       ],
       "derive": [],
@@ -5307,6 +5913,34 @@
           "role": "version",
           "match": "^[ \\t]*image:[ \\t]*[\"']?(?<value>traefik:v?\\d[^\\s\"'@#]*)",
           "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": "packages/cli/src/services/server/bundle/images.ts",
+          "role": "version",
+          "match": "TRAEFIK_REF = '(?<value>traefik:v?\\d[^']*)'",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/rediacc_ci/core/devbox.py",
+          "role": "version",
+          "match": "^DEVBOX_PROXY_IMAGE = \"(?<value>traefik:v?\\d[^\"]*)\"",
+          "expect": 1
+        },
+        {
+          "repo": ".",
+          "file": ".ci/config/constants.sh",
+          "role": "version",
+          "match": "^readonly DEVBOX_PROXY_IMAGE=\"(?<value>traefik:v?\\d[^\"]*)\"",
+          "expect": 1
+        },
+        {
+          "repo": "private/renet",
+          "file": "scripts/ci-test.sh",
+          "role": "version",
+          "match": "pull_with_retry (?<value>traefik:v?\\d[^\\s]*)",
+          "expect": 1
         }
       ],
       "derive": [],
@@ -5337,13 +5971,6 @@
     {
       "scanner": "literal",
       "repo": "private/renet",
-      "file": "Dockerfile",
-      "match": "both declare `go 1\\.26\\.0`",
-      "reason": "BLOCKER: the comment records the go directive measured in that release when the csi-builder base was chosen; a bump re-measures it rather than renaming the version"
-    },
-    {
-      "scanner": "literal",
-      "repo": "private/renet",
       "file": "pkg/kube/csidriver/crds.go",
       "match": "client/config/crd",
       "reason": "BLOCKER: names the external-snapshotter release the embedded VolumeSnapshot CRDs were vendored from; it moves only when the CRDs are re-vendored from the new tag, which a version bump alone does not do (PLAN-pins-command survey item 4)"
@@ -5360,5 +5987,119 @@
       "file": "tests/fixtures/docker-compose-with-ports.yml",
       "reason": "BLOCKER: a sample compose file listed in private/renet/tests/README.md as a test fixture, which no test, build or deploy pulls (nothing in renet references the path), so its image tags are sample input rather than a deployed version"
     }
-  ]
+  ],
+  "lines": {
+    "dockerhub:alpine": {
+      "depth": 2,
+      "why": "alpine releases in 3.x branches (3.23, 3.24), each its own package set and support window"
+    },
+    "dockerhub:arangodb": {
+      "depth": 2,
+      "why": "arangodb numbers its release lines 3.x (3.11, 3.12), and a 3.x move changes the storage engine defaults"
+    },
+    "dockerhub:caddy": {
+      "depth": 1,
+      "why": "caddy 2 is semver: a 2.x minor keeps the Caddyfile and API compatible"
+    },
+    "dockerhub:cassandra": {
+      "depth": 2,
+      "why": "cassandra numbers its release lines x.y (4.0, 4.1, 5.0), each with its own sstable format and support window"
+    },
+    "dockerhub:clickhouse/clickhouse-server": {
+      "depth": 2,
+      "why": "clickhouse numbers its releases YY.M (24.3, 24.8), each a release line with its own settings changes"
+    },
+    "dockerhub:codercom/code-server": {
+      "depth": 1,
+      "why": "code-server keeps major 4 and moves its minor with each monthly VS Code release, so a 4.x minor is a routine step on one line"
+    },
+    "dockerhub:collabora/code": {
+      "depth": 2,
+      "why": "collabora numbers its releases YY.MM (25.04, 26.04), and the parts after that are builds of one release"
+    },
+    "dockerhub:couchdb": {
+      "depth": 1,
+      "why": "couchdb is semver: a 3.x minor keeps the data and HTTP API compatible"
+    },
+    "dockerhub:dpage/pgadmin4": {
+      "depth": 1,
+      "why": "pgadmin4 ships a 9.x minor every month as a routine release; only the leading number is a line"
+    },
+    "dockerhub:elasticsearch": {
+      "depth": 1,
+      "why": "elasticsearch is semver: the index format and settings change on the leading number"
+    },
+    "dockerhub:golang": {
+      "depth": 2,
+      "why": "Go numbers its release lines 1.x (1.26, 1.27), each with its own language and toolchain changes"
+    },
+    "dockerhub:influxdb": {
+      "depth": 1,
+      "why": "influxdb is semver: a 2.x minor keeps the data and API compatible"
+    },
+    "dockerhub:kibana": {
+      "depth": 1,
+      "why": "kibana is semver and moves with elasticsearch on the leading number"
+    },
+    "dockerhub:mariadb": {
+      "depth": 2,
+      "why": "mariadb numbers its release series x.y (10.11, 11.4), each run through mariadb-upgrade"
+    },
+    "dockerhub:mysql": {
+      "depth": 2,
+      "why": "mysql numbers its release lines x.y (8.0, 8.4 LTS, 9.x innovation), each upgrading the data dictionary"
+    },
+    "dockerhub:neo4j": {
+      "depth": 1,
+      "why": "neo4j numbers its lines by the leading number (5, then calendar years 2025, 2026)"
+    },
+    "dockerhub:nginx": {
+      "depth": 2,
+      "why": "nginx numbers its branches 1.x (an odd mainline, an even stable), and the leading 1 never moves"
+    },
+    "dockerhub:node": {
+      "depth": 1,
+      "why": "node numbers its release lines by the leading number (24, 26)"
+    },
+    "dockerhub:nvidia/cuda": {
+      "depth": 2,
+      "why": "CUDA numbers its toolkit releases x.y (13.0, 13.5), each with its own runtime libraries and driver floor"
+    },
+    "dockerhub:otel/opentelemetry-collector-contrib": {
+      "depth": 2,
+      "why": "the collector is 0.x, where every minor is a release that can rename or drop config keys"
+    },
+    "dockerhub:percona": {
+      "depth": 2,
+      "why": "percona server follows the mysql release lines x.y (8.0, 8.4), each upgrading the data dictionary"
+    },
+    "dockerhub:postgres": {
+      "depth": 1,
+      "why": "postgres numbers its majors by the leading number (16, 17, 18)"
+    },
+    "dockerhub:python": {
+      "depth": 2,
+      "why": "python numbers its feature releases 3.x (3.13, 3.14), each with its own C API and removals"
+    },
+    "dockerhub:rabbitmq": {
+      "depth": 2,
+      "why": "rabbitmq numbers its release series x.y (3.13, 4.0, 4.1), each with its own feature flags"
+    },
+    "dockerhub:redis": {
+      "depth": 1,
+      "why": "redis is semver: the RDB format moves on the leading number"
+    },
+    "dockerhub:solr": {
+      "depth": 1,
+      "why": "solr is semver: the index format moves on the leading number"
+    },
+    "dockerhub:traefik": {
+      "depth": 2,
+      "why": "traefik numbers its releases v3.x, and a minor adds and deprecates providers and options"
+    },
+    "dockerhub:ubuntu": {
+      "depth": 2,
+      "why": "ubuntu numbers its releases YY.MM (24.04, 26.04), each its own distribution"
+    }
+  }
 }

@@ -4,8 +4,8 @@
  * The sibling test mocks `@rediacc/shared/config-crypto` wholesale, which proves
  * the adapter's control flow but says nothing about whether the CLI actually
  * recovers the right CEK. This test keeps the crypto REAL: it stands up a genuine
- * password key-slot with the shared module (generateCek → newPasswordSlotParams →
- * derivePasswordSlotSecret → wrapCekForSlot), seals a real config blob under that
+ * recovery key-slot with the shared module (generateCek → newRecoverySlotParams →
+ * deriveRecoverySlotSecret → wrapCekForSlot), seals a real config blob under that
  * exact CEK, then drives the CLI's OWN unwrap path, `RemoteConfigAdapter.pull()`,
  * whose private `deriveCek` runs `deriveWrappingKey` + `cekUnwrap`, and asserts:
  *
@@ -13,11 +13,11 @@
  *      the slot was wrapped with (captured via a real-implementation spy on
  *      `cekUnwrap` + `exportAesKey` raw compare), and the config plaintext the CLI
  *      returns matches what was encrypted;
- *   2. wrong password → the slot secret no longer unwraps → RemoteStaleSlotError;
+ *   2. wrong recovery code → the slot secret no longer unwraps → RemoteStaleSlotError;
  *   3. a rotated/stale wrappedCek (generation mismatch) → RemoteStaleSlotError,
  *      i.e. the CLI surfaces its actionable re-enroll error.
  *
- * Only the HTTP boundary (`config-server-client`) is mocked; every AES/HKDF/PBKDF2
+ * Only the HTTP boundary (`config-server-client`) is mocked; every AES/HKDF
  * operation runs for real, and token + secure storage are plain in-memory stubs
  * passed straight to the adapter constructor.
  */
@@ -45,12 +45,13 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 // Real crypto, do NOT mock @rediacc/shared/*.
 import * as configCrypto from '@rediacc/shared/config-crypto';
 import {
-  derivePasswordSlotSecret,
+  deriveRecoverySlotSecret,
   exportAesKey,
   generateCek,
+  generateRecoveryCode,
   generateServerSecret,
   importAesKey,
-  newPasswordSlotParams,
+  newRecoverySlotParams,
   randomBytes,
   toBase64,
   wrapCekForSlot,
@@ -61,6 +62,7 @@ import {
   RemoteConfigAdapter,
   RemoteConfigUndecryptableError,
   RemoteStaleSlotError,
+  sessionPrincipalOf,
 } from '../remote-config-adapter.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
@@ -72,7 +74,7 @@ const STORE_ID = '11111111-1111-4111-8111-111111111111';
 const CONFIG_ID = '22222222-2222-4222-8222-222222222222';
 const TEAM_ID = '33333333-3333-4333-8333-333333333333';
 const STORAGE_KEY_ID = 'rdc:pw:44444444-4444-4444-8444-444444444444';
-const PASSWORD = 'correct horse battery staple';
+const RECOVERY_CODE = generateRecoveryCode();
 const SDK_EPOCH = 11;
 
 const REMOTE: RemoteConfig = {
@@ -123,18 +125,18 @@ function createSecureStorage(secretB64: string | null) {
 }
 
 /**
- * Provision a genuine password slot + a genuine encrypted config sealed under the
+ * Provision a genuine recovery slot + a genuine encrypted config sealed under the
  * SAME CEK. Returns the raw CEK (for the byte compare), the slot secret bytes,
  * the opaque wrappedCek, and the session + config-pull responses the config API
  * would serve.
  */
 async function provision(
-  password: string,
+  recoveryCode: string,
   teamId: string | null = TEAM_ID,
   opts: { wrapServerSecret?: Uint8Array; wrapCek?: CryptoKey } = {}
 ) {
-  const kdfParams = newPasswordSlotParams();
-  const slotSecret = await derivePasswordSlotSecret(password, kdfParams);
+  const kdfParams = newRecoverySlotParams();
+  const slotSecret = await deriveRecoverySlotSecret(recoveryCode, kdfParams);
   const serverSecret = generateServerSecret();
   const cek = await generateCek();
 
@@ -161,6 +163,7 @@ async function provision(
     sdkEpoch: SDK_EPOCH,
     sdkDerived,
     cek,
+    cekGeneration: 1,
     teamId: teamId ?? undefined,
   });
 
@@ -185,6 +188,9 @@ async function provision(
         lastModified: '2026-01-01T00:00:00Z',
         sdkEpoch: SDK_EPOCH,
         commitments: payload.envelope.commitments,
+        wrappedConfigKey: payload.envelope.wrappedConfigKey,
+        configKeyVersion: payload.envelope.configKeyVersion,
+        cekGeneration: payload.envelope.cekGeneration,
       },
       hmac: payload.hmac,
       // The server's pull always returns the key of the epoch the blob was pushed in (configs.ts pull route).
@@ -208,7 +214,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   });
 
   it('unwraps the identical CEK bytes the slot was wrapped with (derive → wrap → CLI unwrap)', async () => {
-    const f = await provision(PASSWORD);
+    const f = await provision(RECOVERY_CODE);
     wireConfigApi(f.session, f.config);
 
     // Spy on the shared cekUnwrap but keep the REAL implementation, so we can read back exactly which CEK the CLI's deriveCek produced.
@@ -241,13 +247,13 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     expect(Buffer.from(recoveredRaw)).toEqual(Buffer.from(expectedRaw));
   });
 
-  it('rejects with RemoteStaleSlotError when the password (slot secret) is wrong', async () => {
-    // Slot + config sealed under PASSWORD; the device holds the WRONG slot secret.
-    const f = await provision(PASSWORD);
+  it('rejects with RemoteStaleSlotError when the recovery code (slot secret) is wrong', async () => {
+    // Slot + config sealed under RECOVERY_CODE; the device holds the WRONG slot secret.
+    const f = await provision(RECOVERY_CODE);
     wireConfigApi(f.session, f.config);
 
-    const wrongKdf = newPasswordSlotParams();
-    const wrongSlotSecret = await derivePasswordSlotSecret('a different password', wrongKdf);
+    const wrongKdf = newRecoverySlotParams();
+    const wrongSlotSecret = await deriveRecoverySlotSecret(generateRecoveryCode(), wrongKdf);
 
     const adapter = new RemoteConfigAdapter(
       REMOTE,
@@ -265,7 +271,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   it('rejects with RemoteStaleSlotError on a rotated/stale wrappedCek (generation mismatch)', async () => {
     // The slot secret is CORRECT, but the stored wrappedCek was wrapped under a different server secret, i.e. the CEK was rotated and this device kept its old wrapping. The AES-GCM auth tag fails and the CLI surfaces its re-enroll error rather than a raw OperationError.
     const rotatedServerSecret = generateServerSecret();
-    const f = await provision(PASSWORD, TEAM_ID, { wrapServerSecret: rotatedServerSecret });
+    const f = await provision(RECOVERY_CODE, TEAM_ID, { wrapServerSecret: rotatedServerSecret });
     wireConfigApi(f.session, f.config);
 
     const adapter = new RemoteConfigAdapter(
@@ -295,7 +301,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     // The slot wraps CEK-B; the stored blob was sealed under CEK-A. The device
     // unwraps CEK-B cleanly and then meets a config it cannot read: exactly the "store already holds a different config for this org" case.
     const otherCek = await generateCek();
-    const f = await provision(PASSWORD, TEAM_ID, { wrapCek: otherCek });
+    const f = await provision(RECOVERY_CODE, TEAM_ID, { wrapCek: otherCek });
     wireConfigApi(f.session, f.config);
 
     const unwrapSpy = vi.spyOn(configCrypto, 'cekUnwrap');
@@ -333,7 +339,7 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
   it('separates a session-layer failure from the store mismatch', async () => {
     // Same CEK on both sides, so the HMAC and the CEK layer both pass; only the
     // server-derived SDK layer is wrong. That is a retryable session problem, not a store-identity problem, and it must not claim the latter.
-    const f = await provision(PASSWORD);
+    const f = await provision(RECOVERY_CODE);
     // The pull response carries the session-layer key (the push epoch's), so that is where the wrong key goes.
     wireConfigApi(f.session, { ...f.config, sdk_derived: toBase64(randomBytes(32)) });
 
@@ -357,5 +363,66 @@ describe('RemoteConfigAdapter — real crypto round-trip', () => {
     expect(message).toContain(CONFIG_ID);
     expect(message).toMatch(/retry/i);
     expect(message).not.toContain(STORE_ID);
+  });
+});
+
+// ─── D2: the session names the caller a local run is judged as ─────────
+
+describe('RemoteConfigAdapter.policyContext: the session principal (PLAN-rmcp-decide.md D2)', () => {
+  const SOLO: RemoteConfig = { ...REMOTE, teamId: undefined };
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    mockConfigServerFetch.mockReset();
+  });
+
+  /** Serve the session, the pull, and a 404 `policy_not_found` for `GET /configs/:id/policy`. */
+  async function wire(session: Record<string, unknown>) {
+    const f = await provision(RECOVERY_CODE, null);
+    const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+    mockConfigServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/configs/session')) {
+        return Promise.resolve({ data: { ...f.session, ...session } });
+      }
+      if (path.endsWith('/policy')) {
+        const missing = new ConfigServerError('no policy', 404);
+        Object.assign(missing, { code: 'policy_not_found' });
+        return Promise.reject(missing);
+      }
+      return Promise.resolve({ data: f.config });
+    });
+    return new RemoteConfigAdapter(
+      SOLO,
+      CONFIG_NAME,
+      createTokenStorage({
+        token: 'rct_1',
+        wrappedCek: f.wrappedCek,
+      }) as unknown as RemoteTokenStorage,
+      createSecureStorage(toBase64(f.slotSecret))
+    );
+  }
+
+  it("answers the session's member and the policy read through GET /configs/:id/policy", async () => {
+    const adapter = await wire({ orgRole: 'member', userEmail: 'm@example.com' });
+    const context = await adapter.policyContext();
+    expect(context.principal).toEqual({ orgRole: 'member', userEmail: 'm@example.com' });
+    expect(context.policy).toEqual({ locked: [], ignoredLocked: [] });
+    const asked = mockConfigServerFetch.mock.calls.map((call) => String(call[0]));
+    expect(asked).toContain(`/account/api/v1/configs/${CONFIG_ID}/policy`);
+  });
+
+  it('refuses a session that names no valid org role, never assuming owner', async () => {
+    const adapter = await wire({ orgRole: 'superuser', userEmail: 'x@example.com' });
+    await expect(adapter.policyContext()).rejects.toThrow(/no org role/);
+  });
+});
+
+describe('sessionPrincipalOf', () => {
+  it.each(['owner', 'admin', 'member'])('keeps the org role %s', (role) => {
+    expect(sessionPrincipalOf(role, 'a@b.c')).toEqual({ orgRole: role, userEmail: 'a@b.c' });
+  });
+
+  it.each([undefined, null, '', 'Owner', 'root', 1])('names no principal for %j', (role) => {
+    expect(sessionPrincipalOf(role, 'a@b.c')).toBeUndefined();
   });
 });

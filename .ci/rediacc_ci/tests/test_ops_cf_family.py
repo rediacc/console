@@ -426,7 +426,14 @@ def test_delta_all_filtered_output_is_not_a_failure(world: h.World) -> None:
 
 def _reset_env(env: dict[str, str]) -> dict[str, str]:
     """The port's environment: already bound to its own `reset-bench-eu` profile, so it does not re-execute under `bws_env`. The twin had no profile, so its environment, and every golden key, is unchanged."""
-    return {**env, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
+    # Declared delta: the port signs the R2 wipe with the wipe-only `BENCH_WIPE_R2_*` pair; the bash twin (and every golden key) still reads the `CLOUDFLARE_R2_*` pair, so the same values are bound under both spellings only on the port side.
+    wipe = {}
+    if "CLOUDFLARE_R2_ACCESS_KEY_ID" in env:
+        wipe = {
+            "BENCH_WIPE_R2_ACCESS_KEY_ID": env["CLOUDFLARE_R2_ACCESS_KEY_ID"],
+            "BENCH_WIPE_R2_SECRET_ACCESS_KEY": env["CLOUDFLARE_R2_SECRET_ACCESS_KEY"],
+        }
+    return {**env, **wipe, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
 
 
 D1_TABLES = {
@@ -481,6 +488,15 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     port_calls, probes = h.split_probe_block(world.calls())
     assert not h.split_probe_block(bash_calls)[1]  # the control: the bash sent no probe
     assert probes, "the minted token was used without a readiness probe"
+    # DECLARED DELTA: the port reads the live production signal (every subscription's backup manifests) before it wipes; the bash read none. Compared without that one query, which must be there.
+    signal = [
+        c
+        for c in port_calls
+        if c["tool"] == "curl" and c["body"] and "FROM backup_manifests" in c["body"]
+    ]
+    assert len(signal) == 1, signal
+    assert not any(c.get("body") and "backup_manifests" in c["body"] for c in bash_calls)
+    port_calls = [c for c in port_calls if c not in signal]
     assert rc_b == rc_p == 0, (err_b, err_p)
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
@@ -724,6 +740,16 @@ def test_delta_reset_bench_re_executes_under_its_own_profile(
         return subprocess.CompletedProcess(argv, 7)
 
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu")
+    # An armed declaration that stops no eu wipe: the committed one may be empty, which refuses (fail closed).
+    monkeypatch.setattr(
+        reset_bench.bench_production,
+        "load",
+        lambda *_a: [
+            reset_bench.bench_production.Protected(
+                "00000000-0000-4000-8000-000000000000", "m", "r", "asia"
+            )
+        ],
+    )
     monkeypatch.setattr(reset_bench.shutil, "which", lambda cmd: "/usr/bin/" + cmd)
     monkeypatch.setattr(reset_bench.subprocess, "run", fake_run)
     assert reset_bench.main(["--yes", "--r2-only"]) == 7
@@ -778,14 +804,17 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     # PLAN-terms-acceptance E2: the port pushes the commercial register's name with the other SELLER_* fields; the retired bash never held it. A fake value.
     bound["SELLER_REGISTER_NAME"] = "fake-register-name-for-tests"
     bound["SALES_NOTIFY_EMAIL"] = "sales@example.invalid"
-    # f4fbdece81 / 0360a85606: the port binds the Stripe sandbox pair as the Worker's STRIPE_SANDBOX_* secrets (a test-prefixed key, or the push is refused); the retired bash never held them. Fake values, never real keys.
-    bound["STRIPE_SANDBOX_SECRET_KEY"] = "sk_test_fake-stripe-sandbox-key-for-tests"
-    bound["STRIPE_SANDBOX_WEBHOOK_SECRET"] = "whsec_fake-stripe-sandbox-hook-for-tests"
     # PLAN-email-sender-separation E1: the contact and alerts senders and recipients the port pushes; the retired bash never held them. Reserved-domain values.
     bound["CONTACT_FROM_EMAIL"] = "contact@example.invalid"
     bound["ALERTS_FROM_EMAIL"] = "alerts@example.invalid"
     bound["CONTACT_NOTIFY_EMAIL"] = "contact-inbox@example.invalid"
     bound["ALERTS_NOTIFY_EMAIL"] = "alerts-inbox@example.invalid"
+    # PLAN-forensics-shipping FS12 (464878dffc): the bench forensics store triple the port pushes; the retired bash never held it. Fake values, set as a whole (a partial triple is refused).
+    bound["ACCOUNT_FORENSICS_S3_ENDPOINT"] = "https://forensics.example.invalid"
+    bound["ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID"] = "fake-forensics-key-id"
+    bound["ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY"] = "fake-forensics-secret"
+    # ab89774522: the port pushes the AI Gateway logs-read token and refuses without it; the retired bash never held it. A fake value.
+    bound["AI_GATEWAY_LOGS_TOKEN"] = "fake-ai-gateway-logs-token"
     return bound
 
 
@@ -798,14 +827,24 @@ PORT_ONLY_SECRETS = (
     "CLOUDFLARE_ACCOUNT_ID",
     "SELLER_REGISTER_NAME",
     "SALES_NOTIFY_EMAIL",
-    "STRIPE_SANDBOX_SECRET_KEY",
-    "STRIPE_SANDBOX_WEBHOOK_SECRET",
     # PLAN-email-sender-separation E1: the contact and alerts senders and recipients.
     "CONTACT_FROM_EMAIL",
     "ALERTS_FROM_EMAIL",
     "CONTACT_NOTIFY_EMAIL",
     "ALERTS_NOTIFY_EMAIL",
+    # PLAN-forensics-shipping FS12 (464878dffc): the bench forensics store triple.
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+    # 851b6d636e: the forensics bucket and region travel as secrets beside the triple (blank beside an empty one).
+    "ACCOUNT_FORENSICS_S3_BUCKET",
+    "ACCOUNT_FORENSICS_S3_REGION",
+    # ab89774522: the AI Gateway logs-read token of the nightly credit reconcile.
+    "AI_GATEWAY_LOGS_TOKEN",
 )
+
+# DECLARED DELTA (Stripe removal): the account Worker takes no Stripe secret, so the port pushes none; the retired bash golden still records these two blank live names, dropped from its side of the comparison.
+STRIPE_RETIRED = ("STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET")
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
 RETIRED_BENCH_SENDER = "noreply@notify.rediacc.com"
@@ -838,6 +877,10 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (b8601cfde): the port lists the Worker's deployments after the secrets push to record the live version; the bash never did.
         if raw["tool"] == "npx" and raw["argv"][2:4] == ["deployments", "list"]:
             continue
+        # DECLARED DELTA: the rotation preflight runs the TypeScript check directly from private/account, off the `rotation` bws profile that `./run.sh rotation` binds; mapped back to the bash call.
+        if raw["tool"] == "npx" and raw["argv"][2:4] == ["scripts/rotation/index.ts", "check"]:
+            out.append({"tool": "run.sh", "argv": ["rotation", "check", "--for=bench"]})
+            continue
         call = dict(raw)
         # DECLARED DELTA (2026-10-28): the keyless bench portal builds into bench/dist, never into the dist a production deploy uploads; the bash built into dist/account.
         if call["tool"] == "npx" and "vite" in call["argv"]:
@@ -851,7 +894,7 @@ def _deploy_shape(calls: list[dict]) -> list[dict]:
         # DECLARED DELTA (PLAN-config-server-key K2, PLAN-free-license F2): the port pushes PORT_ONLY_SECRETS, which the retired bash never held. Dropped from the compared body; `test_deploy_bench_matches_bash` asserts each present first.
         if isinstance(call.get("stdin"), dict):
             # DECLARED DELTA (PLAN-enterprise-isolation S4): the account Worker signs through LICENSE_SIGNER and holds no licence private key, so the port stopped pushing ACCOUNT_ED25519_PRIVATE_KEY; the retired bash golden still records it.
-            dropped = {*PORT_ONLY_SECRETS, "ACCOUNT_ED25519_PRIVATE_KEY"}
+            dropped = {*PORT_ONLY_SECRETS, "ACCOUNT_ED25519_PRIVATE_KEY", *STRIPE_RETIRED}
             call["stdin"] = {k: v for k, v in call["stdin"].items() if k not in dropped}
             # DECLARED DELTA (71f25f3e8f): the port's bench sender default moved to notify.rediacc.cloud; the retired bash golden records the old sender, mapped forward so every other stdin key still compares verbatim.
             if call["stdin"].get("AWS_SES_FROM") == RETIRED_BENCH_SENDER:
@@ -891,10 +934,6 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
     }
     out_mapped = out_p.replace(version_line, "", 1)
-    # DECLARED DELTA (f4fbdece81): the port announces the Stripe sandbox pair it binds, a line the retired bash never printed; asserted once, then dropped.
-    stripe_line = "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET\n"
-    assert out_mapped.count(stripe_line) == 1
-    out_mapped = out_mapped.replace(stripe_line, "", 1)
     # DECLARED DELTA (finding 87f7acb9): the secret-name listing that precedes the retired-key deletion is echoed (the fake prints an empty list); asserted once, then dropped.
     assert out_mapped.count("[]\n") == 1
     out_mapped = out_mapped.replace("[]\n", "", 1)
@@ -918,6 +957,19 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert secrets["ACCOUNT_AE_READ_TOKEN"] == "fake-ae-read-token-for-tests"
     # The port-only set is compared away above, so every name must be present in the port's push first.
     assert all(name in secrets for name in PORT_ONLY_SECRETS), sorted(secrets)
+    # Review 8ec26e74.1: the bucket and region are compared away with the port-only set, so each is pinned to its literal here. The bucket is the forensicsR2 name of regions.json's bench row; a wrong value would otherwise fail nowhere.
+    assert secrets["ACCOUNT_FORENSICS_S3_BUCKET"] == "forensics-bench"
+    assert secrets["ACCOUNT_FORENSICS_S3_REGION"] == "auto"
+    # Review df62ac3c.1: `_deploy_shape` maps the port's rotation call back to the bash's `run.sh rotation check`, so the profile and cwd the port changed are pinned on the raw port calls: the TypeScript check runs from private/account and nothing goes through run.sh (which would bind the `rotation` bws profile).
+    rotation = [
+        c
+        for c in port_calls
+        if c["tool"] == "npx" and c["argv"][2:4] == ["scripts/rotation/index.ts", "check"]
+    ]
+    assert len(rotation) == 1, rotation
+    assert rotation[0]["argv"] == [*deploy_bench.ROTATION_CHECK_ARGV[1:]]
+    assert rotation[0]["cwd"] == "private/account"
+    assert not [c for c in port_calls if c["tool"] == "run.sh"], "the port went through run.sh"
     assert secrets["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.example.invalid"
     # The bash's fallback fired: with only the R2 trio in its environment it pushed the trio as the backup credential. The port received the same values under the backup names (`_port_deploy_env`).
     bash_secrets = next(c["stdin"] for c in bash_calls if c["tool"] == "npx" and c["stdin"])
@@ -925,7 +977,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     # And no wrangler child of the port inherits the account-wide trio, where every one of the bash's did.
     assert any(set(R2_TO_BACKUP) <= set(c.get("cf_env") or ()) for c in bash_calls)
     assert not any(set(R2_TO_BACKUP) & set(c.get("cf_env") or ()) for c in port_calls)
-    assert secrets["STRIPE_SECRET_KEY"] == ""
+    assert not [name for name in secrets if name.startswith("STRIPE")], sorted(secrets)
     # Self-destruct output is a delta (the bash sent it to /dev/null). The portal build line is the other: bench is built with no Turnstile sitekey since the operator ruling of 2026-10-13, and the bash still names its key.
     bash_build = "→ Building account portal SPA (Turnstile sitekey: 0x4AAAAAAC46Rczgin0T1o04)"
     port_build = "→ Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)"
@@ -1038,8 +1090,13 @@ def test_delta_the_account_wide_r2_trio_alone_is_refused_before_any_remote_write
     assert _port_deploy_env(env)["ACCOUNT_BACKUP_S3_ENDPOINT"] == env["CLOUDFLARE_R2_ENDPOINT"]
     # Only the R2 trio stays untranslated: the port-only secrets are the port's own, so neither may be what refuses.
     bound = _port_deploy_env(env)
-    # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, never an environment value, so it is not in `bound`.
-    needed = [name for name in PORT_ONLY_SECRETS if name != "CLOUDFLARE_ACCOUNT_ID"]
+    # CLOUDFLARE_ACCOUNT_ID is a constant the port pushes, and the forensics bucket and region are derived from the region and the endpoint, never environment values, so none is in `bound`.
+    derived = {
+        "CLOUDFLARE_ACCOUNT_ID",
+        "ACCOUNT_FORENSICS_S3_BUCKET",
+        "ACCOUNT_FORENSICS_S3_REGION",
+    }
+    needed = [name for name in PORT_ONLY_SECRETS if name not in derived]
     missing = [name for name in needed if name not in bound]
     assert not missing, f"_port_deploy_env dropped port-only secrets: {missing}"
     keyed = {
@@ -1186,6 +1243,7 @@ PAYLOAD_ENV = (
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+    "AI_GATEWAY_LOGS_TOKEN",
 )
 
 
@@ -1194,7 +1252,6 @@ def _payload_env(monkeypatch) -> None:
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", '{"user": "u", "pass": "p"}')
-    monkeypatch.setattr(deploy_bench, "stripe_pair", lambda: ("", ""))
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", h.R2_ENDPOINT)
 
 

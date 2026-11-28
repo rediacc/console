@@ -301,7 +301,7 @@ async function build(mutant: DevcontainerMutant | null): Promise<ControlCase[]> 
       'gopls: a release whose go.mod needs a newer Go than the image is ineligible, naming the Go it needs, and the newest one that builds is taken',
       mixed.releases.length === 2 &&
         mixed.releases[0].verdict?.eligible === false &&
-        (mixed.releases[0].verdict?.why ?? '').includes('needs go 1.999.0') &&
+        mixed.releases[0].verdict.why.includes('needs go 1.999.0') &&
         firstEligible === fits,
       JSON.stringify(mixed)
     );

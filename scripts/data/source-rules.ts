@@ -198,8 +198,10 @@ const ACCOUNT_WEB_EXTRA_UNTRANSLATED_PATTERNS = [
   '^RC1-X{8}-X{8}-X{8}-X{8}$',
   '^Passkey$',
   '^Tag$',
+  '^VS Code$',
   '^(Business|Community|Enterprise|Professional)$',
   '^Pro$',
+  '^Standard$', // the same word in de, et, fr and it (forensicsLevelStandard)
   '^Clustering$',
   '^(Plan|Type|Newsletter|Name|Limit|Source|Admin|Total|Team|Status|Magnet|Machines|Code|Permissions|General|Description|Date|Dashboard|Contact|Activations|Actions)$',
   '^Commit$',
@@ -436,6 +438,15 @@ const CLI_I18N: RuleInstance[] = [
     files: ['packages/cli/src/**/*.js', 'packages/cli/src/**/*.ts'],
     ignores: ['packages/cli/src/__tests__/**'],
     options: [{ allow: ['src/services/machine/machine-connection.ts'] }],
+  },
+  {
+    // PLAN-rmcp-decide.md D5: no retired guard import, no policy evaluation beside decide(), and enforce() only at the decision step (utils/command-policy.ts) and the executor (services/serve/policy.ts), the rule's defaults.
+    ruleId: 'custom/no-direct-guard-call',
+    kind: 'source',
+    modulePath: 'eslint-rules/no-direct-guard-call.js',
+    exportName: 'noDirectGuardCall',
+    files: ['packages/cli/src/**/*.ts'],
+    ignores: ['packages/cli/src/**/__tests__/**'],
   },
 ];
 

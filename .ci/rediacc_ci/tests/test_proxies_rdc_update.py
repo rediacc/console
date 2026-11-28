@@ -4,7 +4,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 
 ONE CASE DRIVES THE REAL SUBJECT (five scenarios, a Python fixture server per scenario, ~7 s on this host). The rest use a stub subject with the same dispatch SHAPE, which is the only way to drive the drift and zero-scenario branches: the real dispatch cannot be asked to grow an eighth arm.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-rdc-update.observations.jsonl` (5 rows, 5
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (5 rows, 5
 distinct trees, 5 distinct finding sets).
 """
 
@@ -34,6 +34,9 @@ FIXTURE_FILES = (
     TWIN_REL,
     ".ci/scripts/test/proxies/proxy-lib.sh",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",
     ".ci/rediacc_ci/proxies/__init__.py",

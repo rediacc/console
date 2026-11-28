@@ -124,15 +124,32 @@ export async function readBundle(
   return `${lines.join('\n')}\n`;
 }
 
-/** A child `rdc` that must succeed; its failure names the verb and the exit code. */
+const STDERR_TAIL_LINES = 6;
+const STDERR_TAIL_CHARS = 600;
+const SECRET_LINE =
+  /(pass(?:word|phrase)?|secret|token|api[-_]?key|authorization|credential|private[-_]?key)(\s*[=:]\s*)\S+/gi;
+
+/** The last few lines of a child's stderr, secrets masked and the length bounded, for a failure message. */
+export function stderrTail(stderr: string): string {
+  const lines = stderr
+    .split('\n')
+    .map((line) => line.trim().replace(SECRET_LINE, '$1$2[redacted]'))
+    .filter(Boolean)
+    .slice(-STDERR_TAIL_LINES);
+  const text = lines.join(' | ');
+  return text.length > STDERR_TAIL_CHARS ? `...${text.slice(-STDERR_TAIL_CHARS)}` : text;
+}
+
+/** A child `rdc` that must succeed; its failure names the verb, the exit code and the tail of its stderr. */
 export async function rdcMust(deps: ServerDeps, argv: string[]): Promise<string> {
   const result = await deps.rdc(argv);
   if (result.code !== 0) {
+    const command = `rdc ${argv.slice(0, 4).join(' ')}`;
+    const detail = stderrTail(result.stderr);
     throw new ServerError(
-      t('commands.server.errors.rdcFailed', {
-        command: `rdc ${argv.slice(0, 4).join(' ')}`,
-        code: result.code,
-      })
+      detail
+        ? t('commands.server.errors.rdcFailedDetail', { command, code: result.code, detail })
+        : t('commands.server.errors.rdcFailed', { command, code: result.code })
     );
   }
   return result.stdout;

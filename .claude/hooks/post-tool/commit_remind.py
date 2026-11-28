@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PostToolUse (every tool): after an Edit, Write, MultiEdit or NotebookEdit, remind the session to commit its verified unit when it holds uncommitted edits and the branch has gone `commit_remind_min` minutes without a commit (agent/plans/PLAN-fast-loop.md, Part 2).
+"""PostToolUse (every tool): after an Edit, Write, MultiEdit or NotebookEdit, remind the session to commit its verified unit when it holds uncommitted edits and the branch has gone `wl_checks.COMMIT_REMIND_MIN` (15) minutes without a commit (agent/plans/PLAN-fast-loop.md, Part 2).
 
 ADVISORY, ALWAYS. The reminder is `additionalContext` on a tool call that already ran; nothing is refused and the exit status is 0 whatever happens (operator 2026-10-06: a reminder, never a block).
 

@@ -163,3 +163,76 @@ def test_the_pr_finish_review_box_stays_unticked_while_a_deferral_stands(tmp_pat
 def test_a_waiver_item_names_its_finding_as_a_whole_token(text, token, want):
     """Findings b18d31bd.1 and b18d31bd.2: a substring test let an item naming `.12` or `F12` waive `.1` or `F1`."""
     assert R.names_token(text, token) is want
+
+
+# ---- R20261125.1 (agent/plans/PLAN-stop-hook-retro-20261125.md friction 1): the block names the in-flight route it already honours.
+K = wlfix.import_wl("wl_checks")
+HOLDER = "e32de9b1"
+
+
+def _rec(state, worker, **extra):
+    return dict({"id": HOLDER, "state": state, "worker": worker, "text": "red-gate fixer"}, **extra)
+
+
+def test_an_open_finding_with_no_naming_item_prints_the_update_line(tmp_path):
+    """The 9a666914.1 shape: a high finding no item names blocks, and the block now says how to hand it to a live writer."""
+    st = _state(tmp_path, "open", "high", items=K.review_items([_rec(">", "w-live")], {"w-live"}))
+    block, _malformed, _note = R.stop_texts(st, holders=[HOLDER])
+    assert "OPEN PER-COMMIT REVIEW FINDING(S)" in block, block
+    assert (
+        "in flight with a live writer: worklist.py --update <me> %s '%s ...'" % (HOLDER, FID)
+        in block
+    ), block
+    assert "live [>] item(s) of this session: %s" % HOLDER in block, block
+
+
+def test_with_no_live_item_the_update_line_names_a_placeholder(tmp_path):
+    block, _malformed, _note = R.stop_texts(_state(tmp_path, "open", "high", items={}))
+    assert "worklist.py --update <me> <its [>] item> '%s ...'" % FID in block, block
+    assert "live [>] item(s) of this session" not in block, block
+
+
+def test_the_finding_in_a_live_items_lease_note_is_a_note_not_a_block(tmp_path):
+    """Following the printed route: the id written into a live item's lease note stands the finding down."""
+    recs = [_rec(">", "w-live", lease_note="scope added: review %s class" % FID)]
+    st = _state(tmp_path, "open", "high", items=K.review_items(recs, {"w-live"}))
+    block, _malformed, note = R.stop_texts(st, holders=[HOLDER])
+    assert block == "", block
+    assert "OPEN [high] %s f.py:2: an item naming it is leased [>]" % FID in note, note
+    assert R.push_refusals(st) == ["blocking"]
+
+
+def test_control_the_same_lease_note_on_a_dead_worker_blocks(tmp_path):
+    recs = [_rec(">", "w-dead", lease_note="scope added: review %s class" % FID)]
+    st = _state(tmp_path, "open", "high", items=K.review_items(recs, {"w-live"}))
+    block, _malformed, note = R.stop_texts(st)
+    assert "OPEN PER-COMMIT REVIEW FINDING(S)" in block, block
+    assert FID in block, block
+    assert "an item naming it is leased" not in note, note
+
+
+def test_mark_commands_keeps_the_three_resolutions_first():
+    got = R.mark_commands(FID)
+    assert len(got) == 4, got
+    assert [g.split()[4] for g in got[:3]] == ["fixed", "not-a-bug", "waived"], got
+    assert got[3].startswith("in flight with a live writer: worklist.py --update <me> "), got
+
+
+def test_several_live_items_are_all_listed_and_none_is_named_in_the_update_line(tmp_path):
+    """Findings 85ee5a27.1 and .2: the list is not cut at the block limit, and the update line does not pick an unrelated first item."""
+    ids = ["%08x" % (0xA0000000 + i) for i in range(7)]
+    st = _state(tmp_path, "open", "high", items={})
+    block, _malformed, _note = R.stop_texts(st, holders=ids)
+    assert "live [>] item(s) of this session: %s" % ", ".join(ids) in block, block
+    assert "worklist.py --update <me> <its [>] item> '%s ...'" % FID in block, block
+    assert ids[0] not in block.split("live [>] item(s)")[0], block
+
+
+def test_a_repeated_holder_id_is_listed_once_and_still_names_the_single_item(tmp_path):
+    """9283c3bd.1: the docstring says each holder id once; two copies of one id are one live item."""
+    st = _state(tmp_path, "open", "high", items={})
+    block, _malformed, _note = R.stop_texts(st, holders=[HOLDER, HOLDER, ""])
+    assert "live [>] item(s) of this session: %s\n" % HOLDER in block + "\n", block
+    assert block.count(HOLDER) >= 1
+    assert "%s, %s" % (HOLDER, HOLDER) not in block, block
+    assert "worklist.py --update <me> %s '%s ...'" % (HOLDER, FID) in block, block

@@ -1,6 +1,6 @@
 """The renet licence tier map still covers every registered function.
 
-Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-renet-tier-map.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 THE TWIN IS DECLARED `kind: local-only`, AND ITS BLOCKER IS ABOUT WIRING RATHER THAN ABOUT THE TIER MAP, so it stays with the bash file rather than moving here: "no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step 'Run renet tests'), which resolves to that leaf and not this
 one, so a step pointer would claim CI runs a script it never invokes". A port does not inherit a registration, so nothing here re-states it as a live suppression, and this module is deliberately NOT wired into anything either.
@@ -40,6 +40,13 @@ change what the gate prints.
 
 `2>&1` IS THE TWIN'S OWN MERGE AND IS NOT THIS PORT'S CHOICE. Phase 2 captures the test run with the two streams merged, then re-prints the whole thing on stderr when the run failed. `rediacc_ci.tests.differential` refuses to merge streams for exactly the reason the 2026-09-06 emit-advisory incident showed, and this is not that: the merge here is INSIDE the subject, part of what
 the gate prints, so the port merges too and the gate's own two streams stay separate.
+
+---- gate ----
+kind: local-only
+id: check:ci-renet-tiers
+blocker: BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes
+needs: go, submodules
+---- end gate ----
 """
 
 import os
@@ -50,6 +57,7 @@ import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls, plant
+from rediacc_ci.quality import seams
 from rediacc_ci.well_known import RENET_REPO
 
 RENET_REL = "private/renet"
@@ -139,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
         return selftest()
 
     root = paths.repo_root()
-    renet_dir = pathlib.Path(os.environ.get("RENET_DIR") or (root / RENET_REL))
+    renet_dir = seams.scratch_root("RENET_DIR", os.environ.get("RENET_DIR")) or (root / RENET_REL)
 
     # go.mod is the marker, NOT the directory: an uninitialised submodule leaves an EMPTY directory behind, and a gate that ran zero tests against it would report success while checking nothing.
     if not _require_submodule(renet_dir / MARKER, "Renet submodule"):
@@ -234,7 +242,7 @@ def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path compiles and runs a Go package, which needs a toolchain, the submodule, and tens of seconds; a selftest that silently degraded when any of those was missing would be the vacuity this package exists to refuse. The two functions that decide the verdict are pure, so they are driven directly here, and the whole gate is
-    proven end to end by the committed shadow ledger `.ci/shadow/w7p2-renet-tiermap.observations.jsonl` over five distinct trees.
+    proven end to end by the committed shadow ledger the ledger (deleted in commit:936280cd35) over five distinct trees.
     """
     ctl = Controls("renet-tier-map", floor=18, verbose=True)
 
@@ -355,4 +363,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_renet_tier_map.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -14,7 +14,8 @@
  * Invariant: every primitive leaf in schemas.ts MUST resolve to a template
  * entry here (exact, wildcard, or a registered ancestor container), except the
  * envelope fields the coverage gate explicitly excludes (schemaVersion, id,
- * version, encryption). The CI gate `check:ci-schema-coverage`
+ * version, encryption) and the local-only `policy` ceiling a remote config
+ * refuses (coverage.ts LOCAL_ONLY_EXCLUSIONS). The CI gate `check:ci-schema-coverage`
  * (scripts/gates/check-schema-coverage.ts) walks RdcConfigSchema and fails closed on
  * any Zod leaf introduced without a registry entry — and on any registry entry
  * whose template no longer matches a schema node (stale residue).
@@ -36,7 +37,7 @@ export interface SensitivityMeta {
   redactAs?: string;
   /** Include in server-side field-commitment envelope. Default: true for non-public. */
   commit?: boolean;
-  /** Encrypt this value in the local file when encryption.mode === 'master-password'. Default: true for secret/credential. */
+  /** Seal this value in the local file whenever the config is sealed (any encryption.mode but 'plaintext'). Default: true for secret/credential. */
   encryptAtRest?: boolean;
 }
 
@@ -85,13 +86,28 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/credentials/ssh/knownHosts': { kind: 'pii' },
   '/credentials/cfDnsApiToken': { kind: 'secret' },
 
-  // ── Authorization policy (executor-enforced) ───────────────────────────── Registered as a single leaf: the whole document is one committed value, so ANY edit to ANY rule changes the commitment and a push that rewrites the rules without knowing the current value is rejected by the server.
-  //
-  // Not 'public' (public fields are excluded from pathsToCommit, which would leave the rules tamper-able) and not 'secret' either: the threat here is not someone reading the rules, it is someone quietly rewriting them.
-  '/policy': { kind: 'identifier' },
-
-  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree, for the reason '/policy' is: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
+  // ── Access (SSH keys rdc installs on machines, with their source ranges) ── One committed value for the whole subtree: the threat is a push that quietly rewrites who may log in from where (adds a key, widens a range), so ANY edit changes the commitment and a push made without knowing the current value is rejected.
   '/access': { kind: 'identifier' },
+
+  // ── Console recipes (PLAN-console-command-line.md D7) ── One committed value for every recipe: a recipe is a list of commands the console runs, so a push that rewrites one without knowing the current value is rejected, as for /access.
+  '/console/recipes': { kind: 'identifier' },
+
+  // ── AI provider profiles (PLAN-console-ai-providers.md D2) ── The key and every header value are secrets (a header can carry the auth, as `cf-aig-authorization` does on a Cloudflare AI Gateway BYOK profile): encrypted at rest, and each one committed, so a push that rewrites one without knowing its current value is rejected. The rest of a profile and the default's name are public.
+  '/ai/providers/*/key': { kind: 'secret' },
+  '/ai/providers/*/headers/*': { kind: 'secret' },
+  '/ai/providers/*/format': { kind: 'public' },
+  '/ai/providers/*/baseURL': { kind: 'public' },
+  '/ai/providers/*/authScheme': { kind: 'public' },
+  '/ai/providers/*/model': { kind: 'public' },
+  '/ai/providers/*/judgeModel': { kind: 'public' },
+  '/ai/providers/*/maxOutputTokens': { kind: 'public' },
+  '/ai/providers/*/capabilities/tools': { kind: 'public' },
+  '/ai/providers/*/capabilities/streaming': { kind: 'public' },
+  '/ai/providers/*/capabilities/parallelToolCalls': { kind: 'public' },
+  '/ai/providers/*/capabilities/vision': { kind: 'public' },
+  '/ai/providers/*/preset': { kind: 'public' },
+  '/ai/providers/*/byokOnly': { kind: 'public' },
+  '/ai/default': { kind: 'public' },
   // The verifier is what the CLI uses to CHECK the master password BEFORE any decryption can happen. Encrypting it under the password it verifies is a bootstrapping deadlock, so it is stored in the clear by explicit override (spec 04 §2.3 [P0-DECIDED]). It is a verifier, not a recoverable secret.
   //
   // commit:false because it is HOST-LOCAL to the master-password at-rest mode and must never enter the remote config envelope. A remote config is stored under the CEK, not a master password, so the verifier is meaningless there — and committing it (without also syncing it, which we must not) would drop a committed pointer on every push/rotation round trip and brick the re-push.
@@ -370,6 +386,23 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   // ── Local binary override ──────────────────────────────────────────────── renetPath is a user-set filesystem override (e.g. /opt/bin/renet). It is not a secret — marking it public lets `config show` surface the actual value so scripts and tests can verify which binary is in use. A user who embeds their home directory ("/home/alice/bin/renet") accepts that the path surfaces
   // like any other resource path they chose.
   '/renetPath': { kind: 'public' },
+
+  // ── Preview overlay (PLAN-preview-signer.md D8) ─────────────────────────── This device's switch to a PR preview: device-local (DEVICE_LOCAL_POINTERS), so never synced and never committed. The name is the preview's unguessable address (ruling 7), so it and the host and channel derived from it are identifiers, redacted from agents.
+  '/preview/name': { kind: 'identifier', commit: false },
+  '/preview/host': { kind: 'identifier', commit: false },
+  '/preview/channel': { kind: 'identifier', commit: false },
+  '/preview/enteredAt': { kind: 'public' },
+  '/preview/licenceEndsAt': { kind: 'public' },
+  '/preview/formatChange/formats': { kind: 'public' },
+  '/preview/formatChange/reason': { kind: 'public' },
+  '/preview/previous/cliVersion': { kind: 'public' },
+  '/preview/previous/cliSha256': { kind: 'public' },
+  '/preview/previous/updateChannel': { kind: 'public' },
+  '/preview/previous/binaryPath': { kind: 'public' },
+  '/preview/touched/*/slot': { kind: 'public' },
+  '/preview/touched/*/version': { kind: 'public' },
+  '/preview/touched/*/sha256': { kind: 'public' },
+  '/preview/touched/*/touchedAt': { kind: 'public' },
 };
 
 /**
@@ -399,6 +432,9 @@ export const SENSITIVITY_REGISTRY: Map<PointerTemplate, Required<SensitivityMeta
  * - `/encryption`: this file's at-rest mode and its per-field ciphertexts; the push carries the
  *   decrypted values instead.
  * - `/renetPath`: a filesystem override for this device's renet binary.
+ * - `/preview`: this device's switch to a PR preview (PLAN-preview-signer.md D8). The preview CLI
+ *   binary, its token file and the renet slots it records belong to this device; another device
+ *   pulling the config stays on the real server.
  * - `/credentials/masterPasswordVerifier`: meaningful only to this file's at-rest mode (F4).
  * - `/account/accountServer`, `/account/e2ePublicKey`: the login of this device (operator ruling
  *   2026-09-25, "Logout is per device"). `rdc subscription login` writes both and `logout` clears
@@ -415,6 +451,7 @@ export const DEVICE_LOCAL_POINTERS = [
   '/remote',
   '/encryption',
   '/renetPath',
+  '/preview',
   '/credentials/masterPasswordVerifier',
   '/account/accountServer',
   '/account/e2ePublicKey',
@@ -425,4 +462,29 @@ export const DEVICE_LOCAL_POINTERS = [
  */
 export function listSensitivityTemplates(): readonly PointerTemplate[] {
   return [...SENSITIVITY_REGISTRY.keys()];
+}
+
+/** True when `template` is `pointer` or lies under it (`/encryption` covers `/encryption/kdf/salt`). */
+function coveredBy(template: PointerTemplate, pointer: PointerTemplate): boolean {
+  return template === pointer || template.startsWith(`${pointer}/`);
+}
+
+/**
+ * Templates that are both device-local and sealed at rest (PLAN-config-sealed-local.md D7).
+ *
+ * A sealed leaf must be restorable from the store: when a device loses its seal key, the recovery
+ * re-pulls the config and drops every sealed leaf of the old file. A device-local leaf is never
+ * pulled, so sealing one would turn a lost key into lost data. The answer must stay empty;
+ * `__tests__/config-field-crypto-seal.test.ts` in the CLI holds it there. Parameters exist so a test
+ * can prove the check catches an offending fixture.
+ */
+export function deviceLocalSealedTemplates(
+  registry: ReadonlyMap<PointerTemplate, Required<SensitivityMeta>> = SENSITIVITY_REGISTRY,
+  deviceLocal: readonly PointerTemplate[] = DEVICE_LOCAL_POINTERS
+): PointerTemplate[] {
+  return [...registry.entries()]
+    .filter(
+      ([template, meta]) => meta.encryptAtRest && deviceLocal.some((p) => coveredBy(template, p))
+    )
+    .map(([template]) => template);
 }

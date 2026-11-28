@@ -6,6 +6,9 @@ import { lookup } from 'node:dns/promises';
 import { fingerprint, keyBlobAlgorithm, parseKnownHosts } from '../../utils/host-keys.js';
 import type { Ipv6Resolver } from './types.js';
 
+/** Stands in for the machine name in the suggested command when the caller names none. */
+const MACHINE_NAME_PLACEHOLDER = '<machine-name>';
+
 /** A hostname's IPv6 (AAAA) address, or undefined when it has none. */
 export const resolveAaaa: Ipv6Resolver = async (hostname) => {
   try {
@@ -54,7 +57,8 @@ export function resolveWithin(
  * pin against an unchanged host, which looks identical to key rotation.
  */
 export function buildHostKeyMismatchMessage(params: {
-  machineName: string;
+  /** Absent when the caller never learned the machine's name: the remedy then carries a placeholder, never the IP. */
+  machineName?: string;
   host: string;
   knownHosts: string;
   offeredKey: string;
@@ -73,7 +77,9 @@ export function buildHostKeyMismatchMessage(params: {
     : '  pinned:   (none recorded)';
 
   return [
-    `Host key mismatch for "${machineName}" (${host})`,
+    machineName
+      ? `Host key mismatch for "${machineName}" (${host})`
+      : `Host key mismatch for ${host}`,
     '',
     pinnedSummary,
     `  offered:  ${offeredType || '(unknown algorithm)'} ${fingerprint(offeredKey)}`,
@@ -82,6 +88,6 @@ export function buildHostKeyMismatchMessage(params: {
     'local config, and so will a man-in-the-middle. Confirm the fingerprint out',
     'of band before trusting it.',
     '',
-    `If the change is expected: rdc machine scan-keys ${machineName}`,
+    `If the change is expected: rdc machine scan-keys ${machineName ? machineName : MACHINE_NAME_PLACEHOLDER}`,
   ].join('\n');
 }

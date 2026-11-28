@@ -159,8 +159,14 @@ describe('command plane coverage', () => {
     // 223 -> 225, machine 121 -> 123: `repo admin orphan list|delete` (worklist #48d790e1) read the machine's images and delete one through renet.
     // 225 -> 226, other 44 -> 45: `feedback report` files a report with the account service and reaches no machine (PLAN-rdc-feedback C3).
     // 226 -> 228, other 45 -> 47: `feedback list|show` read the account service and reach no machine (PLAN-rdc-feedback C4).
-    expect(COMMANDS.length).toBe(228);
-    expect(counts).toEqual({ config: 58, machine: 123, other: 47 });
+    // 228 -> 231, machine 123 -> 124, other 47 -> 49: `preview use|status` read and write the config, the installed rdc and the preview's public endpoints; `preview leave` also switches each touched server's renet back over SSH (PLAN-preview-signer C2, C3).
+    // 231 -> 230, other 49 -> 48: `config remote master-password change` is deleted with the password key slot (PLAN-rmcp-policy-record K4, D39).
+    // 230 -> 231, other 48 -> 49: `completion` prints a shell script built from the contract and reaches no machine (PLAN-console-command-line CL12).
+    // 231 -> 236, other 49 -> 54: `incident status|export`, `forensics verify`, `repo flows` and `repo opens` read the account server's forensics API or a local evidence directory (PLAN-forensics-investigation FI7).
+    // 236 -> 239, machine 124 -> 125, other 54 -> 56: `forensics level` runs the forensics_level renet function on the machine; `incident declare|close` write the account record, and declare runs its machine steps as child rdc commands (PLAN-forensics-investigation FI8).
+    // 239 -> 241, machine 125 -> 127: `vscode expose|unexpose` run the repository_vscode_expose and repository_vscode_unexpose renet functions on the repository's machine (PLAN-vscode-browser-exposure V3).
+    expect(COMMANDS.length).toBe(241);
+    expect(counts).toEqual({ config: 58, machine: 127, other: 56 });
   });
 
   it('records the interactive commands', () => {
@@ -175,6 +181,7 @@ describe('command plane coverage', () => {
       'config field rotate',
       'config remote enable',
       'ops ssh',
+      'preview leave',
       'repo tunnel',
       'serve',
       'server install',
@@ -220,7 +227,9 @@ describe('command plane coverage', () => {
     // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
     // 112 -> 116: `server status|upgrade|backup|licence` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local (the caller's install record and keys).
     // 116 -> 118: `repo admin orphan list|delete` are machine-plane and non-interactive (delete confirms only without --yes).
-    expect(machineNonInteractive.length).toBe(118);
+    // 118 -> 119: `forensics level` runs the forensics_level renet function on the repository's machine (PLAN-forensics-investigation FI8).
+    // 119 -> 121: `vscode expose|unexpose` (PLAN-vscode-browser-exposure V3).
+    expect(machineNonInteractive.length).toBe(121);
   });
 
   it('plane and interactive entries all point at real commands', () => {

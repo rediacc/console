@@ -1,6 +1,6 @@
 """The shell gate control-tally, ported from `.ci/scripts/lib/gate-controls.sh`.
 
-PORTED FROM `.ci/scripts/lib/gate-controls.sh` (41 lines), which has since been deleted. The three quality gates that sourced it were themselves bash twins and were retired first, leaving the library with no sourcer at all; `.ci/shadow/w7p5b-gate-controls.observations.jsonl` holds 5 rows of equivalence over 5 distinct trees, and `.ci/rediacc_ci/tests/test_core_gate_controls.py`
+PORTED FROM `.ci/scripts/lib/gate-controls.sh` (41 lines), which has since been deleted. The three quality gates that sourced it were themselves bash twins and were retired first, leaving the library with no sourcer at all; the ledger (deleted in commit:936280cd35) holds 5 rows of equivalence over 5 distinct trees, and `.ci/rediacc_ci/tests/test_core_gate_controls.py`
 now compares this module against the library's own recorded bytes under `goldens/gate-controls/`.
 
 WHY IT IS WORTH PORTING AT ALL, WHICH IS NOT THE 41 LINES. `gate-controls.sh` was extracted on 2026-09-06 after `check:ci-shape-duplication` caught the same five lines in three files. The SAME shape has since been re-created three times in Python, and the copies say so themselves:

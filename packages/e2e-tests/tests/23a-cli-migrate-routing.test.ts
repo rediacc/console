@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { CliMigrateSuite, canRun, M1, M2 } from '../src/utils/cliMigrateHarness';
+import { CliMigrateSuite, canRun, DS, M1, M2 } from '../src/utils/cliMigrateHarness';
 
 // Suite 23a (`E2E Full Integration`, ubuntu-24.04 CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM `repo migrate` routing family is CLI logic — config placement rewrite + `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9). This suite drives the real `rdc` binary via CliRunner and cross-checks the CLI's claims against the bridge (SSH → renet) so the CLI
 // asserts are falsifiable, not self-referential. Its sibling 23b (migrate ordering, failed target, gc race) shares the harness in src/utils/cliMigrateHarness.ts and runs in another CI leg (ct-tests.yml gives each its own fleet; the vm:check cli-migrate-23 leg runs the two files one after the other under --workers 1, never together): tests 7 and 8 here run an UNFILTERED `config reconcile` and assert on every conflict in the e2e-cli config, so 23b's repos must never exist on this fleet while they run.
@@ -37,8 +37,17 @@ test.describe
       return json!.data;
     };
 
+    // GUID-named entries already under <datastore>/repositories before this suite creates anything (the fleet's own `vmcheck-base` grand repo, for one). 5b judges only what this suite's migrates could have left behind, and the phase-1 base is a fresh random UUID per migrate, so it is never in this set.
+    const preexisting = new Set<string>();
+    const GUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
     test.beforeAll(async () => {
       await s.setup();
+      for (const runner of [s.w1, s.w2]) {
+        const res = await runner.executeViaBridge(`sudo ls -1 ${DS}/repositories`);
+        for (const line of res.stdout.split('\n'))
+          if (GUID_RE.test(line.trim())) preexisting.add(line.trim());
+      }
     });
 
     test.afterAll(async () => {
@@ -85,6 +94,23 @@ test.describe
     test('5. default migrate left NO repo on the source (machine-11), cross-checked on the bridge', async () => {
       // The CLI removed the source copy; the bridge is ground truth so this is a real absence, not a config-only claim.
       expect(await s.repoPresentOnBridge(s.w1, APP)).toBe(false);
+    });
+
+    test('5b. default migrate left no phase-1 delta base: only live repos remain under <datastore>/repositories', async () => {
+      // The phase-1 base is a GUID-named file beside the repo images. The cutover push asks for it to be pruned, so a GUID that is neither a live repo's nor one already resident before the suite (`preexisting`, e.g. vm:check's vmcheck-base) means the prune never ran.
+      const live = new Set(Object.values(s.guids));
+      for (const [runner, label] of [
+        [s.w1, M1],
+        [s.w2, M2],
+      ] as const) {
+        const res = await runner.executeViaBridge(`sudo ls -1 ${DS}/repositories`);
+        expect(res.code, `ls repositories on ${label}: ${res.stderr}`).toBe(0);
+        const stray = res.stdout
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => GUID_RE.test(l) && !live.has(l) && !preexisting.has(l));
+        expect(stray, `surviving non-live GUIDs on ${label}`).toEqual([]);
+      }
     });
 
     test('6. `--keep-source` retains both copies; config still points at the target', async () => {

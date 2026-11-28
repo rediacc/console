@@ -1,6 +1,6 @@
 """META-GATE: a validator that PASSES when given nothing is broken by definition.
 
-PORTED FROM `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over ten recorded runs in `.ci/shadow/twin-parity.ledger.jsonl` before the bash file was deleted, and nothing here reads or executes it any more.
+PORTED FROM `.ci/scripts/test/gates/test-gate-anti-vacuity.sh`, WHICH IS NOW RETIRED. The twin and this port agreed on every case over ten recorded runs in the ledger (deleted in commit:936280cd35) before the bash file was deleted, and nothing here reads or executes it any more.
 
 WHY THIS EXISTS. This repo accumulated about twelve quality gates that were green because they could not fail. Two root patterns, both reproducible by simply removing the input:
 
@@ -310,8 +310,8 @@ def test_fetch_retry_reads_every_file_type(gate):
     python3 = harness.require_tool("python3", "install python3")
     program = (
         "import sys, os\n"
-        "sys.path.insert(0, os.path.join(sys.argv[1], '.ci/scripts/quality'))\n"
-        "import check_fetch_retry as G\n"
+        "sys.path.insert(0, os.path.join(sys.argv[1], '.ci'))\n"
+        "from rediacc_ci.quality import fetch_retry as G\n"
         "bare = 'curl -fsSL -o /tmp/x.tgz https://example.com/x.tgz'\n"
         "retried = 'curl -fsSL --retry 5 -o /tmp/x.tgz https://example.com/x.tgz'\n"
         "if len(G.logical_blocks(bare + chr(10), is_dockerfile=False)) == 0:\n"

@@ -1,6 +1,6 @@
 """`rediacc_ci.security.check_commands`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/security/check-commands.sh` and the port over one fixture tree each and compared exit code, stdout and stderr. The K=5 ledger `.ci/shadow/w7p6-check-commands.observations.jsonl` recorded that comparison over five distinct trees, re-recorded on 2026-09-10 against the fixed pair.
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/security/check-commands.sh` and the port over one fixture tree each and compared exit code, stdout and stderr. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, re-recorded on 2026-09-10 against the fixed pair.
 
 THE TWIN HAS NOW BEEN DELETED, and every case compares against `goldens/check-commands/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree. Each provenance header carries the twin's blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
@@ -81,6 +81,9 @@ PACKAGE_FILES = (
     "rediacc_ci/__init__.py",
     "rediacc_ci/paths.py",
     "rediacc_ci/security/__init__.py",
+    # `__main__` refuses an unknown argument through the shared parser before `main` runs
+    "rediacc_ci/quality/__init__.py",
+    "rediacc_ci/quality/gate_args.py",
 )
 
 
@@ -88,6 +91,7 @@ def fixture(where: pathlib.Path, name: str, *, subject: pathlib.Path) -> pathlib
     """A tree shaped like the repository, holding a COPY of the subject at its own depth."""
     root = where / "tree"
     (root / ".ci" / "rediacc_ci" / "security").mkdir(parents=True, exist_ok=True)
+    (root / ".ci" / "rediacc_ci" / "quality").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "security").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "x").mkdir(parents=True, exist_ok=True)
     (root / "scripts").mkdir(parents=True, exist_ok=True)

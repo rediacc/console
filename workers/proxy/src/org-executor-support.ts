@@ -2,6 +2,7 @@
  * The constants, types and stateless helpers of `OrgExecutor` (src/org-executor.ts), which re-exports the public ones. Nothing here holds Durable Object state.
  */
 
+import { WK_ACCOUNT_EGRESS_HOST } from '../../../packages/shared/src/config/well-known.generated.js';
 import type { AcquireAnswer, ExecutorCapacity, ExecutorSize } from './capacity';
 import { EXECUTOR_TOKEN_PLACEHOLDER } from './egress';
 import type { ExecutorIssuerRpc } from './issued-token';
@@ -9,9 +10,13 @@ import { executorName, placementOf } from './placement';
 import type { ProbeResult, ProbeTarget, ProbeVerdict } from './reachability';
 
 /** The host the container addresses the account server by; `interceptOutboundHttp` routes it to the `AccountEgress` entrypoint. A container's own public egress is outside Cloudflare's ranges: on bench (2026-10-24) every introspection, executor-token request, config pull and audit post a container made to ACCOUNT_URL got 403 "outside Cloudflare ranges" while the Worker's own binding calls answered 200. The name resolves nowhere, so an egress that somehow escaped interception fails at DNS rather than reaching the internet. */
-export const ACCOUNT_EGRESS_HOST = 'account.internal';
+export const ACCOUNT_EGRESS_HOST = WK_ACCOUNT_EGRESS_HOST;
 /** The main-module export the intercept binds, through `ctx.exports` (Design A: per-instance props). */
 const ACCOUNT_EGRESS_ENTRYPOINT = 'AccountEgress';
+/** The host the loop host addresses Rediacc-provided AI by (agent/plans/PLAN-console-ai-credits.md D1); `interceptOutboundHttp` routes it to the `AiEgress` entrypoint. Like the account host it resolves nowhere, so a call that escaped interception fails at DNS. */
+export const AI_EGRESS_HOST = 'ai.internal';
+/** The main-module export the AI intercept binds, through `ctx.exports`. */
+const AI_EGRESS_ENTRYPOINT = 'AiEgress';
 /** `rdc serve` listens here. */
 export const EXECUTOR_PORT = 8080;
 /** The image key under `[containers.images]` in the wrangler config. */
@@ -204,7 +209,7 @@ const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(
 
 /** A call into the container runtime that outlived CONTAINER_CALL_TIMEOUT_MS. The message is the reason a failed start reports. */
 export class StallError extends Error {
-  constructor(readonly step: 'health' | 'egress' | 'destroy') {
+  constructor(readonly step: 'health' | 'egress' | 'destroy' | 'busy') {
     super(`${step}-stalled`);
     this.name = 'StallError';
   }
@@ -245,7 +250,7 @@ export function containerRequest(request: Request): Request {
 }
 
 /** The name and message of a caught error, for a log line. Never the request or its content. */
-export function errorSummary(error: unknown): { name: string; message: string } {
+function errorSummary(error: unknown): { name: string; message: string } {
   if (error instanceof Error) return { name: error.name, message: error.message };
   return { name: typeof error, message: String(error) };
 }
@@ -272,8 +277,58 @@ async function healthy(
   }
 }
 
+/** The executor's dispatch count route (PROXY_ROUTES.busy in packages/shared/src/cli-contract/wire.ts); only the alarm reaches it, never a caller. */
+export const BUSY_PATH = '/v1/busy';
+
+/**
+ * True when `pathname` reaches the container's busy route. The container's router decodes percent-escapes and is
+ * lenient about repeated and trailing slashes, so a raw comparison would let `/v1/%62usy` or `//v1/busy/` through the
+ * outside refusal (review 1cf0bd86.1). A pathname that does not decode is treated as the busy route: it fails closed.
+ */
+export function isBusyPath(pathname: string): boolean {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(pathname);
+  } catch {
+    return true;
+  }
+  const normal = decoded.replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+  return normal === BUSY_PATH;
+}
+
+/** The longest the alarm holds a container awake on a dispatch count alone, so a dispatch that never ends cannot pin an instance forever. A literal, like `sleepAfter`. */
+export const MAX_DISPATCH_HOLD_MS = 60 * 60_000;
+
+/** How many dispatches the executor is running, asked of the container, or undefined when the count could not be had (an error, a non-2xx answer or a stall). The caller decides what an unknown count means (review 1cf0bd86.2). */
+export async function dispatchesRunning(container: Container): Promise<number | undefined> {
+  const abort = new AbortController();
+  const ask = async (): Promise<number | undefined> => {
+    const response = await container
+      .getTcpPort(EXECUTOR_PORT)
+      .fetch(`http://container${BUSY_PATH}`, { signal: abort.signal });
+    if (!response.ok) {
+      await response.body?.cancel();
+      return undefined;
+    }
+    const body = (await response.json()) as { busy?: unknown };
+    return typeof body.busy === 'number' && body.busy > 0 ? body.busy : 0;
+  };
+  try {
+    return await within(ask(), CONTAINER_CALL_TIMEOUT_MS, () => new StallError('busy'));
+  } catch (error) {
+    logStall(error);
+    abort.abort();
+    return undefined;
+  }
+}
+
+/** The answer to a request for the dispatch count that came from outside the Durable Object. */
+export function busyRefusal(): Response {
+  return Response.json({ error: 'Not found.', code: 'ROUTE_NOT_FOUND' }, { status: 404 });
+}
+
 /** Destroy the container, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. */
-export function destroyContainer(container: Container, reason: string): Promise<void> {
+function destroyContainer(container: Container, reason: string): Promise<void> {
   return within(
     container.destroy(reason),
     CONTAINER_CALL_TIMEOUT_MS,
@@ -282,10 +337,7 @@ export function destroyContainer(container: Container, reason: string): Promise<
 }
 
 /** The response body, byte for byte, with `done` called once when it closes, errors or is cancelled, rather than when the headers arrive. */
-export function trackBody(
-  body: ReadableStream<Uint8Array>,
-  done: () => void
-): ReadableStream<Uint8Array> {
+function trackBody(body: ReadableStream<Uint8Array>, done: () => void): ReadableStream<Uint8Array> {
   const reader = body.getReader();
   let finished = false;
   const finish = () => {
@@ -345,22 +397,66 @@ export async function releaseLease(
   }
 }
 
-/** Route `account.internal` to the egress entrypoint with the instance's props, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. Registering again replaces the props without dropping open connections. */
+/** Route `account.internal` to the egress entrypoint, and `ai.internal` to the AI egress entrypoint, with the instance's props, rejecting with a StallError at CONTAINER_CALL_TIMEOUT_MS. Both registrations share that one allowance, so a start keeps its bound. Registering again replaces the props without dropping open connections. A Worker whose main module does not export `AiEgress` registers the account host alone: `ai.internal` then fails at DNS, which refuses the call. */
 export async function registerEgress(
   ctx: DurableObjectState,
   container: Container,
   orgId: string,
   placement: number
 ): Promise<void> {
-  const factory = (ctx.exports as unknown as Record<string, EgressFactory | undefined>)[
-    ACCOUNT_EGRESS_ENTRYPOINT
-  ];
+  const exported = ctx.exports as unknown as Record<string, EgressFactory | undefined>;
+  const factory = exported[ACCOUNT_EGRESS_ENTRYPOINT];
   if (typeof factory !== 'function') throw new Error('egress-entrypoint-missing');
   const props: ExecutorEgressProps = { orgId, placement, containerId: ctx.id.toString() };
+  const registrations = [container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props }))];
+  const aiFactory = exported[AI_EGRESS_ENTRYPOINT];
+  if (typeof aiFactory === 'function') {
+    registrations.push(container.interceptOutboundHttp(AI_EGRESS_HOST, aiFactory({ props })));
+  }
   await within(
-    container.interceptOutboundHttp(ACCOUNT_EGRESS_HOST, factory({ props })),
+    Promise.all(registrations),
     CONTAINER_CALL_TIMEOUT_MS,
     () => new StallError('egress')
+  );
+}
+
+/** The forwarded response with its body counted in flight until it closes; a bodiless response closes at once. */
+export function trackedResponse(response: Response, done: () => void): Response {
+  if (response.body === null) {
+    done();
+    return response;
+  }
+  return new Response(trackBody(response.body, done), {
+    status: response.status,
+    statusText: response.statusText,
+    headers: response.headers,
+  });
+}
+
+/** The 502 for a forward that threw. The log message stays the fixed forward-failure string any alert matches; the stage rides as a field. */
+export function forwardFailure(stage: 'touch' | 'lease' | 'forward', error: unknown): Response {
+  console.warn('proxy: org executor forward failed', { stage, ...errorSummary(error) });
+  return Response.json(
+    { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
+    { status: 502 }
+  );
+}
+
+/** Run a step whose failure must not stop the caller: a throw is logged through `logStall`, then as `message`, and swallowed. */
+export async function stallWarn(run: () => Promise<unknown>, message: string): Promise<void> {
+  try {
+    await run();
+  } catch (error) {
+    logStall(error);
+    console.warn(message);
+  }
+}
+
+/** Destroy the container, logging and swallowing a failure: the caller is stopping it anyway. */
+export function destroyQuietly(container: Container, reason: string): Promise<void> {
+  return stallWarn(
+    () => destroyContainer(container, reason),
+    `proxy: org executor destroy failed: ${reason}`
   );
 }
 
@@ -386,11 +482,20 @@ export async function pollReady(container: Container, live: () => boolean): Prom
 }
 
 /** Record an out-of-memory exit for the sizing rule: the time of any, and separately of one on the heavy size. */
-export async function flagOom(
-  storage: DurableObjectStorage,
-  size: string | undefined
-): Promise<void> {
+async function flagOom(storage: DurableObjectStorage, size: string | undefined): Promise<void> {
   const now = Date.now();
   await storage.put(OOM_KEY, now);
   if (size === 'heavy') await storage.put(OOM_HEAVY_KEY, now);
+}
+
+/** The size named in the out-of-memory log line when the container never reported one. */
+const UNKNOWN_SIZE = 'unknown';
+
+/** Log an out-of-memory exit and flag it for the sizing rule, never throwing: bookkeeping must not block the exit's cleanup. */
+export async function recordOomExit(
+  storage: DurableObjectStorage,
+  size: string | undefined
+): Promise<void> {
+  console.warn(`proxy: org executor out of memory on ${size ?? UNKNOWN_SIZE}`);
+  await warnIfThrows(() => flagOom(storage, size), 'proxy: org executor exit bookkeeping failed');
 }

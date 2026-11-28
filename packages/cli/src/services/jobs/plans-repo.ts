@@ -1,5 +1,6 @@
 /** Job plans of the J4 and J16 conversion boxes: repo and backup verbs (see plans.ts). */
 
+import { WK_ETC_DIR } from '@rediacc/shared/config/well-known.generated';
 import type { JobPlan } from './plans-types.js';
 
 export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
@@ -337,6 +338,14 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     box: 'J16',
     steps: ['advanceHeadCommit'],
   },
+  'forensics level': {
+    form: 'single',
+    fn: 'forensics_level',
+    lock: 'read',
+    timeout: '10m',
+    box: 'J16',
+    note: `overlap.go classifies forensics_level by its default rule (read): the level file it writes under ${WK_ETC_DIR}/forensics touches none of the repository's data`,
+  },
   'repo policy get': {
     form: 'single',
     fn: 'repository_policy_get',
@@ -423,5 +432,21 @@ export const REPO_JOB_PLANS: Readonly<Record<string, JobPlan>> = {
     timeout: '24h',
     box: 'J16',
     steps: ['renderRepoTrim'],
+  },
+  // PLAN-vscode-browser-exposure V3: one job each; expose prints the editor's URL as its step. Its first run on a machine pulls the code-server image, so it takes the long class.
+  'vscode expose': {
+    form: 'single',
+    fn: 'repository_vscode_expose',
+    lock: 'repo-exclusive',
+    timeout: '24h',
+    box: 'J16',
+    steps: ['printVscodeExpose'],
+  },
+  'vscode unexpose': {
+    form: 'single',
+    fn: 'repository_vscode_unexpose',
+    lock: 'repo-exclusive',
+    timeout: '10m',
+    box: 'J16',
   },
 };

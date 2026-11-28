@@ -38,7 +38,7 @@ NO FALLBACK FOR A MISSING common.sh, matching the twin: this script sources the 
 case is not modelled here, and there is nothing to model: it is a bash `source`
 error, not a behaviour of this script.
 
-K=5 LEDGER: `.ci/shadow/w7p6-detect-bump-type.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

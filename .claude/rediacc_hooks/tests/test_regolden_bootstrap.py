@@ -55,7 +55,7 @@ def test_control_a_tree_without_the_venv_is_called_missing(tmp_path):
 # The two guards whose fixture world lives under `tempfile.gettempdir()` and whose goldens moved with TMPDIR, and the two whose "running" cases quote a live PID (`GOLDEN_UNSTABLE_ENVS`) and were rewritten on every regolden although the differential never compares them.
 TMPDIR_STEMS = (
     "block_plan_without_tasks",
-    "block_roundlog_write",
+    "block_guarded_path_edit",
     "block_bash_write_to_running_script",
     "block_edit_of_running_script",
 )

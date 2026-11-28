@@ -24,6 +24,9 @@ different set of tokens than the twin whenever a selector carries a glob charact
 import glob
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_agent_browser_repo_output", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 33
@@ -88,30 +91,6 @@ MESSAGE = (
     "  Screenshots are disposable. Evidence that must survive belongs in the program\n"
     "  checkpoints directory, not in /tmp and not in the repo.\n"
 )
-
-EDGE_CASES = [
-    # Case 1, reproduced 2026-08-27.
-    (
-        "an unrecognised flag is eaten as the path",
-        "agent-browser screenshot --full-page /tmp/x.png",
-    ),
-    # Case 2, in both its shapes.
-    ("an absolute path inside the repo", "agent-browser screenshot /home/developer/console/x.png"),
-    ("a bare filename resolves against $PWD", "agent-browser screenshot shot.png"),
-    ("the correct shape", "agent-browser screenshot /tmp/shot.png --full"),
-    ("a known value-taking flag", "agent-browser screenshot /tmp/shot.png --viewport=1280x800"),
-    # `head -1` was wrong twice over, so EVERY writing segment is judged.
-    (
-        "the first segment writes nothing and the second is correct",
-        "agent-browser open http://x && agent-browser screenshot /tmp/x.png",
-    ),
-    (
-        "two output subcommands, and the SECOND is the bad one",
-        "agent-browser screenshot /tmp/a.png; agent-browser pdf b.pdf",
-    ),
-    ("a non-writing subcommand is not this guard's business", "agent-browser open http://x"),
-    ("prose naming the rule", "echo 'agent-browser screenshot shot.png'"),
-]
 
 
 def _expand(word):

@@ -12,7 +12,7 @@ THE STATE TABLE (this module owns it since the bash original, `.ci/scripts/ci/as
 
 LIVE. `.github/workflows/ci.yml` runs `python3 -m rediacc_ci.ci.assert_job_succeeded <label> <result> <ci-complete-verdict>` for the finalize-release sentinel. With no verdict argument the table above applies unchanged.
 
-Ledger: `.ci/shadow/w7p6-assert-job-succeeded.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-job-succeeded --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE UNKNOWN-RESULT ARM FAILS CLOSED, WHICH IS WHY THE PORT KEEPS IT VERBATIM

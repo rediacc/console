@@ -8,6 +8,7 @@ import { existsSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { delegationCertId } from '@rediacc/shared/subscription';
 import { ServerError } from '../box.js';
+import { fingerprintOf } from '../bundle/signing.js';
 import type {
   BoxReply,
   BwsRow,
@@ -43,6 +44,37 @@ export function certFor(
 }
 
 export const FAKE_RELEASE_BASE = 'https://releases.test/cli';
+const FAKE_MODELS_BASE = 'https://releases.test/models';
+
+/** The stable models channel the release host serves by default: a pointer, its manifest, two objects, each signed. */
+export const FAKE_MODELS: Record<string, string> = (() => {
+  const sha = (text: string) => createHash('sha256').update(text).digest('hex');
+  const objects = { 'params.json': '{"k":1}', 'priors.json': '{"p":2}' };
+  const manifest = JSON.stringify({
+    schema: 1,
+    version: '7',
+    files: Object.entries(objects).map(([path, body]) => ({
+      path,
+      sha256: sha(body),
+      size: body.length,
+    })),
+  });
+  const served: Record<string, string> = {
+    [`${FAKE_MODELS_BASE}/channels/stable.json`]: JSON.stringify({
+      seq: 1,
+      version: '7',
+      manifest_sha256: sha(manifest),
+    }),
+    [`${FAKE_MODELS_BASE}/channels/stable.json.sig`]: 'sig-channel',
+    [`${FAKE_MODELS_BASE}/manifests/7.json`]: manifest,
+    [`${FAKE_MODELS_BASE}/manifests/7.json.sig`]: 'sig-manifest',
+  };
+  for (const body of Object.values(objects)) {
+    served[`${FAKE_MODELS_BASE}/objects/${sha(body)}`] = body;
+    served[`${FAKE_MODELS_BASE}/objects/${sha(body)}.sig`] = `sig-${sha(body).slice(0, 8)}`;
+  }
+  return served;
+})();
 
 export interface FakeOptions {
   /** What the release host serves, by full URL; any other URL answers like a 404. */
@@ -53,6 +85,8 @@ export interface FakeOptions {
   templateVersion?: number;
   resolveSequence?: string[][];
   issue?: IssueOutcome;
+  /** Whether the config holds a registered account's login; by default, unless `issue` is `no-login`. */
+  loggedIn?: boolean;
   health?: number;
   sans?: string[];
   freeProbe?: number;
@@ -62,6 +96,8 @@ export interface FakeOptions {
   zoneToken?: string;
   files?: Record<string, string>;
   rdcFail?: string;
+  /** The stderr a failing `rdcFail` call carries. */
+  rdcStderr?: string;
   /** Per-path-suffix answers that win over the defaults (a refused login, a 404 route). */
   boxReplies?: Record<string, Partial<BoxReply>>;
   /** The box's live `data/web/delegation-cert.json`, as `certFor` gives it (base64 of the JSON). */
@@ -283,7 +319,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     rdc(argv) {
       calls.push(`rdc ${argv.join(' ')}`);
       if (opts.rdcFail && argv.join(' ').startsWith(opts.rdcFail)) {
-        return Promise.resolve({ code: 1, stdout: '', stderr: '' });
+        return Promise.resolve({ code: 1, stdout: '', stderr: opts.rdcStderr ?? '' });
       }
       return Promise.resolve(ok());
     },
@@ -325,6 +361,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       bwsWrites.push(request);
       return Promise.resolve();
     },
+    hasAccountLogin: () => opts.loggedIn ?? opts.issue?.kind !== 'no-login',
     issueCert(key) {
       calls.push('issue');
       return Promise.resolve(
@@ -368,14 +405,14 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       baseUrl: () => FAKE_RELEASE_BASE,
       fetchText(url) {
         calls.push(`release GET ${url}`);
-        const body = opts.release?.[url];
+        const body = opts.release?.[url] ?? FAKE_MODELS[url];
         return body === undefined
           ? Promise.reject(new ServerError(`cliDownloadFailed ${url} HTTP 404`))
           : Promise.resolve(body);
       },
       download(url, dest) {
         calls.push(`release GET ${url}`);
-        const body = opts.release?.[url];
+        const body = opts.release?.[url] ?? FAKE_MODELS[url];
         if (body === undefined) {
           return Promise.reject(new ServerError(`cliDownloadFailed ${url} HTTP 404`));
         }
@@ -426,4 +463,11 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     uploads,
     live: () => live,
   };
+}
+
+/** The fingerprint `rdc server bundle` printed for the bundle held in `files` under `dir`. */
+export function signerOf(files: Record<string, string>, dir: string): string {
+  const fingerprint = fingerprintOf(files[`${dir}/signer.pub`] ?? '');
+  if (!fingerprint) throw new Error(`no signer.pub under ${dir}`);
+  return fingerprint;
 }

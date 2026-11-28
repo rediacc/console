@@ -1,6 +1,6 @@
 """The enforcement layer cannot quietly disarm itself.
 
-Ported from `.ci/scripts/quality/check-hook-integrity.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-hook-integrity.observations.jsonl` asserted equivalence over seven distinct trees and the twin's own text was recorded as goldens.
+Ported from `.ci/scripts/quality/check-hook-integrity.sh`, which W7 P5 batch G2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over seven distinct trees and the twin's own text was recorded as goldens.
 
 The twin's header, carried whole. Every paragraph of it records a hole this gate had and closed, and the holes are the design:
 
@@ -295,6 +295,15 @@ the HAZARD it guards is real in this file too, and it is the reason the three `e
 THE DIFFERENTIAL COVERS ALL THREE WAYS THE SCOPE CAN COLLAPSE, because under the `while read` form they are the same event and the `|| true` fires on the FIRST `read` rather than the last: a declared key holding an empty list, a scope file
 with no such key at all, and a scope file that is not JSON. The ledger carries a
 tree for each.
+
+---- gate ----
+step: Hook integrity
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import json
@@ -1127,4 +1136,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_hook_integrity.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

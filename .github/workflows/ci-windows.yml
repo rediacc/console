@@ -1,0 +1,96 @@
+name: CI - Windows
+
+# The Windows lane (PLAN-windows-lane D10): the win32 unit tests by name, the agent-guard refusal cases with the renet Windows artifact, and a bundle smoke. Remote suites (term, sync, vscode against a worker) stay local in `PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check`, because a hosted Windows runner has no Linux worker to reach.
+on:
+  workflow_call:
+
+# Every job declares its own permissions; this default is empty on purpose.
+permissions: {}
+
+jobs:
+  windows-lane:
+    name: Windows lane
+    permissions:
+      contents: read
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+
+      - name: Download renet binaries
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      # The CLI finds the ancestry helper as `renet` on PATH when it is not a SEA.
+      - name: Put renet on PATH
+        run: |
+          mkdir -p "$RUNNER_TEMP/renet-bin"
+          cp private/bin/renet-windows-amd64.exe "$RUNNER_TEMP/renet-bin/renet.exe"
+          echo "$RUNNER_TEMP/renet-bin" >> "$GITHUB_PATH"
+
+      - name: "Unit: Windows tier A under vitest.windows.config.ts"
+        working-directory: packages/cli
+        run: npx vitest run --config vitest.windows.config.ts
+
+      - name: Build CLI
+        run: npm run build:cli
+
+      - name: "Guard: renet process-ancestry reports the process chain"
+        run: |
+          OUT=$(renet process-ancestry --pid $$ --keys PATH)
+          echo "$OUT" | jq -e '.ancestors | length > 0'
+
+      # An agent without an override is refused before any network use.
+      - name: "Guard: agent machine access is refused without an override"
+        env:
+          REDIACC_AGENT: '1'
+        run: |
+          set -u
+          RDC="node packages/cli/dist/cli-bundle.cjs"
+          $RDC config init winguard
+          $RDC --config winguard machine add guard-probe --ip 10.255.255.1 --user probe
+          if $RDC --config winguard term connect guard-probe -c "echo reached"; then
+            echo "agent guard did not refuse term connect"; exit 1
+          fi
+
+      # The override is set below the agent boundary (the outer process carries REDIACC_AGENT, the inner one adds the override), so it is not proven and stays refused.
+      - name: "Guard: an override injected below the agent boundary is refused"
+        run: |
+          set -u
+          RDC="node packages/cli/dist/cli-bundle.cjs"
+          if REDIACC_AGENT=1 bash -c "REDIACC_ALLOW_GRAND_REPO='*' $RDC --config winguard term connect guard-probe -c 'echo reached'"; then
+            echo "injected override was honored"; exit 1
+          fi
+
+      - name: "Smoke: config init, machine add and scan-keys against a closed port"
+        run: |
+          set -u
+          RDC="node packages/cli/dist/cli-bundle.cjs"
+          $RDC config init winsmoke
+          $RDC --config winsmoke machine add closed-port --ip 127.0.0.1 --user probe --port 1
+          if $RDC --config winsmoke machine scan-keys closed-port; then
+            echo "scan-keys exited 0 against a closed port"; exit 1
+          fi
+
+      # The runner image ships OpenSSH server. When it can be started, scan-keys must pin its host keys.
+      - name: "Smoke: machine scan-keys against the runner's own sshd"
+        shell: pwsh
+        run: |
+          $svc = Get-Service -Name sshd -ErrorAction SilentlyContinue
+          if (-not $svc) { Write-Host "::notice::no sshd service on this runner image, scan-keys positive case skipped"; exit 0 }
+          Start-Service sshd
+          node packages/cli/dist/cli-bundle.cjs --config winsmoke machine add local-sshd --ip 127.0.0.1 --user runneradmin
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          node packages/cli/dist/cli-bundle.cjs --config winsmoke machine scan-keys local-sshd
+          exit $LASTEXITCODE

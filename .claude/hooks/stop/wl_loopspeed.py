@@ -42,7 +42,12 @@ GIT_TIMEOUT_S = 20
 
 
 def _git(root, *args):
-    """stdout of one read-only git command in `root`, or None on any failure."""
+    """stdout of one read-only git command in `root`, or None on any failure. A query wl_core.git_cacheable admits is answered from the HEAD-keyed cache."""
+    import wl_core
+
+    if wl_core.git_cacheable(args):
+        got = wl_core.git_run(root, args, timeout=GIT_TIMEOUT_S)
+        return wl_core.git_text(got[1]) if got is not None and got[0] == 0 else None
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), *args],

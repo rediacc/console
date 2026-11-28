@@ -11,8 +11,6 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
-import hashlib
-import hmac
 import importlib
 import itertools
 import json
@@ -78,6 +76,7 @@ SEAMS: dict[str, Seam] = {
     "S2": Seam("rediacc_ci.deploy.deploy_signer", "the regional signers and their binding"),
     "V1": Seam(__name__, "the caller-side signer probe"),
     "K2": Seam("rediacc_ci.release.rings_run", "the ring runner"),
+    "V5": Seam(__name__, "the release rehearsal reset"),
     "C2": Seam("rediacc_ci.enterprise.lifecycle", "list, update, suspend, export and remove"),
     "A1": Seam(__name__, "the owner mail a bench company captured"),
     "V3": Seam(__name__, "the www lookup entry reader"),
@@ -109,6 +108,7 @@ _GROUPS: dict[str, tuple[str, ...]] = {
         "turnstile_domains",
     ),
     "K2": ("target_version", "versions", "caller_version", "release"),
+    "V5": ("reset_release",),
     "V6": ("mint", "present"),
     "V7": (
         "container_app", "durable_object", "console_command", "egress_ips", "set_allowlist",
@@ -1136,15 +1136,15 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # The `enterprise proof replay` and `proof proxy` token readers (agent/plans/PLAN-enterprise-isolation.md, box V6's group, which V7's proxy token rides). SEAMS binds them by name.
 #
-# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
+# SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers a step-up (a server-minted link has no browser binding), which the confirmation `POST /account/api/v1/auth/magic-link/step-up` completes from the same address and answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`).
 #
-# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` sets the store up the first time the way the portal does. Setup sits behind `requireTwoFactor` and `requireElevated` (`POST /configs/setup`), so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`). A second factor is enrolled for the length of the setup only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`), the store is created with one master-password slot, and the second factor is disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. A store already there is opened through `POST /configs/bootstrap-session` with method `password`, which `requireTwoFactor` gates as well, so the bootstrap runs under the same elevated, short-lived second factor. Either answer carries a fresh config token, and that token is the artifact. The slot password is never stored: it is an HMAC of the company's `ACCOUNT_SERVER_API_KEY` under a fixed label (`store_password`), so a later run derives it again and a removed company leaves nothing behind for it.
+# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` opens the store the portal set up. The lab cannot set one up: `POST /configs/setup` demands a passkey slot with a verified WebAuthn registration (a recovery code alone is refused, private/account/src/routes/configs.ts), and password slots no longer exist, so a company without a store is a `LabError` that names the portal step. The store is opened through `POST /configs/bootstrap-session` with method `recovery`, which sits behind `requireTwoFactor`, so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`) and a second factor is enrolled for the length of the bootstrap only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`) and disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. The answer carries a fresh config token, and that token is the artifact. The recovery code is the operator's: the kit the portal showed at the store's setup, supplied in `ENTERPRISE_PROOF_RECOVERY_CODE` (`store_recovery_code`), never stored by the lab.
 #
 # An `e2e-envelope` is a request sealed to the company's X25519 key, as the CLI's tunnel seals every request (packages/cli/src/services/account/account-client.ts). The key is the one `GET /account/api/v1/.well-known/server-info` publishes, and the sealed request is `GET /account/api/v1/licenses/status` under a fresh `license:read` token of the same company.
 #
-# THE CRYPTOGRAPHY IS THE PRODUCT'S OWN. The slot wrap, the CEK unwrap, the config push payload, the CEK handoff to an executor and the request seal are the TypeScript functions of `@rediacc/shared` (`config-crypto`, `config-schema`, `e2e`, `cli-contract`), imported from packages/shared/src by `ts_crypto` and run through the repository's `tsx`, one JSON request on stdin and one JSON answer on stdout. Nothing is ported to Python, a password or a CEK never reaches argv, and the helper's stderr is never put into an error.
+# THE CRYPTOGRAPHY IS THE PRODUCT'S OWN. The slot wrap, the CEK unwrap, the config push payload, the CEK handoff to an executor and the request seal are the TypeScript functions of `@rediacc/shared` (`config-crypto`, `config-schema`, `e2e`, `cli-contract`), imported from packages/shared/src by `ts_crypto` and run through the repository's `tsx`, one JSON request on stdin and one JSON answer on stdout. Nothing is ported to Python, a recovery code or a CEK never reaches argv, and the helper's stderr is never put into an error.
 #
 # `present(company, kind, artifact)` sends one artifact to the company's own account host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one probe: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts); an `api-token` is the bearer of `GET /account/api/v1/licenses/status` (scope `license:read`, private/account/src/routes/license.ts); a `proxy-token` is the bearer of `POST /account/api/v1/proxy/introspect` with `{"token": "self", "self": true}` (scope `proxy:exec`, private/account/src/routes/proxy.ts), the lookup the company's proxy makes through its own account Worker's `ExecutorIssuer`, over the same D1. The api-token middleware binds a first-use token to the presenting address, which is this machine for both companies, so a refusal by the other company is never an address mismatch. A `config-token` is the `X-Config-Token` of `POST /configs/session`; the token rotates on use but stays good for three, so the other company refuses a live token. An `e2e-envelope` is posted to `POST /account/api/v1/tunnel`: the company that holds the key opens it and answers 200 with the inner status in the clear (`E2eResponseEnvelope.status`), which is then the verdict, and a company that does not answers 400 `Decryption failed`, the refusal.
 
@@ -1153,6 +1153,7 @@ ME_PATH = "/account/api/v1/portal/me"
 STATUS_PATH = "/account/api/v1/licenses/status"
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 VERIFY_PATH = "/account/api/v1/auth/magic-link/verify"
+STEP_UP_PATH = "/account/api/v1/auth/magic-link/step-up"
 TOKENS_PATH = "/account/api/v1/api-tokens"
 TERMS_PATH = "/account/api/v1/portal/terms"
 TERMS_ACCEPT_PATH = TERMS_PATH + "/accept"
@@ -1204,7 +1205,7 @@ REAUTH_SQL = (
     "ORDER BY created_at DESC LIMIT 50"
 )
 REAUTH_TOKEN = login_bench.REAUTH_TOKEN
-STORE_PASSWORD_LABEL = b"rediacc-enterprise-proof-config-store-v1"
+RECOVERY_CODE_ENV = "ENTERPRISE_PROOF_RECOVERY_CODE"
 CRYPTO_TIMEOUT_S = 120
 # The crypto helper `ts_crypto` runs: `@rediacc/shared` imported from packages/shared/src (argv[2], a file URL), one
 # JSON request on stdin, one JSON answer on stdout. Every operation is a call into the shared package.
@@ -1223,14 +1224,23 @@ const x25519 = (spki) =>
   crypto.subtle.importKey('spki', cc.fromBase64(spki), { name: 'X25519' }, false, []);
 let out;
 if (req.op === 'setup') {
+  // The key material of a new store: the CEK wrapped under a fresh recovery slot and under a fresh machine secret.
   const cek = await cc.generateCek();
   const serverSecret = cc.generateServerSecret();
-  const params = cc.newPasswordSlotParams();
-  const secret = await cc.derivePasswordSlotSecret(req.password, params);
+  const recoveryCode = cc.generateRecoveryCode();
+  const recoveryParams = cc.newRecoverySlotParams();
+  const recoverySecret = await cc.deriveRecoverySlotSecret(recoveryCode, recoveryParams);
+  const machineSecret = cc.generateMachineSecret();
+  const machineParams = cc.newMachineSecretParams();
+  const machineSlotSecret = await cc.deriveMachineSecretSlotSecret(machineSecret, machineParams);
   const pair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
   const spki = new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey));
   out = {
     cek: await rawCek(cek),
+    recoveryCode,
+    machineSecret,
+    machineSecretKdfParams: machineParams,
+    machineSecretWrappedCek: await cc.wrapCekForSlot(cek, machineSlotSecret, serverSecret),
     body: {
       orgId: '',
       sdkMaster: b64(cc.generateSdkMaster()),
@@ -1238,9 +1248,9 @@ if (req.op === 'setup') {
       orgPassphrase: b64(cc.randomBytes(32)),
       slots: [
         {
-          method: 'password',
-          kdfParams: params,
-          wrappedCek: await cc.wrapCekForSlot(cek, secret, serverSecret),
+          method: 'recovery',
+          kdfParams: recoveryParams,
+          wrappedCek: await cc.wrapCekForSlot(cek, recoverySecret, serverSecret),
         },
       ],
       requirePasskey: false,
@@ -1248,7 +1258,14 @@ if (req.op === 'setup') {
     },
   };
 } else if (req.op === 'unwrap') {
-  const secret = await cc.derivePasswordSlotSecret(req.password, req.kdfParams);
+  // A recovery code opens a recovery slot, a machine secret a machine-secret wrap; exactly one is given.
+  if ((req.recoveryCode === undefined) === (req.machineSecret === undefined)) {
+    throw new Error('unwrap takes a recoveryCode or a machineSecret');
+  }
+  const secret =
+    req.recoveryCode === undefined
+      ? await cc.deriveMachineSecretSlotSecret(req.machineSecret, req.kdfParams)
+      : await cc.deriveRecoverySlotSecret(req.recoveryCode, req.kdfParams);
   const cek = await cc.unwrapCekForSlot(req.wrappedCek, secret, cc.fromBase64(req.serverSecret));
   out = { cek: await rawCek(cek) };
 } else if (req.op === 'push') {
@@ -1259,6 +1276,7 @@ if (req.op === 'setup') {
     sdkDerived: await cc.importAesKey(cc.fromBase64(req.sdkDerived)),
     cek: await cc.importAesKey(cc.fromBase64(req.cek)),
     storeId: req.storeId,
+    cekGeneration: req.cekGeneration,
   });
   out = { encryptedBlob: payload.encryptedBlob, envelope: payload.envelope };
 } else if (req.op === 'seal-cek') {
@@ -1505,12 +1523,37 @@ def owner_session(
         )
     if answer.json().get("requiresTwoFactor"):
         raise proof.LabError("company %s: the owner sign-in asks for a second factor" % company)
+    if answer.json().get("requiresStepUp"):
+        # A server-minted link carries no browser binding, so the verify answers `requiresStepUp` for it (private/account/src/services/auth.service.ts); a verify that answers none is taken as signed in. The owner is passwordless without a factor, so the one answerable step is the confirmation; any other method is refused rather than answered, since the lab holds no password, code or passkey for the owner.
+        answer = _confirm_step_up(company, host, answer.json(), call)
     for cookie in answer.header_values("Set-Cookie"):
         got = ACCESS_COOKIE.search(cookie)
         if got:
             accept_terms(company, host, got.group(1), call=call)
             return got.group(1)
     raise proof.LabError("company %s: the magic-link verify set no access_token" % company)
+
+
+def _confirm_step_up(company: str, host: str, challenge: dict, call: Call) -> HttpAnswer:
+    """Answer the `confirm` step-up of the owner's magic-link verify from the same address, as the portal's confirm button does; any other method, or a missing token, is a `LabError`. The token is never put into an error."""
+    method = challenge.get("method")
+    token = challenge.get("stepUpToken")
+    if method != "confirm" or not isinstance(token, str) or not token:
+        raise proof.LabError(
+            "company %s: the owner sign-in asks for a step-up the lab cannot answer (method %s)"
+            % (company, method)
+        )
+    answer = call(
+        "POST",
+        "https://%s%s" % (host, STEP_UP_PATH),
+        {"Content-Type": "application/json"},
+        json.dumps({"stepUpToken": token, "confirm": True}).encode(),
+    )
+    if answer.status != 200:
+        raise proof.LabError(
+            "company %s: the magic-link step-up answered HTTP %d" % (company, answer.status)
+        )
+    return answer
 
 
 def accept_terms(company: str, host: str, cookie: str, *, call: Call = http_call) -> bool:
@@ -1751,10 +1794,15 @@ class StoreKeys:
     configs: int
 
 
-def store_password(company: str, *, api_key: ApiKey = store_api_key) -> str:
-    """The master password of the store's proof slot: an HMAC of the company's server key, derived again on every run and stored nowhere."""
-    key = api_key(company).encode()
-    return hmac.new(key, STORE_PASSWORD_LABEL, hashlib.sha256).hexdigest()
+def store_recovery_code(*, env: Mapping[str, str] | None = None) -> str:
+    """The recovery code that opens the store's recovery slot: the operator's kit from the portal, read from `ENTERPRISE_PROOF_RECOVERY_CODE` and never stored by the lab."""
+    value = (os.environ if env is None else env).get(RECOVERY_CODE_ENV, "").strip()
+    if not value:
+        raise proof.LabError(
+            "%s is not set (the recovery code the portal showed when the store was set up)"
+            % RECOVERY_CODE_ENV
+        )
+    return value
 
 
 # The account's coded 503 for a console leg no executor can serve (private/account/src/routes/console.ts `consoleUnavailable`).
@@ -1871,35 +1919,12 @@ def _under_second_factor[T](world: Owner, action: Callable[[], T]) -> T:
     return result
 
 
-def _setup_store(world: Owner, password: str) -> StoreKeys:
-    """Create the store with one master-password slot, under a second factor that lives only as long as the setup."""
-
-    def setup() -> StoreKeys:
-        material = world.crypto({"op": "setup", "password": password})
-        made = _expect(
-            world.send("POST", SETUP_PATH, material.get("body")),
-            (201,),
-            world.company,
-            "the config store setup",
-        )
-        store = made.get("store")
-        store_id = str(store.get("id") or "") if isinstance(store, dict) else ""
-        token = made.get("initialToken")
-        if not store_id or not isinstance(token, str) or not token:
-            raise proof.LabError(
-                "company %s: the store setup answered no store or token" % world.company
-            )
-        return StoreKeys(store_id, str(material.get("cek") or ""), token, 0)
-
-    return _under_second_factor(world, setup)
-
-
-def _open_store(world: Owner, store_id: str, configs: int, password: str) -> StoreKeys:
-    """Open an existing store through its password slot: a fresh config token and the CEK. The bootstrap runs under the same short-lived second factor as the setup, since `POST /configs/bootstrap-session` is `requireTwoFactor` gated too."""
+def _open_store(world: Owner, store_id: str, configs: int, recovery_code: str) -> StoreKeys:
+    """Open an existing store through its recovery slot: a fresh config token and the CEK. The bootstrap runs under the same short-lived second factor as the setup, since `POST /configs/bootstrap-session` is `requireTwoFactor` gated too."""
     slot = _under_second_factor(
         world,
         lambda: _expect(
-            world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "password"}),
+            world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "recovery"}),
             (200,),
             world.company,
             "the store bootstrap",
@@ -1911,7 +1936,7 @@ def _open_store(world: Owner, store_id: str, configs: int, password: str) -> Sto
     opened = world.crypto(
         {
             "op": "unwrap",
-            "password": password,
+            "recoveryCode": recovery_code,
             "kdfParams": slot.get("kdfParams"),
             "wrappedCek": slot.get("wrappedCek"),
             "serverSecret": slot.get("serverSecret"),
@@ -1921,15 +1946,18 @@ def _open_store(world: Owner, store_id: str, configs: int, password: str) -> Sto
 
 
 def ensure_store(world: Owner) -> StoreKeys:
-    """The company's config store, set up on first use and opened after that."""
+    """The company's config store, opened through its recovery slot. A company without a store is refused: setup needs a passkey registration the lab cannot make."""
     info = _expect(world.send("GET", STORE_INFO_PATH), (200,), world.company, "the store info")
-    password = store_password(world.company, api_key=world.api_key)
-    if info.get("configured") is True:
-        store_id = str(info.get("storeId") or "")
-        if not store_id:
-            raise proof.LabError("company %s: a configured store names no id" % world.company)
-        return _open_store(world, store_id, int(info.get("configCount") or 0), password)
-    return _setup_store(world, password)
+    if info.get("configured") is not True:
+        raise proof.LabError(
+            "company %s has no config store: setup needs a passkey slot with a verified WebAuthn "
+            "registration, so the owner sets it up in the portal first and saves the recovery kit"
+            % world.company
+        )
+    store_id = str(info.get("storeId") or "")
+    if not store_id:
+        raise proof.LabError("company %s: a configured store names no id" % world.company)
+    return _open_store(world, store_id, int(info.get("configCount") or 0), store_recovery_code())
 
 
 def e2e_envelope(
@@ -2249,6 +2277,7 @@ def _push_proof_config(world: Owner, keys: StoreKeys) -> None:
             "sdkDerived": session.get("sdk_derived"),
             "cek": keys.cek,
             "storeId": keys.store_id,
+            "cekGeneration": session.get("cekGeneration"),
         }
     )
     body = {
@@ -2504,6 +2533,54 @@ def request_from(
             % (method, path, start)
         )
     return answer.status
+
+
+# ==== box V5: the release rehearsal reset (`proof release`)
+#
+# `reset_release(version)` takes `version`'s progress out of every bench control database, so a rehearsal meets companies that have not taken it: the `rollout` rows of that version and its `ring-resmoke` audit rows, the two things of a version's progress the ring runner reads (`rings_run.read_world`). The proof rehearses the version edge runs, so without the reset a stop latched by an earlier rehearsal of the same version stops the next one before its planted failure (the 2026-11-24 `proof release --bench` run was stopped by the 2026-11-22 stop of `proof-ring-canary`), and a rehearsal that finished leaves nothing to stop. The `deploy-record` audit rows stay: `proof cost` reads them.
+#
+# Only proof companies: a row naming a company that is not a `proof-*` company of the bench control databases (or is in none of them) is a `LabError` naming its id, raised before anything is deleted, so the reset never rewrites the history of a company the lab did not create. Returns the ids whose rows were taken out.
+
+
+RESET_ROLLOUT_SQL = "SELECT DISTINCT company_id FROM rollout WHERE version = ?"
+RESET_DELETE_ROLLOUT_SQL = "DELETE FROM rollout WHERE version = ?"
+RESMOKE_ACTION = "ring-resmoke"
+RESET_DELETE_RESMOKE_SQL = (
+    "DELETE FROM audit WHERE action = ? AND json_extract(detail, '$.version') = ?"
+)
+RESET_RESMOKE_SQL = "SELECT DISTINCT company_id FROM audit WHERE action = ? AND json_extract(detail, '$.version') = ?"
+
+
+def reset_release(
+    version: str,
+    *,
+    query: Query = d1_query,
+    companies: Companies = all_companies,
+) -> list[str]:
+    names = {str(r.get("id")): str(r.get("name") or "") for r in companies(BENCH)}
+    databases = sorted(registry.databases(BENCH).values())
+    # Both deletes below are by version across companies, so the rows each one would take out are read first and every company they name is checked (review c2a8357f.1).
+    held = {
+        database: {
+            str(r.get("company_id") or "") for r in query(database, RESET_ROLLOUT_SQL, [version])
+        }
+        | {
+            str(r.get("company_id") or "")
+            for r in query(database, RESET_RESMOKE_SQL, [RESMOKE_ACTION, version])
+        }
+        for database in databases
+    }
+    ids = sorted(set().union(*held.values()))
+    foreign = [c for c in ids if not names.get(c, "").startswith(PROOF_COMPANY_PREFIX)]
+    if foreign:
+        raise proof.LabError(
+            "the rollout or ring-resmoke rows of %s name %s, not a proof company of the bench control databases; "
+            "the lab rewrites no other company's history" % (version, ", ".join(foreign))
+        )
+    for database in databases:
+        query(database, RESET_DELETE_ROLLOUT_SQL, [version])
+        query(database, RESET_DELETE_RESMOKE_SQL, [RESMOKE_ACTION, version])
+    return ids
 
 
 # ==== box V8: deploy records, usage, the image rebuild and the limits (`proof cost`)

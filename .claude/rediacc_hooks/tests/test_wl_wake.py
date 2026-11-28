@@ -5,6 +5,7 @@ A stop that waits on background work is re-invoked only when a task exits, so a 
 
 from __future__ import annotations
 
+import datetime
 import json
 import subprocess
 import sys
@@ -168,3 +169,65 @@ def test_wk9_an_unknown_argument_is_refused_and_arms_nothing(tmp_path):
         assert got.returncode == 2, (extra, got.stdout, got.stderr)
         assert "unknown argument" in got.stderr, (extra, got.stderr)
         assert not list(tmp_path.rglob("%s.json" % ME)), "a refused call left a timer lock"
+
+
+def _queue_at(root, level):
+    plans = root / "agent" / "plans"
+    plans.mkdir(parents=True, exist_ok=True)
+    (plans / "QUEUE.md").write_text(
+        "## Settings\n\n```stop-hook\neffort: %s\n```\n\n## Promoted\n" % level, encoding="utf-8"
+    )
+
+
+def _round_ago(root, minutes, session=ME):
+    wn = wlfix.import_wl("wl_writersnow")
+    now = datetime.datetime.now(datetime.UTC)
+    wn.append_round(root, session, "/tmp/s.md", now - datetime.timedelta(minutes=minutes))
+
+
+def test_wk10_the_idle_sleep_is_capped_at_the_next_round_only_where_the_check_asks_for_one(
+    monkeypatch, tmp_path
+):
+    """review d09c81b0.1 and .2: a timer armed with no --minutes wakes when the next round is due, and at an effort level where `writers-now-due` is silent a session with no round row keeps the plain sleep."""
+    wake = _wake(monkeypatch, tmp_path)
+    wn = wlfix.import_wl("wl_writersnow")
+    # CONTROL: at effort high a session that has never run a round is due at once.
+    _queue_at(tmp_path, "high")
+    assert wake._writers_now_due_in(ME, tmp_path) == 1.0
+    # The same ledger-less session at an effort level below the advise threshold waits the plain sleep.
+    for level in ("quiet", "low"):
+        _queue_at(tmp_path, level)
+        assert wake._writers_now_due_in(ME, tmp_path) == float(wake.WAKE_DEFAULT_MIN), level
+    # With a round 5 minutes old at effort high the sleep ends when the window does, not before.
+    _queue_at(tmp_path, "high")
+    _round_ago(tmp_path, 5)
+    got = wake._writers_now_due_in(ME, tmp_path)
+    assert abs(got - (wn.WINDOW_MIN - 5)) < 0.5, got
+    # A round older than the window floors at one minute; a peer's round is not this session's.
+    _round_ago(tmp_path, 40)
+    assert wake._writers_now_due_in(ME, tmp_path) == 1.0
+    assert wake._writers_now_due_in("cafebabe", tmp_path) == 1.0
+    _queue_at(tmp_path, "low")
+    assert wake._writers_now_due_in(ME, tmp_path) == float(wake.WAKE_DEFAULT_MIN)
+
+
+def test_wk11_main_caps_the_default_sleep_at_the_due_time_and_keeps_an_explicit_minutes(
+    monkeypatch, tmp_path
+):
+    """review d09c81b0.2: `main` arms min(default, due-in) when no --minutes is given, and exactly --minutes when it is."""
+    wake = _wake(monkeypatch, tmp_path)
+    armed: list[float] = []
+
+    def fake_acquire(_me, minutes):
+        armed.append(minutes)
+        return False, {"pid": 1, "until": 0}
+
+    monkeypatch.setattr(wake, "acquire", fake_acquire)
+    monkeypatch.setattr(wake, "_writers_now_due_in", lambda _me, _root=None: 3.0)
+    assert wake.main(["wl_wake.py", ME]) == 0
+    assert wake.main(["wl_wake.py", ME, "--minutes", "10"]) == 0
+    assert armed == [3.0, 10.0]
+    # CONTROL: a round far off leaves the plain default.
+    monkeypatch.setattr(wake, "_writers_now_due_in", lambda _me, _root=None: 999.0)
+    assert wake.main(["wl_wake.py", ME]) == 0
+    assert armed[-1] == float(wake.WAKE_DEFAULT_MIN)

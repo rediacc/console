@@ -593,8 +593,9 @@ export function registerRepairCommand(machine: Command): void {
         const windowSpec = (config.machines[name] as { maintenanceWindow?: string } | undefined)
           ?.maintenanceWindow;
         const outcome = await runMachineRepair(name, windowSpec, options, realDeps(name));
-        renderRepairOutcome(outcome, getOutputFormat());
+        // Set before the print, so the JSON envelope of a failed repair says success:false.
         if (outcome.exitCode !== 0) setExitCode(outcome.exitCode);
+        renderRepairOutcome(outcome, getOutputFormat());
       } catch (error) {
         handleError(error);
       }

@@ -210,12 +210,15 @@ export const CONFIG_KEY_ORDER = [
 
   // Which universe this config is
   'account',
+  'preview',
   'defaults',
   'credentials',
 
   // What it holds
   'resources',
   'access',
+  'console',
+  'ai',
   'state',
 
   // Infrastructure and authorization

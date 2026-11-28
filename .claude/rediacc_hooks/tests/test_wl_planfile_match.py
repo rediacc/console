@@ -8,6 +8,8 @@ from __future__ import annotations
 import math
 import random
 
+import pytest
+
 from rediacc_hooks.tests import wlfix
 
 PF = wlfix.import_wl("wl_planfile")
@@ -96,3 +98,22 @@ def test_control_the_same_constant_reuses_the_caches():
     assert PF._prepared(rows) is PF._prepared(rows)
     prepared = PF._prepared(rows)
     assert PF._token_index(prepared) is PF._token_index(prepared)
+
+
+@pytest.mark.parametrize("threshold", [0.0, 1.5])
+def test_a_task_match_outside_zero_to_one_agrees_with_the_brute_force_scan(monkeypatch, threshold):
+    """Review 27829d52.1: the `else:` bound for a TASK_MATCH outside (0, 1] (the env seam) must return exactly what the full scan returns; 0.0 matches every row sharing a token, 1.5 matches none."""
+    monkeypatch.setattr(P, "TASK_MATCH", threshold)
+    rng = random.Random(11)
+    hits = 0
+    for _ in range(200):
+        rows = [
+            ("i%d" % n, " ", " ".join(rng.sample(WORDS, rng.randint(3, 9))))
+            for n in range(rng.randint(1, 10))
+        ]
+        task = " ".join(rng.sample(WORDS, rng.randint(3, 10)))
+        prepared = PF.prepare(rows)
+        got = PF.match_item(task, prepared)
+        assert got == brute(task, prepared), (threshold, rows, task)
+        hits += got is not None
+    assert (hits > 0) == (threshold == 0.0), hits

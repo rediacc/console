@@ -17,15 +17,15 @@ docker users never type `--datastore`.
 5. Gating carries over by verb class (grandGuard on mutating repo verbs; cluster family
 behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blocked).
 
-## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
+## 1. The tree — AS BUILT (shape verified against the live CLI, 2026-07-13; counts re-pinned by plane-coverage.test.ts)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **228 contract commands** (123 machine-plane, 58 config-plane, 47 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **241 contract commands** (127 machine-plane, 58 config-plane, 56 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
                 access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
-                remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
+                remote {enable disable status refresh versions restore}    ssh {set show remove}
 rdc machine:    add remove list status setup scan-keys health repair prune converge restart-services
                 provision deprovision
                 access {set remove show push}
@@ -34,7 +34,7 @@ rdc machine:    add remove list status setup scan-keys health repair prune conve
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
 rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
-                cat diff logs exec tunnel health repair
+                cat diff logs exec tunnel health repair flows opens
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
                 commit branch checkout log merge gc
                 resize expand trim policy {set get}
@@ -48,18 +48,21 @@ rdc cluster:    create scale join evict destroy status kubeconfig snapshot {crea
 rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile  check  repair  toc-key {sync}  immutability {show set}  undelete  churn
 rdc server:     install status upgrade backup licence {mint} bundle
 rdc term:       connect
-rdc vscode:     connect list cleanup check serve {status stop}
+rdc vscode:     connect list cleanup check expose unexpose serve {status stop}
 rdc ops:        up down status ssh setup check
+rdc preview:    use leave status
 rdc subscription: login register logout status notices retire refresh proxy-token
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc feedback:   report list show
-rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
+rdc incident:   status export declare close
+rdc forensics:  verify level
+rdc doctor | credits | update | version | legal | completion | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-four differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -85,7 +88,8 @@ Thirty-four differences. The first six are deliberate and each is traceable to a
 | `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
 | no `server` noun | `server {install status upgrade backup licence {mint} bundle}` | Installs the self-hosted account server (Elite) as a repository on a machine, then checks, upgrades (forking a rollback point first), backs up and licenses it. `bundle` builds the offline bundle on a connected machine, `licence mint` issues the certificate for an offline install's request (`licence <domain>` still applies one), and `install --offline` and `machine setup --offline` consume the bundle, so they are flags rather than leaves. A whole program landing after this transcript was drawn; `rdc serve` (the executor) is a different thing. |
 | `repo` with no `permission` | `repo permission {grant revoke show}` | A repository's Rediaccfile `up()` and `down()` run as the unprivileged universal user; `grant` widens what they may reach (a path with `--path`, or root with `--root`), `revoke` narrows it and `show` prints the grant in effect. Each runs a repository_permission_* renet function on the machine holding the repository, so all three are machine-plane and proxy-capable. |
-| `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
+| `config remote` with a `master-password change` verb | `config remote` without it | The password slot of the config key was removed (migration 0095 deleted the password rows), so the verb that re-wrapped the key under a new password has nothing left to change. |
+| no `preview` noun | `preview {use leave status}` | Tests a pull request's build on the operator's own machines: `use` switches this config to a preview's CLI and server, `leave` returns to the published builds, and `status` shows which preview the config is on. |
 | `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |
 | `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
 | no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
@@ -97,6 +101,11 @@ Thirty-four differences. The first six are deliberate and each is traceable to a
 | no `config import-machine` | `config import-machine <machine> --from <config> [--dry-run] [--strategy-from-source]` | PLAN-hostinger-to-bench Design 5: moving a machine between named configs by hand-editing JSON dropped its datastores, repositories and backup bindings, and a name clash silently overwrote the target's entry. The verb plans the whole import first (machine, datastores, strategies, bindings, repositories, tags), refuses a clash on a different identity, and writes nothing under `--dry-run`. |
 | `repo admin` with no orphan verbs | `repo admin orphan {list delete}` | Worklist #48d790e1: a repository image whose GUID left every config could not be removed, because `repo delete` resolves only config refs and `machine prune --orphaned-repos` deletes every orphan on the machine at once. `list <machine>` judges each image with the verdict `machine prune --orphaned-repos` reaches, and `delete <guid>@<machine>` removes exactly one orphan through renet `repository_delete`, refusing a GUID any readable config names. Both judge against the caller's configs, so neither is proxy-capable, and `machine prune` joins them because its `--orphaned-repos` and `--prune-unknown` flags decide at runtime. |
 | no `feedback` noun | `feedback {report list show}` | PLAN-rdc-feedback C3/C4: `report` files a redacted report of a failed command (the last one with `--last`) with the account service, and `list` and `show` read the reports the caller filed. All three talk to the account service only and reach no machine, so they are other-plane. A report is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| no shell completion | `completion <bash\|zsh\|fish\|pwsh>` | Prints the completion script for the named shell; the script asks the hidden `__complete` entry for candidates, so names of machines, repositories and configs complete from the active config. A leaf with no noun of its own, like `version` and `legal`. Not drift: it postdates this transcript. |
+| `repo` with no forensic reads | `repo {flows opens}` | PLAN-forensics-investigation: `flows` lists a repository's recorded network flows and `opens` its recorded file opens over a time window, each with gap rows where no evidence exists. Both read the account server only (the `forensics:read` scope on a paid plan) and reach no machine. |
+| no `incident` noun | `incident {status export declare close}` | PLAN-forensics-investigation D4, D7: incidents are declared in the web console or by `declare` (FI8), which writes the account record and its eviction hold first, then runs the forensic fork and the switch to full capture as child rdc commands, and `close` ends the hold; `status` lists them or shows one with its deadline clocks, and `export` writes the incident's window, raw chain files and their verification to a directory. An incident is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| no `forensics` noun | `forensics {verify level}` | PLAN-forensics-investigation D5: `verify` recomputes the audit day-file chain and the signed batch chains of an evidence directory on the workstation, under machine keys from outside the directory (`--machine-key`, or the keys the account server pinned for the incident the directory names). `level` (FI8) sets a machine's capture level (basic, standard or full) as one forensics_level job on the machine plane. |
+| no web-exposed editor | `vscode {expose unexpose}` | PLAN-vscode-browser-exposure V3: `expose` runs the repository's pinned code-server container on its own Docker daemon behind the route server's portal-token gate as one repository_vscode_expose job and prints the editor's URL; `unexpose` removes the container as one repository_vscode_unexpose job. Both are machine-plane. The editor is opened from the web console, which mints the token, so no SSH tunnel is held. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

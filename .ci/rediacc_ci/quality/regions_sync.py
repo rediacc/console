@@ -34,10 +34,17 @@ THE EXIT-STATUS BEHAVIOUR ON A NON-DICT, NON-LIST ROOT IS PRESERVED EXACTLY, and
     len(d.get('regions', d)) if isinstance(d,(dict,list)) else 0
 
 and a top-level JSON *list* satisfies the isinstance test, then dies on `.get` with an AttributeError. Under `set -e` the assignment carries that failure out and the script exits non-zero having printed a traceback and no verdict. The port reproduces the same expression rather than "fixing" it, because the fix is a behaviour change and this file's job is to keep the verdict. The
-traceback TEXT differs between the two -- it names different files -- but a crash is not a verdict on either side, and `scripts/lib/shadow-gate.ts` classifies neither as a finding.
+traceback TEXT differs between the two -- it names different files -- but a crash is not a verdict on either side, and the shadow gate (commit:bf054adcd4) classifies neither as a finding.
 
 THE DIFF PRINTED ON DIVERGENCE. The twin ends with `diff <(printf '%s\n' "$a") <(printf '%s\n' "$b") | head -20`. Both operands are ONE line -- `json.dumps` with no indent -- so the output is always the four-line normal-format hunk `1c1`, `< a`, `---`, `> b`, and `head -20` never truncates anything. The port emits those four lines literally rather than reaching for difflib, which
 produces a different format for the same fact. The `head -20` is carried as a cap anyway, so a future multi-line normalization cannot turn a divergence report into a screenful.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_regions_sync.py
+blocker: BLOCKER: test_gate_regions_sync.py drives the REAL gate over the REAL regions.json and packages/shared/src/regions/data.json, and check:ci-pytest (ci-quality.yml quality-security, "Python package tests") runs it every CI run; its controls plant a divergence, an empty file and invalid JSON to prove all three refusals fire; the two files are held together by hand (no build step syncs them, despite what index.ts used to claim) and data.json is the ONLY region list users get because ${SITE_URL}/regions.json returns 404, so silent drift would ship to every install
+needs: none
+---- end gate ----
 """
 
 import json
@@ -233,3 +240,10 @@ def selftest() -> int:
         ctl.check("FLOOR MIRROR: exactly %d region(s) is enough" % MIN_REGIONS, run(one, one), 0)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_regions_sync.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

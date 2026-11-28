@@ -207,7 +207,7 @@ def test_override_needs_no_pr_number(tmp_path: pathlib.Path) -> None:
         new_env = diff.env_for(
             PREVIEW_URL_OVERRIDE=url,
             **_BUDGET,
-            PR_NUMBER=None,
+            PREVIEW_NAME=None,
             PYTHONPATH=".ci",
             PYTHONDONTWRITEBYTECODE="1",
         )
@@ -219,10 +219,10 @@ def test_override_needs_no_pr_number(tmp_path: pathlib.Path) -> None:
 
 
 def test_pr_number_still_required_without_override_reworded() -> None:
-    """Exit code and the identified variable agree; wording does not, and is not supposed to -- see the port's module docstring."""
+    """INTENTIONAL DELTA (PLAN-preview-signer N2): the twin needs PR_NUMBER and builds `pr-<n>`; the port needs the preview's word name instead. Both refuse with exit 1 and name the variable they need."""
     old_env = diff.env_for(PR_NUMBER=None, PREVIEW_URL_OVERRIDE=None)
     new_env = diff.env_for(
-        PR_NUMBER=None, PREVIEW_URL_OVERRIDE=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
+        PREVIEW_NAME=None, PREVIEW_URL_OVERRIDE=None, PYTHONPATH=".ci", PYTHONDONTWRITEBYTECODE="1"
     )
     old = diff.twin_call(
         TWIN,
@@ -234,7 +234,22 @@ def test_pr_number_still_required_without_override_reworded() -> None:
     assert old[0] == 1
     assert new[0] == 1
     assert "PR_NUMBER" in old[2]
-    assert "PR_NUMBER" in new[2]
+    assert "PREVIEW_NAME must be a preview Worker name" in new[2]
+
+
+def test_an_old_style_or_signer_name_is_refused_and_not_echoed() -> None:
+    for name in ("pr-123", "pv-able-baker-charlie-signer", "pv-able-baker"):
+        env = diff.env_for(
+            PREVIEW_NAME=name,
+            PREVIEW_URL_OVERRIDE=None,
+            PYTHONPATH=".ci",
+            PYTHONDONTWRITEBYTECODE="1",
+        )
+        rc, out, err = diff.bash_streams(
+            "python3 -m rediacc_ci.deploy.%s" % MODULE, env=env, timeout=30
+        )
+        assert rc == 1, name
+        assert name not in out + err, "the refused value is not echoed"
 
 
 def test_ci_defaults_are_still_strict() -> None:

@@ -10,7 +10,7 @@ NOTHING IS NORMALIZED. Neither side emits a timestamp, a pid or a tempdir path: 
 
 THE NETWORK IS NEVER TOUCHED, including by the real-tree case. `curl` is shimmed on PATH in every case here; the shim serves a locally built tarball or refuses. A test that downloads 4 MB from github is a test that fails on a plane.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ensure-nfpm.observations.jsonl` (5 rows, 5 distinct
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (5 rows, 5 distinct
 trees, 5 distinct finding sets).
 """
 
@@ -383,7 +383,7 @@ def test_a_missing_toolchain_env_is_constants_shs_own_refusal(tmp_path: pathlib.
 def test_unpinned_version_exits_1_without_forging_bash_text(tmp_path: pathlib.Path) -> None:
     """THE ONE NAMED DIVERGENCE, and both halves of it are asserted here.
 
-    With `NFPM_VERSION` gone, the twin dies at `:54` under `set -u` with bash's own `line NN: NFPM_VERSION: unbound variable` -- an interpreter diagnostic carrying a path and a line number, which a second language cannot produce and `scripts/lib/shadow-gate.ts` files as CHATTER on both sides. The port matches the exit code and the empty stdout and does NOT forge the sentence.
+    With `NFPM_VERSION` gone, the twin dies at `:54` under `set -u` with bash's own `line NN: NFPM_VERSION: unbound variable` -- an interpreter diagnostic carrying a path and a line number, which a second language cannot produce and the shadow gate (commit:bf054adcd4) files as CHATTER on both sides. The port matches the exit code and the empty stdout and does NOT forge the sentence.
     """
     fixture = build_fixture(tmp_path, drop_version_pin=True)
     old, new = run_both(fixture)

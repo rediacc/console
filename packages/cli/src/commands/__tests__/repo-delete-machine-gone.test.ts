@@ -30,7 +30,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: () => Promise.resolve(),
+  enforceResolvedTarget: () => Promise.resolve(),
   CMD: { REPO_DELETE: 'repo.delete' },
 }));
 vi.mock('../../services/core/output.js', () => ({

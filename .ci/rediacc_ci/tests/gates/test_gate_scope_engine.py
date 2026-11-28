@@ -778,7 +778,7 @@ def test_representative_deltas_classify_to_pinned_verdicts(gate, tmp_path):
 
     # -- the rows that must skip the heavy matrix entirely -------------------
     expect_classify(gate, "docs only", "reduced|19|", "docs/ci-overhaul/06-progress.md")
-    expect_classify(gate, "agent tooling only", "reduced|19|", ".claude/commands/pr-babysit.md")
+    expect_classify(gate, "agent tooling only", "reduced|19|", ".claude/commands/landing.md")
     # THE REPORTED CASE (commit bcc4f1ee1, 2026-08-06): an Apache-2.0 attribution-URL check that ran the ceph fork test, because scripts/** was a single blanket rule.
     expect_classify(gate, "gate source only", "reduced|19|", "scripts/gates/check-embed-credits.ts")
     expect_classify(gate, "gate lib only", "reduced|19|", "scripts/lib/blocker-validator.ts")

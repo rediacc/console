@@ -77,7 +77,7 @@ a `ci: { kind: 'step', workflow, job, step }` pointing at a REAL step name.
 
 Then run both meta-gates and read what they say:
 
-- `npm run check:ci-parity` - asserts the local gate set and the CI surface agree in BOTH
+- `npm run gen:gates -- --check` (check:ci-gen-gates) - asserts the local gate set and the CI surface agree in BOTH
 directions. It will catch a half-wired gate immediately, and it is picky in a useful way: `leaves` must match what package.json actually resolves to. If your npm script points at a shell wrapper, the leaf is the wrapper, not the TypeScript file it calls.
 - `npm run check:ci-gate-reachability-coverage` - asserts every manifest gate is reachable
 from `npm run ci`. A gate defined but never run is the failure mode this exists for.

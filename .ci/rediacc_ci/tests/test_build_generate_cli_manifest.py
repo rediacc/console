@@ -1,6 +1,6 @@
 """`rediacc_ci.build.generate_cli_manifest`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/generate-cli-manifest.sh` and the port inside one throwaway repo root and compared exit code, stdout, stderr, the recorded CALL LOG of the four tools either side spawns, and the hash of every file the run produced. The ledger `.ci/shadow/w7p6-generate-cli-manifest.observations.jsonl` holds 5 rows
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/generate-cli-manifest.sh` and the port inside one throwaway repo root and compared exit code, stdout, stderr, the recorded CALL LOG of the four tools either side spawns, and the hash of every file the run produced. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows
 of that comparison.
 
 Every case now compares against `goldens/generate-cli-manifest/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.

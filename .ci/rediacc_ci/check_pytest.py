@@ -1113,10 +1113,10 @@ def selftest(pytest_bin: str | None, *, verbose: bool = False) -> bool:
         in verdict(corpus=MIN_TESTS, collected=MIN_TESTS, passed=0, returncode=-9, timeout_s=4321),
     )
 
-    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake.
+    # THE KILLER ITSELF, driven against the exact shape that hung: a child whose GRANDCHILD holds the read end open. Killing only the child blocks forever here; `proc.run` kills the GROUP, so it returns. Driven through the shared runner rather than a local copy, because the copy was the first mistake. `sleep`, not `tail -f /dev/null`: uutils tail exits 1 at once with "OS file watch limit reached" when the host has no inotify instance left (measured 2026-11-26), so the control stopped hanging and failed.
     t0 = time.monotonic()
     blocked = proc.run(
-        ["bash", "-c", "tail -f /dev/null & echo spawned; tail -f /dev/null"],
+        ["bash", "-c", "sleep 20 & echo spawned; sleep 20"],
         timeout=3,
     )
     elapsed = time.monotonic() - t0
@@ -1275,6 +1275,13 @@ FLAGS_ALONE = ("--help", "-h", "--selftest", "--full")
 #
 # A local unsharded run judges only the test files the change set can reach (`pytest_impact.select_for_tree`); `--full`, `CI=true`, or any `--shard` leg judges the whole suite. CI passes `--shard` on every leg and sets `CI=true`, so it is the full-suite backstop by two independent routes. Whatever ran, the scope lands in SCOPE_RELPATH and in one `pytest-scope:` line, so the receipt and its reader can tell an impact green from a full one.
 SCOPE_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/scope.json")
+# THE LAST-GREEN RECORD (PLAN-ciquick-cpu W11) is separate from the scope because the two live different lives. The scope is this run's receipt and is removed at every run start; the last-green record names the commit the suite was last green at, is written only by a green run, and is never removed. While the base lived in scope.json, every red run (48 of the last 100 receipts on 2026-11-21) erased it, and the next run fell back to the push base and printed `pytest-impact: FULL`.
+LAST_GREEN_RELPATH = pathlib.PurePosixPath(".ci/cache/quality-pytest/last-green.json")
+# The `dirtyDigest` a ci:quick receipt carries for a clean tree: the first 16 hex digits of sha256 over an empty `git status --porcelain=v1 -z` (scripts/ci-runner/run.ts `dirtyDigest`).
+CLEAN_DIRTY_DIGEST = "e3b0c44298fc1c14"
+# The receipts the ci-runner archives (scripts/ci-runner/run.ts `archiveReceipt`), and the toolchain cache a kept clone links back to its live checkout (scripts/ci-runner/quick-clone.ts `LINKED_CACHES`), which is how a run inside the clone finds the receipts kept beside the live checkout.
+RECEIPTS_DIRNAME = "receipts"
+LINKED_TOOLCHAIN_DIRNAME = "toolchain"
 
 
 def wants_full(argv: list[str], env: Mapping[str, str] | None = None) -> str | None:
@@ -1293,19 +1300,15 @@ def impact_floor(smoke_corpus: int) -> int:
     return max(1, smoke_corpus * 2 // 3)
 
 
-def write_scope(root: pathlib.Path, record: dict) -> None:
-    """The scope of this run, for the receipt. Written to the `.ci/cache` scratch root like the junit beside it. Only a GREEN run reaches here (every failure returns first), so `head` and `python` name the last commit this suite was green at (only when the tree held no uncommitted edits), which `last_green_base` reads as the next round's impact base."""
+def write_scope(root: pathlib.Path, record: dict, *, whole: bool = True) -> None:
+    """The scope of this run, for the receipt, and on a whole-suite or impact green over a clean tree the last-green record too. Both go to the `.ci/cache` scratch root like the junit beside them. Only a GREEN run reaches here (every failure returns first). `whole=False` is a `--shard` leg: it proved its own files, not the suite at HEAD, so it names no green commit. A run over uncommitted edits proved the working tree, not HEAD, so it leaves the previous record as it is."""
     target = root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name
     target.parent.mkdir(parents=True, exist_ok=True)
     head = gitx.git(["rev-parse", "HEAD"], root=root)
-    # A run over uncommitted edits proved the working tree, not HEAD, so it names no green commit (the base stays the previous one).
     dirty = gitx.git(["status", "--porcelain", "--untracked-files=normal"], root=root)
     clean = dirty.returncode == 0 and not dirty.stdout.strip()
-    record = dict(
-        record,
-        python=sys.version,
-        head=head.stdout.strip() if head.returncode == 0 and clean else None,
-    )
+    green_head = head.stdout.strip() if head.returncode == 0 and clean and whole else None
+    record = dict(record, python=sys.version, head=green_head)
     target.write_text(json.dumps(record, indent=1) + "\n", encoding="utf-8")
     print(
         "pytest-scope: %s files=%s collected=%s map=%s"
@@ -1316,24 +1319,108 @@ def write_scope(root: pathlib.Path, record: dict) -> None:
             record.get("mapDigest") or "-",
         )
     )
+    if green_head is None:
+        print(
+            "pytest-last-green: kept (%s)"
+            % ("a --shard leg proves its leg only" if not whole else "the tree is not a clean HEAD")
+        )
+        return
+    (root / ".ci" / "cache" / "quality-pytest" / LAST_GREEN_RELPATH.name).write_text(
+        json.dumps(
+            {
+                "head": green_head,
+                "python": sys.version,
+                "mapDigest": record.get("mapDigest"),
+                "pytestScope": record["pytestScope"],
+            },
+            indent=1,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    print("pytest-last-green: %s" % green_head[:12])
+
+
+def _is_ancestor(root: pathlib.Path, head: object) -> bool:
+    return (
+        isinstance(head, str)
+        and bool(head)
+        and gitx.git(["merge-base", "--is-ancestor", head, "HEAD"], root=root).returncode == 0
+    )
+
+
+def receipt_dirs(root: pathlib.Path) -> list[pathlib.Path]:
+    """Where ci:quick receipts for `root` can be: its own `.ci/cache/receipts`, and for a kept clone the live checkout's, reached through the toolchain cache link the clone holds."""
+    cache = root / ".ci" / "cache"
+    dirs = [cache / RECEIPTS_DIRNAME]
+    link = cache / LINKED_TOOLCHAIN_DIRNAME
+    if link.is_symlink():
+        dirs.append(link.resolve().parent / RECEIPTS_DIRNAME)
+    out: list[pathlib.Path] = []
+    for d in dirs:
+        if d.is_dir() and d.resolve() not in [o.resolve() for o in out]:
+            out.append(d)
+    return out
+
+
+def green_receipt_heads(root: pathlib.Path) -> list[tuple[str, str, pathlib.Path]]:
+    """`(finishedAt, head, file)` of every receipt that judged THIS root with check:ci-pytest `ok`, over a clean tree that did not move during the run, newest first. A receipt of another root (the live checkout's own `--here` runs, a second clone) proved a different tree path and is not read; neither is a red, dirty or unstable one, nor a file that does not parse."""
+    here = root.resolve()
+    found: list[tuple[str, str, pathlib.Path]] = []
+    for d in receipt_dirs(root):
+        for f in d.glob("*.json"):
+            try:
+                doc = json.loads(f.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                continue
+            if not isinstance(doc, dict):
+                continue
+            judged = doc.get("judgedRoot")
+            gates = doc.get("gates")
+            row = gates.get("check:ci-pytest") if isinstance(gates, dict) else None
+            head = doc.get("head")
+            if (
+                not isinstance(judged, str)
+                or pathlib.Path(judged).resolve() != here
+                or not isinstance(row, dict)
+                or row.get("verdict") != "ok"
+                or doc.get("dirtyDigest") != CLEAN_DIRTY_DIGEST
+                or doc.get("stable") is not True
+                or not isinstance(head, str)
+            ):
+                continue
+            found.append((str(doc.get("finishedAt") or ""), head, f))
+    found.sort(key=lambda t: t[0], reverse=True)
+    return found
 
 
 def last_green_base(root: pathlib.Path) -> str | None:
-    """The commit of the last GREEN run (`write_scope`'s `head`), as the impact base, so a round re-judges only what changed since the suite last passed rather than the whole unpushed batch. Sound by induction: a green full run proves every test at its head, and a green impact run over base B proves every test the B..head diff reaches while the rest were proven at B. None, so the push base stands, when there is no record, the Python that ran it differs (a new interpreter is a new suite), or its head is not an ancestor of HEAD (a rebase or another branch)."""
+    """The commit the suite was last GREEN at, as the impact base, so a round re-judges only what changed since the suite last passed rather than the whole unpushed batch. Sound by induction: a green full run proves every test at its head, and a green impact run over base B proves every test the B..head diff reaches while the rest were proven at B.
+
+    The order: the last-green record (`write_scope`), which survives a red run; with no record, the newest green ci:quick receipt this root judged that HEAD descends from; then None, so the push base stands. A record whose Python differs (a new interpreter is a new suite) or whose head HEAD does not descend from (a rebase, another branch) also gives None and not a receipt, since a receipt cannot say which interpreter ran it."""
     try:
         record = json.loads(
-            (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).read_text(
+            (root / ".ci" / "cache" / "quality-pytest" / LAST_GREEN_RELPATH.name).read_text(
                 encoding="utf-8"
             )
         )
+    except FileNotFoundError:
+        record = None
     except (OSError, ValueError):
         return None
-    head = record.get("head") if isinstance(record, dict) else None
-    if not isinstance(head, str) or not head or record.get("python") != sys.version:
-        return None
-    if gitx.git(["merge-base", "--is-ancestor", head, "HEAD"], root=root).returncode != 0:
-        return None
-    return head
+    if record is not None:
+        if not isinstance(record, dict) or record.get("python") != sys.version:
+            return None
+        head = record.get("head")
+        return head if isinstance(head, str) and _is_ancestor(root, head) else None
+    for _finished, head, f in green_receipt_heads(root):
+        if _is_ancestor(root, head):
+            print(
+                "pytest-impact: no last-green record; base from the green receipt %s" % f.name,
+                file=sys.stderr,
+            )
+            return head
+    return None
 
 
 def select_impact(root: pathlib.Path, base: str | None = None):
@@ -1419,7 +1506,7 @@ def main(argv: list[str]) -> int:
 
     root = paths.repo_root()
 
-    # Once the arguments are accepted, a scope record is this run's or nothing (a usage refusal above judged no suite and leaves the previous record, which still describes that earlier run): a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone.
+    # Once the arguments are accepted, a scope record is this run's or nothing (a usage refusal above judged no suite and leaves the previous record, which still describes that earlier run): a red or killed run, a bad shard manifest, a failed control and an unavailable pytest included, must not leave the receipt reading the previous green's scope. `--selftest` records no scope and judges no suite, so it leaves the last run's record alone. The last-green record (LAST_GREEN_RELPATH) is NOT removed here: it names the last commit the suite was green at, which a red run does not change, and removing it made every run after a red one fall back to the push base.
     if "--selftest" not in argv:
         (root / ".ci" / "cache" / "quality-pytest" / SCOPE_RELPATH.name).unlink(missing_ok=True)
 
@@ -1530,6 +1617,7 @@ def main(argv: list[str]) -> int:
                 "collected": collected,
                 "mapDigest": None,
             },
+            whole=False,
         )
         print(
             "%s✓%s %d test(s) collected and passed (shard %d/%d, corpus %d, floor %d)"
@@ -1569,7 +1657,7 @@ def main(argv: list[str]) -> int:
             base = last_green_base(root)
             if base is not None:
                 print(
-                    "pytest-impact: base = the last green commit %s (scope.json), not the push base"
+                    "pytest-impact: base = the last green commit %s (last-green.json or a green receipt), not the push base"
                     % base[:12]
                 )
         selection = select_impact(root, base)
@@ -1723,4 +1811,8 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # The accepted set IS what `unknown_args` accepts (the same two tuples), so the two cannot drift. `main` keeps its own refusal, with the hint for a named test, for in-process callers; this one runs first on the command line and exits 2, the contract's code.
+    gate_args.parse("check_pytest.py", sys.argv[1:], switches=FLAGS_ALONE, valued=FLAGS_WITH_VALUE)
     sys.exit(main(sys.argv[1:]))

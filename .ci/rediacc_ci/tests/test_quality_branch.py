@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.branch` against the shell it reproduces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-branch.observations.jsonl` drives the whole gate over five distinct trees: one commit behind, three behind, eight behind, behind AND conflicting, and unrelated histories. What a ledger row cannot isolate is the three pieces that decide whether the gate is even answering the question:
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees: one commit behind, three behind, eight behind, behind AND conflicting, and unrelated histories. What a ledger row cannot isolate is the three pieces that decide whether the gate is even answering the question:
 
   * the fetch REFSPEC, which the twin spells out because a bare
     `git fetch origin <branch>` does not promise to write

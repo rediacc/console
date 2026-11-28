@@ -15,18 +15,11 @@ from rediacc_ci import paths
 if TYPE_CHECKING:
     import pathlib
 
-SCRIPT = paths.from_root(".ci", "scripts", "quality", "check_hint_corpus.py")
 LIVE_HINTS = paths.from_root("docs", "agent-reference", "HINTS.md")
 
 
 def _gate():
-    paths.on_sys_path(SCRIPT.parent)
-    spec = importlib.util.spec_from_file_location("check_hint_corpus_under_test", SCRIPT)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("rediacc_ci.quality.hint_corpus")
 
 
 def _run(gate, tmp_path: pathlib.Path, enforced: str | None, capsys) -> tuple[int, str]:

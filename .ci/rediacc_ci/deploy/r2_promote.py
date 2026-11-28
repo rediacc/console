@@ -210,6 +210,45 @@ def put_argv(source: str, key: str, endpoint: str, bucket: str = BUCKET) -> list
     ]
 
 
+def get_object_argv(key: str, target: str, endpoint: str, bucket: str = BUCKET) -> list[str]:
+    """Fetch ONE object with `s3api get-object`, whose JSON receipt on stdout carries the ETag of the bytes just written to `target` (`aws s3 cp` prints none)."""
+    return [
+        awscli.AWS,
+        "s3api",
+        "get-object",
+        "--bucket",
+        bucket,
+        "--key",
+        key,
+        target,
+        *endpoint_args(endpoint),
+    ]
+
+
+def put_if_argv(
+    source: str, key: str, etag: str | None, endpoint: str, bucket: str = BUCKET
+) -> list[str]:
+    """A conditional upload of ONE object: `--if-match <etag>` replaces only the version that was read, and `--if-none-match *` (for `etag` None) creates the key only when it does not exist. R2 answers 412 `PreconditionFailed` to a write that lost the race."""
+    # `put-object` does not guess a content type (`aws s3 cp` did), so the key's own is sent, as `copy_argv` does; a key with no guessable type gets none.
+    content_type = mimetypes.guess_type(key)[0]
+    return [
+        awscli.AWS,
+        "s3api",
+        "put-object",
+        "--bucket",
+        bucket,
+        "--key",
+        key,
+        "--body",
+        source,
+        "--cache-control",
+        CC_MUTABLE,
+        *(["--content-type", content_type] if content_type else []),
+        *(["--if-match", etag] if etag else ["--if-none-match", "*"]),
+        *endpoint_args(endpoint),
+    ]
+
+
 def delete_argv(keys: list[str], endpoint: str, bucket: str = BUCKET) -> list[str]:
     """One `aws s3api delete-objects` for up to `DELETE_BATCH` keys, `Quiet` so the reply names only the keys that failed."""
     payload = json.dumps({"Objects": [{"Key": key} for key in keys], "Quiet": True})
@@ -279,6 +318,18 @@ def _run_quiet(argv: list[str]) -> tuple[int, str]:
     return proc.returncode, proc.stderr.decode("utf-8", errors="replace")
 
 
+def _missing(stderr: str) -> bool:
+    return "(NoSuchKey)" in stderr or "(404)" in stderr or "Not Found" in stderr
+
+
+def _lost_race(stderr: str) -> bool:
+    return (
+        "(PreconditionFailed)" in stderr
+        or "(412)" in stderr
+        or "(ConditionalRequestConflict)" in stderr
+    )
+
+
 class Transfers:
     """The retried aws calls of one run, carrying the caller's name for messages and its retry delay."""
 
@@ -336,6 +387,69 @@ class Transfers:
         )
         if status:
             raise PromoteError(status)
+
+    def get_with_etag(self, key: str, target: str) -> str | None:
+        """Fetch `key` to `target` and return the ETag of exactly those bytes, or None when the key does not exist (nothing is written to `target`)."""
+        out: list[bytes] = []
+        err: list[str] = []
+
+        def run() -> tuple[int, str]:
+            proc = awscli.run(
+                get_object_argv(key, target, self.endpoint, self.bucket), capture_output=True
+            )
+            out[:] = [proc.stdout]
+            err[:] = [proc.stderr.decode("utf-8", errors="replace")]
+            if proc.returncode and not _missing(err[0]):
+                sys.stderr.buffer.write(proc.stderr)
+                sys.stderr.flush()
+            return proc.returncode, err[0]
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+        what = "fetch of %s/%s" % (self.bucket, key)
+        status = transfer_retry.retried(
+            run, what, self.self_name, self.delay_s, only_transient=True
+        )
+        if status and _missing(err[0]):
+            return None
+        if status:
+            raise PromoteError(status)
+        try:
+            return str(json.loads(out[0].decode("utf-8"))["ETag"])
+        except (ValueError, KeyError, TypeError) as exc:
+            print("%s: %s returned no ETag" % (self.self_name, what), file=sys.stderr)
+            raise PromoteError(1) from exc
+
+    def put_if_match(self, source: str, key: str, etag: str | None) -> bool:
+        """Upload `source` to `key` only if the object is still the version `etag` names (None: only if it does not exist). Returns False when another writer got there first (412), so the caller re-reads and re-merges."""
+        err: list[str] = []
+
+        def run() -> tuple[int, str]:
+            proc = awscli.run(
+                put_if_argv(source, key, etag, self.endpoint, self.bucket),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            err[:] = [proc.stderr.decode("utf-8", errors="replace")]
+            if proc.returncode and not _lost_race(err[0]):
+                sys.stderr.buffer.write(proc.stderr)
+                sys.stderr.flush()
+            return proc.returncode, err[0]
+
+        sys.stdout.flush()
+        sys.stderr.flush()
+        status = transfer_retry.retried(
+            run,
+            "conditional put of %s/%s" % (self.bucket, key),
+            self.self_name,
+            self.delay_s,
+            only_transient=True,
+        )
+        if status and _lost_race(err[0]):
+            return False
+        if status:
+            raise PromoteError(status)
+        return True
 
     def put(self, source: str, key: str) -> None:
         status = self._retried(

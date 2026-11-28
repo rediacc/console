@@ -1,6 +1,6 @@
 """A script that INSTALLS a Go tool must be able to FIND it.
 
-Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which W7 P5 batch B6 retired once `.ci/shadow/w7p2-gotoolpath.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-go-tool-path.sh`, which W7 P5 batch B6 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -51,7 +51,7 @@ numbers look like file line numbers and are not -- and it is REPORTED rather tha
 
 THE COLOUR IS UNCONDITIONAL IN THE TWIN, unlike every sibling gate. `pass` and `fail` here `printf` raw `\033[0;31m` and `\033[0;32m` with no `[ -t 1 ]` test, no `NO_COLOR` test and no `CI` test, so this gate writes escape sequences into every CI log and every pipe. check-git-op-conditionals.sh and check-host-toolchain-coverage.sh, written by the same hand, both gate their
 colour on `[ -t 1 ] && [ -z "${NO_COLOR:-}" ]`. Carried unchanged and reported;
-`scripts/lib/shadow-gate.ts` strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
+the shadow gate (commit:bf054adcd4) strips ANSI before comparing, so this costs the differential nothing and costs a human reading a log a little.
 
 FINDINGS GO TO STDOUT IN THE TWIN. `fail()` has no `>&2`, so every finding, the floor refusal and the final `N finding(s).` line all land on stdout. That is the opposite of `rediacc_ci.log`'s rule (messages on stderr, stdout is data), so the port uses `print()` for exactly these lines and says so at each call site rather than silently moving a stream. A stream swap is precisely the
 2026-09-06 emit-advisory incident, and moving one during a port is how it would happen again.
@@ -61,6 +61,21 @@ its presence in the class otherwise looks like a bug when read next to `re.MULTI
 
 WHAT THIS GATE STILL CANNOT SEE, unchanged by the port and worth knowing before anyone trusts a green: the analysis is per-FILE, so a GOBIN mention anywhere in a file clears every bare invocation in it, including ones on a code path the GOBIN line never runs on. That is the twin's deliberate trade -- the install and the invocation are usually several lines apart, and a PATH fix
 anywhere above the call site is what actually makes it work -- and widening it would flag correct code, which is how a gate gets suppressed.
+
+---- gate ----
+step: Go tool PATH
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+why: Console's own scripts already use the right shape -- toolchain.sh installs
+     with GOBIN and invokes by absolute path, which is why check:ci-shell-format
+     passes on a host with no shfmt on PATH. This gate exists so that stays
+     true: the defect it names cost four instances in the renet submodule on
+     2026-08-27, each one a `go install` followed by a bare invocation, and CI
+     could not see any of them because actions/setup-go masks it.
+---- end gate ----
 """
 
 import os
@@ -140,7 +155,7 @@ def bare_invocations(body: str) -> list[str]:
 def scan_file(path: pathlib.Path, label: str) -> list[str]:
     """The twin's `scan_file`, as the lines it would print. Empty means clean.
 
-    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The first line is the finding header; the rest are its continuation, which is what `scripts/lib/shadow-gate.ts` folds into the same finding.
+    Returned rather than printed so `main` owns every stream decision in one place and a test can assert on the decision without capturing anything. The first line is the finding header; the rest are its continuation, which is what the shadow gate (commit:bf054adcd4) folds into the same finding.
 
     An unreadable file is NOT a finding. The twin's `cat "$f" 2>/dev/null ||
     return 0` swallows it, and a port that turned it into an error would report
@@ -438,4 +453,7 @@ def _run(root: pathlib.Path) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_go_tool_path.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

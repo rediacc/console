@@ -1,6 +1,6 @@
-r"""check:ci-python-env-registry -- the pinned SET of every `module:NAME` pair where a tracked Python module reads an environment variable, held shrink-only.
+r"""The `python_reads` section of the one environment registry, held by check:ci-env-registry -- the pinned SET of every `module:NAME` pair where a tracked Python module reads an environment variable, held shrink-only.
 
-THE GENERAL CASE OF `check:ci-worklist-env-registry`. That gate, landed the same day, asks one question about one PREFIX: is every `WORKLIST_*` name registered, and is every registered name read. This one asks the whole-tree question with no prefix at all, and keys on the PAIR rather than the name, because "who reads it" is the half a name-keyed registry throws away. The two are
+THE GENERAL CASE OF THE `worklist` SECTION (`worklist_env_registry.py`). That check, landed the same day, asks one question about one PREFIX: is every `WORKLIST_*` name registered, and is every registered name read. This one asks the whole-tree question with no prefix at all, and keys on the PAIR rather than the name, because "who reads it" is the half a name-keyed registry throws away. The two are
 complements and the narrow one is NOT subsumed: it additionally pins the DEFAULT SPELLING each name is read with and an authored KIND per name, neither of which this file has any opinion about. See the section "WHAT THIS DOES NOT CLAIM" below.
 
 WHY A REGISTRY AT ALL. An environment read is an undeclared input. Nothing in this tree could answer "which Python modules depend on the environment, and on what" without a fresh grep, and a grep answers wrongly in both directions: it misses the 87 pairs read through a module-level constant (`os.environ.get( paths.ROOT_ENV)`), and it counts names that appear only inside string
@@ -25,7 +25,7 @@ Those are the same two set differences, and stating them as four cases is the po
 
 HOW A GENUINELY NEW READ IS REGISTERED, and why `--write-baseline` alone cannot do it. A blanket reseed is refused whenever it would ADD a pair, exactly as `.ci/scripts/quality/check_language_policy.py` refuses one: a drain that removes 30 and adds 1 has still added 1, and comparing totals is not the same claim as comparing sets. To add, the pair must be TYPED:
 
-    check_python_env_registry.py --write-baseline --allow-new <module>:<NAME>
+    python3 -m rediacc_ci.quality.python_env_registry --write-baseline --allow-new <module>:<NAME>
 
 and `--allow-new` is itself checked -- a pair that is not actually an addition is refused, so the flag cannot be used to pre-bank a read that does not exist.
 
@@ -63,8 +63,8 @@ WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
 
   * it does not know what a variable MEANS, whether it is a secret, or who sets
     it. That is W8 P2's manifest, keyed on the NAME across all languages.
-  * it does not check DEFAULTS. `check:ci-worklist-env-registry` does, for its
-    prefix, and that check is the reason it must not be folded into this one.
+  * it does not check DEFAULTS. The `worklist` section does, for its prefix,
+    and that check is the reason it is a separate section rather than this one.
   * it does not scan bash, TypeScript or Go. The name says Python.
   * a read behind `getattr(os, "environ")`, an `os.environ` or its copy handed
     WHOLE to another function that reads it there, or a name built by
@@ -73,7 +73,7 @@ WHAT THIS DOES NOT CLAIM, so nobody reads more into a green than is there:
     each name by its literal where the alias is bound; the third lands as an
     opaque entry.
 
-THE GATE HEADER LIVES IN THE ENTRY POINT, not here, for the reason `check_worklist_env_registry.py` records: `gate-bind` reads the file the registry INVOKES BY PATH, and a header on the module derives this module's own path, which the package.json binding then disagrees with.
+THE SECTION LIVES IN `.ci/config/env-manifest.json` (`env_doc.py`), beside the shard classification and the WORKLIST_* registry, and this module is no gate of its own: check:ci-env-registry (`env_registry.py`) runs `check()` and these controls, and this module's own entry is the writer, `PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_env_registry --write-baseline [--allow-new <module>:<NAME>]`. The shrink-only rules below are unchanged by the move.
 
 Exit 1 on any finding or refusal, 2 on a failed control.
 """
@@ -90,11 +90,14 @@ import sys
 import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.controls import Checker, controls_first, git_isolated, plant
+from rediacc_ci.controls import Checker, git_isolated, plant
+from rediacc_ci.quality import env_ast, env_doc
 
-# The baseline, relative to the repository root. NOT reached through `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this file is deliberately not policy (see the docstring).
-BASELINE_REL = ".ci/config/python-env-registry.json"
+# The baseline is the `python_reads` section of the one environment registry. NOT reached through `policy_paths.policy_path()`: that seam resolves `.ci/policy/` only, and this file is deliberately not policy (see the docstring).
+BASELINE_REL = env_doc.DOC_REL
+SECTION = env_doc.PYTHON_READS
 KEY = "modules"
+WRITER = "PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_env_registry --write-baseline"
 
 # The call shapes that READ the environment.
 #
@@ -107,12 +110,10 @@ OPAQUE_PREFIX = "*"
 NOTE = (
     "SHRINK-ONLY, AND GENERATED -- do not hand-edit except to re-key a moved module. "
     "Every `<module>: [NAME, ...]` here is one environment variable a tracked Python "
-    "module reads, derived from the AST by "
-    ".ci/scripts/quality/check_python_env_registry.py. A `*` prefix means the name is "
-    "not a literal at the call site and the EXPRESSION is recorded instead. The gate "
-    "asserts SET EQUALITY with the tree in both directions: a read missing from here "
-    "reds, and so does an entry here that nothing reads -- so this file can neither be "
-    "trimmed to escape a finding nor pre-loaded with one. Drain it with "
+    "module reads, derived from the AST by python_env_registry.py. A `*` prefix means the "
+    "name is not a literal at the call site and the EXPRESSION is recorded instead. The "
+    "gate asserts SET EQUALITY with the tree in both directions: a read missing from here "
+    "reds, and so does an entry nothing reads. Drain it with "
     "`--write-baseline`, which refuses any reseed that would ADD a pair even when the "
     "total shrinks. A genuinely new read must be typed: "
     "`--write-baseline --allow-new <module>:<NAME>`."
@@ -167,7 +168,7 @@ def module_index(rels) -> dict[str, str]:
 def import_aliases(tree: ast.Module) -> dict[str, str]:
     """Local name -> dotted module it refers to, for `X.CONST` resolution."""
     out: dict[str, str] = {}
-    for node in ast.walk(tree):
+    for node in env_ast.imports(tree):
         if isinstance(node, ast.ImportFrom) and node.module:
             for alias in node.names:
                 out[alias.asname or alias.name] = "%s.%s" % (node.module, alias.name)
@@ -192,7 +193,7 @@ def env_key_nodes(tree: ast.Module):
     argument that keeps `pop` and `setdefault` out of GET_FUNCS, and the two exclusions have to agree or the registry says a variable is an input depending on which spelling the harness happens to use.
     """
     not_a_read = set()
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Assign):
             not_a_read.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
         elif isinstance(node, (ast.AugAssign, ast.AnnAssign)) and isinstance(
@@ -201,7 +202,7 @@ def env_key_nodes(tree: ast.Module):
             not_a_read.add(id(node.target))
         elif isinstance(node, ast.Delete):
             not_a_read.update(id(t) for t in node.targets if isinstance(t, ast.Subscript))
-    for node in ast.walk(tree):
+    for node in env_ast.nodes(tree):
         if isinstance(node, ast.Call):
             func = node.func
             attr = getattr(func, "attr", None) or getattr(func, "id", None)
@@ -232,8 +233,13 @@ def env_key_nodes(tree: ast.Module):
 def scan_module(rel: str, tree: ast.Module, consts_by_rel, index) -> set[str]:
     """The NAME set one module contributes. Opaque names carry a `*` prefix."""
     consts = consts_by_rel.get(rel, {})
-    aliases = import_aliases(tree)
+    alias_table: list[dict[str, str]] = []
     here = str(pathlib.PurePosixPath(rel).parent)
+
+    def aliases_of() -> dict[str, str]:
+        if not alias_table:
+            alias_table.append(import_aliases(tree))
+        return alias_table[0]
 
     def resolve(node: ast.expr) -> str | None:
         if isinstance(node, ast.Constant) and isinstance(node.value, str):
@@ -241,7 +247,7 @@ def scan_module(rel: str, tree: ast.Module, consts_by_rel, index) -> set[str]:
         if isinstance(node, ast.Name):
             return consts.get(node.id)
         if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-            target = index.get(aliases.get(node.value.id, ""))
+            target = index.get(aliases_of().get(node.value.id, ""))
             if target is not None:
                 return consts_by_rel.get(target, {}).get(node.attr)
             sibling = "%s/%s.py" % (here, node.value.id)
@@ -299,6 +305,7 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
                 "--allow-new argument would be ambiguous, so there is no verdict." % rel
             )
     trees: dict[str, ast.Module] = {}
+    may_read: set[str] = set()
     for rel in rels:
         try:
             source = (root / rel).read_text(encoding="utf-8", errors="surrogateescape")
@@ -307,8 +314,10 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
                 "%s is tracked but cannot be read (%s), so it cannot be scanned and "
                 "this gate will not report a clean tree around it" % (rel, exc)
             ) from exc
+        if env_ast.may_read_env(source):
+            may_read.add(rel)
         try:
-            trees[rel] = ast.parse(source, filename=rel)
+            trees[rel] = env_ast.parse(source, rel)
         except SyntaxError as exc:
             raise RefusalError(
                 "%s does not parse (%s), so its environment reads are invisible and "
@@ -318,6 +327,8 @@ def derive(root) -> tuple[dict[str, list[str]], int]:
     index = module_index(trees)
     derived: dict[str, list[str]] = {}
     for rel, tree in trees.items():
+        if rel not in may_read:
+            continue
         names = scan_module(rel, tree, consts_by_rel, index)
         if names:
             derived[rel] = sorted(names)
@@ -344,16 +355,17 @@ def evaluate(baseline: dict[str, list[str]], derived: dict[str, list[str]]):
     findings.extend(
         "NEW %s -- this module reads that environment variable and the registry does "
         "not have it. An environment read is an undeclared input. If the read is "
-        "correct, register it with `--write-baseline --allow-new %s`. If you got here "
-        "by DELETING that line from %s, put it back: trimming the baseline is not a "
-        "way past this gate, and this finding is what proves it." % (pair, pair, BASELINE_REL)
+        "correct, register it with `npm run env:register -- <module> <NAME> --class <shard>` "
+        "(or `%s --allow-new %s`). If you got here by DELETING that line from %s `%s`, put it "
+        "back: trimming the baseline is not a way past this gate, and this finding is what "
+        "proves it." % (pair, WRITER, pair, BASELINE_REL, SECTION)
         for pair in sorted(want - have)
     )
     findings.extend(
         "STALE %s -- the registry has that pair and nothing in the tree reads it. "
         "Either the read was removed and the registry was not drained (run "
-        "`--write-baseline`; do NOT hand-edit), or the entry was added for a read that "
-        "does not exist, which is the other thing this gate refuses." % pair
+        "`%s`; do NOT hand-edit), or the entry was added for a read that "
+        "does not exist, which is the other thing this gate refuses." % (pair, WRITER)
         for pair in sorted(have - want)
     )
     opaque = {p for p in want if ":" + OPAQUE_PREFIX in p}
@@ -369,7 +381,7 @@ def evaluate(baseline: dict[str, list[str]], derived: dict[str, list[str]]):
 
 
 def read_baseline(path: pathlib.Path):
-    """The registry, or None when the file is absent. Raises on corruption.
+    """The registry, or None when the document or its section is absent. Raises on corruption.
 
     A corrupt baseline is NOT an empty one. Returning `{}` for unreadable JSON
     would report the whole tree as NEW, which is noise, and would also let a single stray byte convert every real finding into the same undifferentiated wall.
@@ -377,38 +389,42 @@ def read_baseline(path: pathlib.Path):
     if not path.is_file():
         return None
     try:
-        obj = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
+        doc = env_doc.read(path)
+    except env_doc.DocError as exc:
         raise RefusalError(
             "%s exists but cannot be read (%s). A corrupt baseline is not an empty "
             "one: every read in the tree would report as NEW. Repair the JSON; do not "
-            "delete the file." % (BASELINE_REL, exc)
+            "delete the file." % (env_doc.shown(path), exc)
         ) from exc
-    modules = obj.get(KEY)
+    if SECTION not in doc:
+        return None
+    modules = doc[SECTION].get(KEY) if isinstance(doc[SECTION], dict) else None
     if not isinstance(modules, dict):
         raise RefusalError(
-            "%s has no object under %r. That key IS the registry; without it there is "
-            "nothing to compare the tree against." % (BASELINE_REL, KEY)
+            "%s `%s` has no object under %r. That key IS the registry; without it there is "
+            "nothing to compare the tree against." % (env_doc.shown(path), SECTION, KEY)
         )
     for rel, names in modules.items():
         if not isinstance(names, list) or not all(isinstance(n, str) for n in names):
             raise RefusalError(
-                "%s: the entry for %r is not a list of strings" % (BASELINE_REL, rel)
+                "%s `%s`: the entry for %r is not a list of strings"
+                % (env_doc.shown(path), SECTION, rel)
             )
     return {rel: list(names) for rel, names in modules.items()}
 
 
 def run(root=None):
     """(findings, stats) for the real tree. Refuses rather than guessing."""
-    root = pathlib.Path(root or paths.repo_root())
-    baseline = read_baseline(root / BASELINE_REL)
+    path = env_doc.doc_path(root)
+    baseline = read_baseline(path)
     if baseline is None:
         raise RefusalError(
-            "%s does not exist. With no registry there is nothing to compare against, "
-            "and deleting the file is otherwise the cheapest way to make every finding "
-            "disappear at once. Seed it with `--write-baseline --first-seed`." % BASELINE_REL
+            "%s has no `%s` section. With no registry there is nothing to compare against, "
+            "and deleting it is otherwise the cheapest way to make every finding "
+            "disappear at once. Seed it with `%s --first-seed`."
+            % (env_doc.shown(path), SECTION, WRITER)
         )
-    derived, scanned = derive(root)
+    derived, scanned = derive(pathlib.Path(root or paths.repo_root()))
     if not derived and baseline:
         raise RefusalError(
             "ZERO environment reads derived from %d scanned Python file(s), while the "
@@ -455,7 +471,7 @@ def write_verdict(*, exists: bool, first_seed: bool, additions, allowed):
 def _explain(code: str, payload, current: int) -> str:
     if code == "missing-baseline":
         return (
-            "Refusing to write the baseline: %s does not exist.\n"
+            "Refusing to write the baseline: %s has no `python_reads` section.\n"
             "  With no previous baseline there is nothing to compare against, so all %d\n"
             "  pair(s) would be absorbed and any read added in the meantime would be\n"
             "  enshrined in the same stroke. If this really is a first seed, say so:\n"
@@ -486,10 +502,9 @@ def _explain(code: str, payload, current: int) -> str:
 
 
 def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
-    root = pathlib.Path(root or paths.repo_root())
-    path = root / BASELINE_REL
+    path = env_doc.doc_path(root)
     previous = read_baseline(path)
-    derived, scanned = derive(root)
+    derived, scanned = derive(pathlib.Path(root or paths.repo_root()))
     want, have = pairs_of(derived), pairs_of(previous or {})
     additions = [] if previous is None else sorted(baseline_additions(have, want))
     code, payload = write_verdict(
@@ -502,7 +517,7 @@ def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
         log.error(_explain(code, payload, len(want)))
         return 1
     body = {"note": NOTE, KEY: {rel: derived[rel] for rel in sorted(derived)}}
-    text = json.dumps(body, indent=2) + "\n"
+    text = env_doc.dump(body)
     # THE COMPOSITION ASSERTION, in the code rather than in anyone's memory: a shrink-only baseline guarantees the total cannot grow and guarantees NOTHING about composition. The bytes are re-parsed and the sets diffed BEFORE anything is written, because the first draft wrote the file and THEN refused -- which left a refused reseed on disk and made the very next `--first-seed`
     # report "446 before" against an empty predecessor.
     landed = pairs_of(json.loads(text)[KEY])
@@ -517,8 +532,14 @@ def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
             % (len(surprise), ", ".join(surprise))
         )
         return 1
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    # The other sections of the one document are carried through untouched; only this one is replaced.
+    try:
+        doc = env_doc.read(path) if path.is_file() else {}
+    except env_doc.DocError as exc:
+        log.error("cannot write the `%s` section: %s" % (SECTION, exc))
+        return 1
+    doc[SECTION] = body
+    env_doc.write(path, doc)
     if previous is None:
         log.success(
             "registry SEEDED: %d pair(s) across %d module(s) from %d scanned file(s). "
@@ -545,40 +566,24 @@ def write_baseline(root=None, *, first_seed: bool = False, allowed=()) -> int:
 # --------------------------------------------------------------------------- entry ---------------------------------------------------------------------------
 
 
-def main(argv=None) -> int:
-    argv = list(argv or [])
-    if "--selftest" in argv:
-        return 1 if selftest() else 0
-    if "--write-baseline" in argv:
-        allowed = []
-        for i, arg in enumerate(argv):
-            if arg != "--allow-new":
-                continue
-            # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with nothing after it, or with the next token being another flag, is a typed permission that names nothing; silently dropping it would turn an intended registration into a blanket reseed the very next refusal then blames on the author.
-            if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
-                log.error("--allow-new needs a <module>:<NAME> argument after it")
-                return 1
-            allowed.append(argv[i + 1])
-        return write_baseline(first_seed="--first-seed" in argv, allowed=allowed)
-    rc = controls_first("python env registry", selftest)
-    if rc:
-        return rc
+def check() -> int:
+    """The verdict on the real tree, printed. 0 green, 1 on a finding or refusal. Controls are the caller's (`env_registry.py`)."""
     try:
         findings, stats = run()
     except RefusalError as exc:
-        log.error("python env registry: %s" % exc)
+        log.error("python_reads: %s" % exc)
         return 1
     if findings:
         for finding in findings:
             log.error("  %s" % finding)
         log.error(
-            "%d finding(s) against %s: %d new, %d stale."
-            % (len(findings), BASELINE_REL, stats["new"], stats["stale"])
+            "%d finding(s) against %s `%s`: %d new, %d stale."
+            % (len(findings), BASELINE_REL, SECTION, stats["new"], stats["stale"])
         )
         return 1
     log.success(
-        "python env registry: %d pair(s) across %d module(s) -- %d distinct name(s) plus "
-        "%d opaque read(s) -- match %s exactly, in both directions; %d tracked .py "
+        "python_reads: %d pair(s) across %d module(s) -- %d distinct name(s) plus "
+        "%d opaque read(s) -- match %s `%s` exactly, in both directions; %d tracked .py "
         "file(s) scanned"
         % (
             stats["pairs"],
@@ -586,10 +591,34 @@ def main(argv=None) -> int:
             stats["names"],
             stats["opaque"],
             BASELINE_REL,
+            SECTION,
             stats["scanned"],
         )
     )
     return 0
+
+
+def main(argv=None) -> int:
+    """The writer: `--write-baseline [--first-seed] [--allow-new <module>:<NAME>]...`, or `--selftest`. The check itself runs as check:ci-env-registry."""
+    argv = list(argv or [])
+    if "--selftest" in argv:
+        return 1 if selftest() else 0
+    if "--write-baseline" not in argv:
+        log.error(
+            "python_env_registry is the `python_reads` writer, not a gate: pass --write-baseline "
+            "(the check runs as `PYTHONPATH=.ci python3 -m rediacc_ci.quality.env_registry`)"
+        )
+        return 2
+    allowed = []
+    for i, arg in enumerate(argv):
+        if arg != "--allow-new":
+            continue
+        # A DANGLING FLAG IS AN ERROR, NOT AN EMPTY LIST. `--allow-new` with nothing after it, or with the next token being another flag, is a typed permission that names nothing; silently dropping it would turn an intended registration into a blanket reseed the very next refusal then blames on the author.
+        if i + 1 >= len(argv) or argv[i + 1].startswith("--"):
+            log.error("--allow-new needs a <module>:<NAME> argument after it")
+            return 1
+        allowed.append(argv[i + 1])
+    return write_baseline(first_seed="--first-seed" in argv, allowed=allowed)
 
 
 # --------------------------------------------------------------------------- controls ---------------------------------------------------------------------------
@@ -645,7 +674,7 @@ def _fixture(tmp, src=_SRC, consts=_CONSTS, modules=_CLEAN_MODULES):
     if modules is not None:
         path = root / BASELINE_REL
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({"note": NOTE, KEY: modules}, indent=2), encoding="utf-8")
+        path.write_text(env_doc.dump({SECTION: {"note": NOTE, KEY: modules}}), encoding="utf-8")
     for args in (["init", "-q"], ["add", "-A", "-f"]):
         subprocess.run(["git", "-C", str(root), *args], check=False, capture_output=True)
     return root
@@ -907,8 +936,13 @@ def selftest() -> bool:
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp)
-        (root / BASELINE_REL).write_text('{"note": "x"}', encoding="utf-8")
-        check("VACUITY: a registry with no `modules` key is a REFUSAL", _refuses(root))
+        (root / BASELINE_REL).write_text('{"python_reads": {"note": "x"}}', encoding="utf-8")
+        check("VACUITY: a section with no `modules` key is a REFUSAL", _refuses(root))
+
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp)
+        (root / BASELINE_REL).write_text('{"shards": {}}', encoding="utf-8")
+        check("VACUITY: a document with no `python_reads` section is a REFUSAL", _refuses(root))
 
     with tempfile.TemporaryDirectory() as tmp:
         root = _fixture(tmp, src="def broken(:\n")
@@ -917,7 +951,9 @@ def selftest() -> bool:
     with tempfile.TemporaryDirectory() as tmp:
         root = pathlib.Path(tmp)
         (root / BASELINE_REL).parent.mkdir(parents=True)
-        (root / BASELINE_REL).write_text(json.dumps({KEY: _CLEAN_MODULES}), encoding="utf-8")
+        (root / BASELINE_REL).write_text(
+            json.dumps({SECTION: {KEY: _CLEAN_MODULES}}), encoding="utf-8"
+        )
         subprocess.run(["git", "-C", str(root), "init", "-q"], check=False, capture_output=True)
         check("VACUITY: a corpus of ZERO tracked .py files is a REFUSAL", _refuses(root))
 
@@ -954,4 +990,12 @@ def selftest() -> bool:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "python_env_registry",
+        sys.argv[1:],
+        switches=("--selftest", "--write-baseline", "--first-seed"),
+        valued=("--allow-new",),
+    )
     raise SystemExit(main(sys.argv[1:]))

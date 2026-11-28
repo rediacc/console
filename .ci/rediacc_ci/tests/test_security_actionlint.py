@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/actionlint.sh` and the port over one scratch repository apiece and compared the exit code, both streams and the recorded argv of every tool call.
 
-The ledger `.ci/shadow/w7p6-actionlint.observations.jsonl` recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
+The ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
 
 Every FIXTURE case now compares against `goldens/actionlint/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
@@ -53,6 +53,14 @@ SLUG = "actionlint"
 
 TWIN_REL = ".ci/scripts/security/actionlint.sh"
 PORT_REL = ".ci/rediacc_ci/security/actionlint.py"
+#: The host tools a tool-missing case keeps when the directory that holds them also holds an actionlint (`curl` is the case's own fake, never linked).
+HOST_TOOLS = [
+    *("python3", "bash", "sh", "env", "tar", "gzip", "gunzip", "uname", "mkdir", "cat", "chmod"),
+    *("rm", "mv", "cp", "dirname", "basename", "sed", "grep", "awk", "tr", "head", "tail"),
+    *("sha256sum", "shasum", "mktemp", "date", "ls", "ln", "id", "readlink", "sort", "wc"),
+    *("cut", "touch", "printf", "sleep", "tee", "find", "xargs", "realpath", "uniq", "install"),
+    "git",
+]
 TWIN = ROOT / TWIN_REL
 PORT = ROOT / PORT_REL
 
@@ -69,6 +77,9 @@ COPIED = (
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/log.py",
     ".ci/rediacc_ci/security/__init__.py",
@@ -288,7 +299,18 @@ def drive(
         hidden = fx / "fake" / "nobin"
         hidden.mkdir(parents=True, exist_ok=True)
         write(hidden / "curl", FAKE_CURL, mode=0o755)
-        env["PATH"] = "%s%s%s" % (hidden, os.pathsep, differential.BASE_ENV["PATH"])
+        # Minus every host directory holding an actionlint too: a host install (~/.local/bin, measured 2026-11-25) left on PATH is reached before curl and the case never sees the acquisition path.
+        host_dirs = [d for d in differential.BASE_ENV["PATH"].split(os.pathsep) if d]
+        host = [d for d in host_dirs if not (pathlib.Path(d) / "actionlint").exists()]
+        # Review 0c9a169c.1: a dropped directory (/usr/bin with an actionlint in it) also held python3, bash and tar, so the case lost them and passed or failed for a reason other than the acquisition path. Each tool the subject needs is linked into the scratch directory from the dropped directories, actionlint and the fake curl excluded.
+        for d in host_dirs:
+            if d in host:
+                continue
+            for tool in HOST_TOOLS:
+                src, link = pathlib.Path(d) / tool, hidden / tool
+                if src.exists() and not link.exists() and not link.is_symlink():
+                    link.symlink_to(src)
+        env["PATH"] = os.pathsep.join([str(hidden), *host])
     if subject_rel.endswith(".sh"):
         command = "bash %s" % (fx / subject_rel)
     else:
@@ -731,3 +753,32 @@ def test_a_planted_loss_of_the_template_pass_is_caught(tmp_path: pathlib.Path) -
 
     compare(tmp_path / "good", name)
     assert PORT.read_text(encoding="utf-8") == original
+
+
+def test_a_host_dir_holding_actionlint_keeps_its_other_tools_on_the_tool_missing_path(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 0c9a169c.1: the PATH of a tool-missing case loses the host's actionlint and nothing else. A planted host directory holding an actionlint, a python3 and a tar stands for /usr/bin on a host with actionlint installed."""
+    host = tmp_path / "host"
+    host.mkdir()
+    for name in ("actionlint", "python3", "tar"):
+        write(host / name, "#!/bin/sh\n", mode=0o755)
+    monkeypatch.setitem(differential.BASE_ENV, "PATH", "%s%s/usr/bin" % (host, os.pathsep))
+    seen: dict[str, str] = {}
+    real_run = subprocess.run
+
+    def spy(argv, **kw):
+        seen["PATH"] = kw["env"]["PATH"]
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(subprocess, "run", spy)
+    name = "a-failed-download"
+    drive(build(tmp_path / "case", name), name)
+    scratch = [pathlib.Path(p) for p in seen["PATH"].split(os.pathsep)]
+    hidden = scratch[0]
+    assert host not in scratch, "the host directory with an actionlint stayed on PATH"
+    assert not (hidden / "actionlint").exists(), "the host's actionlint was linked in"
+    assert (hidden / "python3").is_symlink()
+    assert (hidden / "tar").is_symlink()
+    assert (hidden / "curl").is_file()
+    assert not (hidden / "curl").is_symlink()

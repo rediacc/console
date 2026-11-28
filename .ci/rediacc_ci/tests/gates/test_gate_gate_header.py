@@ -1,6 +1,6 @@
 """Port of `.ci/scripts/test/gates/test-gate-header.sh`, retired in W7 P5.
 
-The per-gate DECLARATION parser in `scripts/lib/gate-header.ts`, proved in both directions.
+The per-gate DECLARATION parser in `scripts/ci-runner/gate-spec.ts`, proved in both directions.
 
 WHY IT NEEDS ITS OWN GATE. That module is the single source the gate binder derives every registration from -- id, run command, lane, needs. A parser that silently returns `null` makes the binder emit NOTHING for that gate, which reads exactly like "this gate has no declaration yet" and is the vacuity shape this repo keeps paying
 for. So the NEGATIVES matter as much as the positives: no block, an UNTERMINATED
@@ -11,7 +11,7 @@ The two inference cases are the ones that cost CI time. `--recurse-submodules` i
 THE PROBE IS THE TWIN'S, CHARACTER FOR CHARACTER, and it is embedded here rather than lifted out of the twin at runtime. Reading it from `test-gate-header.sh` would make this module stop working the day W7 P5 deletes that file, which is the one event the whole port exists to survive. The duplication is therefore deliberate and temporary, and it is why the checks below are on the
 probe's OWN output rather than on a re-implementation of the parser: the port drives the same TypeScript against the same module and replays each verdict line as a control.
 
-WHY `tsx -` READING STDIN RATHER THAN A TEMP FILE. The probe imports `./scripts/lib/gate-header.js`, a path relative to the CWD. Written to a temp file and run from there, that import resolves against the temp directory and the run dies before a single control executes -- the same failure mode the layout-overflow twin records from its own first draft. Fed on stdin with `cwd` at the
+WHY `tsx -` READING STDIN RATHER THAN A TEMP FILE. The probe imports `./scripts/ci-runner/gate-spec.js`, a path relative to the CWD. Written to a temp file and run from there, that import resolves against the temp directory and the run dies before a single control executes -- the same failure mode the layout-overflow twin records from its own first draft. Fed on stdin with `cwd` at the
 repo root, the relative import resolves exactly as it does for every other consumer.
 
 THREE REFUSALS ARE KEPT, and each is a different way this could go quiet:
@@ -29,7 +29,7 @@ NO `xdist_group`. Both cases are one short-lived `npx tsx` subprocess reading tw
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-MOD = paths.from_root("scripts", "lib", "gate-header.ts")
+MOD = paths.from_root("scripts", "ci-runner", "gate-spec.ts")
 
 # The floor the twin spells `((ASSERTED < 13))`. Not a count of what the probe has today -- that is read back from the run -- only a refusal of a probe that has lost most of its cases.
 MIN_VERDICTS = 13
@@ -41,7 +41,7 @@ PROBE_TS = r"""import {
   headerError,
   inferredNeeds,
   parseGateHeader,
-} from './scripts/lib/gate-header.js';
+} from './scripts/ci-runner/gate-spec.js';
 
 let bad = 0;
 const ck = (label: string, ok: boolean, detail?: unknown): void => {
@@ -96,7 +96,7 @@ ck(
   derivedId('.ci/scripts/quality/check_docker_npm_pins.py')
 );
 ck(
-  'run is the BARE PATH for py -- a python3 prefix breaks check:ci-parity',
+  'run is the BARE PATH for py -- a python3 prefix breaks the parity leg of check:ci-gen-gates',
   derivedRun('.ci/scripts/quality/check_x.py') === '.ci/scripts/quality/check_x.py'
 );
 ck(
@@ -190,7 +190,7 @@ def run_probe(gate) -> harness.RunResult:
     """The probe on stdin, from the repo root. Streams MERGED, as the twin captures them."""
     if not MOD.is_file():
         gate.log_fail(
-            "gate-header.ts is missing at %s; the binder's source of truth is gone"
+            "gate-spec.ts is missing at %s; the binder's source of truth is gone"
             % paths.relative_to_root(MOD)
         )
     npx = harness.require_tool(
@@ -220,7 +220,7 @@ def total_line(text: str) -> str | None:
 def test_the_subject_is_present(gate):
     gate.log_test("the binder's source of truth must exist before anything is asserted about it")
     gate.assert_eq(
-        MOD.is_file(), True, "scripts/lib/gate-header.ts is the module every case below drives"
+        MOD.is_file(), True, "scripts/ci-runner/gate-spec.ts is the module every case below drives"
     )
     gate.log_pass("the parser module is on disk at %s" % paths.relative_to_root(MOD))
 

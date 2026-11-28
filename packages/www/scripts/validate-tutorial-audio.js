@@ -42,7 +42,7 @@ const ROOT = path.resolve(__dirname, '..');
 const TRANSCRIPT_DIR = path.join(ROOT, 'src', 'data', 'tutorial-transcripts');
 const TIMELINE_DIR = path.join(ROOT, 'src', 'data', 'tutorial-timeline');
 const AUDIO_DIR = path.join(ROOT, 'public', 'assets', 'tutorials', 'audio');
-// All 13 site locales. This gate runs in CI *after* `sync-media-from-r2.sh --audio-only` (ci-quality.yml), so it validates PUBLISHED audio — which is why it stayed at ten while ar/et/tr were narrated locally but unpublished. All three are published now, so the list is the full set, sourced from packages/locales rather than hand-maintained. `--lang <code>` still validates any
+// All 13 site locales. This gate runs in CI *after* `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only` (ci-quality.yml), so it validates PUBLISHED audio — which is why it stayed at ten while ar/et/tr were narrated locally but unpublished. All three are published now, so the list is the full set, sourced from packages/locales rather than hand-maintained. `--lang <code>` still validates any
 // single locale on demand.
 const AUDIO_LANGUAGES = SITE_LOCALES;
 
@@ -110,7 +110,7 @@ const KNOWN_TTS_PROVIDERS = new Set(['qwen3-tts', 'voxcpm2']);
 // their own word timings like every other locale. derive-fallback-timeline.ts is dormant (its FALLBACK_LANGUAGES is empty) and refuses to overwrite a locale that has real narration.
 
 // The audio tree is synced to R2, not committed to git (see .ci/docs/r2-media-setup.md #9) -- a clean checkout has none of it locally, which is expected, not a bug. Only assert individual files exist when the tree is present at all (e.g. after `./run.sh www tutorials generate` or
-// `.ci/scripts/deploy/sync-media-from-r2.sh --audio-only`); every other
+// `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only`); every other
 // check in this file (hash consistency, wordTimings structure, replay-range sanity) still runs regardless, since none of that depends on the mp3 bytes actually being on disk.
 const AUDIO_TREE_PRESENT = fs.existsSync(AUDIO_DIR);
 
@@ -425,7 +425,7 @@ function main() {
         'Audio tree not present locally (synced to R2, not committed to git -- see ' +
           '.ci/docs/r2-media-setup.md #9). Skipping per-file existence checks; timeline ' +
           'structure/hash/wordTimings checks still run. To check physical audio files too, run: ' +
-          '.ci/scripts/deploy/sync-media-from-r2.sh --audio-only'
+          'PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only'
       )
     );
   }
@@ -439,7 +439,7 @@ function main() {
       colors.yellow(
         `Audio files not checked for ${pairsWithoutLocalAudio.length} of ${pairs.length} pair(s): none of their mp3s exist locally ` +
           '(a partial audio tree, e.g. after generating one tutorial). Their timeline structure was still validated. ' +
-          'To check them too: .ci/scripts/deploy/sync-media-from-r2.sh --audio-only'
+          'To check them too: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only'
       )
     );
   }

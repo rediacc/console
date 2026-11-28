@@ -219,7 +219,7 @@ export const REGISTRY: GateMutation[] = [
     leaf: 'scripts/gates/check-retention-knob-parity.ts',
     inputs: [
       'package.json',
-      'packages/shared/src/config-schema/schemas.ts',
+      'packages/shared/src/config-schema/backup-schema.ts',
       'private/account/src/dto/backup.dto.ts',
       'private/account/src/services/backup-gc.service.ts',
       'packages/cli/src/commands/backup-retention-commands.ts',

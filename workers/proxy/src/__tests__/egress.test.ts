@@ -14,57 +14,9 @@ vi.mock('cloudflare:workers', () => ({
 }));
 
 import { AccountEgress, EXECUTOR_TOKEN_PLACEHOLDER } from '../egress';
-import { type ExecutorIssuerRpc, resetIssuedTokenCache } from '../issued-token';
-import type { EgressReportAnswer } from '../org-executor';
-
-const API = 'http://account.internal/account/api/v1';
-
-/** `idFromName(name).toString()` is `id:<name>`, which is what OrgExecutor passes as `containerId` for that instance (`this.ctx.id.toString()`). */
-const NAMES = {
-  idFromName: (name: string) => ({ toString: () => `id:${name}` }),
-};
-
-function setup() {
-  const seen: Request[] = [];
-  const state = { issues: [] as string[], fetches: 0, relocates: 0 };
-  const issuer = {
-    relocate: () => {
-      state.relocates += 1;
-      return Promise.reject(new Error('the egress never relocates'));
-    },
-    issue: (orgId: string) => {
-      state.issues.push(orgId);
-      return Promise.resolve({
-        token: `rdt_for_${orgId}`,
-        expiresAt: new Date(Date.now() + 45 * 60_000).toISOString(),
-      });
-    },
-    fetch: () => {
-      state.fetches += 1;
-      return Promise.reject(new Error('never'));
-    },
-  } as unknown as Service<ExecutorIssuerRpc>;
-  const account = {
-    fetch: (r: Request) => {
-      seen.push(r);
-      return Promise.resolve(Response.json({}));
-    },
-  } as unknown as Fetcher;
-  const env = {
-    ACCOUNT_URL: 'https://account.test',
-    ACCOUNT: account,
-    ISSUER: issuer,
-  };
-  return { env, seen, state };
-}
-
-function introspect(): Request {
-  return new Request(`${API}/proxy/introspect`, {
-    method: 'POST',
-    headers: { authorization: `Bearer ${EXECUTOR_TOKEN_PLACEHOLDER}` },
-    body: '{}',
-  });
-}
+import { resetIssuedTokenCache } from '../issued-token';
+import { ACCOUNT_EGRESS_HOST, type EgressReportAnswer } from '../org-executor-support';
+import { API, introspect, NAMES, setup } from './helpers/egress-harness';
 
 beforeEach(() => {
   resetIssuedTokenCache();
@@ -199,6 +151,30 @@ describe('AccountEgress entrypoint (props and containerId checks)', () => {
     expect(seen).toEqual([]);
   });
 
+  it('admits the run events route with the issued token (control: GET on it is refused)', async () => {
+    const { egress, seen, state } = entry(OWN);
+    const events = (method: string, query = '') =>
+      new Request(`${API}/console/runs/events${query}`, {
+        method,
+        headers: { authorization: `Bearer ${EXECUTOR_TOKEN_PLACEHOLDER}` },
+        ...(method === 'POST' ? { body: '{}' } : {}),
+      });
+
+    const ok = await egress.fetch(events('POST'));
+    expect(ok.status).toBe(200);
+    expect(seen[0]?.headers.get('authorization')).toBe('Bearer rdt_for_org-a');
+    expect(state.issues).toEqual(['org-a']);
+
+    const withQuery = await egress.fetch(events('POST', '?runId=x'));
+    expect(withQuery.status).toBe(403);
+    expect(await withQuery.json()).toMatchObject({ reason: 'query-not-allowed' });
+
+    const get = await egress.fetch(events('GET'));
+    expect(get.status).toBe(403);
+    expect(await get.json()).toMatchObject({ reason: 'route-not-allowed' });
+    expect(seen).toHaveLength(1);
+  });
+
   it('refuses a bearer call that is not the placeholder, before the issuer', async () => {
     const { egress, seen, state } = entry(OWN);
     const response = await egress.fetch(
@@ -223,7 +199,7 @@ function unreachable(
   method = 'POST',
   body: string | undefined = JSON.stringify(TARGET)
 ): Request {
-  return new Request(`http://account.internal${path}`, {
+  return new Request(`http://${ACCOUNT_EGRESS_HOST}${path}`, {
     method,
     ...(method === 'POST' && body !== undefined
       ? { body, headers: { 'content-type': 'application/json' } }
@@ -373,7 +349,7 @@ describe('AccountEgress egress-unreachable report route', () => {
   });
 
   it('no body, or an empty one, is a report with no target', async () => {
-    const bodiless = new Request('http://account.internal/executor/v1/egress-unreachable', {
+    const bodiless = new Request(`http://${ACCOUNT_EGRESS_HOST}/executor/v1/egress-unreachable`, {
       method: 'POST',
     });
     for (const request of [bodiless, unreachable(undefined, 'POST', '')]) {

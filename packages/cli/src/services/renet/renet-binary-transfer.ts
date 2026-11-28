@@ -17,7 +17,7 @@ import {
   removeTempKnownHostsFile,
   removeTempSSHKeyFile,
 } from '../../remote/ssh/index.js';
-import { executeRsync, getRsyncCommand } from '../../remote/sync/index.js';
+import { executeRsync, getRsyncCommand, rsyncUserHost } from '../../remote/sync/index.js';
 import { debugEnabled } from '../../utils/debug.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
@@ -95,7 +95,13 @@ async function tryDeltaSyncStage(
       `cp -f ${shellQuote(seedCandidate.path)} ${shellQuote(stagingPath)} && chmod 600 ${shellQuote(stagingPath)}`
     );
     outputService.info(`Syncing renet delta to ${config.host}...`);
-    await deltaSyncBinary(config, binary, stagingPath, remoteRsyncPath);
+    // rsync dials the address this session reached, which is not the configured host after an IPv6 fallback.
+    await deltaSyncBinary(
+      { ...config, host: sftp.dialedHost },
+      binary,
+      stagingPath,
+      remoteRsyncPath
+    );
     const stagedHash = await getRemoteFileHash(sftp, stagingPath);
     if (stagedHash !== localHash) {
       throw new Error(
@@ -200,11 +206,14 @@ export async function deltaSyncBinary(
 
   try {
     if (config.knownHosts?.trim()) {
-      knownHostsPath = await createTempKnownHostsFile(config.knownHosts);
+      knownHostsPath = await createTempKnownHostsFile(config.knownHosts, {
+        host: config.host,
+        port: config.port ?? DEFAULTS.SSH.PORT,
+      });
     }
     await fs.writeFile(localBinaryPath, binary, { mode: 0o700 });
     const sshOptions = buildDeltaSshOptions(config, keyFilePath, knownHostsPath);
-    const destination = `${config.username}@${config.host}:${stagingPath}`;
+    const destination = `${rsyncUserHost(config.username, config.host)}:${stagingPath}`;
     const result = await executeRsync({
       sshOptions,
       source: localBinaryPath,

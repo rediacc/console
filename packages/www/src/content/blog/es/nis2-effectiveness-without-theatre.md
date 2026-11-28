@@ -5,7 +5,7 @@ title: >-
 description: >-
   Evaluación continua de la efectividad, el fork de tiempo constante que la hace
   económica, y el calendario de notificación del artículo 23 que no podrás
-  cumplir sin artefactos de calidad forense.
+  cumplir sin evidencia verificable.
 author: Rediacc
 publishedDate: 2026-05-09T00:00:00.000Z
 category: guide
@@ -17,8 +17,8 @@ tags:
   - notificacion-incidentes
 featured: false
 language: es
-sourceHash: "8f8855f44bcea0b0"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "995dbf0e628d72c3"
+sourceCommit: "448a645f5ea157696cf64e943a5d82be55dd1b70"
 translatedFrom: en
 ---
 
@@ -27,7 +27,7 @@ translatedFrom: en
 > - La directiva dice: los apartados 21(2)(e) y (f) juntos exigen recuperación y pruebas de seguridad que funcionen de verdad, bajo demanda, contra producción actual.
 > - El coste de hacerlo bien con herramientas de la clase Delphix, Veeam Instant Recovery o Rubrik Live Mount es lo que lleva a la mayoría de los equipos a optar silenciosamente por staging.
 > - Cuando un fork de producción tarda siete segundos, la economía cambia. Los ejercicios semanales se vuelven realistas. La efectividad continua se vuelve documentable.
-> - El régimen de notificación del artículo 23 (alerta temprana a las 24 horas, notificación a las 72 horas, informe mensual) es imposible de cumplir sin artefactos de calidad forense. Nosotros proporcionamos los artefactos; el SOC, el SIEM y el flujo de presentación ante ENISA siguen siendo tu responsabilidad.
+> - El régimen de notificación del artículo 23 (alerta temprana a las 24 horas, notificación a las 72 horas, informe mensual) es imposible de cumplir sin evidencia. Rediacc proporciona registros de flujo por repositorio e informes por etapas firmados en planes de pago; el SOC, el SIEM y la presentación ante la autoridad siguen siendo tu responsabilidad.
 
 Entra en cualquier equipo SRE de tamaño mediano y haz una pregunta: ¿cuándo fue la última vez que hicisteis una recuperación completa de extremo a extremo, no una verificación de ficheros de backup, sino que levantasteis el sistema recuperado con aplicaciones, bases de datos y configuraciones y validasteis que funciona? La respuesta honesta, en la mayoría de los equipos, es "en el tabletop del año pasado." Después todo el mundo vuelve al trabajo.
 
@@ -158,7 +158,7 @@ rdc repo delete prod-app:effectiveness-2026w19 --yes
 rdc repo delete prod-app:restore-2026w19 --yes
 ```
 
-El log de auditoría captura cada paso (creación del fork, repo up, sesiones de terminal, backup pull, repo destroy). Tiene encadenamiento de hash. `rdc config audit verify` en la estación de trabajo del operador confirma que la cadena no ha sido modificada desde que se escribieron los eventos. Consulta [Seguridad de Cuenta § Postura de Seguridad del CLI para Agentes de IA](/es/docs/account-security) para el modelo de auditoría.
+El log de auditoría captura cada paso (creación del fork, repo up, sesiones de terminal, backup pull, repo destroy). El log local de la estación de trabajo tiene encadenamiento de hash, y `rdc config audit verify` en la estación de trabajo del operador confirma que esa cadena no ha sido modificada desde que se escribieron los eventos. Ese comando cubre solo el log de la estación de trabajo. La auditoría de consola del lado del servidor se encadena por organización y día. Consulta [Seguridad de Cuenta § Postura de Seguridad del CLI para Agentes de IA](/es/docs/account-security) para el modelo de auditoría.
 
 El tiempo de reloj de pared total para la rutina, en un repositorio de 128 GB, es inferior a 15 minutos. La mayor parte corresponde al smoke test y al viaje de red de ida y vuelta para el backup pull. Las operaciones de fork en sí mismas son cuestión de segundos.
 
@@ -192,15 +192,15 @@ rdc repo up prod-app:serving-2026-05-09T14-30Z
 # Cortar el tráfico al nuevo fork de servicio mediante DNS o el servidor de rutas.
 ```
 
-El fork forense responde a la pregunta del regulador en la hora 60: "muéstrenos el estado exacto de sus sistemas en el momento del compromiso." El fork de servicio responde a la pregunta del cliente. El log de auditoría con 70+ eventos responde a "quién hizo qué, cuándo" de forma encadenada por hash y verificable.
+El fork forense responde a la pregunta del regulador en la hora 60: "muéstrenos el estado exacto de los sistemas en el momento del compromiso." El fork de servicio responde a la pregunta del cliente. El log de auditoría con 70+ eventos responde a "quién hizo qué, cuándo"; los registros de flujo de forensics y la línea de tiempo del incidente (planes de pago, en el nivel de captura elegido por repositorio) añaden lo que hizo el tráfico de red del repositorio, con lotes firmados y encadenados que se verifican en el navegador. Los registros de flujo muestran volumen y destino, no contenido.
 
 Eso es lo que Rediacc proporciona al operador. Lo que no proporcionamos:
 
-- **El SIEM**. No transmitimos a Splunk, Datadog, Sentinel ni a tu stack propio. El log de auditoría es JSONL local en la estación de trabajo del operador; redirigirlo a un SIEM es el trabajo de integración del operador.
-- **El SOC**. No gestionamos una capacidad de detección 24x7. No producimos alertas. No hacemos triaje.
-- **La notificación gestionada**. No presentamos el informe ante ENISA. No redactamos la alerta temprana. No coordinamos con el CSIRT nacional en tu nombre.
+- **El SIEM**. No ofrecemos conector a Splunk, Datadog ni Sentinel. Los eventos de auditoría del servidor de cuentas se emiten como registros de OpenTelemetry que un collector operado por el cliente puede reenviar, y el log de auditoría de la estación de trabajo es JSONL local; conectar cualquiera de los dos a un SIEM es trabajo de integración del operador.
+- **El SOC**. No gestionamos una capacidad de detección 24x7 ni hacemos triaje. En los planes de pago, los detectores de anomalías sobre los registros de flujo forenses de los repositorios con captura activada emiten avisos de seguridad frente a una línea base aprendida por repositorio. Un aviso es una invitación a investigar, no la prueba de una brecha, y una persona sigue teniendo que leerlo.
+- **La notificación gestionada**. Los relojes de Declare incident y los borradores de informe por etapas mantienen visibles los plazos, pero no presentamos el informe ante ENISA, no enviamos la alerta temprana y no coordinamos con el CSIRT nacional. Decidir si un incidente es notificable sigue siendo criterio del cliente.
 
-Esta es la palanca que un proveedor establecido usará contra nosotros. Veeam Data Platform con integraciones de Coveware, Rubrik con su brazo de servicios gestionados, y algunas firmas especializadas en retención de IR (Mandiant, Kroll, S-RM en Europa) venden exactamente la capa operativa que Rediacc no tiene. Pretender lo contrario es el movimiento de marketing que nos mete en problemas. La posición defendible es: Rediacc te da artefactos de calidad forense que esos servicios no pueden producir por sí solos; esos servicios te dan la capa de notificación operativa que Rediacc no puede proporcionar. Son complementarios. Un programa NIS2 necesita ambos.
+Esta es la palanca que un proveedor establecido usará contra nosotros. Veeam Data Platform con integraciones de Coveware, Rubrik con su brazo de servicios gestionados, y algunas firmas especializadas en retención de IR (Mandiant, Kroll, S-RM en Europa) venden exactamente la capa operativa que Rediacc no tiene. Pretender lo contrario es el movimiento de marketing que nos mete en problemas. La posición defendible es: Rediacc te da evidencia verificable que esos servicios no pueden producir por sí solos; esos servicios te dan la capa de notificación operativa que Rediacc no puede proporcionar. Son complementarios. Un programa NIS2 necesita ambos.
 
 ## Lo que Rediacc no ejecuta por ti
 
@@ -220,7 +220,7 @@ Tres artefactos. Prodúcelos y la conversación sobre los artículos 21(2)(e) y 
 
 **Artefacto 1: la cadencia de ejercicios de fork**. Un log con marca de tiempo de ejercicios de efectividad ejecutados con una cadencia semanal o quincenal durante los últimos doce meses en ciclo rotativo. Cada entrada muestra el repositorio padre, la etiqueta del fork, el parche o cambio bajo prueba, el resultado del smoke test y la marca de tiempo del desmontaje. El log de auditoría producido por `rdc config audit log --since` captura todo esto.
 
-**Artefacto 2: el log de auditoría de esos ejercicios, encadenado por hash**. La cadena de hash en el log de auditoría es lo que transforma "ejecutamos 47 ejercicios el año pasado" de una afirmación en evidencia. `rdc config audit verify` valida la cadena de extremo a extremo. El resultado de la validación es la salida de un único comando que un auditor puede volver a ejecutar.
+**Artefacto 2: el log de auditoría de la estación de trabajo de esos ejercicios, encadenado por hash**. La cadena de hash en el log de auditoría de la estación de trabajo es lo que transforma "ejecutamos 47 ejercicios el año pasado" de una afirmación en evidencia. `rdc config audit verify` valida la cadena de extremo a extremo. El resultado de la validación es la salida de un único comando que un auditor puede volver a ejecutar.
 
 **Artefacto 3: el rastro de verificación de backups**. Para cada estrategia de backup programada, la unidad systemd produce un archivo sidecar de estado en `/var/run/rediacc/cold-backup-<guid>.status.json` por repositorio y por ejecución, y una línea de log de resumen final. `rdc backup status` expone ambos. Combinado con el ejercicio de restauración semanal del Paso 4 de la rutina anterior, esto da al auditor un rastro de "backup tomado y restauración probada," no solo de "backup tomado." Consulta [Monitorización](/es/docs/monitoring) para la superficie de diagnóstico.
 

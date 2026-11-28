@@ -1,7 +1,8 @@
 ---
 title: AI 智能体安全与防护机制
 description: >-
-  Rediacc CLI 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限。知识门控、脱敏处理、祖先验证覆盖以及哈希链接审计日志。
+  Rediacc 如何防止 AI 编程助手泄露密钥、覆盖凭据或提升权限。所有入口共用一个
+  决策，主动授权与策略上限缺一不可，另有知识门控、脱敏和哈希链式审计日志（服务器端按组织和日生成，CLI 则写入本地文件）。
 category: Concepts
 tags:
   - ai-agents
@@ -9,8 +10,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: zh
-sourceHash: "34d12ee4f0a3791c"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 当 Claude Code、Cursor、Gemini CLI、Copilot CLI 或其他任何 AI 编程助手驱动 `rdc` 时，CLI 对其的处理方式与坐在键盘前的人类不同。本页说明智能体能做什么、不能做什么，以及即使智能体试图绕过防护机制，这些机制依然有效的原因。
@@ -24,17 +25,21 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 | `rdc config field get --pointer <pointer> --digest` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（公开字段） | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（敏感字段，**提供正确的 `--current`**） | ✅ allowed |  |
-| `rdc config edit --dump`（已脱敏的 JSONC） | ✅ allowed |  |
+| `rdc config edit --dump --redacted`（已脱敏的 JSONC） | ✅ allowed |  |
 | `rdc config audit {log, tail, verify}` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（敏感字段，无 `--current`） | 🔴 refused | 提供 `--current "<旧值>"` |
+| `rdc repo secret set <repo> --rotate-secret`（不带 `--current` 的轮换） | 🔴 refused | 提供 `--current`，或由人类在终端中执行轮换 |
 | `rdc config field get --pointer <pointer> --reveal` | 🔴 refused | 改用 `--digest` |
 | `rdc config show --reveal` | 🔴 refused | 使用不带参数的 `rdc config show` |
-| `rdc config edit`（交互式编辑器） | 🔴 refused | 由人类在启动智能体前设置 `REDIACC_ALLOW_CONFIG_EDIT=*` |
-| `rdc config edit --apply <file>` | 🔴 refused | 相同的覆盖方式 |
-| `rdc config field rotate --pointer <pointer>` | 🔴 refused | 相同的覆盖方式；使用交互式确认 |
+| `rdc config edit`（交互式编辑器） | 🔴 refused，无覆盖方式 | 用 `--dump --redacted` 查看，用 `config field set --current` 修改单个字段 |
+| `rdc config edit --apply <file>` | 🔴 refused，无覆盖方式 | 同上；整份文档的修改由终端前的人类应用 |
+| `rdc config edit --reveal` | 🔴 refused，无覆盖方式 | 同上 |
+| `rdc config field rotate --pointer <pointer>` | 🔴 refused | 由人类在交互式终端中运行 |
+| 修改 grand（生产）仓库 | 🔴 refused | 在允许修改 grand 仓库的策略范围内，由人类针对该仓库主动授权（[见下文](#one-decision-opt-in-and-policy-ceiling)） |
+| 集群或数据存储生命周期操作 | 🔴 refused | 在允许集群操作的策略范围内，由人类针对该集群主动授权 |
 | `rdc term connect <machine>`（直接 SSH 到机器） | 🔴 refused | 先 fork 一个仓库，再连接到 fork |
 
-所有被拒绝的操作都会以 `outcome: refused` 和原因写入审计日志。
+每次对智能体的拒绝都会连同 `outcome: refused` 和原因写入审计日志。整份配置文档的编辑对智能体完全没有可用路径：配置中保存着每个仓库的 LUKS 凭据，能够改写配置的智能体也就能删掉某个凭据，而没有它加密卷就无法打开。
 
 ## 智能体的检测方式
 
@@ -43,7 +48,22 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 - `REDIACC_AGENT`、`CLAUDECODE`、`GEMINI_CLI`、`COPILOT_CLI` 之一设置为 `"1"`，或 `CURSOR_TRACE_ID` 被设置（任何值）。
 - 在 Linux 上：祖先链中任何父进程的环境变量中包含上述变量之一（通过 `/proc/<pid>/environ`）。即使智能体使用 `env -i` 或包装脚本删除了自己的变量，父进程链仍会告知 CLI 是谁启动了它。
 
-检测每个进程只运行一次并被缓存。无法禁用。
+检测每个进程只运行一次并被缓存，无法禁用。远程 MCP 授权会在执行端把它的调用标记为智能体调用，无需任何检测。
+
+## 一个决策：主动授权与策略上限缺一不可
+
+每个运行 `rdc` 命令的入口（CLI、本地 MCP 服务器、远程 MCP 服务器、`rdc --proxy` 和 Web 控制台）都向同一个决策函数发起询问，因此它们拒绝和允许的内容完全一致。该函数应用两个条件，只有两者都满足时智能体才能行动：
+
+1. **策略上限。** 组织策略经团队策略收窄后，决定调用方可以使用哪些命令、机器和仓库，以及是否允许修改 grand 仓库（`allowGrandRepos`）和执行集群操作（`allowClusterOps`）。没有策略记录的配置会回退到按角色设定的默认值：所有者和管理员可以操作，成员不可以。策略是一条独立的密封记录，只有所有者和管理员可以写入（[安全模型](/zh/docs/security-model#policy)）；任何智能体和任何 CLI 命令都无法编辑它。
+2. **人类的主动授权。** 即使在上限之内，智能体仍然需要人类指明它可以修改的 grand 仓库或集群：
+   - **本地智能体**（CLI 和本地 MCP）：人类在启动智能体之前，先在终端中导出 `REDIACC_ALLOW_GRAND_REPO`（仓库名，或 `*`）或 `REDIACC_ALLOW_CLUSTER_OPS`（集群名，或 `*`）。CLI 会检查进程祖先，因此智能体在会话中途设置的变量不算数（[各操作系统如何验证](#how-a-local-opt-in-is-verified-on-each-os)）。
+   - **远程智能体**（远程 MCP）：主动授权是人类在账户界面中创建的授权的一部分（[远程服务器](/zh/docs/ai-agents-mcp#remote-server)）。
+
+主动授权永远不会放宽上限：被策略关闭的仓库，无论环境或授权如何声明，仍然保持关闭。fork 不需要主动授权。CLI 无法识别的仓库按 grand 处理。
+
+**破坏性变更会先询问。** 当智能体被允许对 grand 仓库做破坏性变更（例如 `repo delete`）时，返回的结果是 `needs_confirmation`。MCP 客户端会向用户显示确认提示；没有提示功能的客户端会得到一个 `confirm` 参数，在询问用户后回传。在 CLI 中，由人类加上 `--confirm-grand <repo>` 重新运行命令。
+
+每个结果都带有稳定的代码（`POLICY_DENIED`、`GRAND_REPO_DENIED`、`CLUSTER_OPS_DENIED`、`AGENT_OPT_IN_MISSING`、`FORK_BLOCKED`、`AGENT_BLOCKED`、`CONFIRMATION_REQUIRED`），脚本或智能体据此代码而不是消息文本来分支处理（[JSON 输出](/zh/docs/ai-agents-json-output)）。
 
 ## 知识门控模型
 
@@ -52,7 +72,7 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 - 想要轮换存储在 `/credentials/cfDnsApiToken` 的 API 令牌？
 - CLI 询问："当前值是什么？"
 - 智能体（或人类）通过 `--current "$OLD"` 提供明文。CLI 对 `$OLD` 进行 SHA-256 哈希，并与当前存储值的摘要进行比较。匹配 → 写入通过。不匹配 → 拒绝，记录审计。
-- 要在不验证旧值的情况下轮换，传入 `--rotate-secret`（与 `--current` 互斥）。这会被以轮换方式记录在审计日志中。
+- 若要在不验证旧值的情况下轮换，请传入 `--rotate-secret`（与 `--current` 互斥）。它会作为轮换被明确记入审计，并且只对交互式终端前的人类有效：智能体，或 stdin 上没有终端的脚本，仍然需要 `--current`。
 
 该模型关闭了三个攻击面：
 
@@ -82,7 +102,7 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 }
 ```
 
-**智能体应该将 `next.options[].run` 逐字转达给人类，而不是合成自己的命令。** 这样可以避免"智能体编造了一个不存在的命令"这类失败模式，并保持操作者对实际操作的控制。
+**智能体应当把 `next.options[].run` 原样转交给人类，而不是自己编造命令。** 这样可以避免智能体捏造出一条不存在的命令，也让操作者始终掌控真正执行的动作。轮换选项是留给人类在终端中运行的，对智能体本身则会被拒绝。
 
 ### 实际示例
 
@@ -93,7 +113,7 @@ $ rdc config field get --pointer /credentials/cfDnsApiToken
 
 # 尝试无证明地覆盖：拒绝。
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
-✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
+✗ Precondition failed: sensitive path requires --current
 
 # 提供当前明文：允许。
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
@@ -102,11 +122,11 @@ $ rdc config field set --pointer /credentials/cfDnsApiToken \
 Set /credentials/cfDnsApiToken
 ```
 
-如果智能体从未拥有 `$OLD_CF_TOKEN`，它就无法满足前提条件，轮换被拒绝。拥有它的用户仍然可以通过编辑器或从 shell 传入 `--current` 来完成操作。
+如果智能体从未拥有 `$OLD_CF_TOKEN`，它就无法满足前提条件，轮换会被拒绝。知道该值的人仍然可以完成：在自己的 shell 中传入 `--current`，或在交互式终端中使用 `rdc config field rotate`。
 
 ## 默认脱敏
 
-每个读取敏感状态的 `rdc` 命令（`config show`、`config field get`、`config machine list`、`config edit --dump`）对密钥字段返回**脱敏占位符**而非明文：
+每个读取敏感状态的 `rdc` 命令（`config show`、`config field get`、`config machine list`、`config edit --dump --redacted`）对密钥字段返回**脱敏占位符**而非明文：
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -118,28 +138,9 @@ Set /credentials/cfDnsApiToken
 
 `--reveal` 为交互式 TTY 上的人类取消脱敏。智能体无论 TTY 状态如何都会被拒绝。每次授予都会写入 `reveal_granted` 审计条目；每次拒绝都会写入 `refused` 条目，并附带操作者的智能体信号。
 
-## `REDIACC_ALLOW_CONFIG_EDIT` 覆盖
+## 各操作系统如何验证本地主动授权
 
-某些操作（交互式编辑器、`--apply`、`field rotate`）是为人类设计的，没有对智能体安全的路径。如果你明确希望智能体执行其中一项，可以设置：
-
-```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'          # 完全绕过
-# 或
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# （逗号分隔的范围 glob：每段允许 * 通配符）
-```
-
-……智能体会继承它。
-
-**关键细节**：覆盖必须出现在祖先链中智能体**上方**的进程中。如果智能体在自己的环境中设置它（或在其启动的子 shell 中），CLI 会拒绝并告知你：
-
-> `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
-
-效果：智能体不能通过在会话中途运行 `export REDIACC_ALLOW_CONFIG_EDIT='*'` 来绕过防护机制。只有父进程（在启动智能体之前，你在终端中的操作）才能打开那扇门。
-
-## 平台支持：覆盖如何在各操作系统上验证
-
-`REDIACC_ALLOW_CONFIG_EDIT` 和 `REDIACC_ALLOW_GRAND_REPO` 都依赖祖先验证来证明覆盖是由你设置的，而不是由智能体注入的。验证在 Linux、macOS 和 Windows 上都有效，但它读取的证人因平台而异，强度级别也不同：
+`REDIACC_ALLOW_GRAND_REPO` 和 `REDIACC_ALLOW_CLUSTER_OPS` 都依赖祖先验证来证明主动授权是由人类设置的，而不是由智能体注入的。验证在 Linux、macOS 和 Windows 上都能工作，但它读取的凭证因平台而异，保证的强度也不同：
 
 | 平台 | 证人 | 强度 |
 |---|---|---|
@@ -147,9 +148,9 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 | macOS | `kern.procargs2` sysctl，由随 `rdc` 内附的小型助手读取 | 与 Linux 相同的 exec 时快照属性。对自己的进程不需要 root 权限即可读取。 |
 | Windows | 每个祖先进程的实时环境块（PEB），由同一助手读取，并带有 PID 重用保护 | 较弱：Windows 没有保存 exec 时快照，因此检查读取当前内存。祖先进程仍无法被智能体通常运行的任何东西改写，但证人不像 Linux 和 macOS 那样由内核冻结。 |
 
-在 macOS 和 Windows 上，CLI 会生成其内附的 `renet` 二进制文件来进行读取；助手报告每个祖先携带的被监视变量，所有决策逻辑保留在 CLI 中。如果助手缺失、过期或出于任何原因失败，CLI 无法验证覆盖并**以安全失败模式关闭**：覆盖被拒绝，错误表明验证不可用，而不是说你做错了什么。正常安装永远不会显示该消息；重新安装 `rdc` 会恢复助手。
+在 macOS 和 Windows 上，CLI 会启动其内置的 `renet` 二进制文件来读取；该辅助程序报告每个祖先进程携带了哪些受监视的变量，所有决策逻辑仍留在 CLI 中。如果辅助程序缺失、版本过旧或因任何原因失败，CLI 无法验证主动授权，并会**安全地失败关闭**：主动授权被拒绝，错误信息说明的是验证不可用，而不是有什么地方做错了。正常的安装不会出现这条信息；重新安装 `rdc` 即可恢复辅助程序。
 
-在每个平台上都真实的是：覆盖必须在智能体启动时已经存在于其环境中。在你的终端中导出它，然后启动智能体。在会话中途设置该变量的智能体会被拒绝。
+各平台上始终成立的一点：主动授权必须在智能体进程启动时就已存在于它的环境中。先在终端中导出，再启动智能体。在会话中途设置该变量的智能体会被拒绝。
 
 ## 审计日志
 
@@ -157,7 +158,7 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
-{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent without REDIACC_ALLOW_CONFIG_EDIT=*","prevHash":"sha256:abc1..."}
+{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent environment","prevHash":"sha256:abc1..."}
 {"ts":"2026-04-21T10:03:05.220Z","actor":{"kind":"human"},"command":"config show --reveal","paths":[],"outcome":"reveal_granted","configId":"...","configVersion":48,"prevHash":"sha256:deac..."}
 ```
 
@@ -212,7 +213,7 @@ rdc config audit verify
 | 仓库数据、挂载命名空间、Docker 范围、智能体防护、审计日志、部署时密钥注入 | Rediacc |
 | 使用这些密钥的应用代码，以及在构建时烘烤到镜像中的任何凭据 | 仓库开发者 |
 
-主要的缓解措施是内置的：**[每个仓库的密钥](/zh/docs/repositories#secrets)** 存储在与加密仓库镜像不同的平面中，不会在 fork 边界之间复制。fork 的容器启动时会获得一个空的密钥映射，并以不同的外部主体身份自我标识。使用 `rdc repo secret set` 设置它们（环境变量模式用于 compose 插值，文件模式用于 tmpfs `secrets:` 块）。变更门控是对称的。人类和智能体都必须提供 `--current`（passwd 风格的前提条件）或 `--rotate-secret`（审计轮换）来覆盖或删除现有值。
+主要的缓解措施是内置的：**[每个仓库的密钥](/zh/docs/repositories#secrets)** 存储在与加密仓库镜像不同的平面中，不会在 fork 边界之间复制。fork 的容器启动时会获得一个空的密钥映射，并以不同的外部主体身份自我标识。使用 `rdc repo secret set` 设置它们（环境变量模式用于 compose 插值，文件模式用于 tmpfs `secrets:` 块）。变更门控是对称的。人类和智能体都必须提供 `--current`（passwd 风格的前提条件）来覆盖或删除现有值；`--rotate-secret`（审计轮换）是终端前人类的替代方式。
 
 **跨仓库隔离是强制执行的。** 仓库 B 中的恶意或不谨慎的 compose 文件无法引用仓库 A 的密钥目录。Renet 的 compose 验证器会硬拒绝任何指向当前仓库 `${REDIACC_NETWORK_ID}` 目录之外的 `secrets: file:`、`configs: file:` 或 `env_file:` 路径，而且这个拒绝**不能被 `--unsafe` 覆盖**。纵深防御：围绕 Rediaccfile bash 子进程的 Landlock 沙箱将文件系统读取限制为仅当前网络的密钥目录，因此来自恶意 Rediaccfile 的 `cat /var/run/rediacc/net-<other>/secrets/X` 会在内核层以 EACCES 失败。Docker API 上同样如此：每个仓库的 Docker 套接字由 renet 策略代理提供服务，它会以 `403` 拒绝 `--privileged`、主机 `pid`、`ipc` 和 `uts`、设备请求，以及触及其他仓库运行时或数据的绑定挂载，因此持有 `${DOCKER_SOCKET}` 的容器无法借助该 API 访问其他仓库，被检查的也不仅是 compose 文件。只有运维人员能放宽绑定规则，且仅限指定名称的主机目录，方式是一份 root 所有、任何容器都无法写入的授权。
 
@@ -225,24 +226,24 @@ Rediacc 处理部署时注入、跨 fork 隔离和跨仓库隔离。"不要把�
 
 ## 快速方案
 
-### 允许智能体轮换单个云端令牌
+### 让智能体处理单个 grand 仓库
 
 ```bash
-# 以你自己的身份，在启动智能体之前：
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
-claude-code              # 或 cursor、gemini 等
+# 以人类身份，在启动智能体之前：
+export REDIACC_ALLOW_GRAND_REPO='gitlab'
+claude              # 或 cursor、gemini 等
 ```
 
-现在智能体可以执行 `config field rotate /credentials/cfDnsApiToken --new …`，但仍无法编辑 `/credentials/ssh/privateKey` 或打开交互式编辑器。
+智能体现在可以在策略允许修改 grand 仓库的范围内修改 `gitlab`，而不能修改其他任何 grand 仓库。像 `repo delete gitlab` 这样的破坏性变更仍然会要求确认。
 
-### 允许智能体进行广泛的配置编辑会话
+### 在不知道旧值的情况下轮换云令牌
 
 ```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'
-claude-code
+# 以人类身份，在交互式终端中：
+rdc config field rotate --pointer /credentials/cfDnsApiToken --new "$NEW_CF_TOKEN"
 ```
 
-智能体可以打开 `rdc config edit`、使用 `--reveal` 并运行 `field rotate`。每个操作仍会以 `actor.kind: agent` 和 `CLAUDECODE` 信号记录在审计日志中。
+不带 `--current` 的轮换仍由人类负责。知道当前值的智能体则改用 `rdc config field set --current`。
 
 ### 了解智能体被允许访问的字段
 
@@ -255,6 +256,8 @@ rdc config field list --sensitive --output json
 ## 另请参阅
 
 - [AI 智能体集成概览](/zh/docs/ai-agents-overview): 顶层介绍
+- [MCP 服务器](/zh/docs/ai-agents-mcp)：本地和远程 MCP、授权及其主动授权
+- [安全模型](/zh/docs/security-model)：策略记录以及谁可以写入它
 - [Claude Code 配置](/zh/docs/ai-agents-claude-code): 集成模板
 - [JSON 输出信封](/zh/docs/ai-agents-json-output): 机器可读响应
 - [加密配置存储](/zh/docs/config-storage): 服务器端密码学强制

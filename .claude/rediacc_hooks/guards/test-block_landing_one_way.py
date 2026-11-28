@@ -17,6 +17,10 @@ import pathlib
 import subprocess
 import sys
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 DISPATCH = str(HOOKS / "dispatch.py")
@@ -187,7 +191,7 @@ def run_guard(command, cwd, defect=None):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=ENV, cwd=str(cwd)
     )
     if proc.returncode not in (0, 2):

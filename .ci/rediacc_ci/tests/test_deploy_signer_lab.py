@@ -22,8 +22,14 @@ KEYS = {
 
 @pytest.fixture(autouse=True)
 def _nothing_declared(monkeypatch):
-    """The live `.ci/config/bench-production.json` decides nothing here; a test that needs a declaration passes one."""
-    monkeypatch.setattr(bench_production, "load", lambda *_a: [])
+    """The live `.ci/config/bench-production.json` decides nothing here; a test that needs a declaration passes one. The default read returns one entry held by a region no signer is named for, because an EMPTY declaration refuses every stop (review 856c142a.1)."""
+    monkeypatch.setattr(
+        bench_production,
+        "load",
+        lambda *_a: [
+            bench_production.Protected("11111111-2222-4333-8444-555555555555", "m", "r", "none")
+        ],
+    )
 
 
 def _regions_with(deployable: dict[str, bool]) -> dict[str, Any]:
@@ -55,6 +61,12 @@ DECLARED = [
         "11111111-2222-4333-8444-555555555555", "hostinger", "production backups"
     )
 ]
+
+
+def _elsewhere(signer: str) -> list[bench_production.Protected]:
+    """A declaration that holds an entry, but not in `signer`'s region."""
+    region = "us" if signer != "signer-bench-us" else "eu"
+    return [bench_production.Protected(DECLARED[0].subscription_id, "m", "r", region)]
 
 
 def _protocol_signature(name: str) -> inspect.Signature:
@@ -350,14 +362,24 @@ def test_stop_and_cut_refuse_while_bench_carries_production_data(signer, monkeyp
         ds.cut_region(signer.rsplit("-", 1)[1], run=run, env=KEYS, protected=lambda: DECLARED)
     assert run.calls == []
     assert "hostinger" in ds.stop_refusal(signer, protected=lambda: DECLARED)
-    # control: with nothing declared the stop deletes the key
-    assert ds.stop_refusal(signer, protected=list) == ""
-    ds.stop_signer(signer, run=run, env=KEYS, protected=list)
+    # control: a declaration that holds nothing in this signer's region lets the stop delete the key
+    assert ds.stop_refusal(signer, protected=lambda: _elsewhere(signer)) == ""
+    ds.stop_signer(signer, run=run, env=KEYS, protected=lambda: _elsewhere(signer))
     assert run.calls[0][len(ds.wrangler.ARGV) : len(ds.wrangler.ARGV) + 3] == [
         "secret",
         "delete",
         "ACCOUNT_ED25519_PRIVATE_KEY",
     ]
+
+
+@pytest.mark.parametrize("signer", ["signer-bench-eu", "signer-bench-us", "signer-bench-asia"])
+def test_an_empty_declaration_refuses_the_stop_and_the_cut(signer):
+    """Review 856c142a.1: an unarmed (empty) list fails closed, as it does for reset_bench."""
+    run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PUBLIC_KEY"}]))
+    assert "declares no protected subscription" in ds.stop_refusal(signer, protected=list)
+    with pytest.raises(proof.LabError, match="fails closed"):
+        ds.stop_signer(signer, run=run, env=KEYS, protected=list)
+    assert run.calls == []
 
 
 def test_an_unreadable_declaration_refuses_the_stop(monkeypatch):

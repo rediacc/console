@@ -6,7 +6,7 @@
  *
  * - Commands with `mcp` field are auto-derived as MCP tools from the Commander tree.
  * - Commands with `mcpExcludeReason` are explicitly excluded from MCP.
- * - Commands with `grandGuard`/`forkBlocked` are enforced by assertCommandPolicy().
+ * - Commands with `grandGuard`/`forkBlocked`/`agentBlocked` are judged by the CLI decision step (utils/command-policy.ts enforceRootCommand) through decide().
  */
 
 interface McpMeta {
@@ -25,6 +25,23 @@ interface McpMeta {
   appendArgs?: string[];
 }
 
+/**
+ * Where an MCP tool is served (PLAN-rmcp-local-mcp Design 2-3, decision D57).
+ *
+ * - `proxy`: served by the hosted MCP Worker through the executor today. Exactly the tools whose contract command is `proxyCapable`; scripts/generate-mcp-registry.ts refuses a disagreement either way.
+ * - `executor`: not proxy-capable yet, and made to run on the executor against the session config by LM10 of that plan.
+ * - `in-memory`: not proxy-capable yet, and re-implemented by LM10 against the granted config the executor already holds.
+ * - `local`: never served remotely. Admitted only on one of the two bases D57 allows: the tool reads or writes the caller's own disk, or it needs a terminal.
+ *
+ * `reason` is the written verdict; .ci/config/mcp-surface.json records the same verdict per tool, and the coverage test holds the two equal.
+ */
+export type McpSurface =
+  | { kind: 'proxy' }
+  | { kind: 'executor' | 'in-memory'; reason: string }
+  | { kind: 'local'; basis: 'caller-disk' | 'terminal'; reason: string };
+
+const PROXY: McpSurface = { kind: 'proxy' };
+
 export interface CommandMeta {
   /** Block grand (non-fork) repos in agent mode. Override: REDIACC_ALLOW_GRAND_REPO */
   grandGuard?: boolean;
@@ -34,6 +51,8 @@ export interface CommandMeta {
   agentBlocked?: boolean;
   /** MCP tool metadata. If present, auto-derive an MCP tool from Commander. */
   mcp?: McpMeta;
+  /** Where the MCP tool is served; required beside every `mcp` entry (the coverage test refuses one without it). */
+  mcpSurface?: McpSurface;
   /** If set, this command is explicitly excluded from MCP with this reason. */
   mcpExcludeReason?: string;
 }
@@ -47,12 +66,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // ── Detached jobs (they survive the connection that started them) ────── Reading a job's spool is safe. Cancelling stops real work and gc destroys logs, so both are destructive and both auto-confirm via --yes. `job logs --follow` only ends when the job does, which an agent cannot usefully block on, so it is hidden: an agent polls `job status` instead.
 
   'job list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'job status': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'job logs': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -66,17 +88,21 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'An agent cannot usefully block until the job ends; poll with job_status and job_logs.',
   },
   'job cancel': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
   'job gc': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
   // Dismissing drops this config's local ticket records (it never touches the machine's spool), so it is destructive to that record only and auto-confirms like gc.
   'job dismiss': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
 
   'machine status': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -101,6 +127,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // A read-only probe. It was the one leaf with no classification at all, which fails closed (no MCP exposure) but leaves the question open rather than answered.
   'machine health': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // The repair verbs act on findings (restarts, prune, a repository's own repair() code); they run through the CLI, where the safety classes, the maintenance window and the journal apply, and the local ops refresher calls the CLI the same way.
@@ -109,53 +136,68 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply',
   },
   'machine list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'machine gpu list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'machine add': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
   'machine remove': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['yes'] },
   },
 
   // ── Backup noun (strategies, machine-scoped runs, artifacts) ────────────
   'backup strategy list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup strategy show': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup run': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup status': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'backup cancel': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'backup restore': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup usage': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Applying rewrites the ledger that feeds quota (never deletes data); re-running converges.
   // A dry run or --check changes nothing.
   'backup reconcile': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'read' },
   },
   'backup manifests': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup retention': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // The two MUTATIONS opt OUT of MCP. A retention policy decides what the server DELETES, and an agent that narrows one silently discards snapshots the operator meant to keep; `set` also REPLACES every knob rather than merging, so a partial call is a data-loss shape. The read above is fine.
@@ -171,6 +213,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // A dry run of the policy against the live manifests: it reports which snapshots a prune would delete and deletes nothing.
   'backup retention preview': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup snapshots delete': {
@@ -187,6 +230,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // The delayed-deletion window (D-immutable). `show` is a read. `set` changes how long a delete waits, so it opts OUT like a retention mutation: a shortening is itself delayed by the server, but an agent should not move the safety window.
   'backup immutability show': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'backup immutability set': {
@@ -196,6 +240,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Cancels a delayed delete: it only keeps data, and repeating it is harmless.
   'backup undelete': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'write' },
   },
   // Samples run for minutes to hours, with a reflink base held on the machine until the verb ends, which no MCP timeout covers.
@@ -206,25 +251,31 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Opts IN as a write: it asks the server to delete a corrupt chunk and re-uploads from the machine's anchor.
   'backup repair': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   // Opts IN as a write: it restores one file to scratch and records the verdict on the server.
   'backup check': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
-  // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin.
+  // Opts IN as a write: it installs a public key, and only --replace ever sends the credential, on stdin. Destructive because --replace overwrites the key already installed on the machine, and the previous key is not kept; idempotent because the same key installed twice leaves the same state.
   'backup toc-key sync': {
-    mcp: { destructive: false, idempotent: true, timeout: 'write', excludeOptions: ['debug'] },
+    mcpSurface: PROXY,
+    mcp: { destructive: true, idempotent: true, timeout: 'write' },
   },
   'backup verify': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   // Opts IN as a read, like its `verify` sibling: it opens the repository image read-only and lists it, mutating nothing. Idempotent because the same repository yields the same listing until somebody changes the repository, and the walk itself never writes.
   'backup browse': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   // Opts IN, unlike the strategy mutations: it is a machine-plane, non-interactive command an agent legitimately runs. NOT idempotent, because each run mints a new snapshot id and charges quota for whatever it uploads; not destructive, because it only ever adds objects (machine grants carry no delete).
   'backup snapshot': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write', excludeOptions: ['debug'] },
   },
   'backup strategy set': {
@@ -244,6 +295,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine infra show': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -256,6 +308,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // ══════════════════════════════════════════════════════════════════════ Auto-derived MCP tools (write) ══════════════════════════════════════════════════════════════════════
 
   'repo create': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: false,
@@ -265,6 +318,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo up': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -290,6 +344,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo down': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -313,6 +368,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo delete': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -325,6 +381,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo fork': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: false,
@@ -337,6 +394,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo migrate': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -346,11 +404,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       requiredArgs: ['ref'],
       descriptionOverride:
         'Move a repository to another machine with minimal downtime: a two-phase copy (bulk sync while running, then a short stop + delta sync + start on the destination) with DNS cutover. The repo keeps its identity and secrets. Use repo_push for a backup copy that stays on both machines.',
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
 
   'repo push': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -365,6 +424,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo pull': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -377,6 +437,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine prune': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -386,6 +447,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
   // Restarts every stale repo daemon on the machine (a short outage per repo), destroys no data, and a second run finds nothing stale.
   'machine converge': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -396,10 +458,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // Restarts renet daemons still running a replaced binary (and with --include-docker each repo's supervisor, a short outage per repo); destroys no data, and a second run finds nothing stale.
   'machine restart-services': {
+    mcpSurface: PROXY,
     mcp: { destructive: true, idempotent: true, timeout: 'write', excludeOptions: ['json'] },
   },
 
   'machine provision': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: false,
@@ -409,6 +473,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine deprovision': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: false,
@@ -419,6 +484,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider add': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -427,6 +493,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider remove': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: true,
@@ -435,6 +502,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'machine provider list': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -449,6 +517,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // backup restore all are); exclusions are for what an agent must not drive, an interactive TTY, key material, a file upload, or a judgment call a human owes. ══════════════════════════════════════════════════════════════════════
 
   'machine setup': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -459,13 +528,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'machine scan-keys': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
       timeout: 'write',
       descriptionOverride:
         "Record the machine's SSH host keys in the local config. Required before any command can reach it.",
-      excludeOptions: ['debug'],
     },
   },
   // ★ OPERATOR-RULED (unmapped by spec §5; ruled 2026-07-13): EXCLUDE both. `infra push` PROVISIONS CLOUD VMs AND SPENDS REAL MONEY. `infra set` is the loaded gun that `push` fires. An agent must not be able to both arm and pull.
@@ -492,6 +561,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Unbinds an SSH key from a machine, which changes who `machine access push` lets in. Access changes are an operator decision.',
   },
   'machine access show': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // ★ OPERATOR-RULED: the cert cache is KEY MATERIAL. `clear` DESTROYS it. Only `status`, which returns no material, is agent surface. (These are #61's trio: they were declared destructive precisely so the console would confirm them; that is not a licence to also hand them to an agent.)
@@ -503,6 +573,12 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Moves TLS key material onto the machine. Key material is not agent surface.',
   },
   'machine infra cert status': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason:
+        "Reports the certificate cache files under the caller's own config directory; the executor holds no such cache.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'machine infra cert clear': {
@@ -559,12 +635,26 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'config list': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason:
+        "Lists the config files on the caller's own disk; a session holds exactly one granted config.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
+  // `--reveal` prints decrypted secrets and the handler refuses it to an agent at run time (config.ts applyRevealGate), so the tool does not advertise it.
   'config show': {
-    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['reveal'] },
   },
   'config current': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason:
+        "Names the config file the caller's own install selects, with its file path and token file state.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Same intent as the ASKED:2026-10-28T13:29Z ruling on `machine access set|push`: the config access writers declare the keys and source ranges every machine binding installs, so they change who may log in. `list` reads them and stays callable.
@@ -581,9 +671,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Sets the config-wide source ranges access keys may log in from. Access changes are an operator decision.',
   },
   'config access list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'config audit log': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Reads the audit log file on the caller's own disk.",
+    },
     mcp: {
       destructive: false,
       idempotent: true,
@@ -592,6 +688,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'config audit verify': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Verifies the hash chain of the audit log file on the caller's own disk.",
+    },
     mcp: {
       destructive: false,
       idempotent: true,
@@ -612,9 +713,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Rewrites a damaged config from backup; the operator must see what changed.',
   },
   'config prune': {
-    // ★ SPEC-MANDATED: spec/03 §5 grants mcp(write, idempotent) and withholds only --purge-archived (which drops EVERY archived record regardless of grace). I had excluded the whole leaf by inference; the spec is narrower and better, prune is a safe, idempotent cleanup, and only its nuclear option is agent-inappropriate.
+    mcpSurface: PROXY,
+    // Idempotent: a second run finds nothing left to remove. Destructive, because a run deletes expired certificates, archives and dangling refs from the config file and none of that is recoverable by the tool. Only --purge-archived is withheld from agents: it drops EVERY archived record regardless of grace (spec/03 section 5.1).
     mcp: {
-      destructive: false,
+      destructive: true,
       idempotent: true,
       timeout: 'write',
       excludeOptions: ['purge-archived'],
@@ -629,6 +731,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   credits: {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -638,20 +741,80 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   version: {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Reports the CLI build installed on the caller's own machine and its update channel.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   legal: {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  completion: {
+    mcpExcludeReason:
+      'Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.',
   },
   // Files a report with the account service: a write, and never idempotent (each send can consume the daily limit).
   'feedback report': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: false, timeout: 'write' },
   },
   'feedback list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'feedback show': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // Forensics (PLAN-forensics-investigation D7, D8): the two reads of the caller's disk are local tools, the three account reads run on the executor with the single-use read ticket an open investigation mints (FI11) and refuse without one, the three writes stay out.
+  'incident status': {
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'incident export': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Writes the incident's evidence directory to the caller's own disk.",
+    },
+    mcp: { destructive: false, idempotent: true, timeout: 'write' },
+  },
+  'forensics verify': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Verifies the hash chains of an evidence directory on the caller's own disk.",
+    },
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read',
+      descriptionOverride:
+        'Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory (an rdc incident export directory) and list every gap and edit. Batch signatures verify only under machine keys from outside the directory: machine-key entries, else the keys the account server pinned for the incident the directory names. Exits 1 on any gap or edit.',
+    },
+  },
+  'repo flows': {
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'repo opens': {
+    mcpSurface: PROXY,
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'incident declare': {
+    mcpExcludeReason:
+      'Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
+  },
+  'incident close': {
+    mcpExcludeReason:
+      'Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
+  },
+  'forensics level': {
+    mcpExcludeReason:
+      'Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.',
   },
 
   'cluster rehearse': {
@@ -665,6 +828,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // rdc server (PLAN-enterprise-tenants C7): status is a read; the rest install, restart or print the server's keys.
   'server status': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Finds the server through the caller's own local install record.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'server install': {
@@ -698,6 +866,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Config value deletion: use CLI directly',
   },
   'config reconcile': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -706,7 +875,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
         'Rebuild the local state bucket from machine truth (renet list all). Fixes stale datastore-attach and routing data; run this when a derived-machine op reports a state mismatch (exit 12).',
       // --accept-observed rewrites a DECLARATION (promote-class human decision);
       // an agent hitting a placement conflict should surface it, not resolve it.
-      excludeOptions: ['debug', 'accept-observed'],
+      excludeOptions: ['accept-observed'],
     },
   },
   'config import-machine': {
@@ -724,7 +893,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Remote config management: interactive browser flow, use CLI directly',
   },
 
-  // ══════════════════════════════════════════════════════════════════════ Policy-only entries (no MCP tools, enforced by assertCommandPolicy) ══════════════════════════════════════════════════════════════════════
+  // ══════════════════════════════════════════════════════════════════════ Policy-only entries (no MCP tools, judged by the CLI decision step) ══════════════════════════════════════════════════════════════════════
 
   'repo admin template apply': {
     grandGuard: true,
@@ -751,6 +920,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Production swap; human decision.',
   },
   'repo health': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -765,6 +935,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       "Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply",
   },
   'repo status': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -776,6 +947,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   },
 
   'repo list': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -784,6 +956,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo cat': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -794,6 +967,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo diff': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -804,6 +978,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo commit': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -821,6 +996,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Config-only ref operation: use CLI directly',
   },
   'repo checkout': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -834,6 +1010,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo log': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -844,6 +1021,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo merge': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -857,6 +1035,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo gc': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: true,
       idempotent: false,
@@ -867,6 +1046,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo admin fsck': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -895,6 +1075,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // No grandGuard: trim only releases blocks the filesystem already freed (fstrim + dangling-image prune); repo data is untouched, safe on grands. --docker-volumes IS data-destructive (deletes unused volumes), so it is excluded from the MCP surface, CLI only. `ref` is REQUIRED for the MCP tool even though the CLI positional is optional: the no-ref form trims every mounted
   // repository on the machine, and `repoArg` is what the grand guard resolves. Leaving ref omittable (and `machine` exposed) would let an agent run the machine-wide form unguarded across grands. The machine-wide trim stays CLI-only.
   'repo trim': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -927,6 +1108,8 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // existed in the command tree, so the policy layer and the tree disagreed on the string. Keyed to the real leaves now.
   'term connect': { grandGuard: true },
   'vscode connect': { grandGuard: true },
+  // Exposing the editor exposes a shell in the repo sandbox, so a grand repo is guarded like `vscode connect`; stopping it is always safe.
+  'vscode expose': { grandGuard: true },
 
   // Per-repo secrets, V2 write-only model.
   //
@@ -939,23 +1122,23 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Writes (set/unset) require --current/--rotate-secret ceremony, so they stay CLI-only. Reads (list/get) ARE exposed as repo_secret_list and repo_secret_get MCP tools.',
   },
   'repo secret list': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
       timeout: 'read' as const,
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug'],
     },
   },
   'repo secret get': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
       timeout: 'read' as const,
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug'],
     },
   },
 
@@ -970,6 +1153,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   ops: { mcpExcludeReason: 'Local VM provisioning: requires host KVM/QEMU, not remote-operable' },
   doctor: { mcpExcludeReason: 'Diagnoses local CLI installation, not a remote operation' },
   update: { mcpExcludeReason: 'CLI self-update, not a remote operation' },
+  preview: {
+    mcpExcludeReason:
+      "Replaces the installed CLI and the machines' renet; an operator switch, not an agent operation",
+  },
   subscription: { mcpExcludeReason: 'License management; local concern.' },
   mcp: { mcpExcludeReason: 'The MCP server itself, which cannot recurse' },
 
@@ -983,6 +1170,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // ── repo logs / repo exec (R2-F14): the first-class replacements for the container side door `term connect` used to carry. These are what make the `term` MCP exclusion honest: an agent that wants a log line or a command run asks for exactly that, instead of asking for an interactive shell.
   'repo logs': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -992,6 +1180,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo exec': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -1006,6 +1195,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // 2026-07-13 on a GREEN #49 live probe. The data path is proven END TO END on the shipping binary, red-then-green, one variable apart: before the fix the replica's PV resolved to an EMPTY directory and the pod came up `1/1 Running` with NO FailedMount and no error of any kind (a broken replica does not crashloop, it serves nothing, silently). After one `datastore volumes-open`,
   // the same directory held the nonce THE PRIMARY'S POD WROTE BEFORE THE FORK EXISTED, byte-identical. No empty volume, no fresh LUKS format and no default image can produce that value, which is why the nonce was the assertion. spec/03 §5.4 authorizes exactly these three.
   'repo replicate': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: false,
@@ -1015,10 +1205,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       requiredArgs: ['ref'],
       descriptionOverride:
         'Provision read replicas of a repository. Declarative: the replica count is the desired state, so re-running with the same count is a no-op.',
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
   'repo replicate status': {
+    mcpSurface: PROXY,
     mcp: {
       destructive: false,
       idempotent: true,
@@ -1028,6 +1219,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
   'repo replicate remove': {
+    mcpSurface: PROXY,
     grandGuard: true,
     mcp: {
       destructive: true,
@@ -1035,7 +1227,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       timeout: 'write',
       repoArg: 'ref',
       requiredArgs: ['ref'],
-      excludeOptions: ['debug', 'skip-router-restart'],
+      excludeOptions: ['debug'],
     },
   },
   // ★ HELD, and the reason is stated honestly rather than deferred. `refresh` re-forks every replica, which makes it the exact site of #49's back-door hole: a re-fork WITHOUT the LUKS re-open would roll the ENTIRE replica set to empty, on the one command whose whole job is to refresh data. The fix is in and unit-pinned, but the refresh path itself has never been exercised on a
@@ -1071,9 +1263,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   // ── Cluster group ──────────────────────────────────────────────────────
   'cluster status': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'cluster kubeconfig': {
+    mcpSurface: {
+      kind: 'local',
+      basis: 'caller-disk',
+      reason: "Writes the kubeconfig to a 0600 file on the caller's own disk and prints that path.",
+    },
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   // Provisioning/teardown are host-mutating and long-running; keep them out of agent hands by default. Unlike `run`, this family is NOT an absolute block: the operator can deliberately unlock specific clusters (or all, via `*`)
@@ -1140,12 +1338,15 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Group; its leaves carry their own dispositions.',
   },
   'datastore list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
   'datastore status': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
   'datastore snapshot list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read', excludeOptions: ['debug'] },
   },
 
@@ -1155,6 +1356,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Infrastructure snapshot: operator unlock only',
   },
   'cluster snapshot list': {
+    mcpSurface: PROXY,
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
   },
 };

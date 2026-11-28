@@ -1,7 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 
 // i18n stub
 vi.mock('../../i18n/index.js', () => ({
@@ -22,6 +25,7 @@ const mockGetCurrent = vi.hoisted(() => vi.fn());
 
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getRepository: mockGetRepository,
     addRepository: mockAddRepository,
     allocateNetworkId: mockAllocateNetworkId,
@@ -105,6 +109,10 @@ vi.mock('../../services/config/network-id-discovery.js', async (orig) => {
 });
 
 const { handleForkAction } = await import('../repo-fork.js');
+const { JobDispatchedError, setCommandJobDeps } = await import(
+  '../../services/jobs/command-job.js'
+);
+const { TicketStore } = await import('../../services/jobs/ticket-store.js');
 
 const PARENT = {
   repositoryGuid: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
@@ -162,6 +170,12 @@ afterEach(() => {
   stdoutSpy.mockRestore();
   vi.clearAllMocks();
 });
+
+/** Every lease the fork took is released, and it took at least one: a path that abandons the pool fails here. */
+function expectLeasesBalanced(): void {
+  expect(mockAcquire.mock.calls.length).toBeGreaterThan(0);
+  expect(mockLeaseRelease).toHaveBeenCalledTimes(mockAcquire.mock.calls.length);
+}
 
 describe('repo fork — hard-isolate of secrets', () => {
   it('runtime: forking a parent with secrets produces a fork registration with NO secrets', async () => {
@@ -238,7 +252,7 @@ describe('repo fork — orchestration', () => {
     );
     expect(mockEnsureDns).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+    expectLeasesBalanced();
   });
 
   it('compound --up: single execute with { up, grand, repo_name }, DNS fired early', async () => {
@@ -269,7 +283,7 @@ describe('repo fork — orchestration', () => {
 
     // postRepoUpTasks runs as a success step of the fork job (PLAN-detached-jobs J4)
     expect(mockPostRepoUpTasks).toHaveBeenCalledExactlyOnceWith('app:staging', 'hostinger');
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+    expectLeasesBalanced();
   });
 
   it('compound --up is one job even when no up-phase step shows: a renet with jobs has fork --up', async () => {
@@ -315,7 +329,7 @@ describe('repo fork — orchestration', () => {
     expect(mockRemoveRepository).toHaveBeenCalledWith('app:staging');
     expect(mockRefreshIdentityFor).not.toHaveBeenCalled();
     expect(mockPostRepoUpTasks).not.toHaveBeenCalled();
-    expect(mockLeaseRelease).toHaveBeenCalledTimes(1);
+    expectLeasesBalanced();
   });
 
   it('fork failure after the key deploy removes the fork key by its GUID', async () => {
@@ -362,6 +376,66 @@ describe('repo fork — orchestration', () => {
   it('a successful fork leaves the key alone', async () => {
     await handleForkAction('app', 'staging', { machine: 'hostinger' });
     expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+  });
+});
+
+// WB6 (PLAN-rmcp-writeback Design 6): the catch rolls the registration back only for a fork whose job never started.
+describe('repo fork: a started job keeps its registration', () => {
+  let ticketDir: string;
+  /** A ticket store whose record of the finished job cannot be written, so recording the dispatched job fails. */
+  class FinishFailsStore extends TicketStore {
+    override append(...args: Parameters<InstanceType<typeof TicketStore>['append']>) {
+      if (args[0] === 'finished') throw new Error('disk full');
+      return super.append(...args);
+    }
+  }
+
+  beforeEach(() => {
+    ticketDir = mkdtempSync(join(tmpdir(), 'repo-fork-wb6-'));
+    mockGetRepository.mockImplementation((ref: string) => Promise.resolve(registeredOrParent(ref)));
+  });
+  afterEach(() => {
+    setCommandJobDeps();
+    rmSync(ticketDir, { recursive: true, force: true });
+  });
+
+  it('keeps the registration and the deployed key when the job was dispatched and recording it failed', async () => {
+    setCommandJobDeps({ store: () => new FinishFailsStore('test', ticketDir) });
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      JobDispatchedError
+    );
+
+    expect(mockExecute).toHaveBeenCalledTimes(1);
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+    expectLeasesBalanced();
+  });
+
+  it('keeps the registration and the key when the dispatch timed out and the job state is unknown', async () => {
+    setCommandJobDeps({ store: () => new TicketStore('test', ticketDir) });
+    mockExecute.mockRejectedValueOnce(
+      new CliExitError(ERROR_CODES.NETWORK_ERROR, 'proxy timed out', { retryable: true })
+    );
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'proxy timed out'
+    );
+
+    expect(mockRemoveRepository).not.toHaveBeenCalled();
+    expect(mockRemoveRepoKey).not.toHaveBeenCalled();
+  });
+
+  it('still rolls back when the job never started', async () => {
+    setCommandJobDeps({ store: () => new TicketStore('test', ticketDir) });
+    mockExecute.mockRejectedValueOnce(new Error('refused before any job'));
+
+    await expect(handleForkAction('app', 'staging', { machine: 'hostinger' })).rejects.toThrow(
+      'refused before any job'
+    );
+
+    expect(mockRemoveRepository).toHaveBeenCalledWith('app:staging');
+    expect(mockRemoveRepoKey).toHaveBeenCalledTimes(1);
   });
 });
 

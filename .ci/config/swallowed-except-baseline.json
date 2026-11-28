@@ -1,0 +1,13 @@
+{
+  "$comment": "SHRINK-ONLY ratchet of check:ci-swallowed-failures' Python mode (PLAN-silent-failure-sweep.md D7, SF9). Each row is the count of unwaived swallowing handlers a Stop hook module may still hold; a module with no row allows 0. Seeded 2026-11-23 after SF2-SF5 and SF7 landed: worklist.py and wl_cli.py are SF6's (the CLI verbs SP3 moved), the rest are sites the box writers' own rules did not reach. A module above its row is red; a module below its row is red until the row is lowered. Hand-edit one row at a time, never regenerate the file, and never add a row for a new finding: fix it, or waive it with `# swallowed-failure-ok: <reason>` on the line above the except.",
+  "files": {
+    ".claude/hooks/stop/wl_checklist.py": 1,
+    ".claude/hooks/stop/wl_checks.py": 1,
+    ".claude/hooks/stop/wl_lessons.py": 1,
+    ".claude/hooks/stop/wl_lkg.py": 2,
+    ".claude/hooks/stop/wl_planfile.py": 1,
+    ".claude/hooks/stop/wl_reggate.py": 2,
+    ".claude/hooks/stop/wl_roster.py": 3,
+    ".claude/hooks/stop/wl_ruling.py": 1
+  }
+}

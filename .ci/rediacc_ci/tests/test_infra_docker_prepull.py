@@ -1,6 +1,6 @@
 """`rediacc_ci.infra.docker_prepull`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/infra/docker-prepull.sh` and the port over one stubbed PATH and compared exit code, stdout, stderr and the docker CALL LOG. The ledger `.ci/shadow/w7p6-docker-prepull.observations.jsonl` holds 5 rows of that comparison, recorded in a disposable scratch git repository outside this checkout.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/infra/docker-prepull.sh` and the port over one stubbed PATH and compared exit code, stdout, stderr and the docker CALL LOG. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison, recorded in a disposable scratch git repository outside this checkout.
 
 Every case now compares against `goldens/docker-prepull/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 

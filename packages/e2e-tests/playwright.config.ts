@@ -139,5 +139,9 @@ export default test.defineConfig({
       : []),
     // Detached jobs on a worker (suite 32, PLAN-jobs-backup-real-machine-tests E1): two concurrent `renet job start/claim` processes against one spool, asserted on machine state. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
     { name: 'test-32', testMatch: '32-*.test.ts' },
+    // Forensics level (suite 33, PLAN-forensics-investigation FI14): the forensics_level verb writes the repo's capture level under /etc/rediacc/forensics. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-33', testMatch: '33-*.test.ts' },
+    // Browser VS Code behind the route server's portal-token gate (PLAN-vscode-browser-exposure V5): expose, admit a fresh token once, refuse a spent one, unexpose, and the idle reaper after its real 15 minute window. Unconditional: it needs a worker VM and the account server every E2E Workers leg starts (its TEST_MODE seams seed the suite's own console user).
+    { name: 'test-34', testMatch: '34-*.test.ts' },
   ],
 });

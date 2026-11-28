@@ -33,19 +33,37 @@ THE OPERATOR. There is no override beyond the ASKED escape: the operator's own `
 FAILS OPEN, LOUDLY, on a broken environment (no root, the trigger or receipt module will not import, git cannot name the pushed tree): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
 """
 
-import datetime
-import json
 import pathlib
-import re
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts, tables
 from rediacc_hooks.guards import block_unverified_push as PUSH
+
+__getattr__ = tables(
+    "block_vm_unverified_push",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "TIP_BRANCH",
+    "_ASK",
+    "_DEADLINE",
+    "_FILES",
+    "_PUSH",
+    "_UNAVAIL",
+    "_advanced",
+    "_chained",
+    "_other_pointer",
+    "_reverted",
+    "_stale_not_verified",
+    "_with_receipt",
+    "plant_receipt",
+    "plant_retired",
+)
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# The second-last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard but block_backup_unverified_push (64) has let the command through.
-ORDER = 63
+# The second-last pre-bash slot: the ledger line is the admission record, so it is written only after every other guard but block_backup_unverified_push (63) has let the command through.
+ORDER = 62
 
 # The touched test, inverted: planted, every push reads as untouched and passes without a receipt.
 DEFECT = ("if not hits:", "if True:")
@@ -81,15 +99,16 @@ MUTANTS = {
     ),
 }
 
-REASON_ENV = "VM_CHECK_PUSH_REASON"
-KINDS = ("vm-unavailable", "not-runtime", "deadline")
-MIN_WHY = 40
-LEDGER_REL = "agent/ledgers/vm-check-push-reasons.jsonl"
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the escape, its kinds and the ledger are declared there and read back here.
+ROW = _push_receipts.row("vm:check")
+REASON_ENV = ROW.escape
+KINDS = ROW.kinds
+MIN_WHY = _push_receipts.MIN_WHY
+LEDGER_REL = ROW.ledger
 HITS_SHOWN = 10
-REASON_RE = re.compile(r"^\s*([A-Za-z-]+)\s*:\s*(.*?)\s*$", re.DOTALL)
-ASKED_TOKEN_RE = re.compile(r"\s*\bASKED:\S*")
-# The minute the escape must spell; `wl_checks.ASKED_RE` is the same shape, and matching it here lets a malformed token be named before the transcript is read.
-ASKED_STRICT_RE = re.compile(r"\bASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2})?Z")
+REASON_RE = _push_receipts.REASON_RE
+ASKED_TOKEN_RE = _push_receipts.ASKED_TOKEN_RE
+ASKED_STRICT_RE = _push_receipts.ASKED_STRICT_RE
 TRIGGER_MOD = "rediacc_ci.proof.surfaces"
 RECEIPT_MOD = "rediacc_ci.proof.vm_tier"
 
@@ -213,295 +232,6 @@ def world(
     return root
 
 
-def plant_receipt(
-    root,
-    status="VERIFIED",
-    tree=None,
-    inputs=None,
-    pointer=None,
-    built=None,
-    ran=("renet",),
-    reason_class=None,
-    account_checkout=None,
-    account_modified=False,
-    verified_base=None,
-):
-    """Write a schema 3 receipt into `root`'s cache through the receipt module's own `write`, keyed on `tree` (HEAD's by default) with the trigger digest the guard will compute for it unless `inputs` overrides it.
-
-    `ran` names the phases a VERIFIED receipt ran (each also required); a FAILED or NOT_VERIFIED one ran none and required both. `reason_class` overrides the NOT_VERIFIED or FAILED class, `account_checkout` the account checkout (the pointer by default) and `account_modified` its modified flag. `verified_base`, a (commit, tree) pair, is recorded as `trigger.verifiedBase`, the base a `--changed` run diffed against.
-    """
-    trigger = syspath.import_from_ci(TRIGGER_MOD)
-    receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
-    root = pathlib.Path(root)
-    tree = tree or _git(root, "rev-parse", "HEAD^{tree}")
-    head = _git(root, "rev-parse", "HEAD")
-    if not head:
-        raise RuntimeError("fixture has no HEAD commit to key the receipt on")
-    if pointer is None:
-        pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
-    account_pointer = _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT))
-    if not account_pointer:
-        raise RuntimeError("fixture has no account pointer to key the receipt on")
-    reason = None
-    steps = [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}]
-    if status == "NOT_VERIFIED":
-        reason = {
-            "class": reason_class or "fleet-unavailable",
-            "detail": "ops up --basic exited 1",
-        }
-        steps = []
-    elif status == "FAILED":
-        reason = {"class": reason_class or "step-failed", "detail": "V1.3 sftp put"}
-        steps.append(
-            {
-                "id": "V1.3",
-                "desc": "sftp put into the repo",
-                "rc": 1,
-                "verdict": "FAIL",
-                "ms": 1,
-                "evidence": "permission denied",
-            }
-        )
-    verified = status == "VERIFIED"
-    phases = {
-        side: {"required": side in ran if verified else True, "ran": verified and side in ran}
-        for side in receipt_mod.SIDES
-    }
-    surfaces = sorted(
-        set().union(*(trigger.MAP.phases[side] for side, ph in phases.items() if ph["required"]))
-    )
-    receipt = {
-        "tier": "vm",
-        "schema": receipt_mod.SCHEMA,
-        "status": status,
-        "reason": reason,
-        "tree": tree,
-        "head": head,
-        "dirty": False,
-        "inputs": inputs if inputs is not None else trigger.inputs(root, tree),
-        "surfaces": surfaces,
-        "submodules": {
-            RENET: {"pointer": pointer, "checkout": pointer, "modified": False},
-            ACCOUNT: {
-                "pointer": account_pointer,
-                "checkout": account_pointer if account_checkout is None else account_checkout,
-                "modified": account_modified,
-            },
-        },
-        "renet": {
-            "built": pointer if built is None else built,
-            "modified": False,
-            "sha256": "0" * 64,
-            "deployed": True,
-        },
-        "trigger": {
-            "base": "origin/main",
-            "via": "origin/main",
-            "hits": [],
-            "sides": sorted(side for side, phase in phases.items() if phase["required"]),
-        },
-        "fleet": {"mode": "reused", "os": "ubuntu-24.04", "ips": [], "landlock": {}},
-        "phases": phases,
-        "gateway": {"mode": "reused", "port": 8787, "started": 1767225600},
-        "forks": [],
-        "steps": steps,
-        "teardown": {"ok": True, "leftovers": []},
-        "runId": "fixture-run",
-        "startedAt": "2026-01-01T00:00:00Z",
-        "finishedAt": "2026-01-01T00:01:00Z",
-        "wallMs": 60000,
-    }
-    if verified_base is not None:
-        receipt["trigger"]["verifiedBase"] = {"head": verified_base[0], "tree": verified_base[1]}
-        receipt["runId"] = "fixture-run-chained"
-    receipt_mod.write(root, receipt)
-    return root
-
-
-def plant_retired(root, schema):
-    """A VERIFIED receipt in a retired schema shape (1 or 2) for HEAD's tree, written raw (the receipt module's `write` refuses it): the guard must read it as no receipt at all."""
-    trigger = syspath.import_from_ci(TRIGGER_MOD)
-    receipt_mod = syspath.import_from_ci(RECEIPT_MOD)
-    root = pathlib.Path(root)
-    tree = _git(root, "rev-parse", "HEAD^{tree}")
-    pointer = _git(root, "rev-parse", "%s:%s" % (tree, RENET))
-    receipt = {
-        "schema": schema,
-        "status": "VERIFIED",
-        "reason": None,
-        "tree": tree,
-        "head": _git(root, "rev-parse", "HEAD"),
-        "inputs": trigger.inputs(root, tree),
-        "renet": {
-            "pointer": pointer,
-            "checkout": pointer,
-            "built": pointer,
-            "modified": False,
-            "deployed": True,
-        },
-        "trigger": {"base": "origin/main", "via": "origin/main", "hits": []},
-        "fleet": {"mode": "reused", "os": "ubuntu-24.04", "ips": [], "landlock": {}},
-        "forks": [],
-        "steps": [{"id": "V1.1", "desc": "deploy renet", "rc": 0, "verdict": "PASS", "ms": 1}],
-        "teardown": {"ok": True, "leftovers": []},
-        "runId": "fixture-run-schema-%d" % schema,
-        "startedAt": "2026-01-01T00:00:00Z",
-        "finishedAt": "2026-01-01T00:01:00Z",
-        "wallMs": 60000,
-    }
-    if schema == 2:
-        receipt["trigger"]["sides"] = ["renet"]
-        receipt["phases"] = {
-            "renet": {"required": True, "ran": True},
-            "account": {"required": False, "ran": False},
-        }
-        receipt["account"] = {
-            "pointer": _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT)),
-            "checkout": _git(root, "rev-parse", "%s:%s" % (tree, ACCOUNT)),
-            "modified": False,
-            "gateway": {},
-        }
-    folder = receipt_mod.receipt_dir(root)
-    folder.mkdir(parents=True, exist_ok=True)
-    data = json.dumps(receipt, indent=2, sort_keys=True) + "\n"
-    for name in ("%s.json" % tree, receipt_mod.LATEST):
-        (folder / name).write_text(data, encoding="utf-8")
-    return root
-
-
-def _with_receipt(path, status, **kw):
-    root = world(path, cli=True)
-    return plant_receipt(root, status, **kw)
-
-
-def _advanced(path):
-    """VERIFIED at the CLI commit, then one more docs-only commit: the digest carries over."""
-    root = world(path, cli=True)
-    plant_receipt(root)
-    _put(root, "docs/later.md", "later\n")
-    _commit(root, "docs after the run")
-    return root
-
-
-def _other_pointer(path):
-    """A VERIFIED receipt taken at renet A, while the pushed tree points at renet B."""
-    root = world(path, renet_files=("cmd/renet/sandbox_exec.go",))
-    seed_tree = _git(root, "rev-parse", "origin/main^{tree}")
-    if not seed_tree:
-        raise RuntimeError("fixture has no origin/main tree to seed the receipt from")
-    return plant_receipt(root, tree=seed_tree)
-
-
-def _stale_not_verified(path):
-    """The CLI touched; the only NOT_VERIFIED receipt is for the seed's tree and inputs."""
-    root = world(path, cli=True)
-    seed_tree = _git(root, "rev-parse", "origin/main^{tree}")
-    if not seed_tree:
-        raise RuntimeError("fixture has no origin/main tree to seed the receipt from")
-    return plant_receipt(root, "NOT_VERIFIED", tree=seed_tree)
-
-
-def _chained(path, base="VERIFIED", account_after=False):
-    """The V2 chain: an account commit with a both-phase receipt of status `base` (none when `base` is None), then a CLI commit whose renet-only VERIFIED receipt names the account commit as its `verifiedBase`. `account_after` also moves the account gitlink in the CLI commit, so the account side changed after the base and the chained receipt did not run it."""
-    root = world(path, account_files=(ACCOUNT_SRC,))
-    base_head = _git(root, "rev-parse", "HEAD")
-    base_tree = _git(root, "rev-parse", "HEAD^{tree}")
-    if not base_head or not base_tree:
-        raise RuntimeError("fixture has no HEAD commit or tree to chain the receipt from")
-    if base is not None:
-        plant_receipt(root, base, ran=("renet", "account"))
-    if account_after:
-        _put(root / ACCOUNT, ACCOUNT_SRC, "export const licenses = 3;\n")
-        _commit(root / ACCOUNT, "account C")
-    _put(root, CLI_FILE, "export const sftp = 3;\n")
-    _commit(root, "the CLI after the VERIFIED run")
-    return plant_receipt(root, ran=("renet",), verified_base=(base_head, base_tree))
-
-
-TIP_BRANCH = "vm-tip"
-
-
-def _reverted(path):
-    """`TIP_BRANCH` holds the CLI commit; HEAD reverts the CLI file on top, so HEAD's range touches nothing while the branch's does."""
-    root = world(path, cli=True)
-    _git(root, "branch", TIP_BRANCH)
-    _put(root, CLI_FILE, "export const sftp = 1;\n")
-    _commit(root, "revert the CLI change")
-    return root
-
-
-FIXTURES = {
-    "vmc-docs-only": world,
-    "vmc-cli-none": lambda p: world(p, cli=True),
-    "vmc-cli-verified": lambda p: _with_receipt(p, "VERIFIED"),
-    "vmc-cli-not-verified": lambda p: _with_receipt(p, "NOT_VERIFIED"),
-    "vmc-cli-failed": lambda p: _with_receipt(p, "FAILED"),
-    "vmc-renet-sandbox": lambda p: world(p, renet_files=("cmd/renet/sandbox_exec.go",)),
-    "vmc-renet-tests-only": lambda p: world(p, renet_files=("pkg/sandbox/sandbox_test.go",)),
-    "vmc-other-pointer": _other_pointer,
-    "vmc-advanced": _advanced,
-    "vmc-missing-old": lambda p: world(p, missing_old=True),
-    "vmc-stale-not-verified": _stale_not_verified,
-    "vmc-reverted": _reverted,
-    "vmc-account-src": lambda p: world(p, account_files=(ACCOUNT_SRC,)),
-    "vmc-account-tests-only": lambda p: world(p, account_files=(ACCOUNT_TEST,)),
-    "vmc-account-renet-receipt": lambda p: plant_receipt(world(p, account_files=(ACCOUNT_SRC,))),
-    "vmc-account-verified": lambda p: plant_receipt(
-        world(p, account_files=(ACCOUNT_SRC,)), ran=("account",)
-    ),
-    "vmc-account-missing-old": lambda p: world(p, account_missing_old=True),
-    "vmc-renet-wide": lambda p: world(p, renet_files=("pkg/license/x.go",)),
-    "vmc-renet-gomod": lambda p: world(p, renet_files=("go.mod",)),
-    "vmc-chain-ok": _chained,
-    "vmc-chain-account-after": lambda p: _chained(p, account_after=True),
-    "vmc-chain-no-base": lambda p: _chained(p, base=None),
-    "vmc-chain-base-not-verified": lambda p: _chained(p, base="NOT_VERIFIED"),
-    "vmc-schema-1": lambda p: plant_retired(world(p, cli=True), 1),
-    "vmc-schema-2": lambda p: plant_retired(world(p, cli=True), 2),
-}
-
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    (name[len("vmc-") :], {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in FIXTURES
-]
-
-_ASK = " ASKED:2026-01-01T00:00Z"
-_FILES = "only packages/cli/src/remote/sftp.ts comments changed, no runtime code"
-_DEADLINE = "the 03:00Z CD promote carries the broken stable SFTP path otherwise"
-_UNAVAIL = "the ops fleet is down, ops up --basic exits 1 on vm11 and vm12"
-_PUSH = "git push origin 1008-1"
-EDGE_CASES = [
-    ("a bare push", "git push -u origin 1008-1"),
-    ("an implicit push", "git push"),
-    ("a -C push", "git -C . push origin 1008-1"),
-    ("vm-unavailable", "%s='vm-unavailable: %s%s' %s" % (REASON_ENV, _UNAVAIL, _ASK, _PUSH)),
-    ("not-runtime", "%s='not-runtime: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("deadline", "%s='deadline: %s%s' %s" % (REASON_ENV, _DEADLINE, _ASK, _PUSH)),
-    (
-        "an exported reason",
-        "export %s='not-runtime: %s%s'; %s" % (REASON_ENV, _FILES, _ASK, _PUSH),
-    ),
-    ("an unknown kind", "%s='because: %s%s' %s" % (REASON_ENV, _FILES, _ASK, _PUSH)),
-    ("a short why", "%s='deadline: soon%s' %s" % (REASON_ENV, _ASK, _PUSH)),
-    ("no ASKED", "%s='not-runtime: %s' %s" % (REASON_ENV, _FILES, _PUSH)),
-    ("a malformed ASKED", "%s='not-runtime: %s ASKED:today' %s" % (REASON_ENV, _FILES, _PUSH)),
-    ("a dry run", "git push --dry-run origin 1008-1"),
-    ("a delete push", "git push origin --delete 1007-1"),
-    ("the mirror push of main", "git push gitlab origin/main:refs/heads/main --follow-tags"),
-    ("a submodule push", "git -C private/renet push origin 1008-1"),
-    ("prose naming a push", "echo 'git push origin 1008-1'"),
-    ("a scratch repo", "git -C /tmp push origin x"),
-    ("two pushes of two commits", "git push origin %s:refs/heads/x && %s" % (TIP_BRANCH, _PUSH)),
-    ("two refspecs in one push", "git push origin 1008-1:1008-1 %s:refs/heads/x" % TIP_BRANCH),
-    ("every branch", "git push --all origin"),
-    ("a glob refspec", "git push origin 'refs/heads/*:refs/heads/*'"),
-    ("a mirror push", "git push --mirror origin"),
-    (
-        "a mirror push, escaped",
-        "%s='deadline: %s%s' git push --mirror origin" % (REASON_ENV, _DEADLINE, _ASK),
-    ),
-]
-
-
 # --------------------------------------------------------------------------- what the command pushes
 
 
@@ -545,7 +275,13 @@ def _push_tree(run, base, root, created, cmd):
         store = commit_policy.common_dir(root)
         if top and store and commit_policy.common_dir(top) == store:
             return root if pathlib.Path(top).resolve() == pathlib.Path(root).resolve() else top
-    repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
+    # The bound trees are passed (box LT11), as commit_policy._creation_repo does: without them a push in a submodule of the landing tree resolved to this checkout and was judged against this checkout's receipt (2026-11-21, `git -C <landing>/private/renet push origin 1104-1` refused while the landing tree's own receipt was VERIFIED for the pushed tree).
+    repo = (
+        commit_policy.scoped_repo(
+            run, base, root, created, cmd, trees=commit_policy.bound_trees(root)
+        )
+        or root
+    )
     if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
         # A submodule (its pointer push carries the range) or another repository.
         return ""
@@ -717,14 +453,9 @@ def _for_these_inputs(receipt, tree, digest):
     return receipt.get("tree") == tree or (bool(digest) and receipt.get("inputs") == digest)
 
 
-def _not_verified_attempt(receipt_mod, root, tree, digest):
-    """The NOT_VERIFIED receipt taken for these inputs, or None."""
-    for receipt in (receipt_mod.read_archive(root, tree), receipt_mod.read_latest(root)):
-        if receipt is None or receipt.get("status") != receipt_mod.NOT_VERIFIED:
-            continue
-        if _for_these_inputs(receipt, tree, digest):
-            return receipt
-    return None
+def _not_verified_attempt(root, tree, digest):
+    """The NOT_VERIFIED receipt taken for these inputs, or None (the table's reader, judged by `_for_these_inputs`)."""
+    return _push_receipts.not_verified_attempt(ROW.id, root, tree, digest, _for_these_inputs)
 
 
 def _operator_answered(ev, reason):
@@ -744,35 +475,11 @@ def _operator_answered(ev, reason):
     return bool(wl_checks._asked_in_transcript(reason, transcript))
 
 
-def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
-    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None)."""
-    if reason is None:
-        return None, "escape-missing: no `%s=` on it" % REASON_ENV, None
-    m = REASON_RE.match(reason)
-    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
-    if kind not in KINDS:
-        return (
-            None,
-            "escape-kind: `%s=%r`: the kind must be one of %s"
-            % (REASON_ENV, reason, ", ".join(KINDS)),
-            None,
-        )
-    why = ASKED_TOKEN_RE.sub("", rest).strip()
-    if len(why) < MIN_WHY:
-        return (
-            None,
-            "escape-why: `%s`: the why is %d characters; at least %d name the files or the deadline"
-            % (reason, len(why), MIN_WHY),
-            None,
-        )
-    if not ASKED_STRICT_RE.search(reason):
-        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason, None
-    if not _operator_answered(ev, reason):
-        unproven = (
-            "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this session's transcript "
-            "(within 300 s)"
-        )
-        return None, unproven, None
+def _judge_reason(ev, reason, root, tree, digest):
+    """(kind, why, receipt-or-None) when the escape is admitted, else (None, the refusal line, None). The checks every escape shares are the table's (`_push_receipts.judge_escape`); the NOT_VERIFIED attempt is this row's own."""
+    kind, why = _push_receipts.judge_escape(ev, ROW.id, reason, _operator_answered)
+    if kind is None:
+        return None, why, None
     attempt = None
     if kind == "vm-unavailable" and tree is None:
         blind = (
@@ -781,7 +488,7 @@ def _judge_reason(ev, reason, receipt_mod, root, tree, digest):
         )
         return None, blind, None
     if kind == "vm-unavailable":
-        attempt = _not_verified_attempt(receipt_mod, root, tree, digest)
+        attempt = _not_verified_attempt(root, tree, digest)
         if attempt is None:
             missing = (
                 "escape-no-attempt: `vm-unavailable`, but no NOT_VERIFIED receipt exists for these inputs; "
@@ -799,7 +506,6 @@ def _pointer(root, tree, sub):
 
 
 def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
-    asked = ASKED_STRICT_RE.search(reason or "")
     receipt = None
     if attempt is not None:
         receipt = {
@@ -807,7 +513,7 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
             "class": (attempt.get("reason") or {}).get("class"),
         }
     return {
-        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": _push_receipts.now_stamp(),
         "branch": commit_policy.current_branch(root),
         "head": commit,
         "tree": tree,
@@ -816,23 +522,14 @@ def _row(root, commit, tree, kind, why, reason, hits, attempt, sides=()):
         "sides": sorted(sides),
         "kind": kind,
         "why": why,
-        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
+        "asked": _push_receipts.asked_minute(reason),
         "hits": hits[:HITS_SHOWN],
         "receipt": receipt,
     }
 
 
 def _record(ev, root, rows):
-    path = pathlib.Path(root) / LEDGER_REL
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
-    except OSError as exc:
-        ev.warn(
-            "block-vm-unverified-push: the admission was NOT recorded in %s (%s)."
-            % (LEDGER_REL, exc)
-        )
+    _push_receipts.record(ev, ROW.id, root, rows)
 
 
 # What each phase costs, as the refusal shows it (agent/plans/PLAN-account-vm-check.md *Cost*; AV7 measures it live).
@@ -930,7 +627,7 @@ def _judge_tree(ev, root, pushes, trigger, receipt_mod, blocks):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, _attempt = _judge_reason(ev, reason, receipt_mod, root_path, None, "")
+            kind, why, _attempt = _judge_reason(ev, reason, root_path, None, "")
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue
@@ -963,7 +660,7 @@ def _judge_tree(ev, root, pushes, trigger, receipt_mod, blocks):
         refusals = []
         for index in sending:
             line, reason, _args = pushes[index]
-            kind, why, attempt = _judge_reason(ev, reason, receipt_mod, root_path, tree, digest)
+            kind, why, attempt = _judge_reason(ev, reason, root_path, tree, digest)
             if kind is None:
                 refusals.append("  %s\n    escape refused: %s\n" % (line, why))
                 continue

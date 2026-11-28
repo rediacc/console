@@ -11,14 +11,12 @@ name: Housekeeping
 #   cleanup            - rediacc_ci.housekeeping.cleanup_versions (releases, tags,
 #                        GHCR, deployments, CF Pages, envs, D1, Turnstile, R2 orphans,
 #                        branches, workflow runs/artifacts/cache).
-#   stripe-cleanup     - Stripe sandbox orphan sweep. No sandbox webhook is verified: the
-#                        edge hosts it pointed at are gone with the product-domain rename.
 #   cf-leftovers       - rediacc_ci.housekeeping.cf_leftovers: a report-only listing of Workers
 #                        scripts, edge/bench D1 databases, routes and custom domains no
 #                        wrangler config accounts for. Deletes nothing; findings never fail it.
 #   budget-check       - rediacc_ci.ci.freshness --check --cadence nightly: every
 #                        artifact .ci/config/freshness.json registers against fresh
-#                        measurements, reported to the nightly-status issue.
+#                        measurements, reported to the job log and step summary.
 #   gate-costs-capture - a serial ci:quick plus one third of the slow gates, measuring
 #                        each gate's CPU, uploaded as the artifact gate_costs --refresh reads.
 
@@ -150,71 +148,6 @@ jobs:
           CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN: ${{ env.BWS_CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
-  stripe-cleanup:
-    name: Stripe sandbox cleanup
-    # ubuntu-latest, not ubuntu-slim: slim has a hard 15-minute platform
-    # cap, so the 30-minute timeout below was unreachable -- a long run was
-    # silently CANCELLED at 15 rather than timing out. Found by CHECK 3 in
-    # .ci/scripts/security/check_workflow_gates.py.
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    # pull-requests: read is for cleanup-orphans.ts, which is handed
-    # GH_TOKEN: github.token and shells out to `gh pr view --json state`.
-    # It requireEnv()s the token, so an unscoped one fails the step rather
-    # than degrading. The App token minted here is preset: readonly and
-    # carries no pull_requests scope, so it cannot serve that call.
-    permissions:
-      contents: read
-      pull-requests: read
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Fetch secrets from Bitwarden
-        # LIVE: the BWS_ values below are read by this job's steps, flipped from
-        # secrets.* by the cutover. The secrets.* reads that remain are the
-        # comparator's, which must keep reading GitHub or it compares a value with
-        # itself and passes forever.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
-            GITHUB_APP_ID > BWS_APP_ID
-            CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
-      - uses: ./.github/actions/setup-node-npm
-
-      - name: Install dependencies
-        run: npm ci && npm run install:natives
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - uses: ./.github/actions/app-token
-        id: app-token-stripe
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,account
-
-      - name: Initialize account submodule
-        run: git submodule update --init private/account
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Cleanup orphaned Stripe sandbox resources
-        run: npx tsx scripts/cleanup-orphans.ts
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          GH_TOKEN: ${{ github.token }}
-
   cf-leftovers:
     name: Cloudflare leftovers report
     runs-on: ubuntu-latest
@@ -256,22 +189,20 @@ jobs:
 
   budget-check:
     name: CI time budget check
-    # T3.3 (PLAN-ci-time-budget). No app-token: none of the housekeeping presets
-    # (readonly, housekeeping, cd) grant `issues`, the same reason ops-nightly-status.yml
-    # gives for using its own job-scoped `github.token` instead of the App -- it cannot
-    # bypass the branch-protection ruleset and creates no further workflow runs, so it
-    # is the smaller grant for the same read (Actions API) plus post (an issue comment)
-    # this job needs.
+    # T3.3 (PLAN-ci-time-budget). No app-token: this job uses its own job-scoped
+    # `github.token` instead of the App -- it cannot bypass the branch-protection
+    # ruleset and creates no further workflow runs, so it is the smaller grant for
+    # the read (Actions API) it needs. It reports to its log and step summary; a
+    # failing check reds the scheduled run, which wl_schedred surfaces to a session.
     runs-on: ubuntu-slim
     timeout-minutes: 10
     permissions:
       contents: read
       actions: read # sample ci.yml's own runs/jobs/artifacts (budget_report.py)
-      issues: write # post to the nightly-red issue thread on a failing check
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # .ci for the rediacc_ci package, scripts/ci for report-budget-check.cjs,
+          # .ci for the rediacc_ci package,
           # .github for the workflow YAML budget_report.py's lane_display_patterns reads,
           # scripts/ci-runner for the gates.lock.json gate_costs.py --check compares against;
           # .ci also carries config/freshness.json, the registry the check step runs.
@@ -289,7 +220,7 @@ jobs:
       # artifact .ci/config/freshness.json registers at the nightly cadence is checked
       # here (today lane-durations.json via budget_report --check and gate-costs.json
       # via gate_costs --check), and rediacc_ci.ci.freshness alone writes the summary
-      # the report step posts, one section per artifact. A missing artifact, a check
+      # the report step prints, one section per artifact. A missing artifact, a check
       # that cannot start and a refused registry are all failures, never a pass.
       - name: CI time budget check
         id: budget-check
@@ -302,18 +233,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the issue gets posted whether or
-      # not the next step's own `exit 1` runs -- see report-budget-check.cjs's own
-      # header for why this posts its own dated section rather than reusing
-      # report-nightly-status.cjs's function, which is wired to a DIFFERENT trigger
-      # (workflow_run: completed of "Console CI") with no payload this cron carries.
+      # A SEPARATE STEP FROM THE FAILURE ITSELF, so the report is printed whether or
+      # not the next step's own `exit 1` runs.
       - name: Report a stale or over-budget CI leg
         if: steps.budget-check.outputs.rc != '0'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          BUDGET_CHECK_SUMMARY_PATH: /tmp/budget-check.txt
-        with:
-          script: return await require('./scripts/ci/report-budget-check.cjs')({github, context, core})
+        run: |
+          cat /tmp/budget-check.txt
+          cat /tmp/budget-check.txt >>"$GITHUB_STEP_SUMMARY"
 
       - name: Fail the job when the budget check failed
         if: steps.budget-check.outputs.rc != '0'

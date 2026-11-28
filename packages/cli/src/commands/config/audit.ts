@@ -54,6 +54,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
 
   audit
     .command('log')
+    .summary(t('commands.config.audit.log.descriptionShort'))
     .description(t('commands.config.audit.log.description'))
     .option('--since <spec>', t('commands.config.audit.log.optionSince'))
     .option('--path <glob>', t('commands.config.audit.log.optionPath'))
@@ -82,6 +83,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
 
   audit
     .command('tail')
+    .summary(t('commands.config.audit.tail.descriptionShort'))
     .description(t('commands.config.audit.tail.description'))
     .action(() => {
       const path = auditLogPath();
@@ -114,6 +116,7 @@ export function registerAuditCommands(parent: Command, _program: Command): void 
 
   audit
     .command('verify')
+    .summary(t('commands.config.audit.verify.descriptionShort'))
     .description(t('commands.config.audit.verify.description'))
     .action(() => {
       try {

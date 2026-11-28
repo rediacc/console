@@ -189,6 +189,7 @@ def settled(root, check_key, sig):
                 return rule
         return None
     except Exception:
+        # Safe to ignore: the module docstring's contract. None restores the behaviour a check had before rulings existed (warn), the safe direction for a hook that runs in every session.
         return None
 
 

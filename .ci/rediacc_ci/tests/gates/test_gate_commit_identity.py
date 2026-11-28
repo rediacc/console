@@ -1,6 +1,6 @@
 r"""Port of `.ci/scripts/test/gates/test-commit-identity.sh`, retired in W7 P5.
 
-Drives the REAL `.ci/scripts/quality/check_commit_identity.py` against a fake `gh`. The bash gate script this test used to drive (`check-commit-identity.sh`) is retired in the same change: `.github/workflows/ci-quality.yml` already invokes the Python entry point directly, and the K=5 shadow ledger under `.ci/shadow/w7p2-commit-identity.observations.jsonl` licenses the equivalence
+Drives the REAL `.ci/scripts/quality/check_commit_identity.py` against a fake `gh`. The bash gate script this test used to drive (`check-commit-identity.sh`) is retired in the same change: `.github/workflows/ci-quality.yml` already invokes the Python entry point directly, and the K=5 shadow ledger under the ledger (deleted in commit:936280cd35) licenses the equivalence
 this port checks once more, case for case, before the twin leaves.
 
 THAT GATE'S VERDICT IS AN API ANSWER, so the only way to test it without a live PR is to control what the API says. A fake `gh` on PATH serves fixture JSON and applies the caller's own `--jq` to it.

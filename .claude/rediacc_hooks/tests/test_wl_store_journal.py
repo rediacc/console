@@ -119,14 +119,13 @@ def test_union_never_doubles_an_event(repo):
     assert len(keys) == len(set(keys)) == 3
 
 
-def test_phase_and_epics_survive_the_switch(repo):
-    S.phase_event(worklist(), ME, ME, "merge", branch="live")
+def test_epics_survive_the_switch(repo):
+    S.add_item(worklist(), ME, "(%s) store anchor" % ME)
     E.record_epic(ME, "e1e1e1e1", "the epic", ["abc"])
-    commit_store(repo, "store: phase and epic")
+    commit_store(repo, "store: epic")
     git(repo, "switch", "-q", "-c", "older", "HEAD~1")
     assert not (repo / "agent" / "worklist" / "epics.jsonl").exists()
     assert "e1e1e1e1" in E.load_epics()
-    assert S.phase_fold(worklist()).phase.get(ME, {}).get("mode") == "merge"
 
 
 def test_store_override_disables_the_journal(repo, tmp_path, monkeypatch):
@@ -194,3 +193,14 @@ def test_a_secret_used_as_a_nested_key_or_in_a_tuple_is_redacted() -> None:
     assert key not in json.dumps(ev)
     assert "AKIA...OQGI" in ev["map"]
     assert ev["pair"] == ["AKIA...OQGI", "y"]
+
+
+def test_the_journal_twin_is_redacted_by_its_own_door(repo) -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "VCE5"
+    target = S.store_dir(repo) / "x.jsonl"
+    S.store_dir(repo).mkdir(parents=True, exist_ok=True)
+    payload: list[Any] = [{"ev": "x", "t": key}]
+    S._journal_append(target, payload, repo)
+    twin = S.journal_twin(target, repo)
+    assert twin is not None
+    assert key not in twin.read_text()

@@ -52,8 +52,8 @@ def variant_checks(tag: str, pick) -> None:
         pick(dev, False, False, M.ARM_FINISH) is M.V_LOOP_NEXT_MERGE,
     )
     control(
-        tag + " dev no PR names the draft",
-        pick(dev, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_DRAFT,
+        tag + " dev no PR names the backup push",
+        pick(dev, False, True, M.ARM_OPEN) is M.V_LOOP_NEXT_NO_PR_BACKUP,
     )
     control(
         tag + " landing finish merges",
@@ -98,10 +98,10 @@ def text_checks() -> None:
         "git rebase <landing branch>" in wait and "never run /pr-merge" in wait,
     )
     control("today's merge text offers /pr-merge", "run /pr-merge" in M.V_LOOP_NEXT_MERGE % fields)
-    draft = M.V_LOOP_NEXT_NO_PR_DRAFT % {"branch": "1120-2", "ahead": 2}
+    backup = M.V_LOOP_NEXT_NO_PR_BACKUP % {"branch": "1120-2", "ahead": 2}
     control(
-        "draft names gh pr create --draft",
-        "gh pr create --draft --base main --head 1120-2" in draft,
+        "the development arm names the backup push and opens no PR",
+        "git push -u origin 1120-2" in backup and "gh pr create" not in backup,
     )
 
 

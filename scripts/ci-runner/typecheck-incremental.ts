@@ -33,17 +33,14 @@ import { fileURLToPath } from 'node:url';
 import { evaluate, parse as momoaParse } from '@humanwhocodes/momoa';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { grantedCores } from './lease-client';
+import { cacheDirFor } from './typecheck-cache-dir';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 /**
  * tsbuildinfo files and stamps, one directory per checkout, OUTSIDE the repository: check:ci-gate-tree-writes counts even the gitignored .ci/cache as the shared tree, and a cache nothing else reads has no reason to sit beside the gates that read the tree.
  */
-export const CACHE_DIR = path.join(
-  os.homedir(),
-  '.cache',
-  'rediacc-typecheck',
-  REPO_ROOT.replace(/^\/+/, '').replace(/\//g, '-')
-);
+export const CACHE_DIR = cacheDirFor(REPO_ROOT);
+
 const WORKERS_CLAUSE = 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers';
 const WWW_CLAUSE = 'npm run typecheck --workspace packages/www';
 const WWW_EXPECTED = 'astro sync && tsc --noEmit';
@@ -502,6 +499,7 @@ async function execute(tsc: string, plan: Plan, cwd: string, width: number): Pro
     if (r.code !== 0) return results;
   }
   const queue = plan.steps.filter((s) => s.phase === 'check');
+  // tree-write: safe CACHE_DIR is cacheDirFor(REPO_ROOT) from typecheck-cache-dir.ts, under the home directory, outside every tree
   fs.mkdirSync(CACHE_DIR, { recursive: true });
   const workers = Array.from({ length: Math.max(1, Math.min(width, queue.length)) }, async () => {
     for (let step = queue.shift(); step !== undefined; step = queue.shift()) {
@@ -526,6 +524,12 @@ export function describeRun(r: StepResult): string {
 function tscPath(root: string): string | undefined {
   const p = path.join(root, 'node_modules', 'typescript', 'bin', 'tsc');
   return fs.existsSync(p) ? p : undefined;
+}
+
+/** Whether `dir` lies outside `root`: its relative path is `..` itself, climbs by a `..` SEGMENT, or is absolute (another drive). A first segment merely spelled `..cache` is inside. */
+function isOutside(root: string, dir: string): boolean {
+  const rel = path.relative(root, dir);
+  return rel === '..' || rel.startsWith(`..${path.sep}`) || path.isAbsolute(rel);
 }
 
 async function selftest(): Promise<number> {
@@ -560,6 +564,18 @@ async function selftest(): Promise<number> {
     workerConfigs(REPO_ROOT)
   );
   const labels = real.steps.map((s) => s.label);
+  check(
+    isOutside('/r', '/x/y') &&
+      isOutside('/r/a', '/r/b') &&
+      !isOutside('/r', '/r/..cache') &&
+      !isOutside('/r', '/r'),
+    "CONTROL: isOutside reads a first segment spelled '..cache' as inside, and a sibling or foreign path as outside"
+  );
+  // The `tree-write: safe` pragmas cite CACHE_DIR as outside every tree; this is the assertion they lean on.
+  check(
+    CACHE_DIR.startsWith(`${os.homedir()}${path.sep}`) && isOutside(REPO_ROOT, CACHE_DIR),
+    `CACHE_DIR (${CACHE_DIR}) must sit under the home directory and outside the repository, or the tree-write pragmas are false`
+  );
   check(
     labels.includes('packages/cli/tsconfig.test.json'),
     'the real plan must include packages/cli/tsconfig.test.json, the project the 2026-10-01 TS2322 lived in'

@@ -70,6 +70,8 @@ vi.mock('../../utils/repo-executor.js', () => ({
 }));
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: vi.fn().mockResolvedValue({ repoKey: 'shop', machineName: 'm1' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: vi.fn().mockResolvedValue({ repoKey: 'shop' }),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
@@ -264,8 +266,75 @@ describe('backup verify --restore-test', () => {
     });
     await run(['verify', 'shop', '--restore-test']);
     expect(printed()).toMatchObject({ status: 'failed' });
+    expect(printed().reason).toContain('the anchor moved');
     expect(mocks.setExitCode).toHaveBeenCalledWith(1);
     expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(false);
+  });
+
+  describe('a live repository whose backup loop moved the anchor during the restore (hostinger mail, 2026-11-27)', () => {
+    const MOVED = '20261127T055548Z-638b4ab3e7d6db20';
+    const heldToSnapshot = (over: Record<string, unknown> = {}) =>
+      compareRecord({
+        anchorSnapshotId: MOVED,
+        heldTo: 'snapshot',
+        snapshotId: SNAP,
+        cellsRoot: 'r1',
+        snapshotCellsRoot: 'r1',
+        ...over,
+      });
+
+    it('proves the copy held to the restored snapshot, and records proven', async () => {
+      script({
+        restore: { success: true, stdout: restoreRecord({ cellsRoot: 'verified' }) },
+        compare: { success: true, stdout: heldToSnapshot() },
+      });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(printed()).toMatchObject({ status: 'proven', snapshotId: SNAP });
+      expect(mocks.setExitCode).not.toHaveBeenCalled();
+      const post = mocks.fetch.mock.calls.find((c) => String(c[0]).includes('/verification'));
+      expect(post?.[0]).toContain(`/snapshots/${SNAP}/verification`);
+      expect(post?.[1].body).toEqual({ level: 'restore-test', status: 'proven' });
+    });
+
+    it('refuses when the restore did not verify the inventory root, and records nothing', async () => {
+      script({
+        restore: { success: true, stdout: restoreRecord({ cellsRoot: 'absent' }) },
+        compare: { success: true, stdout: heldToSnapshot() },
+      });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(printed()).toMatchObject({ status: 'failed' });
+      expect(printed().reason).toContain('manifest root');
+      expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(
+        false
+      );
+    });
+
+    it('refuses a copy held to some other snapshot', async () => {
+      script({
+        restore: { success: true, stdout: restoreRecord({ cellsRoot: 'verified' }) },
+        compare: { success: true, stdout: heldToSnapshot({ snapshotId: MOVED }) },
+      });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(printed()).toMatchObject({ status: 'failed' });
+      expect(printed().reason).not.toContain('anchor moved');
+      expect(mocks.fetch.mock.calls.some((c) => String(c[0]).includes('/verification'))).toBe(
+        false
+      );
+    });
+
+    it('a copy that differs from its snapshot records failed', async () => {
+      script({
+        restore: { success: true, stdout: restoreRecord({ cellsRoot: 'verified' }) },
+        compare: {
+          success: false,
+          stdout: heldToSnapshot({ status: 'different', reason: '1 cells of the copy differ' }),
+        },
+      });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(printed()).toMatchObject({ status: 'failed', reason: '1 cells of the copy differ' });
+      const post = mocks.fetch.mock.calls.find((c) => String(c[0]).includes('/verification'));
+      expect(post?.[1].body).toEqual({ level: 'restore-test', status: 'failed' });
+    });
   });
 
   it('prints failed, not proven, when the server answers that the snapshot is still failed', async () => {
@@ -338,6 +407,23 @@ describe('backup verify --restore-test', () => {
       await run(['verify', 'shop', '--restore-test']);
       expect(mocks.setExitCode).toHaveBeenCalledWith(1);
       expect(mocks.warn.mock.calls.join('\n')).toContain(copyName());
+    });
+
+    const retires = () =>
+      mocks.fetch.mock.calls.map((c) => String(c[0])).filter((url) => url.endsWith('/retire'));
+
+    it("retires the deleted copy's licence, and never the source's", async () => {
+      await run(['verify', 'shop', '--restore-test']);
+      const copyGuid = (mocks.addRepository.mock.calls[0][1] as { repositoryGuid: string })
+        .repositoryGuid;
+      expect(retires()).toEqual([`/account/api/v1/licenses/repos/${copyGuid}/retire`]);
+      expect(retires().join()).not.toContain(SOURCE_GUID);
+    });
+
+    it('retires nothing when the copy could not be deleted (control)', async () => {
+      script({ del: { success: false } });
+      await run(['verify', 'shop', '--restore-test']);
+      expect(retires()).toEqual([]);
     });
   });
 

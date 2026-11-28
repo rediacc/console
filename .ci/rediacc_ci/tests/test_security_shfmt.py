@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/shfmt.sh` and the port over one scratch tree apiece and compared the exit code, both streams and the recorded argv of every tool call.
 
-The ledger `.ci/shadow/w7p6-shfmt.observations.jsonl` recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
+The ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
 
 HOW THE CORPUS IS HELD STABLE. This gate prints `shfmt --version` and renders whatever diff the real formatter produces, so both the pin and the formatter's own rendering could have ended up frozen into a golden. Neither does.
 
@@ -64,6 +64,9 @@ COPIED = (
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/toolchain.py",
@@ -482,6 +485,21 @@ def real_run() -> subprocess.CompletedProcess:
     )
 
 
+# PLAN-ciquick-cpu.md W17. The live run over the real tree (the real pinned shfmt over every scope) is read by two cases, so it runs ONCE per session and the two share an xdist group so the once is real. The read-only guard travels WITH the run: the scope hashes are taken immediately before and after the one real run, so whichever case draws it first, the
+# comparison is still about that run and never about two reads with no run between them.
+REAL_RUN = pytest.mark.xdist_group("shfmt-real-run")
+_REAL_RUN: list[tuple[subprocess.CompletedProcess, dict[str, str], dict[str, str]]] = []
+
+
+def real_run_guarded() -> tuple[subprocess.CompletedProcess, dict[str, str], dict[str, str]]:
+    """(the one real run, the scope hashes before it, the scope hashes after it)."""
+    if not _REAL_RUN:
+        before = real_scope_hashes()
+        proc = real_run()
+        _REAL_RUN.append((proc, before, real_scope_hashes()))
+    return _REAL_RUN[0]
+
+
 def diff_blocks(text: str) -> tuple[list[str], list[str]]:
     """(the non-diff prologue lines, one string per `diff <a>.orig <b>` block)."""
     prologue: list[str] = []
@@ -506,10 +524,10 @@ def block_files(blocks: list[str]) -> list[str]:
     return [b.split("\n", 1)[0].split()[1].removesuffix(".orig") for b in blocks]
 
 
+@REAL_RUN
 def test_the_real_repository_is_read_only_and_reports_a_real_verdict() -> None:
     """The whole tree, the real pinned shfmt, and a read-only guard. NOT FROZEN, and the module docstring says why."""
-    before = real_scope_hashes()
-    proc = real_run()
+    proc, before, after = real_run_guarded()
     _prologue, blocks = diff_blocks(proc.stdout)
     if blocks:
         assert proc.returncode != 0
@@ -518,9 +536,10 @@ def test_the_real_repository_is_read_only_and_reports_a_real_verdict() -> None:
         assert "success: Shell script formatting passed" in proc.stdout
         for scope in (".ci/**/*.sh", ".claude/**/*.sh", "./run.sh", "scripts/dev/**/*.sh"):
             assert ("info: Checking %s" % scope) in proc.stdout, "scope %s never ran" % scope
-    assert real_scope_hashes() == before, "a real run mutated a shell script"
+    assert after == before, "a real run mutated a shell script"
 
 
+@REAL_RUN
 def test_the_ports_order_is_byte_order() -> None:
     """ATTRIBUTION, halved by the deletion and stated as such.
 
@@ -537,7 +556,7 @@ def test_the_ports_order_is_byte_order() -> None:
     assert found != sorted(found), (
         "the ambient find IS sorted here, so the port's sortedness proves nothing on this host"
     )
-    _prologue, blocks = diff_blocks(real_run().stdout)
+    _prologue, blocks = diff_blocks(real_run_guarded()[0].stdout)
     if not blocks:
         return
     files = block_files(blocks)
@@ -593,24 +612,29 @@ def test_shell_files_is_sorted_and_finds_the_nested_ones() -> None:
 def test_shell_files_agrees_with_the_ambient_find_as_a_set() -> None:
     """Different ORDER, same SET. The whole divergence in one assertion.
 
-    THE TWO `-not -path` CLAUSES ARE THE PORT'S TWO PRUNES, spelled back at find so the comparison is about ORDER and nothing else. `.claude/worktrees/*` is a peer session's sibling checkout; `.ci/cache/*` is `.gitignore:143`, the toolchain and uv sdist caches, which on 2026-09-23 put a third-party `libyaml.sh` from a PyPI sdist into this gate's corpus and turned it red over
+    THE TWO `-prune` CLAUSES ARE THE PORT'S TWO PRUNES, spelled back at find so the comparison is about ORDER and nothing else. `.claude/worktrees/*` is a peer session's sibling checkout; `.ci/cache/*` is `.gitignore:143`, the toolchain and uv sdist caches, which on 2026-09-23 put a third-party `libyaml.sh` from a PyPI sdist into this gate's corpus and turned it red over
     formatting nobody here can fix. Both are invisible to git and to CI and entirely visible to a raw walk. Drop either clause and this test fails describing the pruned files, which is the intended way to notice a prune that was removed on one side only.
     """
     for rel in (".ci", ".claude"):
         found = subprocess.run(
+            # `-prune`, not `-not -path`: the same set, but find no longer descends into every peer lease under .claude/worktrees only to drop what it found there (measured 2026-11-20: 99.9 s of this case's time, PLAN-ciquick-cpu.md W17).
             [
                 "find",
                 rel,
+                "(",
+                "-path",
+                ".claude/worktrees",
+                "-o",
+                "-path",
+                ".ci/cache",
+                ")",
+                "-prune",
+                "-o",
                 "-name",
                 "*.sh",
                 "-type",
                 "f",
-                "-not",
-                "-path",
-                ".claude/worktrees/*",
-                "-not",
-                "-path",
-                ".ci/cache/*",
+                "-print",
             ],
             capture_output=True,
             text=True,

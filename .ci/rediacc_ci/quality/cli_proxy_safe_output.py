@@ -9,6 +9,15 @@ WHAT IT CHECKS. Every non-test TypeScript file under packages/cli/src, line by l
 Comment lines are skipped. A file on ALLOWED may keep EXACTLY its pinned number of sites: one more is a finding (a new bypass in a file that is exempt for an unrelated reason), one fewer is a finding too (lower the pin, so the exemption shrinks with the code), and an entry whose file is gone is dead.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
+
+---- gate ----
+step: CLI proxy-safe output
+needs: none
+lane: quality-static
+selftest: true
+why: a CLI command that wrote to process.stdout or set process.exitCode directly returned
+     empty output and exit 0 through the executor proxy (repo cat, 2026-09-24)
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -264,4 +273,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_cli_proxy_safe_output.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

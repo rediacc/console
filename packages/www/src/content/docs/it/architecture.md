@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: it
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Architettura
@@ -240,6 +240,8 @@ rdc config audit verify
 > Questo file contiene dati sensibili (chiavi private SSH, credenziali LUKS, token Cloudflare). È memorizzato con permessi `0600` (lettura/scrittura solo per il proprietario). Non condividerlo né includerlo nel controllo di versione. Quando qualsiasi comando `rdc` lo legge, i campi sensibili sono [redatti per impostazione predefinita](/en/docs/ai-agents-safety): il testo in chiaro appare solo con `--reveal` su un TTY interattivo per esseri umani.
 
 ### Envelope v2 e applicazione lato server
+
+Consulta il [Modello di sicurezza](/it/docs/security-model) per sapere chi può vedere cosa e come sono delimitate le chiavi.
 
 Quando la configurazione è sincronizzata con l'[archivio di configurazione cifrato](/en/docs/config-storage), la CLI racchiude ogni campo sensibile in un commitment HMAC per campo e trasporta tali commitment nell'envelope in testo in chiaro. Il server vede solo digest esadecimali, mai i valori, eppure può applicare i knowledge-gate su ogni scrittura:
 

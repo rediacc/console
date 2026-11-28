@@ -9,8 +9,7 @@ Exit codes, unchanged: 0 contract is up-to-date, 1 stale contract detected.
 
 HOW IT DECIDES. It REGENERATES the contract into a temporary directory and diffs, rather than checking a hash or a timestamp. That is the expensive answer and the only honest one: a hash pinned in a file is a claim about a generator nobody re-ran, and a timestamp says which file is newer, not whether they agree.
 
-THE VERSION IS EXCLUDED FROM THE DIFF, and the twin says why: "The version is injected at build time, so ignore it when diffing (both the TS constant and the JSON field). Mirrors check-renet-types.sh." This repository stores no version in source at all -- every package.json carries the `0.0.0-dev` placeholder and the real value arrives from a git tag at build time -- so a contract
-regenerated on a developer's machine differs from the committed one in exactly those two lines and in nothing else.
+THE VERSION IS DIFFED LIKE EVERY OTHER LINE. The twin excluded it because the version was injected at build time, so a contract regenerated on a developer's machine differed from the committed one in exactly those lines. Since PLAN-console-contract-semantics.md D5 the version is a content hash of the command surface the generator computes itself: regeneration is deterministic, so a version line that differs is a contract that differs, and the executor's mismatch check (packages/cli/src/services/serve/server.ts) depends on the committed hash being the one the generator would write. All three top-level artefacts, `contract-version.generated.ts` included, are compared byte for byte.
 
 -----------------------------------------------------------------------------
 PORT NOTES.
@@ -33,6 +32,13 @@ to 1 would tell a reader "the contract is stale" when the truth is "the build di
 STDOUT OF BOTH SUBPROCESSES IS DISCARDED AND STDERR IS NOT. `>/dev/null` in the twin redirects stdout only. A build's progress chatter is noise; its errors are the only thing that explains a non-zero status, and swallowing them is how a gate failure becomes unreadable.
 
 WHAT THIS GATE CANNOT SEE, unchanged: whether the generator itself is correct. It proves the committed data equals what the generator produces TODAY, so a generator that started emitting nonsense would make the tree stale, get regenerated, and go green on the nonsense. That is the twin's blind spot and the port inherits it rather than growing a second opinion.
+
+---- gate ----
+step: CLI contract
+needs: node
+selftest: true
+lane: quality-packages
+---- end gate ----
 """
 
 import os
@@ -51,50 +57,14 @@ OUTPUT_SUBDIR = "packages/shared/src/cli-contract/data"
 # The generator, run through `npx tsx` from the repository root.
 GENERATOR = "packages/cli/scripts/generate-cli-contract.ts"
 
-# The two non-i18n artefacts, in the twin's order. Order is visible in the `Stale CLI contract: ...` line, which joins the list with spaces.
-TOP_LEVEL_FILES = ("contract.generated.ts", "contract.json")
+# The three non-i18n artefacts. Order is visible in the `Stale CLI contract: ...` line, which joins the list with spaces. `contract-version.generated.ts` carries the version alone, for a web bundle that sends it without loading the contract, so a stale copy is exactly the mismatch the executor refuses.
+TOP_LEVEL_FILES = ("contract.generated.ts", "contract.json", "contract-version.generated.ts")
 
 # The one flag beside `--selftest`: judge without building the workspace packages first (see `main`).
 NO_BUILD = "--no-build"
 
-# The two substrings whose lines are dropped before diffing. Substrings, not
-# patterns: `grep -v -e '_VERSION = ' -e '"version":'` is BRE and neither string
-# contains a BRE metacharacter, so a literal `in` test is the same question.
-VERSION_MARKERS = ("_VERSION = ", '"version":')
-
 # The em dash the twin emits, written as an escape. See the port notes.
 ORPHAN_SUFFIX = " (orphaned \u2014 no such locale)"
-
-
-def strip_version_lines(path: pathlib.Path) -> str | None:
-    """A file's content with every version-bearing line removed.
-
-    Returns None when the file cannot be read, which is what `grep` on a missing file amounts to: an empty stream plus a complaint on stderr. The caller reproduces the complaint, because the twin's process substitutions inherit the script's stderr and the message reaches a reader today.
-    """
-    try:
-        text = path.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return None
-    lines = text.split("\n")
-    # `split` leaves a trailing empty element for a file that ends in a newline. grep would not emit a line there, so it is dropped before filtering rather than filtered and re-joined, which would add a spurious blank line to one side of the comparison.
-    if lines and lines[-1] == "":
-        lines.pop()
-    kept = [line for line in lines if not any(marker in line for marker in VERSION_MARKERS)]
-    # grep terminates every line it prints, including a final one the input did not terminate. Rebuilding with a trailing newline per line reproduces the bytes `diff` actually compares.
-    return "".join(line + "\n" for line in kept)
-
-
-def compare_ignoring_version(committed: pathlib.Path, generated: pathlib.Path) -> bool:
-    """True when the two files agree once version lines are removed.
-
-    `diff -q ... >/dev/null 2>&1` in the twin, so a diff of any size is one bit of information. The bit is what the stale list records.
-    """
-    left = strip_version_lines(committed)
-    right = strip_version_lines(generated)
-    for path, content in ((committed, left), (generated, right)):
-        if content is None:
-            print("grep: %s: No such file or directory" % path, file=sys.stderr)
-    return left is not None and right is not None and left == right
 
 
 def _glob_or_literal(directory: pathlib.Path) -> list[pathlib.Path]:
@@ -120,7 +90,7 @@ def stale_entries(output_dir: pathlib.Path, temp_dir: pathlib.Path) -> list[str]
         committed = output_dir / name
         if not committed.is_file():
             stale.append("%s (missing)" % name)
-        elif not compare_ignoring_version(committed, temp_dir / name):
+        elif not _files_equal(committed, temp_dir / name):
             stale.append(name)
 
     for generated in _glob_or_literal(temp_dir / "i18n"):
@@ -140,13 +110,12 @@ def stale_entries(output_dir: pathlib.Path, temp_dir: pathlib.Path) -> list[str]
 
 
 def _files_equal(left: pathlib.Path, right: pathlib.Path) -> bool:
-    """Plain `diff -q`: no version filtering for the i18n bundles.
-
-    The twin filters versions out of the two top-level artefacts and NOT out of the locale bundles, because no version is injected into them. Applying the filter uniformly would be tidier and would stop the gate seeing a locale whose text happens to contain `"version":`, which several of them do.
-    """
+    """Plain `diff -q`, for every artefact. A missing or unreadable side is never equal: a vanished artefact must not read as up-to-date."""
     try:
         return left.read_bytes() == right.read_bytes()
-    except OSError:
+    except OSError as exc:
+        # A bare "stale" line would not say WHICH side was unreadable; the old bash `grep` printed it (per-commit review b6917624.2).
+        print("diff: %s: %s" % (exc.filename or "?", exc.strerror or exc), file=sys.stderr)
         return False
 
 
@@ -239,10 +208,11 @@ def _write_tree(base: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
     return base
 
 
-# The smallest tree that is a valid contract: two top-level artefacts and one locale. Every plant below is this dict with exactly one entry changed, which is what makes each control name a single cause.
+# The smallest tree that is a valid contract: three top-level artefacts and two locales. Every plant below is this dict with exactly one entry changed, which is what makes each control name a single cause.
 _GOLDEN = {
-    "contract.generated.ts": 'export const CLI_VERSION = "0.0.0-dev";\nexport const X = 1;\n',
-    "contract.json": '{\n  "version": "0.0.0-dev",\n  "commands": ["repo"]\n}\n',
+    "contract.generated.ts": "export const CLI_CONTRACT_VERSION = '0123456789abcdef';\nexport const X = 1;\n",
+    "contract.json": '{\n  "version": "0123456789abcdef",\n  "commands": ["repo"]\n}\n',
+    "contract-version.generated.ts": "export const CLI_CONTRACT_VERSION = '0123456789abcdef';\n",
     "i18n/en.json": '{"repo": "Repository"}\n',
     "i18n/tr.json": '{"repo": "Depo"}\n',
 }
@@ -294,20 +264,30 @@ def selftest() -> int:
         # CONTROL FIRST: committed data identical to what the generator emits. Without this every plant below could be firing against a fixture that was already stale, and the suite would be green while testing nothing.
         ctl.check("CONTROL: an up-to-date contract passes", run(dict(_GOLDEN)), 0)
 
-        # THE VERSION EXEMPTION, in both directions. A contract differing ONLY in the injected version is NOT stale...
-        version_only = dict(_GOLDEN)
-        version_only["contract.generated.ts"] = (
-            'export const CLI_VERSION = "1.2.3";\nexport const X = 1;\n'
-        )
-        version_only["contract.json"] = '{\n  "version": "1.2.3",\n  "commands": ["repo"]\n}\n'
-        ctl.check("MIRROR: a version-only difference is not stale", run(version_only), 0)
+        # THE VERSION IS NOT EXEMPT. A contract differing ONLY in its version is stale: the version is a deterministic content hash, so a mismatch means the committed contract is not the one the generator writes. One plant per artefact that carries it.
+        for name, text in (
+            (
+                "contract.generated.ts",
+                "export const CLI_CONTRACT_VERSION = 'fedcba9876543210';\nexport const X = 1;\n",
+            ),
+            ("contract.json", '{\n  "version": "fedcba9876543210",\n  "commands": ["repo"]\n}\n'),
+            (
+                "contract-version.generated.ts",
+                "export const CLI_CONTRACT_VERSION = 'fedcba9876543210';\n",
+            ),
+        ):
+            version_only = dict(_GOLDEN)
+            version_only[name] = text
+            ctl.check(
+                "PLANT: a version-only difference in %s is stale" % name, run(version_only), 1
+            )
 
-        # ...and a difference on any OTHER line still is, which is what stops the exemption from swallowing the whole file.
+        # Real drift on a non-version line, used again by the --no-build plants below.
         real_drift = dict(_GOLDEN)
         real_drift["contract.generated.ts"] = (
-            'export const CLI_VERSION = "1.2.3";\nexport const X = 2;\n'
+            "export const CLI_CONTRACT_VERSION = '0123456789abcdef';\nexport const X = 2;\n"
         )
-        ctl.check("PLANT: drift beside a version change is caught", run(real_drift), 1)
+        ctl.check("PLANT: drift on a non-version line is caught", run(real_drift), 1)
 
         # PLANT: each top-level artefact, missing and then merely different.
         for name in TOP_LEVEL_FILES:
@@ -348,11 +328,11 @@ def selftest() -> int:
             ["en.json", "tr.json"],
         )
 
-        # THE VERSION FILTER IS NOT APPLIED TO LOCALE BUNDLES, which is the asymmetry `_files_equal` exists for. A bundle whose only difference is a line containing `"version":` is STILL stale, and a port that had unified the two comparisons would report it clean.
+        # A version-looking line inside a locale bundle is drift like any other.
         version_in_locale = dict(_GOLDEN)
         version_in_locale["i18n/en.json"] = '{"repo": "Repository", "version": "x"}\n'
         ctl.check(
-            "ASYMMETRY: a version line inside a locale bundle is still drift",
+            "PLANT: a version line inside a locale bundle is drift",
             run(version_in_locale),
             1,
         )

@@ -17,8 +17,10 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 ## Tasks
 
-- [ ] Multi-region placement: prove the us and asia executor placement on real edge-us and edge-asia, the clause split from six-targets L2, multi-org ML2, durable-object L2 and L3, and connect-timeout E10.
+- [x] Multi-region placement: prove the us and asia executor placement on real edge-us and edge-asia, the clause split from six-targets L2, multi-org ML2, durable-object L2 and L3, and connect-timeout E10.
   Accept: E1 exits 0 on `durable` with two org ids against each origin, a console command before edge-us's enable step answers the coded 503 (six-targets L2), and org B's `executor_placement` counter on edge-us is recorded before and after 27-90 and 27-91 (connect-timeout E10).
+    (ticked) 2026-11-26T12:36:02Z by d778be9d: bench form of placement (ASKED:2026-11-26T10:24Z hostinger for every bench check): bench-us and bench-asia per operator ruling ASKED:2026-11-26T10:24Z (hostinger for every bench check): E1 27-90 and 27-91 rc 0 on both (us runs 8b67bdf1 372abe24 af1eb74b, asia runs 8a96a216 bdf5b5a0 6fd4609f f74e5e0d cbfc297d df7b3043); pre-enable 503 CONSOLE_EXECUTION_UNAVAILABLE on POST /account/api/v1/console/session for us and asia (console_executor --disable rc 0, then --enable rc 0); org B executor_placement D1 read before and after one 27-91 run: us d44b576d 0 -> 0, asia 014d9d8f 0 -> 0 (no relocation, fresh durable object); asia deploy record written rc 0 proxy version eaf6dba8
+    (corrected 2026-11-27T04:34:40Z, 210a21b2.1) The tick proves the bench form only (bench-us and bench-asia under ASKED:2026-11-26T10:24Z); the Accept's real edge-us and edge-asia runs are not recorded here and the bench runs do not stand in for them.
 - [ ] EU deploy order: deploy the account server on eu before the CLI release, the clause split from token-ip-rebind T9.
   Accept: the release records show the eu account deploy's version id and time ahead of the CLI publish.
 - [ ] Hostinger scheduled timer: after the stable deploy, the next scheduled snapshot of one hostinger repo uploads and commits, the clause split from shared-bucket L2.

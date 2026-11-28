@@ -54,6 +54,19 @@ describe('assertRepoMountedOnMachine', () => {
     );
   });
 
+  it('refuses an undeployed fork and names `repo up` for that fork ref', async () => {
+    // A fork's image is a reflink copy, mounted only by its first `repo up`: an upload before that would write under the unmounted path on the host disk.
+    mockExecute.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: listResultStdout([{ name: REPO_GUID, mounted: false }]),
+    });
+
+    await expect(assertRepoMountedOnMachine('mail:x', REPO_GUID, MACHINE)).rejects.toThrow(
+      /rdc repo up mail:x\b/
+    );
+  });
+
   it('throws ValidationError when the repo is absent from the list', async () => {
     mockExecute.mockResolvedValue({
       success: true,

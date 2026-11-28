@@ -23,6 +23,8 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_hook_exec_baseline.py
 COUNTER = paths.from_root(".claude", "rediacc_hooks", "execcount.py")
 SETTINGS = paths.from_root(".claude", "settings.json")
 BASELINE = paths.from_root(".ci", "policy", "hook-exec-baseline.json")
+CONFIG_FILES = ("lane-durations.json", "hook-ledger.json")
+GUARDS = paths.from_root(".claude", "rediacc_hooks", "guards")
 
 
 def _run(root=None) -> harness.RunResult:
@@ -31,11 +33,15 @@ def _run(root=None) -> harness.RunResult:
 
 
 def _mirror(tmp: pathlib.Path) -> pathlib.Path:
-    """A scratch root holding copies of the two REAL files the gate reads."""
+    """A scratch root holding copies of the REAL files the gate reads: the wiring, the pinned baseline, the lane durations and hook ledger snapshots and the guard modules its line budgets measure."""
     (tmp / ".claude").mkdir(parents=True, exist_ok=True)
     (tmp / ".ci" / "policy").mkdir(parents=True, exist_ok=True)
     shutil.copy(SETTINGS, tmp / ".claude" / "settings.json")
     shutil.copy(BASELINE, tmp / ".ci" / "policy" / "hook-exec-baseline.json")
+    (tmp / ".ci" / "config").mkdir(parents=True, exist_ok=True)
+    for name in CONFIG_FILES:
+        shutil.copy(paths.from_root(".ci", "config", name), tmp / ".ci" / "config" / name)
+    shutil.copytree(GUARDS, tmp / ".claude" / "rediacc_hooks" / "guards")
     return tmp
 
 

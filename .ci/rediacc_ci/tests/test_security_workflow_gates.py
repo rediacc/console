@@ -3,7 +3,7 @@
 THE COMPARISON IS BYTE FOR BYTE ON BOTH STREAMS, and that is affordable here in a way it usually is not: 788 of the twin's 1108 lines were ALREADY Python, sitting in six `python3 - <<'PYEOF'` heredocs, so the port transcribes them rather than rewording them. Anything short of byte equality would therefore be a transcription error, not a legitimate rewrite. Two cases are exempted by
 name below, each with its own test saying why.
 
-WHY A FIXTURE TREE AND NOT ONLY THE REAL REPO. The real tree is green, and a differential over two silent gates proves nothing (`scripts/lib/shadow-gate.ts` calls that `VACUOUS_BOTH_EMPTY` and refuses it). Every case here builds a tree that makes a specific check FAIL, and `test_the_real_repository_agrees` is the one clean-tree case, kept because the six checks read seven different
+WHY A FIXTURE TREE AND NOT ONLY THE REAL REPO. The real tree is green, and a differential over two silent gates proves nothing (the shadow gate (commit:bf054adcd4) calls that `VACUOUS_BOTH_EMPTY` and refuses it). Every case here builds a tree that makes a specific check FAIL, and `test_the_real_repository_agrees` is the one clean-tree case, kept because the six checks read seven different
 real inputs there that no fixture reproduces.
 
 WHY THE TWIN IS COPIED INTO THE FIXTURE. Both sides resolve the repository root
@@ -11,7 +11,7 @@ from their OWN location -- `${BASH_SOURCE[0]}/../../..` in the twin
 (`check-workflow-gates.sh:57-58`), `paths.repo_root()` in the port -- and CHECKS 5 and 6 read `$ROOT_DIR` rather than `$WORKFLOWS_DIR`. Pointing only `WORKFLOWS_DIR` at a fixture would leave those two checks running against the REAL repository underneath every case. Copying both implementations to the same relative paths inside the fixture is what makes all six checks
 fixture-scoped.
 
-K=5 LEDGER: `.ci/shadow/w7p6-workflow-gates.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

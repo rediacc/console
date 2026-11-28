@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.submodule_branches` against the shell and jq it replaces.
 
 WHAT THIS FILE COVERS AND WHAT IT MOSTLY CANNOT. Most gh call sites cannot be exercised locally, so the parts that DECIDE a merge -- the low-effort-reply normaliser, the PR-link matcher, and the unreplied-comment jq oracle -- are exercised as pure functions against the shapes the GitHub API actually returns. The branch/pointer logic is covered end to end by
-`.ci/shadow/w7p2-submodule-branches.observations.jsonl` over five distinct trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH` directly, added 2026-09-10 alongside the fix that made it distinguish a fetch failure from a genuinely empty description (they used to be indistinguishable, silently disabling the submodule-PR-link check on a transient API
+the ledger (deleted in commit:936280cd35) over five distinct trees. `console_pr_body` is the one exception: it takes a `gh` stub on `PATH` directly, added 2026-09-10 alongside the fix that made it distinguish a fetch failure from a genuinely empty description (they used to be indistinguishable, silently disabling the submodule-PR-link check on a transient API
 failure).
 """
 

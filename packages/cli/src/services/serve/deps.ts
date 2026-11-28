@@ -7,13 +7,17 @@
  * different config sources without either one growing a mode flag.
  */
 
+import type { AiConfigs } from '@rediacc/shared/ai';
 import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import type { PolicyDecision } from '@rediacc/shared/policy';
+import type { AiRecorder } from '../ai/recorder.js';
 import type { Executor } from '../executor/types.js';
+import type { AgentGrantSessions } from './agent-grant-session.js';
 import type { AuthVerifier } from './auth.js';
 import type { EgressReportTarget, EgressUnreachableAnswer } from './egress-report.js';
 import type { AuthorizeArgs } from './policy.js';
+import type { RunIndex } from './run-index.js';
 import type { SessionPrincipal, SessionStore } from './sessions.js';
 
 /** The audit event the executor ships for every command it runs. */
@@ -24,6 +28,8 @@ export interface ExecutorAuditEvent {
   functionName?: string;
   machineName?: string;
   params: Record<string, unknown>;
+  /** The params of the renet call `functionName` names, observed like it; never shipped whole (audit.ts reads the repository identity out of them). */
+  functionParams?: Record<string, unknown>;
   success: boolean;
   exitCode: number;
   durationMs: number;
@@ -32,6 +38,8 @@ export interface ExecutorAuditEvent {
   jobId?: string;
   /** `started` for a ticket handed back before the job ended, else the job's terminal state. */
   outcome?: 'started' | 'succeeded' | 'failed' | 'cancelled';
+  /** The command request's id, shipped so the account Worker joins this event to the console run that caused it. */
+  requestId?: string;
 }
 
 export interface ServeCrypto {
@@ -83,7 +91,13 @@ export interface ServeDeps {
   ) => Promise<EgressUnreachableAnswer | undefined>;
   /** Throws PolicyDenied when the principal may not run the command. */
   authorize: (args: AuthorizeArgs) => PolicyDecision;
-  /** Ships one audit event per command. Awaited, so a killed process cannot lose it. */
+  /**
+   * Ships one audit event. Awaited, so a killed process cannot lose it. Throws
+   * AuditUnavailableError (audit.ts) when the event could not be delivered: a
+   * mutating command whose `started` event fails is refused before dispatch
+   * (AUDIT_UNAVAILABLE), and an outcome event that fails is reported in the
+   * result instead.
+   */
   audit?: (event: ExecutorAuditEvent) => Promise<void>;
   /**
    * Whether a command's machine work runs detached. Defaults to the contract's
@@ -92,4 +106,33 @@ export interface ServeDeps {
    * harness whose fake executor does not implement the job spool.
    */
   detach?: (entry: ContractCommand) => boolean;
+  /**
+   * Records every dispatched command in the account server's run index
+   * (run-index.ts). Never fails or delays a command; absent in a harness that does not
+   * want the account round trips.
+   */
+  runIndex?: RunIndex;
+  /**
+   * The agent-grant sessions behind `POST /v1/mcp/call` (agent-grant-session.ts). Set by `rdc serve`
+   * in both modes (commands/serve.ts configLoading), always pinned to the executor's org; without it
+   * the route is not registered.
+   */
+  agentGrants?: AgentGrantSessions;
+  /**
+   * Seals and posts each AI chat message to the account server's conversation store
+   * (services/ai/recorder.ts). The store's conversation row is what the account's approval route
+   * looks up, so a chat this executor does not record cannot have a held call approved from the
+   * page. Absent in a harness that does not want the account round trips.
+   */
+  aiRecorder?: AiRecorder;
+  /**
+   * The AI profile sources of a chat, team over shared (container-config.ts
+   * `teamOverSharedAiConfigs`). Absent: the request's own config is the only source, which is the
+   * daemon tier's one enrolled config.
+   */
+  aiConfigs?: (
+    principal: SessionPrincipal,
+    config: RdcConfig,
+    configSessionId?: string
+  ) => Promise<AiConfigs>;
 }

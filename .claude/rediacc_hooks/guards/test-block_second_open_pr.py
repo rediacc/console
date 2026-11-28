@@ -17,6 +17,10 @@ import sys
 import tempfile
 import types
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_second_open_pr"
@@ -168,7 +172,7 @@ def run(command, gh):
     payload = json.dumps(
         {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(ROOT)}
     )
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=payload,
         capture_output=True,
@@ -511,7 +515,7 @@ def run_tree(command, tree, gh):
     payload = json.dumps(
         {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(tree)}
     )
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=payload,
         capture_output=True,

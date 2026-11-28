@@ -17,10 +17,19 @@
     "  1. a FAILING gate is not carried here;",
     "  2. a gate carried here is not failing -- an excuse cannot outlive its failure;",
     "  3. a carried gate emitted a key this file does not carry (a NEW finding);",
-    "  4. a carried key is no longer emitted (a STALE finding: remove it);",
+    "  4. a pattern entry is past its `expires` date;",
+    "A carried key the gate did not report THIS run is printed as a WARNING, not a",
+    "refusal (flapping keys), and is removed once it stays gone.",
+    "",
+    "A gate whose keys flap may carry a PATTERN instead of keys:",
+    "{\"gate\", \"patterns\": [\"pytest-slow:*\"], \"reason\", \"expires\": \"YYYY-MM-DD\"}.",
+    "`*` matches any run of characters. `expires` is required (a schema error",
+    "without it) and the pattern blocks from the day after it; adding a pattern or",
+    "moving its date later is a widening, never a record-only shrink.",
+    "A pattern made only of `*` (match-all) is a schema error, like a whole-gate '*' beside keys.",
     "  5. a keyed gate reported no parsable keys, or a '*' gate does emit keys;",
     "  6. an entry is malformed (no version 2, no findings, an empty list, '*'",
-    "     beside keys for one gate) -- a schema error, never skipped silently.",
+    "     beside keys for one gate) -- a schema error, never skipped silently; a pattern entry with no `expires` or beside `findings`.",
     "An entry whose reason is under 80 characters (160 for '*') carries nothing:",
     "the same bar .dead-bash-allowlist applies and test_gate_dead_bash.py proves.",
     "",
@@ -28,5 +37,33 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": []
+  "carried": [
+    {
+      "gate": "check:ci-ops-health",
+      "findings": "*",
+      "reason": "Off-box state, not code: the ops-health Worker reports the main-branch CI Drift ingest red since 2026-11-26T11:42Z (pin-freshness, devcontainer-pins, go-deps, deps, embed-asset-freshness, plan-folders), which main carries until this branch merges; on 1121-1 those gates run green in ci:quick (run 7). Lift: drop this entry once the first CI Drift run after the merge posts a green ingest."
+    },
+    {
+      "gate": "check:ci-lane-budget",
+      "findings": "*",
+      "reason": "The Windows lane (ci-windows.yml, PLAN-windows-lane) has never run on CI, so the gate reports it UNCHECKED with no job p90, and the 2026-09-29 ruling (#5a954657) forbids seeding an unmeasured number. Only a push lets the job run once and be measured. Operator ruling ASKED:2026-11-27T15:26Z: carry it. Lift: drop this entry once windows-lane has run green and budget_report --refresh has recorded its p90."
+    },
+    {
+      "gate": "check:ci-budget-freshness",
+      "findings": [
+        "gate-costs:drift:cpu_s:check:ci-actionlint",
+        "gate-costs:drift:eff_cores:check:ci-proxy-rdc-update",
+        "gate-costs:drift:eff_cores:check:ci-setup-idempotency",
+        "gate-costs:unmeasured:check:ci-devcontainer-pins"
+      ],
+      "reason": "BLOCKER: gate_costs --check judges .ci/config/gate-costs.json against the newest gate-costs captures, which on 2026-11-28 are PR #607 runs 46109550206 and 46120150056, both cancelled early (Console CI created no runs 2026-11-01..28, #cac16822); --refresh would rebase the baseline on those failed captures, so these four exact keys are carried until a full green PR #607 run measures them."
+    },
+    {
+      "gate": "check:ci-pytest",
+      "findings": [
+        "pytest-skip:.ci.rediacc_ci.tests.test_ops_windows_image::test_go_pins_equal_recorded_inputs"
+      ],
+      "reason": "The test compares the Go ISO pins with .ci/config/windows-image.json inputs, which stay null until PLAN-windows-lane WL28 uploads the Windows ISOs; the skip reports on some runs and not others, so it is carried again (removed at cdf2f8f7 when a run showed it green); under R3 an unreported carried key only warns."
+    }
+  ]
 }

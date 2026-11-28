@@ -1,6 +1,6 @@
 """The exported command tree must still match the live CLI.
 
-Ported from `.ci/scripts/quality/check-command-tree.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-cmdtree.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Command tree", needs node, selftest true.
+Ported from `.ci/scripts/quality/check-command-tree.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. Its gate header registers it as step "Command tree", needs node, selftest true.
 
 WHY THIS EXISTS, carried whole from the twin because the list of dependants IS the argument:
 
@@ -76,6 +76,13 @@ THREE PLACES THIS IS DELIBERATELY STRONGER, all of them "the gate ran and verifi
      naming which of the two commands failed.
 
 WHAT IT CANNOT SEE: whether the tree is CORRECT, only whether it is CURRENT. A CLI whose Commander definitions are wrong exports a tree that matches itself.
+
+---- gate ----
+lane: quality-code
+step: Command tree
+needs: node
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -361,4 +368,7 @@ def node_count_of(text: str) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_command_tree.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

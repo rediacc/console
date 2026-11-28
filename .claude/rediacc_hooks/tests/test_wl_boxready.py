@@ -1,6 +1,6 @@
 """The ready `[writer]` boxes and the IDLE CAPACITY block (agent/plans/PLAN-idle-writer-capacity.md I2, I3; operator rulings R1-R4 of 2026-11-09).
 
-On 2026-11-09 17 of 25 writer slots sat free for hours while PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take, and no check said so. `wl_boxready.ready_boxes` lists those boxes, and `idle_capacity_text` is the block the Stop hook raises when free slots and ready boxes meet.
+On 2026-11-09 most of the then writer capacity sat idle for hours while PLAN-enterprise-isolation.md had `[writer]` boxes a writer could take, and no check said so. `wl_boxready.ready_boxes` lists those boxes, and `idle_capacity_text` is the block the Stop hook raises when ready boxes have no writer; with no writer limit (agent/plans/PLAN-unlimited-writers.md) it counts no slots.
 """
 
 from __future__ import annotations
@@ -12,17 +12,14 @@ import os
 import pathlib
 import subprocess
 
-import pytest
-
 from rediacc_hooks import plan_gate, syspath
-from rediacc_hooks.tests.test_plan_gate import _t, _turbo_root
+from rediacc_hooks.tests.test_plan_gate import _plan_root, _t
 
 syspath.on_sys_path(plan_gate.STOP_DIR)
 B = importlib.import_module("wl_boxready")
 D = importlib.import_module("wl_plandeps")
 E = importlib.import_module("wl_effort")
 
-FIVE = "```stop-hook\neffort: high\nturbo: on\nbatch_size: 3\nplan_concurrency: 5\n```\n"
 TICKED = "    (ticked) 2026-11-09T08:00:00Z by d778be9d: commit:abc1234567 the evidence line\n"
 
 
@@ -50,7 +47,7 @@ ENT = _plan(
 
 
 def _root(tmp_path, plans, promoted):
-    return _turbo_root(tmp_path, plans, promoted, FIVE)
+    return _plan_root(tmp_path, plans, promoted)
 
 
 def _ids(ready):
@@ -185,7 +182,7 @@ def test_a_live_only_prerequisite_does_not_hold_writer_boxes(tmp_path):
     assert B.ready_boxes(root3)[0] == []
 
 
-def test_turbo_off_reads_the_given_plan_set_only(tmp_path):
+def test_the_given_plan_set_is_read_only(tmp_path):
     root = _root(tmp_path, {"ent": ENT, "b": _plan("- [ ] B1 [writer] b\n")}, ["ent", "b"])
     got = B.ready_boxes(root, plans=(_t("b"),))[0]
     assert _ids(got) == [("PLAN-b.md", "B1")]
@@ -196,10 +193,7 @@ def test_turbo_off_reads_the_given_plan_set_only(tmp_path):
 
 def _text(root, **kw):
     args = {
-        "free": 3,
-        "cap": 25,
         "phase": False,
-        "turbo_picks": (),
         "plans": None,
         "live_plans": (),
         "items": (),
@@ -216,34 +210,20 @@ def test_the_block_names_boxes_and_the_spawn_command(tmp_path):
     assert text.startswith("IDLE CAPACITY")
     assert "PLAN-ent.md#%s" % sig in text
     assert "/writers-now PLAN-ent.md" in text
-    assert "3 free writer slot(s) of 25" in text
-    assert "2 ready" in text
+    assert "IDLE CAPACITY: 2 ready `[writer]` box(es)" in text
+    assert "slot" not in text
 
 
-@pytest.mark.parametrize(
-    "kw",
-    [{"free": 0}, {"free": -2}, {"phase": True}, {"free": 1, "turbo_picks": ("PLAN-x.md",)}],
-)
-def test_the_block_stands_down(tmp_path, kw):
+def test_the_block_stands_down_in_a_babysit_or_merge_phase(tmp_path):
     root = _root(tmp_path, {"ent": ENT}, ["ent"])
-    assert _text(root, **kw) == ""
+    assert _text(root, phase=True) == ""
+    # CONTROL: the same root outside the phase names its boxes.
+    assert _text(root).startswith("IDLE CAPACITY")
 
 
 def test_the_block_is_silent_with_no_ready_box(tmp_path):
     root = _root(tmp_path, {"l": LIVE_ONLY}, ["l"])
     assert _text(root) == ""
-
-
-def test_a_turbo_pick_takes_its_slot_and_its_boxes_but_never_silences_the_rest(tmp_path):
-    """The real run of 2026-11-09 after the ceiling fix: TURBO NEXT named one plan while 21 slots were free. The picked plan's boxes leave the list and its slot is spent; the other ready boxes are still named."""
-    other = _plan("- [ ] B1 [writer] b_one with an underscore\n")
-    root = _root(tmp_path, {"ent": ENT, "b": other}, ["ent", "b"])
-    text = _text(root, free=21, turbo_picks=(_t("ent"),))
-    assert "20 free writer slot(s)" in text
-    assert "PLAN-ent.md#" not in text
-    assert "/writers-now PLAN-b.md" in text
-    # The row is the raw box line: an underscore survives (the parsed body strips it).
-    assert "B1 [writer] b_one with an underscore" in text
 
 
 def test_the_effort_table_owns_the_key_and_the_hook_produces_it():
@@ -260,7 +240,7 @@ def test_the_pr_loop_profile_keeps_the_key():
         n.value
         for n in ast.walk(tree)
         if isinstance(n, ast.Assign)
-        and any(getattr(t, "id", "") == "TURBO_KEEPS" for t in n.targets)
+        and any(getattr(t, "id", "") == "IDLE_KEEPS" for t in n.targets)
     )
     assert "idle-capacity" in ast.unparse(keeps)
 

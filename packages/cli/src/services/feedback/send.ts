@@ -50,6 +50,7 @@ export function buildReport(options: BuildOptions): FeedbackReport {
   const { entry } = options;
   const message = options.message?.trim();
   return {
+    source: 'cli',
     kind: options.kind,
     commandPath: entry?.commandPath ?? '',
     argv: entry?.argv ?? '',

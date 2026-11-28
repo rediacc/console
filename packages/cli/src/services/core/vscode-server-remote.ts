@@ -54,6 +54,7 @@ async function execSSH(
   stdin?: string
 ): Promise<SSHExecResult> {
   const conn = new SSHConnection(privateKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
     forceTTY: false,
   });
@@ -386,4 +387,52 @@ export async function waitForHttpReady(
     await new Promise((r) => setTimeout(r, 500));
   }
   return false;
+}
+
+/**
+ * What `renet repository vscode expose --output json` prints
+ * (private/renet/cmd/renet/repository_vscode.go vscodeExposeResult): the
+ * editor's public name behind the route server's portal-token gate. The
+ * container runs a pinned code-server image, so this path installs nothing on
+ * the host (agent/plans/PLAN-vscode-browser-exposure.md Design 2).
+ */
+export interface VSCodeExposeResult {
+  guid: string;
+  hostname: string;
+  url: string;
+  serviceIp: string;
+  folder: string;
+}
+
+function isExposeResult(value: unknown): value is VSCodeExposeResult {
+  if (typeof value !== 'object' || value === null) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.guid === 'string' &&
+    typeof v.hostname === 'string' &&
+    typeof v.url === 'string' &&
+    typeof v.serviceIp === 'string' &&
+    typeof v.folder === 'string'
+  );
+}
+
+/**
+ * Find the expose result in captured stdout. Bridge log lines may be
+ * interleaved (and prefixed `[tag] `), so each line is tried on its own and
+ * the last complete result wins.
+ */
+export function parseVSCodeExposeResult(stdout: string): VSCodeExposeResult | undefined {
+  let found: VSCodeExposeResult | undefined;
+  for (const raw of stdout.split('\n')) {
+    const line = raw.replace(/^\[[^\]]+\]\s?/, '').trim();
+    const brace = line.indexOf('{');
+    if (brace < 0) continue;
+    try {
+      const parsed: unknown = JSON.parse(line.slice(brace));
+      if (isExposeResult(parsed)) found = parsed;
+    } catch {
+      // Not JSON: a log line that happens to carry a brace.
+    }
+  }
+  return found;
 }

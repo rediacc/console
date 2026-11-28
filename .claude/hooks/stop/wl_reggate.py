@@ -9,6 +9,7 @@ FAIL SAFE: a missing marker initialises to current HEAD and asks nothing that st
 """
 
 import contextlib
+import datetime
 import fnmatch
 import glob
 import hashlib
@@ -53,10 +54,12 @@ REGGATE_VERDICTS = (
 # SCOPE IS THE BRANCH, not the session. `reggate_path` is keyed on session id, so a per-session budget would evaporate at exactly the moment a long night makes compaction likely. A branch maps one-to-one onto one PR and one CI queue, which is where the cost actually lands; two sessions sharing a branch share the budget, correctly, because they share the queue.
 # ---------------------------------------------------------------------------
 REGGATE_CAP = max(1, int(os.environ.get("WORKLIST_REGGATE_CAP", "7")))
-# A branch may never merge, so the merge probe alone could hold a debt open
-# forever. due = min(merge_detected, at + grace): the grace clock can only make a
-# debt due SOONER, never never.
+# A debt is due when its ledger's branch is not the live one (it landed or was abandoned: the one-branch rule leaves no third case) or when the grace clock runs out, whichever comes first (debt_due). The clock is what makes a debt on the live branch, or on `main`, come back at all.
 REGGATE_DEBT_GRACE_MIN = max(1, int(os.environ.get("WORKLIST_REGGATE_DEBT_GRACE_MIN", "720")))
+# THE CAP ON THE CAP (design Q4.2, agent/plans/PLAN-reggate-debt-collection.md D2). Past this many outstanding debts on the live branch the cap stops deferring and the demand blocks normally: without it the cap was a permanent hatch, and 0914-1 (29) and 1104-1 (28) both walked through it.
+REGGATE_MAX_DEBTS = max(1, int(os.environ.get("WORKLIST_REGGATE_MAX_DEBTS", "5")))
+# A retire pays a debt only with the operator minute it was ruled at (D5).
+RETIRE_ASKED_RE = re.compile(r"^ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
 
 
 def debt_dir(root=None):
@@ -76,9 +79,9 @@ def debt_dir(root=None):
 def _branch_slug(branch):
     """A branch name flattened to one safe filename component.
 
-    Branch names carry '/' and worse; one file per branch means the name IS the filename, so it is sanitised rather than trusted.
+    Branch names carry '/' and worse; one file per branch means the name IS the filename, so it is sanitised rather than trusted. A dot is flattened too: ledger_paths skips every dotted stem (the `<branch>.shapedup-wide.jsonl` side files), so a ledger written under a dotted branch name would never be read back (review 896a95d5.4).
     """
-    slug = re.sub(r"[^A-Za-z0-9._-]+", "-", (branch or "detached").strip()) or "detached"
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", (branch or "detached").strip()) or "detached"
     return slug[:100]
 
 
@@ -164,7 +167,12 @@ def read_ledger(branch, root=None):
 
     `forgot` means the ledger could not be read as written. It is reported rather than swallowed, because a budget computed from an unreadable ledger reads as a FRESH budget -- the most permissive answer possible, and exactly the shape that would let the cap silently stop capping.
     """
-    path = debt_path(branch, root)
+    return read_ledger_path(debt_path(branch, root))
+
+
+def read_ledger_path(path):
+    """(records, forgot) for one ledger file, under read_ledger's FAIL SAFE contract."""
+    path = pathlib.Path(path)
     if not path.exists():
         return [], False
     records, forgot = [], False
@@ -187,27 +195,71 @@ def read_ledger(branch, root=None):
     return records, forgot
 
 
-def branch_merged(branch, root=None):
-    """Has this branch landed on origin/main?
+def ledger_paths(root=None):
+    """Every per-branch debt ledger under debt_dir, sorted.
 
-    A FAILED PROBE IS NOT A MERGE. It returns False, so the grace clock alone governs the debt -- making it due sooner, never never. A probe that answered True on failure would discharge every debt on any git hiccup.
+    SKIPS `*.*.jsonl`. The shape-duplication advisory writes `<branch>.shapedup-wide.jsonl` beside the ledgers, holding only `ask` records; a reader that folded those as ledgers would count a second "branch" per real one. `_branch_slug` flattens every dot, so a dotted stem is never a ledger whatever the branch is called.
     """
-    if not branch:
-        return False
-    # NOT `merge-base --is-ancestor`: it answers through its EXIT CODE and prints nothing, while C._git returns stdout and collapses every failure to "". Through that helper a merged branch and a broken git are the same empty string. `rev-list --count origin/main..HEAD` puts the answer on stdout: "0" means HEAD carries nothing origin/main lacks, i.e. it landed.
-    return C._git(root or ".", "rev-list", "--count", "origin/main..HEAD") == "0"
+    d = debt_dir(root)
+    if not d.is_dir():
+        return []
+    return sorted(p for p in d.glob("*.jsonl") if p.is_file() and "." not in p.stem)
 
 
-def budget_state(branch, root=None):
-    """(charged, remaining, debts, forgot) folded from the ledger.
+def debt_due(record, live_branch, now=None):
+    """Is this debt due? (agent/plans/PLAN-reggate-debt-collection.md D1.)
 
-    THE COUNTER RESETS WHEN THE BRANCH LANDS; DEBTS DO NOT. A merge resets the counter and simultaneously makes every outstanding debt DUE. That inversion is the point: merging is what makes you pay, and there is no ordering in which a merge discharges a debt.
+    True when the debt's branch is not the live one, or when `at + REGGATE_DEBT_GRACE_MIN` has passed. `main` is never "the other branch": a `main.jsonl` debt is due by the clock alone, because main is where every branch lands rather than a branch that landed.
+
+    IT REPLACED `branch_merged`, which ignored its argument and answered `rev-list --count origin/main..HEAD == "0"` for the CURRENT HEAD. Under `gh pr merge --rebase` a landed branch's shas are rewritten, so that probe never saw a merge from the branch itself, and a fresh branch with no commits read as merged. The one-branch rule makes the question unnecessary: a ledger whose branch is not the live one has landed or been abandoned, and either way it is due.
+
+    An unparseable `at` is DUE: a debt whose clock cannot be read must not be held open forever by its own corruption.
+    """
+    br = str((record or {}).get("br") or "")
+    if br != "main" and br != str(live_branch or ""):
+        return True
+    at = C.parse_stamp(str((record or {}).get("at") or ""))
+    if at is None:
+        return True
+    now = now or C.utcnow()
+    return at + datetime.timedelta(minutes=REGGATE_DEBT_GRACE_MIN) <= now
+
+
+def cap_defers(remaining, forgot, outstanding):
+    """The cap's guard, as the wl_checks block site spells it: defer only when the ledger read cleanly, the budget is spent, and fewer than REGGATE_MAX_DEBTS debts are outstanding on the live branch. Any other answer leaves the demand to block normally."""
+    return not forgot and remaining <= 0 and outstanding < REGGATE_MAX_DEBTS
+
+
+def paid_sigs(records):
+    """Sigs one ledger has paid: a `discharge`, or a `retire` carrying its operator `ASKED:` stamp. A retire without a well-formed stamp pays nothing (D5).
+
+    THIS READER ONLY SHAPE-CHECKS THE STAMP (review 896a95d5.3). That the minute matches an operator answer is checked once, at write time, by `retire()` against the transcript; a reader cannot repeat it. What keeps a hand-typed `retire` line out of the ledger is the pre-bash and Edit/Write guard `block_agent_store_shell_write` (agent/reggate is an agent store)."""
+    out = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+    out |= {
+        r.get("sig")
+        for r in records
+        if r.get("kind") == "retire" and RETIRE_ASKED_RE.match(str(r.get("asked") or ""))
+    }
+    out.discard(None)
+    return out
+
+
+def budget_state(branch, root=None, live=None):
+    """(charged, remaining, debts, forgot) folded from the ledger; `debts` are the outstanding (unpaid) ones.
+
+    THE COUNTER RESETS WHEN THE LEDGER'S BRANCH IS NOT THE LIVE ONE; DEBTS DO NOT. A branch that landed has a counter nobody can charge again, while its outstanding debts become due (debt_due). That inversion is the point: landing is what makes a debt payable, and there is no ordering in which landing discharges one. `live` defaults to the checkout's current branch.
+
+    AN UNKNOWN LIVE BRANCH RESETS NOTHING (review 896a95d5.1). When `live` is defaulted and git cannot name a branch (a failed probe, a detached HEAD), `C.git_branch` answers "", and comparing that against the ledger's branch would reset every counter to the full cap: the lax direction. With no live branch to compare against, the counter stands.
     """
     records, forgot = read_ledger(branch, root)
-    discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+    paid = paid_sigs(records)
     charged = sum(1 for r in records if r.get("kind") == "charge")
-    debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in discharged]
-    if branch_merged(branch, root):
+    debts = [r for r in records if r.get("kind") == "debt" and r.get("sig") not in paid]
+    if live is None:
+        live = C.git_branch(root or C.project_root(C.project_start()))
+        if not live:
+            return charged, max(0, REGGATE_CAP - charged), debts, forgot
+    if (branch or "") != (live or ""):
         charged = 0
     return charged, max(0, REGGATE_CAP - charged), debts, forgot
 
@@ -215,6 +267,463 @@ def budget_state(branch, root=None):
 def charge(branch, sig, reason, root=None):
     """Spend one unit of budget. Called ONLY on a `proven` settle or at the cap."""
     return append_ledger(branch, {"kind": "charge", "sig": sig, "why": reason}, root=root)
+
+
+def cap_demand(branch, sig, gate, root=None):
+    """The cap at the wl_checks block site, as one call: -> (capped, charged).
+
+    Reads the live branch's budget, asks cap_defers (the spent budget, a clean read, and fewer than REGGATE_MAX_DEBTS outstanding debts), and only on a yes writes the `debt` record (the judge's `regression_gate` finding in `gate`) and the `capped` charge. Any other answer writes nothing and the demand blocks normally. The block site calls this and nothing else of the ledger, so a control on it is a control on the block (review 896a95d5.2).
+    """
+    charged, remaining, debts, forgot = budget_state(branch, root, live=branch)
+    if not cap_defers(remaining, forgot, len(debts)):
+        return False, charged
+    gate = gate or {}
+    append_ledger(
+        branch,
+        {
+            "kind": "debt",
+            "sig": sig,
+            "blind_spot": str(gate.get("blind_spot", ""))[:300],
+            "surface": str(gate.get("surface", ""))[:20],
+            "artifact": str(gate.get("artifact", ""))[:200],
+            "charged": charged,
+            **debt_snapshot(root if root is not None else C.project_root(C.project_start())),
+        },
+        root=root,
+    )
+    charge(branch, sig, "capped", root=root)
+    return True, charged
+
+
+# --------------------------------------------------------------------------- DEBT COLLECTION (agent/plans/PLAN-reggate-debt-collection.md D3-D7).
+#
+# The cap above turns a demand into a `debt` record. Until this half landed nothing read those records back: no code wrote `materialize` or `discharge`, so a capped demand was a permanent deferral. Here a due debt becomes a worklist item exactly once, a changed named artifact discharges it, an operator minute retires it, and the CI gate (.ci/rediacc_ci/quality/reggate_debt.py) folds the same ledgers through these same readers.
+# ---------------------------------------------------------------------------
+BACKLOG_PLAN = "agent/plans/PLAN-reggate-debt-collection.md"
+BACKLOG_TITLE = "reggate debt backlog"
+_LEGACY_REL: list[str] = []
+
+
+def legacy_rel():
+    """`.ci/policy/reggate-debt-legacy.json` through rediacc_ci.policy_paths (check:ci-policy-inventory), resolved on first use and cached; wl_proc's import put `.ci` on sys.path. Lazy for the reason wl_loopspeed.record_policy_rel gives: a module-level call breaks the Stop-hook tests that copy this directory into a scratch tree without `.ci`."""
+    if not _LEGACY_REL:
+        from rediacc_ci.policy_paths import policy_rel
+
+        _LEGACY_REL.append(policy_rel("reggate-debt-legacy.json"))
+    return _LEGACY_REL[0]
+
+
+# Epics truncate one record's covers at wl_epic.EPIC_MAX_COVERS; a first import of a hundred debts is attached in chunks of this size.
+_EPIC_CHUNK = 64
+
+
+def debt_entries(root=None):
+    """One dict per `debt` record across every ledger, in ledger then file order.
+
+    Keys: sig, br (the record's branch, else the ledger's), ledger (the file stem, which append_ledger maps back to the same file), at, blind_spot, surface, artifact, paid (a discharge or a stamped retire), retired, discharged, item (the materialized item id, or ""), and the record's content snapshot head, dirty (None when the record has none) and dirty_more (`debt_snapshot`).
+    """
+    out = []
+    for path in ledger_paths(root):
+        records, _forgot = read_ledger_path(path)
+        discharged = {r.get("sig") for r in records if r.get("kind") == "discharge"}
+        paid = paid_sigs(records)
+        items = {
+            r.get("sig"): str(r.get("item") or "")
+            for r in records
+            if r.get("kind") == "materialize"
+        }
+        for r in records:
+            if r.get("kind") != "debt":
+                continue
+            sig = str(r.get("sig") or "")
+            out.append(
+                {
+                    "sig": sig,
+                    "br": str(r.get("br") or path.stem),
+                    "ledger": path.stem,
+                    "at": str(r.get("at") or ""),
+                    "blind_spot": str(r.get("blind_spot") or ""),
+                    "surface": str(r.get("surface") or ""),
+                    "artifact": str(r.get("artifact") or ""),
+                    "paid": sig in paid,
+                    "discharged": sig in discharged,
+                    "retired": sig in paid and sig not in discharged,
+                    "item": items.get(sig, ""),
+                    "head": str(r.get("head") or ""),
+                    "dirty": r.get("dirty") if isinstance(r.get("dirty"), dict) else None,
+                    "dirty_more": bool(r.get("dirty_more")),
+                }
+            )
+    return out
+
+
+def due_debts(root, live_branch, now=None):
+    """Debts that are due, unpaid and not yet materialized."""
+    return [
+        e
+        for e in debt_entries(root)
+        if not e["paid"] and not e["item"] and debt_due(e, live_branch, now)
+    ]
+
+
+def debt_item_text(entry, me8):
+    """The item a due debt becomes. The blind spot rides VERBATIM: it is the judge's finding, and a paraphrase is how a debt loses what it was about."""
+    return "reggate-debt:%s (%s) %s -- branch %s, surface %s, named artifact %s" % (
+        entry["sig"][:8],
+        (me8 or "")[:8],
+        entry["blind_spot"],
+        entry["br"],
+        entry["surface"] or "none",
+        entry["artifact"] or "(none)",
+    )
+
+
+@contextlib.contextmanager
+def _collect_lock(root=None):
+    """One collector at a time across sessions sharing this tree: two stops folding the same due set would each add the same items. The lock file has no `.jsonl` suffix, so ledger_paths never reads it."""
+    import fcntl
+
+    d = debt_dir(root)
+    d.mkdir(parents=True, exist_ok=True)
+    with open(d / "collect.lock", "a", encoding="utf-8") as fh:
+        fcntl.flock(fh, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(fh, fcntl.LOCK_UN)
+
+
+def _live_plan_epic(loop_plans):
+    """The first epic carrying one of the live PR's plans, or ""."""
+    import wl_epic as E
+
+    plans = set(loop_plans or ())
+    if not plans:
+        return ""
+    return next((eid for eid, rec in E.load_epics().items() if rec.get("plan") in plans), "")
+
+
+def backlog_epic(me8):
+    """The one backlog epic carrying this plan, minted on first use."""
+    import wl_epic as E
+
+    for eid, rec in E.load_epics().items():
+        if rec.get("plan") == BACKLOG_PLAN and rec.get("title") == BACKLOG_TITLE:
+            return eid
+    return E.new_epic(me8, BACKLOG_TITLE, plan=BACKLOG_PLAN)
+
+
+def _attach(me8, epic_id, ids):
+    import wl_epic as E
+
+    for k in range(0, len(ids), _EPIC_CHUNK):
+        E.add_to_epic(me8, epic_id, ids[k : k + _EPIC_CHUNK])
+
+
+def materialize(root, worklist, me8, live_branch, loop_plans=(), now=None):
+    """Turn every due, unpaid, unmaterialized debt into ONE worklist item, once. -> [(sig, item_id)].
+
+    One `add_items` append for the whole set, then one `materialize` record per debt in its own ledger, which is what makes a second stop add nothing. A debt on the live branch joins the live PR plan's epic, so it blocks like any item there; any other debt (and a live one when no PR plan epic exists) joins the backlog epic, which carries this plan and stays one queued line until this plan is the live PR's.
+
+    AN ITEM WITHOUT ITS RECORD IS ADOPTED, NOT ADDED AGAIN (review ee1cb780.2). The items are appended before the records, so a stop that raised between the two left items whose debts still read as unmaterialized; the next stop added each one a second time. A due debt whose item already sits in the store (`_orphan_items`) takes that item's id, and only the rest are added.
+    """
+    with _collect_lock(root):
+        due = due_debts(root, live_branch, now)
+        if not due:
+            return []
+        orphans = _orphan_items(worklist, due)
+        fresh = [e for e in due if e["sig"] not in orphans]
+        added = iter(
+            S.add_items(worklist, me8, [debt_item_text(e, me8) for e in fresh], root=root)
+            if fresh
+            else []
+        )
+        ids = [orphans[e["sig"]] if e["sig"] in orphans else next(added) for e in due]
+        for e, iid in zip(due, ids, strict=True):
+            append_ledger(
+                e["ledger"], {"kind": "materialize", "sig": e["sig"], "item": iid}, root=root
+            )
+        live_epic = _live_plan_epic(loop_plans)
+        on_live = [
+            iid for e, iid in zip(due, ids, strict=True) if live_epic and e["br"] == live_branch
+        ]
+        rest = [iid for iid in ids if iid not in set(on_live)]
+        if on_live:
+            _attach(me8, live_epic, on_live)
+        if rest:
+            _attach(me8, backlog_epic(me8), rest)
+        return [(e["sig"], iid) for e, iid in zip(due, ids, strict=True)]
+
+
+def _orphan_items(worklist, due):
+    """`sig -> item id` for each due debt whose item is already in the store with no `materialize` record: an item whose text opens `reggate-debt:<sig8> (` and names the debt's branch (debt_item_text's shape)."""
+    by_head = {
+        ("reggate-debt:%s (" % e["sig"][:8], "-- branch %s," % e["br"]): e["sig"] for e in due
+    }
+    out: dict[str, str] = {}
+    for rec in S.load(worklist, sync=False).items:
+        text = str(rec.get("text") or "")
+        for (head, branch), sig in by_head.items():
+            if sig not in out and text.startswith(head) and branch in text:
+                out[sig] = str(rec.get("id") or "")
+    return {sig: iid for sig, iid in out.items() if iid}
+
+
+def collect_debts(root, worklist, me8, live_branch, loop_plans=(), items=None):
+    """The stop-time debt collection, in order (D3, D4, D7): materialize every due debt, discharge every proven one, and return the REGGATE_DEBT_STATUS line while any debt stays unpaid ("" when none does). wl_checks queues the line; this is the one call it makes, so the suite drives the same sequence the stop runs (review ee1cb780.3)."""
+    materialize(root, worklist, me8, live_branch, loop_plans)
+    # Discharge is hook-only (D4): a changed named artifact pays a debt here, and nothing else writes `discharge`.
+    discharge_scan(root, worklist, me8, items)
+    n_open, n_legacy, oldest = debt_status(root)
+    return M.REGGATE_DEBT_STATUS % (n_open, n_legacy, oldest) if n_open else ""
+
+
+def legacy_sigs(root=None):
+    """The frozen legacy set from `legacy_rel()`, or an empty set when the file is absent or unreadable."""
+    if root is None:
+        root = C.project_root(C.project_start())
+    try:
+        data = json.loads((pathlib.Path(root) / legacy_rel()).read_text(encoding="utf-8"))
+    except (OSError, ValueError, ImportError):
+        return set()
+    sigs = data.get("sigs") if isinstance(data, dict) else None
+    return {s for s in sigs if isinstance(s, str)} if isinstance(sigs, list) else set()
+
+
+def debt_status(root=None, legacy=None):
+    """(open, legacy_open, oldest_date) over every unpaid debt; oldest_date is "" when none is open."""
+    legacy = legacy_sigs(root) if legacy is None else legacy
+    unpaid = [e for e in debt_entries(root) if not e["paid"]]
+    if not unpaid:
+        return 0, 0, ""
+    oldest = min((e["at"] for e in unpaid if e["at"]), default="")
+    return len(unpaid), sum(1 for e in unpaid if e["sig"] in legacy), oldest[:10]
+
+
+# A path a session names on the debt's item (`worklist.py --update <me> <id> artifact:<path>`), tried beside the debt's own named artifact.
+_ARTIFACT_TOKEN = re.compile(r"(?<!\S)artifact:(\S+)")
+
+
+def _clean_rel(rel):
+    """A repo-relative path, or "" for anything that climbs out or is absolute (the prefix strip, never `.lstrip("./")`: see prove_named_artifact)."""
+    rel = str(rel or "").strip().strip("`'\"")
+    while rel.startswith("./"):
+        rel = rel[2:]
+    if not rel or rel.startswith("/") or ".." in rel.split("/"):
+        return ""
+    return rel
+
+
+def _dirty_paths(root):
+    """Every path `git status --porcelain` names, or an empty set when git cannot answer. A broken git proves NOTHING here, the opposite of _is_dirty's err-toward-True: that one decides whether to run a gate, this one whether a debt is paid."""
+    status = C._git(root, "status", "--porcelain", "--untracked-files=all") or ""
+    return {_porcelain_path(ln) for ln in status.splitlines() if ln.strip()}
+
+
+def _is_listed_dirty(rel, dirty):
+    """Whether `git status` named `rel`, or an untracked directory holding it."""
+    return rel in dirty or any(d.endswith("/") and rel.startswith(d) for d in dirty)
+
+
+# At most this many dirty paths are hashed into a debt record; past it the record says `dirty_more` and a path it did not hash cannot prove by the dirty tree (it may have been dirty already).
+DEBT_DIRTY_MAX = 128
+
+
+def debt_snapshot(root):
+    """The fields a `debt` record carries so a later dirty path can be judged by CONTENT (review 6b9a0176.1): `head`, the commit the tree stood on, and `dirty`, the content hash (`_hash_file`, "" for a deleted path) of every path `git status` named at that moment, capped at DEBT_DIRTY_MAX with `dirty_more` set past it. Empty when git cannot answer, which leaves only the commit-date proof."""
+    head = C._git(root, "rev-parse", "--verify", "-q", "HEAD")
+    if not head:
+        return {}
+    dirty = sorted(_dirty_paths(root))
+    hashes = {
+        rel: _hash_file(pathlib.Path(root) / rel)
+        for rel in dirty[:DEBT_DIRTY_MAX]
+        if not rel.endswith("/")
+    }
+    snap = {"head": head, "dirty": hashes}
+    if len(dirty) > DEBT_DIRTY_MAX:
+        snap["dirty_more"] = True
+    return snap
+
+
+def _changed_since_debt(root, rel, debt):
+    """Whether the content at `rel` now differs from what it was when `debt` was recorded; False when the record carries no snapshot.
+
+    A path dirty at that moment is compared with the hash the record holds, so a pre-debt edit that is stashed and popped, touched or saved unchanged proves nothing. A path clean at that moment held the blob of the record's `head` (or did not exist there), and is compared with it. Never by modification time, which every rewrite moves.
+    """
+    head = str(debt.get("head") or "")
+    hashes = debt.get("dirty")
+    if not head or not isinstance(hashes, dict):
+        return False
+    full = pathlib.Path(root) / rel
+    if rel in hashes:
+        return _hash_file(full) != hashes[rel]
+    if debt.get("dirty_more"):
+        return False
+    then = C._git(root, "rev-parse", "--verify", "-q", "%s:%s" % (head, rel))
+    if not then:
+        return full.exists()
+    return C._git(root, "hash-object", "--", rel) != then
+
+
+def _committed_after(root, rel, at):
+    """The committer date of the last commit touching `rel` when it is later than `at`, else ""."""
+    out = (C._git(root, "log", "-1", "--format=%cI", "--", rel) or "").strip()
+    if not out:
+        return ""
+    try:
+        when = datetime.datetime.fromisoformat(out)
+    except ValueError:
+        return ""
+    return out if when > at else ""
+
+
+def _artifact_reachable(root, scripts, rel):
+    """True unless `rel` is a check script (CHECK_SCRIPT_GLOBS) that nothing `npm run ci` runs. A unit test, an E2E case or an ops step is not a gate and needs no key; a gate that is defined but never run proves nothing."""
+    if not any(fnmatch.fnmatch(rel, pat) for pat in CHECK_SCRIPT_GLOBS):
+        return True
+    key = _gate_key(scripts, rel)
+    if key and gate_reachable(scripts, key, root):
+        return True
+    if PYTEST_GATE_KEY in scripts and pytest_collects(rel, root):
+        return gate_reachable(scripts, PYTEST_GATE_KEY, root)
+    if _citation_matches_gate(rel, root):
+        return True
+    return _hook_suite_reachable(scripts, rel, root)
+
+
+# The hook suites that run in CI without a check:* key: `.claude/rediacc_hooks/tests/test_hooks_delegates.py` (`_discover_tailed`) globs `test-*.py` directly under each of its `_TAILED_ROOTS` and runs every one, and pytest collects that driver under `check:ci-pytest`. A `.claude/hooks/**` path anywhere else (the `test-*.sh` globs, which no runner reads since the bash batteries retired) is reached by nothing (review 6253c25c.3).
+HOOK_SUITE_DRIVER = ".claude/rediacc_hooks/tests/test_hooks_delegates.py"
+HOOK_SUITE_DIRS = (".claude/hooks/stop/", ".claude/hooks/context/", ".claude/hooks/post-bash/")
+
+
+def _hook_suite_reachable(scripts, rel, root):
+    """True when `rel` is a `test-*.py` suite directly under a HOOK_SUITE_DIRS directory, the driver that runs those suites exists and pytest collects it, and `check:ci-pytest` is reachable from `npm run ci`."""
+    folder, _sep, name = rel.rpartition("/")
+    if folder + "/" not in HOOK_SUITE_DIRS or not fnmatch.fnmatch(name, "test-*.py"):
+        return False
+    if not (pathlib.Path(root) / HOOK_SUITE_DRIVER).is_file():
+        return False
+    if PYTEST_GATE_KEY not in scripts or not pytest_collects(HOOK_SUITE_DRIVER, root):
+        return False
+    return gate_reachable(scripts, PYTEST_GATE_KEY, root)
+
+
+def prove_debt(root, scripts, rel, debt, dirty):
+    """(proven, proof) for one candidate path against one debt entry (D4): `debt` is a `debt_entries` row, read for `at` and its content snapshot (`head`, `dirty`, `dirty_more`).
+
+    Proven when the path exists, changed after the debt (dirty in this tree with content that differs from what the path held when the debt was recorded, or last committed after `at`), and, when it is a check script, is reachable from `npm run ci`. The two proofs say which one applied, because they differ in strength: the commit-date proof shows a case was written after the debt, not that it fails on the defect.
+
+    DIRTY IS NOT ENOUGH ON ITS OWN (review 6253c25c.1), AND NEITHER IS A NEWER MTIME (review 6b9a0176.1): a path edited before the debt and still uncommitted is dirty, and a stash and pop, a `touch` or an unchanged editor save gives it a fresh modification time without changing a byte. The content is compared with the debt's snapshot (`_changed_since_debt`); a record with no snapshot has only the commit-date proof.
+    """
+    rel = _clean_rel(rel)
+    when = C.parse_stamp(str(debt.get("at") or ""))
+    full = pathlib.Path(root) / rel
+    if not rel or when is None or not full.exists():
+        return False, ""
+    at = debt.get("at")
+    if _is_listed_dirty(rel, dirty) and _changed_since_debt(root, rel, debt):
+        proof = "dirty-tree: %s changed in this tree after the debt (%s)" % (rel, at)
+    else:
+        committed = _committed_after(root, rel, when)
+        if not committed:
+            return False, ""
+        proof = (
+            "commit-date: %s last committed %s, after the debt (%s); this shows a case was "
+            "written after the debt, not that it fails on the defect" % (rel, committed, at)
+        )
+    if not _artifact_reachable(root, scripts, rel):
+        return False, ""
+    return True, proof
+
+
+def discharge_scan(root, worklist, me8, items=None):
+    """Discharge every unpaid debt whose named artifact (or an `artifact:<path>` on its item) proves it. -> [(sig, artifact)].
+
+    HOOK-ONLY. No CLI verb writes `discharge`: a hand tick of a debt's item changes nothing in the ledger, so the gate still counts the debt unpaid (C5). On proof the hook appends `{"kind": "discharge", ...}` and ticks the item with `discharge:<sig8> <artifact>`. `items` is the fold's item list, read for the `artifact:` tokens and to skip re-ticking a closed item.
+    """
+    by_id = {r.get("id"): r for r in (items or [])}
+    out: list[tuple[str, str]] = []
+    with _collect_lock(root):
+        unpaid = [e for e in debt_entries(root) if not e["paid"]]
+        if not unpaid:
+            return out
+        scripts = package_scripts(root)
+        dirty = _dirty_paths(root)
+        for e in unpaid:
+            rec = by_id.get(e["item"]) or {}
+            notes = "%s\n%s" % (rec.get("text", ""), rec.get("line", ""))
+            cands = [e["artifact"], *_ARTIFACT_TOKEN.findall(notes)]
+            for cand in dict.fromkeys(c for c in cands if _clean_rel(c)):
+                ok, proof = prove_debt(root, scripts, cand, e, dirty)
+                if not ok:
+                    continue
+                rel = _clean_rel(cand)
+                append_ledger(
+                    e["ledger"],
+                    {"kind": "discharge", "sig": e["sig"], "artifact": rel, "proof": proof},
+                    root=root,
+                )
+                if e["item"] and rec.get("state", " ") != "x":
+                    S.set_state(
+                        worklist, me8, e["item"], "x", "discharge:%s %s" % (e["sig"][:8], rel)
+                    )
+                out.append((e["sig"], rel))
+                break
+    return out
+
+
+def retire(root, worklist, me8, sig8, asked, reason, asked_ok, items=None):
+    """`worklist.py --reggate-retire <me> <sig8> ASKED:<YYYY-MM-DDTHH:MM>Z <reason>` (D5). -> (rc, text).
+
+    The one escape for a debt whose subject is gone. Refused unless the minute matches an operator answer in the lead transcript (`asked_ok`, the check `--review-mark waived` uses), the sig names exactly one unpaid debt, and a reason is given. Writes `retire` with the stamp, which is the only form the gate counts as paid, and closes the debt's item.
+    """
+    if not RETIRE_ASKED_RE.match(str(asked or "")):
+        return 2, "reggate-retire: %r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % (asked,)
+    reason = str(reason or "").strip()
+    if not reason:
+        return 2, "reggate-retire: a reason is required (why the debt's subject is gone)"
+    sig8 = str(sig8 or "").strip().lower()
+    if len(sig8) < 6 or not re.fullmatch(r"[0-9a-f]+", sig8):
+        return 2, "reggate-retire: %r is not a debt sig (6 or more hex characters)" % (sig8,)
+    with _collect_lock(root):
+        hits = [e for e in debt_entries(root) if e["sig"].startswith(sig8)]
+        if not hits:
+            return 2, "reggate-retire: no reggate debt has sig %s" % sig8
+        open_hits = [e for e in hits if not e["paid"]]
+        if not open_hits:
+            return 2, "reggate-retire: debt %s is already paid" % sig8
+        if len({e["sig"] for e in open_hits}) > 1:
+            return 2, "reggate-retire: sig %s is ambiguous (%s)" % (
+                sig8,
+                ", ".join(sorted({e["sig"] for e in open_hits})),
+            )
+        if asked_ok is None or not asked_ok(asked):
+            return 2, (
+                "reggate-retire: %s matches no AskUserQuestion answer in this session's transcript: "
+                "ask the operator first, then retire with that answer's minute" % asked
+            )
+        e = open_hits[0]
+        append_ledger(
+            e["ledger"],
+            {"kind": "retire", "sig": e["sig"], "asked": asked, "reason": reason[:300], "by": me8},
+            root=root,
+        )
+        state = ({r.get("id"): r for r in (items or [])}.get(e["item"]) or {}).get("state", " ")
+        if e["item"] and state != "x":
+            S.set_state(worklist, me8, e["item"], "x", "retire:%s %s" % (e["sig"][:8], asked))
+    return 0, "reggate-retire: debt %s retired (%s)" % (e["sig"], asked)
+
+
+def unpaid_listing(root=None):
+    """The bare `--reggate-retire <me>` answer: every unpaid debt, one line each."""
+    unpaid = [e for e in debt_entries(root) if not e["paid"]]
+    lines = ["reggate-retire: %d unpaid reggate debt(s)" % len(unpaid)]
+    lines += [
+        "  %s  %s  %s  %s" % (e["sig"][:12], e["br"], e["at"][:10], e["blind_spot"][:100])
+        for e in unpaid
+    ]
+    return "\n".join(lines)
 
 
 def save_reggate(path, state):
@@ -305,6 +814,7 @@ def _diff_tree_files(root, sha):
     try:
         files = C._git(root, "diff-tree", "--no-commit-id", "--name-only", "-r", sha).splitlines()
     except Exception:
+        # Safe to ignore: C._git already turns a git or spawn failure into "", so this only guards a programming error, and [] is the documented answer for an id that is not a tree-ish (a tick id) that every caller handles.
         return []
     if files:
         return [f.strip() for f in files if f.strip()]
@@ -314,6 +824,7 @@ def _diff_tree_files(root, sha):
             root, "diff-tree", "--root", "--no-commit-id", "--name-only", "-r", sha
         ).splitlines()
     except Exception:
+        # Safe to ignore, for the reason on the first arm: C._git never raises on a git failure, and [] is the documented answer.
         return []
     return [f.strip() for f in files if f.strip()]
 
@@ -568,10 +1079,10 @@ def _manifest_entries(root):
     whose leading comment sat INSIDE the brace was invisible, and the reachability gate checked a smaller set while printing a healthy "agrees with all N registrations". Found 2026-08-20 with a planted entry it went green over; it was already hiding check:ci-dockerfile-mirror-resilience and check:ci-tutorial-card-fonts, at 259 of 261 seen. The next TS shape nobody anticipated would
     have done it again, silently and in the same direction.
 
-    The lock is that literal, projected to JSON by `scripts/gen/gen-gates-lock.ts` and kept faithful by `check:ci-gates-lock`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
+    The lock is that literal, projected to JSON by `scripts/gen/gen-gates-lock.ts` and kept faithful by `check:ci-gen-gates`, which fails when the two disagree. One parse, no regex archaeology, and a shape error is a JSON error rather than a quietly shorter list.
 
     RETURNS AN EMPTY LIST WHEN THE LOCK IS ABSENT, deliberately and not by oversight. That matches what the regex version did on an unreadable file, and `check_gate_reachability_coverage.py` DEPENDS on it: its control stubs this lookup to empty and requires the probe's verdict to change, which is how that gate proves it can still detect manifest-blindness. Absence is a broken
-    checkout rather than a state to tolerate, and the gate that refuses it is check:ci-gates-lock, not this reader.
+    checkout rather than a state to tolerate, and the gate that refuses it is check:ci-gen-gates, not this reader.
     """
     if root is None:
         return []
@@ -682,6 +1193,115 @@ def pytest_collects(rel, root):
     return any(fnmatch.fnmatch(os.path.basename(rel), pat) for pat in patterns)
 
 
+VERDICT_FILE = "rediacc-reggate-verdicts.json"
+LOG_DIR = "rediacc-reggate-logs"
+
+
+def _verdict_path(root):
+    dirs = C._repo_git_dirs(root)
+    return None if dirs is None else dirs[0] / VERDICT_FILE
+
+
+def _log_dir(root):
+    dirs = C._repo_git_dirs(root)
+    return None if dirs is None else dirs[0] / LOG_DIR
+
+
+def _proof_trailer(rel, digest, code):
+    return "REGGATE-PROOF gate=%s hash=%s exit=%d\n" % (rel, digest, code)
+
+
+def recorded_verdict(root, rel, digest):
+    """The exit code `--prove` recorded for gate `rel` at content hash `digest`, or None when none was recorded, the record is unreadable, or the evidence behind it does not check out.
+
+    A row alone settles nothing: it must name a log file under <git-dir>/rediacc-reggate-logs/ whose sha256 equals the row's `log_sha256` and whose last line is the proof trailer for THIS gate, hash and exit. A hand-written `{"hash", "exit": 0}` therefore has no log to name. RESIDUAL RISK: a writer with access to the git directory can still forge the row, the log and the trailer together; this binds a verdict to a run's recorded output, it does not authenticate who ran it (no key outside the agent's writable paths exists to sign with).
+    """
+    path = _verdict_path(root)
+    logs = _log_dir(root)
+    if path is None or logs is None:
+        return None
+    try:
+        row = json.loads(path.read_text(encoding="utf-8")).get(rel)
+    except (OSError, ValueError, AttributeError):
+        return None
+    if not (isinstance(row, dict) and row.get("hash") == digest):
+        return None
+    code, name, want = row.get("exit"), row.get("log"), row.get("log_sha256")
+    if not isinstance(code, int) or isinstance(code, bool):
+        return None
+    if not isinstance(name, str) or not name or os.path.basename(name) != name:
+        return None
+    try:
+        raw = (logs / name).read_bytes()
+    except OSError:
+        return None
+    if hashlib.sha256(raw).hexdigest() != want:
+        return None
+    if not raw.decode("utf-8", "replace").endswith(_proof_trailer(rel, digest, code)):
+        return None
+    return code
+
+
+def _record_verdict(root, rel, digest, code, output=""):
+    path = _verdict_path(root)
+    logs = _log_dir(root)
+    if path is None or logs is None:
+        raise OSError("no git directory under %s to hold %s" % (root, VERDICT_FILE))
+    try:
+        rows = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(rows, dict):
+            rows = {}
+    except FileNotFoundError:
+        rows = {}
+    except ValueError:
+        rows = {}  # a corrupt record is replaced by this fresh one, which names the run that wrote it
+    logs.mkdir(parents=True, exist_ok=True)
+    name = "%s-%s.log" % (hashlib.sha256(rel.encode("utf-8")).hexdigest()[:12], digest[:16])
+    body = (
+        output
+        + ("" if output.endswith("\n") or not output else "\n")
+        + _proof_trailer(rel, digest, code)
+    )
+    (logs / name).write_text(body, encoding="utf-8")
+    rows[rel] = {
+        "hash": digest,
+        "exit": code,
+        "at": C.stamp_now(),
+        "log": name,
+        "log_sha256": hashlib.sha256(body.encode("utf-8")).hexdigest(),
+    }
+    path.write_text(json.dumps(rows, indent=1, sort_keys=True), encoding="utf-8")
+
+
+def _gate_key(scripts, rel):
+    return next((k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]), "")
+
+
+def prove_cli(root):
+    """`wl_reggate.py --prove`: run `npm run <key>` for every check script that is new or dirty relative to HEAD and has no recorded verdict at its content hash (a script changed in an earlier commit is skipped), and record each exit. The Stop hook only READS these verdicts (prove_new_gate), so a gate's minutes-long run never sits on the stop path (agent/plans/PLAN-tooling-speed.md D3). Returns the printed lines."""
+    scripts = package_scripts(root)
+    out = []
+    for pat in CHECK_SCRIPT_GLOBS:
+        for f in sorted(glob.glob(os.path.join(str(root), pat))):
+            rel = os.path.relpath(f, str(root)).replace(os.sep, "/")
+            digest = _hash_file(f)
+            if not digest or recorded_verdict(root, rel, digest) is not None:
+                continue
+            if not (_is_dirty(rel, root) or _new_since_head(rel, root, "HEAD")):
+                continue
+            key = _gate_key(scripts, rel)
+            if not key or not gate_reachable(scripts, key, root):
+                out.append("%s: skipped (no reachable check:* key runs it)" % rel)
+                continue
+            res = wl_proc.run(
+                ["npm", "run", "--silent", key], cwd=str(root), timeout=REGGATE_TIMEOUT_S
+            )
+            code = res.returncode
+            _record_verdict(root, rel, digest, code, (res.stdout or "") + (res.stderr or ""))
+            out.append("%s via `npm run %s`: exit %d (recorded)" % (rel, key, code))
+    return out or ["nothing to prove: no new or changed check script lacks a verdict"]
+
+
 def prove_new_gate(root, scripts, state):
     """(proven, notes). A claimed gate must leave ARTIFACTS, each verified: a NEW or CHANGED check script (content hash vs the marker), a check:* key whose command runs it, reachability from `npm run ci` (transitive, see gate_reachable), and a bounded green run. Runs are cached by content hash so a red gate is not re-run every stop and a green one is not re-paid. A green run of
     a control-first gate IS the planted-defect proof, because such a gate self-fails when its own control cannot fire -- the check-i18n-cross-locale.ts --selftest that NOTHING invoked is the exact failure this rule exists for, and check-gate-reachability.ts exists because a gate can be defined yet never run."""
@@ -719,10 +1339,7 @@ def prove_new_gate(root, scripts, state):
                 )
                 proven = True
                 continue
-            key = next(
-                (k for k in sorted(scripts) if k.startswith("check:") and rel in scripts[k]),
-                "",
-            )
+            key = _gate_key(scripts, rel)
             if not key and PYTEST_GATE_KEY in scripts and pytest_collects(rel, root):
                 # Collected through pyproject.toml testpaths. The whole suite exceeds REGGATE_TIMEOUT_S, so like the other suites it is accepted on change once the key is shown reachable from `npm run ci`.
                 if not gate_reachable(scripts, PYTEST_GATE_KEY, root):
@@ -750,14 +1367,16 @@ def prove_new_gate(root, scripts, state):
                     "(defined-but-never-run is the check-gate-reachability failure)" % (rel, key)
                 )
                 continue
-            # NO try/except: `wl_proc.run` never raises for a timeout or a failed spawn, and the codes it returns are the two this site was already synthesising by hand -- TIMEOUT_RC is 124 and SPAWN_FAILED_RC is 127.
-            code = wl_proc.run(
-                ["npm", "run", "--silent", key],
-                cwd=str(root),
-                timeout=REGGATE_TIMEOUT_S,
-            ).returncode
+            # The Stop hook never starts npm: it reads the verdict `wl_reggate.py --prove` recorded for this content hash. A gate with no recorded verdict is left unsettled (not written to gate_runs, so the next stop looks again) and the note names the command.
+            code = recorded_verdict(root, rel, digest)
+            if code is None:
+                notes.append(
+                    "%s: no recorded verdict for `npm run %s`; run `python3 .claude/hooks/stop/wl_reggate.py --prove`"
+                    % (rel, key)
+                )
+                continue
             state["gate_runs"][rel] = {"hash": digest, "exit": code, "at": stamp}
-            notes.append("%s via `npm run %s`: exit %d" % (rel, key, code))
+            notes.append("%s via `npm run %s`: exit %d (recorded verdict)" % (rel, key, code))
             if code == 0:
                 proven = True
     if not notes:
@@ -886,3 +1505,13 @@ def apply_regression_verdict(rg, scripts, root, state, sig, lines, me8):
         token,
     )
     return "block", reason, ""
+
+
+if __name__ == "__main__":
+    import sys
+
+    if sys.argv[1:2] == ["--prove"]:
+        print("\n".join(prove_cli(sys.argv[2] if len(sys.argv) > 2 else os.getcwd())))
+    else:
+        sys.stderr.write("usage: wl_reggate.py --prove [<repo root>]\n")
+        sys.exit(2)

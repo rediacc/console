@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: it
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 A dirla tutta, `rdc` è progettato con piena consapevolezza degli agenti. Claude Code, Cursor, Cline: qualsiasi assistente AI che invoca `rdc` in una subshell ottiene output JSON strutturato, errori leggibili dalla macchina e i guardrail che ti aspetteresti per la gestione autonoma dell'infrastruttura Rediacc. Ecco come funziona l'integrazione.
@@ -77,7 +77,7 @@ Le risposte di errore includono i campi `retryable` e `guidance`:
 
 ## Sicurezza e guardrail
 
-Va detto che la CLI non tratta gli agenti allo stesso modo di un essere umano alla tastiera. Le operazioni sensibili richiedono la prova di una conoscenza previa dello stato corrente (il flag `--current`), i flussi con editor interattivo vengono rifiutati per impostazione predefinita e ogni rifiuto viene registrato nel log di audit. Il riferimento [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) descrive la tabella completa del firewall, il modello knowledge-gate, il scope-override `REDIACC_ALLOW_CONFIG_EDIT` e il log di audit con hash a catena.
+Va detto che la CLI non tratta gli agenti allo stesso modo di un essere umano alla tastiera. Le operazioni sensibili richiedono la prova dello stato corrente (il flag `--current`), le modifiche all'intera configurazione vengono rifiutate senza override e ogni rifiuto viene registrato nel log di audit. Il riferimento [Sicurezza e guardrail degli agenti AI](/en/docs/ai-agents-safety) descrive la tabella completa del firewall, il modello knowledge-gate, la regola di adesione esplicita E limite della policy e il log di audit con hash a catena.
 
 ## Passi successivi
 

@@ -9,8 +9,7 @@ The line carries no marker: `lint.pyflakes.allowed-unused-imports` in the root p
 
 Eighty-one entry points carried a byte-identical copy of the insert below and not one of them said why. The three questions that copy raised, each answered here once instead of nowhere eighty-one times:
 
-WHY AN ENTRY POINT EXISTS AT ALL, rather than registering the library module directly. The registry invokes a gate BY PATH -- `package.json` holds `".ci/scripts/quality/check_npmrc.py"` and `scripts/ci-runner/manifest.ts` repeats it as a leaf. The obvious alternative, `python3 -m rediacc_ci.quality.npmrc`, does run, and is still wrong: `check:ci-parity`'s tokenizer cannot read
-`-m`, so it resolves the leaves to `[python3]` and the gate fails parity. `derivedRun` in `scripts/lib/gate-header.ts` records that trap for `.py` by name. So each gate needs a file at a path, and that file is a shim.
+WHY ENTRY POINTS STILL EXIST. A gate whose header sits in its rediacc_ci module is registered as `PYTHONPATH=.ci python3 -m rediacc_ci.quality.<x>` and runs no file in this directory (PLAN-tooling-code-reduction D2; the parity resolver reads `-m` as the module's file). The files left here are the gates whose logic still lives in the entry point itself, and thin entry points kept for callers that run a module by path.
 
 WHY THE HOP IS NEEDED. Nothing puts `.ci` on `sys.path` for a path invocation. Run `python3 .ci/rediacc_ci/quality/npmrc.py` and it dies at `from rediacc_ci import log, paths` before doing any work. What a path invocation DOES put on `sys.path[0]` is the script's own directory -- `.ci/scripts/quality` -- which is both why `import _cipath` resolves with no hop of its own and why the
 hop has to exist for anything else. That

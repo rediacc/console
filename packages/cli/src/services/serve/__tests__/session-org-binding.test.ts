@@ -187,6 +187,7 @@ describe('config cache', () => {
       sdkEpoch,
       sdkDerived,
       cek,
+      cekGeneration: 1,
     });
 
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
@@ -205,6 +206,15 @@ describe('config cache', () => {
           })
         );
       }
+      if (href.endsWith('/configs')) {
+        // The warm hit's version check; the version never moves, so nothing re-pulls.
+        return Promise.resolve(
+          Response.json({
+            newServerToken: 'rct2',
+            configs: [{ configId, teamId: null, version: 1, lastModified: '' }],
+          })
+        );
+      }
       return Promise.resolve(
         Response.json({
           newServerToken: 'rct2',
@@ -212,6 +222,7 @@ describe('config cache', () => {
           configData: payload.encryptedBlob,
           envelope: payload.envelope,
           hmac: payload.hmac,
+          policy: null,
         })
       );
     }) as unknown as typeof fetch;

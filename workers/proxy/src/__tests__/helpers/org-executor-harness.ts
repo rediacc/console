@@ -10,7 +10,8 @@
 
 import { expect, vi } from 'vitest';
 import type { AcquireAnswer, RenewAnswer } from '../../capacity';
-import { OrgExecutor, type OrgExecutorEnv, type RelocateAnswer } from '../../org-executor';
+import { OrgExecutor } from '../../org-executor';
+import type { OrgExecutorEnv, RelocateAnswer } from '../../org-executor-support';
 import { executorName } from '../../placement';
 import type { ProbeResult, ProbeTarget } from '../../reachability';
 import { fakeSocket, type ScriptedRead, setConnect } from '../cloudflare-sockets-stub';

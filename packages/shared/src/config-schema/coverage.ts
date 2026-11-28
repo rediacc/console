@@ -13,8 +13,9 @@
  *   - any schema leaf no registry template covers (an unclassified field), and
  *   - any registry template that matches nothing the schema can produce
  *     (registry rot — the entry silently commits/encrypts/redacts nothing).
- * The only carve-out is ENVELOPE_EXCLUSIONS below — the document's own
- * plumbing, which no sensitivity kind applies to.
+ * The carve-outs are ENVELOPE_EXCLUSIONS below — the document's own
+ * plumbing, which no sensitivity kind applies to — and LOCAL_ONLY_EXCLUSIONS,
+ * the fields a remote config refuses.
  *
  * Mirrors walker.ts semantics: matching is per-segment with equal length,
  * `*` in a registry template matches any single segment. A CONCRETE registry
@@ -85,6 +86,19 @@ function hasPrunedAncestor(registrySegs: string[], pruned: string[][]): boolean 
  * the schema, present or future, must carry a registry entry.
  */
 export const ENVELOPE_EXCLUSIONS = ['/schemaVersion', '/id', '/version', '/encryption'] as const;
+
+/**
+ * Fields that never leave the device, so no sensitivity kind applies:
+ * `policy` is the local-file ceiling (D24). RdcConfigSchema refuses it beside
+ * a `remote` block and buildConfigPushPayload refuses to seal one, so it is never pushed, committed or synced; a remote
+ * config's policy is its own record (PLAN-rmcp-policy-record.md Design 1).
+ */
+export const LOCAL_ONLY_EXCLUSIONS = ['/policy'] as const;
+
+const DEFAULT_EXCLUSIONS: readonly PointerTemplate[] = [
+  ...ENVELOPE_EXCLUSIONS,
+  ...LOCAL_ONLY_EXCLUSIONS,
+];
 
 export interface SchemaCoverageReport {
   /** Node templates a registry entry matched (walk pruned there). */
@@ -208,7 +222,7 @@ function walkSchema(node: unknown, path: string[], ctx: WalkContext, stack: unkn
 export function computeSchemaCoverage(
   schema: z.ZodType,
   templates: readonly PointerTemplate[],
-  exclusions: readonly PointerTemplate[] = ENVELOPE_EXCLUSIONS
+  exclusions: readonly PointerTemplate[] = DEFAULT_EXCLUSIONS
 ): SchemaCoverageReport {
   const ctx: WalkContext = {
     templates: templates.map((raw) => ({ raw, segs: segments(raw) })),

@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: ko
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc는 전적으로 귀하의 인프라에서 실행됩니다. 클로닝, 백업 및 배포 작업 중에도 데이터가 귀하의 머신을 벗어나지 않습니다. 귀하는 데이터 컨트롤러이자 처리자로 유지됩니다. 어떠한 제3자 SaaS도 귀하의 데이터를 처리하지 않습니다.
@@ -25,7 +25,7 @@ Rediacc의 기술적 기능을 주요 컴플라이언스 프레임워크의 요�
 | [CCPA](/ko/docs/legal-ccpa) | 캘리포니아 소비자 개인정보 권리 | 자체 호스팅(데이터 판매/공유 없음), 제로 지식 암호화, 암호화 삭제, 리포지토리별 데이터 인벤토리 |
 | [ISO 27001](/ko/docs/legal-iso27001) | 정보 보안 관리 통제 | 자산 관리, 암호화 통제, 제로 지식 설정 저장소, 접근 제어, 운영 보안 |
 | [PCI DSS](/ko/docs/legal-pci-dss) | 결제 카드 데이터 보호 | 아키텍처에 의한 네트워크 분할, 필수 암호화, 감사 로깅, 자체 호스팅을 통한 범위 축소 |
-| [NIS2 및 DORA](/ko/docs/legal-nis2-dora) | EU 사이버보안 및 금융 복원력 | 공급망 위험 제거, CoW 클로닝을 통한 복원력 테스트, 암호화, 사고 탐지 |
+| [NIS2 및 DORA](/ko/docs/legal-nis2-dora) | EU 사이버보안 및 금융 복원력 | 공급망 위험 제거, CoW 클로닝을 통한 복원력 테스트, 암호화, 이상 알림과 사고 보고 시계(유료 플랜) |
 | [데이터 주권](/ko/docs/legal-data-sovereignty) | 글로벌 데이터 거주지 법률 (PIPL, LGPD, KVKK, PIPA 등) | 자체 호스팅 = 데이터가 귀하의 관할권을 벗어나지 않음. 국경 간 이전 없음, 적정성 평가 불필요 |
 
 ## 아키텍처적 기반

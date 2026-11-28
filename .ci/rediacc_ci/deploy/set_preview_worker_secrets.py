@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-preview-worker-secrets.sh`.
 
-Pushes fourteen runtime secrets (no licence private key: the preview Worker signs through its LICENSE_SIGNER service binding to signer-bench-eu, so only the public half the signer signs with is pushed) into the per-PR preview Worker `pr-<PR_NUMBER>` in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not fifteen `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
+Pushes twelve runtime secrets (no licence private key, so only the public half is pushed) into the per-PR preview Worker named `PREVIEW_NAME` in ONE `wrangler secret bulk` call. The name is the word name `rediacc_ci.deploy.preview_name` derives (`pv-<w>-<w>-<w>`, PLAN-preview-signer D5), passed in by the deploy job, which masks it; anything else is refused before a call, so this script never builds a Worker name from a PR number. The twin's own header carries the reason the call is bulk and not twelve `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded. One bulk call sets them all against a
 single version.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS, and this port keeps that property end to end. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
@@ -17,22 +17,14 @@ PIPEFAIL IS REPRODUCED, NOT APPROXIMATED. The twin's one pipeline is `jq -n ... 
 THE ONE CASE THE SEQUENTIAL PIPE CANNOT REPRODUCE, said out loud rather than left to be discovered. In bash the two halves run CONCURRENTLY, so a `wrangler` that exited 0 WITHOUT draining its stdin would kill jq with SIGPIPE, and pipefail would end the run at 141 with no closing line. Here jq always finishes first, so the same wrangler produces a clean exit 0. It is unreachable
 with the real tool, which reads the document it was given before deciding anything, and reproducing it would mean writing a second process supervisor to model a failure mode that has never occurred.
 
-ONE DIVERGENCE, in text nobody parses. `: "${PR_NUMBER:?PR_NUMBER is required}"`
-(:38) is bash's own refusal, and it prints the bash FILE and a bash LINE NUMBER:
-
-    .ci/scripts/deploy/set-preview-worker-secrets.sh: line 38: PR_NUMBER: PR_NUMBER is required
-
-A port cannot honestly print a line number in a file it is not. `MISSING_PR_NUMBER` carries the `VAR: message` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/wait_for_preview_worker.py` and `deploy/delete_r2_channel.py`, and the differential asserts BOTH sides of it so it cannot be "fixed" into agreement by accident.
-
-`:?` IS AN UNSET-OR-EMPTY TEST, not an unset test, so `PR_NUMBER=` refuses
-exactly as an absent one does. Driven in the differential, because a port testing `"PR_NUMBER" in os.environ` would sail past the empty case and then write fifteen production secrets to a Worker literally named `pr-`.
+THE WORKER NAME IS CHECKED, NOT TRUSTED. An unset, empty or wrongly shaped `PREVIEW_NAME` (a `-signer` name included) is refused with exit 1 before any call, so the secrets never reach a Worker named `` or `pr-` or the signer Worker.
 
 TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's acceptance rule is agreement with the live twin; a repair is a cutover-box decision):
 
   1. THE GUARD MESSAGE NAMES A VARIABLE THIS SCRIPT DOES NOT HAVE. Line 53
      prints `WORKER_NAME=$WORKER`, and there is no `WORKER_NAME` here: the
      sentence is inherited verbatim from `set-www-worker-secrets.sh`, where the
-     variable is real. The VALUE printed is right (`pr-123`); the label points a
+     variable is real. The VALUE printed is right (the preview name); the label points a
      reader at an environment variable that plays no part on this path.
      `GUARD_LABEL_SAYS_WORKER_NAME` names it so a test can assert it by name.
   2. "15" IS A LITERAL IN THE CLOSING LINE (:105), not a count of what was sent.
@@ -41,7 +33,7 @@ TWO OBSERVATIONS ABOUT THE TWIN, NEITHER OF THEM REPAIRED HERE (this wave's acce
      sixteenth key to the twin without touching that line, the test says so
      instead of the log quietly under-reporting.
 
-K=5 LEDGER: `.ci/shadow/w7p6-set-preview-worker-secrets.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -54,6 +46,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import common, wrangler
+from rediacc_ci.deploy import preview_name
 
 if TYPE_CHECKING:
     import pathlib
@@ -61,13 +54,9 @@ if TYPE_CHECKING:
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_preview_worker_secrets"
 
-# `WORKER="pr-${PR_NUMBER}"` (:40).
-WORKER_PREFIX = "pr-"
+NAME_ENV = "PREVIEW_NAME"
 
-# The `${PR_NUMBER:?...}` stand-in named in the docstring's divergence note.
-MISSING_PR_NUMBER = "PR_NUMBER: PR_NUMBER is required"
-
-# The fourteen `--arg <var> "${<ENV>:-}"` pairs (:72-86) in the twin's ORDER,
+# The twelve `--arg <var> "${<ENV>:-}"` pairs (:72-86) in the twin's ORDER,
 # which is also the key order of the object it builds (:87-103). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, so the tuple is the port's copy of the twin's list and the differential re-derives the same list from the twin's source and compares.
 #
 # (environment variable this script READS, jq variable it binds it to). ONE NAME EVERYWHERE: the variable read is the key written, which is what the Worker's zod schema declares (private/account/src/types/env.ts).
@@ -77,8 +66,6 @@ KEYS: tuple[tuple[str, str], ...] = (
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub"),
     ("ACCOUNT_SERVER_API_KEY", "api_key"),
     ("ACCOUNT_JWT_SECRET", "jwt"),
-    ("STRIPE_SECRET_KEY", "stripe"),
-    ("STRIPE_WEBHOOK_SECRET", "stripe_wh"),
     ("ROOT_EMAIL", "admin"),
     ("AWS_SES_ACCESS_KEY_ID", "ses_key"),
     ("AWS_SES_SECRET_ACCESS_KEY", "ses_secret"),
@@ -90,8 +77,7 @@ KEYS: tuple[tuple[str, str], ...] = (
 
 # The ten `_require_nonempty` calls (:59-69), in order. The FIRST empty one ends the run, so the order is observable in the message a caller reads.
 #
-# WHY THESE TEN AND NOT THE OTHER FOUR, in the twin's own words (:42-49): ROOT_EMAIL, the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the five ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError. Stripe is deliberately NOT demanded: ci.yml feeds the preview
-# the SANDBOX key, and a preview without billing is a legitimate state.
+# WHY THESE TEN AND NOT THE OTHER TWO, in the twin's own words (:42-49): ROOT_EMAIL, the SES pair, the SES region and Turnstile are optional() in the Worker schema and turn their feature off SILENTLY when empty, and the five ACCOUNT_* ones are non-optional and would make every request on the preview 500 with an EnvConfigError.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
@@ -115,7 +101,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
 GUARD_LABEL_SAYS_WORKER_NAME = True
 
 # Observation 2: the closing line's count is a literal in the twin, not a tally.
-SECRET_COUNT_CLAIM = 14
+SECRET_COUNT_CLAIM = 12
 
 
 class GuardError(Exception):
@@ -133,9 +119,11 @@ class GuardError(Exception):
         ]
 
 
-def worker_name(pr_number: str) -> str:
-    """`WORKER="pr-${PR_NUMBER}"` (:40)."""
-    return "%s%s" % (WORKER_PREFIX, pr_number)
+def worker_name(name: str) -> str | None:
+    """The preview Worker `name` names, or None when it is not a preview Worker's word name (`pv-<w>-<w>-<w>`; the `-signer` Worker is refused too)."""
+    if preview_name.is_preview_worker(name) and not name.endswith("-signer"):
+        return name
+    return None
 
 
 def check_nonempty(env: dict[str, str], worker: str) -> None:
@@ -168,7 +156,7 @@ def jq_input(env: dict[str, str]) -> str:
     """The values as one JSON object keyed by jq variable, in `KEYS` order, for jq's stdin. ASCII only (`ensure_ascii`), so a value the environment decoded with surrogate escapes still reaches jq, which re-encodes each string exactly as it encoded the twin's `--arg`.
 
     Every value is read as `"${NAME:-}"`, so an absent variable becomes the
-    empty string rather than an error: the ten guards above have already refused the ones that must not be empty, and the other four are legitimately absent.
+    empty string rather than an error: the ten guards above have already refused the ones that must not be empty, and the other two are legitimately absent.
     """
     return json.dumps({var: env.get(key, "") for key, var in KEYS})
 
@@ -213,13 +201,14 @@ def main(argv: list[str]) -> int:
 
     env = dict(os.environ)
 
-    pr_number = env.get("PR_NUMBER", "")
-    if not pr_number:
-        # THE DIVERGENCE: bash prefixes this with `<path>: line 38: `.
-        print(MISSING_PR_NUMBER, file=sys.stderr)
+    worker = worker_name(env.get(NAME_ENV, ""))
+    if worker is None:
+        # The value is not echoed: a wrong one may still be a preview's real name, which the deploy job masks.
+        print(
+            "%s: %s must be a preview Worker name (pv-<word>-<word>-<word>)" % (SELF, NAME_ENV),
+            file=sys.stderr,
+        )
         return 1
-
-    worker = worker_name(pr_number)
 
     try:
         check_nonempty(env, worker)

@@ -16,8 +16,8 @@ tags:
   - mercado-intermedio
 featured: false
 language: pt
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -121,7 +121,7 @@ Esta é a secção que determina se o resto da publicação é honesto. A tabela
 | Licença de ferramenta de dados de teste ou mascaramento | Orçamento de formação de pessoal e sensibilização para a segurança (Artigo 21.º(2)(g) da NIS2) |
 | Licença de recuperação instantânea no fornecedor de backup | Solução MFA corporativa mais abrangente; a Rediacc tem TOTP no portal, não uma plataforma MFA corporativa |
 | | Contrato de pen testing ou plataforma de testes autónomos; a Rediacc disponibiliza o ambiente alvo, não a capacidade de teste |
-| | SIEM e SOC para deteção e reporte do Artigo 23.º; a Rediacc disponibiliza artefactos de qualidade forense, não a camada de reporte operacional |
+| | SIEM e SOC para deteção e reporte do Artigo 23.º; a Rediacc disponibiliza registos de fluxo por repositório, uma cronologia verificável e rascunhos de relatórios por fases nos planos pagos, não a camada de reporte operacional |
 | | Fornecedor de IaaS (Hetzner, OVH, o seu colo, o seu bare metal); a Rediacc corre sobre, não em vez de, infraestrutura |
 | | Pessoal a gerir o programa. A Rediacc é uma camada de ferramentas, não uma equipa de segurança |
 
@@ -153,7 +153,7 @@ Cinco contratos. Dois deles (Veeam, Veeam Cloud Connect) são com o mesmo fornec
 - A Drata mantém-se (EUR 18.000)
 - O esquema de dados de teste desenvolvido internamente é retirado; o meio dia do SRE de duas em duas semanas passa a executar a rotina de eficácia semanal
 
-Consolidação do plano de dados: 5 rubricas passam a 1 (Rediacc) mais a linha IaaS existente. A secção de plano de dados do registo de fornecedores passa de 5 entradas para 2. O argumento de eficácia contínua passa a ser exercícios semanais com evidências de registo de auditoria encadeado por hash; o argumento de teste de recuperação passa a ser suportado pelo output de `rdc backup status` e um exercício de restauro semanal.
+Consolidação do plano de dados: 5 rubricas passam a 1 (Rediacc) mais a linha IaaS existente. A secção de plano de dados do registo de fornecedores passa de 5 entradas para 2. O argumento de eficácia contínua passa a ser exercícios semanais com evidências do registo de auditoria do posto de trabalho, verificado por `rdc config audit verify`; o argumento de teste de recuperação passa a ser suportado pelo output de `rdc backup status` e um exercício de restauro semanal.
 
 Os números são ilustrativos, não promessas. O seu conjunto é diferente. A forma, quatro a cinco rubricas a consolidar numa mais a IaaS existente, é o que parece uma conversa real com um comprador.
 

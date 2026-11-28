@@ -24,10 +24,10 @@ That plan box said "68 files and rising". No reading of this tree produces 68. O
 WHY A BASELINE AND NOT THIRTY-THREE MORE EXEMPTIONS. 33 of those 36 files are outside the box that widened this control, and an exemption means "this is correct forever". Freezing them as DEBT says the opposite: the total may not grow, a baselined hop that gets fixed must be DRAINED rather than left as a permanent hole, and both halves are asserted below. EXEMPT is reserved for the
 three that are structurally required, each with a reason this file proves is still live.
 
-WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Five of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the three under `rediacc_ci/setup/`, and
-`rediacc_hooks/dispatch.py` (`battery.py` made six until it was deleted with the bash gate-test battery, 2026-10-09). THREE of those five are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
+WHAT THE `_cipath` TRICK CANNOT DO, MEASURED RATHER THAN ASSUMED, because the next box to read this file will otherwise try it. `import _cipath` resolves only because a PATH invocation puts the script's own directory on `sys.path[0]`. Four of the baselined hops sit INSIDE a package and still run as scripts: `check_pytest.py`, the two under `rediacc_ci/setup/`, and
+`rediacc_hooks/dispatch.py` (`battery.py` and `the shadow driver` made six until they were deleted, the first with the bash gate-test battery on 2026-10-09 and the second by agent/plans/PLAN-tooling-code-reduction.md CR1, last at commit:aa829a19dc). THREE of those four are also imported by their package name -- `setup/tools.py` and `setup/port_parity.py` by the suite, `dispatch.py` by two hook suites -- and a sibling shim is impossible for them: driven on a throwaway package, running
 `pkg/sub/dualuse.py` as a script prints `__package__=None` and loads, while
-`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining two, `check_pytest.py` and `setup/shadow_driver.py`, COULD take a shim and would gain nothing, because they sit in different directories and the shim is itself a file containing the hop: two hops would become two shims. So none of the five is sitting there because nobody swept it.
+`from pkg.sub import dualuse` dies at `import _pkgpath`. The remaining one, `check_pytest.py`, COULD take a shim and would gain nothing, because the shim is itself a file containing the hop: one hop would become one shim. So none of the four is sitting there because nobody swept it.
 
 WHY THE BASELINE IS KEYED ON A HASH OF THE HOP'S SOURCE AND NOT ON ITS LINE.
 A line number churns when a paragraph moves above it, and a baseline that churns gets regenerated wholesale, which silently re-absorbs findings nobody looked at. The hash survives a MOVE and deliberately does NOT survive a REWRITE: rewriting a hop is exactly the moment a human should look at it again. When that happens the run reports one gone and one new IN THE SAME FILE --
@@ -97,16 +97,6 @@ EXEMPT: dict[str, str] = {
         "The exemption dies the day `.ci/scripts/ci/profiler/` stops holding "
         "path-invoked entry points."
     ),
-    ".ci/scripts/quality/check_fetch_retry.py": (
-        "BLOCKER: ruff's E402 EXEMPTS a `sys.path` mutation that precedes a "
-        "module-level import and exempts nothing else. Measured against ruff "
-        "0.16.1, the version check_python_lint.py pins: a bare insert then "
-        "`import json` is clean, the resolver call then `import json` is E402, and "
-        "so is any other statement. This file imports a SIBLING gate at module "
-        "level and the hop has to come first, so the canonical form would cost a "
-        "per-line waiver where the bare form costs nothing. The exemption dies the "
-        "day that import moves inside a function."
-    ),
     ".claude/rediacc_hooks/syspath.py": (
         "BLOCKER: this IS the canonical hop for code under `.claude`, the counterpart "
         "of `paths.on_sys_path` for files that cannot reach `rediacc_ci`: a guard or "
@@ -134,6 +124,17 @@ EXEMPT: dict[str, str] = {
         "guards import the same engine the same scoped way, so the argument is "
         "identical rather than duplicated by accident."
     ),
+    ".ci/rediacc_ci/ops/rebind_code.py": (
+        "BLOCKER: the CLI spawns this one path itself, with no shell and no PYTHONPATH "
+        "(`REDIACC_IP_REBIND_CODE_COMMAND`, exported by rdc.sh for the bench configs; "
+        "packages/cli/src/services/account/token-ip-rebind.ts), so `PYTHONPATH=.ci "
+        "python3 -m` is not available to it. `import _cipath` resolves only to a file "
+        "beside a script whose directory is not a package, and `paths.on_sys_path` sits "
+        "behind the very hop it would replace. 8cde2fae79 chose this hop over the bash "
+        "shim scripts/ops/rebind-code.sh and its language-policy allowlist entry, and "
+        "test_ops_rebind_code.py runs the file by path with PYTHONPATH unset. The "
+        "exemption dies the day rdc.sh stops naming this file as the program."
+    ),
 }
 
 #: relpath -> the hop fingerprints frozen there. DEBT, not permission. The total may
@@ -145,10 +146,7 @@ EXEMPT: dict[str, str] = {
 #: the (path, fingerprint) pair.
 BASELINE: dict[str, tuple[str, ...]] = {
     ".ci/rediacc_ci/check_pytest.py": ("068d93dec96d",),
-    ".ci/rediacc_ci/dev/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
-    ".ci/rediacc_ci/docker/shadow_driver.py": ("c1e552fa19e9",),  # FRESH
     ".ci/rediacc_ci/setup/port_parity.py": ("c1e552fa19e9",),
-    ".ci/rediacc_ci/setup/shadow_driver.py": ("c1e552fa19e9",),
     ".ci/rediacc_ci/setup/tools.py": ("c1e552fa19e9",),
     # -- The three `FRESH` lines below ARRIVED AFTER PRE-A1. Not a fix this control was allowed to make: all three were UNCOMMITTED work belonging to a writer running concurrently with it, and editing another writer's live files is how a tree with no safety net loses work. Sorted in place rather than grouped, so the table stays regenerable and a reader diffing it sees a stable
     # order.
@@ -169,7 +167,8 @@ BASELINE: dict[str, tuple[str, ...]] = {
     ".claude/hooks/stop/test-judge-schema.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-plan-status-parse.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-planindex.py": ("cac5257d3f9d",),
-    ".claude/hooks/stop/test-planrec.py": ("2af853e16b8e", "2af853e16b8e"),
+    # test-planrec.py was rekeyed in a66ada74b4, after c41f3aa240 changed its hop.
+    ".claude/hooks/stop/test-planrec.py": ("eb9415193463", "eb9415193463"),
     ".claude/hooks/stop/test-reggate-ledger.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/test-teammate-idle.py": ("cac5257d3f9d",),
     ".claude/hooks/stop/wl_planindex.py": ("cac5257d3f9d",),
@@ -189,8 +188,6 @@ BASELINE: dict[str, tuple[str, ...]] = {
 #: `paths`. DRAIN THESE FIRST.
 FRESH: frozenset[str] = frozenset(
     {
-        ".ci/rediacc_ci/dev/shadow_driver.py",
-        ".ci/rediacc_ci/docker/shadow_driver.py",
         ".ci/rediacc_ci/tests/test_wl_proc.py",
         ".ci/rediacc_ci/tests/test_worklist_state_stdin.py",
         ".claude/hooks/post-bash/cancel_old_ci.py",
@@ -268,9 +265,15 @@ def scan(root: pathlib.Path, files: list[str]) -> dict[str, list[tuple[int, str]
     control never touched.
     """
     found: dict[str, list[tuple[int, str]]] = {}
+    tracked: set[str] | None = None
     for rel in files:
         path = root / rel
         if not path.is_file():
+            # AN UNTRACKED FILE THAT VANISHED AFTER THE LISTING is another writer's transient file, the same case `_corpus`'s `existing=True` already drops when it is gone before the listing: on 2026-11-25 test_gate_docs_gen.py's B2 probe (`.claude/hooks/context/zz_untracked_probe.py`, planted and unlinked in the real tree) was listed here and gone before this read, which failed this test under xdist. A TRACKED path missing is still a partial checkout and still raises; the tracked set is every tracked path, not only `*.py`, so a tracked file of another suffix that goes missing raises too.
+            if tracked is None:
+                tracked = set(gitx.ls_files(root=root))
+            if rel not in tracked:
+                continue
             msg = (
                 f"{rel} is listed by git but is not on disk, so this control cannot "
                 "read it. A partial checkout means the scan is not seeing the tree "
@@ -461,6 +464,40 @@ def test_the_floor_fires_when_the_corpus_collapses() -> None:
     assert vanished(scan(paths.repo_root(), _corpus())) == []
 
 
+def _scratch_repo(tmp_path: pathlib.Path, tracked: dict[str, str]) -> pathlib.Path:
+    """A throwaway git repo whose index holds `tracked` (staged, not committed, which `ls-files --cached` lists), with the real tree untouched."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, env=env, check=True)
+    for rel, text in tracked.items():
+        (tmp_path / rel).write_text(text, encoding="utf-8")
+    subprocess.run(["git", "add", "--", *tracked], cwd=tmp_path, env=env, check=True)
+    return tmp_path
+
+
+def test_a_vanished_untracked_file_is_skipped_and_the_rest_still_scans(tmp_path) -> None:
+    """Review e09c27d5.1, the silent direction: a listed path that is not tracked and is gone is another writer's transient file."""
+    hop = "import sys\nsys.path.insert(0, '/x')\n"
+    root = _scratch_repo(tmp_path, {"kept.py": hop})
+    found = scan(root, ["kept.py", "transient_probe.py"])
+    assert list(found) == ["kept.py"], found
+
+
+def test_a_vanished_tracked_py_file_still_raises(tmp_path) -> None:
+    """Review e09c27d5.1, the firing direction: the same shape for a TRACKED path is a partial checkout."""
+    root = _scratch_repo(tmp_path, {"kept.py": "X = 1\n", "gone.py": "X = 2\n"})
+    (root / "gone.py").unlink()
+    with pytest.raises(AssertionError, match=r"gone\.py is listed by git but is not on disk"):
+        scan(root, ["kept.py", "gone.py"])
+
+
+def test_a_vanished_tracked_non_py_file_still_raises(tmp_path) -> None:
+    """Review e09c27d5.2: the tracked set is not limited to `*.py`."""
+    root = _scratch_repo(tmp_path, {"kept.py": "X = 1\n", "notes.txt": "n\n"})
+    (root / "notes.txt").unlink()
+    with pytest.raises(AssertionError, match=r"notes\.txt is listed by git but is not on disk"):
+        scan(root, ["kept.py", "notes.txt"])
+
+
 def test_the_growth_check_fires_on_a_plant_and_not_on_the_baseline() -> None:
     """Both directions of the ratchet, exercised without editing the tree."""
     baselined = ".ci/rediacc_ci/check_pytest.py"
@@ -528,13 +565,66 @@ NOT_A_PRINTED_COMMAND: dict[tuple[str, str], tuple[int, str]] = {
         2,
         "the generated `rdc` shim's body, a selftest fixture compared byte for byte",
     ),
-    (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.quality.orphan_mod"): (
+    (".ci/rediacc_ci/quality/workflow_env_provision.py", "rediacc_ci.x.writer"): (
         0,
-        "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+        "a selftest fixture written into a scratch composite action, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/workflow_env_provision.py", "rediacc_ci.nowhere.at_all"): (
+        1,
+        "a selftest fixture fed to the gate's own module resolver, naming a module that resolves to nothing by design",
     ),
     (".ci/rediacc_ci/quality/dead_python.py", "rediacc_ci.testrun.orphan_run"): (
         0,
         "a selftest fixture naming a module that exists only in the gate's scratch tree (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.a.b"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.sub.entry"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.clean"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "rediacc_ci.blind"): (
+        0,
+        "a selftest fixture fed to the gate's own module regex, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "a backticked mention `python3 -m rediacc_ci.*`"): (
+        1,
+        "a selftest control string whose backticked mention the gate's regex must NOT read as a module",
+    ),
+    (".ci/rediacc_ci/quality/checkout_cone.py", "# runs `python3 -m rediacc_ci.*` here"): (
+        1,
+        "the comment text the control above feeds the gate's own module regex",
+    ),
+    (".ci/rediacc_ci/quality/inner_timeout_reachable.py", "rediacc_ci.missing.mod"): (
+        1,
+        "a selftest fixture fed to the gate's own step parser, naming modules that exist only in the fixture (one bare second command in the same workflow text)",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "rediacc_ci.testrun.deep",
+    ): (
+        0,
+        "a selftest fixture fed to the gate's own step parser, naming a module that exists only in the fixture (already hop-spelled; kept out of the runnable cases)",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "python3 -m pytest && python3 -m rediacc_ci.a.b",
+    ): (
+        1,
+        "a selftest fixture fed to the gate's own step parser, naming modules that exist only in the fixture",
+    ),
+    (
+        ".ci/rediacc_ci/quality/inner_timeout_reachable.py",
+        "`python3 -m rediacc_ci.<x>` and `<path>.py` steps exist in",
+    ): (
+        1,
+        "the gate's own message naming the step shape it resolves, a sentence rather than a command to run",
     ),
 }
 

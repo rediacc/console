@@ -77,6 +77,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",
@@ -91,12 +92,9 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
-    # The sandbox pair is pinned empty so a value left in the process environment by an earlier test cannot make it half-set.
-    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "")
-    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
     payload = deploy_bench.secrets_payload()
-    # 37 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench.
-    assert len(payload) == 41
+    # 33 plus the four PLAN-email-sender-separation E1 keys, each defaulted for bench, plus the PLAN-forensics-shipping FS12 forensics store triple (464878dffc), empty here, plus AI_GATEWAY_LOGS_TOKEN (ab89774522), plus the forensics bucket and region (pushed as secrets, blank with the triple).
+    assert len(payload) == 43
     for name in (
         "CONTACT_FROM_EMAIL",
         "ALERTS_FROM_EMAIL",
@@ -108,7 +106,6 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
     assert payload["ACCOUNT_BACKUP_S3_BUCKET"] == "backups-bench"
-    assert payload["STRIPE_SECRET_KEY"] == ""
     monkeypatch.delenv("ACCOUNT_JWT_SECRET")
     with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_JWT_SECRET missing"):
         deploy_bench.secrets_payload()
@@ -127,6 +124,7 @@ def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",

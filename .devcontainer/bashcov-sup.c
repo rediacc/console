@@ -39,6 +39,21 @@ static void esc_shape(char*dst,size_t cap){
     }
     dst[j]=0;
 }
+// BASHCOV_CALL is the per-Bash-call id bash_env.sh exports as "<pid>-<start ns>", the key
+// wl_resprofile folds rows on. Only digits, one '-', digits is echoed, so nothing but
+// [0-9-] ever reaches the JSON; anything else leaves the field out and the row counts
+// as unkeyed.
+static void call_field(char*dst,size_t cap){
+    const char*s=getenv("BASHCOV_CALL"); size_t n=0; int dash=0;
+    dst[0]=0;
+    if(!s) return;
+    for(;s[n];n++){
+        if(s[n]=='-'){ if(dash||n==0) return; dash=1; }
+        else if(s[n]<'0'||s[n]>'9') return;
+    }
+    if(!dash||s[n-1]=='-'||n+16>=cap) return;
+    snprintf(dst,cap,"\"call\":\"%s\",",s);
+}
 static void sample(void){
     char p[64], buf[128]; int fd, n;
     snprintf(p,sizeof p,"/proc/%d/wchan",child);
@@ -70,8 +85,10 @@ int main(int argc,char**argv){
     const char*out=getenv("BASHCOV_OUT");
     if(out){ int fd=open(out,O_WRONLY|O_APPEND|O_CREAT|O_CLOEXEC,0600); if(fd>=0){
         char shp[192]; esc_shape(shp,sizeof shp);
-        char buf[1280]; int n=snprintf(buf,sizeof buf,"{\"src\":\"sup\",\"shape\":\"%s\",\"pid\":%d,\"sup\":%d,\"ppid\":%d,\"exit\":%d,\"sig\":%d,\"wall_us\":%ld,\"utime_us\":%ld,\"stime_us\":%ld,\"maxrss_kb\":%ld,\"peak_hwm_kb\":%ld,\"nvcsw\":%ld,\"nivcsw\":%ld,\"samples\":%d,\"blocked\":%d,\"wchan\":[",
-            shp,(int)child,(int)getpid(),(int)getppid(),WIFEXITED(st)?WEXITSTATUS(st):-1,WIFSIGNALED(st)?WTERMSIG(st):0,
+        char cal[96]; call_field(cal,sizeof cal);
+        struct timespec wt; clock_gettime(CLOCK_REALTIME,&wt);
+        char buf[1280]; int n=snprintf(buf,sizeof buf,"{\"src\":\"sup\",\"shape\":\"%s\",%s\"t\":%lld,\"pid\":%d,\"sup\":%d,\"ppid\":%d,\"exit\":%d,\"sig\":%d,\"wall_us\":%ld,\"utime_us\":%ld,\"stime_us\":%ld,\"maxrss_kb\":%ld,\"peak_hwm_kb\":%ld,\"nvcsw\":%ld,\"nivcsw\":%ld,\"samples\":%d,\"blocked\":%d,\"wchan\":[",
+            shp,cal,(long long)wt.tv_sec*1000LL+wt.tv_nsec/1000000,(int)child,(int)getpid(),(int)getppid(),WIFEXITED(st)?WEXITSTATUS(st):-1,WIFSIGNALED(st)?WTERMSIG(st):0,
             (long)((t1.tv_sec-t0.tv_sec)*1000000L+(t1.tv_nsec-t0.tv_nsec)/1000),
             ru.ru_utime.tv_sec*1000000L+ru.ru_utime.tv_usec,ru.ru_stime.tv_sec*1000000L+ru.ru_stime.tv_usec,ru.ru_maxrss,peak_hwm,ru.ru_nvcsw,ru.ru_nivcsw,nsamp,nblocked);
         for(int i=0;i<NW&&wcnt[i]&&n<(int)sizeof buf-80;i++) n+=snprintf(buf+n,sizeof buf-n,"%s[\"%s\",%d]",i?",":"",wname[i],wcnt[i]);

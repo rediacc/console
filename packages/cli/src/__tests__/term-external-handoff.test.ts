@@ -7,13 +7,13 @@ vi.mock('../remote/terminal/index.js', () => ({
 }));
 vi.mock('../remote/utils/platform.js', () => ({ getPlatform: () => 'linux' }));
 
-import { buildHandoffArgv, launchExternalTerminal } from '../commands/term.js';
+import { buildHandoffArgv, launchExternalTerminal } from '../commands/term-external.js';
 import { SSHConnection } from '../remote/ssh/connection.js';
 
 const details = { environment: {}, workingDirectory: undefined } as never;
 
 function fakeConnection(res: Record<string, string | undefined>) {
-  const conn = new SSHConnection('k', 'h', { preferAgent: false });
+  const conn = new SSHConnection('k', 'h', { host: '10.0.0.1', preferAgent: false });
   // Seed private state directly: no real key material or ssh-agent involved.
   Object.assign(conn, {
     setupResult: {

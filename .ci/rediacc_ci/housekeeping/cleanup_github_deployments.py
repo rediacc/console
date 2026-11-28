@@ -37,7 +37,7 @@ TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, because this
   Both are pinned by tests that state they are pinning a DEFECT, so a future
   fix to the twin turns them red rather than sliding past.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-github-deployments.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -13,6 +13,7 @@ function registerArchive(admin: Command, program: Command): void {
 
   archive
     .command('list')
+    .summary(t('commands.repo.admin.archive.list.descriptionShort'))
     .description(t('commands.repo.admin.archive.list.description'))
     .action(async () => {
       try {
@@ -42,6 +43,7 @@ function registerArchive(admin: Command, program: Command): void {
   archive
     .command('restore')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.repo.admin.archive.restore.descriptionShort'))
     .description(t('commands.repo.admin.archive.restore.description'))
     .option('--new-name <name>', t('options.newName'))
     .action(async (name: string, options: { newName?: string }) => {
@@ -58,6 +60,7 @@ function registerArchive(admin: Command, program: Command): void {
   archive
     .command('purge')
     .argument('[name]', t('options.name'))
+    .summary(t('commands.repo.admin.archive.purge.descriptionShort'))
     .description(t('commands.repo.admin.archive.purge.description'))
     .option('-y, --yes', t('options.yes'))
     .action(async (_name: string | undefined, options: { yes?: boolean }) => {

@@ -1,6 +1,6 @@
 r"""A capability probe must exercise the operations its CONSUMER depends on.
 
-Ported from `.ci/scripts/quality/check-probe-parity.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-probe-parity.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-probe-parity.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -61,7 +61,7 @@ THE EXEMPTION LIST IS PRINTED NOWHERE AND THAT IS CARRIED, NOT FIXED. The twin's
 `EXEMPT_VERBS=("unlink" "purge" "revoke")` is silent: a consumer verb it forgives
 never appears in any line of output, so a reader of a green run cannot see which operations were excused. The port keeps that behaviour because the differential compares finding sets and a new line would be a divergence; it is reported as a finding against the twin rather than repaired here.
 
-`sort -u` IS UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
+`sort -u` IS UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4) pins for both
 sides (`buildEnv`). Python's `sorted()` on `str` is code-point order, which agrees with C collation for the `[a-z]` alphabet these verbs are drawn from. The regexes admit nothing else, so the two orders cannot diverge here.
 
 THE `sed` COMMENT STRIP REPLACES ONLY THE FIRST MATCH PER LINE, which is what `s///` without `g` means, and the leftmost match of `[[:space:]]*#.*$` starts at
@@ -78,6 +78,13 @@ MEASURE grep WITH `/usr/bin/grep`, NEVER AT AN INTERACTIVE PROMPT. A Claude Code
 3.12. The two disagree on `\x27`, on binary-file reporting and on which files are searched, and a probe run at the prompt is a statement about the wrapper rather than about the gate. This cost two wrong port notes in this same wave.
 
 THE EM DASHES IN THE TWIN'S MESSAGES ARE EMITTED AS `\\u2014` ESCAPES. The house rule forbids an em dash in authored text; the twin's message bytes are not authored here, they are REPRODUCED, and the differential compares finding text. Writing the escape keeps this file free of the character while keeping the two sides byte-identical.
+
+---- gate ----
+lane: quality-static
+step: Capability-probe parity
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import pathlib
@@ -292,4 +299,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_probe_parity.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

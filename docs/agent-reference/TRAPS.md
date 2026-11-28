@@ -296,7 +296,7 @@ $'\x00'` is not a NUL detector: bash strips the NUL from `$'\x00'`, the empty pa
 ## A subagent is live by the harness list AND its own transcript, and a lease is judged at stop time through the agent's lineage
 Trap-Id: subagent-liveness-needs-transcript-and-lineage
 Enforced-By: file:.claude/hooks/stop/wl_checks.py
-Residue: The PreToolUse cap guard cannot see a task list and ESTIMATES from the last Stop event plus the metas started since it; the Stop hook's `roster-cap` recount from the authoritative event is the backstop, and a replay against the `.lastevent-` sidecar is only as fresh as the last FULL stop.
+Residue: The PreToolUse spawn guard (block_plan_concurrency) cannot see a task list and ESTIMATES the live writers from the last Stop event plus the metas started since it; the Stop hook's `roster-concurrency` recount from the authoritative event is the backstop, and a replay against the `.lastevent-` sidecar is only as fresh as the last FULL stop.
 
 Measured on 2026-09-24 in one session running parallel writers, and every signal the old ladder read was wrong in a different direction. The Stop event listed 15 subagents as `running`; 11 of them had ended their turn (`stop_reason: end_turn`) between 8 and 54 minutes earlier, so "the harness lists it" is not "it is working". More than 30 leases carried `worker_verified: false` while their workers were live,
 because `--lease` checks the id against the PREVIOUS stop's snapshot and a lease is taken seconds after the spawn, before any snapshot has seen it: verification at lease time is structurally blind for a new worker. And a parent agent that finished while its depth-2 child kept working drew `ladder-gone` on the parent's items, because the child's `parentAgentId` lives only in the child's meta and the event carries no parent marker.
@@ -341,7 +341,7 @@ The tell, for a reviewer: a report that says "restored, no-op" and cites a clean
 
 ## A green task notification can be reporting the shell, not the gate
 Trap-Id: green-notification-reports-the-shell
-Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
+Enforced-By: file:.ci/rediacc_ci/quality/swallowed_failures.py
 Residue: The gate reads scripts in the tree. A wrapper typed into a Bash call, `cmd > log 2>&1; echo exit=$?`, lives in no file, and that is exactly where this one was paid for.
 
 A backgrounded `npm run check:lint` completed with **"exit code 0"** in its task notification while the gate itself was failing with 17 errors. Nothing was broken. The command was:
@@ -481,7 +481,7 @@ Run 38389205702 (PR #600, 2026-10-13) was the first on its branch in which the t
 
 **The tell:** a differential fails on the runner with both sides plausible, and the differing bytes are a number, an order or a wording that no port chooses. The recorded side is then "what the twin printed on one machine".
 
-**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`devbox_shadow_driver.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
+**The fix is at the seam, never in the golden.** The twins are deleted, so a frozen answer is final. `rediacc_ci.tests.differential` holds the recorder's facts (`RECORDER_IDS`) and one helper per property: `recorder_ids_here` reads the recorded ids back as the running host's, `mask_ls_filesystem` and `mask_coreutils_diagnostic` drop the filesystem's and the implementation's share from BOTH sides, and `host_diagnostic` pins a shelled-out tool's line against the real tool. A driver that builds its own world pins the recorder's identity and host paths instead (`harness_devbox.GOLDEN_HOST_IDS`, `GOLDEN_HOST_NODES`), with one test per pin that reads the unpinned default against the real host.
 
 **The command that makes a local run mean something.** It runs one leg under another uid and gid, with no git identity, `CI=true`, an empty HOME and a scratch directory on ext4.
 
@@ -621,7 +621,7 @@ Measured both ways: the old grep ACCEPTS `{"e2e":{"keys":[]}}`. Grep for a field
 
 ## Read stdout and stderr SEPARATELY, and never `2>/dev/null`
 Trap-Id: read-stdout-and-stderr-separately
-Enforced-By: file:.ci/scripts/quality/check_swallowed_failures.py
+Enforced-By: file:.ci/rediacc_ci/quality/swallowed_failures.py
 Residue: The gate covers `2>/dev/null` and discarded exit statuses in TRACKED scripts. A one-off command typed into a tool call is in no file, and that is where three rounds went.
 
 Cost: at least three rounds this program. `gh run view --log-failed` is run-scoped even with `--job` and says so on stderr; a plan writer wrapped in `2>/dev/null || true` made a crash indistinguishable from "no plan was due"; and `grep -i FAIL` matched the word "fail" inside PASSING lines, making a mutation probe look inconclusive. <!-- raw-ci-read-ok: history -->
@@ -1163,10 +1163,10 @@ Two questions, both cheap, both usually decisive:
 
 ## A cost measured under load becomes a DEMAND, because the cache averages and the oracle believes the average
 Trap-Id: load-poisoned-cost-becomes-policy
-Enforced-By: gate:check:ci-gate-manifest
+Enforced-By: gate:check:ci-gen-gates
 Residue: The cache can only be judged against ITSELF. Nothing can tell a gate that genuinely slowed from one measured under contention, so the floor of several measurements is the instrument, and a single number never is.
 
-`check:ci-gate-manifest` judges whether a gate belongs in the pre-push lane from `.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On 2026-09-02 one full run overlapped two writer sub-agents and the load it carried was recorded like any other measurement: a gate that takes 4.5 s alone was averaged up to 21 s, and the next manifest check demanded it be
+The manifest-rules leg of `check:ci-gen-gates` (scripts/gates/check-gate-manifest.ts) judges whether a gate belongs in the pre-push lane from `.ci/cache/gate-durations.json`, which `npm run ci` writes after every run. On 2026-09-02 one full run overlapped two writer sub-agents and the load it carried was recorded like any other measurement: a gate that takes 4.5 s alone was averaged up to 21 s, and the next manifest check demanded it be
 marked `slow: true` with a reason. The reason would have been a lie, and the gate would have left the fast lane for good on the strength of one bad afternoon.
 
 Two things made this easy to fall for. The runner prints `SYSTEM UNDER LOAD` for exactly one gate (the tutorial player), so the other 350 measurements looked clean. And the finding text names a number, which reads as evidence rather than as the artifact of a moving average.
@@ -1498,8 +1498,8 @@ a secret and the log. If the value itself is the question, reduce it to a digest
 
 ## Local gates read the WORKING TREE, CI reads the TRACKED tree, so a half-staged pair passes here and fails there
 Trap-Id: working-tree-green-tracked-tree-red
-Enforced-By: gate:check:ci-parity
-Residue: Both directions of the split are now gated -- `check:ci-parity` catches a tracked file with no manifest entry, and `check:ci-gate-manifest`'s `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before you commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
+Enforced-By: gate:check:ci-gen-gates
+Residue: Both directions of the split are now gated, by two legs of `check:ci-gen-gates` -- the parity leg catches a tracked file with no manifest entry, and the manifest-rules leg's `leaf-tracked` arm catches a manifest entry naming an untracked file. Neither can fire before a commit, because until then the working tree is consistent by construction. The residue is the habit: `git diff --cached --stat` before every commit.
 
 `npm run ci:quick` was 307/307 and CI came back red on the commit it had just blessed. The failing step was "Validate parity between the local gate set and the CI quality surface":
 
@@ -1728,7 +1728,7 @@ Do it in an order that cannot destroy the target:
 Write to a scratch path and `mv` into place, so a failure leaves the original untouched. Verify by digest afterwards, not by eye: a zero-byte file and a correctly restored one look identical in a directory listing.
 ## A gate that says "in the same commit" is almost never checking commits
 Trap-Id: same-commit-advice-is-not-enforcement
-Enforced-By: file:.ci/scripts/quality/check_language_policy.py:793
+Enforced-By: file:.ci/rediacc_ci/quality/language_policy.py:792
 Residue: the wording is fixed in ONE gate. Twelve files under `.ci/scripts/quality/`,
 `.ci/rediacc_ci/quality/` and `scripts/gates/` carry same-commit language, and the other eleven still promise more than they check. Nothing decides, in general, whether a given gate's atomicity claim is enforced -- that is a property of what the gate reads, and reading it is a human step.
 
@@ -1923,7 +1923,7 @@ The only enforcement was the agent's own judgment, exercised against its own rea
 WHY "IT WAS READ-ONLY" DOES NOT SETTLE IT.
 The policy file does not carve out an exception for reads, and for good reason a session cannot verify from inside the sandbox: a `curl` against a real CDN endpoint or a `gh api` call against a real repository still touches infrastructure this session was never authorized to touch, whatever it happens to do while there, and "harmless in this instance" is not the same claim as "the boundary permits it."
 
-WHAT THIS SESSION DID ONCE IT NOTICED: did not incorporate the claimed real-run results into `.ci/shadow/w7p5a-status.json` or `.ci/policy/.w7p5a-real-run-leg-blocklist` (both left exactly as they were), and deferred the incident to the operator with the evidence rather than deciding alone whether any harm occurred.
+WHAT THIS SESSION DID ONCE IT NOTICED: did not incorporate the claimed real-run results into `.ci/shadow/w7p5a-status.json` (deleted in commit:936280cd35) or `.ci/policy/.w7p5a-real-run-leg-blocklist` (both left exactly as they were), and deferred the incident to the operator with the evidence rather than deciding alone whether any harm occurred.
 
 The check: a dispatch brief that touches anything adjacent to a written production boundary should state the boundary EXPLICITLY in the prompt, in the imperative, rather than trusting a subagent to find the same sentence in a policy file and weigh it the way the brief's author would.
 "The policy is right there in the repo" is not the same guarantee as "the policy was in the instruction the agent was actually given."
@@ -2000,11 +2000,11 @@ CI collects pytest units by shard manifest, not by directory. A new test module 
 
 ## An environment read registered in one registry and not the other
 Trap-Id: env-read-needs-both-registries
-Enforced-By: gate:check:ci-python-env-registry, gate:check:ci-worklist-env-registry
+Enforced-By: gate:check:ci-env-registry
 Residue:
 Documented-In: text:docs/agent-reference/ci-gates.md A new environment variable is registered with one command
 
-An environment read is registered twice: the Python env registry for `.ci`, and the worklist env registry for the hook side. A read added to only one passes its own gate and fails the other's on the next run, often in a different session that never touched it.
+An environment read is registered in more than one place: the `python_reads` section of `.ci/config/env-manifest.json` for a Python module, the `worklist` section for a WORKLIST_* name, and a shard for every name. A read added to only one section reds check:ci-env-registry on the next run, often in a different session that never touched it, which is why `npm run env:register` writes every section in one call.
 
 ## Manifest paths without pathsOrigin
 Trap-Id: manifest-paths-needs-paths-origin
@@ -2034,7 +2034,6 @@ A citation of a bare file name resolves against nothing once the file moves or a
 Trap-Id: no-cacheprovider-vs-strict-config
 Enforced-By: shape:no-cacheprovider-vs-strict-config
 Residue: the note follows a Bash call that ran pytest with `-p no:cacheprovider` and printed the empty run; a nested run inside a script or a gate whose output the session never reads is not seen, and nothing refuses the flag up front.
-Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
 Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
 Shape: post ^(?:\S*/)?(?:pytest|python[0-9.]*\s.*-m\s*pytest)\b.*\s-p\s*no:cacheprovider(?:\s|$)
 Shape-Output: no tests ran|Unknown config option: cache_dir
@@ -2060,7 +2059,7 @@ Documented-In: text:.claude/rediacc_hooks/guards/block_raw_pr_body_edit.py (-F|-
 Trap-Id: retro-flag-after-bare-dashdash
 Enforced-By: file:.claude/hooks/stop/worklist.py
 Residue: only a trailing --retro is recovered; one in the middle of the note is silent note text.
-Documented-In: text:.claude/hooks/stop/worklist.py accepted anywhere BEFORE the bare
+Documented-In: text:agent/plans/_done/PLAN-lessons-registry.md accepted anywhere BEFORE the bare
 
 The worklist verbs accept `--retro` and `--evidence` anywhere before a bare `--`. After it, only a trailing `--retro` is recovered; one in the middle of a note becomes part of the note text, and the flag silently does nothing.
 
@@ -2086,7 +2085,7 @@ The CLI cannot carry the pointer itself: it is the shipped product and knows not
 Trap-Id: plan-closed-with-live-bindings
 Enforced-By: gate:check:ci-plan-bindings, file:.claude/hooks/stop/wl_planbind.py
 Residue: a binding written only in prose (a plan named without its file name, a box described in words) is not seen; a box signature binds only an item that names no other plan, because identical box lines in different plans share one signature.
-Documented-In: doc:agent/plans/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
+Documented-In: doc:agent/plans/_done/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
 
 On 2026-10-03 seven plans sat compacted in `_done/` with open boxes, and the worklist items that cited them reached the operator as "no live box: keep or drop?": the work had been closed by moving its document, not by finishing it. Compaction, `--move` and `--sweep` checked the plan's own status and nothing that pointed at it. `wl_planbind.bindings` now names every open box, open item, unfinished dependent and citing box, the three verbs refuse while it is non-empty, and the gate fails any closed plan that still has one.
 
@@ -2104,3 +2103,11 @@ The 403 was Cloudflare's own block page. Bench sits behind ONE WAF custom rule t
 A second, different refusal follows it: with the new IP allowed, the eu-bench login is still tied to the old one, and the CLI asks for an authenticator code. That is the agent's own step too: `npm run login:bench` moves the login headlessly (see the `human-remedy-read-as-operator-step` entry above).
 
 A post-bash hint (`.claude/hooks/stop/wl_benchblock.py`) now names both commands on every output that shows either refusal from a bench command, and the ops-health machines check appends the allowlist command to a bench 403. Before recording any "rate limit" against bench, look for Cloudflare's "Attention Required" page or a bare `HTTP 403`: a rate limit answers 429.
+
+## A full disk is freed by its biggest sources, not by `worktree gc`
+Trap-Id: full-disk-recipe
+Enforced-By: file:.ci/rediacc_ci/dev/worktree_lease.py
+Residue: sizes in the refusal are measured with `du` under a 20-second timeout, so a source that cannot be measured is named as such; Docker's own disk (`/var/lib/docker` on a native host, Docker Desktop's disk image under WSL or macOS) is reclaimed only by the image prune it prints.
+Documented-In: doc:docs/agent-reference/release-process.md#Local edge release (`release:local`)
+
+On 2026-11-24 a 566 GB disk at 98% refused every lease and `./run.sh worktree gc --write` freed nothing: the space sat in `~/.cache/go-build` (106 GB), the `.ci/cache/release/<sha>` clones of `release:local` (24 GB, never pruned), Docker images (62 GB, one in use) and `~/.cache/rediacc` (17 GB). The refusal now prints each source with its size and the safe command: `PYTHONPATH=.ci python3 -m rediacc_ci.release.cache_prune`, `go clean -cache` while no writer builds, and `docker image prune -a --filter until=168h`. The arm64 SEA container ran as root over the bind-mounted clone and left root-owned files; it now runs with `--user <uid>:<gid>`.

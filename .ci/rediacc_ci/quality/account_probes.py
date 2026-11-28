@@ -25,6 +25,13 @@ THE LOAD PROBE'S EXIT 3 IS LOAD-BEARING AND IS CARRIED AS A CONSTANT. An import 
 THE THREE ASSERTIONS ARE INDEPENDENT AND ALL THREE RUN, because a run that stopped at assertion 1 would hide whether the CONTROL could still fire.
 
 THE LISTENER IS `python3 -m http.server`, spawned as a child rather than served in-process: the control demonstrates that a REAL socket on a REAL port answers curl, and a same-process server shares the interpreter with the code asserting about it. The readiness loop is `curl`, 50 attempts, 0.1s apart, because the probe under test speaks HTTP through curl and the readiness check has to prove HTTP is being answered, not merely that a port is open.
+
+---- gate ----
+lane: quality-static
+step: Dev-stack liveness probes
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -467,4 +474,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_account_probes.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

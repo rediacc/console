@@ -3,8 +3,8 @@
 WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry, `npm run release:local -- --channel edge [--dry-run]` (`rediacc_ci.release.local`, box W2-B). The operator ruling of 2026-10-27T09:45Z sets the line this guard (box W2-C) holds: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." agent/plans/PLAN-product-domain-rename.md then retires the stable Worker set (box W7): the edge and stable pairs become one shared Worker set per region, which the session deploys without asking. So:
 
   1. EVERY SHARED WORKER DEPLOY IS FREE, with no question (the one exception is a Worker module run naming `--company` without `--company-bench`, which rule 4 asks for). PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`; a `--branch-release` run is rule 2's), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever shared target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml` (the region ids read from `regions.json` at the project root) kept in `workers/account` or `workers/proxy`, or named bare so it resolves in the working directory.
-  2. THE CLI'S STABLE CHANNEL, AND A BRANCH RELEASE, NEED A PROVEN ASK: `release:local --channel edge --workers-only --branch-release` without `--dry-run` (it deploys a pushed branch head, not origin/main, to the shared Workers that serve public eu/us/asia; operator ruling ASKED:2026-11-13T05:02Z; its dry run reads no secret and writes nothing, so it stays free), the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
-  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12), promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
+  2. THE CLI'S STABLE CHANNEL, AND A BRANCH RELEASE, NEED A PROVEN ASK: `release:local --channel edge --workers-only --branch-release` without `--dry-run` (it deploys a pushed branch head, not origin/main, to the shared Workers that serve public eu/us/asia; operator ruling ASKED:2026-11-13T05:02Z; its dry run reads no secret and writes nothing, so it stays free), the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), a dispatch of the stable promotion workflow `.github/workflows/cd-release-stable.yml` (agent/plans/PLAN-retire-nightlies-and-mentions.md D4, box G2: `gh workflow run` naming its file, its `name:` in any case, or a numeric id no offline read can resolve, and `gh api .../actions/workflows/<file|id>/dispatches`; free only with an inline dry-run field reading exactly `true`, `-f dry_run=true` or `inputs[dry_run]=true`, while `--json` and `--input` carry the inputs where the guard cannot read them and so ask), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
+  3. `release:local --channel stable` NEEDS A PROVEN ASK, dry run included: stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12). The operator's answer to Q1 of agent/plans/PLAN-retire-nightlies-and-mentions.md (2026-11-16, "also allow release:local for stable", box S7) lifted the 2026-10-27 outright refusal, so the entry promotes edge to stable beside the cd-release-stable.yml dispatch, and every run of it, the dry run too, is admitted only with the rule 2 proof (the entry itself refuses a stable run whose environment carries no `RELEASE_ASKED=ASKED:<minute>Z`). A run of the entry naming no channel is refused, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
   4. AN ENTERPRISE COMPANY'S RELEASE NEEDS A PROVEN ASK, because company Workers carry the stable channel (agent/plans/PLAN-enterprise-isolation.md box K2): the ring runner `python3 -m rediacc_ci.release.rings_run`, spelled also `./run.sh enterprise release` and `python3 -m rediacc_ci enterprise release`, is admitted freely with `--bench` (fake companies on bench), `--dry-run` or `--help`, and otherwise only with a proven RELEASE_ASKED. A Worker module run naming `--company` without `--company-bench` deploys one real company's Worker outside the runner, so it needs the same ask; the shared Worker sets of rule 1 stay free.
   5. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on a bench or preview config (judged on the config's file name, never the directories above it; `deploy_bench` and `deploy_proxy --target bench` are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
@@ -14,9 +14,9 @@ A `--help`/`-h` on a publish module passes, as does `--help` on a `wrangler`, `g
 
 WRAPPERS ARE UNWRAPPED. `./run.sh devbox exec -- ...`, `bws_env exec ... -- ...` and `docker exec <container> ...` hand their tail to another process, so the tail is judged as a command of its own with the outer environment carried in. `npm run <script>` is judged by the script's own text from the package.json of each directory it runs in (`--prefix`, `cd`, or each workspace `-w` names by path or package name, every one under `--workspaces`), because `workers/mta-sts`'s `npm run deploy` is a `wrangler deploy` that names no publish verb on the command line.
 
-WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
+WHAT IT DOES NOT SEE: a publish verb assembled at run time, `gh api` POSTs to the releases endpoint, a workflow dispatch sent by `curl` or through a gh alias, a path into `.ci/cache/release/` spelled through a glob or a symlink the word does not resolve through, and a program that builds the path from parts. The release record and the R2 sentinel are what a release leaves behind, so a release this guard missed is still visible after the fact.
 
-ORDER 62, ahead of `block_vm_unverified_push` (63) and `block_backup_unverified_push` (64). Both write a ledger line once they admit an escaped push, on the claim that every refusing guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb left a ledger line for a push that never ran.
+ORDER 61, ahead of `block_vm_unverified_push` (62) and `block_backup_unverified_push` (63). Both write a ledger line once they admit an escaped push, on the claim that every refusing guard ran first; with this guard behind them a command that escapes a push AND runs a refused publish verb left a ledger line for a push that never ran.
 
 THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`); it is judged by `test-block_unasked_release.py` beside it, which also plants DEFECT and every MUTANT.
 """
@@ -28,12 +28,14 @@ import re
 import shlex
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
+from rediacc_hooks.guards import tables
 from rediacc_hooks.guards.block_host_toolchain_run import _python_target
-from rediacc_hooks.wellknown import IMAGE_REGISTRY
+
+__getattr__ = tables("block_unasked_release", "EDGE_CASES", "_ASK", "_PY")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 62
+ORDER = 61
 
 # Planted, no finding is ever refused: every publish verb, every unproven ASKED and every write into the release clone passes.
 DEFECT = ("    if refusals:\n", "    if False:\n")
@@ -48,6 +50,10 @@ MUTANTS = {
         "    tail = args\n    return _option(tail",
     ),
     "any-channel-admitted": ('    if channel == "edge":\n', "    if True:\n"),
+    "stable-entry-free": (
+        'return "ask", STABLE_CHANNEL_WHAT, ""',
+        'return "", STABLE_CHANNEL_WHAT, ""',
+    ),
     "branch-release-free": (
         'return "ask", BRANCH_RELEASE_WHAT, ""',
         'return "", BRANCH_RELEASE_WHAT, ""',
@@ -140,6 +146,34 @@ MUTANTS = {
         '_asks_help(rest, ("--help", "-h")) and _declares_help(root, module)',
         '_asks_help(rest, ("--help", "-h"))',
     ),
+    "stable-dispatch-free": (
+        '    return "ask", STABLE_DISPATCH_WHAT % selector, ""',
+        '    return "", STABLE_DISPATCH_WHAT % selector, ""',
+    ),
+    "dispatch-dry-run-ignored": (
+        '    if dry_run:\n        return "", "", ""\n',
+        '    if False:\n        return "", "", ""\n',
+    ),
+    "dispatch-display-name-ignored": (
+        "by_name and selector.casefold() in _stable_workflow_names(root)",
+        "False",
+    ),
+    "dispatch-json-stdin-trusted": (
+        "dry = not json_stdin and _field_value(",
+        "dry = _field_value(",
+    ),
+    "dispatch-last-field-ignored": (
+        "        if sep and name == key:\n            found = value\n",
+        "        if sep and name == key and found is None:\n            found = value\n",
+    ),
+    "dispatch-api-ignored": (
+        "    found = _DISPATCH_ENDPOINT.search(endpoint)\n",
+        "    found = None\n",
+    ),
+    "workflow-repo-before-verb": (
+        "lead, verb, rest = shellscan._gh_parse(args[1:], GH_WORKFLOW_RUN_FLAGS, True)",
+        "lead, verb, rest = [], args[1:2], args[2:]",
+    ),
     "workspace-glob-through-path": (
         "glob.glob(pattern, root_dir=here)",
         "glob.glob(os.path.join(here, pattern))",
@@ -185,10 +219,10 @@ STEP_MODULES = (
     "rediacc_ci.release.update_homebrew_tap",
 )
 PUBLISH_MODULES = (*WORKER_MODULES, *STABLE_MODULES, *STEP_MODULES)
-STABLE_CHANNEL_REFUSAL = (
-    "release:local --channel stable: stable is the CLI channel Enterprise company Workers ride "
-    "through rings, promoted through CI/CD only (.github/workflows/cd-release-stable.yml, "
-    "operator ruling 2026-10-27T09:45Z); RELEASE_ASKED does not admit it"
+# PLAN-retire-nightlies-and-mentions S7: the stable entry asks, its dry run too.
+STABLE_CHANNEL_WHAT = (
+    "release:local --channel stable (a promotion of edge to the CLI channel Enterprise company "
+    "Workers ride)"
 )
 # A branch release deploys a pushed branch head to the shared Workers that serve public eu/us/asia (operator ruling 2026-11-13T05:02Z); the entry parses with allow_abbrev=False, so the flag is judged as one exact word.
 BRANCH_RELEASE_FLAG = "--branch-release"
@@ -211,6 +245,29 @@ _MODULE_CONFIG = re.compile(r"(?:\A|[.\-_])(?:bench|preview)(?:[.\-_]|\Z)")
 WRANGLER_PAGES_PUBLISH = ("deploy", "publish")
 WRANGLER_VALUE_OPTIONS = ("-c", "--config", "-e", "--env", "--cwd", "--env-file")
 GH_RELEASE_PUBLISH = ("create", "upload", "edit", "delete")
+# The stable promotion is a dispatch of this workflow (PLAN-retire-nightlies-and-mentions D4, box G2): gh names a workflow by its file name, its `name:` (matched without regard to case) or its numeric id.
+STABLE_WORKFLOW_FILE = "cd-release-stable.yml"
+STABLE_WORKFLOW_REL = ".github/workflows/" + STABLE_WORKFLOW_FILE
+# The `name:` the file carries today. The stable selector set is this name AND the one read from the file: the file is the source, so a rename moves the guard with it, and the recorded name keeps refusing the old spelling until it is updated here (and stands alone when the file cannot be read or decoded, or carries no top-level `name:` line).
+STABLE_WORKFLOW_NAME = "CD - Release to Stable"
+# `gh workflow run`'s flags (gh 2.x `workflow run --help`, plus the inherited `--repo`), in shellscan's pflag table form: (shorthand, takes a value).
+GH_WORKFLOW_RUN_FLAGS = {
+    "help": ("h", False),
+    "repo": ("R", True),
+    "raw-field": ("f", True),
+    "field": ("F", True),
+    "ref": ("r", True),
+    "json": ("", False),
+}
+DISPATCH_DRY_RUN = "dry_run"
+# strconv.ParseBool's false spellings, which pflag applies to `--json=<v>`.
+GH_FALSE = frozenset(("0", "f", "F", "false", "FALSE", "False"))
+_DISPATCH_ENDPOINT = re.compile(r"(?:\A|/)actions/workflows/([^/?#\s]+)/dispatches/?(?:[?#]|\Z)")
+STABLE_DISPATCH_WHAT = "a dispatch of %s (%%s; the stable promotion)" % STABLE_WORKFLOW_FILE
+UNRESOLVED_DISPATCH_WHAT = (
+    "a dispatch of workflow id %s (an id this guard cannot resolve offline, judged as the stable "
+    "promotion; name the workflow file instead)"
+)
 DOCKER_PUSH_VERBS = (("push",), ("image", "push"), ("manifest", "push"))
 DOCKER_NAMES = ("docker", "docker-buildx", "podman", "docker-compose", "podman-compose")
 # `docker compose push` pushes every service image, `compose publish` the project as an OCI artifact, and `compose build --push` builds and pushes (review 2e939f2a.6).
@@ -326,8 +383,9 @@ EVERY WORKER DEPLOY IS FREE: the stable and edge Worker pairs are one shared set
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target <t> --region <r>
     npx wrangler deploy --config wrangler.<region>.toml
 
-THE CLI'S STABLE CHANNEL IS CI/CD ONLY. A promote verb, or a raw wrangler deploy of a config
-outside the shared region set, needs the operator's answer first, and the ASKED minute must match
+THE CLI'S STABLE CHANNEL NEEDS AN ASK. A promote verb, a dispatch of cd-release-stable.yml
+(`gh workflow run cd-release-stable.yml`; `-f dry_run=true` is free), or a raw wrangler deploy of
+a config outside the shared region set, needs the operator's answer first, and the ASKED minute must match
 an AskUserQuestion answer in this session's transcript (within 300 s):
 
     RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z <the command>
@@ -338,51 +396,10 @@ run) deploys a pushed branch head to public production, and needs the same prove
 An Enterprise company's release (`rings_run` or `./run.sh enterprise release` without `--bench`
 or `--dry-run`), or a Worker module run naming a real `--company`, needs the same proven ask.
 
-`release:local --channel stable` is refused even then: cd-release-stable.yml promotes stable. A raw
+`release:local -- --channel stable` (a promotion, its dry run included) needs the same proven ask. A raw
 gh release, v* tag push, docker push or release step is never admitted here; the entry runs them
 behind its gates and records each one.
 """
-
-_ASK = "ASKED:2026-01-01T00:00Z"
-_PY = "PYTHONPATH=.ci python3 -m"
-
-EDGE_CASES = [
-    ("the edge entry", "npm run release:local -- --channel edge"),
-    ("the edge entry, dry run", "npm run release:local -- --channel edge --dry-run"),
-    ("the entry, channel before the separator", "npm run release:local --channel edge"),
-    ("the stable entry", "npm run release:local -- --channel stable --dry-run"),
-    (
-        "the stable entry with an ASKED",
-        "RELEASE_ASKED=%s %s" % (_ASK, "npm run release:local -- --channel stable"),
-    ),
-    ("the entry by module", "%s rediacc_ci.release.local --channel edge" % _PY),
-    ("wrangler deploy on a shared region config", "npx wrangler deploy --config wrangler.eu.toml"),
-    ("wrangler deploy on the bench config", "npx wrangler deploy --config wrangler.bench-eu.toml"),
-    ("wrangler deploy on a config outside the region set", "npx wrangler deploy"),
-    ("wrangler deploy dry run", "npx wrangler deploy --dry-run --outdir /tmp/x"),
-    ("wrangler tail reads", "npx wrangler tail www"),
-    ("gh release create", "gh release create v1.2.3 --notes x"),
-    ("gh release view", "gh release view v1.2.3"),
-    ("a v tag push", "git push origin v1.2.3"),
-    ("a branch push", "git push origin 1231-9"),
-    ("docker push", "docker push %s/renet:1.2.3" % IMAGE_REGISTRY),
-    ("docker build", "docker build -t x ."),
-    ("the www deploy", "%s rediacc_ci.deploy.deploy_www" % _PY),
-    ("a stable CLI promote", "%s rediacc_ci.deploy.promote_r2_to_stable" % _PY),
-    ("an eu account deploy", "%s rediacc_ci.deploy.deploy_account --region eu" % _PY),
-    (
-        "an asia account deploy",
-        "%s rediacc_ci.deploy.deploy_account --region asia --target edge" % _PY,
-    ),
-    ("the bench proxy", "%s rediacc_ci.deploy.deploy_proxy --target bench" % _PY),
-    ("a regional proxy", "%s rediacc_ci.deploy.deploy_proxy --target stable --region eu" % _PY),
-    ("a raw release step", "%s rediacc_ci.release.create_github_release --version 1.2.3" % _PY),
-    ("deploy_bench", "%s rediacc_ci.ops.deploy_bench" % _PY),
-    ("pytest naming a module", "python3 -m pytest -k rediacc_ci.deploy.deploy_www"),
-    ("prose naming a verb", "echo 'wrangler deploy'"),
-    ("a redirect into the release clone", "echo x > .ci/cache/release/abc/a.txt"),
-    ("reading the release clone", "cat .ci/cache/release/abc/a.txt"),
-]
 
 
 # --------------------------------------------------------------------------- the ASKED proof
@@ -604,7 +621,7 @@ def _entry_verdict(channel, npm, words=()):
             return "ask", BRANCH_RELEASE_WHAT, ""
         return "", "", ""
     if channel == "stable":
-        return "refuse", STABLE_CHANNEL_REFUSAL, ""
+        return "ask", STABLE_CHANNEL_WHAT, ""
     return "refuse", NO_CHANNEL_REFUSAL if npm else NO_CHANNEL_MODULE_REFUSAL, ""
 
 
@@ -908,7 +925,7 @@ def _publish(run, where, root):
         words = _positionals(args, ("-R", "--repo"))
         if words[:1] == ["release"] and words[1:2] and words[1] in GH_RELEASE_PUBLISH:
             return "refuse", "gh release %s" % words[1], ""
-        return "", "", ""
+        return _gh_dispatch(args, root)
     if name == "git":
         _globals, verb, rest = commit_policy.git_split(args)
         what = _pushes_release_tag(rest) if verb == "push" else ""
@@ -918,6 +935,70 @@ def _publish(run, where, root):
     if module in PUBLISH_MODULES:
         return _module_publish(module, _module_args(run), root)
     return "", "", ""
+
+
+def _stable_workflow_names(root):
+    """The casefolded stable selector names: the `name:` read from the workflow file under `root` together with the recorded `STABLE_WORKFLOW_NAME`, both whenever the file yields a name, so a rename in the file adds the new spelling without dropping the old one; only the recorded name when the file cannot be read, is not UTF-8 (review 1c35b2e6.3: a `UnicodeDecodeError` escaped the `OSError` arm), or carries no top-level `name:` line (review 01413920.1)."""
+    try:
+        with open(os.path.join(str(root), STABLE_WORKFLOW_REL), encoding="utf-8") as handle:
+            found = re.search(r"^name:[ \t]*(.+?)[ \t]*$", handle.read(), re.MULTILINE)
+    except (OSError, ValueError):
+        found = None
+    name = found.group(1).strip("'\"") if found else STABLE_WORKFLOW_NAME
+    return {name.casefold(), STABLE_WORKFLOW_NAME.casefold()}
+
+
+def _dispatch_verdict(selector, dry_run, root, by_name=True):
+    """`(kind, what, note)` for a dispatch of the workflow `selector` names: its file name (a path's last part), its `name:` when `by_name` (gh's selector; the REST endpoint takes only a file name or an id), or a numeric id. A stable dispatch asks unless it is a dry run; an id asks too, since no offline read can say which workflow it is."""
+    stable = _base(selector) == STABLE_WORKFLOW_FILE or (
+        by_name and selector.casefold() in _stable_workflow_names(root)
+    )
+    if not stable and not selector.isdigit():
+        return "", "", ""
+    if dry_run:
+        return "", "", ""
+    if not stable:
+        return "ask", UNRESOLVED_DISPATCH_WHAT % selector, ""
+    return "ask", STABLE_DISPATCH_WHAT % selector, ""
+
+
+def _field_value(fields, key):
+    """The value the LAST `key=<v>` among `fields` gives (gh builds a map, so a later field wins), or None."""
+    found = None
+    for field in fields:
+        name, sep, value = field.partition("=")
+        if sep and name == key:
+            found = value
+    return found
+
+
+def _gh_dispatch(args, root):
+    """`(kind, what, note)` for a `gh workflow run <workflow>` or a `gh api .../actions/workflows/<workflow>/dispatches` call. The dry run is admitted only from an inline field reading exactly `true`: `--json` (inputs on stdin) and `--input <file>` carry the inputs where this guard cannot read them, so those ask."""
+    if args[:1] == ["workflow"]:
+        # The inherited `--repo` may stand before the verb (`gh workflow -R o/r run X`), so the verb is the first operand, not the second word.
+        lead, verb, rest = shellscan._gh_parse(args[1:], GH_WORKFLOW_RUN_FLAGS, True)
+        if verb != ["run"]:
+            return "", "", ""
+        tail, operands, _rest = shellscan._gh_parse(rest, GH_WORKFLOW_RUN_FLAGS, False)
+        if not operands:
+            return "", "", ""
+        flags = [*lead, *tail]
+        fields = [v for n, v in flags if n in ("raw-field", "field")]
+        json_stdin = any(n == "json" and v not in GH_FALSE for n, v in flags)
+        dry = not json_stdin and _field_value(fields, DISPATCH_DRY_RUN) == "true"
+        return _dispatch_verdict(operands[0], dry, root)
+    if args[:1] != ["api"]:
+        return "", "", ""
+    parsed = shellscan.gh_args(args)
+    endpoint = next(iter(parsed.operands), "")
+    found = _DISPATCH_ENDPOINT.search(endpoint)
+    if not found:
+        return "", "", ""
+    fields = [*parsed.values("raw-field"), *parsed.values("field")]
+    dry = parsed.last("input") is None and (
+        _field_value(fields, "inputs[%s]" % DISPATCH_DRY_RUN) == "true"
+    )
+    return _dispatch_verdict(found.group(1), dry, root, by_name=False)
 
 
 def _judge(cmd, where_root, env, root, depth, found):

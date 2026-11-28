@@ -399,11 +399,25 @@ def test_proposal_id_is_derived_for_old_rows_and_written_for_new_ones(tmp_path):
 
 def test_pending_note_names_the_curator_and_its_run_directory():
     h = _hints()
-    note = h.pending_note("d778be9d-aaaa", 3)
+    rows = [
+        {"id": "a1", "source": "judge"},
+        {"id": "a2", "source": "stop-judge"},
+        {"id": "b1", "source": "wake-timer"},
+    ]
+    note = h.pending_note("d778be9d-aaaa", rows)
     assert note.startswith("3 hint proposal(s)"), note
     assert "lesson-curator" in note, note
     assert "agent/d778be9d/lessons/e" in note, note
     assert "--hint-resolve d778be9d <id> <kind>:<token>" in note, note
+    # control: no family reaches 3, so no cluster is named
+    assert "weekly-lessons box" not in note, note
+    rows.append({"id": "a3", "source": "stop-gate-judge"})
+    note = h.pending_note("d778be9d-aaaa", rows)
+    assert note.startswith("4 hint proposal(s)"), note
+    assert (
+        "1 source family(ies) hold 3 or more of them, one weekly-lessons box each: judge (3)."
+        in note
+    ), note
 
 
 def test_hint_resolve_cli_refuses_an_unknown_id_and_a_dead_pointer_then_records_a_live_one(wl):
@@ -539,3 +553,52 @@ def test_hint_resolve_cli_accepts_file_and_shape_pointers_and_refuses_dead_ones(
         (ids[0], "file:notes/live.py:1"),
         (ids[1], "shape:shaped-trap"),
     ]
+
+
+# ---- source families (PLAN-weekly-lessons.md W2 / D6) ------------------------
+
+
+def test_source_family_merges_judge_spellings_and_leaves_others_apart():
+    h = _hints()
+    judge = {h.source_family(k) for k in ("judge", "stop-judge", "stop-gate-judge", " Judge ")}
+    assert judge == {"judge"}
+    # control: a distinct source is not swallowed into the judge family
+    assert h.source_family("unlanded-lease") == "unlanded-lease"
+    assert h.source_family("unlanded-lease") != h.source_family("judge")
+    assert h.source_family("") == "unsourced"
+    assert h.source_family("brand-new-key") == "brand-new-key"
+
+
+def test_cluster_counts_fold_spellings_into_one_cluster_with_a_threshold(monkeypatch):
+    h = _hints()
+    rows = [
+        {"id": "a1", "source": "judge"},
+        {"id": "a2", "source": "stop-judge"},
+        {"id": "a3", "source": "stop-gate-judge"},
+        {"id": "b1", "source": "unlanded-lease"},
+        {"id": "b2", "source": "unlanded-lease"},
+        {"id": "c1", "source": "wake-timer"},
+    ]
+    assert h.cluster_counts(rows)["judge"] == ["a1", "a2", "a3"]
+    # fixture: the three spellings reach the threshold of 3 only once folded
+    assert h.clusters(rows) == [("judge", ["a1", "a2", "a3"])]
+    # control (4a8a3956.1): with no folding table, the three judge spellings are three families of one each, so no cluster reaches the threshold
+    monkeypatch.setattr(h, "SOURCE_FAMILIES", {})
+    unfolded = h.cluster_counts(rows)
+    assert unfolded["judge"] == ["a1"]
+    assert unfolded["stop-judge"] == ["a2"]
+    assert unfolded["stop-gate-judge"] == ["a3"]
+    assert h.clusters(rows) == []
+
+
+def test_every_family_target_is_a_stable_fixed_point():
+    h = _hints()
+    for fam in set(h.SOURCE_FAMILIES.values()):
+        assert h.source_family(fam) == fam, fam
+
+
+def test_stuck_shell_proposals_cluster_with_the_roster_family():
+    h = _hints()
+    assert h.source_family("stuck-shell") == "roster"
+    assert h.source_family("no-such-check-key") == "no-such-check-key"
+    assert h.source_family("") == h.UNSOURCED_FAMILY

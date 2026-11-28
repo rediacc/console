@@ -149,9 +149,11 @@ async function runBackupRepair(
   };
 }
 
-/** Print the one document, then the warnings, and set the exit code: anything short of a complete repair fails. */
+/** Set the exit code, print the one document, then the warnings: anything short of a complete repair fails. */
 function renderReport(report: RepairReport): void {
   const format = getOutputFormat();
+  // Set before the print, so the JSON envelope of a failed repair says success:false.
+  if (report.status !== 'clean' && report.status !== 'repaired') setExitCode(1);
   outputService.print(report, format === 'table' ? 'json' : format);
   if (report.status === 'clean') return;
   if (report.status === 'dry-run') {
@@ -166,13 +168,13 @@ function renderReport(report: RepairReport): void {
       t('commands.backup.repair.affected', { snapshots: report.affectedSnapshots.join(', ') })
     );
   }
-  if (report.status !== 'repaired') setExitCode(1);
 }
 
 export function registerBackupRepair(backup: Command): void {
   backup
     .command('repair')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.repair.descriptionShort'))
     .description(t('commands.backup.repair.description'))
     .option('--dry-run', t('commands.backup.repair.optionDryRun'))
     .option('--debug', t('options.debug'))

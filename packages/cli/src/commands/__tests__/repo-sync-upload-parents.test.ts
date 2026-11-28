@@ -91,7 +91,7 @@ vi.mock('../../services/repo/repo-mount-check.js', () => ({
   assertRepoMountedOnMachine: () => Promise.resolve(),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: () => Promise.resolve(),
+  enforceResolvedTarget: () => Promise.resolve(),
   validateRemotePath: vi.fn(),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));

@@ -25,7 +25,7 @@ import {
   type ExecutorRecord,
   isOomExit,
   type RelocateAnswer,
-} from '../org-executor';
+} from '../org-executor-support';
 import { UNREACHABLE_THRESHOLD, UNREACHABLE_WINDOW_MS } from '../placement';
 import {
   FakeCapacity,

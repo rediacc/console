@@ -20,22 +20,32 @@ import { tmpdir } from 'node:os';
 import { serve } from '@hono/node-server';
 import { CLI_CONTRACT_VERSION } from '@rediacc/shared/cli-contract';
 import { PROXY_ROUTES } from '@rediacc/shared/cli-contract/wire';
+import { WK_OPENAI_API_BASE } from '@rediacc/shared/config/well-known.generated';
 import {
   cekHandoffEncrypt,
   ENVELOPE_VERSION,
+  encryptPolicyRecord,
   exportAesKey,
   fromBase64,
   generateCek,
+  generateConfigKey,
   generateSdkMaster,
   sdkDerive,
+  selectiveEncrypt,
   toBase64,
 } from '@rediacc/shared/config-crypto';
-import { buildConfigPushPayload, type RdcConfig } from '@rediacc/shared/config-schema';
+import {
+  buildCommitEntries,
+  buildConfigPushPayload,
+  type RdcConfig,
+  toFullConfig,
+} from '@rediacc/shared/config-schema';
 import type { PolicyDocument } from '@rediacc/shared/policy';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { configFileStorage } from '../../../adapters/config-file-storage.js';
 import { createCli } from '../../../cli.js';
 import { configService } from '../../config/config-resources.js';
+import { boundEffectivePolicy, memoryPolicyHighWater } from '../../config/policy-record.js';
 import {
   createOutputState,
   DispatchExit,
@@ -44,12 +54,26 @@ import {
 import { resetProxySessions } from '../../executor/proxy-client.js';
 import type { ExecuteOptions, ExecuteResult } from '../../executor/types.js';
 import { AuthVerifier } from '../auth.js';
-import { createContainerConfigLoader, createExecutorGrantRecorder } from '../container-config.js';
+import { ConfigChain, cekGenerationOf, SessionConfigStore } from '../config-writeback.js';
+import {
+  createContainerConfigLoader,
+  createExecutorGrantRecorder,
+  teamOverSharedAiConfigs,
+} from '../container-config.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
 import { authorize } from '../policy.js';
 import { createServeApp } from '../server.js';
 import { SessionStore } from '../sessions.js';
+import {
+  createFakeConfigStore,
+  type FakeConfigStore,
+  CONFIG_ID as HARNESS_CONFIG_ID,
+  EXECUTOR_TOKEN as HARNESS_EXECUTOR_TOKEN,
+  OWNER_TOKEN as HARNESS_OWNER_TOKEN,
+  STORE_ID as HARNESS_STORE_ID,
+  OPEN_POLICY,
+} from './writeback-harness.js';
 
 /**
  * Extract an ArrayBuffer for the Web Crypto API, exactly as config-crypto's own
@@ -173,11 +197,12 @@ const PRINCIPALS: Record<string, unknown> = {
 /**
  * The config that only ever exists encrypted, until the executor opens it.
  *
- * The optional policy document is the point of the deny test below: the RULES
- * ride inside the ciphertext, so if the executor cannot decrypt them it silently
- * falls back to the missing-document default and enforces nothing.
+ * The optional `forgedPolicy` is a policy field written INTO the config document,
+ * the way a member with push access could forge one; the real rules ride in the
+ * policy record beside the config (boot's second argument), and the forged
+ * field must decide nothing.
  */
-function secretConfig(policy?: PolicyDocument): RdcConfig {
+function secretConfig(forgedPolicy?: PolicyDocument): RdcConfig {
   const config: RdcConfig = {
     schemaVersion: 3,
     id: CONFIG_ID,
@@ -197,7 +222,7 @@ function secretConfig(policy?: PolicyDocument): RdcConfig {
     // A recorded network ID: a repo without one asks its machine first, and the fake executor is no machine.
     state: { repos: { demo: { latest: { networkId: 2816 } } } },
     encryption: { mode: 'plaintext' },
-    ...(policy === undefined ? {} : { policy }),
+    ...(forgedPolicy === undefined ? {} : { policy: forgedPolicy }),
   };
   return config;
 }
@@ -220,8 +245,19 @@ describe('container-tier config loading', () => {
   let mintBodies: { userId: string; sessionId: string }[];
   /** When set, the fake account server refuses to record grants. */
   let refuseGrants: boolean;
+  /** The envelope version of the payload the fake pull serves. */
+  let servedEnvelopeVersion: number;
 
-  async function boot(config: RdcConfig): Promise<void> {
+  /**
+   * Boot the executor against `config`, with `policy` (when given) sealed as the
+   * config's policy record, which the fake pull serves beside the blob exactly as
+   * the account server does; null when there is none.
+   */
+  async function boot(
+    config: RdcConfig,
+    policy?: PolicyDocument,
+    sealedFor: string = CONFIG_ID
+  ): Promise<void> {
     cek = await generateCek();
     executed = [];
     resolvedAtExecution = [];
@@ -232,17 +268,37 @@ describe('container-tier config loading', () => {
     mintBodies = [];
     refuseGrants = false;
 
-    // Real ciphertext, built exactly as a CLI push builds it.
     const sdkEpoch = 12345;
     const sdkDerived = await sdkDerive(generateSdkMaster(), sdkEpoch);
-    const payload = await buildConfigPushPayload(config, {
-      storeId: 'store-1',
-      version: 4,
-      sdkEpoch,
-      sdkDerived,
-      cek,
-    });
+    // Real ciphertext, built exactly as a CLI push builds it; a forged policy field is sealed by hand, past the builder that refuses it, as a member forging one would.
+    const payload =
+      config.policy === undefined
+        ? await buildConfigPushPayload(config, {
+            storeId: 'store-1',
+            version: 4,
+            sdkEpoch,
+            sdkDerived,
+            cek,
+            cekGeneration: 1,
+          })
+        : await selectiveEncrypt(toFullConfig(config, { version: 4, sdkEpoch }), sdkDerived, cek, {
+            sdkEpoch,
+            storeId: 'store-1',
+            commitEntries: buildCommitEntries(config),
+            configKey: { key: await generateConfigKey(), version: 1, cekGeneration: 1 },
+          });
+    servedEnvelopeVersion = payload.envelope.envelopeVersion;
     const sdkDerivedB64 = toBase64(await exportAesKey(sdkDerived));
+    const policyRecord =
+      policy === undefined
+        ? null
+        : await encryptPolicyRecord(policy, cek, {
+            storeId: 'store-1',
+            configId: sealedFor,
+            teamId: null,
+            version: 1,
+            cekGeneration: 1,
+          });
 
     /** The fake /configs/executor-grant. Mirrors the server: the grantor is the presented bearer's creator. */
     const recordGrantCall = (init?: RequestInit): Response => {
@@ -274,6 +330,20 @@ describe('container-tier config loading', () => {
       });
     };
 
+    /** GET /configs: the one config at the version it was sealed under. */
+    const listingAnswer = (): Response =>
+      json({
+        newServerToken: 'rct_rotated',
+        configs: [
+          {
+            configId: CONFIG_ID,
+            teamId: null,
+            version: payload.envelope.version,
+            lastModified: '',
+          },
+        ],
+      });
+
     /** Every account call but the grant record, which stays out of accountCalls so the pull/mint counts below measure what they say. */
     const countedCall = (href: string, init?: RequestInit): Response => {
       accountCalls.push(href);
@@ -291,7 +361,7 @@ describe('container-tier config loading', () => {
         expect((init?.headers as Record<string, string>)['X-Config-Token']).toBe(
           'rct_executor_scoped'
         );
-        // A pull without the envelope header gets 426 against a v3 store (the R1 clean break).
+        // A pull that declares less than v4 (or no header) gets 426 (the R1 and Design 8 clean breaks).
         expect((init?.headers as Record<string, string>)['x-config-envelope']).toBe(
           String(ENVELOPE_VERSION)
         );
@@ -301,6 +371,7 @@ describe('container-tier config loading', () => {
           configData: payload.encryptedBlob,
           envelope: payload.envelope,
           hmac: payload.hmac,
+          policy: policyRecord,
         });
       }
 
@@ -309,6 +380,11 @@ describe('container-tier config loading', () => {
 
     const accountFetch = vi.fn((url: string | URL, init?: RequestInit) => {
       const href = String(url);
+      // The version check a warm session makes before each later command (Design 5 of PLAN-rmcp-executor-hardening). The stored version never moves here, so it never re-pulls; the counts below filter on '/configs/' and leave it out.
+      if (href.endsWith('/configs')) {
+        accountCalls.push(href);
+        return listingAnswer();
+      }
       return href.includes('/configs/executor-grant')
         ? recordGrantCall(init)
         : countedCall(href, init);
@@ -435,6 +511,8 @@ describe('container-tier config loading', () => {
     await response.text();
 
     expect(executed).toHaveLength(1);
+    // The blob it opened is an envelope v4, sealed under the config's content key.
+    expect(servedEnvelopeVersion).toBe(4);
 
     // The config policy ran against is the DECRYPTED one. If the executor had failed to open the blob, these fields could not exist.
     expect(authorizedAgainst).toHaveLength(1);
@@ -516,15 +594,13 @@ describe('container-tier config loading', () => {
 
   // ── The rules must actually reach the executor ───────────────────────
 
-  it('enforces a deny rule that exists ONLY inside the encrypted config', async () => {
-    // The policy document rides in the ciphertext and nowhere else. The account server cannot read it, the wire does not carry it, and the executor has no local copy: the ONLY way this rule can bind is if the executor genuinely decrypted the config it was handed.
+  it('enforces a deny rule that exists ONLY inside the encrypted policy record', async () => {
+    // The policy rides in its own record, sealed under the CEK, and nowhere else. The account server cannot read it and the executor has no local copy: the ONLY way this rule can bind is if the executor genuinely opened the record it was handed.
     server.close();
-    await boot(
-      secretConfig({
-        version: 1,
-        defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
-      })
-    );
+    await boot(secretConfig(), {
+      version: 1,
+      defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
+    });
 
     await grantKey(OWNER_TOKEN);
     const response = await runCommand(OWNER_TOKEN);
@@ -534,22 +610,47 @@ describe('container-tier config loading', () => {
     expect(((await response.json()) as { error: string }).error).toMatch(/denies/);
     expect(executed).toHaveLength(0);
 
-    // And the rule really came out of the blob: policy reached authorize().
+    // And the rule really came out of the record: the policy bound to the config authorize() saw.
     expect(authorizedAgainst).toHaveLength(1);
-    expect(authorizedAgainst[0].policy).toEqual({
+    expect(boundEffectivePolicy(authorizedAgainst[0])?.org).toEqual({
       version: 1,
       defaults: { commands: { allow: ['*'], deny: [COMMAND_PATH] } },
     });
   });
 
+  it('a policy field forged into the config document decides nothing', async () => {
+    // A member who may push the config writes a deny-all policy into the document. The executor reads the policy from the record only, and there is none, so the owner is allowed by the missing-policy default.
+    server.close();
+    await boot(secretConfig({ version: 1, defaults: { commands: { allow: ['*'], deny: ['*'] } } }));
+
+    await grantKey(OWNER_TOKEN);
+    const response = await runCommand(OWNER_TOKEN);
+
+    expect(response.status).toBe(200);
+    await response.text();
+    expect(executed).toHaveLength(1);
+    expect(boundEffectivePolicy(authorizedAgainst[0])).toEqual({ locked: [], ignoredLocked: [] });
+  });
+
+  it('refuses the session when the policy record does not open for this config', async () => {
+    server.close();
+    // A record sealed for another config, served beside this one (a swapped record): the tag fails, and the executor runs nothing rather than falling back to the missing-policy default.
+    await boot(secretConfig(), { version: 1, defaults: { commands: { allow: ['*'] } } }, 'cfg-x');
+
+    await grantKey(OWNER_TOKEN);
+    const response = await runCommand(OWNER_TOKEN);
+
+    expect(response.status).not.toBe(200);
+    expect(((await response.json()) as { error: string }).error).toMatch(/policy record/i);
+    expect(executed).toHaveLength(0);
+  });
+
   it('still allows what the encrypted rules permit', async () => {
     server.close();
-    await boot(
-      secretConfig({
-        version: 1,
-        defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
-      })
-    );
+    await boot(secretConfig(), {
+      version: 1,
+      defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
+    });
 
     await grantKey(OWNER_TOKEN);
     const response = await runCommand(OWNER_TOKEN);
@@ -576,7 +677,8 @@ describe('container-tier config loading', () => {
     expect(grantBodies).toEqual([{ sessionId, token: OWNER_TOKEN }]);
 
     await (await runCommand()).text();
-    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId }]);
+    // Minted writable: the session's config changes are pushed back through this chain (PLAN-rmcp-writeback.md WB1).
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId, write: true }]);
     expect(executed).toHaveLength(1);
   });
 
@@ -585,7 +687,7 @@ describe('container-tier config loading', () => {
     await grantKey();
 
     await (await runCommand(OWNER_TOKEN, { 'X-Config-Session': first })).text();
-    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId: first }]);
+    expect(mintBodies).toEqual([{ userId: 'user-owner', sessionId: first, write: true }]);
   });
 
   it('drops the session when the account server refuses to record the grant', async () => {
@@ -658,9 +760,10 @@ describe('container-tier config loading', () => {
     const afterSecond = accountCalls.filter((u) => u.includes('/configs/')).length;
 
     expect(executed).toHaveLength(2);
-    // Exactly one mint + one pull, for two commands.
+    // Exactly one mint + one pull, for two commands; the second pays one metadata listing and no pull.
     expect(afterFirst).toBe(2);
     expect(afterSecond).toBe(2);
+    expect(accountCalls.filter((u) => u.endsWith('/configs'))).toHaveLength(1);
   });
 
   it('drops the decrypted config when the session goes, so it never outlives its key', async () => {
@@ -762,5 +865,148 @@ describe('createExecutorGrantRecorder status mapping', () => {
       expect(error).toBeInstanceOf(Error);
       expect((error as Error).name).not.toBe('AuthError');
     }
+  });
+});
+
+describe('the executor loader on envelope v4 (PLAN-rmcp-policy-record.md SK3)', () => {
+  /** A session store opened straight through the chain, as the container loader opens one. */
+  async function openDirect(store: FakeConfigStore): Promise<SessionConfigStore> {
+    const sessionId = 'session-v4';
+    await store.fetch('https://account.test/account/api/v1/configs/executor-grant', {
+      method: 'POST',
+      headers: { authorization: `Bearer ${HARNESS_EXECUTOR_TOKEN}` },
+      body: JSON.stringify({ sessionId, token: HARNESS_OWNER_TOKEN }),
+    });
+    const chain = new ConfigChain({
+      accountUrl: 'https://account.test',
+      executorToken: HARNESS_EXECUTOR_TOKEN,
+      userId: 'user-owner',
+      fetchImpl: store.fetch,
+    });
+    await chain.mint(sessionId);
+    return SessionConfigStore.open({
+      chain,
+      sessionId,
+      cek: store.cek,
+      target: { storeId: HARNESS_STORE_ID, configId: HARNESS_CONFIG_ID, teamId: null },
+      orgConfigId: HARNESS_CONFIG_ID,
+      policyHighWater: memoryPolicyHighWater(),
+    });
+  }
+
+  const seeded = (): RdcConfig =>
+    ({
+      schemaVersion: 3,
+      id: HARNESS_CONFIG_ID,
+      version: 3,
+      resources: {
+        machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
+        repositories: {},
+      },
+      encryption: { mode: 'plaintext' },
+    }) as unknown as RdcConfig;
+
+  const addMachine = (config: RdcConfig): RdcConfig => ({
+    ...config,
+    resources: {
+      ...config.resources,
+      machines: { ...config.resources?.machines, m2: { ip: '10.1.1.2', user: 'root', port: 22 } },
+    },
+  });
+
+  it('names the CEK generation the store wrapped each served document under', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    const generation = (store.storedEnvelope() as { cekGeneration?: number }).cekGeneration;
+    expect(typeof generation).toBe('number');
+    const session = await openDirect(store);
+    expect(cekGenerationOf(session.config)).toBe(generation);
+    const written = await session.write(addMachine);
+    expect(cekGenerationOf(written)).toBe(generation);
+    expect(cekGenerationOf(seeded())).toBeUndefined();
+  });
+
+  it('pulls a v4 config and pushes v4 under the same content key', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    expect(store.storedEnvelope().envelopeVersion).toBe(4);
+    const pulledWrap = store.storedEnvelope().wrappedConfigKey;
+    const session = await openDirect(store);
+    expect(session.config.resources?.machines).toHaveProperty('m1');
+
+    await session.write(addMachine);
+    expect(store.puts).toHaveLength(1);
+    expect(store.puts[0]).toMatchObject({ status: 200, envelopeVersion: 4, configKeyVersion: 1 });
+    // A fresh wrap (new IV) of the same key at the same version: the store's copy still opens under the session key.
+    expect(store.puts[0]?.wrappedConfigKey).toBeTruthy();
+    expect(store.puts[0]?.wrappedConfigKey).not.toBe(pulledWrap);
+    expect((await store.current()).resources?.machines).toHaveProperty('m2');
+
+    // The second write reuses the wrap the first one recorded, and proves the deletion against it.
+    await session.write((config) => {
+      const machines = { ...config.resources?.machines };
+      delete machines.m2;
+      return { ...config, resources: { ...config.resources, machines } };
+    });
+    expect(store.puts[1]).toMatchObject({ status: 200, envelopeVersion: 4, configKeyVersion: 1 });
+    expect(store.puts[1]?.removedKeys.length).toBeGreaterThan(0);
+  });
+
+  it('fails the write before the PUT when /session names no CEK generation', async () => {
+    const store = await createFakeConfigStore(seeded(), OPEN_POLICY);
+    const session = await openDirect(store);
+    store.sessionCekGeneration = undefined;
+    await expect(session.write(addMachine)).rejects.toThrow(/CEK generation/);
+    expect(store.puts).toHaveLength(0);
+  });
+});
+
+describe('teamOverSharedAiConfigs', () => {
+  const profile = (model: string) => ({
+    providers: {
+      main: {
+        format: 'openai-chat' as const,
+        baseURL: WK_OPENAI_API_BASE,
+        key: 'sk-test',
+        authScheme: 'bearer' as const,
+        model,
+        capabilities: { tools: true, streaming: true, parallelToolCalls: false, vision: false },
+      },
+    },
+    default: 'main',
+  });
+  const configWith = (model: string) =>
+    ({ schemaVersion: 3, id: 'cfg', version: 1, ai: profile(model) }) as unknown as RdcConfig;
+  const member = {
+    orgId: 'org-1',
+    teamId: 'team-a',
+    userId: 'user-1',
+    userEmail: 'u@example.com',
+    orgRole: 'member' as const,
+  };
+
+  it("opens the org's shared config beside a team member's config, under the same session", async () => {
+    const asked: { teamId: string | null; session: string | undefined }[] = [];
+    const sources = teamOverSharedAiConfigs((principal, session) => {
+      asked.push({ teamId: principal.teamId, session });
+      return Promise.resolve(configWith('shared-model'));
+    });
+    const team = configWith('team-model');
+    const answer = await sources(member, team, 'sess-1');
+    expect(asked).toEqual([{ teamId: null, session: 'sess-1' }]);
+    expect(answer.team?.providers.main?.model).toBe('team-model');
+    expect(answer.shared?.providers.main?.model).toBe('shared-model');
+  });
+
+  it('gives a principal with no team, and an agent grant, the one config they run against', async () => {
+    const loader = vi.fn(() => Promise.resolve(configWith('never')));
+    const sources = teamOverSharedAiConfigs(loader);
+    const own = configWith('own-model');
+    expect(await sources({ ...member, teamId: null }, own)).toEqual({ team: own.ai });
+    expect(await sources({ ...member, agentGrantId: 'g1' }, own)).toEqual({ team: own.ai });
+    expect(loader).not.toHaveBeenCalled();
+  });
+
+  it('fails the request when the shared config cannot be opened', async () => {
+    const sources = teamOverSharedAiConfigs(() => Promise.reject(new Error('pull refused')));
+    await expect(sources(member, configWith('team-model'))).rejects.toThrow('pull refused');
   });
 });

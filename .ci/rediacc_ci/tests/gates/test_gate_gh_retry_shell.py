@@ -34,6 +34,7 @@ TWIN_BODY = (
 )
 
 
+# PLAN-ciquick-cpu.md W17: every run over a copied tree skips the gate's `controls_first` (`harness.without_controls`); `test_selftest_controls_pass` and the real-tree run keep them, as check:ci-gh-retry-reads does.
 def _shell(root: pathlib.Path) -> harness.RunResult:
     argv = [
         sys.executable,
@@ -43,7 +44,16 @@ def _shell(root: pathlib.Path) -> harness.RunResult:
         "--root",
         str(root),
     ]
-    return harness.run(argv, cwd=str(paths.from_root(".ci")), timeout=180)
+    return harness.run(harness.without_controls(argv), cwd=str(paths.from_root(".ci")), timeout=180)
+
+
+def _driver_on_copy(root: pathlib.Path) -> harness.RunResult:
+    return harness.run(
+        harness.without_controls(
+            [sys.executable, DRIVER, "--quiet-writes", "--shell-root", str(root)]
+        ),
+        timeout=240,
+    )
 
 
 def _copy(dst: pathlib.Path) -> pathlib.Path:
@@ -153,9 +163,7 @@ def test_reaper_without_retry_reds_through_the_driver(gate, tmp_path):
     root = _copy(tmp_path / "tree")
     reaper = root / REAPER
     clean = reaper.read_text(encoding="utf-8")
-    green = harness.run(
-        [sys.executable, DRIVER, "--quiet-writes", "--shell-root", str(root)], timeout=240
-    )
+    green = _driver_on_copy(root)
     gate.assert_exit(0, green, "the unplanted copy through the driver")
     gate.ok("the unplanted copy is green through the driver")
 
@@ -163,9 +171,7 @@ def test_reaper_without_retry_reds_through_the_driver(gate, tmp_path):
     assert hit is not None, "%s no longer carries a --retry" % REAPER
     reaper.write_text(clean.replace(hit.group(0), "", 1), encoding="utf-8")
     line = _line_of(reaper, REAPER_CURL)
-    red = harness.run(
-        [sys.executable, DRIVER, "--quiet-writes", "--shell-root", str(root)], timeout=240
-    )
+    red = _driver_on_copy(root)
     gate.assert_exit(1, red, "the reaper's GitHub curl without --retry")
     gate.assert_contains(
         red.err,

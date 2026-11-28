@@ -10,7 +10,7 @@ run produced, and `_agree` fails when the two trees differ even by one path.
 THE THREE FILESYSTEM TOOLS ARE RECORDED, NOT REPLACED. `rm`, `mkdir` and `cp` are wrappers that append their own argv to a log and then `exec` the real binary, so the copies really happen AND the argv each side built is comparable. `dirname` and `uname` are plain symlinks and deliberately NOT recorded: the twin spawns them from `get_repo_root` and from sourcing `common.sh`, which
 is shell plumbing rather than ported logic, and recording them would manufacture a divergence out of the fact that Python resolves its own path in-process.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-pages.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

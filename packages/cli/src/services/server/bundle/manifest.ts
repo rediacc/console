@@ -32,6 +32,12 @@ export interface ManifestCli {
   sha256: string;
 }
 
+/** One file the bundle carries beside the images: its path under the bundle and its sha256. */
+export interface ManifestFile {
+  file: string;
+  sha256: string;
+}
+
 export interface BundleManifest {
   schema: number;
   cliVersion: string;
@@ -40,6 +46,10 @@ export interface BundleManifest {
   images: ManifestImage[];
   /** Present only when the bundle was built with `--with-cli`. */
   cli?: ManifestCli[];
+  /** Every file under `models/`; absent when the bundle was built with `--no-models`. */
+  models?: ManifestFile[];
+  /** sha256 of `images/manifest.txt`, which the signed manifest binds like the images. */
+  imageList: string;
   createdAt: string;
 }
 
@@ -110,6 +120,11 @@ function image(raw: unknown): ManifestImage {
   };
 }
 
+function fileEntry(raw: unknown): ManifestFile {
+  if (!isRecord(raw)) throw bad('models[]');
+  return { file: str(raw.file, 'models[].file'), sha256: str(raw.sha256, 'models[].sha256') };
+}
+
 function cliEntry(raw: unknown): ManifestCli {
   if (!isRecord(raw)) throw bad('cli[]');
   return {
@@ -119,7 +134,11 @@ function cliEntry(raw: unknown): ManifestCli {
   };
 }
 
-export function parseManifest(text: string): BundleManifest {
+/**
+ * The parsed manifest's checked parts: the top-level shape, schema version, arch and array fields are refused here.
+ * The string fields and the entries of `images`, `models` and `cli` are refused by `parseManifest` as it reads them.
+ */
+function checkedManifest(text: string) {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
@@ -135,23 +154,44 @@ export function parseManifest(text: string): BundleManifest {
   const arch = raw.renet.arch;
   if (!BUNDLE_ARCHES.includes(arch as BundleArch)) throw bad('renet.arch');
   if (!Array.isArray(raw.images)) throw bad('images');
-  if (raw.cli !== undefined && !Array.isArray(raw.cli)) throw bad('cli');
+  return {
+    raw,
+    template: raw.template,
+    renet: raw.renet,
+    arch: arch as BundleArch,
+    images: raw.images as unknown[],
+    cli: optionalArray(raw.cli, 'cli'),
+    models: optionalArray(raw.models, 'models'),
+  };
+}
+
+/** An optional array field: absent stays undefined, anything else but an array is refused. */
+function optionalArray(value: unknown, field: string): unknown[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value)) throw bad(field);
+  return value;
+}
+
+export function parseManifest(text: string): BundleManifest {
+  const { raw, template, renet, arch, images, cli, models } = checkedManifest(text);
   return {
     schema: BUNDLE_SCHEMA,
     cliVersion: str(raw.cliVersion, 'cliVersion'),
     template: {
-      name: str(raw.template.name, 'template.name'),
-      version: Number(raw.template.version),
-      sha256: str(raw.template.sha256, 'template.sha256'),
+      name: str(template.name, 'template.name'),
+      version: Number(template.version),
+      sha256: str(template.sha256, 'template.sha256'),
     },
     renet: {
-      version: str(raw.renet.version, 'renet.version'),
-      arch: arch as BundleArch,
-      file: str(raw.renet.file, 'renet.file'),
-      sha256: str(raw.renet.sha256, 'renet.sha256'),
+      version: str(renet.version, 'renet.version'),
+      arch,
+      file: str(renet.file, 'renet.file'),
+      sha256: str(renet.sha256, 'renet.sha256'),
     },
-    images: raw.images.map(image),
-    ...(raw.cli !== undefined && { cli: raw.cli.map(cliEntry) }),
+    images: images.map(image),
+    ...(cli !== undefined && { cli: cli.map(cliEntry) }),
+    ...(models !== undefined && { models: models.map(fileEntry) }),
+    imageList: str(raw.imageList, 'imageList'),
     createdAt: str(raw.createdAt, 'createdAt'),
   };
 }

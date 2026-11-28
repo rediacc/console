@@ -28,7 +28,12 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import tables
 from rediacc_hooks.wellknown import ACCOUNT_REPO, ELITE_REPO, GH_REPO, RENET_REPO
+
+__getattr__ = tables(
+    "block_second_open_pr", "EDGE_CASES", "ENVS", "_GH_DOWN", "_GH_EMPTY", "_GH_LIST"
+)
 
 CHAIN = "pre-bash"
 ORDER = 24
@@ -38,20 +43,6 @@ GH_READ_PAUSE_S = 2
 # THE DRAFT ADMISSION'S FILTER is the line planted. Inverted, only the open PRs that stand beside an admitted draft count: with no landing record the second PR this guard exists for is waved through, and with one the landing branch's PR alone blocks the development draft while every other open PR is ignored. The fail-closed arm keeps its own witness (`gh down fails closed` in test-block_second_open_pr.py).
 DEFECT = ("if not _stands_beside(row, beside)", "if _stands_beside(row, beside)")
 
-# `gh` answering is what makes the block direction reachable at all: under the harness default it exits 1 with nothing, which is only the fail-closed arm.
-_GH_LIST = (
-    '#!/bin/sh\ncat <<\'GHEOF\'\n[{"number":563,"title":"t","headRefName":"b","isDraft":false}]\n'
-    "GHEOF\n"
-)
-_GH_EMPTY = "#!/bin/sh\ncat <<'GHEOF'\n[]\nGHEOF\n"
-_GH_DOWN = "#!/bin/sh\necho 'gh: could not connect'\nexit 1\n"
-
-ENVS = [
-    ("gh-silent-failure", {}, {}),
-    ("gh-unreachable", {}, {"gh": _GH_DOWN}),
-    ("gh-none-open", {}, {"gh": _GH_EMPTY}),
-    ("gh-one-open", {}, {"gh": _GH_LIST}),
-]
 
 UNVERIFIABLE = (
     "❌ BLOCKED: cannot verify whether an open PR already exists in %s, so this\n"
@@ -130,18 +121,6 @@ READY_REFUSED = (
     "   DO THIS INSTEAD: merge the landing branch's PR first; the draft turns\n"
     "   ready after it merges.\n"
 )
-
-EDGE_CASES = [
-    ("the create this guard exists for", "gh pr create --draft -t x -b y"),
-    ("sh -c wrapping does not bypass it", "sh -c 'gh pr create --draft -t x -b y'"),
-    # THE CONTROL THAT MATTERS: with no open PR the guard must be invisible, or it would block the FIRST PR too and simply stop all work.
-    ("a non-create gh command is ignored", "gh pr view 567"),
-    (
-        "a submodule create is judged against ITS repo",
-        ("gh pr create --repo " + RENET_REPO + " -t x"),
-    ),
-    ("prose naming the command", "echo 'gh pr create --draft'"),
-]
 
 
 def _run_capture(argv):
@@ -433,7 +412,8 @@ def _ready_refusal(ev, run_, cwd):
 
 def run(ev):
     cmd = ev.field("tool_input", "command")
-    cwd = ev.field("cwd")
+    # The payload's own cwd wins; the dispatcher's (`ev.cwd`) stands in when it carries none, so a harness can hand the guard a world (`CWD_WORLDS`) instead of the process directory.
+    cwd = ev.field("cwd") or ev.cwd
     if cmd == "":
         return hookio.ALLOW
 

@@ -260,8 +260,13 @@ def advisory(root, env=None):
     """The advisory text, or None when renet is unchanged, untestable here, or already covered. Never raises: report-only, so a broken probe must never refuse a stop."""
     try:
         found = pending(root, env)
-    except Exception:
-        return None
+    except Exception as exc:
+        # Report-only, so the stop is never refused, but a probe that broke is named rather than read as "renet unchanged or covered".
+        return (
+            "RENET GO TESTS: the coverage probe failed (%s: %s), so whether renet changed since "
+            "origin/main without its mapped `go test` run is unknown. Report-only; "
+            "block_renet_untested_push still refuses the push." % (type(exc).__name__, exc)
+        )
     if found is None:
         return None
     changed, required, tree, missing = found

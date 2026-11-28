@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * check:ci-gates-lock -- emit `scripts/ci-runner/gates.lock.json` from the manifest, and
+ * gen-gates-lock -- emit `scripts/ci-runner/gates.lock.json` from the manifest, and
  * refuse when the committed lock and the manifest disagree.
  *
  * WHY A LOCK AT ALL. `scripts/ci-runner/manifest.ts` is TypeScript, and three things read

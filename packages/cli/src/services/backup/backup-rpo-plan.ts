@@ -191,7 +191,8 @@ export type DefaultWindow =
 
 /** The default keep-within window of a plan (O3), or why there is none. */
 export function defaultKeepWithin(planCode: string | undefined): DefaultWindow {
-  if (!planCode || !(planCode in PLAN_BACKUP_KEEP_WITHIN)) return { kind: 'unknown-plan' };
+  if (!planCode || !Object.hasOwn(PLAN_BACKUP_KEEP_WITHIN, planCode))
+    return { kind: 'unknown-plan' };
   const seconds =
     PLAN_BACKUP_KEEP_WITHIN[planCode as keyof typeof PLAN_BACKUP_KEEP_WITHIN].defaultSeconds;
   return seconds === null

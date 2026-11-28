@@ -14,14 +14,10 @@
         // points (npm scripts run them directly), not imported by anything, so
         // without this glob knip reports every one of them as an unused file.
         "scripts/gates/*.ts",
-        // SAME REASON, one level out: these three are executed BY PATH from bash,
-        // from Python, or by hand, and knip only follows TypeScript imports. It
-        // reported all three as unused files, and acting on that would have been
-        // destructive rather than tidy:
-        //   shadow-gate.ts            <- .ci/rediacc_ci/tests/gates/test_gate_shadow_gate.py:70
-        //     runs it as `LIB`. It is the comparator that proves the W7P6 bash->Python
-        //     ports equivalent, so deleting it removes the instrument the port
-        //     campaign is measured with.
+        // SAME REASON, one level out: these two are executed BY PATH from Python
+        // or by hand, and knip only follows TypeScript imports. It reported both
+        // as unused files, and acting on that would have been destructive rather
+        // than tidy:
         //   generate-third-party-licenses.ts <- GENERATOR_REL in
         //     .ci/rediacc_ci/build/prepare_cli_assets.py:123, and named again in
         //     .ci/rediacc_ci/ci/generate_tag.py:176.
@@ -34,13 +30,12 @@
         // DELIBERATELY ABSENT, and measured rather than assumed: scripts/gen/gen-docs.ts
         // and scripts/gen/gen-gates-lock.ts left the "scripts/*.ts" glob when W9 P2 moved
         // them here on 2026-09-20, and listing them looked necessary for the same reason
-        // the three above are listed. It is not. Knip resolves a file named by a
+        // the two above are listed. It is not. Knip resolves a file named by a
         // package.json script as an entry on its own, and those two are named by
-        // `gen:docs`, `gen:gates-lock` and `check:ci-gates-lock`; adding them reds this
+        // `gen:docs`, `gen:gates-lock` and `check:ci-gen-gates`; adding them reds this
         // config with "Remove redundant entry pattern" under
-        // --treat-config-hints-as-errors. The three above are listed precisely because no
-        // npm script names them -- bash, Python and the operator's own hand run those.
-        "scripts/lib/shadow-gate.ts",
+        // --treat-config-hints-as-errors. The two above are listed precisely because no
+        // npm script names them -- Python and the operator's own hand run those.
         "scripts/gen/generate-third-party-licenses.ts",
         "scripts/gen/fetch-directive-snapshot.ts",
         // Run BY PATH from .ci/rediacc_ci/quality/gate_tree_writes.py (check:ci-gate-tree-writes), which no npm script names.
@@ -52,6 +47,8 @@
         // Run BY PATH by hand (`npx tsx scripts/ci-runner/path-trace.ts --gate <id> --write`, `npx tsx scripts/ci-runner/trace-honest.ts --quick`): the PLAN-ciquick-cpu derivation and honesty tools, which no npm script names (the package.json key budget is shrink-only) and which only .ci/rediacc_ci/tests/test_path_trace*.py and each other reach.
         "scripts/ci-runner/path-trace.ts",
         "scripts/ci-runner/trace-honest.ts",
+        // Run BY PATH (`npx tsx scripts/ci-runner/verify-changed.ts --changed`), the one verify command .claude/commands/writers-now.md names; no npm script carries it (the package.json key budget is shrink-only). Its controls are named by `check:ci-runner-selftest`, which makes them an entry on their own.
+        "scripts/ci-runner/verify-changed.ts",
         // scripts/ci-runner/trace-ledger.ts is the data module path-trace.ts writes by path (LEDGER_REL) and .ci/rediacc_ci/tests/test_path_trace.py reads; no TypeScript import reaches it.
         "scripts/ci-runner/trace-ledger.ts",
         // Loaded BY PATH, not by import: .ci/scripts/quality/lint-rule-liveness.mjs:449
@@ -72,6 +69,8 @@
         "scripts/__tests__/entry-point.control.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
         "scripts/__tests__/upstream-retry-note.control.ts",
+        // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
+        "scripts/__tests__/run-control.control.ts",
         // Run BY PATH from scripts/gates/check-standalone-selftests.ts, like the one above.
         "scripts/lib/entry-point-selftest.ts"
       ],
@@ -123,6 +122,14 @@
       "ignore": [
         // BLOCKER: esbuild bundling script invoked by `npm run build:bundle`; it imports the root-hoisted transitive esbuild (rebuilt by install:natives), intentionally undeclared in this workspace to avoid pinning a second esbuild version
         "bundle.mjs"
+      ],
+      "ignoreBinaries": [
+        // BLOCKER: the serve hardening test mints its throwaway self-signed TLS pair with the host's openssl (src/services/serve/__tests__/hardening-daemon-bind.test.ts); a host tool, not an npm dependency
+        "openssl",
+        // BLOCKER: the completion test sources the printed pwsh script into a real PowerShell when one is installed and skips otherwise (src/commands/__tests__/completion.test.ts); a host shell, not an npm dependency
+        "pwsh",
+        // BLOCKER: the Linux Secret Service backend stores the passkey secret through the host's libsecret CLI (src/utils/secure-storage.ts and its native test); a host tool, not an npm dependency
+        "secret-tool"
       ]
     },
     "packages/e2e-tests": {
@@ -151,6 +158,8 @@
         "scripts/generate-json.js",
         "scripts/generate-route-manifest.js",
         "scripts/generate-tutorial-video.ts",
+        // Run by .ci/media/pool.sh and the tutorial render-queue gate (manifest run), neither of which knip reads.
+        "scripts/list-tutorial-render-pairs.js",
         "src/scripts/*.ts",
         "src/components/Navigation.tsx",
         "src/components/Footer.tsx",
@@ -214,19 +223,26 @@
     // Declaring the workspace is the fix; suppressing the specifier would have hidden a
     // structural gap rather than closed it.
     // Entry points need no `entry` here: the wrangler plugin supplies `src/index.ts` from
-    // wrangler.toml's `main`, and the vitest plugin supplies the tests.
+    // wrangler.toml's `main`, and the vitest plugin supplies the tests. workers/account is the
+    // one exception: its vitest plugin is off, so it declares its test `entry` itself (below).
     // Its three siblings are declared below, on the same terms. They were held back on the
     // belief that none could `npm install`; probing each one separately showed that was
     // true of workers/proxy ALONE, which had no lockfile and so resolved wrangler to a
     // version peering `@cloudflare/workers-types@^5`. account and mta-sts install from
     // their lockfiles untouched.
     "workers/account": {
+      // BLOCKER: this worker's package.json declares no vitest, so knip's vitest plugin is off for it and its tests (workers/account/vitest.config.mjs) read as unused files
+      "entry": [
+        "src/**/__tests__/**/*.test.ts"
+      ],
       "project": [
         "src/**/*.ts"
       ],
       "ignoreDependencies": [
         // BLOCKER: same as workers/www below -- wrangler is invoked as `npx wrangler ...` from .ci/scripts/deploy/*.sh with this directory as the working directory, never from a package.json script, so knip has no call site to trace
-        "wrangler"
+        "wrangler",
+        // BLOCKER: the tests import vitest from the root install; adding it to this worker's package.json would need a lockfile rewrite for a dev tool the root already pins
+        "vitest"
       ]
     },
     "workers/mta-sts": {

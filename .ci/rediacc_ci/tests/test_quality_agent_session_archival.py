@@ -2,7 +2,7 @@
 
 WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into a TEXT roster and assert which directories a finding accuses; they exercise the judgment through one path. The cases here drive the individual functions directly, at their boundaries and with their arguments out of order, which is where a helper that happens to agree with the roster fixture stops agreeing.
 
-THE MIRROR. `check_agent_session_archival.py` restates `wl_store.AGENT_RESERVED_DIRS` as `RESERVED_MIRROR`, used by its controls alone; the running gate reads the hook's own set. The copy exists so the controls still run on a checkout with no `.claude/`, and the only thing that makes that copy payable is a test comparing the two in BOTH directions, which is the first case below.
+THE MIRROR. `rediacc_ci.quality.agent_session_archival_gate` restates `wl_store.AGENT_RESERVED_DIRS` as `RESERVED_MIRROR`, used by its controls alone; the running gate reads the hook's own set. The copy exists so the controls still run on a checkout with no `.claude/`, and the only thing that makes that copy payable is a test comparing the two in BOTH directions, which is the first case below.
 A mirror nobody compares is a second definition.
 
 THE REST IS THE PURE CORE. `idle_hours`, `due_after_hours`, `classify_due`, `vacuity_reason`, `label_for` and `move_refusal` take data and return data: no git, no filesystem, no clock, so every case is a literal in and a literal out.
@@ -10,6 +10,7 @@ THE REST IS THE PURE CORE. `idle_hours`, `due_after_hours`, `classify_due`, `vac
 
 import ast
 import dataclasses
+import importlib
 import pathlib
 import sys
 from typing import TypedDict, Unpack
@@ -27,13 +28,8 @@ HOUR = ASA.SECONDS_PER_HOUR
 
 
 def _gate_module():
-    """`check_agent_session_archival` imported as a MODULE, for its mirror and its fixtures.
-
-    The entry point is a flat script rather than a package member, so it is reached by the same sys.path hop every other gate test in this package uses. Imported for its constants only; nothing here calls `main`.
-    """
-    paths.on_sys_path(GATE_DIR)
-    paths.on_sys_path(paths.ci_dir())
-    return pytest.importorskip("check_agent_session_archival")
+    """`rediacc_ci.quality.agent_session_archival_gate` imported as a MODULE, for its mirror and its fixtures. Nothing here calls `main`."""
+    return importlib.import_module("rediacc_ci.quality.agent_session_archival_gate")
 
 
 def _sessions(*pairs: tuple[str, float, bool]) -> list[ASA.Session]:
@@ -302,7 +298,7 @@ def test_the_gate_entry_point_is_importable_and_its_floor_is_met():
     gate = _gate_module()
     assert gate.CONTROL_FLOOR >= 20
     assert gate.selftest() == 0
-    assert sys.modules["check_agent_session_archival"] is gate
+    assert sys.modules["rediacc_ci.quality.agent_session_archival_gate"] is gate
 
 
 def test_a_worklist_publication_does_not_hold_a_review_directory():
@@ -321,3 +317,79 @@ def test_a_hand_written_doc_opening_with_the_publish_marker_still_holds_a_review
         "docs/forged.md": ASA.PUBLISH_MARKER + " -->\nsee agent/reviews/0101-9/clean.jsonl\n",
     }
     assert ASA.citers_of(texts, ["0101-9"]) == {"docs/forged.md": ["agent/reviews/0101-9/"]}
+
+
+def _prune_setup(monkeypatch, tmp_path, files: dict[str, bytes]):
+    """A prune of one due review directory (`0101-9`) over a tracked tree of `files`."""
+    gate = _gate_module()
+    for rel, data in files.items():
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+    monkeypatch.setattr(gate.gitx, "ls_files", lambda *_a, **_k: sorted(files))
+    monkeypatch.setattr(gate, "_review_dirs", lambda _root: [ASA.ReviewDir("0101-9", 0.0)])
+    monkeypatch.setattr(gate, "_current_branch", lambda _root: "0202-1")
+    monkeypatch.setattr(ASA, "retention_days", lambda _root: 1.0)
+    return gate
+
+
+def test_prune_refuses_when_a_ledger_or_shell_file_cites_the_directory(
+    monkeypatch, tmp_path, capsys
+):
+    """The scan reads every tracked text file, not only a fixed extension list (review fb629e93.2)."""
+    for rel in ("agent/ledgers/x.jsonl", "scripts/run.sh", "cfg/a.toml"):
+        gate = _prune_setup(
+            monkeypatch,
+            tmp_path,
+            {
+                "agent/reviews/0101-9/clean.jsonl": b"{}\n",
+                rel: b"see agent/reviews/0101-9/clean.jsonl\n",
+            },
+        )
+        assert gate.prune_reviews(tmp_path, write=True) == 1
+        assert (tmp_path / "agent/reviews/0101-9").exists()
+        assert rel in capsys.readouterr().err
+
+
+def test_prune_ignores_a_binary_file_and_deletes_an_uncited_directory(
+    monkeypatch, tmp_path, capsys
+):
+    gate = _prune_setup(
+        monkeypatch,
+        tmp_path,
+        {"agent/reviews/0101-9/clean.jsonl": b"{}\n", "img.bin": b"\0agent/reviews/0101-9/"},
+    )
+    assert gate.prune_reviews(tmp_path, write=True) == 0
+    assert not (tmp_path / "agent/reviews/0101-9").exists()
+    assert "deleted 1 director" in capsys.readouterr().out
+
+
+def test_prune_does_not_report_a_directory_that_would_not_delete(monkeypatch, tmp_path, capsys):
+    """rmtree(ignore_errors=True) hides a failed delete; the survivor is named and the run is rc 1 (review fb629e93.1)."""
+    gate = _prune_setup(monkeypatch, tmp_path, {"agent/reviews/0101-9/clean.jsonl": b"{}\n"})
+    monkeypatch.setattr(gate.shutil, "rmtree", lambda *_a, **_k: None)
+    assert gate.prune_reviews(tmp_path, write=True) == 1
+    out = capsys.readouterr()
+    assert "could not delete agent/reviews/0101-9/" in out.err
+    assert "deleted" not in out.out
+
+
+def test_prune_refuses_when_a_tracked_file_cannot_be_read(monkeypatch, tmp_path, capsys):
+    """An unreadable file may hold a citer, so it holds the prune and is named (review ac8e280b.1)."""
+    gate = _prune_setup(monkeypatch, tmp_path, {"agent/reviews/0101-9/clean.jsonl": b"{}\n"})
+    (tmp_path / "locked.txt").write_text("agent/reviews/0101-9/\n", encoding="utf-8")
+    (tmp_path / "dir-or-link").mkdir()
+    monkeypatch.setattr(gate.gitx, "ls_files", lambda *_a, **_k: ["locked.txt", "dir-or-link"])
+    real = pathlib.Path.read_bytes
+
+    def refuse(self):
+        if self.name == "locked.txt":
+            raise PermissionError(13, "denied")
+        return real(self)
+
+    monkeypatch.setattr(pathlib.Path, "read_bytes", refuse)
+    assert gate.prune_reviews(tmp_path, write=True) == 1
+    assert (tmp_path / "agent/reviews/0101-9").exists()
+    err = capsys.readouterr().err
+    assert "locked.txt" in err
+    assert "dir-or-link" not in err

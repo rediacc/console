@@ -14,6 +14,7 @@
  */
 import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { describe, expect, it } from 'vitest';
+import { bindEffectivePolicy } from '../../config/policy-record.js';
 import { authorize } from '../policy.js';
 import type { SessionPrincipal } from '../sessions.js';
 
@@ -73,6 +74,33 @@ describe('stale deny globs at the executor', () => {
       defaults: { commands: { allow: ['machine query', 'repo list'] } },
     });
 
+    expect(authorize({ principal: PRINCIPAL, commandPath: 'repo list', config }).allowed).toBe(
+      true
+    );
+  });
+
+  it.each(['org', 'team'] as const)(
+    'refuses a record-bound %s policy that carries a stale deny glob (review d0911272.1)',
+    (tier) => {
+      const stale = {
+        version: 1,
+        defaults: { commands: { allow: ['repo *'], deny: ['repo takeover'] } },
+      } as never;
+      const config = {} as unknown as RdcConfig;
+      bindEffectivePolicy(config, { [tier]: stale, locked: [], ignoredLocked: [] });
+      expect(() => authorize({ principal: PRINCIPAL, commandPath: 'repo list', config })).toThrow(
+        /repo takeover/
+      );
+    }
+  );
+
+  it('control: a record-bound policy whose deny rules are live still authorizes', () => {
+    const live = {
+      version: 1,
+      defaults: { commands: { allow: ['repo *'], deny: ['repo delete'] } },
+    } as never;
+    const config = {} as unknown as RdcConfig;
+    bindEffectivePolicy(config, { org: live, locked: [], ignoredLocked: [] });
     expect(authorize({ principal: PRINCIPAL, commandPath: 'repo list', config }).allowed).toBe(
       true
     );

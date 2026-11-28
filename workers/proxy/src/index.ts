@@ -22,12 +22,16 @@
  * config, to be routed to.
  */
 
+import { WorkerEntrypoint } from 'cloudflare:workers';
+import type { CreditsRpc } from './ai-egress';
 import type { ExecutorCapacity } from './capacity';
 import { allowlistRefusal } from './ip-allowlist';
 import { type ExecutorIssuerRpc, IssuerError } from './issued-token';
-import type { ExecutorRefusalCode, OrgExecutor, PinAnswer } from './org-executor';
+import type { OrgExecutor } from './org-executor';
+import type { McpCallAnswer, McpCallForward, RevokeGrantAnswer } from './org-executor-mcp';
+import type { ExecutorRefusalCode, PinAnswer } from './org-executor-support';
 import { executorName, placementOf } from './placement';
-import { readiness } from './ready';
+import { internalOccupancy, readiness } from './ready';
 import {
   chooseSize,
   type ExecutorTier,
@@ -38,6 +42,8 @@ import {
 } from './sizing';
 import { activeSpan, type RuntimeSpan } from './span';
 
+// The AI egress, reached through `ctx.exports.AiEgress` by OrgExecutor (agent/plans/PLAN-console-ai-credits.md D1).
+export { AiEgress } from './ai-egress';
 // Every export of the main module is an entrypoint or a Durable Object class: workerd refuses to start on a plain value, and wrangler refuses a deploy whose bound Durable Object classes are not exported here.
 // The cap coordinator, bound as EXECUTOR_CAPACITY.
 export { ExecutorCapacity } from './capacity';
@@ -60,6 +66,14 @@ export interface Env {
    * Service binding to the regional account Worker's `ExecutorIssuer` entrypoint: `route(bearer)` names the caller's org and its executor placement, `issue(orgId)` mints that org's short-lived account token (`proxy:exec` and `audit:write`), and `relocate(orgId, fromPlacement)` is called only by OrgExecutor when its container keeps failing to reach a machine. src/issued-token.ts caches the tokens per org. The container never sees one: it holds a placeholder that src/egress.ts swaps on the way out.
    */
   ISSUER?: Service<ExecutorIssuerRpc>;
+  /** Service binding to the account Worker's `CreditLedgerGate` entrypoint: `reserve`, `commit` and `release` on an org's credit ledger, called only by `AiEgress` (src/ai-egress.ts). A deploy without it refuses every AI call with `ai-unconfigured`. */
+  CREDITS?: Service<CreditsRpc>;
+  /** Secret: a gateway-scoped Cloudflare token for `cf-aig-authorization`, never a provider key. */
+  AI_GATEWAY_TOKEN?: string;
+  /** The region's AI Gateway id, `rediacc-<region>` (.ci/config/ai-gateway.json). */
+  AI_GATEWAY_ID?: string;
+  /** The Cloudflare account that owns the gateway. */
+  AI_GATEWAY_ACCOUNT_ID?: string;
   /** The `[version_metadata]` binding: `/v1/ready` answers its `id` as `workerVersion`, so a deploy smoke can tell the new version from one still rolling out. */
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   /**
@@ -162,7 +176,10 @@ function startRefused(code: ExecutorRefusalCode, span: RuntimeSpan | undefined):
 }
 
 /** The slice of an OrgExecutor stub the Worker calls, typed from the class itself so a signature change there fails the typecheck here. */
-type OrgExecutorStub = Pick<OrgExecutor, 'oomAt' | 'oomHeavyAt' | 'pin'> & {
+type OrgExecutorStub = Pick<
+  OrgExecutor,
+  'mcpCall' | 'oomAt' | 'oomHeavyAt' | 'pin' | 'revokeGrant'
+> & {
   fetch(request: Request): Promise<Response>;
 };
 
@@ -265,6 +282,120 @@ async function viaOrgExecutor(
   return stub.fetch(request);
 }
 
+/** The routes that need no tenant token: health, readiness, and the account-only internal occupancy read. Undefined for any other path. */
+async function operationalRoute(
+  pathname: string,
+  request: Request,
+  env: Env,
+  span: RuntimeSpan | undefined
+): Promise<Response | undefined> {
+  if (pathname === '/v1/health') {
+    span?.setAttribute('rediacc.proxy.outcome', 'health');
+    return Response.json({ ok: true });
+  }
+  if (pathname === '/v1/ready') {
+    const answer = await readiness(env);
+    span?.setAttribute(
+      'rediacc.proxy.outcome',
+      answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
+    );
+    return Response.json(answer.body, { status: answer.status });
+  }
+  if (pathname === '/v1/internal/occupancy') {
+    const answered = await internalOccupancy(request, env);
+    span?.setAttribute(
+      'rediacc.proxy.outcome',
+      answered.status === 200 ? 'occupancy' : `occupancy:${answered.status}`
+    );
+    return answered;
+  }
+  return undefined;
+}
+
+/**
+ * Where a hosted MCP call runs: the grant's org and executor placement, as the MCP Worker resolved them through the account Worker (agent/plans/PLAN-rmcp-remote-worker.md Design 4).
+ */
+export interface McpCallRouting {
+  orgId: string;
+  placement: number;
+  /** The org's executor tier; a missing tier is `standard`. */
+  tier?: string;
+}
+
+/**
+ * The entrypoint the MCP Worker's `EXECUTOR` service binding names (agent/plans/PLAN-rmcp-remote-worker.md Design 1). An RPC entrypoint, not a fetch route: no request from the internet can address it, so the routing the MCP Worker resolved is trusted here the way `ExecutorIssuer.route`'s answer is on the fetch path, and the call reaches the org's container through `OrgExecutor.mcpCall` with the forward as its body.
+ */
+export class McpExecutor extends WorkerEntrypoint<Env> {
+  async call(routing: McpCallRouting, forward: McpCallForward): Promise<McpCallAnswer> {
+    return await mcpCallVia(this.env, routing, forward);
+  }
+}
+
+/** The body of `McpExecutor.call`. Not exported: every export of this module must be an entrypoint or a Durable Object class. Every refusal is a code, never a guess. */
+async function mcpCallVia(
+  env: Env,
+  routing: McpCallRouting,
+  forward: McpCallForward
+): Promise<McpCallAnswer> {
+  const placement = placementOf(routing.placement);
+  const namespace = env.ORG_EXECUTOR;
+  if (!namespace || typeof routing.orgId !== 'string' || routing.orgId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  if (placement === undefined) return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  const tenant: Tenant = { orgId: routing.orgId, tier: tierOf(routing.tier), placement };
+  let stub: Awaited<ReturnType<typeof pinAtPlacement>>['stub'];
+  try {
+    const pinned = await pinAtPlacement(namespace, tenant, undefined);
+    // A relocated org is not re-routed here: the MCP Worker's grant answer names the placement, and its next resolution names the new one.
+    if (!pinned.answer.ok) return { ok: false, code: pinned.answer.code, status: 503 };
+    stub = pinned.stub;
+  } catch {
+    // Nothing reached the container yet, so a start failure is the whole truth and a retry is safe.
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  try {
+    return await stub.mcpCall(forward);
+  } catch {
+    // The forward may have been delivered and the command may have run, so this is not a start failure and a client must not retry it blindly.
+    return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
+  }
+}
+
+/**
+ * The entrypoint the account Worker's grant-revocation service binding names (agent/plans/PLAN-rmcp-agent-grants.md Design 5, box AG-S5). An RPC entrypoint beside `McpExecutor`: the account resolved the org's placement from its own database, so the routing is trusted the way `McpExecutor.call`'s is. It addresses the org's Durable Object by name, without pinning, and calls `OrgExecutor.revokeGrant`; an org with no running container answers `dropped: false` and nothing is started.
+ */
+export class GrantRevoker extends WorkerEntrypoint<Env> {
+  async revoke(routing: McpCallRouting, grantId: string): Promise<RevokeGrantAnswer> {
+    return await revokeGrantVia(this.env, routing, grantId);
+  }
+}
+
+/** The body of `GrantRevoker.revoke`. Not exported: every export of this module must be an entrypoint or a Durable Object class. A failure to reach the Durable Object is a code, so the account retries it. */
+async function revokeGrantVia(
+  env: Env,
+  routing: McpCallRouting,
+  grantId: string
+): Promise<RevokeGrantAnswer> {
+  const placement = placementOf(routing.placement);
+  const namespace = env.ORG_EXECUTOR;
+  if (!namespace || typeof routing.orgId !== 'string' || routing.orgId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  if (placement === undefined || typeof grantId !== 'string' || grantId === '') {
+    return { ok: false, code: 'EXECUTOR_START_FAILED', status: 503 };
+  }
+  // The Durable Object is addressed by name and NOT pinned: a pin starts a container, and a revocation must never start one. An instance that never ran has no session to drop and answers `dropped: false`.
+  try {
+    const stub = namespace.get(
+      namespace.idFromName(executorName(routing.orgId, placement))
+    ) as unknown as OrgExecutorStub;
+    return await stub.revokeGrant(grantId);
+  } catch {
+    return { ok: false, code: 'EXECUTOR_FAILED', status: 502 };
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -277,19 +408,8 @@ export default {
       return denied;
     }
 
-    if (url.pathname === '/v1/health') {
-      span?.setAttribute('rediacc.proxy.outcome', 'health');
-      return Response.json({ ok: true });
-    }
-
-    if (url.pathname === '/v1/ready') {
-      const answer = await readiness(env);
-      span?.setAttribute(
-        'rediacc.proxy.outcome',
-        answer.status === 200 ? 'ready' : `not-ready:${answer.body.reason}`
-      );
-      return Response.json(answer.body, { status: answer.status });
-    }
+    const operational = await operationalRoute(url.pathname, request, env, span);
+    if (operational) return operational;
 
     const tenant = await resolveTenant(request, env);
     if ('reason' in tenant) {

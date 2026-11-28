@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { sftpConfigForMachine } from '../../services/machine/machine-connection.js';
+import type { MachineConfig } from '../../types/index.js';
 import { fingerprint } from '../../utils/host-keys.js';
 import { buildHostKeyMismatchMessage } from '../sftp/client.js';
 
@@ -38,6 +40,32 @@ describe('buildHostKeyMismatchMessage', () => {
     expect(msg).toContain('If the change is expected');
     expect(msg).toContain('rdc machine scan-keys hostinger');
     expect(msg).toMatch(/confirm the fingerprint out\s*\n?of band/i);
+  });
+
+  it('never offers the IP as the scan-keys argument when the machine name is unknown', () => {
+    const msg = buildHostKeyMismatchMessage({
+      host,
+      knownHosts: `${host} ssh-ed25519 ${OLD_ED25519}`,
+      offeredKey: NEW_ED25519,
+    });
+    expect(msg).toContain('rdc machine scan-keys <machine-name>');
+    expect(msg).not.toContain(`scan-keys ${host}`);
+  });
+
+  it('treats an empty machine name as unknown in the title and the remedy', () => {
+    const msg = buildHostKeyMismatchMessage({
+      machineName: '',
+      host,
+      knownHosts: `${host} ssh-ed25519 ${OLD_ED25519}`,
+      offeredKey: NEW_ED25519,
+    });
+    expect(msg).toContain('rdc machine scan-keys <machine-name>');
+    expect(msg).toContain(`Host key mismatch for ${host}`);
+  });
+
+  it('carries the machine name from a machine config into the SFTP config', () => {
+    const cfg = sftpConfigForMachine({ ip: host, user: 'u' } as MachineConfig, 'key', 'hostinger');
+    expect(cfg.machineName).toBe('hostinger');
   });
 
   it('compares against the pin of the same algorithm only', () => {

@@ -10,10 +10,13 @@ import importlib
 import importlib.util
 import json
 import pathlib
-import subprocess
 import sys
 import tempfile
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve()
 HOOKS = HERE.parents[1]
@@ -220,9 +223,14 @@ MUTANTS = [
                 "    words = [target for _op, target in _redirects(shellscan._analyse(cmd))]\n",
                 "    words = [target for _op, target in shellscan._analyse(cmd).writes]\n",
             ),
+            # The run's redirects are `shellscan.write_records`' (CR5), a record per typed and per expanded target; this plant reads only the typed one.
             (
-                "        for op, target in _redirects(shellscan._analyse(cmd))\n",
-                "        for op, target in shellscan._analyse(cmd).writes\n",
+                '    if write.how in ("redirect", "append"):\n',
+                (
+                    '    if write.how in ("redirect", "append") and write.word not in write.run.writes:\n'
+                    "        return False\n"
+                    '    if write.how in ("redirect", "append"):\n'
+                ),
             ),
         ],
     ),
@@ -332,7 +340,7 @@ MUTANTS = [
 
 
 def via_dispatch(command, cwd):
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=json.dumps({"tool_name": "Bash", "tool_input": {"command": command}, "cwd": cwd}),
         capture_output=True,

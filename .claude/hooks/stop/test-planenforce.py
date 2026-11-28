@@ -59,6 +59,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 
 REPO = HERE.parent.parent.parent
 GATE = REPO / ".ci" / "scripts" / "quality" / "check_plan_implementation.py"
+# The gate body: GATE is the by-path shim that runs it, so the source the wiring controls read is the module.
+GATE_MODULE = REPO / ".ci" / "rediacc_ci" / "quality" / "plan_implementation.py"
 
 ME = "d778be9d"
 
@@ -627,8 +629,8 @@ def neighbour_controls():
 
 def wiring_controls():
     print("6. both halves read the same clock (C10)")
-    truthy("C10 SETUP: the CI gate exists where the wiring says it does", GATE.is_file())
-    src = GATE.read_text(encoding="utf-8")
+    truthy("C10 SETUP: the CI gate exists where the wiring says it does", GATE_MODULE.is_file())
+    src = GATE_MODULE.read_text(encoding="utf-8")
 
     # READ FROM THE AST, NOT FROM A SUBSTRING. The first spelling of these two searched the gate's source for the literal `CLOCK_KEYS is not E.CLOCK_KEYS`, and renaming the import alias from `E` to `enforce` -- a change that alters nothing about the claim -- turned both controls red. A control that a rename can break is a control that a rename can also silently satisfy.
     def compares_identity(name):
@@ -676,10 +678,10 @@ def wiring_controls():
     )
     control("C10d: the CI gate defines no allowlist, exemption or bypass structure", hatch, [])
     truthy(
-        "C10d2: and the control can see one -- the same pattern finds check_test_file_orphans' EXEMPT",
+        "C10d2: and the control can see one -- the same pattern finds test_file_orphans' EXEMPT",
         re.findall(
             r"(?mi)^(ALLOWLIST|ALLOW_LIST|EXEMPT|EXEMPTIONS|SUPPRESS\w*|BYPASS\w*|SKIP_\w+|IGNORE_\w+)\s*[:=]",
-            (GATE.parent / "check_test_file_orphans.py").read_text(encoding="utf-8"),
+            (GATE_MODULE.parent / "test_file_orphans.py").read_text(encoding="utf-8"),
         ),
     )
     # DRIVEN, not read: the gate's own selftest must catch every plant it declares.

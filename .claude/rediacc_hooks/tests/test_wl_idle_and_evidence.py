@@ -306,3 +306,35 @@ def test_a_pass_claimed_for_a_registered_gate_is_silent(wl):
     wl.say("Ran check:ci-trap-registry passed, rc=0.\n\n## Remaining\nnothing")
     got = wl.run()
     assert PHANTOM_NEEDLE not in got.out, got.out[:800]
+
+
+def _gate_resolution(tmp_path, scripts, rows):
+    if scripts is not None:
+        (tmp_path / "package.json").write_text(json.dumps({"scripts": scripts}), encoding="utf-8")
+    if rows is not None:
+        lock = tmp_path / "scripts" / "ci-runner" / "gates.lock.json"
+        lock.parent.mkdir(parents=True, exist_ok=True)
+        lock.write_text(rows if isinstance(rows, str) else json.dumps(rows), encoding="utf-8")
+    return wlfix.import_wl("wl_planrec").resolve(tmp_path, "gate", "check:ci-lock-only")
+
+
+def test_a_lock_only_gate_resolves_with_or_without_a_scripts_block(tmp_path):
+    """ec98a3e3.1/.2: a gate the runner runs directly is real when the lock registers it with `gate: true`, even with no scripts block. Controls: `gate: false`, an unregistered id and an unreadable lock stay refused."""
+    row = [{"id": "check:ci-lock-only", "gate": True}]
+    assert _gate_resolution(tmp_path, {"x": "y"}, row) == (True, "gates.lock.json gate")
+    bare = tmp_path / "bare"
+    bare.mkdir()
+    assert _gate_resolution(bare, None, row) == (True, "gates.lock.json gate")
+    off = tmp_path / "off"
+    off.mkdir()
+    off_row = [{"id": "check:ci-lock-only", "gate": False}]
+    assert _gate_resolution(off, {"x": "y"}, off_row) == (False, "no such gate")
+    other = tmp_path / "other"
+    other.mkdir()
+    assert _gate_resolution(other, {"x": "y"}, [{"id": "check:other", "gate": True}])[0] is False
+    broken = tmp_path / "broken"
+    broken.mkdir()
+    ok, why = _gate_resolution(broken, None, "{ not json")
+    assert ok is False
+    assert "package.json has no scripts block" in why
+    assert "could not be read" in why

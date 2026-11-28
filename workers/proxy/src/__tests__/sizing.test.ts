@@ -3,7 +3,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { OrgExecutor, type OrgExecutorEnv } from '../org-executor';
+import { OrgExecutor } from '../org-executor';
+import { type OrgExecutorEnv } from '../org-executor-support';
 import {
   chooseSize,
   heavyFullFallback,

@@ -8,11 +8,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: ja
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Codeは `rdc` CLIを通じてRediaccとネイティブに連携します。このガイドでは、セットアップ、権限、一般的なワークフローについて説明します。
+
+> **安全性を最優先に**: シークレットに触れるものにエージェントを接続する前に、[AIエージェントの安全性とガードレール](/ja/docs/ai-agents-safety)を読んでください。`rdc` の下で動作する Claude Code はエージェントとして検出されます。機密性の高い変更には、人間にもエージェントにも等しく `--current <previous-value>`（passwd形式の前提条件）が必要です。`--rotate-secret`（承認済みで監査対象のローテーション）が有効なのは、ターミナル上の人間だけです。`rdc config edit`（インタラクティブ、`--apply`、`--reveal`）はオーバーライドなしで拒否され、grand リポジトリとマシンへの直接 SSH は、ポリシーが許す範囲で人間がオプトインしない限り閉じたままです。前提条件が失敗すると、JSON エンベロープの `errors[].next.options[].run` フィールドが、ユーザーに実行を提案すべき正確な CLI コマンドをエージェントに伝えます。それをそのまま伝えてください。
 
 ## クイックセットアップ
 
@@ -36,7 +38,7 @@ Claude Codeは起動時に `CLAUDE.md` を読み込み、すべてのインタ�
 - Deploy: rdc repo up <repo>@<machine> --yes
 - Containers: rdc machine status <machine> --containers -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term connect <machine> [repo]
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -84,7 +86,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 

@@ -200,26 +200,26 @@ def test_discovery_reads_uncommented_schedules_only(tmp_path):
     assert "was-nightly" in [w["stem"] for w in SR.scheduled_workflows(root)]
 
 
+KEPT_SCHEDULED_STEMS = {
+    "ci",
+    "ops-housekeeping",
+    "ci-obs-mirror",
+    "ci-vm-bake",
+    "ct-backup-perf",
+    "ops-pins-soaked",
+    "ops-cf-usage-report",
+    "ops-telemetry-probe",
+    "ops-d1-size-report",
+}
+
+
 def test_discovery_pins_this_repos_scheduled_workflows():
     """The list is discovered, never hardcoded; this pin says which workflows that discovery finds today, so a schedule silently dropping out of the watch fails here."""
     root = wlfix.STOP_DIR.parents[2]
     stems = {w["stem"] for w in SR.scheduled_workflows(root)}
-    assert stems == {
-        "ci",
-        "ops-housekeeping",
-        "cd-release-stable",
-        "ci-obs-mirror",
-        "ci-vm-bake",
-        "ct-backup-perf",
-        "ops-pins-soaked",
-        "ops-cf-usage-report",
-        "ops-telemetry-probe",
-        "ops-d1-size-report",
-        # The weekly drift run, which took over ci.yml's old schedule.
-        "ci-drift",
-        # The nightly backup suite run.
-        "ct-backup-nightly",
-    }
+    # Exact, no subtraction (review d9f8a401.1): box S1 of PLAN-retire-nightlies-and-mentions deleted ci-drift.yml and cd-release-stable.yml's schedule, so either one coming back is a new scheduled workflow this pin must name.
+    assert stems == KEPT_SCHEDULED_STEMS
+    assert len(KEPT_SCHEDULED_STEMS) == 9
 
 
 # --------------------------------------------------------------------------- the verdict
@@ -238,6 +238,39 @@ def test_newest_scheduled_run_and_its_latest_attempt_decide(repo, tmp_path, gh):
     # Control: the newest run is the red one, so the verdict turns red.
     serve(gh, [run(RED_RUN, created="2026-10-04T06:00:00Z"), *runs[1:]])
     assert row_of(SR.refresh(repo, tmp_path / "wl.md", force=True), "ci")["red"] is True
+
+
+GONE_RUN = 70000001
+
+
+def test_a_scheduled_run_of_a_workflow_with_no_schedule_in_the_tree_is_an_undeclared_row(
+    repo, tmp_path, gh
+):
+    """A schedule deleted from the tree leaves its runs on main; the verdict names the absence as one `undeclared` row, never a red."""
+    gone = run(
+        GONE_RUN,
+        file="retired.yml",
+        conclusion="failure",
+        created="2026-10-04T06:00:00Z",
+        name="Retired",
+    )
+    older = run(
+        GONE_RUN - 1, file="retired.yml", conclusion="success", created="2026-10-02T06:00:00Z"
+    )
+    hk = run(1, file="housekeeping.yml", conclusion="success")
+    serve(gh, [run(RED_RUN, conclusion="success"), gone, older, hk])
+    doc = SR.refresh(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "ok", doc
+    assert [(r["stem"], r["run_id"], r["undeclared"], r["red"]) for r in doc["undeclared"]] == [
+        ("retired", GONE_RUN, True, False)
+    ]
+    # Control, the other direction: the declared workflows are never undeclared rows, and the retired one is not a declared row.
+    assert {r["stem"] for r in doc["undeclared"]}.isdisjoint({w["stem"] for w in doc["workflows"]})
+    # A red undeclared run blocks nobody: assess() reads only the declared rows.
+    assert SR.assess(tmp_path / "wl.md", [], "s" * 8, doc)["block"] == []
+    # Control: with no stray run on the page there is no undeclared row.
+    serve(gh, [run(RED_RUN, conclusion="success"), hk])
+    assert SR.refresh(repo, tmp_path / "wl2.md", force=True)["undeclared"] == []
 
 
 def test_a_green_dispatch_run_never_clears_a_scheduled_red(repo, tmp_path, gh):
@@ -725,7 +758,44 @@ def test_session_start_line_reads_the_cache_only(tmp_path, gh, monkeypatch):
     assert SR.session_start_line(wlp) == ""
 
 
+@pytest.mark.usefixtures("gh")
+def test_session_start_line_says_tracking_unknown_when_the_worklist_is_unreadable(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), jobs={}))
+
+    def boom(*_args, **_kwargs):
+        raise OSError("store locked")
+
+    monkeypatch.setattr(S, "load", boom)
+    line = SR.session_start_line(wlp)
+    assert "tracking unknown (worklist unreadable: OSError: store locked)" in line, line
+    assert "untracked" not in line, line
+
+
+@pytest.mark.usefixtures("gh")
+def test_session_start_line_control_a_readable_empty_worklist_is_untracked(tmp_path, monkeypatch):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    GH.cache_write(SR.cache_path(wlp), dict(red_doc(), jobs={}))
+    line = SR.session_start_line(wlp)
+    assert "untracked" in line, line
+    assert "tracking unknown" not in line, line
+
+
 # --------------------------------------------------------------------------- the Stop hook wiring
+
+
+def fresh_routes(gh):
+    """The two reads the Stop hook's freshness check adds beside a refresh (wl_checks SCHEDULED-RUN FRESHNESS): the repo's Actions switch and the workflow registry. Appended after `serve`, whose needles match neither."""
+    gh.route("actions/permissions", {"enabled": True})
+    gh.route(
+        "actions/workflows?per_page=100", {"total_count": len(REGISTRY), "workflows": REGISTRY}
+    )
 
 
 def _stop_world(fix):
@@ -735,6 +805,7 @@ def _stop_world(fix):
     make_repo(fix.proj, workflows={"ci.yml": CI_YML})
     shim = Gh(fix.base)
     serve(shim, [run(RED_RUN)], jobs=[{"name": "Quality / Pytest (3/3)", "conclusion": "failure"}])
+    fresh_routes(shim)
     env = {"PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", ""))}
     return shim, env
 
@@ -1045,6 +1116,7 @@ def _stop_world_main_red(fix):
     make_repo(fix.proj, workflows={"ci.yml": CI_YML})
     shim = Gh(fix.base)
     serve_main_red(shim)
+    fresh_routes(shim)
     env = {
         "PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", "")),
         "XDG_CACHE_HOME": str(fix.base / "xdg"),
@@ -1161,3 +1233,210 @@ def test_failed_jobs_refuses_a_short_page_below_the_total(monkeypatch):
     names, err = SR._failed_jobs(".", "o", "r", 7)
     assert names == []
     assert "short at 1 of 141" in err
+
+
+# --------------------------------------------------------------------------- freshness (operator ruling 2026-11-21, worklist #5eb28959)
+
+
+def iso_ago(seconds):
+    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - seconds))
+
+
+REGISTRY = [
+    {
+        "id": 100,
+        "path": ".github/workflows/ci.yml",
+        "state": "active",
+        "created_at": "2025-01-01T00:00:00Z",
+    },
+    {
+        "id": 101,
+        "path": ".github/workflows/housekeeping.yml",
+        "state": "active",
+        "created_at": "2025-01-01T00:00:00Z",
+    },
+]
+
+
+def serve_fresh(gh, runs, enabled=True):
+    """Routes for one freshness read: the permissions read, the per-workflow fallback, the scheduled runs page, then the registry (most specific first)."""
+    gh.reset()
+    gh.route("actions/permissions", {"enabled": enabled})
+    gh.route("/runs?event=schedule&per_page=1", {"workflow_runs": []})
+    gh.route("actions/runs?event=schedule", {"workflow_runs": runs})
+    gh.route(
+        "actions/workflows?per_page=100", {"total_count": len(REGISTRY), "workflows": REGISTRY}
+    )
+
+
+def test_freshness_discovery_reads_main_not_the_working_tree(tmp_path):
+    root = make_repo(tmp_path / "r")
+    # The branch moves housekeeping to weekly and adds a scheduled workflow main does not have.
+    wdir = root / ".github" / "workflows"
+    (wdir / "housekeeping.yml").write_text(
+        HK_YML.replace("0 3 * * *", "0 3 * * 0"), encoding="utf-8"
+    )
+    (wdir / "branch-only.yml").write_text(
+        HK_YML.replace("Housekeeping", "Branch Only"), encoding="utf-8"
+    )
+    got, source = SR.main_scheduled_workflows(root)
+    assert source == "origin/main"
+    assert [(w["file"], w["crons"], w["dispatchable"]) for w in got] == [
+        ("ci.yml", ["0 1 * * *"], True),
+        ("housekeeping.yml", ["0 3 * * *"], False),
+    ]
+    # Control: with no origin/main ref the working tree stands in, and the source says so.
+    bare = make_repo(tmp_path / "b", origin=False)
+    (bare / ".github" / "workflows" / "housekeeping.yml").write_text(
+        HK_YML.replace("0 3 * * *", "0 3 * * 0"), encoding="utf-8"
+    )
+    got, source = SR.main_scheduled_workflows(bare)
+    assert source.startswith("working tree")
+    assert {w["file"]: w["crons"] for w in got}["housekeeping.yml"] == ["0 3 * * 0"]
+
+
+def test_freshness_with_no_origin_or_no_schedule_makes_zero_calls(tmp_path, gh):
+    bare = make_repo(tmp_path / "b", origin=False)
+    assert SR.refresh_freshness(bare, tmp_path / "wl.md", force=True)["state"] == "unset"
+    plain = make_repo(tmp_path / "p", workflows={"plain.yml": PLAIN_YML})
+    doc = SR.refresh_freshness(plain, tmp_path / "wl.md", force=True)
+    assert (doc["state"], doc["rows"]) == ("ok", [])
+    assert gh.calls() == []
+    # Control: a scheduled workflow on main makes the read.
+    serve_fresh(gh, [])
+    SR.refresh_freshness(make_repo(tmp_path / "r"), tmp_path / "wl.md", force=True)
+    assert gh.calls("actions/workflows?per_page=100")
+
+
+def test_freshness_fresh_is_silent_and_cached(repo, tmp_path, gh):
+    wlp = tmp_path / "wl.md"
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(20 * 3600)),
+        ],
+    )
+    doc = SR.refresh_freshness(repo, wlp)
+    assert doc["state"] == "ok"
+    assert doc["discovered"] == 2
+    assert {r["file"]: r["verdict"] for r in doc["rows"]} == {
+        "ci.yml": "fresh",
+        "housekeeping.yml": "fresh",
+    }
+    assert SR.freshness_advisory(doc) == ""
+    page = "actions/runs?event=schedule"
+    assert len(gh.calls(page)) == 1
+    SR.refresh_freshness(repo, wlp)
+    assert len(gh.calls(page)) == 1, "inside the TTL every session reads the cache"
+    SR.refresh_freshness(repo, wlp, force=True)
+    assert len(gh.calls(page)) == 2
+
+
+def test_freshness_49h_stale_names_the_workflow_and_the_fix(repo, tmp_path, gh):
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(49 * 3600)),
+        ],
+    )
+    doc = SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)
+    text = SR.freshness_advisory(doc, "deadbeef")
+    assert "STALE: Housekeeping (housekeeping.yml), cron 0 3 * * *" in text, text
+    assert "gh workflow enable housekeeping.yml --repo fake/repo" in text
+    # HK_YML declares no workflow_dispatch, so no dispatch line; ci.yml is fresh and unnamed.
+    assert "gh workflow run" not in text
+    assert "Console CI" not in text
+    assert "worklist.py --add deadbeef 'sched-stale:housekeeping" in text
+    assert gh.calls("actions/permissions"), "an actionable row reads the repo's Actions switch"
+    # Control: 47 h is inside the window, so the same read is silent.
+    serve_fresh(
+        gh,
+        [
+            run(1, created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", created=iso_ago(47 * 3600)),
+        ],
+    )
+    assert SR.freshness_advisory(SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)) == ""
+
+
+def test_freshness_unreadable_is_named_not_fresh(repo, tmp_path, gh):
+    gh.reset()
+    gh.route("actions/workflows?per_page=100", rc=1, err="gh: Not Found (HTTP 404)")
+    doc = SR.refresh_freshness(repo, tmp_path / "wl.md", force=True)
+    assert doc["state"] == "unreadable"
+    assert "UNCHECKED, not fine" in SR.freshness_advisory(doc)
+
+
+def test_session_start_shows_the_cached_freshness_with_zero_calls(tmp_path, gh, monkeypatch):
+    monkeypatch.setenv("WORKLIST_STORE_DIR", str(tmp_path / "store"))
+    wlp = tmp_path / "wl.md"
+    wlp.write_text("", encoding="utf-8")
+    stale_row = {
+        "file": "housekeeping.yml",
+        "stem": "housekeeping",
+        "name": "Housekeeping",
+        "crons": ["0 3 * * *"],
+        "dispatchable": True,
+        "state": "active",
+        "verdict": "stale",
+        "last_run_at": iso_ago(3 * 86400),
+        "last_run_id": 7,
+        "age_s": 3 * 86400,
+        "window_s": 48 * 3600,
+        "why": "",
+    }
+    doc = {
+        "state": "ok",
+        "error": "",
+        "at": time.time(),
+        "slug": "fake/repo",
+        "rows": [stale_row],
+        "actions_enabled": True,
+    }
+    GH.cache_write(SR.freshness_path(wlp), doc)
+    line = SR.session_start_line(wlp)
+    assert "STALE: Housekeeping (housekeeping.yml)" in line, line
+    assert gh.calls() == [], "SessionStart makes zero gh calls"
+    # Control: the same row fresh says nothing.
+    GH.cache_write(SR.freshness_path(wlp), dict(doc, rows=[dict(stale_row, verdict="fresh")]))
+    assert SR.session_start_line(wlp) == ""
+
+
+def _stop_world_fresh(fix, hk_age_s):
+    """A Stop world whose scheduled runs on main are all green, Console CI 5 h ago and Housekeeping `hk_age_s` ago, so only the freshness check can speak."""
+    fix.setup()
+    fix.brief_now()
+    make_repo(fix.proj)
+    shim = Gh(fix.base)
+    serve(
+        shim,
+        [
+            run(GREEN_RUN, conclusion="success", created=iso_ago(5 * 3600)),
+            run(2, file="housekeeping.yml", conclusion="success", created=iso_ago(hk_age_s)),
+        ],
+    )
+    fresh_routes(shim)
+    env = {"PATH": "%s%s%s" % (shim.bindir, os.pathsep, fix.env.get("PATH", ""))}
+    return shim, env
+
+
+def test_the_stop_names_a_scheduled_workflow_github_stopped_firing(wl):
+    """Review 10b4ed2b.1: refresh_freshness ran only from the manual --freshness path, so a cron GitHub stopped firing reached no session. The Stop hook now reads it and queues the advisory."""
+    shim, env = _stop_world_fresh(wl, 49 * 3600)
+    got = wl.run(env)
+    assert "SCHEDULED WORKFLOWS NOT FIRING" in got.out, got.out[:2500]
+    assert "STALE: Housekeeping (housekeeping.yml), cron 0 3 * * *" in got.out
+    assert "worklist.py --add deadbeef 'sched-stale:housekeeping" in got.out
+    assert "SCHEDULED RED" not in got.out, "both runs are green; only freshness speaks"
+    assert shim.calls("actions/workflows?per_page=100"), "the freshness read really ran"
+    assert SR.read_freshness(wl.wl) is not None, "the stop caches the document for SessionStart"
+
+
+def test_the_stop_is_silent_when_every_scheduled_workflow_fired(wl):
+    shim, env = _stop_world_fresh(wl, 20 * 3600)
+    got = wl.check_quiet("SCHEDULED WORKFLOWS NOT FIRING", result=wl.run(env))
+    assert "SCHEDULED-RUN FRESHNESS" not in got.out
+    assert "scheduled-freshness check failed" not in got.out
+    assert shim.calls("actions/workflows?per_page=100"), "the read ran and judged both fresh"

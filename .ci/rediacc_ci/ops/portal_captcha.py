@@ -44,6 +44,8 @@ LOGIN_API = "/account/api/v1/auth/login"
 INDEX_RE = re.compile(r"(/account/assets/index-[^\"'\s<>?#]+\.js)")
 # Every Turnstile site key starts 0x4AAAAAA; a hex constant in bundled crypto code does not match.
 SITEKEY_RE = re.compile(r"0x4AAAAAA[0-9A-Za-z_-]{8,}")
+# The portal bundle the site key sits in grew to 5.46 MB on 2026-11-28 (index-BtXC003Y.js), past the 4 MB read this module used, so the key fell beyond the cut and the smoke reported a bundle "with no site key" that had one, stopping a release mid-region. 32 MB leaves headroom while still bounding a runaway answer.
+MAX_BODY_BYTES = 32_000_000
 CAPTCHA_REQUIRED = "Captcha verification required"
 # Not an account: the captcha middleware refuses before the body is read for credentials.
 DUMMY_LOGIN = {"email": "portal-captcha-probe@rediacc.invalid", "password": "portal-captcha-probe"}
@@ -118,7 +120,7 @@ def http(method: str, url: str, body: dict | None = None) -> Reply:
     while True:
         try:
             with _open(request, pin) as resp:
-                return Reply(resp.status, resp.read(4_000_000).decode("utf-8", "replace"))
+                return Reply(resp.status, resp.read(MAX_BODY_BYTES).decode("utf-8", "replace"))
         except urllib.error.HTTPError as exc:
             try:
                 text = exc.read(65_536).decode("utf-8", "replace")

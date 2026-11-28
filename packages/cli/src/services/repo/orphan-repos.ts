@@ -9,10 +9,14 @@
  * with the GUID, never a raw filesystem removal.
  */
 
+import { readFile } from 'node:fs/promises';
+import { composeRef } from '@rediacc/shared/ref';
 import {
   getRepositories,
   type RepositoryInfo,
 } from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { t } from '../../i18n/index.js';
+import { settleDeletedRepoLicense } from '../account/license-retire.js';
 import { configService } from '../config/config-resources.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import type { ExecuteResult } from '../executor/types.js';
@@ -22,6 +26,8 @@ import { analyzePrune } from './prune.js';
 /** One image on the machine, judged against every readable config. */
 export interface MachineRepoVerdict {
   guid: string;
+  /** The ref the current config's archive record gives the GUID (`name` or `name:tag`), else null: no config entry names an orphan. */
+  name: string | null;
   verdict: 'orphaned' | 'protected';
   reason: string;
   mounted: boolean;
@@ -49,6 +55,17 @@ async function configuredGrandGuids(): Promise<Set<string>> {
   return grands;
 }
 
+/** GUID (lowercase) -> the ref of the current config's archive record for it: the one name an orphaned image can still carry. */
+export async function archivedNames(): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  for (const record of await configService.listArchivedRepositories()) {
+    if (record.repositoryGuid) {
+      names.set(record.repositoryGuid.toLowerCase(), composeRef(record.name, record.tag));
+    }
+  }
+  return names;
+}
+
 /** Why analyzePrune listed a GUID in neither bucket: it refused the whole scan (an unreadable config, warned). */
 const SCAN_REFUSED = 'config scan refused: a config could not be read (see the warning above)';
 const GRAND_OF_FORK = 'grand lineage of a configured fork';
@@ -73,11 +90,13 @@ export async function classifyMachineRepos(
   const orphaned = new Map(analysis.orphaned.map((c) => [c.guid, c.reason]));
   const protectedReasons = new Map(analysis.protected.map((c) => [c.guid, c.reason]));
   const grands = await configuredGrandGuids();
+  const names = await archivedNames();
 
   return repos.map((repo) => {
     const guid = repo.name;
     const base = {
       guid,
+      name: names.get(guid.toLowerCase()) ?? null,
       mounted: Boolean(repo.mounted),
       running: isRepoRunning(repo),
       containers: repo.container_count,
@@ -98,19 +117,110 @@ export async function classifyMachineRepos(
 
 /**
  * Delete one repository image by GUID through renet `repository_delete` (it stops the repository's Docker daemon,
- * unmounts, closes LUKS and removes the image, its grants, licence blobs and backup state). The one delete call of
- * every GUID-addressed path, so `machine prune` and `repo admin orphan delete` cannot drift apart.
+ * unmounts, closes LUKS and removes the image, its grants, licence blobs and backup state), then retire its licence
+ * on the account server so the licence summary stops counting a repository that no longer exists. The one delete
+ * call of every GUID-addressed path, so `machine prune` and `repo admin orphan delete` cannot drift apart.
  */
-export function deleteRepoImageByGuid(
+export async function deleteRepoImageByGuid(
   machineName: string,
   guid: string,
   options: { debug?: boolean; quietSpinners?: boolean } = {}
 ): Promise<ExecuteResult> {
-  return getExecutor().execute({
+  const result = await getExecutor().execute({
     functionName: 'repository_delete',
     machineName,
     params: { repository: guid },
     debug: options.debug,
     ...(options.quietSpinners ? { quietSpinners: true } : {}),
+  });
+  if (result.success) await settleDeletedRepoLicense(guid, guid);
+  return result;
+}
+
+/** One line of `executor_orphans list --json` (.ci/rediacc_ci/ops/executor_orphans.py): an executor-created repo, fork or machine. */
+export interface ExecutorEvent {
+  machine: string | null;
+  repo: string | null;
+  guid: string | null;
+  at: string | null;
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null;
+}
+
+/** Parse the tool's JSON lines (blank lines skipped). A line that is not a JSON object is a hard error naming its number. */
+export function parseExecutorEvents(text: string): ExecutorEvent[] {
+  const events: ExecutorEvent[] = [];
+  for (const [index, line] of text.split('\n').entries()) {
+    if (line.trim() === '') continue;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(line);
+    } catch {
+      parsed = null;
+    }
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      throw new Error(
+        t('commands.repo.admin.orphan.list.executorEventsBadLine', { line: index + 1 })
+      );
+    }
+    const row = parsed as Record<string, unknown>;
+    events.push({
+      machine: textOrNull(row.machine),
+      repo: textOrNull(row.repo),
+      guid: textOrNull(row.guid),
+      at: textOrNull(row.at),
+    });
+  }
+  return events;
+}
+
+export async function readExecutorEvents(file: string): Promise<ExecutorEvent[]> {
+  let text: string;
+  try {
+    text = await readFile(file, 'utf8');
+  } catch (error) {
+    throw new Error(
+      t('commands.repo.admin.orphan.list.executorEventsUnreadable', {
+        file,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+  return parseExecutorEvents(text);
+}
+
+/** A GUID-less event names the repo as the executor saw it: the whole archived ref (`name` or `name:tag`) or its name part. */
+function namesEvent(ref: string | null, repo: string | null): boolean {
+  // A GUID-less event that names no repo cannot place itself on any orphan.
+  return ref !== null && repo !== null && (ref === repo || ref.split(':')[0] === repo);
+}
+
+/**
+ * Join the executor's events onto the verdicts. Only an event whose machine is `machine` counts: an event naming no
+ * machine cannot place the image on this one. An event carrying a GUID matches the image with that GUID; an event
+ * carrying none (one recorded before the executor shipped the GUID) matches each orphan whose archived ref is the event's
+ * repo or whose name part (before the tag) is the event's repo: an event `alpha:v2` marks only `alpha:v2`, while an event
+ * `alpha` cannot tell the tags apart and marks every orphan `alpha:*` on the machine. A matched orphan gets the executor reason with the event time. A protected image keeps its verdict
+ * and reason, and an unmatched orphan keeps its own reason: another cause produced it.
+ */
+export function applyExecutorEvents(
+  rows: MachineRepoVerdict[],
+  events: ExecutorEvent[],
+  machine: string
+): MachineRepoVerdict[] {
+  const onMachine = events.filter((e) => e.machine === machine);
+  return rows.map((row) => {
+    if (row.verdict !== 'orphaned') return row;
+    const guid = row.guid.toLowerCase();
+    const hit = onMachine.find((e) =>
+      e.guid === null ? namesEvent(row.name, e.repo) : e.guid.toLowerCase() === guid
+    );
+    if (!hit) return row;
+    return {
+      ...row,
+      reason: t('commands.repo.admin.orphan.list.executorReason', { at: hit.at ?? '-' }),
+    };
   });
 }

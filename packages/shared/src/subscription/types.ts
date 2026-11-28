@@ -5,6 +5,8 @@
  * Used by account-server, renet, and CLI.
  */
 
+import type { ForensicsClaim } from '../forensics/claim.js';
+
 /**
  * Subscription plan codes.
  */
@@ -72,6 +74,8 @@ export interface SubscriptionData {
   maxRepositorySizeGb: number;
   /** Maximum successful repo-license issuances per UTC calendar month */
   maxRepoLicenseIssuancesPerMonth: number;
+  /** Logical-CPU ceiling per machine; null or absent means unlimited. Recorded for the licence, enforced by the account server */
+  maxCpusPerMachine?: number | null;
   /** Feature flags for this plan */
   features: FeatureFlags;
 
@@ -146,6 +150,12 @@ export interface RepoLicense {
   prevChainHash: string;
   issuedByEmail?: string;
   companyName?: string;
+  /**
+   * The forensics claim (PLAN-forensics-shipping D9), stamped at issue and renewal from
+   * the plan and the repo's forensics settings. Absent on blobs issued before it existed,
+   * which renet reads as disabled.
+   */
+  forensics?: ForensicsClaim;
 }
 
 export interface SignedRepoLicense {
@@ -197,6 +207,12 @@ export interface DelegationCert {
    * backups default to the plan value when read.
    */
   storageQuotaBytes?: number;
+  /**
+   * Forensic-capture quota in bytes. Optional for the same reason as
+   * `storageQuotaBytes`: certs issued before forensics shipping carry none and
+   * read the plan value.
+   */
+  forensicsQuotaBytes?: number;
   /** Upper bound on the chain sequence number */
   maxTotalIssuances: number;
   /** Base64 SPKI Ed25519 public key of the on-premise server */
@@ -230,14 +246,17 @@ export type ApiTokenScope =
   // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
-  // Config plane: `config:enroll` lets a headless CLI add a password key slot to its own config-store membership (rdc config remote enable --master-password). Creatable by any member — not privileged.
+  // Config plane: `config:enroll` lets a headless CLI enroll against a machine secret and add its key slot to its own config-store membership (rdc config remote enable --machine-secret). Creatable by any member — not privileged.
   | 'config:enroll'
   // Backup plane: `backup:read` lets a CLI query the subscription's backup storage state through the tunnel (usage, manifest index, verify). Read-only, creatable by any member — not privileged. The MACHINE never holds this: it commits its own manifests via the license-blob storage session.
   | 'backup:read'
   // `backup:manage` declares the server-enforced GFS retention policy, which SCHEDULES DELETIONS. It is deliberately not folded into `backup:read`: a token minted to show a usage bar must not be able to shrink history.
   | 'backup:manage'
   // `backup:restore` mints a restore session for one lineage from an API token (POST /backups/restore-session), so the CLI can rebuild an image straight from the chunk store with no machine. Privileged (owner/admin), team-scoped tokens only, and never part of a member's CLI login: it turns a token into a download credential.
-  | 'backup:restore';
+  | 'backup:restore'
+  // Forensics plane (PLAN-forensics-investigation D7): `forensics:read` reads the incident timeline, flows, file opens and chain material (`rdc incident status|export`, `rdc repo flows|opens`, `rdc forensics verify`); `incident:manage` declares and closes incidents. Both privileged (owner/admin only).
+  | 'forensics:read'
+  | 'incident:manage';
 
 /**
  * API token for machine authentication.
@@ -277,7 +296,7 @@ export interface OrganizationSubscription {
 }
 
 /**
- * Billing period for Stripe subscriptions.
+ * Billing period for plan pricing.
  */
 export type BillingPeriod = 'monthly' | 'annual';
 
@@ -292,6 +311,35 @@ export interface PlanPricing {
 }
 
 /**
+ * How a subscription on a plan code is paid for (PLAN-pricing-plan-model.md Design 1).
+ * 'free-eligible' exists only on PROFESSIONAL: free Professional is the PROFESSIONAL plan
+ * code with the free limits, so renet needs no new plan code. Every other subscription is
+ * 'paid', including the zero-priced FREE and COMMUNITY floors.
+ */
+export type PricingBasis = 'free-eligible' | 'paid';
+
+/**
+ * The plan dimensions PLAN_LIMITS cannot carry, because PLAN_LIMITS is the flat number map
+ * the generated subscription schema hands renet as `map[string]map[string]int`.
+ * `null` means unlimited (for repositories on ENTERPRISE: per quote, set by the
+ * per-subscription override).
+ */
+export interface PlanCaps {
+  /** Organization members, active plus pending invitations. Never scaled per licence. */
+  maxUsers: number | null;
+  /** ORIGINAL repositories only; a fork never counts. */
+  maxRepositories: number | null;
+  /** Logical CPUs per machine, as the OS reports them (hyperthreads and vCPUs included). */
+  maxCpusPerMachine: number | null;
+}
+
+/** Self-serve floating-licence count a plan sells; `max: null` is open-ended (quoted). */
+export interface FloatingLicenceRange {
+  min: number;
+  max: number | null;
+}
+
+/**
  * Display metadata for a subscription plan.
  */
 export interface PlanMetadata {
@@ -299,7 +347,7 @@ export interface PlanMetadata {
   description: string;
   paid: boolean;
   featured: boolean;
-  /** Purchasable via self-serve checkout. False = fallback-only (COMMUNITY) or partner-only (ENTERPRISE). */
+  /** Purchasable via self-serve checkout. False for every plan (no checkout; paid plans are sold through partners or an account link). */
   selfServe: boolean;
   /**
    * The web console (browser-driven command execution through an executor) is
@@ -307,6 +355,12 @@ export interface PlanMetadata {
    * against real machines on the operator's behalf, which is a paid capability.
    */
   webConsole: boolean;
+  /**
+   * The Rediacc-hosted AI tier (prepaid credits) is available on this plan.
+   * Grants and reservations both check it; the provider choice shows the
+   * Rediacc tier only for an entitled org.
+   */
+  rediaccAiCredits: boolean;
 }
 
 /**

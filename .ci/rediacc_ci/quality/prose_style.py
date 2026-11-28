@@ -43,6 +43,13 @@ should look at the line again.
 
 `--drain` IS THE VERB FOR A FIXED FINDING, AND IT CAN ONLY REMOVE. `--write-baseline` freezes the WHOLE current set, so it refuses whenever any unbaselined finding exists anywhere in the tree, warnings included. On 2026-09-24 that meant 96 unrelated advisory warnings blocked the removal of two rows that had stopped firing, and the gate stayed red on a tree with no new error. `--drain` keeps
 the previous baseline's rows that still fire and writes nothing else: the kept set is a filter of the old file, and before it is written it passes the same `shrink_only` add verdict the other shrink-only gates use, so a new finding cannot enter even through a broken filter. It then reports "N drained, 0 added" and runs the ordinary verdict, so a new finding still fails the same run.
+
+---- gate ----
+step: Check prose style (the work, not the person)
+needs: none
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import collections
@@ -2933,4 +2940,23 @@ def _added(previous, findings):
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_prose_style.py",
+        sys.argv[1:],
+        switches=(
+            "--selftest",
+            "-h",
+            "--help",
+            "--write",
+            "--diff",
+            "--write-baseline",
+            "--accept-new",
+            "--json",
+            "--drain",
+        ),
+        valued=("--scope",),
+        positional="<subcommand|path>",
+    )
     raise SystemExit(main(sys.argv[1:]))

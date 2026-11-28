@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-"""Entry point for the portal Turnstile site-key guard gate. Logic is in the package.
+"""Run `rediacc_ci.quality.portal_sitekey_guard` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.portal_sitekey_guard`, which the gate's own `--selftest` exercises.
-
----- gate ----
-step: Portal site-key guard
-needs: none
-lane: quality-static
-selftest: true
-why: every production login failed on 2026-09-24 because the deployed portal was built
-     with an empty Turnstile site key, and no check read the deploy workflows for it
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/portal_sitekey_guard.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import portal_sitekey_guard
 
 if __name__ == "__main__":
+    _gate_args.parse("check_portal_sitekey_guard.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(portal_sitekey_guard.main(sys.argv[1:]))

@@ -27,7 +27,6 @@ import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { formatBytes } from '../utils/format.js';
 import { resolveRemoteName } from '../utils/remote-resolve.js';
@@ -461,8 +460,6 @@ export async function migrateRepo(ref: string, options: MigrateOptions): Promise
   // known machine/cluster name to resolve; use it verbatim.
   const to = provision ? options.to : await resolveMigrateEndpoint(options.to);
   const migrationStart = Date.now();
-
-  await assertCommandPolicy(CMD.REPO_PUSH, repoKey);
 
   const repoConfig = await configService.getRepository(repoKey);
   if (!repoConfig) {

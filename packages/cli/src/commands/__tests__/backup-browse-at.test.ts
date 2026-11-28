@@ -31,8 +31,8 @@ const mockResolveRepoRef = vi.hoisted(() => vi.fn());
 const mockResolveRepoRefLocal = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: mockResolveRepoRef,
-  resolveRepoRefLocal: mockResolveRepoRefLocal,
 }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: mockResolveRepoRefLocal }));
 
 vi.mock('../../services/backup/backup-runs-state.js', () => ({
   recordBackupRun: vi.fn(),
@@ -347,6 +347,21 @@ describe('backup browse --at store fallback', () => {
     expect(mockExecuteRepoFunction.mock.calls.every((c) => c[4].failureIsAnswer === true)).toBe(
       true
     );
+  });
+
+  it('renders the last store failure when every store is unreachable, and prints no listing', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    answers(failed('HTTP 502 bad gateway'), failed('connect ECONNREFUSED 10.0.0.1:443'));
+
+    await run(['browse', 'shop', '--at', SNAPSHOT]);
+
+    expect(stores()).toEqual(['eu-west', undefined]);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+    expect(mockRenderFailure.mock.calls[0][0]).toMatchObject({
+      error: 'connect ECONNREFUSED 10.0.0.1:443',
+    });
+    expect(mockPrint).not.toHaveBeenCalled();
   });
 
   it('does not fall back when the snapshot is missing, and renders that failure', async () => {

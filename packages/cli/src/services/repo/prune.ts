@@ -5,11 +5,13 @@
  * Compares remote GUIDs against all config files to identify orphaned entries.
  */
 
+import { isSealed } from '@rediacc/shared/config-schema';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { ArchivedRepository, RdcConfig } from '../../types/index.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { currentRequestContext } from '../core/request-context.js';
 
 const DEFAULT_GRACE_DAYS = 7;
 
@@ -100,7 +102,7 @@ async function scanOtherConfig(
     const config = await configFileStorage.load(name);
 
     // Check if config is encrypted and repos aren't readable
-    if (config.encryption?.mode === 'master-password' && !config.resources?.repositories) {
+    if (isSealed(config) && !config.resources?.repositories) {
       unreadableConfigs.push(name);
       return;
     }
@@ -131,7 +133,8 @@ async function collectAllConfigGuids(): Promise<ConfigScanResult> {
 
   await scanCurrentConfig(guidSources, currentConfigName);
 
-  const configNames = await configFileStorage.list();
+  // Inside an executor request the session config is the caller's whole universe, and the other config files on the executor's disk belong to other callers: judging against them would protect an image for the wrong caller, and reading them would cross tenants.
+  const configNames = currentRequestContext() ? [] : await configFileStorage.list();
   for (const name of configNames) {
     if (name === currentConfigName) continue;
     await scanOtherConfig(guidSources, unreadableConfigs, archived, name);

@@ -14,6 +14,7 @@ either file reds both sides. Nothing about the SUBJECT is reimplemented: every p
 
 import json
 import os
+import re
 
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
@@ -108,26 +109,27 @@ def test_selftest_has_controls(gate):
 
 
 def test_gate_runs_the_selftest(gate):
-    """The gate is worthless if the npm script does not actually run the self-test, or runs it in a way that ignores its exit code."""
-    if not PACKAGE_JSON.is_file():
-        gate.log_fail("no package.json at %s, so this assertion would be vacuous" % PACKAGE_JSON)
-    scripts = json.loads(PACKAGE_JSON.read_text(encoding="utf-8")).get("scripts") or {}
-    if not scripts:
-        gate.log_fail(
-            "package.json declares NO scripts at all, so this case scanned nothing. "
-            "Zero subjects is a failure here, not a pass."
-        )
-    cmd = scripts.get(GATE_NAME, "")
+    """The gate is worthless if its manifest entry does not actually run the self-test, or runs it in a way that ignores its exit code.
+
+    The command lives in the manifest entry's `run:` (package.json no longer carries a `check:ci-tutorial-render-queue` script).
+    """
+    if not MANIFEST.is_file():
+        gate.log_fail("no gate manifest at %s, so this assertion would be vacuous" % MANIFEST_REL)
+    match = re.search(
+        r"id: '%s',\s*run: '([^']*)'" % re.escape(GATE_NAME), MANIFEST.read_text(encoding="utf-8")
+    )
+    cmd = match.group(1) if match else ""
     if not cmd:
-        gate.log_fail("%s is not registered in package.json" % GATE_NAME)
+        gate.log_fail("%s has no `run:` right after its id in %s" % (GATE_NAME, MANIFEST_REL))
     gate.assert_contains(
         cmd, "list-tutorial-render-pairs", "%s must invoke the predicate" % GATE_NAME
     )
     gate.assert_contains(cmd, "--selftest", "%s must run --selftest" % GATE_NAME)
     # `;` or `||` between stages would swallow a failure; `&&` propagates it.
-    if ";" in cmd:
+    if ";" in cmd or "||" in cmd:
         gate.log_fail(
-            "%s chains with ';' which discards a failing stage's exit code: %s" % (GATE_NAME, cmd)
+            "%s chains with ';' or '||' which discards a failing stage's exit code: %s"
+            % (GATE_NAME, cmd)
         )
     gate.log_pass("%s runs --selftest and propagates its exit code" % GATE_NAME)
 

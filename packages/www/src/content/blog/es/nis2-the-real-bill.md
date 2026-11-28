@@ -16,8 +16,8 @@ tags:
   - mid-market
 featured: false
 language: es
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -114,7 +114,7 @@ Esta es la sección que determina si el resto de la entrada es honesta. La tabla
 | Licencia de herramienta de datos de prueba o enmascaramiento | Presupuesto de formación de personal y concienciación en seguridad (NIS2 artículo 21(2)(g)) |
 | Licencia de recuperación instantánea en el proveedor de backup | Solución corporativa de MFA más amplia; Rediacc tiene TOTP en el portal, no una plataforma corporativa de MFA |
 | | Contrato de prueba de penetración o plataforma de pruebas autónomas; Rediacc proporciona el entorno objetivo, no la capacidad de prueba |
-| | SIEM y SOC para la detección y notificación del artículo 23; Rediacc proporciona artefactos de grado forense, no la capa de notificación operativa |
+| | SIEM y SOC para la detección y notificación del artículo 23; Rediacc proporciona registros de flujo por repositorio, una línea de tiempo verificable y borradores de informes por etapas en planes de pago, no la capa de notificación operativa |
 | | Proveedor de IaaS (Hetzner, OVH, tu colo, tu bare metal); Rediacc se ejecuta sobre la infraestructura, no en lugar de ella |
 | | Personal que gestiona el programa. Rediacc es una capa de herramientas, no un equipo de seguridad |
 
@@ -146,7 +146,7 @@ Cinco contratos. Dos de ellos (Veeam, Veeam Cloud Connect) son con el mismo prov
 - Drata se mantiene (18.000 EUR)
 - El esquema propio de datos de prueba se retira; el medio día del SRE cada dos semanas pasa a ejecutar la rutina de efectividad semanal
 
-Consolidación del plano de datos: 5 partidas a 1 (Rediacc) más la línea de IaaS existente. La sección del plano de datos del registro de proveedores pasa de 5 entradas a 2. La historia de efectividad continua son ahora simulacros semanales con evidencia de registro de auditoría encadenado por hash; la historia de la prueba de recuperación está ahora respaldada por la salida de `rdc backup status` y un simulacro de restauración por semana.
+Consolidación del plano de datos: 5 partidas a 1 (Rediacc) más la línea de IaaS existente. La sección del plano de datos del registro de proveedores pasa de 5 entradas a 2. La historia de efectividad continua son ahora simulacros semanales con evidencia del registro de auditoría de la estación de trabajo, que `rdc config audit verify` comprueba; la historia de la prueba de recuperación está ahora respaldada por la salida de `rdc backup status` y un simulacro de restauración por semana.
 
 Los números son ilustrativos, no promesas. Tu stack es diferente. La forma, de cuatro a cinco partidas colapsando en una más la IaaS existente, es como se ve una conversación real con un comprador.
 

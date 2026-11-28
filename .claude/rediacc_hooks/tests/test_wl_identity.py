@@ -29,7 +29,7 @@ XDIST_GROUP = "wl-identity-l1"
 
 
 #: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
-ACCEPTED_RC = {"--add-many": 2, "--batch-body": 1, "--promote": 1, "--hint-resolve": 2}
+ACCEPTED_RC = {"--add-many": 2, "--promote": 1, "--hint-resolve": 2, "--armed-start": 1}
 
 
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
@@ -411,15 +411,32 @@ def drive_l1(fix) -> L1Drive:
         )
     )
     mkitem("l1-list-item")  # the --list row asserts on the TEXT, not the id
+    # --handover-answer needs a handover to answer (wl_handover, PLAN-simple-two-tree-loop B7).
+    _ho = re.search(
+        r"handover #([0-9a-f]{8})",
+        both(l1run(fix, "--handover", wlfix.ME, "lesson", "l1-ho-check", "l1-ho-evidence")),
+    )
+    i_handover = _ho.group(1) if _ho else ""
     for name, value in (
         ("i_tick", i_tick),
         ("i_defer", i_defer),
         ("i_update", i_update),
         ("i_lease", i_lease),
         ("i_reopen", i_reopen),
+        ("i_handover", i_handover),
     ):
         assert value, "FIXTURE BROKEN: %s was never created, so its row proves nothing" % name
     inv_rel, inv_selector = plant_investigate_target(fix)
+    # The armed-action verbs (agent/plans/PLAN-armed-actions.md AA2): one item the --arm row arms and the later rows read, start and disarm, and a one-row survey with its brief draft. Nothing is armed before the table runs, so the --state row above them meets no `## Armed` demand.
+    i_arm = mkitem("l1-arm-item")
+    armed_draft = fix.base / "l1-armed-draft.md"
+    armed_draft.write_text("l1 armed brief\n", encoding="utf-8")
+    armed_survey = fix.base / "l1-armed-survey.md"
+    armed_survey.write_text(
+        "## 10. Armed\n\n| blocker | dependent sigs | trigger | brief draft path |\n|---|---|---|---|\n"
+        "| l1 | 0123abcd | NEEDS:pushed-head | %s |\n" % armed_draft,
+        encoding="utf-8",
+    )
 
     # A phantom for the --reassign row: three aged events under an identity that has never stopped, owning open items. This case runs no Stop hook, so no .lastevent- file exists for anybody here, which is exactly the phantom shape.
     fix.phantom_store("phantom1", 90)
@@ -468,7 +485,12 @@ def drive_l1(fix) -> L1Drive:
         ("--list", "--list --open @WHO@", "l1-list-item"),
         ("--state", "--state @WHO@", "STATE.md section written"),
         ("--loop", "--loop @WHO@ 2099-01-01T00:00:00Z 1 l1-label", "loop declared"),
-        ("--phase", "--phase @WHO@ babysit --branch l1-pr-branch --pr 1", "phase babysit for"),
+        ("--handover", "--handover @WHO@ lesson l1-table-check l1-table-evidence", "handover #"),
+        (
+            "--handover-answer",
+            "--handover-answer @WHO@ %s done" % i_handover,
+            "answered: done",
+        ),
         ("--brief", "--brief @WHO@ l1-brief-text", "brief recorded"),
         ("--intent", "--intent @WHO@ l1-intent-text --for 30", "intent recorded"),
         ("--reap", "--reap @WHO@ l1task9", "reaped 1 task"),
@@ -486,6 +508,8 @@ def drive_l1(fix) -> L1Drive:
         # runs the same argv parse, the same PREFIX_RE and the same _identity_or_die, which is the whole surface this table is about.
         ("--plan-compact", "--plan-compact @WHO@", "plan record candidates"),
         ("--plan-revive", "--plan-revive @WHO@", "plan records on disk"),
+        # Listing mode for the same reason (agent/plans/PLAN-plan-verbs.md T14): a bare `<me>` lists the plans with no ledger row after the same _identity_or_die its --write mode runs.
+        ("--plan-new", "--plan-new @WHO@", "--plan-new can register"),
         # Same listing rule, same reason. --plan-tick's write mode needs a plan AND a committed box ledger; its listing mode is where a caller gets the box SIGNATURE the write mode wants, so the read is a prerequisite of the write rather than a convenience, and it runs the identical argv parse.
         ("--plan-tick", "--plan-tick @WHO@", "open boxes that --plan-tick can flip"),
         # Unlike the three rows above, --plan-investigate has no listing mode, so CONTROL A is driven for real against plant_investigate_target's fixture plan rather than against an empty argv.
@@ -495,6 +519,8 @@ def drive_l1(fix) -> L1Drive:
             % (inv_rel, inv_selector, inv_rel, inv_rel),
             "[verdict: present]",
         ),
+        # Dry run (no --write): the fixture's pending-tick queue is empty, so the accepted run lists zero rows after the same _identity_or_die its --write mode runs.
+        ("--apply-ticks", "--apply-ticks @WHO@", "apply-ticks: 0 pending row(s)"),
         # A dry run (no --write) over the same fixture plan: it prints the five-part report and writes nothing. The fixture has no git repository, so the merge base is unresolvable and the report says so, after the same _identity_or_die its --write mode runs.
         ("--plan-preflight", "--plan-preflight @WHO@ %s" % inv_rel, "5. VERDICT:"),
         # Listing mode (a `<me>` and no plan): prints the open LP boxes after the same _identity_or_die its record and tick modes run, and runs no recorder.
@@ -520,16 +546,22 @@ def drive_l1(fix) -> L1Drive:
         ("--queue-set", "--queue-set @WHO@", "effort: "),
         # The table's stdin holds a blank line, which --add-many refuses, so the accepted run answers with that refusal after the same _identity_or_die a real run passes.
         ("--add-many", "--add-many @WHO@", "REFUSED: line 2"),
-        # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
-        ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.
         ("--promote", "--promote @WHO@ PLAN-l1-absent.md l1-note", "does not exist"),
+        # Appends a round row to the fixture's agent/ledgers/writers-now-rounds.jsonl (agent/plans/PLAN-writers-now-cadence.md WN1), so a foreign `<me>` must be refused before the write.
+        (
+            "--writers-now-start",
+            "--writers-now-start @WHO@ %s" % (fix.base / "l1-writers-now.md"),
+            "writers-now round",
+        ),
         # The per-commit review verbs (agent/plans/PLAN-per-commit-review.md section 6), each driven in its no-argument mode: the fixture has no git repository, so HEAD is on no branch and each verb answers without touching a review file, after the same argv parse and _identity_or_die its write modes run.
         ("--review-mark", "--review-mark @WHO@", "open per-commit review findings"),
         ("--review-commit", "--review-commit @WHO@", "no finished review file"),
         ("--review-run", "--review-run @WHO@", "unreviewed commits"),
         # --prune-reviews runs the archival gate from the project root (PLAN-per-commit-review T5), so the fixture plants a stand-in gate there: the identity check is this table's subject, and the real gate needs a git work tree the fixture does not have.
         ("--prune-reviews", "--prune-reviews @WHO@", "no agent/reviews/<branch>/ directory"),
+        # The reggate retire verb (agent/plans/PLAN-reggate-debt-collection.md D5), driven in its listing mode: a bare `<me>` lists the unpaid debts after the same _identity_or_die its retire mode runs.
+        ("--reggate-retire", "--reggate-retire @WHO@", "unpaid reggate debt"),
         # Listing mode (no --write): the fixture has no git branch, so the accepted run lists nothing, after the same _identity_or_die its --write mode runs.
         (
             "--drop-foreign-reviews",
@@ -542,6 +574,12 @@ def drive_l1(fix) -> L1Drive:
         ("--retro-brief", "--retro-brief @WHO@ early", "STOP-HOOK RETRO for session"),
         # The operator-ruling verb (agent/plans/PLAN-stop-hook-rulings-campaign.md section 2), driven in its listing mode: a bare `<me>` prints the live rulings after the same _identity_or_die its record and revoke modes run.
         ("--rule", "--rule @WHO@", "operator rulings:"),
+        # The armed-action verbs (agent/plans/PLAN-armed-actions.md AA2). --armed-start's accepted run is the before-the-fire refusal (ACCEPTED_RC), after the same _identity_or_die its start runs.
+        ("--arm", "--arm @WHO@ %s --when PUSHED:head --run-cmd true" % i_arm, "armed #"),
+        ("--armed-list", "--armed-list @WHO@", "PUSHED:head"),
+        ("--armed-start", "--armed-start @WHO@ %s" % i_arm, "has not fired"),
+        ("--disarm", "--disarm @WHO@ %s --why l1-replanned" % i_arm, "disarmed #"),
+        ("--arm-from-survey", "--arm-from-survey @WHO@ %s" % armed_survey, "armed 1 item(s)"),
     ]
 
     stand_in = fix.proj / ".ci" / "scripts" / "quality" / "check_agent_session_archival.py"
@@ -629,7 +667,10 @@ def test_185_anti_vacuity_the_verb_list_is_derived_from_the_source_not_typed_her
     driver recorded at runtime, not by grepping this file, which would pass on a case that never ran.
     """
     assert l1.covered, "the driver recorded no verbs at all, so this case has nothing to check"
-    src = (wlfix.STOP_DIR / "worklist.py").read_text(encoding="utf-8")
+    # The dispatch spans two files since PLAN-tooling-speed.md SP3: worklist.py keeps --help and --path, wl_cli.py every other verb.
+    src = "\n".join(
+        (wlfix.STOP_DIR / name).read_text(encoding="utf-8") for name in ("worklist.py", "wl_cli.py")
+    )
     verbs: set[str] = set()
     verbs.update(re.findall(r'sys\.argv\[1:2\] == \["(--[a-z-]+)"\]', src))
     verbs.update(re.findall(r'sys\.argv\[1\] == "(--[a-z-]+)"', src))

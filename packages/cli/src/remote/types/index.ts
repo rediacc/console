@@ -48,6 +48,12 @@ export interface TerminalLaunchOptions {
   workingDirectory?: string;
   environmentVariables?: Record<string, string>;
   keepOpen?: boolean;
+  /**
+   * Files the launched terminal deletes itself once its command ends,
+   * whatever the exit code. Honored by the Windows launchers (windows-terminal,
+   * cmd, powershell); the POSIX path hands cleanup over through its own wrapper.
+   */
+  cleanupFiles?: string[];
 }
 
 // Platform Types

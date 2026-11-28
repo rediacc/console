@@ -417,6 +417,7 @@ def docker_tree(tmp: pathlib.Path) -> pathlib.Path:
         "literalExclude": [],
         "entries": [leaf],
         "ignores": [],
+        "lines": {"dockerhub:node": real["lines"]["dockerhub:node"]},
     }
     (root / ".ci" / "config").mkdir(parents=True)
     (root / ".ci" / "config" / "pins.json").write_text(

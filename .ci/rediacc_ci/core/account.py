@@ -6,22 +6,22 @@ This is a pre-cutover port on the same sequencing every other lib in this campai
 --------------------------------------------------------------------------
 WHAT IS HERE AND WHAT IS DELIBERATELY ABSENT
 --------------------------------------------------------------------------
-SEVEN FUNCTIONS ARE PORTED AND SHADOW-DIFFERENTIALLY PROVED, and they are the ones whose whole answer is computation or a file read: `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_banner_row`, `account_totp`, and the decidable half of `account_db`. `shadow_driver.py`'s four scenarios drive these against the live twin.
+SEVEN FUNCTIONS ARE PORTED AND SHADOW-DIFFERENTIALLY PROVED, and they are the ones whose whole answer is computation or a file read: `account_allocate_ports`, `account_wait_port`, `account_rustfs_alive`, `account_generate_crypto_keys`, `account_banner_row`, `account_totp`, and the decidable half of `account_db`. `tests/harness_account.py`'s four scenarios drive these against the port, and test_core_account.py compares the result with the goldens.
 
 THERE IS NO `.env` WRITER HERE ANY MORE. The twin's four (`account_generate_fresh_env`, `account_env_add_if_missing`, `account_ensure_env_keys`, `account_ensure_env`) were deleted from BOTH sides when `private/account/.env` was retired (`agent/plans/PLAN-account-env-to-bws.md`): secrets reach `account_dev` through `bws_env exec`, and the non-secret constants come from the committed `private/account/dev.defaults.env`.
-The ledger rows for the `env` and `fresh-env` scenarios in `.ci/shadow/w7p5b-account.observations.jsonl` are history about functions that no longer exist on either side. `mint_dev_keys()` below is new rather than ported: it has no twin, and its tests prove it directly.
+The ledger rows for the `env` and `fresh-env` scenarios in the ledger (deleted in commit:936280cd35) are history about functions that no longer exist on either side. `mint_dev_keys()` below is new rather than ported: it has no twin, and its tests prove it directly.
 
 THREE MORE ARE PORTED, `account_stop`, `account_rotation` and `account_bws_exec`, but proved by a REAL RUN instead of a shadow differential, because all three genuinely start and stop real infrastructure: `stop()` kills tracked dev pids and tears down real Docker containers, and `rotation()` dispatches to a real TypeScript CLI (`private/account/scripts/rotation/`) that mints and deletes real credentials at AWS IAM and Cloudflare, and pushes them to Bitwarden Secrets Manager (see `private/account/CLAUDE.md`, "Secret Rotation").
 `bws_exec()` re-executes `./run.sh` under `bws_env exec`, which reads the live Bitwarden store; it is reached through `rotation()`, exactly as the twin reaches it.
 An input/output differential compares two ANSWERS; these produce SIDE EFFECTS, so `test_core_account.py` instead drives each one for real -- `stop()` against a real tracked process and a real (sandboxed, compose-file-less) Docker daemon, confirmed by process and port checks rather than by exit code alone; `rotation()` only through the manifest-only, credential-free subcommands it shares with the twin (`list`, `status`, `history`).
-`rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live production credentials and are never invoked, by anything, from this port or its tests. None of the three joins `PORTED_FUNCTIONS` in `shadow_driver.py`'s sense: that module's own docstring still lists them under "WHAT IS NEVER DRIVEN HERE", and that is correct -- the differential technique genuinely does not apply to them.
+`rotate`/`check`/`deactivate`/`delete`/`sweep`/`init` need live production credentials and are never invoked, by anything, from this port or its tests. None of the three joins `PORTED_FUNCTIONS` in `tests/harness_account.py`'s sense: that module's own docstring still lists them under "WHAT IS NEVER DRIVEN HERE", and that is correct -- the differential technique genuinely does not apply to them.
 `test_core_account.py`'s `PORTED_FUNCTIONS`/`NOT_PORTED_FUNCTIONS` tuple is the one that moved.
 
-THE OTHER ELEVEN ARE IN `rediacc_ci.core.account_lifecycle`, not here: `account_dev`, `account_dev_credentials`, `account_stripe_auto`, `account_cleanup`, `account_docker_ghost_clean`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_load_defaults` and `account_state_gateway_port`.
-Each of them starts, stops or talks to real infrastructure (Docker, RustFS, a Vite and an Astro server, a foreground gateway, `stripe listen`, Bitwarden), so they are proved by a STUB-FARM TRANSCRIPT differential instead (`core/account_lifecycle_shadow_driver.py`, pair `w7p5b-account-lifecycle`), which compares the ordered calls each side makes to a directory of scripted programs rather than two runs of a live stack.
+THE OTHER TEN ARE IN `rediacc_ci.core.account_lifecycle`, not here: `account_dev`, `account_dev_credentials`, `account_cleanup`, `account_docker_ghost_clean`, `account_test`, `account_test_e2e`, `account_reset`, `account_seed_demo`, `account_load_defaults` and `account_state_gateway_port`.
+Each of them starts, stops or talks to real infrastructure (Docker, RustFS, a Vite and an Astro server, a foreground gateway, Bitwarden), so they are proved by a STUB-FARM TRANSCRIPT differential instead (`tests/harness_account_lifecycle.py`, pair `w7p5b-account-lifecycle`), which compares the ordered calls each side makes to a directory of scripted programs rather than two runs of a live stack.
 `stop()` below still inlines `account_docker_ghost_clean` rather than calling the lifecycle module's `docker_ghost_clean()`, because `stop()` is real-run verified against its own inlined body and that proof would not transfer. `gateway_port_from_state()` below is `account_totp`'s and `account_stop`'s INLINE pipeline; `account_state_gateway_port`, the named helper, is the lifecycle module's.
 
-`account_db`'s LAUNCH is grouped with the eleven even though the function as a whole is ported. Everything up to the launch, meaning argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution, is decided in `db_plan()` and is what the differential drives.
+`account_db`'s LAUNCH is grouped with the ten even though the function as a whole is ported. Everything up to the launch, meaning argument parsing, the database path, the devbox-derived preferred port, the free-port search, the two refusals and the `sqlite_web` resolution, is decided in `db_plan()` and is what the differential drives.
 `db_launch()` below execs a server and is NOT differentially proved; it is written out so the port is complete, and it is named here so nobody reads its green as evidence.
 
 --------------------------------------------------------------------------
@@ -274,7 +274,7 @@ def curl_body(argv: list[str]) -> str:
 
     MEASURED 2026-09-23 WITH CURL OFF PATH, because the port raised where the twin degraded. The twin's `|| true` swallows bash's own `curl: command not found`, leaves the capture EMPTY, and `account_rustfs_alive` returns 1; the port called `subprocess.run` and died with `FileNotFoundError`, which is a traceback in place of a verdict.
 
-    THE VERDICT IS EQUIVALENT AND THE TEXT IS NOT, which is the same trade `rediacc_ci/dev/shadow_driver.py` records for its `no-npm` scenario. Bash reports a missing command as `<file>: line <n>: curl: command not found`, and a line number inside `account.sh` is neither reproducible by a port nor worth reproducing, so this is silent and only the empty body is preserved.
+    THE VERDICT IS EQUIVALENT AND THE TEXT IS NOT, which is the same trade the dev verb's recording makes for its `no-npm` scenario (`.ci/rediacc_ci/tests/test_dev_www.py`). Bash reports a missing command as `<file>: line <n>: curl: command not found`, and a line number inside `account.sh` is neither reproducible by a port nor worth reproducing, so this is silent and only the empty body is preserved.
 
     STDOUT IS THE WHOLE ANSWER, and the exit status is deliberately discarded. That is what `$(curl ... || true)` does at both call sites: `-s` with `-w '%{http_code}'` prints `000` on a refused connection, and `-sf` prints NOTHING on any failure, so an empty capture already means failure in both shapes and a second test on the return code would be a rule the twin does not have.
     """
@@ -733,16 +733,24 @@ def ci_dir(env: dict[str, str] | None = None) -> str:
     return str(pathlib.Path(__file__).resolve().parents[2])
 
 
-def bws_exec(profile: str, run_sh_args: list[str], env: dict[str, str] | None = None) -> None:
-    """`account_bws_exec`, `.ci/lib/account.sh:48-56`. Returns only when PROFILE is already hydrated.
+def bws_exec(
+    profile: str,
+    run_sh_args: list[str],
+    env: dict[str, str] | None = None,
+    also: tuple[str, ...] = (),
+) -> None:
+    """`account_bws_exec`, `.ci/lib/account.sh:48-56`. Returns only when PROFILE and every `also` profile are already hydrated.
 
     Otherwise REPLACES this process with `python3 -m rediacc_ci.core.bws_env exec --profile PROFILE -- $CONSOLE_ROOT_DIR/run.sh RUN_SH_ARGS...`, exactly the twin's `exec`, so the profile's secrets reach the re-run through its ENVIRONMENT and never through a file.
     The re-run finds PROFILE in `REDIACC_BWS_PROFILES` and carries on; an absent token or store entry is `bws_env`'s refusal, with no fallback.
 
+    `also` names further profiles bound by the same exec. `rotation` takes `rotation-reads`, whose names come from the shared store while `rotation` itself reads the separate rotation-admin store with its own token file.
+
     THE RE-RUN IS `./run.sh`, NOT THIS MODULE, because that is what the twin re-executes and the twin is what `run.sh` still dispatches to. Real-run verified through `rotation()`, never differentially: it reads the live store.
     """
     environ = dict(os.environ if env is None else env)
-    if profile in environ.get(BWS_PROFILES_ENV, "").split(","):
+    hydrated = environ.get(BWS_PROFILES_ENV, "").split(",")
+    if all(p in hydrated for p in (profile, *also)):
         return
     existing = environ.get("PYTHONPATH", "")
     environ["PYTHONPATH"] = ci_dir(environ) + (":" + existing if existing else "")
@@ -751,8 +759,7 @@ def bws_exec(profile: str, run_sh_args: list[str], env: dict[str, str] | None = 
         "-m",
         "rediacc_ci.core.bws_env",
         "exec",
-        "--profile",
-        profile,
+        *[arg for p in (profile, *also) for arg in ("--profile", p)],
         "--",
         os.path.join(console_root(environ), "run.sh"),
         *run_sh_args,
@@ -775,7 +782,7 @@ def rotation(argv: list[str], env: dict[str, str] | None = None) -> int:
 
     Returns 1 where the twin's bare `check_node_version` call, or its `cd "$ACCOUNT_DIR" || exit 1`, aborts under errexit. Otherwise the dispatched subprocess's exit code, or 127 -- matching the shell's own "command not found" convention, since the twin does not swallow this one with `|| true` -- if `npx` itself is not on PATH.
     """
-    bws_exec("rotation", ["rotation", *argv], env)
+    bws_exec("rotation", ["rotation", *argv], env, also=("rotation-reads",))
     status = node_version_ok()
     if status != 0:
         return status

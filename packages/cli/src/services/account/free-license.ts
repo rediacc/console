@@ -237,7 +237,7 @@ export async function issueFreeRepoLicense(
   const termsAcceptance = await ensureTermsAcceptance();
   return withSharedOrPooledSftp(
     sharedSftp,
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     async (sftp) => {
       const [machineId, clientMachineId] = await Promise.all([
         readRemoteMachineId(sftp, remoteRenetPath),

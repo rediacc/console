@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ja
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### 認証
@@ -79,6 +79,8 @@ rdc subscription login
 - Passkeyベースの鍵導出（WebAuthn + PRF）
 - リクエストごとのローテーション付きローテーショントークン
 
+[セキュリティモデル](/ja/docs/security-model)のページでは、誰が何を見られるか、キーのスコープがどう決まるか、何を復旧できるかを説明しています。
+
 ### セッションセキュリティ
 
 | トークンタイプ | 有効期間 | ストレージ | 更新 |
@@ -117,6 +119,6 @@ rdc update --status            # Show current channel
 
 ### AIエージェント向け CLI セキュリティポスチャー
 
-`rdc` を呼び出すコーディングエージェントは現実の脅威面です。そのため、私たちは別個のプリンシパルとして扱います。すべての `rdc` 呼び出しは起動時に、環境シグナル（CLAUDECODE、GEMINI_CLI、COPILOT_CLI、CURSOR_TRACE_ID、REDIACC_AGENT）とLinux `/proc` による祖先ウォークに基づいて、**ヒューマン**または**エージェント**に分類されます。検出はベストエフォートです。意図的なラッパーは環境変数を偽装できます。だから祖先ウォークが重要なのです。エージェントは縮小された権限セットを受け取ります。機密設定の変更にはナレッジゲート（`--current <old>`）が必要で、インタラクティブエディターは祖先確認済みの `REDIACC_ALLOW_CONFIG_EDIT` オーバーライドなしでは拒否され、表示コマンドの `--reveal` はブロックされます。すべての決定（許可、拒否、`--reveal` の付与）は `~/.config/rediacc/audit.log.jsonl` にハッシュチェーンされた JSONL 行として書き込まれます。`rdc config audit verify` でチェーンの整合性を確認してください。
+`rdc` を呼び出すコーディングエージェントは現実の脅威面です。そのため、私たちは別個のプリンシパルとして扱います。すべての `rdc` 呼び出しは起動時に、環境シグナル（CLAUDECODE、GEMINI_CLI、COPILOT_CLI、CURSOR_TRACE_ID、REDIACC_AGENT）とLinux `/proc` による祖先ウォークに基づいて、**ヒューマン**または**エージェント**に分類されます。検出はベストエフォートです。意図的なラッパーは環境変数を偽装できます。だから祖先ウォークが重要なのです。エージェントは縮小された権限セットを受け取ります。機密設定の変更にはナレッジゲート（`--current <old>`）が必要で、`rdc config edit`（インタラクティブ、`--apply`、`--reveal`）はオーバーライドなしで拒否され、表示コマンドの `--reveal` はブロックされます。エージェントは、人間のオプトインとポリシー上限の両方が許可する場所でのみ動作します（[AIエージェントの安全性](/ja/docs/ai-agents-safety)）。すべての決定（許可、拒否、`--reveal` の付与）は `~/.config/rediacc/audit.log.jsonl` にハッシュチェーンされた JSONL 行として書き込まれます。`rdc config audit verify` でチェーンの整合性を確認してください。
 
 エージェントができること・できないことの完全なマトリクス、ナレッジゲートの実例、スコープオーバーライドの仕組みについては、[AIエージェントの安全性とガードレール](/ja/docs/ai-agents-safety)を参照してください。

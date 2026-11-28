@@ -58,7 +58,7 @@ vi.mock('../../services/executor/local-executor.js', () => ({
 }));
 
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: { DATASTORE_ATTACH: 'datastore attach', DATASTORE_DETACH: 'datastore detach' },
 }));
 

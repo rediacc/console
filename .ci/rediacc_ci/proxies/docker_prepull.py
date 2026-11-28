@@ -11,7 +11,7 @@ THE FAILURE PATH IS DELIBERATELY NOT DRIVEN, same reason as the bash twin: an un
 
 CANNOT-RUN, not a verdict: no docker binary, no reachable daemon, or no reachable registry all exit 77.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-docker-prepull.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -118,4 +118,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("docker_prepull.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

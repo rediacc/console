@@ -38,7 +38,12 @@ def clock() -> str:
     return NOW
 
 
-@pytest.fixture(scope="module")
+# ONE TEMPLATE PER SESSION, ON ONE WORKER (PLAN-ciquick-cpu.md W18). Applying every migration in journal order is the expensive part of this file, and under xdist each worker that drew one of its tests built its own copy: measured 2026-11-20 at 23-25 s on each of eight workers, against 1.5 s for a test that copies the template. The group sends every test here to one
+# worker and the session scope builds the template there once; each test still copies it into its own `tmp_path`, so no test sees another's writes.
+XDIST_GROUP = "d1-shard-move"
+
+
+@pytest.fixture(scope="session")
 def template(tmp_path_factory: pytest.TempPathFactory) -> pathlib.Path:
     path = tmp_path_factory.mktemp("d1") / "template.db"
     conn = sqlite3.connect(path)
@@ -97,6 +102,7 @@ def seed(db: mod.SqliteExecutor) -> None:
     add("event_log", id="ev-org", subscription_id=None, org_id=O1)
     add("event_log", id="ev-org2", subscription_id=None, org_id=O2)
     add("config_stores", id=STORE, org_id=O1)
+    add("audit_compaction_state", org_id=O1)
     add("config_entries", id=ENTRY, config_store_id=STORE, team_id=T1, hmac="h")
     add("config_versions", id="ver-1", config_entry_id=ENTRY, created_by_user_id=U2)
     add("config_key_slots", id="slot-1", config_store_id=STORE, user_id=U2)
@@ -141,8 +147,10 @@ def run(shards, subs, target=1, **kw) -> tuple[int, str, str]:
 
 def test_tenant_set_follows_the_router_and_every_table_scopes(template: pathlib.Path) -> None:
     tenant = mod.load_tenant_tables()
-    assert len(tenant) == 29
-    assert len(set(tenant)) == 29
+    # The registry is the account server's to grow; what this tool pins is that the set is non-trivial, free of repeats, and holds the tables the rules below name.
+    assert len(tenant) >= 29
+    assert len(set(tenant)) == len(tenant)
+    assert {"config_stores", "audit_compaction_state", "config_entries"} <= set(tenant)
     db = mod.SqliteExecutor(template)
     schema = mod.read_schema(db)
     scope = mod.Scope([S1], [O1], {STORE}, {ENTRY})
@@ -184,6 +192,54 @@ def test_literals_round_trip(template: pathlib.Path) -> None:
     db.close()
 
 
+def test_an_org_keyed_table_is_scoped_by_org_id_and_is_empty_without_an_org() -> None:
+    """`audit_compaction_state` has no subscription column: it follows the moved orgs, and a move of no org selects nothing from it. A table with none of the known columns still refuses."""
+    scope = mod.Scope([S1], [O1])
+    where = mod.scope_where("audit_compaction_state", ["org_id", "last_day"], scope)
+    assert where is not None
+    assert where.startswith("org_id IN")
+    assert "org-1" in where
+    assert mod.scope_where("audit_compaction_state", ["org_id"], mod.Scope([S1], [])) is None
+    with pytest.raises(mod.MoveError):
+        mod.scope_where("unknown_table", ["id", "name"], scope)
+
+
+def test_schema_modules_follow_the_db_index_imports(tmp_path: pathlib.Path) -> None:
+    """The schema modules are read from db/index.ts, so a module the router does not name (forensics-detect-schema.ts) is still mapped, and an index with none refuses."""
+    real = mod.schema_modules(ROOT / "private" / "account" / "src" / "db")
+    assert "forensics-detect-schema.ts" in real
+    (tmp_path / "index.ts").write_text("import * as x from './brand-new-schema.js';\n")
+    assert mod.schema_modules(tmp_path) == ["brand-new-schema.ts"]
+    (tmp_path / "index.ts").write_text("export const nothing = 1;\n")
+    with pytest.raises(mod.MoveError):
+        mod.schema_modules(tmp_path)
+
+
+@pytest.mark.parametrize(
+    "table",
+    [
+        "forensics_incidents",
+        "forensics_eviction_holds",
+        "forensics_support_grants",
+        "forensics_investigations",
+    ],
+)
+def test_forensics_tables_move_with_the_org(table: str, template: pathlib.Path) -> None:
+    """The four forensics tables carry only `org_id`: each is selected by it, empty without an org, and registered as tenant data."""
+    assert table in mod.ORG_KEYED
+    assert table in mod.load_tenant_tables()
+    db = mod.SqliteExecutor(template)
+    columns = mod.read_schema(db).columns[table]
+    db.close()
+    where = mod.scope_where(table, columns, mod.Scope([S1], [O1]))
+    assert where is not None
+    assert where.startswith("org_id IN")
+    assert mod.scope_where(table, columns, mod.Scope([S1], [])) is None
+    # Control: a table outside ORG_KEYED with the same shape still refuses.
+    with pytest.raises(mod.MoveError):
+        mod.scope_where("not_registered", ["id", "org_id"], mod.Scope([S1], [O1]))
+
+
 # --- the move ---------------------------------------------------------------------------------------
 
 
@@ -213,7 +269,8 @@ def test_move_copies_verifies_flips_and_deletes(shards) -> None:
     assert [(t.table, t.count, t.sha256) for t in after] == [
         (t.table, t.count, t.sha256) for t in before
     ]
-    assert sum(t.count for t in after) >= 17
+    assert sum(t.count for t in after) >= 18
+    assert {t.table: t.count for t in after}["audit_compaction_state"] == 1
     assert counts(directory, (S1, S2)) == {}
     assert counts(directory, (S3,)) == bystander
     assert counts(target, (S3,)) == {}

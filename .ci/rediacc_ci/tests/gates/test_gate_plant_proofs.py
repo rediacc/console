@@ -15,6 +15,8 @@ import shutil
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.quality import plant_proofs as pp
 from rediacc_ci.tests.gates import harness
@@ -77,8 +79,17 @@ def _mirror(tmp):
     fixture = root / BASH_SUBJECT
     fixture.parent.mkdir(parents=True, exist_ok=True)
     fixture.write_text(BASH_FIXTURE, encoding="utf-8")
-    (root / "package.json").write_text(
-        json.dumps({"scripts": {pp.PYTHON_DELEGATE_ID: pp.PYTHON_DELEGATE}}),
+    registry = root / pp.REGISTRY_REL
+    registry.parent.mkdir(parents=True, exist_ok=True)
+    registry.write_text(
+        json.dumps(
+            [
+                {
+                    "id": pp.PYTHON_DELEGATE_ID,
+                    "run": "PYTHONPATH=.ci python3 -m " + pp.PYTHON_DELEGATE_MODULE,
+                }
+            ]
+        ),
         encoding="utf-8",
     )
     for args in (["init", "-q"], ["add", "-A", "-f"]):
@@ -247,6 +258,33 @@ def test_the_python_delegate_going_missing_is_a_refusal(gate):
         gate.assert_contains(result.combined, "delegated", "and says the arm is delegated")
         gate.assert_contains(result.combined, "unscanned", "and that Python would go unchecked")
     gate.log_pass("the delegation is asserted, not documented, so it cannot rot quietly")
+
+
+def _registry_root(tmp_path, text):
+    (tmp_path / pp.PYTHON_DELEGATE).parent.mkdir(parents=True)
+    (tmp_path / pp.PYTHON_DELEGATE).write_text("", encoding="utf-8")
+    (tmp_path / pp.REGISTRY_REL).parent.mkdir(parents=True)
+    (tmp_path / pp.REGISTRY_REL).write_text(text, encoding="utf-8")
+    return tmp_path
+
+
+def test_a_corrupt_registry_is_a_refusal_not_an_unregistered_delegate(tmp_path):
+    """Review 774e902a.1: unreadable gates.lock.json refuses, it is never read as 'not registered'."""
+    root = _registry_root(tmp_path, "{not json")
+    with pytest.raises(pp.RefusalError, match="unreadable"):
+        pp.python_delegate_state(root)
+
+
+def test_registration_needs_the_exact_delegate_module_not_a_longer_name(tmp_path):
+    """Review 774e902a.2: a run naming python_control_plants_legacy does not register the delegate."""
+
+    def entry(run):
+        return json.dumps([{"id": pp.PYTHON_DELEGATE_ID, "run": run}])
+
+    legacy = "PYTHONPATH=.ci python3 -m %s_legacy" % pp.PYTHON_DELEGATE_MODULE
+    exact = "PYTHONPATH=.ci python3 -m %s" % pp.PYTHON_DELEGATE_MODULE
+    assert pp.python_delegate_state(_registry_root(tmp_path / "a", entry(legacy))) == (True, False)
+    assert pp.python_delegate_state(_registry_root(tmp_path / "b", entry(exact))) == (True, True)
 
 
 def test_the_selftest_runs_and_is_not_trivially_small(gate):

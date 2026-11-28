@@ -3,7 +3,7 @@ r"""`rediacc_ci.quality.audit_coverage` against the shell it replaces.
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The decisions in this gate are made by two greps whose semantics differ (`auditService\.recordOperation` is a BRE with an escaped dot, `'cli\.[a-z._]+[a-z_]'` is an ERE), by a `case` whose arm ORDER decides the mapping, and by a five-stage pipeline with a stage in it that does nothing. A table of expected strings would be a
 table of what the PORT does, asserted against itself.
 
-The committed ledger `.ci/shadow/w7p2-audit-coverage.observations.jsonl` compares the WHOLE gate over five distinct trees. It cannot isolate WHICH stage of the phase-5 pipeline dropped a line, and it cannot show that the `grep -v 'audit.ts'` stage is inert, because on any tree the twin and the port are inert together. This file takes those seams one at a time.
+The committed ledger the ledger (deleted in commit:936280cd35) compares the WHOLE gate over five distinct trees. It cannot isolate WHICH stage of the phase-5 pipeline dropped a line, and it cannot show that the `grep -v 'audit.ts'` stage is inert, because on any tree the twin and the port are inert together. This file takes those seams one at a time.
 
 THE FRAGMENTS BELOW ARE LIFTED FROM `.ci/scripts/quality/check-audit-coverage.sh` lines 161-194 with the variables substituted and nothing else changed.
 """

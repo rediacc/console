@@ -13,7 +13,7 @@ THE AUDIO PREFIX IS NOT A CDN ASSET. `tutorials/audio/` is a build-time TTS cach
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 IN A TEST
 -----------------------------------------------------------------------------
-`aws` is the one external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py`) puts a RECORDING FAKE `aws` on a scratch PATH that logs its exact argv and answers from the environment. `.ci/shadow/w7p5a-status.json` records this path as blocked only
+`aws` is the one external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_sync_media_to_r2.py`) puts a RECORDING FAKE `aws` on a scratch PATH that logs its exact argv and answers from the environment. the ledger (deleted in commit:936280cd35) records this path as blocked only
 for the "one real run" clause and says in as many words that the mocked parity
 ledger is a SEPARATE, achievable piece of work. This is that piece.
 
@@ -77,7 +77,7 @@ FACTORED OUT
 The two BASH twins share nothing but `common.sh`. There is no media-sync bash library, each file carries its own copy of the parse loop, its own copy of the credential block and its own `SYNC_ARGS`, and the copies are NOT identical: this one adds `--cache-control` and `--delete`, the other adds `mkdir -p`, and the `--dry-run` sentences differ word for word. A shared Python helper
 would have no bash counterpart, and an edit to one twin would silently change the other's port. Collapsing the pair belongs to the cutover box that deletes both bash files. Same ruling, and the same reason, as `promote_r2_to_stable.py` gives for its hotfix sibling.
 
-K=5 LEDGER: `.ci/shadow/w7p6-sync-media-to-r2.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

@@ -25,6 +25,7 @@ import urllib.error
 from typing import Any
 
 from rediacc_ci.core import https
+from rediacc_ci.well_known import ACCOUNT_EGRESS_HOST
 
 SELF = "rediacc_ci.spikes.do_policy_spike"
 PROFILE = "deploy-proxy-bench-eu"
@@ -85,6 +86,12 @@ PLANTED_MAX_INSTANCES = WRANGLER_TOML.format(
     'scheduling_policy = "durable_object"\nmax_instances = 25',
 )
 
+
+def _with_egress(source: str) -> str:
+    """`source` with the account egress URL the proxy intercepts written in place of its placeholder."""
+    return source.replace("__ACCOUNT_EGRESS_URL__", "http://" + ACCOUNT_EGRESS_HOST)
+
+
 DOCKERFILE = """FROM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205
 COPY server.mjs /server.mjs
 EXPOSE 8080
@@ -101,7 +108,7 @@ async function callEgress(n) {
   const out = [];
   for (let i = 0; i < n; i++) {
     try {
-      const r = await fetch('http://account.internal/echo?i=' + i, { signal: AbortSignal.timeout(10000) });
+      const r = await fetch('__ACCOUNT_EGRESS_URL__/echo?i=' + i, { signal: AbortSignal.timeout(10000) });
       out.push({ status: r.status, body: await r.json() });
     } catch (e) {
       out.push({ error: String(e && e.cause ? e.cause : e) });
@@ -200,7 +207,7 @@ export class SpikeDO extends DurableObject {
         const t0 = Date.now();
         if (reg === 'before') await this.register(org, Number(p.get('rot') || '0'));
         const env = image === 'executor'
-          ? { REDIACC_TOKEN: 'placeholder', REDIACC_ACCOUNT_SERVER: 'http://account.internal', REDIACC_REGION: 'eu', REDIACC_EXECUTOR_ORG_ID: org }
+          ? { REDIACC_TOKEN: 'placeholder', REDIACC_ACCOUNT_SERVER: '__ACCOUNT_EGRESS_URL__', REDIACC_REGION: 'eu', REDIACC_EXECUTOR_ORG_ID: org }
           : { SPIKE_ORG: org };
         try {
           c.start({ image: c.images[image], instance: SIZES[size], enableInternet: p.get('internet') !== '0', env });
@@ -265,9 +272,11 @@ def write_scratch(
         ),
         encoding="utf-8",
     )
-    (scratch / "src" / "index.mjs").write_text(WORKER_SOURCE, encoding="utf-8")
+    (scratch / "src" / "index.mjs").write_text(_with_egress(WORKER_SOURCE), encoding="utf-8")
     (scratch / "container" / "Dockerfile").write_text(DOCKERFILE, encoding="utf-8")
-    (scratch / "container" / "server.mjs").write_text(CONTAINER_SERVER, encoding="utf-8")
+    (scratch / "container" / "server.mjs").write_text(
+        _with_egress(CONTAINER_SERVER), encoding="utf-8"
+    )
 
 
 def wrangler(

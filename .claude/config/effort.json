@@ -1,7 +1,7 @@
 {
   "$why": [
-    "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high|ultra`, each a superset of the one before; this file says what each level turns on.",
-    "`bundles` gives each level its switch values. Settings resolve as effort, then this bundle, then an explicit key in the QUEUE.md fence, which wins (`wl_planqueue.settings`).",
+    "The Stop hook's one effort dial (agent/plans/PLAN-stop-hook-effort.md). agent/plans/QUEUE.md `## Settings` names a level, `effort: quiet|low|smart|high`, each a superset of the one before; this file says what each level turns on. `effort` is the only setting (agent/plans/PLAN-simple-two-tree-loop.md B5).",
+    "`bundles` gives each level its switch values: cadence, judge, agent_hint and agent_pushback. They resolve from the level alone; the QUEUE.md fence takes no override line (`wl_planqueue.settings`). commit_remind_min (15, wl_checks.COMMIT_REMIND_MIN) is fixed in code, and there is no writer limit (agent/plans/PLAN-unlimited-writers.md).",
     "`checks` gives every Stop-hook check key exactly once. A blocking key (a `vadd` in wl_checks.py) carries `block` and `advise`: it blocks at `block` and above, rides the advisory queue from `advise` up to the level below `block`, and is off below `advise`. An advisory-only key (an `outq_add`) carries `advise` alone. A FLOOR key is the string `floor`: it blocks at every level, and the set is the literal in .claude/hooks/stop/wl_floor.py, not this file.",
     "Kept honest by the effort-table rule of `npm run check:ci-plan-record`: every key the hook can produce appears once, no unknown key, every FLOOR key is `floor` and nothing else is, and `block` is never below `advise`.",
     "`tuned` stamps every key the effort tuner changed (agent/plans/PLAN-stop-hook-effort-tuning.md, .claude/hooks/stop/wl_effort_tune.py): `direction`, the `from` entry, `tuned_at`, `review_after` and the outcome rows it rests on. Promotions are applied by the tuner with a report line; demotions only through the operator's answer to one batched /ask. A FLOOR key never appears here, and the effort-table rule refuses one that does."
@@ -10,70 +10,28 @@
     "quiet",
     "low",
     "smart",
-    "high",
-    "ultra"
+    "high"
   ],
   "bundles": {
     "quiet": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "off",
       "agent_hint": false,
       "agent_pushback": false
     },
     "low": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "off",
       "agent_hint": false,
       "agent_pushback": false
     },
     "smart": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "core",
       "agent_hint": true,
       "agent_pushback": true
     },
     "high": {
-      "turbo": false,
-      "turbo_push": "batch-end",
-      "batch_size": 1,
-      "plan_concurrency": 1,
-      "writer_cap": 4,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
-      "cadence": true,
-      "judge": "full",
-      "agent_hint": true,
-      "agent_pushback": true
-    },
-    "ultra": {
-      "turbo": true,
-      "turbo_push": "batch-end",
-      "batch_size": 3,
-      "plan_concurrency": 5,
-      "writer_cap": 15,
-      "commit_remind_min": 15,
-      "backup_push_h": 4,
       "cadence": true,
       "judge": "full",
       "agent_hint": true,
@@ -90,10 +48,12 @@
     "ci-red": "floor",
     "ci-unreadable": "floor",
     "roster-dead": "floor",
-    "roster-cap": "floor",
     "unread-reports": "floor",
     "wake-timer": "floor",
-    "landing-stack": "floor",
+    "landing-stack": {
+      "block": "low",
+      "advise": "quiet"
+    },
     "landing-behind": {
       "advise": "low"
     },
@@ -104,6 +64,14 @@
     "wl-stale": {
       "block": "smart",
       "advise": "low"
+    },
+    "lessons-weekly": {
+      "block": "smart",
+      "advise": "low"
+    },
+    "writers-now-due": {
+      "block": "high",
+      "advise": "smart"
     },
     "plan-unimplemented": {
       "block": "low",
@@ -125,10 +93,6 @@
       "block": "low",
       "advise": "low"
     },
-    "turbo-next": {
-      "block": "low",
-      "advise": "low"
-    },
     "idle-capacity": {
       "block": "smart",
       "advise": "low"
@@ -137,11 +101,11 @@
       "block": "low",
       "advise": "low"
     },
-    "focus-pr-items": {
-      "block": "low",
+    "defer-expired": {
+      "block": "smart",
       "advise": "low"
     },
-    "defer-expired": {
+    "armed-action-due": {
       "block": "smart",
       "advise": "low"
     },
@@ -273,6 +237,14 @@
       "block": "smart",
       "advise": "low"
     },
+    "resume-dead-agent": {
+      "block": "low",
+      "advise": "quiet"
+    },
+    "ready-ticks": {
+      "block": "high",
+      "advise": "smart"
+    },
     "roster-unleased": {
       "block": "high",
       "advise": "low"
@@ -283,6 +255,13 @@
     },
     "roster-concurrency": {
       "block": "smart",
+      "advise": "low"
+    },
+    "stuck-shell": {
+      "block": "low",
+      "advise": "quiet"
+    },
+    "stuck-shell-live": {
       "advise": "low"
     },
     "plan-adopted": {
@@ -314,10 +293,6 @@
       "advise": "low"
     },
     "no-remaining": {
-      "block": "smart",
-      "advise": "smart"
-    },
-    "out-of-sync": {
       "block": "smart",
       "advise": "smart"
     },
@@ -373,6 +348,9 @@
       "block": "smart",
       "advise": "smart"
     },
+    "bg-live-work": {
+      "advise": "low"
+    },
     "ci-report": {
       "advise": "low"
     },
@@ -383,12 +361,6 @@
       "advise": "low"
     },
     "ci-hold": {
-      "advise": "low"
-    },
-    "focus-ended": {
-      "advise": "low"
-    },
-    "focus-pr-unreadable": {
       "advise": "low"
     },
     "prscope-broken": {
@@ -403,7 +375,10 @@
     "commit-remind": {
       "advise": "low"
     },
-    "backup-push": {
+    "landing-release-unreadable": {
+      "advise": "low"
+    },
+    "check-read-failed": {
       "advise": "low"
     },
     "backup-lag": {
@@ -466,6 +441,9 @@
     "judge-contentless": {
       "advise": "smart"
     },
+    "judge-status-demand": {
+      "advise": "smart"
+    },
     "scheduled-green": {
       "advise": "smart"
     },
@@ -475,11 +453,20 @@
     "scheduled-red-peer": {
       "advise": "smart"
     },
+    "scheduled-stale": {
+      "advise": "low"
+    },
+    "scheduled-stale-bug": {
+      "advise": "smart"
+    },
     "ops-health-peer": {
       "advise": "smart"
     },
     "ops-health-unreadable": {
       "advise": "smart"
+    },
+    "host-temp": {
+      "advise": "quiet"
     },
     "scheduled-unreadable": {
       "advise": "smart"
@@ -535,9 +522,6 @@
     "hint-corpus-err": {
       "advise": "high"
     },
-    "hint-proposals": {
-      "advise": "high"
-    },
     "resprofile": {
       "advise": "high"
     },
@@ -566,6 +550,20 @@
     "worktree-unlanded": {
       "block": "low",
       "advise": "low"
+    },
+    "handover-open": {
+      "block": "low",
+      "advise": "low"
+    },
+    "handover-land": {
+      "block": "low",
+      "advise": "low"
+    },
+    "handover-lesson": {
+      "advise": "low"
+    },
+    "handover-bug": {
+      "advise": "smart"
     }
   },
   "tuned": {
@@ -616,16 +614,6 @@
       "tuned_at": "2026-11-06T14:23:19Z",
       "review_after": "2026-11-20T14:23:19Z",
       "evidence": "eo-6064c474, eo-63c5b57a, eo-905d7062, eo-3402a702, eo-76ecab46, eo-71073147, eo-46ff6676, eo-49b083b7, eo-d570962c, eo-bc24ae51, eo-030c1558, eo-c15194bf"
-    },
-    "out-of-sync": {
-      "direction": "promote",
-      "from": {
-        "block": "high",
-        "advise": "smart"
-      },
-      "tuned_at": "2026-11-06T14:23:19Z",
-      "review_after": "2026-11-20T14:23:19Z",
-      "evidence": "eo-7af458c7, eo-7c629d3e, eo-1279e2e7, eo-4910ad27, eo-6954f7ef, eo-9ef59881, eo-5eddde17, eo-d5189bfa, eo-e63ed506, eo-51f0eaa8, eo-9bfe5c49, eo-cee58da0"
     },
     "reg-capped": {
       "direction": "promote",

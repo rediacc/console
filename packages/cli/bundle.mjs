@@ -1,3 +1,4 @@
+import { writeFileSync } from 'node:fs';
 import * as esbuild from 'esbuild';
 
 /** Plugin to exclude native .node bindings from the bundle.
@@ -87,10 +88,14 @@ const result = await esbuild.build({
   // .py files are embedded as TEXT, not compiled. The VS Code bootstrap runs a real Python program on the remote host; keeping it in a .py file instead of a template literal is what lets ruff lint and format it, and what stopped it being a place values could be interpolated into as code.
   loader: { '.py': 'text' },
   logLevel: 'silent',
+  // The metafile lists every input the bundle contains; the third-party notice generator reads it so the npm report is exactly what ships.
+  metafile: true,
   define: {
     __CLI_VERSION__: JSON.stringify(process.env.CLI_VERSION || '0.0.0-dev'),
   },
 });
+
+writeFileSync('dist/cli-bundle.meta.json', JSON.stringify(result.metafile));
 
 if (result.warnings.length > 0) {
   const formattedWarnings = await esbuild.formatMessages(result.warnings, {

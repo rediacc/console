@@ -296,6 +296,8 @@ def test_masker_tokens_are_per_label_and_public_names_pass():
         "signer-bench-us",
         "pr-7",
         "media",
+        "pv-able-baker-charlie",
+        "pv-able-baker-charlie-signer",
     ):
         assert m.mask(public) == public
     assert m.masked == 2

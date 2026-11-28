@@ -16,24 +16,25 @@
  */
 
 import { z } from 'zod';
-import { parseDurationSeconds, rpoProblem } from '../backup/duration.js';
+import { AiConfigSchema } from '../ai/profile.js';
 import { ValidationError } from '../errors/index.js';
 import { PolicyDocumentSchema } from '../policy/schema.js';
 import { AccessSchema } from './access.js';
+import { BackupDestinationSchema, BackupStrategyConfigSchema } from './backup-schema.js';
 import { ClusterConfigSchema, ClusterKvmSchema, ClusterPoolSchema } from './cluster-schema.js';
+import { PreviewOverlaySchema } from './preview-schema.js';
 import {
   absolutePath,
   datastoreRef,
   domain,
   ipOrHostname,
   ipVersion,
-  isValidCron,
   port,
   resourceName,
   TagName,
-  utf8ByteLength,
   uuid,
 } from './primitives.js';
+import { SecretEntrySchema, SecretsRecordSchema } from './secrets-schema.js';
 import type { AcmeCertCache, RdcState, ReflogEntry, RepoRuntimeState } from './state-schema.js';
 import { StateSchema } from './state-schema.js';
 
@@ -42,12 +43,17 @@ import { StateSchema } from './state-schema.js';
 // =============================================================================
 
 /**
- * A single AES-GCM ciphertext. `data` is the base64 of salt+iv+ciphertext+tag
- * as produced by `nodeCryptoProvider.encrypt` (adapters/crypto.ts). v2 stored a
- * single compound blob under the `/resources` pointer with a broken
- * `nonce:tag:ciphertext` split; v3 stores one entry per concrete leaf pointer.
+ * A single AES-GCM ciphertext, one entry per concrete leaf pointer.
+ *
+ * - `v: 2` (PLAN-config-sealed-local.md D2): `data` is base64(iv + ciphertext + tag) under the
+ *   config's field key, with `pointer|keyringId` as additional authenticated data (`keyringId` is empty, so `pointer|`, in a mode without the keyring key such as
+ *   master-password), so a blob moved to another field or sealed under another key fails to open.
+ * - No `v` (legacy): `data` is base64(salt + iv + ciphertext + tag) from
+ *   `nodeCryptoProvider.encrypt`, a per-blob PBKDF2 at the legacy iteration count. Read-only: the
+ *   next write re-seals it as v2.
  */
 const EncryptedBlobSchema = z.object({
+  v: z.literal(2).optional(),
   data: z.string().min(1),
 });
 
@@ -84,61 +90,6 @@ const CloudProviderConfigSchema = z.object({
 // =============================================================================
 // Repository (families of structural tags) + per-repo secrets
 // =============================================================================
-
-// Per-repo secrets. Two delivery modes:
-//   env  → injected as REDIACC_SECRET_<KEY> in the renet shell (compose `${VAR}`).
-// file → tmpfs file at /var/run/rediacc/net-<networkId>/secrets/<KEY> on the target machine, referenced by Docker compose `secrets:` block. Fork isolation: registerFork does NOT copy `secrets`; a fork's map is empty.
-const SECRET_KEY_REGEX = /^[A-Z][A-Z0-9_]*$/;
-
-// Size caps (gate C11, merged with spec 05). The config file is atomically rewritten and remote-pushed WHOLE on every mutation, and each mode materializes as one k8s Secret object per repo namespace (~1 MiB apiserver cap), so anything larger is a file the data plane should carry.
-export const SECRET_ENV_VALUE_MAX_BYTES = 32 * 1024; // 32 KiB per env value
-export const SECRET_FILE_VALUE_MAX_BYTES = 256 * 1024; // 256 KiB per file value
-export const SECRET_AGGREGATE_MAX_BYTES = 512 * 1024; // 512 KiB per repo per mode
-
-export const SecretEntrySchema = z
-  .object({
-    mode: z.enum(['env', 'file']),
-    value: z.string().min(1, 'Secret value cannot be empty'),
-  })
-  .superRefine((entry, ctx) => {
-    const bytes = utf8ByteLength(entry.value);
-    const cap = entry.mode === 'env' ? SECRET_ENV_VALUE_MAX_BYTES : SECRET_FILE_VALUE_MAX_BYTES;
-    if (bytes > cap) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['value'],
-        message: `Secret value is ${bytes} bytes; the ${entry.mode}-mode cap is ${cap} bytes. Carry larger payloads on the data plane, not in config.`,
-      });
-    }
-  });
-
-export const SecretKeySchema = z
-  .string()
-  .min(1)
-  .max(64, 'Secret key must be 64 characters or fewer')
-  .regex(SECRET_KEY_REGEX, 'Secret key must be UPPER_SNAKE_CASE (uppercase letter then [A-Z0-9_])');
-
-const SecretsRecordSchema = z.record(SecretKeySchema, SecretEntrySchema).superRefine((rec, ctx) => {
-  let envTotal = 0;
-  let fileTotal = 0;
-  for (const entry of Object.values(rec)) {
-    const bytes = utf8ByteLength(entry.value);
-    if (entry.mode === 'env') envTotal += bytes;
-    else fileTotal += bytes;
-  }
-  if (envTotal > SECRET_AGGREGATE_MAX_BYTES) {
-    ctx.addIssue({
-      code: 'custom',
-      message: `env-mode secrets total ${envTotal} bytes; the per-repo aggregate cap is ${SECRET_AGGREGATE_MAX_BYTES} bytes.`,
-    });
-  }
-  if (fileTotal > SECRET_AGGREGATE_MAX_BYTES) {
-    ctx.addIssue({
-      code: 'custom',
-      message: `file-mode secrets total ${fileTotal} bytes; the per-repo aggregate cap is ${SECRET_AGGREGATE_MAX_BYTES} bytes.`,
-    });
-  }
-});
 
 /**
  * On-disk repository record — one per structural tag. Runtime status
@@ -253,210 +204,6 @@ const MachineConfigSchema = z.object({
 });
 
 // =============================================================================
-// Backup strategy
-// =============================================================================
-
-// Fields shared by every destination kind.
-const backupDestinationCommon = {
-  name: z.string().min(1, 'Destination name cannot be empty'),
-  enabled: z.boolean().optional(),
-  bandwidthLimit: z.string().optional(),
-};
-
-/** A backup store id: a lowercase slug (`home`, `eu-west`, `office-rustfs`), unique per subscription. */
-export const BACKUP_STORE_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62})$/;
-
-const removedDestinationField = (field: string) =>
-  z.never({
-    error: `A backup destination no longer carries \`${field}\`: bucket credentials live on the account server. Register the store (\`POST /backups/stores\`) and name it with \`target\`.`,
-  });
-
-/**
- * A backup destination: the content-addressed chunk store. `target` names a store
- * registered on the account server (absent = `home`, the store every subscription
- * has), so no bucket credential sits in a config file. The removed `endpoint` and
- * `vaultContent` fields are refused with a message naming the replacement, and so
- * are destinations of the removed `storage` kind (or without a `kind`).
- */
-export const BackupDestinationSchema = z
-  .object({
-    kind: z.literal('hosted-service'),
-    ...backupDestinationCommon,
-    target: z
-      .string()
-      .regex(
-        BACKUP_STORE_ID_PATTERN,
-        'A backup target is a store id: lowercase letters, digits and dashes'
-      )
-      .optional(),
-    /** `upload` (absent) takes a machine snapshot into `target`; `replicate` has the account server copy `from` into `target`, so the machine uploads once. */
-    mode: z.enum(['upload', 'replicate']).optional(),
-    /** The source store of a replicate destination. Required for `replicate`, refused for `upload`. */
-    from: z
-      .string()
-      .regex(
-        BACKUP_STORE_ID_PATTERN,
-        'A replication source is a store id: lowercase letters, digits and dashes'
-      )
-      .optional(),
-    endpoint: removedDestinationField('endpoint').optional(),
-    vaultContent: removedDestinationField('vaultContent').optional(),
-  })
-  .superRefine((dest, ctx) => {
-    if (dest.mode === 'replicate' && dest.from === undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['from'],
-        message: 'A replicate destination needs `from`, the store it copies from',
-      });
-    }
-    if (dest.mode !== 'replicate' && dest.from !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['from'],
-        message: '`from` belongs to a replicate destination; set `mode: replicate` or drop it',
-      });
-    }
-  });
-
-/**
- * GFS-style retention policy for a strategy's manifests.
- *
- * The CLI DECLARES this; the account server ENFORCES it (retentionPolicySweep
- * in private/account/src/services/backup-gc.service.ts, per lineage, on the
- * maintenance cron). Enforcement is server-side because the server holds the
- * only delete credential, and because the machine most likely to eat quota
- * forever is the one that died — a policy that only self-manages while a
- * machine is up is not self-managing.
- *
- * The semantics the server implements, stated exactly (the earlier wording
- * here, "unset = unbounded for that bucket", described no code and read the
- * opposite way round for a single-knob policy):
- * - `keepLast` keeps the N most recent snapshots regardless of time bucket.
- * - Each time knob keeps the most recent snapshot in each of the N most recent
- *   buckets that HAVE one — `keepDaily: 7` is "the last 7 days with a backup",
- *   not "the last 7 calendar days".
- * - Once ANY knob is set, an unset knob contributes nothing (restic/borg).
- * - A policy with EVERY knob unset declares no bound and keeps everything,
- *   which is what keeps `retention: {}` distinguishable from omitting
- *   `retention` entirely (the latter pushes no policy at all).
- * - The newest snapshot of a lineage is ALWAYS kept, whatever the policy says.
- *   A retention sweep must never empty a lineage.
- */
-const RetentionPolicySchema = z.object({
-  keepLast: z.number().int().min(0).optional(),
-  keepHourly: z.number().int().min(0).optional(),
-  keepDaily: z.number().int().min(0).optional(),
-  keepWeekly: z.number().int().min(0).optional(),
-  keepMonthly: z.number().int().min(0).optional(),
-  keepYearly: z.number().int().min(0).optional(),
-  /**
-   * Keep every snapshot within this many seconds of the stream's NEWEST snapshot (not of now, so a
-   * stream whose backups stop deletes nothing). Whole seconds and positive, like the wire field of
-   * the same name; the CLI's `within=24h` parses to it. Adds to what the other knobs keep.
-   */
-  keepWithinSeconds: z.number().int().positive().optional(),
-});
-
-const CronSchema = z.string().refine(isValidCron, 'Must be a valid 5-field cron expression');
-
-/**
- * Verification of a strategy's snapshots, run on the machine by the units `backup schedule` renders.
- *
- * - `spotAfterRun` (default true): the snapshot service ends with `backup verify --level spot`.
- * - `deepSchedule`: cron of the full-verify timer, which rotates one repository per run. Unset means a daily run at a
- *   time derived from the unit name, so a fleet does not verify in the same minute.
- * - `off`: renders neither the spot nor the timer. The failure report units stay, since they only speak on failure.
- *
- * Strict, because a misspelled key stripped silently would leave verification running when the operator turned it off.
- */
-const BackupVerifySchema = z
-  .object({
-    off: z.boolean().optional(),
-    spotAfterRun: z.boolean().optional(),
-    deepSchedule: z
-      .string()
-      .refine(isValidCron, 'Must be a valid 5-field cron expression')
-      .optional(),
-  })
-  .strict();
-
-const DurationSchema = z
-  .string()
-  .refine(
-    (v) => parseDurationSeconds(v) !== undefined,
-    'Must be a duration such as 30s, 15m or 1h'
-  );
-
-/**
- * The declared protection target: how far behind a repository may fall. At least 5 minutes (decision
- * O6), and a length the timer can repeat evenly (see rpoProblem).
- */
-const RpoSchema = DurationSchema.superRefine((value, ctx) => {
-  const seconds = parseDurationSeconds(value);
-  const problem = seconds === undefined ? undefined : rpoProblem(seconds);
-  if (problem) ctx.addIssue({ code: 'custom', message: `Invalid rpo "${value}": ${problem}` });
-});
-
-const HOOK_FAILURE_POLICIES = ['continue', 'abort'] as const;
-
-/**
- * One repository's own target and the per-repo run settings that ride with it. The repo gets its own
- * unit, so `rpo` is required; the rest is optional and left to the verb's defaults when absent.
- * Strict, because a misspelt key stripped silently would leave the repository on a default the
- * operator believed they had changed.
- *
- * - `cellSize`: grid cell size (`1M`, `4M`). A value that differs from the repository's recorded grid
- *   RE-SEEDS it, so the scheduled verb never carries the consent flag; changing it is an explicit act.
- * - `indexEvery`: how often the browse index is sealed.
- * - `hookTimeout` and `hookFailure`: bound and failure policy of the pre-backup hook.
- */
-const RepoTargetSchema = z
-  .object({
-    rpo: RpoSchema,
-    cellSize: z
-      .string()
-      .regex(/^\d+(\.\d+)?[KMGkmg]$/, 'Must be a size such as 1M or 4M')
-      .optional(),
-    indexEvery: DurationSchema.optional(),
-    hookTimeout: DurationSchema.optional(),
-    hookFailure: z.enum(HOOK_FAILURE_POLICIES).optional(),
-  })
-  .strict();
-
-const BackupStrategyConfigSchema = z.object({
-  destinations: z.array(BackupDestinationSchema),
-  schedule: CronSchema,
-  mode: z.enum(['hot', 'cold']).optional(),
-  enabled: z.boolean().optional(),
-  bandwidthLimit: z.string().optional(),
-  /** Read cap for hashing and cell reads, strategy level only (the read is local to the machine). Same grammar as bandwidthLimit; 0 = unlimited. */
-  readBandwidthLimit: z.string().optional(),
-  /** Hard CPU ceiling of a snapshot, strategy level: percent of ALL cores (1-100, 100 = no ceiling). Unset means the verb's default, 50. */
-  cpuLimit: z.number().int().min(1).max(100).optional(),
-  include: z.array(z.string()).optional(),
-  exclude: z.array(z.string()).optional(),
-  retention: RetentionPolicySchema.optional(),
-  verify: BackupVerifySchema.optional(),
-  /** The strategy's protection target. When set, the strategy's main unit renders from it instead of `schedule`. */
-  rpo: RpoSchema.optional(),
-  /** Run settings of the main unit; the same meaning as in a per-repo target. */
-  indexEvery: DurationSchema.optional(),
-  hookTimeout: DurationSchema.optional(),
-  hookFailure: z.enum(HOOK_FAILURE_POLICIES).optional(),
-  /**
-   * Per-repo targets: EXACT repo ref (`name:tag`, or a bare `name` for the grand) -> target. The repo
-   * gets its own unit and leaves the main unit's scope. A bare name no longer pulls in its forks
-   * (`mail:*` asks for the family).
-   */
-  repoTargets: z.record(z.string(), RepoTargetSchema).optional(),
-  /** Removed: replaced by `repoTargets`. Declared only so a stale config is refused by name instead of having the override stripped silently. */
-  repoSchedules: z
-    .never({ error: '`repoSchedules` was replaced by `repoTargets` (rpo per repository)' })
-    .optional(),
-});
-
-// =============================================================================
 // Top-level buckets (spec half)
 // =============================================================================
 
@@ -514,9 +261,41 @@ const InfraTopSchema = z.object({
   cfDnsZoneId: z.string().optional(),
 });
 
+/**
+ * At-rest modes (PLAN-config-sealed-local.md D1). Every mode but `plaintext` seals the
+ * encrypt-at-rest leaves into `encryptedFields`:
+ * - `master-password`: field key from the master password alone;
+ * - `keyring`: field key from a random key held in the OS secure storage under `keyringId`;
+ * - `keyring+master-password`: field key from both.
+ */
+export const ENCRYPTION_MODES = [
+  'plaintext',
+  'master-password',
+  'keyring',
+  'keyring+master-password',
+] as const;
+export type EncryptionMode = (typeof ENCRYPTION_MODES)[number];
+
+/** The password KDF of a sealed config: one PBKDF2 per process, never one per blob. */
+const SealKdfSchema = z.object({
+  alg: z.literal('pbkdf2-sha256'),
+  iterations: z.number().int().positive(),
+  /** base64 of the random salt. */
+  salt: z.string().min(1),
+});
+
+/** Secure-storage key of a config's seal key: `rdc:seal:<uuid>`, inside the secure-storage key allowlist. */
+export const SEAL_KEYRING_ID = /^rdc:seal:[0-9a-f-]{36}$/;
+
 const EncryptionSchema = z.object({
-  mode: z.enum(['plaintext', 'master-password']),
+  mode: z.enum(ENCRYPTION_MODES),
   encryptedFields: z.record(z.string(), EncryptedBlobSchema).optional(),
+  /** Where the random seal key lives in secure storage; fresh per seal and per re-seal. */
+  keyringId: z.string().regex(SEAL_KEYRING_ID).optional(),
+  /** Present whenever a master password is part of the field key. */
+  kdf: SealKdfSchema.optional(),
+  /** The operator opted this config out of sealing (`rdc config seal off`). */
+  sealOptOut: z.boolean().optional(),
 });
 
 const RemoteConfigSchema = z.object({
@@ -551,7 +330,44 @@ export {
   resolveAccessSourceRanges,
   SourceRangesSchema,
 } from './access.js';
+export { BACKUP_STORE_ID_PATTERN, BackupDestinationSchema } from './backup-schema.js';
+export { PREVIEW_NAME_PATTERN, PreviewOverlaySchema } from './preview-schema.js';
 export { utf8ByteLength } from './primitives.js';
+export {
+  SECRET_AGGREGATE_MAX_BYTES,
+  SECRET_ENV_VALUE_MAX_BYTES,
+  SECRET_FILE_VALUE_MAX_BYTES,
+  SecretEntrySchema,
+  SecretKeySchema,
+} from './secrets-schema.js';
+
+// =============================================================================
+// Console (team recipes, PLAN-console-command-line.md D7)
+// =============================================================================
+
+/** Upper bound of one recipe body; a recipe is a short list of `rdc` lines, not a script store. */
+export const CONSOLE_RECIPE_BODY_MAX_CHARS = 16_384;
+
+/**
+ * One team recipe: `# description` lines, `$name = ...` declarations and one
+ * `rdc` line per step, parsed by `parseRecipe` (packages/shared/src/command-line/recipe.ts).
+ */
+export const ConsoleRecipeSchema = z.object({
+  description: z.string().max(200).optional(),
+  body: z.string().min(1, 'A recipe body cannot be empty').max(CONSOLE_RECIPE_BODY_MAX_CHARS),
+  updatedAt: z.iso.datetime(),
+});
+
+/**
+ * Console settings stored in the config. `recipes` is keyed by recipe name and
+ * field-committed as one value (sensitivity.ts '/console/recipes'), like
+ * `access`. `.loose()` keeps keys a newer client adds under `console`.
+ */
+export const ConsoleSchema = z
+  .object({
+    recipes: z.record(resourceName, ConsoleRecipeSchema).optional(),
+  })
+  .loose();
 
 // =============================================================================
 // Top-level RdcConfig v3
@@ -578,24 +394,44 @@ export const RdcConfigSchema = z
      * Field-committed as one value (sensitivity.ts '/access'), like `policy`.
      */
     access: AccessSchema.optional(),
+    /** Console settings: the team's recipes (PLAN-console-command-line.md D7). */
+    console: ConsoleSchema.optional(),
+    /**
+     * AI provider profiles (PLAN-console-ai-providers.md D2): named profiles and
+     * the default one. Org level in the shared config, team level in a team
+     * config. Each profile's `key` and every `headers` value is a `secret` leaf
+     * in sensitivity.ts, so it is encrypted at rest and its commitment gates a
+     * rewrite on knowing the current value.
+     */
+    ai: AiConfigSchema.optional(),
     infra: InfraTopSchema.optional(),
     encryption: EncryptionSchema.optional(),
     remote: RemoteConfigSchema.optional(),
+    /** The preview this device is switched to (PLAN-preview-signer.md D8); absent when not in a preview. */
+    preview: PreviewOverlaySchema.optional(),
     renetPath: z.string().optional(),
     state: StateSchema.optional(),
     /**
-     * Authorization rules the EXECUTOR enforces (`rdc serve`).
-     *
-     * It lives inside the config, which means it lives inside the encrypted
-     * blob, which means Rediacc cannot read an organization's rules. It is also
-     * field-committed (see sensitivity.ts '/policy'), so the server rejects a
-     * push that rewrites it without knowing the current value. That matters more
-     * than secrecy here: the threat is not someone READING the rules, it is
-     * someone quietly REWRITING them to grant themselves access.
+     * The local-file ceiling on what the EXECUTOR may run (D24). Only a config
+     * with no `remote` block carries it: a remote config's policy is its own
+     * encrypted record, written by owners, admins and team admins through
+     * `PUT /configs/:id/policy` (PLAN-rmcp-policy-record.md Design 1), and a
+     * `policy` field beside `remote` fails the parse below, so a member cannot
+     * plant one in a pushed blob.
      */
     policy: PolicyDocumentSchema.optional(),
   })
-  .loose();
+  .loose()
+  .superRefine((config, ctx) => {
+    if (config.remote !== undefined && config.policy !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['policy'],
+        message:
+          'A remote config carries no policy field; its policy is the separate record behind PUT /configs/:id/policy.',
+      });
+    }
+  });
 
 // =============================================================================
 // Types
@@ -617,8 +453,10 @@ type ClusterPool = z.infer<typeof ClusterPoolSchema>;
 type ClusterKvm = z.infer<typeof ClusterKvmSchema>;
 export type ClusterPoolRole = ClusterPool['role'];
 type RemoteConfig = z.infer<typeof RemoteConfigSchema>;
+type PreviewOverlay = z.infer<typeof PreviewOverlaySchema>;
 type EncryptedBlob = z.infer<typeof EncryptedBlobSchema>;
 type EncryptionState = z.infer<typeof EncryptionSchema>;
+type ConsoleRecipe = z.infer<typeof ConsoleRecipeSchema>;
 
 export type {
   AcmeCertCache,
@@ -628,11 +466,13 @@ export type {
   ClusterConfig,
   ClusterKvm,
   ClusterPool,
+  ConsoleRecipe,
   EncryptedBlob,
   EncryptionState,
   InfraConfig,
   MachineConfig,
   Placement,
+  PreviewOverlay,
   RdcConfig,
   RdcState,
   RemoteConfig,
@@ -694,6 +534,22 @@ export function hasRemoteConfig(
   return Boolean(config?.remote?.apiUrl && config.remote.storeId && config.remote.configId);
 }
 
+/** True when the config's encrypt-at-rest leaves are sealed on disk (any mode but `plaintext`). */
+export function isSealed(config: RdcConfig | null | undefined): boolean {
+  const mode = config?.encryption?.mode;
+  return mode !== undefined && mode !== 'plaintext';
+}
+
+/** True when the seal key includes a random key held in the OS secure storage. */
+export function usesKeyring(mode: EncryptionMode | undefined): boolean {
+  return mode === 'keyring' || mode === 'keyring+master-password';
+}
+
+/** True when the seal key includes the master password. */
+export function usesMasterPassword(mode: EncryptionMode | undefined): boolean {
+  return mode === 'master-password' || mode === 'keyring+master-password';
+}
+
 // =============================================================================
 // Parse helpers
 // =============================================================================
@@ -720,6 +576,7 @@ const CONFIG_KEY_ORDER_V3 = [
   'id',
   'version',
   'account',
+  'preview',
   'defaults',
   'credentials',
   'resources',

@@ -121,7 +121,7 @@ print(json.dumps({
 """
 
 
-def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does(monkeypatch):
+def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does():
     """block_unverified_push cannot import rediacc_ci and this gate should not import a hook, so the two matchers are copies; this pins them equal, and pins the guard's reading of the REAL policy to this gate's."""
     proc = subprocess.run(
         [sys.executable, "-c", PARITY_CHILD, json.dumps(GLOB_CORPUS), str(POLICY)],
@@ -132,13 +132,7 @@ def test_the_guard_reads_globs_and_the_policy_exactly_as_this_gate_does(monkeypa
     )
     assert proc.returncode == 0, proc.stderr
     guard = json.loads(proc.stdout)
-    # Loaded BY FILE, not through a sys.path hop (test_canonical_sys_path_hop.py freezes those). Its `import _cipath` only puts `.ci` on sys.path, which pytest already has, so a stub scoped to this test stands in for it.
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    gate = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gate)
+    gate = importlib.import_module("rediacc_ci.quality.record_paths")
     mine = [bool(gate.glob_re(g).match(p)) for g, p in GLOB_CORPUS]
     assert guard["matches"] == mine, list(zip(GLOB_CORPUS, guard["matches"], mine, strict=True))
     assert any(mine), "the corpus matched nothing, so agreement proves nothing"
@@ -166,10 +160,16 @@ PLAN_RECORDS = (
 )
 #: THE MEASURED READER SET of those six records, derived on 2026-11-16 by the fixed derivation and classified by hand (the exemptions and their reasons are in the policy). This is what a plan-only commit re-runs instead of the lane. A gate joining or leaving it is a decision, so it is written down here as well as in the policy: the gate itself only proves the policy equals the derivation, and would stay green if both lost a reader together.
 #: 2026-11-18 (PLAN-push-decoupling F1): 36 -> 58. The declared tier reads each gate's own lock entry, so the `names: ['**']` gates (they list every file name, and a new plan file changes that list) and the gates that list `agent` or `.ci/config` joined; check:ci-parity was a notReader on a manifest.ts reason and now reads through its `names`.
+#: 2026-11-23 (PLAN-tooling-code-reduction CR2): 58 -> 56. check:ci-doc-region-parity, check:ci-gate-bind and check:ci-parity retired into check:ci-gen-gates, whose leaf spawns their scripts as legs; the derivation follows those legs (check_record_paths TS_LEG_RE), so it reads the plan files through the doc-region leg's `*.md` glob.
+#: 2026-11-24 (PLAN-tooling-code-reduction CR1-CR4 integration): 58 -> 59, the set as the derivation now reports it.
+#: Joined: the nine gates whose lock entry names `**` and that dcee36e930 declared as readers of the record set (agent-browser-exit, docker-npm-pins, go-module-sync, lint-rule-liveness, model-invocable-commands, plant-proofs, secret-supply, standalone-selftests, unverified-downloads), and check:ci-max-lines through plan-boxes.json alone.
+#: Left the derivation: dead-service-methods, git-history-depth, jq-boolean-default, merge-method-prose, no-inline-python, python-gate-deps, retired-commands, schema-call-sites and tracked-sidecars.
+#: 2026-11-24 (after the 9a66691457 re-trace): 59 -> 59. Those nine leave the six plan records' declared readers too, and check:ci-source-rules leaves both sets: its traced `names` no longer reach agent/. check:ci-pipefail-grep-q joins every record through the `names: ['**']` its traced lock entry carries. A gate that re-trace narrowed and a later re-trace widens back is named by record_paths as an UNDECLARED READER, so the drop cannot go stale silently. check:ci-pipefail-grep-q is in the set by classification, not by measurement: its `**` is a path-trace widening the tracer does not model, so it reads no plan file itself and leaves the set the day the tracer stops widening.
 PLAN_READERS = frozenset(
     {
         "check:ci-account-env-retired",
         "check:ci-actionlint",
+        "check:ci-agent-browser-exit",
         "check:ci-agent-hint-liveness",
         "check:ci-agent-session-archival",
         "check:ci-allowlist-key-matching",
@@ -177,28 +177,27 @@ PLAN_READERS = frozenset(
         "check:ci-commit-citations",
         "check:ci-container-build-context",
         "check:ci-dead-python",
-        "check:ci-dead-service-methods",
         "check:ci-decision-ids",
-        "check:ci-doc-region-parity",
+        "check:ci-docker-npm-pins",
         "check:ci-dockerfile-mirror-resilience",
         "check:ci-durable-paths-tracked",
+        "check:ci-env-registry",
         "check:ci-fetch-integrity",
         "check:ci-fetch-retry",
-        "check:ci-gate-bind",
         "check:ci-gate-reachability-coverage",
         "check:ci-gate-test-real-file-plants",
+        "check:ci-gen-gates",
         "check:ci-generated-artifacts",
         "check:ci-gh-retry-reads",
-        "check:ci-git-history-depth",
+        "check:ci-go-module-sync",
         "check:ci-hint-corpus",
         "check:ci-i18n-cli-key-usage",
         "check:ci-i18n-value-types",
         "check:ci-inner-timeout-reachable",
-        "check:ci-jq-boolean-default",
+        "check:ci-lint-rule-liveness",
         "check:ci-literal-sources",
-        "check:ci-merge-method-prose",
-        "check:ci-no-inline-python",
-        "check:ci-parity",
+        "check:ci-max-lines",
+        "check:ci-model-invocable-commands",
         "check:ci-plan-bindings",
         "check:ci-plan-boxes",
         "check:ci-plan-citations",
@@ -209,24 +208,23 @@ PLAN_READERS = frozenset(
         "check:ci-plan-implementation",
         "check:ci-plan-live-proof",
         "check:ci-plan-record",
+        "check:ci-pipefail-grep-q",
+        "check:ci-plant-proofs",
         "check:ci-portal-sitekey-guard",
         "check:ci-prose-style",
-        "check:ci-python-gate-deps",
-        "check:ci-retired-commands",
         "check:ci-retired-terms",
         "check:ci-review-resolutions",
-        "check:ci-schema-call-sites",
         "check:ci-scope-mirrors",
         "check:ci-script-exec-bit",
+        "check:ci-secret-supply",
         "check:ci-shape-duplication",
         "check:ci-shell-commands",
         "check:ci-shell-format",
-        "check:ci-source-rules",
-        "check:ci-tracked-sidecars",
+        "check:ci-standalone-selftests",
         "check:ci-trap-registry",
         "check:ci-tree-shape",
         "check:ci-typecheck-scope-coverage",
-        "check:ci-worklist-env-registry",
+        "check:ci-unverified-downloads",
         "check:cli-examples",
     }
 )
@@ -246,7 +244,7 @@ PLAN_FAMILY = frozenset(
         "check:ci-commit-citations",
         "check:cli-examples",
         "check:ci-prose-style",
-        "check:ci-doc-region-parity",
+        "check:ci-gen-gates",
         "check:ci-scope-mirrors",
         "check:ci-retired-terms",
         "check:ci-tree-shape",
@@ -256,15 +254,9 @@ PLAN_FAMILY = frozenset(
 )
 
 
-def _load_gate(monkeypatch):
-    """The gate module, loaded by file as the parity test above loads it."""
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    gate = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gate)
-    return gate
+def _load_gate():
+    """The gate module, imported from the package that holds its logic."""
+    return importlib.import_module("rediacc_ci.quality.record_paths")
 
 
 def _reads_plans(gate, root, leaf_name, source):
@@ -287,17 +279,17 @@ def _reads_plans(gate, root, leaf_name, source):
     return "check:probe" in gate.derive_readers(gates, records, root)[0][PLAN_RECORD]
 
 
-def test_a_path_in_code_is_a_citation(monkeypatch, tmp_path):
+def test_a_path_in_code_is_a_citation(tmp_path):
     """The firing halves: a whole-literal path, a path joined from literal segments, and a template literal."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     assert _reads_plans(gate, tmp_path, "opens.py", 'F = open("agent/plans/x.md")\n')
     assert _reads_plans(gate, tmp_path, "joins.py", 'D = ROOT / "agent" / "plans"\n')
     assert _reads_plans(gate, tmp_path, "tpl.ts", "const p = `${root}/agent/plans/${n}.md`;\n")
 
 
-def test_a_path_in_prose_is_not_a_citation(monkeypatch, tmp_path):
+def test_a_path_in_prose_is_not_a_citation(tmp_path):
     """The silent halves, each a firing source with the path moved into prose. Before the fix every one of these made its gate a reader, which is how 168 gates came to read the plan set."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     # CONTROL FIRST: the instrument fires in this very tree, so a silence below is the rule's.
     assert _reads_plans(gate, tmp_path, "control.py", 'F = open("agent/plans/x.md")\n')
     docstring = '"""WHY (agent/plans/PLAN-x.md): like open("agent/plans/x.md")."""\nX = 1\n'
@@ -310,9 +302,9 @@ def test_a_path_in_prose_is_not_a_citation(monkeypatch, tmp_path):
     assert not _reads_plans(gate, tmp_path, "jsdoc.ts", jsdoc)
 
 
-def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
+def test_an_exclusion_key_in_a_config_is_not_a_scope(tmp_path):
     """.ci/config/pins.json lists `agent/**` under `literalExclude`; read as a scope it made eleven pin gates readers. The same glob under an inclusion key still counts."""
-    gate = _load_gate(monkeypatch)
+    gate = _load_gate()
     cfg = tmp_path / ".cfg"
     cfg.mkdir()
     (cfg / "out.json").write_text('{"literalExclude": [{"glob": "agent/**"}]}', encoding="utf-8")
@@ -329,9 +321,7 @@ def test_an_exclusion_key_in_a_config_is_not_a_scope(monkeypatch, tmp_path):
 @pytest.fixture(scope="module")
 def real_derivation():
     """The real-tree derivation, run once for the module: a full scan of the tracked tree is the test's whole cost, and fixture setup is shared time the slow-test ratchet does not charge to a test."""
-    # The patch is import-time only: the gate imports `_cipath` once at module top, so undoing the stub when the context exits does not touch `derive_readers`.
-    with pytest.MonkeyPatch.context() as mp:
-        gate = _load_gate(mp)
+    gate = _load_gate()
     records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     derived, scanned, _read = gate.derive_readers(lock, records, ROOT)
@@ -350,11 +340,26 @@ def test_the_plan_records_have_exactly_the_measured_readers(real_derivation):
         readers |= set(derived[glob]) - set(by_glob[glob]["notReaders"])
         declared |= set(by_glob[glob]["readers"])
     assert readers == PLAN_READERS, (sorted(readers - PLAN_READERS), sorted(PLAN_READERS - readers))
+    # The dated comment above is the decision record and says 59; the literal is the set it counts.
+    assert len(PLAN_READERS) == 59, "PLAN_READERS holds %d; update the dated comments" % len(
+        PLAN_READERS
+    )
     assert declared == PLAN_READERS, sorted(declared ^ PLAN_READERS)
     missing = PLAN_FAMILY - set(derived[PLAN_RECORD])
     assert not missing, "plan gates the derivation no longer sees: %s" % sorted(missing)
-    # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s. It is not derived, so it is not a reader and needs no exemption; if it ever is derived, that is a decision to take here, not a line to add quietly.
-    assert all("check:ci-pytest" not in derived[glob] for glob in PLAN_RECORDS)
+    # check:ci-pytest re-runs the reader gates from its real-tree tests and costs about 1750 s, so it is never a reader of a plan record. The decision taken here (2026-11-23): since 957bf23a89 the derivation sees ONE citation in it, the `*.json` glob green_receipt_heads runs over the ci:quick receipt directories, which opens nothing under .ci/config/; that one citation is exempt by name in notReaders. Any OTHER citation, or that one without its exemption, is red here and is a new decision.
+    cited = []
+    for glob in PLAN_RECORDS:
+        evidence = derived[glob].get("check:ci-pytest")
+        if evidence is None:
+            continue
+        cited.append(glob)
+        assert evidence.startswith(".ci/rediacc_ci/check_pytest.py:"), (glob, evidence)
+        assert evidence.endswith("(glob) *.json"), (glob, evidence)
+        assert "check:ci-pytest" in by_glob[glob]["notReaders"], glob
+    # The exemptions are keyed by name, so one whose citation is gone is stale and hides any future read: when the derivation stops seeing the citation, drop the notReaders entry with it.
+    exempt = [g for g in PLAN_RECORDS if "check:ci-pytest" in by_glob[g]["notReaders"]]
+    assert sorted(cited) == sorted(exempt), (sorted(cited), sorted(exempt))
 
 
 def test_the_plan_text_records_stay_under_review():
@@ -365,7 +370,8 @@ def test_the_plan_text_records_stay_under_review():
     # Not a bare agent/plans/**: a non-.md file there (a .tsv inventory, a .patch attachment) is judged by check:ci-language-policy, which scans every tracked path, so it must void the receipt.
     globs = {r["glob"] for r in doc["records"]}
     assert "agent/plans/**" not in globs
-    assert not any(g.endswith("STATE.md") for g in globs), "STATE.md is not a record path"
+    # A session's hand-over is a record (box R20261123.4), and nothing else named STATE.md is: agent/STATE.md at the agent/ root stays a voiding path.
+    assert {g for g in globs if g.endswith("STATE.md")} == {STATE_RECORD}, sorted(globs)
 
 
 # ---------------------------------------------------------------- a carried verdict over a touched record
@@ -463,3 +469,114 @@ def test_the_guard_refuses_a_carried_verdict_over_a_touched_record_until_it_is_r
     assert worlds["outside"]["refusal"] is None, worlds["outside"]
     assert "filesHash differs" in (worlds["inside"]["refusal"] or ""), worlds["inside"]
     assert worlds["refreshed"]["refusal"] is None, worlds["refreshed"]
+
+
+# ---------------------------------------------------------------- a session hand-over advances the receipt (box R20261123.4)
+
+STATE_RECORD = "agent/*/STATE.md"
+STATE_PATH = "agent/ace763dd/STATE.md"
+
+STATE_CHILD = """
+import json, pathlib, subprocess, sys
+from rediacc_hooks.guards import block_unverified_push as G
+
+policy_doc = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding="utf-8"))
+
+def world(base, record_path, policy):
+    root = G._repo_v2_carried(base, "ok")
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=str(root), check=True, capture_output=True, env=G._env()).stdout.decode().strip()
+    receipt_path = root / ".ci" / "cache" / "prepush-receipt.json"
+    body = json.loads(receipt_path.read_text(encoding="utf-8"))
+    target = root / G.RECORD_POLICY_REL
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(policy), encoding="utf-8")
+    git("add", "-A", "--", G.RECORD_POLICY_REL)
+    git("commit", "-q", "-m", "the real policy")
+    start = git("rev-parse", "HEAD^{tree}")
+    body["headTree"] = start
+    hand = root / record_path
+    hand.parent.mkdir(parents=True, exist_ok=True)
+    hand.write_text("# STATE\\n\\n## Next action\\n\\nkeep going\\n", encoding="utf-8")
+    git("add", "-A", "--", record_path)
+    git("commit", "-q", "-m", "chore(state): hand-over")
+    end = git("rev-parse", "HEAD^{tree}")
+    records, error = G.parse_record_policy(policy)
+    readers = sorted({r for rec in records if G.record_of(record_path, [rec]) for r in rec["readers"]})
+    # What scripts/ci-runner/run.ts runAdvance appends: the step from the receipt's tree to the new one, every reader of the touched record re-run green.
+    body["advances"] = [{"from": start, "to": end, "paths": [record_path], "gates": {r: 0 for r in readers}, "finishedAt": "2026-11-23T00:00:00Z"}]
+    receipt_path.write_text(json.dumps(body), encoding="utf-8")
+    return {"error": error, "readers": readers, "refusal": G.receipt_refusal(str(root), end, G.read_receipt(str(root), end))}
+
+without = dict(policy_doc, records=[r for r in policy_doc["records"] if r["glob"] != sys.argv[3]])
+base = pathlib.Path(sys.argv[1])
+print(json.dumps({
+    "state": world(base / "state", sys.argv[4], policy_doc),
+    "before": world(base / "before", sys.argv[4], without),
+    "root-state": world(base / "root-state", "agent/STATE.md", policy_doc),
+}))
+"""
+
+
+def test_a_session_hand_over_commit_advances_the_receipt(tmp_path):
+    """The wisdom commit of 2026-11-23 (ea95248e0f, 72 s into a ci:quick run) voided the receipt because agent/<session>/STATE.md was no record, and the push was refused "judged a different tree" after 54 minutes. With the REAL policy:
+
+    * the runner's side: the hand-over lies inside exactly one record and every reader of it is a `gate: true` gate of the real lock, the two policy facts scripts/ci-runner/run.ts planAdvance needs to plan an advance rather than the whole lane (the three matchers agree, pinned above);
+    * the guard's side: block_unverified_push admits the pushed tree over the step runAdvance appends (receipt at T0, a commit touching only the hand-over, its readers re-run green at T1);
+    * the inverse: the same world under the policy WITHOUT the record is refused as outside the record set, which is the pre-fix behaviour, and agent/STATE.md at the agent/ root is refused under the real policy.
+    """
+    gate = importlib.import_module("rediacc_ci.quality.record_paths")
+    records = gate.parse_policy(json.loads(POLICY.read_text(encoding="utf-8")))
+    owners = [r["glob"] for r in records if gate.covers(r, STATE_PATH)]
+    assert owners == [STATE_RECORD], owners
+    assert not [r["glob"] for r in records if gate.covers(r, "agent/STATE.md")]
+    state = next(r for r in records if r["glob"] == STATE_RECORD)
+    lock = json.loads(LOCK.read_text(encoding="utf-8"))
+    known = {g["id"] for g in lock if isinstance(g, dict) and g.get("gate") is True}
+    assert state["readers"], "a record with no reader proves nothing about an advance"
+    assert set(state["readers"]) <= known, sorted(set(state["readers"]) - known)
+
+    proc = subprocess.run(
+        [sys.executable, "-c", STATE_CHILD, str(tmp_path), str(POLICY), STATE_RECORD, STATE_PATH],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, PYTHONPATH=str(HOOKS), GIT_CONFIG_GLOBAL=os.devnull),
+        timeout=300,
+    )
+    assert proc.returncode == 0, proc.stderr
+    worlds = json.loads(proc.stdout)
+    assert all(w["error"] is None for w in worlds.values()), worlds
+    assert worlds["state"]["readers"] == sorted(state["readers"]), worlds["state"]["readers"]
+    assert worlds["state"]["refusal"] is None, worlds["state"]["refusal"]
+    assert "outside the record set" in (worlds["before"]["refusal"] or ""), worlds["before"]
+    assert STATE_PATH in worlds["before"]["refusal"]
+    assert "outside the record set" in (worlds["root-state"]["refusal"] or ""), worlds["root-state"]
+
+
+@pytest.mark.parametrize(
+    "args", [("--update",), ("--records-only", "--write-baseline"), ("--policy",)]
+)
+def test_an_unknown_or_incomplete_argument_is_refused_by_name(args):
+    """`npm run check:ci-record-paths -- --update` once exited 0 and did nothing: the script has no --update. An argument the gate does not know is a usage error (rc 2) naming the argument and the flags it accepts, never a silent green."""
+    result = _gate(*args)
+    assert result.rc == 2, harness.render_output(result)
+    offending = args[-1]
+    assert offending in result.err, harness.render_output(result)
+    for accepted in (
+        "--selftest",
+        "--records-only",
+        "--widths-only",
+        "--policy",
+        "--lock",
+        "--widths",
+    ):
+        assert accepted in result.err, harness.render_output(result)
+    assert "record-paths: OK" not in result.out, harness.render_output(result)
+
+
+def test_the_bare_run_still_passes_on_the_real_tree():
+    """The silent control for the refusal above: the no-argument run, as package.json drives it, judges both modes and passes."""
+    result = _gate()
+    assert result.rc == 0, harness.render_output(result)
+    assert "record-paths: OK" in result.out, harness.render_output(result)

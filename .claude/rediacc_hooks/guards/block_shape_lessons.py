@@ -11,23 +11,18 @@ import importlib.util
 import sys
 
 from rediacc_hooks import hookio, syspath
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_shape_lessons", "EDGE_CASES")
 
 _MODULE = "trapguard_shapes"
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 70
+ORDER = 69
 
 # Without the refusal arm, a loaded pre:refuse shape (and the warn arm, which shares the match) admits silently.
 DEFECT = ("hit = shapes.side_match(shape.pre, cmd)", 'hit = ""')
-
-EDGE_CASES = [
-    ("a millisecond date under uutils (TRAPS seed, warns)", "date +%s%3N"),
-    ("a date run inside a substitution warns too", "t=$(date +%s%3N); echo $t"),
-    ("a date with no precision digit", "date +%s"),
-    ("the shape named inside an echo is not a run", 'echo "date +%s%3N"'),
-    ("an unrelated command", "git status"),
-]
 
 
 def _shapes():

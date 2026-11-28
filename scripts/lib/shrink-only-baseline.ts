@@ -212,7 +212,8 @@ export const commitBaseline = (input: {
   label: string;
   noun: string;
   key: string;
-  note: string;
+  /** One string, or one string per line when the note runs past the prose line floor (a JSON string cannot break across lines; an array of them can). */
+  note: string | readonly string[];
   current: readonly string[];
   firstSeed: boolean;
   read: (p: string) => string | null;

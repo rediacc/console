@@ -1,0 +1,26 @@
+{
+  "EDGE_CASES": [
+    {"//": "Judged where the write LANDS (#bc7d998c): each refusal was allowed before, and the message names both paths."},
+    ["a Write through a .. detour onto the record", {"tool_name": "Write", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/x/../PLAN-a-compacted-record.md", "content": "# rewritten\n"}}],
+    ["a Write through a symlink onto the record", {"tool_name": "Write", "tool_input": {"file_path": "/tmp/rediacc-guard-records/linked/PLAN-a-compacted-record.md", "content": "# rewritten\n"}}],
+    ["a Write replaces the spine outright", {"tool_name": "Write", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "content": "# rewritten\n"}}],
+    ["an edit quoting a whole header line", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "Status: compacted", "new_string": "Status: active"}}],
+    {"//": "The 2026-09-06 reproduction: a MINIMAL unique old_string with no line prefix at all, which every line-anchored pattern above misses."},
+    ["the bare 40-hex blob as old_string", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "c129f44d1b7e4a0f8d3c25e6b91af07d2c5e0168"}}],
+    ["the bare 8-hex signature as old_string", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "9a3f0b1d"}}],
+    ["a done= attestation", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "new_string": "done=abandoned"}}],
+    ["a checkbox line", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "new_string": "- [ ] a new box"}}],
+    ["a (record) attestation line", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "new_string": "    (record) done=open"}}],
+    {"//": "BOTH DIRECTIONS of the box-body containment test."},
+    ["a box body quoted whole", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "Rotate the namespace and update all four consumers"}}],
+    ["the shortest distinguishing part of a box body", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "Rotate the namespace"}}],
+    {"//": "... and its floor: a needle under 12 characters is ordinary prose."},
+    ["a needle under the twelve-character floor", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "Rotate the"}}],
+    {"//": "The common case, which must stay frictionless."},
+    ["sharpening the prose is allowed", {"tool_name": "Edit", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-a-compacted-record.md", "old_string": "Prose that Record-Sig deliberately does not cover", "new_string": "Prose the signature deliberately leaves alone"}}],
+    {"//": "Both halves of the record test are required."},
+    ["a plan that is not a record", {"tool_name": "Write", "tool_input": {"file_path": "/tmp/rediacc-guard-records/agent/PLAN-not-a-record.md", "content": "# rewritten\n"}}],
+    ["a record path that does not exist", {"tool_name": "Write", "tool_input": {"file_path": "agent/PLAN-absent.md", "content": "x"}}],
+    ["a document that is not a plan", {"tool_name": "Write", "tool_input": {"file_path": "a.md"}}]
+  ]
+}

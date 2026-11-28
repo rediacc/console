@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.python_lint`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-python-lint.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-python-lint.observations.jsonl`, which holds equivalence over six distinct trees. The twin has now been deleted and
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-python-lint.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which holds equivalence over six distinct trees. The twin has now been deleted and
 every case that executed it compares against `goldens/python-lint/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 WHAT MADE THE FREEZE POSSIBLE, because it was blocked on exactly this for two sessions. `build()` used to `copytree` the LIVE `.ci/rediacc_ci/core/` into every specimen to clear `MIN_PY_FILES`, and the twin prints the corpus SIZE on every run, so a recording taken on any given day would have red the next time a peer added a module to one of the fastest-moving directories in the
@@ -15,7 +15,7 @@ F821, and would prove nothing -- which is the exact trap the twin's comment desc
 TWO THINGS THIS FILE PROVES THAT THE LEDGER CANNOT.
 
   * THE FILE FLOOR fires with a `VACUOUS INPUT` message, and
-    `scripts/lib/shadow-gate.ts` classifies that vocabulary as a REFUSAL, which
+    the shadow gate (commit:bf054adcd4) classifies that vocabulary as a REFUSAL, which
     SUSPENDS the comparison rather than ruling on it. So the floor case is
     unrecordable by construction and lives here.
   * EXIT 77 requires a PATH with neither ruff nor uvx on it. That is an
@@ -256,7 +256,7 @@ def test_a_clean_run_still_prints_ruffs_own_pass_line(tmp_path):
 def test_the_file_floor_refuses_rather_than_reporting_clean(tmp_path):
     """`ruff check` with no paths exits 0, so a shrinking input reads as clean.
 
-    NOT IN THE LEDGER: the refusal says `VACUOUS INPUT`, and `scripts/lib/shadow-gate.ts` treats that vocabulary as a suspended comparison rather than a verdict. Byte equality can rule on it, so it lived here while the twin did and its recording lives here now.
+    NOT IN THE LEDGER: the refusal says `VACUOUS INPUT`, and the shadow gate (commit:bf054adcd4) treats that vocabulary as a suspended comparison rather than a verdict. Byte equality can rule on it, so it lived here while the twin did and its recording lives here now.
     """
     want_exit, want_out, want_err = split_golden(frozen.read(SLUG, slug(FLOOR_CASE)))
     returncode, stdout, stderr = run_port(build(tmp_path, {}, with_padding=False))
@@ -410,7 +410,7 @@ def test_the_twin_is_gone_and_its_recording_names_it() -> None:
 def test_the_recorded_green_is_not_vacuously_equal() -> None:
     """Two implementations that both print nothing agree about nothing.
 
-    Three of the eight recordings exit 0, and a port could match any of them by printing nothing at all if the recording were empty. The green path must still SAY what it measured, on STDOUT, and leave STDERR clean; the refusals are the other way round. The split is the twin's, and `scripts/lib/shadow-gate.ts` reads the two streams differently, so a recording that had
+    Three of the eight recordings exit 0, and a port could match any of them by printing nothing at all if the recording were empty. The green path must still SAY what it measured, on STDOUT, and leave STDERR clean; the refusals are the other way round. The split is the twin's, and the shadow gate (commit:bf054adcd4) reads the two streams differently, so a recording that had
     collapsed both onto one stream would weaken every comparison above without failing any of them.
     """
     green = split_golden(frozen.read(SLUG, slug("a clean corpus passes")))

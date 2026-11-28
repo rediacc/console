@@ -5,6 +5,7 @@ EVERY TRIGGER CASE HAS ITS INVERSE, differing by one planted fact: a commit olde
 
 from __future__ import annotations
 
+import ast
 import importlib.util
 import io
 import json
@@ -209,20 +210,31 @@ def test_clean_tree_owes_nothing_however_old_the_last_commit(tmp_path):
     assert U.evaluate(root, tr, {}, now=NOW, minutes=15) is None
 
 
-def test_threshold_comes_from_the_queue_settings(tmp_path):
+def test_threshold_is_the_fixed_constant_and_a_queue_line_does_not_move_it(tmp_path):
+    """agent/plans/PLAN-simple-two-tree-loop.md ruling 11: commit_remind_min is 15 in wl_checks.py, and the post-tool member reads the same constant through `remind_min`. A `commit_remind_min:` line in QUEUE.md is refused by the settings parser and moves nothing."""
+    wl_checks = wlfix.import_wl("wl_checks")
+    assert wl_checks.COMMIT_REMIND_MIN == 15
     root = make_repo(tmp_path, commit_age_min=20)
     (root / "a.txt").write_text("x\n")
     tr = write_transcript(tmp_path / "t.jsonl", [edit_line(root / "a.txt")])
-    # No QUEUE.md: the default (15) applies, so a 20-minute-old commit fires.
+    # No QUEUE.md: the constant (15) applies, so a 20-minute-old commit fires.
     assert U.evaluate(root, tr, {}, now=NOW) is not None
     queue = root / wl_planqueue.QUEUE_REL
     queue.parent.mkdir(parents=True)
     queue.write_text(
-        wl_planqueue.set_settings("# Plan queue\n\n## Promoted\n", {"commit_remind_min": "45"}),
+        "# Plan queue\n\n## Settings\n\n```stop-hook\neffort: high\ncommit_remind_min: 45\n```\n\n"
+        "## Promoted\n",
         encoding="utf-8",
     )
-    assert U.remind_min(root) == 45
-    assert U.evaluate(root, tr, {}, now=NOW) is None
+    assert U.remind_min(root) == 15
+    assert U.evaluate(root, tr, {}, now=NOW) is not None
+    assert any("commit_remind_min" in p for p in wl_planqueue.settings_for(root)[1])
+    # CONTROL: the threshold is read, so an explicit larger one is silent on the same tree.
+    assert U.evaluate(root, tr, {}, now=NOW, minutes=45) is None
+    # The Stop hook passes the same constant, not a settings field.
+    src = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
+    assert "minutes=COMMIT_REMIND_MIN," in src
+    assert "commit_remind_min" not in src.replace("COMMIT_REMIND_MIN", "")
 
 
 def test_oldest_age_and_listing_in_the_rendered_text(tmp_path):
@@ -357,10 +369,17 @@ def test_evaluation_leaves_the_worktree_and_index_byte_identical(tmp_path):
 # ---- advisory, never blocking -------------------------------------------------
 
 
-def test_the_keys_are_focus_advisories_and_not_core_or_cap_wait():
+def test_the_keys_are_advisories_and_not_core():
+    checks = json.loads(
+        (STOP_DIR.parents[1] / "config" / "effort.json").read_text(encoding="utf-8")
+    )["checks"]
     for key in ("commit-remind", "receipt-behind", "ci-hold"):
-        assert wl_standdown.advisory_kept(key), key
         assert key not in wl_standdown.CORE, "%s must not be a blocking core key" % key
+        # 09af23fb.3: each is declared an advisory in the effort table, with an advise level and no block level.
+        entry = checks.get(key)
+        assert isinstance(entry, dict), "%s has no effort.json entry" % key
+        assert "advise" in entry, entry
+        assert "block" not in entry, entry
 
 
 def test_the_stop_wiring_uses_the_allow_queue_and_never_vadd():
@@ -391,7 +410,6 @@ def init_real_repo(proj, commit_age_min):
 
 def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):
     init_real_repo(wl.proj, commit_age_min=60)
-    wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
     wl.append_transcript(
         json.loads(edit_line(wl.proj / "work.txt", ts="2026-10-06T10:00:00Z")),
@@ -408,7 +426,6 @@ def test_a_full_stop_run_carries_the_reminder_and_still_allows(wl):
 
 def test_the_inverse_stop_run_is_silent_when_the_commit_is_recent(wl):
     init_real_repo(wl.proj, commit_age_min=1)
-    wl.settings(commit_remind_min=15)
     (wl.proj / "work.txt").write_text("edited\n")
     wl.append_transcript(json.loads(edit_line(wl.proj / "work.txt")))
     wl.say("done for now")
@@ -512,3 +529,44 @@ def test_member_does_not_clobber_the_stop_hooks_own_state_fields(member_env):
     state = S.load_state(worklist, p["session_id"])
     assert state["stop_owned"] == "keep me"
     assert "a.txt" in state["uc_files"]
+
+
+def test_remind_min_does_not_import_the_stop_battery():
+    """196fda72.1: the post-tool member's read stays cheap, so wl_uncommitted holds the constant and never imports wl_checks; wl_checks takes its value from it."""
+    source = (STOP_DIR / "wl_uncommitted.py").read_text(encoding="utf-8")
+    assert "import wl_checks" not in source
+    assert _imports_of(source, "wl_checks") == []
+    checks = importlib.import_module("wl_checks")
+    assert checks.COMMIT_REMIND_MIN == U.COMMIT_REMIND_MIN == 15
+
+
+def _imports_of(source: str, module: str) -> list[str]:
+    """Every spelling in `source` that loads `module`: `import m`, `from m import x`, `importlib.import_module("m")` and `__import__("m")` (964fbdbe.2: a substring check saw only the first)."""
+    hits = []
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.Import):
+            hits += [a.name for a in node.names if a.name.split(".")[0] == module]
+        elif isinstance(node, ast.ImportFrom) and (node.module or "").split(".")[0] == module:
+            hits.append("from %s" % node.module)
+        elif isinstance(node, ast.Call) and ast.unparse(node.func).endswith(
+            ("import_module", "__import__")
+        ):
+            first = node.args[0] if node.args else None
+            if isinstance(first, ast.Constant) and str(first.value).split(".")[0] == module:
+                hits.append(ast.unparse(node))
+    return hits
+
+
+@pytest.mark.parametrize(
+    "planted",
+    [
+        "import wl_checks\n",
+        "from wl_checks import COMMIT_REMIND_MIN\n",
+        "import importlib\nm = importlib.import_module('wl_checks')\n",
+        "m = __import__('wl_checks')\n",
+    ],
+)
+def test_control_every_spelling_of_the_battery_import_is_seen(planted):
+    """964fbdbe.2 control: each way of reintroducing the import is caught, and an unrelated import is not."""
+    assert _imports_of(planted, "wl_checks")
+    assert _imports_of("import wl_core\nfrom wl_store import x\n", "wl_checks") == []

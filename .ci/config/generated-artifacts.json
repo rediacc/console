@@ -117,7 +117,7 @@
       "outputs": ["scripts/ci-runner/gates.lock.json"],
       "inputs": ["scripts/ci-runner/*.ts", "scripts/gen/gen-gates-lock.ts"],
       "generator": "npm run gen:gates-lock",
-      "gate": "check:ci-gates-lock",
+      "gate": "check:ci-gen-gates",
       "deterministic": true,
       "measured_s": 1.1,
       "commit": {
@@ -126,12 +126,12 @@
         "budget_s": 45,
         "links": ["node_modules"],
         "requires": [{ "path": "node_modules/tsx", "fix": "npm install && npm run install:natives" }],
-        "blind": "The lock's own selftest does not run at commit time; check:ci-gates-lock runs it.",
+        "blind": "The lock's own selftest does not run at commit time; check:ci-gen-gates runs it.",
         "control": {
           "kind": "replace",
           "path": "scripts/ci-runner/manifest.ts",
-          "old": "run: 'npm run check:ci-gates-lock',",
-          "new": "run: 'npm run check:ci-gates-lock --generated-artifacts-control',"
+          "old": "run: 'npm run gen:gates-lock',",
+          "new": "run: 'npm run gen:gates-lock --generated-artifacts-control',"
         }
       }
     },
@@ -142,7 +142,7 @@
       "outputs": ["scripts/data/doc-registry.md", "CLAUDE.md", "docs/agent-reference/*.md"],
       "inputs": ["scripts/gen/gen-docs.ts", "scripts/lib/doc-providers.ts"],
       "generator": "npx tsx scripts/gen/gen-docs.ts --write",
-      "gate": "check:ci-doc-region-parity",
+      "gate": "check:ci-gen-gates",
       "deterministic": true,
       "measured_s": 13.1,
       "reason": "Checked at commit time by `gen_docs_pre_commit` in .claude/rediacc_hooks/git/githooks.py, which predates this registry and asks the generator itself (`--affected`) which staged paths are inputs: each provider declares its own `inputs` in scripts/lib/doc-providers.ts, so the two globs here name only the machinery and the full input set is not repeated."
@@ -215,10 +215,10 @@
       "id": "python-env-registry",
       "title": "Python environment registry",
       "when": "pre-push",
-      "outputs": [".ci/config/python-env-registry.json"],
+      "outputs": [".ci/config/env-manifest.json"],
       "inputs": [".ci/**/*.py", ".claude/**/*.py"],
-      "generator": ".ci/scripts/quality/check_python_env_registry.py --write-baseline",
-      "gate": "check:ci-python-env-registry",
+      "generator": "hand-edited: PYTHONPATH=.ci python3 -m rediacc_ci.quality.python_env_registry --write-baseline drains the python_reads section, and a new read goes through npm run env:register",
+      "gate": "check:ci-env-registry",
       "deterministic": true,
       "hand_reviewed": true,
       "measured_s": 24.7,
@@ -244,10 +244,10 @@
       "outputs": [".github/workflows/ci-quality.yml"],
       "inputs": ["scripts/gate-bind.ts", "scripts/ci-runner/manifest.ts", ".ci/scripts/quality/check_*.py", "scripts/gates/check-*.ts"],
       "generator": "npm run gate:bind",
-      "gate": "check:ci-gate-bind",
+      "gate": "check:ci-gen-gates",
       "deterministic": true,
       "measured_s": 6.1,
-      "reason": "6.1 s with every gate source as an input, so most CI commits would pay it; check:ci-parity and check:ci-gate-bind judge it in the pre-push run."
+      "reason": "6.1 s with every gate source as an input, so most CI commits would pay it; the binder and parity legs of check:ci-gen-gates judge it in the pre-push run."
     }
   ]
 }

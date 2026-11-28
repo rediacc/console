@@ -1,6 +1,6 @@
 """`rediacc_ci.build.build_www`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/build-www.sh` and the port inside one throwaway fixture root and compared exit code, stdout, stderr and the recording fake's call log. The ledger `.ci/shadow/w7p6-build-www.observations.jsonl` holds 5 rows of that comparison.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/build/build-www.sh` and the port inside one throwaway fixture root and compared exit code, stdout, stderr and the recording fake's call log. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison.
 
 Every fixture case now compares against `goldens/build-www/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
@@ -66,7 +66,7 @@ PYTHON = sys.executable
 # THE `uname` FORKS WERE A NAMED DIVERGENCE, not a reproduced one: the port imports a module rather than sourcing a library, so it never runs them. It is invisible in output on any machine that HAS uname, and on one that does not the twin printed two `common.sh: line 64: uname: command not found` lines the port has no reason to forge. The fixture therefore supplies uname.
 PATH_MINIMUM = ("dirname", "uname", "mkdir")
 
-# The recording fake. It writes its own argv to the call log with a distinct prefix, the same prefix the K=5 ledger scoped `--finding-re` to, because `shadow-gate.ts` classifies every `→ `/`✓ ` line as CHATTER before any message-text regex is consulted and this subject reports ONLY through those two glyphs on its success path.
+# The recording fake. It writes its own argv to the call log with a distinct prefix, the same prefix the K=5 ledger scoped `--finding-re` to, because the shadow gate (commit:bf054adcd4) classifies every `→ `/`✓ ` line as CHATTER before any message-text regex is consulted and this subject reports ONLY through those two glyphs on its success path.
 FAKE_NPM = """#!/bin/bash
 printf 'CALL npm' >>"$FAKE_CALL_LOG"
 for a in "$@"; do printf '\\t%s' "$a" >>"$FAKE_CALL_LOG"; done

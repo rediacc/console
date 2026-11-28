@@ -11,7 +11,9 @@ Hand-registered, with no gate header, as `local-only`: it needs docker and the C
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import proxy_wrangler_dev_e2e
 
 if __name__ == "__main__":
+    _gate_args.parse("check_proxy_wrangler_dev_e2e.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(proxy_wrangler_dev_e2e.main(sys.argv[1:]))

@@ -2,7 +2,7 @@
 
 THE BASH HALF IS GONE, 2026-10-08. W11-A/B/C and section 12 U1-U3 deleted the last `.ci/scripts/test/gates/test-*.sh`, so the half of `main()` that scanned them and exempted the lock's `mutex: ["tree:..."]` registrations had no corpus left and refused ("no gate tests found"). It is removed, together with `registered_writers`, which existed only to feed it. What remains is the PYTHON half below: no pytest module may declare the real-tree xdist group, and the pytest lane may not hold an exclusive `tree:` claim, with its own refusal over an empty module corpus. The bash scanner (`scan_text`) and its controls STAY: `rediacc_ci.quality.gate_tree_writes` imports it for bash gate leaves. The history below describes the bash half as it was.
 
-Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-pool-writer.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
+Ported from `.ci/scripts/quality/check-pool-writer-safety.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. Its gate header registers it as step "Pool-registered tests do not write the real tree", needs none, selftest true.
 
 -----------------------------------------------------------------------------
 RETARGETED 2026-09-09 (W7P3-BAT): THE REGISTRATION IS THE LOCK, NOT THE RUNNER.
@@ -115,7 +115,7 @@ POSIX ERE IS LEFTMOST-LONGEST AND PYTHON IS LEFTMOST-FIRST. Every pattern here w
 backtracks to the same answer for `local=1` and `exportFOO=1`, the redirect
 pattern's `>>?` is greedy in both, and `test-[A-Za-z0-9._-]+\\.sh` lands on the same token in both engines. Stated because "the regex is the same text" is not the same claim as "the regex matches the same thing".
 
-THE MULTI-LINE `printf ' %s\\n' "$hits"` IS A TWIN DEFECT, CARRIED. `$hits` is ONE argument holding several newline-separated lines, so printf applies the format ONCE and only the FIRST line gets its two-space indent. A port that indented every line would print different bytes and, worse, would change the finding set: `scripts/lib/shadow-gate.ts` promotes an unindented
+THE MULTI-LINE `printf ' %s\\n' "$hits"` IS A TWIN DEFECT, CARRIED. `$hits` is ONE argument holding several newline-separated lines, so printf applies the format ONCE and only the FIRST line gets its two-space indent. A port that indented every line would print different bytes and, worse, would change the finding set: the shadow gate (commit:bf054adcd4) promotes an unindented
 `<file>.sh:<line>:` to a finding by its path-line rule and an indented one by its continuation rule, so both are compared either way, but the TEXT differs. Reported, not repaired.
 
 THE ONE-DIRECTIONAL RULE MEANS THIS GATE HAS NO SHRINK-ONLY BASELINE and needs none: it reports only NEW unregistered writers, and a registration that outlived its write is deliberately not a finding.
@@ -125,6 +125,13 @@ let `test-foo.sh` be satisfied by a registration of `test-foo.sh.bak`. The
 retarget kept that property: the lock parser emits basenames and membership is still an exact set lookup.
 
 THE THREE ANTI-VACUITY REFUSALS SURVIVED THE RETARGET ONE FOR ONE, because they are what make the verdict mean anything: the LOCK being absent (was: the runner), the parse returning ZERO writers (was: an empty WRITER_TESTS), and the gates directory being empty. Each one exits 1 and says which.
+
+---- gate ----
+lane: quality-static
+step: Pool-registered tests do not write the real tree
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import json
@@ -814,4 +821,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_pool_writer_safety.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

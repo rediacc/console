@@ -45,7 +45,7 @@ with `npm query` (same answer, 31 ms against 1,056 ms, and no dependency on
 npm query's output schema). `resolve_workspace` does the same walk in Python;
 the FIRST match wins and the search stops, as `process.exit(0)` does there.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-unit-tests.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -208,4 +208,20 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` reads `--selftest` or two bare arguments, <workspace> and <npm script key>; a flag in either place is a typo, refused rather than run as the workspace.
+    _parsed = gate_args.parse(
+        "unit_tests.py", sys.argv[1:], switches=("--selftest",), positional="<workspace> <script>"
+    )
+    # The shared parser takes any number of bare arguments, and `main` reads two (or none with `--selftest`) and drops the rest, so the count is checked here, as run_account and run_renet do.
+    if len(_parsed.positionals) > 2 or (
+        "--selftest" in _parsed.argv and _parsed.argv != ["--selftest"]
+    ):
+        print(
+            "unit_tests.py: expected `--selftest` alone or <workspace> <script>, got %r"
+            % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

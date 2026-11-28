@@ -69,6 +69,26 @@ export const FormatHintSchema = z.enum([
 
 export const OptionTierSchema = z.enum(['common', 'advanced']);
 
+export const CommandSeveritySchema = z.enum(['none', 'caution', 'destructive']);
+
+export const PreviewPolaritySchema = z.enum(['opt-in', 'default']);
+
+/** Whether `flag` names a boolean option of the command is checked below. */
+export const CommandPreviewSchema = z.object({
+  flag: z.string().min(1),
+  polarity: PreviewPolaritySchema,
+});
+
+export const ErrorOriginSchema = z.enum(['user', 'environment', 'rediacc']);
+
+export const ContractErrorCodeSchema = z.object({
+  code: z.string().min(1),
+  origin: ErrorOriginSchema,
+});
+
+/** The longest summary a command may carry, in characters. */
+export const SUMMARY_MAX_LENGTH = 100;
+
 export const CommandExampleSchema = z.object({
   command: z.string().min(1),
   values: z.record(z.string(), z.string()),
@@ -116,6 +136,10 @@ export const ContractCommandSchema = z.object({
   plane: CommandPlaneSchema,
   descriptionKey: z.string().nullable(),
   label: z.string(),
+  summaryKey: z.string().min(1).nullable(),
+  summary: z.string().min(1),
+  severity: CommandSeveritySchema,
+  preview: CommandPreviewSchema.optional(),
   options: z.array(ContractOptionSchema),
   positionals: z.array(ContractPositionalSchema),
   hasSubcommands: z.boolean(),
@@ -137,6 +161,7 @@ export const ContractCommandSchema = z.object({
   interactive: z.boolean(),
   proxyCapable: z.boolean(),
   proxyBlockedReason: z.string().min(1).optional(),
+  proxyBlockedReasonKey: z.string().min(1).optional(),
   detachable: z.boolean(),
   detachBlockedReason: z.string().min(1).optional(),
 
@@ -150,6 +175,7 @@ export const CliContractSchema = z.object({
   version: z.string().min(1),
   languages: z.array(z.string().min(1)).min(1),
   commands: z.array(ContractCommandSchema).min(1),
+  errorCodes: z.array(ContractErrorCodeSchema),
 });
 
 /** A flattened i18n bundle: key -> translated string. */
@@ -167,6 +193,47 @@ export function safeParseCliContract(
   return CliContractSchema.safeParse(value);
 }
 
+/**
+ * The non-machine commands the executor serves against the session config
+ * (PLAN-rmcp-local-mcp LM10, D57). It mirrors the generator's EXECUTOR_SERVED
+ * table on purpose: the contract under validation cannot vouch for itself, and
+ * a test pins this set to the real contract's off-machine proxyable commands.
+ */
+export const EXECUTOR_SERVED_COMMANDS: ReadonlySet<string> = new Set([
+  'backup immutability show',
+  'backup manifests',
+  'backup reconcile',
+  'backup retention',
+  'backup retention preview',
+  'backup strategy list',
+  'backup strategy show',
+  'backup undelete',
+  'backup usage',
+  'cluster status',
+  'config access list',
+  'config prune',
+  'config show',
+  'credits',
+  'feedback list',
+  'feedback report',
+  'feedback show',
+  'incident status',
+  'legal',
+  'machine access show',
+  'machine add',
+  'machine infra show',
+  'machine list',
+  'machine provider add',
+  'machine provider list',
+  'machine provider remove',
+  'machine remove',
+  'repo flows',
+  'repo opens',
+  'repo replicate status',
+  'repo secret get',
+  'repo secret list',
+]);
+
 /** Identity invariants: a command's path, key and domain must agree. */
 function checkIdentity(cmd: ContractCommand): string[] {
   const problems: string[] = [];
@@ -181,24 +248,67 @@ function checkIdentity(cmd: ContractCommand): string[] {
 
 /**
  * proxyCapable is derived, and a consumer must never be handed a proxyable
- * command that is interactive or off the machine plane. Every refusal must also
- * carry a reason, so the CLI can always tell the operator why.
+ * command that is interactive or off the machine plane, unless it is named in
+ * EXECUTOR_SERVED_COMMANDS, and then it can never be detachable
+ * (checkDetachableCommand). Every refusal must also carry a reason, so the CLI
+ * can always tell the operator why.
  */
 function checkProxyCapability(cmd: ContractCommand): string[] {
+  const problems: string[] = cmd.proxyCapable ? proxyCapableProblems(cmd) : [];
+
+  if (!cmd.proxyCapable && cmd.proxyBlockedReason === undefined) {
+    problems.push(`${cmd.pathKey}: not proxyCapable but gives no proxyBlockedReason`);
+  }
+  if (cmd.proxyBlockedReasonKey !== undefined && cmd.proxyBlockedReason === undefined) {
+    problems.push(`${cmd.pathKey}: proxyBlockedReasonKey set without a proxyBlockedReason`);
+  }
+
+  return problems;
+}
+
+/** What a proxyCapable command may not be: off the machine plane unless executor-served, interactive, or carrying a block reason. */
+function proxyCapableProblems(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+  if (cmd.plane !== 'machine' && !EXECUTOR_SERVED_COMMANDS.has(cmd.pathKey)) {
+    problems.push(
+      `${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}" and the command is not executor-served`
+    );
+  }
+  if (cmd.interactive) {
+    problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
+  }
+  if (cmd.proxyBlockedReason !== undefined) {
+    problems.push(`${cmd.pathKey}: proxyCapable but carries a proxyBlockedReason`);
+  }
+  return problems;
+}
+
+/**
+ * The semantic fields a console renders from: a summary short enough for one
+ * line, a preview switch that is a real boolean option of the same command, and
+ * a severity that never undercuts the MCP destructive annotation.
+ */
+function checkSemantics(cmd: ContractCommand): string[] {
   const problems: string[] = [];
 
-  if (cmd.proxyCapable) {
-    if (cmd.plane !== 'machine') {
-      problems.push(`${cmd.pathKey}: proxyCapable but plane is "${cmd.plane}"`);
+  // Characters are code points, so an emoji counts once, as the type doc says.
+  const summaryLength = [...cmd.summary].length;
+  if (summaryLength > SUMMARY_MAX_LENGTH) {
+    problems.push(
+      `${cmd.pathKey}: summary is ${summaryLength} characters, over ${SUMMARY_MAX_LENGTH}`
+    );
+  }
+  if (cmd.preview) {
+    const flag = cmd.preview.flag;
+    const opt = cmd.options.find((o) => o.long === flag);
+    if (!opt) {
+      problems.push(`${cmd.pathKey}: preview.flag "${flag}" names no option of this command`);
+    } else if (opt.valueTaking) {
+      problems.push(`${cmd.pathKey}: preview.flag "${flag}" takes a value, not a switch`);
     }
-    if (cmd.interactive) {
-      problems.push(`${cmd.pathKey}: proxyCapable but interactive`);
-    }
-    if (cmd.proxyBlockedReason !== undefined) {
-      problems.push(`${cmd.pathKey}: proxyCapable but carries a proxyBlockedReason`);
-    }
-  } else if (cmd.proxyBlockedReason === undefined) {
-    problems.push(`${cmd.pathKey}: not proxyCapable but gives no proxyBlockedReason`);
+  }
+  if (cmd.destructive === true && cmd.severity === 'none') {
+    problems.push(`${cmd.pathKey}: MCP-annotated destructive but severity is "none"`);
   }
 
   return problems;
@@ -320,6 +430,19 @@ function checkPositionalBindings(cmd: ContractCommand): string[] {
   return problems;
 }
 
+/** What a detachable command must not be: off the proxy, off the machine plane (it runs no machine job there), or a job verb. */
+function checkDetachableCommand(cmd: ContractCommand): string[] {
+  const problems: string[] = [];
+  if (!cmd.proxyCapable) problems.push(`${cmd.pathKey}: detachable but not proxyCapable`);
+  if (cmd.plane !== 'machine') {
+    problems.push(
+      `${cmd.pathKey}: detachable but plane is "${cmd.plane}", so it runs no machine job`
+    );
+  }
+  if (cmd.domain === 'job') problems.push(`${cmd.pathKey}: a job verb cannot be detachable`);
+  return problems;
+}
+
 /**
  * detachable is derived from proxyCapable, so it can never be set on a command
  * that is not, nor on a `job` verb. A proxyable non-job command that is not
@@ -328,12 +451,7 @@ function checkPositionalBindings(cmd: ContractCommand): string[] {
  */
 function checkDetachable(cmd: ContractCommand): string[] {
   const problems: string[] = [];
-  if (cmd.detachable && !cmd.proxyCapable) {
-    problems.push(`${cmd.pathKey}: detachable but not proxyCapable`);
-  }
-  if (cmd.detachable && cmd.domain === 'job') {
-    problems.push(`${cmd.pathKey}: a job verb cannot be detachable`);
-  }
+  if (cmd.detachable) problems.push(...checkDetachableCommand(cmd));
   const exception = cmd.proxyCapable && cmd.domain !== 'job' && !cmd.detachable;
   if (exception && !cmd.detachBlockedReason) {
     problems.push(`${cmd.pathKey}: proxyable but not detachable, with no detachBlockedReason`);
@@ -361,10 +479,17 @@ export function checkContractInvariants(contract: CliContract): string[] {
       ...checkExamples(cmd),
       ...checkOutput(cmd),
       ...checkPositionalBindings(cmd),
-      ...checkDetachable(cmd)
+      ...checkDetachable(cmd),
+      ...checkSemantics(cmd)
     );
     if (seen.has(cmd.pathKey)) problems.push(`${cmd.pathKey}: duplicate entry`);
     seen.add(cmd.pathKey);
+  }
+
+  const seenCodes = new Set<string>();
+  for (const row of contract.errorCodes) {
+    if (seenCodes.has(row.code)) problems.push(`error code ${row.code}: duplicate entry`);
+    seenCodes.add(row.code);
   }
 
   return problems;

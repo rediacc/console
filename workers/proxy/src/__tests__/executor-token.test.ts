@@ -15,14 +15,14 @@ import {
   issuedToken as issued,
   resetIssuedTokenCache,
 } from '../issued-token';
-import { executorEnv as executorEnvVars } from '../org-executor';
+import { ACCOUNT_EGRESS_HOST, executorEnv as executorEnvVars } from '../org-executor-support';
 import { resetReadyCache } from '../ready';
 
 const ACCOUNT_URL = 'https://account.test';
 const ISSUED = 'rdt_issued_executor_token';
 const PLACEHOLDER = 'rediacc-executor-placeholder';
 const CALLER = 'rdt_caller_token';
-const HOST = 'http://account.internal';
+const HOST = `http://${ACCOUNT_EGRESS_HOST}`;
 const API = `${HOST}/account/api/v1`;
 const ORG = 'org-1';
 const forwardAccountEgress = (request: Request, e: Env): Promise<Response> =>

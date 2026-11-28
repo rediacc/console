@@ -3,7 +3,7 @@
 
 W7P6 wave 28. The bash twin stays the LIVE registered gate (`check:ci-shell-lint`, step "Shell lint"); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved on both streams by
 `.ci/rediacc_ci/tests/test_security_shellcheck.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-shellcheck.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+the ledger (deleted in commit:936280cd35). Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 WHAT IT DOES. Acquires shellcheck AT THE PIN through `rediacc_ci.core.toolchain`, enumerates EVERY tracked and untracked `*.sh` from git (not from a list of roots), drops the ones deleted in the working tree, refuses an empty list, runs `shellcheck -e SC1090 -e SC1091 -e SC2034 -S warning` over them in batches of 40, and then greps `.ci/scripts/build` for four bash-4-only
 constructs that would break the macOS runners (bash 3.2, GPLv3).
@@ -409,4 +409,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("shellcheck.py", sys.argv[1:])
     raise SystemExit(main(sys.argv[1:]))

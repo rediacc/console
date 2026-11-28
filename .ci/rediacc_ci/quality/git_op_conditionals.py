@@ -1,6 +1,6 @@
 """A git-identity capture that reaches a conditional must be guarded first.
 
-Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which W7 P5 batch G2 retired once `.ci/shadow/w7p2-gitop.observations.jsonl` asserted equivalence over five distinct trees and the twin's own embedded scanner was recorded as goldens.
+Ported from `.ci/scripts/quality/check-git-op-conditionals.sh`, which W7 P5 batch G2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees and the twin's own embedded scanner was recorded as goldens.
 
 WHY THE TWIN EXISTS, carried over from its header because the archaeology is the half of a gate that cannot be recovered from the code:
 
@@ -100,6 +100,15 @@ comment or a heredoc counts. For a gate whose false POSITIVE gets it suppressed,
 
 `[[:space:]]` IS NOT `\\s`; see `rediacc_ci.quality.npmrc` for the same note. The
 class is written out.
+
+---- gate ----
+step: Git-op conditional guards
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -1067,4 +1076,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_git_op_conditionals.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

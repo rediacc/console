@@ -504,3 +504,16 @@ Run on the lease tree of branch 1104-1, from `PLAN-backup-critical-tier.md` boxe
 - T3: the `Critical-Tier Backups` section (target and RPO as a loss window including upload time, the hook with its bounds and security note, cell size, delayed destruction with its limits, live and waiting storage, the churn cap, alert latency) and the `--keep-within` row are in all 13 locales of `backup-restore.md`; the study text in `mt6-backup.ts` names the window. `check:cli-docs`, `validate:cli-docs -w @rediacc/www`, `check:ci-i18n-docs-untranslated` and `check:ci-docs-structure-parity` rc 0.
 - T4, leg u: `backup_onprem` records Object Lock and versioning as `STORE-CAPABILITY` lines, not asserted; three planted controls sit in the row. The live row against RustFS and legs t, v, w need a worker and were not run.
 - Not run: no live machine, bench or hostinger step, no `vm:check`.
+
+## 12. The cutover record (2026-10-29 to 2026-11-17)
+
+Section 9.16 refused to tick `w8` while the four `ACCOUNT_BACKUP_S3_*` secrets were unset and no machine was migrated. Both have since happened, so `CHECKLIST.md` w8 is ticked. The live records are in `agent/plans/PLAN-backup-program.md` Phase Q, and each id below was read back against the tree on 2026-11-27 (the commits with `git cat-file -t`, the snapshot ids as quoted in the plan).
+
+- Q5, probe: `backup snapshot mail:bp-probe` rc 0, snapshot `20261029T074142Z-f7574d9603cd6d0f`, 4,257,218,560 bytes, 1,015 chunks; the second unchanged snapshot (Q6) `20261029T075014Z-46f1913c08bdd19e` added 0 bytes.
+- Q7, R2 download probe (its passing record sits under the Q11 box in the plan): `backup restore --no-seed` fetched all 1,015 chunks (4,257,218,560 bytes) and the image hash matched the source.
+- Q10, schedule: commit `c380c4164`, `rediacc-backup-nightly-hot.timer` bound on hostinger.
+- Q11, first seed: commit `29e66220b`, `backup run nightly-hot -b` started 2026-11-07T09:58:05Z and finished 10:29:42Z, a manifest for all 13 repositories, each newest `totalBytes` equal to its image size, unit Result=success. The per-repository seeds before it ran 2026-10-29 at the capped rate (for example mail `20261029T080754Z-683901b9ca07e5ab`, gitlab `20261029T132423Z-363a9734d756d223`, nextcloud `20261029T154848Z-4960a85b93ae46e0`).
+- Bucket counts: `rediacc-backups-eu` held 105,428 objects, 441.7 GB when read on 2026-11-08 (`PLAN-product-domain-rename.md`, result line of L1).
+- Move to bench: hostinger re-licensed against bench (C2) and scheduled (C3) to `backups-bench`; the 2026-11-17 02:17:31 nightly finished on bench and `backup verify --store` was rc 0 for all 13 repositories (commit `31214d672d`, `PLAN-hostinger-to-bench.md` C4 and C5). `backup verify --restore-test` of every repository (C6) and the first scheduled run (C7) stay open in that plan.
+
+Not recoverable from the tree: the `/tmp/m/host-backup-program-*` output directories and `.ci/cache/ciquick/q14-verify-0743.log` cited by the Q11 and Q14 ticks no longer exist, so the 13 per-repository manifest ids of the 2026-11-07 seed are not reproduced here.

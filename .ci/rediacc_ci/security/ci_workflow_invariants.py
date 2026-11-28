@@ -3,7 +3,7 @@
 
 W7P6 wave 27. The bash twin stays the LIVE registered gate; this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py` and by the K=5
-shadow ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+shadow ledger the ledger (deleted in commit:936280cd35). Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 NAMING. `check_` is dropped from the module name to match the closest sibling already in this package, `rediacc_ci.security.workflow_gates` (the port of `check-workflow-gates.sh`). `check_commands.py` and `rdc_sh_env_check.py` kept their prefixes; the package is not internally consistent, so the rule applied here is "match the nearest shape", not "match the package".
 
@@ -52,7 +52,7 @@ CD run 37749637824 is the case: the tag lived in `tag-and-release`, behind post-
     tag over a range that touches .github/workflows is then refused (v1.3.11,
     v1.3.8).
 
-THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-release-edge.yml keeps releasing edge on merge, `npm run release:local -- --channel edge` is a second edge path, stable stays CI/CD only). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row. `local_stable_admitted` also calls the entry's `main(["--channel", "stable"])`, which must refuse with rc 2 naming cd-release-stable.yml before reading anything. An import failure is a finding, never a pass.
+THE LOCAL RELEASE ORDER (PLAN-local-release W3-B, as amended by the operator rulings of 2026-10-27T09:45Z: cd-release-edge.yml keeps releasing edge on merge and `npm run release:local -- --channel edge` is a second edge path; and by the answer to Q1 of PLAN-retire-nightlies-and-mentions, 2026-11-16, "also allow release:local for stable", box S7: `--channel stable` promotes edge to stable from its own table, behind a RELEASE_ASKED every stable run must carry). The release-order rules above, applied to the local entry's declarative table `rediacc_ci.release.local.STEPS`, imported rather than parsed, so the phase reads exactly the rows the entry runs. `analyse_local_steps` finds rows by the module their argv runs, never by id, and refuses (`LOCAL_KINDS`): a table with no sentinel seal, no tag, no CLI upload or no account deploy (vacuity); a seal not immediately followed by the tag rows; tag rows that are not contiguous or do not end in the push; any row from the seal through the tag push with `can_fail=True`; an account deploy before the CLI upload, the seal or the tag push; and any stable row in the edge table. `analyse_stable_steps` reads the stable table `STABLE_STEPS` the same way and refuses one that runs no `local_gates --channel stable`, promotes (R2, a Docker retag, the production mark) before that gate, runs no `promote_r2_to_stable`, marks production before or without `verify_stable_endpoints`, or carries an edge publisher (the seal, the version tag, an edge upload, a Worker deploy, a GitHub Release). `local_stable_unasked` also calls the entry's `main(["--channel", "stable"])` with RELEASE_ASKED removed from the environment, which must refuse with rc 2 naming RELEASE_ASKED before reading anything. An import failure is a finding, never a pass.
 
 THE CD-PREFLIGHT PINS (PLAN-cd-errors-in-ci W4) ride the same phase and read a fourth file, `ops-housekeeping.yml` (`HOUSEKEEPING_WORKFLOW_FILE` overrides it). `rediacc_ci.release.cd_preflight` must run at three sites, each with at least the checks `PREFLIGHT_REQUIRED_CHECKS` names (`cd-preflight-narrowed` otherwise):
 
@@ -501,12 +501,29 @@ def _cd_arm(run: str) -> str:
     return "\n".join(ln for ln in match.group(1).splitlines() if not ln.strip().startswith("#"))
 
 
-def _preset_findings(action_doc: object) -> list[tuple[str, str]]:
+def _script_cd_grants_workflows(script: str) -> bool:
+    """True when the `cd` entry of perms.py's PRESETS table lists `("workflows", "write")`."""
+    match = re.search(r'^\s*"cd":\s*\[(.*?)^\s*\],', script, re.MULTILINE | re.DOTALL)
+    if match is None:
+        return False
+    body = "\n".join(ln for ln in match.group(1).splitlines() if not ln.strip().startswith("#"))
+    return re.search(r'\(\s*"workflows"\s*,\s*"write"\s*\)', body) is not None
+
+
+def _preset_findings(action_doc: object, perms_script: str = "") -> list[tuple[str, str]]:
+    """The cd preset must grant workflows:write. The perms step is either the inline `cd)` arm or a call of the sibling perms.py (the cap on inline `run:` logic moved it there), whose text arrives as `perms_script`."""
     runs = action_doc.get("runs") if isinstance(action_doc, dict) else None
     steps = _steps(runs)
     perms = [s for s in steps if _text(s.get("id")) == "perms"]
-    if not perms or "perm-workflows=write" not in _cd_arm(_text(perms[0].get("run"))):
-        return [("cd-preset-no-workflows", "the `cd)` arm of step `perms`")]
+    run_text = _text(perms[0].get("run")) if perms else ""
+    if perms and "perms.py" in _text(perms[0].get("env")) + run_text:
+        granted = _script_cd_grants_workflows(perms_script)
+        where = "the `cd` entry of perms.py (step `perms`)"
+    else:
+        granted = bool(perms) and "perm-workflows=write" in _cd_arm(run_text)
+        where = "the `cd)` arm of step `perms`"
+    if not granted:
+        return [("cd-preset-no-workflows", where)]
     mint = [s for s in steps if "create-github-app-token" in _text(s.get("uses"))]
     with_map = mint[0].get("with") if mint else None
     passed = _text(with_map.get("permission-workflows")) if isinstance(with_map, dict) else ""
@@ -518,13 +535,13 @@ def _preset_findings(action_doc: object) -> list[tuple[str, str]]:
 
 
 def analyse_release(
-    ci_doc: object, cd_doc: object, action_doc: object
+    ci_doc: object, cd_doc: object, action_doc: object, perms_script: str = ""
 ) -> tuple[list[tuple[str, str]], dict[str, object]]:
     """The release-order phase over three parsed documents: (findings, shape). Pure; the selftest drives it with literal dicts."""
     findings = _sentinel_findings(ci_doc) + _tag_findings(cd_doc)
     findings += _permission_findings(cd_doc)
     push_findings, pushes = _push_findings(cd_doc)
-    findings += push_findings + _preset_findings(action_doc)
+    findings += push_findings + _preset_findings(action_doc, perms_script)
     jobs = cd_doc.get("jobs") if isinstance(cd_doc, dict) else None
     tags = version_tag_steps(cd_doc)
     shape: dict[str, object] = {
@@ -613,16 +630,23 @@ LOCAL_KINDS = (
     "local-order-no-account-deploy",
     "local-order-account-before-publish",
     "local-order-stable-step",
-    "local-order-stable-admitted",
+    "local-order-stable-unasked",
+    "local-stable-unreadable",
+    "local-stable-no-gate",
+    "local-stable-before-gate",
+    "local-stable-no-promote",
+    "local-stable-mark-unverified",
+    "local-stable-edge-step",
 )
 
 LOCAL_MODULE = "rediacc_ci.release.local"
+LOCAL_ASK_ENV = "RELEASE_ASKED"
 LOCAL_SEAL = "rediacc_ci.deploy.write_release_sentinel"
 LOCAL_TAG = "rediacc_ci.release.tag"
 LOCAL_TAG_RECORD_KIND = "tag-record"
 LOCAL_CLI_UPLOAD = "rediacc_ci.deploy.upload_to_r2"
 LOCAL_ACCOUNT_DEPLOY = "rediacc_ci.deploy.deploy_account"
-# A stable step: the channel or Docker tag named stable, or a stable-only publisher. Stable is CI/CD only (ruling ASKED:2026-10-27T09:45Z).
+# A stable step: the channel or Docker tag named stable, or a stable-only publisher. Stable rows live in `STABLE_STEPS`, behind the ask (PLAN-retire-nightlies-and-mentions S7), never in the edge table.
 # `--target stable` is the module target name of the one shared Worker set per region (deploy_proxy, console_executor, deploy_record), not the CLI channel, so that argv pair is admitted; `CHANNEL=stable` and every other spelling still refuse.
 _STABLE_TARGET_RE = re.compile(r"--target\s+stable\b")
 _STABLE_RE = re.compile(
@@ -705,15 +729,67 @@ def analyse_local_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str,
     return out, shape
 
 
-def local_stable_admitted(module: object) -> str:
-    """Empty when the entry refuses `--channel stable` before reading anything, else why not."""
+LOCAL_STABLE_GATE = "rediacc_ci.release.local_gates"
+LOCAL_STABLE_PROMOTE = "rediacc_ci.deploy.promote_r2_to_stable"
+LOCAL_STABLE_VERIFY = "rediacc_ci.deploy.verify_stable_endpoints"
+LOCAL_STABLE_MARK = "rediacc_ci.release.mark_production"
+# The rows that change what stable serves or claims: each must follow the stable gate.
+_STABLE_WRITE_RE = re.compile(
+    r"promote_r2_to_stable|promote_docker_to_stable|retag_image|imagetools|mark_production"
+)
+# An edge publisher has no place in a promotion: the seal, the version tag, an edge upload, a Worker deploy, a GitHub Release.
+_EDGE_PUBLISH_RE = re.compile(
+    r"write_release_sentinel|rediacc_ci\.release\.tag\b(?!_)|upload_to_r2|upload_repos_to_r2"
+    r"|deploy_account|deploy_proxy|deploy_www|console_executor|create_github_release"
+    r"|--channel\s+edge\b|CHANNEL=edge\b"
+)
+_STABLE_GATE_RE = re.compile(r"%s\b.*--channel\s+stable\b" % re.escape(LOCAL_STABLE_GATE))
+
+
+def analyse_stable_steps(steps: object) -> tuple[list[tuple[str, str]], dict[str, object]]:
+    """The order of the local entry's `STABLE_STEPS` table: (findings, shape). Pure; the selftest drives it with literal rows. Rows are found by the module their argv runs, never by id."""
+    rows = list(steps) if isinstance(steps, (list, tuple)) else []
+    out: list[tuple[str, str]] = []
+    ident = [str(getattr(r, "id", "?")) for r in rows]
+    gates = [i for i, r in enumerate(rows) if _STABLE_GATE_RE.search(_row_text(r))]
+    writes = [i for i, r in enumerate(rows) if _STABLE_WRITE_RE.search(_row_text(r))]
+    promotes = [i for i, r in enumerate(rows) if LOCAL_STABLE_PROMOTE in _row_text(r)]
+    verifies = [i for i, r in enumerate(rows) if LOCAL_STABLE_VERIFY in _row_text(r)]
+    marks = [i for i, r in enumerate(rows) if LOCAL_STABLE_MARK in _row_text(r)]
+    edge = [ident[i] for i, r in enumerate(rows) if _EDGE_PUBLISH_RE.search(_row_text(r))]
+    shape: dict[str, object] = {
+        "rows": len(rows),
+        "gate": ident[gates[0]] if gates else "",
+        "writes": [ident[i] for i in writes],
+        "edge": edge,
+    }
+    if not gates:
+        out.append(("local-stable-no-gate", "<none>"))
+    else:
+        early = [ident[i] for i in writes if i < gates[0]]
+        if early:
+            out.append(("local-stable-before-gate", ", ".join(early)))
+    if not promotes:
+        out.append(("local-stable-no-promote", "<none>"))
+    out.extend(
+        ("local-stable-mark-unverified", ident[i])
+        for i in marks
+        if not any(v < i for v in verifies)
+    )
+    out.extend(("local-stable-edge-step", name) for name in edge)
+    return out, shape
+
+
+def local_stable_unasked(module: object) -> str:
+    """Empty when the entry refuses an unasked `--channel stable` (RELEASE_ASKED removed from the environment) before reading anything, with rc 2 naming RELEASE_ASKED, else why not."""
     main_fn = getattr(module, "main", None)
-    if getattr(module, "CHANNEL", None) != "edge" or not callable(main_fn):
-        return "CHANNEL is %r, not 'edge'" % getattr(module, "CHANNEL", None)
+    if not callable(main_fn):
+        return "the entry has no callable main"
     sink = io.StringIO()
+    saved = os.environ.pop(LOCAL_ASK_ENV, None)
     try:
         with contextlib.redirect_stderr(sink), contextlib.redirect_stdout(sink):
-            # A root that cannot exist: should a regression ever admit stable, the entry fails on its first read here instead of reaching a real run.
+            # A root that cannot exist: should a regression ever admit an unasked stable run, the entry fails on its first read here instead of reaching a real run.
             rc = main_fn(
                 ["--channel", "stable"], root=pathlib.Path("/nonexistent/local-release-gate-probe")
             )
@@ -721,12 +797,19 @@ def local_stable_admitted(module: object) -> str:
         return "main(['--channel', 'stable']) exited through SystemExit(%r)" % exc.code
     except Exception as exc:
         return "main(['--channel', 'stable']) raised %s: %s" % (type(exc).__name__, exc)
-    if rc != 2 or "cd-release-stable.yml" not in sink.getvalue():
-        return "main(['--channel', 'stable']) returned %r without naming cd-release-stable.yml" % rc
+    finally:
+        if saved is not None:
+            os.environ[LOCAL_ASK_ENV] = saved
+    if rc != 2 or LOCAL_ASK_ENV not in sink.getvalue():
+        return "main(['--channel', 'stable']) with no %s returned %r without naming it" % (
+            LOCAL_ASK_ENV,
+            rc,
+        )
     return ""
 
 
 LOCAL_TABLE = "%s.STEPS" % LOCAL_MODULE
+LOCAL_STABLE_TABLE = "%s.STABLE_STEPS" % LOCAL_MODULE
 LOCAL_MESSAGES = {
     "local-order-unreadable": "INVARIANT-FAIL: local-release-order: "
     + LOCAL_TABLE
@@ -768,10 +851,36 @@ LOCAL_MESSAGES = {
     + ", %s. The account Worker must reach a channel only after the CLI that speaks to it is published, sealed and tagged (R1, .ci/config/release-requires.json). Move the account rows after the tag.",
     "local-order-stable-step": "INVARIANT-FAIL: local-release-order: row %s of "
     + LOCAL_TABLE
-    + " is a stable step. Stable releases and stable deploys are CI/CD only (cd-release-stable.yml, ruling ASKED:2026-10-27T09:45Z); remove the row.",
-    "local-order-stable-admitted": "INVARIANT-FAIL: local-release-order: "
+    + " is a stable step. The edge table carries no stable row: a stable promotion runs from "
+    + LOCAL_STABLE_TABLE
+    + ", behind RELEASE_ASKED (PLAN-retire-nightlies-and-mentions S7); move the row there.",
+    "local-order-stable-unasked": "INVARIANT-FAIL: local-release-order: "
     + LOCAL_MODULE
-    + " does not refuse --channel stable (%s). Stable is CI/CD only; refuse it before anything is read.",
+    + " does not refuse an unasked --channel stable (%s). Every stable run, the dry run included, needs RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z; refuse it before anything is read.",
+    "local-stable-unreadable": "INVARIANT-FAIL: local-release-order: "
+    + LOCAL_STABLE_TABLE
+    + " cannot be imported (%s), so the stable promotion order was not checked.",
+    "local-stable-no-gate": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_STABLE_TABLE
+    + " runs "
+    + LOCAL_STABLE_GATE
+    + " --channel stable (%s), so nothing holds the stable soak before the promotion. Restore the gate row.",
+    "local-stable-before-gate": "INVARIANT-FAIL: local-release-order: in "
+    + LOCAL_STABLE_TABLE
+    + ", %s change what stable serves before the stable gate runs. Move the gate row first.",
+    "local-stable-no-promote": "INVARIANT-FAIL: local-release-order: no row of "
+    + LOCAL_STABLE_TABLE
+    + " runs "
+    + LOCAL_STABLE_PROMOTE
+    + " (%s), so the order check promoted nothing and verified nothing. Retarget it deliberately.",
+    "local-stable-mark-unverified": "INVARIANT-FAIL: local-release-order: row %s of "
+    + LOCAL_STABLE_TABLE
+    + " marks production with no "
+    + LOCAL_STABLE_VERIFY
+    + " row before it. The production markers claim the version is live and serving (cd-release-stable.yml); verify first.",
+    "local-stable-edge-step": "INVARIANT-FAIL: local-release-order: row %s of "
+    + LOCAL_STABLE_TABLE
+    + " publishes to edge (a seal, the version tag, an edge upload, a Worker deploy or a GitHub Release). A promotion publishes nothing new; remove the row.",
 }
 
 
@@ -789,16 +898,26 @@ def _local_release_phase() -> tuple[list[str], list[str]]:
         why = "%s: %s" % (type(exc).__name__, exc)
         return [LOCAL_MESSAGES["local-order-unreadable"] % why], []
     findings, shape = analyse_local_steps(steps)
-    why = local_stable_admitted(module)
+    try:
+        stable_steps = module.STABLE_STEPS
+    except Exception as exc:
+        findings.append(("local-stable-unreadable", "%s: %s" % (type(exc).__name__, exc)))
+        stable_shape: dict[str, object] = {"rows": 0, "gate": "", "writes": []}
+    else:
+        stable_findings, stable_shape = analyse_stable_steps(stable_steps)
+        findings.extend(stable_findings)
+    why = local_stable_unasked(module)
     if why:
-        findings.append(("local-order-stable-admitted", why))
+        findings.append(("local-order-stable-unasked", why))
     errors = [m for k, n in findings if (m := local_message_for(k, n)) is not None]
     if errors:
         return errors, []
     return [], [
         "local release order holds: %d rows in %s; seal '%s' immediately followed by the tag "
         "unit %s, none of them can_fail; the CLI publish (%s) before all %d account deploy "
-        "row(s) (each expanded per region); 0 stable rows, and --channel stable is refused"
+        "row(s) (each expanded per region); 0 stable rows. %d rows in %s: gate '%s' before "
+        "the %d promotion row(s) %s, production marked after the verification, no edge "
+        "publisher; an unasked --channel stable is refused"
         % (
             typing.cast("int", shape["rows"]),
             LOCAL_TABLE,
@@ -806,6 +925,11 @@ def _local_release_phase() -> tuple[list[str], list[str]]:
             ", ".join(typing.cast("list[str]", shape["tag"])),
             ", ".join(typing.cast("list[str]", shape["cli"])),
             typing.cast("int", shape["accounts"]),
+            typing.cast("int", stable_shape["rows"]),
+            LOCAL_STABLE_TABLE,
+            stable_shape["gate"],
+            len(typing.cast("list[str]", stable_shape["writes"])),
+            ", ".join(typing.cast("list[str]", stable_shape["writes"])),
         )
     ]
 
@@ -1032,6 +1156,11 @@ UPSTREAM_GATES = (
     "check:ci-ops-health",
     "check:deps",
 )
+# Upstream gates whose manifest step runs the Python module itself rather than `npm run <id>`
+# (scripts/ci-runner/manifest.ts `run:`); the step counts when it invokes that module.
+UPSTREAM_GATE_MODULES = {
+    "check:ci-ops-health": "rediacc_ci.quality.ops_health",
+}
 UPSTREAM_GATE_LABEL = "no-external-quality"
 UPSTREAM_GATE_ANNOUNCER = "rediacc_ci.quality.announce_gate_skips"
 # The one `if:` an external step may carry: the lane's standard guard and the label hold, nothing that can tell a schedule from a pull request. Compared with parentheses removed, because gate-bind wraps its `when:` conjunct in them, and with at most one gate-bind shard conjunct (`matrix.shard == N`) removed, because a shard index cannot tell a cadence either.
@@ -1073,15 +1202,96 @@ def _guard(value: object) -> str:
     return _SHARD_CONJUNCT_RE.sub("", _reduced(_expr(value)))
 
 
+def _substitution(code: str, i: int) -> tuple[str, int]:
+    """(body, index after it) of the command substitution opening at `code[i]` (a backtick, or `$(` with its matching parenthesis, one inside a quoted string or after a backslash not counting, 747c7fe6.1); an unclosed one runs to the end of the line."""
+    if code[i] == "`":
+        end = code.find("`", i + 1)
+        return (code[i + 1 :], len(code)) if end < 0 else (code[i + 1 : end], end + 1)
+    depth = 1
+    j = i + 2
+    quote = ""
+    while j < len(code) and depth:
+        ch = code[j]
+        if quote == "'":
+            quote = "" if ch == "'" else quote
+        elif ch == "\\":
+            j += 1
+        elif quote == '"':
+            quote = "" if ch == '"' else quote
+        elif ch in "'\"":
+            quote = ch
+        else:
+            depth += {"(": 1, ")": -1}.get(ch, 0)
+        j += 1
+    return (code[i + 2 : j - 1], j) if depth == 0 else (code[i + 2 :], len(code))
+
+
+def _split_chain(code: str) -> tuple[list[str], str | None]:
+    """(substitution bodies, rest) at the first `&&`, `||` or `;` outside single or double quotes; rest is None when the line never chains. A separator inside a quoted string is text (`echo "x && npm run <gate>"` names a gate, it does not run it, 4f789e58.1). A backslash outside single quotes escapes the next character, so `echo \\"x && npm run <gate>` opens no quote and chains (6ccb06b9.1). A command substitution (`$(` or a backtick) outside single quotes runs, so its body is returned as executed and the text around it stays text: `echo "$(date) npm run <gate>"` runs `date` only (6ccb06b9.2, e166b8d7.1)."""
+    subs: list[str] = []
+    quote = ""
+    i = 0
+    while i < len(code):
+        ch = code[i]
+        if quote == "'":
+            if ch == "'":
+                quote = ""
+        elif ch == "\\":
+            i += 2
+            continue
+        elif ch == "`" or code.startswith("$(", i):
+            body, i = _substitution(code, i)
+            subs.append(body)
+            continue
+        elif quote == '"':
+            if ch == '"':
+                quote = ""
+        elif ch in "'\"":
+            quote = ch
+        elif ch == ";":
+            return subs, code[i + 1 :]
+        elif code.startswith(("&&", "||"), i):
+            return subs, code[i + 2 :]
+        i += 1
+    return subs, None
+
+
+def _after_echo(code: str) -> str:
+    """What still executes on a line: an `echo`/`printf` is text, but the command chained after it (`echo start && npm run <gate>`) runs, so the line is cut at its first `&&`, `||` or `;` outside quotes and the rest is judged again (17f9d3d7.2, 4f789e58.1). A substitution inside the echo runs, so its body is kept and the text around it is dropped (6ccb06b9.2, e166b8d7.1)."""
+    kept: list[str] = []
+    while code.startswith(("echo ", "printf ")):
+        subs, rest = _split_chain(code)
+        kept.extend(subs)
+        if rest is None:
+            return "\n".join(kept)
+        code = rest.strip()
+    kept.append(code)
+    return "\n".join(part for part in kept if part)
+
+
+def _executed_lines(run: str) -> str:
+    """The lines of a `run:` script that execute: comment lines, a trailing ` # comment`, and the `echo`/`printf` part of a line dropped, so a gate named only in text does not read as run."""
+    kept = []
+    for line in run.splitlines():
+        code = _after_echo(line.split(" #", 1)[0].strip())
+        if not code or code.startswith("#"):
+            continue
+        kept.append(code)
+    return "\n".join(kept)
+
+
 def upstream_gate_steps(quality_doc: object) -> dict[str, list[tuple[str, int, dict]]]:
-    """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`."""
+    """gate id -> every (job, step index, step) in ci-quality.yml whose `run:` invokes `npm run <id>`, or the gate's registered module (UPSTREAM_GATE_MODULES)."""
     found: dict[str, list[tuple[str, int, dict]]] = {gate: [] for gate in UPSTREAM_GATES}
     jobs = quality_doc.get("jobs") if isinstance(quality_doc, dict) else None
     for job, body in (jobs if isinstance(jobs, dict) else {}).items():
         for i, st in enumerate(_steps(body)):
-            run = _text(st.get("run"))
+            run = _executed_lines(_text(st.get("run")))
             for gate in UPSTREAM_GATES:
-                if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run):
+                module = UPSTREAM_GATE_MODULES.get(gate)
+                if re.search(r"\bnpm run %s(?![\w:-])" % re.escape(gate), run) or (
+                    module and re.search(r"\bpython3 -m %s(?![\w.])" % re.escape(module), run)
+                ):
                     found[gate].append((job, i, st))
     return found
 
@@ -1237,7 +1447,9 @@ def _preflight_phase(ci_file: str, cd_file: str, hk_file: str) -> tuple[list[str
     return [], ["cd-preflight holds: " + "; ".join(shape)]
 
 
-def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[str], list[str]]:
+def _release_phase(
+    ci_file: str, cd_file: str, action_file: str, perms_file: str = ""
+) -> tuple[list[str], list[str]]:
     """(errors, info lines). Missing or unparseable inputs are errors: unread is never fine."""
     files = {"ci": ci_file, "cd": cd_file, "action": action_file}
     docs = {}
@@ -1250,7 +1462,11 @@ def _release_phase(ci_file: str, cd_file: str, action_file: str) -> tuple[list[s
             docs[key] = load_workflow(path)
         except SetupExitError as exc:
             return ["INVARIANT-FAIL: release-order: %s" % exc.message.strip()], []
-    findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"])
+    perms_script = ""
+    if perms_file and os.path.isfile(perms_file):
+        with open(perms_file, encoding="utf-8") as handle:
+            perms_script = handle.read()
+    findings, shape = analyse_release(docs["ci"], docs["cd"], docs["action"], perms_script)
     errors = [m for k, n in findings if (m := release_message_for(k, n, files)) is not None]
     if errors:
         return errors, []
@@ -2221,6 +2437,9 @@ def main(argv: list[str]) -> int:
     action_file = os.environ.get("APP_TOKEN_ACTION_FILE") or os.path.join(
         root_dir, ".github", "actions", "app-token", "action.yml"
     )
+    perms_file = os.environ.get("APP_TOKEN_PERMS_FILE") or os.path.join(
+        root_dir, ".github", "actions", "app-token", "perms.py"
+    )
     hk_file = os.environ.get("HOUSEKEEPING_WORKFLOW_FILE") or os.path.join(
         root_dir, ".github", "workflows", "ops-housekeeping.yml"
     )
@@ -2265,7 +2484,9 @@ def main(argv: list[str]) -> int:
 
     release_info: list[str] = []
     if release_phase:
-        release_errors, release_info = _release_phase(workflow_file, cd_file, action_file)
+        release_errors, release_info = _release_phase(
+            workflow_file, cd_file, action_file, perms_file
+        )
         preflight_errors, preflight_info = _preflight_phase(workflow_file, cd_file, hk_file)
         upstream_errors, upstream_info = _upstream_gate_phase(workflow_file, quality_file)
         pins_errors, pins_info = _pins_soaked_phase(pins_file)
@@ -2313,4 +2534,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("ci_workflow_invariants.py", sys.argv[1:])
     raise SystemExit(main(sys.argv[1:]))

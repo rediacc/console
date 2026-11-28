@@ -1,0 +1,27 @@
+{
+  "EDGE_CASES": [
+    ["a plain commit", "git commit -m \"feat(x): y\" -- a.ts"],
+    ["a valid hotfix", "git commit -m \"fix(ci): x [hotfix]\n\nHotfix-Evidence: 12345678\" -- a.ts"],
+    ["a hotfix above the file limit", "git commit -m \"fix: x [hotfix]\n\nHotfix-Evidence: 12345678\" -- a b c d e f"],
+    ["a hotfix with no evidence", "git commit -m \"fix: x [hotfix]\" -- a.ts"],
+    ["a hotfix whose evidence has no known shape", "git commit -m \"fix: x [hotfix]\n\nHotfix-Evidence: trust me\" -- a.ts"],
+    ["the ASKED evidence form", "git commit -m \"fix: x [hotfix]\n\nHotfix-Evidence: ASKED:2026-09-25T10:00Z\" -- a.ts"],
+    ["a wrapper payload is still judged", "sh -c 'git commit -m \"feat: y\" -- a.ts'"],
+    ["a commit in a scratch repo", "git -C /tmp commit -m \"x\" -- a"],
+    ["prose about committing", "echo 'git commit on main'"],
+    ["git log is not a commit", "git log -n 5"]
+  ],
+  "MESSAGE_CASES": [
+    ["a python heredoc chained before -F - yields only the commit's own body", "python3 - <<'EOF'\nprint('PR-TASK: deadbeef')\nEOF\ngit commit -F - -- a <<'EOF'\nfeat: x\nEOF", "feat: x"],
+    ["a cat heredoc piped into -F - is the message", "cat <<'EOF' | git commit -F -\nfeat: y\nEOF", "feat: y"],
+    ["-F <file> with an unrelated heredoc earlier yields the file", "cat > other.md <<'EOF'\nnot the message\nEOF\ngit commit -F msgfile -- a", "feat: from the file"],
+    ["-F /dev/stdin is stdin, never the hook's own", "git commit -F /dev/stdin <<'EOF'\nfeat: d\nEOF", "feat: d"],
+    ["a here-string on -F -", "git commit -F - <<< 'feat: hs'", "feat: hs"],
+    ["-F <file> ignores its own stray heredoc", "git commit -F msgfile <<'EOF'\nnoise\nEOF", "feat: from the file"],
+    ["CONTROL: the plain -F - heredoc shape", "git commit -F - -- a <<'EOF'\nfeat: x\nEOF", "feat: x"],
+    ["CONTROL: a piped stdin stays opaque", "printf 'feat: p' | git commit -F -", ""],
+    {"//": "#9888de00: the bytes on disk are an earlier command's, so the file is never read."},
+    ["-F <file> this same command writes first is not read", "printf 'feat: new' > msgfile && git commit -F msgfile -- a", ""],
+    ["CONTROL: -F <file> after a write to another file is read", "printf 'x' > other.md && git commit -F msgfile -- a", "feat: from the file"]
+  ]
+}

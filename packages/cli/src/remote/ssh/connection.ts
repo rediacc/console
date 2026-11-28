@@ -2,9 +2,14 @@ import { type ChildProcess, type StdioOptions, spawn } from 'node:child_process'
 import { DEFAULTS } from '@rediacc/shared/config';
 import { writeStderr } from '../../services/core/request-context.js';
 import { getPlatform, windowsToUnixPath } from '../utils/platform.js';
+import { decodeSSHKey } from '../utils/sshKeyText.js';
 import { addKeyToAgent, isSSHAgentAvailable, startSSHAgent, stopSSHAgent } from './agent.js';
-import { createTempSSHKeyFile, decodeSSHKey, removeTempSSHKeyFile } from './keyManager.js';
-import { createTempKnownHostsFile, removeTempKnownHostsFile } from './knownHosts.js';
+import { createTempSSHKeyFile, removeTempSSHKeyFile } from './keyManager.js';
+import {
+  createTempKnownHostsFile,
+  type KnownHostsTarget,
+  removeTempKnownHostsFile,
+} from './knownHosts.js';
 
 /**
  * Connection method used for SSH
@@ -122,8 +127,9 @@ export function buildSSHOptions(options: {
     ...SSH_KEEPALIVE_OPTIONS
   );
 
+  // IdentitiesOnly keeps ssh to the given key: a user's agent full of other keys would otherwise be offered first and can exhaust the server's MaxAuthTries.
   if (convertedKeyFilePath) {
-    opts.push('-i', convertedKeyFilePath);
+    opts.push('-i', convertedKeyFilePath, '-o', 'IdentitiesOnly=yes');
   }
 
   return opts;
@@ -134,7 +140,7 @@ export function buildSSHOptions(options: {
  *
  * @param sshKey - SSH private key content
  * @param known_hosts - Known hosts entry from vault (REQUIRED)
- * @param port - SSH port (default: 22)
+ * @param target - Host and port ssh dials (the pinned keys are written under it)
  * @param sshExecutable - Optional SSH executable for path conversion
  * @param forceTTY - Force TTY allocation with -tt (default: false)
  * @returns SSH setup result with options and agent info
@@ -142,7 +148,7 @@ export function buildSSHOptions(options: {
 async function setupSSHAgentConnection(
   sshKey: string,
   known_hosts: string,
-  port = 22,
+  target: KnownHostsTarget,
   sshExecutable?: string,
   forceTTY = false
 ): Promise<SSHSetupResult> {
@@ -169,12 +175,12 @@ async function setupSSHAgentConnection(
     await addKeyToAgent(sshKey, agentResult.socketPath);
 
     // Create known hosts file
-    const knownHostsPath = await createTempKnownHostsFile(known_hosts);
+    const knownHostsPath = await createTempKnownHostsFile(known_hosts, target);
 
     // Build SSH options (no key file needed, agent will provide it)
     const sshOptions = buildSSHOptions({
       knownHostsPath,
-      port,
+      port: target.port,
       strictHostKeyChecking: true,
       sshExecutable,
       forceTTY,
@@ -199,7 +205,7 @@ async function setupSSHAgentConnection(
  *
  * @param sshKey - SSH private key content
  * @param known_hosts - Known hosts entry from vault (REQUIRED)
- * @param port - SSH port (default: 22)
+ * @param target - Host and port ssh dials (the pinned keys are written under it)
  * @param sshExecutable - Optional SSH executable for path conversion
  * @param forceTTY - Force TTY allocation with -tt (default: false)
  * @returns SSH setup result with options and file paths
@@ -207,7 +213,7 @@ async function setupSSHAgentConnection(
 async function setupSSHConnection(
   sshKey: string,
   known_hosts: string,
-  port = 22,
+  target: KnownHostsTarget,
   sshExecutable?: string,
   forceTTY = false
 ): Promise<SSHSetupResult> {
@@ -229,13 +235,13 @@ async function setupSSHConnection(
 
   // Create temporary files
   const keyFilePath = await createTempSSHKeyFile(sshKey);
-  const knownHostsPath = await createTempKnownHostsFile(known_hosts);
+  const knownHostsPath = await createTempKnownHostsFile(known_hosts, target);
 
   // Build SSH options
   const sshOptions = buildSSHOptions({
     knownHostsPath,
     keyFilePath,
-    port,
+    port: target.port,
     strictHostKeyChecking: true,
     sshExecutable,
     forceTTY,
@@ -281,6 +287,8 @@ async function cleanupSSHConnection(result: SSHSetupResult): Promise<void> {
  * SSH Connection constructor options
  */
 export interface SSHConnectionCtorOptions {
+  /** Host the ssh command dials; the pinned keys are written under it for OpenSSH. */
+  host: string;
   /** SSH port number (default: 22) */
   port?: number;
   /** Whether to try SSH agent first (default: true) */
@@ -296,6 +304,7 @@ export interface SSHConnectionCtorOptions {
 export class SSHConnection {
   private readonly sshKey: string;
   private readonly known_hosts: string;
+  private readonly host: string;
   private readonly port: number;
   private readonly preferAgent: boolean;
   private readonly forceTTY: boolean;
@@ -307,9 +316,9 @@ export class SSHConnection {
    *
    * @param sshKey - SSH private key content
    * @param known_hosts - Host key from vault (REQUIRED for security)
-   * @param options - Connection options (port, preferAgent, forceTTY) or port number for backward compatibility
+   * @param options - Connection options (host, port, preferAgent, forceTTY)
    */
-  constructor(sshKey: string, known_hosts: string, options?: SSHConnectionCtorOptions | number) {
+  constructor(sshKey: string, known_hosts: string, options: SSHConnectionCtorOptions) {
     if (!known_hosts || known_hosts.trim().length === 0) {
       throw new Error(
         'Security Error: known_hosts is required for SSH connections. ' +
@@ -319,16 +328,10 @@ export class SSHConnection {
     this.sshKey = sshKey;
     this.known_hosts = known_hosts;
 
-    // Support both old (port number) and new (options object) signatures
-    if (typeof options === 'number') {
-      this.port = options;
-      this.preferAgent = true;
-      this.forceTTY = false;
-    } else {
-      this.port = options?.port ?? DEFAULTS.SSH.PORT;
-      this.preferAgent = options?.preferAgent ?? true;
-      this.forceTTY = options?.forceTTY ?? false;
-    }
+    this.host = options.host;
+    this.port = options.port ?? DEFAULTS.SSH.PORT;
+    this.preferAgent = options.preferAgent ?? true;
+    this.forceTTY = options.forceTTY ?? false;
   }
 
   /**
@@ -351,7 +354,7 @@ export class SSHConnection {
           this.setupResult = await setupSSHAgentConnection(
             this.sshKey,
             this.known_hosts,
-            this.port,
+            { host: this.host, port: this.port },
             undefined, // sshExecutable
             this.forceTTY
           );
@@ -371,7 +374,7 @@ export class SSHConnection {
     this.setupResult = await setupSSHConnection(
       this.sshKey,
       this.known_hosts,
-      this.port,
+      { host: this.host, port: this.port },
       undefined, // sshExecutable
       this.forceTTY
     );

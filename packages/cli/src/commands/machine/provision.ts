@@ -48,6 +48,7 @@ export function registerCloudCommands(machine: Command, _program: Command): void
   // machine provision
   machine
     .command('provision')
+    .summary(t('commands.machine.provision.descriptionShort'))
     .description(t('commands.machine.provision.description'))
     .argument('<name>', t('options.name'))
     .requiredOption('--provider <name>', t('commands.machine.provision.optionProvider'))
@@ -78,6 +79,7 @@ export function registerCloudCommands(machine: Command, _program: Command): void
   // machine deprovision
   machine
     .command('deprovision')
+    .summary(t('commands.machine.deprovision.descriptionShort'))
     .description(t('commands.machine.deprovision.description'))
     .argument('<name>', t('options.name'))
     .option('--force', t('commands.machine.deprovision.optionForce'))

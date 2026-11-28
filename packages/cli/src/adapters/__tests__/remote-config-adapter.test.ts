@@ -1,4 +1,4 @@
-import type { RdcConfig } from '@rediacc/shared/config-schema';
+import { ConfigPolicyFieldError, type RdcConfig } from '@rediacc/shared/config-schema';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Hoisted Mocks ──────────────────────────────────────────────────────
@@ -36,7 +36,10 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 }));
 
 vi.mock('@rediacc/shared/config-crypto', () => ({
-  ENVELOPE_VERSION: 3,
+  ENVELOPE_VERSION: 4,
+  generateConfigKey: vi.fn(() => Promise.resolve({})),
+  unwrapConfigKey: vi.fn(() => Promise.resolve({})),
+  unwrapEnvelopeConfigKey: vi.fn(() => Promise.resolve({})),
   derivePointerBlindingKey: vi.fn(() => Promise.resolve({})),
   blindPointer: vi.fn((_key: unknown, pointer: string) => Promise.resolve(`blind:${pointer}`)),
   selectiveDecrypt: mockSelectiveDecrypt,
@@ -56,11 +59,13 @@ import {
   RemotePreconditionError,
   RemoteRollbackError,
   RemoteStaleSlotError,
+  RemoteTeamForbiddenError,
   RemoteTokenExpiredError,
   RemoteTokenIpMismatchError,
   RemoteUnreachableError,
   RemoteVersionConflictError,
 } from '../remote-config-adapter.js';
+import { resetLegacyEnvelopeWarnings } from '../remote-config-support.js';
 import type { RemoteTokenStorage } from '../remote-token-storage.js';
 
 // ─── Test Fixtures ───────────────────────────────────────────────────────
@@ -75,14 +80,20 @@ const REMOTE: RemoteConfig = {
 
 const CONFIG_NAME = 'test-config';
 
-/** What the (mocked) sealing step returns: a v3 envelope with its commitment salt. */
+/** What the (mocked) sealing step returns: a v4 envelope with its commitment salt and content-key wrap. */
 const SEALED_ENVELOPE = {
-  envelopeVersion: 3,
+  envelopeVersion: 4,
   id: 'cfg-id',
   version: 6,
   sdkEpoch: 10,
   commitments: { alg: 'HMAC-SHA256', fckSalt: 'fresh-salt', fields: {} },
+  wrappedConfigKey: 'wrapped-key',
+  configKeyVersion: 1,
+  cekGeneration: 1,
 };
+
+/** The content-key wrap a sync record keeps of SEALED_ENVELOPE. */
+const SEALED_WRAP = { wrappedConfigKey: 'wrapped-key', configKeyVersion: 1, cekGeneration: 1 };
 
 /** A pull response body: the blob plus the session material it carries. */
 function pullBody() {
@@ -114,6 +125,7 @@ function createMockTokenStorage() {
     updateToken: vi.fn(),
     recordSync: vi.fn(),
     delete: vi.fn(),
+    enrolledHere: vi.fn().mockResolvedValue(false),
     withLease: vi.fn(
       async (
         name: string,
@@ -170,6 +182,7 @@ describe('RemoteConfigAdapter', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetLegacyEnvelopeWarnings();
 
     tokenStorage = createMockTokenStorage();
     secureStorage = createMockSecureStorage();
@@ -346,7 +359,7 @@ describe('RemoteConfigAdapter', () => {
       expect(err).toBeInstanceOf(RemoteTokenIpMismatchError);
       expect(err).not.toBeInstanceOf(RemoteTokenExpiredError);
       expect((err as RemoteAuthError).reason).toBe('ip_mismatch');
-      expect((err as Error).message).toContain('rdc config remote enable');
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
       expect((err as Error).message).not.toBe(new RemoteTokenExpiredError().message);
     });
 
@@ -389,6 +402,39 @@ describe('RemoteConfigAdapter', () => {
       await expect(adapter.pull()).rejects.toThrow(RemotePasskeySecretMissingError);
     });
 
+    it('names the config in the enroll command of the missing-key error', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as RemotePasskeySecretMissingError).configName).toBe(CONFIG_NAME);
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
+    });
+
+    it('says the key is gone, likely after a restart, when this device enrolled the config', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+      tokenStorage.enrolledHere.mockResolvedValue(true);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as Error).message).toContain('no longer holds its key');
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
+    });
+
+    it('says the config is not enrolled on this device when it never was (a config copied here)', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+      tokenStorage.enrolledHere.mockResolvedValue(false);
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as Error).message).toContain('is not enrolled for config storage on this device');
+      expect((err as Error).message).not.toContain('no longer holds');
+      expect((err as Error).message).toContain(`rdc --config ${CONFIG_NAME} config remote enable`);
+    });
+
     it('should throw RemoteTokenExpiredError when token storage is empty', async () => {
       tokenStorage.get.mockResolvedValue(null);
 
@@ -412,7 +458,7 @@ describe('RemoteConfigAdapter', () => {
     it('should encrypt and call PUT endpoint', async () => {
       // Session
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10, cekGeneration: 1 },
       });
 
       // Encrypt result
@@ -456,7 +502,7 @@ describe('RemoteConfigAdapter', () => {
 
     it('should persist rotated tokens during push', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
         newServerToken: 'tok_push_rotated',
       });
 
@@ -485,7 +531,7 @@ describe('RemoteConfigAdapter', () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       // Session succeeds; the PUT then conflicts.
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       mockConfigServerFetch.mockRejectedValueOnce(
@@ -563,7 +609,7 @@ describe('RemoteConfigAdapter', () => {
   describe('testConnection', () => {
     it('should return true on success', async () => {
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
 
       const result = await adapter.testConnection();
@@ -586,18 +632,23 @@ describe('RemoteConfigAdapter', () => {
   });
   // ─── envelope v3: high-water mark, v2 read, tombstones (T8/T9) ──────────
 
-  describe('envelope v3 guards', () => {
+  describe('envelope guards', () => {
     const BINDING = 'store-001/config-001/team-001';
-    const seen = (highWater: number, envelopeVersion: 2 | 3 = 3) => ({
+    const seen = (highWater: number, envelopeVersion: 2 | 3 | 4 = 3) => ({
       binding: BINDING,
       highWater,
       envelopeVersion,
       fckSalt: 'stored-salt',
     });
-    const pulledAt = (version: number, envelopeVersion: 2 | 3 = 3) => ({
+    const pulledAt = (version: number, envelopeVersion: 2 | 3 | 4 = 3) => ({
       data: {
         ...pullBody(),
-        envelope: { ...pullBody().envelope, version, envelopeVersion },
+        envelope: {
+          ...pullBody().envelope,
+          version,
+          envelopeVersion,
+          ...(envelopeVersion === 4 ? SEALED_WRAP : {}),
+        },
       },
     });
 
@@ -616,6 +667,31 @@ describe('RemoteConfigAdapter', () => {
       tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5) });
       mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 2));
       await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteRollbackError);
+    });
+
+    it('names the config, not its GUID, when it refuses an envelope downgrade', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 2));
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect((err as Error).message).toContain(CONFIG_NAME);
+      expect((err as Error).message).not.toContain(REMOTE.configId);
+    });
+
+    it('refuses the v3 envelope once the device has seen v4 for this config', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 4) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 3));
+      await expect(adapter.pull()).rejects.toBeInstanceOf(RemoteRollbackError);
+      expect(tokenStorage.recordSync).not.toHaveBeenCalled();
+    });
+
+    it('control: a v4 pull over a recorded v4 opens and records the wrap', async () => {
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 4) });
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(6, 4));
+      await expect(adapter.pull()).resolves.toMatchObject({ version: 6 });
+      expect(tokenStorage.recordSync).toHaveBeenCalledWith(
+        CONFIG_NAME,
+        expect.objectContaining({ envelopeVersion: 4, configKey: SEALED_WRAP })
+      );
     });
 
     it('ignores a record that names another config', async () => {
@@ -643,10 +719,24 @@ describe('RemoteConfigAdapter', () => {
       warn.mockRestore();
     });
 
+    it('names the config, not its GUID, and warns once per config per process', async () => {
+      const { outputService } = await import('../../services/core/output.js');
+      const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(4, 2));
+      await adapter.pull();
+      mockConfigServerFetch.mockResolvedValueOnce(pulledAt(4, 2));
+      await adapter.pull();
+      expect(warn).toHaveBeenCalledTimes(1);
+      const text = String(warn.mock.calls[0]?.[0]);
+      expect(text).toContain(CONFIG_NAME);
+      expect(text).not.toContain(REMOTE.configId);
+      warn.mockRestore();
+    });
+
     it('a push from the version the device saw carries that envelope as its prior, and moves the mark', async () => {
       tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: seen(5, 2) });
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 10, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       mockConfigServerFetch.mockResolvedValueOnce({ data: { version: 6 } });
@@ -656,21 +746,26 @@ describe('RemoteConfigAdapter', () => {
       const options = mockSelectiveEncrypt.mock.calls.at(-1)?.[3] as {
         prior?: { envelopeVersion: number; fckSalt: string };
         storeId: string;
+        configKey: { version: number; cekGeneration: number };
       };
       expect(options.storeId).toBe('store-001');
       expect(options.prior).toMatchObject({ envelopeVersion: 2, fckSalt: 'stored-salt' });
+      // A v2 store gets a fresh content key at version 1, wrapped under the session's generation.
+      expect(options.configKey).toMatchObject({ version: 1, cekGeneration: 1 });
       expect(tokenStorage.recordSync).toHaveBeenCalledWith(CONFIG_NAME, {
         binding: BINDING,
         highWater: 6,
-        envelopeVersion: 3,
+        envelopeVersion: 4,
         fckSalt: 'fresh-salt',
+        configKey: SEALED_WRAP,
+        cekGeneration: 1,
       });
     });
 
     it('a 409 precondition_failed is RemotePreconditionError naming the pointers, not a version conflict', async () => {
       const { ConfigServerError } = await import('../../services/config/config-server-client.js');
       mockConfigServerFetch.mockResolvedValueOnce({
-        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1 },
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
       });
       mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
       const refusal = new ConfigServerError('Precondition failed', 409, 'precondition_failed');
@@ -698,6 +793,232 @@ describe('RemoteConfigAdapter', () => {
         '/resources/machines/m1/ip',
         'opaque-key',
       ]);
+    });
+  });
+  // ─── policy: refusal before the lease, record read, high-water carry (review 1121-1) ───
+
+  describe('policy', () => {
+    const BINDING = 'store-001/config-001/team-001';
+    const RECORD = { version: 2, cekGeneration: 1, blob: 'sealed' };
+    const notFound = async () => {
+      const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+      return Object.assign(new ConfigServerError('no policy', 404), { code: 'policy_not_found' });
+    };
+    const pullBodyWith = (extra: Record<string, unknown>) => ({
+      data: {
+        ...pullBody(),
+        envelope: {
+          ...pullBody().envelope,
+          configId: 'config-001',
+          version: 3,
+          teamId: 'team-001',
+        },
+        ...extra,
+      },
+    });
+
+    beforeEach(() => {
+      mockSelectiveDecrypt.mockResolvedValue({ id: 'c', version: 3, machines: {} });
+    });
+
+    it('refuses a push that carries a policy field before the lease and any request (no token spent)', async () => {
+      const config = {
+        schemaVersion: 3,
+        id: 'i',
+        version: 1,
+        policy: { version: 1, defaults: {} },
+      } as RdcConfig;
+      await expect(adapter.push(config, 1)).rejects.toBeInstanceOf(ConfigPolicyFieldError);
+      expect(tokenStorage.withLease).not.toHaveBeenCalled();
+      expect(mockConfigServerFetch).not.toHaveBeenCalled();
+    });
+
+    it('a push without a policy field still reaches the server (control)', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
+      });
+      mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
+      mockConfigServerFetch.mockResolvedValueOnce({ data: { version: 2 } });
+      await adapter.push({ schemaVersion: 3, id: 'i', version: 1 }, 1);
+      expect(tokenStorage.withLease).toHaveBeenCalledTimes(1);
+    });
+
+    it('parses the policy record a pull carries', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce(pullBodyWith({ policy: RECORD }));
+      expect((await adapter.pull()).policy).toEqual(RECORD);
+    });
+
+    it('reads a pull with policy null as no record, and refuses a malformed record', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce(pullBodyWith({ policy: null }));
+      expect((await adapter.pull()).policy).toBeNull();
+      mockConfigServerFetch.mockResolvedValueOnce(pullBodyWith({ policy: { version: 0 } }));
+      await expect(adapter.pull()).rejects.toThrow(/malformed policy record/);
+    });
+
+    it('carries the policy high-water marks through a pull and a push', async () => {
+      const marks = { 'store-001/config-001/team-001': 4 };
+      const synced = {
+        binding: BINDING,
+        highWater: 3,
+        envelopeVersion: 3,
+        fckSalt: 'salt',
+        policyHighWater: marks,
+      };
+      tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: synced });
+      mockConfigServerFetch.mockResolvedValueOnce(pullBodyWith({}));
+      await adapter.pull();
+      expect(tokenStorage.recordSync).toHaveBeenLastCalledWith(
+        CONFIG_NAME,
+        expect.objectContaining({ policyHighWater: marks })
+      );
+
+      mockConfigServerFetch.mockResolvedValueOnce({
+        data: { server_secret: 'c2Vy', sdk_derived: 'c2Rr', sdkEpoch: 1, cekGeneration: 1 },
+      });
+      mockSelectiveEncrypt.mockResolvedValue({ encryptedBlob: 'e', envelope: SEALED_ENVELOPE });
+      mockConfigServerFetch.mockResolvedValueOnce({ data: { version: 4 } });
+      await adapter.push({ schemaVersion: 3, id: 'i', version: 3 }, 3);
+      expect(tokenStorage.recordSync).toHaveBeenLastCalledWith(
+        CONFIG_NAME,
+        expect.objectContaining({ policyHighWater: marks })
+      );
+    });
+
+    /** Serve session, pull, the store's config list and a 404 for every policy read; collect the paths asked. */
+    function servePolicyContext(configs: Array<{ configId: string; teamId: string | null }>) {
+      const asked: string[] = [];
+      const session = {
+        data: {
+          server_secret: 'c2Vy',
+          sdk_derived: 'c2Rr',
+          sdkEpoch: 1,
+          cekGeneration: 1,
+          orgRole: 'member',
+          userEmail: 'm@example.com',
+        },
+      };
+      const answer = async (path: string) => {
+        if (path.includes('/policy')) throw await notFound();
+        return pullBodyWith({});
+      };
+      mockConfigServerFetch.mockImplementation((path: string) => {
+        asked.push(path);
+        if (path.includes('/configs/session')) return Promise.resolve(session);
+        if (path.endsWith('/configs')) return Promise.resolve({ data: { configs } });
+        return answer(path);
+      });
+      return asked;
+    }
+
+    it("reads the org-level config's record beside the team config's own", async () => {
+      const asked = servePolicyContext([
+        { configId: 'org-config', teamId: null },
+        { configId: 'config-001', teamId: 'team-001' },
+      ]);
+      const context = await adapter.policyContext();
+      expect(context.principal).toEqual({ orgRole: 'member', userEmail: 'm@example.com' });
+      expect(asked).toContain('/account/api/v1/configs/org-config/policy');
+      expect(asked).toContain('/account/api/v1/configs/config-001/policy?teamId=team-001');
+    });
+
+    it('asks for no org record when the store lists no org-level config (control)', async () => {
+      const asked = servePolicyContext([{ configId: 'config-001', teamId: 'team-001' }]);
+      await adapter.policyContext();
+      expect(asked.filter((path) => path.includes('/policy'))).toEqual([
+        '/account/api/v1/configs/config-001/policy?teamId=team-001',
+      ]);
+    });
+
+    describe('kept for an unreachable server (vm:check A2.2, 2026-11-27)', () => {
+      const SYNCED = { binding: BINDING, highWater: 3, envelopeVersion: 3, fckSalt: 'salt' };
+      const KEPT = {
+        principal: { orgRole: 'member', userEmail: 'm@example.com' },
+        policy: { locked: [], ignoredLocked: [] },
+      };
+      const refused = () => new TypeError('fetch failed', { cause: { code: 'ECONNREFUSED' } });
+
+      it('keeps the context it opened in the sync record', async () => {
+        tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: SYNCED });
+        servePolicyContext([{ configId: 'config-001', teamId: 'team-001' }]);
+        const context = await adapter.policyContext();
+        expect(tokenStorage.recordSync).toHaveBeenLastCalledWith(
+          CONFIG_NAME,
+          expect.objectContaining({ binding: BINDING, policyContext: context })
+        );
+      });
+
+      it('judges with the kept context when the server cannot be reached', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).resolves.toEqual(KEPT);
+      });
+
+      it('control: with no kept context the unreachable error propagates', async () => {
+        tokenStorage.get.mockResolvedValue({ token: 't', wrappedCek: 'w', sync: SYNCED });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).rejects.toBeInstanceOf(RemoteUnreachableError);
+      });
+
+      it('control: a refusal the server answered is never masked by the kept context', async () => {
+        const { ConfigServerError } = await import('../../services/config/config-server-client.js');
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(
+          Object.assign(new ConfigServerError('forbidden', 403), { code: 'team_forbidden' })
+        );
+        const error = await adapter.policyContext().catch((e: unknown) => e);
+        expect(error).not.toEqual(KEPT);
+        expect(error).toBeInstanceOf(RemoteTeamForbiddenError);
+      });
+
+      it('control: a context kept for another binding is not used', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, binding: 'store-001/other/team-001', policyContext: KEPT },
+        });
+        mockConfigServerFetch.mockRejectedValue(refused());
+        await expect(adapter.policyContext()).rejects.toBeInstanceOf(RemoteUnreachableError);
+      });
+
+      it('reads the kept context with no request and no token (review df48a12a.1)', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: '',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, policyContext: KEPT },
+        });
+        await expect(adapter.cachedPolicyContext()).resolves.toEqual(KEPT);
+        expect(mockConfigServerFetch).not.toHaveBeenCalled();
+      });
+
+      it('control: reads no context kept for another binding', async () => {
+        tokenStorage.get.mockResolvedValue({
+          token: 't',
+          wrappedCek: 'w',
+          sync: { ...SYNCED, binding: 'store-001/other/team-001', policyContext: KEPT },
+        });
+        await expect(adapter.cachedPolicyContext()).resolves.toBeUndefined();
+      });
+    });
+  });
+
+  describe('a missing key whose enrollment marker cannot be read', () => {
+    it('keeps the key-gone wording, never claiming the device did not enroll', async () => {
+      mockConfigServerFetch.mockResolvedValueOnce({ data: pullBody() });
+      secureStorage.get.mockResolvedValue(null);
+      tokenStorage.enrolledHere.mockRejectedValue(new Error('EACCES'));
+
+      const err = await adapter.pull().catch((e: unknown) => e);
+      expect(err).toBeInstanceOf(RemotePasskeySecretMissingError);
+      expect((err as Error).message).toContain('no longer holds its key');
+      expect((err as Error).message).not.toContain('has not enrolled');
     });
   });
 });

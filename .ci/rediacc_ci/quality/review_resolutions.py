@@ -32,6 +32,17 @@ A WAIVER IS TRUSTED ON ITS GRAMMAR. The `ASKED:` minute is matched against the l
 WHAT A GREEN DOES NOT MEAN. It does not mean every commit is covered by a record: per-commit coverage (patch-id matching across rebases) stays with `wl_review.py --check` and the push guard. Rule iv only refuses the case where the directory holds nothing at all.
 
 EXIT CODES: 0 clean, 1 a refusal, 2 CANNOT RUN (a pull_request run with no head ref, an unreadable config, no base to measure rule iv against while the directory is empty, or a failed control). A local run on `main` or a detached HEAD prints "not a PR branch: nothing to judge" and exits 0.
+
+---- gate ----
+step: Review resolutions
+needs: none
+selftest: true
+lane: quality-branch
+why: a `deferred` resolution counted as resolved in every local reader and no CI step
+     read resolutions at all, so 1007-1 merged as PR #599 carrying a deferral. Operator
+     ruling 2026-10-08: a finding is fixed before merge, always; the one escape is an
+     operator-ruled waiver with an ASKED: minute.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -47,7 +58,7 @@ import sys
 import tempfile
 from typing import TYPE_CHECKING
 
-from rediacc_ci import controls
+from rediacc_ci import controls, paths
 from rediacc_ci.review import review_table
 from rediacc_ci.review.pr_labels import branch_slug
 
@@ -674,3 +685,12 @@ def main(argv: list[str], *, root: pathlib.Path, env: Mapping[str, str] | None =
     except CannotRunError as exc:
         print("review resolutions: CANNOT RUN (exit 2, not a verdict): %s" % exc, file=sys.stderr)
         return 2
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_review_resolutions.py", sys.argv[1:], switches=("--selftest",), valued=("--root",)
+    )
+    raise SystemExit(main(sys.argv[1:], root=paths.repo_root()))

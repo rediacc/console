@@ -6,13 +6,14 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildAllTools, registerAllTools } from '../tools.js';
+import { FIRST_CALL_CTX } from './policy-ctx.js';
 
 const mockExecFile = vi.fn();
 vi.mock('node:child_process', () => ({
   execFile: (...args: unknown[]) => mockExecFile(...args),
 }));
 
-type Handler = (args: Record<string, unknown>) => Promise<unknown>;
+type Handler = (args: Record<string, unknown>, ctx: unknown) => Promise<unknown>;
 
 function handlers(): Map<string, Handler> {
   const registered = new Map<string, Handler>();
@@ -28,7 +29,7 @@ function handlers(): Map<string, Handler> {
 function callTool(name: string, args: Record<string, unknown>): Promise<unknown> {
   const handler = handlers().get(name);
   if (!handler) return Promise.reject(new Error(`no handler registered for ${name}`));
-  return handler(args);
+  return handler(args, FIRST_CALL_CTX);
 }
 
 function childPrints(): void {

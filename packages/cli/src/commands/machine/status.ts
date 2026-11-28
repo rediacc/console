@@ -677,7 +677,8 @@ async function resolveStatusMachine(name: string | undefined): Promise<string> {
 /**
  * The sections a `machine status` job asks `list-all` for. The licence detail and the stale-binary probe ride
  * the same job as the rest (its `licenses` and `stale-processes` sections), so a filtered run asks for both next
- * to what it was asked for. Undefined is the full listing.
+ * to what it was asked for. Undefined is the full listing, which renet answers with every section except
+ * `storage-health` (about 10 s); `--storage-health` names it, so the hint printed without the flag stays true.
  */
 function requestedSections(sections: string[]): string[] | undefined {
   return sections.length > 0
@@ -1036,6 +1037,11 @@ async function renderStatusFromJob(
     );
   }
 
+  // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
+  // Exit code 2 matches the precedent in machine/health.ts (0 = clean, 1 = warn, 2 = error). Set before the document prints, so its JSON envelope says success:false.
+  const strictDrift = options.strict ? (listResult.health_drift?.entries.length ?? 0) : 0;
+  if (strictDrift > 0) setExitCode(2);
+
   if (format === 'table') {
     renderTableMode(
       listResult,
@@ -1078,13 +1084,8 @@ async function renderStatusFromJob(
     writeStderr(`\n${t('commands.machine.status.storageHealthHint')}\n`);
   }
 
-  // --strict: exit non-zero when any container has crossed the health-drift threshold. Lets CI scripts gate deploys on post-deploy convergence without hand-parsing the JSON.
-  // Exit code 2 matches the precedent in machine/health.ts (0 = clean,
-  // 1 = warn, 2 = error).
-  if (options.strict && (listResult.health_drift?.entries.length ?? 0) > 0) {
-    const count = listResult.health_drift?.entries.length ?? 0;
-    writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count })}\n`);
-    setExitCode(2);
+  if (strictDrift > 0) {
+    writeStderr(`\n${t('commands.machine.status.strictDriftDetected', { count: strictDrift })}\n`);
   }
 
   if (options.syncCerts) {

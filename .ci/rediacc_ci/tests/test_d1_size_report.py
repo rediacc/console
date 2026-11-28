@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import sqlite3
+import subprocess
+import textwrap
 from datetime import UTC, datetime
 
 import pytest
 
-from rediacc_ci.core import ghx
+from rediacc_ci import paths
 from rediacc_ci.ops import d1_size_report as sr
 
 NOW = datetime(2026, 11, 9, 12, 0, tzinfo=UTC)
@@ -287,203 +290,74 @@ def test_a_dataset_name_that_is_not_an_identifier_is_refused_before_any_ae_query
     assert "not an identifier" in capsys.readouterr().err
 
 
-class _FakeGh:
-    def __init__(self, issues: list[dict]) -> None:
-        self.bodies: list[str] = []
-        self.issues = issues
-        self.verbs: list[str] = []
-
-    def __call__(self, *args: str) -> str:
-        self.verbs.append(args[1])
-        if "--body" in args:
-            self.bodies.append(args[args.index("--body") + 1])
-        return json.dumps(self.issues) if args[1] == "list" else ""
-
-
-def _doc(*alerting: str) -> dict:
-    return {
-        "regions": [{"region": r, "alerts": ["x"]} for r in alerting]
-        + [{"region": "ok", "alerts": []}]
-    }
-
-
-def test_the_alert_issue_is_created_when_none_is_open():
-    gh = _FakeGh([])
-    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["create"]
-
-
-def test_the_alert_lookup_is_a_listing_not_a_search():
-    seen: list[tuple[str, ...]] = []
-
-    class Spy(_FakeGh):
-        def __call__(self, *args: str) -> str:
-            seen.append(args)
-            return super().__call__(*args)
-
-    sr.sync_alert_issue(_doc("eu"), "report", Spy([]))
-    assert "--search" not in seen[0]
-
-
-def test_a_full_issue_listing_refuses_instead_of_creating_a_duplicate():
-    full = [
-        {"number": n, "title": "other", "body": "", "comments": []}
-        for n in range(sr.ISSUE_LIST_LIMIT)
-    ]
-    gh = _FakeGh(full)
-    with pytest.raises(sr.GhError, match="listing limit"):
-        sr.sync_alert_issue(_doc("eu"), "report", gh)
-    assert gh.verbs == ["list"]
-
-
-def test_a_create_that_fails_after_the_post_was_accepted_is_not_a_failure():
-    found = {"number": 9, "title": sr.ISSUE_TITLE, "body": ""}
-
-    class Flaky(_FakeGh):
-        def __call__(self, *args: str) -> str:
-            # The lookup after the failed create finds the issue the POST made.
-            if args[1] == "list" and "create" in self.verbs:
-                self.issues = [found]
-            out = super().__call__(*args)
-            if args[1] == "create":
-                raise RuntimeError("502")
-            return out
-
-    gh = Flaky([])
-    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["create"]
-    assert gh.verbs == ["list", "create", "list"]
-
-
-def test_a_create_that_fails_and_leaves_no_issue_still_raises():
-    class Failing(_FakeGh):
-        def __call__(self, *args: str) -> str:
-            if args[1] == "create":
-                raise RuntimeError("502")
-            return super().__call__(*args)
-
-    with pytest.raises(RuntimeError):
-        sr.sync_alert_issue(_doc("eu"), "report", Failing([]))
-
-
-def test_the_same_alert_set_edits_the_body_without_a_new_comment():
-    marker = sr.alert_marker(_doc("eu"))
-    gh = _FakeGh([{"number": 7, "title": sr.ISSUE_TITLE, "body": "old\n" + marker}])
-    assert sr.sync_alert_issue(_doc("eu"), "report", gh) == ["edit"]
-    assert gh.verbs == ["list", "edit"]
-
-
-def test_a_changed_alert_set_edits_and_comments():
-    gh = _FakeGh([{"number": 7, "title": sr.ISSUE_TITLE, "body": sr.alert_marker(_doc("eu"))}])
-    assert sr.sync_alert_issue(_doc("eu", "us"), "report", gh) == ["comment", "edit"]
-    assert gh.verbs == ["list", "comment", "edit"]
-
-
-def test_a_failed_edit_after_the_comment_retries_only_the_edit():
-    issue = {
-        "number": 7,
-        "title": sr.ISSUE_TITLE,
-        "body": sr.alert_marker(_doc("eu")),
-        "comments": [],
-    }
-
-    class EditFails(_FakeGh):
-        def __call__(self, *args: str) -> str:
-            out = super().__call__(*args)
-            if args[1] == "edit":
-                raise RuntimeError("502")
-            return out
-
-    first = EditFails([issue])
-    with pytest.raises(RuntimeError):
-        sr.sync_alert_issue(_doc("eu", "us"), "report", first)
-    assert first.verbs == ["list", "comment", "edit"]
-    # The next run sees the comment carrying the new marker with the body still old.
-    issue["comments"] = [{"body": first.bodies[0]}]
-    second = _FakeGh([issue])
-    assert sr.sync_alert_issue(_doc("eu", "us"), "report", second) == ["edit"]
-    assert second.verbs == ["list", "edit"]
-
-
-def test_an_older_alert_comment_with_the_same_set_does_not_suppress_a_new_one():
-    old = sr.alert_marker(_doc("eu", "us"))
-    mid = sr.alert_marker(_doc("eu"))
-    issue = {
-        "number": 7,
-        "title": sr.ISSUE_TITLE,
-        "body": mid,
-        "comments": [{"body": "x\n" + old}, {"body": "y\n" + mid}],
-    }
-    gh = _FakeGh([issue])
-    assert sr.sync_alert_issue(_doc("eu", "us"), "report", gh) == ["comment", "edit"]
-
-
-def test_a_failed_comment_leaves_the_old_marker_so_the_next_run_posts_it_again():
-    class Failing(_FakeGh):
-        def __call__(self, *args: str) -> str:
-            if args[1] == "comment":
-                raise RuntimeError("502")
-            return super().__call__(*args)
-
-    gh = Failing([{"number": 7, "title": sr.ISSUE_TITLE, "body": sr.alert_marker(_doc("eu"))}])
-    with pytest.raises(RuntimeError):
-        sr.sync_alert_issue(_doc("eu", "us"), "report", gh)
-    assert "edit" not in gh.verbs
-
-
-def _gh_result(code: int, out: str = "", err: str = "") -> ghx.GhResult:
-    return ghx.GhResult(["gh"], code, out, err)
-
-
-def test_the_real_gh_retries_a_transient_failure():
-    answers = [_gh_result(1, err="gh: Server Error (HTTP 502)"), _gh_result(0, out="[]")]
-    calls: list[list[str]] = []
-
-    def runner(args, **_kw):
-        calls.append(args)
-        return answers.pop(0)
-
-    naps: list[float] = []
-    assert sr._real_gh("issue", "list", runner=runner, sleep=naps.append) == "[]"
-    assert len(calls) == 2
-    assert len(naps) == 1
-
-
-@pytest.mark.parametrize("verb", ["create", "comment"])
-def test_the_real_gh_never_retries_a_non_idempotent_call(verb):
-    calls: list[list[str]] = []
-
-    def runner(args, **_kw):
-        calls.append(args)
-        return _gh_result(1, err="gh: Server Error (HTTP 502)")
-
-    with pytest.raises(sr.GhError):
-        sr._real_gh("issue", verb, "--body", "x", runner=runner, sleep=lambda _s: None)
-    assert len(calls) == 1
-
-
-def test_the_real_gh_failure_carries_gh_stderr():
-    def runner(_args, **_kw):
-        return _gh_result(1, err="HTTP 403: Resource not accessible")
-
-    with pytest.raises(sr.GhError, match="HTTP 403: Resource not accessible"):
-        sr._real_gh("issue", "list", runner=runner, sleep=lambda _s: None)
-
-
-def test_main_reports_a_gh_failure_on_stderr_and_exits_1(tmp_path, monkeypatch, capsys):
-    (tmp_path / "r.json").write_text(json.dumps(_doc("eu")))
-    (tmp_path / "r.md").write_text("report")
-
-    def boom(*_a, **_kw):
-        raise sr.GhError("gh issue list failed (exit 1): nope")
-
-    monkeypatch.setattr(sr, "sync_alert_issue", boom)
-    rc = sr.main(
-        [
-            "--alert-issue",
-            "--json-out",
-            str(tmp_path / "r.json"),
-            "--md-out",
-            str(tmp_path / "r.md"),
-        ]
+def _report_step_script() -> str:
+    """The `run:` body of the workflow's report step, read from the tracked file."""
+    text = (paths.repo_root() / ".github/workflows/ops-d1-size-report.yml").read_text(
+        encoding="utf-8"
     )
-    assert rc == 1
-    assert "nope" in capsys.readouterr().err
+    marker = "      - name: Read every region's D1\n"
+    assert marker in text, "the report step is gone from ops-d1-size-report.yml"
+    step = text.split(marker, 1)[1]
+    body = step.split("        run: |\n", 1)[1]
+    lines = []
+    for line in body.splitlines():
+        if line.strip() and not line.startswith("          "):
+            break
+        lines.append(line[10:])
+    return "\n".join(lines) + "\n"
+
+
+def _run_step(tmp_path, rc: int):
+    """Run the real step script with a stub `python3` that exits `rc`, and return the result."""
+    stub = tmp_path / "bin"
+    stub.mkdir()
+    py = stub / "python3"
+    py.write_text(
+        textwrap.dedent(
+            """\
+            #!/bin/bash
+            echo "report" > d1-size.md
+            exit %d
+            """
+        )
+        % rc,
+        encoding="utf-8",
+    )
+    py.chmod(0o755)
+    summary = tmp_path / "summary.md"
+    env = {
+        **os.environ,
+        "PATH": "%s:%s" % (stub, os.environ["PATH"]),
+        "GITHUB_STEP_SUMMARY": str(summary),
+    }
+    result = subprocess.run(
+        ["bash", "-c", _report_step_script()],
+        cwd=tmp_path,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return result, summary
+
+
+@pytest.mark.parametrize("rc", [3, 2, 1])
+def test_the_workflow_step_fails_on_any_non_zero_report_exit(tmp_path, rc):
+    """An alert (3) reds the scheduled run, like an unreadable region (2)."""
+    result, summary = _run_step(tmp_path, rc)
+    assert result.returncode == rc, result.stderr
+    assert summary.read_text(encoding="utf-8") == "report\n"
+
+
+def test_the_workflow_step_passes_a_quiet_report(tmp_path):
+    """The other direction: rc 0 stays green, so the failing cases above are not a step that always fails."""
+    result, _summary = _run_step(tmp_path, 0)
+    assert result.returncode == 0, result.stderr
+
+
+def test_the_workflow_opens_no_issue_and_asks_for_no_issue_permission():
+    text = (paths.repo_root() / ".github/workflows/ops-d1-size-report.yml").read_text(
+        encoding="utf-8"
+    )
+    assert "issues: write" not in text
+    assert "alert-issue" not in text

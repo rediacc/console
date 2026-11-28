@@ -38,6 +38,7 @@ vi.mock('../../config/config-resources.js', () => ({
         rows.get(name) ?? (name.includes(':') ? undefined : rows.get(`${name}:latest`))
       )
     ),
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getLiveGrand: vi.fn((name: string) =>
       Promise.resolve(rows.get(name) ?? rows.get(`${name}:latest`))
     ),
@@ -79,6 +80,11 @@ vi.mock('../../machine/machine-connection.js', () => ({
   machineConnections: {
     acquire: vi.fn(() => Promise.resolve({ ensure: vi.fn(), release: vi.fn() })),
   },
+}));
+// These tests cover job attach, not the agent create guard, whose process-ancestry check refuses under an agent parent.
+vi.mock('../../../utils/agent-guard.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../../utils/agent-guard.js')>()),
+  assertAgentRepoCreate: async () => undefined,
 }));
 vi.mock('../../repo/repo-key-deployment.js', () => ({
   deployRepoKeyIfNeeded: vi.fn(() => Promise.resolve()),

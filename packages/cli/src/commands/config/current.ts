@@ -35,6 +35,7 @@ function resolveWithSource(
 export function registerCurrentCommand(parent: Command, program: Command): void {
   parent
     .command('current')
+    .summary(t('commands.config.current.descriptionShort'))
     .description(t('commands.config.current.description'))
     .action(async () => {
       try {
@@ -59,7 +60,8 @@ export function registerCurrentCommand(parent: Command, program: Command): void 
         );
 
         const tokenState = getSubscriptionTokenState();
-        const cfg = fileExists ? await configService.getCurrent() : null;
+        // The local file, never a pull: the remote pointer and the encryption mode are this device's own sections, so a remote config whose token cannot be renewed still reports (WORKSTATION_ONLY_COMMANDS).
+        const cfg = fileExists ? await configFileStorage.load(name) : null;
 
         // A config with no remote pointer is the local adapter (CLAUDE.md: local is the only adapter). Plain assignment, not `?? 'local'`, keeps both the nullish-default and prefer-nullish lint rules satisfied.
         let remoteStore = 'local';

@@ -40,7 +40,10 @@ import wl_planfid as P
 import wl_planfile as F
 import wl_planindex as PI
 import wl_planrec as R
-import worklist as _W
+import worklist
+
+# The verbs live in wl_cli (PLAN-tooling-speed.md SP3); importing worklist binds it to the probed siblings.
+_W = worklist.CLI
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -415,16 +418,19 @@ truthy("CONTROL: _auto_prose keeps the prose around them", "prose here" in lifte
 # ---------------------------------------------------------------------------
 # 3. THE SIGNATURE. check_plan_boxes.py hashes the parser's own dedup key; this
 # module restates that in four lines and the two must never drift. ---------------------------------------------------------------------------
-sys.path.insert(0, str(HERE.parents[2] / ".ci" / "scripts" / "quality"))
+sys.path.insert(0, str(HERE.parents[2] / ".ci"))
 try:
-    import check_plan_boxes as CPB
+    from rediacc_ci.quality import plan_boxes as CPB
 
     control("box_sig equals the gate's own sig()", R.box_sig(TASK_DONE), CPB.sig(TASK_DONE))
     control("...and for the open task too", R.box_sig(TASK_OPEN), CPB.sig(TASK_OPEN))
 except ImportError as _exc:  # pragma: no cover
     Tally.fails += 1
     Tally.count += 1
-    print("FAIL  could not import check_plan_boxes to compare sig(): %s" % _exc, file=sys.stderr)
+    print(
+        "FAIL  could not import rediacc_ci.quality.plan_boxes to compare sig(): %s" % _exc,
+        file=sys.stderr,
+    )
 
 control("Record-Sig in the file matches record_sig()", REC["record_sig"], R.record_sig(REC))
 # The signature covers the SPINE and not the prose, in both directions.
@@ -1335,16 +1341,11 @@ control(
 )
 
 # THE RESTATEMENT CONTROL. ledger_row is check_plan_boxes.scan restated, not imported, so the two are asserted equal here -- which is the only thing that keeps the restatement from drifting into a second opinion.
-sys.path.insert(0, str(HERE.parents[2] / ".ci" / "scripts" / "quality"))
+sys.path.insert(0, str(HERE.parents[2] / ".ci"))
 _cpb_loaded = False
 try:
-    import importlib.util as _ilu
+    from rediacc_ci.quality import plan_boxes as _cpb
 
-    _spec = _ilu.spec_from_file_location(
-        "_cpb", HERE.parents[2] / ".ci" / "scripts" / "quality" / "check_plan_boxes.py"
-    )
-    _cpb = _ilu.module_from_spec(_spec)
-    _spec.loader.exec_module(_cpb)
     _cpb_loaded = True
     (ROOT / REL).write_text(_ticked, encoding="utf-8")
     control(
@@ -1447,11 +1448,11 @@ control(
     "a selector quoting a backticked path matches the box, whose body is stored with backticks and underscores stripped",
     R.select_box(
         R.open_boxes(
-            "## Tasks\n- [ ] T4 `.claude/rediacc_hooks/plan_gate.py`: settings_at and next_turbo\n"
+            "## Tasks\n- [ ] T4 `.claude/rediacc_hooks/plan_gate.py`: settings_at and pr_plan_set\n"
         ),
         "T4 `.claude/rediacc_hooks/plan_gate.py`",
     )[2],
-    "T4 .claude/rediacchooks/plangate.py: settingsat and nextturbo",
+    "T4 .claude/rediacchooks/plangate.py: settingsat and prplanset",
 )
 raises(
     "a plan with NO open boxes says so rather than reporting no match",

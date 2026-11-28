@@ -21,6 +21,12 @@
       "defaultValue": null
     },
     {
+      "flags": "--confirm-grand <name>",
+      "descriptionKey": "options.confirmGrand",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "--fields <fields>",
       "descriptionKey": "options.fields",
       "mandatory": false,
@@ -61,7 +67,7 @@
       "subcommands": [
         {
           "name": "list",
-          "descriptionKey": "commands.job.list.description",
+          "descriptionKey": "commands.job.list.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -81,7 +87,7 @@
         },
         {
           "name": "status",
-          "descriptionKey": "commands.job.status.description",
+          "descriptionKey": "commands.job.status.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -102,7 +108,7 @@
         },
         {
           "name": "logs",
-          "descriptionKey": "commands.job.logs.description",
+          "descriptionKey": "commands.job.logs.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -141,7 +147,7 @@
         },
         {
           "name": "cancel",
-          "descriptionKey": "commands.job.cancel.description",
+          "descriptionKey": "commands.job.cancel.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -168,7 +174,7 @@
         },
         {
           "name": "wait",
-          "descriptionKey": "commands.job.wait.description",
+          "descriptionKey": "commands.job.wait.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -228,7 +234,7 @@
         },
         {
           "name": "gc",
-          "descriptionKey": "commands.job.gc.description",
+          "descriptionKey": "commands.job.gc.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -328,7 +334,7 @@
         },
         {
           "name": "list",
-          "descriptionKey": "commands.machine.list.description",
+          "descriptionKey": "commands.machine.list.descriptionShort",
           "options": [
             {
               "flags": "--search <text>",
@@ -354,7 +360,7 @@
         },
         {
           "name": "scan-keys",
-          "descriptionKey": "commands.machine.scanKeys.description",
+          "descriptionKey": "commands.machine.scanKeys.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -518,7 +524,7 @@
         },
         {
           "name": "health",
-          "descriptionKey": "commands.machine.health.description",
+          "descriptionKey": "commands.machine.health.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -577,7 +583,7 @@
         },
         {
           "name": "provision",
-          "descriptionKey": "commands.machine.provision.description",
+          "descriptionKey": "commands.machine.provision.descriptionShort",
           "options": [
             {
               "flags": "--provider <name>",
@@ -640,7 +646,7 @@
         },
         {
           "name": "deprovision",
-          "descriptionKey": "commands.machine.deprovision.description",
+          "descriptionKey": "commands.machine.deprovision.descriptionShort",
           "options": [
             {
               "flags": "--force",
@@ -849,7 +855,7 @@
           "subcommands": [
             {
               "name": "add",
-              "descriptionKey": "commands.machine.provider.add.description",
+              "descriptionKey": "commands.machine.provider.add.descriptionShort",
               "options": [
                 {
                   "flags": "--provider <source>",
@@ -966,7 +972,7 @@
             },
             {
               "name": "remove",
-              "descriptionKey": "commands.machine.provider.remove.description",
+              "descriptionKey": "commands.machine.provider.remove.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -980,7 +986,7 @@
             },
             {
               "name": "list",
-              "descriptionKey": "commands.machine.provider.list.description",
+              "descriptionKey": "commands.machine.provider.list.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
@@ -1052,7 +1058,7 @@
             },
             {
               "name": "show",
-              "descriptionKey": "commands.machine.infra.show.description",
+              "descriptionKey": "commands.machine.infra.show.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -1093,7 +1099,7 @@
               "subcommands": [
                 {
                   "name": "pull",
-                  "descriptionKey": "commands.machine.infra.cert.pull.description",
+                  "descriptionKey": "commands.machine.infra.cert.pull.descriptionShort",
                   "options": [
                     {
                       "flags": "--no-prune",
@@ -1120,7 +1126,7 @@
                 },
                 {
                   "name": "push",
-                  "descriptionKey": "commands.machine.infra.cert.push.description",
+                  "descriptionKey": "commands.machine.infra.cert.push.descriptionShort",
                   "options": [
                     {
                       "flags": "--debug",
@@ -1141,14 +1147,14 @@
                 },
                 {
                   "name": "status",
-                  "descriptionKey": "commands.machine.infra.cert.status.description",
+                  "descriptionKey": "commands.machine.infra.cert.status.descriptionShort",
                   "options": [],
                   "arguments": [],
                   "subcommands": []
                 },
                 {
                   "name": "clear",
-                  "descriptionKey": "commands.machine.infra.cert.clear.description",
+                  "descriptionKey": "commands.machine.infra.cert.clear.descriptionShort",
                   "options": [],
                   "arguments": [],
                   "subcommands": []
@@ -1225,7 +1231,7 @@
             },
             {
               "name": "show",
-              "descriptionKey": "commands.machine.access.show.description",
+              "descriptionKey": "commands.machine.access.show.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -1276,7 +1282,7 @@
           "subcommands": [
             {
               "name": "set",
-              "descriptionKey": "commands.backup.strategy.set.description",
+              "descriptionKey": "commands.backup.strategy.set.descriptionShort",
               "options": [
                 {
                   "flags": "--destination <name>",
@@ -1399,7 +1405,7 @@
             },
             {
               "name": "bind",
-              "descriptionKey": "commands.backup.strategy.bind.description",
+              "descriptionKey": "commands.backup.strategy.bind.descriptionShort",
               "options": [
                 {
                   "flags": "-m, --machine <name>",
@@ -1420,7 +1426,7 @@
             },
             {
               "name": "unbind",
-              "descriptionKey": "commands.backup.strategy.unbind.description",
+              "descriptionKey": "commands.backup.strategy.unbind.descriptionShort",
               "options": [
                 {
                   "flags": "-m, --machine <name>",
@@ -1441,7 +1447,7 @@
             },
             {
               "name": "remove",
-              "descriptionKey": "commands.backup.strategy.remove.description",
+              "descriptionKey": "commands.backup.strategy.remove.descriptionShort",
               "options": [
                 {
                   "flags": "--destination <name>",
@@ -1468,14 +1474,14 @@
             },
             {
               "name": "list",
-              "descriptionKey": "commands.backup.strategy.list.description",
+              "descriptionKey": "commands.backup.strategy.list.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
             },
             {
               "name": "show",
-              "descriptionKey": "commands.backup.strategy.show.description",
+              "descriptionKey": "commands.backup.strategy.show.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -1491,7 +1497,7 @@
         },
         {
           "name": "schedule",
-          "descriptionKey": "commands.backup.schedule.description",
+          "descriptionKey": "commands.backup.schedule.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -1514,6 +1520,12 @@
             {
               "flags": "--reset-failed",
               "descriptionKey": "commands.backup.schedule.optionResetFailed",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--adopt-origin",
+              "descriptionKey": "commands.backup.schedule.optionAdoptOrigin",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1556,7 +1568,7 @@
         },
         {
           "name": "status",
-          "descriptionKey": "commands.backup.status.description",
+          "descriptionKey": "commands.backup.status.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -1583,7 +1595,7 @@
         },
         {
           "name": "cancel",
-          "descriptionKey": "commands.backup.cancel.description",
+          "descriptionKey": "commands.backup.cancel.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -1610,14 +1622,14 @@
         },
         {
           "name": "usage",
-          "descriptionKey": "commands.backup.usage.description",
+          "descriptionKey": "commands.backup.usage.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "manifests",
-          "descriptionKey": "commands.backup.manifests.description",
+          "descriptionKey": "commands.backup.manifests.descriptionShort",
           "options": [
             {
               "flags": "--limit <n>",
@@ -1650,7 +1662,7 @@
         },
         {
           "name": "verify",
-          "descriptionKey": "commands.backup.verify.description",
+          "descriptionKey": "commands.backup.verify.descriptionShort",
           "options": [
             {
               "flags": "--deep",
@@ -1746,7 +1758,7 @@
         },
         {
           "name": "snapshot",
-          "descriptionKey": "commands.backup.snapshot.description",
+          "descriptionKey": "commands.backup.snapshot.descriptionShort",
           "options": [
             {
               "flags": "--reseed",
@@ -1968,14 +1980,14 @@
           "subcommands": [
             {
               "name": "show",
-              "descriptionKey": "commands.backup.immutability.show.description",
+              "descriptionKey": "commands.backup.immutability.show.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
             },
             {
               "name": "set",
-              "descriptionKey": "commands.backup.immutability.set.description",
+              "descriptionKey": "commands.backup.immutability.set.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -1991,7 +2003,7 @@
         },
         {
           "name": "undelete",
-          "descriptionKey": "commands.backup.undelete.description",
+          "descriptionKey": "commands.backup.undelete.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -2038,7 +2050,7 @@
         },
         {
           "name": "reconcile",
-          "descriptionKey": "commands.backup.reconcile.description",
+          "descriptionKey": "commands.backup.reconcile.descriptionShort",
           "options": [
             {
               "flags": "--dry-run",
@@ -2065,7 +2077,7 @@
         },
         {
           "name": "repair",
-          "descriptionKey": "commands.backup.repair.description",
+          "descriptionKey": "commands.backup.repair.descriptionShort",
           "options": [
             {
               "flags": "--dry-run",
@@ -2092,7 +2104,7 @@
         },
         {
           "name": "check",
-          "descriptionKey": "commands.backup.check.description",
+          "descriptionKey": "commands.backup.check.descriptionShort",
           "options": [
             {
               "flags": "--path <file>",
@@ -2125,7 +2137,7 @@
           "subcommands": [
             {
               "name": "sync",
-              "descriptionKey": "commands.backup.tocKey.sync.description",
+              "descriptionKey": "commands.backup.tocKey.sync.descriptionShort",
               "options": [
                 {
                   "flags": "--replace",
@@ -2771,7 +2783,7 @@
         },
         {
           "name": "status",
-          "descriptionKey": "commands.repo.status.description",
+          "descriptionKey": "commands.repo.status.descriptionShort",
           "options": [
             {
               "flags": "--debug",
@@ -2798,7 +2810,7 @@
         },
         {
           "name": "list",
-          "descriptionKey": "commands.repo.list.description",
+          "descriptionKey": "commands.repo.list.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -2830,7 +2842,7 @@
         },
         {
           "name": "health",
-          "descriptionKey": "commands.repo.health.description",
+          "descriptionKey": "commands.repo.health.descriptionShort",
           "options": [
             {
               "flags": "--debug",
@@ -3069,6 +3081,60 @@
             {
               "flags": "--skip-router-restart",
               "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "flows",
+          "descriptionKey": "commands.repo.flows.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "opens",
+          "descriptionKey": "commands.repo.opens.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
               "mandatory": false,
               "defaultValue": null
             }
@@ -3360,7 +3426,7 @@
               "subcommands": [
                 {
                   "name": "enable",
-                  "descriptionKey": "commands.repo.admin.autostart.enable.description",
+                  "descriptionKey": "commands.repo.admin.autostart.enable.descriptionShort",
                   "options": [
                     {
                       "flags": "--debug",
@@ -3387,7 +3453,7 @@
                 },
                 {
                   "name": "disable",
-                  "descriptionKey": "commands.repo.admin.autostart.disable.description",
+                  "descriptionKey": "commands.repo.admin.autostart.disable.descriptionShort",
                   "options": [
                     {
                       "flags": "--debug",
@@ -3414,7 +3480,7 @@
                 },
                 {
                   "name": "list",
-                  "descriptionKey": "commands.repo.admin.autostart.list.description",
+                  "descriptionKey": "commands.repo.admin.autostart.list.descriptionShort",
                   "options": [
                     {
                       "flags": "-m, --machine <name>",
@@ -3561,6 +3627,12 @@
                   "name": "list",
                   "descriptionKey": "commands.repo.admin.orphan.list.description",
                   "options": [
+                    {
+                      "flags": "--executor-events <file>",
+                      "descriptionKey": "commands.repo.admin.orphan.list.executorEventsOption",
+                      "mandatory": false,
+                      "defaultValue": null
+                    },
                     {
                       "flags": "--debug",
                       "descriptionKey": "options.debug",
@@ -5044,7 +5116,7 @@
       "subcommands": [
         {
           "name": "init",
-          "descriptionKey": "commands.config.init.description",
+          "descriptionKey": "commands.config.init.descriptionShort",
           "options": [
             {
               "flags": "--ssh-key <path>",
@@ -5083,14 +5155,14 @@
         },
         {
           "name": "list",
-          "descriptionKey": "commands.config.list.description",
+          "descriptionKey": "commands.config.list.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "show",
-          "descriptionKey": "commands.config.show.description",
+          "descriptionKey": "commands.config.show.descriptionShort",
           "options": [
             {
               "flags": "--reveal",
@@ -5104,14 +5176,14 @@
         },
         {
           "name": "current",
-          "descriptionKey": "commands.config.current.description",
+          "descriptionKey": "commands.config.current.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "delete",
-          "descriptionKey": "commands.config.delete.description",
+          "descriptionKey": "commands.config.delete.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -5125,7 +5197,7 @@
         },
         {
           "name": "set",
-          "descriptionKey": "commands.config.set.description",
+          "descriptionKey": "commands.config.set.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -5145,7 +5217,7 @@
         },
         {
           "name": "clear",
-          "descriptionKey": "commands.config.clear.description",
+          "descriptionKey": "commands.config.clear.descriptionShort",
           "options": [],
           "arguments": [
             {
@@ -5159,7 +5231,7 @@
         },
         {
           "name": "recover",
-          "descriptionKey": "commands.config.recover.description",
+          "descriptionKey": "commands.config.recover.descriptionShort",
           "options": [
             {
               "flags": "-y, --yes",
@@ -5262,7 +5334,7 @@
         },
         {
           "name": "rotate-cek",
-          "descriptionKey": "commands.config.rotateCek.description",
+          "descriptionKey": "commands.config.rotateCek.descriptionShort",
           "options": [
             {
               "flags": "--api-url <url>",
@@ -5282,7 +5354,7 @@
           "subcommands": [
             {
               "name": "set",
-              "descriptionKey": "commands.config.ssh.set.description",
+              "descriptionKey": "commands.config.ssh.set.descriptionShort",
               "options": [
                 {
                   "flags": "--key <path>",
@@ -5302,14 +5374,14 @@
             },
             {
               "name": "show",
-              "descriptionKey": "commands.config.ssh.show.description",
+              "descriptionKey": "commands.config.ssh.show.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
             },
             {
               "name": "remove",
-              "descriptionKey": "commands.config.ssh.remove.description",
+              "descriptionKey": "commands.config.ssh.remove.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
@@ -5369,7 +5441,7 @@
             },
             {
               "name": "remove",
-              "descriptionKey": "commands.config.access.remove.description",
+              "descriptionKey": "commands.config.access.remove.descriptionShort",
               "options": [],
               "arguments": [
                 {
@@ -5415,7 +5487,7 @@
             },
             {
               "name": "list",
-              "descriptionKey": "commands.config.access.list.description",
+              "descriptionKey": "commands.config.access.list.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
@@ -5430,17 +5502,11 @@
           "subcommands": [
             {
               "name": "enable",
-              "descriptionKey": "commands.config.remote.enable.description",
+              "descriptionKey": "commands.config.remote.enable.descriptionShort",
               "options": [
                 {
-                  "flags": "--master-password",
-                  "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
-                  "mandatory": false,
-                  "defaultValue": null
-                },
-                {
-                  "flags": "--master-password-stdin",
-                  "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
+                  "flags": "--machine-secret <id>",
+                  "descriptionKey": "commands.config.remote.enable.optionMachineSecret",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -5468,7 +5534,7 @@
             },
             {
               "name": "disable",
-              "descriptionKey": "commands.config.remote.disable.description",
+              "descriptionKey": "commands.config.remote.disable.descriptionShort",
               "options": [
                 {
                   "flags": "--local",
@@ -5488,14 +5554,14 @@
             },
             {
               "name": "status",
-              "descriptionKey": "commands.config.remote.status.description",
+              "descriptionKey": "commands.config.remote.status.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
             },
             {
               "name": "versions",
-              "descriptionKey": "commands.config.remote.versions.description",
+              "descriptionKey": "commands.config.remote.versions.descriptionShort",
               "options": [
                 {
                   "flags": "--explain",
@@ -5509,7 +5575,7 @@
             },
             {
               "name": "restore",
-              "descriptionKey": "commands.config.remote.restore.description",
+              "descriptionKey": "commands.config.remote.restore.descriptionShort",
               "options": [
                 {
                   "flags": "-y, --yes",
@@ -5529,30 +5595,8 @@
               "subcommands": []
             },
             {
-              "name": "master-password",
-              "descriptionKey": "commands.config.remote.masterPassword.description",
-              "options": [],
-              "arguments": [],
-              "subcommands": [
-                {
-                  "name": "change",
-                  "descriptionKey": "commands.config.remote.masterPassword.change.description",
-                  "options": [
-                    {
-                      "flags": "--new-master-password-stdin",
-                      "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
-                      "mandatory": false,
-                      "defaultValue": null
-                    }
-                  ],
-                  "arguments": [],
-                  "subcommands": []
-                }
-              ]
-            },
-            {
               "name": "refresh",
-              "descriptionKey": "commands.config.remote.refresh.description",
+              "descriptionKey": "commands.config.remote.refresh.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
@@ -5690,6 +5734,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--redacted",
+              "descriptionKey": "commands.config.edit.optionRedacted",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--apply <file>",
               "descriptionKey": "commands.config.edit.optionApply",
               "mandatory": false,
@@ -5719,7 +5769,7 @@
           "subcommands": [
             {
               "name": "log",
-              "descriptionKey": "commands.config.audit.log.description",
+              "descriptionKey": "commands.config.audit.log.descriptionShort",
               "options": [
                 {
                   "flags": "--since <spec>",
@@ -5745,14 +5795,14 @@
             },
             {
               "name": "tail",
-              "descriptionKey": "commands.config.audit.tail.description",
+              "descriptionKey": "commands.config.audit.tail.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
             },
             {
               "name": "verify",
-              "descriptionKey": "commands.config.audit.verify.description",
+              "descriptionKey": "commands.config.audit.verify.descriptionShort",
               "options": [],
               "arguments": [],
               "subcommands": []
@@ -5904,6 +5954,186 @@
       ]
     },
     {
+      "name": "incident",
+      "descriptionKey": "commands.incident.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "status",
+          "descriptionKey": "commands.incident.status.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "id",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "declare",
+          "descriptionKey": "commands.incident.declare.description",
+          "options": [
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.repo.rowsSinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.repo.rowsUntilOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--aware-at <when>",
+              "descriptionKey": "commands.incident.declare.awareAtOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--resume <id>",
+              "descriptionKey": "commands.incident.declare.resumeOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "close",
+          "descriptionKey": "commands.incident.close.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "export",
+          "descriptionKey": "commands.incident.export.description",
+          "options": [
+            {
+              "flags": "--out <dir>",
+              "descriptionKey": "commands.incident.export.outOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--stage <stage>",
+              "descriptionKey": "commands.incident.export.stageOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--format <format>",
+              "descriptionKey": "commands.incident.export.formatOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "id",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
+      "name": "forensics",
+      "descriptionKey": "commands.forensics.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "verify",
+          "descriptionKey": "commands.forensics.verify.description",
+          "options": [
+            {
+              "flags": "--dir <path>",
+              "descriptionKey": "commands.forensics.verify.dirOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--report <file>",
+              "descriptionKey": "commands.forensics.verify.reportOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--id <report-id>",
+              "descriptionKey": "commands.forensics.verify.idOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--since <when>",
+              "descriptionKey": "commands.forensics.verify.sinceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--until <when>",
+              "descriptionKey": "commands.forensics.verify.untilOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--machine-key <machine=hex>",
+              "descriptionKey": "commands.forensics.verify.machineKeyOption",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "level",
+          "descriptionKey": "commands.forensics.level.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            },
+            {
+              "name": "level",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "version",
       "descriptionKey": "commands.version.description",
       "options": [
@@ -5915,6 +6145,20 @@
         }
       ],
       "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "completion",
+      "descriptionKey": "commands.completion.description",
+      "options": [],
+      "arguments": [
+        {
+          "name": "shell",
+          "required": true,
+          "variadic": false,
+          "defaultValue": null
+        }
+      ],
       "subcommands": []
     },
     {
@@ -6475,7 +6719,7 @@
           "subcommands": [
             {
               "name": "status",
-              "descriptionKey": "commands.vscode.serve.status.description",
+              "descriptionKey": "commands.vscode.serve.status.descriptionShort",
               "options": [
                 {
                   "flags": "--server-provider <id>",
@@ -6496,7 +6740,7 @@
             },
             {
               "name": "stop",
-              "descriptionKey": "commands.vscode.serve.stop.description",
+              "descriptionKey": "commands.vscode.serve.stop.descriptionShort",
               "options": [
                 {
                   "flags": "--server-provider <id>",
@@ -6518,15 +6762,69 @@
           ]
         },
         {
+          "name": "expose",
+          "descriptionKey": "commands.vscode.expose.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "unexpose",
+          "descriptionKey": "commands.vscode.unexpose.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "list",
-          "descriptionKey": "commands.vscode.list.description",
+          "descriptionKey": "commands.vscode.list.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "cleanup",
-          "descriptionKey": "commands.vscode.cleanup.description",
+          "descriptionKey": "commands.vscode.cleanup.descriptionShort",
           "options": [
             {
               "flags": "--all",
@@ -6546,7 +6844,7 @@
         },
         {
           "name": "check",
-          "descriptionKey": "commands.vscode.check.description",
+          "descriptionKey": "commands.vscode.check.descriptionShort",
           "options": [
             {
               "flags": "--insiders",
@@ -6635,6 +6933,56 @@
       "subcommands": []
     },
     {
+      "name": "preview",
+      "descriptionKey": "commands.preview.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "use",
+          "descriptionKey": "commands.preview.use.description",
+          "options": [
+            {
+              "flags": "--accept-format-change",
+              "descriptionKey": "commands.preview.use.acceptFormatChange",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "leave",
+          "descriptionKey": "commands.preview.leave.description",
+          "options": [
+            {
+              "flags": "--machine <name>",
+              "descriptionKey": "commands.preview.leave.machine",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.preview.status.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": []
+        }
+      ]
+    },
+    {
       "name": "ops",
       "descriptionKey": "commands.ops.description",
       "options": [],
@@ -6642,7 +6990,7 @@
       "subcommands": [
         {
           "name": "up",
-          "descriptionKey": "commands.ops.up.description",
+          "descriptionKey": "commands.ops.up.descriptionShort",
           "options": [
             {
               "flags": "--force",
@@ -6687,6 +7035,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--windows <ids>",
+              "descriptionKey": "options.opsWindows",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -6698,7 +7052,7 @@
         },
         {
           "name": "down",
-          "descriptionKey": "commands.ops.down.description",
+          "descriptionKey": "commands.ops.down.descriptionShort",
           "options": [
             {
               "flags": "--backend <backend>",
@@ -6718,7 +7072,7 @@
         },
         {
           "name": "status",
-          "descriptionKey": "commands.ops.status.description",
+          "descriptionKey": "commands.ops.status.descriptionShort",
           "options": [
             {
               "flags": "--backend <backend>",
@@ -6732,7 +7086,7 @@
         },
         {
           "name": "ssh",
-          "descriptionKey": "commands.ops.ssh.description",
+          "descriptionKey": "commands.ops.ssh.descriptionShort",
           "options": [
             {
               "flags": "--vm-id <id>",
@@ -6764,7 +7118,7 @@
         },
         {
           "name": "setup",
-          "descriptionKey": "commands.ops.setup.description",
+          "descriptionKey": "commands.ops.setup.descriptionShort",
           "options": [
             {
               "flags": "--debug",
@@ -6778,7 +7132,7 @@
         },
         {
           "name": "check",
-          "descriptionKey": "commands.ops.check.description",
+          "descriptionKey": "commands.ops.check.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
@@ -7138,7 +7492,7 @@
       "subcommands": [
         {
           "name": "login",
-          "descriptionKey": "commands.subscription.login.description",
+          "descriptionKey": "commands.subscription.login.descriptionShort",
           "options": [
             {
               "flags": "-t, --token <token>",
@@ -7164,7 +7518,7 @@
         },
         {
           "name": "register",
-          "descriptionKey": "commands.subscription.register.description",
+          "descriptionKey": "commands.subscription.register.descriptionShort",
           "options": [
             {
               "flags": "--email <address>",
@@ -7184,14 +7538,14 @@
         },
         {
           "name": "logout",
-          "descriptionKey": "commands.subscription.logout.description",
+          "descriptionKey": "commands.subscription.logout.descriptionShort",
           "options": [],
           "arguments": [],
           "subcommands": []
         },
         {
           "name": "proxy-token",
-          "descriptionKey": "commands.subscription.proxyToken.description",
+          "descriptionKey": "commands.subscription.proxyToken.descriptionShort",
           "options": [
             {
               "flags": "--json",
@@ -7266,8 +7620,8 @@
               "defaultValue": null
             },
             {
-              "flags": "--dry-run",
-              "descriptionKey": "commands.subscription.retire.optionDryRun",
+              "flags": "--apply",
+              "descriptionKey": "commands.subscription.retire.optionApply",
               "mandatory": false,
               "defaultValue": null
             }
@@ -7318,7 +7672,7 @@
       "subcommands": [
         {
           "name": "serve",
-          "descriptionKey": "commands.mcp.serve.description",
+          "descriptionKey": "commands.mcp.serve.descriptionShort",
           "options": [
             {
               "flags": "--config <name>",
@@ -7352,7 +7706,19 @@
           "flags": "--host <host>",
           "descriptionKey": "commands.serve.optionHost",
           "mandatory": false,
-          "defaultValue": "0.0.0.0"
+          "defaultValue": null
+        },
+        {
+          "flags": "--tls-cert <path>",
+          "descriptionKey": "commands.serve.optionTlsCert",
+          "mandatory": false,
+          "defaultValue": null
+        },
+        {
+          "flags": "--tls-key <path>",
+          "descriptionKey": "commands.serve.optionTlsKey",
+          "mandatory": false,
+          "defaultValue": null
         },
         {
           "flags": "--mode <mode>",
@@ -7513,6 +7879,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--signer <fingerprint>",
+              "descriptionKey": "commands.server.install.optionSigner",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--bws-project <id>",
               "descriptionKey": "commands.server.install.optionBwsProject",
               "mandatory": false,
@@ -7543,7 +7915,7 @@
         },
         {
           "name": "status",
-          "descriptionKey": "commands.server.status.description",
+          "descriptionKey": "commands.server.status.descriptionShort",
           "options": [
             {
               "flags": "-m, --machine <name>",
@@ -7597,6 +7969,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--signer <fingerprint>",
+              "descriptionKey": "commands.server.install.optionSigner",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--force",
               "descriptionKey": "commands.server.upgrade.optionForce",
               "mandatory": false,
@@ -7633,7 +8011,7 @@
         },
         {
           "name": "backup",
-          "descriptionKey": "commands.server.backup.description",
+          "descriptionKey": "commands.server.backup.descriptionShort",
           "options": [
             {
               "flags": "--out <file>",
@@ -7666,7 +8044,7 @@
         },
         {
           "name": "licence",
-          "descriptionKey": "commands.server.licence.description",
+          "descriptionKey": "commands.server.licence.descriptionShort",
           "options": [
             {
               "flags": "--cert <file>",
@@ -7698,7 +8076,7 @@
           "subcommands": [
             {
               "name": "mint",
-              "descriptionKey": "commands.server.licence.mint.description",
+              "descriptionKey": "commands.server.licence.mint.descriptionShort",
               "options": [
                 {
                   "flags": "--request <file>",
@@ -7749,6 +8127,12 @@
             {
               "flags": "--with-cli <platforms>",
               "descriptionKey": "commands.server.bundle.optionWithCli",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-models",
+              "descriptionKey": "commands.server.bundle.optionNoModels",
               "mandatory": false,
               "defaultValue": null
             }

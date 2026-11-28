@@ -12,7 +12,7 @@ WHY AN ENTRY POINT AT ALL: `check_npmrc.py` states both measured reasons. A port
 THERE IS DELIBERATELY NO `---- gate ----` HEADER HERE, AND THAT IS THE CARRIED FIELD SET. The twin has no header block at all -- grepped for `---- gate ----` and for every field name, zero hits -- so the field-for-field diff comes out empty and an invented header would be a NEW claim, not a moved one. `bind()` returns null for a file with no header and the gate is simply not
 gate-bind's business (`gate-bind.ts:17`).
 
-The CI step exists and is HAND-WRITTEN, outside the `quality-static` gate-bind region (`ci-quality.yml:354`, region closes at 346), which is reported to the driver separately. That step's `run:` line is `npm run check:ci-scans-tracked-paths`, so unlike the OTLP one it follows the package.json registration and needs no workflow edit to cut over.
+The CI step exists and is HAND-WRITTEN, outside the `quality-static` gate-bind region (`ci-quality.yml:354`, region closes at 346), which is reported to the driver separately. That step's `run:` line is this file's path, the same command the manifest entry runs; the package.json key is gone (PLAN-tooling-code-reduction.md CR2), and `gen:gates -- --check` holds the step and the entry to each other.
 
 `inferredNeeds` NOTE, since a headerless file makes the union moot but not the fact: `inferredNeeds(twin)` is `["node"]` (its scanner matches `npm `/`npx `/ `node ` command positions in the surfaces it greps) and `inferredNeeds(this file)` is `[]`. Nothing consumes either today; recorded so a future header is written with the measured value.
 
@@ -26,13 +26,15 @@ DRIVEN, on this tree, both streams captured SEPARATELY:
 DRIVEN RED AS WELL, and the plant carried its own negative control. A throwaway `.ci/scripts/__gate_probe_scans.sh` was written with TWO mentions of the same gitignored path: one in a comment (PROSE, which must NOT be reported) and one in command position (`bash private/growth/nope.sh`). Both sides exit 1, both print a byte-identical 136-byte stdout and a byte-identical 486-byte
 stderr naming `.ci/scripts/__gate_probe_scans.sh:3` and quoting the command -- line 3, not line 2, so the prose control fired on both sides too. The probe file was then deleted and both sides returned to exit 0.
 
-INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-ci-scans-tracked-paths.sh` stayed on disk as the differential twin until the shadow ledger (deleted in commit:99a4de363d) asserted equivalence over five distinct trees. W7 P5 batch C1 retired it, and this entry point is what the gate runs from.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import ci_scans_tracked_paths
 
 if __name__ == "__main__":
+    _gate_args.parse("check_ci_scans_tracked_paths.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(ci_scans_tracked_paths.main(sys.argv[1:]))

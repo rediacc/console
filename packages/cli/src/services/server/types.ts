@@ -7,6 +7,11 @@
  */
 
 export type TlsMethod = 'letsencrypt' | 'cloudflare' | 'byo';
+/**
+ * `auto` is the one mode that installs: the logged-in account's delegation cert. `free` stays a
+ * choice only so the install can refuse it by name: the anonymous FREE licence never runs an
+ * on-premise server (operator ruling 2026-11-23), which takes a registered account (COMMUNITY or up).
+ */
 export type LicenceMode = 'auto' | 'free';
 
 export const TLS_METHODS: readonly TlsMethod[] = ['letsencrypt', 'cloudflare', 'byo'] as const;
@@ -62,7 +67,6 @@ export type IssueOutcome =
   | { kind: 'issued'; cert: IssuedCert }
   | { kind: 'no-login' }
   | { kind: 'missing-scope' }
-  | { kind: 'plan-disallows'; message: string }
   | { kind: 'other-key'; certId: string; message: string };
 
 /** One `bws secret list` row, as far as the backup reads it. */
@@ -112,6 +116,8 @@ export interface ServerDeps {
   bwsList(): Promise<BwsRow[]>;
   /** One value-carrying write through `bws-write.ts`, the value on stdin. */
   bwsWrite(request: BwsWriteRequest): Promise<void>;
+  /** Whether the config holds a registered account's login (a subscription token with its subscription id). */
+  hasAccountLogin(): boolean;
   /** `POST /delegation/issue` under the logged-in config's token. */
   issueCert(delegatedPublicKey: string): Promise<IssueOutcome>;
   /** Run a local program (`docker save` for `--local-image`); resolves to its exit code. */

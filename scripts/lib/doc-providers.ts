@@ -15,7 +15,7 @@
  *
  * NO PROVIDER IMPORTS scripts/ci-runner/manifest.ts, AND THAT IS A RULE RATHER THAN A TASTE.
  * The gate catalogue reads `scripts/ci-runner/gates.lock.json`, the committed JSON projection
- * of the manifest that `check:ci-gates-lock` keeps faithful in both directions. An earlier
+ * of the manifest that `check:ci-gen-gates` keeps faithful in both directions. An earlier
  * draft of this file imported the typed `GATES` export instead. That was reversed for the
  * reason docs/ci-overhaul/08-driver-contract.md gives: `manifest.ts` is a single-writer file
  * behind the root driver's merge queue for the whole program, and every additional reader of it
@@ -27,13 +27,13 @@
  * refuse an empty or malformed file outright, where a broken TypeScript import would surface as
  * a module-load stack trace somewhere else entirely.
  *
- * ENUMERATION IS FROM `git ls-files`, i.e. the INDEX, with one guard. Section 5b of the driver
- * contract records check-shell-declared-commands.ts crashing on six unstaged deletions: the
- * index listed files the worktree no longer had. Every provider here therefore filters to paths
- * that are regular files on disk and reports the rest as `missing` rather than throwing. The
- * flip side is that an UNTRACKED new file is invisible to these providers. That is the correct
- * bias for a record other waves will diff against: an untracked file is not yet part of the
- * repository's contract.
+ * ENUMERATION IS FROM `git ls-files`, i.e. the INDEX, with one guard. Section 5b of the driver contract records
+ * check-shell-declared-commands.ts crashing on six unstaged deletions: the index listed files
+ * the worktree no longer had. Every provider here therefore filters to paths that are regular
+ * files on disk and reports the rest as `missing` rather than throwing. An UNTRACKED file is not
+ * part of the record: listing untracked files made every session's stray scratch files (another
+ * session's .ci/state/, for one) read as drift in this shared tree (5b34d5aeb2, reverted forward).
+ * The commit-policy hook renders against the commit's own tree, where a new file is staged.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -146,7 +146,9 @@ const underAny = (rel: string, dirs: readonly string[]): boolean =>
  * Four false alarms every run is how a report teaches its reader to skip it, so the mode is read
  * and the gitlinks are excluded before anything is judged.
  */
-const lsFiles = (root: string, ...paths: string[]): string[] =>
+const lsFiles = (root: string, ...paths: string[]): string[] => lsFilesIndexed(root, paths);
+
+const lsFilesIndexed = (root: string, paths: string[]): string[] =>
   execFileSync('git', ['-C', root, 'ls-files', '-s', '-z', '--', ...paths], {
     encoding: 'utf-8',
     maxBuffer: 64 * 1024 * 1024,
@@ -269,7 +271,7 @@ const gateWhere = (g: LockEntry): string => {
 
 export const gatesProvider: Provider = {
   id: 'gates',
-  scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gates-lock\` keeps faithful`,
+  scans: `${GATES_LOCK}, the committed projection of the manifest that \`check:ci-gen-gates\` keeps faithful`,
   columns: ['Gate', 'Runs in CI as', 'Is gate', 'Slow'],
   rows: (root) =>
     readGatesLock(root)
@@ -416,7 +418,11 @@ const wiredHooks = (root: string): WiredHook[] => {
  * That direction is the safe one: over-admitting hides a dead file, it never invents a false
  * accusation, and this table is a record rather than an enforcement gate.
  */
-const reachability = (root: string, wired: Set<string>, files: string[]): Map<string, string> => {
+export const reachability = (
+  root: string,
+  wired: Set<string>,
+  files: string[]
+): Map<string, string> => {
   const text = new Map<string, string>();
   for (const rel of files) {
     try {
@@ -445,8 +451,8 @@ const reachability = (root: string, wired: Set<string>, files: string[]): Map<st
     } else if (/\.claude\/rediacc_hooks\/tests\//.test(rel) && /^test_.*\.py$/.test(base)) {
       reached.set(rel, 'via pytest (testpaths)');
     } else if (
-      // 3. THE STANDALONE SCRIPTS. test_hooks_delegates.py's _discover_tailed globs `test-*.py` under hooks/context, hooks/stop and rediacc_hooks/guards and runs each one. Before this seed a script was "reached" only through some other file's incidental mention of its name, so test-planenforce.py read as dead code on 2026-10-03 the moment wl_planenforce.py's docstring stopped naming it.
-      /\.claude\/(hooks\/(context|stop)|rediacc_hooks\/guards)\/test-[^/]*\.py$/.test(rel)
+      // 3. THE STANDALONE SCRIPTS. test_hooks_delegates.py's _discover_tailed globs `test-*.py` under hooks/context, hooks/post-bash, hooks/stop and rediacc_hooks/guards (its _TAILED_ROOTS) and runs each one. Before this seed a script was "reached" only through some other file's incidental mention of its name, so test-planenforce.py read as dead code on 2026-10-03 the moment wl_planenforce.py's docstring stopped naming it.
+      /\.claude\/(hooks\/(context|post-bash|stop)|rediacc_hooks\/guards)\/test-[^/]*\.py$/.test(rel)
     ) {
       reached.set(rel, 'via test_hooks_delegates.py (glob)');
     }
@@ -1892,6 +1898,8 @@ const jsonTokens = (text: string): RegExp[] => {
 const isNamerCandidate = (f: string): boolean => {
   if (NOT_A_DISCOVERER.some((d) => f.startsWith(d))) return false;
   if (GENERATED_PROJECTIONS.includes(f)) return false;
+  // A test fixture is data a test feeds a program, not a program writing a location down; left in, a guard fixture that quotes a path wins the wiring tier over the loader that binds it.
+  if (/(?:^|\/)tests\/fixtures\//.test(f)) return false;
   const ext = path.extname(f);
   return WIRING_EXT.includes(ext) || f.startsWith('.vscode/') || CODE_EXT.includes(ext);
 };
@@ -2430,6 +2438,90 @@ export const agentReferenceProvider: Provider = {
   inputs: { scope: (rel) => AGENT_REFERENCE_PAGE_RE.test(rel) },
 };
 
+/* ------------------------------------------------------------ MCP tools */
+
+export const MCP_REGISTRY_JSON = 'packages/shared/src/mcp/tools.generated.json';
+
+export interface McpRegistryTool {
+  name: string;
+  description: string;
+  surface: string;
+  annotations: { readOnlyHint: boolean; destructiveHint: boolean };
+}
+
+/**
+ * The first sentence of a registry description, which is what a table row can carry.
+ *
+ * A registry description runs to a paragraph (it is the text a client shows beside the tool), and a page table of 96 paragraphs is unreadable. A sentence ends at `.`, `!` or `?` followed by a space and an upper-case letter or a backtick, or at the end of the text, so `e.g. foo` and `0.5 s` stay inside one sentence. The full text is in `tools/list`.
+ */
+export function firstSentence(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  const m = /^(.*?[.!?])(?= [A-Z`]|$)/.exec(flat);
+  return m?.[1] ?? flat;
+}
+
+/** The registry's tools, refused loudly when the file is missing, malformed or empty: a table of nothing would read as an MCP server with no tools. */
+export function readMcpRegistryTools(root: string): McpRegistryTool[] {
+  const file = path.join(root, MCP_REGISTRY_JSON);
+  if (!fs.existsSync(file)) {
+    throw new Error(
+      `${MCP_REGISTRY_JSON} is missing; regenerate it with ` +
+        '`npx tsx packages/cli/scripts/generate-mcp-registry.ts`.'
+    );
+  }
+  const doc = JSON.parse(fs.readFileSync(file, 'utf-8')) as { tools?: McpRegistryTool[] };
+  const tools = doc.tools ?? [];
+  if (tools.length === 0) {
+    throw new Error(`${MCP_REGISTRY_JSON} lists no tools; the MCP tool tables would be empty.`);
+  }
+  return tools;
+}
+
+/**
+ * The one class fact the registry states truthfully: whether the tool is destructive.
+ *
+ * NO READ/WRITE COLUMN, because the registry carries no such fact. `annotations.readOnlyHint` is `!isDestructive` (packages/cli/src/commands/mcp/tool-factory.ts), so `machine_add` and `backup_run` say `readOnlyHint: true`, and `timeoutClass` is a time budget (`backup_check` restores a file and is budgeted as a write). A column built from either would publish a guess as a fact.
+ */
+export const mcpToolDestructive = (t: McpRegistryTool): string =>
+  t.annotations.destructiveHint ? 'yes' : 'no';
+
+/** True for a tool only the local `rdc mcp serve` offers. */
+export const isLocalOnlyMcpTool = (t: McpRegistryTool): boolean => t.surface === 'local';
+
+/** A plain .md page parses `<config>` as an HTML tag and drops it, so a description's angle brackets become entities. */
+const escapeAngles = (text: string): string => text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** One row per tool on one side of the remote/local split, in registry order (sorted by name). */
+const mcpToolRows = (root: string, local: boolean): ProviderRow[] =>
+  readMcpRegistryTools(root)
+    .filter((t) => isLocalOnlyMcpTool(t) === local)
+    .map((t) => ({
+      key: t.name,
+      cells: [`\`${t.name}\``, mcpToolDestructive(t), escapeAngles(firstSentence(t.description))],
+    }));
+
+/**
+ * The MCP tools a remote client reaches, for the first tool table of `ai-agents-mcp.md`.
+ *
+ * Every surface but `local` is remote: `proxy` is served by the hosted Worker today, and `executor` and `in-memory` are the registry's verdicts that PLAN-rmcp-local-mcp LM10 turns into `proxy` (packages/shared/src/mcp/schema.ts). `check:ci-mcp-docs-parity` holds every locale copy of the page to the same names in the same order.
+ */
+export const mcpToolsProvider: Provider = {
+  id: 'mcp-tools',
+  scans: `the tools in \`${MCP_REGISTRY_JSON}\` a remote MCP client reaches (every surface except \`local\`), one row per tool`,
+  columns: ['Tool', 'Destructive', 'Description'],
+  rows: (root) => mcpToolRows(root, false),
+  inputs: filesInput(MCP_REGISTRY_JSON),
+};
+
+/** The local-only MCP tools (surface `local`: they read the caller's own disk), for the second tool table of `ai-agents-mcp.md`. */
+export const mcpToolsLocalProvider: Provider = {
+  id: 'mcp-tools-local',
+  scans: `the tools in \`${MCP_REGISTRY_JSON}\` only the local \`rdc mcp serve\` offers (surface \`local\`), one row per tool`,
+  columns: ['Tool', 'Destructive', 'Description'],
+  rows: (root) => mcpToolRows(root, true),
+  inputs: filesInput(MCP_REGISTRY_JSON),
+};
+
 export const PROVIDERS: readonly Provider[] = [
   gatesProvider,
   gatesSummaryProvider,
@@ -2448,6 +2540,8 @@ export const PROVIDERS: readonly Provider[] = [
   planRecordGrammarProvider,
   jsonInventoryProvider,
   envManifestProvider,
+  mcpToolsProvider,
+  mcpToolsLocalProvider,
 ];
 
 export const providerById = (id: string): Provider | undefined =>

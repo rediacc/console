@@ -40,6 +40,7 @@ import { CommanderError } from 'commander';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { createCli } from '../../cli.js';
 import { namedFailureOf } from '../../utils/errors.js';
+import { withExecutorPrincipal } from '../account/executor-principal.js';
 import { configService } from '../config/config-resources.js';
 import {
   type CommandRequestContext,
@@ -50,6 +51,7 @@ import {
   runInRequestContext,
 } from '../core/request-context.js';
 import type { ExecuteResult, Executor, RenetEvent } from '../executor/types.js';
+import { type ForensicsTicket, withForensicsTicket } from '../forensics/client.js';
 import { RequestIdMinter, withInvocationMinter } from '../jobs/attach.js';
 import {
   currentRequestTelemetry,
@@ -113,6 +115,16 @@ export interface DispatchArgs {
    * the command's spans to this and not to the executor's own token.
    */
   caller?: TelemetryCaller;
+  /**
+   * The single-use forensics read ticket of the request (PLAN-forensics-investigation D8): the
+   * forensics reads redeem it once and read as the approving owner's agent. Absent, those reads
+   * refuse, since the executor's own token carries no `forensics:read`.
+   */
+  forensicsTicket?: ForensicsTicket;
+  /**
+   * The introspected caller's token id. A container-mode dispatch (the one that carries `config`) sends its licence calls to the executor routes on this principal's behalf (services/account/executor-principal.ts); absent, those calls fail named.
+   */
+  principalTokenId?: string;
 }
 
 export interface DispatchOutcome {
@@ -141,11 +153,8 @@ export interface DispatchOutcome {
    * the audit would otherwise record `undefined` for it.
    */
   machineName?: string;
-  /**
-   * Config changes the command made that were NOT persisted, because it ran
-   * against a request-scoped config. Zero on a daemon, whose writes land on disk.
-   */
-  unpersistedConfigWrites: number;
+  /** The params of the call `functionName` names, observed with it: the audit reads the repository identity out of them. */
+  functionParams?: Record<string, unknown>;
 }
 
 /** The error code of a refusal that carries none of its own: another job holds the scope. */
@@ -375,6 +384,18 @@ export function prepareCommand(
   return { entry, argv: buildArgv(entry, params, positionals) };
 }
 
+/** The renet functions that make an image; their call params carry the new GUID (audit.ts MADE_GUID_PARAM). */
+const IMAGE_MAKING_FUNCTIONS: ReadonlySet<string> = new Set([
+  'repository_create',
+  'repository_fork',
+]);
+
+/** A container dispatch (the one the container tier hands a config) acts for its caller's token on licence calls. */
+function withContainerPrincipal<T>(args: DispatchArgs, fn: () => T): T {
+  if (!args.config) return fn();
+  return withExecutorPrincipal({ tokenId: args.principalTokenId }, fn);
+}
+
 export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutcome> {
   const { argv } = args.prepared;
   const started = Date.now();
@@ -387,6 +408,8 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let lastResult: ExecuteResult | undefined;
   let functionName: string | undefined;
   let machineName: string | undefined;
+  let functionParams: Record<string, unknown> | undefined;
+  let madeImage = false;
 
   // Every machine call a served command makes is one job, attached for the window the executor seam sets and handed back as a ticket when it outlives it: the executor cannot assume the client's connection outlives the work. `onJobStarted` fires once per job so the route can announce the job line. A client-supplied request id is the invocation id: each call of the command mints `<id>:<machine>:<seq>` from it, so a retried POST attaches to the jobs the first one started and a second call of the same command is its own job.
   const minter = args.requestId ? new RequestIdMinter(args.requestId) : undefined;
@@ -394,8 +417,14 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
   let refusedOverlaps: JobOverlap[] | undefined;
   const recordingExecutor: Executor = {
     async execute(options) {
-      functionName = options.functionName;
-      machineName = options.machineName;
+      // An image-making call (create, fork) is what the audit event traces an orphaned image back to, so a later call of the same command (fork then up) does not displace it. The event's success and exit code stay the command's own (a failing `up` after a good fork is a failed `repo fork`), and its `commandPath` names the command, so the function here says which image was made, not which call failed.
+      const makesImage = IMAGE_MAKING_FUNCTIONS.has(options.functionName);
+      if (makesImage || !madeImage) {
+        functionName = options.functionName;
+        machineName = options.machineName;
+        functionParams = options.params;
+        madeImage = makesImage;
+      }
       let result: ExecuteResult;
       try {
         result = await args.executor.execute({
@@ -432,48 +461,82 @@ export async function dispatchCommand(args: DispatchArgs): Promise<DispatchOutco
     ...(args.config ? { config: createRequestConfigScope(args.config) } : {}),
   };
 
+  const parse = async () => {
+    const program = createCli();
+    harden(program, context.stderr);
+    try {
+      await program.parseAsync(argv, { from: 'user' });
+      return { failed: false as const };
+    } catch (error) {
+      endFailedCommandSpan(error, Date.now() - started);
+      return { failed: true as const, error };
+    }
+  };
+  const parseInContext = () =>
+    withContainerPrincipal(args, () => runInRequestContext(context, parse));
+  // The forensics reads of this dispatch see its ticket, or null so that they refuse.
   const outcome = await runWithRequestTelemetry(
     args.caller,
     () =>
       withInvocationMinter(minter, () =>
-        runInRequestContext(context, async () => {
-          const program = createCli();
-          harden(program, context.stderr);
-          try {
-            await program.parseAsync(argv, { from: 'user' });
-            return { failed: false as const };
-          } catch (error) {
-            endFailedCommandSpan(error, Date.now() - started);
-            return { failed: true as const, error };
-          }
-        })
+        withForensicsTicket(args.forensicsTicket ?? null, () => parseInContext())
       ),
     'command'
   );
 
   const { text: stdout, bytes: stdoutBytes } = joinStdout(context.stdout);
   const stderr = context.stderr.join('\n');
-  const unpersistedConfigWrites = context.config?.specWrites ?? 0;
   const common = {
     stdout,
     ...(stdoutBytes ? { stdoutBytes } : {}),
     stderr,
     functionName,
     machineName,
-    unpersistedConfigWrites,
+    ...(functionParams ? { functionParams } : {}),
   };
 
   if (!outcome.failed) {
     const result = lastResult ?? inertResult(Date.now() - started);
-    return { result: withRequestedExit(result, context.exitCode), ...common };
+    const settled = withUnsavedWrite(
+      withRequestedExit(result, context.exitCode),
+      context.config?.writeFailure
+    );
+    return { result: settled, ...common };
   }
 
-  const failure = toFailure(outcome.error, lastResult, Date.now() - started, stderr);
+  const failure = withWriteFailure(
+    toFailure(outcome.error, lastResult, Date.now() - started, stderr),
+    context.config?.writeFailure
+  );
   // A BUSY refusal is a structured result: the code, and the jobs that hold the scope with their attach commands.
   const refused = refusedOverlaps
     ? { ...failure, errorCode: failure.errorCode ?? BUSY_ERROR_CODE, overlaps: refusedOverlaps }
     : failure;
   return { result: refused, ...common };
+}
+
+/**
+ * Name a failure after the config write the request scope refused
+ * (CONFIG_WRITE_UNAVAILABLE). The command's handleError flattened the thrown
+ * refusal into an exit, so its code survives only on the scope. A failed machine
+ * call keeps its own code: it is how the command as a whole ended.
+ */
+function withWriteFailure(failure: ExecuteResult, writeFailure: string | undefined): ExecuteResult {
+  if (!writeFailure || failure.errorCode) return failure;
+  return { ...failure, errorCode: writeFailure };
+}
+
+/**
+ * A command that caught the refused or failed config write and still exited 0
+ * did not save its change, so the served result fails with the write's code
+ * instead of reporting a success the config store never saw.
+ */
+export function withUnsavedWrite(
+  result: ExecuteResult,
+  writeFailure: string | undefined
+): ExecuteResult {
+  if (!writeFailure || !result.success || result.errorCode) return result;
+  return { ...result, success: false, exitCode: result.exitCode || 1, errorCode: writeFailure };
 }
 
 /** The overlaps a refused start carried (JobOverlapRefusedError), or undefined for any other error. */

@@ -641,7 +641,8 @@ KEYED = {"version": 2, "carried": KEYED_ENTRIES}
 SHORT = {"version": 2, "carried": [{"gate": "fast:red", "findings": "*", "reason": "too short"}]}
 for label, carried_receipt, doc, want in (
     ("keyed exact", {"failed": ["g"], "findings": {"g": ["k1", "k2"]}}, KEYED, True),
-    ("keyed with a stale carried key", {"failed": ["g"], "findings": {"g": ["k1"]}}, KEYED, False),
+    # R3: a carried key the run did not report only warns at the guard, so it carries here too.
+    ("keyed with a stale carried key", {"failed": ["g"], "findings": {"g": ["k1"]}}, KEYED, True),
     (
         "a stale carried gate",
         {"failed": ["fast:red"], "findings": {}},
@@ -659,6 +660,29 @@ for label, carried_receipt, doc, want in (
         True,
     ),
     ("star under the reason bar", {"failed": ["fast:red"], "findings": {}}, SHORT, False),
+    (
+        "a live pattern covers the recorded keys",
+        {"failed": ["g"], "findings": {"g": ["slow:a", "slow:b"]}},
+        {
+            "version": 2,
+            "carried": [
+                {"gate": "g", "patterns": ["slow:*"], "expires": "2999-01-01", "reason": LONG}
+            ],
+        },
+        True,
+    ),
+    (
+        "an expired pattern",
+        {"failed": ["g"], "findings": {"g": ["slow:a"]}},
+        {
+            "version": 2,
+            "carried": [
+                {"gate": "g", "patterns": ["slow:*"], "expires": "2000-01-01", "reason": LONG}
+            ],
+        },
+        False,
+    ),
+    ("keyed, recorded keys empty", {"failed": ["g"], "findings": {"g": []}}, KEYED, False),
 ):
     full = dict(GREEN, exitCode=1, **carried_receipt)
     refusal, _notes = GUARD.carried_verdict(full, doc)

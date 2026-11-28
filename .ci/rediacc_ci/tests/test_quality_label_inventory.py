@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.label_inventory`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with both streams captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the ledger `.ci/shadow/w7p2-label-inventory.observations.jsonl`, which holds over ten distinct trees. The twin has now been deleted and every case that
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-inventory.sh` over a specimen with both streams captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the ledger the ledger (deleted in commit:936280cd35), which holds over ten distinct trees. The twin has now been deleted and every case that
 executed it compares against `goldens/label-inventory/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 EVERY CASE USES THE INJECTION SEAMS, so no case touches the network. That is the twin's own design (`LABEL_INVENTORY_LIVE_FILE`, `LABEL_INVENTORY_PROBE_FILE`, `LABEL_INVENTORY_LIVE_JSON_FILE`), and the PROBE seam is separate from the LIST seam on purpose: "the whole point of the re-read is that it can disagree with the list."
@@ -77,14 +77,11 @@ def build(tmp_path: pathlib.Path, files: dict[str, str]) -> pathlib.Path:
         src / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    for name in ("__init__.py", "%s.py" % MODULE):
+    for name in ("__init__.py", "gate_args.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,
             root / ".ci" / "rediacc_ci" / "quality" / name,
         )
-    (root / ".ci" / "scripts" / "ci" / "report-nightly-status.cjs").write_text(
-        'issues.createLabel({name: "nightly-red"})\n', encoding="utf-8"
-    )
     (root / ".ci" / "rediacc_ci" / "review" / "pr_labels.py").write_text(
         'MANAGED = ("ci", "bump-none")\n', encoding="utf-8"
     )
@@ -208,9 +205,7 @@ CASES = [
     (
         "a drifted description is a finding on the real declaration path",
         {
-            ".github/labels.yml": declarations(
-                "alpha", "bravo", "charlie", "nightly-red", "ci", "bump-none"
-            ),
+            ".github/labels.yml": declarations("alpha", "bravo", "charlie", "ci", "bump-none"),
             "fx/live.txt": "alpha\nbravo\ncharlie\n",
             "fx/live.json": json.dumps(
                 [
@@ -226,9 +221,7 @@ CASES = [
     (
         "an UNREADABLE drift comparison is never a clean tree",
         {
-            ".github/labels.yml": declarations(
-                "alpha", "bravo", "charlie", "nightly-red", "ci", "bump-none"
-            ),
+            ".github/labels.yml": declarations("alpha", "bravo", "charlie", "ci", "bump-none"),
             "fx/live.txt": "alpha\nbravo\ncharlie\n",
             "fx/live.json": '[{"name":"alpha","desc',
         },
@@ -239,13 +232,11 @@ CASES = [
         # FIXED 2026-09-10. Neither LIVE_FILE nor LIVE_JSON_FILE is set, so LIVE_SOURCE falls to "GitHub API" for BOTH the names-only read (which succeeds) and the drift-comparison full-object read (which fails). Before the fix, a failed drift read silently skipped the description/ colour comparison and the gate reported "all agree" anyway.
         "a failed live-JSON fetch over the real GitHub API path refuses, not skips",
         {
-            ".github/labels.yml": declarations(
-                "alpha", "bravo", "charlie", "nightly-red", "ci", "bump-none"
-            ),
+            ".github/labels.yml": declarations("alpha", "bravo", "charlie", "ci", "bump-none"),
             "fxbin/gh": (
                 "#!/bin/bash\n"
                 'for a in "$@"; do [ "$a" = "--jq" ] && '
-                "{ printf 'alpha\\nbravo\\ncharlie\\nnightly-red\\nci\\nbump-none\\n'; exit 0; }; "
+                "{ printf 'alpha\\nbravo\\ncharlie\\nci\\nbump-none\\n'; exit 0; }; "
                 "done\n"
                 "echo 'HTTP 500: simulated failure' >&2\n"
                 "exit 1\n"
@@ -351,12 +342,12 @@ def test_the_allowlist_is_short_and_every_entry_names_a_creator():
 
     The entries are also PRINTED on every run (`log_info`), which is the house rule about quiet exemptions: a forgiven label that never appears in the output is a debt nobody can see.
     """
-    assert len(gate.CREATE_ON_DEMAND) == 3
+    assert len(gate.CREATE_ON_DEMAND) == 2
     for entry in gate.CREATE_ON_DEMAND:
         name, _, creator = entry.partition("|")
         assert name, entry
         assert creator, entry
-        assert creator.startswith(".ci/"), entry
+        assert creator.startswith((".ci/", "scripts/ci/")), entry
 
 
 def test_the_declaration_reader_keeps_the_twins_unquoting_order():

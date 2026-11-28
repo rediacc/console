@@ -28,13 +28,12 @@ WHY, in the twin's own words, because the failure was a silent fail-open:
     otherwise make direction (b) vacuously clean and direction (a) fire on
     everything, so "empty" is treated as a failed read, never as a tree state.
 
-    CREATE-ON-DEMAND. Exactly one label is legitimately absent until first use:
-    report-nightly-status.cjs creates `nightly-red` right before it opens the
-    rolling issue, because createIssue with an unknown label fails the whole call.
-    It is still declared in labels.yml (the guide must be able to explain it), so
-    it would otherwise trip direction (a) forever. The allowlist below forgives
-    ABSENCE only; the entry names its creator so a future reader can check the
-    claim, and the gate verifies both halves of the entry still exist.
+    CREATE-ON-DEMAND. Two labels are legitimately absent until first use: the PR
+    label applier creates `ci` and `bump-none` right before it first applies them.
+    They are still declared in labels.yml (the guide must be able to explain them),
+    so they would otherwise trip direction (a) forever. The allowlist below
+    forgives ABSENCE only; each entry names its creator so a future reader can
+    check the claim, and the gate verifies both halves of the entry still exist.
 
     Test seams (so the test never touches the network):
       LABEL_INVENTORY_LABELS_FILE - the declaration file
@@ -46,13 +45,7 @@ WHY, in the twin's own words, because the failure was a silent fail-open:
                                     list, because the whole point of the re-read
                                     is that it can disagree with the list.
 
-THE THREE ALLOWLIST ENTRIES CARRY THEIR OWN BLOCKER REASONS, verbatim:
-
-    nightly-red: report-nightly-status.cjs calls issues.createLabel for
-    nightly-red immediately before opening the rolling issue, because
-    issues.create with an unknown label fails the entire call; the label
-    therefore does not exist until the first red night, and demanding it up front
-    would fail this gate on a repo whose nightly has never gone red.
+THE TWO ALLOWLIST ENTRIES CARRY THEIR OWN BLOCKER REASONS, verbatim:
 
     ci: the PR label applier (rediacc_ci.review.pr_labels) creates `ci` immediately before its
     first use, the same pattern and for the same reason: the label is brand new,
@@ -91,11 +84,11 @@ THE ALLOWLIST IS SELF-EXPIRING, and the scoping of that is deliberate:
 
     a stale entry is a permanent hole, so both halves of every entry are
     re-verified. This is what makes the exemption self-expiring: delete
-    report-nightly-status.cjs and the allowlist fails rather than quietly
-    forgiving a label nothing creates any more.
+    the creating script and the allowlist fails rather than quietly forgiving a
+    label nothing creates any more.
 
     The "still declared" half is scoped to the REAL declaration file: a fixture
-    tree legitimately does not carry nightly-red, and the entry must not fail every
+    tree legitimately does not carry `ci`, and the entry must not fail every
     test that drives this gate against a fixture. Same shape as
     check-workflow-gates.sh's SLIM_TIMEOUT_REQUIRE_COVERAGE, and the test drives
     the flag on explicitly so the scoping itself stays covered.
@@ -164,7 +157,7 @@ PORT NOTES.
 THE EMBEDDED PYTHON HEREDOC BECOMES ORDINARY FUNCTIONS, and its exit-code contract becomes an exception. The twin runs a `python3 - <<'PY'` child and captures `drift_rc` separately so that a crash cannot read as agreement; here the same distinction is `DriftUnreadableError`, raised where that child exits 1, and the caller turns it into the identical message and exit. The shape of
 the guarantee is what matters: an unreadable comparison is never a clean tree.
 
-`length()` IN awk IS BYTES UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts`
+`length()` IN awk IS BYTES UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4)
 pins for both sides, while Python's `len()` counts CHARACTERS. Every description in this repo is ASCII, so the two agree today; a description with a non-ASCII character would be measured differently, and the port would under-report rather than over-report. Stated rather than silently normalised, because normalising it would make the port disagree with the twin on a real file.
 
 THE UNQUOTING ORDER IS OBSERVABLE AND IS PRESERVED. The twin strips the `- name:` prefix, then a surrounding pair of double quotes, then a surrounding pair of single quotes, and only THEN trailing whitespace. So `- name: "x" ` keeps its quotes: the `^"(.*)"$` anchor fails while the trailing spaces are still there. That is a bug in the twin and it is carried, because "fixing" it
@@ -173,6 +166,13 @@ changes which names reconcile.
 `gh` IS SHELLED OUT TO, once for the name list and once for the JSON, exactly as the twin does it, and the single-label re-read is a third call. A failed call is never folded into "fine": the name read refuses outright, and the re-read reports "could not probe" (2), which REPORTS the finding rather than dropping it.
 
 THE ALLOWLIST IS PRINTED, NOT SILENT. `log_info` names every allowlisted label that is legitimately absent on every run, so the debt stays visible. That is the house rule about quiet exemptions, and the twin already follows it.
+
+---- gate ----
+kind: test
+test: .ci/rediacc_ci/tests/gates/test_gate_label_inventory.py
+blocker: BLOCKER: test_gate_label_inventory.py:test_real_tree_reconciles_against_an_injected_live_list runs the gate seam-free over the REAL .github/labels.yml under check:ci-pytest (ci-quality.yml quality-security) with the live list injected, so the real parse, the declared floor and the create-on-demand check execute every CI run; the live GitHub read runs on npm
+needs: none
+---- end gate ----
 """
 
 import json
@@ -204,7 +204,6 @@ DESC_CAP = 100
 
 # "<label>|<script that creates it>". Absence is forgiven for these and ONLY these. Keep it this short. Each entry's BLOCKER reason is in the module docstring, where a reviewer reads it.
 CREATE_ON_DEMAND = (
-    "nightly-red|.ci/scripts/ci/report-nightly-status.cjs",
     "ci|.ci/rediacc_ci/review/pr_labels.py",
     "bump-none|.ci/rediacc_ci/review/pr_labels.py",
 )
@@ -703,7 +702,7 @@ def selftest() -> int:
         )
 
     # THE ALLOWLIST STAYS SHORT AND EVERY ENTRY NAMES ITS CREATOR.
-    ctl.check("the allowlist has three entries", len(CREATE_ON_DEMAND), 3)
+    ctl.check("the allowlist has two entries", len(CREATE_ON_DEMAND), 2)
     ctl.truthy(
         "every allowlist entry names a creator",
         all("|" in entry and entry.split("|", 1)[1] for entry in CREATE_ON_DEMAND),
@@ -713,4 +712,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_label_inventory.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

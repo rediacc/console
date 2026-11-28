@@ -43,6 +43,7 @@ vi.mock('../../jobs/executor-observation.js', () => ({
   }),
 }));
 
+import { AUDIT_UNAVAILABLE, AuditUnavailableError } from '../audit.js';
 import { AuthVerifier } from '../auth.js';
 import { serveCrypto } from '../crypto.js';
 import type { ServeDeps } from '../deps.js';
@@ -80,11 +81,15 @@ function trailer(extra: Record<string, unknown> = {}): string {
 }
 
 describe('job poll and cancel routes', () => {
+  let ended: { jobId: string; state: string; exitCode?: number }[];
   let audited: { commandPath: string; destructive: boolean; success: boolean }[];
   let app: ReturnType<typeof createServeApp>;
+  /** How many of the next audit deliveries fail, as an unreachable account server would. */
+  let auditFailures = 0;
 
   function boot(policy?: unknown) {
     audited = [];
+    ended = [];
     const deps: ServeDeps = {
       mode: 'daemon',
       auth: new AuthVerifier({
@@ -108,10 +113,23 @@ describe('job poll and cancel routes', () => {
       loadConfig: () => Promise.resolve(config(policy)),
       authorize,
       audit: (event) => {
+        if (auditFailures > 0) {
+          auditFailures--;
+          return Promise.reject(new AuditUnavailableError('account server unreachable'));
+        }
         audited.push(event);
         return Promise.resolve();
       },
       executor: { execute: () => Promise.reject(new Error('no command runs here')) },
+      runIndex: {
+        begin: () => {
+          throw new Error('no run begins here');
+        },
+        endJob: (jobId, outcome) => {
+          ended.push({ jobId, ...outcome });
+          return Promise.resolve();
+        },
+      },
     };
     app = createServeApp(deps);
   }
@@ -123,6 +141,7 @@ describe('job poll and cancel routes', () => {
     ran.length = 0;
     observed.length = 0;
     cancelled.length = 0;
+    auditFailures = 0;
     spool.stdout = `${JSON.stringify({ type: 'output', msg: 'a' })}\n${JSON.stringify({ type: 'output', msg: 'b' })}\n${trailer()}\n`;
     boot();
   });
@@ -173,12 +192,31 @@ describe('job poll and cancel routes', () => {
     expect(audited[0]).toMatchObject({ commandPath: 'job logs', success: true });
   });
 
+  it('an undeliverable terminal event is forgotten, so the next poll ships it once (review b32c1cdd.1)', async () => {
+    spool.stdout = `${trailer({ state: 'succeeded', exit_code: 0, finished_at: '2026-11-04T00:00:00Z' })}\n`;
+    auditFailures = 1;
+    expect((await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`)).status).toBe(200);
+    expect(audited).toHaveLength(0);
+    for (let i = 0; i < 2; i++) {
+      expect((await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`)).status).toBe(200);
+    }
+    expect(audited).toHaveLength(1);
+  });
+
   it('hands the terminal state to the executor observation on every poll (run-once lives in executor-observation.test.ts)', async () => {
     spool.stdout = `${trailer({ state: 'succeeded', exit_code: 0, finished_at: '2026-11-04T00:00:00Z' })}\n`;
     for (let i = 0; i < 3; i++) {
       await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
     }
     expect(observed).toEqual(Array(3).fill({ jobId: ID, state: 'succeeded', exitCode: 0 }));
+  });
+
+  it('a terminal poll ends the run index row of the job, and a running one does not (review b70d6146.1)', async () => {
+    await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
+    expect(ended).toEqual([]);
+    spool.stdout = `${trailer({ state: 'succeeded', exit_code: 0, finished_at: '2026-11-04T00:00:00Z' })}\n`;
+    await get(`${PROXY_ROUTES.jobPoll(ID)}?machine=hostinger`);
+    expect(ended).toEqual([{ jobId: ID, state: 'succeeded', exitCode: 0 }]);
   });
 
   it('writes no terminal audit while the job still runs', async () => {
@@ -194,12 +232,27 @@ describe('job poll and cancel routes', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ state: 'cancelled', exitCode: 130 });
     expect(cancelled).toEqual([ID]);
-    expect(audited).toHaveLength(1);
-    expect(audited[0]).toMatchObject({
+    // Recorded `started` before the cancel reaches the machine, then with its outcome (PLAN-rmcp-writeback.md Design 8).
+    expect(audited).toHaveLength(2);
+    expect(audited[0]).toMatchObject({ commandPath: 'job cancel', outcome: 'started' });
+    expect(audited[1]).toMatchObject({
       commandPath: 'job cancel',
       destructive: true,
       success: true,
     });
+    expect(audited[1]).not.toHaveProperty('outcome');
+  });
+
+  it('refuses a cancel whose pre-cancel audit record cannot be delivered (503), and sends nothing to the machine (review b32c1cdd.2)', async () => {
+    auditFailures = 1;
+    const res = await app.request(`${PROXY_ROUTES.jobCancel(ID)}?machine=hostinger`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${TOKEN}` },
+    });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toMatchObject({ code: AUDIT_UNAVAILABLE });
+    expect(cancelled).toHaveLength(0);
+    expect(audited).toHaveLength(0);
   });
 
   it('refuses a cancel the policy does not allow', async () => {

@@ -14,10 +14,13 @@ import importlib.util
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import tempfile
 from typing import Any
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 ROOT = HOOKS.parents[1]
@@ -143,7 +146,7 @@ def payload(cmd):
 
 
 def run(cmd):
-    p = subprocess.run(
+    p = _harness.run(
         GUARD_ARGV,
         input=json.dumps(payload(cmd)),
         capture_output=True,

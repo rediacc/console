@@ -16,11 +16,14 @@ import pathlib
 import subprocess
 
 from rediacc_hooks import hookio
+from rediacc_hooks.guards import _write_rules, tables
 from rediacc_hooks.guards import block_protected_files as PF
+
+__getattr__ = tables("block_protected_files_edit", "EDGE_CASES")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
-ORDER = 16
+ORDER = 15
 
 # The path test is the whole guard: with it gone no protected file is recognised, so an empty Write over `.claude/settings.json` passes.
 DEFECT = ("if not PF._is_protected(absolute):", "if True:")
@@ -34,75 +37,6 @@ MESSAGE = (
     "the file is allowed; to undo a change, edit the value back. If the file genuinely has to be\n"
     "emptied or restored, hand the exact command to the operator to run with the `!` prefix.\n"
 )
-
-# The cases that need no world on disk; the restore cases need a checkout and live in the harness.
-EDGE_CASES = [
-    (
-        "a Write emptying the settings file",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.json", "content": ""},
-        },
-    ),
-    (
-        "a Write blanking the pre-commit script",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/scripts/pre-commit-check.sh", "content": "\n \n"},
-        },
-    ),
-    (
-        "a NotebookEdit naming the settings file",
-        {
-            "tool_name": "NotebookEdit",
-            "tool_input": {"notebook_path": "/r/.claude/settings.json", "new_source": "x"},
-        },
-    ),
-    (
-        "a Write of new settings text",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.json", "content": '{"hooks": {}}\n'},
-        },
-    ),
-    (
-        "a Write emptying an ordinary file",
-        {"tool_name": "Write", "tool_input": {"file_path": "/r/docs/x.md", "content": ""}},
-    ),
-    (
-        "a Write emptying the local settings file",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "/r/.claude/settings.local.json", "content": ""},
-        },
-    ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": ""}}),
-]
-
-
-def _result_text(doc, path):
-    """The text the call leaves at `path`, or None when the tool itself would fail and nothing changes (the `block_user_only_command` reading)."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None
-    if "content" in tin:
-        return str(tin.get("content") or "")
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text
 
 
 def _head_text(path):
@@ -143,7 +77,7 @@ def run(ev):
         ev.warn_raw(MESSAGE % (tool, "replace", shown))
         return hookio.DENY
     path = pathlib.Path(absolute)
-    after = _result_text(doc, path)
+    after, _why = _write_rules.result_text(doc, path)
     if after is None:
         return hookio.ALLOW
     if not after.strip():

@@ -41,6 +41,23 @@ def _set(doc: dict, kind: str, binding: str, key: str, value: object) -> None:
     raise AssertionError("plant needle gone: no %s binding %s" % (kind, binding))
 
 
+def _drop(doc: dict, kind: str, binding: str) -> None:
+    for block in doc[kind]:
+        if block.get("binding") == binding:
+            doc[kind].remove(block)
+            return
+    raise AssertionError("plant needle gone: no %s binding %s" % (kind, binding))
+
+
+def _drop_queue(doc: dict, side: str, queue: str) -> None:
+    rows = doc["queues"][side]
+    for row in rows:
+        if row.get("queue") == queue:
+            rows.remove(row)
+            return
+    raise AssertionError("plant needle gone: no queue %s in %s" % (queue, side))
+
+
 def _profile(inputs: g.Inputs, name: str) -> dict:
     return inputs.consumers[name]
 
@@ -111,7 +128,7 @@ def offline_plants() -> list[
         return found
 
     def bench_payload(i: g.Inputs, found):
-        i.bench_payload.remove("STRIPE_WEBHOOK_SECRET")
+        i.bench_payload.remove("ACCOUNT_JWT_SECRET")
         return found
 
     def drop_profile(i: g.Inputs, found):
@@ -162,6 +179,71 @@ def offline_plants() -> list[
                 "asia",
                 lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "bucket_name", "configs-eu"),
             ),
+        ),
+        (
+            "regions: an off-pattern audit bucket",
+            ("us", "regions"),
+            regions("auditR2", "us", "audit-eu"),
+        ),
+        (
+            "regions: an off-pattern forensics queue",
+            ("asia", "regions"),
+            regions("forensicsQueue", "asia", "forensics-compact-us"),
+        ),
+        (
+            "account: a config lacking the AUDIT_BUCKET binding",
+            ("us", "account"),
+            acc("us", lambda d: _drop(d, "r2_buckets", "AUDIT_BUCKET")),
+        ),
+        (
+            "account: an audit bucket outside the region's jurisdiction",
+            ("eu", "account"),
+            acc("eu", lambda d: _set(d, "r2_buckets", "AUDIT_BUCKET", "jurisdiction", None)),
+        ),
+        (
+            "account: another region's audit bucket",
+            ("asia", "account"),
+            acc("asia", lambda d: _set(d, "r2_buckets", "AUDIT_BUCKET", "bucket_name", "audit-eu")),
+        ),
+        (
+            "account: a config lacking the AGENT_GRANT_REVOKER binding",
+            ("eu", "account"),
+            acc("eu", lambda d: _drop(d, "services", "AGENT_GRANT_REVOKER")),
+        ),
+        (
+            "account: AGENT_GRANT_REVOKER bound to another region's proxy",
+            ("us", "account"),
+            acc("us", lambda d: _set(d, "services", "AGENT_GRANT_REVOKER", "service", "proxy-eu")),
+        ),
+        (
+            "account: another region's forensics bucket var",
+            ("asia", "account"),
+            acc(
+                "asia",
+                lambda d: d["vars"].__setitem__("ACCOUNT_FORENSICS_S3_BUCKET", "forensics-eu"),
+            ),
+        ),
+        (
+            "account: a forensics compaction queue with no consumer",
+            ("us", "account"),
+            acc("us", lambda d: _drop_queue(d, "consumers", "forensics-compact-us")),
+        ),
+        (
+            "account: a forensics producer on another region's queue",
+            ("eu", "account"),
+            acc(
+                "eu",
+                lambda d: [
+                    p.__setitem__("queue", "forensics-compact-us")
+                    for p in d["queues"]["producers"]
+                    if p.get("binding") == "FORENSICS_COMPACT_QUEUE"
+                ],
+            ),
+        ),
+        (
+            "account: the five-minute forensics cron dropped from one config",
+            ("us", "account"),
+            acc("us", lambda d: d["triggers"]["crons"].remove("*/5 * * * *")),
         ),
         (
             "account: a dropped EU jurisdiction",
@@ -312,7 +394,7 @@ def fake_get(
         workers = [w for t in targets for w in (t.account_worker, t.proxy_worker)]
     if secrets is None:
         secrets = {
-            t.account_worker: [*sorted(live.pushed_names(t)), "__ARCHIVE_API_KEY", "EXECUTOR_MODE"]
+            t.account_worker: [*sorted(live.pushed_names()), "__ARCHIVE_API_KEY", "EXECUTOR_MODE"]
             for t in targets
         }
         secrets.update({t.proxy_worker: [] for t in targets})
@@ -361,7 +443,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
     base = fake_get(inputs, targets)
 
     def secrets_with(worker: str, names: list[str]):
-        s = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
+        s = {t.account_worker: sorted(live.pushed_names()) for t in targets}
         s.update({t.proxy_worker: [] for t in targets})
         s[worker] = names
         return fake_get(inputs, targets, secrets=s)
@@ -391,14 +473,8 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         ),
         (
             "live: a legacy name on bench",
-            secrets_with("account-bench", [*sorted(live.pushed_names(targets[-1])), "JWT_SECRET"]),
+            secrets_with("account-bench", [*sorted(live.pushed_names()), "JWT_SECRET"]),
             {("bench-eu", "secrets")},
-            set(),
-        ),
-        (
-            "live: the bench-only sandbox keys on a production Worker",
-            secrets_with("account-eu", [*pushed, *sorted(g.BENCH_ONLY_PAYLOAD)]),
-            {("eu", "secrets")},
             set(),
         ),
         (

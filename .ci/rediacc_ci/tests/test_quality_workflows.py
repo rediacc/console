@@ -3,7 +3,7 @@
 WHY A DIFFERENTIAL. Four of the five banned patterns are handed to `grep -n` as BASIC regular expressions, and one of them -- `script:[[:space:]]*|` -- depends on `|` being LITERAL in BRE. Read as ERE it would match every line. Two of the structural rules are awk state machines whose indentation arithmetic is 1-based and spaces-only. Running the real tools and comparing is the only
 form of this test that can fail for the right reason.
 
-The whole gate is covered by `.ci/shadow/w7p2-workflows.observations.jsonl` over five distinct trees.
+The whole gate is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import pathlib
@@ -11,6 +11,7 @@ import pathlib
 import pytest
 
 from rediacc_ci.quality import workflows as mod
+from rediacc_ci.quality.guard_mutants import read_declarations, scan
 from rediacc_ci.tests import differential as diff
 
 BANNED_GREPS = [
@@ -235,3 +236,64 @@ def test_a_wrapped_python_call_without_slurp_is_not_a_finding():
 def test_a_comment_still_resets_the_join():
     """Unchanged behaviour, asserted because the depth counter is reset in the same arm and a reset that forgot one of the two would leak a bracket across a comment."""
     assert mod.slurp_jq_offenders('gh api x --slurp \\\n# a comment\n    --jq ".[]"\n') == []
+
+
+def test_a_workflow_and_an_action_sharing_a_short_label_are_judged_apart(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A fat `ci.yml` workflow must not be hidden by a thin `.github/actions/ci.yml` read after it: both have the short label `ci.yml`."""
+    monkeypatch.delenv(mod.ACTIONS_DIR_ENV, raising=False)
+    fat = "".join("          echo %d\n" % i for i in range(30))
+    wf = tmp_path / ".github" / "workflows"
+    act = tmp_path / mod.DEFAULT_ACTIONS_DIR
+    wf.mkdir(parents=True)
+    act.mkdir(parents=True)
+    (wf / "ci.yml").write_text(
+        "jobs:\n  a:\n    steps:\n      - name: fat\n        run: |\n" + fat, encoding="utf-8"
+    )
+    (act / "ci.yml").write_text(
+        "runs:\n  steps:\n    - shell: bash\n      run: echo hi\n", encoding="utf-8"
+    )
+    errors = mod.Errors()
+    mod.check_inline_run_blocks(errors, tmp_path, ".github/workflows", 8)
+    assert errors.count == 1
+
+
+# --- guard_mutants.read_declarations (review findings 224eea76.1 and 224eea76.3) ---
+
+
+def test_an_annotated_defect_is_read():
+    out = read_declarations('DEFECT: tuple[str, str] = ("aaa", "bbb")\nx = "aaa"\n')
+    assert out["errors"] == []
+    assert [p["label"] for p in out["plants"]] == ["DEFECT"]
+    assert out["plants"][0]["spans"]
+
+
+def test_a_plain_defect_is_still_read():
+    out = read_declarations('DEFECT = ("aaa", "bbb")\n')
+    assert out["errors"] == []
+    assert [p["label"] for p in out["plants"]] == ["DEFECT"]
+
+
+def test_a_second_declaration_is_an_error():
+    out = read_declarations('DEFECT = ("aaa", "bbb")\nDEFECT = ("ccc", "ddd")\n')
+    assert any("declared twice" in e for e in out["errors"])
+
+
+def test_scan_lists_a_guard_that_annotates_its_declaration(tmp_path):
+    """Review 40bf6c74.1: the file prefilter no longer drops `DEFECT: T = ...`."""
+    (tmp_path / "g.py").write_text('DEFECT: tuple[str, str] = ("aaa", "bbb")\nx = "aaa"\n')
+    (tmp_path / "plain.py").write_text("x = 1\n")
+    rows = scan(str(tmp_path))
+    assert [r["stem"] for r in rows] == ["g"]
+    assert rows[0]["plants"][0]["spans"]
+
+
+def test_scan_spans_index_the_raw_bytes_of_a_crlf_guard(tmp_path):
+    """Review 40bf6c74.2: with CRLF line endings the spans still point at `old` in the file's own bytes."""
+    raw = b'DEFECT = ("needle", "other")\r\nline = 1\r\nuse = "needle"\r\n'
+    (tmp_path / "g.py").write_bytes(raw)
+    spans = scan(str(tmp_path))[0]["plants"][0]["spans"]
+    assert spans
+    for start, end in spans:
+        assert raw[start:end] == b"needle"

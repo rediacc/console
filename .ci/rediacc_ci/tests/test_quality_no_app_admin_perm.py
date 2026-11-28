@@ -1,11 +1,11 @@
 """`rediacc_ci.quality.no_app_admin_perm`, driven directly against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over each fixture below, with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's over the same tree. The K=5 ledger `.ci/shadow/w7p2-appadmin.observations.jsonl` recorded that verdict over five distinct trees and licensed the port. The twin has now
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-no-app-admin-perm.sh` over each fixture below, with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's over the same tree. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port. The twin has now
 been deleted, and every case that executed it compares against `goldens/app-admin-perm/`, which holds the twin's OWN recorded output for that fixture, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes. Nothing here is a hand-written
 expectation.
 
 WHAT IS COMPARED IS WHAT THE DIFFERENTIAL COMPARED. That comparison was never byte-for-byte on both streams: it asserted the exit code and the SET of `permission-administration` lines on stdout, because two things were known to differ. Order is one -- GNU grep walks with fts in readdir order and the port walks sorted, so the two agree about WHICH lines and not about the order of
-them, exactly as `shadow-gate.ts` compares a multiset. The port's success line is the other, and it is a DECLARED divergence rather than a normalization: the port appends the count of files it read, because a green that carries no evidence of having seen the tree is the failure this gate is named after. `test_the_success_line_divergence_is_still_declared` pins it so that it stays a
+them, exactly as the shadow gate (commit:bf054adcd4) compares a multiset. The port's success line is the other, and it is a DECLARED divergence rather than a normalization: the port appends the count of files it read, because a green that carries no evidence of having seen the tree is the failure this gate is named after. `test_the_success_line_divergence_is_still_declared` pins it so that it stays a
 decision and not a drift.
 
 The full twin render is recorded all the same, both streams verbatim, so a reader can see everything the twin printed and not only the projection the suite compares.
@@ -159,7 +159,7 @@ def test_the_success_line_divergence_is_still_declared(tmp_path: pathlib.Path) -
 
 
 def test_scan_returns_grep_rn_shape(tmp_path: pathlib.Path) -> None:
-    """The byte shape `shadow-gate.ts` classifies as a finding, pinned."""
+    """The byte shape the shadow gate (commit:bf054adcd4) classifies as a finding, pinned."""
     root = build(tmp_path, {".github/workflows/ci.yml": CLEAN_WORKFLOW + REQUEST})
     hits, files_read = gate.scan(root)
     assert hits == [".github/workflows/ci.yml:6:        permission-administration: write"]

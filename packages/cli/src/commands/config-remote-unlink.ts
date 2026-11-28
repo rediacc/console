@@ -31,6 +31,7 @@ import {
   ServerE2eKeyUnavailableError,
   ServerInfoStatusError,
 } from '../services/account/account-client.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { ConfigServerError } from '../services/config/config-server-client.js';
 import { RemoteTokenRefreshError } from '../services/config/device-token-refresh.js';
 import { outputService } from '../services/core/output.js';
@@ -55,6 +56,7 @@ export function storeCopyGone(configName: string, remote: RemoteConfig): Validat
       name: configName,
       configId: remote.configId,
       storeId: remote.storeId,
+      cmd: rdcCommand('config remote disable --local', configName),
     })
   );
 }
@@ -89,7 +91,11 @@ export function closedServerPath(
   // A config whose stored server moved: its pull cannot even seal a request, because server-info of the old host answers 401, 403 or 404 and the config holds no key for it. That is a closed path (the host refuses or no longer knows this store), not a transient outage, so it names `--local`. Disable stays server-only by ruling: a stale-cache write is never done implicitly.
   if (isServerGone(error)) {
     return new ValidationError(
-      t('commands.config.remote.disable.accessLost', { name: configName, error: error.message })
+      t('commands.config.remote.disable.accessLost', {
+        name: configName,
+        error: error.message,
+        cmd: rdcCommand('config remote disable --local', configName),
+      })
     );
   }
   const refused =
@@ -97,7 +103,11 @@ export function closedServerPath(
     (error instanceof RemoteTokenRefreshError && ACCOUNT_LEFT_STORE.has(error.code));
   if (!refused) return undefined;
   return new ValidationError(
-    t('commands.config.remote.disable.accessLost', { name: configName, error: error.message })
+    t('commands.config.remote.disable.accessLost', {
+      name: configName,
+      error: error.message,
+      cmd: rdcCommand('config remote disable --local', configName),
+    })
   );
 }
 
@@ -133,7 +143,10 @@ export async function disableLocal(configName: string, opts: { yes?: boolean }):
   // A pointer with no cache stamp holds no copy of the config: never pulled here, or removed when the account lost its team.
   if (remote.cachedVersion === undefined) {
     throw new ValidationError(
-      t('commands.config.remote.disable.localNoCache', { name: configName })
+      t('commands.config.remote.disable.localNoCache', {
+        name: configName,
+        cmd: rdcCommand('config remote enable', configName),
+      })
     );
   }
   const version = String(remote.cachedVersion);

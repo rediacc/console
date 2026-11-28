@@ -18,11 +18,12 @@ function buf(data: Uint8Array): ArrayBuffer {
 
 /** Generate a random AES-256 key. */
 export function generateAesKey(): Promise<CryptoKey> {
+  // Cast: workers-types types generateKey as CryptoKey | CryptoKeyPair; an AES key is always a CryptoKey.
   return crypto.subtle.generateKey(
     { name: 'AES-GCM', length: ENCRYPTION_CONFIG.KEY_LENGTH_BITS },
     true,
     ['encrypt', 'decrypt']
-  );
+  ) as Promise<CryptoKey>;
 }
 
 /** Import raw key bytes as an AES-256-GCM CryptoKey. */
@@ -41,12 +42,16 @@ export function importAesKey(
 
 /** Export a CryptoKey to raw bytes. */
 export async function exportAesKey(key: CryptoKey): Promise<Uint8Array> {
-  const raw = await crypto.subtle.exportKey('raw', key);
+  // Cast: workers-types types exportKey as ArrayBuffer | JsonWebKey; the 'raw' format is always an ArrayBuffer.
+  const raw = (await crypto.subtle.exportKey('raw', key)) as ArrayBuffer;
   return new Uint8Array(raw);
 }
 
 /** AES-GCM parameters: the IV, plus the additional authenticated data when there is any. */
-function gcmParams(iv: Uint8Array, aad?: Uint8Array): AesGcmParams {
+function gcmParams(
+  iv: Uint8Array,
+  aad?: Uint8Array
+): { name: string; iv: ArrayBuffer; additionalData?: ArrayBuffer } {
   return aad
     ? { name: 'AES-GCM', iv: buf(iv), additionalData: buf(aad) }
     : { name: 'AES-GCM', iv: buf(iv) };

@@ -1,9 +1,10 @@
 ---
 title: Segurança e Proteções de Agentes IA
 description: >-
-  Como o CLI da Rediacc impede que assistentes de código IA vazem segredos,
-  sobrescrevam credenciais ou escalonem privilégios. Portões de conhecimento,
-  redação, anulações verificadas por ancestralidade e um registro de auditoria encadeado por hash.
+  Como a Rediacc impede que assistentes de programação com IA vazem segredos,
+  sobrescrevam credenciais ou escalem privilégios. Uma única decisão para cada
+  superfície, adesão explícita E teto de política, portões de conhecimento,
+  redação e um registro de auditoria encadeado por hash por organização e por dia no servidor, e em um arquivo local para a CLI.
 category: Concepts
 tags:
   - ai-agents
@@ -11,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: pt
-sourceHash: "34d12ee4f0a3791c"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 Você está apontando um assistente de código IA para sua infraestrutura. Quando Claude Code, Cursor, Gemini CLI, Copilot CLI ou qualquer coisa similar dirige `rdc`, o CLI detecta e aplica um conjunto de regras diferente do de um humano no teclado. Esta página cobre o que o agente pode e não pode fazer, e como as proteções se mantêm mesmo quando ele tenta convencer seu caminho para sair delas.
@@ -26,17 +27,21 @@ Você está apontando um assistente de código IA para sua infraestrutura. Quand
 | `rdc config field get --pointer <pointer> --digest` | ✅ permitido |  |
 | `rdc config field set --pointer <pointer>` (campo público) | ✅ permitido |  |
 | `rdc config field set --pointer <pointer>` (campo sensível, **com `--current` correto**) | ✅ permitido |  |
-| `rdc config edit --dump` (JSONC redacionado) | ✅ permitido |  |
+| `rdc config edit --dump --redacted` (JSONC redigido) | ✅ permitido |  |
 | `rdc config audit {log, tail, verify}` | ✅ permitido |  |
 | `rdc config field set --pointer <pointer>` (campo sensível, sem `--current`) | 🔴 recusado | Forneça `--current "<old value>"` |
+| `rdc repo secret set <repo> --rotate-secret` (rotação sem `--current`) | 🔴 recusado | Fornecer `--current`, ou um humano faz a rotação em um terminal |
 | `rdc config field get --pointer <pointer> --reveal` | 🔴 recusado | Use `--digest` em vez disso |
 | `rdc config show --reveal` | 🔴 recusado | Use `rdc config show` simples |
-| `rdc config edit` (editor interativo) | 🔴 recusado | Humano define `REDIACC_ALLOW_CONFIG_EDIT=*` antes de iniciar o agente |
-| `rdc config edit --apply <file>` | 🔴 recusado | Mesma anulação |
-| `rdc config field rotate --pointer <pointer>` | 🔴 recusado | Mesma anulação; usa confirmação interativa |
+| `rdc config edit` (editor interativo) | 🔴 recusado, sem anulação | Inspecionar com `--dump --redacted`, alterar um único campo com `config field set --current` |
+| `rdc config edit --apply <file>` | 🔴 recusado, sem anulação | Igual; um humano em um terminal aplica as edições do documento inteiro |
+| `rdc config edit --reveal` | 🔴 recusado, sem anulação | Igual |
+| `rdc config field rotate --pointer <pointer>` | 🔴 recusado | Um humano executa em um terminal interativo |
+| Alterar um repositório grand (produção) | 🔴 recusado | Adesão explícita de um humano para esse repositório, dentro de uma política que permita alterações em repositórios grand ([abaixo](#one-decision-opt-in-and-policy-ceiling)) |
+| Operações de ciclo de vida de cluster ou datastore | 🔴 recusado | Adesão explícita de um humano para esse cluster, dentro de uma política que permita operações de cluster |
 | `rdc term connect <machine>` (SSH direto da máquina) | 🔴 recusado | Faça fork de um repositório primeiro e conecte ao fork |
 
-Cada recusa é escrita no registro de auditoria com `outcome: refused` e um motivo.
+Toda recusa a um agente é gravada no registro de auditoria com `outcome: refused` e um motivo. A edição do documento de configuração inteiro não tem nenhum caminho para um agente: a configuração guarda a credencial LUKS de cada repositório, e um agente que pudesse reescrevê-la também poderia apagar uma credencial sem a qual o volume cifrado não pode ser aberto.
 
 ## Como agentes são detectados
 
@@ -45,7 +50,22 @@ O CLI trata um processo como um agente quando qualquer um destes é verdadeiro:
 - Um de `REDIACC_AGENT`, `CLAUDECODE`, `GEMINI_CLI`, `COPILOT_CLI` está definido como `"1"`, ou `CURSOR_TRACE_ID` está definido de alguma forma.
 - No Linux: qualquer processo pai acima na cadeia de ancestralidade tem uma dessas variáveis em seu ambiente (via `/proc/<pid>/environ`). Mesmo se o agente desativar suas próprias variáveis com `env -i` ou um script de encapsulador, a cadeia pai ainda diz ao CLI quem o iniciou.
 
-A detecção é executada uma vez por processo e é armazenada em cache. Não pode ser desabilitada.
+A detecção roda uma vez por processo e fica em cache. Não pode ser desativada. Uma concessão de MCP remoto marca suas chamadas como chamadas de agente no executor, sem precisar de detecção.
+
+## Uma única decisão: adesão explícita E teto de política
+
+Toda superfície que executa um comando `rdc` (a CLI, o servidor MCP local, o servidor MCP remoto, `rdc --proxy` e o console web) consulta a mesma função de decisão, então todas recusam e permitem as mesmas coisas. Ela aplica duas condições, e um agente só age onde ambas valem:
+
+1. **O teto de política.** A política da organização, restringida pela política da equipe, decide quais comandos, máquinas e repositórios quem chama pode usar, e se alterações em repositórios grand (`allowGrandRepos`) e operações de cluster (`allowClusterOps`) são permitidas. Uma configuração sem registro de política recorre a um padrão por função: proprietários e administradores podem agir, membros não. A política é um registro selado à parte, que só proprietários e administradores escrevem ([Modelo de Segurança](/pt/docs/security-model#policy)); nenhum agente e nenhum comando da CLI pode editá-la.
+2. **A adesão explícita do humano.** Dentro do teto, um agente ainda precisa que um humano indique o repositório grand ou o cluster que ele pode alterar:
+   - **Agentes locais** (CLI e MCP local): o humano exporta `REDIACC_ALLOW_GRAND_REPO` (nomes de repositórios, ou `*`) ou `REDIACC_ALLOW_CLUSTER_OPS` (nomes de clusters, ou `*`) no terminal antes de iniciar o agente. A CLI verifica a ascendência de processos, então uma variável que o agente define no meio da sessão não conta ([como cada sistema operacional é verificado](#how-a-local-opt-in-is-verified-on-each-os)).
+   - **Agentes remotos** (MCP remoto): as adesões fazem parte da concessão que o humano cria na interface da conta ([Servidor remoto](/pt/docs/ai-agents-mcp#remote-server)).
+
+Uma adesão nunca amplia o teto: um repositório que a política fecha continua fechado, não importa o que o ambiente ou a concessão digam. Forks não precisam de adesão. Um repositório que a CLI não consegue identificar conta como grand.
+
+**Alterações destrutivas perguntam primeiro.** Quando um agente está liberado para uma alteração destrutiva em um repositório grand (`repo delete`, por exemplo), a resposta é `needs_confirmation`. Um cliente MCP mostra ao usuário um pedido de confirmação; um cliente sem esse recurso recebe um argumento `confirm` para devolver depois de perguntar ao usuário. Na CLI, o humano executa o comando de novo com `--confirm-grand <repo>`.
+
+Cada resposta traz um código estável (`POLICY_DENIED`, `GRAND_REPO_DENIED`, `CLUSTER_OPS_DENIED`, `AGENT_OPT_IN_MISSING`, `FORK_BLOCKED`, `AGENT_BLOCKED`, `CONFIRMATION_REQUIRED`), de modo que um script ou um agente se guia pelo código e não pela mensagem ([Saída JSON](/pt/docs/ai-agents-json-output)).
 
 ## O modelo de conhecimento-gate
 
@@ -54,7 +74,7 @@ Mutações sensíveis seguem a convenção `passwd(1)`: para alterar um segredo,
 - Você quer rotacionar um token de API armazenado em `/credentials/cfDnsApiToken`?
 - O CLI pergunta: "qual é o valor atual?"
 - O agente (ou humano) fornece o texto simples via `--current "$OLD"`. O CLI cria um hash `$OLD` com SHA-256 e compara com o resumo do valor armazenado atualmente. Coincidência → a escrita passa. Incompatibilidade → recusada, auditada.
-- Para rotacionar sem verificar o valor anterior, passe `--rotate-secret` (mutuamente exclusivo com `--current`). Isso é claramente auditado como uma rotação.
+- Para rotacionar sem verificar o valor anterior, passe `--rotate-secret` (mutuamente exclusivo com `--current`). Isso é auditado de forma explícita como uma rotação e só vale para um humano em um terminal interativo: um agente, ou um script sem terminal no stdin, ainda precisa de `--current`.
 
 O modelo fecha três superfícies de ataque:
 
@@ -84,7 +104,7 @@ Quando a pré-condição falha, o envelope JSON (`--output json`) carrega um cam
 }
 ```
 
-**Agentes devem retransmitir `next.options[].run` verbatim ao humano em vez de sintetizar seus próprios comandos.** Isso evita o modo de falha "agente inventa um comando que não existe" e mantém o operador no controle da ação real.
+**Os agentes devem repassar `next.options[].run` literalmente ao humano, em vez de inventar comandos próprios.** Isso evita o caso em que o agente inventa um comando que não existe e mantém o operador no controle da ação real. A opção de rotação é para o humano executar em um terminal; ao próprio agente ela é recusada.
 
 ### Exemplo trabalhado
 
@@ -95,7 +115,7 @@ $ rdc config field get --pointer /credentials/cfDnsApiToken
 
 # Tentar sobrescrever sem prova: recusado.
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
-✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
+✗ Precondition failed: sensitive path requires --current
 
 # Fornecer o texto simples atual: permitido.
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
@@ -104,11 +124,11 @@ $ rdc config field set --pointer /credentials/cfDnsApiToken \
 Set /credentials/cfDnsApiToken
 ```
 
-Se o agente nunca tiver `$OLD_CF_TOKEN`, ele não pode satisfazer a pré-condição e a rotação é recusada. O usuário que *tem* pode ainda fazer isso através do editor ou passando `--current` de seu shell.
+Se o agente nunca teve `$OLD_CF_TOKEN`, ele não consegue satisfazer a pré-condição e a rotação é recusada. Quem conhece o valor ainda pode fazê-la: passando `--current` pelo próprio shell, ou com `rdc config field rotate` em um terminal interativo.
 
 ## Redação por padrão
 
-Cada comando `rdc` que lê estado sensível: `config show`, `config field get`, `config machine list`, `config edit --dump`: retorna **redação de stubs** para campos secretos, não texto simples:
+Cada comando `rdc` que lê estado sensível: `config show`, `config field get`, `config machine list`, `config edit --dump --redacted`: retorna **redação de stubs** para campos secretos, não texto simples:
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -120,28 +140,9 @@ O sufixo hex de 8 caracteres do stub são os primeiros 8 caracteres de `sha256(c
 
 `--reveal` não redaciona para humanos em um TTY interativo. Agentes são recusados independentemente do estado do TTY. Cada concessão escreve uma entrada de auditoria `reveal_granted`; cada recusa escreve uma entrada `refused` com os sinais do agente do ator anexados.
 
-## A anulação `REDIACC_ALLOW_CONFIG_EDIT`
+## Como uma adesão explícita local é verificada em cada sistema operacional
 
-Algumas operações: o editor interativo, `--apply`, `field rotate`: existem para humanos e não têm caminho seguro para agentes. Se você realmente quer que um agente faça um deles, você define:
-
-```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'          # bypass completo
-# ou
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# (globs separados por vírgulas: wildcards * permitidos por segmento)
-```
-
-…e o agente o herda.
-
-**Detalhe crucial**: a anulação deve aparecer em um processo **acima** do agente na cadeia de ancestralidade. Se o agente a define em seu próprio ambiente (ou em um subshell que criou), o CLI recusa e diz isso:
-
-> `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
-
-O efeito: um agente não pode convencer seu caminho além de uma proteção executando `export REDIACC_ALLOW_CONFIG_EDIT='*'` no meio da sessão. Apenas um processo pai (você, em seu terminal, antes de iniciar o agente) pode abrir essa porta.
-
-## Suporte de plataforma: como a anulação é verificada em cada SO
-
-`REDIACC_ALLOW_CONFIG_EDIT` e `REDIACC_ALLOW_GRAND_REPO` ambas contam com verificação de ancestralidade para provar que a anulação foi definida por você e não injetada pelo agente. A verificação funciona em Linux, macOS e Windows, mas a testemunha que lê difere por plataforma, assim como a força da garantia:
+`REDIACC_ALLOW_GRAND_REPO` e `REDIACC_ALLOW_CLUSTER_OPS` dependem ambas da verificação de ascendência para provar que a adesão foi definida pelo humano e não injetada pelo agente. A verificação funciona em Linux, macOS e Windows, mas a testemunha que ela lê difere por plataforma, e a força da garantia também:
 
 | Plataforma | Testemunha | Força |
 |---|---|---|
@@ -149,9 +150,9 @@ O efeito: um agente não pode convencer seu caminho além de uma proteção exec
 | macOS | Sysctl `kern.procargs2`, lido por um pequeno helper que vem dentro de `rdc` | Mesma propriedade de snapshot no tempo de exec que Linux. Legível para seus próprios processos sem root. |
 | Windows | O bloco de ambiente vivo de cada processo ancestral (PEB), lido pelo mesmo helper, com proteções de reutilização de PID | Mais fraco: Windows não mantém snapshot no tempo de exec, então a verificação lê memória atual. Ancestrais ainda não podem ser reescritos por nada que um agente normalmente execute, mas a testemunha não é congelada pelo kernel da forma que é em Linux e macOS. |
 
-Em macOS e Windows, o CLI lança seu binário bundled `renet` para fazer a leitura; o helper relata qual das variáveis monitoradas cada ancestral carrega, e toda a lógica de decisão permanece no CLI. Se o helper estiver faltando, desatualizado ou falhar por qualquer motivo, o CLI não pode verificar a anulação e **falha fechado**: a anulação é rejeitada e o erro diz que a verificação não estava disponível, não que você fez algo errado. Uma instalação funcionando nunca mostra essa mensagem; reinstalar `rdc` restaura o helper.
+No macOS e no Windows, a CLI inicia o binário `renet` incluído para fazer a leitura; o auxiliar informa quais das variáveis monitoradas cada ancestral carrega, e toda a lógica de decisão permanece na CLI. Se o auxiliar estiver ausente, desatualizado ou falhar por qualquer motivo, a CLI não consegue verificar a adesão e **falha de forma segura**: a adesão é rejeitada e o erro diz que a verificação não estava disponível, não que algo foi feito errado. Uma instalação funcional nunca mostra essa mensagem; reinstalar o `rdc` restaura o auxiliar.
 
-O que permanece verdadeiro em cada plataforma: a anulação deve já estar presente no ambiente do processo agente quando ele inicia. Exporte em seu terminal, depois inicie o agente. Um agente que define a variável no meio da sessão é recusado.
+O que continua valendo em todas as plataformas: a adesão já precisa estar presente no ambiente do processo do agente quando ele inicia. Ela é exportada no terminal e só depois o agente é iniciado. Um agente que define a variável no meio da sessão é recusado.
 
 ## Registro de auditoria
 
@@ -159,7 +160,7 @@ Cada mutação, cada recusa, cada concessão `--reveal` escreve uma linha JSONL 
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
-{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent without REDIACC_ALLOW_CONFIG_EDIT=*","prevHash":"sha256:abc1..."}
+{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent environment","prevHash":"sha256:abc1..."}
 {"ts":"2026-04-21T10:03:05.220Z","actor":{"kind":"human"},"command":"config show --reveal","paths":[],"outcome":"reveal_granted","configId":"...","configVersion":48,"prevHash":"sha256:deac..."}
 ```
 
@@ -214,7 +215,7 @@ Esta é a linha de responsabilidade compartilhada:
 | Dados do repositório, namespace de montagem, escopo Docker, proteções de agentes, registro de auditoria, injeção de segredos no tempo de implantação | Rediacc |
 | Código de aplicação que usa esses segredos, e quaisquer credenciais assadas na imagem no tempo de compilação | Desenvolvedor do repositório |
 
-A mitigação primária é construída: **[segredos por repositório](/pt/docs/repositories#secrets)** são armazenados em um plano separado da imagem de repositório criptografada e não são copiados além do limite do fork. Os contêineres do fork inicializam com um mapa de segredos vazio e se identificam como um principal externo diferente do pai. Defina-os com `rdc repo secret set` (modo env para interpolação de composição, modo arquivo para blocos tmpfs `secrets:`). O portão de mutação é simétrico. Humanos e agentes devem fornecer `--current` (pré-condição estilo passwd) ou `--rotate-secret` (rotação auditada) para sobrescrever ou excluir um valor existente.
+A mitigação primária é construída: **[segredos por repositório](/pt/docs/repositories#secrets)** são armazenados em um plano separado da imagem de repositório criptografada e não são copiados além do limite do fork. Os contêineres do fork inicializam com um mapa de segredos vazio e se identificam como um principal externo diferente do pai. Defina-os com `rdc repo secret set` (modo env para interpolação de composição, modo arquivo para blocos tmpfs `secrets:`). O portão de mutação é simétrico. Humanos e agentes devem fornecer `--current` (pré-condição estilo passwd) para sobrescrever ou excluir um valor existente; `--rotate-secret` (rotação auditada) é a alternativa para um humano em um terminal.
 
 **Isolamento de repositório cruzado é aplicado.** Um arquivo de composição malicioso ou descuidado no repositório B não pode referenciar o diretório de segredos do repositório A. O validador de composição do Renet nega duramente qualquer caminho `secrets: file:`, `configs: file:` ou `env_file:` que aponte para fora do diretório `${REDIACC_NETWORK_ID}` do repositório atual, e a rejeição NÃO é sobrescritível por `--unsafe`. Defesa em profundidade: a sandbox Landlock ao redor do subprocesso bash Rediaccfile limita leituras do sistema de arquivos ao diretório de segredos da rede atual apenas, então um `cat /var/run/rediacc/net-<other>/secrets/X` de um Rediaccfile malicioso falha com EACCES na camada do kernel. O mesmo vale para a API do Docker: o socket Docker de cada repositório é atendido por um proxy de políticas do renet que recusa com `403` `--privileged`, `pid`, `ipc` e `uts` do host, pedidos de dispositivos e binds que alcancem o runtime ou os dados de outro repositório. Assim, um contêiner com `${DOCKER_SOCKET}` não consegue usar a API para chegar a outro repositório, e não é só o arquivo compose que é verificado. Somente o operador pode ampliar a regra de binds, para diretórios do host indicados por nome, com uma concessão pertencente ao root em que nenhum contêiner consegue gravar.
 
@@ -227,24 +228,24 @@ Rediacc trata da injeção no tempo de implantação, do isolamento de fork cruz
 
 ## Receitas rápidas
 
-### Deixe um agente rotacionar um token único de nuvem
+### Deixar um agente trabalhar em um repositório grand
 
 ```bash
-# Como você, antes de iniciar o agente:
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
-claude-code              # ou cursor, gemini, etc.
+# Como humano, antes de iniciar o agente:
+export REDIACC_ALLOW_GRAND_REPO='gitlab'
+claude              # ou cursor, gemini, etc.
 ```
 
-Agora o agente pode `config field rotate /credentials/cfDnsApiToken --new …` mas ainda não pode editar `/credentials/ssh/privateKey` ou abrir o editor interativo.
+O agente agora pode alterar `gitlab`, onde a política permite alterações em repositórios grand, e nenhum outro repositório grand. Uma alteração destrutiva, como `repo delete gitlab`, continua pedindo confirmação.
 
-### Deixe um agente fazer uma sessão de edição de configuração ampla
+### Rotacionar um token de nuvem sem saber o valor antigo
 
 ```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'
-claude-code
+# Como humano, em um terminal interativo:
+rdc config field rotate --pointer /credentials/cfDnsApiToken --new "$NEW_CF_TOKEN"
 ```
 
-O agente pode abrir `rdc config edit`, usar `--reveal` e executar `field rotate`. Cada ação ainda é auditada com `actor.kind: agent` e o sinal `CLAUDECODE`.
+A rotação sem `--current` fica com o humano. Um agente que conhece o valor atual usa `rdc config field set --current` em vez disso.
 
 ### Descubra quais campos um agente pode tocar
 
@@ -257,6 +258,8 @@ Retorna cada template de pointer, seu tipo (`secret` / `credential` / `pii` / `i
 ## Veja também
 
 - [Visão geral da integração de agentes IA](/pt/docs/ai-agents-overview): o passeio de nível superior
+- [Servidor MCP](/pt/docs/ai-agents-mcp): MCP local e remoto, concessões e suas adesões explícitas
+- [Modelo de Segurança](/pt/docs/security-model): o registro de política e quem pode escrevê-lo
 - [Configuração do Claude Code](/pt/docs/ai-agents-claude-code): modelo de integração
 - [Envelope de saída JSON](/pt/docs/ai-agents-json-output): respostas legíveis por máquina
 - [Armazenamento de configuração criptografado](/pt/docs/config-storage): aplicação criptográfica do lado do servidor

@@ -14,7 +14,7 @@ import type { TLSSocket } from 'node:tls';
 import { type AccountFetchError, accountServerFetch } from '../account/account-client.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { getEffectiveConfigName } from '../config/config-name.js';
-import { writeStdout } from '../core/request-context.js';
+import { writeStderr, writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { certToBase64, parseSignedCert } from './cert.js';
 import { offlineDeps } from './deps-offline.js';
@@ -33,17 +33,25 @@ function rdcBinary(): { command: string; prefix: string[] } {
 }
 
 /** A child `rdc` under this run's config: stdout captured, stderr (its progress) passed through. */
+const STDERR_KEEP = 8192;
+
 function runRdc(argv: string[]): Promise<ProcResult> {
   const bin = rdcBinary();
   const args = [...bin.prefix, '--config', getEffectiveConfigName(), ...argv];
   return new Promise((resolve) => {
-    const child = spawn(bin.command, args, { stdio: ['ignore', 'pipe', 'inherit'] });
+    const child = spawn(bin.command, args, { stdio: ['ignore', 'pipe', 'pipe'] });
     let stdout = '';
+    let stderr = '';
+    // Shown as it arrives and kept (bounded) so a failure can name its cause.
+    child.stderr.on('data', (chunk: Buffer) => {
+      writeStderr(chunk);
+      stderr = `${stderr}${chunk.toString('utf-8')}`.slice(-STDERR_KEEP);
+    });
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString('utf-8');
     });
     child.on('error', (error) => resolve({ code: 1, stdout, stderr: error.message }));
-    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr: '' }));
+    child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }));
   });
 }
 
@@ -137,6 +145,12 @@ async function resolveHost(host: string): Promise<string[]> {
   return [...v4, ...v6];
 }
 
+/** A registered account's login: anonymous use (the FREE licence) holds no subscription token. */
+function hasAccountLogin(): boolean {
+  const state = getSubscriptionTokenState();
+  return state.kind === 'ready' && Boolean(state.token.subscriptionId);
+}
+
 async function issueCert(delegatedPublicKey: string): Promise<IssueOutcome> {
   const state = getSubscriptionTokenState();
   if (state.kind !== 'ready' || !state.token.subscriptionId) return { kind: 'no-login' };
@@ -173,9 +187,6 @@ function issueRefusal(error: AccountFetchError): IssueOutcome {
   if (error.status === 403 && /Missing required scope/i.test(error.message)) {
     return { kind: 'missing-scope' };
   }
-  if (error.code === 'PLAN_DISALLOWS_DELEGATION_CERT') {
-    return { kind: 'plan-disallows', message: error.message };
-  }
   if (error.status === 409) {
     const certId = String(error.details?.existingCertId ?? '');
     return { kind: 'other-key', certId, message: error.message };
@@ -203,6 +214,7 @@ export function liveServerDeps(): ServerDeps {
     writeDns,
     bwsList,
     bwsWrite,
+    hasAccountLogin,
     issueCert,
     local: (command, args) =>
       new Promise((resolve) => {

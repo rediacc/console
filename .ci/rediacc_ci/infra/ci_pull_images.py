@@ -73,7 +73,7 @@ reorder them.
 
 Exit: 0 on the full path; 1 on either missing environment variable; the subshell's failing status (docker's) when login or a pull fails; 127 when there is no `docker` at all.
 
-K=5 LEDGER: `.ci/shadow/w7p6-ci-pull-images.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

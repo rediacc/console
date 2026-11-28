@@ -12,7 +12,10 @@
  * one, and the old 404-means-empty rule seeded a second config beside it.
  */
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { promises as fs } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // ─── Hoisted Mocks ──────────────────────────────────────────────────────
 
@@ -69,6 +72,7 @@ vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
 vi.mock('../../adapters/remote-token-storage.js', () => ({
   remoteTokenStorage: {
     get: (name: string) => Promise.resolve(tokenMem.get(name) ?? null),
+    recordEnrollment: () => Promise.resolve(),
     set: (name: string, data: { token: string; wrappedCek: string }) => {
       tokenMem.set(name, data);
       return Promise.resolve();
@@ -588,5 +592,86 @@ describe('finalizeEnable never seeds a second config beside an existing one', ()
     );
     expect(mockAdapterInstance.push).not.toHaveBeenCalled();
     expect(mockConfigFileStorage.save).not.toHaveBeenCalled();
+  });
+});
+
+describe('finalizeEnable keeps a unique pre-enable copy of the config file', () => {
+  let dir: string;
+  let file: string;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    adapterCtorArgs.length = 0;
+    secureMem.clear();
+    tokenMem.clear();
+    delete process.env.REDIACC_YES;
+    dir = await fs.mkdtemp(join(tmpdir(), 'rdc-pre-enable-'));
+    file = join(dir, `${CONFIG_NAME}.json`);
+    mockConfigFileStorage.getConfigPath.mockReturnValue(file);
+    mockConfigFileStorage.loadDecrypted.mockImplementation(async () =>
+      JSON.parse(await fs.readFile(file, 'utf-8'))
+    );
+    // The real save copies the file to the generic `.bak` first (last-save-wins), then writes the new content.
+    mockConfigFileStorage.save.mockImplementation(async (config: RdcConfig) => {
+      await fs.copyFile(file, `${file}.bak`);
+      await fs.writeFile(file, JSON.stringify(config));
+    });
+    mockAdapterInstance.listConfigs.mockResolvedValue([]);
+    mockAdapterInstance.pull.mockResolvedValue({
+      config: structuredClone(serverConfig),
+      version: 3,
+      sdkEpoch: 1,
+    });
+  });
+
+  afterEach(async () => {
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  const preEnableCopies = async () =>
+    (await fs.readdir(dir))
+      .filter((n) => /\.json\.pre-enable\.\d{8}T\d{6}Z(-\d+)?\.bak$/.test(n))
+      .sort();
+
+  it('survives a second enable, which replaces the generic .bak', async () => {
+    const first = JSON.stringify({ ...localConfig, marker: 'first-local' });
+    await fs.writeFile(file, first);
+    await fs.writeFile(`${file}.bak`, 'older save');
+    const info = vi.spyOn(outputService, 'info').mockImplementation(() => undefined);
+
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME, { force: true });
+    const afterFirst = await preEnableCopies();
+    expect(afterFirst).toHaveLength(1);
+    expect(await fs.readFile(join(dir, afterFirst[0]), 'utf-8')).toBe(first);
+    expect(info.mock.calls.map((c) => String(c[0])).join('\n')).toContain(afterFirst[0]);
+
+    // A second enable on the now-cached file: the generic .bak holds the first enable's pre-save file only.
+    await fs.writeFile(file, JSON.stringify({ ...localConfig, marker: 'second-local' }));
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME, { force: true });
+
+    const afterSecond = await preEnableCopies();
+    expect(afterSecond).toHaveLength(2);
+    expect(await fs.readFile(join(dir, afterFirst[0]), 'utf-8')).toBe(first);
+    expect(await fs.readFile(`${file}.bak`, 'utf-8')).toContain('second-local');
+    info.mockRestore();
+  });
+
+  it('names the copy in the overwrite confirmation, ahead of the write', async () => {
+    await fs.writeFile(file, JSON.stringify(localConfig));
+    process.env.REDIACC_YES = '1';
+    mockAskConfirm.mockResolvedValue(true);
+
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME);
+
+    const prompt = String(mockAskConfirm.mock.calls[0][0]);
+    expect(prompt).toMatch(/\.json\.pre-enable\.\d{8}T\d{6}Z\.bak/);
+    expect(await preEnableCopies()).toHaveLength(1);
+  });
+
+  it('writes no copy when the config file does not exist yet', async () => {
+    mockConfigFileStorage.loadDecrypted.mockResolvedValue(structuredClone(localConfig));
+    mockConfigFileStorage.save.mockResolvedValue(undefined);
+    await finalizeEnable(pendingRemote(CONFIG_ID), CONFIG_NAME, { force: true });
+    expect(await preEnableCopies()).toHaveLength(0);
   });
 });

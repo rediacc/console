@@ -24,6 +24,24 @@ import wl_ci as W
 
 _SCRATCH = tempfile.mkdtemp(prefix="ci-carried-")
 atexit.register(shutil.rmtree, _SCRATCH, True)
+# ONE PRIVATE TMPDIR: wl_ci records a landing-rounds row through wl_longred, whose flock sidecar lives under `$TMPDIR/claude-worklist/.judge` (read at call time), and test_hooks_delegates fails a standalone suite that leaves an entry in the shared one.
+_PRIOR_ENV = {k: os.environ.get(k) for k in ("TMPDIR", "XDG_CACHE_HOME")}
+_PRIOR_TEMPDIR = tempfile.tempdir
+
+
+def _restore_env():
+    """Put the process back as it was at interpreter exit (registered with atexit): TMPDIR, tempdir and the cache dir point at the private scratch for the whole run and return to their prior values when the process ends."""
+    tempfile.tempdir = _PRIOR_TEMPDIR
+    for key, value in _PRIOR_ENV.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
+atexit.register(_restore_env)
+os.environ["TMPDIR"] = _SCRATCH
+tempfile.tempdir = _SCRATCH
 # job_log caches completed logs under XDG_CACHE_HOME; a fixture job id must never read a real cached log, nor leave one behind.
 os.environ["XDG_CACHE_HOME"] = _SCRATCH
 
@@ -222,6 +240,15 @@ check("carried-only: the advisory names the job", "Quality / Branch" in note, Tr
 check("carried-only: the advisory is ONE line", note.count("\n"), 0)
 check("carried-only: the next step's finding is not lent to this step", "P-R9" in note, False)
 
+# b74a99a2.7: a carried-only final head is advisory, so the long-red ledger records it with no red (the wall-ask and outage clocks never start on it).
+_L = importlib.import_module("wl_longred")
+_rows = _L.read_rows(det["_base"], 599)
+check(
+    "carried-only: the ledger round holds no red",
+    [r for x in _rows for r in x.get("reds") or []],
+    [],
+)
+
 # CACHED per tip: the second stop on the same tip reads the verdict from the steps cache, with no job or log read.
 st2, _d2, f2 = trouble([BRANCH], CARRY_OK, {}, {}, base=det["_base"])
 check("carried-only, second stop: still `carried` from the cache", st2, "carried")
@@ -398,5 +425,21 @@ check(
     v["verdict"] != "carried",
     True,
 )
+
+# ---- ENV RESTORE: `_restore_env` reinstates the prior TMPDIR, tempdir and cache dir, and the scratch is put back after ----
+_swap = {k: os.environ.get(k) for k in ("TMPDIR", "XDG_CACHE_HOME")}
+_swap_tempdir = tempfile.tempdir
+_restore_env()
+check(
+    "restore: the prior TMPDIR, XDG_CACHE_HOME and tempdir return",
+    (os.environ.get("TMPDIR"), os.environ.get("XDG_CACHE_HOME"), tempfile.tempdir),
+    (_PRIOR_ENV["TMPDIR"], _PRIOR_ENV["XDG_CACHE_HOME"], _PRIOR_TEMPDIR),
+)
+for _k, _v in _swap.items():
+    if _v is None:
+        os.environ.pop(_k, None)
+    else:
+        os.environ[_k] = _v
+tempfile.tempdir = _swap_tempdir
 
 T.exit()

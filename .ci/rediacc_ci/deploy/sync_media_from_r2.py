@@ -10,7 +10,7 @@ build-time TTS cache read off LOCAL DISK by the tutorial-video pipeline, is not 
 -----------------------------------------------------------------------------
 NOTHING HERE REACHES R2 IN A TEST
 -----------------------------------------------------------------------------
-`aws` is the one external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_sync_media_from_r2.py`) puts a RECORDING FAKE `aws` on a scratch PATH that logs its exact argv and answers from the environment. `.ci/shadow/w7p5a-status.json` records this path as blocked only
+`aws` is the one external tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_sync_media_from_r2.py`) puts a RECORDING FAKE `aws` on a scratch PATH that logs its exact argv and answers from the environment. the ledger (deleted in commit:936280cd35) records this path as blocked only
 for the "one real run" clause and says in as many words that the mocked parity
 ledger is a SEPARATE, achievable piece of work. This is that piece.
 
@@ -69,7 +69,7 @@ The differential asserts BOTH directions so nobody "fixes" either side into the 
 
 THE ORDER OF THE THREE REFUSALS IS PART OF THE CONTRACT and is reproduced exactly: `require_var` on the access key, then `require_cmd aws`, then the secret, then the endpoint. A machine with no `aws` and no credentials at all reports the MISSING BINARY, not the missing key.
 
-K=5 LEDGER: `.ci/shadow/w7p6-sync-media-from-r2.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

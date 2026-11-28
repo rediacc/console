@@ -15,6 +15,7 @@ const benefitItems = ta(`${ns}.benefits.items`);
 const tierCards = ta(`${ns}.tiers.cards`);
 const howSteps = ta(`${ns}.how.steps`);
 const certFacts = ta(`${ns}.certification.facts`);
+const growthItems = ta(`${ns}.growth.items`);
 
 const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
 ---
@@ -58,6 +59,42 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
             </div>
           ))}
         </div>
+      </div>
+    </section>
+
+    <!-- What partners get, calculator leads, channel stance -->
+    <section class="pt-section pt-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.growth.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.growth.lede`)}</p>
+        <div class="pt-card-grid">
+          {growthItems.map((item: any) => (
+            <div class="pt-card">
+              <h3>{item.title}</h3>
+              <p>{item.body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section class="pt-section">
+      <div class="container">
+        <h2>{t(`${ns}.leads.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.leads.body`)}</p>
+        <p class="pt-stance">{t(`${ns}.stance`)}</p>
+      </div>
+    </section>
+
+    <section class="pt-section pt-section--alt">
+      <div class="container">
+        <h2>{t(`${ns}.directoryCta.title`)}</h2>
+        <p class="pt-section-lede">{t(`${ns}.directoryCta.body`)}</p>
+        <p class="pt-stance">
+          <a href={`/${lang}/partners/find`} class="pt-btn-secondary">
+            {t(`${ns}.directoryCta.button`)} &rarr;
+          </a>
+        </p>
       </div>
     </section>
 
@@ -263,6 +300,13 @@ const tierSlugs = ['registered', 'silver', 'gold', 'platinum'];
     color: var(--color-text-secondary);
     max-width: 720px;
     margin: 0 auto var(--space-12);
+  }
+
+  .pt-stance {
+    text-align: center;
+    font-weight: var(--font-weight-semibold);
+    max-width: 720px;
+    margin: 0 auto;
   }
 
   .pt-card-grid {

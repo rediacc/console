@@ -5,7 +5,7 @@ Asserts the resolved R2 staging CHANNEL matches the GitHub event type. The twin'
 
 SOLE IMPLEMENTATION. `.github/workflows/ci.yml:295` runs this module, and so does `rediacc_ci.tests.gates.test_gate_channel_for_event`. The twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/assert-channel-for-event/`, recorded from the tracked script on its last day in the tree.
 
-Ledger: `.ci/shadow/w7p6-assert-channel-for-event.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-assert-channel-for-event --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE UNKNOWN-EVENT ARM FAILS CLOSED, A DELIBERATE DELTA FROM THE TWIN
@@ -42,6 +42,7 @@ from rediacc_ci import log
 # `^pr-[0-9]+$` from the twin, as a fullmatch. `[0-9]` is ASCII-only in both
 # engines (the twin runs under LC_ALL=C in CI), and fullmatch rather than
 # `re.match(... + "$")` because Python's `$` also matches before a trailing newline while bash's does not -- `pr-1\n` must fail on both sides.
+# The staging channel keeps the PR number and never takes the secret-derived preview name (`pv-<w>-<w>-<w>`, PLAN-preview-signer N2): cd-stage retags the public rdc and server images to it, and GHCR lists those tags anonymously.
 PR_CHANNEL = re.compile(r"pr-[0-9]+")
 
 # The two events that must produce NO R2 bytes at all. `workflow_dispatch` is the nightly rehearsal (ci.yml, guarded to main); the twin spells out at :44-53 why it needs an explicit arm rather than falling into `*)`.

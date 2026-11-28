@@ -37,10 +37,13 @@
  * use: a reseed that drains two findings and absorbs one satisfies "the total did not
  * grow" while violating "the set only loses members".
  *
- * The AWS half contributes ZERO baseline entries and is meant to stay that way. Its
- * honest bound really is none: the leak was redacted before this gate existed, and there
- * are no AWS-id fixtures here. Any AKIA/ASIA/AIDA/AROA id is therefore an addition and
- * reds on sight -- which is the class the operator actually asked about.
+ * The AWS half is meant to contribute no baseline entry. There are no AWS-id fixtures
+ * in the tree (the selftest assembles its synthetic ids at run time and never writes them to a tracked file), so any AKIA/ASIA/AIDA/AROA id is an addition and reds on sight -- which is the
+ * class the operator actually asked about. An AWS finding is therefore keyed on the VALUE,
+ * not the file: `<path>:AWS_KEY_ID:sha256=<12 hex>`, one id per distinct key id. The one
+ * operator-ruled exception (a deactivated key id in an append-only store) is pinned to
+ * that single value, so a second, different id appended to the same file still reds. A
+ * file-wide `<path>:AWS_KEY_ID` entry exempted every id the file would ever hold.
  *
  * TOKEN SHAPES ARE GATED TOO, and the reason they were nearly left out is worth keeping.
  * `ghp_` and `xox*` both matched on the first run and both hits were synthetic --
@@ -62,17 +65,18 @@
  * .ci/config/tracked-credentials-baseline.json would leave this gate reading an EMPTY
  * frozen set in CI and reporting both known fixtures as brand-new findings -- red on
  * main, for nothing. It is not declared as a manifest `leaf`, because that field mirrors
- * what package.json resolves to and check:ci-parity enforces the mirror.
+ * what package.json resolves to and check:ci-gen-gates enforces the mirror.
  */
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { envRoot } from '../lib/repo-root.js';
 import {
   baselineAdditions,
   commitBaseline,
-  sharedSelftestCases,
   selftestVerdict,
+  sharedSelftestCases,
 } from '../lib/shrink-only-baseline.js';
 
 // ANCHORED ON THIS FILE, not on the caller's working directory. This read `process.env.TRACKED_CRED_ROOT ?? process.cwd()`, which check:ci-gate-cwd-independence did not see: its pattern only matched cwd as the FIRST argument of path.resolve/join, so the commonest shape of its own rule passed. The seam is preserved -- TRACKED_CRED_ROOT still overrides -- but the default is derived
@@ -93,6 +97,8 @@ const KEY = 'credentialShapedFindings';
  * PCRE-ism is caught by the selftest instead of on the first real run.
  */
 const AWS_RE = /\b(AKIA|ASIA|AIDA|AROA)[0-9A-Z]{16}\b/;
+/** Hex digits of sha256(id) an AWS finding carries: enough to tell two ids apart, never the id itself. */
+const AWS_DIGEST_HEX = 12;
 const PEM_BEGIN = /-----BEGIN [A-Z ]*PRIVATE KEY-----/;
 /**
  * Token shapes, kept in step with .claude/hooks/stop/wl_store.py::_SECRET_SHAPES.
@@ -197,7 +203,18 @@ function candidates(root: string): string[] {
   }
 }
 
-/** Ids are `<path>:<shape>`, the form the shared guard expects. */
+/**
+ * One finding per DISTINCT AWS access key id in `text`, keyed `<path>:AWS_KEY_ID:sha256=<hex>`. The digest pins a baseline entry to one value, so the entry cannot exempt the next id the same file gains; the id itself is never part of the finding.
+ */
+export function awsKeyIdFindings(path: string, text: string): string[] {
+  const ids = new Set(text.match(new RegExp(AWS_RE.source, 'g')) ?? []);
+  return [...ids].map((id) => {
+    const digest = createHash('sha256').update(id).digest('hex').slice(0, AWS_DIGEST_HEX);
+    return `${path}:AWS_KEY_ID:sha256=${digest}`;
+  });
+}
+
+/** Ids are `<path>:<shape>` (an AWS id adds `:sha256=<hex>`), the form the shared guard expects. */
 export function scan(root: string): string[] {
   const ids = new Set<string>();
   for (const f of candidates(root)) {
@@ -207,7 +224,7 @@ export function scan(root: string): string[] {
     } catch {
       continue;
     }
-    if (AWS_RE.test(text)) ids.add(`${f}:AWS_KEY_ID`);
+    for (const id of awsKeyIdFindings(f, text)) ids.add(id);
     if (hasPemBody(text)) ids.add(`${f}:PEM_BODY`);
     if (TOKEN_RE.test(text)) ids.add(`${f}:TOKEN`);
   }
@@ -217,6 +234,32 @@ export function scan(root: string): string[] {
 function readBaseline(): string[] {
   if (!existsSync(BASELINE)) return [];
   return (JSON.parse(readFileSync(BASELINE, 'utf8'))[KEY] ?? []) as string[];
+}
+
+/** The length a note line must stay strictly under: R18's floor in .ci/config/prose-style-rules.json, where a line of this length or more is the shape the prose gate may flag. */
+export const NOTE_LINE_FLOOR = 768;
+
+/**
+ * The baseline's `note`, one whole sentence group per line so no line passes the R18 floor. `--write-baseline` writes exactly this, and the selftest refuses a tracked file whose note differs from it: on 2026-11-24 the file had gained the eu key's record by hand while this text still described one AWS entry, so the next `--write-baseline` would have erased that record.
+ */
+export const BASELINE_NOTE: readonly string[] = [
+  'SHRINK-ONLY. Credential SHAPES in tracked files. Entries here are legitimate, permanent test fixtures -- a validly-shaped key or token that a test cannot do without.',
+  'Nothing separates a good fixture from a real credential by shape, so the known ones are frozen and anything new reds.',
+  'No AWS entry here is a fixture: a new AWS_KEY_ID means a real key id reached a PUBLIC remote, so rotate it and do not baseline it.',
+  'No AWS entry is baselined now. Two were, pinned by sha256, both dead keys, while their ids sat in the deleted agent/worklist/ace763dd.jsonl; they left the baseline with that file.',
+  '73cb9b0ee6db was the deactivated rediacc-ses-asia key id (operator ruling ASKED:2026-11-24T17:3xZ). b28ffa442441 was the rediacc-ses-eu key minted 2026-09-02, deactivated 2026-11-10T13:52Z and deleted at AWS 2026-11-10T13:54Z (operator ruling ASKED:2026-11-24T19:47Z). Either id reappearing in a tracked file is a finding again.',
+  'A TOKEN entry is only a visibly synthetic fixture.',
+];
+
+/** Why a note fails its shape, or '' when every line is a whole sentence group under the floor. Pure. */
+export function noteProblem(note: readonly string[], floor: number = NOTE_LINE_FLOOR): string {
+  if (note.length === 0) return 'the note is empty';
+  for (const [i, line] of note.entries()) {
+    if (line.length >= floor)
+      return `line ${i + 1} is ${line.length} characters, at or past ${floor}`;
+    if (!line.endsWith('.')) return `line ${i + 1} does not end on a full stop`;
+  }
+  return '';
 }
 
 function selftest(): number {
@@ -233,11 +276,7 @@ function selftest(): number {
 
   for (const c of sharedSelftestCases()) check(`shared: ${c.name}`, c.ok, c.detail);
 
-  // ASSEMBLED FROM PARTS, ON PURPOSE. A literal AKIA + 16 in this file makes the gate a
-  // finding in its OWN scan the moment the file is tracked -- which is exactly what
-  // happened on the first run after `git add`, and the baseline note forbids the easy
-  // way out ("rotate it, do not baseline it") for a reason. It also states this gate's
-  // honest limit out loud: it matches LITERALS, so a credential split across a concatenation evades it here and anywhere else. Every scanner of this kind shares that limit; the gate is a floor against carelessness, not against intent.
+  // ASSEMBLED FROM PARTS, ON PURPOSE. A literal AKIA + 16 in this file makes the gate a finding in its OWN scan the moment the file is tracked -- which is exactly what happened on the first run after `git add`, and the baseline note forbids the easy way out ("rotate it, do not baseline it") for a reason. It also states this gate's honest limit out loud: it matches LITERALS, so a credential split across a concatenation evades it here and anywhere else. Every scanner of this kind shares that limit; the gate is a floor against carelessness, not against intent.
   const plantedAwsId = 'AKIA' + 'WXE5TUDQ4T2EY5KV';
   check('an AWS access key id is detected', AWS_RE.test(`key ${plantedAwsId} here`));
   // CONTROL: without this the gate would fire on every document discussing AWS, and the next person to trip on it would delete the pattern rather than narrow it.
@@ -344,8 +383,50 @@ function selftest(): number {
     'the write path REFUSES a growing set',
     selftestVerdict({ additions: ['c.md:AWS_KEY_ID'] })?.kind === 'would-grow'
   );
+  // AN AWS ENTRY IS PINNED TO ONE VALUE. A file-wide `<path>:AWS_KEY_ID` entry exempted every id the file would ever hold.
+  const otherAwsId = 'AKIA' + 'Q7PL2MZX9RB4TN6C';
+  const one = awsKeyIdFindings('w.jsonl', `{"k":"${plantedAwsId}"}`);
+  const two = awsKeyIdFindings('w.jsonl', `{"k":"${plantedAwsId}"}\n{"k":"${otherAwsId}"}`);
+  check(
+    'an AWS finding carries a 12-hex value digest, never the id',
+    one.length === 1 && /^w\.jsonl:AWS_KEY_ID:sha256=[0-9a-f]{12}$/.test(one[0]),
+    one.join()
+  );
+  check(
+    'a second, different AWS id in a baselined file is an addition',
+    baselineAdditions(one, two).length === 1 && !baselineAdditions(one, two).includes(one[0]),
+    baselineAdditions(one, two).join()
+  );
+  // CONTROL: the same id again (an append-only store repeats lines) is no new finding, or the pinned entry reds on every compaction.
+  check(
+    'CONTROL: the same AWS id twice in one file is one finding',
+    baselineAdditions(one, awsKeyIdFindings('w.jsonl', `${plantedAwsId} ${plantedAwsId}`))
+      .length === 0
+  );
+  // CONTROL: or the digest could be a constant and the second id would still look new by accident of order.
+  check('CONTROL: two different ids get two different digests', new Set(two).size === 2);
   // CONTROL: draining must stay possible, or the backlog freezes instead of ratcheting.
   check('CONTROL: the write path ALLOWS a shrinking set', selftestVerdict({}) === null);
+  // THE NOTE: every line a whole sentence group under the R18 floor, and the tracked file carries exactly the note --write-baseline writes.
+  check(
+    'the baseline note is whole sentences under the line floor',
+    noteProblem(BASELINE_NOTE) === '',
+    noteProblem(BASELINE_NOTE)
+  );
+  check(
+    'CONTROL: a line at the floor, and a line cut mid-sentence, are each refused',
+    noteProblem(['x'.repeat(NOTE_LINE_FLOOR - 1) + '.']) !== '' &&
+      noteProblem(['an unfinished line']) !== '' &&
+      noteProblem([]) !== ''
+  );
+  const trackedNote: unknown = existsSync(BASELINE)
+    ? JSON.parse(readFileSync(BASELINE, 'utf8')).note
+    : undefined;
+  check(
+    'the tracked baseline note is the note --write-baseline writes',
+    JSON.stringify(trackedNote) === JSON.stringify(BASELINE_NOTE),
+    'regenerate with: npx tsx scripts/gates/check-tracked-credentials.ts --write-baseline'
+  );
   // Proves the ERE half of the contract: git grep must ACCEPT both patterns. Without it
   // a PCRE-only construct passes every JS assertion above and dies on the first real run.
   let prefilterOk = true;
@@ -400,16 +481,7 @@ function main(): number {
       label: '.ci/config/tracked-credentials-baseline.json',
       noun: 'credential-shaped finding in a tracked file',
       key: KEY,
-      note:
-        'SHRINK-ONLY. Credential SHAPES in tracked files. Entries here are legitimate, ' +
-        'permanent test fixtures -- a validly-shaped key or token that a test cannot do ' +
-        'without. Nothing separates a good fixture from a real credential by shape, so the ' +
-        'known ones are frozen and anything new reds. AWS_KEY_ID entries are NOT expected ' +
-        'here at all: there are no AWS-id fixtures in this repo, so one appearing means a ' +
-        'real access key id was committed to a PUBLIC remote -- rotate it, do not baseline ' +
-        'it. A TOKEN entry is only ever a fixture whose value is visibly synthetic (the one ' +
-        'here is the literal alphabet); a real-looking token belongs in a revocation, not ' +
-        'in this file.',
+      note: BASELINE_NOTE,
       current,
       firstSeed: process.argv.includes('--first-seed'),
       read: (p) => (existsSync(p) ? readFileSync(p, 'utf8') : null),

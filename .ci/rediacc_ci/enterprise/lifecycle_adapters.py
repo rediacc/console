@@ -1,6 +1,6 @@
 """The production `Exporter` and `Teardown` of enterprise.lifecycle, over wrangler, the R2 S3 endpoint, the Cloudflare API and the enterprise bws project.
 
-WHAT EACH CALL REACHES. `CloudflareExporter.dump_d1` runs `wrangler d1 export account-<company> --remote` (argv from `core.wrangler.ARGV`, the one spelling of a wrangler call) into a temporary file and returns its text; `bucket_keys` and `get_object` read the bucket over R2's S3 API, because the Cloudflare REST API serves no object listing (measured 2026-10-01, `ops/reset_bench.py` RULE T 1). `secrets.json` is written by `lifecycle.export` itself, at mode 0600, from the `Store` in the `Context` (the enterprise `BwsStore`), so the exporter holds no secret. `CloudflareTeardown` deletes the product zone's Worker Routes whose script is one of the company's Workers (`/zones/{id}/workers/routes`), then the two Workers (`proxy-<company>` first, since it binds `account-<company>`) and the D1 database `account-<company>` through the Cloudflare API, the lookup entry through `ops.enterprise_lookup.delete` (the namespace's one writer; the KV key is the HMAC of the domain, so neither the domain nor the pepper reaches argv), the token `enterprise-<id>-backups` the `CloudflareMinter` created, each bucket (emptied over S3, then deleted through the API), and each store entry through `bws secret delete <id>`.
+WHAT EACH CALL REACHES. `CloudflareExporter.dump_d1` runs `wrangler d1 export account-<company> --remote` (argv from `core.wrangler.ARGV`, the one spelling of a wrangler call) into a temporary file and returns its text; `bucket_keys` and `get_object` read the bucket over R2's S3 API, because the Cloudflare REST API serves no object listing (measured 2026-10-01, `ops/reset_bench.py` RULE T 1). `secrets.json` is written by `lifecycle.export` itself, at mode 0600, from the `Store` in the `Context` (the enterprise `BwsStore`), so the exporter holds no secret. `CloudflareTeardown` deletes the product zone's Worker Routes whose script is one of the company's Workers (`/zones/{id}/workers/routes`), then the two Workers (`proxy-<company>` first, since it binds `account-<company>`) and the D1 database `account-<company>` through the Cloudflare API, the lookup entry through `ops.enterprise_lookup.delete` (the namespace's one writer; the KV key is the HMAC of the domain, so neither the domain nor the pepper reaches argv), the bucket tokens `enterprise-<id>-backups`, `-configs` and `-audit` the `CloudflareMinter` created, each bucket (emptied over S3, then deleted through the API), and each store entry through `bws secret delete <id>`.
 
 EVERY STEP RESUMES. Each step but the lookup delete first reads whether its target still exists and skips it when it is gone (the lookup delete is repeated as such: a KV delete of an absent key is a no-op), so a rerun of `enterprise remove` after a failure repeats nothing destructive but that one idempotent delete and continues at the failed step. The teardown keeps a journal (`done`), and a failing step raises a `LifecycleError` naming the step, the opaque company id, the steps completed this run and that a rerun resumes. `lifecycle.remove` runs the steps in order and stops at the first raise, so nothing after the failed step runs and the company is not marked removed.
 
@@ -67,6 +67,11 @@ def backup_token_name(company: Target) -> str:
 def configs_token_name(company: Target) -> str:
     """The name `secrets.configs_token_name` gives the configs-bucket-only token."""
     return "enterprise-%s-configs" % company.id
+
+
+def audit_token_name(company: Target) -> str:
+    """The name `secrets.audit_token_name` gives the audit-bucket-only token."""
+    return "enterprise-%s-audit" % company.id
 
 
 def _codes(answer: Mapping[str, Any]) -> str:
@@ -155,7 +160,7 @@ def _object_path(bucket: str, key: str) -> str:
 def _bucket_s3(
     shared: S3, company_s3: Callable[[Target, str], S3] | None, company: Target, bucket: str
 ) -> S3:
-    """The transport for one bucket: each of a company's two buckets is reached with the company's own key for that bucket (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket with the shared pair."""
+    """The transport for one bucket: each of the company's three buckets (configs, backups, audit) is reached with the company's own key for that bucket, because the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8 and answers 403 for any of them; only a bucket that is not the company's goes to the shared pair. With no `company_s3` factory (an exporter built without per-company keys) every bucket goes to the shared pair, and the three company buckets then answer 403 naming the bucket."""
     if company_s3 is not None and bucket in company.buckets:
         return company_s3(company, bucket)
     return shared
@@ -402,8 +407,12 @@ class CloudflareTeardown:
         return None if ids else GONE
 
     def _company_queues(self, company: Target) -> list[dict[str, Any]]:
-        """The company's backup queue and its dead-letter queue as `{queue_id, consumers}`, matched by exact name."""
-        names = {"backup-replicate-%s" % company.name, "backup-replicate-%s-dlq" % company.name}
+        """The company's backup queue, its dead-letter queue and its forensics compaction queue as `{queue_id, consumers}`, matched by exact name."""
+        names = {
+            "backup-replicate-%s" % company.name,
+            "backup-replicate-%s-dlq" % company.name,
+            "forensics-compact-%s" % company.name,
+        }
         what = "the queue listing"
         found: list[dict[str, Any]] = []
         page, pages = 1, 1
@@ -479,7 +488,11 @@ class CloudflareTeardown:
         return 1, failed
 
     def revoke_tokens(self, company: Target) -> None:
-        names = {backup_token_name(company), configs_token_name(company)}
+        names = {
+            backup_token_name(company),
+            configs_token_name(company),
+            audit_token_name(company),
+        }
         token_http = self._token_http
 
         def step() -> str | None:

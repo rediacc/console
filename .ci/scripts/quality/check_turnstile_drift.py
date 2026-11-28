@@ -1,23 +1,16 @@
 #!/usr/bin/env python3
-"""Entry point for the Turnstile widget drift gate. Logic is in the package.
+"""Run `rediacc_ci.quality.turnstile_drift` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.deploy.turnstile_drift`. CI's quality lane runs the CONTROLS only (`--selftest`: a fake Cloudflare, no network, no credential). The LIVE comparison needs production credentials, so it runs as the deploy preflight in `.github/workflows/cd-deploy-account.yml`, before any account Worker deploy or secret push.
-
----- gate ----
-step: Turnstile widget drift
-run: .ci/scripts/quality/check_turnstile_drift.py --selftest
-selftest: true
-needs: none
-lane: quality-static
-why: on 2026-09-24 Bitwarden's Turnstile secret had silently stopped matching the live
-     rediacc-console widget, a routine secret push deployed it, and every login failed
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/turnstile_drift.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
-from rediacc_ci.deploy import turnstile_drift
+import _gate_args
+from rediacc_ci.quality import turnstile_drift
 
 if __name__ == "__main__":
+    _gate_args.parse("check_turnstile_drift.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(turnstile_drift.main(sys.argv[1:]))

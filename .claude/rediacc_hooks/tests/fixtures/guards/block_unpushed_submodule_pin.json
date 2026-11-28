@@ -1,0 +1,18 @@
+{
+  "EDGE_CASES": [
+    ["a plain push of the branch", "git push origin 0923-1"],
+    ["a bare push", "git push"],
+    ["an explicit refspec", "git push origin HEAD:0923-1"],
+    ["a forced push is still a push", "git push --force-with-lease origin 0923-1"],
+    ["a wrapper payload is still scanned", "sh -c 'git push origin 0923-1'"],
+    {"//": "Controls: none of these publish a console tip."},
+    ["a dry run", "git push --dry-run origin 0923-1"],
+    ["a delete", "git push origin --delete 0923-1"],
+    ["tags only", "git push --tags origin"],
+    ["prose about pushing", "echo 'git push origin 0923-1 once renet is up'"],
+    ["git pull is not git push", "git pull --rebase"],
+    ["a push inside the submodule, by -C", "git -C private/renet push origin 0923-1"],
+    ["a push inside the submodule, by cd", "cd private/renet && git push origin 0923-1"],
+    ["a push in another tree", "cd /tmp && git push"]
+  ]
+}

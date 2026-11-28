@@ -15,8 +15,8 @@ tags:
   - mid-market
 featured: false
 language: tr
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -120,7 +120,7 @@ Bu bölüm, yazının geri kalanının dürüst olup olmadığını belirliyor. 
 | Test verisi veya maskeleme aracı lisansı | Personel eğitimi ve güvenlik farkındalığı bütçesi (NIS2 Article 21(2)(g)) |
 | Yedekleme satıcısında anlık kurtarma lisansı | Daha geniş kurumsal MFA çözümü; Rediacc portalda TOTP'ye sahip, kurumsal MFA platformuna değil |
 | | Sızma testi sözleşmesi veya otonom test platformu; Rediacc hedef ortamı sağlıyor, test yetkinliğini değil |
-| | Article 23 tespiti ve raporlaması için SIEM ve SOC; Rediacc adli kalitede artefaktlar sağlıyor, operasyonel raporlama katmanını değil |
+| | Article 23 tespiti ve raporlaması için SIEM ve SOC; Rediacc ücretli planlarda depo başına akış kayıtları, doğrulanabilir bir zaman çizelgesi ve aşamalı rapor taslakları sağlıyor, operasyonel raporlama katmanını değil |
 | | IaaS sağlayıcısı (Hetzner, OVH, kolosyonunuz, bare metal'ınız); Rediacc altyapının üzerinde çalışıyor, yerine geçmiyor |
 | | Programı yürüten personel. Rediacc bir araç katmanı, güvenlik ekibi değil |
 
@@ -152,7 +152,7 @@ Beş sözleşme. İkisi (Veeam, Veeam Cloud Connect) aynı satıcıyla ama farkl
 - Drata kalıyor (EUR 18.000)
 - Evde yapılmış test verisi düzeni emekliye ayrılıyor; her iki haftada bir yarım SRE günü bunun yerine haftalık etkinlik rutinini çalıştırmaya gidiyor
 
-Veri düzlemi birleştirmesi: 5 kalemden 1'e (Rediacc) artı mevcut IaaS kalemi. Tedarikçi kaydının veri düzlemi bölümü 5 girişten 2'ye düşüyor. Sürekli etkinlik hikayesi artık hash zincirli denetim günlüğü kanıtıyla haftalık tatbikatlar; kurtarma testi hikayesi artık `rdc backup status` çıktısı ve haftada bir geri yükleme tatbikatıyla desteklenmiş.
+Veri düzlemi birleştirmesi: 5 kalemden 1'e (Rediacc) artı mevcut IaaS kalemi. Tedarikçi kaydının veri düzlemi bölümü 5 girişten 2'ye düşüyor. Sürekli etkinlik hikayesi artık `rdc config audit verify` ile kontrol edilen iş istasyonu denetim günlüğü kanıtıyla haftalık tatbikatlar; kurtarma testi hikayesi artık `rdc backup status` çıktısı ve haftada bir geri yükleme tatbikatıyla desteklenmiş.
 
 Rakamlar gösterge niteliğinde, vaat değil. Sizin yığınınız farklı. Şekil (dört-beş kalemin tek artı mevcut IaaS'a indirgenmesi), gerçek bir alıcı görüşmesinin nasıl göründüğü.
 

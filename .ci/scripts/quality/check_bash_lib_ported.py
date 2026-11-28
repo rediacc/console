@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-"""Entry point for the bash-lib port completeness gate. Logic is in the package.
+"""Run `rediacc_ci.quality.bash_lib_migration_complete` by path, with the same argument check its own entry makes.
 
-Contract section 5d puts a gate's entry point where `scripts/gate-bind.ts` can see it; the logic lives in `rediacc_ci.quality.bash_lib_migration_complete`, which the gate's own `--selftest` exercises.
-
----- gate ----
-step: Bash-lib port completeness
-needs: none
-lane: quality-static
-selftest: true
-why: account.sh reached 22 of 22 ported functions on 2026-09-24 by a hand count;
-     nothing stopped a new bash function or a renamed Python def from reopening the gap
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/bash_lib_migration_complete.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import bash_lib_migration_complete
 
 if __name__ == "__main__":
+    _gate_args.parse("check_bash_lib_ported.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(bash_lib_migration_complete.main(sys.argv[1:]))

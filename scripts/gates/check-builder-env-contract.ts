@@ -7,7 +7,7 @@
  *
  *   .ci/rediacc_ci/deploy/set_account_worker_secrets.py   (cd-deploy-account.yml)
  *   .ci/rediacc_ci/deploy/set_www_worker_secrets.py       (cd-deploy-worker.yml)
- *   .ci/rediacc_ci/deploy/set_preview_worker_secrets.py   (ci.yml)
+ *   .ci/rediacc_ci/deploy/preview_keys.py                 (ci.yml)
  *
  * and exactly one place decides what those variables are called on the way in:
  * the `env:` block of the workflow step whose `run:` invokes the builder. The
@@ -151,6 +151,9 @@ export function crossChannelGuardProblem(
  * Region-and-channel fan-ins (`SUFFIXED_CHANNEL_PREFIXES`), counted when channelFanInFloor was
  * added: 1/0/0, one prefix (`ACCOUNT_CONFIG_SERVER_KEY`) in the account builder and none in the
  * other two. `ACCOUNT_BACKUP_STORE_KEK` raised the account builder to 2.
+ *
+ * Plain fan-ins in the account builder: 4 until the Stripe credentials left the deploy, 3 since
+ * (`AWS_SES_ACCESS_KEY_ID`, `AWS_SES_SECRET_ACCESS_KEY`, `OBS_OTLP_CREDENTIALS`).
  */
 const PAIRS: Pair[] = [
   {
@@ -158,7 +161,7 @@ const PAIRS: Pair[] = [
     builder: '.ci/rediacc_ci/deploy/set_account_worker_secrets.py',
     exportFloor: 35,
     readFloor: 25,
-    fanInFloor: 4,
+    fanInFloor: 3,
     channelFanInFloor: 2,
     channel: 'STABLE',
   },
@@ -172,9 +175,9 @@ const PAIRS: Pair[] = [
   },
   {
     workflow: '.github/workflows/ci.yml',
-    builder: '.ci/rediacc_ci/deploy/set_preview_worker_secrets.py',
-    exportFloor: 12,
-    readFloor: 12,
+    builder: '.ci/rediacc_ci/deploy/preview_keys.py',
+    exportFloor: 5,
+    readFloor: 3,
     fanInFloor: 0,
     channelFanInFloor: 0,
   },
@@ -212,12 +215,6 @@ const EXEMPT: Exemption[] = [
     name: 'CLOUDFLARE_ACCOUNT_ID',
     direction: 'exported-not-read',
     reason: 'BLOCKER: same as CLOUDFLARE_API_TOKEN -- wrangler reads it, the builder does not.',
-  },
-  {
-    name: 'PR_NUMBER',
-    direction: 'read-not-exported',
-    reason:
-      'BLOCKER: set as JOB-level env on deploy-preview in ci.yml (one definition serving ~8 steps), not repeated in the step env block. This gate parses the STEP block only.',
   },
 ];
 

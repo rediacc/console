@@ -169,22 +169,22 @@ def test_the_partition_covers_the_real_corpus_exactly():
 
 
 def test_the_gate_is_wired_into_all_three_places():
-    """package.json, the lock, and a real workflow step whose name matches.
+    """No package.json key (the runner calls the module directly, CR2), a lock entry, and a real workflow step whose name matches and runs that module.
 
-    `check:ci-parity` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of a 345-entry report.
+    `npm run gen:gates -- --check` asserts this across the whole estate and is the authority; this is the local copy that fails with THIS gate's name in the message rather than as one line of an estate-wide report.
     """
     scripts = json.loads((ROOT / "package.json").read_text(encoding="utf-8"))["scripts"]
-    assert scripts["check:ci-python-types"] == ".ci/scripts/quality/check_python_types.py"
+    assert "check:ci-python-types" not in scripts, "the gate runs its module directly (CR2)"
 
     lock = json.loads((ROOT / "scripts/ci-runner/gates.lock.json").read_text(encoding="utf-8"))
     entry = next(e for e in lock if e["id"] == "check:ci-python-types")
     assert entry["gate"] is True, entry
-    assert entry["leaves"] == [".ci/scripts/quality/check_python_types.py"], entry
+    assert entry["leaves"] == [".ci/rediacc_ci/quality/python_types.py"], entry
     step = entry["ci"]["step"]
 
     workflow = (ROOT / entry["ci"]["workflow"]).read_text(encoding="utf-8")
     assert ("- name: %s" % step) in workflow, step
-    assert ".ci/scripts/quality/check_python_types.py" in workflow
+    assert "python3 -m rediacc_ci.quality.python_types" in workflow
 
 
 def test_the_gate_script_is_executable_and_has_a_shebang():

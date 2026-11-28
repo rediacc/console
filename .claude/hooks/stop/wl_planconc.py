@@ -976,21 +976,6 @@ def with_claims(live, claims, now=None) -> LivePlans:
     return out
 
 
-def cap_verdict(writers, claims, session_id, cap) -> Verdict | None:
-    """The refusal when this session's live writers plus its unstarted claims already fill the cap, else None. Only a claim adds anything here: with none, `block_agent_cap` has judged the same count. Per session, as `wl_roster`'s count is."""
-    mine = sum(1 for c in claims if c.get("session") == session_id)
-    if not mine or writers + mine < cap:
-        return None
-    return Verdict(
-        False,
-        "cap",
-        (
-            "%d live writer(s) and %d same-message spawn(s) fill writer_cap %d, so this would be writer number %d"
-            % (writers, mine, cap, writers + mine + 1),
-        ),
-    )
-
-
 # ---------------------------------------------------------------- ranking
 
 

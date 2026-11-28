@@ -92,38 +92,25 @@ def ordered(text: str) -> list[str]:
 
 
 # ------------------------------------------------------------ the settings block
-# agent/plans/PLAN-stop-hook-turbo.md D1/D2: `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value of the key.
+# `## Settings` above `## Promoted` holds ONE fenced block, info string `stop-hook`, of `key: value` lines with an optional ` -- <note>`. It is the single switchboard for the Stop hook; a reader that doubts anything falls back to the fail-safe value.
 #
-# agent/plans/PLAN-stop-hook-effort.md: the block names ONE `effort` level, and every other value resolves as effort -> that level's bundle in .claude/config/effort.json (`wl_effort.bundle`) -> an explicit line in the fence, which wins. A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check, as before the dial existed. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
+# agent/plans/PLAN-simple-two-tree-loop.md B5 (ruling 11): the block takes ONE key, `effort`, and refuses every other line by name with the line to delete. The level's bundle in .claude/config/effort.json (`wl_effort.bundle`) decides judge, cadence, agent_hint and agent_pushback, and nothing in the fence overrides them. commit_remind_min (wl_checks.COMMIT_REMIND_MIN) is fixed in code, and there is no writer limit to set (agent/plans/PLAN-unlimited-writers.md). A missing or bad `effort:` line is `high` (wl_effort.FAILSAFE): every check. There is no off switch; `effort: quiet` keeps only the FLOOR (wl_floor).
 
 SETTINGS_HEADING = "## Settings"
 SETTINGS_FENCE = "stop-hook"
 EFFORT_KEY = "effort"
-BOOL_KEYS = ("turbo", "cadence", "agent_hint", "agent_pushback")
-INT_KEYS = ("batch_size", "plan_concurrency", "writer_cap", "commit_remind_min", "backup_push_h")
-# Integer keys for which 0 is a value (it turns the feature off) rather than a typo.
-ZERO_OK_KEYS = ("backup_push_h",)
-# Keys whose value is one word from a fixed set (agent/plans/PLAN-turbo-local-first.md LF-W1; the effort plan's levels and judge modes).
+# The bundle switches typed as on|off when a bundle value is checked (`resolve`). Never fence keys.
+BOOL_KEYS = ("cadence", "agent_hint", "agent_pushback")
+# Keys whose value is one word from a fixed set: the effort levels, and the judge modes a bundle may name.
 CHOICE_KEYS = {
     EFFORT_KEY: wl_effort.LEVELS,
-    "turbo_push": ("batch-end", "pr"),
     "judge": wl_effort.JUDGE_MODES,
 }
-# The fence keys, in the render order of a new block and of the in-flight mode line: the level, then the switches a level's bundle sets that the operator overrides in practice. A literal tuple: check:ci-scope-mirrors reads it as the oracle of CLAUDE.md's `pr.queue-switches` list.
-SETTINGS_KEYS = (
-    "effort",
-    "turbo",
-    "turbo_push",
-    "batch_size",
-    "plan_concurrency",
-    "writer_cap",
-    "commit_remind_min",
-    "backup_push_h",
-    "judge",
-)
-# Bundle switches that are no longer fence keys of their own and survive only as an explicit override line: the level decides them.
-OVERRIDE_ONLY_KEYS = ("cadence", "agent_hint", "agent_pushback")
-KNOWN_KEYS = SETTINGS_KEYS + OVERRIDE_ONLY_KEYS
+# The fence keys. A literal tuple: check:ci-scope-mirrors reads it as the oracle of CLAUDE.md's `pr.queue-switches` list.
+SETTINGS_KEYS = ("effort",)
+# The switches the level resolves and the fence never names, in the render order of the in-flight mode line after `effort`.
+BUNDLE_KEYS = ("judge", "cadence", "agent_hint", "agent_pushback")
+KNOWN_KEYS = SETTINGS_KEYS + BUNDLE_KEYS
 NOTE_SEP = " -- "
 _FIELD_NOTE = re.compile(r"[ \t]--[ \t]")
 _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
@@ -131,19 +118,9 @@ _SOLO = re.compile(r"[ \t]--[ \t]+solo[ \t]*$")
 
 @dataclasses.dataclass(frozen=True)
 class Settings:
-    """The effective switches, resolved from the effort level, its bundle and the fence's overrides. `notes` maps a key to the note after ` -- ` on its line. The field defaults are the `high` bundle, the fail-safe level."""
+    """The effective switches, resolved from the effort level and its bundle. `notes` maps `effort` to the note after ` -- ` on its line. The field defaults are the `high` bundle, the fail-safe level."""
 
     effort: str = wl_effort.FAILSAFE
-    turbo: bool = False
-    # Under turbo, when the batch is pushed (agent/plans/PLAN-turbo-local-first.md): `batch-end` holds every commit locally until the batch completes, then pushes and opens the PR once; `pr` is the earlier behaviour, a PR open while the batch fills. Read only when turbo is on.
-    turbo_push: str = "batch-end"
-    batch_size: int = 1
-    plan_concurrency: int = 1
-    writer_cap: int = 4
-    # Minutes without a commit, with this session's own edits still uncommitted, before the commit reminder speaks (PLAN-fast-loop.md Part 2). A reminder, never a block.
-    commit_remind_min: int = 15
-    # Hours the oldest unpushed commit may age before the hook advises a backup push with no PR (PLAN-turbo-local-first.md D4); 0 turns the advisory off.
-    backup_push_h: int = 4
     # `off`, `core` (the judge without riders: no regression sweep, deferral audit, settle or admission sections) or `full`.
     judge: str = "full"
     cadence: bool = True
@@ -155,18 +132,18 @@ class Settings:
 _DEFAULTS = Settings()
 
 
+def refusal(key: str, line: str) -> str:
+    """The refusal of a fence line naming anything but `effort`: the key by name and the line to delete."""
+    return "%r is not a setting (effort is the only one); delete the line `%s`" % (key, line)
+
+
 def _value(key: str, raw: str):
-    """The typed value of `raw` for `key`; ValueError names what was expected."""
+    """The typed value of `raw` for `key` (`effort`, or a bundle switch); ValueError names what was expected."""
     raw = raw.strip()
     if key in BOOL_KEYS:
         if raw not in ("on", "off"):
             raise ValueError("%s: expected on|off, got %r" % (key, raw))
         return raw == "on"
-    if key in INT_KEYS:
-        floor = 0 if key in ZERO_OK_KEYS else 1
-        if not re.fullmatch(r"[0-9]+", raw) or int(raw) < floor:
-            raise ValueError("%s: expected an integer >= %d, got %r" % (key, floor, raw))
-        return int(raw)
     if key in CHOICE_KEYS:
         if raw not in CHOICE_KEYS[key]:
             raise ValueError("%s: expected %s, got %r" % (key, "|".join(CHOICE_KEYS[key]), raw))
@@ -174,15 +151,15 @@ def _value(key: str, raw: str):
     raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
 
 
-def resolve(level: str, overrides: dict) -> tuple[Settings, list[str]]:
-    """(settings, problems) for `level` with `overrides` ({key: typed value}) on top of its bundle. A bundle value that does not type-check is dropped with a problem, so the field keeps the fail-safe default."""
+def resolve(level: str) -> tuple[Settings, list[str]]:
+    """(settings, problems) for `level`, from its bundle alone. A bundle value that does not type-check is dropped with a problem, so the field keeps the fail-safe default."""
     problems: list[str] = []
     table, why = wl_effort.load()
     if why:
         problems.append(why)
     values: dict = {}
     for key, raw in wl_effort.bundle(level, table).items():
-        if key not in KNOWN_KEYS or key == EFFORT_KEY:
+        if key not in BUNDLE_KEYS:
             problems.append("%s: bundle %s sets unknown key %r" % (wl_effort.TABLE_REL, level, key))
             continue
         shown = ("on" if raw else "off") if isinstance(raw, bool) else str(raw)
@@ -190,7 +167,6 @@ def resolve(level: str, overrides: dict) -> tuple[Settings, list[str]]:
             values[key] = _value(key, shown)
         except ValueError as exc:
             problems.append("%s: bundle %s: %s" % (wl_effort.TABLE_REL, level, exc))
-    values.update(overrides)
     values[EFFORT_KEY] = level
     return dataclasses.replace(_DEFAULTS, **values), problems
 
@@ -266,7 +242,7 @@ def _scan(text: str):
 
 
 def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
-    """(settings, problems, the keys the block set validly)."""
+    """(settings, problems, the keys the block set validly). A line naming any key but `effort` is a problem naming the key and the line to delete, and changes nothing."""
     block, problems = _scan(text)
     problems = list(problems)
     found: dict[str, list[tuple[str, str | None]]] = {}
@@ -277,13 +253,14 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
                 if line.strip():
                     problems.append("not a `key: value` line: %r" % line.strip())
                 continue
+            if row[0] not in SETTINGS_KEYS:
+                problems.append(refusal(row[0], line.strip()))
+                continue
             found.setdefault(row[0], []).append((row[1], row[2]))
     values: dict = {}
     notes: dict = {}
     for key, rows in found.items():
-        if key not in KNOWN_KEYS:
-            problems.append("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
-        elif len(rows) > 1:
+        if len(rows) > 1:
             problems.append("%s: set %d times; the default is used" % (key, len(rows)))
         else:
             try:
@@ -293,21 +270,19 @@ def _parse(text: str) -> tuple[Settings, list[str], set[str]]:
                 continue
             if rows[0][1]:
                 notes[key] = rows[0][1]
-    effort_set = EFFORT_KEY in values
-    level = values.pop(EFFORT_KEY, wl_effort.FAILSAFE)
-    got, resolved = resolve(level, values)
-    present = set(values) | ({EFFORT_KEY} if effort_set else set())
-    return dataclasses.replace(got, notes=notes), problems + resolved, present
+    level = values.get(EFFORT_KEY, wl_effort.FAILSAFE)
+    got, resolved = resolve(level)
+    return dataclasses.replace(got, notes=notes), problems + resolved, set(values)
 
 
 def settings(text: str) -> tuple[Settings, list[str]]:
-    """The effective settings of a QUEUE.md text and the problems found. A missing section is all defaults and no problem; a bad key or value falls back to that key's default and the rest still parse."""
+    """The effective settings of a QUEUE.md text and the problems found. A missing section is all defaults and no problem; a bad `effort:` value is `high`, and a line naming any other key is refused by name."""
     got, problems, _set = _parse(text)
     return got, ["%s: %s" % (QUEUE_REL, p) for p in problems]
 
 
 def sources(text: str) -> dict[str, str]:
-    """Per key, where its value came from: `QUEUE.md` when the block sets it validly, `effort <level>` when the level's bundle does, else `default`."""
+    """Per key, where its value came from: `QUEUE.md` when the block sets `effort` validly, `effort <level>` when the level's bundle sets a switch, else `default`."""
     got, _problems, present = _parse(text)
     bundled = wl_effort.bundle(got.effort)
     return {
@@ -352,13 +327,13 @@ def _line(key: str, value, note: str | None) -> str:
 
 
 def set_settings(text: str, updates: dict[str, str], note: str | None = None) -> str:
-    """`text` with `updates` ({key: raw value}) written into the settings fence. Only the fence's lines change: an updated key's line is replaced (later duplicates of it dropped), a key the block lacks is appended, every other byte stays. An EMPTY value removes the key's line, so the level's bundle decides it again. An absent section is created above `## Promoted` with the `effort` line and the updated keys.
+    """`text` with `updates` ({key: raw value}) written into the settings fence. `effort` is the only key. Only the fence's lines change: the `effort` line is replaced (later duplicates of it dropped) or appended, every other byte stays. An EMPTY value removes the line, so the fail-safe level `high` decides. An absent section is created above `## Promoted` with the `effort` line.
 
-    `note` is attached to every updated key. Without it, an updated key keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for an unknown key, a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
+    `note` is attached to the updated line. Without it, the line keeps its note when its value is unchanged and loses it when the value changes (a stale reason is worse than none). ValueError, nothing written, for any key but `effort` (refused by name), a bad value, a multi-line note, or a structurally broken block (section below Promoted, a second or unclosed fence)."""
+    for key in updates:
+        if key not in SETTINGS_KEYS:
+            raise ValueError("%r is not a setting (effort is the only one)" % key)
     drop = {k for k, v in updates.items() if not str(v).strip()}
-    for key in drop:
-        if key not in KNOWN_KEYS:
-            raise ValueError("unknown key %r (known: %s)" % (key, ", ".join(KNOWN_KEYS)))
     typed = {k: _value(k, v) for k, v in updates.items() if k not in drop}
     if note is not None:
         note = note.strip()
@@ -380,7 +355,7 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         merged.setdefault(EFFORT_KEY, wl_effort.FAILSAFE)
         lines = [
             _line(k, merged[k], note_for(k) if k in typed else None)
-            for k in KNOWN_KEYS
+            for k in SETTINGS_KEYS
             if k in merged
         ]
         section = "%s\n\n```%s\n%s\n```\n\n" % (SETTINGS_HEADING, SETTINGS_FENCE, "\n".join(lines))
@@ -403,14 +378,14 @@ def set_settings(text: str, updates: dict[str, str], note: str | None = None) ->
         out.append(line)
     out.extend(
         _line(key, typed[key], note_for(key)) + "\n"
-        for key in KNOWN_KEYS
+        for key in SETTINGS_KEYS
         if key in typed and key not in done
     )
     return text[: block[0]] + "".join(out) + text[block[1] :]
 
 
 def solo_plans(text: str) -> set[str]:
-    """The Promoted and Generated entries whose note ends with ` -- solo`: such a plan runs alone in its PR under turbo."""
+    """The Promoted and Generated entries whose note ends with ` -- solo`. Every plan rides its own PR, so the marker is shown in the In-flight block and decides nothing."""
     block = (generated_text(text) or "").split(NOT_QUEUED_HEADING, 1)[0]
     return {
         m.group(1)
@@ -712,7 +687,7 @@ def problems(root, update: bool = False) -> list[str]:
 
 # ------------------------------------------------------------ the Promoted progress block
 # Operator order 2026-10-08 (worklist #1420d4b8): the `## Promoted` section shows the general progress of all its plans and a completed/all box ratio per plan, and the Stop hook keeps it current. The block sits directly under the `## Promoted` heading, between PROGRESS_BEGIN and PROGRESS_END: one overall line, then one table row per numbered entry carrying that entry's own number, its
-# done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`, the rule `block_turbo_early_push` uses. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
+# done/total box ratio and its state. Every count is read from the plan files by `rediacc_hooks.plan_gate.open_boxes`, the merge gate's rule (parser count against raw line count, a `Moved-To:` stub followed); an entry whose file is gone is looked for under `agent/plans/_done/`. `.ci/config/plan-boxes.json` is the committed second reading of the same boxes and
 # check:ci-plan-boxes holds it equal to the files, so the block cannot disagree with the registry without one of the two gates going red.
 #
 # A LEDGER, NOT RUNTIME STATE. Its inputs are tracked files, so a clean CI checkout reproduces it: `want` renders it and `problems` (check:ci-plan-record RQ) compares it, so a hand edit or a missed render is a finding. It self-heals locally: `refresh` (the plan verbs, through `wl_planrec.refresh_index`) and `refresh_inflight` (every Stop-hook run, `--queue-set` and `--phase`) both re-render it.
@@ -1017,11 +992,11 @@ def moved_problems(root) -> list[str]:
 
 
 # ------------------------------------------------------------ the in-flight block
-# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ... valid for focus, turbo and other modes as well." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, every active focus, the live branch and its PR, the PR's plan set with box progress and how
+# Operator order 2026-10-06: "agent/plans/QUEUE.md should show the plans for the current 'working on it' ..." `## In flight` sits between `## Settings` and `## Promoted` and answers what the loop is doing NOW: the effective switches, the live branch and its PR, the PR's plan set with box progress and how
 # each plan got there, the branch's work that belongs to no plan in that set, live writers and leased items, and the next plan with the reason it is next.
 #
-# RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the focus events, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
-# (`wl_checks.run_stop`) and the verbs that change a mode (`worklist.py --queue-set`, `--phase`) call it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases and focus events are read for every session.
+# RUNTIME STATE, NOT A LEDGER. Its inputs (the PR, the roster, the leases) live outside the tracked tree, so a clean CI checkout cannot reproduce it, and it is never compared: `render` copies every byte outside the generated block, so `problems` and `--update` neither read nor rewrite this one (`test_inflight_block_is_never_compared_by_the_queue_gate` in .claude/rediacc_hooks/tests/test_wl_queue_settings.py proves both). `refresh_inflight` is its only writer: the Stop hook
+# (`wl_checks.run_stop`) and the verb that changes a mode (`worklist.py --queue-set`) calls it, and a merge or a branch cut is picked up by the stop that follows it. The block carries no clock, so a stop that changed nothing writes nothing. A stop renders its own session's writers; leases are read for every session.
 
 INFLIGHT_HEADING = "## In flight"
 INF_BEGIN = "<!-- queue:inflight:begin -->"
@@ -1030,12 +1005,11 @@ _INF_BLOCK = re.compile(
     r"(?ms)^%s[ \t]*$\n?(.*?)^%s[ \t]*$" % (re.escape(INF_BEGIN), re.escape(INF_END))
 )
 INFLIGHT_INTRO = (
-    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. "
+    "What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set`. "
     "It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit."
 )
 # The labels the mode line is read back by (`inflight_mode`).
 MODE_LABEL = "- Mode: "
-FOCUS_LABEL = "- Phase: "
 _LIST_MAX = 12
 
 
@@ -1061,16 +1035,6 @@ class EpicLine:
 
 
 @dataclasses.dataclass(frozen=True)
-class FocusLine:
-    owner: str
-    mode: str
-    pr: str
-    branch: str
-    at: str
-    expired: bool = False
-
-
-@dataclasses.dataclass(frozen=True)
 class TreeLine:
     """One tree of a landing record: its role, the branch checked out there, and its PR (`pr` 0 when it has none, `state` the PR's state when it has one)."""
 
@@ -1085,7 +1049,6 @@ class InFlight:
     """Everything the block shows. `writers` is None when the live writers could not be counted."""
 
     settings: Settings = dataclasses.field(default_factory=Settings)
-    focus: tuple[FocusLine, ...] = ()
     kind: str = ""
     branch: str = ""
     pr: int = 0
@@ -1113,7 +1076,7 @@ def _onoff(value: bool) -> str:
 
 
 def mode_line(settings: Settings) -> str:
-    """`- Mode: effort smart; turbo off; batch_size 3; ...`, every key of `KNOWN_KEYS` in order, as resolved."""
+    """`- Mode: effort smart; judge core; cadence on; ...`, every key of `KNOWN_KEYS` in order, as resolved."""
     parts = []
     for key in KNOWN_KEYS:
         value = getattr(settings, key)
@@ -1196,25 +1159,6 @@ def landing_trees(root, worklist, session_id, pr_read=None) -> tuple[TreeLine, .
 def render_inflight(inf: InFlight) -> str:
     """The lines between the in-flight markers."""
     out = [mode_line(inf.settings)]
-    if inf.focus:
-        out.append(
-            FOCUS_LABEL
-            + "; ".join(
-                "%s on PR #%s (branch %s, session %s, since %s%s)"
-                % (
-                    f.mode,
-                    f.pr or "?",
-                    f.branch or "?",
-                    f.owner,
-                    f.at or "?",
-                    ", past its 24-hour limit" if f.expired else "",
-                )
-                for f in inf.focus
-            )
-            + "."
-        )
-    else:
-        out.append(FOCUS_LABEL + "build.")
     import wl_prscope as P
 
     if inf.kind == P.LIVE:
@@ -1261,10 +1205,9 @@ def render_inflight(inf: InFlight) -> str:
     else:
         ids = ["worker:%s" % w for w in inf.writers]
         out.append(
-            "- Writers: %d live of writer_cap %d (session %s)%s"
+            "- Writers: %d live (session %s)%s"
             % (
                 len(ids),
-                inf.settings.writer_cap,
                 inf.session or "?",
                 ": %s." % _more(ids) if ids else ".",
             )
@@ -1296,8 +1239,8 @@ def with_inflight(text: str, body: str) -> str:
     return text + sep + section.rstrip("\n") + "\n"
 
 
-def _plan_source(rel, loop, body, named) -> str:
-    """How `rel` joined the live PR's plan set: the `Plan:` line, a turbo batch claim, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
+def _plan_source(rel, loop, body) -> str:
+    """How `rel` joined the live PR's plan set: the `Plan:` line, an `Operational-Reason:` addition, a prerequisite, or the queue head standing in for a body with no `Plan:` line."""
     import wl_prscope as P
 
     plan_gate, _cp = P._hooks_pkg()
@@ -1310,8 +1253,6 @@ def _plan_source(rel, loop, body, named) -> str:
         return "the queue head, standing in while the PR body names no `Plan:` line"
     if rel == listed[0]:
         return "the PR body's `Plan:` line"
-    if rel in named:
-        return "a turbo batch claim on the `Plan:` line"
     if plan_gate.has_operational_reason(body):
         return "added to the `Plan:` line under `Operational-Reason:`"
     return "the PR body's `Plan:` line"
@@ -1345,12 +1286,11 @@ def _branch_epic_commits(root, kind) -> dict[str, int]:
 
 
 def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=None) -> InFlight:
-    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), `plan_gate.turbo_named` and the PR body for each plan's source, the focus events and leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
+    """The `InFlight` for the checkout at `root`, from the same readers the Stop hook acts on: `wl_prscope.loop_state` (the PR, its plan set via `plan_gate.pr_plan_set`, the next plan), the PR body for each plan's source, the leases of the store's fold, `wl_epic.load_epics` with the branch's `PR-TASK:` trailers.
     `fold` and `loop` are the stop's own when it has them; `writers` is the live writer ids, None when not counted."""
     import wl_ci
     import wl_epic
     import wl_prscope as P
-    import wl_standdown
     import wl_store as S
 
     root = pathlib.Path(root)
@@ -1360,21 +1300,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
         fold = S.load(worklist, sync=False)
     if loop is None:
         # The loop belongs to the tree this session runs in (a landing session maps its store to the main checkout, so the mapped root would read the development tree's role).
-        loop = P.loop_state(S.own_tree(root), worklist, session_id, settings=settings)
-    focus = []
-    for owner, ev in sorted((fold.phase or {}).items()):
-        if not isinstance(ev, dict) or ev.get("mode") not in wl_standdown.PHASE_MODES:
-            continue
-        focus.append(
-            FocusLine(
-                str(owner)[:8],
-                str(ev.get("mode")),
-                str(ev.get("pr") or ""),
-                str(ev.get("branch") or ""),
-                str(ev.get("at") or ""),
-                bool(wl_standdown.expired(ev)),
-            )
-        )
+        loop = P.loop_state(S.own_tree(root), worklist, session_id)
     body = None
     if loop.kind == P.LIVE and loop.branch:
         nodes, err = wl_ci.pr_link(str(root), worklist, session_id, loop.branch)
@@ -1387,22 +1313,12 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
                 ),
                 None,
             )
-    named = plan_gate.turbo_named(str(root), loop.branch) if loop.branch else []
 
     def plan_line(rel, source):
         opened, done, why = plan_gate.open_boxes(str(root), rel)
         return PlanLine(rel, source, done, -1 if why else opened + done)
 
-    lines = [plan_line(rel, _plan_source(rel, loop, body, named)) for rel in loop.plans]
-    if loop.kind in (P.LIVE, P.UNREADABLE):
-        for rel in [*named, *loop.turbo_picks]:
-            if rel not in loop.plans and all(p.rel != rel for p in lines):
-                lines.append(
-                    plan_line(
-                        rel,
-                        "a turbo pick named by the Stop hook, joining the `Plan:` line on the next push",
-                    )
-                )
+    lines = [plan_line(rel, _plan_source(rel, loop, body)) for rel in loop.plans]
     in_set = {p.rel for p in lines}
     # An epic is in flight on this branch when a commit here carries its `PR-TASK:` trailer or one of its items is leased; an epic whose only open items wait unleased is queued work, not this branch's.
     open_ids = {r["id"] for r in fold.items if r.get("state") in (" ", ">", "?")}
@@ -1442,12 +1358,7 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
         else:
             why = "the deepest unfinished prerequisite of the first open queue entry"
         if loop.kind == P.LIVE:
-            when = (
-                "a turbo pick joins this PR when a writer slot frees under plan_concurrency %d"
-                % settings.plan_concurrency
-                if settings.turbo
-                else "starts on the next branch after PR #%d merges" % loop.pr
-            )
+            when = "starts on the next branch after PR #%d merges" % loop.pr
         elif loop.kind == P.NO_PR:
             when = (
                 "starts when this branch's PR binds it on its first push"
@@ -1458,7 +1369,6 @@ def gather_inflight(root, worklist, session_id, fold=None, loop=None, writers=No
             when = "starts on branch %s" % (loop.next_branch or "<next MMDD-N>")
     return InFlight(
         settings=settings,
-        focus=tuple(focus),
         kind=loop.kind,
         branch=loop.branch,
         pr=loop.pr,

@@ -14,6 +14,8 @@ import threading
 
 from rediacc_hooks.tests import wlfix
 
+M = wlfix.import_wl("worklist_messages")
+
 PEER_BODY = """Session cafe1234 owns packages/cli/src/services/licensing and the two drill scripts under scripts/dev, all of them uncommitted. A git add -A from any other session in this checkout would sweep them into somebody else s commit, which is the cross-session fact that has no home in a per-session file.
 
 ## Next action
@@ -164,13 +166,32 @@ def test_12_an_empty_world_allows_the_stop(wl):
     wl.check("allow", "", "an empty world allows the stop")
 
 
-def test_16_a_remaining_section_that_omits_an_open_task_blocks(wl):
+def test_16_a_remaining_section_that_omits_an_open_task_passes(wl):
+    """agent/plans/PLAN-stop-hook-store-status.md R1: the `out-of-sync` check is retired, so an open task id the message omits no longer blocks; the hook renders the item table from the store."""
     wl.say("answer\n\n## Remaining\n| #7 | thing | pending, me |")
     wl.brief_now()
     wl.hand_now()
     wl.task(7, "pending", "thing")
     wl.task(8, "pending", "the forgotten one")
-    wl.check("block", "OUT OF SYNC", "an omitted task id blocks")
+    got = wl.check("allow", "", "an omitted task id no longer blocks")
+    assert "OUT OF SYNC" not in got.out, got.out[:600]
+
+
+def test_16b_a_missing_remaining_heading_still_blocks_and_lists_no_item(wl):
+    """CONTROL for test_16: the same changed item set with no `## Remaining` heading still blocks with `no-remaining`, and its text is the D6 contract with no item line in it (the old text listed up to 12 remaining lines after a colon)."""
+    wl.say("answer, with the heading left off")
+    wl.brief_now()
+    wl.hand_now()
+    wl.task(7, "pending", "thing")
+    wl.task(8, "pending", "the forgotten one")
+    got = wl.check("block", "no '## Remaining' section", "a missing heading still blocks")
+    assert M.V_NO_REMAINING in got.out, got.out[:600]
+    # The hook prints its block as JSON, so a newline in the reason reads as the two characters `\n`; the violation's own text runs to the first blank line.
+    tail = got.out[got.out.index(M.V_NO_REMAINING) + len(M.V_NO_REMAINING) :]
+    own = tail.replace("\\n", "\n").split("\n\n", 1)[0]
+    assert "the forgotten one" not in own, own[:300]
+    assert "#7" not in own, own[:300]
+    assert "listing what is left" not in got.out, got.out[:600]
 
 
 def test_17_naming_every_open_task_passes(wl):

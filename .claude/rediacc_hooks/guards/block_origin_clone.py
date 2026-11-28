@@ -26,12 +26,15 @@ import re
 import shlex
 import urllib.parse
 
-from rediacc_hooks import commit_policy, hookio, shellscan, wellknown
+from rediacc_hooks import commit_policy, hookio, shellscan
 from rediacc_hooks.guards import block_worktree_add as programs
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_origin_clone", "EDGE_CASES", "_CONSOLE", "_GHO", "_MIRROR", "_RENET")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 67
+ORDER = 66
 
 # The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `block_push_to_protected_branch` does.
 _GITHOOKS_SPEC = importlib.util.spec_from_file_location(
@@ -268,6 +271,7 @@ class World:
         self.text = cmd
         self._common = None
         self._origins = None
+        self._worktrees = None
 
     def common(self):
         if self._common is None:
@@ -295,16 +299,35 @@ class World:
             self._origins = found
         return self._origins
 
+    def worktrees(self):
+        """Every registered worktree of this repository (the landing tree at its sibling path, the leases), the checkout itself first."""
+        if self._worktrees is None:
+            listed = (
+                commit_policy.git(["worktree", "list", "--porcelain"], cwd=self.root, foreign=True)
+                or ""
+            )
+            roots = [self.root]
+            roots.extend(
+                line[len("worktree ") :]
+                for line in listed.splitlines()
+                if line.startswith("worktree ")
+            )
+            self._worktrees = roots
+        return self._worktrees
+
     def is_place_of_ours(self, real):
-        """Is the resolved path this checkout, its git directory, or a path in them?"""
+        """Is the resolved path this checkout, one of its registered worktrees, its git directory, or a path in them?"""
         common = self.common()
         if common and commit_policy.is_inside(real, common):
             return True
-        if not commit_policy.is_inside(real, self.root):
-            return False
-        rel = os.path.relpath(real, os.path.realpath(self.root))
-        first = rel.split(os.sep, 1)[0]
-        return rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(self.root, first))
+        for root in self.worktrees():
+            if not commit_policy.is_inside(real, root):
+                continue
+            rel = os.path.relpath(real, os.path.realpath(root))
+            first = rel.split(os.sep, 1)[0]
+            if rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(root, first)):
+                return True
+        return False
 
     def is_source_of_ours(self, real):
         """Does a clone SOURCE name this checkout or its git directory? A place test is too wide for a source: from a run standing below the root (a package directory, a lease under `.claude/worktrees/`) every bare word resolves under an existing top-level entry, so `fetch` read as a source was "ours" (#11ad5926). git clones only a source that exists, so a source must exist, apart from a path under `.git` and an absent submodule directory (`private/<name>`). A bare absent `private` is not one: it is a plain directory of the superproject, never a repository, so git clones nothing from it (review c804bc45.2)."""
@@ -820,34 +843,6 @@ def _walk_text(cmd, world, depth):
             if why:
                 return why
     return _by_path_reason(cmd, world, depth)
-
-
-_GHO = wellknown.GH_ORIGIN
-_CONSOLE = wellknown.GH_REPO
-_RENET = wellknown.RENET_REPO
-_MIRROR = githooks.MIRROR_HOST
-EDGE_CASES = [
-    ("the origin", f"git clone {_GHO}/{_CONSOLE}.git /tmp/x"),
-    ("a submodule", f"git clone git@github.com:{_RENET}.git /tmp/x"),
-    ("the mirror", f"git clone https://{_MIRROR}/rediacc-org/github/console.git /tmp/x"),
-    ("gh", f"gh repo clone {_CONSOLE}"),
-    ("a wrapper", f"sh -c 'git clone {_GHO}/{_CONSOLE} /tmp/x'"),
-    (
-        "init and fetch",
-        f"git init /tmp/x && git -C /tmp/x fetch {_GHO}/{_CONSOLE}.git",
-    ),
-    (
-        "program text",
-        f"python3 -c \"import os; os.system('git clone {_GHO}/{_CONSOLE} /x')\"",
-    ),
-    ("control: a fixture", "git clone /tmp/fixture /tmp/y"),
-    ("control: an unrelated url", "git clone https://example.invalid/a.git /tmp/y"),
-    ("control: prose", f"echo git clone {_GHO}/{_CONSOLE}.git /tmp/x"),
-    (
-        "control: a heredoc body",
-        f"cat > n.md <<'EOF'\ngit clone {_GHO}/{_CONSOLE}.git /tmp/x\nEOF",
-    ),
-]
 
 
 def run(ev):

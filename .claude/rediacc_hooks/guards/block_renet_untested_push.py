@@ -27,19 +27,37 @@ SCOPE: a command-position `git push` in this checkout or in its private/renet. N
 FAILS OPEN, LOUDLY, on a broken environment (no root, the map or a helper module will not load): a note on stderr and the push allowed, like the sibling push guards. A verdict is never failed open.
 """
 
-import datetime
-import json
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts, tables
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 
+__getattr__ = tables(
+    "block_renet_untested_push",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "CONSOLE_READ",
+    "FIXTURE_MAP",
+    "LICENSE_FILE",
+    "MISSING_NEW",
+    "RECEIPTS_REL",
+    "UNMAPPED_FILE",
+    "_ASK",
+    "_DEADLINE",
+    "_ENVIRONMENT",
+    "_console_read",
+    "_new_missing",
+    "plant_receipt",
+    "world",
+)
+
 CHAIN = "pre-bash"
 OWN_SUITE = True
-# After every other refusing push guard, so its ledger line is written only for a command the rest admitted. The vm-check (63) and backup (64) ledgers are written before this slot; see the report that added it for the renumbering that would put this guard ahead of them.
-ORDER = 66
+# After every other refusing push guard, so its ledger line is written only for a command the rest admitted. The vm-check (62) and backup (63) ledgers are written before this slot; see the report that added it for the renumbering that would put this guard ahead of them.
+ORDER = 65
 
 # The touched test, inverted: planted, every range reads as selecting nothing and passes without a receipt.
 DEFECT = ('if not required["packages"]:', "if True:")
@@ -61,10 +79,12 @@ MUTANTS = {
     ),
 }
 
-REASON_ENV = "RENET_TEST_PUSH_REASON"
-KINDS = ("environment", "deadline")
-MIN_WHY = 40
-LEDGER_REL = "agent/ledgers/renet-test-push-reasons.jsonl"
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the escape, its kinds and the ledger are declared there and read back here.
+ROW = _push_receipts.row("renet")
+REASON_ENV = ROW.escape
+KINDS = ROW.kinds
+MIN_WHY = _push_receipts.MIN_WHY
+LEDGER_REL = ROW.ledger
 SHOWN = 10
 SURFACES_MOD = "rediacc_ci.proof.surfaces"
 RENET = "private/renet"
@@ -74,150 +94,6 @@ UNEXAMINED = "block-renet-untested-push: %s; this push passed UNEXAMINED."
 
 
 # --------------------------------------------------------------------------- fixture worlds
-
-CONSOLE_READ = "packages/shared/src/subscription/schema.generated.json"
-FIXTURE_MAP = {
-    "schema": 1,
-    "module": "github.com/rediacc/renet",
-    "whole": [{"glob": "go.mod", "why": "the module graph reaches every package"}],
-    "always": [],
-    "entries": [
-        {"glob": "cmd/renet/**", "packages": ["cmd/renet"], "dependents": []},
-        {
-            "glob": "pkg/license/**",
-            "packages": ["pkg/license"],
-            "dependents": ["cmd/renet"],
-        },
-        {
-            "glob": "pkg/sandbox/**",
-            "packages": ["pkg/sandbox"],
-            "dependents": ["cmd/renet"],
-        },
-    ],
-    "console": [
-        {"glob": CONSOLE_READ, "packages": ["pkg/license"], "why": "a renet test reads it"}
-    ],
-}
-LICENSE_FILE = "pkg/license/store.go"
-UNMAPPED_FILE = "pkg/brandnew/x.go"
-RECEIPTS_REL = ".ci/cache/renet-receipts"
-
-
-def world(path, renet_files=(), missing_old=False):
-    """`block_vm_unverified_push.world` (a console checkout on `1008-1`, renet commit A at origin/main's gitlink and B on the branch when `renet_files` are named) plus this guard's map and a renet `origin/main` at A, so the renet push form has a base. Returns the console path."""
-    root = VM.world(path, renet_files=renet_files, missing_old=missing_old)
-    renet = root / RENET
-    VM._put(root, ".ci/config/renet-test-map.json", json.dumps(FIXTURE_MAP, indent=2) + "\n")
-    VM._git(root, "add", ".ci/config/renet-test-map.json")
-    VM._git(root, "commit", "-q", "-m", "map")
-    VM._git(renet, "remote", "add", "origin", "https://github.com/fixture/renet.git")
-    first = VM._git(renet, "rev-list", "--max-parents=0", "HEAD")
-    VM._git(renet, "update-ref", "refs/remotes/origin/main", first)
-    return root
-
-
-def plant_receipt(root, packages, every=False, commit="HEAD"):
-    """A passing receipt for the renet tree of `commit` (in private/renet) under `<root>/RECEIPTS_REL`, the shape the gate writes."""
-    renet = pathlib.Path(root) / RENET
-    tree = VM._git(renet, "rev-parse", "%s^{tree}" % commit)
-    receipts = pathlib.Path(root) / RECEIPTS_REL
-    receipts.mkdir(parents=True, exist_ok=True)
-    doc = {
-        "schema": 1,
-        "renetTree": tree,
-        "renetHead": VM._git(renet, "rev-parse", commit),
-        "dirty": False,
-        "all": every,
-        "packages": sorted(packages),
-        "consoleTrees": [],
-        "base": "",
-        "passed": 3,
-        "finishedAt": "2026-01-01T00:00:00Z",
-    }
-    (receipts / ("%s.json" % tree)).write_text(json.dumps(doc) + "\n", encoding="utf-8")
-    return root
-
-
-def _new_missing(path):
-    """The branch moves the renet gitlink to a commit this checkout does not hold, so no local run can have tested it."""
-    root = world(path)
-    VM._git(root, "update-index", "--cacheinfo", "160000,%s,%s" % (MISSING_NEW, RENET))
-    VM._git(root, "commit", "-q", "-m", "gitlink to a commit not fetched")
-    return root
-
-
-def _console_read(path, receipt=False):
-    """The renet pointer does not move, but the branch changes a console file a renet test reads, so the renet packages that read it need a receipt."""
-    root = world(path)
-    VM._put(root, CONSOLE_READ, "{}\n")
-    VM._git(root, "add", CONSOLE_READ)
-    VM._git(root, "commit", "-q", "-m", "console read")
-    return plant_receipt(root, ["pkg/license"]) if receipt else root
-
-
-MISSING_NEW = "fedcba9876543210fedcba9876543210fedcba98"
-
-FIXTURES = {
-    "rnt-docs": world,
-    "rnt-new-missing": _new_missing,
-    "rnt-renet-docs": lambda p: world(p, renet_files=("README.md",)),
-    "rnt-license": lambda p: world(p, renet_files=(LICENSE_FILE,)),
-    "rnt-license-receipt": lambda p: plant_receipt(
-        world(p, renet_files=(LICENSE_FILE,)), ["cmd/renet", "pkg/license"]
-    ),
-    "rnt-license-partial": lambda p: plant_receipt(
-        world(p, renet_files=(LICENSE_FILE,)), ["pkg/license"]
-    ),
-    "rnt-license-seed-receipt": lambda p: plant_receipt(
-        world(p, renet_files=(LICENSE_FILE,)), ["cmd/renet", "pkg/license"], commit="HEAD~1"
-    ),
-    "rnt-unmapped-partial": lambda p: plant_receipt(
-        world(p, renet_files=(UNMAPPED_FILE,)), ["cmd/renet", "pkg/license", "pkg/sandbox"]
-    ),
-    "rnt-unmapped-all": lambda p: plant_receipt(
-        world(p, renet_files=(UNMAPPED_FILE,)), [], every=True
-    ),
-    "rnt-missing-old": lambda p: world(p, renet_files=(LICENSE_FILE,), missing_old=True),
-    "rnt-console-read": _console_read,
-    "rnt-console-read-receipt": lambda p: _console_read(p, receipt=True),
-}
-
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    (
-        name[len("rnt-") :],
-        {
-            "CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name,
-            "RENET_TEST_RECEIPT_DIR": "{FIXTURE:%s}/%s" % (name, RECEIPTS_REL),
-        },
-        {},
-    )
-    for name in FIXTURES
-]
-
-_ASK = " ASKED:2026-01-01T00:00Z"
-_ENVIRONMENT = "pkg/daemon netns tests need root here; CI test-renet-go runs them under sudo"
-_DEADLINE = "the 03:00Z CD promote carries the broken stable licence check otherwise"
-EDGE_CASES = [
-    ("a console push", "git push origin 1008-1"),
-    ("an implicit console push", "git push"),
-    ("a renet push by -C", "git -C private/renet push origin main"),
-    ("a renet push after cd", "cd private/renet && git push origin main"),
-    (
-        "environment",
-        "%s='environment: %s%s' git push origin 1008-1" % (REASON_ENV, _ENVIRONMENT, _ASK),
-    ),
-    ("deadline", "%s='deadline: %s%s' git push origin 1008-1" % (REASON_ENV, _DEADLINE, _ASK)),
-    (
-        "an unknown kind",
-        "%s='because: %s%s' git push origin 1008-1" % (REASON_ENV, _DEADLINE, _ASK),
-    ),
-    ("no ASKED", "%s='deadline: %s' git push origin 1008-1" % (REASON_ENV, _DEADLINE)),
-    ("a dry run", "git push --dry-run origin 1008-1"),
-    ("a renet dry run", "git -C private/renet push --dry-run origin main"),
-    ("a delete push", "git push origin --delete 1007-1"),
-    ("prose naming a push", "echo 'git -C private/renet push origin main'"),
-    ("a mirror push", "git push --mirror origin"),
-]
 
 
 # --------------------------------------------------------------------------- what the command pushes
@@ -233,7 +109,12 @@ def _pushes(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if VM._skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
+        repo = (
+            commit_policy.scoped_repo(
+                run, base, root, created, cmd, trees=commit_policy.bound_trees(root)
+            )
+            or root
+        )  # bound trees passed (box LT11): a push in a landing-tree submodule is that submodule's, not this checkout's
         top = pathlib.Path(repo).resolve()
         line = " ".join(["git", "push", *args])
         if top == renet_root:
@@ -337,64 +218,26 @@ def _operator_answered(ev, reason):
 
 
 def _judge_reason(ev, reason):
-    """(kind, why) when the escape is admitted, else (None, the refusal line)."""
-    if reason is None:
-        return None, "escape-missing: no `%s=` on it" % REASON_ENV
-    m = VM.REASON_RE.match(reason)
-    kind, rest = (m.group(1).lower(), m.group(2)) if m else ("", reason)
-    if kind not in KINDS:
-        return None, "escape-kind: `%s=%r`: the kind must be one of %s" % (
-            REASON_ENV,
-            reason,
-            ", ".join(KINDS),
-        )
-    why = VM.ASKED_TOKEN_RE.sub("", rest).strip()
-    if len(why) < MIN_WHY:
-        return (
-            None,
-            "escape-why: `%s`: the why is %d characters; at least %d name the tests or the deadline"
-            % (
-                reason,
-                len(why),
-                MIN_WHY,
-            ),
-        )
-    if not VM.ASKED_STRICT_RE.search(reason):
-        return None, "escape-asked: `%s` carries no ASKED:<YYYY-MM-DDTHH:MM>Z" % reason
-    if not _operator_answered(ev, reason):
-        return (
-            None,
-            "escape-unproven: its ASKED: minute matches no AskUserQuestion answer in this session's transcript (within 300 s)",
-        )
-    return kind, why
+    """(kind, why) when the escape is admitted, else (None, the refusal line): the table's shared escape checks (`_push_receipts.judge_escape`)."""
+    return _push_receipts.judge_escape(ev, ROW.id, reason, _operator_answered)
 
 
 def _row(root, form, commit, tree, kind, why, reason, packages):
-    asked = VM.ASKED_STRICT_RE.search(reason or "")
     return {
-        "ts": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "ts": _push_receipts.now_stamp(),
         "branch": commit_policy.current_branch(root),
         "form": form,
         "head": commit,
         "renetTree": tree,
         "kind": kind,
         "why": why,
-        "asked": asked.group(0)[len("ASKED:") :] if asked else "",
+        "asked": _push_receipts.asked_minute(reason),
         "packages": packages[:SHOWN],
     }
 
 
 def _record(ev, root, rows):
-    path = pathlib.Path(root) / LEDGER_REL
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "a", encoding="utf-8") as fh:
-            fh.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
-    except OSError as exc:
-        ev.warn(
-            "block-renet-untested-push: the admission was NOT recorded in %s (%s)."
-            % (LEDGER_REL, exc)
-        )
+    _push_receipts.record(ev, ROW.id, root, rows)
 
 
 REFUSAL = """BLOCKED: this push changes renet Go code and no passing renet test receipt covers renet tree %(tree)s (%(form)s push, commit %(commit)s, sent as `%(src)s`).
@@ -493,7 +336,7 @@ def run(ev):
             required = _required(WR, test_map, changed, console_changed, base_label)
             if not required["packages"]:
                 continue
-            receipt = WR.read_receipt(tree)
+            receipt = _push_receipts.read(ROW.id, root, tree)
             missing = WR.uncovered(receipt, required)
             if missing == []:
                 continue

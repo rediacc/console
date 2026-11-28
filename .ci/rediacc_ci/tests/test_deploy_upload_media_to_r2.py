@@ -3,8 +3,8 @@
 Both are pure forwarding shims (`exec` / `os.execv`) onto the real primitive, `.ci/media/tools/upload-r2.sh`, so what is under test is the FORWARD: argv, exit status, and whatever the target prints before it would need network access. Every case here stays on the target's local argument-validation path (`--kind`, then `require_var`, then `require_file`), which all run before
 `require_cmd aws` -- so these are real invocations of both shims, with no credentials, no network, and no fixture, exactly like `.ci/rediacc_ci/tests/gates/test_gate_media_shims.py`'s own "aws, npx and the network absent" design for the twin.
 
-The K=5 shadow-gate ledger is
-`.ci/shadow/w7p5a-upload-media-to-r2.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-upload-media-to-r2 --assert --k 5` -> "equivalence holds over 5 distinct trees"), varying argv rather than env vars across the five specimens -- this script has no environment-driven branch at all.
+The K=5 shadow gate ledger is
+the ledger (deleted in commit:936280cd35) (the shadow gate (commit:bf054adcd4) -> "equivalence holds over 5 distinct trees"), varying argv rather than env vars across the five specimens -- this script has no environment-driven branch at all.
 """
 
 from __future__ import annotations

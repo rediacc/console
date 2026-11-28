@@ -1,6 +1,6 @@
 """`rediacc_ci.build.build_linux_packages`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/build/build-linux-packages.sh` and the port over two identically built fixture trees and compared all five observables below. The K=5 ledger `.ci/shadow/w7p6-build-linux-packages.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/build/build-linux-packages.sh` and the port over two identically built fixture trees and compared all five observables below. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every case that executed it compares
 against `goldens/build-linux-packages/`, which holds the twin's OWN recorded results, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
 WHAT IS COMPARED, and what each recording therefore carries. This script produces no output of its own on the happy path -- it is eight delegations and nothing else -- so a stdout comparison would be a comparison of two empty strings. Every case compares:
@@ -50,7 +50,7 @@ TWIN_DELEGATE = ".ci/scripts/build/build-linux-pkg.sh"
 
 # The recording delegate. Stands in for the real build-linux-pkg.sh, which runs nfpm and signs packages. `FAIL_ON` is a 1-based call index so a case can fail the third of eight and the comparison can check that the remaining five never happened.
 #
-# It writes its argv as `call: ...` on STDOUT rather than through a log-step helper, and that is not cosmetic: `scripts/lib/shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a delegate that reported like `common.sh` would have made every ledger row read VACUOUS_BOTH_EMPTY. The `call: ` prefix is what the ledger's
+# It writes its argv as `call: ...` on STDOUT rather than through a log-step helper, and that is not cosmetic: the shadow gate (commit:bf054adcd4) classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is consulted, so a delegate that reported like `common.sh` would have made every ledger row read VACUOUS_BOTH_EMPTY. The `call: ` prefix is what the ledger's
 # `--finding-re` scoped to.
 FAKE_DELEGATE = """#!/usr/bin/env python3
 import os, pathlib, sys

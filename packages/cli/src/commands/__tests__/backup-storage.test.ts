@@ -29,8 +29,8 @@ const mockResolveRepoRef = vi.hoisted(() => vi.fn());
 const mockResolveRepoRefLocal = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: mockResolveRepoRef,
-  resolveRepoRefLocal: mockResolveRepoRefLocal,
 }));
+vi.mock('../../utils/repo-ref-local.js', () => ({ resolveRepoRefLocal: mockResolveRepoRefLocal }));
 
 const mockRecordBackupRun = vi.hoisted(() => vi.fn());
 vi.mock('../../services/backup/backup-runs-state.js', () => ({
@@ -73,6 +73,11 @@ vi.mock('../../utils/errors.js', async () => {
     },
   };
 });
+
+const mockRenderFailure = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/local-execution-failures.js', () => ({
+  renderLocalExecutionFailure: mockRenderFailure,
+}));
 
 const { outputService } = await import('../../services/core/output.js');
 const { registerBackupStorageCommands } = await import('../backup-storage.js');
@@ -158,18 +163,37 @@ describe('backup verify', () => {
     expect(process.exitCode).not.toBe(1);
   });
 
-  it('defaults to level=spot and leaves a mismatch to the rendered failure, printing nothing more', async () => {
-    // The real executor renders the failure envelope and sets the exit code; verify must add no second document.
-    mockExecuteRepoFunction.mockImplementation(() => {
+  it('defaults to level=spot and renders a mismatch after the records, printing nothing on stdout', async () => {
+    const failed = {
+      success: false,
+      exitCode: 1,
+      error: 'verification found problems (see records above)',
+      stdout: '{"status":"mismatch"}\n',
+    };
+    mockRenderFailure.mockImplementation(() => {
       process.exitCode = 1;
-      return Promise.resolve({ success: false });
     });
-    await run(['verify', 'shop']);
+    mockExecuteRepoFunction.mockResolvedValue(failed);
+    const stderrWrite = vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+    try {
+      await run(['verify', 'shop']);
 
-    expect(mockPrint).not.toHaveBeenCalled();
+      expect(mockPrint).not.toHaveBeenCalled();
+      // The record "see records above" refers to reaches the operator, before the failure rendering.
+      expect(stderrWrite.mock.calls.map((c) => String(c[0])).join('')).toContain(
+        '"status":"mismatch"'
+      );
+      expect(mockRenderFailure).toHaveBeenCalledWith(failed, failed.error);
+      expect(stderrWrite.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRenderFailure.mock.invocationCallOrder[0]
+      );
+    } finally {
+      stderrWrite.mockRestore();
+    }
 
     const call = mockExecuteRepoFunction.mock.calls[0];
     expect(call[3]).toEqual({ level: 'spot' });
+    expect((call[4] as { failureIsAnswer?: boolean }).failureIsAnswer).toBe(true);
     expect(plannedSteps(call)[2].params).toEqual({ repo: 'shop' });
     expect(process.exitCode).toBe(1);
   });

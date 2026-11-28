@@ -3,14 +3,15 @@
 WHY A DIFFERENTIAL AND NOT A TABLE OF EXPECTED STRINGS. The interesting half of this gate is a four-stage shell pipeline -- `grep -E | tail -n1 | sed -E | tr -d` -- whose behaviour on the awkward inputs (a trailing comment, inner whitespace, a key that appears twice, an empty value) is decided by POSIX character classes and by sed's substitution order rather than by anything a
 reader could infer. A table of expected strings would be a table of what the PORT does, asserted against itself. Running the real pipeline under bash and comparing is the only form of this test that can fail for the right reason.
 
-The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh` lines 44-69 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger `.ci/shadow/w7p2-npmrc.observations.jsonl` compares over five distinct trees. This file covers the seams that ledger cannot isolate.
+The bash fragments below are lifted from `.ci/scripts/quality/check-npmrc.sh` lines 44-69 with the variables substituted, and nothing else changed. They are NOT the whole gate: the whole gate is what the committed shadow ledger the ledger (deleted in commit:936280cd35) compares over five distinct trees. This file covers the seams that ledger cannot isolate.
 """
 
 import pathlib
+import shutil
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import gitx, paths
 from rediacc_ci.quality import npmrc
 from rediacc_ci.tests import differential as diff
 
@@ -101,6 +102,12 @@ def test_required_keys_are_pinned() -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def _work_tree(tmp_path: pathlib.Path) -> None:
+    """Every fixture root is a git work tree, since `main` lists the tree with `git ls-files` and refuses one it cannot list."""
+    assert gitx.git(["init", "-q"], root=tmp_path).ok
+
+
 def _seed_release_age(
     root: pathlib.Path, body: str = '{"minimum_release_age_minutes": 1440}\n'
 ) -> None:
@@ -117,8 +124,7 @@ def test_main_refuses_an_absent_npmrc(tmp_path: pathlib.Path, monkeypatch) -> No
 
 def test_main_passes_a_hardened_npmrc(tmp_path: pathlib.Path, monkeypatch) -> None:
     """Its mirror: the gate must be capable of returning 0, or the line above proves only that it refuses everything."""
-    (tmp_path / ".npmrc").write_text("ignore-scripts=true\nallow-git=none\n", encoding="utf-8")
-    _seed_release_age(tmp_path)
+    _hardened_root(tmp_path)
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
     assert npmrc.main([]) == 0
 
@@ -129,6 +135,7 @@ def test_main_refuses_the_relocated_key_back_in_npmrc(tmp_path: pathlib.Path, mo
         "ignore-scripts=true\nallow-git=none\nminimum-release-age=1440\n", encoding="utf-8"
     )
     _seed_release_age(tmp_path)
+    _seed_listed_exceptions(tmp_path)
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
     assert npmrc.main([]) == 1
 
@@ -150,6 +157,7 @@ def test_main_refuses_a_missing_or_weakened_window(
     (tmp_path / ".npmrc").write_text("ignore-scripts=true\nallow-git=none\n", encoding="utf-8")
     if body is not None:
         _seed_release_age(tmp_path, body)
+    _seed_listed_exceptions(tmp_path)
     monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
     assert npmrc.main([]) == 1
 
@@ -167,9 +175,11 @@ def _seed_submodule_project(root: pathlib.Path, rel: str, npmrc_body: str | None
         (project / ".npmrc").write_text(npmrc_body, encoding="utf-8")
 
 
-def _hardened_root(root: pathlib.Path) -> None:
+def _hardened_root(root: pathlib.Path, skip: str = "") -> None:
+    """A clean root `.npmrc` and release-age config, plus every SCRIPT_EXCEPTIONS directory but `skip` as the real tree carries it."""
     (root / ".npmrc").write_text("ignore-scripts=true\nallow-git=none\n", encoding="utf-8")
     _seed_release_age(root)
+    _seed_listed_exceptions(root, skip=skip)
 
 
 @pytest.mark.parametrize("rel", ["", "web", "e2e", "deep/nested"])
@@ -223,6 +233,95 @@ def test_the_real_private_projects_are_found_when_checked_out() -> None:
     found = npmrc.private_project_dirs(root)
     assert "private/account" in found
     assert "private/account/web" in found
+
+
+def _seed_tree_file(root: pathlib.Path, rel: str, body: str) -> None:
+    target = root / rel
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(body, encoding="utf-8")
+
+
+def _seed_listed_exceptions(root: pathlib.Path, skip: str = "") -> None:
+    """Every SCRIPT_EXCEPTIONS directory as a standalone project with its reasoned override, as in the real tree."""
+    for directory, _reason, phrase in npmrc.SCRIPT_EXCEPTIONS:
+        if directory == skip:
+            continue
+        _seed_tree_file(root, directory + "/package.json", "{}\n")
+        _seed_tree_file(root, directory + "/package-lock.json", "{}\n")
+        _seed_tree_file(root, directory + "/.npmrc", "# %s\nignore-scripts=false\n" % phrase)
+
+
+def test_main_passes_the_listed_exceptions(tmp_path: pathlib.Path, monkeypatch) -> None:
+    """CONTROL: each listed directory with its reason comment passes, so the refusals below are about the planted change."""
+    _hardened_root(tmp_path)
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 0
+
+
+@pytest.mark.parametrize(
+    ("rel", "body"),
+    [
+        ("workers/new/.npmrc", "ignore-scripts=false\n"),  # an override in an unlisted directory
+        ("workers/new/.npmrc", "loglevel=warn\n"),  # unset ignore-scripts: npm defaults it to false
+        ("tools/x/.npmrc", "ignore-scripts=true\nallow-git=all\n"),  # allow-git loosened
+        ("tools/x/.npmrc", "ignore-scripts=true\nlegacy-peer-deps=true\n"),  # a forbidden key
+    ],
+)
+def test_main_refuses_a_weak_nested_npmrc(
+    tmp_path: pathlib.Path, monkeypatch, rel: str, body: str
+) -> None:
+    """RED FIRST: the gap review 80099530.1 found. The gate read the root `.npmrc` only, so a nested override was invisible."""
+    _hardened_root(tmp_path)
+    _seed_tree_file(tmp_path, rel, body)
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_main_refuses_a_listed_directory_without_its_reason(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    _hardened_root(tmp_path)
+    listed = npmrc.SCRIPT_EXCEPTIONS[0][0]
+    _seed_tree_file(tmp_path, listed + "/.npmrc", "ignore-scripts=false\n")
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_main_refuses_a_standalone_project_without_npmrc(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """Four Workers held a lockfile and no `.npmrc` until 2026-11-25, running lifecycle scripts by npm's default with nothing stating why."""
+    _hardened_root(tmp_path)
+    _seed_tree_file(tmp_path, "workers/new/package.json", "{}\n")
+    _seed_tree_file(tmp_path, "workers/new/package-lock.json", "{}\n")
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_main_refuses_a_stale_exception(tmp_path: pathlib.Path, monkeypatch) -> None:
+    """An entry whose directory is gone fails, so the exception list can only shrink with the tree."""
+    _hardened_root(tmp_path, skip=npmrc.SCRIPT_EXCEPTIONS[0][0])
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_main_refuses_a_tree_git_cannot_list(tmp_path: pathlib.Path, monkeypatch) -> None:
+    """VACUITY: an unlistable tree is UNCHECKED, never clean."""
+    shutil.rmtree(tmp_path / ".git")
+    _hardened_root(tmp_path)
+    monkeypatch.setenv(paths.ROOT_ENV, str(tmp_path))
+    assert npmrc.main([]) == 1
+
+
+def test_the_real_tree_scan_sees_every_worker() -> None:
+    """ANTI-VACUITY against the real tree: every tracked Worker `.npmrc` is listed, so a scan that found none cannot pass."""
+    root = paths.repo_root()
+    listed = npmrc.tree_paths(root)
+    assert listed is not None
+    findings, nested, standalone = npmrc.tree_findings(root, listed)
+    assert findings == []
+    assert nested >= len(npmrc.SCRIPT_EXCEPTIONS)
+    assert standalone >= len(npmrc.SCRIPT_EXCEPTIONS)
 
 
 def test_selftest_is_green() -> None:

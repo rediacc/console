@@ -77,7 +77,7 @@ WHAT v2 ADDED, AND WHY `cache-to` IS NOT THE EMITTER THIS MODULE REFUSES
   A name outside it is refused and NO FILE IS WRITTEN, which is the assertion that matters: an exit code alone would still leave a partial cache on disk for the next reader to trust.
 
 THE `STRIPE_WEBHOOK_SECRET` GUARD THAT PART 4 ASKED FOR IS DELIBERATELY ABSENT. Part 4 item 4 wanted "a refusal on `STRIPE_WEBHOOK_SECRET` until D3 lands", D3 being the collision where `.env`'s copy of that name was the committed E2E fixture while the store's was the real signing secret.
-D3 HAS landed: the local key is `STRIPE_E2E_WEBHOOK_SECRET`, a committed fixture in `private/account/dev.defaults.env`, and no profile in `.ci/config/secret-supply.json` binds a `STRIPE_*` name at all. A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
+D3 HAS landed, and its cause is gone: the committed fixture key and the local webhook listener were deleted with the Stripe integration, so no local file carries `STRIPE_WEBHOOK_SECRET` itself (the lifecycle harness's DEFAULTS fixture sets the differently named `STRIPE_E2E_WEBHOOK_SECRET`, which the store does not hold). A hardcoded refusal for a collision that no longer exists is dead code whose expiry has already passed, and it would refuse a caller that legitimately wants the production secret.
 """
 
 import contextlib
@@ -614,7 +614,23 @@ def read_token(env: dict | None = None) -> str:
     direct = environ.get(ACCESS_ENV, "")
     if direct:
         return direct
-    path = token_path(environ)
+    return _read_token_file(token_path(environ))
+
+
+def profile_token_path(file_name: str, env: Mapping[str, str] | None = None) -> str:
+    """Where a profile's own token file is: `file_name` in the directory of the default token file."""
+    return os.path.join(os.path.dirname(token_path(env)), file_name)
+
+
+def read_profile_token(file_name: str, env: dict | None = None) -> str:
+    """The token a profile with `token_file` fetches with: that file only, "" when absent.
+
+    NEITHER `BWS_ACCESS_TOKEN` NOR `BWS_ACCESS_TOKEN_FILE` IS CONSULTED. Both name the shared ci-shared credential, and the point of a separate file is that this profile's store is never reached with it. The mode check covers the profile file itself and its directory, the same rule as the default file's.
+    """
+    return _read_token_file(profile_token_path(file_name, os.environ if env is None else env))
+
+
+def _read_token_file(path: str) -> str:
     try:
         st = os.stat(path)
     except OSError:
@@ -1074,42 +1090,85 @@ def hydrate(
     need_req = [s for s in required if not environ.get(s[1])]
     need_opt = [s for s in optional if not environ.get(s[1])]
     resolved: dict[str, str] = {}
-    if need_req or need_opt:
-        token = read_token(environ)
+    # One fetch per token source: the default token, and one per distinct `token_file` a wanted profile names. A name goes to ONE source: required before optional, and a `token_file` source before the default one, whatever order the profiles were named in, because the store a `token_file` profile reads is the one built to hold its names.
+    groups: dict[str, tuple[list, list]] = {}
+    claimed: set[str] = set()
+    ordered = sorted(wanted, key=lambda n: not table[n].get("token_file"))
+    per_profile = {n: profile_specs(table, [n]) for n in ordered}
+    for pname in wanted:
+        groups.setdefault(str(table[pname].get("token_file") or ""), ([], []))
+    for half, need in ((0, need_req), (1, need_opt)):
+        for pname in ordered:
+            g = groups[str(table[pname].get("token_file") or "")][half]
+            for spec in per_profile[pname][half]:
+                if spec in need and spec[1] not in claimed:
+                    claimed.add(spec[1])
+                    g.append(spec)
+    for token_file, (g_req, g_opt) in groups.items():
+        if not (g_req or g_opt):
+            continue
+        if token_file:
+            token = read_profile_token(token_file, environ)
+            if (
+                not token
+                and not g_req
+                and not os.path.exists(profile_token_path(token_file, environ))
+            ):
+                print(
+                    "rediacc_ci.core.bws_env: the token file %s is missing; %d optional name(s) left unset: %s"
+                    % (
+                        profile_token_path(token_file, environ),
+                        len(g_opt),
+                        " ".join(s[1] for s in g_opt),
+                    ),
+                    file=err,
+                )
+                continue
+            if not token:
+                raise RefusalError(
+                    [
+                        "rediacc_ci.core.bws_env: the token file %s is missing or empty."
+                        % profile_token_path(token_file, environ),
+                        "  Profile(s) %s read their own store with it and never with the shared token. Only the operator creates it (mode 0600); the steps are in private/account/CLAUDE.md, Secret Rotation."
+                        % " ".join(n for n in wanted if table[n].get("token_file") == token_file),
+                    ]
+                )
+        else:
+            token = read_token(environ)
         if not token:
-            if need_req:
+            if g_req:
                 raise RefusalError(NO_TOKEN)
             print(
                 "rediacc_ci.core.bws_env: no token; %d optional name(s) left unset: %s"
-                % (len(need_opt), " ".join(s[1] for s in need_opt)),
+                % (len(g_opt), " ".join(s[1] for s in g_opt)),
                 file=err,
             )
-        else:
-            fetch_env = dict(environ, **{ACCESS_ENV: token})
-            bws = binary(fetch_env)
-            if not bws:
-                raise RefusalError(NO_BINARY)
-            rows = listing(bws, fetch_env)
-            absent_req = [n for n, _l in need_req if not pick(rows, n)]
-            if absent_req:
-                raise RefusalError(
-                    [
-                        "rediacc_ci.core.bws_env: %d required name(s) absent or empty in the store: %s"
-                        % (len(absent_req), " ".join(absent_req)),
-                        *MISSING_TAIL,
-                    ]
-                )
-            absent_opt = [n for n, _l in need_opt if not pick(rows, n)]
-            if absent_opt:
-                print(
-                    "rediacc_ci.core.bws_env: %d optional name(s) absent in the store, left unset: %s"
-                    % (len(absent_opt), " ".join(absent_opt)),
-                    file=err,
-                )
-            for name, local in need_req + need_opt:
-                value = pick(rows, name)
-                if value:
-                    resolved[local] = value
+            continue
+        fetch_env = dict(environ, **{ACCESS_ENV: token})
+        bws = binary(fetch_env)
+        if not bws:
+            raise RefusalError(NO_BINARY)
+        rows = listing(bws, fetch_env)
+        absent_req = [n for n, _l in g_req if not pick(rows, n)]
+        if absent_req:
+            raise RefusalError(
+                [
+                    "rediacc_ci.core.bws_env: %d required name(s) absent or empty in the store: %s"
+                    % (len(absent_req), " ".join(absent_req)),
+                    *MISSING_TAIL,
+                ]
+            )
+        absent_opt = [n for n, _l in g_opt if not pick(rows, n)]
+        if absent_opt:
+            print(
+                "rediacc_ci.core.bws_env: %d optional name(s) absent in the store, left unset: %s"
+                % (len(absent_opt), " ".join(absent_opt)),
+                file=err,
+            )
+        for name, local in g_req + g_opt:
+            value = pick(rows, name)
+            if value:
+                resolved[local] = value
     environ.update(resolved)
     # `passes_token`: the child itself runs `bws` (the rotation tool writes `bitwarden-sm:` consumers), so it gets the bootstrap token too. Every other profile's child never sees it.
     if any(table[n].get("passes_token") for n in wanted) and not environ.get(ACCESS_ENV):

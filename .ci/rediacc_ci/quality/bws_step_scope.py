@@ -20,7 +20,7 @@ THE NAMES are `.ci/config/bws-step-scoped.json`, by Bitwarden NAME (the left-han
 
 A READ is `env.NAME`, `$NAME`, `${NAME}` or a quoted `'NAME'`/`"NAME"` inside an `environ` lookup, outside comments, anywhere in the step (its `env:`, `with:`, `if:` and `run:`). What a step reads IMPLICITLY from its process environment cannot be seen by any text scan, which is why (ii) refuses EVERY non-consumer step in the window rather than only the ones that mention the name.
 
-THE PARSE IS SHARED, NOT RE-TYPED. The `NAME > ENV` grammar is `check_bws_map.parse_requests`, loaded by path (`.ci/scripts/quality/check_bws_map.py` is an entry point, not a package module), because two parsers for one grammar is how a block comes to mean different things to two gates. Steps come from `rediacc_ci.workflows`, the tree's one YAML parser; each structural step is mapped to its line range by a line scan, and a disagreement
+THE PARSE IS SHARED, NOT RE-TYPED. The `NAME > ENV` grammar is `rediacc_ci.quality.bws_map.parse_requests`, imported from `rediacc_ci.quality.bws_map`, because two parsers for one grammar is how a block comes to mean different things to two gates. Steps come from `rediacc_ci.workflows`, the tree's one YAML parser; each structural step is mapped to its line range by a line scan, and a disagreement
 between the two counts is an instrument failure (exit 2), never a silent skip.
 
 ANTI-VACUITY. Zero windows is a failure. Fewer windows than `MIN_WINDOWS` is a failure (raise it when a job gains a scoped fetch; lower it only when a job is deleted). A config name that is not in `.ci/config/bws-secret-map.json`, or that no fetch requests, is a dead entry and a failure. A config reason that does not start with `BLOCKER:` or fails `rediacc_ci.core.allowlist.validate_reason` is a failure. The success line prints files, jobs, windows and consumers so a collapse is visible.
@@ -28,13 +28,23 @@ ANTI-VACUITY. Zero windows is a failure. Fewer windows than `MIN_WINDOWS` is a f
 THE SEAM. `WORKFLOW_DIR` replaces the corpus with every `*.yml` in that directory, and `BWS_STEP_SCOPED_CONFIG` replaces the config, so a test can drive the real scan against a fixture. Neither weakens a rule: an empty directory has zero windows and reds.
 
 KNOWN LIMIT, recorded rather than hidden. A process the consumer starts and leaves running keeps the key in its own environment (`.ci/rediacc_ci/testrun/start_account.py` starts the per-run account server with `**os.environ`), and a later step running as the same user can read `/proc/<pid>/environ`. Blanking GITHUB_ENV cannot reach it; the plan's follow-up item owns it.
+
+---- gate ----
+step: Bitwarden step-scoped secrets
+needs: none
+selftest: true
+lane: quality-security
+why: a production signing key fetched at job start through bws-secrets lands in
+     GITHUB_ENV and is readable by every later step of the job. This keeps each
+     listed key to a dedicated fetch, its consumer and an always() scrub.
+---- end gate ----
 """
 
 from __future__ import annotations
 
 import contextlib
 import functools
-import importlib.util
+import importlib
 import io
 import json
 import os
@@ -54,16 +64,15 @@ if TYPE_CHECKING:
 
 CONFIG_REL = ".ci/config/bws-step-scoped.json"
 MAP_REL = ".ci/config/bws-secret-map.json"
-BWS_MAP_GATE_REL = ".ci/scripts/quality/check_bws_map.py"
-BWS_MAP_MODULE = "check_bws_map_for_step_scope"
+BWS_MAP_MODULE = "rediacc_ci.quality.bws_map"
 FETCH_ACTION = "./.github/actions/bws-secrets"
 SCRUB_ACTION = "./.github/actions/bws-scrub"
 
 WORKFLOW_DIR_ENV = "WORKFLOW_DIR"
 CONFIG_ENV = "BWS_STEP_SCOPED_CONFIG"
 MIN_WINDOWS_ENV = "BWS_STEP_SCOPE_MIN_WINDOWS"
-# Counted per exported variable: 1 ACCOUNT_ED25519_PRIVATE_KEY window (cd-deploy-worker, for the www Worker; account Workers sign through LICENSE_SIGNER since PLAN-enterprise-isolation S4 and every CI job mints its own pair since PLAN-production-key-only N5), 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch.
-DEFAULT_MIN_WINDOWS = 8
+# Counted per exported variable: 1 ACCOUNT_ED25519_PRIVATE_KEY window (cd-deploy-worker, for the www Worker; account Workers sign through LICENSE_SIGNER since PLAN-enterprise-isolation S4 and every CI job mints its own pair since PLAN-production-key-only N5), 3 ACCOUNT_X25519_PRIVATE_KEY windows sharing the deploy jobs' fetch, and two cd-stage windows for each of the two GPG variables. Raise it when a job gains a scoped fetch; the deploy-preview window went when that job began generating its tunnel key per preview (PLAN-pr-path-ephemeral-credentials D3), 8 to 7.
+DEFAULT_MIN_WINDOWS = 7
 
 ALWAYS = "always()"
 MIN_CONTROLS = 20
@@ -108,20 +117,19 @@ class Report:
 
 @functools.cache
 def bws_map_gate() -> types.ModuleType:
-    """`.ci/scripts/quality/check_bws_map.py`, loaded by path once."""
-    path = paths.repo_root() / BWS_MAP_GATE_REL
-    # The entry point opens with `import _cipath`, which resolves from its own directory; a path LOAD does not put that directory on sys.path the way a path INVOCATION does.
-    paths.on_sys_path(path.parent)
-    spec = importlib.util.spec_from_file_location(BWS_MAP_MODULE, path)
-    if spec is None or spec.loader is None:
-        msg = "cannot load %s" % path
-        raise InstrumentError(msg)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
+    """`rediacc_ci.quality.bws_map`, the gate whose `parse_requests` this one reuses."""
+    try:
+        module = importlib.import_module(BWS_MAP_MODULE)
+    except ImportError as exc:
+        msg = "%s cannot be imported (%s); this gate reuses its parse_requests" % (
+            BWS_MAP_MODULE,
+            exc,
+        )
+        raise InstrumentError(msg) from exc
     if not callable(getattr(module, "parse_requests", None)):
         msg = (
             "%s no longer defines parse_requests; this gate reuses it and cannot parse a fetch without it"
-            % path
+            % BWS_MAP_MODULE
         )
         raise InstrumentError(msg)
     return module
@@ -847,3 +855,10 @@ __all__ = [
     "selftest",
     "verdict",
 ]
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_bws_step_scope.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

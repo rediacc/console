@@ -18,7 +18,9 @@ import subprocess
 import time
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.wellknown import GH_REPO, RENET_REPO
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_merge_with_unpushed", "EDGE_CASES", "ENVS")
 
 CHAIN = "pre-bash"
 ORDER = 27
@@ -26,24 +28,6 @@ ORDER = 27
 # On `main` there is no feature branch to strand, and /pr-merge deliberately ends there; without this arm the guard refuses the last step of the sanctioned landing sequence.
 DEFECT = ('if branch == "main":', "if False:")
 
-# THE THREE GIT WORLDS THIS GUARD DISTINGUISHES, and it distinguishes none of them inside a feature worktree. Run against this checkout it fails open on every input, because no `origin/<branch>` ref exists here -- so the whole corpus would have compared two constants. `test_every_guard_discriminates` said so on the first run, which is what these are an answer to.
-ENVS = [
-    ("ahead", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-ahead}"}, {}),
-    ("synced", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-synced}"}, {}),
-    ("main", {"CLAUDE_PROJECT_DIR": "{FIXTURE:git-main}"}, {}),
-    # This checkout's SHAPE, never the checkout itself: a real-looking branch with history and a remote-tracking ref behind it. The live spelling was retired on 2026-09-22 after the measured divergence (66 unpushed commits from bash, 67 from the port), and the per-session clone that replaced it on 2026-09-24, because a golden cannot freeze a tree that moves. See `_synthetic_this_worktree` in test_guards_differential.py.
-    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
-]
-
-EDGE_CASES = [
-    ("the verb at a command position", "gh pr merge 42"),
-    # `gh pr view`, `gh pr list`, and a merge typed inside a heredoc that documents this hook are all none of its business.
-    ("a different pr subcommand", "gh pr view 42"),
-    ("a merge for another repository", ("gh pr merge 42 --repo " + RENET_REPO)),
-    ("a merge for this repository, named", ("gh pr merge 42 --repo " + GH_REPO)),
-    ("--repo with an equals sign", ("gh pr merge 42 --repo=" + RENET_REPO)),
-    ("the verb inside quoted prose", "echo 'run gh pr merge when green'"),
-]
 
 # THE PR'S OWN TREE (agent/plans/PLAN-two-track-merge-dev.md, box LT12). With a landing record the merged PR's head is read from `gh pr view` (its `headRefName`), not from the session root's HEAD: a merge typed in the development tree merges the landing tree's branch, and judging the development branch there refused on the wrong commits and let the landing tree's unpushed ones be orphaned. Planted, the head is the root's branch again.
 TWO_TREE_DEFECT = ("head = _pr_head(root, runs)", 'head = ""')

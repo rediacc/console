@@ -120,7 +120,8 @@ def test_parse_bump_reads_the_three_verdicts() -> None:
         "bump", OLD, NEW
     )
     assert ab.parse_bump(
-        1, "nothing written.\nREFUSED os:opensuse-16.0-ceph: current: current\n"
+        1,
+        "nothing written.\nREFUSED os:opensuse-16.0-ceph: already current: pinned at 20.1.0, no newer release\n",
     ) == ab.Plan("none")
     with pytest.raises(ab.AutobumpError, match="no obs-mirror tag"):
         ab.parse_bump(1, "REFUSED os:opensuse-16.0-ceph: no obs-mirror tag for %s\n" % NEW)

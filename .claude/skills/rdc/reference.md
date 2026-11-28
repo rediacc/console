@@ -501,6 +501,7 @@ Deploy backup schedule to a remote machine (systemd timers)
 - `--dry-run`: Preview generated units without deploying
 - `--force`: Proceed even if a backup is currently running (new unit applies on next tick; running invocation keeps its old unit)
 - `--reset-failed`: Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)
+- `--adopt-origin`: Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)
 - `--debug`: Enable debug output
 
 > MCP excluded: Installs systemd backup timers on a machine; use CLI directly.
@@ -964,8 +965,9 @@ Provision VM cluster locally
 - `--basic`: Minimal cluster (bridge + 1 worker)
 - `--lite`: Skip VM provisioning (status only)
 - `--skip-orchestration`: Skip cluster orchestration
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--os <name>`: VM operating system (e.g., ubuntu-24.04, debian-13)
+- `--windows <ids>`: Windows client VM ids to provision (comma-separated, reserved range 31-39; sets VM_WINDOWS)
 - `--debug`: Enable debug output
 
 ### rdc ops down
@@ -974,7 +976,7 @@ Destroy VM cluster
 
 **Options:**
 
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--debug`: Enable debug output
 
 ### rdc ops status
@@ -983,7 +985,7 @@ Show VM cluster status
 
 **Options:**
 
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 
 ### rdc ops ssh
 
@@ -993,7 +995,7 @@ SSH into a VM
 
 - `--vm-id <id>`: Virtual machine ID
 - `-c, --command <cmd>`: Execute a command instead of interactive shell
-- `--backend <backend>`: Virtualization backend (kvm|qemu, auto-detected)
+- `--backend <backend>`: Virtualization backend (kvm|qemu|hyperv, auto-detected)
 - `--user <user>`: SSH username for VM connection
 
 ### rdc ops setup
@@ -1297,6 +1299,28 @@ Git-style file-level diff between two copy-on-write forked repositories. Reports
 
 > MCP tool
 
+### rdc repo flows <ref>
+
+List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+
+> MCP tool
+
+### rdc repo opens <ref>
+
+List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+
+> MCP tool
+
 ### rdc repo commit <ref>
 
 Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only, so it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.
@@ -1471,6 +1495,7 @@ List the repository images on a machine and whether each one is an orphan that n
 
 **Options:**
 
+- `--executor-events <file>`: Read the executor's events (JSON lines from the executor_orphans tool) and mark an orphan they name as executor-created
 - `--debug`: Enable debug output
 
 ### rdc repo admin orphan delete <ref>
@@ -2074,8 +2099,7 @@ Link this config to remote encrypted storage
 
 **Options:**
 
-- `--master-password`: Enroll headlessly with a pre-provisioned password slot (no browser)
-- `--master-password-stdin`: Like --master-password, reading the master password from stdin
+- `--machine-secret <id>`: Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET, piped stdin or a hidden terminal prompt, never the command line
 - `--api-url <url>`: Account server URL
 - `--force`: Replace differing local content with the server copy without confirmation
 - `--config-id <id>`: Attach to this existing config of the store instead of creating a new entry
@@ -2108,14 +2132,6 @@ Publish an earlier version of this config as its newest version
 **Options:**
 
 - `-y, --yes`: Skip confirmation prompt
-
-### rdc config remote master-password change
-
-Change the master password: re-wrap the config key from this device's enrollment under a new password slot
-
-**Options:**
-
-- `--new-master-password-stdin`: Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)
 
 ### rdc config remote refresh
 
@@ -2176,6 +2192,7 @@ Open the active config in $EDITOR as a redacted JSONC projection. Humans only; a
 
 - `--reveal`: Show plaintext for sensitive values (interactive TTY only; audited)
 - `--dump`: Print current config as JSONC to stdout (read-only; safe for agents when redacted)
+- `--redacted`: Redact sensitive values in --dump output (the default; cannot be combined with --reveal)
 - `--apply <file>`: Apply an edited JSONC file (skips $EDITOR launch)
 - `--current-secrets <file>`: JSON file mapping pointer→old plaintext for knowledge-gate on --apply
 - `--editor <cmd>`: Editor command override (follows git precedence: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)
@@ -2279,6 +2296,64 @@ Show one feedback report by its id (or a unique prefix of it), with its status, 
 
 > MCP tool
 
+### rdc incident status [id]
+
+List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.
+
+> MCP tool
+
+### rdc incident declare <ref>
+
+Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.
+
+**Options:**
+
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)
+- `--until <when>`: End of the window, in the same forms (default: now)
+- `--aware-at <when>`: When the organization became aware, as an ISO 8601 instant; never later than the declaration (default: now)
+- `--resume <id>`: Run the machine steps of this declared incident again, only those whose last outcome is not ok
+
+> MCP excluded: Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
+
+### rdc incident close <id>
+
+Close an incident. Nothing is released at once: the eviction hold and the R2 lock rules end 30 days after the close.
+
+> MCP excluded: Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
+
+### rdc incident export <id>
+
+Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.
+
+**Options:**
+
+- `--out <dir>`: Directory to write (default: incident-<id>)
+- `--stage <stage>`: Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)
+- `--format <format>`: Report format with --stage: json (default), stix or pdf
+
+> MCP tool
+
+### rdc forensics verify
+
+Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. With --report a signed incident report is checked instead, against the public record of its id and the published report key; it exits 1 when the content or signature does not match.
+
+**Options:**
+
+- `--dir <path>`: Evidence directory to verify
+- `--report <file>`: Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)
+- `--id <report-id>`: Report id, when the file name does not carry it
+- `--since <when>`: Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)
+- `--until <when>`: End of the window, in the same forms (default: the last day in the directory)
+- `--machine-key <machine=hex>`: Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)
+
+> MCP tool
+
+### rdc forensics level <ref> <level>
+
+Set the forensic capture level of a repository through the forensics_level function on its machine: basic, standard or full. The collector caps the level at what the plan includes.
+
+> MCP excluded: Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.
+
 ### rdc version
 
 Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.
@@ -2288,6 +2363,12 @@ Print the CLI version, platform, update channel and the active license: the plan
 - `--json`: Print machine-readable JSON
 
 > MCP tool
+
+### rdc completion <shell>
+
+Print a completion script for the named shell. Command, flag and choice words come from the CLI contract and complete without starting the CLI; machine, repository and other config resource names come from the hidden __complete lookup, kept per shell session until the config file changes. Load it with eval "$(rdc completion bash)" or eval "$(rdc completion zsh)", rdc completion fish | source, or rdc completion pwsh | Out-String | Invoke-Expression.
+
+> MCP excluded: Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.
 
 ### rdc vscode connect <target>
 
@@ -2324,6 +2405,26 @@ Stop the browser VS Code server
 
 - `--server-provider <id>`: Browser VS Code server implementation (openvscode, code-server)
 
+### rdc vscode expose <ref>
+
+Start the repository's browser VS Code as a container on its own Docker daemon, published at vscode.<repo>.<machine>.<domain> behind the portal-token gate. Open it from the web console, which mints the token; it stops after 15 minutes without a heartbeat.
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
+> agent: fork-only (a grand needs REDIACC_ALLOW_GRAND_REPO; ops VMs exempt)
+
+### rdc vscode unexpose <ref>
+
+Stop and remove the repository's exposed VS Code container at once, closing every open editor session.
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
 ### rdc vscode list
 
 List configured VS Code SSH connections
@@ -2347,7 +2448,7 @@ Check VS Code installation and configuration
 
 ### rdc tools install <tool>
 
-Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
+Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. `tofu` installs OpenTofu on any platform. `rsync` installs the MSYS2 rsync and the runtime libraries it loads, on Windows only; elsewhere rsync comes from the system package manager. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.
 
 **Options:**
 
@@ -2378,6 +2479,26 @@ Check for new CLI versions and apply updates. Supports --check-only to check wit
 - `--channel <channel>`: Set release channel (stable or edge)
 
 > MCP excluded: CLI self-update, not a remote operation
+
+### rdc preview use <name>
+
+Check the preview's build of the CLI against both of its origins, keep the current CLI as rdc.pre-preview, install the preview's CLI and point this config at the preview server. A server gets the preview's renet only the first time the CLI provisions it.
+
+**Options:**
+
+- `--accept-format-change`: Accept the warning that this preview changes an on-disk format, without asking
+
+### rdc preview leave
+
+List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.
+
+**Options:**
+
+- `--machine <name>`: Switch back only this server
+
+### rdc preview status
+
+Show the active preview, its licence end date, the servers on its renet and the way back.
 
 ### rdc subscription login
 
@@ -2436,8 +2557,8 @@ Retire the license of a repository that is gone, so it leaves the license counts
 **Options:**
 
 - `--force`: Retire a license whose repository is still in this config and not hard-expired
-- `--expired`: Retire every hard-expired license of a deleted repository or one not in this config
-- `--dry-run`: With --expired: list what would be retired and change nothing
+- `--expired`: List every hard-expired license of a repository that is gone: deleted, not in this config, or absent from its machine
+- `--apply`: With --expired: retire the listed licenses (without it, --expired only lists them)
 
 ### rdc subscription refresh
 
@@ -2465,7 +2586,9 @@ Run this process as an executor so clients can run commands through it instead o
 **Options:**
 
 - `-p, --port <port>`: Port to listen on (default: 8080)
-- `--host <host>`: Address to bind (default: 0.0.0.0)
+- `--host <host>`: Address to bind (default 127.0.0.1 for a daemon, 0.0.0.0 in a container)
+- `--tls-cert <path>`: PEM certificate file; with --tls-key, serve HTTPS
+- `--tls-key <path>`: PEM private key file for --tls-cert
 - `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.
@@ -2491,7 +2614,7 @@ Install the self-hosted account server on an existing machine: check the machine
 - `--tls-cert <file>`: Certificate file in PEM form (with --tls byo), covering both domains
 - `--tls-key <file>`: Private key file of that certificate (with --tls byo)
 - `--tls-ca <file>`: CA certificate the server's certificate chains to, used for the health check
-- `--licence <mode>`: auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier
+- `--licence <mode>`: auto (the default): a delegation certificate from the logged-in registered account. free is refused: an on-premise server needs a registered account (rdc subscription login)
 - `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
 - `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
@@ -2499,6 +2622,7 @@ Install the self-hosted account server on an existing machine: check the machine
 - `--no-dns-wait`: Print the DNS records without waiting for them to resolve
 - `--offline`: Install air-gapped from --bundle: no upstream, registry or package call
 - `--bundle <dir>`: Offline bundle directory written by 'rdc server bundle'
+- `--signer <fingerprint>`: Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key
 - `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
 - `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
@@ -2526,6 +2650,7 @@ Upgrade an installed server: fork its repository as a rollback point, place the 
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
 - `--local-image`: Save the --image from the local Docker and ship it instead of pulling
 - `--bundle <dir>`: Upgrade from an offline bundle written by 'rdc server bundle'
+- `--signer <fingerprint>`: Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key
 - `--force`: Apply a newer template even over local edits to the deployed files
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
 - `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
@@ -2579,5 +2704,6 @@ Build an offline bundle (images, renet, manifest, checksums) for an air-gapped i
 - `--tag <tag>`: Server image tag to bundle
 - `--image <ref>`: Bundle this local image instead of pulling a tag
 - `--with-cli <platforms>`: Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64
+- `--no-models`: Leave the detection models out of the bundle
 
 > MCP excluded: Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.

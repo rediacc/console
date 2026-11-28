@@ -72,8 +72,8 @@ class Two:
         self.landing_sub_head = tip(self.landing_sub)
 
 
-def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
-    """The two-tree promotion fixture. `picks` landing commits reach origin/main; `dev_conflict` makes the first development commit collide with main's unrelated commit; `absorb_dev` puts the first development commit's change on main inside a larger commit, so the rebase drops it as empty."""
+def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False, dev_work=True):
+    """The two-tree promotion fixture. `picks` landing commits reach origin/main; `dev_conflict` makes the first development commit collide with main's unrelated commit; `absorb_dev` puts the first development commit's change on main inside a larger commit, so the rebase drops it as empty; `dev_work=False` leaves the development branch at the landing tip, with no commit of its own."""
     sub_origin = base_dir / "sub.git"
     spike.must(base_dir, "init", "-q", "--bare", "-b", "main", str(sub_origin))
     seed = base_dir / "sub-seed"
@@ -93,12 +93,14 @@ def build_two(base_dir, *, picks=2, dev_conflict=False, absorb_dev=False):
     landing_shas = [commit(main, "l1.txt"), commit(main, "l2.txt")]
     spike.must(main, "push", "-q", "origin", LANDING)
     spike.must(main, "switch", "-q", "-c", DEV)
-    commit(main, "other.txt" if dev_conflict else "d1.txt", "dev side\n", "D1")
-    # The development branch's submodule commit sits on the development name in the main checkout's submodule tree, pushed nowhere.
-    spike.must(main / SUB, "switch", "-q", "-c", DEV)
-    sub_link = commit(main / SUB, "s1.txt")
-    spike.must(main, "add", "--", SUB)
-    commit(main, "d2.txt", None, "D2")
+    sub_link = None
+    if dev_work:
+        commit(main, "other.txt" if dev_conflict else "d1.txt", "dev side\n", "D1")
+        # The development branch's submodule commit sits on the development name in the main checkout's submodule tree, pushed nowhere.
+        spike.must(main / SUB, "switch", "-q", "-c", DEV)
+        sub_link = commit(main / SUB, "s1.txt")
+        spike.must(main, "add", "--", SUB)
+        commit(main, "d2.txt", None, "D2")
     landing = base_dir / "console-landing"
     spike.must(main, "worktree", "add", "-q", str(landing), LANDING)
     spike.must(landing, "-c", "protocol.file.allow=always", "submodule", "update", "-q", "--init")
@@ -123,14 +125,31 @@ def two(tmp_path):
     return build_two(tmp_path.resolve())
 
 
-def fake_gh(state="MERGED", pr=None, fail=False):
+MERGED_SHA = "f" * 40
+GREEN = {"status": "completed", "conclusion": "success"}
+
+
+def fake_gh(state="MERGED", pr=None, fail=False, runs=None, merged=MERGED_SHA):
+    """gh answers for promotion. `runs` maps a workflow file to the run list gh prints for it at the merged sha (newest first); both release workflows default to one green run."""
     pr = {"number": 42, "isDraft": True} if pr is None else pr
+    lists = {"ci.yml": [GREEN], "cd-release-edge.yml": [GREEN], **(runs or {})}
 
     def gh(args, _cwd):
-        if fail or args[:2] != ["pr", "view"]:
+        if fail:
             return 1, ""
-        if args[2] == LANDING and args[4] == "state":
-            return 0, json.dumps({"state": state})
+        if args[:2] == ["run", "list"]:
+            workflow = args[args.index("--workflow") + 1]
+            assert args[args.index("--commit") + 1] == merged
+            rows = lists.get(workflow)
+            if rows is None:
+                return 1, ""
+            return 0, json.dumps(
+                [{"databaseId": 900 + i, "headSha": merged, **r} for i, r in enumerate(rows)]
+            )
+        if args[:2] != ["pr", "view"]:
+            return 1, ""
+        if args[2] == LANDING and args[4] == "state,mergeCommit":
+            return 0, json.dumps({"state": state, "mergeCommit": {"oid": merged}})
         if args[2] == DEV and args[4] == "number,isDraft":
             return 0, json.dumps(pr)
         return 1, ""
@@ -214,7 +233,9 @@ def test_promote_refuses_a_landing_submodule_branch_the_gitlink_lacks(two):
 
 
 def test_promote_refuses_a_dirty_landing_submodule_tree(two):
-    spike.write(two.landing_sub / "scratch.txt", "work\n")
+    # A modified tracked file in the submodule tree refuses; untracked files no longer count (ASKED:2026-11-22T18:55Z).
+    tracked = spike.must(two.landing_sub, "ls-files").splitlines()[0]
+    spike.write(two.landing_sub / tracked, "changed\n")
     with pytest.raises(promote_mod.PromoteRefusedError, match="submodule tree sub of the landing"):
         run_promote(two.main)
     untouched(two)
@@ -260,10 +281,61 @@ def test_promote_without_a_pr_number_names_the_branch(two):
 
 @pytest.mark.parametrize("where", ["main", "landing"])
 def test_promote_refuses_a_dirty_tree_in_either_checkout(two, where):
-    spike.write(getattr(two, where) / "scratch.txt", "work\n")
+    # A modified TRACKED file refuses; untracked files no longer count (operator ruling ASKED:2026-11-22T18:55Z).
+    tree = getattr(two, where)
+    tracked = spike.must(tree, "ls-files").splitlines()[0]
+    spike.write(tree / tracked, "changed\n")
     with pytest.raises(promote_mod.PromoteRefusedError, match="is dirty"):
         run_promote(two.main)
     untouched(two)
+
+
+def test_an_untracked_file_of_other_work_does_not_block_promotion(two):
+    spike.write(two.main / "agent" / "other-session" / "notes.md", "theirs\n")
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert (two.main / "agent" / "other-session" / "notes.md").read_text() == "theirs\n"
+
+
+def test_promote_ignores_the_machine_local_settings_file(two):
+    """.claude/settings.local.json is never committed, so it alone does not make the main checkout dirty."""
+    spike.write(two.main / ".claude" / "settings.local.json", "{}\n")
+    assert run_promote(two.main) == "gh pr ready 42"
+
+
+def test_the_settings_file_is_ignored_when_it_is_the_first_dirty_row(two):
+    """A tracked, modified settings.local.json sorts first; the stripped porcelain output must not defeat the exemption."""
+    target = two.main / ".claude" / "settings.local.json"
+    spike.write(target, "{}\n")
+    spike.must(two.main, "add", "-f", "--", ".claude/settings.local.json")
+    spike.must(
+        two.main, "commit", "-qm", "track local settings", "--", ".claude/settings.local.json"
+    )
+    spike.write(target, '{"changed": true}\n')
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert target.read_text(encoding="utf-8") == '{"changed": true}\n'
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["{ not json\n", '{"records": [{"except": []}]}\n'],
+    ids=["unparseable", "a record with no glob"],
+)
+def test_an_unreadable_record_policy_refuses_by_name(two, text):
+    """A record policy that exists and cannot be read is not an empty record set: read as one, every record path counts as dirt and the refusal names the wrong cause (stop-gate judge 2026-11-23)."""
+    spike.write(two.main / ".ci" / "policy" / "record-paths.json", text)
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"record-paths\.json"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_control_a_readable_record_policy_exempts_its_records(two):
+    """The silent control for the refusal above: a readable policy is read, and a dirty path it lists is a record, not dirt."""
+    spike.write(
+        two.main / ".ci" / "policy" / "record-paths.json", '{"records": [{"glob": "*.txt"}]}\n'
+    )
+    tracked = next(p for p in spike.must(two.main, "ls-files").splitlines() if p.endswith(".txt"))
+    spike.write(two.main / tracked, "a record rewrite\n")
+    assert promote_mod._dirty(two.main) == []
 
 
 @pytest.mark.parametrize(
@@ -352,6 +424,134 @@ def test_promote_a_failed_submodule_switch_names_what_is_left(two, monkeypatch):
     assert "git -C %s switch --no-track -C %s %s" % (two.landing_sub, DEV, two.sub_link) in text
     assert "git -C %s switch --no-track -c %s %s" % (two.main, NEXT, DEV) in text, text
     assert record_of(two.main) == {"path": str(two.landing), "branch": DEV}
+
+
+# ---- the D3 premises (PLAN-simple-two-tree-loop B3) ---------------------------
+
+
+RED = {"status": "completed", "conclusion": "failure"}
+PENDING = {"status": "in_progress", "conclusion": ""}
+
+
+@pytest.mark.parametrize(
+    ("runs", "why"),
+    [
+        ({"ci.yml": [RED]}, "Console CI on main .* is failure"),
+        ({"cd-release-edge.yml": [PENDING]}, "the edge release .* is in_progress"),
+        ({"cd-release-edge.yml": []}, "has no cd-release-edge.yml run"),
+        # The newest run decides: an older green run under a newer red one is still red.
+        ({"ci.yml": [RED, GREEN]}, "Console CI on main .* is failure"),
+        ({"ci.yml": None}, "gh could not list the ci.yml runs"),
+    ],
+)
+def test_promote_refuses_a_release_that_is_not_fully_green(two, runs, why):
+    with pytest.raises(promote_mod.PromoteRefusedError, match=why):
+        run_promote(two.main, gh=fake_gh(runs=runs))
+    untouched(two)
+
+
+def test_promote_control_a_rerun_turned_green_is_admitted(two):
+    assert run_promote(two.main, gh=fake_gh(runs={"ci.yml": [GREEN, RED]})) == "gh pr ready 42"
+
+
+def test_promote_refuses_a_merged_pr_gh_names_no_merge_commit_for(two):
+    with pytest.raises(promote_mod.PromoteRefusedError, match="no merge commit"):
+        run_promote(two.main, gh=fake_gh(merged=""))
+    untouched(two)
+
+
+PLAN = "PLAN-fixture.md"
+WRITER_SIG = "aaaa1111"
+
+
+def plan_commit(two, boxes):
+    """A development commit adding agent/plans/PLAN-fixture.md with `boxes` and a Plan-Box trailer naming it; the fixture's tip moves with it."""
+    rel = "agent/plans/%s" % PLAN
+    body = "# PLAN: fixture\nStatus: approved\n\n## Tasks\n\n%s\n" % "\n".join(boxes)
+    spike.write(two.main / rel, body)
+    spike.must(two.main, "add", "--", rel)
+    message = "feat: plan work\n\nPlan-Box: %s#%s clauses=all" % (PLAN, WRITER_SIG)
+    spike.must(two.main, "commit", "--no-gpg-sign", "-q", "-m", message)
+    two.dev_tip = tip(two.main)
+
+
+def test_promote_refuses_a_plan_with_an_open_writer_box(two):
+    plan_commit(
+        two,
+        [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [ ] W2 [writer] The second writer box, still open.",
+            "- [ ] V1 [live] The live run, open.",
+        ],
+    )
+    with pytest.raises(promote_mod.PromoteRefusedError, match="not code-complete: 1 open"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_promote_control_a_plan_with_only_a_live_box_open_is_admitted(two):
+    plan_commit(
+        two,
+        [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [x] W2 [writer] The second writer box, done.",
+            "- [ ] V1 [live] The live run, open for the landing tree.",
+            "- [ ] L1 [lead] The lead's measurement, open.",
+        ],
+    )
+    assert run_promote(two.main) == "gh pr ready 42"
+    assert spike.out(two.landing, "symbolic-ref", "--short", "HEAD") == DEV
+
+
+def test_the_hook_reader_names_the_box_promote_refuses_on(two):
+    """PLAN-stop-hook-retro-20261123 D1: the Stop hook's landing-stack check and step 5 read one answer."""
+    plan_commit(two, ["- [ ] W2 [writer] The second writer box, still open."])
+    shas = promote_mod._dev_commits(two.main, DEV)
+    found = lease._hook_module("wl_stack").open_writer_boxes(two.main, shas)
+    assert found == [("agent/plans/%s" % PLAN, ["W2 [writer] The second writer box, still open."])]
+    with pytest.raises(promote_mod.PromoteRefusedError, match="not code-complete: 1 open"):
+        run_promote(two.main)
+
+
+def test_code_complete_raises_on_the_shared_reader_answer(two, monkeypatch):
+    """Mutant guard: step 5 asks wl_stack.open_writer_boxes, so a box only that reader sees refuses."""
+    stack = lease._hook_module("wl_stack")
+    seen = []
+
+    def fake(_root, shas):
+        seen.append(list(shas))
+        return [("agent/plans/PLAN-shared.md", ["S1 [writer] Seen by the shared reader only."])]
+
+    monkeypatch.setattr(stack, "open_writer_boxes", fake)
+    with pytest.raises(
+        promote_mod.PromoteRefusedError, match=r"PLAN-shared\.md is not code-complete: 1 open"
+    ):
+        run_promote(two.main)
+    assert seen
+    assert seen[0]
+    untouched(two)
+
+
+def test_promote_refuses_a_named_plan_the_checkout_lacks(two):
+    commit(two.main, "d3.txt", None, "feat: d3\n\nPlan-Box: PLAN-absent.md#bbbb2222 clauses=all")
+    two.dev_tip = tip(two.main)
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"PLAN-absent\.md"):
+        run_promote(two.main)
+    untouched(two)
+
+
+def test_promote_with_no_development_commits_idles(tmp_path, capfd):
+    two = build_two(tmp_path.resolve(), dev_work=False)
+    # The release premise is never read: a red main would refuse if it were.
+    assert run_promote(two.main, gh=fake_gh(runs={"ci.yml": [RED]})) is None
+    assert "the landing tree idles and no PR is opened" in capfd.readouterr().err
+    untouched(two)
+
+
+def test_promote_cmd_idle_exits_zero_with_nothing_on_stdout(monkeypatch, capfd):
+    monkeypatch.setattr(promote_mod, "promote", lambda _root: None)
+    assert promote_mod.cmd_promote([]) == 0
+    assert capfd.readouterr().out == ""
 
 
 def test_promote_cmd_rejects_an_argument(capfd):
@@ -515,3 +715,82 @@ def test_gc_control_an_unbound_linked_tree_stays_rule_1(tmp_path):
     row = base.row_of(done.stdout, "console-landing")
     assert "rule 1" in row, done.stdout
     assert "landing: " not in row, done.stdout
+
+
+def test_a_hotfix_on_top_of_the_merge_is_judged_at_the_main_tip(two):
+    """Review e876c65d.1: merged is an ancestor of origin/main but not its tip, so the fix returns the tip; reverting `_release_sha` to `return merged` fails here."""
+    old_tip = spike.must(two.main, "rev-parse", "origin/main")
+    hotfix = commit(two.merger, "hotfix.txt", None, "hotfix on top of the merge")
+    spike.must(two.merger, "push", "-q", "origin", "main")
+    spike.must(two.main, "fetch", "-q", "origin")
+    assert hotfix != old_tip
+    assert promote_mod._release_sha(two.main, old_tip) == hotfix
+
+
+def test_the_release_is_judged_at_the_main_tip_when_it_contains_the_merge(two):
+    """A hotfix on top of the merge: the merge's own release stays red, main's tip released green with it inside."""
+    tip = spike.must(two.main, "rev-parse", "origin/main")
+    assert promote_mod._release_sha(two.main, tip) == tip
+    # A development commit main does not contain is judged as itself, as is an unknown sha.
+    dev_tip = spike.must(two.main, "rev-parse", DEV)
+    assert promote_mod._release_sha(two.main, dev_tip) == dev_tip
+    # Control: a sha main does not contain is judged as itself.
+    assert promote_mod._release_sha(two.main, MERGED_SHA) == MERGED_SHA
+
+
+def test_record_paths_and_hook_ledgers_are_not_dirt():
+    globs = [
+        ("agent/reviews/**", ()),
+        ("agent/plans/**/*.md", ()),
+        ("agent/worklist/*.jsonl", ("agent/worklist/epics.jsonl",)),
+    ]
+    globs = [*globs, ("agent/ledgers/*.jsonl", ())]
+    assert promote_mod._is_record("agent/plans/QUEUE.md", globs)
+    assert promote_mod._is_record("agent/reviews/1121-1/clean.jsonl", globs)
+    assert promote_mod._is_record("agent/ledgers/ops-health.jsonl", globs)
+    # Controls: an excepted record and a code file still count as dirt.
+    assert not promote_mod._is_record("agent/worklist/epics.jsonl", globs)
+    assert not promote_mod._is_record(".ci/rediacc_ci/dev/landing.py", globs)
+
+
+def test_dirty_judges_a_staged_rename_by_both_paths(two):
+    """Reviews 9188db83.1, 9188db83.2, 912adb6a.2: `_dirty` itself reads the policy file and judges both ends of a rename."""
+    policy_file = two.main / ".ci" / "policy" / "record-paths.json"
+    spike.write(policy_file, '{"records": [{"glob": "agent/x/*.txt"}]}\n')
+    spike.write(two.main / "agent" / "x" / "a.txt", "a\n")
+    kept = ["agent/x/a.txt", ".ci/policy/record-paths.json"]
+    spike.must(two.main, "add", "-f", "--", *kept)
+    spike.must(two.main, "commit", "--no-gpg-sign", "-qm", "record fixtures", "--", *kept)
+    # Both ends records: not dirt.
+    spike.must(two.main, "mv", "agent/x/a.txt", "agent/x/b.txt")
+    assert promote_mod._dirty(two.main) == []
+    spike.must(two.main, "mv", "agent/x/b.txt", "agent/x/a.txt")
+    # A tracked code file renamed onto a record path: the code file's deletion is dirt.
+    spike.must(two.main, "mv", "d1.txt", "agent/x/c.txt")
+    rows = promote_mod._dirty(two.main)
+    assert len(rows) == 1, rows
+    assert "d1.txt" in rows[0]
+
+
+def test_a_release_run_without_a_head_sha_does_not_count(two):
+    """Review f029cf99.2: a gh row that lacks headSha is not a run at the merged sha."""
+    gh = fake_gh(runs={"ci.yml": [{"headSha": None, **GREEN}]})
+    with pytest.raises(promote_mod.PromoteRefusedError, match=r"no .* run at the merged sha"):
+        run_promote(two.main, gh=gh)
+    untouched(two)
+
+
+def test_a_staged_rename_is_judged_by_its_new_path():
+    """Review 912adb6a.1: `R  old -> new` must match the record globs on the new path."""
+    globs = [("agent/ledgers/*.jsonl", ())]
+    assert (
+        promote_mod._porcelain_path("R  agent/ledgers/a.jsonl -> agent/ledgers/b.jsonl")
+        == "agent/ledgers/b.jsonl"
+    )
+    assert promote_mod._is_record(
+        promote_mod._porcelain_path("R  x.py -> agent/ledgers/b.jsonl"), globs
+    )
+    # Control: a rename onto a code path still counts as dirt.
+    assert not promote_mod._is_record(
+        promote_mod._porcelain_path("R  agent/ledgers/a.jsonl -> src/a.py"), globs
+    )

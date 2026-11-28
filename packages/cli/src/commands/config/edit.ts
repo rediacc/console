@@ -2,7 +2,8 @@
  * `rdc config edit`, open the active config in $EDITOR for hand-edit.
  *
  * Flow:
- *   1. Refuse for AI agents unless REDIACC_ALLOW_CONFIG_EDIT scope grants access.
+ *   1. Refuse every AI agent for the interactive editor, --apply and --reveal (no override
+ *      exists); refuse --apply for a human whose stdin is not a TTY.
  *   2. Render the config as redacted JSONC (or full JSONC with --reveal + audit).
  *   3. Spawn $EDITOR; wait for the user to close it.
  *   4. Re-parse the saved file; reject any modified `<redacted:…>` stub
@@ -14,7 +15,8 @@
  *
  * Subcommand: `rdc config edit --dump [--redacted] [--apply <file>]`
  *   --dump            print the current config as JSONC to stdout
- *   --apply <file>    read an edited JSONC from a file and apply it
+ *   --redacted        redact sensitive values (the default; conflicts with --reveal)
+ *   --apply <file>    read an edited JSONC from a file and apply it (human at a TTY only)
  *
  * Audit:
  *   edit_open / edit_apply / edit_abort / reveal_granted are all logged.
@@ -35,26 +37,25 @@ import { createInterface } from 'node:readline';
 import { isatty } from 'node:tty';
 import {
   canonicalJson,
-  getByPointer,
   parseConfig,
   type RdcConfig,
   RdcConfigSchema,
   stringifyConfig,
-  walkSensitive,
 } from '@rediacc/shared/config-schema';
-import type { Command } from 'commander';
+import { type Command, Option } from 'commander';
 import { t } from '../../i18n/index.js';
-import { redactClone, shortFingerprint } from '../../schema/fingerprint.js';
+import { redactClone } from '../../schema/fingerprint.js';
 import { configService } from '../../services/config/config-resources.js';
 import { isRemoteConfigFile, updateSyncedConfig } from '../../services/config/synced-write.js';
 import { auditLog } from '../../services/core/audit-log.js';
 import { outputService } from '../../services/core/output.js';
 import { writeStdout } from '../../services/core/request-context.js';
-import { configEditOverrideScope, isAgentEnvironment } from '../../utils/agent-guard.js';
+import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { EditorError, openEditor } from '../../utils/editor-launcher.js';
 import { handleError, ValidationError } from '../../utils/errors.js';
+import { parseJsonText } from '../../utils/json-text.js';
+import { loadKnowledgeFile, reconcileStubs, stripComments } from './edit-stubs.js';
 
-const REDACT_PATTERN = /^<redacted:[^>]+>:[0-9a-f]{8}$/;
 const MAX_RETRIES = 3;
 
 function configDir(): string {
@@ -63,10 +64,7 @@ function configDir(): string {
 }
 
 function refuseAgentEdit(): never {
-  const key = process.env.REDIACC_ALLOW_CONFIG_EDIT
-    ? 'errors.agent.configEditAncestry'
-    : 'errors.agent.configEdit';
-  throw new ValidationError(t(key));
+  throw new ValidationError(t('errors.agent.configEdit'));
 }
 
 interface RenderOptions {
@@ -112,127 +110,6 @@ function promptRotationConfirmation(paths: string[]): Promise<boolean> {
       resolve(answer.trim().toLowerCase() === 'rotate');
     });
   });
-}
-
-/**
- * Strip JSONC comment lines (lines starting with `//` after optional whitespace).
- * Block comments and inline `//` are NOT supported, the renderer only emits
- * line comments before the JSON body, so the stripper handles only that form.
- */
-function stripComments(jsonc: string): string {
-  return jsonc
-    .split('\n')
-    .filter((line) => !/^\s*\/\//.test(line))
-    .join('\n');
-}
-
-/**
- * Detect modified `<redacted:...>` stubs by comparing each sensitive path's
- * value in the edited config against the current config's stub.
- *
- * Rules:
- *   - Unchanged stub  (stub matches current digest)  → substitute real value back.
- *   - Stub replaced with a DIFFERENT stub             → hard failure (meaningless edit).
- *   - Stub replaced with real plaintext               → rotation intent.
- *     - If knowledge[pointer] supplied (via --current-secrets) and it matches the
- *       current value: accept the new value; a mismatch is a hard failure.
- *     - Otherwise: surface on `rotations` so the caller can prompt or reject.
- *   - A sensitive value with no current value (newly added)  → accepted as is.
- *
- * Returning `rotations` (instead of immediately failing) lets interactive mode
- * show a single confirmation prompt for all rotations; non-interactive `--apply`
- * keeps strict behavior by converting `rotations` to `failures` at the call site.
- */
-type StubOutcome =
-  | { kind: 'untouched'; currentValue: unknown }
-  | { kind: 'bad-stub' }
-  | { kind: 'bad-knowledge' }
-  | { kind: 'rotation' }
-  | { kind: 'accepted' }
-  | { kind: 'public' };
-
-function classifyStub(
-  pointer: string,
-  editedValue: unknown,
-  currentConfig: RdcConfig,
-  meta: { kind: string; redactAs?: string },
-  knowledge: Record<string, unknown> | undefined
-): StubOutcome {
-  if (meta.kind === 'public') return { kind: 'public' };
-
-  const currentValue = getByPointer(currentConfig, pointer);
-  const currentStub =
-    currentValue === null || currentValue === undefined
-      ? null
-      : `${meta.redactAs ?? `<redacted:${meta.kind}>`}:${shortFingerprint(currentValue)}`;
-
-  if (typeof editedValue === 'string' && currentStub && editedValue === currentStub) {
-    return { kind: 'untouched', currentValue };
-  }
-
-  if (typeof editedValue === 'string' && REDACT_PATTERN.test(editedValue)) {
-    return { kind: 'bad-stub' };
-  }
-
-  // A value that did not exist before rotates nothing: keep it.
-  if (currentValue === undefined || currentValue === null) return { kind: 'accepted' };
-
-  const claim = knowledge?.[pointer];
-  if (claim === undefined) return { kind: 'rotation' };
-  return canonicalJson(claim) === canonicalJson(currentValue)
-    ? { kind: 'accepted' }
-    : { kind: 'bad-knowledge' };
-}
-
-function reconcileStubs(
-  edited: unknown,
-  currentConfig: RdcConfig,
-  knowledge: Record<string, unknown> | undefined
-): { result: unknown; failures: string[]; rotations: string[] } {
-  const failures: string[] = [];
-  const rotations: string[] = [];
-  const view = JSON.parse(JSON.stringify(edited));
-
-  for (const { pointer, value: editedValue, meta } of walkSensitive(view as RdcConfig)) {
-    const outcome = classifyStub(pointer, editedValue, currentConfig, meta, knowledge);
-    if (outcome.kind === 'public' || outcome.kind === 'accepted') continue;
-    if (outcome.kind === 'untouched') {
-      assignAtPointer(view, pointer, outcome.currentValue);
-    } else if (outcome.kind === 'bad-stub') {
-      failures.push(
-        `${pointer}: edited value still looks like a redaction stub but does not match the current digest`
-      );
-    } else if (outcome.kind === 'bad-knowledge') {
-      failures.push(`${pointer}: the --current-secrets value does not match the current value`);
-    } else {
-      rotations.push(pointer);
-    }
-  }
-
-  return { result: view, failures, rotations };
-}
-
-function assignAtPointer(root: unknown, pointer: string, value: unknown): void {
-  if (pointer === '') return;
-  const segments = pointer
-    .split('/')
-    .slice(1)
-    .map((s) => s.replaceAll('~1', '/').replaceAll('~0', '~'));
-  let cursor: Record<string, unknown> | undefined = root as Record<string, unknown>;
-  for (let i = 0; i < segments.length - 1; i++) {
-    cursor = cursor[segments[i]] as Record<string, unknown> | undefined;
-    if (!cursor) return;
-  }
-  cursor[segments[segments.length - 1]] = value;
-}
-
-function loadKnowledgeFile(path: string): Record<string, unknown> {
-  const text = readFileSync(path, 'utf8');
-  const raw: unknown = JSON.parse(text);
-  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
-    throw new ValidationError(`--current-secrets must be a JSON object: ${path}`);
-  }
-  return raw as Record<string, unknown>;
 }
 
 async function applyEdit(
@@ -281,7 +158,7 @@ async function handleApplyMode(
   const stripped = stripComments(text);
   let edited: unknown;
   try {
-    edited = JSON.parse(stripped);
+    edited = parseJsonText(stripped);
   } catch (err) {
     throw new ValidationError(`Invalid JSON in ${applyPath}: ${(err as Error).message}`);
   }
@@ -372,7 +249,7 @@ function parseTmpFile(
   const text = readFileSync(tmpFile, 'utf8');
   const stripped = stripComments(text);
   try {
-    return { edited: JSON.parse(stripped) };
+    return { edited: parseJsonText(stripped) };
   } catch (err) {
     const errs = [`JSON parse error: ${(err as Error).message}`];
     const banner = `// ─── ${errs.length} ERROR(S) on attempt ${attempt + 1}/${MAX_RETRIES} ───\n`;
@@ -531,27 +408,41 @@ async function handleInteractiveMode(
   );
 }
 
-/** Check agent gate and reveal gate; throws if access should be refused. */
-function checkEditGates(
-  config: RdcConfig,
-  agent: boolean,
-  needsAgentGate: boolean,
-  reveal: boolean
-): void {
-  if (agent && needsAgentGate) {
-    const scope = configEditOverrideScope();
-    if (!scope || scope !== '*') {
-      auditLog(configDir(), {
-        command: 'config edit',
-        paths: [],
-        outcome: 'refused',
-        configId: config.id,
-        configVersion: config.version,
-        reason: 'agent without REDIACC_ALLOW_CONFIG_EDIT=*',
-      });
-      refuseAgentEdit();
-    }
+interface EditGateInput {
+  agent: boolean;
+  /** Interactive editor, --apply or --reveal: every form that writes or exposes plaintext. */
+  needsAgentGate: boolean;
+  reveal: boolean;
+  apply: boolean;
+}
+
+/** Check the agent, apply-TTY and reveal gates; throws if access should be refused. */
+function checkEditGates(config: RdcConfig, gate: EditGateInput): void {
+  // No override exists: a whole-document edit can rewrite the policy that limits the agent and drop a repo's LUKS credential, so every agent is refused.
+  if (gate.agent && gate.needsAgentGate) {
+    auditLog(configDir(), {
+      command: 'config edit',
+      paths: [],
+      outcome: 'refused',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'agent environment',
+    });
+    refuseAgentEdit();
   }
+  // A script an agent drives outside the ancestry check has no TTY on stdin, so --apply is for a human at a terminal only.
+  if (gate.apply && !isatty(process.stdin.fd)) {
+    auditLog(configDir(), {
+      command: 'config edit --apply',
+      paths: [],
+      outcome: 'refused',
+      configId: config.id,
+      configVersion: config.version,
+      reason: 'stdin is not a TTY',
+    });
+    throw new ValidationError(t('errors.agent.applyRequiresTty'));
+  }
+  const reveal = gate.reveal;
   if (reveal) {
     if (!isatty(process.stdout.fd))
       throw new ValidationError(t('errors.agent.showRevealRequiresTty'));
@@ -568,9 +459,13 @@ function checkEditGates(
 export function registerEditCommands(parent: Command, _program: Command): void {
   parent
     .command('edit')
+    .summary(t('commands.config.edit.descriptionShort'))
     .description(t('commands.config.edit.description'))
     .option('--reveal', t('commands.config.edit.optionReveal'))
     .option('--dump', t('commands.config.edit.optionDump'))
+    .addOption(
+      new Option('--redacted', t('commands.config.edit.optionRedacted')).conflicts('reveal')
+    )
     .option('--apply <file>', t('commands.config.edit.optionApply'))
     .option('--current-secrets <file>', t('commands.config.edit.optionCurrentSecrets'))
     .option('--editor <cmd>', t('commands.config.edit.optionEditor'))
@@ -578,6 +473,7 @@ export function registerEditCommands(parent: Command, _program: Command): void {
       async (options: {
         reveal?: boolean;
         dump?: boolean;
+        redacted?: boolean;
         apply?: string;
         currentSecrets?: string;
         editor?: string;
@@ -593,7 +489,12 @@ export function registerEditCommands(parent: Command, _program: Command): void {
           // Agent gate: block interactive editor + --apply + --reveal. --dump without --reveal is read-only redacted output, safe for agents.
           const interactive = !options.dump && !options.apply;
           const needsAgentGate = interactive || Boolean(options.apply) || reveal;
-          checkEditGates(config, agent, needsAgentGate, reveal);
+          checkEditGates(config, {
+            agent,
+            needsAgentGate,
+            reveal,
+            apply: Boolean(options.apply),
+          });
 
           const knowledge: Record<string, unknown> | undefined = options.currentSecrets
             ? loadKnowledgeFile(options.currentSecrets)

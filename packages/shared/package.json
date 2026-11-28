@@ -11,11 +11,16 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "^2.4.0",
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@cloudflare/workers-oauth-provider": "1.4.0",
+    "@modelcontextprotocol/client": "2.4.0",
     "@types/node": "^24.19.0",
     "@vitest/utils": "^5.0.2",
+    "esbuild": "0.28.2",
+    "miniflare": "5.20261119.0-beta",
     "rimraf": "^6.1.2",
     "typescript": "^7.0.2",
     "vitest": "^5.0.2"
@@ -28,6 +33,10 @@
     "./regions": {
       "types": "./dist/regions/index.d.ts",
       "default": "./dist/regions/index.js"
+    },
+    "./auth": {
+      "types": "./dist/auth/index.d.ts",
+      "default": "./dist/auth/index.js"
     },
     "./legal": {
       "types": "./dist/legal/index.d.ts",
@@ -100,6 +109,10 @@
     "./config-schema/*": {
       "types": "./dist/config-schema/*.d.ts",
       "default": "./dist/config-schema/*.js"
+    },
+    "./mcp-host/*": {
+      "types": "./dist/mcp-host/*.d.ts",
+      "default": "./dist/mcp-host/*.js"
     },
     "./backup/*": {
       "types": "./dist/backup/*.d.ts",
@@ -224,6 +237,42 @@
     "./job-poll/*": {
       "types": "./dist/job-poll/*.d.ts",
       "default": "./dist/job-poll/*.js"
+    },
+    "./ai-credits": {
+      "types": "./dist/ai-credits/index.d.ts",
+      "default": "./dist/ai-credits/index.js"
+    },
+    "./ai": {
+      "types": "./dist/ai/index.d.ts",
+      "default": "./dist/ai/index.js"
+    },
+    "./ai/*": {
+      "types": "./dist/ai/*.d.ts",
+      "default": "./dist/ai/*.js"
+    },
+    "./mcp/*": {
+      "types": "./dist/mcp/*.d.ts",
+      "default": "./dist/mcp/*.js"
+    },
+    "./forensics": {
+      "types": "./dist/forensics/index.d.ts",
+      "default": "./dist/forensics/index.js"
+    },
+    "./forensics/*": {
+      "types": "./dist/forensics/*.d.ts",
+      "default": "./dist/forensics/*.js"
+    },
+    "./incident": {
+      "types": "./dist/incident/index.d.ts",
+      "default": "./dist/incident/index.js"
+    },
+    "./command-line": {
+      "types": "./dist/command-line/index.d.ts",
+      "default": "./dist/command-line/index.js"
+    },
+    "./command-line/*": {
+      "types": "./dist/command-line/*.d.ts",
+      "default": "./dist/command-line/*.js"
     }
   },
   "files": [

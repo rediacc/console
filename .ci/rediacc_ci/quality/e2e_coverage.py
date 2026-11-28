@@ -97,6 +97,13 @@ is inherited rather than introduced.
 EXIT CODES ARE UNCHANGED. 0 and 1 only; the twin has no setup-error code and no
 77. `77` is reserved by the W7 contract for cannot-run, and neither half of this
 gate can be in that state without the missing-file branches below firing first.
+
+---- gate ----
+step: Check E2E test coverage for all renet functions
+needs: node, submodules
+selftest: true
+lane: quality-content
+---- end gate ----
 """
 
 import os
@@ -524,4 +531,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_e2e_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

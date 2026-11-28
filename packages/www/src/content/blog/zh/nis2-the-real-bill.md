@@ -12,8 +12,8 @@ tags:
   - mid-market
 featured: false
 language: zh
-sourceHash: "b1569f9c0bab2b54"
-sourceCommit: 8062f196566d6ba5f90b084e5484cf722b4bdf16
+sourceHash: "820f79f26bd23745"
+sourceCommit: 5f4fc4c93d74073e5a9b8f8431444495a7f641b6
 translatedFrom: en
 ---
 
@@ -117,7 +117,7 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 | 测试数据或脱敏工具授权 | 人员培训和安全意识预算（NIS2 Article 21(2)(g)）|
 | 备份供应商处的即时恢复授权 | 更广泛的企业 MFA 解决方案；Rediacc 门户提供 TOTP，而非企业级 MFA 平台 |
 | | 渗透测试合同或自主测试平台；Rediacc 提供目标环境，不提供测试能力 |
-| | 用于 Article 23 检测和报告的 SIEM 和 SOC；Rediacc 提供法证级证据，不提供运营报告层 |
+| | 用于 Article 23 检测和报告的 SIEM 和 SOC；Rediacc 在付费方案中提供每仓库流记录、可验证的时间线和分阶段报告草稿，不提供运营报告层 |
 | | IaaS 提供商（Hetzner、OVH、你的托管机房、你的裸金属）；Rediacc 运行在基础设施之上，而非取代基础设施 |
 | | 负责运营整个项目的人员。Rediacc 是工具层，不是安全团队 |
 
@@ -149,7 +149,7 @@ Rediacc 是一个带有统一审计日志的控制平面，取代了五个类别
 - Drata 保留（EUR 18,000）
 - 自建测试数据方案退役，原本每两周半天的 SRE 时间改用于运行每周有效性例程
 
-数据平面整合：5 个行项目缩减为 1 个（Rediacc）加上现有 IaaS 行项目。供应商注册表数据平面部分从 5 个条目降至 2 个。持续有效性现在有每周演练和哈希链式审计日志证据作为支撑，恢复测试现在由 `rdc backup status` 输出和每周恢复演练提供背书。
+数据平面整合：5 个行项目缩减为 1 个（Rediacc）加上现有 IaaS 行项目。供应商注册表数据平面部分从 5 个条目降至 2 个。持续有效性现在有每周演练和 `rdc config audit verify` 所校验的工作站审计日志证据作为支撑，恢复测试现在由 `rdc backup status` 输出和每周恢复演练提供背书。
 
 这些数字是示意性的，不是承诺。你的技术栈会有所不同。四到五个行项目整合为一个加上现有 IaaS 的结构，是真实采购方对话的样子。
 

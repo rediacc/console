@@ -23,6 +23,7 @@ import json
 import subprocess
 import time
 
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.tests import corpus
 from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO, RENET_REPO
 
@@ -188,7 +189,28 @@ def run_guard(
     """`(exit code, stderr text)`. stdout is discarded, exactly as the suite did.
 
     The suite ran `... 2>&1 >/dev/null` for the message assertions, which redirects stderr to the pipe and stdout to /dev/null -- NOT the other way round. A guard's product is what it says on stderr.
+
+    IN THIS PROCESS (PLAN-ciquick-cpu W15): `guards/_harness.run` answers a `dispatch.py <stem>` argv through `dispatch.run_one` with the child's environment, zone, temp directory and cwd swapped in, and hands anything else (a bash key, a process-table reader) to a real process. `run_guard_process` below is the always-a-process form `test_hooks_boundary.py` holds every guard to.
     """
+    argv = guard_cmd(key)
+    completed = _harness.run(
+        argv,
+        input=today_filled(payload).encode(),
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.PIPE if want_stderr else subprocess.DEVNULL,
+        env=env,
+        cwd=cwd,
+        timeout=GUARD_TIMEOUT_S,
+        check=False,
+    )
+    err = completed.stderr.decode("utf-8", "replace") if want_stderr else ""
+    return completed.returncode, err
+
+
+def run_guard_process(
+    key: str, payload: str, *, want_stderr: bool, env: dict | None = None, cwd: str | None = None
+) -> tuple[int, str]:
+    """`run_guard`, always as a real `python3 dispatch.py <stem>` (or bash) process: the boundary the in-process path is measured against."""
     argv = guard_cmd(key)
     completed = subprocess.run(
         argv,
@@ -1382,7 +1404,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_missing_npm_script.py",
-        bash_json("npx -c 'npm run check:ci-python-lint'"),
+        bash_json("npx -c 'npm run gen:gates'"),
         "missing-npm-script CONTROL: a launched npm run of a real script",
     ),
     case(
@@ -1489,6 +1511,21 @@ STATIC: list[Case] = [
         "review-file-shell-write CONTROL: a launched copy OUT of the directory",
     ),
     case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find /tmp -name '*.md' -exec cp {} agent/reviews/ \;"),
+        "review-file-shell-write: a launched copy INTO the directory, named by the walked file",
+    ),
+    case(
+        "check 2 guards/block_review_file_shell_write.py",
+        bash_json(r"find /tmp -name '*.md' -exec cp /tmp/x.md agent/reviews/{} \;"),
+        "review-file-shell-write: a launched copy whose landing is `<review dir>/{}` stays in the directory",
+    ),
+    case(
+        "check 0 guards/block_review_file_shell_write.py",
+        bash_json(r"find agent/reviews -name '*.md' -exec cp /tmp/x.md /tmp/out/{} \;"),
+        "review-file-shell-write CONTROL: a landing `<other dir>/{}` is not the walked directory",
+    ),
+    case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json("echo find agent/reviews -exec sed -i s/high/low/ {} +"),
         "review-file-shell-write CONTROL: prose naming a launched sed -i",
@@ -1546,7 +1583,7 @@ STATIC: list[Case] = [
         ),
         "review-file-shell-write: a heredoc writing a review file through Path",
     ),
-    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in test-block_review_file_edit.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
+    # #c4542b69: a script run BY PATH is read like a heredoc; the refusals need scratch scripts and live in _review_file_suite.py. These pin the allow paths: a TRACKED script whose own text names a review path and writes files, and a script that cannot be read, which fails open.
     case(
         "check 0 guards/block_review_file_shell_write.py",
         bash_json("python3 .claude/rediacc_hooks/tests/test_wl_loopspeed.py"),
@@ -2580,7 +2617,7 @@ STATIC: list[Case] = [
     # --- block-host-toolchain-run: a gate that cannot run reports no verdict --- This guard sat on disk UNREGISTERED, so the lesson it encodes had no enforcement at all. It fires only when the HOST lacks the toolchain and the devbox has it, so its allow direction is the interesting half: a host that has the tool must not be pushed anywhere.
     case(
         "check 0 guards/block_host_toolchain_run.py",
-        bash_json("./run.sh devbox exec -- npm run check:ci-python-lint"),
+        bash_json("./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint"),
         "host-toolchain: already routed through the devbox",
     ),
     case(
@@ -2590,7 +2627,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 0 guards/block_host_toolchain_run.py",
-        bash_json("echo 'npm run check:ci-python-lint'"),
+        bash_json("echo 'npm run ci -- --only check:ci-python-lint'"),
         "host-toolchain CONTROL: echoing a gate name is not running it",
     ),
     case(
@@ -3634,32 +3671,32 @@ STATIC: list[Case] = [
         bash_json('echo "PR_BRANCH_DATE_OK=1 gh pr create" && gh pr create --head 0825-2 -t x'),
         "stale-pr-branch CONTROL: the hatch quoted as prose opens nothing",
     ),
-    # A QUOTED NEIGHBOUR ASSIGNMENT: the turbo push guard demands `TURBO_PUSH_REASON='<kind>: <why>'` on the same `gh pr create`, and a value with spaces made the hatch unmatchable, so the two guards could not both be satisfied (2026-10-21).
+    # A QUOTED NEIGHBOUR ASSIGNMENT: another guard's escape (`VM_CHECK_PUSH_REASON='<kind>: <why>'`) can sit on the same command, and on 2026-10-21 a value with spaces made the hatch unmatchable, so the two guards could not both be satisfied.
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            "PR_BRANCH_DATE_OK=1 TURBO_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
+            "PR_BRANCH_DATE_OK=1 VM_CHECK_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
         ),
         "stale-pr-branch: the hatch holds beside a quoted assignment after it",
     ),
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            "TURBO_PUSH_REASON='ci-cd: a reason with spaces' PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x"
+            "VM_CHECK_PUSH_REASON='ci-cd: a reason with spaces' PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x"
         ),
         "stale-pr-branch: the hatch holds beside a quoted assignment before it",
     ),
     case(
         "check 2 guards/block_stale_pr_branch_date.py",
         bash_json(
-            "TURBO_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
+            "VM_CHECK_PUSH_REASON='ci-cd: a reason with spaces' gh pr create --head 0825-2 -t x"
         ),
         "stale-pr-branch CONTROL: a quoted assignment without the hatch opens nothing",
     ),
     case(
         "check 0 guards/block_stale_pr_branch_date.py",
         bash_json(
-            'TURBO_PUSH_REASON="ci-cd: a reason with spaces" PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x'
+            'VM_CHECK_PUSH_REASON="ci-cd: a reason with spaces" PR_BRANCH_DATE_OK=1 gh pr create --head 0825-2 -t x'
         ),
         "stale-pr-branch: the hatch holds beside a double-quoted assignment",
     ),
@@ -3848,7 +3885,7 @@ STATIC: list[Case] = [
     ),
     case(
         "check 2 guards/block_settled_questions.py",
-        ask_json("How should a finished turbo batch push?"),
+        ask_json("How should a finished batch push?"),
         "settled(push how-should timing refused)",
     ),
     case(

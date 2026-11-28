@@ -76,7 +76,7 @@ COLLAPSES = {"STRIPE_SECRET_KEY_EU", "STRIPE_SECRET_KEY_US", "STRIPE_SECRET_KEY_
 
 # Generated: regenerate, do not edit.
 GENERATED = {
-    ".ci/config/secret-reachability.json": "npm run check:ci-secret-reachability -- --refresh",
+    ".ci/config/secret-reachability.json": "PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability --refresh",
     ".ci/config/bws-secret-map.json": "scripts/ops/bws-map-refresh.py (already on the new names)",
 }
 # Never rewritten: history, session notes, this script, the plan that defines the table.
@@ -454,7 +454,7 @@ def main() -> int:
             f"REFUSING: secret-reachability.json is {stale_days} days old (limit "
             f"{REACH_MAX_AGE_DAYS}). It decides which rename targets must already exist in "
             f"Bitwarden, so a stale copy silently EXEMPTS any org secret created since. "
-            f"Refresh it first: npm run check:ci-secret-reachability -- --refresh",
+            f"Refresh it first: PYTHONPATH=.ci python3 -m rediacc_ci.quality.secret_reachability --refresh",
             file=sys.stderr,
         )
         return 1

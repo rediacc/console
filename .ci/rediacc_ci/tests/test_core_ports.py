@@ -40,6 +40,7 @@ import pytest
 from rediacc_ci import paths, xdist_groups
 from rediacc_ci.core import devbox, ports
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import harness_account
 
 # THE HOST'S PORT SPACE, SLICED PER WORKER (agent/plans/PLAN-prepush-full-cpu.md PF14, 2026-10-05). `_free_range_base` used to call `find_consecutive_free_ports(n, 20000, 30000)`, which returns the FIRST free run in the range -- deterministic by design, because a devbox URL a human bookmarked has to keep resolving to the same port -- so two xdist workers asking at the same instant both got 20000, both bound it, and one failed a race unrelated to the code under test. This module declared `XDIST_GROUP = "ports"` for that, which pinned it and three other modules to one worker. It now scans `xdist_groups.worker_port_range()`, this worker's disjoint slice of the same range, so two workers can never be handed the same run and no group is needed.
 
@@ -195,6 +196,76 @@ def test_is_port_in_use_matches_the_frozen_bash(listener: int) -> None:
         )
         assert rc == expected, err
         assert ports.is_port_in_use(port) is (expected == 0)
+
+
+SS_ROWS = """\
+LISTEN 0 4096 127.0.0.1:8080 0.0.0.0:*
+LISTEN 0 128 *:22 *:*
+LISTEN 0 128 [::]:9443 [::]:*
+LISTEN 0 128 [::1]:5432 [::]:*
+LISTEN 0 1
+garbage
+"""
+
+
+def test_parse_listeners_reads_ipv4_wildcard_and_ipv6_rows() -> None:
+    assert ports.parse_listeners(SS_ROWS) == frozenset({8080, 22, 9443, 5432})
+
+
+@pytest.mark.parametrize("text", ["", "\n", "LISTEN 0 1\nnot a row\n"])
+def test_parse_listeners_is_none_when_no_row_parses(text: str) -> None:
+    """CONTROL: an empty snapshot would read every port as free."""
+    assert ports.parse_listeners(text) is None
+
+
+def _fake_ss(monkeypatch, returncode: int, stdout: str) -> None:
+    monkeypatch.setattr(ports.proc, "which", lambda name: "/usr/bin/ss" if name == "ss" else None)
+    monkeypatch.setattr(
+        ports.proc,
+        "run",
+        lambda argv, **_kw: ports.proc.Result(argv, returncode, stdout, ""),
+    )
+
+
+def test_listening_ports_is_none_when_ss_fails_or_prints_nothing(monkeypatch) -> None:
+    _fake_ss(monkeypatch, 1, SS_ROWS)
+    assert ports.listening_ports() is None
+    _fake_ss(monkeypatch, 0, "")
+    assert ports.listening_ports() is None
+
+
+def test_listening_ports_control_a_working_ss_is_parsed(monkeypatch) -> None:
+    _fake_ss(monkeypatch, 0, SS_ROWS)
+    assert ports.listening_ports() == frozenset({8080, 22, 9443, 5432})
+
+
+def test_prober_falls_back_to_the_per_port_probe_without_ss(monkeypatch) -> None:
+    monkeypatch.setattr(ports.proc, "which", lambda _name: None)
+    assert ports._prober() is ports.is_port_in_use
+    _fake_ss(monkeypatch, 1, "")
+    assert ports._prober() is ports.is_port_in_use
+
+
+def test_listening_ports_sees_a_real_listener(listener: int) -> None:
+    snapshot = ports.listening_ports()
+    if snapshot is None:
+        pytest.skip("no ss on this host")
+    else:
+        assert listener in snapshot
+
+
+def test_require_free_refuses_a_listening_port_and_passes_once_it_closes() -> None:
+    sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.bind(("127.0.0.1", 0))
+    sock.listen(1)
+    port = sock.getsockname()[1]
+    try:
+        with pytest.raises(harness_account.RefusalError, match=str(port)):
+            harness_account.require_free(port, 1, "the control")
+    finally:
+        sock.close()
+    harness_account.require_free(port, 1, "the control")
 
 
 def test_find_port_block_lands_on_the_derived_slot() -> None:

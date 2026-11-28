@@ -161,7 +161,13 @@ RUN_STOP_ARGS = ("worklist", "session_id", "state_doc")
 
 def test_run_stop_calls_the_soaked_pins_report() -> None:
     source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
-    assert _calls_in(source, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+    # run_stop's segments are `_stop_<key>(ns)` functions (PLAN-tooling-speed.md SP3), so the call may sit in run_stop or in one of them.
+    holders = ["run_stop"] + [
+        n.name
+        for n in ast.parse(source).body
+        if isinstance(n, ast.FunctionDef) and n.name.startswith("_stop_")
+    ]
+    assert any(_calls_in(source, fn, "_soaked_pins_report", RUN_STOP_ARGS) for fn in holders)
 
 
 def test_the_call_finder_reads_the_enclosing_function_not_the_text() -> None:
@@ -217,3 +223,119 @@ def test_the_call_finder_walks_a_class_body_but_not_its_methods():
         "            _soaked_pins_report(worklist, session_id, state_doc)\n"
     )
     assert not _calls_in(in_method, "run_stop", "_soaked_pins_report", RUN_STOP_ARGS)
+
+
+# THE DAILY LOCAL ROUTE (PLAN-ciquick-gate-contract K6): once per UTC day, development tree only, result recorded.
+DAY1 = datetime.datetime(2026, 11, 28, 6, 0, 0, tzinfo=datetime.UTC)
+DAY1_LATE = datetime.datetime(2026, 11, 28, 23, 59, 0, tzinfo=datetime.UTC)
+DAY2 = datetime.datetime(2026, 11, 29, 0, 1, 0, tzinfo=datetime.UTC)
+
+
+def _stamp(root, day, **extra):
+    path = SP.stamp_path(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps({"day": day, **extra}), encoding="utf-8")
+
+
+def test_a_stale_stamp_runs_the_fake_apply_and_claims_the_day(tmp_path) -> None:
+    _stamp(tmp_path, "2026-11-27", state="done", rc=0)
+    spawned: list[str] = []
+    claim = SP.run_daily(tmp_path, "development", DAY1, spawn=spawned.append)
+    assert claim is not None
+    assert spawned == [str(tmp_path)]
+    assert json.loads(SP.stamp_path(tmp_path).read_text())["day"] == "2026-11-28"
+
+
+def test_no_stamp_runs_it_too(tmp_path) -> None:
+    spawned: list[str] = []
+    assert SP.run_daily(tmp_path, "", DAY1, spawn=spawned.append) is not None
+    assert spawned == [str(tmp_path)]
+
+
+def test_a_same_day_stamp_does_not_run_it_again(tmp_path) -> None:
+    spawned: list[str] = []
+    SP.run_daily(tmp_path, "development", DAY1, spawn=spawned.append)
+    # Control: a second stop later the same UTC day, then the next day.
+    assert SP.run_daily(tmp_path, "development", DAY1_LATE, spawn=spawned.append) is None
+    assert len(spawned) == 1
+    assert SP.run_daily(tmp_path, "development", DAY2, spawn=spawned.append) is not None
+    assert len(spawned) == 2
+
+
+def test_the_landing_tree_never_runs_it(tmp_path) -> None:
+    spawned: list[str] = []
+    assert SP.run_daily(tmp_path, "landing", DAY1, spawn=spawned.append) is None
+    assert spawned == []
+    assert not SP.stamp_path(tmp_path).exists()
+    # Control: the same tree as a development tree does run it.
+    assert SP.run_daily(tmp_path, "development", DAY1, spawn=spawned.append) is not None
+
+
+def test_a_lease_tree_never_runs_it(tmp_path) -> None:
+    lease = tmp_path / ".claude" / "worktrees" / "d778be9d-12"
+    lease.mkdir(parents=True)
+    spawned: list[str] = []
+    assert SP.run_daily(lease, "development", DAY1, spawn=spawned.append) is None
+    assert spawned == []
+
+
+def test_a_failing_spawn_never_raises(tmp_path) -> None:
+    def boom(_root):
+        raise OSError("no npm")
+
+    assert SP.run_daily(tmp_path, "development", DAY1, spawn=boom) is None
+
+
+def test_a_failing_spawn_releases_the_day_for_a_retry(tmp_path) -> None:
+    """Review 86953e7c.2: a spawn that raises does not consume the day; the next stop is due again and the failure is recorded."""
+
+    def boom(_root):
+        raise OSError("no npm")
+
+    SP.run_daily(tmp_path, "development", DAY1, spawn=boom)
+    on_disk = json.loads(SP.stamp_path(tmp_path).read_text())
+    assert on_disk["state"] == "spawn-failed"
+    assert on_disk["failed_day"] == "2026-11-28"
+    assert "no npm" in on_disk["error"]
+    assert SP.due(tmp_path, "development", DAY1) is True
+    # And a later spawn that works claims the day as usual.
+    assert SP.run_daily(tmp_path, "development", DAY1, spawn=lambda _r: None) is not None
+    assert SP.due(tmp_path, "development", DAY1) is False
+
+
+def test_the_runner_records_its_result_under_the_claimed_day(tmp_path) -> None:
+    SP.run_daily(tmp_path, "development", DAY1, spawn=lambda _r: None)
+    ticks = iter([10.0, 14.5])
+    res = SP.run_verb(tmp_path, runner=lambda _r: (0, "applied 2 pins"), clock=lambda: next(ticks))
+    assert res["rc"] == 0
+    assert res["seconds"] == 4.5
+    on_disk = json.loads(SP.stamp_path(tmp_path).read_text())
+    assert on_disk["day"] == "2026-11-28"
+    assert on_disk["state"] == "done"
+    assert "applied 2 pins" in on_disk["tail"]
+    # Control: a failing verb records its rc and does not reopen the day.
+    res = SP.run_verb(tmp_path, runner=lambda _r: (3, "refused"))
+    assert json.loads(SP.stamp_path(tmp_path).read_text())["rc"] == 3
+    assert SP.run_daily(tmp_path, "development", DAY1_LATE, spawn=lambda _r: None) is None
+
+
+def test_a_raising_runner_is_recorded_as_a_failure(tmp_path) -> None:
+    def boom(_r):
+        raise RuntimeError("network down")
+
+    res = SP.run_verb(tmp_path, runner=boom)
+    assert res["rc"] == 1
+    assert "network down" in res["tail"]
+
+
+def test_the_verb_is_the_apply_soaked_verb_writing_the_report_dir() -> None:
+    assert SP.VERB[:5] == ["npm", "run", "pins", "--", "apply-soaked"]
+    assert SP.VERB[-1] == ".ci/cache/pins-soaked"
+    # The hook only claims and spawns; the verb's budget sits under the Stop hook's 900 s.
+    assert SP.VERB_TIMEOUT_S < 900
+
+
+def test_run_stop_calls_the_daily_route() -> None:
+    source = (wlfix.STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
+    assert "_soaked_pins_daily(" in source
+    assert "wl_soakedpins.run_daily(root, role)" in source

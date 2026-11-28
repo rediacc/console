@@ -33,7 +33,7 @@ The `if npm ...; then/else` shape and its three consequences (errexit suspended 
 
 THE ONE DEFECT WORTH REPEATING, because it is this file's too: `✓ json build completed` (`:19`) is printed before anything is verified, so the run that produces an empty `dist/` prints a green tick and then a refusal.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-json.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

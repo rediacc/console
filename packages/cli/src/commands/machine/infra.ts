@@ -93,6 +93,7 @@ function registerInfraCore(infra: Command, program: Command): void {
   infra
     .command('show')
     .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.infra.show.descriptionShort'))
     .description(t('commands.machine.infra.show.description'))
     .action(async (machineName: string) => {
       try {
@@ -164,6 +165,7 @@ function registerCertCache(infra: Command, program: Command): void {
   cert
     .command('pull')
     .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.infra.cert.pull.descriptionShort'))
     .description(t('commands.machine.infra.cert.pull.description'))
     .option('--no-prune', t('commands.machine.infra.cert.pull.optionNoPrune'))
     .option('--debug', t('options.debug'))
@@ -182,6 +184,7 @@ function registerCertCache(infra: Command, program: Command): void {
   cert
     .command('push')
     .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.infra.cert.push.descriptionShort'))
     .description(t('commands.machine.infra.cert.push.description'))
     .option('--debug', t('options.debug'))
     .action(async (machineName: string, options) => {
@@ -195,6 +198,7 @@ function registerCertCache(infra: Command, program: Command): void {
 
   cert
     .command('status')
+    .summary(t('commands.machine.infra.cert.status.descriptionShort'))
     .description(t('commands.machine.infra.cert.status.description'))
     .action(async () => {
       try {
@@ -247,6 +251,7 @@ function registerCertCache(infra: Command, program: Command): void {
 
   cert
     .command('clear')
+    .summary(t('commands.machine.infra.cert.clear.descriptionShort'))
     .description(t('commands.machine.infra.cert.clear.description'))
     .action(async () => {
       try {

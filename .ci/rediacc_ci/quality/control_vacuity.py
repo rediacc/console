@@ -1,6 +1,6 @@
 r"""Control-first gates must prove their plant actually landed.
 
-Ported from `.ci/scripts/quality/check-control-vacuity.sh`, which W7 P5 batch C2 retired once `.ci/shadow/w7p2-control-vacuity.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-control-vacuity.sh`, which W7 P5 batch C2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the argument IS the gate:
 
@@ -64,10 +64,19 @@ The port uses the WIDER, POSIX set. The difference is unobservable on every shap
 COLOUR IS DECIDED ON A DIFFERENT STREAM. The twin sets RED/GREEN on `[ -t 1 ]` -- stdout -- and then writes its coloured `✗` lines to STDERR. That is the 11-file variant `rediacc_ci.log`'s docstring documents as a bug: redirect one stream and not the other and the colour lands in the wrong place. `log.error` tests the stream it writes to. Under the differential neither stream is a
 terminal, so both produce the same bytes; on a developer's terminal with stdout redirected the twin emits escapes into a pipe and the port does not. Reported as a twin defect, not repaired in the twin.
 
-THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split is the twin's. `echo` for the two summary lines, `>&2` for every `fail`. Carried exactly, because `scripts/lib/shadow-gate.ts` reads both streams and a moved line changes the chatter/finding split.
+THE BANNER AND THE GREEN LINE ARE STDOUT, the findings are stderr, and the split is the twin's. `echo` for the two summary lines, `>&2` for every `fail`. Carried exactly, because the shadow gate (commit:bf054adcd4) reads both streams and a moved line changes the chatter/finding split.
 
 `sed '/.../,+2d'` IS A RANGE, NOT A PER-LINE DELETE. It removes the matching line and the two after it, then RESUMES looking for a new start. A port that deleted only matching lines would leave the two lines after the guard behind and the control's stripped copy would still carry them; a port that stopped after the first range would miss a second guard. Both are wrong in the same
 direction: they make the control easier to pass.
+
+---- gate ----
+step: Control-first gates prove their plant landed
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import glob
@@ -360,7 +369,7 @@ def audit(gate_dir: pathlib.Path, failures: Failures) -> tuple[int, int]:
                 "%s builds its control by pattern substitution but never proves "
                 "the plant landed." % base
             )
-            # STDERR, indented, so `scripts/lib/shadow-gate.ts` attaches these four lines to the finding above them. The twin prints them with bare `echo ... >&2`; the indent is the contract.
+            # STDERR, indented, so the shadow gate (commit:bf054adcd4) attaches these four lines to the finding above them. The twin prints them with bare `echo ... >&2`; the indent is the contract.
             print(
                 "      Reword the targeted line and its control passes against UNMUTATED source,",
                 file=sys.stderr,
@@ -450,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
     # STATE THE SCOPE, do not leave it to the globs. Both arms are counted separately, because they answer the same question about two populations and a reader has to be able to see one of them reach zero.
     # STDOUT, NOT log.info. The twin's last line is
     # `echo "${GREEN}\u2713${NC} $checked ..."`, which lands on stdout, and
-    # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to `scripts/lib/shadow-gate.ts`, so the differential would score the two as equivalent either way; that is exactly why it has to be got right by reading the twin rather than by watching the comparator.
+    # `rediacc_ci.log` writes every message to stderr by design. Both spellings are CHATTER to the shadow gate (commit:bf054adcd4), so the differential would score the two as equivalent either way; that is exactly why it has to be got right by reading the twin rather than by watching the comparator.
     print(
         "\u2713 %d pattern-substitution control(s) prove their plant landed (%d bash, %d python); "
         "%d built by construction or planting nothing (exempt); the raw-substitution half of the "
@@ -706,4 +715,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_control_vacuity.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

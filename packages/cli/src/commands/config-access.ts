@@ -186,6 +186,7 @@ function registerRemove(access: Command): void {
   access
     .command('remove')
     .argument('<key>', t('commands.config.access.argKey'))
+    .summary(t('commands.config.access.remove.descriptionShort'))
     .description(t('commands.config.access.remove.description'))
     .action(async (name: string) => {
       try {
@@ -267,6 +268,7 @@ async function runRanges(
 function registerList(access: Command, program: Command): void {
   access
     .command('list')
+    .summary(t('commands.config.access.list.descriptionShort'))
     .description(t('commands.config.access.list.description'))
     .action(async () => {
       try {

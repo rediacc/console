@@ -37,7 +37,7 @@ TWO DEFECTS IN THE TWIN, REPRODUCED AND REPORTED RATHER THAN FIXED, on the same 
      interpolated, so it is unreachable through the environment; `--repo` is
      still raw.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-pr-environments.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

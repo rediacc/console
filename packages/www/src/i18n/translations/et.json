@@ -447,6 +447,13 @@
         "title": "Muudatuste logi – uusimad uuendused ja väljalasked | Rediacc"
       },
       "subscribeDescription": "Saad teavituse iga kord, kui midagi uut välja tuleb. Ilma reklaamita!",
+      "groupAdded": "Lisatud",
+      "groupFixed": "Parandatud",
+      "groupImproved": "Täiustatud",
+      "stableSince": "Stable'is alates v{{version}}",
+      "noNotes": "Selle versiooni kohta pole kliendimärkmeid",
+      "earlierHistory": "Varasem ajalugu",
+      "viewRelease": "Vaata väljalaset GitHubis",
       "subscribeTitle": "Saa teavitus uutest väljalasetest",
       "subtitle": "Vaata, mida me välja lasime, mida parandasime ja mis tuleb järgmisena.",
       "title": "Muudatuste logi"
@@ -656,7 +663,7 @@
         "title": "Küsimusi?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Andmetöötluslepe"
       },
       "meta": {
@@ -724,12 +731,15 @@
         "details": {
           "id": "details",
           "items": [
-            "<strong>Teema ja eesmärk:</strong> platvormi osutamine, sealhulgas konto ja meeskonna haldus, litsentside väljastamine, krüpteeritud konfiguratsioonisalvestus, majutatud varukoopiasalvestus ja tugi",
+            "<strong>Teema ja eesmärk:</strong> platvormi osutamine, sealhulgas konto ja meeskonna haldus, litsentside väljastamine, krüpteeritud konfiguratsioonisalvestus, majutatud varukoopiasalvestus ja tugi ning tasulistel plaanidel, kus klient selle repositooriumi jaoks sisse lülitab, võrgu kohtuekspertiisi tõendid, mis teenivad selle repositooriumi turvalisust ja intsidentide uurimist",
             "<strong>Kestus:</strong> teenuse kasutustingimuste kehtivusaeg ning jaotises 11 sätestatud kustutamisperiood",
             "<strong>Töötlemise laad:</strong> kogumine, säilitamine, edastamine, päringute tegemine ja kustutamine",
-            "<strong>Andmesubjektide kategooriad:</strong> kliendi volitatud kasutajad, kutsutud meeskonnaliikmed ja partnerite kontaktisikud",
-            "<strong>Isikuandmete kategooriad:</strong> nimed, e-posti aadressid, organisatsioon ja roll, autentimisandmed (paroolide räsid, pääsuvõtmete (passkey) avalikud võtmed), seansside võrguaadressid ja kasutajaagendid ning kõik isikuandmed krüpteeritud andmetes, mida klient platvormil hoiab",
-            "<strong>Eriliigid:</strong> ei ole ette nähtud; klient ei tohi platvormil krüpteerimata kujul hoida eriliigilisi andmeid"
+            "<strong>Andmesubjektide kategooriad:</strong> kliendi volitatud kasutajad, kutsutud meeskonnaliikmed ja partnerite kontaktisikud ning isikud, kelle võrguaadressid esinevad repositooriumi võrguvoo kirjetes, näiteks kliendid, kes ühenduvad kliendi käitatava teenusega",
+            "<strong>Isikuandmete kategooriad:</strong> nimed, e-posti aadressid, organisatsioon ja roll, autentimisandmed (paroolide räsid, pääsuvõtmete (passkey) avalikud võtmed), seansside võrguaadressid ja kasutajaagendid ning kõik isikuandmed krüpteeritud andmetes, mida klient platvormil hoiab; kohtuekspertiisi tõendite puhul võrguvoo metaandmed (aadressid, pordid, baitide ja pakettide arvud, ajad), DNS-nimed ja -vastused, protsesside nimed ja tunnused ning tundlike failide teed, mille protsess avas",
+            "<strong>Eriliigid:</strong> ei ole ette nähtud; klient ei tohi platvormil krüpteerimata kujul hoida eriliigilisi andmeid",
+            "<strong>Kohtuekspertiisi tõendid, aadressid:</strong> väljuvate voogude sihtaadressid säilitatakse tervikuna, sest need ongi tõend. Sissetuleva voo kliendiaadress kirjutatakse kirjesse lühendatuna selle võrguosani (/24 IPv4 puhul, /48 IPv6 puhul) ning täisaadress liigub sama partii eraldi jaotises",
+            "<strong>Kohtuekspertiisi tõendid, säilitamine:</strong> tõendeid säilitatakse kliendi plaani salvestuskvoodi piires ning kui kvoot täitub, eemaldatakse esimesena kõige vanemad päevafailid. Partii on eemaldamise vastu lukustatud 7 päeva ning kliendi välja kuulutatud intsidendi tõendeid hoitakse kuni 30 päeva pärast intsidendi sulgemist",
+            "<strong>Kohtuekspertiisi tõendid, alus:</strong> Rediacc töötleb neid ainult kliendi dokumenteeritud juhise alusel, kui klient lülitab repositooriumi jaoks kohtuekspertiisi sisse"
           ],
           "title": "4. Töötlemise üksikasjad"
         },
@@ -751,7 +761,7 @@
           "content": [
             "See andmetöötluslepe (\"DPA\") on osa <a href=\"terms-of-service\">teenuse kasutustingimustest</a> {{legalName}} (\"Rediacc\", \"volitatud töötleja\") ja kliendi vahel, kui klient kasutab teenuseid ettevõttena ja Rediacc töötleb kliendi isikuandmeid kliendi nimel. Teenuse kasutustingimustes määratletud mõistetel on siin sama tähendus. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
             "Kliendi isikuandmete puhul on klient vastutav töötleja (või oma vastutava töötleja nimel tegutsev volitatud töötleja) ning Rediacc on volitatud töötleja (või alltöötleja). Konto-, arveldus- ja nõustumiskirjete ning telemetria andmete puhul on Rediacc iseseisev vastutav töötleja, nagu on kirjeldatud <a href=\"privacy-policy\">privaatsuspoliitikas</a>, ning see DPA sellele töötlemisele ei kehti.",
-            "Kliendi masinatel olevaid kliendiandmeid Rediacc ei töötle. Krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse võtmetega, mida Rediaccil ei ole, seega Rediacc salvestab need andmeplokid, kuid ei saa nende sisu lugeda."
+            "Välja arvatud jaotises 4 kirjeldatud võrgukriminalistika tõendid, mida Rediacc saab ainult hoidla kohta, millel klient on kriminalistika sisse lülitanud, ei töötle Rediacc kliendi andmeid kliendi masinatel. Krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse võtmetega, mida Rediaccil ei ole, seega Rediacc salvestab need andmeplokid, kuid ei saa nende sisu lugeda."
           ],
           "id": "scope",
           "title": "1. Reguleerimisala ja rollid"
@@ -775,7 +785,8 @@
           ],
           "content2": [
             "Rediacc annab vähemalt kolmkümmend (30) päeva ette teada enne alltöötleja lisamist või asendamist, uuendades seda lehte ja teavitades konto e-posti aadressi. Klient võib selle aja jooksul esitada vastuväite mõistlikel andmekaitseteemalistel põhjustel. Kui pooled ei suuda vastuväidet lahendada, võib klient mõjutatud teenused lõpetada ja saada lõpetamisele järgneva perioodi eest ettemakstud tasud tagasi.",
-            "Veebisaidi analüütika (Plausible) ei töötle kliendi isikuandmeid ja kuulub privaatsuspoliitika alla."
+            "Veebisaidi analüütika (Plausible) ei töötle kliendi isikuandmeid ja kuulub privaatsuspoliitika alla.",
+            "Mudelipakkuja, kelle Klient tehisintellekti agendiga ühendab, ei ole allkäitleja, sest Rediacc ei vali teda ega anna talle juhiseid. Sellele pakkujale saadetud tööriista väljundit reguleerib Kliendi enda leping temaga."
           ],
           "id": "subprocessors",
           "items": [
@@ -1309,6 +1320,93 @@
         ],
         "lede": "Iga partner saab end tasuta sertifitseerida. Vali inimesele sobiv rada: müük või tehniline. Õppeprogramm asub portaalis, nii et sinu meeskond saab enne eksamile minekut valmistuda.",
         "title": "Tasuta sertifikaat, kaks õpperada"
+      },
+      "growth": {
+        "title": "Mida partnerid saavad",
+        "lede": "Neli põhjust, miks Rediacci müümine partnerile tasub.",
+        "items": [
+          {
+            "title": "Tehingud, mida keegi alt ei löö",
+            "body": "Registreeri kliendi tehing ja pärast kinnitamist ei saa ükski teine partner kaitseperioodi jooksul sama klienti registreerida."
+          },
+          {
+            "title": "Marginaal, mis kasvab koos tehinguga",
+            "body": "Mitmeaastased lepingud, ettemaks ja suuremad tehingud annavad lisamarginaali ning sertifitseeritud meeskonnad tõusevad redelil kõrgemale."
+          },
+          {
+            "title": "Tasuta sertifitseerimine",
+            "body": "Müügi- ja tehnikarada, eksam on tasuta. Õppimine toimub partnerite portaalis."
+          },
+          {
+            "title": "30-päevased Enterprise'i prooviversioonid",
+            "body": "Partnerid annavad klientidele 30-päevase Enterprise'i prooviversiooni ise, Rediaccit ootamata."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Liidid meie hinnakalkulaatorist",
+        "body": "Kliendid, kes oma lahenduse avalikus hinnakalkulaatoris läbi arvutavad, saavad küsida partneri pakkumist. Need päringud lähevad nimekirjas olevatele partneritele, kes teenindavad kliendi riiki ja keelt."
+      },
+      "stance": "Me ei müü partnereist mööda. Rediacc müüb otse ainult seal, kus ükski partner klienti ei teeninda.",
+      "directoryCta": {
+        "title": "Partnerite kataloogi pääsemine",
+        "body": "Kinnitatud partnerid võivad valida avaliku kirje oma riikide, keelte ja teenustega, et kliendid leiaksid nad esimesena.",
+        "button": "Vaata kataloogi"
+      },
+      "directory": {
+        "meta": {
+          "title": "Rediacci partnerite register riikide kaupa",
+          "description": "Leia oma riigis ja keeles tegutsev Rediacci partner, et saada kohalikku tuge, kohalikus valuutas arveid ja abi üleminekul."
+        },
+        "hero": {
+          "eyebrow": "Partnerite kataloog",
+          "title": "Leia Rediacci partner enda lähedal",
+          "subtitle": "Partnerid pakuvad kohalikku tuge sinu keeles, esitavad arved sinu valuutas ja aitavad üleminekul. Paljud pakuvad hinda, mis on alla hinnakirja."
+        },
+        "benefits": {
+          "title": "Miks osta partneri kaudu",
+          "items": [
+            "Kohalik tugi sinu keeles",
+            "Arved sinu kohalikus valuutas",
+            "Abi üleminekul inimestelt, kes on seda varem teinud",
+            "Sageli hind alla hinnakirja ja tasuta lisad, mis kasvavad koos tehinguga"
+          ]
+        },
+        "filters": {
+          "country": "Riik",
+          "language": "Keel",
+          "service": "Teenus",
+          "all": "Kõik",
+          "reset": "Tühista filtrid"
+        },
+        "services": {
+          "resale": "Edasimüük",
+          "migration": "Üleminek",
+          "managed": "Hallatud teenus",
+          "training": "Koolitus"
+        },
+        "tiers": {
+          "registered": "Registreeritud",
+          "silver": "Hõbe",
+          "gold": "Kuld",
+          "platinum": "Plaatina"
+        },
+        "card": {
+          "certificates": "Sertifikaate: {{count}}",
+          "visit": "Ava veebileht",
+          "countries": "Riigid",
+          "languages": "Keeled",
+          "services": "Teenused"
+        },
+        "status": {
+          "loading": "Partnereid laaditakse...",
+          "empty": "Neile filtritele ei vasta veel ükski partner. Seal, kus partnerit pole, teenindab Rediacc kliente otse.",
+          "error": "Kataloogi laadimine ebaõnnestus. Proovi hetke pärast uuesti."
+        },
+        "becomePartner": {
+          "text": "Kas juhid edasimüügi- või teenusefirmat?",
+          "link": "Hakka partneriks"
+        }
       },
       "finalCta": {
         "button": "Saa partneriks",
@@ -2384,7 +2482,7 @@
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "100",
-            "repositories": "Piiramatu",
+            "repositories": "5",
             "repoSize": "10 GB",
             "usersTeams": "Piiramatu"
           },
@@ -2459,7 +2557,7 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Meie privaatsuskohustus"
       },
       "meta": {
@@ -2510,8 +2608,9 @@
           "items": [
             "<strong>Teenusepakkujad (alltöötlejad)</strong>, kes majutavad ja käitavad meie platvormi, edastavad e-kirju ja töötlevad makseid ning keda seovad lepingulised kohustused teie andmeid kaitsta. Praegune nimekiri koos iga pakkuja rolli ja asukohaga on meie <a href=\"data-processing-agreement\">andmetöötlusleppes</a>",
             "<strong>Plausible Analytics</strong> küpsisevaba, anonümiseeritud veebisaidi analüütika jaoks (isikuandmeid ei jagata)",
-            "<strong>Telemetria töötlemine</strong> - anonümiseeritud toote kasutusandmed edastatakse meie enda telemetria lõpp-punkti ELis koondamiseks ja analüüsimiseks. Ühtegi telemetria andmed ei jagata kolmandate osapooltega (vt meie <a href=\"telemetry-policy\">telemetria poliitikat</a>)",
-            "<strong>Õiguskaitseasutused</strong>, kui seda nõuab seadus, määrus või kehtiv õiguslik menetlus"
+            "<strong>Telemetria töötlemine</strong> anonümiseeritud toote kasutusandmete jaoks, mis saadetakse koondamiseks ja analüüsiks meie enda telemetria lõpp-punkti Euroopa Liidus. Lõpp-punkt töötab Hostingeri pakutavatel virtuaalserveritel, mis majutab andmeid meie eest meie volitatud töötlejana, nagu on loetletud meie <a href=\"data-processing-agreement\">andmetöötluslepingus</a>, ega kasuta neid oma eesmärkidel. Me ei müü telemetriaandmeid ega jaga neid kellegi teisega (vt meie <a href=\"telemetry-policy\">telemetria poliitikat</a>)",
+            "<strong>Õiguskaitseasutused</strong>, kui seda nõuab seadus, määrus või kehtiv õiguslik menetlus",
+            "<strong>Teie ühendatud mudelipakkuja</strong>, teie juhiste alusel, kui kasutate tehisintellekti agenti kaug-MCP kaudu: agendile tagastatud tööriista väljund läheb sellele pakkujale, kes töötleb seda teie enda lepingu alusel temaga. See pakkuja ei ole meie volitatud töötleja ega allvolitatud töötleja, sest Rediacc ei vali teda ega anna talle juhiseid. Mõned ühendused, näiteks Claude API MCP-ühendus, ei sobi nullandmesäilitusega"
           ],
           "title": "4. Andmete jagamine ja kolmandad osapooled"
         },
@@ -3179,7 +3278,7 @@
             "title": "Article 21(2)(d) on hankijapoolne küsimus"
           },
           {
-            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse-ajaga fork, mis teeb nädalalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kohtuekspertiisi-taseme artefaktideta. SRE ja ops-juhtidele.",
+            "blurb": "Article 21(2)(e), (f) ja 23 koos loetud. Konstantse-ajaga fork, mis teeb nädalalased harjutused realistlikuks, ja Article 23 teavitamistähtaeg, mida ei saa täita ilma kontrollitavate tõenditeta. SRE ja ops-juhtidele.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Pidev tõhusus ilma näitemänguta"
           },
@@ -9846,7 +9945,7 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 1. veebruar 2026",
+        "effectiveDate": "Jõustumiskuupäev: 26. november 2026",
         "title": "Meie telemetria tavad"
       },
       "meta": {
@@ -9947,7 +10046,7 @@
             "<strong>Krüpteerimine:</strong> Kõik andmed krüpteeritakse edastamisel TLS-i abil. Renet agent kasutab lisaks gzip-tihendamist.",
             "<strong>Säilitamine:</strong> Töötlemata telemetria jälgeid salvestatakse kuni 90 päeva silumiseks ja intsidentide uurimiseks. Koondatud mõõdikuid säilitatakse kuni 12 kuud ja seejärel kustutatakse.",
             "<strong>Juurdepääs:</strong> Telemetria andmetele pääsevad juurde ainult Rediacc inseneerimis- ja operatsioonipersonali teadmisvajaduse alusel.",
-            "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei jagata, müüda ega ole juurdepääsetavad kolmandale osapoolele.",
+            "<strong>Kolmandate osapooltega jagamine puudub:</strong> Telemetria andmeid ei müüda ega jagata kellegagi nende endi kasutuseks. Neid hoitakse Euroopa Liidus Hostingeri pakutavatel virtuaalserveritel, mis majutab neid meie eest meie volitatud töötlejana (vt meie <a href=\"data-processing-agreement\">andmetöötluslepingut</a>).",
             "<strong>Infrastruktuur:</strong> Kõiki telemetria andmeid töödeldakse ja salvestatakse Euroopa Liidus asuvatel serveritel."
           ],
           "title": "6. Andmete töötlemine ja salvestamine"
@@ -9962,7 +10061,7 @@
         "introduction": {
           "content": [
             "Rediacc tarkvaratooted koguvad anonümiseeritud kasutustelemetriat, et aidata meil parandada toote kvaliteeti, diagnoosida probleeme ja mõista, kuidas meie tööriistu kasutatakse. Käesolev telemetria poliitika kirjeldab täpselt, milliseid andmeid kogutakse, miks, kuidas neid töödeldakse ja kuidas saate loobuda.",
-            "See poliitika hõlmab kahte toodet: <strong>Rediacc CLI-d</strong> ja <strong>Rediacc Renet agenti</strong>. Veebisaidi analüütikat (Plausible) käsitleme eraldi oma <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
+            "See poliitika hõlmab kahte toodet: <strong>Rediacc CLI-d</strong> ja <strong>Rediacc Renet agenti</strong>. Repositooriumi võrgutegevuse kohtuekspertiisi salvestus ei ole telemeetria; seda töödeldakse kliendi isikuandmetena vastavalt dokumendile <a href=\"data-processing-agreement\">Andmetöötluslepe</a>. Veebisaidi analüütikat (Plausible) käsitleme eraldi oma <a href=\"privacy-policy\">privaatsuspoliitikas</a> ja <a href=\"cookie-policy\">küpsiste poliitikas</a>."
           ],
           "id": "introduction",
           "title": "1. Sissejuhatus"

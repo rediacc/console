@@ -505,7 +505,7 @@ def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     THE PURE HALF, WHICH HERE IS ALMOST ALL OF IT. The library's own header says callers "should usually feed `rsv_assert_bijection` synthetic version lists rather than shimming AWS", and the assertions were deliberately written without I/O for that reason. So the two relations, the floor, the version sort and the pointer parse are all driven directly. The R2 half is proven end to
-    end by the committed shadow ledger `.ci/shadow/w7p2-release-state.observations.jsonl` over five distinct trees, against a stub `aws` inside each fixture.
+    end by the committed shadow ledger the ledger (deleted in commit:936280cd35) over five distinct trees, against a stub `aws` inside each fixture.
     """
     ctl = Controls("release-state", floor=30, verbose=True)
 

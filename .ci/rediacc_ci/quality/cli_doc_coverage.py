@@ -25,12 +25,21 @@ against a stale copy of the twin proves the port matches something nobody ships.
 `grep -A1` IS A LINE-WINDOW, NOT A FILTER, and reproducing it needs saying out loud. It emits the matching line AND the following one, so a flag whose `add_argument(` call wraps onto the next line is still seen. A port that scanned only matching lines would silently lose every wrapped call -- and the gate's own comment explains why the window exists rather than a whole-file grep:
 "a bare `grep -oE '\"--[a-z-]+\"'` over the whole script also matches internal subprocess flags the script shells out to (git's `--abbrev-ref`, gh's `--repo`), which are not the script's own CLI surface at all."
 
-`sort -u` UNDER `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins for both
+`sort -u` UNDER `LC_ALL=C`, which the shadow gate (commit:bf054adcd4) pins for both
 sides. Python's `sorted()` on these ASCII strings is byte order, so the two agree;
 the pin is what makes that true rather than a coincidence of the developer's locale.
 
 THE CONTROL'S `sed` IS A PLAIN GLOBAL SUBSTITUTION and is reproduced as `str.replace`, including its blunt edge: replacing `--changed` also hits `--changed-only` if such a flag existed. That over-reach makes the control STRICTER, never weaker -- more flags go missing from the fixture, and the assertion only asks whether the TARGET went missing -- so it is carried rather than
 refined.
+
+---- gate ----
+step: CLI docs stay in sync with their scripts' real flags
+     # The EXISTING step name, character for character, not a tidier one.
+     # gate-bind matches a header against the step that already runs, so
+     # renaming a step is a separate change from moving what it invokes.
+needs: none
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -299,3 +308,10 @@ def selftest() -> int:
         ctl.check("CONTROL VACUITY: a doc with no flag at all is a refusal", run(), 1)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_cli_doc_coverage.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

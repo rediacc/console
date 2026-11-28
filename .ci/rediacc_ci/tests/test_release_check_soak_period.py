@@ -1,7 +1,7 @@
 """`rediacc_ci.release.check_soak_period`, driven directly.
 
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/check-soak-period.sh` over the same environment and compared its stdout, its stderr and its `$GITHUB_OUTPUT` bytes against the port's.
-The K=5 ledger `.ci/shadow/w7p5a-check-soak-period.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-check-soak-period --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
 THE SILENT-ABORT CASE (`test_unparseable_date_aborts_silently`) IS THE ONE WORTH READING FIRST. It looks like a missing assertion rather than a real case: the subject exits 1 with EMPTY stdout, EMPTY stderr and an EMPTY `$GITHUB_OUTPUT`. That is not this test failing to check anything. It is the twin's own `set -e` behaviour (see the port's module docstring), measured directly
 against the real `date` binary while both copies existed, then reproduced by the port rather than "fixed" into a helpful error message the twin never printed.
@@ -15,6 +15,7 @@ import subprocess
 import time
 
 import pytest
+import yaml
 
 from rediacc_ci.release import check_soak_period, list_edge_releases
 from rediacc_ci.tests import differential as diff
@@ -165,13 +166,11 @@ def nightly_env(days_ago: int, head_sha: str, version: str = "1.2.3") -> dict[st
     return {
         "EDGE_DATE": edge_date(days_ago),
         "SOAK_DAYS": "7",
-        "PROMOTE_TRIGGER": "workflow_run",
+        "PROMOTE_TRIGGER": "workflow_dispatch",
         "EDGE_VERSION": version,
         "NIGHTLY_HEAD_SHA": head_sha,
         # The evidence step always writes a conclusion; an empty one is no waiver.
         "NIGHTLY_CONCLUSION": "success",
-        # The `CI - Drift` run that triggered the promotion (D-promote); the weekly fleet run is the evidence (NIGHTLY_*).
-        "DRIFT_CONCLUSION": "success",
     }
 
 
@@ -262,7 +261,7 @@ def test_nightly_with_a_malformed_head_sha_falls_back_to_soak(tmp_path: pathlib.
 
 
 def test_head_sha_is_ignored_on_the_schedule_trigger(tmp_path: pathlib.Path) -> None:
-    """The 06:00 soak run is unchanged even if a head SHA were somehow present: only `workflow_run` consults ancestry."""
+    """The 06:00 soak run is unchanged even if a head SHA were somehow present: only a dispatch consults ancestry."""
     repo_dir = tmp_path / "r"
     h = make_history(repo_dir)
     _git(repo_dir, "tag", "v1.2.3", h["A"])
@@ -390,10 +389,9 @@ def test_nightly_waiver_selects_the_newest_tested_edge(tmp_path: pathlib.Path) -
     _git(repo_dir, "tag", "v1.0.2", h["A"])
     _git(repo_dir, "tag", "v1.0.1", h["A"])
     env = walk_env(
-        PROMOTE_TRIGGER="workflow_run",
+        PROMOTE_TRIGGER="workflow_dispatch",
         NIGHTLY_HEAD_SHA=h["B"],
         NIGHTLY_CONCLUSION="success",
-        DRIFT_CONCLUSION="success",
     )
     (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
@@ -408,10 +406,9 @@ def test_nightly_waiver_on_the_newest_edge_is_ready(tmp_path: pathlib.Path) -> N
     h = make_history(repo_dir)
     _git(repo_dir, "tag", "v1.0.3", h["B"])
     env = walk_env(
-        PROMOTE_TRIGGER="workflow_run",
+        PROMOTE_TRIGGER="workflow_dispatch",
         NIGHTLY_HEAD_SHA=h["B"],
         NIGHTLY_CONCLUSION="success",
-        DRIFT_CONCLUSION="success",
     )
     (exit_code, _out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
@@ -686,34 +683,9 @@ def test_select_takes_the_nightly_readers_injected() -> None:
     assert got.path == "nightly"
 
 
-# --- The soak re-pointed (PLAN-health-checks-local D4, design D-promote) ---------------------
+# --- The weekly waiver on a dispatch (PLAN-retire-nightlies-and-mentions D1) ---------------------
 #
-# The trigger is a `CI - Drift` run (DRIFT_CONCLUSION); the test evidence is the weekly fleet run (NIGHTLY_HEAD_SHA, NIGHTLY_CONCLUSION).
-
-
-def test_control_a_cancelled_drift_run_means_no_promotion(tmp_path: pathlib.Path) -> None:
-    """Even an edge that soaked for nine days is not promoted by a cancelled drift run."""
-    repo_dir = tmp_path / "r"
-    h = make_history(repo_dir)
-    _git(repo_dir, "tag", "v1.2.3", h["A"])
-    env = nightly_env(9, h["B"])
-    env["DRIFT_CONCLUSION"] = "cancelled"
-    (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
-    assert (exit_code, err) == (0, "")
-    assert "never triggers a promotion" in out
-    assert head(written) == "ready=false\npath=nightly\n"
-    assert "version=\n" in written
-
-
-def test_a_missing_drift_conclusion_is_no_promotion(tmp_path: pathlib.Path) -> None:
-    repo_dir = tmp_path / "r"
-    h = make_history(repo_dir)
-    _git(repo_dir, "tag", "v1.2.3", h["A"])
-    env = nightly_env(9, h["B"])
-    del env["DRIFT_CONCLUSION"]
-    (exit_code, _, err), written = run_in(repo_dir, tmp_path, env)
-    assert (exit_code, err) == (0, "")
-    assert head(written) == "ready=false\npath=nightly\n"
+# Stable promotion is dispatch-only (PLAN-retire-nightlies-and-mentions D1); the test evidence is the weekly fleet run (NIGHTLY_HEAD_SHA, NIGHTLY_CONCLUSION).
 
 
 def test_a_green_weekly_run_containing_the_edge_plus_a_drift_failure_waives_the_soak(
@@ -723,7 +695,6 @@ def test_a_green_weekly_run_containing_the_edge_plus_a_drift_failure_waives_the_
     h = make_history(repo_dir)
     _git(repo_dir, "tag", "v1.2.3", h["A"])
     env = nightly_env(1, h["B"])
-    env["DRIFT_CONCLUSION"] = "failure"
     env["NIGHTLY_CONCLUSION"] = "success"
     (exit_code, out, err), written = run_in(repo_dir, tmp_path, env)
     assert (exit_code, err) == (0, "")
@@ -756,21 +727,6 @@ def test_no_weekly_evidence_still_promotes_a_soaked_edge(tmp_path: pathlib.Path)
     assert head(written) == "ready=true\npath=soak\n"
 
 
-def test_select_a_refused_trigger_decides_nothing_and_reads_no_evidence() -> None:
-    got = check_soak_period.select(
-        edge_version="1.2.3",
-        edge_date="-9",
-        soak_days=7,
-        now_epoch=NOW_EPOCH,
-        nightly=True,
-        trigger_refusal="the drift run concluded cancelled",
-        nightly_tested=lambda: pytest.fail("the evidence is not read for a refused trigger"),
-        epoch=_days_ago,
-    )
-    assert not got.ready
-    assert got.path == "nightly"
-
-
 def test_select_untested_evidence_falls_through_to_the_soak() -> None:
     got = check_soak_period.select(
         edge_version="1.2.3",
@@ -785,3 +741,47 @@ def test_select_untested_evidence_falls_through_to_the_soak() -> None:
     )
     assert got.ready
     assert got.path == "soak"
+
+
+# --- The workflow itself (PLAN-retire-nightlies-and-mentions D1) -----------------------------
+
+
+def _stable_workflow() -> dict:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    return yaml.safe_load((root / ".github/workflows/cd-release-stable.yml").read_text())
+
+
+def test_stable_promotion_triggers_on_dispatch_alone() -> None:
+    """No schedule, no workflow_run: nothing promotes stable by itself."""
+    triggers = _stable_workflow()[True]  # YAML 1.1 reads the bare key `on` as True
+    assert set(triggers) == {"workflow_dispatch"}
+    assert "dry_run" in triggers["workflow_dispatch"]["inputs"]
+    assert "force" in triggers["workflow_dispatch"]["inputs"]
+
+
+def test_every_step_after_the_soak_check_honours_dry_run() -> None:
+    """A dry run selects and reports; the guard is per step, so a step added later without it fails here."""
+    steps = _stable_workflow()["jobs"]["promote"]["steps"]
+    names = [step.get("name", "") for step in steps]
+    after = steps[names.index("Check soak period") + 1 :]
+    assert len(after) >= 8, "the promote job's tail collapsed: %r" % [x.get("name") for x in after]
+    # Polarity matters: a write step gated `inputs.dry_run == true` would run ONLY on a dry run. Every step but the dry-run summary must be off on a dry run; the summary alone is on.
+    summary = "Dry run summary"
+    assert summary in [x.get("name") for x in after], "the dry-run summary step is gone"
+    wrong = [
+        step.get("name")
+        for step in after
+        if ("inputs.dry_run == true" if step.get("name") == summary else "inputs.dry_run != true")
+        not in str(step.get("if", ""))
+    ]
+    assert wrong == []
+    # Control: the soak check itself and the reads before it must still run on a dry run.
+    before = steps[: names.index("Check soak period") + 1]
+    assert not [x for x in before if "inputs.dry_run" in str(x.get("if", ""))]
+
+
+def test_the_weekly_evidence_is_read_on_a_dispatch_that_is_not_forced() -> None:
+    steps = {s.get("name"): s for s in _stable_workflow()["jobs"]["promote"]["steps"]}
+    cond = steps["Find the weekly fleet run"]["if"]
+    assert "inputs.force != true" in cond
+    assert "workflow_run" not in cond

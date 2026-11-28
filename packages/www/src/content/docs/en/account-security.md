@@ -77,6 +77,8 @@ For encrypted, server-synced configuration, see [Config Storage](/en/docs/config
 - Passkey-based key derivation (WebAuthn + PRF)
 - Rotating tokens with per-request rotation
 
+The [Security Model](/en/docs/security-model) page states who can see what, how keys are scoped and what is recoverable.
+
 ### Session Security
 
 | Token Type | Lifetime | Storage | Refresh |
@@ -115,6 +117,6 @@ rdc update --status            # Show current channel
 
 ### CLI Security Posture for AI Agents
 
-Coding agents invoking `rdc` are a real threat surface, so we treat them as a separate principal. Every `rdc` invocation is classified at startup as **human** or **agent** based on environment signals (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus a Linux `/proc` ancestry walk. Detection is best-effort. A determined wrapper can spoof env vars, which is why ancestry matters. Agents get a reduced permission set: sensitive config mutations require the knowledge-gate (`--current <old>`), the interactive editor is refused without an ancestry-verified `REDIACC_ALLOW_CONFIG_EDIT` override, and `--reveal` on any display command is blocked. Every decision (allow, refuse, or grant `--reveal`) writes one hash-chained JSONL line to `~/.config/rediacc/audit.log.jsonl`. Run `rdc config audit verify` to check chain integrity.
+Coding agents invoking `rdc` are a real threat surface, so we treat them as a separate principal. Every `rdc` invocation is classified at startup as **human** or **agent** based on environment signals (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) plus a Linux `/proc` ancestry walk. Detection is best-effort. A determined wrapper can spoof env vars, which is why ancestry matters. Agents get a reduced permission set: sensitive config mutations require the knowledge-gate (`--current <old>`), `rdc config edit` (interactive, `--apply`, `--reveal`) is refused with no override, and `--reveal` on any display command is blocked. An agent acts only where a human opt-in and the policy ceiling both allow it ([AI Agent Safety](/en/docs/ai-agents-safety)). Every decision (allow, refuse, or grant `--reveal`) writes one hash-chained JSONL line to `~/.config/rediacc/audit.log.jsonl`. Run `rdc config audit verify` to check chain integrity.
 
 See [AI Agent Safety & Guardrails](/en/docs/ai-agents-safety) for the full matrix of what agents can and cannot do, worked examples of the knowledge-gate, and scope-override mechanics.

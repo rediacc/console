@@ -9,13 +9,23 @@
  * and a disallowed English-identical value are refused, an `.id` anchor is not; (6) the
  * control: the planner scope assertion rejects the pre-dot matcher `k.startsWith(p)`;
  * (7) a {{placeholder}} set that differs from English is refused; (8) own-property
- * lookups: a key named `constructor` is stamped, not mistaken for stamped.
+ * lookups: a key named `constructor` is stamped, not mistaken for stamped; (9) --restamp
+ * rewrites a stale entry only where the locale value differs from HEAD, lists an unchanged
+ * one, and applies the normal refusals.
  */
+
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
-import { type Ledger, planStamps, run, serializeLedger } from '../gen/i18n-stamp-keys.ts';
+import {
+  gitHeadValues,
+  type Ledger,
+  planStamps,
+  run,
+  serializeLedger,
+} from '../gen/i18n-stamp-keys.ts';
 import { flattenAndHash } from '../lib/crc32.ts';
 
 // Throws so the finally block below still removes the mkdtemp fixture; the catch exits 1.
@@ -141,6 +151,153 @@ try {
   }
   const mutant = Object.keys(enHashes).filter((k) => k.startsWith('legal'));
   if (scopedTo(mutant, 'legal')) fail('control: the scope assertion passes an unscoped stamp');
+
+  // (9) --restamp: re-translated stale key restamped in place, unchanged stale key listed only, placeholder mismatch refused; HEAD is injected because the fixture is no repository.
+  const enR = { r: { a: 'New A', b: 'New B', c: 'Hello {{x}}' } };
+  const deR = { r: { a: 'Neu A', b: 'Neu B', c: 'Hallo {{y}}' } };
+  const headDe: Record<string, string> = {
+    'r.a': 'Alt A',
+    'r.b': 'Neu B',
+    'r.c': 'Hallo {{x}}',
+  };
+  const root2 = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-keys-restamp-'));
+  try {
+    const put2 = (name: string, v: unknown) =>
+      fs.writeFileSync(path.join(root2, name), `${JSON.stringify(v, null, 2)}\n`);
+    put2('en.json', enR);
+    put2('de.json', deR);
+    const stale = { 'r.a': 'deadbeef', 'r.b': 'deadbeef', 'r.c': 'deadbeef' };
+    const ledger2 = path.join(root2, '.naturalized-hashes.json');
+    fs.writeFileSync(ledger2, serializeLedger({ languages: { de: { ...stale } } }));
+    const head = () => headDe;
+    const hR = flattenAndHash(enR, '');
+    const read2 = () =>
+      (JSON.parse(fs.readFileSync(ledger2, 'utf8')) as Ledger).languages?.de ?? {};
+    mute();
+    const plainRc = run(['--prefix', 'r', '--lang', 'de', '--write'], root2, head);
+    const afterPlain = read2();
+    const reRc = run(['--prefix', 'r', '--lang', 'de', '--restamp', '--write'], root2, head);
+    const afterRe = read2();
+    unmute();
+    if (plainRc !== 0 || JSON.stringify(afterPlain) !== JSON.stringify(stale)) {
+      fail('without --restamp a stale entry was rewritten');
+    }
+    if (afterRe['r.a'] !== hR['r.a']) fail('a re-translated stale key was not restamped');
+    if (afterRe['r.b'] !== 'deadbeef') fail('an unchanged stale key was restamped');
+    if (afterRe['r.c'] !== 'deadbeef' || reRc !== 1) {
+      fail(`a placeholder mismatch was not refused under --restamp (rc ${reRc})`);
+    }
+    if (JSON.stringify(Object.keys(afterRe)) !== '["r.a","r.b","r.c"]') fail('restamp reordered');
+    const listed = planStamps({
+      enValues: { 'r.b': 'New B' },
+      enHashes: { 'r.b': hR['r.b'] },
+      localeValues: { de: { 'r.b': 'Neu B' } },
+      ledger: { languages: { de: { 'r.b': 'deadbeef' } } },
+      prefixes: ['r'],
+      langs: ['de'],
+      headValues: { de: { 'r.b': 'Neu B' } },
+    }).de;
+    if (listed.unchanged.join() !== 'r.b' || listed.restamp.length)
+      fail('unchanged key not listed');
+
+    // (10) --since: a value committed after <rev> is restamped against <rev> and stays "unchanged" against HEAD; r.b is still stale from above.
+    const revReader = (_d: string, _l: string, rev: string) =>
+      rev === 'OLD' ? { ...headDe, 'r.b': 'Alt B' } : headDe;
+    mute();
+    const headRc = run(
+      ['--prefix', 'r.b', '--lang', 'de', '--restamp', '--write'],
+      root2,
+      revReader
+    );
+    const afterHead = read2();
+    const sinceRc = run(
+      ['--prefix', 'r.b', '--lang', 'de', '--restamp', '--since', 'OLD', '--write'],
+      root2,
+      revReader
+    );
+    const afterSince = read2();
+    const badRc = run(['--prefix', 'r', '--since', 'OLD'], root2, revReader);
+    unmute();
+    if (headRc !== 0 || afterHead['r.b'] !== 'deadbeef') {
+      fail('without --since a value committed after the base was restamped');
+    }
+    if (sinceRc !== 0 || afterSince['r.b'] !== hR['r.b']) {
+      fail('--since did not restamp a value changed after <rev>');
+    }
+    if (badRc !== 2) fail(`--since without --restamp was not rejected (rc ${badRc})`);
+    mute();
+    const badHeadRc = run(['--prefix', 'r', '--since', 'HEAD'], root2, revReader);
+    // Without --since r.b is listed as unchanged on stdout; capture it through a dry run.
+    fs.writeFileSync(ledger2, serializeLedger({ languages: { de: { ...stale } } }));
+    const captured: string[] = [];
+    const realWrite = process.stdout.write.bind(process.stdout);
+    process.stdout.write = ((c: string | Uint8Array) => {
+      captured.push(String(c));
+      return true;
+    }) as typeof process.stdout.write;
+    run(['--prefix', 'r.b', '--lang', 'de', '--restamp'], root2, revReader);
+    process.stdout.write = realWrite;
+    unmute();
+    if (badHeadRc !== 2) fail(`--since HEAD without --restamp was not rejected (rc ${badHeadRc})`);
+    if (!captured.join('').includes('= r.b: stale, locale value unchanged since HEAD')) {
+      fail('an unchanged stale key was not listed as unchanged without --since');
+    }
+
+    // (11) the real reader: a file present at HEAD, a file absent from HEAD, a bad rev, a corrupt file.
+    const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-keys-gitreader-'));
+    try {
+      const sh = (...a: string[]) =>
+        execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...a], {
+          cwd: repo,
+          stdio: 'ignore',
+        });
+      sh('init', '-q');
+      fs.writeFileSync(path.join(repo, 'de.json'), '{"r":{"a":"Eins"}}\n');
+      fs.writeFileSync(path.join(repo, 'fr.json'), '{not json\n');
+      sh('add', '--', 'de.json', 'fr.json');
+      sh('commit', '-q', '-m', 'seed');
+      if (JSON.stringify(gitHeadValues(repo, 'de')) !== '{"r.a":"Eins"}') {
+        fail('the real reader did not return the committed values');
+      }
+      if (Object.keys(gitHeadValues(repo, 'it')).length !== 0) {
+        fail('a locale file absent from HEAD was not read as {}');
+      }
+      let badRev = '';
+      try {
+        gitHeadValues(repo, 'de', 'NOSUCHREV');
+      } catch (e) {
+        badRev = (e as Error).message;
+      }
+      if (!badRev.includes('cannot resolve revision NOSUCHREV')) fail('a bad rev was not named');
+      let corrupt = '';
+      try {
+        gitHeadValues(repo, 'fr');
+      } catch (e) {
+        corrupt = (e as Error).message;
+      }
+      if (!corrupt.includes('not readable JSON')) fail(`a corrupt file lost its cause: ${corrupt}`);
+      // CONTROL: a blob the tree names but the object store lost is an error, not {}.
+      const blob = execFileSync('git', ['rev-parse', 'HEAD:de.json'], {
+        cwd: repo,
+        encoding: 'utf8',
+      }).trim();
+      const objPath = path.join(repo, '.git', 'objects', blob.slice(0, 2), blob.slice(2));
+      fs.chmodSync(objPath, 0o644);
+      fs.rmSync(objPath);
+      let lost = '';
+      try {
+        gitHeadValues(repo, 'de');
+      } catch (e) {
+        lost = (e as Error).message;
+      }
+      if (!lost.includes('git show'))
+        fail(`a lost blob was read as absent: ${JSON.stringify(lost)}`);
+    } finally {
+      fs.rmSync(repo, { recursive: true, force: true });
+    }
+  } finally {
+    fs.rmSync(root2, { recursive: true, force: true });
+  }
 } catch (e) {
   unmute();
   console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);

@@ -1,6 +1,6 @@
 r"""`rediacc_ci.quality.dead_case_arms` against the grep pipelines it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-dead-case-arms.observations.jsonl` drives the whole gate over five distinct trees carrying a dead arm in each scan root, a live mirror, and the vacuity floor. What a ledger row cannot isolate is the two greps that decide the verdict for every arm:
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees carrying a dead arm in each scan root, a live mirror, and the vacuity floor. What a ledger row cannot isolate is the two greps that decide the verdict for every arm:
 
     grep -rnE '^[[:space:]]*\*[^)]*"[^"]*"[^)]*\)'   is this line an ASSERTION
     grep -rhE --exclude-dir=test "${key}=" $CODE_DIRS | grep -qvE '^\s*(#|//|\*)'

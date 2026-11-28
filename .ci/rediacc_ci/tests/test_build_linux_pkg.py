@@ -6,7 +6,7 @@ WHY THE ENV DUMP IS PART OF THE COMPARISON. This script's real output is a `.deb
 and exported `NFPM_ARCH=x64` instead of `amd64` would be byte-identical on both
 streams and would ship an unusable package. The fake `nfpm` therefore writes the variables it was given to `$FAKE_ENV_DUMP`, and `_agree` compares them.
 
-THE BUILD DIRECTORY IS MASKED, AND IT HAS TO BE. `mktemp -d` and `tempfile.mkdtemp()` both invent a random name, and that name appears in three different argv (`nfpm --target`, the canonicaliser's key path, `gpg --show-keys`). Comparing it would be comparing two random strings. The masking is done INSIDE the fakes rather than in this file, so the shadow-gate ledger -- which has no
+THE BUILD DIRECTORY IS MASKED, AND IT HAS TO BE. `mktemp -d` and `tempfile.mkdtemp()` both invent a random name, and that name appears in three different argv (`nfpm --target`, the canonicaliser's key path, `gpg --show-keys`). Comparing it would be comparing two random strings. The masking is done INSIDE the fakes rather than in this file, so the shadow gate ledger -- which has no
 masking hook of its own -- gets the identical normalisation. `$TMPDIR` is pointed at a fixture directory so the fakes can recognise what to mask.
 
 RECORDED TO `$FAKE_CALL_LOG`, NEVER TO STDOUT. The fake `gpg`'s stdout IS the colon-format key listing the script parses.
@@ -15,7 +15,7 @@ THE PATH IS REPLACED, NOT PREPENDED. `test_the_scratch_path_is_sealed` asserts t
 
 `$0` IS MASKED TO `<SELF>`; the `line <n>: ` in a `set -u` death is masked in the one test that drives it. Nothing else.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-linux-pkg.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

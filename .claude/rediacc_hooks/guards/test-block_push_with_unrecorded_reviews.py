@@ -2,14 +2,13 @@
 """Control harness for block_push_with_unrecorded_reviews.
 
 Each case is a REAL repository with an `origin/main` and a branch, in a state the guard has to judge: an unreviewed commit, a review that is not committed, an open high finding, a hand-edited record, a reviewer in flight, a review that failed once and twice, and the clean branch the guard must let through. The guard runs through dispatch.py exactly as settings.json runs it. The model is never called: review files are written by `wl_review.run_review` with
-an in-process fake reviewer, and the hand edit is a byte change of the kind `block_review_file_edit` exists to refuse.
+an in-process fake reviewer, and the hand edit is a byte change of the kind `block_guarded_path_edit` exists to refuse.
 
 Then the guard's DEFECT is planted in-process and the refusal cases MUST fail, which is the proof they can.
 
     test-block_push_with_unrecorded_reviews.py
 """
 
-import ast
 import importlib
 import importlib.util
 import json
@@ -20,6 +19,10 @@ import subprocess
 import sys
 import tempfile
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _edit_suite
 
 HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
@@ -280,23 +283,7 @@ def via_dispatch(repo, cmd):
     return p.returncode, p.stdout + p.stderr
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def defect_runner(name="DEFECT"):

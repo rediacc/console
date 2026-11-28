@@ -14,7 +14,9 @@ import { pushInfraConfig } from '../../services/provision/infra-provision.js';
 import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
 import { REMOTE_RENET_PATH } from '../../services/renet/renet-provisioner.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
-import type { OutputFormat } from '../../types/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { EXIT_CODES, type OutputFormat } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { convergeAfterSetup } from './converge.js';
@@ -100,39 +102,72 @@ function reportKeyChanges(machineName: string, previous: string, scanned: string
 async function scanSingleMachine(machineName: string): Promise<void> {
   const machine = await configService.getLocalMachine(machineName);
   const previous = machine.knownHosts ?? '';
-  const keyscan = scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
-  if (keyscan) {
-    await configService.updateMachine(machineName, { knownHosts: keyscan });
-    reportKeyChanges(machineName, previous, keyscan);
-  } else {
-    outputService.warn(t('commands.machine.scanKeys.noKeys', { name: machineName }));
+  let keyscan: string;
+  try {
+    keyscan = await scanHostKeys(machine.ip, machine.port ?? DEFAULTS.SSH.PORT);
+  } catch (error) {
+    // The scan is this command's whole purpose: a failed one exits nonzero (NETWORK_ERROR), so a script or CI step can see it.
+    throw new CliExitError(ERROR_CODES.NETWORK_ERROR, scanFailure(machineName, error), {
+      retryable: true,
+    });
   }
+  await configService.updateMachine(machineName, { knownHosts: keyscan });
+  reportKeyChanges(machineName, previous, keyscan);
 }
 
-async function scanAllMachines(): Promise<void> {
+/** The "could not scan" line with the scan's own reason appended. */
+function scanFailure(name: string, error: unknown): string {
+  const reason = error instanceof Error ? error.message : String(error);
+  return `${t('commands.machine.scanKeys.noKeys', { name })}: ${reason}`;
+}
+
+/** One machine's outcome in the all-machines scan; `-o json` prints these rows. */
+interface ScanKeysRow {
+  name: string;
+  ok: boolean;
+  error?: string;
+}
+
+async function scanAllMachines(format: OutputFormat): Promise<void> {
   const machines = await configService.listMachines();
-  let scanned = 0;
+  const rows: ScanKeysRow[] = [];
   for (const m of machines) {
     try {
       const previous = m.config.knownHosts ?? '';
-      const keyscan = scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
-      if (keyscan) {
-        await configService.updateMachine(m.name, { knownHosts: keyscan });
-        // Stay one line per machine in the bulk case unless a pin was actually replaced, which is worth interrupting the summary for.
-        if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
-          reportKeyChanges(m.name, previous, keyscan);
-        } else {
-          outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
-        }
-        scanned++;
+      const keyscan = await scanHostKeys(m.config.ip, m.config.port ?? DEFAULTS.SSH.PORT);
+      await configService.updateMachine(m.name, { knownHosts: keyscan });
+      // Stay one line per machine in the bulk case unless a pin was actually replaced, which is worth interrupting the summary for.
+      if (classifyKeyChange(previous, keyscan).some((c) => c.kind === 'replaced')) {
+        reportKeyChanges(m.name, previous, keyscan);
+      } else {
+        outputService.info(t('commands.machine.scanKeys.keysScanned', { name: m.name }));
       }
-    } catch {
-      outputService.warn(t('commands.machine.scanKeys.noKeys', { name: m.name }));
+      rows.push({ name: m.name, ok: true });
+    } catch (error) {
+      outputService.warn(scanFailure(m.name, error));
+      rows.push({
+        name: m.name,
+        ok: false,
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
   }
-  outputService.success(
-    t('commands.machine.scanKeys.completed', { count: scanned, total: machines.length })
-  );
+  const scanned = rows.filter((r) => r.ok).length;
+  // Any machine that failed makes the run fail, after every machine was tried. Recorded before the summary line or the JSON rows print (the rows only print in json/yaml formats; the table prints the summary and the per-machine warnings), so the JSON envelope says success:false and names each failed machine beside the rows.
+  const failed = rows.filter((r) => !r.ok);
+  if (failed.length > 0) {
+    outputService.fail(
+      EXIT_CODES.NETWORK_ERROR,
+      failed.map((r) => scanFailure(r.name, r.error)).join('; ')
+    );
+  }
+  if (format === 'table') {
+    outputService.success(
+      t('commands.machine.scanKeys.completed', { count: scanned, total: machines.length })
+    );
+  } else {
+    outputService.print(rows, format);
+  }
 }
 
 /** `machine add <name>`, register an existing SSH-reachable machine. */
@@ -159,6 +194,7 @@ function registerRemove(machine: Command): void {
   machine
     .command('remove')
     .argument('<name>', t('options.name'))
+    .summary(t('commands.machine.remove.descriptionShort'))
     .description(t('commands.machine.remove.description'))
     .option('-y, --yes', t('options.yes'))
     .option('--force', t('commands.machine.remove.forceOption'))
@@ -197,6 +233,7 @@ function registerRemove(machine: Command): void {
 function registerList(machine: Command, program: Command): void {
   machine
     .command('list')
+    .summary(t('commands.machine.list.descriptionShort'))
     .description(t('commands.machine.list.description'))
     .option('--search <text>', t('options.searchInField', { field: 'name' }))
     // Closed set: --sort keys are exactly the columns of the output rows below.
@@ -249,17 +286,18 @@ function registerList(machine: Command, program: Command): void {
 }
 
 /** `machine scan-keys [name]`, pin SSH host keys for one or all machines. */
-function registerScanKeys(machine: Command): void {
+function registerScanKeys(machine: Command, program: Command): void {
   machine
     .command('scan-keys')
     .argument('[name]', t('options.name'))
+    .summary(t('commands.machine.scanKeys.descriptionShort'))
     .description(t('commands.machine.scanKeys.description'))
     .action(async (name: string | undefined) => {
       try {
         if (name) {
           await scanSingleMachine(name);
         } else {
-          await scanAllMachines();
+          await scanAllMachines(program.opts().output as OutputFormat);
         }
       } catch (error) {
         handleError(error);
@@ -408,6 +446,6 @@ export function registerMachineRegistrationCommands(machine: Command, program: C
   registerAdd(machine);
   registerRemove(machine);
   registerList(machine, program);
-  registerScanKeys(machine);
+  registerScanKeys(machine, program);
   registerSetup(machine);
 }

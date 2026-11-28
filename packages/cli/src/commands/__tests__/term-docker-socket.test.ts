@@ -11,7 +11,6 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { createServer, type Server } from 'node:net';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { repoDockerHost, repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { WK_DATASTORE_PATH, WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
@@ -41,12 +40,14 @@ const derived = {
   DOCKER_HOST: repoDockerHost(NETWORK_ID),
 };
 
-describe('term connect Docker socket on either layout', () => {
+// BLOCKER: runs the session prefix under `sh` against real unix-domain sockets under /tmp; Windows has neither a POSIX `sh` on PATH nor unix sockets at those paths.
+describe.skipIf(process.platform === 'win32')('term connect Docker socket on either layout', () => {
   let root: string;
   const servers: Server[] = [];
 
   beforeAll(() => {
-    root = mkdtempSync(join(tmpdir(), 'term-sock-'));
+    // A unix socket path caps near 108 bytes; the per-run vitest tmpdir alone can exceed that, so the sockets live under a short root.
+    root = mkdtempSync(join('/tmp', 'tsock-'));
   });
 
   afterEach(async () => {

@@ -12,6 +12,9 @@ const { mockExec, mockExecStreaming } = vi.hoisted(() => ({
 import type { SFTPClient } from '../../sftp/client.js';
 import { isExcluded, sftpUploadFile, sftpUploadPaths } from '../sftp-fallback.js';
 
+// BLOCKER: the tests marked posixIt assert POSIX mode bits (`chmod 755` from a 0o755 file) or create symlinks; NTFS reports no execute bit and symlinkSync needs a privilege the runner lacks.
+const posixIt = it.skipIf(process.platform === 'win32');
+
 // The transfer functions take an already-connected client: the caller leases it
 // from the pool (services/machine/machine-connection.ts), so nothing here opens
 // or closes a session.
@@ -176,7 +179,7 @@ describe('sftpUploadFile', () => {
     expect(r.errors.some((e) => e.includes('verify mismatch'))).toBe(true);
   });
 
-  it('preserves executable bit via chmod', async () => {
+  posixIt('preserves executable bit via chmod', async () => {
     const exe = join(workDir, 'run.sh');
     writeFileSync(exe, '#!/bin/sh\necho hi\n');
     chmodSync(exe, 0o755);
@@ -204,7 +207,7 @@ describe('sftpUploadPaths', () => {
     rmSync(workDir, { recursive: true, force: true });
   });
 
-  it('preserves mode bits per file', async () => {
+  posixIt('preserves mode bits per file', async () => {
     const dir = join(workDir, 'tree');
     mkdirSync(dir);
     const exe = join(dir, 'run.sh');
@@ -221,7 +224,7 @@ describe('sftpUploadPaths', () => {
     expect(cmds.some((c) => c === `chmod 644 'dest/note.txt'`)).toBe(true);
   });
 
-  it('preserves symlinks via ln -sfn', async () => {
+  posixIt('preserves symlinks via ln -sfn', async () => {
     const dir = join(workDir, 'tree');
     mkdirSync(dir);
     writeFileSync(join(dir, 'real.txt'), 'real');
@@ -256,7 +259,7 @@ describe('sftpUploadPaths', () => {
     expect(cmds).toContain(`mkdir -p 'dest/b'`);
   });
 
-  it('never issues sudo or chown for a tree upload with symlinks', async () => {
+  posixIt('never issues sudo or chown for a tree upload with symlinks', async () => {
     const dir = join(workDir, 'tree');
     mkdirSync(dir);
     writeFileSync(join(dir, 'a.txt'), 'a');

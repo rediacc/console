@@ -24,7 +24,8 @@ vi.mock('../../services/core/output.js', () => ({
 
 const { registerJobCommands } = await import('../job.js');
 
-const JOB_ID = '0123456789abcdef0123456789abcdef';
+// A real renet job id: the job commands refuse any other shape before a machine call.
+const JOB_ID = 'j18c1994eaa33d30d-3d9813b2';
 const SUCCEEDED = { job_id: JOB_ID, state: 'succeeded', function: 'repo_up' };
 
 async function run(...args: string[]): Promise<void> {

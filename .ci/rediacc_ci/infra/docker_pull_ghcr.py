@@ -67,7 +67,7 @@ EMPTY array under `set -u`. bash 4.4+ treats that as zero words; bash 4.3 and ea
 
 Exit: 0 on a completed pull; 1 for a missing `--image`, a `:latest` violation, a missing token, a missing actor, or a missing `docker`; otherwise docker's own status from login, pull or logout.
 
-K=5 LEDGER: `.ci/shadow/w7p6-docker-pull-ghcr.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

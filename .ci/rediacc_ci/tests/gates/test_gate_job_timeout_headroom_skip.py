@@ -5,34 +5,22 @@
 
 from __future__ import annotations
 
-import importlib.util
+import importlib
 import json
-import sys
 from typing import TYPE_CHECKING
 
-from rediacc_ci import paths
 from rediacc_ci.core import ghx
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-SCRIPT = paths.from_root(".ci/scripts/quality/check_job_timeout_headroom.py")
 BAD = "36670172984"
 JOBS = "Validate Promotion\t2026-09-01T00:00:00Z\t2026-09-01T00:%02d:00Z\n"
 ERR_502 = "gh: Server Error (HTTP 502)"
 
 
 def _load():
-    hop = paths.on_sys_path(SCRIPT.parent)
-    try:
-        spec = importlib.util.spec_from_file_location("headroom_under_test", SCRIPT)
-        assert spec is not None
-        assert spec.loader is not None
-        mod = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(mod)
-        return mod
-    finally:
-        sys.path.remove(hop)
+    return importlib.import_module("rediacc_ci.quality.job_timeout_headroom")
 
 
 def _baseline(tmp_path: Path) -> Path:

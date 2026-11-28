@@ -4,12 +4,15 @@
  * Every consumer test replaces the module with `vi.mock`, so until this file existed no test ran `keyctl`, `security` or PowerShell at all. Three groups:
  *
  *   1. The key allowlist, on every platform.
- *   2. The native backend of the host OS (keyctl on Linux, Keychain on macOS, DPAPI on Windows): the storage contract, backend selection, a cross-process read, what is left at rest, and that the secret is on no command line (Linux and macOS, through a recording wrapper on PATH; the Windows half is secure-storage.tools.test.ts, because a script cannot stand in for `powershell.exe` there).
+ *   2. The native backend of the host OS (on Linux the Secret Service where a session bus offers one and keyctl otherwise, Keychain on macOS, DPAPI on Windows): the storage contract, backend selection, a cross-process read, what is left at rest, and that the secret is on no command line (Linux and macOS, through a recording wrapper on PATH; the Windows half is secure-storage.tools.test.ts, because a script cannot stand in for `powershell.exe` there).
  *   3. The file backend, which only `REDIACC_SECRET_STORE=file` selects (operator ruling 2026-10-13: no machine gets a disk-held secret without choosing it).
  *   4. The refusal: with no usable native backend and no opt-in, selection throws and stores nothing. `keyctl` off PATH, and a session keyring that cannot read the user keyring back.
+ *   5. The Linux selection order, against a stand-in `secret-tool` on PATH so it holds on any Linux host: the Secret Service first when a session bus exists, the kernel keyring when the bus, the tool or its round trip is missing, the file backend only by opt-in.
  *
  * SKIP OR FAIL. Group 2 needs a backend the process can write AND read. Where it cannot be reached (a container, a session keyring that does not link the user keyring) the group skips with a printed reason, so a workstation without a keyring keeps a green unit suite. `SECURE_STORAGE_REQUIRE_NATIVE=1` removes the skip: every native test runs and an unreachable backend is a failure.
  * The CI job sets it, and `SECURE_STORAGE_NATIVE_RECEIPT` names a file the suite writes with the backend type and the number of native tests that ran, which the job reads back. A leg whose variable was misspelled writes no receipt and is red.
+ *
+ * KEYCTL ON A DESKTOP. The keyctl tests run their children with no session bus (`NO_BUS`), so on a host whose own selection is the Secret Service they still drive the kernel keyring. They run when such a child round-trips a key, or always under the requirement.
  *
  * ISOLATION. Keys carry a unique throwaway prefix and are deleted in `afterAll`. On Linux the config, state and cache homes are the per-file temporary ones from isolate-config-home.ts. The kernel user keyring (`@u`) is per-UID and cannot be redirected, so the throwaway keys do pass through it.
  */
@@ -25,6 +28,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -38,12 +42,13 @@ import {
   SecureStorageUnavailableError,
 } from '../secure-storage.js';
 
-const NATIVE_BY_PLATFORM: Partial<Record<NodeJS.Platform, string>> = {
-  linux: 'keyctl',
-  darwin: 'keychain',
-  win32: 'dpapi',
+/** The native backends of each OS, most preferred first. Linux has two: which one serves depends on the session (a session bus or not). */
+const NATIVE_BY_PLATFORM: Partial<Record<NodeJS.Platform, readonly string[]>> = {
+  linux: ['secret-service', 'keyctl'],
+  darwin: ['keychain'],
+  win32: ['dpapi'],
 };
-const EXPECTED_NATIVE = NATIVE_BY_PLATFORM[process.platform];
+const NATIVE_TYPES = NATIVE_BY_PLATFORM[process.platform];
 const REQUIRE_NATIVE = process.env.SECURE_STORAGE_REQUIRE_NATIVE === '1';
 const RECEIPT_PATH = process.env.SECURE_STORAGE_NATIVE_RECEIPT;
 const IS_LINUX = process.platform === 'linux';
@@ -88,18 +93,18 @@ async function probeNative(): Promise<Probe> {
   try {
     const storage = getSecureStorage();
     type = storage.type;
-    if (EXPECTED_NATIVE === undefined) {
+    if (NATIVE_TYPES === undefined) {
       return {
         reachable: false,
         type,
         detail: `no native backend is defined for ${process.platform}`,
       };
     }
-    if (type !== EXPECTED_NATIVE) {
+    if (!NATIVE_TYPES.includes(type)) {
       return {
         reachable: false,
         type,
-        detail: `selected "${type}", expected "${EXPECTED_NATIVE}"`,
+        detail: `selected "${type}", expected one of "${NATIVE_TYPES.join('", "')}"`,
       };
     }
     const key = freshKey('probe');
@@ -122,6 +127,8 @@ async function probeNative(): Promise<Probe> {
 }
 
 const probe = await probeNative();
+/** The backend this host selects; the tests below hold every child to the same one. */
+const EXPECTED_NATIVE = probe.reachable ? probe.type : NATIVE_TYPES?.at(-1);
 const runNative = REQUIRE_NATIVE || probe.reachable;
 const status = `[secure-storage.native] platform=${process.platform} backend=${probe.type} reachable=${probe.reachable} require=${REQUIRE_NATIVE ? 1 : 0}`;
 const skipNote = `NATIVE TESTS SKIPPED: ${probe.detail}; ${HINTS[process.platform] ?? 'unsupported platform'}. SECURE_STORAGE_REQUIRE_NATIVE=1 turns this skip into a failure.`;
@@ -138,6 +145,12 @@ function nativeIt(name: string, fn: () => Promise<void> | void, ...only: NodeJS.
     await fn();
   });
 }
+
+/** No session bus: what a headless or SSH-only session has, so a Linux child selects the kernel keyring. */
+const NO_BUS: Record<string, string | undefined> = {
+  DBUS_SESSION_BUS_ADDRESS: undefined,
+  XDG_RUNTIME_DIR: undefined,
+};
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
@@ -328,6 +341,99 @@ function emptyPath(): string {
   return mkdtempSync(join(tmpdir(), 'rdc-sstest-nopath-'));
 }
 
+/** Whether `name` is on PATH. */
+function onPath(name: string): boolean {
+  try {
+    toolOnPath(name);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** The kernel keyring's copy of a key, read with the tool and not the module; null when there is none. */
+function keyringItem(key: string): string | null {
+  const search = spawnSync('keyctl', ['search', '@u', 'user', key], { encoding: 'utf-8' });
+  if (search.status !== 0) return null;
+  const pipe = spawnSync('keyctl', ['pipe', search.stdout.trim()], { encoding: 'utf-8' });
+  return pipe.status === 0 ? pipe.stdout : null;
+}
+
+// Settled once: can a child with no session bus store a key in the kernel keyring and read it back? That is what the keyctl tests need, whichever backend this process selects.
+const keyctlReachable =
+  IS_LINUX &&
+  onPath('keyctl') &&
+  (() => {
+    const key = freshKey('keyctl-probe');
+    const value = secret();
+    try {
+      const child = inChild('roundtrip', key, value, { env: NO_BUS });
+      return child.type === 'keyctl' && child.value === value;
+    } finally {
+      unlinkFromUserKeyring(key);
+    }
+  })();
+const runKeyctl = (REQUIRE_NATIVE && IS_LINUX) || keyctlReachable;
+process.stderr.write(
+  `[secure-storage.native] keyctl with no session bus: reachable=${keyctlReachable}${runKeyctl ? '' : ' (KEYCTL TESTS SKIPPED)'}\n`
+);
+
+/** A Linux test that needs the kernel keyring. Declared like a native test, so under the requirement it must run. */
+function keyctlIt(name: string, fn: () => Promise<void> | void): void {
+  if (IS_LINUX) declaredNative.push(name);
+  it.skipIf(!IS_LINUX || !runKeyctl)(name, async () => {
+    ranNative.add(name);
+    await fn();
+  });
+}
+
+interface FakeSecretTool {
+  /** Put first on PATH. */
+  bin: string;
+  /** Every argument the stand-in was started with, one per line. */
+  log: string;
+  /** One file per stored key, holding what `store` read from stdin. */
+  items: string;
+  /** Creating this file makes every call fail the way `secret-tool` does with no Secret Service behind the bus. */
+  failFlag: string;
+}
+
+/**
+ * A stand-in `secret-tool` with the real one's interface: `store --label=L service S account K` reads the secret from stdin, `lookup service S account K` prints it or exits 1, `clear ...` removes it. It keeps items in files, so the selection order can be tested on a host with no Secret Service.
+ */
+function fakeSecretTool(): FakeSecretTool {
+  const bin = mkdtempSync(join(tmpdir(), 'rdc-sstest-secrettool-'));
+  const log = join(bin, 'argv.log');
+  const items = join(bin, 'items');
+  const failFlag = join(bin, 'fail');
+  const script = [
+    '#!/bin/sh',
+    `for arg in "$@"; do printf '%s\\n' "$arg"; done >> '${log}'`,
+    `if [ -f '${failFlag}' ]; then echo 'secret-tool: Cannot autolaunch D-Bus without X11 $DISPLAY' >&2; exit 1; fi`,
+    'cmd=$1; shift',
+    '[ "$cmd" = store ] && shift',
+    `item='${items}/'$(printf '%s' "$4" | tr ':' '_')`,
+    'case $cmd in',
+    `  store) mkdir -p '${items}'; cat > "$item" ;;`,
+    '  lookup) [ -f "$item" ] || exit 1; cat "$item" ;;',
+    '  clear) rm -f "$item" ;;',
+    '  *) exit 2 ;;',
+    'esac',
+    '',
+  ].join('\n');
+  writeFileSync(join(bin, 'secret-tool'), script);
+  chmodSync(join(bin, 'secret-tool'), 0o755);
+  return { bin, log, items, failFlag };
+}
+
+/** The item file the stand-in keeps for `key`. */
+function fakeItem(fake: FakeSecretTool, key: string): string {
+  return join(fake.items, key.replaceAll(':', '_'));
+}
+
+/** A bus address for a child: the stand-in never dials it, the module only needs to see one. */
+const SOME_BUS = 'unix:path=/nonexistent/rdc-sstest-bus';
+
 const VALUE_CLASSES: readonly (readonly [string, string])[] = [
   ['the production shape (base64 of 32 bytes)', secret()],
   ['a leading dash (base64url alphabet)', `-${secret().replaceAll('+', '-').replaceAll('/', '_')}`],
@@ -393,13 +499,34 @@ function storageContract(register: Register, open: () => SecureStorage): void {
   });
 }
 
+/** Every throwaway key out of the kernel keyring and the real Secret Service, with the tools and not the module: a run that broke `delete` must leave none behind. */
+function clearLinuxStores(): void {
+  // Without a session bus `secret-tool` would autolaunch one, the path the module itself never takes (review 0159ab0f.2).
+  const runtime = process.env.XDG_RUNTIME_DIR ?? '';
+  const busPresent =
+    (process.env.DBUS_SESSION_BUS_ADDRESS ?? '') !== '' ||
+    (runtime !== '' && existsSync(join(runtime, 'bus')));
+  const secretTool = busPresent && onPath('secret-tool');
+  for (const key of createdKeys) {
+    unlinkFromUserKeyring(key);
+    if (!secretTool) continue;
+    spawnSync('secret-tool', ['clear', 'service', 'rdc-config', 'account', key], {
+      stdio: 'ignore',
+      timeout: 10_000,
+    });
+  }
+}
+
+// Each created key is deleted through the native store's CLI (secret-tool, security, PowerShell), one process per key; under
+// a loaded ci:quick that took over vitest's 10 s hook default, so the cleanup gets its own bound.
+const CLEANUP_TIMEOUT_MS = 60_000;
+
 afterAll(async () => {
   if (probe.type !== 'none') {
     const storage = getSecureStorage();
     for (const key of createdKeys) await storage.delete(key).catch(() => {});
   }
-  // Independent of the module under test: a run that broke `delete` must not leave throwaway keys in the user keyring.
-  if (IS_LINUX) for (const key of createdKeys) unlinkFromUserKeyring(key);
+  if (IS_LINUX) clearLinuxStores();
   if (!REQUIRE_NATIVE) return;
   // Under the requirement a native test that did not run is a failure, never a pass.
   const missed = declaredNative.filter((name) => !ranNative.has(name));
@@ -415,7 +542,7 @@ afterAll(async () => {
   }
   expect(declaredNative.length).toBeGreaterThan(0);
   expect(missed).toEqual([]);
-});
+}, CLEANUP_TIMEOUT_MS);
 
 // ─── 1. Key allowlist ───────────────────────────────────────────────────
 
@@ -484,6 +611,7 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
 
   nativeIt('backend selection returns the native backend of this OS', () => {
     expect(EXPECTED_NATIVE).toBeDefined();
+    expect(NATIVE_TYPES).toContain(EXPECTED_NATIVE);
     expect(getSecureStorage().type).toBe(EXPECTED_NATIVE);
   });
 
@@ -504,7 +632,7 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
   });
 
   nativeIt(
-    'Linux: after a set through keyctl no file under the config, state or cache home holds the secret',
+    'Linux: after a set through the native backend no file under the config, state or cache home holds the secret',
     async () => {
       const key = freshKey('at-rest');
       const value = secret();
@@ -522,31 +650,33 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
     'linux'
   );
 
-  nativeIt(
-    'Linux: selection proves the keyring with a throwaway key and leaves none behind',
+  keyctlIt(
+    'Linux, no session bus: selection proves the keyring with a throwaway key and leaves none behind',
     () => {
-      const child = inChild('select');
+      const child = inChild('select', '', '', { env: NO_BUS });
       expect(child).toMatchObject({ type: 'keyctl', error: null });
       expect(probeKeysOf(child.pid)).toEqual([]);
-    },
-    'linux'
+    }
   );
 
-  nativeIt(
-    'Linux: a session keyring that does not link @u is refused, naming `keyctl link @u @s` and the opt-in, and nothing is stored (the hosted-runner shape that read back null)',
-    async () => {
+  keyctlIt(
+    'Linux, no session bus: a session keyring that does not link @u is refused, naming `keyctl link @u @s` and the opt-in, and nothing is stored (the hosted-runner shape that read back null)',
+    () => {
       const key = freshKey('unlinked');
       const value = secret();
       // Control: the same child in THIS session, whose keyring is readable, stores and reads the value.
-      expect(inChild('roundtrip', key, value)).toMatchObject({
+      expect(inChild('roundtrip', key, value, { env: NO_BUS })).toMatchObject({
         type: 'keyctl',
         value,
         error: null,
       });
-      await getSecureStorage().delete(key);
+      unlinkFromUserKeyring(key);
 
       // `keyctl session -` gives the child a fresh, empty session keyring: @u is writable by UID and not possessed, so a write lands and the read is denied.
-      const child = inChild('roundtrip', key, value, { wrap: ['keyctl', 'session', '-'] });
+      const child = inChild('roundtrip', key, value, {
+        wrap: ['keyctl', 'session', '-'],
+        env: NO_BUS,
+      });
       expect(child.type).toBeNull();
       expect(child.value).toBeNull();
       expect(child.error).toMatchObject({
@@ -556,10 +686,9 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
       expect(child.error?.message).toContain('keyctl link @u @s');
       expect(child.error?.message).toContain('REDIACC_SECRET_STORE=file');
       // The refusal came before the write: this process, whose session does link @u, finds neither the value nor the probe's throwaway key.
-      expect(await getSecureStorage().get(key)).toBeNull();
+      expect(keyringItem(key)).toBeNull();
       expect(probeKeysOf(child.pid)).toEqual([]);
-    },
-    'linux'
+    }
   );
 
   nativeIt(
@@ -728,28 +857,62 @@ describe(`secure storage: native backend (${EXPECTED_NATIVE ?? 'none'} on ${proc
     'darwin'
   );
 
+  /** The tool behind each backend that runs on a POSIX host, and the argument its write carries. */
+  const TOOL_OF: Record<string, { tool: string; write: string }> = {
+    'secret-service': { tool: 'secret-tool', write: 'store' },
+    keyctl: { tool: 'keyctl', write: 'padd' },
+    keychain: { tool: 'security', write: '-i' },
+  };
+
+  /** Round-trips a fresh secret in a child with the real `tool` wrapped by a recorder, and holds every argument it saw to the secret's absence. */
+  function assertSecretOffArgv(type: string, env: Record<string, string | undefined> = {}): void {
+    const { tool, write } = TOOL_OF[type];
+    const recorder = argvRecorder(tool);
+    const key = freshKey('argv');
+    const value = secret();
+    const child = inChild('roundtrip', key, value, {
+      env: { ...env, PATH: `${recorder.bin}${delimiter}${process.env.PATH ?? ''}` },
+    });
+    const recorded = readFileSync(recorder.log, 'utf-8');
+    rmSync(recorder.bin, { recursive: true, force: true });
+
+    expect(child).toMatchObject({ type, value, error: null });
+    // Control: the recorder saw the calls of this round trip, the write included. Without that an empty log would pass.
+    const args = recorded.split('\n');
+    expect(args).toContain(key);
+    expect(args).toContain(write);
+    for (const form of atRestForms(value)) expect(recorded).not.toContain(form);
+  }
+
   nativeIt(
     'Linux, macOS: the secret is on no command line of the native tool, in any encoding',
-    () => {
-      const tool = IS_LINUX ? 'keyctl' : 'security';
-      const recorder = argvRecorder(tool);
-      const key = freshKey('argv');
-      const value = secret();
-      const child = inChild('roundtrip', key, value, {
-        env: { PATH: `${recorder.bin}${delimiter}${process.env.PATH ?? ''}` },
-      });
-      const recorded = readFileSync(recorder.log, 'utf-8');
-      rmSync(recorder.bin, { recursive: true, force: true });
-
-      expect(child).toMatchObject({ type: EXPECTED_NATIVE, value, error: null });
-      // Control: the recorder saw the calls of this round trip, the write included. Without that an empty log would pass.
-      const args = recorded.split('\n');
-      expect(args).toContain(key);
-      expect(args).toContain(IS_LINUX ? 'padd' : '-i');
-      for (const form of atRestForms(value)) expect(recorded).not.toContain(form);
-    },
+    () => assertSecretOffArgv(EXPECTED_NATIVE ?? 'none'),
     'linux',
     'darwin'
+  );
+
+  keyctlIt(
+    'Linux, no session bus: the secret is on no command line of keyctl, in any encoding',
+    () => assertSecretOffArgv('keyctl', NO_BUS)
+  );
+
+  it.skipIf(!IS_LINUX || probe.type !== 'secret-service')(
+    'Linux desktop: a key one process stored in the Secret Service is read by the next, and the kernel keyring never held it',
+    () => {
+      const key = freshKey('persist');
+      const value = secret();
+      expect(inChild('set', key, value)).toMatchObject({ type: 'secret-service', error: null });
+      // What a restart does to the kernel keyring, done to this key: any copy there is gone before the read.
+      unlinkFromUserKeyring(key);
+      expect(keyringItem(key)).toBeNull();
+      expect(inChild('get', key)).toMatchObject({ type: 'secret-service', value, error: null });
+      // At rest the item is the armour, read with the tool and not the module.
+      const stored = spawnSync('secret-tool', ['lookup', 'service', 'rdc-config', 'account', key], {
+        encoding: 'utf-8',
+        timeout: 10_000,
+      });
+      expect(stored.stdout).toBe(`rdc-b64.${Buffer.from(value, 'utf-8').toString('base64')}`);
+    }
   );
 });
 
@@ -863,4 +1026,153 @@ describe('secure storage: no usable native backend and no opt-in', () => {
     );
     expect(() => withKnob('keyring', getSecureStorage)).toThrow(/not a secret store/);
   });
+});
+
+// ─── 5. The Linux selection order ───────────────────────────────────────
+
+describe('secure storage: Linux selection order (Secret Service, then kernel keyring, then the file store only by opt-in)', () => {
+  const fakes: FakeSecretTool[] = [];
+  function fake(): FakeSecretTool {
+    const made = fakeSecretTool();
+    fakes.push(made);
+    return made;
+  }
+  afterAll(() => {
+    for (const made of fakes) rmSync(made.bin, { recursive: true, force: true });
+  });
+  const logOf = (made: FakeSecretTool): string =>
+    existsSync(made.log) ? readFileSync(made.log, 'utf-8') : '';
+  const withFake = (made: FakeSecretTool): string =>
+    `${made.bin}${delimiter}${process.env.PATH ?? ''}`;
+
+  it.skipIf(!IS_LINUX)(
+    'a session bus and a secret-tool that round-trips: the Secret Service is chosen, the item is armoured, the secret is on no argument, and the keyring holds no copy',
+    () => {
+      const made = fake();
+      const key = freshKey('order-ss');
+      const value = secret();
+      const child = inChild('roundtrip', key, value, {
+        env: { PATH: withFake(made), DBUS_SESSION_BUS_ADDRESS: SOME_BUS },
+      });
+      expect(child).toMatchObject({ type: 'secret-service', value, error: null });
+      expect(readFileSync(fakeItem(made, key), 'utf-8')).toBe(
+        `rdc-b64.${Buffer.from(value, 'utf-8').toString('base64')}`
+      );
+      // The selection probe cleared its own throwaway item: only the real key is left.
+      expect(readdirSync(made.items)).toEqual([key.replaceAll(':', '_')]);
+      const args = logOf(made).split('\n');
+      expect(args).toContain('store');
+      expect(args).toContain(key);
+      for (const form of atRestForms(value)) expect(logOf(made)).not.toContain(form);
+      if (onPath('keyctl')) expect(keyringItem(key)).toBeNull();
+    }
+  );
+
+  it.skipIf(!IS_LINUX)(
+    'the systemd user bus at $XDG_RUNTIME_DIR/bus counts as a session bus when DBUS_SESSION_BUS_ADDRESS is unset',
+    () => {
+      const made = fake();
+      const runtime = mkdtempSync(join(tmpdir(), 'rdc-sstest-runtime-'));
+      writeFileSync(join(runtime, 'bus'), '');
+      const child = inChild('select', '', '', {
+        env: {
+          PATH: withFake(made),
+          DBUS_SESSION_BUS_ADDRESS: undefined,
+          XDG_RUNTIME_DIR: runtime,
+        },
+      });
+      rmSync(runtime, { recursive: true, force: true });
+      expect(child).toMatchObject({ type: 'secret-service', error: null });
+    }
+  );
+
+  keyctlIt('no session bus: secret-tool is never run and the kernel keyring serves', () => {
+    const made = fake();
+    const runtime = mkdtempSync(join(tmpdir(), 'rdc-sstest-runtime-'));
+    const key = freshKey('order-nobus');
+    const value = secret();
+    const child = inChild('roundtrip', key, value, {
+      env: { PATH: withFake(made), DBUS_SESSION_BUS_ADDRESS: undefined, XDG_RUNTIME_DIR: runtime },
+    });
+    rmSync(runtime, { recursive: true, force: true });
+    expect(child).toMatchObject({ type: 'keyctl', value, error: null });
+    expect(logOf(made)).toBe('');
+    expect(keyringItem(key)).toBe(value);
+  });
+
+  keyctlIt(
+    'a session bus whose Secret Service fails the round trip: the kernel keyring serves, without a word on stderr',
+    () => {
+      const made = fake();
+      writeFileSync(made.failFlag, '');
+      const key = freshKey('order-ssfail');
+      const value = secret();
+      const child = inChild('roundtrip', key, value, {
+        env: { PATH: withFake(made), DBUS_SESSION_BUS_ADDRESS: SOME_BUS },
+      });
+      expect(child).toMatchObject({ type: 'keyctl', value, error: null });
+      // Control: secret-tool was tried before the fallback.
+      expect(logOf(made).split('\n')).toContain('store');
+      expect(child.stderr).toBe('');
+      expect(keyringItem(key)).toBe(value);
+    }
+  );
+
+  keyctlIt('a session bus and no secret-tool on PATH: the kernel keyring serves', () => {
+    const bin = emptyPath();
+    symlinkSync(toolOnPath('keyctl'), join(bin, 'keyctl'));
+    const key = freshKey('order-notool');
+    const value = secret();
+    const child = inChild('roundtrip', key, value, {
+      env: { PATH: bin, DBUS_SESSION_BUS_ADDRESS: SOME_BUS },
+    });
+    rmSync(bin, { recursive: true, force: true });
+    expect(child).toMatchObject({ type: 'keyctl', value, error: null });
+  });
+
+  it.skipIf(!IS_LINUX)(
+    'the opt-in beats a working Secret Service: the file backend, and secret-tool is never run',
+    () => {
+      const made = fake();
+      const child = inChild('roundtrip', freshKey('order-file'), secret(), {
+        env: { PATH: withFake(made), DBUS_SESSION_BUS_ADDRESS: SOME_BUS, [KNOB]: 'file' },
+      });
+      expect(child).toMatchObject({ type: 'file', error: null });
+      expect(logOf(made)).toBe('');
+    }
+  );
+
+  it.skipIf(!IS_LINUX)(
+    'a session bus with neither secret-tool nor keyctl: the refusal is the kernel keyring one, and nothing falls to the file store',
+    () => {
+      const store = join(getRediaccDirs().state, 'secure-keys.json');
+      const before = existsSync(store) ? readFileSync(store, 'utf-8') : null;
+      const bin = emptyPath();
+      const child = inChild('roundtrip', freshKey('order-none'), secret(), {
+        env: { PATH: bin, DBUS_SESSION_BUS_ADDRESS: SOME_BUS },
+      });
+      rmSync(bin, { recursive: true, force: true });
+      expect(child.type).toBeNull();
+      expect(child.error).toMatchObject({
+        name: 'SecureStorageUnavailableError',
+        code: 'PRECONDITION_MISMATCH',
+      });
+      expect(child.error?.message).toContain('`keyctl` is not installed');
+      expect(existsSync(store) ? readFileSync(store, 'utf-8') : null).toBe(before);
+    }
+  );
+
+  it.skipIf(!IS_LINUX)(
+    'a Secret Service item under the same service and account that this CLI did not write reads as null',
+    () => {
+      const made = fake();
+      const key = freshKey('order-foreign');
+      mkdirSync(made.items, { recursive: true });
+      writeFileSync(fakeItem(made, key), 'not-armoured');
+      const child = inChild('get', key, '', {
+        env: { PATH: withFake(made), DBUS_SESSION_BUS_ADDRESS: SOME_BUS },
+      });
+      expect(child).toMatchObject({ type: 'secret-service', value: null, error: null });
+    }
+  );
 });

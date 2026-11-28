@@ -23,6 +23,10 @@ import tempfile
 import time
 import types
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 CLAUDE = HOOKS.parent
@@ -48,6 +52,11 @@ FIXED = "fixed %s | abcdef01 %s" % ("f" * 40, AT)
 DOC = "The docstring says the guard refuses, but it returns ALLOW on that path."
 REVIEW_NEEDLE = "'doc-contradicts-code'"
 GEN_NEEDLE = "gen-docs.ts --write"
+# The docs locales beside English; check-locale-sources reports a hard-coded locale list, so this is derived from the single source.
+_SITE_LOCALES = json.loads((HERE.parents[2] / "packages/locales/site-locales.json").read_text())
+WWW_TRANSLATED_LOCALES = [
+    c for c in _SITE_LOCALES["siteLocales"] if c != _SITE_LOCALES["defaultLocale"]
+]
 NOT_RUN = "did not run"
 
 
@@ -83,7 +92,7 @@ def drive(payload, root, argv=(STEM,), extra_env=None):
     env = dict(os.environ, CLAUDE_PROJECT_DIR=str(root))
     env.update(extra_env or {})
     started = time.monotonic()
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, *argv],
         input=payload if isinstance(payload, str) else json.dumps(payload),
         capture_output=True,
@@ -422,9 +431,14 @@ def main():
             lukewarm,
             [],
         )
+        # Not packages/www/src/** as a whole: the English MCP page (content/docs/en/ai-agents-mcp.md) carries a generated region, so that Owns rightly fires. The 12 other locales plus components and pages are ~1,150 paths with no gen-docs input or target, still large enough for the pipe case.
+        www_no_target = ", ".join(
+            ["packages/www/src/content/docs/%s/**" % lang for lang in WWW_TRANSLATED_LOCALES]
+            + ["packages/www/src/components/**", "packages/www/src/pages/**"]
+        )
         case(
-            "control (A3): Owns packages/www/src/** names no gen-docs step",
-            spawn("x\nOwns: packages/www/src/**", root=empty),
+            "control (A3): Owns of www translated docs, components and pages names no gen-docs step",
+            spawn("x\nOwns: %s" % www_no_target, root=empty),
             empty,
             [],
             refuse_needles=(GEN_NEEDLE, NOT_RUN),

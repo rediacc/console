@@ -29,8 +29,8 @@
  * released 2024-12-03 and last pushed 2024-12-25). When a leaf has a `digest` site and Docker
  * Hub serves another index digest for the PINNED tag, inspect offers that tag again, labelled
  * `<image>:<tag>@<first 12 hex of the served digest>`. The label carries no second colon on
- * purpose: status.ts `majorLineOf` reads the text after the last colon, and a hex prefix that
- * starts with digits would read as a phantom newer major line. It carries `redigest: true`, so
+ * purpose: lines.ts `versionParts` reads the text after the last colon, and a hex prefix that
+ * starts with digits would read as a phantom newer line. It carries `redigest: true`, so
  * the core reads it as the pinned version and never as a major: a plain `npm run pins -- bump
  * <id>` takes it (reading it as a major once sent node:26.13.0-slim to a false major-only
  * refusal, #3bb2d9bc). It is dated by the tag's last push and waits out the shared release-age
@@ -42,7 +42,10 @@
  * The `docker` family entry (the FROM scan itself) answers "nothing to bump": its members are
  * the leaves, and a floating tag frozen in the baseline moves through its own leaf.
  *
- * THE AGE OF A MAJOR LINE. check:ci-pin-freshness turns a newer major red once the line's
+ * THE AGE OF A MAJOR LINE. A line is the first `depth` parts of a tag, the depth read from the
+ * `lines` row of the leaf's image (scripts/lib/pins/lines.ts), so python 3.15 is dated by the
+ * 3.15 tags and never by the 3.x tags of a decade (plan #ef324e18).
+ * check:ci-pin-freshness turns a newer major red once the line's
  * first release is MAJOR_GRACE_DAYS old (scripts/lib/pins/status.ts), and Docker Hub carries
  * no release date: `last_updated` is a tag's LAST push, and official images re-push every
  * supported tag on a schedule (`ubuntu:26.04` measured 2026-10-14: last pushed 2026-10-04, half
@@ -75,6 +78,7 @@ import { isWithinFreshnessWindow } from '../../release-age.js';
 import { NotCompared } from '../../upstream.js';
 import type { DriverContext, Inspection, PinDriver, PinPlan, PlanStep } from '../driver.js';
 import { leafCurrent, PlanRefused, planLeafSites } from '../driver.js';
+import { lineDepthOf, lineOf } from '../lines.js';
 import { type PinEntry, siteMatches } from '../registry.js';
 import { iso, soakClearsAt } from '../soak.js';
 import type { LineDatedRelease } from '../status.js';
@@ -106,25 +110,37 @@ interface HubPage {
   next?: unknown;
 }
 
-/** One listed tag; `major` only for a tag of the pin's suffix (any component count), else null. */
+/** One listed tag; `line` (scripts/lib/pins/lines.ts) only for a tag of the pin's suffix (any component count), else null. */
 export interface Listed {
-  major: number | null;
+  line: string | null;
   id: number | null;
   at: number | null;
 }
 
 /**
- * The instant a major line had begun by (see THE AGE OF A MAJOR LINE above): the earliest
+ * The version line of a listed tag at the leaf's depth, the key Listed.line and lineFirstMs
+ * share; under the docker-line-by-major mutant the first number alone (the rule before plan
+ * #ef324e18, which dated python 3.15 by the 3.x tags of a decade). Pure.
+ */
+export function tagLine(name: string, depth: number | undefined, mutant?: T8Mutant): string | null {
+  return (
+    lineOf(name, depth, mutant === 'docker-line-by-major' ? 'first-number-only' : undefined)?.key ??
+    null
+  );
+}
+
+/**
+ * The instant a version line had begun by (see THE AGE OF A MAJOR LINE above): the earliest
  * push among the line's own tags and every tag created no earlier than the line's oldest
  * listed tag (by `id`); with no `id` on the line, the line's own tags alone. Null when nothing
  * in that pool is dated. Pure.
  */
-export function lineFirstMs(major: number, listed: Listed[]): number | null {
-  const line = listed.filter((t) => t.major === major);
+export function lineFirstMs(major: string, listed: Listed[]): number | null {
+  const line = listed.filter((t) => t.line === major);
   const ids = line.flatMap((t) => (t.id === null ? [] : [t.id]));
   const floor = ids.length > 0 ? Math.min(...ids) : null;
   const pool = listed.filter(
-    (t) => t.major === major || (floor !== null && t.id !== null && t.id >= floor)
+    (t) => t.line === major || (floor !== null && t.id !== null && t.id >= floor)
   );
   const ats = pool.flatMap((t) => (t.at === null ? [] : [t.at]));
   return ats.length > 0 ? Math.min(...ats) : null;
@@ -240,6 +256,7 @@ export function dockerDriver(
           `the pinned tag ${tag} has no leading version, so a newer one cannot be named`
         );
       const parts = cur[1].split('.').length;
+      const depth = lineDepthOf(ctx.reg, entry);
       const deps = depsFor(ctx.root);
       const repo = hubRepo(image);
       if (repo === null) throw new Error(`${image} is not a Docker Hub image`);
@@ -256,8 +273,8 @@ export function dockerDriver(
           const m = SHAPE.exec(name);
           const at = typeof r.last_updated === 'string' ? Date.parse(r.last_updated) : Number.NaN;
           listed.push({
-            major:
-              m && m[2] === cur[2] && vOf(name) === vOf(tag) ? Number(m[1].split('.')[0]) : null,
+            line:
+              m && m[2] === cur[2] && vOf(name) === vOf(tag) ? tagLine(name, depth, mutant) : null,
             id: typeof r.id === 'number' && Number.isFinite(r.id) ? r.id : null,
             at: Number.isNaN(at) ? null : at,
           });
@@ -279,7 +296,7 @@ export function dockerDriver(
         .sort(([a], [b]) => cmpVersion(SHAPE.exec(b)?.[1] ?? '0', SHAPE.exec(a)?.[1] ?? '0'))
         .map(([name, r]) => ({
           ...r,
-          lineFirstMs: lineFirstMs(Number((SHAPE.exec(name)?.[1] ?? '0').split('.')[0]), listed),
+          lineFirstMs: lineFirstMs(tagLine(name, depth, mutant) ?? name, listed),
         }))
         .slice(0, 10);
       const redigest =

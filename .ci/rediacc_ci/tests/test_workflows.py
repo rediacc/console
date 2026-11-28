@@ -435,10 +435,10 @@ def test_quoted_scalars_keep_their_content_including_colons_and_hashes():
 
 
 def test_a_comment_needs_a_preceding_space_to_be_a_comment():
-    """`image: ghcr.io/x#tag` would lose its fragment to a naive split."""
-    doc = workflows.parse("a: value # comment\nb: ghcr.io/x#tag\n")
+    """`image: quay.io/x#tag` would lose its fragment to a naive split."""
+    doc = workflows.parse("a: value # comment\nb: quay.io/x#tag\n")
     assert doc["a"] == "value"
-    assert doc["b"] == "ghcr.io/x#tag"
+    assert doc["b"] == "quay.io/x#tag"
 
 
 def test_unsupported_constructs_are_refused_by_name_and_line():

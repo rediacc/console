@@ -10,14 +10,14 @@ import { findSmartRedirect } from './smart-redirect';
 
 interface Env extends LookupEnv {
   ASSETS: Fetcher;
-  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On www.rediacc.com, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
+  // Only bound in PR previews (rediacc_ci.deploy.deploy_www mints the D1 account-pr-<n> and binds it through the generated wrangler.preview.toml). On www.rediacc.com, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com). PR previews bind it too, to account-bench (rediacc_ci.deploy.deploy_www PREVIEW_TOML), next to their own env.DB and an ENTERPRISE_LOOKUP namespace. A preview binds no LICENSE_SIGNER: its SIGNERLESS_PREVIEW = "true" var lets envSchema admit the env, and every signing route answers 503 SIGNER_NOT_CONFIGURED.
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com). PR previews bind it too, to account-bench (rediacc_ci.deploy.deploy_www PREVIEW_TOML), next to their own env.DB and an ENTERPRISE_LOOKUP namespace. A word-named preview (pv-<w>-<w>-<w>, PLAN-preview-signer D1) binds LICENSE_SIGNER to its own <name>-signer Worker (rediacc_ci.deploy.preview_signer), which signs with a delegated key, never the production one. A pr-<n> preview binds no LICENSE_SIGNER: its SIGNERLESS_PREVIEW = "true" var lets envSchema admit the env, and every signing route answers 503 SIGNER_NOT_CONFIGURED.
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
 
-// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (a PR preview such as pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
+// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (a PR preview such as pv-able-baker-charlie.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
 // reflect the preview domain. Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview is false and rewriteOrigin() is skipped. ---------------------------------------------------------------------------
 
 const WWW_ORIGIN = WK_SITE_ORIGIN;
@@ -47,7 +47,7 @@ export function shouldRewrite(contentType: string | null, pathname: string): boo
   return REWRITABLE_TYPES.some((t) => contentType.startsWith(t));
 }
 
-/** Extract release channel from hostname (pr-420 | edge | stable). */
+/** Extract release channel from hostname (pv-able-baker-charlie | pr-420 | edge | stable). */
 export function getChannel(hostname: string): string {
   const match = /^([^.]+)\.rediacc\./.exec(hostname);
   return match ? match[1] : 'stable';

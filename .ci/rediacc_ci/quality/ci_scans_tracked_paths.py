@@ -1,6 +1,6 @@
 """CI CANNOT EXECUTE WHAT GIT DOES NOT TRACK.
 
-Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-ci-scans-tracked-paths.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 The twin's header, carried whole because the incident and the false-positive argument are both load-bearing:
 
@@ -470,4 +470,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_ci_scans_tracked_paths.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

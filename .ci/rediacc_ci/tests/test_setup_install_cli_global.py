@@ -1,6 +1,6 @@
 """`rediacc_ci.setup.install_cli_global`, driven against the bytes its bash twin produced.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/setup/install-cli-global.sh` and the port over one fixture tree apiece and compared three kinds of evidence at once. The K=5 ledgers `.ci/shadow/w7p6-install-cli-global.observations.jsonl` and `.ci/shadow/w7p4b-install-cli-global.observations.jsonl` recorded that over five distinct trees each.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/setup/install-cli-global.sh` and the port over one fixture tree apiece and compared three kinds of evidence at once. The K=5 ledgers the ledger (deleted in commit:936280cd35) and the ledger (deleted in commit:936280cd35) recorded that over five distinct trees each.
 
 Every case now compares against `goldens/install-cli-global/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
@@ -26,7 +26,7 @@ Exit 2, both streams empty, indistinguishable from a gate failing for a real rea
 NOTHING IS MASKED, and that is a claim rather than an omission. The differential compared raw bytes with no normalizer at all, and a freezing normally has to add one for the fixture's absolute path; here no absolute path reaches any recorded section. Both streams carry only the package directory as the case spelled it, the tarball names the case's own environment chose, and literal
 prose. The call log is argv, which is relative. The tree listing is built with `os.path.relpath` against the fixture root. A golden that masked any of those would be weaker than the comparison it replaced.
 
-THE LEDGER LINE. `→ ` and `✓ ` are CHATTER to `shadow-gate.ts` before any `--finding-re` is consulted, so the fake echoes `call: npm ...` on stdout for the shadow ledger to compare, and that line is part of the recorded stdout.
+THE LEDGER LINE. `→ ` and `✓ ` are CHATTER to the shadow gate (commit:bf054adcd4) before any `--finding-re` is consulted, so the fake echoes `call: npm ...` on stdout for the shadow ledger to compare, and that line is part of the recorded stdout.
 """
 
 from __future__ import annotations

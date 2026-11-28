@@ -1,6 +1,6 @@
 r"""Every ROOT `scripts/` path reachable from non-quality CI code must classify FULL.
 
-Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-scope-scripts-reachability.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
+Ported from `.ci/scripts/quality/check-scope-scripts-reachability.sh`, which W7 P5 batch G1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHY THIS EXISTS, in the twin's own words, because the failure is invisible:
 
@@ -130,6 +130,14 @@ THE FIVE-STAGE PIPELINE IS FIVE STAGES HERE TOO. Each `grep`/`sed` in `extract_r
 `node` IS SHELLED OUT TO, exactly as the twin does it. `classify()` lives in `.ci/scripts/ci/scope-map.cjs`, whose rule ORDER is semantics (first match wins, per driver contract section 3). Re-deriving it in Python would produce a gate that agrees with itself about a file it no longer reads.
 
 A MISSING `node` IS A LOUD FAILURE WITH THE FIX IN THE MESSAGE, not a stack trace: `classify_mode` returns the twin's literal `"ERROR"` string, which is not `"full"` and therefore reports every path as a violation -- the same conservative direction the twin takes.
+
+---- gate ----
+step: Scope map, reachable scripts/ paths force full CI
+needs: node
+selftest: true
+lane: quality-security
+its `slow: true
+---- end gate ----
 """
 
 import os
@@ -157,6 +165,11 @@ GATED_DIRS = (
     ".ci/scripts/housekeeping",
 )
 
+# THE QUALITY-LANE WORKFLOW, exempt by name from the root `scripts/` half of the `.github/workflows` scan, and only while its premise holds. ci.yml calls it under `full_suite`, which is `github.event_name != 'push'` and reads no path, and none of its jobs is gated on a scope `run_*` key, so no classification can skip a job of it: a `scripts/` path it runs is a quality-lane consumer, the narrowing this gate exists to protect
+# (module docstring, THE INVARIANT). The exemption was named on 2026-11-27, when CR2 moved 29 gates from `npm run <key>` to `npx tsx scripts/gates/<gate>.ts` steps in this file and every one of them read as "reachable from a gated job". A file in this tuple that names a scope key (`SCOPE_KEY`) LOSES the exemption and is scanned like any other workflow, and every run prints what the exemption skipped.
+QUALITY_WORKFLOWS = (".github/workflows/ci-quality.yml",)
+SCOPE_KEY = re.compile(r"\b(?:outputs|inputs)\.run_[a-z0-9_]+")
+
 # `run.sh` is the drill dispatcher and is itself a ROOT_MANIFEST path, so editing it forces full on its own. It is scanned because what it DISPATCHES to must still be full. The Python verb module is here for the reason in the module docstring.
 GATED_FILES = ("run.sh", ".ci/rediacc_ci/core/run_verbs.py")
 
@@ -178,7 +191,7 @@ OUTPUT_STATEMENT = re.compile(r"\b(log_error|log_warn|log_info|log_debug|echo|pr
 # `\x27` IS NOT A SINGLE QUOTE HERE, AND THAT IS A DEFECT IN THE TWIN, MEASURED RATHER THAN ASSUMED. The twin's lead alternation is `(^|[[:space:]]|"|\x27|\$\(|`|&&|\|\||;)`, written to admit a command that starts after an opening single quote. GNU grep 3.12, which is what `/usr/bin/grep` is on this host and therefore what the twin actually runs, does NOT read `\x27` as a hex
 # escape in an ERE: it treats `\x` as an escaped ordinary `x`, so the alternative matches the literal three characters `x27`. Probed 2026-09-06 on a two-line file containing `a'b` and `ax27b`: `/usr/bin/grep -oE '\x27'` printed `x27`.
 #
-# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, report-nightly-status, validate-pr and watchdog-monitor -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
+# The consequence is a real blind spot, not a curiosity. Five `.cjs` paths in `.github/workflows` are invoked as `require('./.ci/scripts/ci/<name>.cjs')` -- autopilot-guide-comment, label-guide-comment, validate-pr, watchdog-monitor and one reporter since retired -- and the twin does not see any of them: its `.ci` scan counts 226 references from that directory where a grep with a
 # working single-quote alternative counts 231. So an invocation whose only lead character is `'` is invisible to this gate.
 #
 # Reproduced, not repaired: invariant 5 forbids editing the twin in the change that ports it, and the differential rules on behaviour. Reported as a defect.
@@ -207,12 +220,13 @@ LABEL_TAIL = re.compile(r'"?\).*$')
 PY_CONSTANT = re.compile(r"^([A-Z][A-Z0-9_]*)\s*[=:]")
 
 # The two floors. `ci_scanned` had one from the start; the dispatch half did not, and the module docstring records what that cost.
-CI_SCAN_FLOOR = 20
+# Measured at 18 references on the real tree after the Stripe sandbox and sync steps left the workflows; 20 sat just above that count and a deleted step tipped it. The floor only has to separate a working enumeration from a collapsed one, which finds none.
+CI_SCAN_FLOOR = 15
 DISPATCH_FLOOR = 1
 
 
-def walk_text(root: pathlib.Path):
-    """Every file `grep -r` would read under `root`, as text.
+def walk_text(root: pathlib.Path, skip: frozenset[pathlib.Path] = frozenset()):
+    """Every file `grep -r` would read under `root`, as text, less the files in `skip` (resolved paths).
 
     Reproduces GNU grep 3.12 (`/usr/bin/grep`, which is what a SCRIPT resolves `grep` to on this host) as measured 2026-09-06: `-r` does not descend a directory symlink, a file symlink found in the tree is skipped, and a file containing a NUL byte contributes NOTHING TO STDOUT -- with `-o` GNU grep prints no matching text for a binary file, only the diagnostic `grep: <path>: binary
     file matches`, and that goes to STDERR, which every caller of these extractors sends to /dev/null.
@@ -231,6 +245,8 @@ def walk_text(root: pathlib.Path):
         return
     for path in candidates:
         if path.is_symlink() or not path.is_file():
+            continue
+        if skip and path.resolve() in skip:
             continue
         try:
             data = path.read_bytes()
@@ -267,10 +283,10 @@ def _refs(lines, line_re, command_re, path_re) -> list[str]:
     return sorted(out)
 
 
-def extract_refs(target: pathlib.Path) -> list[str]:
+def extract_refs(target: pathlib.Path, skip: frozenset[pathlib.Path] = frozenset()) -> list[str]:
     """Root `scripts/` paths INVOKED under `target`, sorted and deduplicated."""
     return _refs(
-        (line for text in walk_text(target) for line in text.split("\n")),
+        (line for text in walk_text(target, skip) for line in text.split("\n")),
         ROOT_LINE,
         ROOT_COMMAND,
         ROOT_PATH,
@@ -338,6 +354,31 @@ def python_dispatch_targets(text: str, subcommand: str) -> list[str]:
         if current and current.lower().startswith(subcommand.lower()):
             out.update(ROOT_PATH.findall(line))
     return sorted(out)
+
+
+def quality_exemptions(root: pathlib.Path) -> tuple[frozenset[pathlib.Path], list[str]]:
+    """The `QUALITY_WORKFLOWS` files exempt from the scan right now, and one printable line per named file.
+
+    A named file that names a scope key is NOT exempt, and its line says so. A named file that is absent exempts nothing and prints nothing: that direction is the conservative one (every workflow is judged), and a renamed file shows up as the findings its references raise, never as a pass.
+    """
+    skip: set[pathlib.Path] = set()
+    notes: list[str] = []
+    for rel in QUALITY_WORKFLOWS:
+        path = root / rel
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8", errors="replace")
+        keys = sorted(set(SCOPE_KEY.findall(text)))
+        if keys:
+            notes.append("%s: NOT exempt, it names scope key(s) %s" % (rel, ", ".join(keys)))
+            continue
+        refs = extract_refs(path)
+        skip.add(path.resolve())
+        notes.append(
+            "%s: exempt by name (quality lanes, run on full_suite, no scope run_* key); "
+            "%d root scripts/ reference(s) not judged" % (rel, len(refs))
+        )
+    return frozenset(skip), notes
 
 
 def classify_mode(root: pathlib.Path, path: str) -> str:
@@ -475,11 +516,12 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     # ---- the real scan -----------------------------------------------------
+    skip, exemption_notes = quality_exemptions(root)
     for directory in GATED_DIRS:
         target = pathlib.Path(directory)
         if not target.is_dir():
             continue
-        for ref in extract_refs(target):
+        for ref in extract_refs(target, skip):
             check_path(ref, directory)
 
     dispatch_scanned = 0
@@ -501,6 +543,7 @@ def main(argv: list[str] | None = None) -> int:
         target = pathlib.Path(directory)
         if not target.is_dir():
             continue
+        # THE .ci HALF IS NOT EXEMPTED. Every `.ci/scripts/` path classifies `full` today, so judging the quality workflow's references costs nothing, and they are 13 of the references that hold this half above CI_SCAN_FLOOR (measured 2026-11-27: 20 with them, 11 without).
         for ref in extract_ci_refs(target):
             ci_scanned += 1
             check_path(ref, directory)
@@ -542,6 +585,8 @@ def main(argv: list[str] | None = None) -> int:
             "'scripts-gates' rule (first match wins), mirroring 'scripts-license-gen'.",
             file=sys.stderr,
         )
+        for note in exemption_notes:
+            print("  %s" % note, file=sys.stderr)
         return 1
 
     print(
@@ -555,6 +600,8 @@ def main(argv: list[str] | None = None) -> int:
     print("  Blind spot: scanning is workflow-WIDE, not per-job. A path referenced from")
     print("  an ungated job is held to the same rule, which is conservative, and a")
     print("  second-level dependency (a script a scanned script calls) is not followed.")
+    for note in exemption_notes:
+        print("  %s" % note)
     return 0
 
 
@@ -621,8 +668,8 @@ def selftest() -> int:
     for label, sub, want in attribution:
         ctl.check("dispatch: %s" % label, dispatch_targets(runsh, sub), want)
 
-    # THE FLOORS ARE THE TWIN'S, and the dispatch one is the half that had none.
-    ctl.check("the .ci scan floor is 20", CI_SCAN_FLOOR, 20)
+    # THE DISPATCH FLOOR IS THE TWIN'S, and the half that had none; the .ci scan floor moved from the twin's 20 to 15 when the Stripe workflow steps left (see CI_SCAN_FLOOR).
+    ctl.check("the .ci scan floor is 15", CI_SCAN_FLOOR, 15)
     ctl.check("the dispatch floor is 1", DISPATCH_FLOOR, 1)
     ctl.check("six gated directories are scanned", len(GATED_DIRS), 6)
     # THE VERB MODULE MUST STAY IN THE LIST. Removing the dispatcher that held the `drill` arm took this half to zero references on 2026-09-06 and the gate stayed green.
@@ -642,4 +689,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_scope_scripts_reachability.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

@@ -2,13 +2,13 @@
  * Platform-Native Secure Storage
  *
  * Stores secrets (passkey_secret) in OS-native secure storage:
- * - Linux:   Kernel user keyring (keyctl @u); emptied at every restart, the device then enrolls again
+ * - Linux:   the Secret Service (libsecret, through `secret-tool`: GNOME Keyring or KWallet on a desktop session), which persists across restarts; where no session bus answers (headless, SSH-only), the kernel user keyring (keyctl @u), which every restart empties, so the device then enrolls again
  * - macOS:   Keychain (security command), the value armoured as base64 so any string comes back byte-exact
  * - Windows: DPAPI (one ciphertext file per key, named by the SHA-256 of the key)
  *
  * NO SECRET ON A COMMAND LINE. Every backend hands the value to its tool on standard input, never as an argument: an argument is readable by other processes for the life of the child (`ps`, procfs) and is what process-creation auditing records.
  *
- * ONE RULE ON EVERY PLATFORM (operator ruling 2026-10-13). The native backend is used only after it stored, read back and removed a throwaway key in this process. When it cannot, selection refuses with SecureStorageUnavailableError, whose message names the missing tool and the opt-in. No machine gets a disk-held secret without choosing it:
+ * ONE RULE ON EVERY PLATFORM (operator ruling 2026-10-13). A native backend is used only after it stored, read back and removed a throwaway key in this process. On Linux the Secret Service is tried first when a session bus exists, and the kernel keyring is the fallback when it cannot pass that proof (operator ruling 2026-11-25). When it cannot, selection refuses with SecureStorageUnavailableError, whose message names the missing tool and the opt-in. No machine gets a disk-held secret without choosing it:
  * `REDIACC_SECRET_STORE=file` selects the file backend (a JSON file, mode 0o600, in the CLI state directory) and says so once per process on stderr.
  *
  * Each secret is indexed by a server-provided storageKeyId.
@@ -49,17 +49,27 @@ export interface SecureStorage {
   readonly type: string;
 }
 
+/** The storage `getSecureStorage()` hands out: also reads synchronously, for a caller that cannot await (the api-token reader). */
+export interface SyncReadableSecureStorage extends SecureStorage {
+  /** `get` without the promise: the backends do their work synchronously anyway. */
+  getSync(key: string): string | null;
+}
+
 /**
  * This device has no usable place for its secrets, and the file backend was not chosen. The message names what is missing and the opt-in (`REDIACC_SECRET_STORE=file`); `details` carries the native tool's own error line when it gave one. Thrown by `getSecureStorage()` before anything is stored, so a caller's `handleError` reports it with its code and guidance.
  */
 export class SecureStorageUnavailableError extends CliExitError {
-  constructor(message: string, detail?: string) {
+  /** The probe ran out of time: the store may work, the machine was too slow to prove it. */
+  readonly timedOut: boolean;
+
+  constructor(message: string, detail?: string, timedOut = false) {
     super(ERROR_CODES.PRECONDITION_MISMATCH, message, {
       details: detail === undefined ? undefined : [detail],
       retryable: false,
       guidance: message,
     });
     this.name = 'SecureStorageUnavailableError';
+    this.timedOut = timedOut;
   }
 }
 
@@ -73,7 +83,9 @@ class ToolFailure extends Error {
     tool: string,
     /** The tool itself could not be started (not installed, or not on PATH). */
     readonly missing: boolean,
-    readonly detail: string | undefined
+    readonly detail: string | undefined,
+    /** The tool was killed at its time limit (`ETIMEDOUT`). */
+    readonly timedOut = false
   ) {
     super(detail === undefined ? `${tool} failed` : `${tool}: ${detail}`);
     this.name = 'ToolFailure';
@@ -89,7 +101,7 @@ function toolFailure(tool: string, error: unknown): ToolFailure {
           .map((text) => text.trim())
           .find((text) => text.length > 0)
       : undefined;
-  return new ToolFailure(tool, code === 'ENOENT', line);
+  return new ToolFailure(tool, code === 'ENOENT', line, code === 'ETIMEDOUT');
 }
 
 /** stdout as text; the tool's stderr never reaches the terminal. */
@@ -157,7 +169,7 @@ class KeyctlStorage extends Backend {
     } catch (error) {
       throw toolFailure('keyctl', error);
     }
-    // No timeout is set, and the key still does NOT outlive a restart: `@u` is the kernel's per-UID user keyring, held in kernel memory, so a reboot (on WSL, a restart of the VM) empties it, and the kernel may also free it once the user's last process exits. deriveCek() then finds no secret, and `rdc config remote enable` enrolls the device again (config-remote-reenroll.ts). Memory-only is the operator's choice (2026-10-13): there is no disk-held default.
+    // No timeout is set, and the key still does NOT outlive a restart: `@u` is the kernel's per-UID user keyring, held in kernel memory, so a reboot (on WSL, a restart of the VM) empties it, and the kernel may also free it once the user's last process exits. deriveCek() then finds no secret, and `rdc config remote enable` enrolls the device again (config-remote-reenroll.ts). That is why the Secret Service goes first where a session bus offers one (operator ruling 2026-11-25); this backend serves the sessions with none, and no plaintext file is ever the default.
   }
 
   remove(key: string): void {
@@ -168,6 +180,85 @@ class KeyctlStorage extends Backend {
       }
     } catch {
       // Key doesn't exist, ok
+    }
+  }
+}
+
+// ─── Linux: Secret Service (secret-tool) ────────────────────────────────
+//
+// libsecret's `secret-tool` talks to whichever Secret Service the session bus offers (GNOME Keyring, KWallet), which keeps its items in a login keyring on disk, encrypted under the login password, so a key survives a restart.
+//
+// - `store` reads the secret from stdin when stdin is not a terminal; the key is an attribute (`account`), the secret never an argument.
+// - The value is stored ARMOURED, `rdc-b64.<base64 of the UTF-8 bytes>`, as on the Keychain: `lookup` refuses to print an item it does not take for a text password, and a terminal-only newline can never be mistaken for part of the value.
+// - Every call carries a timeout. A Secret Service whose keyring is locked prompts on the desktop for its password; an SSH session nobody answers that prompt from must fall through to the kernel keyring, not hang.
+
+/** The longest any one `secret-tool` call may take. A locked keyring prompting on a desktop nobody watches costs this once, then selection moves on. */
+const SECRET_TOOL_TIMEOUT_MS = 10_000;
+const SECRET_SERVICE_ARMOUR = /^rdc-b64\.([A-Za-z0-9+/=]*)$/;
+
+/**
+ * A session bus to reach a Secret Service through: `DBUS_SESSION_BUS_ADDRESS`, or the systemd user bus at `$XDG_RUNTIME_DIR/bus`, which libsecret finds on its own. Without one `secret-tool` would try to autolaunch a bus of its own (X11 `dbus-launch`), which on a headless host either fails slowly or starts a daemon nobody asked for, so it is not run at all.
+ */
+function sessionBusPresent(): boolean {
+  if ((process.env.DBUS_SESSION_BUS_ADDRESS ?? '') !== '') return true;
+  const runtime = process.env.XDG_RUNTIME_DIR ?? '';
+  return runtime !== '' && existsSync(join(runtime, 'bus'));
+}
+
+class SecretToolStorage extends Backend {
+  readonly type = 'secret-service';
+
+  private attributes(key: string): string[] {
+    return ['service', SERVICE_NAME, 'account', key];
+  }
+
+  read(key: string): string | null {
+    let printed: string;
+    try {
+      printed = execFileSync('secret-tool', ['lookup', ...this.attributes(key)], {
+        ...QUIET,
+        timeout: SECRET_TOOL_TIMEOUT_MS,
+      });
+    } catch (error) {
+      // A call that hit the limit (a locked keyring waiting for its password) says nothing about the item: it is not "absent", which would send the device through re-enrolment.
+      if ((error as { code?: unknown }).code === 'ETIMEDOUT') {
+        throw new ToolFailure(
+          'secret-tool',
+          false,
+          `timed out after ${SECRET_TOOL_TIMEOUT_MS} ms reading the stored key; the keyring may be locked`
+        );
+      }
+      // Exit 1 is both "no such item" and "no Secret Service"; either way nothing is stored here.
+      return null;
+    }
+    const armoured = SECRET_SERVICE_ARMOUR.exec(printed.trim());
+    // An item under this service and account that this CLI did not write is not a secret it can use.
+    if (!armoured) return null;
+    return Buffer.from(armoured[1], 'base64').toString('utf-8');
+  }
+
+  write(key: string, value: string): void {
+    const armoured = `rdc-b64.${Buffer.from(value, 'utf-8').toString('base64')}`;
+    try {
+      // `store` replaces an item with the same attributes, so no remove goes first.
+      execFileSync(
+        'secret-tool',
+        ['store', `--label=Rediacc config storage key ${key}`, ...this.attributes(key)],
+        { ...fed(armoured), timeout: SECRET_TOOL_TIMEOUT_MS }
+      );
+    } catch (error) {
+      throw toolFailure('secret-tool', error);
+    }
+  }
+
+  remove(key: string): void {
+    try {
+      execFileSync('secret-tool', ['clear', ...this.attributes(key)], {
+        ...QUIET,
+        timeout: SECRET_TOOL_TIMEOUT_MS,
+      });
+    } catch {
+      // No such item, ok
     }
   }
 }
@@ -288,6 +379,9 @@ class KeychainStorage extends Backend {
 // - `$ErrorActionPreference='Stop'` turns any failure into a non-zero exit. The marker makes the answer unmistakable either way: output without it is a failure, whatever the exit code.
 // - `-Command` runs a string, which no execution policy governs (a policy governs script files), so none is passed.
 
+/** One powershell spawn takes about 1.7 s on an idle Windows VM and far longer under load; the round trip makes two or three. */
+export const DPAPI_TIMEOUT_MS = 20_000;
+
 const DPAPI_MARKER = 'rdc-dpapi:';
 const DPAPI_ANSWER = /^rdc-dpapi:([A-Za-z0-9+/]*={0,2})$/;
 
@@ -308,7 +402,7 @@ function dpapi(method: 'Protect' | 'Unprotect', bytes: Buffer): Buffer {
     printed = execFileSync(
       'powershell.exe',
       ['-NonInteractive', '-NoProfile', '-Command', dpapiScript(method)],
-      fed(bytes.toString('base64'))
+      { ...fed(bytes.toString('base64')), timeout: DPAPI_TIMEOUT_MS }
     );
   } catch (error) {
     throw toolFailure('powershell', error);
@@ -415,8 +509,8 @@ class FileStorage extends Backend {
  * validating here guarantees no untrusted `storageKeyId` reaches keyctl,
  * security, or PowerShell, regardless of which backend is active.
  */
-class ValidatingStorage implements SecureStorage {
-  constructor(private readonly inner: SecureStorage) {}
+class ValidatingStorage implements SyncReadableSecureStorage {
+  constructor(private readonly inner: Backend) {}
 
   get type(): string {
     return this.inner.type;
@@ -425,6 +519,11 @@ class ValidatingStorage implements SecureStorage {
   get(key: string): Promise<string | null> {
     assertSafeStorageKey(key);
     return this.inner.get(key);
+  }
+
+  getSync(key: string): string | null {
+    assertSafeStorageKey(key);
+    return this.inner.read(key);
   }
 
   set(key: string, value: string): Promise<void> {
@@ -445,32 +544,45 @@ const FILE_STORE = 'file';
 
 /** The native backend of an OS and the two refusals it can raise. */
 interface NativeStore {
+  /** Tried first, in order, each behind its own round trip; the first that passes is used. A failure here is silent: `backend` is the store whose refusal is reported. */
+  preferred: readonly Backend[];
   backend: Backend;
   /** The tool could not be started. */
   missing: () => string;
   /** The tool ran and a key did not come back. */
   unusable: () => string;
+  /** The tool did not answer in time; only a backend with a time limit has one. */
+  timedOut?: () => string;
 }
 
 function nativeStoreFor(platform: NodeJS.Platform): NativeStore | undefined {
   switch (platform) {
     case 'linux':
       return {
+        // The Secret Service persists across restarts; the kernel keyring is the fallback where no session bus or Secret Service answers (headless, SSH-only, CI).
+        preferred: sessionBusPresent() ? [new SecretToolStorage()] : [],
         backend: new KeyctlStorage(),
         missing: () => t('commands.config.remote.secretStore.keyctlMissing'),
         unusable: () => t('commands.config.remote.secretStore.keyringUnusable'),
       };
     case 'darwin':
       return {
+        preferred: [],
         backend: new KeychainStorage(),
         missing: () => t('commands.config.remote.secretStore.toolMissing', NATIVE_NAMES.darwin),
         unusable: () => t('commands.config.remote.secretStore.storeUnusable', NATIVE_NAMES.darwin),
       };
     case 'win32':
       return {
+        preferred: [],
         backend: new DpapiStorage(),
         missing: () => t('commands.config.remote.secretStore.toolMissing', NATIVE_NAMES.win32),
         unusable: () => t('commands.config.remote.secretStore.storeUnusable', NATIVE_NAMES.win32),
+        timedOut: () =>
+          t('commands.config.remote.secretStore.storeTimedOut', {
+            ...NATIVE_NAMES.win32,
+            seconds: DPAPI_TIMEOUT_MS / 1000,
+          }),
       };
     default:
       return undefined;
@@ -490,14 +602,17 @@ const NATIVE_NAMES = {
  *
  * The CLI does NOT run `keyctl link @u @s` to cure that itself. The link lands in the session keyring the caller's whole session shares and outlives the CLI, and it hands every process of that session possession of every key in `@u`; a service manager that gave a unit a private session keyring chose that isolation. The refusal names the command, and running it stays the operator's decision.
  */
-function proveRoundTrip(backend: Backend): { missing: boolean; detail?: string } | null {
+function proveRoundTrip(
+  backend: Backend
+): { missing: boolean; detail?: string; timedOut?: boolean } | null {
   const key = `rdc:probe:${process.pid}-${randomBytes(6).toString('hex')}`;
   const value = randomBytes(24).toString('base64');
   try {
     backend.write(key, value);
     return backend.read(key) === value ? null : { missing: false };
   } catch (error) {
-    if (error instanceof ToolFailure) return { missing: error.missing, detail: error.detail };
+    if (error instanceof ToolFailure)
+      return { missing: error.missing, detail: error.detail, timedOut: error.timedOut };
     throw error;
   } finally {
     try {
@@ -524,6 +639,23 @@ function fileBackend(): Backend {
   return storage;
 }
 
+/** The first backend of `native` that passes its round trip: a preferred one silently, else the required one, whose failure is the refusal. */
+function proveNative(native: NativeStore): Backend {
+  const preferred = native.preferred.find((candidate) => proveRoundTrip(candidate) === null);
+  if (preferred) return preferred;
+  const failure = proveRoundTrip(native.backend);
+  if (failure) {
+    if (failure.timedOut && native.timedOut) {
+      throw new SecureStorageUnavailableError(native.timedOut(), failure.detail, true);
+    }
+    throw new SecureStorageUnavailableError(
+      failure.missing ? native.missing() : native.unusable(),
+      failure.detail
+    );
+  }
+  return native.backend;
+}
+
 function selectBackend(): Backend {
   const choice = process.env.REDIACC_SECRET_STORE ?? '';
   if (choice === FILE_STORE) return fileBackend();
@@ -540,21 +672,14 @@ function selectBackend(): Backend {
       t('commands.config.remote.secretStore.unsupportedPlatform', { platform: process.platform })
     );
   }
-  const failure = proveRoundTrip(native.backend);
-  if (failure) {
-    throw new SecureStorageUnavailableError(
-      failure.missing ? native.missing() : native.unusable(),
-      failure.detail
-    );
-  }
-  provenNative = native.backend;
+  provenNative = proveNative(native);
   return provenNative;
 }
 
 /**
- * The secure storage of this device: the native backend of the OS, proven by a round trip, or the file backend when `REDIACC_SECRET_STORE=file` chose it. Throws SecureStorageUnavailableError when the native backend cannot be used and the file backend was not chosen; nothing falls back on its own.
+ * The secure storage of this device: the native backend of the OS (on Linux the Secret Service when a session bus offers one, else the kernel keyring), proven by a round trip, or the file backend when `REDIACC_SECRET_STORE=file` chose it. Throws SecureStorageUnavailableError when the native backend cannot be used and the file backend was not chosen; nothing falls back on its own.
  * The returned storage validates every key (see ValidatingStorage).
  */
-export function getSecureStorage(): SecureStorage {
+export function getSecureStorage(): SyncReadableSecureStorage {
   return new ValidatingStorage(selectBackend());
 }

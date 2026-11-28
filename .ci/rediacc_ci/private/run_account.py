@@ -4,7 +4,7 @@
 A thin wrapper: check that the `private/account` submodule is checked out, install its dependencies if nothing else has, and run one stage. It reimplements nothing that `private/account`'s own npm scripts do.
 
 THIS MODULE IS WHAT `check:ci-account-server` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_account test`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf`, and `.github/workflows/ci-quality.yml` runs the same module form. The licence is
-`.ci/shadow/w7p4b-run-account.observations.jsonl`, ten clean trees at `--assert --k 5`.
+the ledger (deleted in commit:936280cd35), ten clean trees at `--assert --k 5`.
 
 THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-account-server` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 
@@ -182,4 +182,15 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` reads `$1` as the stage and drops `$2` onward, which is how `test deploy` ran the tests and said nothing about `deploy`. One bare argument, first, and no flag.
+    _parsed = gate_args.parse("run_account.py", sys.argv[1:], positional="<stage>")
+    if len(_parsed.positionals) > 1 or _parsed.argv[:1] != _parsed.positionals[:1]:
+        print(
+            "run_account.py: takes one stage and nothing after it, got %r (accepted: <stage>)"
+            % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

@@ -96,13 +96,15 @@ def test_backup_cli_config_logs_in_with_the_token_on_stdin(
     assert stdin == API_TOKEN
 
 
-def test_transfer_enrollment_carries_the_token_and_password_in_the_environment(
+def test_transfer_enrollment_carries_the_token_and_machine_secret_in_the_environment(
     drill: Recorder, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """`config remote enable --master-password` is a FLAG: the master password rides REDIACC_STORE_MASTER_PASSWORD and the minted token REDIACC_TOKEN."""
+    """`config remote enable --machine-secret <id>` carries only the secret's id: the secret itself rides REDIACC_MACHINE_SECRET and the minted token REDIACC_TOKEN."""
     tr = transfer.Transfer(drill, restart_gateway=False)
     tr.device1 = tr.device2 = str(drill.work)
     tr.server_url = "http://127.0.0.1:1"
+    tr.machine_secret_id = "ms-drill-id"
+    tr.machine_secret = "RM1-DRILL0000-DRILL0000-DRILL0000-DRILL0000"
 
     def mint(_name: str) -> None:
         tr.minted_token = MINTED_TOKEN
@@ -111,15 +113,14 @@ def test_transfer_enrollment_carries_the_token_and_password_in_the_environment(
     monkeypatch.setattr(tr, "mint_token", mint)
     tr.phase_seed_on_enable()
     assert_off_argv(drill, MINTED_TOKEN)
-    assert_off_argv(drill, transfer.STORE_PASSWORD)
+    assert_off_argv(drill, tr.machine_secret)
     enable = [c for c in drill.calls if c[0][1:4] == ["config", "remote", "enable"]]
     assert len(enable) == 1
     argv, env, _stdin = enable[0]
-    assert argv[argv.index("--master-password") + 1].startswith("--"), (
-        "--master-password takes no value"
-    )
+    assert argv[argv.index("--machine-secret") + 1] == tr.machine_secret_id
+    assert "--master-password" not in argv
     assert env["REDIACC_TOKEN"] == MINTED_TOKEN
-    assert env["REDIACC_STORE_MASTER_PASSWORD"] == transfer.STORE_PASSWORD
+    assert env["REDIACC_MACHINE_SECRET"] == tr.machine_secret
 
 
 def test_run_feeds_stdin_text_to_the_child_and_keeps_it_off_last_cmd() -> None:

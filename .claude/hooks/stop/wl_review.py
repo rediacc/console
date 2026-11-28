@@ -277,6 +277,13 @@ def git(repo, *args, stdin=None, timeout=30):
     """(rc, stdout) of one git call; rc 127 when git could not run.
 
     `--no-optional-locks` is load-bearing: every call here is a read, and a plain `git status` (branch_state asks one on every Stop hook, push guard and `--status`) opportunistically rewrites `.git/index` when its stat data is stale, which takes `.git/index.lock`. A `git cherry-pick a b` or a `git commit` of the lead running at that moment dies with `Unable to create '.git/index.lock': File exists` (worklist #65b47fef). The reviewer and the post-bash trigger issue no index-taking call, so this closes the one that is left."""
+    if stdin is None:
+        import wl_core
+
+        if wl_core.git_cacheable(args):
+            # GIT ANSWERS KEYED ON HEAD (wl_core.git_run): branch_state asks the same read-only questions on every stop.
+            got = wl_core.git_run(repo, args, timeout=timeout, opts=("--no-optional-locks",))
+            return (127, "") if got is None else (got[0], wl_core.git_text(got[1]))
     try:
         done = subprocess.run(
             ["git", "--no-optional-locks", "-C", str(repo), *args],
@@ -1031,14 +1038,85 @@ def acquire_slot(cfg, sleep=time.sleep, clock=time.monotonic):
 # --------------------------------------------------------------------------- coverage (section 3.1)
 
 
+_POLICY: list = []
+
+
+def _policy():
+    """This hook tree's own `commit_policy` (the landing-record reader), loaded once by file; None when it cannot be loaded. Read from the file's tree, not from a judged root: a fixture repository carries no `.claude/`."""
+    if not _POLICY:
+        try:
+            _POLICY.append(_load_commit_policy(CONSOLE_ROOT))
+        except Exception as exc:
+            # Loud, not silent: without commit_policy `review_root` answers the main checkout and `base_range` walks the PR-branch commits again.
+            sys.stderr.write(
+                "wl_review: commit_policy could not be loaded (%s: %s); review verbs act on the main checkout\n"
+                % (type(exc).__name__, str(exc)[:160])
+            )
+            _POLICY.append(None)
+    return _POLICY[0]
+
+
+def review_root(project, cwd=None):
+    """The tree whose review records a review verb typed in `cwd` (default: the process's cwd) acts on: the bound tree `cwd` lies in, else `project`.
+
+    TWO TREES, TWO RECORD DIRECTORIES (worklist #edb41f10, measured 2026-11-21). The landing tree holds the PR branch and the main checkout the development branch, and each branch's records live in its own tree's `agent/reviews/<branch>/`. The worklist store resolves to the main checkout from either tree, and the review verbs once resolved there too: `--review-commit` typed in the landing tree committed the development branch's records in the main checkout and left the landing record uncommitted. With no landing record, or a `cwd` in neither bound tree, the answer is `project`, the reading before the binding existed.
+    """
+    policy = _policy()
+    try:
+        where = cwd or os.getcwd()
+    except OSError:
+        return pathlib.Path(project)
+    if policy is None:
+        return pathlib.Path(project)
+    try:
+        return pathlib.Path(policy.command_tree(str(project), str(where)))
+    except Exception:
+        return pathlib.Path(project)
+
+
+def landing_base(repo, branch, tip="HEAD"):
+    """`merge-base(<landing branch>, <tip>)` for a branch stacked on the landing tree's PR branch, else "".
+
+    A STACKED DEVELOPMENT BRANCH DOES NOT OWN ITS BASE'S COMMITS (worklist #688c7385, measured 2026-11-21). The development branch is cut from the PR branch, so `merge-base(origin/main, tip)..tip` walked every PR-branch commit too: after the stacked cut four commits reviewed on 1104-1 were reviewed again into agent/reviews/1121-1/. The landing record (`commit_policy.tree_binding`, a submodule reading its superproject's) names the PR branch; its local ref, else `origin/<branch>`, is the base. "" with no valid record, on the record's own branch, or when neither ref resolves.
+    """
+    policy = _policy()
+    if policy is None or not branch:
+        return ""
+    try:
+        record, _role = policy.tree_binding(str(repo))
+    except Exception as exc:
+        # Loud, like `_policy`: without the record the range walks the PR-branch commits again, which is the defect this function exists to prevent.
+        sys.stderr.write(
+            "wl_review: the landing record could not be read (%s: %s); the review base falls back to origin/main\n"
+            % (type(exc).__name__, exc)
+        )
+        return ""
+    if record is None or record["branch"] == branch:
+        return ""
+    for ref in ("refs/heads/%s" % record["branch"], "refs/remotes/origin/%s" % record["branch"]):
+        if git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % ref):
+            return git_out(repo, "merge-base", ref, tip)
+    return ""
+
+
 def base_range(repo, branch, tip="HEAD"):
-    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`. "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
+    """The branch's own commits: `origin/main..<tip>` on main (a hotfix), else `merge-base(origin/main, <tip>)..<tip>`, or `landing_base..<tip>` when that is newer (a development branch stacked on the landing tree's PR branch). "" when origin/main is unknown. `tip` is HEAD unless the branch is judged at its pushed ref (check_state)."""
     if not git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
         return ""
     if branch == "main":
         return "origin/main..%s" % tip
     base = git_out(repo, "merge-base", "origin/main", tip)
-    return "%s..%s" % (base, tip) if base else ""
+    if not base:
+        return ""
+    # The landing base counts only when it descends from main's: a stacked base that does not sit above main's merge-base (an old PR ref left below origin/main after the PR merged) is dropped, and the main base stands; one that descends from main's base is used.
+    stacked = landing_base(repo, branch, tip)
+    if (
+        stacked
+        and stacked != base
+        and git(repo, "merge-base", "--is-ancestor", base, stacked)[0] == 0
+    ):
+        base = stacked
+    return "%s..%s" % (base, tip)
 
 
 def branch_commits(repo, rng, limit):
@@ -1264,8 +1342,24 @@ def spawn_detached(root, repo, sha, branch, python=None):
     return proc.pid
 
 
+def operation_pending(root, repo):
+    """(tree, operation) for the first of `repo` and `root` with a halted rebase, merge, cherry-pick, revert or am (wl_git.operation_in_progress), else None."""
+    import wl_git
+
+    for tree in dict.fromkeys(str(t) for t in (repo, root)):
+        name = wl_git.operation_in_progress(tree)
+        if name:
+            return tree, name
+    return None
+
+
 def trigger(root, repo, cfg=None, spawn=spawn_detached):
-    """Start reviewers for up to `max_spawn_per_trigger` uncovered commits of the repo's branch. Returns [(sha, pid)]."""
+    """Start reviewers for up to `max_spawn_per_trigger` uncovered commits of the repo's branch. Returns [(sha, pid)].
+
+    NOTHING STARTS while a history operation is halted in `repo` or in `root`, the tree the records land in (`operation_pending`, worklist #b07162cf): a reviewer appends to agent/reviews/<branch>/clean.jsonl or writes `<sha>.md`, and one unstaged tracked record makes `git rebase --continue` refuse. The replayed commits are reviewed once the operation ends, by the next trigger and by the backlog, which ask `uncovered` afresh.
+    """
+    if operation_pending(root, repo):
+        return []
     cfg = cfg or load_config(root)
     branch = current_branch(repo)
     if not branch:
@@ -2068,6 +2162,7 @@ def _stdlib_has(dotted, attrs):
         return False
     try:
         obj = importlib.import_module(dotted)
+    # swallowed-failure-ok: False only withholds a refutation, so the finding the existence oracle was checking stays open for a human, which is the conservative answer to a module that will not import.
     except Exception:
         return False
     for a in attrs:
@@ -2253,6 +2348,7 @@ def refute_existence(tree_obj, finding):
     for ident in idents:
         try:
             proof = lookup(ident)
+        # swallowed-failure-ok: "" refutes nothing, so the finding stays open for a human; a lookup that fails on one identifier must not close a finding the oracle could not prove wrong.
         except Exception:
             return ""
         if not proof:
@@ -2427,6 +2523,7 @@ def _writing_test(root):
     try:
         policy = _load_commit_policy(root)
         cfg = policy.load_config(str(root)) if policy is not None else None
+    # swallowed-failure-ok: None caps no finding, so every finding keeps its full severity, the conservative answer when commit_policy itself cannot be loaded (the handler is for `_load_commit_policy`, which can raise on a missing or broken file; `load_config` falls back to defaults and never raises).
     except Exception:
         return None
     if policy is None:
@@ -2445,10 +2542,8 @@ def _no_review_skip(root, message, paths):
     tags = policy.tags(message or "")
     if "no-review" not in tags or "hotfix" in tags:
         return False
-    try:
-        cfg = policy.load_config(str(root))
-    except Exception:
-        return False
+    # load_config falls back to the defaults on an unreadable config and never raises, so nothing is caught here.
+    cfg = policy.load_config(str(root))
     eligible, _offenders = policy.no_review_eligible(paths, cfg)
     return bool(eligible)
 
@@ -2551,6 +2646,14 @@ def run_review(
                     )
                     apply_existence_oracle(repo, full, review.findings, now=now, log=log)
         review.reviewed_at = now_iso(now)
+        # A REVIEWER STARTED BEFORE A REBASE BEGAN still finishes during it (worklist #b07162cf), so the write asks again: a record written now is an unstaged tracked change `git rebase --continue` refuses over. The verdict is dropped, the commit stays uncovered, and the next trigger or the backlog reviews it after the operation ends.
+        pending = operation_pending(root, repo)
+        if pending:
+            log(
+                "not recorded: a %s is in progress in %s; %s stays uncovered and is reviewed after it ends"
+                % (pending[1], pending[0], full[:12])
+            )
+            return None
         # D3: a `.md` beats a ledger line. A verdict with nothing to do becomes a ledger line, unless a finished `.md` already stands for the sha (a findings record is never unlinked by a later clean result: the new verdict overwrites it, as any re-review does). A failed `.md` is replaced: the line goes in first, then the file goes.
         if ledger_eligible(review) and (previous is None or not previous.finished()):
             lp = ledger_path(root, branch)
@@ -2697,13 +2800,19 @@ def run_command(label, sha, branch):
     )
 
 
-def mark_commands(finding_id):
+def mark_commands(finding_id, holder=""):
+    """The ways out of an open finding: the three resolutions, then the in-flight route.
+
+    The fourth line is the stand-down branch_state already honours (`blocking_in_flight`): a live `[>]` item whose text, last note or lease note names the finding turns its block into a note. Without the line the lead could not find that route from the block it was given (agent/plans/PLAN-stop-hook-retro-20261125.md friction 1). `holder`, when given, is the one live `[>]` item of this session; with several the caller leaves it empty, since the finding belongs to whichever writer is fixing it.
+    """
     return (
         "worklist.py --review-mark <me> %s fixed <sha-of-the-fix>" % finding_id,
         "worklist.py --review-mark <me> %s not-a-bug <evidence citing path:line or a sha>"
         % finding_id,
         "worklist.py --review-mark <me> %s waived #<operator-only item naming %s> ASKED:<YYYY-MM-DDTHH:MM>Z"
         % (finding_id, finding_id),
+        "in flight with a live writer: worklist.py --update <me> %s '%s ...' (the finding waits as a note while that worker is live)"
+        % (holder or "<its [>] item>", finding_id),
     )
 
 
@@ -2913,8 +3022,13 @@ def _malformed_remedy(path, err, branch):
     )
 
 
-def stop_texts(st, limit=5):
-    """(block, malformed, note) for the Stop hook: the `commit-review` block, the `commit-review-malformed` block and the advisory, each "" when there is nothing to say."""
+def stop_texts(st, limit=5, holders=()):
+    """(block, malformed, note) for the Stop hook: the `commit-review` block, the `commit-review-malformed` block and the advisory, each "" when there is nothing to say.
+
+    `holders` are the ids of this session's `[>]` items whose worker is verified live: the open-finding block lists every one of them once, and names the item in the in-flight line only when exactly one is live, since with several the finding belongs to whichever writer is fixing it.
+    """
+    # Each id once, in the order given: a repeated holder id is one live item, and counting it twice would hide the single-item case.
+    holders = list(dict.fromkeys(h for h in holders or () if h))
     block = malformed = ""
     if st["malformed"]:
         malformed = (
@@ -2941,9 +3055,13 @@ def stop_texts(st, limit=5):
         lines = []
         for _p, f in open_blocking[:limit]:
             lines.append("[%s] %s %s:%d -- %s" % (f.severity, f.id, f.file, f.line, f.claim[:160]))
-            lines.extend("    " + c for c in mark_commands(f.id))
+            lines.extend(
+                "    " + c for c in mark_commands(f.id, holders[0] if len(holders) == 1 else "")
+            )
+        if holders:
+            lines.append("live [>] item(s) of this session: %s" % ", ".join(holders))
         parts.append(
-            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer:\n  %s"
+            "OPEN PER-COMMIT REVIEW FINDING(S) at or above the block threshold on %s (%d). Fix each and mark it fixed, record why it is not a bug, or, for an operator-only triage, waive it with the operator's ASKED: answer. A finding a live writer is already fixing waits as a note once its leased [>] item names it:\n  %s"
             % (st["branch"], len(open_blocking), "\n  ".join(lines))
         )
     in_flight = {f.id for _p, f in st.get("deferred_in_flight", [])}
@@ -3247,20 +3365,74 @@ def _citation_ok(repo, evidence, project=None):
     )
 
 
-REBASED_COPY_DEPTH = 400
+def _branch_range(repo, tip="HEAD"):
+    """`merge-base(origin/main, tip)..tip`, the commits the branch carries; the whole history of `tip` when origin/main is unknown or shares no base with it."""
+    base = ""
+    if git_out(repo, "rev-parse", "-q", "--verify", "origin/main^{commit}"):
+        base = git_out(repo, "merge-base", "origin/main", tip)
+    return ("%s..%s" % (base, tip)) if base else tip
 
 
-def rebased_copy_below(repo, pid, fix):
-    """The commit at or below `fix` (within REBASED_COPY_DEPTH) whose patch-id is `pid`, or "". A rebase rewrites the reviewed commit's sha but not its patch-id, so a fix on the rebased branch descends from the copy, not from the sha the record names (seen 2026-10-06: 1006-2 rebased onto v1.8.0 main, and fix f00dbd623 for e2a16724.1 was refused)."""
-    if not pid or pid == "(none)":
-        return ""
-    rc, out = git(repo, "rev-list", "--no-merges", "-n", str(REBASED_COPY_DEPTH), fix)
+_COPY_PATCH_IDS: dict = {}
+
+
+def _range_patch_ids(repo, rng):
+    """`patch_ids(repo, rng)`, kept per resolved range for the life of the process: a batch of marks over one branch reads the branch's patch-ids once."""
+    ends = tuple(
+        git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % end) for end in rng.split("..")
+    )
+    key = (os.path.realpath(repo), ends)
+    if key not in _COPY_PATCH_IDS:
+        _COPY_PATCH_IDS[key] = patch_ids(repo, rng)
+    return _COPY_PATCH_IDS[key]
+
+
+def branch_copies(repo, sha, pid, tip="HEAD"):
+    """The commits on the branch (`_branch_range`) that carry the reviewed commit `sha`: `[sha]` when it is an ancestor of `tip`, else every copy a rebase or a cherry-pick made of it, found by its stable patch-id `pid` and by the `(cherry picked from commit <sha>)` line `cherry-pick -x` writes. [] when the work is not on the branch at all.
+
+    THE COPY IS SEARCHED OVER THE WHOLE BRANCH, NOT A FIXED DEPTH BELOW THE FIX (finding #48c72397, measured 2026-11-24). The earlier lookup walked 400 commits below the fix; on 1121-1, rebased onto main after PR #605 merged, the copy of d6184ab0 sat 730 commits below fix 252bab372c, and 45 genuine fixes were refused as "does not descend". A lease's commits land by `cherry-pick -x`, and that copy carries the reviewed sha in its message even when a conflict changed its patch-id.
+    """
+    anc = git(repo, "merge-base", "--is-ancestor", sha, tip)[0]
+    if anc == 0:
+        return [sha]
+    if anc != 1:
+        # Exit 1 is "not an ancestor"; anything else (128: the sha is missing from this repo) is a failed read, never an empty answer (finding cd54ad27.1).
+        raise ValueError(
+            "git merge-base --is-ancestor %s %s failed in %s (exit %s)" % (sha[:12], tip, repo, anc)
+        )
+    rng = _branch_range(repo, tip)
+    found = []
+    rc, out = git(
+        repo,
+        "log",
+        "--format=%H",
+        "--fixed-strings",
+        "--grep=(cherry picked from commit %s)" % sha,
+        rng,
+    )
     if rc != 0:
-        return ""
-    for sha in out.split():
-        if patch_id(repo, sha) == pid:
-            return sha
-    return ""
+        raise ValueError(
+            "git log --grep for the cherry-pick line of %s failed in %s (exit %s)"
+            % (sha[:12], repo, rc)
+        )
+    found.extend(out.split())
+    if pid and SHA40.match(pid):
+        ids = _range_patch_ids(repo, rng)
+        if ids is None:
+            rc, out = git(repo, "rev-list", "--no-merges", rng)
+            if rc != 0:
+                raise ValueError("git rev-list %s failed in %s (exit %s)" % (rng, repo, rc))
+            ids = {c: patch_id(repo, c) for c in out.split()}
+        found.extend(c for c, p in ids.items() if p == pid and c not in found)
+    return found
+
+
+def absent_verdict(repo, review, tip="HEAD"):
+    """The verdict the tool computes for a reviewed commit `branch_copies` finds nowhere on the branch."""
+    return (
+        "reviewed commit %s is not on this branch: not an ancestor of %s, and no commit of %s carries its patch-id or a cherry-pick line naming it"
+        % (review.sha8, tip, _branch_range(repo, tip))
+    )
 
 
 WAIVE_ASKED_RE = re.compile(r"^ASKED:(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})(?::\d{2})?Z$")
@@ -3464,9 +3636,30 @@ def moved_successors(repo, anchored, base, fix):
     `git log --follow` sees a whole-file rename only, and `-C` a copy of at least half a file: neither sees a function extracted into a neighbour (0477d0c75 moved 246 lines of config.ts into config-reconcile.ts, which git reads as a 32% copy). The anchored file is never its own successor.
 
     Only a commit that touches a source can move lines out of it, so the log is limited to the sources: the MOVE_MAX_COMMITS cap then counts those commits, not every commit of a long range (bf0bded8.2: the onprem/ -> lab/ move sat beyond the newest 60 of 207 commits, and the fix in lab/testca.py was refused).
+
+    A move spread across commits (the code copied into its new home by one commit, the original removed by a later one, or the reverse) matches in no single commit, and the copying commit need not touch a source at all. After the per-commit rounds, one pass over the range's net diff (`git diff --no-renames base fix`) applies the same rule to the lines the sources lost overall and the lines each other file gained overall (#ee9de1f9).
     """
     sources = {anchored}
     found: set[str] = set()
+
+    def receivers(removed, added):
+        lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
+        if not lost:
+            return set()
+        out = set()
+        for path, lines in added.items():
+            if path in sources or path in found:
+                continue
+            pool = lost.copy()
+            hits = 0
+            for line in lines:
+                if pool[line] > 0:
+                    pool[line] -= 1
+                    hits += 1
+            if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
+                out.add(path)
+        return out
+
     for _ in range(MOVE_MAX_ROUNDS):
         rc, out = git(
             repo,
@@ -3484,25 +3677,19 @@ def moved_successors(repo, anchored, base, fix):
             rc2, text = git(repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", sha)
             if rc2 != 0:
                 continue
-            removed, added = _diff_lines(text)
-            lost = collections.Counter(line for src in sources for line in removed.get(src, ()))
-            if not lost:
-                continue
-            for path, lines in added.items():
-                if path in sources or path in found:
-                    continue
-                pool = lost.copy()
-                hits = 0
-                for line in lines:
-                    if pool[line] > 0:
-                        pool[line] -= 1
-                        hits += 1
-                if hits >= MOVE_MIN_LINES and hits * 2 >= len(lines):
-                    found.add(path)
-                    grew = True
+            new = receivers(*_diff_lines(text))
+            if new:
+                found |= new
+                grew = True
         if not grew:
             break
         sources = {anchored, *found}
+    sources = {anchored, *found}
+    rc, text = git(
+        repo, "diff", "--no-renames", "-U0", "--no-color", "--no-ext-diff", base, fix, "--"
+    )
+    if rc == 0:
+        found |= receivers(*_diff_lines(text))
     return found
 
 
@@ -3536,6 +3723,61 @@ def claim_exercised_by_test(repo, fix, test_path, claim):
     )
 
 
+CLAIM_QUOTED_RE = re.compile(r"`([A-Za-z_$][A-Za-z0-9_$.]*)(?:\(\))?`")
+_IDENT_SHAPE_RE = re.compile(r"^[A-Za-z_$][A-Za-z0-9_$]*$")
+# The keyword and the name sit on ONE line (`[ \t]`, never `\s`): a keyword ending one line must not pair with an identifier opening the next (review e386cc46.3).
+# A definition of NAME across the languages here: a TS/JS function, class, interface, type, enum or binding; a Python def or class; a Go func (method receiver allowed), type, var or const; a shell function; a module-level assignment at column 0 (a Python constant).
+_DEFINITION_RE = (
+    r"(?m)(?:\b(?:function\*?|class|interface|type|enum|const|let|var|def|func)[ \t]+(?:\([^)]*\)[ \t]*)?%(n)s(?![A-Za-z0-9_$])"
+    r"|^\s*%(n)s\s*\(\)\s*\{"
+    r"|^%(n)s\s*(?::[^=\n]*)?=(?!=))"
+)
+
+
+def claim_symbols(claim):
+    """The symbols a claim names: its compound identifiers (`claim_identifiers`, file names dropped) and any identifier-shaped backtick-quoted name of at least 4 characters (`touch()`, `opts.retry` read as `retry`), which the bare rule would read as a plain word."""
+    names = {n for n in claim_identifiers(claim) if _IDENT_SHAPE_RE.match(n)}
+    for quoted in CLAIM_QUOTED_RE.findall(claim or ""):
+        last = quoted.rsplit(".", 1)[-1]
+        if len(last) >= 4 and _IDENT_SHAPE_RE.match(last):
+            names.add(last)
+    return names
+
+
+def defines_claimed_symbol(repo, fix, touched, claim, anchored, reviewed):
+    """Whether a non-test file the fix touched DEFINES, in the fix's tree, a symbol the claim names that the anchored file uses (#eff552fc: the claim names `previewTouchOption`, the finding is anchored on its caller renet-execution.ts, and the fix changed its defining module touch.ts).
+
+    The anchored file must name the symbol (at the reviewed commit or at the fix), so the definition is of something the anchor calls; a module that only calls the symbol is no definition. The defining file must also be the anchor's own dependency: an import-like line of the anchored file names it (`_import_lines_name`), or it sits in the anchored file's directory (a Go package or a sourced shell file needs no import). A same-named definition in an unrelated file the fix happened to touch answers nothing (review e386cc46.1). The caller pairs this with a `--test` the fix touched."""
+    names = claim_symbols(claim)
+    if not names:
+        return False
+    # Only a successful read counts: the stderr of a failed `git show` (the anchored file absent at that commit) names paths and is no source text (review e386cc46.2).
+    reads = [git(repo, "show", "%s:%s" % (at, anchored)) for at in (reviewed, fix)]
+    anchor_text = "\n".join(text for rc, text in reads if rc == 0)
+    names = {
+        n
+        for n in names
+        if re.search(r"(?<![A-Za-z0-9_$])%s(?![A-Za-z0-9_$])" % re.escape(n), anchor_text)
+    }
+    if not names:
+        return False
+    anchor_dir = pathlib.PurePosixPath(anchored).parent
+    anchor_lines = anchor_text.splitlines()
+    for path in touched:
+        if path == anchored or is_test_path(path):
+            continue
+        if pathlib.PurePosixPath(path).parent != anchor_dir and not _import_lines_name(
+            anchor_lines, anchored, path
+        ):
+            continue
+        rc, text = git(repo, "show", "%s:%s" % (fix, path))
+        if rc != 0:
+            continue
+        if any(re.search(_DEFINITION_RE % {"n": re.escape(n)}, text) for n in names):
+            return True
+    return False
+
+
 _IMPORT_LINE_RE = re.compile(
     r"\b(?:import|require|from|importlib|load_module|patch|mock)\b", re.IGNORECASE
 )
@@ -3567,15 +3809,20 @@ def references_anchored_file(repo, fix, test_path, anchored):
     )
 
 
-def imports_anchored_module(repo, fix, test_path, anchored):
-    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+def imports_module_in_file(repo, fix, test_path, target):
+    """Whether any import-like line of `test_path` as it stands at `fix` imports `target` (`import { callTool } from '../call.js'` for `src/mcp-host/call.ts`), by the same token rule as `imports_anchored_module`.
+
+    Read over the whole file, not the fix's added lines, and asked only of a file the anchored code MOVED to (#ee9de1f9): a test that already imported the moved module before the fix extended it tests that module, though its name carries nothing of the old path. A file git cannot read at `fix` answers False."""
+    rc, text = git(repo, "show", "%s:%s" % (fix, test_path))
+    if rc != 0:
+        return False
+    return _import_lines_name(text.splitlines(), test_path, target)
+
+
+def _import_lines_name(lines, test_path, anchored):
+    """Whether one of `lines` (source lines, no diff prefix) is import-like and carries a token naming `anchored` (`_token_names_anchored`)."""
     stem = pathlib.PurePosixPath(anchored).stem.lower()
     if not stem:
-        return False
-    rc, text = git(
-        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
-    )
-    if rc != 0:
         return False
     variants = {stem, stem.replace("-", "_"), stem.replace("_", "-")}
     parent = pathlib.PurePosixPath(anchored).parent.name.lower()
@@ -3583,10 +3830,10 @@ def imports_anchored_module(repo, fix, test_path, anchored):
     anchored_low = anchored.lower()
     anchored_bare = str(pathlib.PurePosixPath(anchored_low).with_suffix(""))
     test_dir = pathlib.PurePosixPath(test_path.lower()).parent
-    for line in text.splitlines():
-        if not line.startswith("+") or line.startswith("+++") or not _IMPORT_LINE_RE.search(line):
+    for line in lines:
+        if not _IMPORT_LINE_RE.search(line):
             continue
-        body = line[1:].lower()
+        body = line.lower()
         for token in re.findall(r"[a-z0-9_.@~/-]+", body):
             if _token_names_anchored(
                 token,
@@ -3599,6 +3846,23 @@ def imports_anchored_module(repo, fix, test_path, anchored):
             ):
                 return True
     return False
+
+
+def imports_anchored_module(repo, fix, test_path, anchored):
+    """Whether the lines the fix ADDED to `test_path` import or patch the anchored module by name (`from x.onboarding import ...`, `import {a} from './blob-storage.service'`), so a test whose file name does not carry the stem (`blob-list.test.ts` for `blob-storage.service.ts`) still counts as the anchored file's test (#d8f3ba65). Only import-like lines count: a bare mention of a common stem in an unrelated test answers nothing."""
+    if not pathlib.PurePosixPath(anchored).stem:
+        return False
+    rc, text = git(
+        repo, "show", "--format=", "-U0", "--no-color", "--no-ext-diff", fix, "--", test_path
+    )
+    if rc != 0:
+        return False
+    added = [
+        line[1:]
+        for line in text.splitlines()
+        if line.startswith("+") and not line.startswith("+++")
+    ]
+    return _import_lines_name(added, test_path, anchored)
 
 
 _MODULE_SUFFIXES = {"ts", "tsx", "js", "jsx", "mjs", "cjs", "py", "go", "rs"}
@@ -3641,6 +3905,37 @@ def _token_names_anchored(
     return False
 
 
+def mark_target(root, branch, finding_id):
+    """(root, branch) of the record a mark of `finding_id` writes: the landing tree and its branch when the reviewed commit belongs to the landing branch, else (`root`, `branch`).
+
+    A COMMIT OF THE LANDING BRANCH IS THAT BRANCH'S, WHEREVER THE MARK IS TYPED (worklist #edb41f10, measured 2026-11-21). From the main checkout (1121-1), `--review-mark ... c1237c39.1 fixed 47ce53c34` marked the duplicate record in agent/reviews/1121-1/ while the record the PR merges on, agent/reviews/1104-1/c1237c39...md, kept 4 open findings. With a landing record and `branch` not the record's own, a finding the landing tree's `agent/reviews/<landing branch>/` holds, whose reviewed commit is an ancestor of the landing tree's HEAD in its repository (a submodule's too), is marked there, and the change rides the landing branch's next commit. With no record, on the landing branch itself, or for a commit only the development branch holds, nothing moves.
+    """
+    policy = _policy()
+    if policy is None or not branch:
+        return root, branch
+    try:
+        record = policy.landing_record(str(root))
+    except Exception as exc:
+        sys.stderr.write(
+            "wl_review: the landing record could not be read (%s: %s); the mark is written in %s\n"
+            % (type(exc).__name__, str(exc)[:160], root)
+        )
+        return root, branch
+    if record is None or record["branch"] == branch:
+        return root, branch
+    landing = pathlib.Path(record["path"])
+    if landing.resolve() == pathlib.Path(root).resolve():
+        return root, branch
+    try:
+        _path, review, _f = find_finding(landing, record["branch"], finding_id)
+    except ValueError:
+        return root, branch
+    repo = repo_from_label(landing, review.repo)
+    if git(repo, "merge-base", "--is-ancestor", review.sha, "HEAD")[0] != 0:
+        return root, branch
+    return landing, record["branch"]
+
+
 def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_ok=None):
     """Close one finding. Returns the path written; raises ValueError naming the failed check.
 
@@ -3670,13 +3965,18 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             raise ValueError("the fix cannot be the reviewed commit itself")
         if git(repo, "merge-base", "--is-ancestor", fix, "HEAD")[0] != 0:
             raise ValueError("%s is not on this branch (not an ancestor of HEAD)" % fix[:12])
-        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[
-            0
-        ] != 0 and not rebased_copy_below(repo, review.patch_id, fix):
-            raise ValueError(
-                "%s does not descend from the reviewed commit %s (nor from a rebased copy of it)"
-                % (fix[:12], review.sha8)
-            )
+        if git(repo, "merge-base", "--is-ancestor", review.sha, fix)[0] != 0:
+            copies = branch_copies(repo, review.sha, review.patch_id)
+            if not copies:
+                raise ValueError(
+                    "%s, so no fix descends from it; close the finding with `not-a-bug`, which records that verdict itself"
+                    % absent_verdict(repo, review)
+                )
+            if not any(git(repo, "merge-base", "--is-ancestor", c, fix)[0] == 0 for c in copies):
+                raise ValueError(
+                    "%s does not descend from the reviewed commit %s nor from its copy on this branch (%s)"
+                    % (fix[:12], review.sha8, ", ".join(c[:12] for c in copies))
+                )
         touched = git_out(
             repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--find-renames", fix
         ).splitlines()
@@ -3734,16 +4034,37 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 and test_claim
                 and claim_exercised_by_test(repo, fix, test_path, finding.claim)
             )
+            # A fix of the module that DEFINES a symbol the claim names, anchored on its caller, with a named test the fix touched (#eff552fc).
+            or bool(
+                test_path
+                and defines_claimed_symbol(
+                    repo, fix, touched, finding.claim, finding.file, review.sha
+                )
+            )
         )
         if not followed:
             # The anchored code may have moved between the reviewed commit and the fix: a fix of the file that received it, or of that file's test, is a fix of the anchor.
             moved_to = moved_successors(repo, finding.file, review.sha, fix)
-            followed = bool(moved_to & set(touched)) or (
-                (bool(test_path) or test_claim)
-                and any(
-                    related_test(t, m)
-                    for m in moved_to
-                    for t in ([test_path] if test_path else [x for x in touched if is_test_path(x)])
+            followed = (
+                bool(moved_to & set(touched))
+                or (
+                    (bool(test_path) or test_claim)
+                    and any(
+                        related_test(t, m)
+                        for m in moved_to
+                        for t in (
+                            [test_path] if test_path else [x for x in touched if is_test_path(x)]
+                        )
+                    )
+                )
+                # A test named by --test that imports or names a file the code moved to tests the moved code, whatever its own name (#ee9de1f9: relocate.test.ts imports '../call.js', the new home of workers/mcp/src/call.ts).
+                or bool(
+                    test_path
+                    and any(
+                        imports_module_in_file(repo, fix, test_path, m)
+                        or references_anchored_file(repo, fix, test_path, m)
+                        for m in sorted(moved_to)
+                    )
                 )
             )
         if not followed:
@@ -3758,6 +4079,14 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                 )
             )
         resolution = "fixed %s | %s" % (fix, stamp)
+    elif kind == "not-a-bug" and not branch_copies(repo, review.sha, review.patch_id):
+        # The reviewed work was dropped from the branch, so the finding names code the branch does not carry: the tool states that verdict itself, and any evidence given rides after it (finding #48c72397).
+        given = normalise_claim(" ".join(args), 200).replace("|", "/")
+        verdict = absent_verdict(repo, review) + (" -- %s" % given if given else "")
+        resolution = "not-a-bug | %s | %s" % (
+            normalise_claim(verdict, 400).replace("|", "/"),
+            stamp,
+        )
     elif kind == "not-a-bug":
         evidence = normalise_claim(" ".join(args), 400).replace("|", "/")
         if len(evidence) < 20:
@@ -3829,32 +4158,55 @@ CARRIED_REDS_REL = pathlib.Path(".ci") / "config" / "carried-reds.json"
 CARRIED_REASON_MIN, CARRIED_STAR_REASON_MIN = 80, 160
 
 
-def carried_only(doc, carried_doc):
-    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`) or on exactly the finding keys the receipt recorded for it, by an entry whose reason clears the guard's bar, with no stale carried gate or key. Pure (#68452957)."""
+def carried_only(doc, carried_doc, today=None):
+    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`), or each finding key the receipt recorded for it is named by a keyed entry or matched by an unexpired pattern entry, by an entry whose reason clears the guard's bar. Since R3 (PLAN-ciquick-gate-contract) a carried key the run did not report only warns, so it does not refuse here either; a carried GATE that is not red, an expired or match-all pattern, and a red with no recorded key still refuse. Pure (#68452957)."""
+    import datetime as _dt
+    import fnmatch as _fn
+
     failed = doc.get("failed") if isinstance(doc, dict) else None
     # A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
     if not isinstance(failed, list) or not failed:
         return False
+    day = today or _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
     entries = carried_doc.get("carried") if isinstance(carried_doc, dict) else None
-    by_gate = {}
+    keyed: dict[object, set[str]] = {}
+    star: set[object] = set()
+    patterns: dict[object, list[str]] = {}
     for e in entries or []:
         if not isinstance(e, dict):
             continue
         raw_reason = e.get("reason")
         reason = raw_reason if isinstance(raw_reason, str) else ""
-        if len(reason) >= (
-            CARRIED_STAR_REASON_MIN if e.get("findings") == "*" else CARRIED_REASON_MIN
-        ):
-            by_gate[e.get("gate")] = e.get("findings")
+        gate = e.get("gate")
+        pats = e.get("patterns")
+        if isinstance(pats, list):
+            expires = e.get("expires")
+            if not isinstance(expires, str) or expires < day:
+                return False  # a pattern with no expiry, or past it, blocks at the guard
+            if any(not isinstance(p, str) or set(p) <= {"*"} for p in pats):
+                return False  # a match-all pattern is a schema error at the guard
+            if len(reason) >= CARRIED_REASON_MIN:
+                patterns.setdefault(gate, []).extend(pats)
+            continue
+        findings = e.get("findings")
+        if len(reason) < (CARRIED_STAR_REASON_MIN if findings == "*" else CARRIED_REASON_MIN):
+            continue
+        if findings == "*":
+            star.add(gate)
+        elif isinstance(findings, list):
+            keyed.setdefault(gate, set()).update(findings)
     recorded = doc.get("findings") if isinstance(doc.get("findings"), dict) else {}
-    if any(gate not in failed for gate in by_gate):
+    if any(gate not in failed for gate in set(keyed) | star):
         return False  # a carried gate that is not red is stale, and the guard refuses it
     for gate in failed:
-        carried = by_gate.get(gate)
-        if carried == "*":
+        if gate in star:
             continue
         keys = recorded.get(gate)
-        if not isinstance(carried, list) or not isinstance(keys, list) or set(keys) != set(carried):
+        if not isinstance(keys, list) or not keys:
+            return False  # a red naming no finding is not covered by a keyed or pattern carry
+        named = keyed.get(gate, set())
+        pats = patterns.get(gate, [])
+        if not all(k in named or any(_fn.fnmatchcase(k, p) for p in pats) for k in keys):
             return False
     return True
 
@@ -4135,16 +4487,30 @@ def verb(name, me, args, root, items_loader, branch=None, asked_ok=None):
         if not branch:
             return 1, "refused: HEAD is on no branch, so no review directory applies"
         items = items_loader() if args[1] == "waived" else None
+        where, owner = mark_target(root, branch, args[0])
+        moved = (
+            ""
+            if owner == branch
+            else " (the reviewed commit is the landing branch %s's: its record is marked in %s)"
+            % (owner, where)
+        )
         try:
             path = mark(
-                root, branch, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
+                where, owner, args[0], args[1], args[2:], me, items=items, asked_ok=asked_ok
             )
         except ValueError as exc:
-            return 1, "refused: %s" % exc
-        return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)" % (
+            return 1, "refused: %s%s" % (
+                exc,
+                ""
+                if owner == branch
+                else " (the finding belongs to the landing branch %s's record in %s; nothing was written there)"
+                % (owner, where),
+            )
+        return 0, "marked %s %s in %s; the change rides the next commit (or --review-commit)%s" % (
             args[0],
             args[1],
             path,
+            moved,
         )
     if name == "--review-commit":
         if not branch:
@@ -4325,7 +4691,8 @@ def main(argv):
     if not argv or argv[0] in ("-h", "--help"):
         sys.stdout.write(USAGE)
         return 0 if argv else 2
-    root = pathlib.Path(_opt(argv, "--root", str(CONSOLE_ROOT)))
+    # No --root: the bound tree the command was typed in (review_root), so --check and --status typed in the landing tree judge the PR branch's records there.
+    root = pathlib.Path(_opt(argv, "--root", "")) if "--root" in argv else review_root(CONSOLE_ROOT)
     if argv[0] == "--run" and len(argv) >= 2:
         branch = _opt(argv, "--branch") or current_branch(root)
         if not branch:

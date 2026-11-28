@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ported from `.ci/scripts/ci/scope-reconcile-shadow.sh`, which W7 P5 batch B5 retired once `.ci/shadow/w7p6-scope-reconcile-shadow.observations.jsonl` asserted equivalence over five distinct trees.
+"""Ported from `.ci/scripts/ci/scope-reconcile-shadow.sh`, which W7 P5 batch B5 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 Skip-plan reconciliation for `ci-complete`. Polarity depends on `SCOPE_MODE`:
 when the scope step actually reduced this run (`SCOPE_MODE=reduced`), every

@@ -2,7 +2,7 @@
 """A caller may not hand cleanup-staging.sh a tag it will refuse.
 
 THIS FILE IS THE GATE. It carries `check:ci-staging-tag-guard` outright: package.json, the `Staging tag guard` step in `.github/workflows/ci-quality.yml` and its `scripts/ci-runner/manifest.ts` leaf all name this path, and the `---- gate ----` header below moved here from the twin in the same change (W7P4-Q). The licence for the cutover is
-`.ci/shadow/w7p2-stagingtag.observations.jsonl`, which reads EQUIVALENT over 12 distinct clean trees at K=5, plus the differential in `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`.
+the ledger (deleted in commit:936280cd35), which reads EQUIVALENT over 12 distinct clean trees at K=5, plus the differential in `.ci/rediacc_ci/tests/test_quality_staging_tag_guard.py`.
 
 `.ci/scripts/quality/check-staging-tag-guard.sh` IS GONE, deleted by W7 P5 batch E1. Every case in that differential used to run the real twin over a fixture and compare both streams byte for byte against this file; each now compares against `.ci/rediacc_ci/tests/goldens/staging-tag-guard/`, which holds the twin's own bytes recorded on its last day in the tree. The provenance
 header of each golden names the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
@@ -42,7 +42,7 @@ PORT NOTES.
 THE TALLY IS REPRODUCED, NOT REPLACED BY `rediacc_ci.controls.Controls`, and this is the one decision in the file worth arguing about. The twin sources `.ci/scripts/lib/gate-controls.sh`, whose own header records why that file exists: "Extracted 2026-09-06 after check:ci-shape-duplication caught the same ~5 lines at three copies (check-release-key-canonical,
 check-release-signing-coverage, check-staging-tag-guard) and was right to". The twin's line for it is "One copy of the tally, shared: check:ci-shape-duplication caught three."
 
-`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to `scripts/lib/shadow-gate.ts` and their TEXT differs, so a port using `Controls`
+`Controls` prints `FAIL <label>: got <got!r>, wanted <want!r>`; gate-controls.sh prints ` FAIL <label> (got '<got>' want '<want>')`. Both are findings to the shadow gate (commit:bf054adcd4) and their TEXT differs, so a port using `Controls`
 for the gate's own output would disagree with the twin on every failing control
 and the differential would read MISMATCH_FINDINGS for a port that is behaving correctly. The tally below is therefore a faithful transliteration of the bash one, and `Controls` is used only for `--selftest`, where nothing compares text.
 
@@ -149,7 +149,7 @@ MIN_CONTROLS = 3
 class _GateTally:
     """`.ci/scripts/lib/gate-controls.sh`, transliterated byte for byte.
 
-    Not `rediacc_ci.controls.Controls`: see the port notes. The strings below are the gate's OUTPUT CONTRACT and `scripts/lib/shadow-gate.ts` compares them against the bash twin's, so a nicer wording here is a false mismatch there.
+    Not `rediacc_ci.controls.Controls`: see the port notes. The strings below are the gate's OUTPUT CONTRACT and the shadow gate (commit:bf054adcd4) compares them against the bash twin's, so a nicer wording here is a false mismatch there.
     """
 
     def __init__(self) -> None:
@@ -352,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     # THE SUBJECT LINE IS THE TWIN'S, WORD FOR WORD, AND THAT COST ONE MISMATCH. `gate_finish` interpolates it into BOTH verdicts, and the failing one -- "✗ <subject>: N of M control(s) failed" -- carries the ✗ marker, so it is a FINDING and not chatter. This port first read "(%d call site(s) across %d file(s) scanned)" here, on the assumption that a verdict line is banner text a
     # port may reword. The shadow differential refused all three trees
     # with MISMATCH_FINDINGS on 2026-09-06 and named the line; the rows are in
-    # `.ci/shadow/w7p2-stagingtag.observations.jsonl` and those tree ids stay disqualified. The scanned-file count, which is genuinely worth printing, now goes out above as its own `→` line, where `shadow-gate.ts` classifies it as chatter and a port is allowed to say more than its twin.
+    # the ledger (deleted in commit:936280cd35) and those tree ids stay disqualified. The scanned-file count, which is genuinely worth printing, now goes out above as its own `→` line, where the shadow gate (commit:bf054adcd4) classifies it as chatter and a port is allowed to say more than its twin.
     subject = "staging tag guard (%d call site(s))" % n_calls
     if not tally.finish(MIN_CONTROLS, subject):
         print(
@@ -568,4 +568,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("staging_tag_guard.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

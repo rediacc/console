@@ -393,7 +393,7 @@ def turn_tools(path):
     return tools, operator_text
 
 
-def defer_sig(fold, session_id):
+def defer_sig(fold, session_id, problems=None):
     """A digest of MY `[?]` items. Moves when a deferral of mine appears or goes.
 
     Deliberately narrower than wl_checks.closed_sig, which digests every non-open state: a tick or a lease is not "I parked this on the operator", and letting either of them satisfy condition 3 would hand the gate an exit it never offered. Returns "" when the store cannot be read, and the caller treats "" as unknown.
@@ -404,7 +404,9 @@ def defer_sig(fold, session_id):
             for r in fold.items
             if r["state"] == "?" and C.owned_by_me(r.get("owner"), session_id)
         )
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("%s: %s" % (type(exc).__name__, exc))
         return ""
     return hashlib.sha1(("|".join(rows)).encode("utf-8", "replace")).hexdigest()[:16]
 
@@ -416,8 +418,14 @@ def defer_created(state_doc, fold, session_id):
 
     Instead, with no baseline, ANY `[?]` of mine counts as possibly-this-turn. That is the safe direction: it can only make the gate quieter, and it closes the one way this gate could have deadlocked -- a session that deferred BEFORE its first stop, whose deferral would otherwise look identical on every later stop and be refused forever.
     """
-    sig = defer_sig(fold, session_id)
+    problems: list[str] = []
+    sig = defer_sig(fold, session_id, problems)
     slot = state_doc.setdefault("pendingask", {}) if isinstance(state_doc, dict) else {}
+    # An unreadable store is named in the state doc beside the signature, so a "no deferral seen" verdict is distinguishable from a store that could not be read.
+    if problems:
+        slot["defersig_error"] = problems[0]
+    else:
+        slot.pop("defersig_error", None)
     prev = slot.get("defersig")
     if sig:
         slot["defersig"] = sig

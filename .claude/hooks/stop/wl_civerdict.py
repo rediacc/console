@@ -193,8 +193,11 @@ def note(root, worklist, session_id, ref=None, branch=None, now=None):
             return ""
         wl_gh.cache_write(sp, ([*seen, key])[-SEEN_KEEP:])
         return format_note(entry)
-    except Exception:
-        return ""
+    except Exception as exc:
+        return "CI VERDICT: the note for this session could not be built (%s: %s)." % (
+            type(exc).__name__,
+            exc,
+        )
 
 
 def session_start_line(worklist, branch):
@@ -213,5 +216,9 @@ def session_start_line(worklist, branch):
             "age": age_min,
             "title": entry.get("title") or v.get("verdict") or "unknown",
         }
-    except Exception:
-        return ""
+    except Exception as exc:
+        return "CI VERDICT: the cached verdict for %s could not be read (%s: %s)." % (
+            branch,
+            type(exc).__name__,
+            exc,
+        )

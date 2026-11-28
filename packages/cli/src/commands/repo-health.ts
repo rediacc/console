@@ -93,6 +93,8 @@ export function renderRepoHealthReport(
 ): number {
   const exitCode = REPO_HEALTH_LEVEL_EXIT[report.level];
   const files = report.files ?? [];
+  // Set before the print, so the JSON envelope of an unhealthy repo says success:false.
+  if (exitCode !== 0) setExitCode(exitCode);
   if (format === 'json') {
     outputService.print(
       {
@@ -132,6 +134,7 @@ export function renderRepoHealthFailure(
   repository: string,
   format: OutputFormat
 ): number {
+  setExitCode(REPO_HEALTH_FAILURE_EXIT);
   if (format === 'json') {
     outputService.print(
       {
@@ -203,7 +206,8 @@ export function handleRepoHealthJobFailure(
 // The `printRepoHealth` step renders the verdict once the job's output is seen, so a ticket handed back early prints nothing.
 bindStepHandler('printRepoHealth', ({ output, params, machine }) => {
   const name = typeof params.name === 'string' ? params.name : '';
-  setExitCode(handleRepoHealthOutput(output, name, machine, getOutputFormat()));
+  // The render sets the exit code itself, before it prints, so the JSON envelope agrees with it.
+  handleRepoHealthOutput(output, name, machine, getOutputFormat());
   return Promise.resolve();
 });
 
@@ -214,6 +218,7 @@ bindStepHandler('printRepoHealth', ({ output, params, machine }) => {
 export function registerRepoHealthCommand(repo: Command): void {
   repo
     .command('health')
+    .summary(t('commands.repo.health.descriptionShort'))
     .description(t('commands.repo.health.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -244,9 +249,7 @@ export function registerRepoHealthCommand(repo: Command): void {
           return;
         }
         if (!outcome.result.success) {
-          setExitCode(
-            handleRepoHealthJobFailure(outcome.result, name, machineName, getOutputFormat())
-          );
+          handleRepoHealthJobFailure(outcome.result, name, machineName, getOutputFormat());
         }
       } catch (error) {
         handleError(error);

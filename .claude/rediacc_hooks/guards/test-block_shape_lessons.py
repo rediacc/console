@@ -12,10 +12,13 @@ import importlib.util
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import tempfile
 import typing
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
@@ -120,7 +123,7 @@ def world(base, name, traps=None, notes=None):
 
 def run(command, env, session=""):
     payload = {"tool_name": "Bash", "session_id": session, "tool_input": {"command": command}}
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV,
         input=json.dumps(payload),
         capture_output=True,

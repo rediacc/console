@@ -461,8 +461,8 @@ def test_209h_control_an_off_domain_briefing_still_arrives_without_a_hint(wl):
 
 
 def test_209i_the_kill_switch_silences_the_hint_and_nothing_else(wl):
-    """THE KILL SWITCH. Positive presence first, for the reason case 208 records."""
-    wl.settings(agent_hint=False)
+    """THE KILL SWITCH, now the effort level: `low` turns `agent_hint` off in its bundle (the fence takes `effort` alone, agent/plans/PLAN-simple-two-tree-loop.md B5). Positive presence first, for the reason case 208 records."""
+    wl.settings(effort="low")
     wl.mk_agent("fixtureagent", HINT_DESC)
     hint_fixture(wl)
     # The positive-presence section, as in 209A's control.

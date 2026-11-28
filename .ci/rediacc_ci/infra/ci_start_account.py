@@ -4,13 +4,13 @@ Validates the three account-server secrets, sources the CI environment, writes `
 
 LIVE CALLER, repointed at this module by W7P4-b:
   * `.github/workflows/ci.yml` -- `run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account`,
-    licensed by `.ci/shadow/w7p4b-ci-start-account.observations.jsonl` (nine rows,
+    licensed by the ledger (deleted in commit:936280cd35) (nine rows,
     `--assert --k 5` green, recorded against a fake `docker` that logs its argv). The bash
     twin was deleted under PLAN-retire-bash-oracles B3; its answers are frozen in
     `.ci/rediacc_ci/tests/goldens/twins/infra.ci-start-account.jsonl`.
 
 WHAT MOVES AND WHAT DOES NOT. THE CI ENVIRONMENT IS `rediacc_ci.infra.ci_env.apply()`, called in-process (W7P5-c). Until then this module ran the sourced-only `ci-env.sh` under a real bash and read its exported set back through `env -0`; that twin is deleted, its answers are frozen in `goldens/twins/infra.ci-env.jsonl`, and the cutover itself is licensed by
-`.ci/shadow/w7p5c-ci-start-account-cutover.observations.jsonl` (old side: this module as it was, sourcing the bash; new side: this module). Every `docker` call is shelled out to argument for argument.
+the ledger (deleted in commit:936280cd35) (old side: this module as it was, sourcing the bash; new side: this module). Every `docker` call is shelled out to argument for argument.
 
 PORT NOTES, each driven before it was written down.
 

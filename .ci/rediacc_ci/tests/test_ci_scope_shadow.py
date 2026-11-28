@@ -4,7 +4,7 @@ THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/
 
 Every case now compares against `goldens/scope-shadow/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p4b-scope-shadow.observations.jsonl`, TWELVE rows over twelve distinct trees, every one EQUIVALENT. The older `w7p6-scope-shadow` file has seven rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it.
+THE LEDGER IS the ledger (deleted in commit:936280cd35), TWELVE rows over twelve distinct trees, every one EQUIVALENT. The older `w7p6-scope-shadow` file has seven rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it.
 
 THREE LAYERS, because this pair has three genuinely different risks, and the deletion changes how two of them are held rather than whether they are.
 

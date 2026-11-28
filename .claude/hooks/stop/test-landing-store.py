@@ -5,7 +5,7 @@
 
 Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py.
 
-A fixture repository holds a committed copy of these hooks, a development branch in its main checkout and a linked sibling tree, `console-landing`, on the landing branch. The landing record (`rediacc-landing.json` in the common git dir, the file commit_policy.write_landing_record writes) binds the sibling. With the record, a session rooted in the sibling resolves the main checkout's worklist path, store and STATE.md, its transcripts read live from the sibling's own project directory, and a phase it writes is what pr_freeze reads for the main checkout. Without the record every answer is the sibling's own, exactly as before the box. Two mutants (wl_core.project_root and worklist.py's twin each without the landing redirect) turn the mapping controls red.
+A fixture repository holds a committed copy of these hooks, a development branch in its main checkout and a linked sibling tree, `console-landing`, on the landing branch. The landing record (`rediacc-landing.json` in the common git dir, the file commit_policy.write_landing_record writes) binds the sibling. With the record, a session rooted in the sibling resolves the main checkout's worklist path, store and STATE.md, its transcripts read live from the sibling's own project directory. Without the record every answer is the sibling's own, exactly as before the box. Two mutants (wl_core.project_root and worklist.py's twin each without the landing redirect) turn the mapping controls red.
 """
 
 import ast
@@ -181,7 +181,7 @@ print(json.dumps({
     "dir": C.projects_dir(root),
     "fresh": L.live_teammate_transcripts(str(root), session_id=sys.argv[2]),
     "meta_id": meta[1],
-    "lead": W._lead_transcript(sys.argv[2][:8]),
+    "lead": W.CLI._lead_transcript(sys.argv[2][:8]),
 }))
 """
 
@@ -191,21 +191,6 @@ def transcripts(tmp, stop, project_dir):
     if rc != 0:
         return {"error": err[-600:]}
     return json.loads(out)
-
-
-FREEZE = """
-import json, sys, importlib.util
-spec = importlib.util.spec_from_file_location("pr_freeze", sys.argv[1])
-F = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(F)
-ph = F.active_phase(sys.argv[2], sys.argv[3])
-print(json.dumps(ph and {"mode": ph.get("mode"), "branch": ph.get("branch")}))
-"""
-
-
-def freeze_phase(tmp, main, root, branch):
-    rc, out, err = pyrun(tmp, FREEZE, main / ".claude/rediacc_hooks/pr_freeze.py", root, branch)
-    return json.loads(out) if rc == 0 else {"error": err[-400:]}
 
 
 def munged(path):
@@ -279,6 +264,8 @@ def mutant(tmp, main, name, old, new):
 TWINS = {
     "_common_main": "_local_common_main",
     "landing_record": "_local_landing_record",
+    "read_landing_record": "_local_read_landing_record",
+    "_commit_policy": "_local_commit_policy",
     "landing_main": "_local_landing_main",
 }
 
@@ -378,10 +365,6 @@ def run():
     check("no record: projects_dir is the main directory", t0.get("dir"), str(main_proj))
     check("no record: a teammate under the sibling is not seen", t0.get("fresh"), None)
 
-    done = worklist(tmp, main, main, "--phase", ME, "merge", "--pr", "7", CLAUDE_PROJECT_DIR=main)
-    check("no record: --phase from main defaults to main's HEAD", DEV_BRANCH in done.stdout, True)
-    worklist(tmp, main, main, "--phase", ME, "build", CLAUDE_PROJECT_DIR=main)
-
     # ---- the record binds the sibling
     bind(main, landing)
     p_main = paths(tmp, stop, main)
@@ -431,33 +414,6 @@ def run():
             str(land_proj / (SID + ".jsonl")),
         )
 
-    # A phase written from the sibling, with no --branch: the sibling's own HEAD.
-    done = worklist(
-        tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
-    )
-    check(
-        "record: --phase from the sibling names its own branch", LANDING_BRANCH in done.stdout, True
-    )
-    check(
-        "record: pr_freeze for the main checkout sees the sibling's phase",
-        freeze_phase(tmp, main, main, LANDING_BRANCH),
-        {"mode": "babysit", "branch": LANDING_BRANCH},
-    )
-    worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
-    check(
-        "record: build ends the phase for pr_freeze",
-        freeze_phase(tmp, main, main, LANDING_BRANCH),
-        None,
-    )
-    # From the development tree the default is the record's branch, not main's HEAD.
-    done = worklist(tmp, main, main, "--phase", ME, "merge", "--pr", "7", CLAUDE_PROJECT_DIR=main)
-    check(
-        "record: --phase from main defaults to the landing branch",
-        LANDING_BRANCH in done.stdout and DEV_BRANCH not in done.stdout,
-        True,
-    )
-    worklist(tmp, main, main, "--phase", ME, "build", CLAUDE_PROJECT_DIR=main)
-
     # ---- follow-ups: each store-root read of a landing session
     beef = land_proj / "beef0000-0000-4000-8000-000000000000.jsonl"
     beef.write_text("{}\n", encoding="utf-8")
@@ -491,15 +447,6 @@ def run():
     f1 = followups(tmp, stop, main)
     check("record: main reads its own branch", f1.get("store_branch"), DEV_BRANCH)
     check("record: main's own_tree is main", f1.get("own_tree"), str(main))
-    worklist(
-        tmp, landing, landing, "--phase", ME, "babysit", "--pr", "7", CLAUDE_PROJECT_DIR=landing
-    )
-    check(
-        "record: pr_freeze judged from the sibling sees the phase",
-        freeze_phase(tmp, main, landing, LANDING_BRANCH),
-        {"mode": "babysit", "branch": LANDING_BRANCH},
-    )
-    worklist(tmp, landing, landing, "--phase", ME, "build", CLAUDE_PROJECT_DIR=landing)
     unbind(main)
     f2 = followups(tmp, stop, landing)
     check("no record: the sibling's own_tree is its root", f2.get("own_tree"), str(landing))

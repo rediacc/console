@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.devcontainer_scripts` against the grep pipeline it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-devcontainer-scripts.observations.jsonl` drives the whole gate over five distinct trees: a broken process-group lifecycle, a suppressed primary operation, a missing subject, a syntax error, and a control whose plant no longer applies. What a ledger row cannot isolate is the three-stage grep pipeline that decides which
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees: a broken process-group lifecycle, a suppressed primary operation, a missing subject, a syntax error, and a control whose plant no longer applies. What a ledger row cannot isolate is the three-stage grep pipeline that decides which
 lines assertion A objects to, and there is a specific reason to distrust it here.
 
 `PRIMARY_OPS` alternates a `^`-anchored branch with a branch carrying a NEGATED character class (`curl [^|]*`). `docs/agent-reference/TRAPS.md` records exactly that shape returning SILENT FALSE ZEROS from `grep -E` under ugrep, which would make assertion A pass while reading nothing. So the port's Python regex is run against the REAL `grep -E` over every `.devcontainer/*.sh` in the

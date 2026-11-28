@@ -1566,6 +1566,9 @@ class Evaluator:
             return TEMP
         if ("runtmp." in canon and last in RUNTMP_FNS) or canon in RUNTMP_FNS:
             return TEMP
+        # `seams.system_temp_base()` is the system temp directory computed without the environment (rediacc_ci.quality.seams), the base every gate fixture directory is created under.
+        if canon == "rediacc_ci.quality.seams.system_temp_base":
+            return TEMP
         if canon in ("os.environ.get", "os.getenv"):
             seed = ENV_SEEDS.get(_const_str(args[0] if args else None) or "")
             return seed if seed is not None else self.env_default(e, scope)

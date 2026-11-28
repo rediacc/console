@@ -927,3 +927,43 @@ def test_anchored_roots_leaves_a_claimed_duplicate_alone():
     assert [
         c["id"] for c in P.anchored_roots(finding, root, [root, mine_too, theirs], claimed=set())
     ] == [901, 902]
+
+
+# ---- #9be9bec1: --wait stops at once on a branch with no PR
+
+
+class NoPrGh(FakeGh):
+    """`gh pr view` on a branch with no PR: exit 1 and gh's own sentence, which is no 5xx."""
+
+    def __call__(self, argv: list[str]) -> tuple[int, str, str]:
+        if argv[:2] == ["pr", "view"] and str(PR) not in argv:
+            self.calls.append(list(argv))
+            return 1, "", 'no pull requests found for branch "1121-1"'
+        return super().__call__(argv)
+
+
+def test_wait_without_a_pr_fails_at_once_rc2(capsys):
+    gh = NoPrGh()
+    clock = Clock()
+    assert P.cmd_wait(None, 2100, gh, sleeper=clock.sleep, clock=clock) == 2
+    assert clock.t == 0
+    err = capsys.readouterr().err
+    assert 'no pull requests found for branch "1121-1"' in err
+    assert "pass --pr" in err
+
+
+def test_wait_with_an_explicit_pr_reads_it_past_the_branch_lookup():
+    """CONTROL: --pr names the PR, so the branch with no PR does not matter."""
+    gh = NoPrGh()
+    gh.check_title = "current: reviewed %s" % HEAD[:7]
+    clock = Clock()
+    assert P.cmd_wait(PR, 60, gh, sleeper=clock.sleep, clock=clock) == 0
+
+
+def test_wait_keeps_waiting_through_a_transient_unreadable():
+    """CONTROL: an unreadable read that is not the no-PR sentence still waits out the timeout."""
+    gh = FakeGh()
+    gh.fail = ["pr view"]
+    clock = Clock()
+    assert P.cmd_wait(None, 100, gh, sleeper=clock.sleep, clock=clock) == 3
+    assert clock.t >= 100

@@ -2,7 +2,7 @@
 
 THE TWIN IS DELETED (PLAN-retire-bash-oracles B3, W5). Every case below compares against `goldens/cleanup-staging/`, recorded from `.ci/scripts/docker/cleanup-staging.sh` exactly as if it had been deleted, so the deletion was a no-op for this file. `check:ci-staging-tag-guard` used to forbid it: its default target was that path. The gate now counts the rail in the port instead (`re.match(r"staging-", tag)` in `.ci/rediacc_ci/docker/cleanup_staging.py`; the port's `^staging-` in its docstring is prose, and the gate's rail pattern ignores prose).
 
-The ledger `.ci/shadow/w7p6-cleanup-staging.observations.jsonl` recorded the differential over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
+The ledger the ledger (deleted in commit:936280cd35) recorded the differential over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward.
 
 RECORDING FAKES FOR `gh` ON A SCRATCH PATH, AND NOTHING ELSE REAL. No case names a credential, and the scratch PATH is built from an explicit list of symlinks, so a tool that is not listed is genuinely absent rather than inherited from the developer's shell. That precaution is not theoretical: an early probe for this port left `/usr/bin` on PATH, and the real `docker` binary on
 this machine reached out to `ghcr.io/token` before the twin's first log line.

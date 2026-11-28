@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.label_references`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-references.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-label-references.observations.jsonl`, which holds equivalence over six distinct trees. The twin has now been
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-label-references.sh` over a specimen with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which holds equivalence over six distinct trees. The twin has now been
 deleted and every case that executed it compares against `goldens/label-references/`, which holds the twin's OWN recorded output, captured from the tracked script on its last day in the tree. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 
 THIS FILE ASSEMBLES EVERY LABEL-CONSUMING SHAPE AT RUNTIME, and that is not style. This file lives under `.ci`, which is one of the two directories the real sweep reads. Written as literals, its fixtures would BE label references, and the real gate would report them as undeclared: the port's first draft did exactly that, and `check-label-references.sh` went red naming
@@ -61,7 +61,7 @@ def build(tmp_path: pathlib.Path, labels: str | None, scan: dict[str, str]) -> p
         src / ".ci" / "config" / "well-known.generated.sh",
         root / ".ci" / "config" / "well-known.generated.sh",
     )
-    for name in ("__init__.py", "%s.py" % MODULE):
+    for name in ("__init__.py", "gate_args.py", "%s.py" % MODULE):
         shutil.copy2(
             src / ".ci" / "rediacc_ci" / "quality" / name,
             root / ".ci" / "rediacc_ci" / "quality" / name,
@@ -215,6 +215,14 @@ def test_an_empty_labels_file_does_not_kill_the_reader():
     assert gate.declared_labels("") == []
     assert gate.declared_labels("# only a comment\n") == []
     assert gate.declared_labels("- name: alpha\n") == ["alpha"]
+
+
+def test_the_default_scan_roots_include_scripts_where_the_issue_reporter_lives():
+    """Review 797034e3.1: the default roots are pinned, so a revert to `.github .ci` fails here and not only in the live sweep."""
+    roots = gate.split_dirs(gate.DEFAULT_SCAN_DIRS)
+    assert roots == [".github", ".ci", "scripts"]
+    root = pathlib.Path(__file__).resolve().parents[3]
+    assert all((root / spec).is_dir() for spec in roots)
 
 
 def test_every_pattern_has_a_sample_and_the_sample_fires(tmp_path):

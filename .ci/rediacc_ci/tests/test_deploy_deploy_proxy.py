@@ -2238,6 +2238,28 @@ def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.P
     assert not _bench_record(world.root).exists()
 
 
+def test_head_moving_on_an_unrelated_path_still_records_the_start_head(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Another session committing outside the build's inputs during the build moves HEAD, not an input: the record is written against the head the build started from."""
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    _write(world.root, "docs/unrelated-note.md", "another session's commit\n")
+    _commit(world.root, "unrelated")
+    now = port.bench_identity(world.root)
+    assert now["head"] != built["head"], "control: HEAD did move"
+    assert now["inputs"] == built["inputs"]
+    record = port.record_bench_version(
+        world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
+    )
+    assert record["head"] == built["head"]
+    assert record["tree"] == built["tree"]
+    on_disk = json.loads(_bench_record(world.root).read_text(encoding="utf-8"))
+    assert on_disk["head"] == built["head"], "the file live_proof reads names the start head"
+    assert on_disk["head"] != now["head"]
+    assert on_disk == record
+
+
 def test_a_us_bench_deploy_records_beside_the_eu_record_not_over_it(tmp_path: pathlib.Path) -> None:
     world = World(tmp_path / "console")
     built = port.bench_identity(world.root)

@@ -1,0 +1,14 @@
+{
+  "EDGE_CASES": [
+    ["a script an interpreter is executing", {"tool_input": {"file_path": "/tmp/rediacc-guard-running/long-running-suite.sh"}}],
+    {"//": "HOOK-CHAIN SIBLINGS ARE NOT A RUNNING JOB."},
+    ["a chain evaluator is not a running job", {"tool_input": {"file_path": "/tmp/rediacc-guard-running/hook-chain-sibling.sh"}}],
+    ["a script nobody is running", {"tool_input": {"file_path": "/tmp/rediacc-guard-running/nothing-is-running-this.sh"}}],
+    {"//": "SCOPE: shell scripts only."},
+    ["a TypeScript file is read into memory", {"tool_input": {"file_path": "packages/cli/a.ts"}}],
+    ["a Python file is read into memory", {"tool_input": {"file_path": "a.py"}}],
+    {"//": "ESCAPE THE DOTS: `[b].sh` unescaped matches **/bin/bash**, i.e. every bash process on the machine. Measured on the twin 2026-09-01."},
+    ["a one-letter script name", {"tool_input": {"file_path": "b.sh"}}],
+    ["no file_path at all", {"tool_input": {"new_string": "x"}}]
+  ]
+}

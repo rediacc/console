@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/private/run-renet.sh` and the port over one fixture tree apiece and compared four channels: the exit code, stdout, stderr and the recorded argv of the submodule stage. Every case now compares against `goldens/run-renet/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p4b-run-renet.observations.jsonl`, NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence readable back.
+THE LEDGER IS the ledger (deleted in commit:936280cd35), NINE rows over nine distinct trees, every one EQUIVALENT. The older `w7p6-run-renet` file exists with five rows and is deliberately not the citation: the w7p4b rows are the ones whose recorded `old.cmd` names this bash path and whose `new.cmd` names the module spec that replaced it, which is what makes the licence readable back.
 
 THE REAL `private/renet/.ci/ci.sh` IS NEVER INVOKED. It is the submodule's whole CI: govulncheck, golangci-lint, deadcode and `go test ./...` under root. A suite that reached it would take many minutes, would need a Go toolchain and root, and would SKIP on a checkout without the submodule, and a skip here is exactly the failure `common.sh`'s CI arm exists to prevent.
  The fixture
@@ -267,9 +267,18 @@ def recorded(name: str) -> dict[str, object]:
     }
 
 
+# DELIBERATE DEPARTURES FROM THE TWIN, on the command line only. The twin dropped every argument after the stage, and a flag in the stage's place was run as a stage name; the port's `__main__` now refuses both with exit 2 before anything runs (check:ci-gate-argv), so a typo cannot read as the gate it meant. The goldens stay as the twin's record; these cases assert the refusal instead of the twin's output.
+REFUSED_AT_THE_ARGV = ("extra-arguments-are-dropped", "a-flag-is-just-a-stage-name")
+
+
 def compare(tmp_path: pathlib.Path, name: str) -> dict[str, object]:
-    want = recorded(name)
     got = run(tmp_path, name)
+    if name in REFUSED_AT_THE_ARGV:
+        assert got["exit"] == 2, "%s: exit %r, wanted the argv refusal" % (name, got["exit"])
+        assert "run_renet.py" in str(got["stderr"]), got["stderr"]
+        assert not got["calls"], "%s ran %r after refusing" % (name, got["calls"])
+        return got
+    want = recorded(name)
     for field in ("exit", "stdout", "stderr", "calls"):
         assert got[field] == want[field], "%s: %s diverged:\n twin: %r\n port: %r" % (
             name,

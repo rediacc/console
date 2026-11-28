@@ -39,6 +39,17 @@ THE RULES, each with a plant in the controls that must turn it red:
 SKIP IS NOT PASS. The rotation-scopes file lives in the private/account submodule. When the submodule is not checked out, or the file does not exist yet, the rule prints `SKIP` with the reason on every run and the summary line names it; the other five rules still decide the verdict. Every other way of seeing nothing is a refusal (exit 2): no workflow file, no profile, deploy_bench.py missing or not naming the backup values.
 
 Exit 0 when every rule that ran is clean, 1 on any finding, 2 on a failed control or a corpus the gate cannot read.
+
+---- gate ----
+step: Backup credential isolation
+lane: quality-security
+needs: submodules
+why: one account-wide R2 key once reached the public bench Worker through a
+     fallback in deploy_bench, and one shared backup pair served every
+     environment. Each environment now holds only its own bucket-scoped pair;
+     this pins the profiles, the deploy workflow and the rotation scopes to that
+     split, by name, so an edit cannot quietly re-widen it.
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -1091,3 +1102,15 @@ __all__ = [
     "selftest",
     "workflow_findings",
 ]
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_backup_credential_isolation.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root",),
+    )
+    raise SystemExit(main(sys.argv[1:]))

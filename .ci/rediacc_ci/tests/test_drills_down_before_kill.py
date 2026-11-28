@@ -618,6 +618,12 @@ class FakeCtx:
         self.host_hook: Any = None
         self.row_logs: list[str] = []
         self.kept: dict[str, str] = {}
+        # VmCheck's credential state after P4: a minted token in the child environment under the dev config by default; a test clears both for the stored-token path.
+        self.token: str | None = "minted"
+        self.dev_config = True
+
+    def cli_config_name(self) -> str:
+        return upgrade_converge.run_config_name(self.environ, self.dev_config)
 
     def rdc(self, *args: str, **_kw: Any) -> _Res:
         self.calls.append(("rdc", *args))
@@ -1101,6 +1107,86 @@ def test_k1_6_cleanup_reverts_a_worker_left_on_the_main_renet(
     assert not _cfg_path(live).exists()
 
 
+def test_k1_6_on_a_stored_token_seeds_from_the_default_config_with_its_token(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """vmc-11230811-bb4659: P4 kept the default config's stored token, K1 created A and B there, and K1.6 copied `dev` anyway, so `repo up A` read "is not in this config"."""
+    worker = FakeWorker()
+    live, ctx = _k1_6(tmp_path, monkeypatch, worker)
+    ctx.token, ctx.dev_config = None, False
+    base = pathlib.Path.home() / ".config" / "rediacc"
+    (base / "rediacc.json").write_text('{"id": "d", "renetPath": "/r", "marker": "default"}')
+    (base / "api-token-rediacc.json").write_text('{"token": "stored"}')
+    live.k1_6_rollout()
+    assert all(ok for _d, ok, _e in ctx.rows), ctx.rows
+    doc = json.loads(_cfg_path(live).read_text())
+    assert doc["marker"] == "default"
+    token = base / ("api-token-%s.json" % live.cfg)
+    assert token.read_text() == '{"token": "stored"}'
+    assert oct(token.stat().st_mode & 0o777) == "0o600"
+    live.cleanup()
+    assert not _cfg_path(live).exists()
+    assert not token.exists()
+
+
+def test_k1_6_on_a_minted_token_seeds_from_dev_and_copies_no_token(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The control: a minted token travels in the child environment, so the dev copy gets no token file even when one sits beside dev.json."""
+    worker = FakeWorker()
+    live, ctx = _k1_6(tmp_path, monkeypatch, worker)
+    base = pathlib.Path.home() / ".config" / "rediacc"
+    (base / "rediacc.json").write_text('{"id": "d", "marker": "default"}')
+    (base / "api-token-dev.json").write_text('{"token": "dev-file"}')
+    live.k1_6_rollout()
+    assert all(ok for _d, ok, _e in ctx.rows), ctx.rows
+    assert "marker" not in json.loads(_cfg_path(live).read_text())
+    assert not (base / ("api-token-%s.json" % live.cfg)).exists()
+
+
+def test_k1_6_on_a_stored_token_without_its_file_fails_before_repo_up(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    worker = FakeWorker()
+    live, ctx = _k1_6(tmp_path, monkeypatch, worker)
+    ctx.token, ctx.dev_config = None, False
+    (pathlib.Path.home() / ".config" / "rediacc" / "rediacc.json").write_text('{"id": "d"}')
+    live.k1_6_rollout()
+    failed = [(d, e) for d, ok, e in ctx.rows if not ok]
+    assert len(failed) == 1, ctx.rows
+    assert "seeded from the run's config rediacc" in failed[0][0]
+    assert "api-token-rediacc.json" in failed[0][1]
+    assert not [c for c in ctx.calls if c[1:3] == ("repo", "up")]
+
+
+def test_a_failed_rollout_restores_the_branch_renet_before_k1_7(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """vmc-11230811-bb4659: K1.6 stopped after installing the main-pointer renet, and K1.7 rebooted under that build and recorded two FAIL rows that were K1.6's."""
+    worker = FakeWorker()
+    worker.repo_up_rc = 5
+    live, ctx = _k1_6(tmp_path, monkeypatch, worker)
+    live.k1_6_rollout()
+    assert live.main_installed
+    assert live.restore_branch_renet()
+    assert not live.main_installed
+    assert _oks(ctx, "K1.6 the branch renet is back") == [True]
+    live.cleanup()
+    assert len([c for c in ctx.calls if c[1:3] == ("machine", "setup")]) == 1
+
+
+def test_a_passed_rollout_restores_nothing(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    worker = FakeWorker()
+    live, ctx = _k1_6(tmp_path, monkeypatch, worker)
+    live.k1_6_rollout()
+    calls = len(ctx.calls)
+    assert live.restore_branch_renet()
+    assert len(ctx.calls) == calls
+    assert _oks(ctx, "K1.6 the branch renet is back") == []
+
+
 class _Builder:
     """The host side of `_main_binary`: git, go and the build script, with a build counter and a settable key component each."""
 
@@ -1290,6 +1376,37 @@ def test_execute_runs_the_rows_in_order_and_always_cleans_up(
         monkeypatch.setattr(live, name, lambda n=name: _mark(order, n, True))
     live.execute()
     assert order == list(names)
+
+
+def test_a_failed_branch_renet_restore_stops_before_k1_7_and_cleanup_resumes_reconcile(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """f936d4f4.1 and .2: `run` returns before K1.8 and K1.7 when the restore fails, and the timer the run paused is started again by the cleanup in its `finally`."""
+    worker = FakeWorker()
+    live, _ctx = _ready(tmp_path, worker)
+    order: list[str] = []
+    for name in (
+        "k1_0_bring_up",
+        "k1_1_unit_order",
+        "k1_2_raw_restart",
+        "k1_3_unit_rewrite",
+        "k1_4_stop_side_drift",
+        "k1_5_converge",
+        "k1_9_skewed_restart",
+        "k1_10_mount_restart",
+        "k1_6_rollout",
+        "k1_8_job_timeout",
+        "k1_7_reboot",
+    ):
+        monkeypatch.setattr(live, name, lambda n=name: _mark(order, n, True))
+    monkeypatch.setattr(live, "restore_branch_renet", lambda: _mark(order, "restore", False))
+    assert live.pause_reconcile()
+    assert not worker.timer_on
+    live.execute()
+    assert order[-1] == "restore"
+    assert "k1_7_reboot" not in order
+    assert "k1_8_job_timeout" not in order
+    assert worker.timer_on
 
 
 def test_pause_reconcile_stops_the_timer_and_cleanup_starts_it(tmp_path: pathlib.Path) -> None:

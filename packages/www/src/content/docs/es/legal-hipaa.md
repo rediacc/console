@@ -8,8 +8,8 @@ tags:
 subcategory: regulations
 order: 3
 language: es
-sourceHash: "1a0a2df716f6628b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "3fa7dcd465e26d0b"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 La Ley de Portabilidad y Responsabilidad del Seguro de Salud (HIPAA) es una ley federal de los Estados Unidos que establece estándares para proteger la información sensible de salud de los pacientes (PHI). Se aplica a entidades cubiertas (proveedores de atención médica, planes de salud, cámaras de compensación) y sus socios comerciales.
@@ -35,7 +35,7 @@ HIPAA requiere salvaguardas administrativas, técnicas y físicas. La tabla a co
 | Requisito | Capacidad de Rediacc |
 |-----------|---------------------|
 | Gestión de acceso del personal | Tokens API con permisos de alcance definido. Control de acceso basado en equipos. Revocación automática de tokens al remover del equipo. |
-| Procedimientos de incidentes de seguridad | Los registros de auditoría proporcionan rastro forense de todas las operaciones. El aislamiento por repositorio limita el radio de impacto. |
+| Procedimientos de incidentes de seguridad | Los registros de auditoría recogen quién hizo qué en las operaciones que cubren. Los registros de flujo de red por repositorio (planes de pago, en el nivel elegido por repositorio) y la línea de tiempo de investigación aportan evidencia de un incidente; los registros de flujo muestran volumen y destino, no contenido. No se genera ningún informe específico de HIPAA. El aislamiento por repositorio limita el radio de impacto. |
 | Planificación de contingencia | `rdc repo push/pull` soporta respaldo cifrado a múltiples destinos. Los snapshots CoW permiten recuperación instantánea. |
 
 ### Salvaguardas físicas

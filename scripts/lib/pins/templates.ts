@@ -449,10 +449,31 @@ export function spliceEntries(text: string, prev: PinRegistry, next: PinRegistry
   return [...lines.slice(0, open + 1), bodies.join(',\n'), ...lines.slice(close)].join('\n');
 }
 
-/** Every compose file of every tree under `root`, read from disk; `floor` is the fewest files a scan may find (a fixture tree passes 1). A submodule tree that is not on disk throws: a scan that skipped it would report its leaves as removed. */
+/** The distinct compose files the registry's template leaves cite, as paths relative to the tree root. */
+export function citedFiles(reg: PinRegistry): Set<string> {
+  const cited = new Set<string>();
+  for (const e of reg.entries)
+    if (isTreeId(e.id))
+      for (const s of e.sites) cited.add(s.repo === '.' ? s.file : `${s.repo}/${s.file}`);
+  return cited;
+}
+
+/**
+ * The fewest compose files a scan of a tree that is not the real one may find: the distinct
+ * files the registry's template leaves cite, never below 1 and not capped, so a fixture tree
+ * holding fewer files than its own registry cites (or none) is a moved or emptied root, and
+ * `sync-templates --write` must refuse it rather than splice the missing leaves out. A count
+ * cannot tell a cited file from another one, so pass `citedFiles(reg)` to `readTemplateFiles` too. Pure.
+ */
+export function fixtureFloor(reg: PinRegistry): number {
+  return Math.max(1, citedFiles(reg).size);
+}
+
+/** Every compose file of every tree under `root`, read from disk; `floor` is the fewest files a scan may find (the real tree takes the default, a fixture tree `fixtureFloor`), and `cited`, when given, names files that must each be present (a fixture tree passes `citedFiles(reg)`). A submodule tree that is not on disk throws: a scan that skipped it would report its leaves as removed. */
 export function readTemplateFiles(
   root: string,
-  floor: number = MIN_TEMPLATE_COMPOSE_FILES
+  floor: number = MIN_TEMPLATE_COMPOSE_FILES,
+  cited?: ReadonlySet<string>
 ): Map<string, string> {
   const out = new Map<string, string>();
   for (const tree of TREES) {
@@ -475,10 +496,18 @@ export function readTemplateFiles(
     }
   }
   // A scan that reads a handful of files reads as a clean registry; the floor makes a moved or
-  // empty scan root a refusal (38 template compose files on 2026-11-21).
+  // emptied scan root a refusal (38 template compose files on 2026-11-21). A fixture tree gets
+  // `fixtureFloor` instead of the real tree's 30, and is refused below that too.
   if (out.size < floor)
     throw new Error(
       `only ${out.size} template compose file(s) found under ${TREES.map((t) => t.root).join(', ')} (floor ${floor}): a scan root moved or is empty`
+    );
+  const absent = [...(cited ?? [])]
+    .filter((f) => !out.has(f))
+    .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  if (absent.length > 0)
+    throw new Error(
+      `${absent.length} cited template compose file(s) are not under ${root}: ${absent.slice(0, 5).join(', ')}${absent.length > 5 ? ', ...' : ''}`
     );
   return out;
 }
@@ -699,6 +728,7 @@ export function selftestCases(): ControlCase[] {
           submodules: { scanned: [], unscanned: [] },
           literalExclude: [],
           ignores: [],
+          lines: {},
           entries: [],
         } as PinRegistry,
         scanTemplates(without).entries
@@ -725,6 +755,7 @@ export function selftestCases(): ControlCase[] {
     submodules: { scanned: [], unscanned: [] },
     literalExclude: [],
     ignores: [],
+    lines: {},
     entries: [
       { ...esLeaf, id: 'image:x' },
       { ...esLeaf, id: 'template:gone.x' },
@@ -783,6 +814,83 @@ export function selftestCases(): ControlCase[] {
         return String(e).includes(`floor ${MIN_TEMPLATE_COMPOSE_FILES}`);
       } finally {
         fs.rmSync(empty, { recursive: true, force: true });
+      }
+    })(),
+  });
+  cases.push({
+    name: 'fixtureFloor: a bare registry floors at 1 and a registry citing files floors at their count, past the real-tree floor too',
+    ok: (() => {
+      const leaf = (id: string, file: string): PinEntry =>
+        ({
+          ...small.entries[0],
+          id,
+          sites: [{ repo: '.', file, role: 'r', expect: 1 }],
+        }) as PinEntry;
+      const two = withTemplates(small, [
+        leaf('template:a.x', 'a/docker-compose.yaml'),
+        leaf('template:a.y', 'a/docker-compose.yaml'),
+        leaf('template:b.x', 'b/docker-compose.yaml'),
+      ]);
+      const many = withTemplates(
+        small,
+        Array.from({ length: MIN_TEMPLATE_COMPOSE_FILES + 5 }, (_, i) =>
+          leaf(`template:n${i}.x`, `n${i}/docker-compose.yaml`)
+        )
+      );
+      return (
+        fixtureFloor(withTemplates(small, [])) === 1 &&
+        fixtureFloor(two) === 2 &&
+        fixtureFloor(many) === MIN_TEMPLATE_COMPOSE_FILES + 5
+      );
+    })(),
+  });
+  cases.push({
+    name: 'a fixture tree holding fewer compose files than its registry cites is refused at fixtureFloor, one holding as many OTHER files is refused for the missing cited ones, and one holding exactly the cited files is read',
+    ok: (() => {
+      const dir = fs.mkdtempSync(path.join(fs.realpathSync('/tmp'), 'tpl-fixfloor-'));
+      try {
+        for (const tree of TREES) fs.mkdirSync(path.join(dir, tree.root), { recursive: true });
+        const f = (n: string) => path.join(dir, TEMPLATE_ROOT, 'cat', n, 'docker-compose.yaml');
+        for (const n of ['a', 'b']) {
+          fs.mkdirSync(path.dirname(f(n)), { recursive: true });
+          fs.writeFileSync(f(n), 'services:\n  s:\n    image: redis:7.4.9\n');
+        }
+        const cites = (files: string[]): PinRegistry =>
+          withTemplates(
+            small,
+            files.map(
+              (file, i) =>
+                ({
+                  ...small.entries[0],
+                  id: `template:c${i}.x`,
+                  sites: [{ repo: '.', file, role: 'r', expect: 1 }],
+                }) as PinEntry
+            )
+          );
+        const here = [
+          `${TEMPLATE_ROOT}/cat/a/docker-compose.yaml`,
+          `${TEMPLATE_ROOT}/cat/b/docker-compose.yaml`,
+        ];
+        const exact = cites(here);
+        const three = cites([...here, 'p/3.yaml']);
+        const swapped = cites(['p/1.yaml', 'p/2.yaml']);
+        const silent = readTemplateFiles(dir, fixtureFloor(exact), citedFiles(exact)).size === 2;
+        let refused = false;
+        try {
+          readTemplateFiles(dir, fixtureFloor(three), citedFiles(three));
+        } catch (e) {
+          refused = String(e).includes('floor 3');
+        }
+        // Two files on disk meet a count of two, yet they are not the files the registry cites.
+        let countOnly = false;
+        try {
+          readTemplateFiles(dir, fixtureFloor(swapped), citedFiles(swapped));
+        } catch (e) {
+          countOnly = String(e).includes('cited template compose file(s) are not under');
+        }
+        return silent && refused && countOnly;
+      } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
       }
     })(),
   });

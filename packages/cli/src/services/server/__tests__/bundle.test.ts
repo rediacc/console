@@ -29,7 +29,7 @@ import { serverBundle } from '../bundle/build.js';
 import { bundleImages, rustfsRef, serverRef, TRAEFIK_REF } from '../bundle/images.js';
 import { parseSums, sumsText } from '../bundle/manifest.js';
 import { verifyBundle } from '../bundle/verify.js';
-import { makeFake } from './fakes.js';
+import { FAKE_MODELS, makeFake, signerOf } from './fakes.js';
 
 const OUT = '/bundles/acme';
 const here = dirname(fileURLToPath(import.meta.url));
@@ -80,7 +80,7 @@ describe('the pinned proxy image', () => {
 
 describe('server bundle', () => {
   it('pulls and saves each image for the target platform, then writes the records', async () => {
-    const { fake, manifest } = await built({ out: OUT, tag: '1.2', arch: 'arm64' });
+    const { fake, manifest } = await built({ out: OUT, tag: '1.2', arch: 'arm64', models: false });
     const pulls = fake.calls.filter((c) => c.startsWith('local docker pull'));
     expect(pulls).toHaveLength(3);
     expect(pulls.every((c) => c.includes('--platform linux/arm64'))).toBe(true);
@@ -99,13 +99,15 @@ describe('server bundle', () => {
         'images/server.tar',
         'images/traefik.tar',
         'manifest.json',
+        'manifest.sig',
         'renet/renet-linux-arm64',
+        'signer.pub',
       ].map((f) => `${OUT}/${f}`)
     );
   });
 
   it('writes the manifest the plan names, and sums for every file', async () => {
-    const { fake, manifest } = await built();
+    const { fake, manifest } = await built({ out: OUT, tag: '1.2', models: false });
     expect(manifest).toMatchObject({
       schema: 1,
       cliVersion: '1.0.0',
@@ -168,19 +170,25 @@ describe('server bundle', () => {
 describe('verifyBundle', () => {
   it('accepts the bundle it just wrote', async () => {
     const { fake, manifest } = await built();
-    await expect(verifyBundle(fake.deps, OUT)).resolves.toEqual(manifest);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).resolves.toEqual(
+      manifest
+    );
   });
 
   it('refuses a tar changed after bundling, naming it', async () => {
     const { fake } = await built();
     fake.files[`${OUT}/images/server.tar`] = 'tampered';
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/tampered.*images\/server\.tar/s);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*images\/server\.tar/s
+    );
   });
 
   it('refuses a changed renet binary', async () => {
     const { fake } = await built();
     fake.files[`${OUT}/renet/renet-linux-amd64`] = 'tampered';
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/tampered.*renet-linux-amd64/s);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*renet-linux-amd64/s
+    );
   });
 
   it('refuses a manifest edited after bundling', async () => {
@@ -189,7 +197,9 @@ describe('verifyBundle', () => {
       '1.0.0',
       '9.9.9'
     );
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/tampered.*manifest\.json/s);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*manifest\.json/s
+    );
   });
 
   it('refuses a manifest whose records disagree with the sums, even when the sums were redone', async () => {
@@ -206,13 +216,15 @@ describe('verifyBundle', () => {
       }))
     );
     fake.files[`${OUT}/SHA256SUMS`] = sumsText(rehashed);
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/tampered.*images\/server\.tar/s);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*images\/server\.tar/s
+    );
   });
 
   it('refuses a bundle another CLI version made', async () => {
     const { fake } = await built();
     m.version = '2.0.0';
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
       /cliMismatch.*"bundle":"1\.0\.0".*"cli":"2\.0\.0"/s
     );
   });
@@ -220,12 +232,22 @@ describe('verifyBundle', () => {
   it('refuses a bundle whose renet is not the renet this CLI carries', async () => {
     const { fake } = await built();
     const other = makeFake({ files: fake.files, renetSha: 'f'.repeat(64) });
-    await expect(verifyBundle(other.deps, OUT)).rejects.toThrow(/renetMismatch.*amd64/s);
+    await expect(verifyBundle(other.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /renetMismatch.*amd64/s
+    );
   });
 
   it('names a bundle directory with no SHA256SUMS', async () => {
-    const fake = makeFake();
-    await expect(verifyBundle(fake.deps, '/empty')).rejects.toThrow(/unreadable.*SHA256SUMS/s);
+    const fake = makeFake({
+      files: {
+        '/empty/manifest.sig': 'x',
+        '/empty/signer.pub': Buffer.alloc(32).toString('base64'),
+      },
+    });
+    const fingerprint = signerOf(fake.files, '/empty');
+    await expect(verifyBundle(fake.deps, '/empty', fingerprint)).rejects.toThrow(
+      /unreadable.*SHA256SUMS/s
+    );
   });
 
   it('refuses sums that leave the manifest unprotected', async () => {
@@ -234,6 +256,145 @@ describe('verifyBundle', () => {
       (s) => s.file !== 'manifest.json'
     );
     fake.files[`${OUT}/SHA256SUMS`] = sumsText(without);
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/notSummed/);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /notSummed/
+    );
+  });
+});
+
+describe('the bundle signature (D12)', () => {
+  const signer = (fake: { files: Record<string, string> }) => signerOf(fake.files, OUT);
+
+  it('writes manifest.sig and signer.pub, and the fingerprint is the hash of the key', async () => {
+    const { fake } = await built();
+    expect(fake.files[`${OUT}/manifest.sig`]).toBeTruthy();
+    expect(signer(fake)).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('accepts the fingerprint in upper case, with a sha256: label or with colons', async () => {
+    const { fake, manifest } = await built();
+    const hex = signer(fake);
+    const colons = hex.match(/../g)?.join(':') ?? '';
+    for (const form of [hex.toUpperCase(), `sha256:${hex}`, colons]) {
+      await expect(verifyBundle(fake.deps, OUT, form)).resolves.toEqual(manifest);
+    }
+  });
+
+  it('refuses a tampered image even when the manifest record and every sum were redone', async () => {
+    const { fake } = await built();
+    fake.files[`${OUT}/images/server.tar`] = 'tampered';
+    const hash = await fake.deps.sha256File(`${OUT}/images/server.tar`);
+    const manifest = JSON.parse(fake.files[`${OUT}/manifest.json`]);
+    manifest.images[0].sha256 = hash;
+    fake.files[`${OUT}/manifest.json`] = `${JSON.stringify(manifest, null, 2)}\n`;
+    const redone = await Promise.all(
+      parseSums(fake.files[`${OUT}/SHA256SUMS`]).map(async (s) => ({
+        ...s,
+        sha256: await fake.deps.sha256File(`${OUT}/${s.file}`),
+      }))
+    );
+    fake.files[`${OUT}/SHA256SUMS`] = sumsText(redone);
+    await expect(verifyBundle(fake.deps, OUT, signer(fake))).rejects.toThrow(/badSignature/);
+  });
+
+  it('refuses a fingerprint that is not the bundle signer', async () => {
+    const { fake } = await built();
+    await expect(verifyBundle(fake.deps, OUT, 'b'.repeat(64))).rejects.toThrow(
+      /signerMismatch.*"actual":"[0-9a-f]{64}"/s
+    );
+  });
+
+  it('refuses a bundle re-signed by another key when the fingerprint is the original', async () => {
+    const { fake } = await built();
+    const fingerprint = signer(fake);
+    const other = await built({ out: OUT, tag: '1.2' });
+    fake.files[`${OUT}/manifest.sig`] = other.fake.files[`${OUT}/manifest.sig`];
+    fake.files[`${OUT}/signer.pub`] = other.fake.files[`${OUT}/signer.pub`];
+    await expect(verifyBundle(fake.deps, OUT, fingerprint)).rejects.toThrow(/signerMismatch/);
+  });
+
+  it('refuses a bundle without manifest.sig', async () => {
+    const { fake } = await built();
+    const fingerprint = signer(fake);
+    delete fake.files[`${OUT}/manifest.sig`];
+    await expect(verifyBundle(fake.deps, OUT, fingerprint)).rejects.toThrow(
+      /unsigned.*manifest\.sig/s
+    );
+  });
+
+  it('refuses a bundle without signer.pub', async () => {
+    const { fake } = await built();
+    const fingerprint = signer(fake);
+    delete fake.files[`${OUT}/signer.pub`];
+    await expect(verifyBundle(fake.deps, OUT, fingerprint)).rejects.toThrow(
+      /unsigned.*signer\.pub/s
+    );
+  });
+
+  it('refuses a manifest.sig that is not the signer signature', async () => {
+    const { fake } = await built();
+    fake.files[`${OUT}/manifest.sig`] = Buffer.alloc(64).toString('base64');
+    await expect(verifyBundle(fake.deps, OUT, signer(fake))).rejects.toThrow(/badSignature/);
+  });
+});
+
+describe('the models in the bundle (D12)', () => {
+  it('writes the stable pointer, manifest and objects with their signatures, summed and recorded', async () => {
+    const { fake, manifest } = await built();
+    const files = (manifest.models ?? []).map((f) => f.file);
+    expect(files).toEqual(
+      expect.arrayContaining([
+        'models/channels/stable.json',
+        'models/channels/stable.json.sig',
+        'models/manifests/7.json',
+        'models/manifests/7.json.sig',
+      ])
+    );
+    const objects = files.filter((f) => /^models\/objects\/[0-9a-f]{64}$/.test(f));
+    expect(objects).toHaveLength(2);
+    for (const object of objects) expect(files).toContain(`${object}.sig`);
+    expect(files).toHaveLength(8);
+    const summed = parseSums(fake.files[`${OUT}/SHA256SUMS`]).map((s) => s.file);
+    for (const file of files) expect(summed).toContain(file);
+  });
+
+  it('refuses a model object changed after bundling', async () => {
+    const { fake, manifest } = await built();
+    const object = (manifest.models ?? []).find((f) => f.file.startsWith('models/objects/'));
+    fake.files[`${OUT}/${object?.file}`] = 'tampered';
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*models\/objects/s
+    );
+  });
+
+  it('refuses a model object signature changed after bundling', async () => {
+    const { fake, manifest } = await built();
+    const sig = (manifest.models ?? []).find((f) => /objects\/[0-9a-f]{64}\.sig$/.test(f.file));
+    expect(sig).toBeDefined();
+    fake.files[`${OUT}/${sig?.file}`] = 'tampered';
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*models\/objects/s
+    );
+  });
+
+  it('--no-models leaves models/ out', async () => {
+    const { manifest } = await built({ out: OUT, tag: '1.2', models: false });
+    expect(manifest.models).toBeUndefined();
+  });
+
+  it('refuses an object whose hash differs from the manifest list, writing no records', async () => {
+    m.version = '1.0.0';
+    const fake = makeFake({
+      release: Object.fromEntries(
+        Object.entries(FAKE_MODELS).map(([url, body]) => [
+          url,
+          url.includes('/objects/') ? 'swapped' : body,
+        ])
+      ),
+    });
+    await expect(serverBundle(fake.deps, { out: OUT, tag: '1' })).rejects.toThrow(
+      /modelsSha256Mismatch/
+    );
+    expect(fake.files[`${OUT}/manifest.json`]).toBeUndefined();
   });
 });

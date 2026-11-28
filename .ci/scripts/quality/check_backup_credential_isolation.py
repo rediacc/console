@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
-"""Entry point for the backup credential isolation gate.
+"""Run `rediacc_ci.quality.backup_credential_isolation` by path, with the same argument check its own entry makes.
 
-The logic, the six rules and the controls live in `rediacc_ci.quality.backup_credential_isolation`; this file exists so the registry can invoke it BY PATH, the same split `check_retired_terms.py` uses. The `---- gate ----` header is HERE and not on the module, because `gate-bind` reads the file package.json names.
-
----- gate ----
-step: Backup credential isolation
-lane: quality-security
-needs: submodules
-why: one account-wide R2 key once reached the public bench Worker through a
-     fallback in deploy_bench, and one shared backup pair served every
-     environment. Each environment now holds only its own bucket-scoped pair;
-     this pins the profiles, the deploy workflow and the rotation scopes to that
-     split, by name, so an edit cannot quietly re-widen it.
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/backup_credential_isolation.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import backup_credential_isolation
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_backup_credential_isolation.py",
+        sys.argv[1:],
+        switches=("--selftest",),
+        valued=("--root",),
+    )
     raise SystemExit(backup_credential_isolation.main(sys.argv[1:]))

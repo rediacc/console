@@ -10,7 +10,7 @@
  *
  * See agent/plans/PLAN-npm-ci-parallel-parity.md section 4.4.
  */
-import { execFileSync, spawn } from 'node:child_process';
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -53,6 +53,49 @@ export function gateSpawnArgv(
 }
 
 /**
+ * The runner-death watch alone (fd 4 EOF, then `kill -KILL 0` of the shell's own group; the long account is on RUSAGE_WRAPPER below), as the backgrounded shell fragment every detached spawn in scripts/ci-runner carries (PLAN-host-temp-disposal HT6, D5). Declared before RUSAGE_WRAPPER because that constant is built from it.
+ */
+export const DEATH_WATCH =
+  '{ while :; do read -r -t 1 -u 4 _; __r=$?; if [ $__r -le 128 ] && [ $__r -ne 0 ]; then kill -KILL 0; fi; kill -0 $$ 2>/dev/null || exit 0; done; } </dev/null >/dev/null 2>&1 3>&- &';
+
+/** One stdio slot of `spawnWatched`: the first three are the caller's, fd 3 is unused and fd 4 is the watch pipe. */
+export type WatchedStdio = 'ignore' | 'pipe' | number;
+
+/**
+ * Spawns `cmd args` as the leader of its own process group with the runner-death watch attached, so a runner that dies by SIGKILL or the OOM killer takes the whole group with it within a second. The shell runs the command as its child (not `exec`: measured 2026-11-26, a strace exec'd over the shell never exited after its tracee did, with the watch forked beside it), reports its status, and closes fd 4 for it, so no descendant can hold the watch open. A descendant that leaves the group with setsid is outside this watch, as it is outside RUSAGE_WRAPPER's.
+ */
+export function spawnWatched(
+  cmd: string,
+  args: readonly string[],
+  opts: {
+    cwd: string;
+    env: NodeJS.ProcessEnv;
+    stdio: [WatchedStdio, WatchedStdio, WatchedStdio];
+  }
+): ChildProcess {
+  const child = spawn(
+    'bash',
+    [
+      '-c',
+      `${DEATH_WATCH} __w=$!; "$@" 4<&-; __rc=$?; kill $__w 2>/dev/null; exit $__rc`,
+      'bash',
+      cmd,
+      ...args,
+    ],
+    {
+      cwd: opts.cwd,
+      env: opts.env,
+      stdio: [...opts.stdio, 'ignore', 'pipe'],
+      detached: true,
+    }
+  );
+  // Drained like exec.ts's own fd 4: nothing is written, and a paused pipe may never close.
+  const fd4 = child.stdio[4];
+  if (fd4 !== null && fd4 !== undefined && 'resume' in fd4) fd4.resume();
+  return child;
+}
+
+/**
  * THE RUSAGE WRAPPER (agent/plans/PLAN-ci-quick-cpu-scheduling.md 2.1). The gate runs in a SUBSHELL with fd 3 closed, and the outer shell writes `times` to fd 3 after reaping it.
  *
  * A subshell, not the plan's `trap "times >&3" EXIT; eval "$1" 3>&-`, measured 2026-09-30 for two reasons: an `exit N` inside the gate runs the EXIT trap while `3>&-` is still in force, so the report is lost for exactly the gates that exit explicitly; and a gate that sets its own EXIT trap replaces the wrapper's (bash has one slot). Closing fd 3 for the gate keeps a daemon that inherits it from holding the pipe open and delaying `close`.
@@ -62,7 +105,7 @@ export function gateSpawnArgv(
  * THE RUNNER-DEATH WATCH (fd 4). Each gate leads its own process group (LIVE), so a runner that dies without running its signal handler (SIGKILL, the OOM killer) no longer takes its gates with it: measured 2026-10-07, a gate of a SIGKILLed runner was still alive 3 s later and would have run forever. fd 4 is a pipe whose other end only the runner holds, and nothing is ever written to it, so a background `read` on it returns EOF exactly when the runner is gone, by any death; the watcher then SIGKILLs the whole group, itself included, with `kill -KILL 0` (pid 0 is the sender's own process group) rather than `-$$`: the spawned `bash` may be a wrapper that execs bash as its child (this machine's bashcov-sup shim), and then the group leader is not `$$`, so `-$$` named no group and the first version of this watch killed nothing (measured 2026-10-07). It also polls its own shell once a second and exits when that is gone: a gate that kills its outer shell directly (`kill -9 $$`, a selftest case) would otherwise leave the watcher holding fd 4, and `close`, which waits on every stdio stream, would never fire (measured: the first version hung the selftest exactly there). Chosen over the other two candidates: the gate's stdin would carry the same EOF, but a gate that reads stdin would then block on a live runner instead of seeing /dev/null's EOF (selftest:e2e-stdin pins that); `prctl(PR_SET_PDEATHSIG)` needs a helper binary, is Linux-only, and fires on the death of the spawning THREAD rather than the process. This needs only bash builtins, so it works wherever the wrapper does (Linux, macOS). The gate itself runs with fd 4 closed, so no descendant can hold the watch open or read from it; the watcher has its output on /dev/null and fd 3 closed, so it never delays `close` or the `times` report; and on a normal exit the outer shell kills it before reporting.
  */
 const RUSAGE_WRAPPER =
-  '{ while :; do read -r -t 1 -u 4 _; __r=$?; if [ $__r -le 128 ] && [ $__r -ne 0 ]; then kill -KILL 0; fi; kill -0 $$ 2>/dev/null || exit 0; done; } </dev/null >/dev/null 2>&1 3>&- & __ci_w=$!; ' +
+  `${DEATH_WATCH} __ci_w=$!; ` +
   '( __ci_run=$1; shift; eval "$__ci_run" ) 3>&- 4<&-; __ci_rc=$?; kill $__ci_w 2>/dev/null; times >&3; exit $__ci_rc';
 
 /** Seconds from one `times` field, `1m2.345s`; the decimal mark follows LC_NUMERIC. */
@@ -278,7 +321,7 @@ export function execGate(spec: GateSpec, opts: ExecOptions): Promise<ExecOutcome
         ? opts.profileDir
         : undefined;
     if (profileDir !== undefined && child.pid !== undefined && spec.noProfile !== true) {
-      // Detached and unreferenced: the runner must not wait on the sampler, and the sampler must not keep the runner alive. `--t0` is the absolute clock E4 needs to decide whether two gates' lifetimes overlapped.
+      // Detached on purpose and carrying no death watch of its own: wl_ressample.py --watch exits by itself once the watched gate pid is gone, and the gate dies with its runner (RUSAGE_WRAPPER), so the sampler outlives neither. Unreferenced: the runner must not wait on the sampler, and the sampler must not keep the runner alive. `--t0` is the absolute clock E4 needs to decide whether two gates' lifetimes overlapped.
       try {
         const sampler = spawn(
           'python3',

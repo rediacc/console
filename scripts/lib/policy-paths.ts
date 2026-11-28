@@ -94,8 +94,6 @@ const POLICY_FILES = Object.freeze([
   // exempted entries, so a name-per-line dotfile could not hold it; it is policy by the
   // README's four-part predicate all the same, because every number in it is a claim about the world that a change to .claude/settings.json can stop being true.
   'hook-exec-baseline.json',
-  // D2, 2026-09-09. The WORKLIST_* environment registry: 133 names across 60 files at 183 read sites, with no registry and no schema before this. A typo'd name reads as UNSET, which for a flag defaulting to `on` is the FAIL-OPEN direction.
-  'worklist-env-registry.json',
   // 2026-10-01. The fourth .json, for the same reason as the three beside it: each entry is a small record (owner, reason, and exactly one of a re-checked blocker or a dated expiry), which a name-per-line dotfile could not carry. It excuses a blocklisted npm major past its 90-day deadline. Read only by scripts/gates/check-deps.ts, which enforces its liveness in-gate (expired, stale, dead).
   'deps-major-exceptions.json',
   // 2026-10-06, PLAN-fast-loop.md Part 1. Gates whose verdict moves without a tracked input moving (network, clock, history, untracked cache): the incremental pre-push receipt never carries them. Read by scripts/ci-runner/input-hash.ts (exemptIdsOf) and block_unverified_push's v2 check; each row needs a reason of at least 80 characters (test_gate_incremental_receipt.py).
@@ -108,6 +106,8 @@ const POLICY_FILES = Object.freeze([
   // 2026-11-17. A TABLE of test nodes allowed to run past the slow threshold, one row per node with its own reason, which a name-per-line dotfile could not carry. Read only by .ci/rediacc_ci/quality/pytest_slow_ratchet.py.
   'pytest-slow-allow.json',
   'pytest-impact.json',
+  // 2026-11-27. The shrink-only legacy baseline of reggate debt (PLAN-reggate-debt-collection), a JSON object of `sigs` with a `BLOCKER:` reason, which a name-per-line dotfile could not carry. Read by .claude/hooks/stop/wl_reggate.py (legacy_rel) and, through it, .ci/rediacc_ci/quality/reggate_debt.py.
+  'reggate-debt-legacy.json',
 ] as const);
 
 type PolicyFileName = (typeof POLICY_FILES)[number];

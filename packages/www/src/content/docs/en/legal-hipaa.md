@@ -33,7 +33,7 @@ HIPAA requires administrative, technical, and physical safeguards. The table bel
 | Requirement | Rediacc Capability |
 |-------------|-------------------|
 | Workforce access management | API tokens with scoped permissions. Team-based access control. Token auto-revocation on team removal. |
-| Security incident procedures | Audit logs provide forensic trail of all operations. Per-repository isolation limits blast radius. |
+| Security incident procedures | Audit logs record who did what for the operations they cover. Per-repository network flow records (paid plans, at the level chosen per repository) and the investigation timeline supply evidence for an incident; flow records show volume and destination, not content. No HIPAA-specific report is generated. Per-repository isolation limits blast radius. |
 | Contingency planning | `rdc repo push/pull` supports multi-destination encrypted backup. CoW snapshots enable instant recovery. |
 
 ### Physical Safeguards

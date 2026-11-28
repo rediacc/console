@@ -40,7 +40,7 @@ The prepend mutates `os.environ["PATH"]` rather than a local copy, because the
 bash `export PATH=` is seen by BOTH `command -v nfpm` in the preflight and the
 subject subprocess below it.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-linux-packages.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -273,4 +273,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("linux_packages.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

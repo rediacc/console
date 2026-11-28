@@ -84,3 +84,51 @@ def test_the_wired_hook_pattern_reaches_run_sh_in_each_spelling(command, hits):
         % (literal.group(1), json.dumps(command))
     )
     assert _node(script) == hits
+
+
+def _json_inventory(tmp_path, files: dict[str, str]) -> dict[str, str]:
+    """`jsonInventoryProvider.rows` over a throwaway index holding `files`: member path -> its "Discovered by" cell."""
+    for rel, text in files.items():
+        target = tmp_path / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(text, encoding="utf-8")
+    for argv in (["init", "-q"], ["add", "-A"]):
+        subprocess.run(["git", *argv], cwd=tmp_path, check=True)
+    script = (
+        "import { jsonInventoryProvider } from './scripts/lib/doc-providers.ts';"
+        "const rows = await jsonInventoryProvider.rows(process.argv[1]);"
+        "console.log(JSON.stringify(Object.fromEntries(rows.map((r) => [r.key, r.cells[2]]))));"
+    )
+    done = subprocess.run(
+        ["npx", "tsx", "--input-type=module", "-e", script, str(tmp_path)],
+        cwd=paths.repo_root(),
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    return json.loads(done.stdout)
+
+
+INVENTORY_TREE = {
+    "package.json": "{}\n",
+    ".ci/config/a.json": "{}\n",
+    "scripts/data/b.json": "{}\n",
+    ".ci/policy/c.json": "{}\n",
+    "wiring.yml": "x: package.json\n",
+    "scripts/tool.ts": "read('.ci/config/a.json');\n",
+}
+
+
+def test_json_inventory_a_test_fixture_never_names_a_member(tmp_path):
+    """Review 2e7076b2.1: a fixture that quotes a member's path must not win the namer tier."""
+    tree = {**INVENTORY_TREE, "scripts/tests/fixtures/fx.ts": "read('scripts/data/b.json');\n"}
+    got = _json_inventory(tmp_path, tree)
+    assert "fx.ts" not in got["scripts/data/b.json"]
+    assert "convention" in got["scripts/data/b.json"]
+    assert "tool.ts" in got[".ci/config/a.json"]
+
+
+def test_json_inventory_control_the_same_mention_outside_a_fixture_dir_names_the_member(tmp_path):
+    tree = {**INVENTORY_TREE, "scripts/real/fx.ts": "read('scripts/data/b.json');\n"}
+    got = _json_inventory(tmp_path, tree)
+    assert "real/fx.ts" in got["scripts/data/b.json"]

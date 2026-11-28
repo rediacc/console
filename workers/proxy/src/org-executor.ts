@@ -12,6 +12,15 @@ import { DurableObject } from 'cloudflare:workers';
 import { capacityStub, type ExecutorCapacity, type ExecutorSize } from './capacity';
 import { drillProbeTarget } from './drill';
 import {
+  callMcp,
+  callRevoke,
+  isMcpCallPath,
+  isRevokeGrantPath,
+  type McpCallAnswer,
+  type McpCallForward,
+  type RevokeGrantAnswer,
+} from './org-executor-mcp';
+import {
   type ExecutorIdentity,
   outsideProbe,
   pinRefusal,
@@ -20,26 +29,28 @@ import {
   relocateOrg,
   reportAnswer,
   reportRefusal,
-  vantageTarget,
+  vantageProbe,
 } from './org-executor-relocate';
 import {
   acquireLease,
   bounded,
+  busyRefusal,
   containerRequest,
-  destroyContainer,
+  destroyQuietly,
+  dispatchesRunning,
   durationMs,
   type EgressReportAnswer,
   EXECUTOR_IMAGE_KEY,
   EXECUTOR_PORT,
   type ExecutorRecord,
   type ExitResult,
-  errorSummary,
-  flagOom,
-  pollReady,
   executorEnv,
+  forwardFailure,
+  isBusyPath,
   isOomExit,
   isRefusal,
   logStall,
+  MAX_DISPATCH_HOLD_MS,
   OOM_HEAVY_KEY,
   OOM_KEY,
   ORG_KEY,
@@ -47,16 +58,19 @@ import {
   type PinAnswer,
   type PinnedExecutor,
   pinnedFrom,
+  pollReady,
   RECORD_KEY,
   RENEW_THROTTLE_MS,
   RETIRED_KEY,
+  recordOomExit,
   refusal,
   refusalResponse,
   registerEgress,
   releaseLease,
   StallError,
   type StartAnswer,
-  trackBody,
+  stallWarn,
+  trackedResponse,
   UNREACHABLE_AT_KEY,
   UNREACHABLE_KEY,
   warnIfThrows,
@@ -64,27 +78,6 @@ import {
 import { executorName, placementOf, UNREACHABLE_THRESHOLD, unreachableRecent } from './placement';
 import { type ProbeResult, type ProbeTarget, probeSshBanner } from './reachability';
 import { INSTANCE_BY_SIZE } from './sizing';
-
-export {
-  ACCOUNT_EGRESS_HOST,
-  CONTAINER_CALL_TIMEOUT_MS,
-  COORDINATOR_TIMEOUT_MS,
-  durationMs,
-  type EgressReportAnswer,
-  type ExecutorEgressProps,
-  type ExecutorRecord,
-  type ExecutorRefusalCode,
-  executorEnv,
-  isOomExit,
-  type OrgExecutorEnv,
-  type PinAnswer,
-  READY_TIMEOUT_MS,
-  RENEW_THROTTLE_MS,
-  type RelocateAnswer,
-} from './org-executor-support';
-
-/** The size named in the out-of-memory log line when the container never reported one. */
-const UNKNOWN_SIZE = 'unknown';
 
 /** The per-org executor Durable Object. See the module comment. */
 export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
@@ -103,6 +96,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   private inFlight = 0;
   private lastActivity = 0;
   private lastRenew = 0;
+  /** When the alarm first held the container for a running dispatch with no request in flight, until the dispatches end or the hold is given up. */
+  private busyHoldSince: number | undefined;
   /** Set when the lease is lost and cannot be re-acquired, or the instance retired: in-flight requests finish, then the container is destroyed. */
   private draining = false;
   /** The placement the org moved to, once this instance retired. A retired instance never starts, never re-acquires and refuses every pin. */
@@ -238,12 +233,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
    * The outside reachability vantage (src/org-executor-relocate.ts module comment): probe `target`'s SSH banner from this instance, which must be the unpinned instance named `vantageName(hint)`, reached by `outsideProbe` with that location hint (the hint places the instance when the first call creates it). On any other instance, on a pinned one, or for a target `probeTarget` refuses, it answers `target-unreachable (error)` without a connect, so a refusal never counts a report.
    */
   probeFromVantage(hint: string, target: ProbeTarget): Promise<ProbeResult> {
-    const admitted = vantageTarget(this.identity(), hint, target);
-    if ('refused' in admitted) {
-      console.warn(`proxy: org executor outside probe refused: ${admitted.refused}`);
-      return Promise.resolve({ verdict: 'target-unreachable', reason: 'error' });
-    }
-    return probeSshBanner(admitted);
+    return vantageProbe(this.identity(), hint, target);
   }
 
   /** Retire this instance: kept in storage so a restart stays retired, then drain. The request whose report caused the move still ends with its result line before the container goes. */
@@ -303,6 +293,32 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
 
   /** Forward a request to the container and stream its response back untouched, counting it in flight until the body closes. */
   override async fetch(request: Request): Promise<Response> {
+    const { pathname } = new URL(request.url);
+    // The dispatch count is read by the alarm alone: a caller reaching it through the forward would learn what an org is running. The MCP call route is reached through `mcpCall` alone, and the revoke route through `revokeGrant` alone.
+    if (isBusyPath(pathname) || isMcpCallPath(pathname) || isRevokeGrantPath(pathname)) {
+      return busyRefusal();
+    }
+    return await this.forward(request);
+  }
+
+  /**
+   * One hosted MCP `tools/call` (agent/plans/PLAN-rmcp-remote-worker.md Design 1 and 7): POST the forward to the container's MCP call route as the request body, through the same in-flight count and lease as `fetch`, and hand back the container's JSON answer untouched.
+   */
+  mcpCall(forward: McpCallForward): Promise<McpCallAnswer> {
+    return callMcp(forward, (request) => this.forward(request));
+  }
+
+  /**
+   * Pushed revocation of one agent grant (box AG-S5): tell the running container to drop the grant's session and cached config. A request already in flight under the grant completes, because it holds its own session record; the next call is refused. With no container running there is no session to drop, so nothing is started and the answer is `dropped: false`. The grant id is the only body: the secret never travels here.
+   */
+  async revokeGrant(grantId: string): Promise<RevokeGrantAnswer> {
+    await this.startupSettled();
+    if (!this.ctx.container?.running || !this.record) return { ok: true, dropped: false };
+    return callRevoke(grantId, (request) => this.forward(request));
+  }
+
+  /** The forward behind `fetch` and `mcpCall`: wait out a start, check the instance can serve, then proxy with in-flight counting. */
+  private async forward(request: Request): Promise<Response> {
     await this.startupSettled();
     const container = this.ctx.container;
     if (this.isRetired()) return refusalResponse('EXECUTOR_RELOCATED');
@@ -328,23 +344,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
       }
       stage = 'forward';
       const response = await container.getTcpPort(EXECUTOR_PORT).fetch(containerRequest(request));
-      if (response.body === null) {
-        done();
-        return response;
-      }
-      return new Response(trackBody(response.body, done), {
-        status: response.status,
-        statusText: response.statusText,
-        headers: response.headers,
-      });
+      return trackedResponse(response, done);
     } catch (error) {
       done();
-      // The message stays the fixed forward-failure string any alert matches; the stage rides as a field.
-      console.warn('proxy: org executor forward failed', { stage, ...errorSummary(error) });
-      return Response.json(
-        { error: 'The executor did not answer.', code: 'EXECUTOR_UNREACHABLE' },
-        { status: 502 }
-      );
+      return forwardFailure(stage, error);
     }
   }
 
@@ -357,17 +360,38 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const now = Date.now();
     const idleMs = durationMs(this.sleepAfter);
     if (this.inFlight > 0) {
+      this.busyHoldSince = undefined;
       await this.holdLease(true);
       await this.ctx.storage.setAlarm(now + idleMs);
       return;
     }
     if (now - this.lastActivity >= idleMs) {
+      // A dispatch outlives a client that left: the body closed, but the executor still runs the command.
+      if (await this.dispatchHolds(container, now)) {
+        await this.holdLease(true);
+        await this.ctx.storage.setAlarm(now + idleMs);
+        return;
+      }
+      this.busyHoldSince = undefined;
       const { orgId, placement } = this.record;
       await this.stopContainer('idle');
       await releaseLease(this.capacity(), orgId, placement);
       return;
     }
     await this.ctx.storage.setAlarm(this.lastActivity + idleMs);
+  }
+
+  /** Whether a running dispatch holds the container awake: the executor counts one and the hold has not passed MAX_DISPATCH_HOLD_MS. */
+  private async dispatchHolds(container: Container, now: number): Promise<boolean> {
+    const running = await dispatchesRunning(container);
+    // A count that could not be had keeps an earlier hold alive (a dispatch last seen running may still be), within the same MAX_DISPATCH_HOLD_MS; with no earlier hold it never starts one, so an unreachable container is not pinned awake.
+    if (running === undefined && this.busyHoldSince === undefined) return false;
+    if (running === 0) {
+      this.busyHoldSince = undefined;
+      return false;
+    }
+    this.busyHoldSince ??= now;
+    return now - this.busyHoldSince < MAX_DISPATCH_HOLD_MS;
   }
 
   /** The image the deployed version names for the executor. */
@@ -395,6 +419,8 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
   /** Record activity and arm the idle alarm at `lastActivity + sleepAfter`. */
   private async touch(): Promise<void> {
     this.lastActivity = Date.now();
+    // A request is a new dispatch: an earlier hold's start must not age it past MAX_DISPATCH_HOLD_MS (review 530c463a.1).
+    this.busyHoldSince = undefined;
     await this.ctx.storage.setAlarm(this.lastActivity + durationMs(this.sleepAfter));
   }
 
@@ -550,14 +576,7 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     const wasSize = this.record?.size;
     this.record = undefined;
     this.draining = false;
-    try {
-      if (!result.clean && isOomExit(result.error)) {
-        console.warn(`proxy: org executor out of memory on ${wasSize ?? UNKNOWN_SIZE}`);
-        await flagOom(this.ctx.storage, wasSize);
-      }
-    } catch {
-      console.warn('proxy: org executor exit bookkeeping failed');
-    }
+    if (!result.clean && isOomExit(result.error)) await recordOomExit(this.ctx.storage, wasSize);
     // The record is deleted whatever the OOM flags did. If this delete also fails, the stale record is harmless: `recover` finds no running container and clears it, so a dead container is never recovered as running.
     await warnIfThrows(
       () => this.ctx.storage.delete(RECORD_KEY),
@@ -576,17 +595,11 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.generation += 1;
     this.record = undefined;
     const container = this.ctx.container;
-    try {
-      if (container?.running) await destroyContainer(container, reason);
-    } catch (error) {
-      logStall(error);
-      console.warn(`proxy: org executor destroy failed: ${reason}`);
-    }
-    try {
-      await this.ctx.storage.delete(RECORD_KEY);
-    } catch {
-      console.warn('proxy: org executor record not cleared');
-    }
+    if (container?.running) await destroyQuietly(container, reason);
+    await warnIfThrows(
+      () => this.ctx.storage.delete(RECORD_KEY),
+      'proxy: org executor record not cleared'
+    );
   }
 
   /**
@@ -619,12 +632,10 @@ export class OrgExecutor extends DurableObject<OrgExecutorEnv> {
     this.record = record;
     this.generation += 1;
     this.exited = undefined;
-    try {
-      await registerEgress(this.ctx, container, record.orgId, record.placement);
-    } catch (error) {
-      logStall(error);
-      console.warn('proxy: org executor intercept not re-registered');
-    }
+    await stallWarn(
+      () => registerEgress(this.ctx, container, record.orgId, record.placement),
+      'proxy: org executor intercept not re-registered'
+    );
     this.attachMonitor(container);
     const lease = await acquireLease(this.capacity(), record.orgId, record.placement, record.size);
     if (lease === 'failed' || !lease.ok) {

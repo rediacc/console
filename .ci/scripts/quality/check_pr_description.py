@@ -8,18 +8,17 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-pr-description.sh` carried none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a
 different change from moving which file the step runs.
 
-INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-pr-description.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-pr-description.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-pr-description.sh` stayed on disk as the differential twin until the shadow ledger (deleted in commit:99a4de363d) asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-pr-description --assert --k 5
-    -> equivalence holds over 6 distinct trees
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08 with the shadow gate (deleted in commit:bf054adcd4): equivalence holds over 6 distinct trees.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import pr_description
 
 if __name__ == "__main__":
+    _gate_args.parse("check_pr_description.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(pr_description.main(sys.argv[1:]))

@@ -241,3 +241,71 @@ export CLOUDFLARE_R2_MEDIA_ACCESS_KEY_ID=... CLOUDFLARE_R2_MEDIA_SECRET_ACCESS_K
 PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_to_r2 --audio-only     # backup
 PYTHONPATH=.ci python3 -m rediacc_ci.deploy.sync_media_from_r2 --audio-only   # restore
 ```
+
+## 10. Public data bucket (`rediacc-public-data`)
+
+`rediacc-public-data` is a third bucket, separate from `media` and the releases bucket, for objects that are public by design and are fetched by software rather than by a page: demo data archives, signed detector model bundles and the report PDF fonts. It was created by hand on 2026-11-06 (plan `PLAN-health-checks-local.md`, S1 and O2) and is served at `https://data.rediacc.com`. Cloudflare housekeeping keeps it by name (`KEEP_NAMES` in `.ci/rediacc_ci/housekeeping/cf_retire.py`).
+
+| | |
+|---|---|
+| **Bucket** | `rediacc-public-data`, EEUR, default jurisdiction |
+| **Domain** | `data.rediacc.com` on the `rediacc.com` zone, connected as in section 2 |
+| **Cache Rule** | `(http.host eq "data.rediacc.com")`, `set_cache_settings` with origin TTL respected for edge and browser, created as in section 5 |
+| **CORS** | rule `public-data-read`: `GET` and `HEAD` from `*`, set as in section 5b |
+| **bws profile** | `public-data`, holding `R2_PUBLIC_DATA_ACCESS_KEY_ID` and `R2_PUBLIC_DATA_SECRET_ACCESS_KEY` |
+
+The Cache Rule respects the origin TTL, so each object carries its own `Cache-Control` from upload time: `public, max-age=31536000, immutable` for content-addressed or versioned objects, and `public, max-age=60` for the mutable channel pointers under `models/channels/`. The CORS rule is open for the same reason as in section 5b: every object is already fetchable by anyone without credentials.
+
+The `public-data` token is bucket-scoped (Object Read & Write on `rediacc-public-data` only). A signed list request against `rediacc-public-data` answered 200 and one against `rediacc-www-media` answered 403 when it was minted. Commands that need it run under `bws_env exec --profile public-data -- <command>`. No workflow uploads to this bucket, and `.ci/config/bws-unrequested.json` records the two key names as bound only by that profile.
+
+### Prefixes
+
+| Prefix | Content | Written by |
+|---|---|---|
+| `stackexchange/` | The StackExchange archives behind the `demo-stackoverflow` repository, with `SHA256SUMS` | A one-off upload from hostinger under the `public-data` profile; no scripted job exists |
+| `models/` | Detector model bundles: `objects/<sha256>`, `manifests/<version>.json` and `channels/edge.json` and `stable.json`, each manifest and pointer with a detached `.sig` | `renet models pack` builds the objects and the unsigned manifest, `private/renet/cmd/modelsign` signs the manifest and the pointers with the offline model key, and `rediacc_ci.ops.publish_models` is the upload job named in `PLAN-forensics-detection.md` D11 |
+| `fonts/` | Noto Sans subsets that the incident report PDF embeds for non-Latin scripts, each pinned by sha256 in `private/account/src/services/pdf/report-fonts.ts` | A hand upload; the ja, ko and zh pins are open work |
+
+Readers of the prefixes: renet fetches `models/` from `https://data.rediacc.com/models/` (`DefaultOrigin` in `private/renet/pkg/models/source_http.go`) and verifies the manifest signature before installing a bundle. The account server fetches `fonts/` through `REPORT_FONT_BASE_URL` and refuses a file whose hash differs from its pin; on-premise installs read the same files from `REPORT_FONT_DIR`.
+
+The upload jobs are the part still moving, so the state is read live rather than from this section:
+
+```bash
+ls .ci/rediacc_ci/ops | grep -i models
+bws_env exec --profile public-data -- true
+DATA_HOST=data.rediacc.com
+curl -sI "https://$DATA_HOST/models/channels/stable.json" | grep -iE "http/|cache-control"
+```
+
+## 11. Private Windows image bucket (`windows-ci-images`)
+
+`windows-ci-images` holds the Windows lane's bake inputs and golden image (plan `PLAN-windows-lane.md` D12). It is PRIVATE: it carries the Windows 11 Enterprise Evaluation ISO, the pinned virtio-win ISO and an installed image whose registry holds the autologon password in clear text. It is never `rediacc-public-data`, which is public by policy (section 10), and `rediacc_ci.ops.windows_image` refuses that bucket by name before any request. The name sits outside the `rediacc-<x>` form Cloudflare housekeeping retires, so no keep-list entry is needed.
+
+| | |
+|---|---|
+| **Bucket** | `windows-ci-images`, created by hand (box WL20); no custom domain, no public access, no Cache Rule, no CORS |
+| **Record** | `.ci/config/windows-image.json`: the bucket, `warn_days`, the `rebake` command, and `inputs` and `image` (each `null` until its first upload) with their sha256 values |
+| **bws profile** | `windows-image`, holding `R2_WINDOWS_IMAGE_ACCESS_KEY_ID`, `R2_WINDOWS_IMAGE_SECRET_ACCESS_KEY` and `WINDOWS_IMAGE_ADMIN_PASSWORD` once WL20 mints them |
+
+The token is bucket-scoped (Object Read & Write on `windows-ci-images` only), minted through `cf_auth` like the public-data token. No workflow binds it: a GitHub secret on a public repository would hand the image to any workflow run.
+
+### Layout
+
+| Key | Content |
+|---|---|
+| `inputs/win11-eval/<sha256>.iso` | The evaluation ISO, refused by `upload-inputs` unless its ISO 9660 label is an evaluation one (`<edition>_<arch>FREE_<lang>_DV<n>`) |
+| `inputs/virtio-win/<sha256>.iso` | The virtio-win ISO the bake loads drivers from |
+| `images/win11/<build>-<installed date>/golden.tar.zst` | The golden qcow2, OVMF VARS, swtpm state and `rediacc-image.json`, packed by `pack` |
+
+### Commands
+
+```bash
+P() { PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile windows-image -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.windows_image "$@"; }
+P probe                                  # 200 on the bucket, 403 on rediacc-public-data, anonymous GET refused
+P upload-inputs <eval.iso> <virtio-win.iso>
+P fetch --inputs                         # into $RENET_DATA_DIR/images/{win11-eval,virtio-win}.iso; WINDOWS_ISO / VIRTIO_ISO skip a download
+P fetch                                  # the golden image into $RENET_DATA_DIR/images/win11-golden/
+P rebake                                 # fetch --inputs, renet ops windows bake, pack, publish
+```
+
+Every verb takes `--dry-run`, which prints the commands and touches neither the network, the bucket nor the record. Each download is verified against the record's sha256 and deleted on a mismatch. `check:ci-windows-image-expiry` reads the record's `image.expires_at` (nothing to check while `image` is `null`) and goes red `warn_days` before the evaluation period ends, printing the `rebake` command.

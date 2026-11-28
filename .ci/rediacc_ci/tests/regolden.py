@@ -16,7 +16,7 @@ REFUSES:
   * when the recording run is not green. A freeze taken from a red differential would enshrine the disagreement as the spec.
   * when no module names the twin, or the run recorded nothing for it: a regolden that touched no golden is not a regolden.
 
-`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. When the carried records were recorded from the other source, the header's `source` reads `mixed` rather than claiming the whole file for this run's source. Without `-k` a key the run never asked for is dropped (and counted), because the run covered every case there is.
+`-k <expr>` narrows a re-record to the cases a Rule-T fix moved, so the reason is stamped only where it is true; every unselected record is carried over byte-for-byte. When the carried records were recorded from the other source, the header's `source` reads `mixed` rather than claiming the whole file for this run's source. Without `-k` a key the run never asked for is a lost case: the run refuses (non-zero, naming the ids) and writes nothing unless `--allow-shrink` says those cases no longer exist, and then they are dropped and counted.
 """
 
 from __future__ import annotations
@@ -118,6 +118,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="a pytest -k expression: re-record only the cases it selects; every other record is kept as it is",
     )
+    parser.add_argument(
+        "--allow-shrink",
+        action="store_true",
+        help="write a golden with fewer cases than the committed one (cases that no longer exist); without it the run refuses and names the lost case ids",
+    )
     args = parser.parse_args(argv)
     if not args.reason.strip():
         print("regolden: --reason is empty", file=sys.stderr)
@@ -157,8 +162,6 @@ def main(argv: list[str] | None = None) -> int:
     os.environ["REDIACC_CI_REGOLDEN_ONLY"] = ",".join(
         sorted(diff.golden_stem(t) for t in args.twins)
     )
-    # The parity driver may reuse a recorded agreement without driving the twin at all; a recording run must drive it.
-    os.environ["TWIN_PARITY_ALWAYS_DRIVE"] = "1"
     select = ["-k", args.select] if args.select else []
     rc = pytest.main(["-q", "-n", "0", "-p", "no:randomly", *select, *files])
     if rc != 0:
@@ -173,9 +176,22 @@ def main(argv: list[str] | None = None) -> int:
     if missing:
         print("regolden: the run recorded nothing for %s" % ", ".join(missing), file=sys.stderr)
         return 1
-    for line in diff.write_recorded(
-        args.source, args.reason, only=stems, keep_unseen=bool(args.select)
-    ):
+    try:
+        lines = diff.write_recorded(
+            args.source,
+            args.reason,
+            only=stems,
+            keep_unseen=bool(args.select),
+            allow_shrink=args.allow_shrink,
+        )
+    except diff.ShrinkRefusedError as exc:
+        print(
+            "regolden: refused, nothing was written: %s. Pass --allow-shrink when those cases "
+            "no longer exist." % exc,
+            file=sys.stderr,
+        )
+        return 1
+    for line in lines:
         print(line)
     return 0
 

@@ -352,6 +352,10 @@ async function renderHealthFromJob(
   const { health, staleBinary, staleBackups, missedTargets, failedVerifies, repoHealth } =
     await composeMachineHealth(name, parseMachineStatus(output));
 
+  // Set before the print, so the JSON envelope of an unhealthy machine says success:false.
+  if (health.exitCode !== 0) {
+    setExitCode(health.exitCode);
+  }
   if (format === 'json') {
     outputService.print(
       {
@@ -367,10 +371,6 @@ async function renderHealthFromJob(
     );
   } else {
     displayHealthReport(health, name, repoHealth);
-  }
-
-  if (health.exitCode !== 0) {
-    setExitCode(health.exitCode);
   }
 }
 
@@ -410,6 +410,7 @@ async function runHealthJob(name: string): Promise<void> {
 export function registerHealthCommand(machine: Command): void {
   machine
     .command('health')
+    .summary(t('commands.machine.health.descriptionShort'))
     .description(t('commands.machine.health.description'))
     .argument('<name>', t('options.name'))
     .action(async (name: string) => {

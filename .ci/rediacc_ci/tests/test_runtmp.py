@@ -289,10 +289,15 @@ def test_a_deep_inherited_tempdir_roots_the_run_dir_at_tmp(tmp_path, monkeypatch
     monkeypatch.setattr(runtmp.tempfile, "tempdir", str(deep))
     d = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
     try:
-        assert d.parent == pathlib.Path("/tmp")
+        # Review 153d0c38.3: the root is checked against facts that do not go through shallow_root(): it exists, it is short enough not to be deep itself, it is outside the deep TMPDIR, and it is one of the two bases the seams use (/tmp, or /var/tmp beside a tmpfs /tmp).
+        assert d.parent == pathlib.Path(str(runtmp.shallow_root()))
+        assert d.parent.is_dir()
+        assert len(str(d.parent)) <= runtmp.DEEP_TMPDIR
+        assert deep not in d.parents
+        assert str(d.parent) in ("/tmp", "/var/tmp"), d.parent
     finally:
         runtmp.remove_tree(str(d))
-    shallow = pathlib.Path("/tmp")
+    shallow = pathlib.Path(str(runtmp.shallow_root()))
     monkeypatch.setattr(runtmp.tempfile, "tempdir", str(shallow))
     e = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
     try:
@@ -328,9 +333,143 @@ def test_the_deepest_kept_base_leaves_a_tsx_socket_path_under_the_kernel_limit(m
         monkeypatch.setattr(runtmp.tempfile, "tempdir", str(longer))
         rooted = pathlib.Path(runtmp.run_dir("runtmp-ctl-"))
         try:
-            assert rooted.parent == pathlib.Path("/tmp")
+            assert rooted.parent == pathlib.Path(str(runtmp.shallow_root()))
         finally:
             runtmp.remove_tree(str(rooted))
     finally:
         base.rmdir()
         longer.rmdir()
+
+
+# --- the TypeScript twin, scripts/lib/runtmp.ts: one stamp, so either sweep removes the other's dead dirs ---
+
+REPO_ROOT = CI_DIR.parent
+_TS_CHILD = r"""
+import { runDir, installSignalCleanup } from %(lib)r;
+import fs from 'node:fs';
+const hooked = process.argv[2] === 'hooked';
+const dir = runDir('runtmp-ts-', process.argv[3]);
+fs.writeFileSync(dir + '/f', 'x');
+if (hooked) installSignalCleanup();
+process.stdout.write(dir + '\n');
+setInterval(() => undefined, 1000);
+"""
+
+
+def _ts_child(tmp_path: pathlib.Path, base: pathlib.Path, mode: str) -> subprocess.Popen:
+    script = tmp_path / ("ts-child-%s.mts" % mode)
+    script.write_text(_TS_CHILD % {"lib": str(REPO_ROOT / "scripts/lib/runtmp.ts")})
+    return subprocess.Popen(
+        ["npx", "tsx", str(script), mode, str(base)],
+        stdout=subprocess.PIPE,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        cwd=str(REPO_ROOT),
+        start_new_session=True,
+    )
+
+
+def _ts_run_dir(child: subprocess.Popen) -> pathlib.Path:
+    assert child.stdout is not None
+    line = child.stdout.readline().strip()
+    assert line, "the TypeScript child never reported its run dir"
+    return pathlib.Path(line)
+
+
+def _end(child: subprocess.Popen, sig: int) -> None:
+    # npx runs tsx which runs node: signal the whole session so the node process itself receives it.
+    os.killpg(child.pid, sig)
+    child.wait(timeout=30)
+    assert child.stdout is not None
+    child.stdout.close()
+
+
+def _sweep_removes_a_killed_typescript_dir(tmp_path: pathlib.Path) -> None:
+    """SIGKILL a TypeScript run, then require the Python sweep to be what removes its dir."""
+    child = _ts_child(tmp_path, tmp_path, "unhooked")
+    dead = _ts_run_dir(child)
+    _end(child, signal.SIGKILL)
+    assert dead.is_dir(), "SIGKILL left nothing, so the sweep is not what removes it"
+    swept = runtmp.sweep_dead("runtmp-ts-", str(tmp_path))
+    assert swept == [str(dead)], "the sweep did not remove the dead dir: swept %r" % (swept,)
+    assert not dead.exists()
+
+
+def test_the_typescript_shallow_root_is_the_python_one(tmp_path: pathlib.Path) -> None:
+    """Both twins root a too-deep run dir on one filesystem: when runtmp.py moved to the seams' base (/var/tmp beside a tmpfs /tmp) and runtmp.ts kept a bare /tmp, trace-honest's sparse dir landed on another device than the fixture it hard-links and `cp -al` failed with EXDEV."""
+    script = tmp_path / "ts-shallow.mts"
+    script.write_text(
+        "import { shallowRoot } from %r;\nprocess.stdout.write(String(shallowRoot()) + '\\n');\n"
+        % str(REPO_ROOT / "scripts/lib/runtmp.ts")
+    )
+    out = subprocess.run(
+        ["npx", "tsx", str(script)],
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        cwd=str(REPO_ROOT),
+        timeout=120,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == str(runtmp.shallow_root())
+
+
+def test_loaded_by_file_the_seams_come_from_beside_it_and_load_once() -> None:
+    """1a88774b.2 and .3: with no `.ci` on sys.path the package is not importable, so `_seams()` loads `quality/seams.py` by path, and a second call returns the same module rather than executing another copy."""
+    code = (
+        "import importlib.util, sys\n"
+        "spec = importlib.util.spec_from_file_location('_rt', %r)\n"
+        "rt = importlib.util.module_from_spec(spec)\n"
+        "spec.loader.exec_module(rt)\n"
+        "assert rt._SEAMS is None, 'the package was importable; the by-file path is not exercised'\n"
+        "first, second = rt._seams(), rt._seams()\n"
+        "assert first is second, 'a second call executed another copy of seams.py'\n"
+        "assert first.__name__ == '_runtmp_seams', first.__name__\n"
+        "print(rt.shallow_root())\n"
+    ) % str(CI_DIR / "rediacc_ci" / "runtmp.py")
+    out = subprocess.run(
+        [sys.executable, "-I", "-c", code],
+        capture_output=True,
+        stdin=subprocess.DEVNULL,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert out.returncode == 0, out.stderr
+    assert out.stdout.strip() == str(runtmp.shallow_root())
+
+
+def test_python_sweep_removes_a_dead_typescript_run_dir(tmp_path: pathlib.Path) -> None:
+    _sweep_removes_a_killed_typescript_dir(tmp_path)
+
+
+def test_planted_defect_a_disabled_sweep_fails_the_sweep_check(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 1380b03b.1: the same check, with the sweep disabled, must fail, and the SIGKILLed dir must stay behind."""
+    monkeypatch.setattr(runtmp, "sweep_dead", lambda *_a, **_k: [])
+    # Review 497fd9e8.3: the failure must be the sweep check's own message, so an unrelated assertion (the 'SIGKILL left nothing' precondition) cannot satisfy it.
+    with pytest.raises(AssertionError, match="the sweep did not remove the dead dir"):
+        _sweep_removes_a_killed_typescript_dir(tmp_path)
+    assert [p for p in tmp_path.iterdir() if p.name.startswith("runtmp-ts-")]
+
+
+def test_a_sigterm_typescript_child_with_the_hook_leaves_nothing(tmp_path: pathlib.Path) -> None:
+    child = _ts_child(tmp_path, tmp_path, "hooked")
+    made = _ts_run_dir(child)
+    assert made.is_dir()
+    _end(child, signal.SIGTERM)
+    assert not made.exists(), "SIGTERM with installSignalCleanup left the run dir"
+
+
+def test_a_sigterm_typescript_child_without_the_hook_leaves_its_dir_for_the_sweep(
+    tmp_path: pathlib.Path,
+) -> None:
+    child = _ts_child(tmp_path, tmp_path, "unhooked")
+    made = _ts_run_dir(child)
+    _end(child, signal.SIGTERM)
+    assert made.is_dir(), (
+        "the unhooked control no longer leaves a dir, so the hooked case proves nothing"
+    )
+    assert runtmp.sweep_dead("runtmp-ts-", str(tmp_path)) == [str(made)]

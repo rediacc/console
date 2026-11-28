@@ -10,9 +10,12 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
+
+import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.quality import plan_lifecycle as PL
@@ -36,9 +39,22 @@ def _git(repo: pathlib.Path, *args: str, when: str | None = None) -> str:
     return result.out
 
 
+# PLAN-ciquick-cpu.md W17. Every fixture-tree run skips the gate's pre-verdict `selftest()` (`harness.without_controls`): this file drives the entry point about fifty times, and each run used to repeat the same controls. `test_selftest_alone_is_green` and `test_the_controls_run_before_the_verdict` still run them, and check:ci-plan-folders runs them first on every CI run.
+def _fixture_argv(*argv: str) -> list[str]:
+    return harness.without_controls([sys.executable, str(GATE), *argv])
+
+
 def _gate(root: pathlib.Path, *argv: str) -> harness.RunResult:
     env = {"PLAN_FOLDERS_ROOT": str(root)}
-    return harness.run([sys.executable, str(GATE), *argv], cwd=paths.repo_root(), env=env)
+    return harness.run(_fixture_argv(*argv), cwd=paths.repo_root(), env=env)
+
+
+# The bare real-tree run is a read two cases share, so it runs once per session (`harness.run_once`) with its controls, as CI runs it; the two cases share an xdist group so the once is real.
+REAL_TREE = pytest.mark.xdist_group("plan-folders-real-tree")
+
+
+def _real_tree() -> harness.RunResult:
+    return harness.run_once([sys.executable, str(GATE)], cwd=paths.repo_root())
 
 
 def _write(root: pathlib.Path, rel: str, text: str) -> None:
@@ -90,16 +106,37 @@ def test_the_subject_exists_and_is_executable(gate):
 # --------------------------------------------------------------------------- The real tree.
 
 
+@REAL_TREE
 def test_the_real_tree_passes_and_says_what_it_counted(gate):
-    result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
+    result = _real_tree()
     gate.assert_exit(0, result, "the real tree must be green with F1 fatal")
     gate.assert_contains(result.out, "✓ plan folders:", "the success line names the corpus")
     gate.assert_contains(result.out, "Blind spot:", "a green says what it did not check")
+    # Review b8e0d3ab.1: the counts in the success line are read, so a green that scanned nothing (or stopped naming the held plans) is a red here.
+    counted = re.search(r"✓ plan folders: (\d+) plan\(s\) and (\d+) stub\(s\)", result.out)
+    if counted is None:
+        gate.log_fail("the success line does not carry the plan and stub counts: %r" % result.out)
+    elif int(counted.group(1)) < 1:
+        gate.log_fail(
+            "the success line counted %s plans, so the scan saw no tree" % counted.group(1)
+        )
+    held = re.search(r"(\d+) past-retention plan\(s\) held by a live citation", result.out)
+    if held is None:
+        gate.log_fail(
+            "the success line does not carry the held-by-citation count (zero is printed too): %r"
+            % result.out
+        )
+    elif result.out.count("F3-held ") != int(held.group(1)):
+        gate.log_fail(
+            "the success line says %s plans are held but %d F3-held lines were printed"
+            % (held.group(1), result.out.count("F3-held "))
+        )
     gate.log_pass("the real tree passes and reports its corpus")
 
 
+@REAL_TREE
 def test_the_controls_run_before_the_verdict(gate):
-    result = harness.run([sys.executable, str(GATE)], cwd=paths.repo_root())
+    result = _real_tree()
     gate.assert_contains(
         result.out, "controls first, then the verdict", "controls are not optional"
     )
@@ -214,6 +251,101 @@ def test_a_finished_plan_in_the_active_folder_is_fatal(gate, tmp_path):
     gate.log_pass("F2 fires on a folder that disagrees with the status")
 
 
+_HELD_REL = "agent/plans/PLAN-held.md"
+_HELD = "# PLAN: held\nStatus: done -- every box ticked\nFirst-Seen: 2026-10-01\n\n- [x] a box\n"
+
+
+def _store_item(root: pathlib.Path, iid: str, text: str, state: str = " ") -> None:
+    """A committed worklist store holding one item `iid`, added open and then set to `state`."""
+    events = [
+        {
+            "ev": "add",
+            "id": iid,
+            "at": "2026-10-01T00:00:00Z",
+            "by": "d00d0000",
+            "s": " ",
+            "o": "d00d0000",
+            "t": "(d00d0000) %s" % text,
+            "ns": 1,
+        }
+    ]
+    if state != " ":
+        events.append(
+            {
+                "ev": "state",
+                "id": iid,
+                "at": "2026-10-01T00:01:00Z",
+                "by": "d00d0000",
+                "s": state,
+                "note": "evidence",
+                "ns": 2,
+            }
+        )
+    _write(root, "agent/worklist/d00d0000.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "store item")
+
+
+def test_a_finished_plan_an_open_item_binds_is_held_not_f2(gate, tmp_path):
+    """The 2026-11-22 contradiction, control first. F2 demands `--move` into _done/, and `--move` refuses a plan an open item binds, so a peer's open item left 17 all-ticked plans with no `Status:` both gates accept. The twin with no item stays fatal F2; the held plan exits 0 and is still printed, naming the item; ticking the item makes F2 fatal again."""
+    control = _seed(tmp_path / "control", {_HELD_REL: _HELD})
+    result = _gate(control)
+    gate.assert_exit(1, result, "the control: an unbound finished plan in agent/plans/ is F2")
+    gate.assert_contains(result.err, "F2 %s" % _HELD_REL, "the control names the file")
+
+    root = _seed(tmp_path / "bound", {_HELD_REL: _HELD})
+    _store_item(root, "82ec5326", "LP-bench proof for PLAN-held.md")
+    moved = _gate(root, "--move", _HELD_REL)
+    gate.assert_exit(1, moved, "the mover refuses the bound plan, so F2's fix is unavailable")
+    held = _gate(root)
+    gate.assert_exit(0, held, "a gate never demands a move the mover refuses")
+    gate.assert_not_contains(held.err, "F2 %s" % _HELD_REL, "the held plan is not a finding")
+    gate.assert_contains(held.out, "F2-held %s" % _HELD_REL, "the held plan stays visible")
+    gate.assert_contains(held.out, "#82ec5326", "the advisory names the binding item")
+    gate.assert_contains(held.out, "1 finished plan(s) held", "the success line counts it")
+
+    _store_item(root, "82ec5326", "LP-bench proof for PLAN-held.md", state="x")
+    cleared = _gate(root)
+    gate.assert_exit(1, cleared, "once the binding clears, F2 is fatal again")
+    gate.assert_contains(cleared.err, "F2 %s" % _HELD_REL, "and names the file")
+    gate.log_pass("F2 holds exactly while the mover's own binding check refuses the move")
+
+
+def test_a_writing_verb_refuses_when_the_root_override_is_refused(gate, tmp_path):
+    """review b49f597f.2: `PLAN_FOLDERS_ROOT` naming a path `seams` refuses (the repository itself, outside the system temp base) falls back to the repository, which a writing verb must not touch: exit 2 naming the variable. The verb names a plan that does not exist, so the run writes nothing even if the refusal were removed. The twin, the same verb at a honoured scratch root, never prints that refusal."""
+    verb = ("--move", "agent/plans/PLAN-does-not-exist.md")
+    env = {"PLAN_FOLDERS_ROOT": str(paths.repo_root())}
+    refused = harness.run(_fixture_argv(*verb), cwd=paths.repo_root(), env=env)
+    gate.assert_exit(2, refused, "an ignored root plus a writing verb must refuse")
+    gate.assert_contains(refused.err, "names a tree this run may not use", "the refusal says why")
+    gate.assert_contains(refused.err, "PLAN_FOLDERS_ROOT", "the refusal names the variable")
+    twin = _gate(_seed(tmp_path, {}), *verb)
+    gate.assert_eq(
+        "names a tree this run may not use" in twin.combined,
+        False,
+        "a honoured root is not refused",
+    )
+    gate.log_pass("a writing verb under a refused root override exits 2 and writes nothing")
+
+
+def test_the_move_refusal_offers_plan_revive_only_for_a_record(gate, tmp_path):
+    """`worklist.py --plan-revive` refuses anything but a compacted or parked record, so the refusal of a plain plan must not offer it. The twin, a compacted record, keeps the line. The twin, a record, sits in _done/ where a compacted plan lives; the mover reaches every plan's bindings through `_binding_refusal`, whatever its folder."""
+    record_rel = "agent/plans/_done/PLAN-rec.md"
+    record = "# PLAN: rec\nStatus: compacted\nFirst-Seen: 2026-10-01\n\n## Boxes\n"
+    root = _seed(tmp_path, {_HELD_REL: _HELD, record_rel: record})
+    _store_item(root, "82ec5326", "proof for PLAN-held.md and PLAN-rec.md")
+    plain = _gate(root, "--move", _HELD_REL)
+    gate.assert_exit(1, plain, "the bound plain plan is refused")
+    gate.assert_contains(plain.err, "PLAN-held.md is bound by 1 thing(s)", "the refusal names it")
+    gate.assert_not_contains(plain.err, "--plan-revive", "a plain plan is never sent to revive")
+    rec = _gate(root, "--move", record_rel)
+    gate.assert_exit(1, rec, "the bound record is refused")
+    gate.assert_contains(
+        rec.err, "--plan-revive <me> PLAN-rec.md", "a record keeps the revive exit"
+    )
+    gate.log_pass("the revive exit appears only where --plan-revive accepts the plan")
+
+
 def test_a_terminal_plan_past_its_retention_is_fatal(gate, tmp_path):
     root = _seed(
         tmp_path,
@@ -224,6 +356,34 @@ def test_a_terminal_plan_past_its_retention_is_fatal(gate, tmp_path):
     gate.assert_exit(1, result, "a terminal plan past 40 days is a finding")
     gate.assert_contains(result.err, "F3 agent/plans/_done/PLAN-gone.md", "F3 names the file")
     gate.log_pass("F3 reads moved_at out of the ledger and fires past the retention")
+
+
+def test_a_cited_terminal_plan_past_its_retention_is_held_not_f3(gate, tmp_path):
+    """The 2026-11-25 contradiction, control first. F3 named `--sweep --write` as the fix and the sweep KEEPS a plan live code cites, so the real tree could never go green. The uncited twin stays fatal F3 and is the one the sweep deletes; the cited plan is an `F3-held` advisory naming the citing path, and the success line counts it."""
+    cited, free = "agent/plans/_done/PLAN-cited.md", "agent/plans/_done/PLAN-free.md"
+    body = "# PLAN: %s\nStatus: done\nFirst-Seen: 2024-01-01\n"
+    root = _seed(tmp_path)
+    when = "2024-02-01T12:00:00+00:00"  # F6 reads the author date of the move against moved_at
+    _write(root, cited, body % "cited")
+    _write(root, "tools/helper.py", "x = 1\n# see PLAN-cited for why\n")
+    _ledger(root, {cited: {"moved_at": "2024-02-01"}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "move the cited plan", when=when)
+    held = _gate(root)
+    gate.assert_exit(0, held, "a gate never demands a deletion the sweep refuses")
+    gate.assert_not_contains(held.err, "F3 %s" % cited, "the cited plan is not a finding")
+    gate.assert_contains(held.out, "F3-held %s" % cited, "the held plan stays visible")
+    gate.assert_contains(held.out, "tools/helper.py:2", "the advisory names the citing path")
+    gate.assert_contains(held.out, "1 past-retention plan(s) held by a live citation", "counted")
+    _write(root, free, body % "free")
+    _ledger(root, {cited: {"moved_at": "2024-02-01"}, free: {"moved_at": "2024-02-01"}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "add an uncited aged plan", when=when)
+    control = _gate(root)
+    gate.assert_exit(1, control, "control: an uncited aged plan is still fatal F3")
+    gate.assert_contains(control.err, "F3 %s" % free, "control: F3 names the uncited plan")
+    gate.assert_not_contains(control.err, "F3 %s" % cited, "the cited one stays held beside it")
+    gate.log_pass("F3 is held for a cited plan and fatal for an uncited one")
 
 
 def test_a_stub_pointing_at_nothing_is_fatal(gate, tmp_path):
@@ -475,9 +635,7 @@ def test_sweep_aborts_and_keeps_the_plan_when_git_grep_fails(gate, tmp_path):
     root, rel = _citer_fixture(tmp_path)
     env = _grep_stub(tmp_path, 2)
     env["PLAN_FOLDERS_ROOT"] = str(root)
-    result = harness.run(
-        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
-    )
+    result = harness.run(_fixture_argv("--sweep", "--write"), cwd=paths.repo_root(), env=env)
     gate.assert_exit(1, result, "a failing git grep is the handled exit 1, not an uncaught crash")
     gate.assert_not_contains(result.err, "Traceback", "the abort is handled, not an uncaught crash")
     gate.assert_contains(result.err, "nothing was deleted", "the abort says nothing was deleted")
@@ -490,9 +648,7 @@ def test_sweep_treats_git_grep_rc1_as_no_citer(gate, tmp_path):
     root, rel = _citer_fixture(tmp_path)
     env = _grep_stub(tmp_path, 1)
     env["PLAN_FOLDERS_ROOT"] = str(root)
-    result = harness.run(
-        [sys.executable, str(GATE), "--sweep", "--write"], cwd=paths.repo_root(), env=env
-    )
+    result = harness.run(_fixture_argv("--sweep", "--write"), cwd=paths.repo_root(), env=env)
     gate.assert_exit(0, result, "control: rc 1 is a clean no-match")
     gate.assert_eq((root / rel).exists(), False, "control: the uncited plan is swept")
     gate.log_pass("git grep rc 1 still sweeps an uncited plan")
@@ -1071,12 +1227,7 @@ def test_a_contended_retirement_keeps_the_moves_success(gate, tmp_path, monkeypa
         },
     )
     _ledger(root, {"agent/plans/PLAN-closing.md": {"status": "done", "open": 0, "done": 1}})
-    monkeypatch.syspath_prepend(str(GATE.parent))  # its `import _cipath` sits beside it
-    spec = importlib.util.spec_from_file_location("cpf_under_test", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = importlib.import_module("rediacc_ci.quality.plan_folders")
     pq = mod._planqueue()
 
     def busy(_root, _rels=None):

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Ported from `.ci/scripts/ci/check-rerun-attempt.sh` (48 lines), which W7 P5 batch B5 retired once `.ci/shadow/w7p6-check-rerun-attempt.observations.jsonl` asserted equivalence over five distinct trees.
+"""Ported from `.ci/scripts/ci/check-rerun-attempt.sh` (48 lines), which W7 P5 batch B5 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 The dumb, deterministic backstop under the AI-driven watchdog: read the run's current attempt and refuse to rerun at or past the cap. The exported name is `WATCHDOG_SKIP_RERUN` because that is the CONSUMER's spelling, read by `watchdog-monitor.cjs`.
 
-`.github/workflows/ops-watchdog-monitor.yml` runs this module. Ledger assertion: `npx tsx scripts/lib/shadow-gate.ts --pair w7p6-check-rerun-attempt --assert --k 5`.
+`.github/workflows/ops-watchdog-monitor.yml` runs this module. Ledger assertion: the shadow gate (commit:bf054adcd4).
 
 -----------------------------------------------------------------------------
 DEFECT A -- THE TWIN EXITS 1 ON ITS OWN HAPPY PATH WHEN `GITHUB_ENV` IS UNSET

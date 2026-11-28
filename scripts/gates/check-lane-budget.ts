@@ -298,8 +298,15 @@ export interface JobP90Seed {
   minutes: number;
   derivation: string;
 }
-// Every seed so far is now measured in job_p90_minutes (the 2026-11-15 refresh); a new call site with no measured run adds one here with its derivation and ruling.
-export const JOB_P90_SEEDS: readonly JobP90Seed[] = [];
+// The 2026-11-15 refresh measured every earlier seed; a new call site with no measured run adds one here with its derivation and ruling.
+export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
+  {
+    label: 'Quality / Content receipt',
+    minutes: 0.4,
+    derivation:
+      'box #a2ae6f1c (PLAN-two-track-merge-dev R3; the signer split of review f1c7c026, worklist #064f9dfc) moved the attest and upload of the CI receipt out of quality-content into quality-content-receipt, which checks out nothing and runs three action steps on one small file. Each priced at the worst measured duration of the same action on ubuntu-latest in ci.yml push runs 45038672967 and 45046811704 (Actions jobs API steps): Set up job 3 s (Stage Artifacts job 137288685117; 1 to 3 s across Quality / Go, Initialize, Stage Artifacts), download-artifact of a small file 3 s (Stage Artifacts "Download www build" 3 s; "Download CLI npm tarball" and "Download json build" 0 to 1 s), attest-build-provenance 12 s (Stage Artifacts "Attest staging release artifact", 11 s and 12 s over a whole dist tree; 2 s for "Attest staging repos artifact"), upload-artifact of a small file 2 s ("Upload CLI manifest for the CD artifact-version assertion" 1 to 2 s; the Tests + Infra / Renet (go) uploads 1 to 2 s), Complete job 0 s: 20 s = 0.34m, rounded up to 0.4',
+  },
+];
 
 /** The samples check 2 judges one call site by: its measured display names, or, when it has none, the seeds its pattern matches. */
 export function samplesWithSeeds(
@@ -1070,6 +1077,21 @@ export function gateStepLanePricing(
 /** A leg's identity: sha256 over its unit ids joined by newlines, first 16 hex. `leg_plan_hash` in `.ci/rediacc_ci/ci/budget_report.py` computes the same, and both selftests pin one literal. Pure. */
 export function legPlanHash(ids: readonly string[]): string {
   return createHash('sha256').update(ids.join('\n')).digest('hex').slice(0, 16);
+}
+
+/**
+ * The one leg of a quality lane with no committed manifest: its step lock entries, in lock order. Its `legPlanHash` is what `job_p90_plans` names when it traces a whole-job p90 (a lane split re-packs this leg the way a rebalance re-packs a sharded one). Pure.
+ */
+export function shardOfOneLeg(
+  lock: readonly { id: string; ci: { kind: string; job?: string } }[],
+  lane: string
+): { index: number; ids: string[] }[] {
+  return [
+    {
+      index: 1,
+      ids: lock.filter((e) => e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id),
+    },
+  ];
 }
 
 /**
@@ -2623,7 +2645,8 @@ async function main(): Promise<number> {
   const measuredLegFindings = (
     lane: string,
     of: number,
-    legs?: readonly { index: number; ids: readonly string[] }[]
+    // Required, not optional: a call that leaves the legs out judges a measurement taken before a lane split as today's, and the compiler refuses that spelling. A lane with no committed legs passes `undefined` on purpose.
+    legs: readonly { index: number; ids: readonly string[] }[] | undefined
   ): number => {
     const byLeg = new Map<number, JobSample[]>();
     for (const sample of samplesFor(lane)) {
@@ -2744,7 +2767,7 @@ async function main(): Promise<number> {
       const legs = contiguousLegs(ids, sizes, sizes.length);
       const worst = priceLegs(lane, job, legs, sizes.length, fixedMinutes, defaultUnitMs, parallel);
       priced.add(job);
-      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, sizes.length)));
+      worstLegPerLane.push(Math.max(worst, measuredLegFindings(job, sizes.length, undefined)));
       continue;
     }
     if (Object.prototype.hasOwnProperty.call(SHARD_COUNTS, lane)) {
@@ -2754,14 +2777,16 @@ async function main(): Promise<number> {
       );
       continue;
     }
-    const laneIds = lock.filter((e) => e.ci.kind === 'step' && e.ci.job === lane).map((e) => e.id);
+    const soloLeg = shardOfOneLeg(lock, lane);
+    const laneIds = soloLeg[0].ids;
     // A lane with zero lock entries and no manifest (quality-submodule-branches) has no units to price; it falls through to check 2's job-level set below rather than vanishing.
     if (laneIds.length === 0) continue;
     priced.add(lane);
     worstLegPerLane.push(
       Math.max(
         priceLeg(lane, 1, 1, laneIds, fixedMinutes, defaultUnitMs, parallel),
-        measuredLegFindings(lane, 1)
+        // The shard of one is a leg like any other, so a whole-job p90 measured before a lane split (job_p90_plans traced it to a leg that no longer ships) is set aside and printed, never judged as today's.
+        measuredLegFindings(lane, 1, soloLeg)
       )
     );
     findings.push(
@@ -3803,6 +3828,37 @@ async function selftest(): Promise<number> {
         measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], undefined) &&
         measuredThisLeg('Q / Pytest (3/3)', ['pytest:a.py'], {}) &&
         measuredThisLeg('Q / Pytest (3/3)', undefined, { 'Q / Pytest (3/3)': ['x'] }),
+    },
+    {
+      name: 'SETS ASIDE (shard of one): a whole-job p90 traced to the lane before a split moved a gate out is not judged as the lane today',
+      ok: (() => {
+        const before = [
+          { id: 'g:a', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:heavy', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:other', ci: { kind: 'step', job: 'q-code' } },
+        ];
+        const after = [before[0], { id: 'g:heavy', ci: { kind: 'step', job: 'q-new' } }, before[2]];
+        const traced = { 'Q / Go': [legPlanHash(shardOfOneLeg(before, 'q-go')[0].ids)] };
+        return (
+          shardOfOneLeg(before, 'q-go')[0].ids.join() === 'g:a,g:heavy' &&
+          !measuredThisLeg('Q / Go', shardOfOneLeg(after, 'q-go')[0].ids, traced)
+        );
+      })(),
+    },
+    {
+      name: 'COUNTS (shard of one): the same trace still judges an unsplit lane, and an untraced lane is judged as today',
+      ok: (() => {
+        const lock = [
+          { id: 'g:a', ci: { kind: 'step', job: 'q-go' } },
+          { id: 'g:heavy', ci: { kind: 'step', job: 'q-go' } },
+        ];
+        const ids = shardOfOneLeg(lock, 'q-go')[0].ids;
+        return (
+          measuredThisLeg('Q / Go', ids, { 'Q / Go': [legPlanHash(ids)] }) &&
+          measuredThisLeg('Q / Go', ids, {}) &&
+          shardOfOneLeg(lock, 'q-none')[0].ids.length === 0
+        );
+      })(),
     },
     {
       name: 'CONTROL (live): job_p90_plans traces at least one measured leg to a leg committed today, so the record is not setting every measurement aside',

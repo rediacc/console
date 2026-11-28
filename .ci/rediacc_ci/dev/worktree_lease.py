@@ -12,25 +12,35 @@ from __future__ import annotations
 import contextlib
 import datetime
 import fcntl
+import hashlib
 import importlib
 import json
 import os
 import pathlib
 import re
 import shlex
+import shutil
 import signal
+import stat
 import subprocess
 import sys
+import tempfile
 import time
 from typing import NamedTuple
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import host_slots
+from rediacc_ci.dev import worktree_land_run
 from rediacc_ci.dev import worktree_spike as spike
+from rediacc_ci.release import release_notes
 
 BASE_BRANCH = "main"
 RECORD_DIR = "rediacc-worktrees"
 SEED_ENTRY = pathlib.PurePath("scripts", "ci-runner", "lease-seed.ts")
 TSX = pathlib.PurePath("node_modules", ".bin", "tsx")
+# The seed's hold on the machine-wide core pool (host_slots, PR-TASK 79b7e92e). A writer wave spawns up to ten leases in one message, and ten seeds syncing dependencies and building packages at once were part of the load 134 on 24 cores of 2026-11-24. Two cores per seed lets a wave seed in parallel without taking the machine. The wait is bounded: past it the seed runs anyway and says so, because a long ci:quick holding the pool must not stall a lease for its whole run.
+SEED_SLOTS = 2
+SEED_SLOT_WAIT_S = 120.0
 # A link is not a directory, so a `.venv/` ignore rule misses it. These stay anchored, because a linked tree reads the main checkout's info/exclude.
 EXCLUDE_LINES = ("/.ci/cache/toolchain", "/.ci/cache/bin", "/.venv")
 ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
@@ -38,6 +48,12 @@ GITLINK_MODE = "160000"
 CONSOLE = "."
 DEFAULT_OWNER = "cli"
 SHOWN_ESCAPES = 5
+# Decimal, the unit the refusal message prints as GB and the one LEASE_ESTIMATE_BYTES is stated in.
+GB = 10**9
+# Measured 2026-11-23 on the live seeded trees: `du -sk` of a second lease after a first one (hard links counted once) is 4271856 KiB, the disk one more lease adds. Rounded up.
+LEASE_ESTIMATE_BYTES = 4_400_000_000
+# What stays free after the new lease, besides room for one more: the 12 spawns of 2026-11-23 filled the disk and every seed failed with ENOSPC (#24f87180). Ten decimal GB: bef569ed lowered this from 10 GiB (10.74 GB) so the printed floor equals the enforced one; the lowering is deliberate, and the 4.4 GB estimate is itself rounded up.
+FREE_FLOOR_BYTES = 10 * GB
 # The two trees a lease is cut from (PLAN-two-track-merge-dev LT16), spelled as commit_policy's ROLE_DEVELOPMENT and ROLE_LANDING: the main checkout's live branch, or the branch the landing record binds.
 TREE_DEVELOPMENT = "development"
 TREE_LANDING = "landing"
@@ -68,7 +84,7 @@ class LeaseRefusedError(RuntimeError):
 
 @contextlib.contextmanager
 def _locked(records):
-    """One lease at a time through the cap and the name, so same-message spawns cannot both take the last slot."""
+    """One lease at a time through the name, so same-message spawns cannot both take one id."""
     records.mkdir(parents=True, exist_ok=True)
     with (records / ".lock").open("w", encoding="utf-8") as handle:
         fcntl.flock(handle, fcntl.LOCK_EX)
@@ -186,30 +202,109 @@ def _add_exclude_lines(git_dir):
             handle.write("%s%s\n" % (lead, "\n".join(missing)))
 
 
+def _free_bytes(path):
+    vfs = os.statvfs(path)
+    return vfs.f_bavail * vfs.f_frsize
+
+
+DU_TIMEOUT = 20
+
+
+def _du_bytes(path):
+    """Size of `path` in bytes by `du -sk`, or None when it is absent, unreadable or measured past DU_TIMEOUT."""
+    if not os.path.lexists(path):
+        return None
+    try:
+        done = subprocess.run(
+            ["du", "-sk", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=DU_TIMEOUT,
+            check=False,
+        )
+        if done.returncode != 0:
+            return None
+        return int(done.stdout.split()[0]) * 1024
+    except (OSError, subprocess.SubprocessError, ValueError, IndexError):
+        return None
+
+
+def _docker_images_size():
+    """The `docker system df` Images row as `<size> (<reclaimable> reclaimable)`, or None when docker does not answer in time."""
+    try:
+        done = subprocess.run(
+            ["docker", "system", "df", "--format", "{{.Type}}|{{.Size}}|{{.Reclaimable}}"],
+            capture_output=True,
+            text=True,
+            timeout=DU_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    for line in done.stdout.splitlines():
+        kind, _, rest = line.partition("|")
+        if kind == "Images":
+            size, _, reclaimable = rest.partition("|")
+            return "%s (%s reclaimable)" % (size, reclaimable)
+    return None
+
+
+def reclaim_sources(root, du=_du_bytes, docker=_docker_images_size):
+    """One line per disk source worth freeing, with its size and the safe command; a source that cannot be measured says so. `du` and `docker` are the measuring seams."""
+    home = pathlib.Path(os.path.expanduser("~"))
+    gocache = pathlib.Path(os.environ.get("GOCACHE") or home / ".cache" / "go-build")
+
+    def size(path):
+        found = du(path)
+        return "%.1f GB" % (found / GB) if found is not None else "size not measured"
+
+    images = docker()
+    return [
+        "%s: lease trees, landed ones only: `./run.sh worktree gc --write`"
+        % size(root / spike.HOLDER),
+        "%s: release:local clones, records and out dirs (`%s`): `PYTHONPATH=.ci python3 -m rediacc_ci.release.cache_prune`; a root-owned path it cannot delete is printed with its `sudo rm -rf` line"
+        % (size(root / ".ci" / "cache" / "release"), ".ci/cache/release"),
+        "%s: Go build cache (%s): `go clean -cache`, only while no writer is building"
+        % (size(gocache), gocache),
+        "%s: Docker images: `docker image prune -a --filter until=168h`"
+        % (images or "size not measured"),
+        "%s: `~/.cache/rediacc`: inspect `du -sh ~/.cache/rediacc/*` and delete what a re-run recreates"
+        % size(home / ".cache" / "rediacc"),
+    ]
+
+
+def _check_disk(root, sources=reclaim_sources):
+    """Refuse a lease that would leave less than FREE_FLOOR_BYTES plus one more lease free on the worktree filesystem. Runs before anything is created, so a refusal leaves nothing behind."""
+    free = _free_bytes(root)
+    needed = FREE_FLOOR_BYTES + 2 * LEASE_ESTIMATE_BYTES
+    if free < needed:
+        message = (
+            "only %.1f GB free on the worktree filesystem; a lease costs about %.1f GB and %.1f GB must stay free after it (the %.1f GB floor plus room for one more lease). Reclaimable sources (`./run.sh worktree gc --write` alone often frees nothing):\n  - %s"
+            % (
+                free / GB,
+                LEASE_ESTIMATE_BYTES / GB,
+                (needed - LEASE_ESTIMATE_BYTES) / GB,
+                FREE_FLOOR_BYTES / GB,
+                "\n  - ".join(sources(root)),
+            )
+        )
+        raise LeaseRefusedError(message)
+
+
 def _reserve(root, name, owner):
-    """Under the lock: the cap, the id, and the empty directory that holds the slot."""
+    """Under the lock: the id, and the empty directory that claims it. No count of trees on disk refuses a lease (agent/plans/PLAN-unlimited-writers.md); `gc` collects the landed ones."""
     holder = root / spike.HOLDER
     git_dir = root / ".git"
     records = git_dir / RECORD_DIR
     with _locked(records):
         holder.mkdir(parents=True, exist_ok=True)
         trees = trees_on_disk(holder)
-        cap = _hook_module("wl_roster").writer_cap(root)
-        if len(trees) >= cap:
-            message = (
-                "%d tree(s) on disk at writer_cap %d: land the finished ones, then ./run.sh worktree gc"
-                % (
-                    len(trees),
-                    cap,
-                )
-            )
-            raise LeaseRefusedError(message)
         lease_id = name or _next_id(owner, trees, records)
         path = holder / lease_id
         if os.path.lexists(path) or (records / ("%s.json" % lease_id)).exists():
             message = "lease %s already exists" % lease_id
             raise LeaseRefusedError(message)
-        # The directory comes last: no `try` covers this function, and an empty one left behind holds a slot `trees_on_disk` counts.
+        # The directory comes last: no `try` covers this function, and an empty one left behind holds an id `_next_id` skips.
         _add_exclude_lines(git_dir)
         path.mkdir()
     return lease_id, path
@@ -223,6 +318,18 @@ def _add_tree(store, path, sha, lease_id):
     )
 
 
+def _seed_process(argv, code, env):
+    return subprocess.run(
+        argv,
+        cwd=str(code),
+        env=env,
+        stdin=subprocess.DEVNULL,
+        stdout=sys.stderr,
+        check=False,
+        timeout=spike.GIT_TIMEOUT,
+    )
+
+
 def _run_seed(path, root, tip):
     code = paths.CI_DIR.parent
     tsx, entry = code / TSX, code / SEED_ENTRY
@@ -231,15 +338,23 @@ def _run_seed(path, root, tip):
             message = "the seed needs %s" % needed
             raise LeaseRefusedError(message)
     env = {k: v for k, v in os.environ.items() if k not in spike.SCRUBBED_ENV}
-    done = subprocess.run(
-        [str(tsx), str(entry), str(path), str(root), tip],
-        cwd=str(code),
-        env=env,
-        stdin=subprocess.DEVNULL,
-        stdout=sys.stderr,
-        check=False,
-        timeout=spike.GIT_TIMEOUT,
-    )
+    argv = [str(tsx), str(entry), str(path), str(root), tip]
+    label = "lease seed %s" % pathlib.Path(path).name
+    with contextlib.ExitStack() as stack:
+        try:
+            cores = stack.enter_context(
+                host_slots.host_slot(SEED_SLOTS, label=label, timeout=SEED_SLOT_WAIT_S)
+            )
+            run_env = {**env, **cores.env}
+        except TimeoutError:
+            print(
+                "worktree lease: no %d free core slot(s) within %ds; %s runs unthrottled"
+                % (SEED_SLOTS, SEED_SLOT_WAIT_S, label),
+                file=sys.stderr,
+                flush=True,
+            )
+            run_env = env
+        done = _seed_process(argv, code, run_env)
     if done.returncode != 0:
         message = "lease-seed.ts exited %d" % done.returncode
         raise LeaseRefusedError(message)
@@ -358,6 +473,71 @@ def _store_of(root, sub):
     return store if store.is_dir() and store != root / ".git" else None
 
 
+def lease_tmp_base():
+    """The directory holding every lease's own temp dir: `/var/tmp/r<uid>`, on disk and short enough for runtmp's DEEP_TMPDIR budget. `REDIACC_LEASE_TMP_BASE` replaces it (the tests; `bash_env.sh` reads the same variable)."""
+    return pathlib.Path(os.environ.get("REDIACC_LEASE_TMP_BASE") or "/var/tmp/r%d" % os.getuid())
+
+
+def lease_tmpdir(lease_id):
+    """The temp dir of a lease: the first 8 characters of its id without the `agent-` prefix, which is the name `bash_env.sh` derives from the cwd."""
+    return lease_tmp_base() / lease_id.removeprefix("agent-")[:8]
+
+
+def _private_dir(path):
+    """Create `path` 0700 unless it exists, then refuse it unless it is a real directory owned by this uid with no group or other bits. Returns True when this call created it. `/var/tmp` is world-writable and sticky, so another local user can plant the name first, as a symlink or as a directory of theirs; `lstat` never follows the link and no chmod ever runs on what was found."""
+    try:
+        os.mkdir(path, 0o700)
+        created = True
+    except FileExistsError:
+        created = False
+    info = os.lstat(path)
+    if stat.S_ISLNK(info.st_mode):
+        problem = "is a symlink"
+    elif not stat.S_ISDIR(info.st_mode):
+        problem = "is not a directory"
+    elif info.st_uid != os.getuid():
+        problem = "is owned by uid %d, not %d" % (info.st_uid, os.getuid())
+    elif info.st_mode & 0o077:
+        problem = "has mode %o, which lets group or other in" % stat.S_IMODE(info.st_mode)
+    else:
+        return created
+    message = "lease temp dir %s %s, so it is refused" % (path, problem)
+    raise LeaseRefusedError(message)
+
+
+def _make_tmpdir(lease_id):
+    """Create the lease's temp dir and its base 0700, each refused by `_private_dir` when it is not this uid's own, and return `(path, created)`: `created` is False when the dir was there already (a lease whose id shares its first 8 characters), so a rollback leaves it alone."""
+    path = lease_tmpdir(lease_id)
+    path.parent.parent.mkdir(parents=True, exist_ok=True)
+    _private_dir(path.parent)
+    return str(path), _private_dir(path)
+
+
+def _tmpdir_shared(root, tmpdir, lease_id):
+    """True when a record other than `lease_id`'s names `tmpdir`: two ids sharing their first 8 characters (every `<owner>-<n>` lease of one session) share one temp dir, which goes only with the last of them."""
+    return any(
+        record is None or record.get("tmpdir") == tmpdir
+        for stem, record in _read_records(root).items()
+        if stem != lease_id
+    )
+
+
+def _remove_satellites(root, record, path):
+    """Delete the temp a lease owns outside its tree: its temp dir unless another lease's record names it too, its typecheck cache dir and its gen-docs pre-commit scratch (PLAN-host-temp-disposal D9). `record` is the lease record and `path` the tree, both read before the tree went."""
+    doomed = []
+    if record.get("tmpdir") and not _tmpdir_shared(root, record["tmpdir"], record.get("id", "")):
+        doomed.append(record["tmpdir"])
+    munged = str(path).lstrip("/").replace("/", "-")
+    doomed.append(os.path.join(os.path.expanduser("~"), ".cache", "rediacc-typecheck", munged))
+    git_dir = record.get("git_dir", "")
+    if git_dir:
+        key = hashlib.sha1(git_dir.encode("utf-8")).hexdigest()[:12]
+        bases = dict.fromkeys((tempfile.gettempdir(), "/tmp"))
+        doomed.extend(os.path.join(base, "gen-docs-precommit-%s" % key) for base in bases)
+    for entry in doomed:
+        shutil.rmtree(entry, ignore_errors=True)
+
+
 def make_lease(root, *, name="", owner="", agent="", tree=""):
     """Make one tree and return its normalized absolute path. Raises `LeaseRefusedError`, with nothing left behind, when it cannot. `tree` names where it is cut (TREES); "" means the tree `root` sits in."""
     origin = os.path.realpath(root)
@@ -378,6 +558,7 @@ def make_lease(root, *, name="", owner="", agent="", tree=""):
             % (", ".join(absent), " ".join(absent))
         )
         raise LeaseRefusedError(message)
+    _check_disk(root)
     repo = spike.Repo(root, [sub for sub, _ in held])
     lease_id, path = _reserve(root, name, owner)
     # The lease's own handler for the build, then each signal goes back to what the caller had (as _remove_row does): left armed, a caller's later SIGINT raised the lease's InterruptedRunError long after the lease was made.
@@ -407,12 +588,14 @@ def _restore_signal_handlers(before):
 
 
 def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree):
+    tmpdir, made_tmpdir = "", False
     try:
         _add_tree(root, path, tip, lease_id)
         for sub, sha in held:
             _add_tree(repo.store(sub), path / sub, sha, lease_id)
         _run_seed(path, root, tip)
         _verify(path, root, tip, dict(held))
+        tmpdir, made_tmpdir = _make_tmpdir(lease_id)
         _write_record(
             root,
             {
@@ -422,12 +605,15 @@ def _make_lease_armed(root, repo, held, tip, path, lease_id, owner, agent, tree)
                 "agent": agent,
                 "base": {CONSOLE: tip, **dict(held)},
                 "tree": tree,
+                "tmpdir": tmpdir,
                 "cut_from": tree_branch(root, tree),
                 "created_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
             },
         )
     except (OSError, RuntimeError, subprocess.SubprocessError, spike.InterruptedRunError) as exc:
         survived = _rollback(repo, path)
+        if made_tmpdir:
+            shutil.rmtree(tmpdir, ignore_errors=True)
         left = "; left behind: %s" % ", ".join(survived) if survived else ""
         message = "lease %s not made: %s%s" % (lease_id, exc, left)
         raise LeaseRefusedError(message) from exc
@@ -534,9 +720,9 @@ def cmd_pin(args):
 
 
 LAND_HELP = """\
-Usage: ./run.sh worktree land <id> [--ticks [--run]]
+Usage: ./run.sh worktree land <id> [--run [--me <prefix>]] [--ticks [--run]]
 
-Read-only. Check that every unlanded commit of the lease carries a PR-TASK
+Read-only without --run. Check that every unlanded commit of the lease carries a PR-TASK
 trailer and a valid Plan-Box trailer and touches no gitlink and no agent/**
 path, then print the commands that land them, submodules first: the
 cherry-picks (-x, so the source sha is read as landed after a conflict), the
@@ -557,6 +743,21 @@ no investigation row, and a ready --plan-tick line when every clause is landed
 or proved and a row recorded before the work exists. --run writes the
 progress rows and runs only the printed --plan-tick lines; it never writes an
 investigation row. No tick line ever names a lease sha.
+
+--run, without --ticks: execute the printed steps in the main checkout, one
+line per step with its rc. Refused inside a lease and with a staged change.
+Submodule picks, then the gitlink commit (the message names the landed
+submodule shas and the lease, with the PR-TASK and Plan-Box trailers of the
+picked commits), then the console picks one at a time. A conflict confined to
+gen-docs regions takes HEAD's copy, runs `npx tsx scripts/gen/gen-docs.ts
+--write`, adds those paths and continues; any other conflict prints the paths
+and leaves the pick in progress. After the picks, a lane the shard coverage
+gate names is placed with `npm run shard:place` and the gate runs again; a
+lane the gate sends to another verb (`--rebalance`, `gate-bind`) is a stop
+for the lead, printed with the gate's own line. With --me <prefix>, each
+`Fixes-Review: <id>` trailer of a landed commit runs `worklist.py
+--review-mark <prefix> <id> fixed <landed sha>` after the picks, and
+`worklist.py --apply-ticks <prefix> --write` runs.
 """
 AGENT_PREFIX = "agent/"
 TRAILER_KEY = "PR-TASK"
@@ -592,8 +793,8 @@ def _boxes_named(message):
     ]
 
 
-def _problems(tree, sha, root):
-    """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against."""
+def _problems(tree, sha, root, key="."):
+    """What makes `sha` refused for landing, one phrase each. `root` is the main checkout whose plans the Plan-Box trailer is judged against; `key` is the repo of the lease the commit sits in (`.` for the console, else the submodule path), which the Release-Note trailer is judged against (PLAN-release-notes RN3)."""
     found = []
     trailers = spike.must(tree, "show", "-s", "--format=%B", sha)
     parsed = subprocess.run(
@@ -608,12 +809,17 @@ def _problems(tree, sha, root):
     found += _plan_box_problems(root, trailers)
     raw = spike.must(tree, "diff-tree", "-r", "--root", "-m", "--no-commit-id", "--raw", "-z", sha)
     fields = raw.split("\0")
+    changed = []
     for meta, rel in zip(fields[0::2], fields[1::2], strict=False):
         modes = meta.lstrip(":").split()[:2]
+        changed.append(rel)
         if GITLINK_MODE in modes:
             found.append("touches the gitlink %s" % rel)
         if rel.startswith(AGENT_PREFIX):
             found.append("touches %s" % rel)
+    note = release_notes.refusal(trailers, changed, release_notes.CONSOLE if key == "." else key)
+    if note:
+        found.append(note)
     return found
 
 
@@ -676,7 +882,7 @@ def land_plan(root, lease_id, notes=None):
         refused += [
             "%s %s: %s" % (key, sha[:12], ", ".join(why))
             for sha in plan[2]
-            if (why := _problems(plan[0], sha, root))
+            if (why := _problems(plan[0], sha, root, key))
         ]
     if refused:
         raise LeaseRefusedError("; ".join(refused))
@@ -848,12 +1054,21 @@ def tick_report(root, lease_id, me):
         inv = rec.investigation_for(root, rel, box.sig)
         if inv is None:
             pointers = " ".join(
-                x for x in ("commit:%s" % last[:12], _first_path(root, box.picks[-1][0], last)) if x
+                shlex.quote(x)
+                for x in ("commit:%s" % last[:12], _first_path(root, box.picks[-1][0], last))
+                if x
             )
             note = TICKS_NOTE % (box.plan, box.sig, last[:12], lease_id, named)
             lines.append(
                 "  worklist.py --plan-investigate %s %s %s %s %s -- %s --write"
-                % (me, rel, box.sig, "present" if done else "partial", pointers, note)
+                % (
+                    shlex.quote(me),
+                    shlex.quote(rel),
+                    box.sig,
+                    "present" if done else "partial",
+                    pointers,
+                    shlex.quote(note),
+                )
             )
             if not done:
                 lines.append(_owed_line(ids, covered))
@@ -870,7 +1085,8 @@ def tick_report(root, lease_id, me):
             continue
         ticks.append((rel, box.sig, evidence))
         lines.append(
-            "  worklist.py --plan-tick %s %s %s '%s' --write" % (me, rel, box.sig, evidence)
+            "  worklist.py --plan-tick %s %s %s %s --write"
+            % (me, rel, box.sig, shlex.quote(evidence))
         )
     return lines, progress, ticks
 
@@ -936,14 +1152,61 @@ def _cmd_ticks(lease_id, flags):
     return rc
 
 
+def _land_run_plan(root, lease_id):
+    """The `LandPlan` for `--run`, after `land_plan` has refused whatever it refuses."""
+    land_plan(root, lease_id)
+    root = _main_checkout(root)
+    path = root / ".git" / RECORD_DIR / ("%s.json" % lease_id)
+    record = json.loads(path.read_text(encoding="utf-8"))
+    live = _live_dir(root, record)
+    subs, console, messages = [], [], {}
+    for key in [*sorted(k for k in record.get("base", {}) if k != "."), "."]:
+        plan = _repo_plan(root, record, key)
+        if plan is None or not plan[2]:
+            continue
+        for sha in plan[2]:
+            messages[sha] = spike.must(plan[0], "show", "-s", "--format=%B", sha)
+        if key == ".":
+            console = plan[2]
+        else:
+            subs.append((key, live / key, plan[2]))
+    return worktree_land_run.LandPlan(live, lease_id, subs, console, messages)
+
+
+def _say(line):
+    print(line, flush=True)
+
+
+def _cmd_run(lease_id, me):
+    try:
+        plan = _land_run_plan(paths.repo_root(), lease_id)
+        rc = worktree_land_run.execute(plan, emit=_say, me=me)
+        if rc == 0:
+            rc = worktree_land_run.after_picks(plan.live, me, emit=_say)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    return rc
+
+
 def cmd_land(args):
+    me = ""
+    if "--me" in args:
+        at = args.index("--me")
+        me = args[at + 1] if at + 1 < len(args) else ""
+        args = args[:at] + args[at + 2 :]
+        if not me or me.startswith("-"):
+            log.error("--me takes a session id prefix")
+            return 1
     ids = [a for a in args if not a.startswith("-")]
     flags = [a for a in args if a.startswith("-")]
     if len(ids) != 1 or any(f not in ("--ticks", "--run") for f in flags):
-        log.error("land takes one lease id, and --ticks [--run] after the picks")
+        log.error("land takes one lease id, then --run [--me <prefix>] or --ticks [--run]")
         return 1
     if "--run" in flags and "--ticks" not in flags:
-        log.error("--run belongs to --ticks")
+        return _cmd_run(ids[0], me)
+    if me:
+        log.error("--me belongs to --run")
         return 1
     if "--ticks" in flags:
         return _cmd_ticks(ids[0], flags)
@@ -1001,6 +1264,12 @@ commits are landed. `--write --id <id>` exits 1 when that lease was kept.
      unlanded commit must be named, and the reason
      needs at least 20 characters. The waiver is recorded in
      .git/rediacc-worktrees/superseded.jsonl, which the Stop hook reads as landed.
+     A lease sha may be a full sha or any unambiguous prefix of one.
+  --drop <lease-sha> --reason '<why>'  with --write --id only: give up an unlanded
+     commit that a different design replaced or nobody wants any more, so no landed
+     twin exists. Repeatable, mixable with --superseded-by (every unlanded commit
+     must be named by one of the two), and the reason needs at least 20 characters.
+     The drop (sha, subject, reason, UTC time) is recorded in the same ledger.
 """
 RULE_PLACE = "rule 1"
 RULE_LIVE = "rule 2"
@@ -1024,6 +1293,8 @@ class World(NamedTuple):
     listed: dict
     records: dict
     policy: object
+    holds: dict
+    items: list | None
 
 
 class Facts(NamedTuple):
@@ -1081,6 +1352,7 @@ def _read_records(root):
 def _read_world(root):
     """Stores, pins, linked trees and records. A store git cannot read refuses the whole run, since a pin not seen is a pin not judged."""
     watch = _hook_module("wl_worktrees")
+    holds = watch.read_holds(root / ".git")
     stores = dict(watch.stores(root / ".git"))
     pins: dict = {}
     listed = {}
@@ -1102,7 +1374,36 @@ def _read_world(root):
         listed=listed,
         records=_read_records(root),
         policy=spike.load_commit_policy(),
+        holds=holds,
+        items=_read_items(root) if holds else [],
     )
+
+
+def _read_items(root):
+    """The worklist's folded items, or None when they cannot be read (a hold then keeps its tree, since its reason cannot be checked)."""
+    core = _hook_module("wl_core")
+    try:
+        worklist = core.worklist_for(core.project_start({"cwd": str(root)}))
+        return list(_hook_module("wl_store").load(worklist, sync=False).items)
+    except ROSTER_ERRORS:
+        return None
+
+
+def _hold_problem(world, lease_id):
+    """The phrase a hold keeps its tree by, or "" for no hold, a hold whose item is closed (a hold cannot outlive its reason) and a hold the Stop hook does not honour either (`hold_check`: not the full item id, not the owner's)."""
+    hold = world.holds.get(lease_id)
+    if hold is None:
+        return ""
+    if hold.get("broken"):
+        return "its hold record could not be read"
+    if world.items is None:
+        return "held for #%s: %s (the worklist could not be read)" % (hold["item"], hold["reason"])
+    found, _why = _hook_module("wl_worktrees").hold_check(
+        hold, world.items, world.records.get(lease_id) or {}
+    )
+    if found:
+        return "held for #%s: %s" % (hold["item"], hold["reason"])
+    return ""
 
 
 def _is_moved_gitlink(row):
@@ -1527,6 +1828,9 @@ def _judge(world, live, lease_id):
         return GcRow(lease_id, str(path), [place], [], "outside")
     facts = _lease_facts(world, lease_id, path, record)
     why = _in_use(world, live, lease_id, path, record)
+    held = _hold_problem(world, lease_id)
+    if held:
+        why = [held, *why]
     kind = "tree" if os.path.lexists(path) else "gone"
     return GcRow(
         lease_id, str(path), [*why, *facts.problems], facts.subs if kind == "tree" else [], kind
@@ -1580,7 +1884,9 @@ def _remove_row(world, row):
 def _remove_row_held(world, row):
     path = pathlib.Path(row.path)
     holder = world.root / spike.HOLDER
+    record = dict(world.records.get(row.lease_id) or {})
     if row.kind == "tree":
+        record["git_dir"] = spike.out(path, "rev-parse", "--absolute-git-dir").strip()
         _rollback(spike.Repo(world.root, row.subs), path)
     else:
         for key, rows in world.listed.items():
@@ -1601,6 +1907,7 @@ def _remove_row_held(world, row):
         survived += spike.out(store, "for-each-ref", "--format=%(refname)", ref).splitlines()
     if not survived:
         (world.root / ".git" / RECORD_DIR / ("%s.json" % row.lease_id)).unlink(missing_ok=True)
+        _remove_satellites(world.root, record, path)
     return survived
 
 
@@ -1625,6 +1932,16 @@ def _is_dirty_problem(why):
     return why.startswith(RULE_CLEAN + ":") and "uncommitted path(s)" in why
 
 
+def _is_unlanded_problem(why):
+    """Rule 4's phrase for commits no landed commit stands for."""
+    return why.startswith(RULE_LANDED + ":") and "unlanded commit(s)" in why
+
+
+def _rules_of(whys):
+    """The distinct rule names ("rule 2", "rule 4", ...) leading each problem line, in order."""
+    return list(dict.fromkeys(w.split(":", 1)[0] for w in whys))
+
+
 def _unlanded_of(world, lease_id):
     """{repo key: [unlanded shas]} of one lease."""
     path = world.root / spike.HOLDER / lease_id
@@ -1640,21 +1957,75 @@ def _touched(repo, sha):
     return {path for path in done.split("\0") if path}
 
 
-def _resolve_superseded(world, lease_id, pairs, reason):
-    """([ledger rows], problems) for the named commits of `lease_id`: every unlanded commit named once, each landed sha an ancestor of its repo's live tip."""
+def _pick_unlanded(flat, given, lease_id):
+    """((repo key, full sha), problem): the one unlanded commit `given` names, as the full sha or any prefix of it (a bare sha names the only one). An ambiguous prefix is refused with the commits it matches."""
+    given = given.strip().lower()
+    hits = [(k, s) for k, s in flat if not given or s.startswith(given)]
+    if len(hits) == 1:
+        return hits[0], ""
+    if hits:
+        shown = ", ".join(s[:SHA_SHOWN] for _k, s in hits)
+        return None, "%r is ambiguous, it matches %d unlanded commits of %s: %s" % (
+            given,
+            len(hits),
+            lease_id,
+            shown,
+        )
+    return None, "%r names no unlanded commit of %s (a full sha or a prefix of one is accepted)" % (
+        given,
+        lease_id,
+    )
+
+
+def _resolve_superseded(world, lease_id, pairs, reason, drops=()):
+    """([ledger rows], problems) for the named commits of `lease_id`: every unlanded commit named once, each landed sha an ancestor of its repo's live tip. `drops` are lease shas (or prefixes) deliberately given up with no landed twin; each is recorded with its subject and the reason."""
     unlanded = _unlanded_of(world, lease_id)
     flat = [(key, sha) for key, shas in sorted(unlanded.items()) for sha in shas]
     if not flat:
         return [], ["%s holds no unlanded commit, so nothing is superseded" % lease_id]
-    problems, rows, named = [], [], set()
-    if len(pairs) == 1 and not pairs[0][0] and len(flat) > 1:
+    problems, rows, named, refused = [], [], set(), set()
+    if len(pairs) == 1 and not pairs[0][0] and len(flat) > 1 and not drops:
         return [], ["a bare landed sha names one commit, but %s holds %d" % (lease_id, len(flat))]
-    for given, landed in pairs:
-        hits = [(k, s) for k, s in flat if (given and s.startswith(given)) or not given]
-        if len(hits) != 1:
-            problems.append("%r names %d unlanded commits of %s" % (given, len(hits), lease_id))
+    for given in drops:
+        hit, why = _pick_unlanded(flat, given, lease_id)
+        if not given.strip():
+            hit, why = None, "--drop needs a lease sha"
+        if hit is None:
+            problems.append(why)
             continue
-        key, sha = hits[0]
+        key, sha = hit
+        if sha in named:
+            problems.append("unlanded commit %s is named twice" % sha[:SHA_SHOWN])
+            continue
+        named.add(sha)
+        shown = _quiet(world.root / key, "log", "-1", "--format=%s", sha)
+        if shown is None:
+            problems.append(
+                "git log could not read commit %s, so its subject is unknown" % sha[:SHA_SHOWN]
+            )
+            continue
+        subject = shown.strip()
+        rows.append(
+            {
+                "sha": sha,
+                "landed": "",
+                "dropped": True,
+                "subject": subject,
+                "lease": lease_id,
+                "reason": reason,
+                "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            }
+        )
+    for given, landed in pairs:
+        hit, why = _pick_unlanded(flat, given, lease_id)
+        if hit is None:
+            problems.append(why)
+            continue
+        key, sha = hit
+        if sha in named:
+            problems.append("unlanded commit %s is named twice" % sha[:SHA_SHOWN])
+            continue
+        refused.add(sha)
         repo = world.root / key
         record = world.records.get(lease_id)
         if _cut_tree(record) == TREE_LANDING:
@@ -1711,7 +2082,8 @@ def _resolve_superseded(world, lease_id, pairs, reason):
                 }
             )
     for _key, sha in flat:
-        if sha not in named:
+        # A commit whose pair was refused above already has its own problem line.
+        if sha not in named and sha not in refused:
             problems.append("unlanded commit %s is not named" % sha[:SHA_SHOWN])
     return ([] if problems else rows), problems
 
@@ -1754,8 +2126,8 @@ def _ledger_retract(root, rows):
         )
 
 
-def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reason=""):
-    """(rc, lines): the listing, and with `write` the deletion. `discard_dirty` waives the uncommitted paths of the one tree `only` names. `superseded` is [(lease sha or "", landed sha)] naming every unlanded commit of that tree as already landed through another."""
+def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reason="", drop=()):
+    """(rc, lines): the listing, and with `write` the deletion. `discard_dirty` waives the uncommitted paths of the one tree `only` names. `superseded` is [(lease sha or "", landed sha)] naming an unlanded commit of that tree as already landed through another, and `drop` is [lease sha] naming one deliberately given up; together they name every unlanded commit of the tree."""
     root = _main_checkout(root)
     lines = []
     deletable, kept, failed = 0, 0, 0
@@ -1763,14 +2135,18 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
         world = _read_world(root)
         live = _read_live(root, named=bool(only))
         recorded = []
-        if superseded and not write:
-            log.error("--superseded-by records a waiver, so it needs --write")
+        flag = (
+            "/".join(f for f, given in (("--superseded-by", superseded), ("--drop", drop)) if given)
+            or "--drop"
+        )
+        if (superseded or drop) and not write:
+            log.error("%s records a waiver, so it needs --write" % flag)
             return 1, []
-        if superseded:
-            recorded, bad = _resolve_superseded(world, only, list(superseded), reason)
+        if superseded or drop:
+            recorded, bad = _resolve_superseded(world, only, list(superseded), reason, list(drop))
             if bad:
                 for problem in bad:
-                    log.error("--superseded-by refused: %s" % problem)
+                    log.error("%s refused: %s" % (flag, problem))
                 return 1, []
         try:
             # Inside the try (747e14b4.1): a write that fails partway is retracted like a failed removal, so no torn waiver stays active.
@@ -1792,12 +2168,21 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
                             "; ".join(waived),
                             discard_dirty,
                         )
+                if any(r.get("dropped") for r in recorded) and judged.lease_id == only:
+                    # Every unlanded commit of the tree is named by now, and the ledger waives a drop for the Stop hook only through a landed twin, so the dropped ones are lifted off rule 4 here.
+                    row = row._replace(why=[w for w in row.why if not _is_unlanded_problem(w)])
                 if row.why:
                     if recorded:
                         _ledger_retract(root, recorded)
                         recorded = []
                     kept += 1
                     lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
+                    if discard_dirty and judged.lease_id == only:
+                        # The waiver covers the uncommitted-path problem of rule 3 and nothing else, so a tree kept under it is kept by the rules named here.
+                        lines.append(
+                            "  %-6s  %-24s --discard-dirty waives only rule 3's uncommitted paths;"
+                            " kept by %s" % ("NOTE", row.lease_id, ", ".join(_rules_of(row.why)))
+                        )
                     continue
                 survived = _remove_row(world, row) if write else []
                 if survived and recorded:
@@ -1809,16 +2194,23 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
                         waive_line
                         + ("; removal incomplete, part of the tree may be gone" if survived else "")
                     )
-                if recorded:
+                lines.extend(
+                    "  %-6s  %-24s dropped %s %r: %s"
+                    % ("DROP", row.lease_id, done["sha"][:SHA_SHOWN], done["subject"], reason)
+                    for done in recorded
+                    if done.get("dropped")
+                )
+                kept_up = [r for r in recorded if not r.get("dropped")]
+                if kept_up:
                     lines.append(
                         "  %-6s  %-24s %d commit(s) superseded: %s"
                         % (
                             "WAIVE",
                             row.lease_id,
-                            len(recorded),
+                            len(kept_up),
                             "; ".join(
                                 "%s by %s" % (r["sha"][:SHA_SHOWN], r["landed"][:SHA_SHOWN])
-                                for r in recorded
+                                for r in kept_up
                             )
                             + "; "
                             + reason,
@@ -1845,9 +2237,9 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
 
 
 def _parse_gc(args):
-    """`(write, id, discard_reason, superseded, reason)`, or None after an error line."""
+    """`(write, id, discard_reason, superseded, reason, drop)`, or None after an error line."""
     write, only, discard = False, "", None
-    superseded, reason = [], None
+    superseded, reason, drop = [], None, []
     rest = list(args)
     while rest:
         arg = rest.pop(0)
@@ -1863,6 +2255,8 @@ def _parse_gc(args):
                 log.error("--superseded-by needs <lease-sha>=<landed-sha> or a bare <landed-sha>")
                 return None
             superseded.append((given, landed))
+        elif arg == "--drop" and rest:
+            drop.append(rest.pop(0).strip())
         elif arg == "--reason" and rest:
             reason = rest.pop(0).strip()
         else:
@@ -1879,21 +2273,23 @@ def _parse_gc(args):
             % DISCARD_REASON_MIN
         )
         return None
-    if reason is not None and not superseded:
-        log.error("--reason belongs to --superseded-by")
+    if reason is not None and not (superseded or drop):
+        log.error("--reason belongs to --superseded-by and --drop")
         return None
-    if superseded and not (write and only):
+    flag = "--superseded-by" if superseded else "--drop"
+    if (superseded or drop) and not (write and only):
+        log.error("%s needs --write and --id <id>: it waives one named tree, never a sweep" % flag)
+        return None
+    if (superseded or drop) and len(reason or "") < DISCARD_REASON_MIN:
+        what = "naming the landed commit" if superseded else "saying why the commit is given up"
         log.error(
-            "--superseded-by needs --write and --id <id>: it waives one named tree, never a sweep"
+            "%s needs --reason of at least %d characters %s" % (flag, DISCARD_REASON_MIN, what)
         )
         return None
-    if superseded and len(reason or "") < DISCARD_REASON_MIN:
-        log.error(
-            "--superseded-by needs --reason of at least %d characters naming the landed commit"
-            % DISCARD_REASON_MIN
-        )
+    if any(not d for d in drop):
+        log.error("--drop needs a lease sha")
         return None
-    return write, only, discard or "", superseded, reason or ""
+    return write, only, discard or "", superseded, reason or "", drop
 
 
 def _hook_input():
@@ -1962,6 +2358,7 @@ def cmd_gc(args):
             discard_dirty=parsed[2],
             superseded=parsed[3],
             reason=parsed[4],
+            drop=parsed[5],
         )
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
@@ -2002,9 +2399,31 @@ def lease_rows(root):
                     key: entry["commits"] for key, entry in facts.repos.items() if entry["commits"]
                 },
                 "problems": facts.problems,
+                "hold": _hold_row(world, lease_id),
             }
         )
     return rows
+
+
+def _hold_row(world, lease_id):
+    """{"item", "reason", "open", "note"} for a lease with a hold, else None. `open` is whether the hold still parks the lease, and `note` says why not ("" when it does). An unreadable hold has an empty item and stays open with the note 'gc keeps the tree', since a record that cannot be read cannot be shown closed; a worklist that cannot be read leaves a readable hold open for the same reason."""
+    hold = world.holds.get(lease_id)
+    if hold is None:
+        return None
+    if hold.get("broken"):
+        return {
+            "item": "",
+            "reason": "hold record unreadable",
+            "open": True,
+            "note": "gc keeps the tree",
+        }
+    if world.items is None:
+        return {"item": hold["item"], "reason": hold["reason"], "open": True, "note": ""}
+    found, why = _hook_module("wl_worktrees").hold_check(
+        hold, world.items, world.records.get(lease_id) or {}
+    )
+    note = "" if found else (why or "item closed, no longer held")
+    return {"item": hold["item"], "reason": hold["reason"], "open": bool(found), "note": note}
 
 
 def _lease_line(row):
@@ -2014,6 +2433,13 @@ def _lease_line(row):
     )
     base = str(row["base"].get(CONSOLE) or "unknown")[:SHA_SHOWN]
     tree = "" if row["exists"] else "  (no tree on disk)"
+    hold = row.get("hold")
+    if hold:
+        note = " (%s)" % hold["note"] if hold["note"] else ""
+        if hold["item"]:
+            tree += "  held for #%s: %s%s" % (hold["item"], hold["reason"], note)
+        else:
+            tree += "  %s%s" % (hold["reason"], note)
     return "  %-24s owner %-10s base %-12s dirty %d  unlanded: %s%s" % (
         row["id"],
         row["owner"] or "unknown",
@@ -2038,6 +2464,136 @@ def cmd_leases(args):
     else:
         sys.stdout.write("".join(_lease_line(row) + "\n" for row in rows) or "no leases\n")
     sys.stdout.flush()
+    return 0
+
+
+HOLD_HELP = """\
+Usage: ./run.sh worktree hold <id> --item <worklist id> --reason <text>
+
+Park a finished lease on purpose: its commits must not land until the open
+worklist item's work exists. The Stop hook then reports the lease as one
+advisory line (held for #<item>: <reason>) instead of blocking, and `gc` keeps
+the tree. The hold ends the moment the item is ticked or gone, and the lease
+blocks again. The item is named by its full id (a unique prefix is resolved to
+it here and recorded in full), it must carry the session's own tag, and the
+session must own the lease: the Stop hook honours no other hold. Refused for
+an unknown lease, an item that is not open or whose prefix is ambiguous, a
+session that does not own the lease and an empty reason.
+`./run.sh worktree unhold <id>` removes it.
+"""
+UNHOLD_HELP = """\
+Usage: ./run.sh worktree unhold <id>
+
+Remove the hold of a lease, so the Stop hook blocks on its unlanded commits
+again and `gc` judges the tree by its rules.
+"""
+
+
+def _hold_file(root, lease_id):
+    return root / ".git" / RECORD_DIR / (lease_id + _hook_module("wl_worktrees").HOLD_SUFFIX)
+
+
+def _known_lease(root, world, lease_id):
+    return bool(ID_RE.match(lease_id)) and lease_id in {*world.records, *_holder_entries(root)}
+
+
+def run_hold(root, lease_id, item, reason):
+    """Write `<id>.hold` beside the lease records. Returns the line to print; raises LeaseRefusedError."""
+    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(_holding_checkout(root) or root)
+    reason = reason.strip()
+    if not reason:
+        message = "hold needs a non-empty --reason"
+        raise LeaseRefusedError(message)
+    with _project_env(root):
+        world = _read_world(root)
+        if not _known_lease(root, world, lease_id):
+            message = "no lease named %s" % lease_id
+            raise LeaseRefusedError(message)
+        items = _read_items(root)
+    if items is None:
+        message = "the worklist could not be read, so the item cannot be checked"
+        raise LeaseRefusedError(message)
+    watch = _hook_module("wl_worktrees")
+    found, why = watch.resolve_open_item(items, item)
+    if not found:
+        raise LeaseRefusedError(why)
+    session = _hook_module("wl_core").resolve_session_id()[:8]
+    if not session:
+        message = "no session id in the environment, so the hold cannot name its writer"
+        raise LeaseRefusedError(message)
+    owner = str((world.records.get(lease_id) or {}).get("owner") or "")[:8]
+    problem = watch.owner_problem(session, found, owner)
+    if problem:
+        raise LeaseRefusedError(problem)
+    record = {
+        "item": str(found["id"]),
+        "session": session,
+        "reason": reason,
+        "held_at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    target = _hold_file(root, lease_id)
+    with _locked(target.parent):
+        partial = target.with_name(".%s.partial" % target.name)
+        partial.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        partial.replace(target)
+    return "%s held for #%s: %s" % (lease_id, record["item"], reason)
+
+
+def run_unhold(root, lease_id):
+    root = pathlib.Path(os.path.realpath(root))
+    root = _main_checkout(_holding_checkout(root) or root)
+    target = _hold_file(root, lease_id) if ID_RE.match(lease_id) else None
+    if target is None or not target.is_file():
+        message = "%s has no hold" % lease_id
+        raise LeaseRefusedError(message)
+    target.unlink()
+    return "%s released; the Stop hook blocks on its unlanded commits again" % lease_id
+
+
+def _parse_hold(args):
+    """`(id, item, reason)`, or None after an error line."""
+    rest, lease_id, item, reason = list(args), "", None, None
+    while rest:
+        arg = rest.pop(0)
+        if arg == "--item" and rest:
+            item = rest.pop(0)
+        elif arg == "--reason" and rest:
+            reason = rest.pop(0)
+        elif not arg.startswith("-") and not lease_id:
+            lease_id = arg
+        else:
+            log.error("Unknown or incomplete option: %s" % arg)
+            return None
+    if not lease_id or item is None or reason is None:
+        log.error("hold needs <id> --item <worklist id> --reason <text>")
+        return None
+    return lease_id, item, reason
+
+
+def cmd_hold(args):
+    parsed = _parse_hold(args)
+    if parsed is None:
+        return 1
+    try:
+        line = run_hold(paths.repo_root(), *parsed)
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write(line + "\n")
+    return 0
+
+
+def cmd_unhold(args):
+    if len(args) != 1 or args[0].startswith("-"):
+        log.error("unhold needs exactly <id>")
+        return 1
+    try:
+        line = run_unhold(paths.repo_root(), args[0])
+    except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
+        log.error("refused: %s" % exc)
+        return 1
+    sys.stdout.write(line + "\n")
     return 0
 
 

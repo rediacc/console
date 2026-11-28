@@ -2,7 +2,7 @@
 
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/shellcheck.sh` and the port over one scratch git repository apiece and compared the exit code, both streams and the recorded argv of every tool call.
 
-The ledger `.ci/shadow/w7p6-shellcheck.observations.jsonl` recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
+The ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, every one of them EQUIVALENT; the row count is stated here from the file rather than carried forward from the sentence that used to claim it.
 
 Every FIXTURE case now compares against `goldens/shellcheck/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree; each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
@@ -72,6 +72,9 @@ COPIED = (
     ".ci/config/constants.sh",
     ".devcontainer/toolchain.env",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/paths.py",
     ".ci/rediacc_ci/proc.py",
     ".ci/rediacc_ci/gitx.py",

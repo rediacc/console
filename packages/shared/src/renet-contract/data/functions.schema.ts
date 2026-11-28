@@ -427,6 +427,11 @@ export const ContainerUnpauseParamsSchema = z.object({
   container: z.string().min(1).describe('Container name'),
 });
 
+/** Set the repository's forensic capture level: basic, standard or full */
+export const ForensicsLevelParamsSchema = z.object({
+  level: z.string().min(1).regex(/^(basic|standard|full)$/).describe('Capture level'),
+});
+
 /** Check whether the API server is ready */
 export const KubeHealthParamsSchema = z.object({
   mountPath: z.string().min(1).describe('Repo/cluster image mount path'),
@@ -752,6 +757,12 @@ export const RepositoryValidateParamsSchema = z.object({
   timeout: z.number().int().default(300).optional().describe('Validation timeout in seconds'),
 });
 
+/** Expose the repository's VS Code (code-server) at its public hostname behind the portal-token gate (JSON result) */
+export const RepositoryVscodeExposeParamsSchema = z.object({});
+
+/** Stop and remove the repository's exposed VS Code container */
+export const RepositoryVscodeUnexposeParamsSchema = z.object({});
+
 /** Install and configure renet */
 export const SetupParamsSchema = z.object({
   datastoreSize: z
@@ -836,6 +847,7 @@ export const FUNCTION_SCHEMAS = {
   container_stats: ContainerStatsParamsSchema,
   container_stop: ContainerStopParamsSchema,
   container_unpause: ContainerUnpauseParamsSchema,
+  forensics_level: ForensicsLevelParamsSchema,
   kube_health: KubeHealthParamsSchema,
   kube_kubeconfig: KubeKubeconfigParamsSchema,
   machine_converge_runtime: MachineConvergeRuntimeParamsSchema,
@@ -891,6 +903,8 @@ export const FUNCTION_SCHEMAS = {
   repository_up: RepositoryUpParamsSchema,
   repository_up_all: RepositoryUpAllParamsSchema,
   repository_validate: RepositoryValidateParamsSchema,
+  repository_vscode_expose: RepositoryVscodeExposeParamsSchema,
+  repository_vscode_unexpose: RepositoryVscodeUnexposeParamsSchema,
   setup: SetupParamsSchema,
 } satisfies Record<RenetFunctionName, z.ZodType<FunctionParamsMap[RenetFunctionName]>>;
 

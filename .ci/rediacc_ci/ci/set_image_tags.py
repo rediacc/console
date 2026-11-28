@@ -5,14 +5,14 @@ Derive the base image tag into `$GITHUB_ENV`, then override the two per-image ta
 
 SOLE IMPLEMENTATION. The bash twin is deleted; `.github/workflows/ci.yml:1113` runs this module, and the twin's observable behaviour is frozen in `.ci/rediacc_ci/tests/goldens/set-image-tags/`.
 
-Ledger: `.ci/shadow/w7p6-set-image-tags.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-set-image-tags --assert --k 5`).
+Ledger: the ledger (deleted in commit:936280cd35).
 
 -----------------------------------------------------------------------------
 THE SIBLING IS CALLED, NOT REIMPLEMENTED
 -----------------------------------------------------------------------------
 The twin was the one live caller of `derive-image-tag.sh`, and the whole of its first half was that call with two arms, so the two were retired together. `rediacc_ci.ci.derive_image_tag` is
 already ported and already carries its own K=5 ledger
-(`.ci/shadow/w7p6-derive-image-tag.observations.jsonl`), so this module invokes that module rather than re-deriving anything: a second implementation of the
+(the ledger (deleted in commit:936280cd35)), so this module invokes that module rather than re-deriving anything: a second implementation of the
 `--sort=-v:refname` ladder is exactly the divergence the campaign exists to
 avoid.
 

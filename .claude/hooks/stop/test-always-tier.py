@@ -51,17 +51,20 @@ ALWAYS_KEYS = frozenset(
         "bg-report",
         "agent-pushback",
         "giveup-claim",
-        # I3 -- the parallel-writer roster (wl_roster). The operator asked for a hard cap and a 20-minute ping with "no escape hatches", and a rotating or pausable key IS a hatch: the cadence and the rotation would hand the stop back while a fifth writer edits the tree. Each is a verdict about live workers whose silence would read as a pass.
-        "roster-cap",
+        # I3 -- the parallel-writer roster (wl_roster). The operator asked for a 20-minute ping with "no escape hatches", and a rotating or pausable key IS a hatch: the cadence and the rotation would hand the stop back while a silent writer edits the tree. Each is a verdict about live workers whose silence would read as a pass.
         "roster-silent",
         "roster-unleased",
         "roster-dead",
         # I3 -- a background wait with no wake-up timer (wl_wake): silence would read as "the wait will end", which is exactly the deadlock.
         "wake-timer",
-        # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work beside a free slot is the same roster verdict, and a rotating key would let the queue park work the cap allows.
+        # Split out of roster-dead by agent/plans/PLAN-stop-hook-retro-20260924.md R.5 and kept at its strength: queued writer work no live plan holds any more is the same roster verdict, and a rotating key would let the queue park work that could start.
         "queue-slot",
-        # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-cap/-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.
+        # I3 -- the Stop-side backstop of block_plan_concurrency (agent/plans/PLAN-plan-priority-concurrency.md section 5c): two live writers of this session already serve plans that break a mutex or share files, so the pre-agent guard was bypassed or blind when one started. Same roster family as roster-silent/-unleased/-dead: a verdict about live workers whose silence would read as a pass, and a rotating key would let a crowded session skip past a mutex collision already in progress.
         "roster-concurrency",
+        # I3 -- a shell waiter the roster no longer counts live (wl_stuckshell, agent/plans/PLAN-writers-now-cadence.md WN4): its final report is captured or its shell outlived the bound. On 2026-11-23 such a writer showed "waiting on 1 shell" for hours while every check read it as live; a rotating key would let the same silence read as a pass.
+        "stuck-shell",
+        # I3 -- a sub-agent an API error killed (wl_roster_resume, operator 2026-11-24). Measured 2026-11-24: SubagentStop did not fire for such a death, so this block is the only place it surfaces; a rotating key would let the dead writer read as a finished one.
+        "resume-dead-agent",
         # I2 -- somebody else is blocked and cannot see this session stand down.
         "unread-reports",
         # I2 -- a scheduled workflow red on main (wl_schedred): the release pipeline is the party blocked (promote-stable counts only green scheduled runs) and it cannot see this session stop, so a rotating key would let the red sit another night behind unrelated checks.
@@ -109,6 +112,12 @@ HYGIENE_KEYS = frozenset(
         "loop-died",
         # Landed work on an open plan box with no investigation row (wl_boxaudit, PLAN-tick-tracking T10): it blocks only after OWED_STOPS consecutive stops (pinned by test_wl_boxaudit.py test_stopcheck_quiet_for_two_stops_blocks_on_the_third_and_the_row_silences_it), and the box's own worklist item is a mission check at T_MISSION (wl_checks.py, the T_MISSION comment: the worklist's `- [ ]` items), so this nag stays out of the always tier on purpose.
         "plan-box-owed",
+        # The weekly lessons cadence (PLAN-weekly-lessons.md D4): a calendar duty, one claim holder, parked in the landing tree. Housekeeping on purpose, so asked-for work outranks it.
+        "lessons-weekly",
+        # The hourly /writers-now cadence (PLAN-writers-now-cadence.md WN2): a clock duty like lessons-weekly, parked in the landing tree and the merge phase. Hygiene on purpose, so a red CI, a dead writer or an unread report is answered before the next round starts.
+        "writers-now-due",
+        # Writer TICK rows whose commits landed, queued at SubagentStop for `worklist.py --apply-ticks` (operator 2026-11-24). Record-keeping the lead runs in one command; it blocks only at `high` (effort.json), so asked-for work outranks it.
+        "ready-ticks",
     }
 )
 
@@ -155,6 +164,71 @@ def always_keys(tree):
         elif isinstance(arg, ast.BinOp) and isinstance(arg.left, ast.Constant):
             out.add(str(arg.left.value).split(":", 1)[0])
     return out
+
+
+def stuck_shell_controls(tree):
+    """Controls for the stuck-shell check's two outputs (wl_stuckshell.stop_check) and its lease bound (review f4b82bed.3 and .4). Returns the failures."""
+    import datetime
+
+    import wl_stuckshell as S
+
+    fails = []
+    owned = {"shell": "bshell01", "reason": "runtime", "report": "", "age_min": 200.0}
+    owned.update(live="python3 cf_retire", leased="")
+    waits = {"shell": "bshell02", "reason": "runtime", "report": "", "age_min": 200.0}
+    waits.update(live="", leased="")
+
+    def drive(rows):
+        said: list[tuple] = []
+        blocked: list = []
+        out = S.stop_check(rows, lambda k, b: said.append((k, b)), blocked.append)
+        return said, blocked, out
+
+    # f4b82bed.3: the owned row reaches the advisory queue with its body, and only the waiting row blocks.
+    said, blocked, out = drive([("agent1", owned), ("agent2", waits)])
+    keys = [k for k, _b in said]
+    if keys != ["stuck-shell-live"]:
+        fails.append("stop_check advised %r, wanted exactly ['stuck-shell-live']" % keys)
+    elif "agent agent1 waiting on shell bshell01: working: python3 cf_retire" not in said[0][1]:
+        fails.append("the stuck-shell-live body does not name the working shell: %r" % said[0][1])
+    elif "no TaskStop order" not in said[0][1] or "TaskStop bshell01" in said[0][1]:
+        fails.append("the stuck-shell-live body orders a TaskStop: %r" % said[0][1])
+    if blocked != [[("agent2", waits)]] or out != [("agent2", waits)]:
+        fails.append("stop_check blocked %r, wanted only agent2" % blocked)
+    elif "TaskStop bshell02" not in S.render(blocked[0]):
+        fails.append("the blocking row's render names no TaskStop for bshell02")
+    # CONTROL: with no owned row nothing is advised, so the assertion above can fail.
+    said, blocked, _out = drive([("agent2", waits)])
+    if said or len(blocked) != 1:
+        fails.append("CONTROL: a waiting-only set advised %r / blocked %r" % (said, blocked))
+
+    # The Stop hook routes its stuck rows through stop_check, so the advisory cannot be dropped from wl_checks without this failing.
+    called = {
+        node.func.attr
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and isinstance(node.func.value, ast.Name)
+        and node.func.value.id == "wl_stuckshell"
+    }
+    if "stop_check" not in called:
+        fails.append(
+            "wl_checks.py no longer routes the stuck rows through wl_stuckshell.stop_check"
+        )
+
+    # f4b82bed.4: an expired lease names no shell; CONTROL: a fresh one does.
+    now = datetime.datetime.now(datetime.UTC)
+
+    def item(minutes):
+        until = (now + datetime.timedelta(minutes=minutes)).strftime("%Y-%m-%dT%H:%MZ")
+        line = "- [>] (sess0000) long verify until:%s worker:bshell01" % until
+        return {"id": "abcd1234", "state": ">", "line": line}
+
+    if S.leased_shells([item(-30)]):
+        fails.append("an expired lease still exempts its shell: %r" % S.leased_shells([item(-30)]))
+    if S.leased_shells([item(60)]) != {"bshell01": "abcd1234"}:
+        fails.append("CONTROL: a fresh lease no longer exempts its shell")
+    return fails
 
 
 def main():
@@ -222,9 +296,17 @@ def main():
     if wl_checks.check_tier("a-key-nobody-defined") != wl_checks.T_HYGIENE:
         fails.append("check_tier does not default an unknown key to T_HYGIENE")
 
-    # 7. Focus mode's PR fix work sits where `open-items` does (agent/plans/PLAN-stop-hook-focus-mode.md section 4): it is the one slice of the queue focus keeps, so it must defeat the cadence pause like the rest of T_MISSION.
-    if wl_checks.check_tier("focus-pr-items") != wl_checks.check_tier("open-items"):
-        fails.append("focus-pr-items is not on open-items' tier of the ladder")
+    # 7. Pinned placements a later edit must argue against. `armed-action-due` (agent/plans/PLAN-armed-actions.md Design 4) is held work whose trigger cleared, the generalisation of an expired DEFAULT, so it shares `defer-expired`'s tier and stays off the invariant tier (a pause must be able to hold a held landing, Design 5).
+    fails.extend(
+        "%s is not on T_MISSION (tier %s)" % (key, wl_checks.check_tier(key))
+        for key in ("armed-action-due", "defer-expired")
+        if wl_checks.check_tier(key) != wl_checks.T_MISSION
+    )
+    if "armed-action-due" in ALWAYS_KEYS:
+        fails.append("armed-action-due is pinned always; Design 5 keeps it out of the FLOOR")
+
+    # 8. The stuck-shell check's advisory and lease bound (wl_stuckshell).
+    fails.extend(stuck_shell_controls(tree))
 
     for f in fails:
         print("FAIL: %s" % f)

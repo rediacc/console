@@ -1,6 +1,6 @@
 """`rediacc_ci.infra.ci_stop`, driven against the bytes and the docker calls its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/ci-stop.sh` and the port over the same throwaway tree and compared four things: the exit code, stdout, the recording docker's ARGV SEQUENCE and whether `.backend-state` survived. The K=5 ledger `.ci/shadow/w7p6-ci-stop.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/infra/ci-stop.sh` and the port over the same throwaway tree and compared four things: the exit code, stdout, the recording docker's ARGV SEQUENCE and whether `.backend-state` survived. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been
 deleted and every case that executed it compares against `goldens/ci-stop/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
 THE CALL LOG IS THE EVIDENCE, and it is recorded beside the streams rather than instead of them. Two implementations can print identical text while calling different commands, and for a teardown script the commands ARE the behaviour: a port that printed "Force removing" and never ran `docker rm` would pass a stdout-only comparison and leave the container up. Each recorded
@@ -37,7 +37,7 @@ STATE_MARKER = "--- backend-state ---\n"
 
 # The recording `docker`. Written as Python, not bash: ruling 7 puts new instruments in Python, and an untracked fixture is not an excuse to write the one shape the ruling names.
 #
-# EVERY KNOB IS BAKED INTO ITS TEXT rather than passed through the environment. The first draft passed five (DOCKER_LOG, FIXTURE_ROOT, COMPOSE_RC, PS_NAMES, VERB_RC) and this comment used to justify the change by claiming they would red `check_env_manifest.py` once the file was tracked. THAT CLAIM WAS WRONG, and the check that refuted it is worth more than the change it was meant
+# EVERY KNOB IS BAKED INTO ITS TEXT rather than passed through the environment. The first draft passed five (DOCKER_LOG, FIXTURE_ROOT, COMPOSE_RC, PS_NAMES, VERB_RC) and this comment used to justify the change by claiming they would red `check:ci-env-registry` once the file was tracked. THAT CLAIM WAS WRONG, and the check that refuted it is worth more than the change it was meant
 # to justify: driven against `rediacc_ci.quality.env_manifest.names_from_py`, the old draft reads ZERO names, because those `os.environ` calls lived inside this very string literal and that reader PARSES rather than greps (env_manifest.py:34). Text inside a string is not a read, in either direction -- the same reason the plan's A6 triage found seventeen false findings that were all
 # Python prose.
 #

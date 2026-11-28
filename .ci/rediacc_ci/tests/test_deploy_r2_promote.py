@@ -64,6 +64,15 @@ def test_copy_argv_is_a_server_side_copy_object_with_the_uploads_metadata() -> N
     )
 
 
+def test_put_if_argv_sends_the_content_type_the_upload_guessed() -> None:
+    argv = r2_promote.put_if_argv("/tmp/h", "cli/stable/history.json", "abc", "https://x")
+    assert argv[argv.index("--content-type") + 1] == "application/json"
+    assert argv[argv.index("--if-match") + 1] == "abc"
+    assert "--content-type" not in r2_promote.put_if_argv(
+        "/tmp/h", "a/stable/InRelease", None, "https://x"
+    )
+
+
 def test_the_pointers_are_the_stamp_table() -> None:
     assert r2_promote.pointers("cli") == ("install.sh", "install.ps1")
     assert r2_promote.pointers("rpm") == ("rediacc.repo",)

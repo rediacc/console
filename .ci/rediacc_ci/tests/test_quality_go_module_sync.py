@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.go_module_sync` against the discovery it replaces.
 
-WHAT IS WORTH TESTING HERE, and it is not the `go mod tidy -diff` call. That part is one subprocess whose verdict is Go's, and the shadow ledger `.ci/shadow/w7p2-go-module-sync.observations.jsonl` drives it end to end over five distinct trees with real untidy modules. What the ledger cannot isolate is
+WHAT IS WORTH TESTING HERE, and it is not the `go mod tidy -diff` call. That part is one subprocess whose verdict is Go's, and the shadow ledger the ledger (deleted in commit:936280cd35) drives it end to end over five distinct trees with real untidy modules. What the ledger cannot isolate is
 the DISCOVERY -- a `grep -rln --include=go.mod` pipeline whose four properties
 (basename matching, the `./` prefix, symlinks not followed, `node_modules` as a SUBSTRING) each decide which modules the gate is even aware of. A discovery that quietly narrows turns this gate green while the coupling it guards rots.
 

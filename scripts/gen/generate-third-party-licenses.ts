@@ -12,9 +12,9 @@
  *      (network); a clearly-marked placeholder if that is unavailable.
  *   5. Bundled npm dependencies enumerated from the root package-lock.json
  *      (no new dependency).
- *   6. Verbatim license texts for each SPDX id used, from committed
- *      packages/cli/src/data/third-party-licenses/<id>.txt when present, else the canonical
- *      SPDX URL (offline fallback).
+ *   6. Verbatim license texts for each SPDX id the inventory and both reports name, from the
+ *      committed packages/cli/src/data/third-party-licenses/<id>.txt (SPDX license-list-data,
+ *      byte-exact); an id with no committed text is marked LICENSE TEXT MISSING, never a URL.
  *
  * Usage:
  *   npx tsx scripts/gen/generate-third-party-licenses.ts [--output <path>] [--repo-root <dir>]
@@ -24,6 +24,7 @@
  */
 
 import { execFileSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,11 +47,12 @@ function parseArgs(): { output: string; repoRoot: string } {
 interface Credit {
   kind?: string;
   name: string;
-  version: string;
+  /** Absent on the Node.js runtime row: the exact Node version is read from the running binary. */
+  version?: string;
   spdx: string;
   license: string;
   upstreamSourceUrl?: string;
-  plannedMirrorUrl?: string;
+  mirrorUrl?: string;
   notes?: string;
 }
 interface CreditsData {
@@ -58,21 +60,44 @@ interface CreditsData {
   components: Credit[];
 }
 
+/** Where `packages/cli/bundle.mjs` writes the esbuild metafile, relative to packages/cli. */
+const META_REL = 'dist/cli-bundle.meta.json';
+
 const RULE = '='.repeat(78);
 const SUBRULE = '-'.repeat(78);
 
-/** Canonical SPDX license-text URLs, for the offline fallback note. */
-const SPDX_URLS: Record<string, string> = {
-  MIT: 'https://spdx.org/licenses/MIT.html',
-  'GPL-2.0-only': 'https://www.gnu.org/licenses/old-licenses/gpl-2.0.txt',
-  'GPL-3.0-or-later': 'https://www.gnu.org/licenses/gpl-3.0.txt',
-  'Apache-2.0': 'https://www.apache.org/licenses/LICENSE-2.0.txt',
+/**
+ * The SPDX license-list-data release every committed text under
+ * packages/cli/src/data/third-party-licenses/ was copied from, byte for byte, from
+ * `text/<id>.txt` at this tag. Refresh a text by fetching it at the tag and committing it unchanged.
+ */
+const SPDX_LICENSE_LIST_TAG = 'v3.29.0';
+
+/**
+ * Deprecated identifiers the Go report still emits, mapped to the current id that has a committed text.
+ * An alias belongs here only when its target's text is committed: `GPL-3.0` and `LGPL-2.1` have none
+ * (no `GPL-3.0-only.txt`, no `LGPL-2.1-only.txt`), so those rows stay literal and the notice marks
+ * LICENSE TEXT MISSING for them, which a release build refuses.
+ */
+const SPDX_ALIASES: Record<string, string> = {
+  'GPL-2.0': 'GPL-2.0-only',
 };
+
+/** Every SPDX id a report row names, collected as the report sections are built. */
+const reportIds = new Set<string>();
+
+/** Records the ids of a licence expression such as `(MIT OR Apache-2.0)`; `UNKNOWN`-style words stay as they are. */
+function noteLicenses(expression: string): void {
+  for (const raw of expression.split(/[()\s]+|\bOR\b|\bAND\b|\bWITH\b/)) {
+    const id = raw.trim();
+    if (!id || id === 'OR' || id === 'AND' || id === 'WITH') continue;
+    reportIds.add(SPDX_ALIASES[id] ?? id);
+  }
+}
 
 /** Candidate committed filenames for an SPDX id's verbatim text. */
 function licenseTextCandidates(spdx: string): string[] {
-  const base = spdx.replace(/-(only|or-later)$/, '');
-  return [`${spdx}.txt`, `${base}.txt`];
+  return [`${SPDX_ALIASES[spdx] ?? spdx}.txt`];
 }
 
 function readCommittedLicenseText(repoRoot: string, spdx: string): string | null {
@@ -94,53 +119,145 @@ function loadCredits(repoRoot: string): CreditsData {
 }
 
 function componentBlock(c: Credit): string {
-  const lines = [`${c.name} ${c.version}`, `  SPDX:    ${c.spdx}`, `  License: ${c.license}`];
+  const lines = [
+    c.version ? `${c.name} ${c.version}` : c.name,
+    `  SPDX:    ${c.spdx}`,
+    `  License: ${c.license}`,
+  ];
   if (c.upstreamSourceUrl) lines.push(`  Source:  ${c.upstreamSourceUrl}`);
-  if (c.plannedMirrorUrl) lines.push(`  Mirror:  ${c.plannedMirrorUrl} (planned)`);
+  if (c.mirrorUrl) lines.push(`  Mirror:  ${c.mirrorUrl}`);
   if (c.notes) lines.push(`  Note:    ${c.notes}`);
   return lines.join('\n');
 }
 
+/** Where the renet build writes its Go dependency report, beside the binaries (`rediacc_ci.infra.build_renet`). */
+const GO_LICENSES_CSV_REL = 'private/bin/renet-go-licenses.csv';
+
+/** The one place the go-licenses version is pinned (and registered in `.ci/config/pins.json`). */
+function pinnedGoLicensesVersion(repoRoot: string): string | null {
+  try {
+    const src = fs.readFileSync(
+      path.join(repoRoot, '.ci/rediacc_ci/infra/build_renet.py'),
+      'utf-8'
+    );
+    return /^GO_LICENSES_VERSION = "(v[0-9][^"]*)"/m.exec(src)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** The renet module's own packages carry no row in rdc's notice; `build_renet.py` refuses them at write time. */
+const GO_LICENSES_IGNORE = 'github.com/rediacc/renet';
+
+/** True for the renet module's own path and its sub-packages, never for a sibling such as `github.com/rediacc/renet-utils`. */
+function isRenetOwnModule(mod: string): boolean {
+  return mod === GO_LICENSES_IGNORE || mod.startsWith(`${GO_LICENSES_IGNORE}/`);
+}
+
+/** `renetPresent` tells the empty-report remedy whether the renet submodule is here to run the verb in. */
+function goReportSection(csv: string, renetPresent: boolean): string {
+  const rows = csv
+    .split('\n')
+    .filter((l) => l.trim().length > 0)
+    .filter((l) => {
+      if (!isRenetOwnModule(l.split(',')[0])) return true;
+      console.error(
+        `generate-third-party-licenses: WARNING dropped a ${GO_LICENSES_IGNORE} row from the Go report`
+      );
+      return false;
+    })
+    .map((l) => {
+      const [mod, url, lic] = l.split(',');
+      noteLicenses(lic ?? 'UNKNOWN');
+      return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
+    });
+  if (rows.length === 0) {
+    return placeholderSection('go-licenses produced no rows.', 'Renet Go module dependencies', [
+      ...(renetPresent
+        ? [`Check the go-licenses output, then run:`, `  ${GO_LICENSES_VERB}`]
+        : [
+            `Replace ${GO_LICENSES_CSV_REL} with the one the renet-binaries CI artifact carries, or check out the renet submodule and run:`,
+            `  ${GO_LICENSES_VERB}`,
+          ]),
+    ]);
+  }
+  return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
+}
+
+/**
+ * The Go report comes from the build that compiled renet: `renet-go-licenses.csv` in private/bin,
+ * which the renet CI build uploads in its binaries artifact. A checkout that has the renet
+ * submodule and no CSV runs the same pinned go-licenses itself; neither present is a placeholder,
+ * which a release build refuses.
+ */
 function goLicensesSection(repoRoot: string): string {
+  const csvPath = path.join(repoRoot, GO_LICENSES_CSV_REL);
   const renetDir = path.join(repoRoot, 'private/renet');
+  if (fs.existsSync(csvPath))
+    return goReportSection(
+      fs.readFileSync(csvPath, 'utf-8'),
+      fs.existsSync(path.join(renetDir, 'go.mod'))
+    );
   if (!fs.existsSync(path.join(renetDir, 'go.mod'))) {
-    return placeholderSection('renet is not present in this checkout (submodule not initialized).');
+    return placeholderSection(
+      `neither ${GO_LICENSES_CSV_REL} nor the renet submodule is present in this checkout.`,
+      'Renet Go module dependencies',
+      [
+        `Provide ${GO_LICENSES_CSV_REL} (the renet-binaries CI artifact carries it), or check out the renet submodule and run:`,
+        `  ${GO_LICENSES_VERB}`,
+      ]
+    );
+  }
+  const version = pinnedGoLicensesVersion(repoRoot);
+  if (!version) {
+    return placeholderSection(
+      'the pinned go-licenses version could not be read.',
+      'Renet Go module dependencies',
+      [
+        `Fix GO_LICENSES_VERSION in .ci/rediacc_ci/infra/build_renet.py, then run:`,
+        `  ${GO_LICENSES_VERB}`,
+      ]
+    );
   }
   try {
     const out = execFileSync(
       'go',
-      ['run', 'github.com/google/go-licenses@latest', 'report', './...'],
+      [
+        'run',
+        `github.com/google/go-licenses@${version}`,
+        'report',
+        './...',
+        '--ignore',
+        'github.com/rediacc/renet',
+      ],
       { cwd: renetDir, encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 180_000 }
     );
-    const rows = out
-      .split('\n')
-      .filter((l) => l.trim().length > 0)
-      .map((l) => {
-        const [mod, url, lic] = l.split(',');
-        return `  ${mod}  [${lic ?? '?'}]  ${url ?? ''}`.trimEnd();
-      });
-    if (rows.length === 0) return placeholderSection('go-licenses produced no rows.');
-    return `Renet Go module dependencies (module  [license]  source):\n\n${rows.join('\n')}`;
+    return goReportSection(out, true);
   } catch {
     return placeholderSection(
-      'go-licenses could not run (offline, or Go/network unavailable at build time).'
+      'go-licenses could not run (offline, or Go/network unavailable at build time).',
+      'Renet Go module dependencies',
+      ['Regenerate on a networked build:', `  ${GO_LICENSES_VERB}`]
     );
   }
 }
 
+/** The verb that writes the Go report; it needs the renet submodule checked out. */
+const GO_LICENSES_VERB =
+  'PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses private/bin/renet-go-licenses.csv';
+
 /**
- * BLOCKER: a placeholder is emitted only when go-licenses cannot run at build
- * time; the release job must regenerate with network so the shipped artifact
- * carries the real Go-dependency license report.
+ * BLOCKER: a placeholder is emitted when a section's input is unavailable at build time: go-licenses
+ * cannot run or no CSV exists (Go section), the esbuild metafile is missing or lists no inputs (CLI
+ * npm section), or the Node.js LICENSE fetch failed. `prepare_cli_assets.py --release` refuses any
+ * placeholder, so the release job must regenerate with its inputs present. `remedy` lines follow the reason.
  */
-function placeholderSection(reason: string): string {
-  return [
-    'Renet Go module dependencies: NOT GENERATED IN THIS BUILD.',
-    `Reason: ${reason}`,
-    'Regenerate on a networked build:',
-    '  (cd private/renet && go run github.com/google/go-licenses@latest report ./...)',
-  ].join('\n');
+function placeholderSection(reason: string, what: string, remedy: string[] = []): string {
+  return [`${what}: NOT GENERATED IN THIS BUILD.`, `Reason: ${reason}`, ...remedy].join('\n');
 }
+
+/** Printed in place of a bundled package whose package.json cannot be read; `prepare_cli_assets.py --release` refuses it. */
+const UNRESOLVED_MARKER = 'UNRESOLVED PACKAGE';
 
 interface NpmDep {
   name: string;
@@ -162,33 +279,104 @@ function readPkgLicense(dir: string): string {
   return 'UNKNOWN';
 }
 
+/** Package directory of a bundled input path: the last `node_modules/<pkg>` (scoped or not) segment. */
+function bundledPackageDir(inputPath: string): string | null {
+  const marker = 'node_modules/';
+  const at = inputPath.lastIndexOf(marker);
+  if (at < 0) return null;
+  const rest = inputPath.slice(at + marker.length).split('/');
+  const nameParts = rest[0].startsWith('@') ? rest.slice(0, 2) : rest.slice(0, 1);
+  if (nameParts.length === 0 || nameParts.some((p) => !p)) return null;
+  return inputPath.slice(0, at + marker.length) + nameParts.join('/');
+}
+
+/**
+ * The npm packages the rdc bundle really contains: every `node_modules/<pkg>` input of the esbuild
+ * metafile `bundle.mjs` writes, with version and licence read from that package's own package.json.
+ */
 function npmDepsSection(repoRoot: string): string {
-  const lockPath = path.join(repoRoot, 'package-lock.json');
-  let lock: { packages?: Record<string, { version?: string; dev?: boolean; license?: string }> };
+  const metaPath = path.join(repoRoot, 'packages/cli', META_REL);
+  let inputs: string[];
   try {
-    lock = JSON.parse(fs.readFileSync(lockPath, 'utf-8'));
+    const meta = JSON.parse(fs.readFileSync(metaPath, 'utf-8')) as {
+      inputs?: Record<string, unknown>;
+    };
+    inputs = Object.keys(meta.inputs ?? {});
   } catch {
-    return placeholderSection('package-lock.json could not be read.');
+    return placeholderSection(
+      `${META_REL} could not be read (run \`node bundle.mjs\` in packages/cli first).`,
+      'CLI npm dependencies'
+    );
   }
-  const packages = lock.packages ?? {};
+  const dirs = new Set<string>();
+  for (const input of inputs) {
+    const dir = bundledPackageDir(input);
+    if (dir) dirs.add(dir);
+  }
   const deps = new Map<string, NpmDep>();
-  for (const [p, meta] of Object.entries(packages)) {
-    if (!p.includes('node_modules/')) continue; // skip workspace roots
-    if (meta.dev) continue; // production deps only
-    const name = p.slice(p.lastIndexOf('node_modules/') + 'node_modules/'.length);
-    const version = meta.version ?? '';
-    const license = meta.license ?? readPkgLicense(path.join(repoRoot, p));
-    deps.set(`${name}@${version}`, { name, version, license });
+  const unresolved: string[] = [];
+  for (const dir of dirs) {
+    const abs = path.resolve(repoRoot, 'packages/cli', dir);
+    try {
+      const pkg = JSON.parse(fs.readFileSync(path.join(abs, 'package.json'), 'utf-8')) as {
+        name?: string;
+        version?: string;
+      };
+      const name = pkg.name ?? dir.slice(dir.lastIndexOf('node_modules/') + 'node_modules/'.length);
+      const version = pkg.version ?? '';
+      deps.set(`${name}@${version}`, { name, version, license: readPkgLicense(abs) });
+    } catch {
+      // never dropped silently: recorded and printed with a marker the release gate refuses
+      // (the file is missing, unreadable or not valid JSON)
+      unresolved.push(dir);
+    }
   }
   const rows = [...deps.values()]
     .sort((a, b) => a.name.localeCompare(b.name) || a.version.localeCompare(b.version))
-    .map((d) => `  ${d.name}@${d.version}  [${d.license}]`);
-  if (rows.length === 0) return placeholderSection('no production npm dependencies found.');
-  return [
-    'Bundled npm dependencies (production; hoisted from package-lock.json):',
-    '',
-    ...rows,
-  ].join('\n');
+    .map((d) => {
+      noteLicenses(d.license);
+      return `  ${d.name}@${d.version}  [${d.license}]`;
+    });
+  for (const dir of unresolved.sort((a, b) => a.localeCompare(b))) {
+    console.error(
+      `generate-third-party-licenses: WARNING ${dir}/package.json is unreadable or malformed`
+    );
+    rows.push(`  ${dir}  [${UNRESOLVED_MARKER}: package.json unreadable or malformed]`);
+  }
+  if (rows.length === 0) {
+    return placeholderSection(
+      'the bundle metafile lists no node_modules inputs.',
+      'CLI npm dependencies'
+    );
+  }
+  return [`Bundled npm dependencies (from ${META_REL}):`, '', ...rows].join('\n');
+}
+
+/**
+ * The LICENSE of the exact Node.js release that builds the SEA (the runtime embedded in rdc),
+ * fetched from the tagged source at build time; the output records its sha256.
+ */
+async function nodeLicenseSection(): Promise<string> {
+  const version = process.version;
+  const url = `https://raw.githubusercontent.com/nodejs/node/${version}/LICENSE`;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(60_000) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const text = await res.text();
+    const digest = createHash('sha256').update(text).digest('hex');
+    return [
+      `Node.js ${version} (runtime embedded in rdc)`,
+      `  Source: ${url}`,
+      `  sha256: ${digest}`,
+      '',
+      text.trimEnd(),
+    ].join('\n');
+  } catch (err) {
+    return placeholderSection(
+      `the Node.js ${version} LICENSE could not be fetched from ${url}: ${(err as Error).message}`,
+      'Node.js runtime LICENSE'
+    );
+  }
 }
 
 function licenseTextsAppendix(repoRoot: string, spdxIds: string[]): string {
@@ -199,25 +387,23 @@ function licenseTextsAppendix(repoRoot: string, spdxIds: string[]): string {
     if (text) {
       blocks.push(`${header}\n\n${text.trimEnd()}`);
     } else {
-      const url = SPDX_URLS[spdx] ?? `https://spdx.org/licenses/${spdx}.html`;
       blocks.push(
-        `${header}\n\nFull license text: ${url}\n` +
-          '(Verbatim text is retrievable at the URL above. To bundle it in this file, ' +
-          `commit it to packages/cli/src/data/third-party-licenses/${spdx}.txt.)`
+        `${header}\n\nLICENSE TEXT MISSING for ${spdx}: commit the SPDX license-list-data ${SPDX_LICENSE_LIST_TAG} ` +
+          `text/${spdx}.txt, unchanged, to packages/cli/src/data/third-party-licenses/${spdx}.txt.`
       );
     }
   }
   return blocks.join('\n\n');
 }
 
-function build(repoRoot: string): string {
+async function build(repoRoot: string): Promise<string> {
   const credits = loadCredits(repoRoot);
   const embedded = credits.components.filter((c) => c.kind === 'embedded-binary');
   const rest = credits.components.filter((c) => c.kind !== 'embedded-binary');
 
-  const spdxIds = [...new Set(credits.components.map((c) => c.spdx))]
-    .filter((s) => s && s !== 'various')
-    .sort((a, b) => Number(a > b) - Number(a < b));
+  for (const c of credits.components) {
+    if (c.spdx && c.spdx !== 'various') noteLicenses(c.spdx);
+  }
 
   const parts: string[] = [];
   parts.push(RULE);
@@ -269,20 +455,29 @@ function build(repoRoot: string): string {
 
   parts.push('');
   parts.push(RULE);
+  parts.push('NODE.JS RUNTIME LICENSE');
+  parts.push(RULE);
+  parts.push('');
+  parts.push(await nodeLicenseSection());
+
+  parts.push('');
+  parts.push(RULE);
   parts.push('LICENSE TEXTS');
   parts.push(RULE);
   parts.push('');
+  // The report sections above have run, so reportIds now holds the inventory's ids and both reports' ids.
+  const spdxIds = [...reportIds].sort((a, b) => Number(a > b) - Number(a < b));
   parts.push(licenseTextsAppendix(repoRoot, spdxIds));
   parts.push('');
 
   return parts.join('\n');
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const { output, repoRoot } = parseArgs();
   let content: string;
   try {
-    content = build(repoRoot);
+    content = await build(repoRoot);
   } catch (err) {
     console.error(`generate-third-party-licenses: FATAL ${(err as Error).message}`);
     process.exit(1);
@@ -292,4 +487,4 @@ function main(): void {
   console.log(`THIRD_PARTY_LICENSES written to ${output} (${content.length} bytes)`);
 }
 
-main();
+await main();

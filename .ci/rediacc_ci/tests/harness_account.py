@@ -1,0 +1,425 @@
+#!/usr/bin/env python3
+"""The port harness for `rediacc_ci.core.account`: builds the sandbox and stub farm, runs one scenario against the port, and prints its observation lines; `test_core_account.py` compares them with the goldens.
+
+    PYTHONPATH=.ci python3 -m rediacc_ci.tests.harness_account --side new --port <port> <scenario>
+
+Moved from `.ci/rediacc_ci/tests/harness_account.py` by agent/plans/PLAN-tooling-code-reduction.md CR1 (last there at commit:aa829a19dc), where its header also carried the shadow-ledger history; the bash side it once drove is gone. Paragraphs below are the ones that still describe what runs.
+
+RUN AS A MODULE AND NEVER BY PATH, which is not a style choice. A by-path invocation puts `.ci/rediacc_ci/core` on `sys.path[0]` and nothing on it can find `rediacc_ci`, so the file would have to open with a hand-written `sys.path.insert` hop. `test_canonical_sys_path_hop.py` refuses exactly that, it refused this file on its first run, and `PYTHONPATH=.ci` plus `-m` removes
+the need rather than baselining it.
+
+-----------------------------------------------------------------------------
+THE SANDBOX, AND WHY EACH SIDE BUILDS ITS OWN
+-----------------------------------------------------------------------------
+`account.sh` reads and WRITES real paths under `$CONSOLE_ROOT_DIR`: `private/account/account.db`, `.account-state`, `.devbox-state`, `.account-logs/`. A differential pointing both sides at one directory would have the first side leave the tree in the state that makes the second take a different branch, and the comparison would then be between two different programs.
+
+The temporary directory differs between the two sides, so every observation is normalised: the sandbox root becomes `<work>` and `$HOME` becomes `<home>` before anything is printed.
+
+-----------------------------------------------------------------------------
+EVERY PORT NUMBER IS FIXED, AND A BUSY ONE IS A REFUSAL
+-----------------------------------------------------------------------------
+The two sides run as two processes, minutes apart, so an ephemeral port chosen at runtime would differ between them and land in a message text as a mismatch that says nothing about the port.
+Every port below is therefore a CONSTANT, and the driver refuses to run when the machine is not in the state the scenario needs: a port that must be free and is not, or a window that must be fully occupied and cannot be, exits 77 with the reason. Drifting to the next free port instead would silently measure a different branch on one side than on the other.
+
+-----------------------------------------------------------------------------
+THE FOUR SCENARIOS, AND WHAT EACH ONE WOULD CATCH
+-----------------------------------------------------------------------------
+  probe       `account_banner_row` over five widths including a multibyte
+              string, `account_rustfs_alive` against a dead port AND against a
+              live HTTP server this driver runs, `account_wait_port` in both
+              directions, and `account_allocate_ports` on a free pinned base and
+              on one whose MIDDLE port this driver holds open. The live-server
+              and held-port halves are the controls: without them every case in
+              the group is a refusal, and two identical refusals prove nothing.
+  keys        `account_generate_crypto_keys`, reduced to a claim per value: the
+              four key encodings by LENGTH, which is fixed-width and so a real
+              assertion, and the two random secrets by SHAPE (non-empty,
+              alphanumeric, at most 64 characters), because their length is not
+              fixed. No value is ever printed.
+  totp        Five state-file shapes, including the one with no `gateway_port=`
+              line at all, where the twin dies inside its own assignment and
+              prints NOTHING. A port that helpfully explained itself there would
+              be caught here.
+  db          The two refusals, plus TWO no-free-port refusals, one of them
+              through a `.devbox-state` file. That is the only way to observe the
+              devbox-derived preferred port without launching a server: the
+              driver holds every port in the scanned window open, and the twin
+              names the port it wanted in its refusal.
+"""
+
+from __future__ import annotations
+
+import argparse
+import contextlib
+import functools
+import http.server
+import io
+import os
+import pathlib
+import shutil
+import socket
+import sys
+import tempfile
+import threading
+
+from rediacc_ci import log, runtmp
+from rediacc_ci.core import account, ports
+
+# Every observation line starts with this prefix; the goldens and the tests key on it.
+OBS = "obs"
+
+EXIT_CANNOT_RUN = 77
+
+# The fixed ports. See the header for why none of them is ephemeral.
+#
+# BELOW THE KERNEL'S EPHEMERAL RANGE, AND ABOVE xdist_groups' WORKER SLICES (20000-30000). Until 2026-10-05 these sat at 45210-45340, inside Linux's default ip_local_port_range (32768-60999): in a one-pass pre-push beside sixty gates making outbound connections, an ephemeral SOURCE port took 45331, which no bind could then claim and no LISTEN probe saw, so `occupy` refused ("needs every port in 45300..45340 busy and these stayed free: 45331") and seven cases failed. `ports_outside_ephemeral` refuses, with the reason, on a kernel whose range reaches down to these.
+LIVE_PORT = 31210
+DEAD_PORT = 31211
+FREE_BASE = 31220
+PINNED_BASE = 31230
+DEVBOX_STUDIO_PORT = 31300
+# `account_db` scans `preferred .. preferred+40`, so a window is 41 ports wide.
+SCAN_WINDOW = account.DB_BROWSER_SCAN_SPAN + 1
+#: Every port this driver pins, low and high, for the ephemeral-range check.
+PINNED_SPAN = (LIVE_PORT, DEVBOX_STUDIO_PORT + SCAN_WINDOW - 1)
+EPHEMERAL_RANGE_FILE = pathlib.Path("/proc/sys/net/ipv4/ip_local_port_range")
+
+# What the sandbox symlinks. `.devcontainer` carries the toolchain pins; `scripts` and `.ci/scripts` are the trees the port's helpers resolve through. `.ci/lib` is not here: the directory was emptied when `local-common.sh` was deleted, and nothing in the port reads it.
+SANDBOX_LINKS = (
+    (".devcontainer",),
+    ("scripts",),
+    (".ci", "config"),
+    (".ci", "scripts"),
+    (".ci", "rediacc_ci"),
+)
+
+
+class RefusalError(RuntimeError):
+    """The driver cannot run, so its silence would not be evidence."""
+
+
+# --------------------------------------------------------------------------- the sandbox ---------------------------------------------------------------------------
+
+
+def build_sandbox(repo: pathlib.Path) -> pathlib.Path:
+    """One `CONSOLE_ROOT_DIR` for one side of one scenario."""
+    for parts in SANDBOX_LINKS:
+        source = repo.joinpath(*parts)
+        if not source.exists():
+            raise RefusalError(
+                "the sandbox cannot be built: %s is missing from %s, so neither side would "
+                "have the code under comparison" % ("/".join(parts), repo)
+            )
+    work = pathlib.Path(tempfile.mkdtemp(prefix="acct-shadow-", dir=runtmp.shared("harness-")))
+    for parts in SANDBOX_LINKS:
+        target = work.joinpath(*parts)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.symlink_to(repo.joinpath(*parts))
+    (work / "private" / "account").mkdir(parents=True, exist_ok=True)
+    return work
+
+
+def sandbox_env(work: pathlib.Path) -> dict[str, str]:
+    """The environment both sides run under, built the same way for each."""
+    return {
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "HOME": os.environ.get("HOME", "/tmp"),
+        "LC_ALL": "C",
+        "LANG": "C",
+        "CONSOLE_ROOT_DIR": str(work),
+        "REDIACC_CI_ROOT": str(work),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+
+
+# --------------------------------------------------------------------------- the controls ---------------------------------------------------------------------------
+
+
+class LiveServer:
+    """A real HTTP server, so the alive probes have something to find.
+
+    THE CONTROL THIS IS. `account_rustfs_alive` and `account_wait_port` both answer "no" for a closed port, and a driver that only ever asked about closed ports would compare two refusals and call that equivalence. This gives each side a port that really is serving, answering the same shape of probe RustFS answers.
+    """
+
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        """SILENT, because the default handler logs every request to stderr.
+
+        On the old side that lands on the driver's own stderr and is discarded; on the new side the request is served by a thread inside `contextlib.redirect_stderr`, so the access line landed in the captured observation and the two sides disagreed about a line neither implementation wrote.
+        """
+
+        def log_message(self, _format, *_args):
+            return
+
+    def __init__(self, port: int) -> None:
+        handler = functools.partial(
+            LiveServer.Quiet, directory=tempfile.mkdtemp(dir=runtmp.shared("harness-"))
+        )
+        try:
+            self.server = http.server.ThreadingHTTPServer(("127.0.0.1", port), handler)
+        except OSError as exc:
+            raise RefusalError(
+                "port %d is taken, so the live-server control cannot be set up and the "
+                "alive probes would compare two refusals: %s" % (port, exc)
+            ) from exc
+        self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+        self.thread.start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def require_free(base: int, count: int, why: str) -> None:
+    """Refuse unless `count` ports from `base` are all free right now."""
+    in_use = ports._prober()
+    busy = [base + i for i in range(count) if in_use(base + i)]
+    if busy:
+        raise RefusalError(
+            "%s needs %d free port(s) from %d and these are listening: %s. This driver does "
+            "not drift to another port, because the two sides run as two processes and a "
+            "drift on one of them compares two different branches."
+            % (why, count, base, ", ".join(str(p) for p in busy))
+        )
+
+
+def ports_outside_ephemeral(range_file: pathlib.Path = EPHEMERAL_RANGE_FILE) -> None:
+    """Refuse when the kernel's ephemeral range overlaps PINNED_SPAN: an outbound connection's source port could then hold a pinned port that no bind can take and no LISTEN probe sees. An unreadable range file (no procfs) is not this check's to judge."""
+    try:
+        low, high = (int(x) for x in range_file.read_text(encoding="utf-8").split()[:2])
+    except (OSError, ValueError):
+        return
+    if low <= PINNED_SPAN[1] and PINNED_SPAN[0] <= high:
+        raise RefusalError(
+            "the pinned ports %d..%d overlap this kernel's ephemeral range %d..%d (%s), so a concurrent "
+            "outbound connection can hold one of them" % (*PINNED_SPAN, low, high, range_file)
+        )
+
+
+def occupy(base: int, count: int, why: str) -> list[socket.socket]:
+    """Make `count` ports from `base` busy, and prove every one of them is.
+
+    A port already held by something else counts, which is why this verifies rather than trusting its own binds: the scenarios using it are ABOUT the no-free-port branch, and one free port in the window silently measures the opposite thing.
+    """
+    ports_outside_ephemeral()
+    held: list[socket.socket] = []
+    for offset in range(count):
+        sock = socket.socket()
+        try:
+            sock.bind(("127.0.0.1", base + offset))
+            sock.listen(1)
+        except OSError:
+            sock.close()
+            continue
+        held.append(sock)
+    in_use = ports._prober()
+    free = [base + i for i in range(count) if not in_use(base + i)]
+    if free:
+        for sock in held:
+            sock.close()
+        raise RefusalError(
+            "%s needs every port in %d..%d busy and these stayed free: %s"
+            % (why, base, base + count - 1, ", ".join(str(p) for p in free))
+        )
+    return held
+
+
+# --------------------------------------------------------------------------- printing ---------------------------------------------------------------------------
+
+
+def text_lines(text: str) -> list[str]:
+    """The lines `while IFS= read -r` would see: none at all for empty text."""
+    if text == "":
+        return []
+    lines = text.split("\n")
+    if lines[-1] == "":
+        lines.pop()
+    return lines
+
+
+class Printer:
+    """The one emitter the new side goes through, matching the bash helpers above."""
+
+    def __init__(self, work: pathlib.Path) -> None:
+        self.work = str(work)
+        self.home = os.environ.get("HOME", "/tmp")
+
+    def norm(self, text: str) -> str:
+        return text.replace(self.work, "<work>").replace(self.home, "<home>")
+
+    def emit(self, text: str) -> None:
+        print("%s %s" % (OBS, self.norm(text)))
+
+    def step(self, name: str, rc: int, out: str, err: str) -> None:
+        self.emit("rc %s=%d" % (name, rc))
+        for line in text_lines(out):
+            self.emit("out %s| %s" % (name, line))
+        for line in text_lines(err):
+            self.emit("err %s| %s" % (name, line))
+
+    def banner(self, row: str) -> None:
+        self.emit("banner| %s" % row.replace(" ", "."))
+
+
+# The scenarios, in the order the ledger lists them. Each is one function of `run_new`.
+SCENARIOS = ("db", "keys", "probe", "totp")
+
+
+# --------------------------------------------------------------------------- the new side ---------------------------------------------------------------------------
+
+
+def call(printer: Printer, name: str, fn) -> int:
+    """Run one port call with its two streams captured, and print the same shape.
+
+    The return-value mapping is the twin's: False is exit 1, True and None are exit 0, and an `AccountError` carries the code the twin's `exit` would have used.
+    """
+    out, err = io.StringIO(), io.StringIO()
+    with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
+        log.reset(colour=False)
+        try:
+            result = fn()
+        except account.AccountError as exc:
+            result = exc.code
+        if result is False:
+            rc = 1
+        elif result is True or result is None:
+            rc = 0
+        else:
+            rc = int(result)
+    log.reset(colour=False)
+    printer.step(name, rc, out.getvalue(), err.getvalue())
+    return rc
+
+
+def run_new(scenario: str, printer: Printer, env: dict[str, str]) -> int:
+    """Drive `rediacc_ci.core.account` through the same scenario."""
+    account_directory = pathlib.Path(account.account_dir(env))
+    state = pathlib.Path(account.state_file(env))
+    devbox_state = pathlib.Path(account.devbox_state_file(env))
+    dead = int(env["DEAD_PORT"])
+
+    if scenario == "probe":
+        for text in ("hello", "", "%063d" % 0, "%070d" % 0, "héllo, ünicode"):
+            printer.banner(account.banner_row(text))
+        live = int(env["LIVE_PORT"])
+        call(printer, "rustfs-dead", lambda: account.rustfs_alive(dead))
+        call(printer, "rustfs-live", lambda: account.rustfs_alive(live))
+        call(printer, "wait-dead", lambda: account.wait_port(dead, "Thing", 0, env=env))
+        call(printer, "wait-live", lambda: account.wait_port(live, "Live", 5, env=env))
+
+        def allocate(base: str) -> int:
+            gateway, vite, astro = account.allocate_ports(dict(env, REDIACC_DEV_PORT_BASE=base))
+            print("gateway=%d vite=%d astro=%d" % (gateway, vite, astro))
+            return 0
+
+        call(printer, "allocate-free", lambda: allocate(env["FREE_BASE"]))
+        call(printer, "allocate-busy", lambda: allocate(env["PINNED_BASE"]))
+        return 0
+
+    if scenario == "keys":
+
+        def crypto_claims() -> int:
+            keys = account.generate_crypto_keys()
+            for name, value in (
+                ("ED25519_PRIV", keys.ed25519_priv),
+                ("ED25519_PUB", keys.ed25519_pub),
+                ("X25519_PRIV", keys.x25519_priv),
+                ("X25519_PUB", keys.x25519_pub),
+            ):
+                print("%s len=%d" % (name, len(value)))
+            for name, value in (("JWT_SEC", keys.jwt), ("API_K", keys.api_key)):
+                ok = bool(value) and value.isascii() and value.isalnum() and len(value) <= 64
+                print("%s shape=%s" % (name, "ok" if ok else "bad"))
+            return 0
+
+        call(printer, "keys", crypto_claims)
+        return 0
+
+    if scenario == "totp":
+        state.unlink(missing_ok=True)
+        call(printer, "no-state", lambda: account.totp(None, env))
+        for name, body in (
+            ("no-key", "started=1\n"),
+            ("empty-value", "gateway_port=\n"),
+            ("equals-in-value", "gateway_port=a=b\n"),
+            ("closed-port", "gateway_port=%d\n" % dead),
+        ):
+            state.write_text(body, encoding="utf-8")
+            call(printer, name, lambda: account.totp(None, env))
+        call(printer, "closed-port-email", lambda: account.totp("other@rediacc.io", env))
+        return 0
+
+    if scenario == "db":
+        call(printer, "unknown-option", lambda: account.db(["--bogus"], env))
+        call(printer, "studio-then-unknown", lambda: account.db(["--studio", "--bogus"], env))
+        call(printer, "no-database", lambda: account.db([], env))
+        nowhere = str(account_directory / "nowhere.db")
+        call(printer, "no-database-env", lambda: account.db([], dict(env, DATABASE_PATH=nowhere)))
+        (account_directory / "account.db").write_text("", encoding="utf-8")
+        devbox_state.unlink(missing_ok=True)
+        call(printer, "no-port-plain", lambda: account.db([], env))
+        devbox_state.write_text("base_port=%s\n" % env["DEVBOX_BASE"], encoding="utf-8")
+        call(printer, "no-port-devbox", lambda: account.db([], env))
+        return 0
+
+    raise RefusalError("unknown scenario %r" % scenario)
+
+
+# --------------------------------------------------------------------------- argv ---------------------------------------------------------------------------
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="one side of the core.account differential")
+    parser.add_argument("--side", choices=("new",), required=True)
+    parser.add_argument("--port", required=True, help="the Python module under comparison")
+    parser.add_argument("scenario", choices=SCENARIOS)
+    args = parser.parse_args(argv)
+
+    repo = pathlib.Path.cwd().resolve()
+    if not (repo / args.port).is_file():
+        sys.stderr.write(
+            "harness_account: the port %s does not exist under %s. A ledger row naming a "
+            "file that is not there attests to nothing.\n" % (args.port, repo)
+        )
+        return EXIT_CANNOT_RUN
+
+    server = None
+    held: list[socket.socket] = []
+    work = None
+    try:
+        require_free(DEAD_PORT, 1, "the dead-port probe")
+        require_free(FREE_BASE, 3, "the free pinned base")
+        require_free(PINNED_BASE, 1, "the pinned base itself")
+        require_free(PINNED_BASE + 2, 1, "the third port of the pinned triple")
+        server = LiveServer(LIVE_PORT)
+        # The MIDDLE port of the pinned triple, so the twin's loop has to reach offset 1 before it refuses. Holding offset 0 would also pass for an implementation that only ever probed the base.
+        held.extend(occupy(PINNED_BASE + 1, 1, "the busy pinned triple"))
+        held.extend(occupy(DEVBOX_STUDIO_PORT, SCAN_WINDOW, "the devbox studio scan window"))
+        held.extend(occupy(account.DB_BROWSER_PREFERRED, SCAN_WINDOW, "the default scan window"))
+
+        work = build_sandbox(repo)
+        printer = Printer(work)
+        env = sandbox_env(work)
+        env.update(
+            {
+                "DEAD_PORT": str(DEAD_PORT),
+                "LIVE_PORT": str(LIVE_PORT),
+                "FREE_BASE": str(FREE_BASE),
+                "PINNED_BASE": str(PINNED_BASE),
+                "DEVBOX_BASE": str(DEVBOX_STUDIO_PORT - account.DEVBOX_OFFSET_STUDIO),
+            }
+        )
+        return run_new(args.scenario, printer, env)
+    except RefusalError as exc:
+        sys.stderr.write("harness_account: %s\n" % exc)
+        return EXIT_CANNOT_RUN
+    finally:
+        if server is not None:
+            server.close()
+        for sock in held:
+            sock.close()
+        if work is not None:
+            shutil.rmtree(work, ignore_errors=True)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

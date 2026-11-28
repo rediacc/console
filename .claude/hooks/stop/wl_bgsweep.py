@@ -18,9 +18,12 @@ DECLARED IS NOT THE SAME AS NEEDED (2026-10-24). The paragraph above once read "
   duplicate-wait  a younger wait loop whose probe another, newer wait loop repeats: one waiter per target is enough.
   finished-agent  a shell a sub-agent launched (`"backgroundTaskId":"<id>"` in its transcript, the link `wl_roster.shell_waiters` reads) while that agent is not running, its transcript proves the turn ended, and it has been quiet BGSWEEP_AGE_MIN.
 
+LIVE WORK IS NEVER A KILL ORDER (2026-11-26). An orphan or a finished agent's shell is judged by its DESCENDANTS too: pid 701267, a finished runner's shell, had the child `python3 -m rediacc_ci.housekeeping.cf_retire archive rediacc-www-media --to-bucket media` 27+ minutes into a sha256 verify of 8,422 objects, and the check ordered `kill -- -701267` on every stop. A descendant that is not a wait command (`sleep`, a poll probe such as `grep`/`test`/`ls`/`tail`, a shell layer, the wake timer) makes the finding `live-work`: reported once, age-free (`live_work_report`), as "unowned live work: <command>, adopt or let finish", with no kill command. A shell with no descendant keeps its old verdict, and the wait-loop and duplicate-wait kinds are never reclassified.
+
 EXEMPT BY COMMAND SHAPE (`LONG_WORK`): the session's wake timer (`wl_wake.py`, split out of the declared set by the hook, so it used to be reported as an orphan once 20 minutes old), `ci-trace --wait`, `wl_prreview --wait`, `wl_wait.py`, renders and test runs. None of those is a shell loop, so they never classify as a wait loop; the list keeps them out of `finished-agent`, and the wake timer out of every kind.
 
 NOTIFICATION, NOT ACTION. No code here calls `os.kill`/`terminate()` against a discovered process. `worklist.py --reap` is the existing "retire a roster entry" verb and it only ever mutates bookkeeping; a future, separate `--reap-pid` verb is where a kill step would plug in, requiring an explicit operator invocation and a fresh re-resolution of the anchor at the moment of the kill (a TOCTOU guard, since the pid could have been reaped and reused between notify and act).
+A FINISHED LEASE IS THE ONE EXCEPTION (operator ruling 2026-11-26, agent/plans/PLAN-host-temp-disposal.md D8): the detached `host_temp sweep` the Stop segment `host-temp` (wl_hosttemp) starts kills a lease's leftover processes 30 minutes after its agent finished; this module still kills nothing, and `sweep()` lists live-work shells too, so its rows are never kill targets (`is_kill_order` decides that).
 """
 
 import os
@@ -203,11 +206,12 @@ def bookkept(rows, live_ids, stdout_task=_stdout_task):
     return {pid for pid, _pp, _c, _a in rows if is_owned(pid)}
 
 
-ORPHAN, WAIT_LOOP, DUPLICATE_WAIT, FINISHED_AGENT = (
+ORPHAN, WAIT_LOOP, DUPLICATE_WAIT, FINISHED_AGENT, LIVE_WORK = (
     "orphan",
     "wait-loop",
     "duplicate-wait",
     "finished-agent",
+    "live-work",
 )
 
 
@@ -216,9 +220,18 @@ class Finding(NamedTuple):
     pgid: int | None
     age_min: float | None
     cmd: str  # the command as typed (the harness wrapper peeled off)
-    kind: str  # ORPHAN, WAIT_LOOP, DUPLICATE_WAIT or FINISHED_AGENT
-    target: str  # the polled probe for the two wait kinds, the owning agent id for FINISHED_AGENT
-    note: str  # the target file's state, or the agent's quiet time; "" when nothing is known
+    kind: str  # ORPHAN, WAIT_LOOP, DUPLICATE_WAIT, FINISHED_AGENT or LIVE_WORK
+    target: str  # the polled probe for the two wait kinds, the owning agent id for FINISHED_AGENT, the live descendant's command for LIVE_WORK
+    note: str  # the target file's state, or the agent's quiet time; for LIVE_WORK, why the shell would otherwise have been reported; "" when nothing is known
+    origin: str = ""  # for LIVE_WORK, the kind the shell alone would have had (ORPHAN or FINISHED_AGENT); "" otherwise
+
+
+class Findings(list):
+    """findings()'s answer: the [Finding] list, plus `unread`, which names a read the sweep could not make ("" when every read answered). A list, so a caller that only iterates reads it as before; `unread` is not yet consumed by any caller; it is there for the stop to name in a check-read-failed advisory (agent/plans/PLAN-silent-failure-sweep.md SF7)."""
+
+    def __init__(self, rows=(), unread: str = ""):
+        super().__init__(rows)
+        self.unread = unread
 
 
 # Legitimately long work, by command shape. Each entry names its exemption; see the module docstring. A tool name counts only as a WORD (`_W`): never inside a path or a file name, so `until [ -s /tmp/ms-render-ar.log ]` or a probe under `/tmp/pytest-of-<user>/` stays a poll (the first draft matched both).
@@ -249,6 +262,68 @@ def long_work(cmd):
     for name, rx in LONG_WORK:
         if rx.search(cmd or ""):
             return name
+    return ""
+
+
+# A descendant whose program is one of these is waiting, not working: the sleep of a wait loop, its probe, or a reporting command after it. A shell layer is a container, judged by its own descendants.
+_WAIT_PROGS = frozenset(
+    {
+        "sleep",
+        "grep",
+        "egrep",
+        "fgrep",
+        "rg",
+        "test",
+        "[",
+        "[[",
+        "ls",
+        "tail",
+        "head",
+        "cat",
+        "wc",
+        "stat",
+        "true",
+        "false",
+        ":",
+        "date",
+        "echo",
+        "printf",
+        "inotifywait",
+    }
+)
+_SHELL_PROGS = frozenset({"bash", "sh", "dash", "zsh"})
+_ASSIGN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
+
+
+def _program(cmd):
+    """The basename of the program `cmd` runs, past an `env` prefix and leading VAR=value assignments."""
+    words = (cmd or "").split()
+    while words and (words[0] == "env" or words[0].endswith("/env") or _ASSIGN.match(words[0])):
+        words = words[1:]
+    return os.path.basename(words[0]) if words else ""
+
+
+def live_command(rows, pid):
+    """The command of the first descendant of `pid` (within `rows`) that is real work, or "" when every descendant only waits.
+
+    Waiting: a `_WAIT_PROGS` program, a shell layer (`bash`, `sh`, ...: its own descendants decide), and the wake timer. Anything else is work, LONG_WORK included: killing a test run throws work away as surely as killing an archive verify.
+    """
+    children: dict[Any, list[Any]] = {}
+    for row in rows:
+        children.setdefault(row[1], []).append(row)
+    seen, queue = {pid}, [pid]
+    while queue:
+        cur = queue.pop(0)
+        for row in children.get(cur, ()):
+            if row[0] in seen:
+                continue
+            seen.add(row[0])
+            queue.append(row[0])
+            cmd = inner_command(row[2])
+            prog = _program(cmd)
+            if prog in _WAIT_PROGS or prog in _SHELL_PROGS or wl_wake.WAKER_RE.search(cmd):
+                continue
+            return cmd
     return ""
 
 
@@ -335,8 +410,15 @@ def _pgid(pid):
             return None
 
 
+def is_kill_order(f):
+    """True when finding `f` is a shell to kill; False for live work, which is adopted or left to finish."""
+    return f.kind != LIVE_WORK
+
+
 def kill_command(f):
-    """The exact command that ends finding `f`: the whole group when the row leads its own group (a harness task is started with setsid, so the group is the task and nothing else), else the pid."""
+    """The exact command that ends finding `f`: the whole group when the row leads its own group (a harness task is started with setsid, so the group is the task and nothing else), else the pid. "" for live work, which is never a kill order."""
+    if not is_kill_order(f):
+        return ""
     if f.pgid is not None and f.pgid == f.pid:
         return "kill -- -%d" % f.pid
     return "kill %d" % f.pid
@@ -350,9 +432,26 @@ def describe(f):
         why = "duplicate wait loop: a newer one polls the same %s" % f.target
     elif f.kind == FINISHED_AGENT:
         why = "launched by sub-agent %s, which has finished" % f.target
+    elif f.kind == LIVE_WORK:
+        why = "unowned live work: %s, adopt or let finish" % f.target
     else:
         why = "undeclared: no running task owns it"
     return "%s (%s)" % (why, f.note) if f.note else why
+
+
+def live_work_report(found):
+    """The once-only advisory body for the LIVE_WORK findings in `found`, or "" when there is none. Age-free on purpose: an unchanged set renders the same text every stop, so the advisory queue shows it once."""
+    rows = [
+        "    pid %d: %s\n        %s\n" % (f.pid, describe(f), f.cmd[:160])
+        for f in sorted((f for f in found if f.kind == LIVE_WORK), key=lambda f: f.pid)
+    ]
+    if not rows:
+        return ""
+    return (
+        "%d UNOWNED LIVE WORK SHELL(S) UNDER THIS SESSION'S OWN HARNESS (no kill order):\n%s"
+        "Each shell has a descendant doing real work, so it is not killed. Adopt it (read its "
+        "output when it ends) or let it finish.\n" % (len(rows), "".join(rows))
+    )
 
 
 def findings(
@@ -364,14 +463,17 @@ def findings(
     pgid_of=_pgid,
     target_note=_target_note,
 ):
-    """[Finding] for this session's harness: undeclared orphans, and the declared shapes no declaration excuses (module docstring). [] when the anchor cannot be resolved.
+    """Findings ([Finding]) for this session's harness: undeclared orphans, and the declared shapes no declaration excuses (module docstring). Empty when the anchor cannot be resolved (a refusal, by design); empty with `unread` set when the process table cannot be read, and `unread` names a failed owner read while the other findings stand.
 
     `owners` is a callable `owners({task id: age seconds}) -> ({task id: agent id}, {finished agent ids}, {agent id: quiet minutes})`, `owner_context` bound to the event in the hook. It is called only when a declared, non-loop, non-LONG_WORK task is old enough to matter, so a quiet stop reads no transcript. A row with age=None (unreadable start time) is an orphan "age unknown" when undeclared, never treated as 0 or as infinite; the declared kinds need a known age.
     """
     if table_with_age is None:
         table_with_age = proc_table_with_age()
     if not table_with_age:
-        return []
+        # This hook is itself a process, so an empty table is a failed read, never a clean one.
+        return Findings(
+            unread="the process table read came back empty, so no background shell was checked"
+        )
     anchor_source = (
         anchor_table
         if anchor_table is not None
@@ -386,6 +488,13 @@ def findings(
     out: list[Finding] = []
 
     def emit(pid, age, cmdline, kind, target="", note=""):
+        # An orphan or a finished agent's shell with a working descendant is live work: the reason it was reported rides the note, and no kill command is ordered. The note drops the agent's quiet time, which changes every stop, so the once-only advisory stays once-only.
+        origin = ""
+        if kind in (ORPHAN, FINISHED_AGENT):
+            work = live_command(rows, pid)
+            if work:
+                note = describe(Finding(pid, None, None, "", kind, target, ""))
+                origin, kind, target = kind, LIVE_WORK, work
         out.append(
             Finding(
                 pid,
@@ -395,6 +504,7 @@ def findings(
                 kind,
                 target,
                 note,
+                origin,
             )
         )
 
@@ -437,11 +547,17 @@ def findings(
         task = task_of.get(pid)
         if task and age is not None and age >= limit and not long_work(cmd):
             candidates.append((pid, age, cmdline, task))
+    unread = ""
     if candidates and owners is not None:
         try:
             owner_of, finished, quiet = owners({t: a for _p, a, _c, t in candidates})
-        except Exception:
+        except Exception as exc:
+            # The undeclared orphans and wait loops above stand on their own reads, so they are still reported; only the finished-agent judgement of these candidates is lost, and that loss is named.
             owner_of, finished, quiet = {}, set(), {}
+            unread = (
+                "the owner read failed (%s: %s), so %d declared shell(s) past %d min were not checked for a finished sub-agent"
+                % (type(exc).__name__, exc, len(candidates), BGSWEEP_AGE_MIN)
+            )
         for pid, age, cmdline, task in candidates:
             agent = (owner_of or {}).get(task)
             if agent and agent in (finished or ()):
@@ -463,70 +579,65 @@ def findings(
             emit(pid, age, cmdline, WAIT_LOOP, target, target_note(target))
         elif age is not None and newest.get(target, age) < age:
             emit(pid, age, cmdline, DUPLICATE_WAIT, target, target_note(target))
-    return out
+    return Findings(out, unread)
 
 
 def sweep(table_with_age=None, anchor_table=None, live_ids=None, stdout_task=_stdout_task):
-    """[(pid, age_min_or_None, cmdline)] -- the undeclared orphans alone, the shape this module first shipped with. `findings()` is the full report."""
+    """[(pid, age_min_or_None, cmdline)] -- the undeclared shells alone (orphans, and the undeclared ones reclassified as live work), the shape this module first shipped with. `findings()` is the full report."""
     return [
         (f.pid, f.age_min, f.cmd)
         for f in findings(
             table_with_age, anchor_table, live_ids, stdout_task, pgid_of=lambda _p: None
         )
-        if f.kind == ORPHAN
+        if ORPHAN in (f.kind, f.origin)
     ]
 
 
 def owner_context(event, cwd, session_id, task_ages, now=None):
-    """({task id: agent id}, {finished agent ids}, {agent id: quiet minutes}) for the shells in `task_ages` ({task id: age seconds}). Never raises; any failure is ({}, set(), {}).
+    """({task id: agent id}, {finished agent ids}, {agent id: quiet minutes}) for the shells in `task_ages` ({task id: age seconds}). Raises on a failed read (wl_roster, a transcript); findings() catches it, keeps every other finding and names the loss in `unread`.
 
     The link is the `"backgroundTaskId":"<id>"` an agent's transcript records when it launches a shell (wl_roster.shell_waiters reads the same). Only transcripts written since the oldest of these shells could have started are read. FINISHED: the event does not list the agent as running, `wl_roster.proven_finished` holds, and the transcript has been quiet BGSWEEP_AGE_MIN.
     """
-    try:
-        import wl_roster as R
+    import wl_roster as R
 
-        task_ids = {str(t) for t in task_ages or () if t}
-        if not task_ids:
-            return {}, set(), {}
-        now = time.time() if now is None else now
-        metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
-        running = {
-            str(b.get("id") or "")
-            for b in (event.get("background_tasks") or [])
-            if isinstance(b, dict) and b.get("type") == "subagent" and b.get("status") == "running"
-        }
-        # A transcript last written before the oldest shell started cannot have launched it.
-        since = now - max(float(a or 0) for a in task_ages.values()) - 60
-        owners: dict[str, str] = {}
-        finished: set[str] = set()
-        quiet: dict[str, int] = {}
-        for aid, m in metas.items():
-            jsonl = m.get("jsonl")
-            try:
-                mtime = jsonl.stat().st_mtime
-            except (OSError, AttributeError):
-                continue
-            if mtime < since:
-                continue
-            try:
-                data = jsonl.read_bytes()
-            except OSError:
-                continue
-            hit = False
-            for mm in re.finditer(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"', data):
-                sid = mm.group(1).decode()
-                if sid in task_ids:
-                    owners[sid] = aid
-                    hit = True
-            if not hit:
-                continue
-            quiet[aid] = int((now - mtime) / 60)
-            if (
-                aid not in running
-                and now - mtime >= BGSWEEP_AGE_MIN * 60
-                and R.proven_finished(jsonl, now, m.get("name", ""), cwd, session_id)
-            ):
-                finished.add(aid)
-        return owners, finished, quiet
-    except Exception:
+    task_ids = {str(t) for t in task_ages or () if t}
+    if not task_ids:
         return {}, set(), {}
+    now = time.time() if now is None else now
+    metas = R.load_metas(R.session_subagents_dir(cwd, session_id))
+    running = {
+        str(b.get("id") or "")
+        for b in (event.get("background_tasks") or [])
+        if isinstance(b, dict) and b.get("type") == "subagent" and b.get("status") == "running"
+    }
+    # A transcript last written before the oldest shell started cannot have launched it.
+    since = now - max(float(a or 0) for a in task_ages.values()) - 60
+    owners: dict[str, str] = {}
+    finished: set[str] = set()
+    quiet: dict[str, int] = {}
+    for aid, m in metas.items():
+        jsonl = m.get("jsonl")
+        try:
+            mtime = jsonl.stat().st_mtime
+        except (OSError, AttributeError):
+            continue
+        if mtime < since:
+            continue
+        # No OSError guard: the stat above just answered, so a failed read is a real read failure, which findings() names (docstring) instead of dropping this agent's finished judgement without a word.
+        data = jsonl.read_bytes()
+        hit = False
+        for mm in re.finditer(rb'"backgroundTaskId":"([A-Za-z0-9_-]+)"', data):
+            sid = mm.group(1).decode()
+            if sid in task_ids:
+                owners[sid] = aid
+                hit = True
+        if not hit:
+            continue
+        quiet[aid] = int((now - mtime) / 60)
+        if (
+            aid not in running
+            and now - mtime >= BGSWEEP_AGE_MIN * 60
+            and R.proven_finished(jsonl, now, m.get("name", ""), cwd, session_id)
+        ):
+            finished.add(aid)
+    return owners, finished, quiet

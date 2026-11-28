@@ -2,7 +2,7 @@
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/announce-gate-skips.sh` over each case below and its bytes were compared against the port's, byte-identical on every path but one.
 
-THE K=5 LEDGER IS `.ci/shadow/w7p6-announce-gate-skips.observations.jsonl`, recorded over five distinct trees against a disposable scratch git repo built OUTSIDE this checkout: this repo's working tree is not clean and `shadow-gate.ts --record` refuses a dirty tree.
+THE K=5 LEDGER IS the ledger (deleted in commit:936280cd35), recorded over five distinct trees against a disposable scratch git repo built OUTSIDE this checkout: this repo's working tree is not clean and `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree.
 
 The twin has now been deleted, and every case compares against `goldens/announce-gate-skips/`, which holds the twin's OWN recorded output. The provenance header of each golden carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed those bytes.
 

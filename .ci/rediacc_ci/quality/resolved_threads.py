@@ -1,6 +1,6 @@
 r"""Every review thread must be RESOLVED, and nobody may be requesting changes.
 
-Ported from `.ci/scripts/quality/check-resolved-threads.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-resolved-threads.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
+Ported from `.ci/scripts/quality/check-resolved-threads.sh`, which W7 P5 batch G1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHAT IT IS, in the twin's own words:
 

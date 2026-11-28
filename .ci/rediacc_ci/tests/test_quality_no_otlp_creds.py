@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.no_otlp_creds`, driven directly.
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-no-otlp-creds.sh` over a fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. THE TWIN HAD NO ENVIRONMENT SEAM -- it resolved the repo root from `get_repo_root`, i.e. from `.ci/scripts/lib/common.sh`'s own location -- so unlike
-`test_quality_staging_tag_guard.py` the twin had to be COPIED into the fixture. That is the recipe the committed ledger uses (`.ci/shadow/w7p2-otlp-creds.observations.jsonl`), and it is what makes the tree id in those rows a claim about both implementations.
+`test_quality_staging_tag_guard.py` the twin had to be COPIED into the fixture. That is the recipe the committed ledger uses (the ledger (deleted in commit:936280cd35)), and it is what makes the tree id in those rows a claim about both implementations.
 
 THE TWIN WAS RETIRED IN W7 P5 once that ledger licensed the port at K=5, and the cases that copied and ran it were retired with it: a fixture holding one implementation compares nothing. Two properties they carried are recorded here rather than lost silently. This gate writes everything through `log_*`, so every line lands on stderr and stdout stays empty, and the pair of
 byte comparisons was what would have caught a stream swap. And `log_info` prefixes a SECOND success glyph onto a line that already carries one, a twin defect the port reproduces rather than tidies; the ledger's rows are the record of that agreement now.

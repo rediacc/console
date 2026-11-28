@@ -23,17 +23,19 @@ IT FAILS OPEN, LOUDLY, as its edit sibling does: a scanner that cannot be import
 
 import importlib
 import io
-import os
 import pathlib
 import re
 import sys
 import tokenize
 
 from rediacc_hooks import hookio, shellscan, syspath
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_suppressions_shell_write", "EDGE_CASES", "_NQ", "_SC", "_TSI")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
-ORDER = 58
+ORDER = 57
 
 # Planting `False` here drops shape 1, the redirect: `cat > a.py <<EOF` with a marker in the body goes through, and the redirect cases flip.
 DEFECT = ("if language is not None:", "if False:")
@@ -83,55 +85,6 @@ Instead:
     is refused here.
 """
 
-_NQ = "# noq" + "a"
-_TSI = "@ts-ignor" + "e"
-_SC = "# shellcheck disabl" + "e"
-
-EDGE_CASES = [
-    (
-        "a heredoc writing a python file with a marker",
-        "cat > /r/x.py <<'EOF'\nimport os  %s: F401\nEOF" % _NQ,
-    ),
-    ("an append to a shell script", "echo '%s=SC2086' >> scripts/x.sh" % _SC),
-    ("tee into a TS file", "printf '// %s\\n' | tee src/a.ts" % _TSI),
-    ("sed -i adding a marker", "sed -i 's/x = 1/x = 1  %s: B010/' a.py" % _NQ),
-    ("sed -i appending a marker line", "sed -i '/^import/a %s: E402' a.py" % _NQ),
-    (
-        "python -c writing a marker",
-        "python3 -c \"open('a.py','a').write('x = 1  %s: B010')\"" % _NQ,
-    ),
-    (
-        "python heredoc writing a marker",
-        "python3 - <<'EOF'\nimport pathlib\npathlib.Path('a.py').write_text('x = 1  %s: B010\\n')\nEOF"
-        % _NQ,
-    ),
-    ("inside sh -c", "sh -c \"echo 'x = 1  %s: B010' >> a.py\"" % _NQ),
-    # CONTROLS.
-    ("sed -i removing a marker", "sed -i 's/  %s: B010//' a.py" % _NQ),
-    ("echo to the terminal", "echo 'never write %s: B010'" % _NQ),
-    (
-        "a commit message heredoc naming the marker",
-        "git commit -F - <<'EOF'\nfix: drop the %s: B010 swaps\nEOF" % _NQ,
-    ),
-    (
-        "a heredoc into a Markdown file",
-        "cat > docs/x.md <<'EOF'\nNever write `%s: B010`.\nEOF" % _NQ,
-    ),
-    ("grep for markers", "grep -rnP '%s' .ci" % _NQ),
-    (
-        "a python program that only reads",
-        "python3 -c \"print(open('a.py').read().count('%s'))\"" % _NQ,
-    ),
-    ("an unrelated redirect", "echo hello > /tmp/out.txt"),
-    ("a heredoc python file with no marker", "cat > /r/x.py <<'EOF'\nimport os\nEOF"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    (
-        "sed -i launched by find -exec on the *.py it names",
-        "find . -name '*.py' -exec sed -i 's/$/  %s: E501/' {} +" % _NQ,
-    ),
-    ("a launched grep only reads", "find . -name '*.py' -exec grep -n '%s' {} +" % _NQ),
-]
-
 
 def _engine():
     root = hookio.repo_root()
@@ -150,17 +103,6 @@ def _language(engine, target, content):
     return engine.language_for(target, head)
 
 
-def _abs(target, run_cwd, cwd):
-    # A kept `<name>/..` pair is read where the disk resolves it (review 2925782e.1), so the baseline counted is the file the write replaces.
-    run_cwd = shellscan.write_directory(run_cwd, cwd)
-    base = (
-        cwd
-        if run_cwd is None
-        else (run_cwd if os.path.isabs(run_cwd) else os.path.join(cwd, run_cwd))
-    )
-    return target if os.path.isabs(target) else os.path.normpath(os.path.join(base, target))
-
-
 def _disk_counts(engine, path, language):
     try:
         with open(path, encoding="utf-8", errors="surrogateescape") as handle:
@@ -169,9 +111,7 @@ def _disk_counts(engine, path, language):
         return engine.count_markers("", language)
 
 
-def _operands(argv):
-    """`run.argv` is the ARGUMENTS, without the command name."""
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = shellscan.plain_operands
 
 
 def _run_operands(run, argv):
@@ -208,15 +148,16 @@ def _render(engine, grew):
     return ", ".join(engine.render_marker(kind, code) for kind, code, _b, _a in grew)
 
 
-_redirects = shellscan.analysis_redirects
+# The `shellscan.write_records` readings whose content is the run's text: an output redirect (`>`, `>>`) and a `tee`. A record's `path` is where the write lands (a kept `<name>/..` pair placed where the disk resolves it, review 2925782e.1), so the baseline counted is the file the write replaces, and its `append` says whether the file's own markers stay.
+_TEXT_WRITES = frozenset(("redirect", "append", "tee"))
 
 
-def _offending(engine, cmd, cwd):
-    """A one-line description of the first marker-adding write in `cmd`, or ""."""
-    analysis = shellscan._analyse(cmd)
+def _offending(engine, cmd, cwd, records=None):
+    """A one-line description of the first marker-adding write in `cmd`, or "". `records` is the chain's one walk (`shellscan.event_write_records`); without it the walk is made here."""
+    if records is None:
+        records = shellscan.write_records(cmd, cwd)
     # A nested heredoc's offsets index its payload, not `cmd` (#78afdc0b): the body is read from its own text.
     bodies = shellscan.heredoc_bodies(cmd)
-    appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}
     # What a `tee` writes is its UPSTREAM stage's output; read as every writer's arguments in the command, plus the heredocs.
     # THE LAUNCHED COMMANDS TOO (#503f0ba8): a `sed -i` or an interpreter that `find -exec` or `npx -c` starts writes the same files, so the runs are `shellscan.every_run`.
     runs = shellscan.every_run(cmd)
@@ -230,8 +171,10 @@ def _offending(engine, cmd, cwd):
         written = shellscan.writer_text(run, cmd) if pure else ""
         # A pure writer's text carries its own heredoc or feed; any other redirect (`python3 gen.py > a.py`) is read with every heredoc in the command, as before.
         content = (written or "") if pure else "\n".join(bodies)
-        targets = shellscan.redirect_targets(run) + (_operands(argv) if name == "tee" else [])
-        for target in targets:
+        for write in records:
+            if write.run is not run or write.how not in _TEXT_WRITES:
+                continue
+            target = write.word
             language = _language(engine, target, content)
             if language is not None and pure and written is None:
                 return "a write of text this hook cannot read into %s (%s)" % (
@@ -240,11 +183,10 @@ def _offending(engine, cmd, cwd):
                 )
             if language is not None:
                 new = engine.count_markers(content, language)
-                appending = target in appends or (name == "tee" and "-a" in argv)
                 old = (
                     engine.count_markers("", language)
-                    if appending
-                    else _disk_counts(engine, _abs(target, run.cwd, cwd), language)
+                    if write.append
+                    else _disk_counts(engine, write.path, language)
                 )
                 grew = engine.growth(old, new)
                 if grew:
@@ -339,7 +281,9 @@ def run(ev):
     except (ImportError, OSError, RuntimeError, SyntaxError) as exc:
         ev.warn(UNEXAMINED % exc)
         return hookio.ALLOW
-    what = _offending(engine, cmd, ev.default(("cwd",), str(root)))
+    what = _offending(
+        engine, cmd, ev.default(("cwd",), str(root)), shellscan.event_write_records(ev)
+    )
     if not what:
         return hookio.ALLOW
     ev.warn_raw(MESSAGE % (what, cmd.split("\n", 1)[0][:160]))

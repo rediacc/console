@@ -20,6 +20,7 @@ const {
   getRsyncCommandMock,
   createTempSSHKeyFileMock,
   removeTempSSHKeyFileMock,
+  dialedOverride,
 } = vi.hoisted(() => ({
   readFileMock: vi.fn(),
   writeFileMock: vi.fn(),
@@ -34,6 +35,8 @@ const {
   getRsyncCommandMock: vi.fn(),
   createTempSSHKeyFileMock: vi.fn(),
   removeTempSSHKeyFileMock: vi.fn(),
+  /** When set, the mocked client reports it as the address its session reached (an IPv6 fallback). */
+  dialedOverride: { host: undefined as string | undefined },
 }));
 
 // The persistent provision-state layer has its own suite (provision-state. test.ts); here it must be inert, its real config reads would wedge inside this file's blanket node:fs/promises mock.
@@ -70,8 +73,11 @@ class MockSFTPClient {
   writeFile = vi.fn((_path: string, _data: Buffer) => Promise.resolve());
   exists = vi.fn((_path: string) => Promise.resolve(false));
   close = vi.fn();
+  /** The real client reports the address it connected over; with no IPv6 fallback that is the configured host. */
+  readonly dialedHost: string;
 
-  constructor(_config: unknown) {
+  constructor(config: { host: string }) {
+    this.dialedHost = dialedOverride.host ?? config.host;
     mockInstances.push(this);
   }
 }
@@ -103,9 +109,12 @@ vi.mock('../core/embedded-assets.js', () => ({
   computeSha256: computeSha256Mock,
 }));
 
-vi.mock('../../remote/sync/index.js', () => ({
+vi.mock('../../remote/sync/index.js', async () => ({
   executeRsync: executeRsyncMock,
   getRsyncCommand: getRsyncCommandMock,
+  rsyncUserHost: (
+    await vi.importActual<typeof import('../../remote/sync/rsync.js')>('../../remote/sync/rsync.js')
+  ).rsyncUserHost,
 }));
 
 vi.mock('../../remote/ssh/index.js', () => ({
@@ -418,6 +427,48 @@ describe('RenetProvisionerService', () => {
     expect(getMockInstance(0).writeFile).not.toHaveBeenCalled();
   });
 
+  it('rsyncs to the address the session reached, not the configured host, after an IPv6 fallback', async () => {
+    const reached = '2001:db8::7';
+    dialedOverride.host = reached;
+    try {
+      const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+      const connectGate = Promise.withResolvers<void>();
+      connectDelegate.mockImplementation(async () => {
+        await connectGate.promise;
+      });
+      const provisionPromise = renetProvisioner.provision(
+        { host: 'hostinger', username: 'muhammed', privateKey: 'key' },
+        { localBinaryPath: '/tmp/renet' }
+      );
+      await vi.waitFor(() => expect(mockInstances).toHaveLength(1));
+      getMockInstance(0).exec.mockImplementation((command: string) =>
+        Promise.resolve(
+          ((): string => {
+            if (command === 'uname -m') return 'x86_64\n';
+            if (command.includes('flock -w 120')) return 'UPDATED CURRENT_UPDATED\n';
+            if (command.includes(' version 2>/dev/null')) return 'remote-hash\n';
+            if (command.includes('command -v rsync')) return '/usr/bin/rsync\n';
+            if (command.startsWith('readlink ')) return '/usr/lib/rediacc/renet/0.5.9/renet\n';
+            if (command.startsWith('cp -f ')) return '';
+            if (command.includes('sha256sum')) return 'local-hash\n';
+            throw new Error(`Unexpected command: ${command}`);
+          })()
+        )
+      );
+      connectGate.resolve();
+      const result = await provisionPromise;
+      expect(result.success).toBe(true);
+      expect(executeRsyncMock).toHaveBeenCalledTimes(1);
+      const destination = String(
+        (executeRsyncMock.mock.calls[0]?.[0] as { destination: string }).destination
+      );
+      expect(destination).toContain(reached);
+      expect(destination).not.toContain('hostinger');
+    } finally {
+      dialedOverride.host = undefined;
+    }
+  });
+
   it('uses the current slot as delta seed even when it matches the target path', async () => {
     const { renetProvisioner } = await import('../renet/renet-provisioner.js');
     const connectGate = Promise.withResolvers<void>();
@@ -454,17 +505,13 @@ describe('RenetProvisionerService', () => {
   });
 
   it('updates current to the newly activated slot for mixed-version installs', async () => {
-    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
     const remoteInstallPathNext = '/usr/lib/rediacc/renet/0.6.1/renet';
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPathNext);
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPathNext
+    );
 
     expect(command).toContain('/usr/lib/rediacc/renet/current/renet');
     expect(command).toContain('/usr/lib/rediacc/renet/0.6.1/renet');
@@ -577,17 +624,18 @@ describe('RenetProvisionerService', () => {
     expect(result.error).toContain("missing 'flock'");
   });
 
-  it('builds a lock command that is safe for POSIX sh', async () => {
+  it('keeps the install command off the provisioner class, so tests drive the one production builder', async () => {
     const { renetProvisioner } = await import('../renet/renet-provisioner.js');
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+    expect('buildLockedInstallCommand' in renetProvisioner).toBe(false);
+  });
+
+  it('builds a lock command that is safe for POSIX sh', async () => {
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPath
+    );
 
     expect(command).toContain("flock -w 120 -E 75 '/tmp/.rdc-renet-provision.lock' sh -c");
     expect(command).toContain("'set -eu;");
@@ -597,16 +645,12 @@ describe('RenetProvisionerService', () => {
 
   it('gives a lock timeout its own exit status and marker', async () => {
     // Without `-E`, flock's timeout exits 1, which the install body can also produce: a machine busy with someone else's provision was reported as "Unexpected provisioning result: (empty output)" and read as a broken install rather than as contention.
-    const { renetProvisioner } = await import('../renet/renet-provisioner.js');
-    const command = (
-      renetProvisioner as unknown as {
-        buildLockedInstallCommand: (
-          stagingPath: string,
-          localHash: string,
-          remoteInstallPath: string
-        ) => string;
-      }
-    ).buildLockedInstallCommand('/tmp/staging-renet', 'local-hash', remoteInstallPath);
+    const { buildLockedInstallCommand } = await import('../renet/renet-remote-install.js');
+    const command = buildLockedInstallCommand(
+      '/tmp/staging-renet',
+      'local-hash',
+      remoteInstallPath
+    );
 
     expect(command).toContain('-E 75');
     expect(command).toContain('[ "$rc" = 75 ] && echo FLOCK_TIMEOUT >&2');

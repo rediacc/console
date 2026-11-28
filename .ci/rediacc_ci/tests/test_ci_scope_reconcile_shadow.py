@@ -7,7 +7,7 @@ no need to fake `node` itself.
 
 EVERY CASE SETS `GITHUB_STEP_SUMMARY` TO A REAL FILE, matching the ONLY environment this script ever actually runs in (inside GitHub Actions, which always sets it). `test_summary_unset_duplicates_the_whole_output` is the one case that leaves it unset.
 
-WHILE BOTH COPIES EXISTED each case ran `.ci/scripts/ci/scope-reconcile-shadow.sh` beside the port over the same fixture and compared exit code, stdout, stderr and the summary file. The K=5 ledger `.ci/shadow/w7p6-scope-reconcile-shadow.observations.jsonl` recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed
+WHILE BOTH COPIES EXISTED each case ran `.ci/scripts/ci/scope-reconcile-shadow.sh` beside the port over the same fixture and compared exit code, stdout, stderr and the summary file. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed
 it went with it. The twin's own kernel-file-offset corruption on the unset-summary path went with it too, since there is no longer a second implementation to diverge from; what remains is the port's side of that behaviour, asserted directly.
 """
 

@@ -24,9 +24,9 @@ vi.mock('../../../version.js', () => ({
 vi.mock('../../config/config-resources.js', () => ({ configService: {} }));
 
 import { serverBundle } from '../bundle/build.js';
-import { parseManifest, parseSums } from '../bundle/manifest.js';
+import { BundleError, parseManifest, parseSums } from '../bundle/manifest.js';
 import { verifyBundle } from '../bundle/verify.js';
-import { FAKE_RELEASE_BASE, makeFake } from './fakes.js';
+import { FAKE_RELEASE_BASE, makeFake, signerOf } from './fakes.js';
 
 const OUT = '/bundles/acme';
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
@@ -71,7 +71,9 @@ describe('server bundle --with-cli', () => {
       expect.arrayContaining(['cli/linux-x64/rdc', 'cli/win-arm64/rdc.exe'])
     );
     expect(parseManifest(fake.files[`${OUT}/manifest.json`]).cli).toEqual(manifest.cli);
-    await expect(verifyBundle(fake.deps, OUT)).resolves.toEqual(manifest);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).resolves.toEqual(
+      manifest
+    );
   });
 
   it('verify refuses a CLI binary changed after bundling', async () => {
@@ -79,7 +81,9 @@ describe('server bundle --with-cli', () => {
     const { fake, run } = bundleWith('mac-arm64', release('1.0.0', ['rdc-mac-arm64']));
     await run();
     fake.files[`${OUT}/cli/mac-arm64/rdc`] = 'tampered';
-    await expect(verifyBundle(fake.deps, OUT)).rejects.toThrow(/tampered.*cli\/mac-arm64\/rdc/s);
+    await expect(verifyBundle(fake.deps, OUT, signerOf(fake.files, OUT))).rejects.toThrow(
+      /tampered.*cli\/mac-arm64\/rdc/s
+    );
   });
 
   it('refuses a download whose sha256 differs from the release checksum, and writes no records', async () => {
@@ -119,12 +123,27 @@ describe('server bundle --with-cli', () => {
     await expect(bundleWith('linux-x64', {}).run()).rejects.toThrow(/cliDownloadFailed.*404/s);
   });
 
-  it('CONTROL: without --with-cli the manifest has no cli entry and the host is never called', async () => {
+  it('CONTROL: without --with-cli the manifest has no cli entry and only the models are fetched from the host', async () => {
     m.version = '1.0.0';
     const { fake, run } = bundleWith(undefined, {});
     const manifest = await run();
     expect(manifest.cli).toBeUndefined();
-    expect(fake.calls.some((c) => c.startsWith('release'))).toBe(false);
+    expect(fake.calls.some((c) => c.startsWith('release') && !c.includes('/models/'))).toBe(false);
     expect(JSON.parse(fake.files[`${OUT}/manifest.json`])).not.toHaveProperty('cli');
+  });
+
+  it('refuses a cli or models entry that is not a list, naming the field', async () => {
+    m.version = '1.0.0';
+    const { fake, run } = bundleWith(undefined, {});
+    await run();
+    const good = JSON.parse(fake.files[`${OUT}/manifest.json`]);
+    // CONTROL: the unchanged manifest parses, so the refusals below are about the field.
+    expect(() => parseManifest(JSON.stringify(good))).not.toThrow();
+    for (const field of ['cli', 'models']) {
+      const refused = () => parseManifest(JSON.stringify({ ...good, [field]: 'not-a-list' }));
+      // A BundleError naming the field, not the TypeError an unchecked `.map` would throw.
+      expect(refused).toThrow(BundleError);
+      expect(refused).toThrow(field);
+    }
   });
 });

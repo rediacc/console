@@ -70,7 +70,7 @@ Exit: 0 on every path the twin reaches, including both early returns and a run
 where every delete failed; `date`'s status when the cutoff cannot be computed;
 1 from `require_cmd` / `require_var`; 2 from `parse_args` on a key that is not a shell identifier.
 
-K=5 LEDGER: `.ci/shadow/w7p6-cleanup-stale-d1.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

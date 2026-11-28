@@ -7,8 +7,8 @@ Both invocations run with `cwd` set to the SCRATCH repo (so `git tag -l` acts on
 THE ONE BASH-SEMANTICS CASE WORTH A DEDICATED TEST: a tag with more than three dotted components (`v1.2.3.4`) folds the fourth into PATCH re-joined with '.' via bash's `read` with too few variable names, rather than being dropped. If the port ever "simplified" this to a 3-way split, `test_extra_dotted_component` is the one that would catch it, and it is exercised for both
 directions (a component present, and PATCH bumped on top of it).
 
-K=5 LEDGER: `.ci/shadow/w7p6-resolve-version.observations.jsonl`, recorded
-against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `shadow-gate.ts --record` refuses a dirty tree). See that file's own header for the exact recording commands.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), recorded
+against a disposable scratch git repo built OUTSIDE this checkout (this repo's own working tree is not clean; `the shadow gate (commit:bf054adcd4) --record` refuses a dirty tree). See that file's own header for the exact recording commands.
 """
 
 from __future__ import annotations
@@ -171,3 +171,49 @@ def test_unknown_flag_prints_usage(tmp_path: pathlib.Path) -> None:
         "Usage: resolve-version.sh [--current | --bump-type patch|minor|major]\n",
     )
     assert as_twin(new) == old
+
+
+# `--preview` has no twin: the bash script never had it, so these run the port alone.
+def _port(repo: pathlib.Path, *args: str) -> tuple[int, str, str]:
+    return diff.bash_streams(
+        f"python3 -m rediacc_ci.version.{MODULE} {' '.join(args)}",
+        env=diff.env_for(PYTHONPATH=_CI_ABS, PYTHONDONTWRITEBYTECODE="1"),
+        cwd=str(repo),
+        timeout=30,
+    )
+
+
+def test_preview_stamps_the_next_version_with_the_sha7(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path, tags=["v1.2.3"])
+    full = "ABCDEF0123456789abcdef0123456789abcdef01"
+    assert _port(repo, "--bump-type", "patch", "--preview", full) == (
+        0,
+        "1.2.4-preview.abcdef0\n",
+        "",
+    )
+    assert _port(repo, "--bump-type", "minor", "--preview", "abcdef0") == (
+        0,
+        "1.3.0-preview.abcdef0\n",
+        "",
+    )
+
+
+def test_preview_without_it_leaves_the_plain_version(tmp_path: pathlib.Path) -> None:
+    # Silent control: the same bump without the flag stays plain, so the suffix comes from --preview alone.
+    repo = _make_repo(tmp_path, tags=["v1.2.3"])
+    assert _port(repo, "--bump-type", "patch") == (0, "1.2.4\n", "")
+
+
+def test_preview_is_refused_without_a_sha_or_a_bump(tmp_path: pathlib.Path) -> None:
+    repo = _make_repo(tmp_path, tags=["v1.2.3"])
+    assert _port(repo, "--bump-type", "patch", "--preview") == (
+        1,
+        "",
+        "Error: --preview requires a commit sha of 7 to 40 hex digits\n",
+    )
+    assert _port(repo, "--bump-type", "patch", "--preview", "zzzzzzz")[0] == 1
+    assert _port(repo, "--current", "--preview", "abcdef0") == (
+        1,
+        "",
+        "Error: --preview applies to --bump-type only\n",
+    )

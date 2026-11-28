@@ -34,6 +34,7 @@ const mockAddRepository = vi.hoisted(() => vi.fn());
 const mockRemoveRepository = vi.hoisted(() => vi.fn());
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
+    listRepositories: vi.fn(() => Promise.resolve([])),
     getCurrent: vi.fn().mockResolvedValue({ resources: { repositories: { app: {} } } }),
     getRepository: mockGetRepository,
     getRepositoryKey: (ref: string) => Promise.resolve(ref),
@@ -51,11 +52,13 @@ vi.mock('../../services/config/network-id-discovery.js', async (importOriginal) 
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
 vi.mock('../../services/machine/machine-connection.js', () => ({

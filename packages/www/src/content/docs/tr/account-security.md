@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: tr
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### Kimlik Doğrulama
@@ -79,6 +79,8 @@ Bir yapılandırmayı [Config Storage](/en/docs/config-storage) ile bağlamak, y
 - Passkey tabanlı anahtar türetme (WebAuthn + PRF)
 - İstek başına rotasyonlu döndürmeli tokenler
 
+[Güvenlik Modeli](/tr/docs/security-model) sayfası kimin neyi görebildiğini, anahtarların nasıl kapsamlandırıldığını ve nelerin kurtarılabildiğini açıklar.
+
 ### Oturum Güvenliği
 
 | Token Türü | Geçerlilik Süresi | Depolama | Yenileme |
@@ -117,6 +119,6 @@ rdc update --status            # Geçerli kanalı göster
 
 ### Yapay Zeka Ajanları için CLI Güvenlik Duruşu
 
-`rdc`'yi çağıran kodlama ajanları gerçek bir tehdit yüzeyi; bu yüzden onlara ayrı bir özne gibi davranıyoruz. Her `rdc` çağrısı başlangıçta ortam sinyallerine (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) ve bir Linux `/proc` soy ağacı yürüyüşüne göre **insan** veya **ajan** olarak sınıflandırılır. Tespit yöntem olarak en iyiyi amaçlar. Kararlı bir sarmalayıcı ortam değişkenlerini sahte gösterebilir; bu yüzden soy ağacı önemlidir. Ajanlar azaltılmış bir izin kümesi alır: hassas yapılandırma mutasyonları bilgi kapısı gerektirir (`--current <eski>`), etkileşimli düzenleyici soy ağacıyla doğrulanmış `REDIACC_ALLOW_CONFIG_EDIT` geçersiz kılması olmadan reddedilir ve herhangi bir görüntüleme komutundaki `--reveal` engellenir. Her karar (izin ver, reddet veya `--reveal` ver) `~/.config/rediacc/audit.log.jsonl` dosyasına hash zincirine bağlı bir JSONL satırı yazar. Zincir bütünlüğünü kontrol etmek için `rdc config audit verify` çalıştırın.
+`rdc`'yi çağıran kodlama ajanları gerçek bir tehdit yüzeyi; bu yüzden onlara ayrı bir özne gibi davranıyoruz. Her `rdc` çağrısı başlangıçta ortam sinyallerine (CLAUDECODE, GEMINI_CLI, COPILOT_CLI, CURSOR_TRACE_ID, REDIACC_AGENT) ve bir Linux `/proc` soy ağacı yürüyüşüne göre **insan** veya **ajan** olarak sınıflandırılır. Tespit yöntem olarak en iyiyi amaçlar. Kararlı bir sarmalayıcı ortam değişkenlerini sahte gösterebilir; bu yüzden soy ağacı önemlidir. Ajanlar azaltılmış bir izin kümesi alır: hassas yapılandırma mutasyonları bilgi kapısı gerektirir (`--current <eski>`), `rdc config edit` (etkileşimli, `--apply`, `--reveal`) hiçbir geçersiz kılma olmadan reddedilir ve herhangi bir görüntüleme komutundaki `--reveal` engellenir. Bir ajan yalnızca bir insanın açık onayının ve ilke tavanının ikisinin birden izin verdiği yerde eylem yapar ([AI Ajan Güvenliği](/tr/docs/ai-agents-safety)). Her karar (izin ver, reddet veya `--reveal` ver) `~/.config/rediacc/audit.log.jsonl` dosyasına hash zincirine bağlı bir JSONL satırı yazar. Zincir bütünlüğünü kontrol etmek için `rdc config audit verify` çalıştırın.
 
 Ajanların yapabilecekleri ve yapamadıklarının tam matrisi, bilgi kapısı örnekleri ve kapsam geçersiz kılma mekanizmaları için bkz. [Yapay Zeka Ajanı Güvenliği ve Korumalar](/tr/docs/ai-agents-safety).

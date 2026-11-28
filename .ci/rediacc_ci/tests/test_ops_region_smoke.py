@@ -17,7 +17,8 @@ SEED = "JBSWY3DPEHPK3PXP"
 VALUES = {
     rs.EMAIL_ENV: "probe@example.invalid",
     rs.PW_ENV: "pw-secret",
-    rs.MASTER_PW_ENV: "master-secret",
+    rs.MS_ID_ENV: "ms-id-1",
+    rs.MS_ENV: "RM1-secret",
 }
 SHOWN = json.dumps({"machines": {"a": 1}, "repos": []})
 
@@ -67,7 +68,7 @@ def test_the_smoke_runs_init_login_enable_refresh_and_show_in_order() -> None:
     assert fake.verbs() == [
         "config init region-smoke-eu",
         f"subscription login --server {ACCOUNT_DEFAULT_ORIGIN}",
-        f"-o json config remote enable --master-password --api-url {ACCOUNT_DEFAULT_ORIGIN}",
+        f"-o json config remote enable --machine-secret ms-id-1 --api-url {ACCOUNT_DEFAULT_ORIGIN}",
         "config remote refresh",
         "-o json config show",
     ]
@@ -78,12 +79,13 @@ def test_secrets_reach_only_the_children_that_need_them_and_never_argv() -> None
     fake = FakeRdc()
     _smoke(fake)
     for argv, _env in fake.calls:
-        assert not any(v in " ".join(argv) for v in VALUES.values())
+        # The secret's id is a public handle and rides argv; the secret itself never does.
+        assert not any(v in " ".join(argv) for k, v in VALUES.items() if k != rs.MS_ID_ENV)
     login = next(e for a, e in fake.calls if a[3] == "subscription")
     enable = next(e for a, e in fake.calls if "enable" in a)
     assert login[rs.LOGIN_PW_ENV] == "pw-secret"
-    assert rs.CLI_STORE_MASTER_PW_ENV not in login
-    assert enable[rs.CLI_STORE_MASTER_PW_ENV] == "master-secret"
+    assert rs.CLI_MS_ENV not in login
+    assert enable[rs.CLI_MS_ENV] == "RM1-secret"
     assert rs.LOGIN_PW_ENV not in enable
     assert all("RDC_DEV" not in e for _a, e in fake.calls)
     assert all(rs.EMAIL_ENV not in e and rs.PW_ENV not in e for _a, e in fake.calls)
@@ -136,7 +138,7 @@ def test_the_digest_is_independent_of_key_order_and_changes_with_content() -> No
 
 def test_values_refuse_a_missing_entry_and_the_placeholder() -> None:
     with pytest.raises(rs.SmokeError, match=rs.PW_ENV) as err:
-        rs.read_values({rs.EMAIL_ENV: "e", rs.MASTER_PW_ENV: "m"})
+        rs.read_values({rs.EMAIL_ENV: "e", rs.MS_ID_ENV: "i", rs.MS_ENV: "m"})
     assert err.value.rc == 2
     with pytest.raises(rs.SmokeError, match="placeholder"):
         rs.read_values({**VALUES, rs.EMAIL_ENV: rs.PLACEHOLDER})
@@ -231,6 +233,26 @@ def test_the_bench_profile_is_declared_and_the_declared_set_is_read_from_the_sup
     assert rs.profile_for("mars") not in rs.declared_profiles()
 
 
+def _bound_locals(profile: str) -> dict[str, str]:
+    """LOCAL -> STORE for every spec a declared profile binds (required and optional)."""
+    path = rs.paths.repo_root().joinpath(*rs.SUPPLY_REL)
+    supply = json.loads(path.read_text(encoding="utf-8"))["consumers"][profile]
+    out: dict[str, str] = {}
+    for spec in [*supply["required"], *supply.get("optional", [])]:
+        store, _, local = spec.partition(">")
+        out[(local or store).strip()] = store.strip()
+    return out
+
+
+def test_the_bench_profile_binds_every_name_the_smoke_requires() -> None:
+    """Red once: the profile bound REDIACC_SMOKE_MASTER_PASSWORD and no machine-secret pair, so a bench smoke refused at its value check (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret)."""
+    bound = _bound_locals(rs.profile_for("bench"))
+    assert set(rs.REQUIRED_NAMES) <= set(bound)
+    assert bound[rs.MS_ENV] == "REDIACC_MACHINE_SECRET"
+    assert bound[rs.MS_ID_ENV] == "REDIACC_MACHINE_SECRET_ID_BENCH_EU"
+    assert "REDIACC_SMOKE_MASTER_PASSWORD" not in bound
+
+
 def test_a_failing_remote_enable_with_a_partial_phrase_is_a_failed_step() -> None:
     """4f1397c0.3: only the CLI's already-linked message excuses a non-zero enable."""
 
@@ -249,6 +271,45 @@ def test_a_failing_remote_enable_with_a_partial_phrase_is_a_failed_step() -> Non
     linked = Enable()
     linked.text = 'Config "x" is already linked to remote storage and this device can open it, so'
     assert _smoke(linked)
+
+
+def test_a_failing_remote_enable_names_the_clis_own_error() -> None:
+    """Red once: a refused enable printed only `config remote enable failed (exit 2)`, hiding the server's team-scope refusal measured on bench 2026-11-24."""
+    said = "This enroll token's team scope does not cover the machine secret's scope"
+    envelope = json.dumps(
+        {"success": False, "errors": [{"code": "VALIDATION_ERROR", "message": said}]}
+    )
+
+    class Enable(FakeRdc):
+        def capture(self, argv, env, merge_stderr=False):
+            if "enable" in argv:
+                return 2, "-> Starting CLI (config x)\n" + envelope
+            return super().capture(argv, env, merge_stderr)
+
+    with pytest.raises(rs.SmokeError) as err:
+        _smoke(Enable())
+    assert said in str(err.value)
+
+
+def test_a_log_line_with_a_brace_before_the_envelope_still_names_the_error() -> None:
+    said = "the enroll token is expired"
+    envelope = json.dumps({"success": False, "errors": [{"code": "X", "message": said}]})
+    out = "-> retry {attempt 2} of 3\n" + envelope
+    assert rs.cli_error_messages(out) == [said]
+
+
+def test_control_a_non_envelope_enable_failure_carries_no_output() -> None:
+    """Control: plain output (which can hold config content) never reaches the error text."""
+
+    class Enable(FakeRdc):
+        def capture(self, argv, env, merge_stderr=False):
+            if "enable" in argv:
+                return 1, "machines: SECRET-CONTENT"
+            return super().capture(argv, env, merge_stderr)
+
+    with pytest.raises(rs.SmokeError) as err:
+        _smoke(Enable())
+    assert str(err.value) == "config remote enable failed (exit 1)"
 
 
 def test_the_capture_merges_stderr_only_when_asked() -> None:

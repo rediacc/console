@@ -15,7 +15,7 @@ THE PASSPHRASE COMES FROM THE ENVIRONMENT AND REACHES gpg ON STDIN, a divergence
 
 THE USAGE-ERROR TEXT DOES NOT MATCH THE TWIN BYTE FOR BYTE, and that is a
 deliberate, checked call rather than an oversight. The twin's `${1:?msg}`
-prints a bash-INTERNAL diagnostic that embeds the invoking script's own path and an interpreter line number (`<script>: line 43: 1: usage: ...`), which is not a thing a second language can reproduce and which a caller has no reason to depend on: `scripts/lib/shadow-gate.ts`'s `PATH_LINE`/`MARKERS` classifiers do not recognise that shape (no `:digits` immediately after `.sh`, no
+prints a bash-INTERNAL diagnostic that embeds the invoking script's own path and an interpreter line number (`<script>: line 43: 1: usage: ...`), which is not a thing a second language can reproduce and which a caller has no reason to depend on: the shadow gate (commit:bf054adcd4)'s `PATH_LINE`/`MARKERS` classifiers do not recognise that shape (no `:digits` immediately after `.sh`, no
 `::error::`/`✗`/`ERROR:` marker), so it normalizes to CHATTER on both sides and plays no part in any recorded verdict. Exit code 1 is what is being ported.
 
 EVERY OTHER ERROR MESSAGE IS TRANSLITERATED VERBATIM, because those ARE the finding text a reader diffs: "<path> is missing or empty", "gpg is not installed", "gpg could not import the key", "no secret key after import", "re-export produced nothing".

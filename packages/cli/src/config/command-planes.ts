@@ -60,9 +60,20 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   credits: { plane: 'other' },
   legal: { plane: 'other' },
   feedback: { plane: 'other' },
+  // The forensics reads are account-server HTTPS (the investigation API); `forensics verify` reads a local evidence directory.
+  // `incident declare` writes the account record and runs its machine steps as child `rdc` commands, so it imports no machine-plane service.
+  incident: { plane: 'other' },
+  forensics: { plane: 'other' },
+  // The `forensics_level` renet function on the repository's machine.
+  'forensics level': { plane: 'machine' },
   version: { plane: 'other' },
+  // Prints a shell completion script built from the generated contract; reads no config and reaches no machine.
+  completion: { plane: 'other' },
   tools: { plane: 'other' },
   update: { plane: 'other' },
+  // `use` and `status` read and write this config, the installed CLI and the preview's public endpoints. `leave` also switches each touched server's renet back over SSH, so it reaches a machine; it asks before it does and replaces the local CLI, so it is interactive and never offered to a headless executor.
+  preview: { plane: 'other' },
+  'preview leave': { plane: 'machine', interactive: true },
   mcp: { plane: 'other' },
 
   // ── machine: config-CRUD leaves only touch the config file ───────────── add/remove/list write or read the config record; provider add/remove/list register cloud-provider credentials in the config; `infra set`/`show` edit the machine's infra block in the config; `infra cert status`/`clear` read and clear the LOCAL cert cache. All would produce the CALLER's answer, so they must
@@ -103,6 +114,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // Docker-storage classification and reclaim run through renet on the machine (`repository_docker_prune`).
   'repo prune': { plane: 'machine' },
   'repo branch': { plane: 'config' },
+  // The repo ref resolves from this config; the rows come from the account server's forensics store, not from the machine.
+  'repo flows': { plane: 'other' },
+  'repo opens': { plane: 'other' },
   // The store IS the encrypted config (repo-secrets-store imports no executor or SSH). Values reach the machine later, via `repo up`.
   'repo secret': { plane: 'config' },
   // Resource-state reads; the rest of both families dispatch to the machine.

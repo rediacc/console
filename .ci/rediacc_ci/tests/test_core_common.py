@@ -15,15 +15,18 @@ FOUR CLASSES OF TEST, and the second and third are the ones that matter:
   4. PLANTED DEFECTS in the port, proving each control can fire.
 """
 
+import dataclasses
 import pathlib
+import shutil
 import subprocess
+import tempfile
 
 import pytest
 
-from rediacc_ci import paths
+from rediacc_ci import paths, runtmp
 from rediacc_ci.core import common, stubfarm
-from rediacc_ci.core import common_stub_shadow_driver as r2_driver
 from rediacc_ci.core import platform as ci_platform
+from rediacc_ci.core.stubfarm import Farm
 from rediacc_ci.tests import differential as diff
 
 TWIN_REL = ".ci/scripts/lib/common.sh"
@@ -503,22 +506,164 @@ def test_planted_an_is_ci_that_accepts_one_would_disagree_with_the_twin():
 
 # -- r2_count_objects, against a stub `aws` ------------------------------------
 #
-# Driven by `rediacc_ci.core.common_stub_shadow_driver` against the LIVE twin on every run: both sides see the same scripted `aws` first on PATH, and the comparison is rc, both streams and the argv the function builds.
+# The port runs with a scripted `aws` first on PATH, and its rc, both streams and the argv the function builds are compared against the golden (`goldens/twins/lib.common.jsonl`, `stub-farm` keys).
 
-R2_CASES = [(scenario, case) for scenario, cases in r2_driver.SCENARIOS.items() for case in cases]
+# The stub-farm harness, moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side or the CLI.
 
 
-@pytest.mark.parametrize(
-    ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
-)
+@dataclasses.dataclass
+class Case:
+    name: str
+    args: list[str]
+    rows: list[dict] = dataclasses.field(default_factory=list)
+    env: dict[str, str | None] = dataclasses.field(default_factory=dict)
+    verb: str = "r2"
+
+
+def aws(out: str | None = None, rc: int = 0, err: str | None = None) -> dict:
+    return {"name": "aws", "glob": "*", "out": out, "rc": rc, "err": err}
+
+
+def probe(
+    rc: int, times: int | None = None, out: str | None = None, err: str | None = None
+) -> dict:
+    return {"name": "probe", "glob": "*", "rc": rc, "times": times, "out": out, "err": err}
+
+
+SCENARIOS: dict[str, list[Case]] = {
+    "count": [
+        Case("three", ["rediacc-www-media", "releases/v1/"], [aws("3\n")]),
+        Case("none-is-zero", ["b", "p"], [aws("None\n")]),
+        Case("empty-answer", ["b", "p"], [aws("")]),
+        Case("a-word", ["b", "p"], [aws("lots\n")]),
+        Case("two-lines", ["b", "p"], [aws("3\n4\n")]),
+        Case("trailing-blank-lines", ["b", "p"], [aws("12\n\n\n")]),
+        Case("padded", ["b", "p"], [aws(" 5 \n")]),
+    ],
+    "failure": [
+        Case(
+            "multi-line-stderr",
+            ["b", "p"],
+            [aws(rc=255, err="An error occurred (AccessDenied)\nsecond line\n")],
+        ),
+        Case(
+            "no-final-newline",
+            ["b", "p"],
+            [aws(rc=254, err="Could not connect to the endpoint URL")],
+        ),
+        Case("silent-failure", ["b", "p"], [aws(out="7\n", rc=1)]),
+    ],
+    "endpoint": [
+        Case("from-argument", ["b", "p", "https://acct.r2.example"], [aws("1\n")]),
+        Case(
+            "from-variable",
+            ["b", "p"],
+            [aws("1\n")],
+            {"CLOUDFLARE_R2_ENDPOINT": "https://env.example"},
+        ),
+        Case(
+            "argument-wins",
+            ["b", "p", "https://arg.example"],
+            [aws("1\n")],
+            {"CLOUDFLARE_R2_ENDPOINT": "https://env.example"},
+        ),
+        Case("none", ["b", "p"], [aws("1\n")]),
+        Case(
+            "empty-argument-falls-back",
+            ["b", "p", ""],
+            [aws("1\n")],
+            {"CLOUDFLARE_R2_ENDPOINT": "https://env.example"},
+        ),
+    ],
+    "quoting": [
+        Case("spaces", ["my bucket", "a prefix/with space/"], [aws("2\n")]),
+        Case("metacharacters", ["b", "p/$(x)/`y`/*?[z]"], [aws("2\n")]),
+        Case("dash-leading", ["-b", "--prefix"], [aws("2\n")]),
+        Case("unicode", ["b", "p/über/"], [aws("2\n")]),
+    ],
+    "wait": [
+        Case(
+            "at-once", ["10", "2", "probe", "--ready"], [probe(0)], {"DEBUG": "true"}, verb="wait"
+        ),
+        Case(
+            "after-three",
+            ["10", "2", "probe", "x y"],
+            [probe(1, times=3, out="noise\n", err="not yet\n"), probe(0)],
+            {"DEBUG": "true"},
+            verb="wait",
+        ),
+        Case("never-debug", ["7", "2", "probe"], [probe(1)], {"DEBUG": "true"}, verb="wait"),
+        Case("never-quiet", ["6", "3", "probe"], [probe(1)], verb="wait"),
+        Case("not-installed", ["4", "1", "no-such-probe-xyz"], [], {"DEBUG": "true"}, verb="wait"),
+        Case("zero-budget", ["0", "1", "probe"], [probe(0)], verb="wait"),
+    ],
+    "refusal": [
+        Case("no-bucket", [], [aws("1\n")]),
+        Case("empty-prefix", ["b", ""], [aws("1\n")]),
+        Case("no-key", ["b", "p"], [aws("1\n")], {"AWS_ACCESS_KEY_ID": None}),
+        Case("empty-key", ["b", "p"], [aws("1\n")], {"AWS_ACCESS_KEY_ID": ""}),
+    ],
+}
+
+NEW_VERBS = {"r2": "r2-count-objects", "wait": "wait-for"}
+
+
+def observe(repo: pathlib.Path, case: Case) -> list[str]:
+    work = pathlib.Path(tempfile.mkdtemp(prefix="r2-shadow-", dir=runtmp.shared("r2-stub-")))
+    try:
+        farm = Farm(work)
+        farm.stub("aws", "probe", "sleep")
+        for spec in case.rows:
+            fields = dict(spec)
+            farm.respond(fields.pop("name"), fields.pop("glob"), **fields)
+        base = {
+            "PATH": "/usr/local/bin:/usr/bin:/bin",
+            "HOME": str(work),
+            "LC_ALL": "C",
+            "LANG": "C",
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "AWS_ACCESS_KEY_ID": "AKIAEXAMPLE",
+        }
+        for key, value in case.env.items():
+            if value is None:
+                base.pop(key, None)
+            else:
+                base[key] = value
+        env = farm.env(base)
+        env["PYTHONPATH"] = str(repo / ".ci")
+        argv = ["python3", "-m", "rediacc_ci.core.common", NEW_VERBS[case.verb], *case.args]
+        proc = subprocess.run(
+            argv, cwd=repo, env=env, capture_output=True, text=True, check=False, timeout=120
+        )
+        lines = ["obs %s rc=%d" % (case.name, proc.returncode)]
+        lines += [
+            "obs %s out#%d| %s" % (case.name, i, t) for i, t in enumerate(proc.stdout.splitlines())
+        ]
+        for i, raw in enumerate(proc.stderr.splitlines()):
+            text = raw
+            # `<file>: line <N>: ` is bash's own stamp on a `${...:?}` death; not reproducible by a port, dropped on both sides.
+            if ": line " in raw and raw.split(": line ", 1)[1].split(":", 1)[0].isdigit():
+                text = raw.split(": line ", 1)[1].split(": ", 1)[1]
+            lines.append("obs %s err#%d| %s" % (case.name, i, text))
+        lines += ["obs %s call#%d| %s" % (case.name, i, t) for i, t in enumerate(farm.transcript())]
+        return lines
+    finally:
+        shutil.rmtree(work, ignore_errors=True)
+
+
+R2_CASES = [(scenario, case) for scenario, cases in SCENARIOS.items() for case in cases]
+
+
 def _frozen_old(scenario, case) -> list[str]:
-    """The observation lines the bash `r2_count_objects` / `wait_for` produced for `case`, from the golden; a re-record from the port runs the driver's new side."""
+    """The observation lines the bash `r2_count_objects` / `wait_for` produced for `case`, from the golden; a re-record from the port runs `observe` above."""
     repo = paths.repo_root()
     rc, out, _err = diff.twin_call(
         TWIN_REL,
         ["stub-farm", scenario, case.name],
-        lambda: (0, "\n".join(r2_driver.observe("old", repo, case)), ""),
-        port=lambda: (0, "\n".join(r2_driver.observe("new", repo, case)), ""),
+        lambda: pytest.fail(
+            "the bash side of %s is deleted; re-record with --source port" % TWIN_REL
+        ),
+        port=lambda: (0, "\n".join(observe(repo, case)), ""),
     )
     assert rc == 0
     return out.split("\n")
@@ -528,40 +673,19 @@ def _frozen_old(scenario, case) -> list[str]:
     ("scenario", "case"), R2_CASES, ids=["%s/%s" % (s, c.name) for s, c in R2_CASES]
 )
 def test_r2_count_objects_matches_the_frozen_twin(scenario, case) -> None:
-    assert _frozen_old(scenario, case) == r2_driver.observe("new", paths.repo_root(), case), (
+    assert _frozen_old(scenario, case) == observe(paths.repo_root(), case), (
         "case %s/%s diverged" % (scenario, case.name)
     )
 
 
 def test_r2_stub_is_what_both_sides_reach(tmp_path) -> None:
     """ANTI-VACUITY: a count case must log exactly one `aws` call, on both sides."""
-    case = r2_driver.SCENARIOS["count"][0]
-    for lines in (_frozen_old("count", case), r2_driver.observe("new", paths.repo_root(), case)):
+    case = SCENARIOS["count"][0]
+    for lines in (_frozen_old("count", case), observe(paths.repo_root(), case)):
         assert sum(" call#" in line for line in lines) == 1, lines
     farm = stubfarm.Farm(tmp_path)
     farm.stub("aws")
     assert stubfarm.shadows(farm, "aws", farm.env({"PATH": "/usr/bin:/bin"}))
-
-
-def test_the_common_stub_ledger_holds() -> None:
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-common-stub",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=paths.repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_launchable_resolves_the_program_through_pathext_on_windows(monkeypatch):

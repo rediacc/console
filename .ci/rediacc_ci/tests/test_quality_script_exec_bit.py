@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.script_exec_bit`, driven directly.
 
-WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-script-exec-bit.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, `.ci/shadow/w7p2-script-exec-bit.observations.jsonl`, which licensed the port at K=5; the twin was retired in W7 P5 and the
+WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-script-exec-bit.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which licensed the port at K=5; the twin was retired in W7 P5 and the
 fixture cases were retired with it.
 
 WHAT THAT CORPUS COVERED, so the shape of the argument survives the deletion: an offender (must fire), an executable script (must stay quiet), a reference inside a comment (must stay quiet), and a `../decoy.sh` in a subdirectory (must stay quiet, and is the case whose first version in the twin could not fail because the correct and the broken behaviour deduped to the same

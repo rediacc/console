@@ -13,6 +13,7 @@ The twin `.ci/scripts/deploy/promote-r2-to-stable-hotfix.sh` still downloads and
 from __future__ import annotations
 
 import ast
+import json
 import os
 import shutil
 import subprocess
@@ -77,6 +78,22 @@ DEFAULT_BUCKET = {
 EDGE_KEYS = sorted(k for k in DEFAULT_BUCKET if "/edge/" in k)
 
 
+# THE STABLE RECORD (PLAN-release-notes D9): every promote ends by writing `cli/stable/history.json`, which is not a channel pointer and not a copy of an edge object, so the pointer and fetch contracts below read around it and its own tests (`test_the_stable_record_*`) read it.
+HISTORY = RELEASES_BUCKET + "/cli/stable/history.json"
+
+
+# The record step also reads the manifest the lane just promoted, to learn the version.
+STABLE_MANIFEST = RELEASES_BUCKET + "/cli/stable/manifest.json"
+
+
+def _ops(records, op):
+    return [
+        r
+        for r in fake.ops(records, op)
+        if r["key"] != HISTORY and not (op == "GET" and r["key"] == STABLE_MANIFEST)
+    ]
+
+
 def run(tmp_path: pathlib.Path, bucket: dict[str, str] | None = None, **kw: typing.Any):
     root = tmp_path / "fx"
     fake.make_bucket(root, DEFAULT_BUCKET if bucket is None else bucket)
@@ -100,10 +117,10 @@ def _expected_urls() -> list[str]:
 
 def _bulk_problems(records) -> list[str]:
     problems = []
-    gets = sorted(r["key"] for r in fake.ops(records, "GET"))
+    gets = sorted(r["key"] for r in _ops(records, "GET"))
     if gets != sorted(fake.EDGE_POINTERS):
         problems.append("fetched to the runner: %s" % gets)
-    puts = sorted(r["key"] for r in fake.ops(records, "PUT"))
+    puts = sorted(r["key"] for r in _ops(records, "PUT"))
     if puts != sorted(fake.STABLE_POINTERS):
         problems.append("uploaded from the runner: %s" % puts)
     problems.extend(
@@ -219,7 +236,7 @@ def test_the_packages_land_before_the_metadata_that_hashes_them(tmp_path) -> Non
 
 def test_the_phases_are_the_soak_gated_lists_not_a_copy() -> None:
     for dir_name in port.CHANNEL_DIRS:
-        assert port.phases(dir_name) == (*soak.phases(dir_name), ())
+        assert port.phases(dir_name) == (*soak.phases(dir_name), soak.HISTORY_EXCLUDE)
 
 
 # --------------------------------------------------------------------------- The channel pointers ---------------------------------------------------------------------------
@@ -251,7 +268,7 @@ def test_mutation_control_a_pointer_copied_unrewritten_is_caught(tmp_path) -> No
 def test_the_pointers_are_written_after_the_rest_of_their_tree(tmp_path) -> None:
     _root, proc, records = run(tmp_path)
     assert proc.returncode == 0, proc.stderr
-    writes = [r["key"] for r in records if r.get("op") in ("COPY", "PUT")]
+    writes = [r["key"] for r in records if r.get("op") in ("COPY", "PUT") and r["key"] != HISTORY]
     for pointer in fake.STABLE_POINTERS:
         tree = pointer.rsplit("/", 1)[0] + "/"
         last_copy = max(
@@ -289,7 +306,7 @@ def test_an_installer_the_stamp_cannot_reach_is_refused_before_any_write(tmp_pat
     assert "install.sh" in proc.stderr, proc.stderr
     assert "stable" in proc.stderr, proc.stderr
     assert fake.ops(records, "COPY") == []
-    assert fake.ops(records, "PUT") == []
+    assert _ops(records, "PUT") == []
 
 
 # --------------------------------------------------------------------------- The purge list comes from the stable listing ---------------------------------------------------------------------------
@@ -585,3 +602,85 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.promote_r2_to_stable_hotfix"
     assert port.__name__ == port.SELF
+
+
+# --------------------------------------------------------------------------- The stable record (PLAN-release-notes D9) ---------------------------------------------------------------------------
+
+
+def _history(root: pathlib.Path) -> list[dict[str, str]]:
+    return json.loads(fake.bucket_keys(root, "")[HISTORY])
+
+
+def test_the_stable_record_takes_the_version_the_lane_just_promoted(tmp_path) -> None:
+    root, proc, _records = run(tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assert [row["version"] for row in _history(root)] == ["1.2.3"]
+    again, records = fake.run_port(root, MODULE, BASE_ENV, HOME)
+    assert again.returncode == 0, again.stderr
+    assert [row["version"] for row in _history(root)] == ["1.2.3"]
+    assert [r for r in fake.ops(records, "PUT") if r["key"] == HISTORY] == []
+
+
+def test_the_stable_record_is_never_copied_from_edge_by_the_catch_all(tmp_path) -> None:
+    bucket = {
+        **DEFAULT_BUCKET,
+        "cli/edge/history.json": '[{"version": "9.9.9", "promoted_at": "x"}]\n',
+    }
+    root, proc, records = run(tmp_path, bucket)
+    assert proc.returncode == 0, proc.stderr
+    assert [r for r in fake.ops(records, "COPY") if r["key"] == HISTORY] == []
+    assert [row["version"] for row in _history(root)] == ["1.2.3"]
+
+
+# --------------------------------------------------------------------------- The record step's refusals and the purge after it (review findings 2786d8d0.6, 2786d8d0.7) ---------------------------------------------------------------------------
+
+
+class _ManifestRun:
+    """A `Transfers` stand-in whose only read is the stable manifest, with the given body."""
+
+    def __init__(self, body: str) -> None:
+        self.body = body
+
+    def get(self, _key: str, target: str) -> None:
+        with open(target, "w", encoding="utf-8") as handle:
+            handle.write(self.body)
+
+
+@pytest.mark.parametrize(
+    ("body", "message"),
+    [
+        ('{"name": "rdc"}', "names no version"),
+        ('{"version": "null"}', "names no version"),
+        ('{"version": ""}', "names no version"),
+        ("[1, 2]", "names no version"),
+        ("not json {", "is not valid JSON"),
+    ],
+)
+def test_the_record_step_refuses_a_manifest_that_names_no_usable_version(
+    monkeypatch, capsys, body: str, message: str
+) -> None:
+    recorded: list[str] = []
+    monkeypatch.setattr(port.r2_promote, "Transfers", lambda *_a, **_k: _ManifestRun(body))
+    monkeypatch.setattr(
+        port.promote_r2_to_stable, "record_stable", lambda _r, v: recorded.append(v)
+    )
+    with pytest.raises(port.BashExitError) as raised:
+        port._record_stable("https://r2.example.invalid", "0")
+    assert raised.value.code == 1
+    assert message in capsys.readouterr().err
+    assert recorded == []
+
+
+def test_the_cdn_is_purged_for_a_promotion_whose_record_step_failed(monkeypatch) -> None:
+    purged: list[tuple[list[str], str]] = []
+    monkeypatch.setattr(port.awscli, "require", lambda: None)
+    monkeypatch.setattr(port, "environment", lambda: {**BASE_ENV, "PROMOTE_RETRY_DELAY_S": "0"})
+    monkeypatch.setattr(port, "_promote_dirs", lambda _endpoint: ["https://x/cli/stable/a"])
+
+    def fail_record(_endpoint: str, _delay: str) -> None:
+        raise port.BashExitError(7)
+
+    monkeypatch.setattr(port, "_record_stable", fail_record)
+    monkeypatch.setattr(port, "_purge", lambda urls, zone: purged.append((urls, zone)))
+    assert port.main([]) == 7
+    assert purged == [(["https://x/cli/stable/a"], "zone-fixture")]

@@ -973,6 +973,7 @@ def _census_owns() -> dict[str, tuple[str, ...]]:
     found: dict[str, tuple[str, ...]] = {}
     plans = REPO / "agent" / "plans"
     for slug in CENSUS:
+        # A plan moves once, at close, and leaves a stub with no `Owns:` at its old path, so the first file found is not the plan when the stub is; read on to the moved copy.
         for folder in (plans, plans / "_done", plans / "_removed"):
             path = folder / f"PLAN-{slug}.md"
             if not path.is_file():
@@ -980,7 +981,7 @@ def _census_owns() -> dict[str, tuple[str, ...]]:
             owns = trig.wl_planconc.declared_owns(path.read_text(encoding="utf-8"))
             if owns:
                 found[slug] = tuple(owns)
-            break
+                break
     return found
 
 

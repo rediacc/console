@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.free_to_registered [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the captured-email and cleanup queries) unless that profile is already bound.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` Bitwarden profile (it needs `CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` and `CF_EMAIL` when no token is set, for the captured-email and cleanup queries) unless that profile is already bound.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -871,24 +871,32 @@ def _step_terms_gate(d: Deps, ev: Evidence, creds: tuple[str, str], stamp: str) 
         raise DrillError("the portal terms gate did not hold")
 
 
-def _step_email(d: Deps, ev: Evidence, email: str, since_iso: str) -> None:
-    status, _ = d.http(API + "/auth/magic-link", {"email": email})
-    if status != 200:
-        ev.add(5, "email", 1, "magic-link request http=%d" % status)
-        raise DrillError("magic-link request refused")
+def _step_email(d: Deps, ev: Evidence, email: str, since_iso: str, stamp: str) -> None:
+    # One cookie jar carries the ml_bind cookie from the request to the verify: the same-browser
+    # rule of `POST /auth/magic-link/verify` (private/account/src/routes/auth.ts) trusts only that.
+    jar = d.jar_path(stamp)
     try:
-        token = wait_for_token(email, since_iso, d.rows, d.sleep)
-    except DrillError as exc:
-        ev.add(5, "email", 1, str(exc))
-        raise
-    status, answer = d.http(API + "/auth/magic-link/verify", {"token": token})
+        status, _ = d.call("POST", API + "/auth/magic-link", {"email": email}, {}, jar)
+        if status != 200:
+            ev.add(5, "email", 1, "magic-link request http=%d" % status)
+            raise DrillError("magic-link request refused")
+        try:
+            token = wait_for_token(email, since_iso, d.rows, d.sleep)
+        except DrillError as exc:
+            ev.add(5, "email", 1, str(exc))
+            raise
+        status, answer = d.call("POST", API + "/auth/magic-link/verify", {"token": token}, {}, jar)
+    finally:
+        d.unlink(jar)
     match = (answer.get("user") or {}).get("email") == email
-    ok = status == 200 and match
+    stepped = answer.get("requiresStepUp") is True
+    ok = status == 200 and match and not stepped
     ev.add(
         5,
         "email",
         0 if ok else 1,
-        "captured mail read, verify http=%d email_match=%s" % (status, match),
+        "captured mail read, verify http=%d email_match=%s%s"
+        % (status, match, " (asked for a step-up from the requesting browser)" if stepped else ""),
     )
     if not ok:
         raise DrillError("magic-link verify failed")
@@ -980,7 +988,9 @@ def _step_handoff(
         since = datetime.fromtimestamp(d.now().timestamp() - CLOCK_SKEW_S, UTC).strftime(
             "%Y-%m-%dT%H:%M:%S"
         )
-        mstatus, _ = d.http(API + "/auth/magic-link", {"email": email, "next": route})
+        mstatus, _ = d.call(
+            "POST", API + "/auth/magic-link", {"email": email, "next": route}, {}, jar
+        )
         if mstatus != 200:
             bad.append("magic-link request http=%d" % mstatus)
         token, got_next = "", ""
@@ -1104,7 +1114,7 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
             raise DrillError("registration did not return 201 with COMMUNITY")
 
         _step_terms_gate(d, ev, (email, password), stamp)
-        _step_email(d, ev, email, since_iso)
+        _step_email(d, ev, email, since_iso, stamp)
         _step_login(d, ev, base, config, (email, password), limits)
         _step_handoff(d, ev, base, config, email, stamp, limits, handoff_codes)
     except DrillError as exc:

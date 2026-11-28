@@ -81,6 +81,14 @@
       "reason": "Eight concurrent `gh api` calls (the `xargs -P 8` of audit.sh:125): every worker waits on a GitHub API response, so the width bounds requests in flight against GitHub, not local cores."
     },
     {
+      "file": ".ci/rediacc_ci/testrun/onprem_suites/writeback.py",
+      "kind": "fixture",
+      "limit": "none; the race scenario needs exactly two concurrent writers",
+      "match": "concurrent.futures.ThreadPoolExecutor(max_workers=2)",
+      "reason": "The racing_pushes_keep_both_edits scenario submits exactly two operations (a served create and a laptop edit) and asserts that both survive; the count is the scenario, not a width, and a wider pool would change nothing.",
+      "width": 2
+    },
+    {
       "file": "packages/www/scripts/check-tutorial-caption-sync.ts",
       "match": "const FETCH_CONCURRENCY = 16;",
       "width": 16,

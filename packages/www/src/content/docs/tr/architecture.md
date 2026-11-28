@@ -10,8 +10,8 @@ tags:
 subcategory: architecture
 order: 0
 language: tr
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # Mimari
@@ -240,6 +240,8 @@ rdc config audit verify
 > Bu dosya hassas veriler (SSH özel anahtarları, LUKS kimlik bilgileri, Cloudflare jetonları) içerir. `0600` izinleriyle (yalnızca sahip okuma/yazma) saklanır. Paylaşmayın veya sürüm denetimine eklemeyin. Herhangi bir `rdc` komutu onu okuduğunda, hassas alanlar varsayılan olarak [redakte edilir](/en/docs/ai-agents-safety): düz metin yalnızca etkileşimli insan TTY'de `--reveal` ile görünür.
 
 ### Envelope v2 ve sunucu tarafında zorlama
+
+Kimin neyi görebildiğini ve anahtarların nasıl kapsamlandırıldığını [Güvenlik Modeli](/tr/docs/security-model) sayfasında bulabilirsiniz.
 
 Yapılandırma [şifreli yapılandırma deposu](/en/docs/config-storage) ile senkronize edildiğinde, CLI her hassas alanı işaretçi başına HMAC taahhüdüyle sarar ve bu taahhütleri düz metin zarf içinde taşır. Sunucu yalnızca onaltılık özetleri görür: asla değerleri değil; ancak yine de her yazma işleminde bilgi kapılarını zorlayabilir:
 

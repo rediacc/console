@@ -1,6 +1,6 @@
 """`rediacc_ci.core.local_common` against the transcripts frozen from the retired `.ci/lib/local-common.sh` (`goldens/twins/lib.local-common.jsonl`).
 
-THE TWIN IS DELETED (PLAN-retire-bash-oracles B3). While it existed every scenario was driven on both sides: `rediacc_ci.core.local_common_shadow_driver` sourced `local-common.sh` through the prelude the deleted `run-legacy.sh` used and called the twin's own functions, and the port did the same work; the twin's full transcripts are the golden, and this file compares the port's live transcript against them byte for byte. A Rule-T change to the port is recorded with `regolden --source port`.
+THE TWIN IS DELETED (PLAN-retire-bash-oracles B3). While it existed every scenario was driven on both sides: `rediacc_ci.tests.harness_local_common` sourced `local-common.sh` through the prelude the deleted `run-legacy.sh` used and called the twin's own functions, and the port did the same work; the twin's full transcripts are the golden, and this file compares the port's live transcript against them byte for byte. A Rule-T change to the port is recorded with `regolden --source port`.
 
 WHAT IS COVERED AND WHAT IS NOT is decided by the driver's seven scenarios and stated in its module docstring rather than restated here.
 The short version: everything whose answer is computation over a local file or a local git read, and none of the eleven installers, the three interactive or session-altering functions, or the three `gate_lane_*` functions, which reach into `.ci/lib/devbox.sh`.
@@ -13,7 +13,6 @@ Every scenario runs with `sha256sum` on PATH, so neither missing-tool branch is 
 
 import ast
 import hashlib
-import json
 import os
 import re
 import shutil
@@ -24,18 +23,16 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import local_common, stubfarm
-from rediacc_ci.core import local_common_actions_shadow_driver as actions_driver
-from rediacc_ci.core import local_common_shadow_driver as driver
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests import harness_local_common as driver
+from rediacc_ci.tests import harness_local_common_actions as actions_driver
 from rediacc_ci.tests.wkloader import path_farm_without
 
 TWIN = ".ci/lib/local-common.sh"
 PORT = ".ci/rediacc_ci/core/local_common.py"
-DRIVER = ".ci/rediacc_ci/core/local_common_shadow_driver.py"
+DRIVER = ".ci/rediacc_ci/tests/harness_local_common.py"
 # Invoked as a MODULE, never by path: see the driver's header for why the by-path form would need a hand-written sys.path hop that `test_canonical_sys_path_hop.py` refuses.
-DRIVER_MODULE = "rediacc_ci.core.local_common_shadow_driver"
-LEDGER = ".ci/shadow/w7p5b-local-common.observations.jsonl"
-
+DRIVER_MODULE = "rediacc_ci.tests.harness_local_common"
 SCENARIOS = sorted(driver.SCENARIOS)
 
 # The floor each scenario must clear. Measured against the recorded ledger rows, then rounded DOWN so a real change to a message does not turn into a test edit; the point is to catch a transcript collapsing to nothing, not to pin a count.
@@ -226,7 +223,7 @@ PORTED_FUNCTIONS = (
     ("write_stamp_hash", "write_stamp_hash"),
     ("_version_gte", "version_gte"),
     ("has_npm_script", "has_npm_script"),
-    # The machine-mutating half, 2026-09-24, proved by `core/local_common_actions_shadow_driver.py`.
+    # The machine-mutating half, 2026-09-24, proved by `tests/harness_local_common_actions.py`.
     ("ensure_cpu_features_gypi", "ensure_cpu_features_gypi"),
     ("_deps_hash", "deps_hash"),
     ("deps_are_current", "deps_are_current"),
@@ -606,23 +603,6 @@ def test_no_sha256_tool_degrades_the_same_way_on_both_sides(tmp_path) -> None:
 # -- the licence, and the tools the scenarios really use ---------------------
 
 
-def test_the_shadow_ledger_holds_five_equivalent_rows_over_five_trees() -> None:
-    """The K=5 licence, read off disk rather than remembered from a session."""
-    path = paths.repo_root() / LEDGER
-    assert path.is_file(), "%s is missing; the port has no recorded licence" % LEDGER
-    rows = [
-        json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()
-    ]
-    assert len(rows) >= 5, "%d row(s) recorded, five are required" % len(rows)
-    assert all(row["verdict"] == "EQUIVALENT" for row in rows)
-    assert len({row["tree"]["id"] for row in rows}) >= 5
-    assert all(row["tree"]["clean"] for row in rows)
-    assert all(TWIN in row["old"]["cmd"] for row in rows)
-    assert all(PORT in row["new"]["cmd"] for row in rows)
-    # The DISTINCT-EVIDENCE RULE: K trees carrying one finding set is one observation.
-    assert len({row["old"]["fingerprint"] for row in rows}) >= 2
-
-
 def test_the_tools_the_scenarios_use_are_installed() -> None:
     """ANTI-VACUITY. Without these the scenarios compare two identical failures."""
     for tool in ("git", "sha256sum", "sort", "sed", "grep", "xargs", "awk", "bash"):
@@ -634,7 +614,7 @@ def test_the_tools_the_scenarios_use_are_installed() -> None:
 
 # -- the machine-mutating half, against a stub farm ---------------------------
 #
-# Driven by `rediacc_ci.core.local_common_actions_shadow_driver`: each case runs the port as a child process in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards against the frozen transcript of the retired twin.
+# Driven by `rediacc_ci.tests.harness_local_common_actions`: each case runs the port as a child process in one fixed sandbox with `npm`, `node`, `go`, `sudo`, `curl`, `tar`, `gcc`, `docker` and `sg` stubbed, and compares rc, both streams, the ordered stub transcript and the whole sandbox tree afterwards against the frozen transcript of the retired twin.
 
 # RULE T: action cases whose transcript the port intentionally changed.
 ACTION_DELTA_CASES = {"renet/source-hash-empty"}
@@ -761,27 +741,6 @@ def test_bash_q_matches_printf_q(word, locale, monkeypatch) -> None:
         check=True,
     )
     assert local_common.bash_q(word) == proc.stdout.decode("utf-8", "surrogateescape")
-
-
-def test_the_actions_ledger_holds() -> None:
-    proc = subprocess.run(
-        [
-            "npx",
-            "tsx",
-            "scripts/lib/shadow-gate.ts",
-            "--pair",
-            "w7p5b-local-common-actions",
-            "--assert",
-            "--k",
-            "5",
-        ],
-        cwd=paths.repo_root(),
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 # -- Rule T: the twin's defects, fixed in the port as INTENTIONAL DELTAS ---------

@@ -1,0 +1,127 @@
+# PLAN: Forensics reports -- staged 24 hour, 72 hour and final incident reports as signed PDF, JSON and STIX 2.1 with a QR verify link and a regulatory field map
+Status: approved -- operator /ask 2026-11-23 in session 9b22c347, worklist #772cfd55 (agent/programs/breach-forensics/02-decisions.md)
+Owner: 9b22c347
+First-Seen: 2026-11-23
+Depends-On: PLAN-forensics-investigation.md -- a report is built from that plan's incident row, deadline clocks, timeline read service and evidence stamp, and extends its `rdc incident export` and `rdc forensics verify` verbs
+Priority: P2 -- a customer whose repo is breached owes NIS2, GDPR or DORA notices on fixed clocks; without these exports the timeline's facts are retyped by hand into each template, but nothing shipped regresses while it waits on plan 4
+Concurrency: parallel -- wave 1: FR1; wave 2: FR2, FR3, FR5, FR10 (file-disjoint); wave 3: FR4, FR6 (schema.ts and the drizzle journal written by FR4 only, private/account/package.json and its lockfile by FR6 only); wave 4: FR7 (edits report-verify.ts after FR5); wave 5: FR8, FR9; wave 6: FR11, FR12 (lead), FR13, then LP-bench. packages/shared/src/incident/**, packages/cli/src/commands/incident.ts, forensics.ts, components/forensics/** and the forensics.json namespace are created by PLAN-forensics-investigation.md; this plan edits them only after that plan's boxes land
+Owns: agent/plans/PLAN-forensics-reports.md, packages/shared/src/incident/report.ts, packages/shared/src/incident/report-field-map.json, packages/shared/src/incident/report-field-map.ts, packages/shared/src/incident/stix.ts, packages/shared/src/incident/canonical.ts, packages/shared/src/incident/__tests__/report*.test.ts, packages/shared/src/incident/__tests__/stix.test.ts, packages/shared/src/incident/__tests__/canonical.test.ts, private/account/src/db/schema.ts (forensics_reports and forensics_report_inputs only), private/account/src/db/scope-registry.ts (those tables only), private/account/drizzle/*_forensics_reports.sql, private/account/drizzle/meta/**, private/account/src/services/incident-report.service.ts, private/account/src/services/report-signing.service.ts, private/account/src/services/pdf/incident-report-pdf.ts, private/account/src/services/pdf/report-fonts.ts, private/account/src/routes/incident-reports.ts, private/account/src/routes/report-verify.ts, private/account/src/routes/index.ts, private/account/src/dto/incident-report.dto.ts, private/account/src/types/env.ts (the REPORT_ED25519_* keys only), private/account/src/container.ts, private/account/src/i18n/index.ts, private/account/src/i18n/locales/*/forensicsReport.json, private/account/package.json, private/account/package-lock.json, private/account/tests/integration/incident-report*.test.ts, private/account/tests/unit/incident-report-pdf.test.ts, private/account/web/src/components/forensics/reports/**, private/account/web/src/pages/ReportVerify.tsx, private/account/web/src/pages/__tests__/report-verify.test.tsx, private/account/web/src/router.tsx, private/account/web/src/i18n/locales/*/forensics.json, packages/cli/src/commands/incident.ts, packages/cli/src/commands/forensics.ts, packages/cli/src/services/forensics/**, packages/cli/src/commands/__tests__/incident-report*.test.ts, packages/cli/src/i18n/locales/*/cli.json (commands.incident.export.* and commands.forensics.verify.* keys only), packages/cli/scripts/command-tree.json, packages/shared/src/cli-contract/data/**, private/account/e2e/tests/27-console/27-6*-forensics-reports.test.ts
+Live-Proof: bench -- the account Worker builds, signs and stores a staged report, serves the public verify route and the verify page on the eu bench after deploy_bench
+
+## Ask
+
+F22: a customer repo incident gets a staged report for the customer to file: 24 hour, 72 hour and final exports as PDF, JSON and a STIX 2.1 bundle, Ed25519-signed with a QR verify link, a field map onto NIS2, GDPR Art. 33 and DORA, and an explicit statement that flow records prove volume and destination, not content. Sections: header (stage, generation time, observed against inferred), timeline (first malicious event, detection, customer awareness, containment), affected assets with Member States, data impact (bytes per destination, sensitive files opened, confidence labels), IoCs (destination IPs, domains, ASNs, ports, process hashes), actions taken (fork, isolation, rotation, restore), suspected cause and MITRE ATT&CK techniques (initial at 72 hours, final at one month), evidence integrity (chain heads, gaps), and the regulatory appendix. Report labels in 13 locales. The judgement of significance stays the customer's.
+
+## Context
+
+1. The certificate PDF is pure pdf-lib with a QR code and Worker-compatible (private/account/src/services/pdf/certificate-pdf.ts:1-8, :55); QR geometry comes from `qrMatrix` (private/account/src/services/pdf/qr.ts:19); pdf-lib and qrcode are already dependencies (private/account/package.json:51-52).
+2. Standard fonts cover Latin-1 only: the invoice labels fall back to English for Chinese and Arabic, and the Russian labels are English text (private/account/src/services/pdf/invoice-pdf-i18n.ts:183-188).
+3. The certificate verify route is public, rate-limited, format-filtered and answers a uniform 404 (private/account/src/routes/certificate-verify.ts:15, :23-37), mounted at `/partner` (private/account/src/routes/index.ts:84), with a web page at `/account/verify/:certificateNumber?` (private/account/web/src/router.tsx:377). It verifies by database lookup, not by signature (private/account/src/routes/certificate-verify.ts:35).
+4. The account Ed25519 key is the licence key: `LicenseSigning` signs only repo licences, subscription blobs and delegation certificates (private/account/src/services/signer-client.ts:25-29), and on Cloudflare the private key lives in the separate signer Worker (private/account/src/services/signer-client.ts:230). `CryptoService.sign` is the raw Ed25519 primitive (private/account/src/services/crypto.service.ts:60).
+5. Server-side strings load one `emails` namespace across 13 locales (private/account/src/i18n/index.ts:2-31).
+6. The DPA promises the customer a breach notice within 72 hours (packages/www/src/i18n/translations/en.json:2442); that is Rediacc's own duty, served by plan 5, not this plan.
+7. NIS2 Art. 23 stages, the DORA template regulations and the NIS Cooperation Group templates of 26 May 2026 are listed with sources in agent/programs/breach-forensics/03-external-research.md (Reporting duties).
+
+## Design
+
+D1. **One report model, three stages.** `packages/shared/src/incident/report.ts` defines `IncidentReport` with `stage` (`early-warning`, `notification`, `final`), the F22 sections, and on every fact `basis: 'observed' | 'inferred' | 'customer'` and, for inferred facts, `confidence: 'low' | 'medium' | 'high'` with the detector reason. The early warning carries the header, the timeline so far, initial IoCs, a suspected-malicious flag and cross-border impact; the notification adds the initial assessment, data impact and initial techniques; the final adds root cause, final techniques and mitigation. A section the stage does not require is omitted, not blank.
+
+D2. **Observed facts come from the server, judgement from the customer.** `incident-report.service.ts` reads plan 4's incident row, timeline service and stamp. Customer inputs live in `forensics_report_inputs` (awareness time, Member State per affected asset, data-subject categories and approximate counts, contact point, suspected cause, chosen techniques, narrative of actions). Detector reasons suggest ATT&CK techniques from a fixed table (exfiltration over C2 T1041, over an alternative protocol T1048, to a web service T1567, automated exfiltration T1020), shown as `inferred` until the customer accepts them. Actions taken come from the incident steps and the console audit in the window (`repo fork`, `repo secret` rotation, restore runs).
+Fixed text in every stage: flow records prove volume and destination, not content; whether the incident is significant or reportable is the customer's judgement.
+
+D3. **Canonical JSON, a dedicated report key.** Reports are canonicalized (sorted keys, no insignificant whitespace, UTF-8, numbers as integers or decimal strings) by `canonical.ts`, hashed with SHA-256 and signed with a new `REPORT_ED25519_PRIVATE_KEY` per region (on-premise: its own key from its env). The licence key is rejected for this: its signer refuses anything but licences and certificates (Context 4), and a report must not be a licence-signing oracle. Public keys with validity windows are served at `GET /reports/keys`. `forensics_reports(id, org_id, incident_id, stage, sha256, signature, key_id, generated_at, generated_by)`; the three files go to the forensics bucket under `reports/<org>/<incident>/` and are kept while the incident record exists.
+
+D4. **STIX 2.1 without a library.** `stix.ts` emits a bundle: an `identity` for the org, `indicator` objects with STIX patterns (`[ipv4-addr:value = '...']`, `[ipv6-addr:value = ...]`, `[domain-name:value = ...]`, `[network-traffic:dst_port = ...]`, `[file:hashes.'SHA-256' = ...]`), `autonomous-system` observables, `observed-data` per destination with first and last seen, and `relationship` objects; ids are UUIDv5 over the content so a regeneration is byte-stable. A process hash appears only when plan 1 recorded one; the report says so where it did not.
+
+D5. **PDF that renders every locale.** `incident-report-pdf.ts` follows the certificate pattern: header with stage and generation time, sections as paged tables, the evidence stamp, the disclaimer, a QR and printed URL to `/account/verify/report/<id>` and the SHA-256 on every page footer. Non-Latin scripts embed Noto Sans subsets through `@pdf-lib/fontkit` (published 2022, far past the freshness window), loaded from `data.rediacc.com/fonts/` with sha256 pins in `report-fonts.ts`, or from `REPORT_FONT_DIR` on-premise; a missing font fails generation rather than printing English (Context 2).
+
+D6. **Public verification.** `GET /reports/verify/:id` (no session, rate-limited, uniform 404, pattern of Context 3) returns `{id, stage, generatedAt, sha256, signature, keyId}` and nothing of the content. `ReportVerify.tsx` takes a dropped JSON or PDF, recomputes the hash and checks the signature in the browser with WebCrypto Ed25519; `rdc forensics verify --report <file>` does the same offline with the published keys.
+
+D7. **Regulatory field map.** `report-field-map.json` maps each report field to NIS2 Art. 23(4)(a), (b) and (d), GDPR Art. 33(3)(a) to (d) and the DORA templates of Implementing Regulation (EU) 2025/302, with field names taken from the NIS Cooperation Group templates of 26 May 2026; each regime row names its source URL and retrieval date, and a field with no counterpart says `not-applicable` with a reason. The PDF appendix and the JSON `fieldMap` render from it.
+
+D8. **Strings.** Report labels live in a server namespace `forensicsReport` (13 locales); the web panel adds keys to plan 4's `forensics` namespace; English first, the 12 others through the naturalization pipeline, writers on sonnet.
+
+## Ordering against other live plans
+
+- PLAN-forensics-investigation.md lands first (header edge): FR4 needs FI2 and FI3, FR9 needs FI7 and FI8, FR8 needs FI10.
+- PLAN-forensics-alerts-notices.md owns Rediacc's own security notice (F21); this plan never sends a notice, it only produces files.
+- PLAN-forensics-docs-legal.md documents the reports and the `data.rediacc.com/fonts/` prefix after this plan lands.
+
+## Tasks
+
+- [x] FR1 [writer] Report model and canonical form (D1, D3): `report.ts` with stages, sections, basis and confidence, and `canonical.ts` with a test that key order and whitespace never change the hash.
+  Owns: packages/shared/src/incident/report.ts, packages/shared/src/incident/canonical.ts, packages/shared/src/incident/__tests__/report-model.test.ts, packages/shared/src/incident/__tests__/canonical.test.ts
+  Depends on: PLAN-forensics-investigation.md#FI1.
+  Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/report-model.test.ts src/incident/__tests__/canonical.test.ts)` rc 0 (an early warning carrying a final-only section fails to parse, an inferred fact without confidence fails, two key orders hash the same).
+    (ticked) 2026-11-25T16:07:46Z by d778be9d: FR1 staged report model with canonical hashing; landed 35e28ea1f4; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 11f03fae, a lease-side sha the pick rewrote to the landed sha above; the FI1 waiver holds, PLAN-forensics-investigation.md ticks FI1 (reviews 128b7bb6.1, 128b7bb6.3)
+- [x] FR2 [writer] STIX 2.1 bundle (D4): `stix.ts` with indicators, observables, observed-data and relationships, content-derived UUIDv5 ids, and a test of every object against the STIX 2.1 required properties and pattern grammar.
+  Owns: packages/shared/src/incident/stix.ts, packages/shared/src/incident/__tests__/stix.test.ts
+  Depends on: FR1.
+  Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/stix.test.ts)` rc 0 (two runs give identical bytes, an IPv6 destination gets an `ipv6-addr` pattern, a missing process hash emits no file indicator, a control object without `spec_version` fails).
+    (ticked) 2026-11-25T16:07:47Z by d778be9d: FR2 deterministic STIX bundle; landed d2a4633aae; shared incident tests pass, account tsc and web typecheck rc 0. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 2d7c07ae, a lease-side sha the pick rewrote to the landed sha above (review 128b7bb6.2)
+- [x] FR3 [writer] Regulatory field map (D7): read the NIS Cooperation Group templates of 26 May 2026, Implementing Regulation (EU) 2025/302 and GDPR Art. 33(3), then write `report-field-map.json` and its typed loader with source URLs and retrieval dates.
+  Owns: packages/shared/src/incident/report-field-map.json, packages/shared/src/incident/report-field-map.ts, packages/shared/src/incident/__tests__/report-field-map.test.ts
+  Depends on: FR1.
+  Accept: `(cd packages/shared && npx vitest run src/incident/__tests__/report-field-map.test.ts)` rc 0 (every report field mapped or `not-applicable` with a reason, every regime row has a URL and date, a control field missing from the map fails).
+    (ticked) 2026-11-25T17:44:04Z by d778be9d: FR3 regulatory field map; shared incident 37 tests pass; regulation refs to be checked against source texts at FR12; landed 4ab1dce546. DEPS-WAIVED: used prerequisites landed
+- [x] FR4 [writer] Report builder and inputs (D2): `forensics_report_inputs` and `forensics_reports` tables with one migration and scope entries, and `incident-report.service.ts` assembling a stage from the incident row, the timeline service, the console audit in the window, customer inputs and the technique table.
+  Owns: private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/*_forensics_reports.sql, private/account/drizzle/meta/**, private/account/src/services/incident-report.service.ts, private/account/src/container.ts, private/account/tests/integration/incident-report-build.test.ts
+  Depends on: FR1, PLAN-forensics-investigation.md#FI2, PLAN-forensics-investigation.md#FI3.
+  Accept: `(cd private/account && npx vitest run tests/integration/incident-report-build.test.ts)` rc 0 (a fork and a secret rotation in the window appear as actions, a suggested technique stays `inferred` until accepted, the volume-not-content statement is present in every stage); `npm run check:ci-account-scope-audit` rc 0.
+    (ticked) 2026-11-25T18:55:26Z by d778be9d: FR4 report build service and migration 0114; incident-report-build tests pass, drizzle-kit check fine; landed ed5365996b. DEPS-WAIVED: used prerequisites landed
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) the message cites 07a5fd57, a lease-side sha the pick rewrote to the landed sha above (review 48af0392.1)
+- [x] FR5 [writer] Signing and storage (D3): `report-signing.service.ts` over the report key, the `REPORT_ED25519_*` env keys, the files written under `reports/<org>/<incident>/`, and `GET /reports/keys`.
+  Owns: private/account/src/services/report-signing.service.ts, private/account/src/types/env.ts, private/account/src/routes/report-verify.ts, private/account/tests/integration/incident-report-sign.test.ts
+  Depends on: FR1.
+  Accept: `(cd private/account && npx vitest run tests/integration/incident-report-sign.test.ts)` rc 0 (a signature verifies with the served key, a changed byte fails, the licence signer is never called, a missing report key refuses generation with a named error).
+    (ticked) 2026-11-25T18:05:02Z by d778be9d: FR5 landed (account gitlink 0c8969657f); 9 tests pass, account tsc rc 0. DEPS-WAIVED: used prerequisites landed
+- [x] FR6 [writer] PDF renderer (D5): `incident-report-pdf.ts` with paged sections, stamp, disclaimer, QR and hash footer, `report-fonts.ts` with pinned Noto subsets and `REPORT_FONT_DIR`, and `@pdf-lib/fontkit` added with the lockfile written by the pinned npm.
+  Owns: private/account/src/services/pdf/incident-report-pdf.ts, private/account/src/services/pdf/report-fonts.ts, private/account/package.json, private/account/package-lock.json, private/account/tests/unit/incident-report-pdf.test.ts
+  Depends on: FR1, FR10.
+  Accept: `(cd private/account && npx vitest run tests/unit/incident-report-pdf.test.ts)` rc 0 (an Arabic and a Japanese report render their labels, a font hash mismatch fails, the QR decodes to the verify URL); `npm run check:deps` and `npm run check:ci-lockfile` rc 0.
+    (ticked) 2026-11-25T18:57:47Z by d778be9d: FR6 landed (gitlink 942826fc72); incident-report-pdf 8 passed, account tsc and check:deps rc 0; ja/ko/zh font pins owed as #1172ddf6. DEPS-WAIVED: used prerequisites landed
+- [x] FR7 [writer] Report and verify routes (D3, D6): `POST /incidents/:id/reports` for owners and admins under plan 4's investigation, list and download routes, and the public `GET /reports/verify/:id` with rate limit and uniform 404, mounted in routes/index.ts.
+  Owns: private/account/src/routes/incident-reports.ts, private/account/src/routes/report-verify.ts, private/account/src/routes/index.ts, private/account/src/dto/incident-report.dto.ts, private/account/tests/integration/incident-report-routes.test.ts
+  Depends on: FR4, FR5, FR6.
+  Accept: `(cd private/account && npx vitest run tests/integration/incident-report-routes.test.ts)` rc 0 (member 403, a final report before a notification exists refused with the clock named, verify of an unknown id and of a malformed id both 404, the verify body holds no report content).
+    (ticked) 2026-11-25T19:36:39Z by d778be9d: FR7 incident report and verify routes, ReportFontError mapped to HTTP, report keys in EnvConfig; 27 tests passed; landed db28c67437. DEPS-WAIVED: used prerequisites landed
+- [x] FR8 [writer] Web: the Reports panel under `components/forensics/reports/` (inputs form, stage buttons enabled by the clocks, downloads) and `ReportVerify.tsx` at `/account/verify/report/:id` checking a dropped file in the browser, English keys in en/forensics.json.
+  Owns: private/account/web/src/components/forensics/reports/**, private/account/web/src/pages/ReportVerify.tsx, private/account/web/src/pages/__tests__/report-verify.test.tsx, private/account/web/src/router.tsx, private/account/web/src/i18n/locales/en/forensics.json
+  Depends on: FR7, PLAN-forensics-investigation.md#FI10.
+  Accept: `(cd private/account/web && npx vitest run src/components/forensics/reports src/pages/__tests__/report-verify.test.tsx)` rc 0 (a tampered JSON shows invalid, an accepted technique moves from inferred to customer, the panel is keyboard-operable); `(cd private/account && npm run typecheck:web)` rc 0.
+    (ticked) 2026-11-26T06:29:46Z by d778be9d: FR8 complete (account da146eb6): report-inputs GET and PUT owner/admin only with member and other-org refusals, ReportsPanel mounted in Investigate.tsx, review e170d019.1-.4 fixed; merged tree incident-report-inputs rc 0, web suites rc 0, typechecks rc 0 DEPS-WAIVED: the unfinished prerequisite plans' open boxes are live runs and records that feed no code path these tests exercise commit:5a50b6aaa1 fileline:private/account/src/routes/incident-reports.ts:1
+- [x] FR9 [writer] CLI: `rdc incident export <id> --stage early-warning|notification|final --format pdf|json|stix` and `rdc forensics verify --report <file>` against the published keys, English keys in en/cli.json, the regenerated contract and command tree.
+  Owns: packages/cli/src/commands/incident.ts, packages/cli/src/commands/forensics.ts, packages/cli/src/services/forensics/**, packages/cli/src/commands/__tests__/incident-report*.test.ts, packages/cli/src/i18n/locales/en/cli.json, packages/cli/scripts/command-tree.json, packages/shared/src/cli-contract/data/**
+  Depends on: FR7, PLAN-forensics-investigation.md#FI8.
+  Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/incident-report)` rc 0 (a downloaded report verifies, an edited one exits 1); `npm run check:ci-cli-contract` rc 0.
+    (ticked) 2026-11-26T10:42:44Z by d778be9d: FR9 export json, stix and pdf (base64 route private/account 2339389d) plus verify --report: incident-report 13 tests and account incident-report-routes 5 tests rc 0 on the merged tree commit:4606b6bbce plan:agent/plans/PLAN-forensics-reports.md
+- [x] FR10 [writer] English report labels: the `forensicsReport` namespace in private/account/src/i18n/locales/en and its loading in private/account/src/i18n/index.ts.
+  Owns: private/account/src/i18n/index.ts, private/account/src/i18n/locales/en/forensicsReport.json
+  Depends on: FR1.
+  Accept: `(cd private/account && npm run typecheck)` rc 0 and a unit case in tests/unit/incident-report-pdf.test.ts that every section label resolves in English.
+    (ticked) 2026-11-25T17:44:04Z by d778be9d: FR10 English forensicsReport labels and tReport; label test passes, account tsc rc 0; landed 4474dcde99. DEPS-WAIVED: used prerequisites landed
+- [x] FR11 [writer] Translate `forensicsReport`, the new `forensics` keys and the new cli.json keys into the 12 other locales through the naturalization pipeline, writers on sonnet, then lock the hashes.
+  Owns: private/account/src/i18n/locales/*/forensicsReport.json, private/account/web/src/i18n/locales/*/forensics.json, packages/cli/src/i18n/locales/*/cli.json
+  Depends on: FR8, FR9, FR10.
+  Accept: `npm run check:i18n` rc 0, `npm run check:ci-i18n-account-key-usage` rc 0 and `npm run check:ci-i18n-cli-key-usage` rc 0.
+    (ticked) 2026-11-25T17:44:05Z by d778be9d: FR11 forensicsReport keys in the 12 other locales, hashes locked; check:i18n rc 0 (forensics.json and cli.json halves wait on FR8 and FR9); landed 4474dcde99. DEPS-WAIVED: used prerequisites landed
+- [ ] FR12 [lead] Mint one report key pair per target (bench, eu, the two other production regions), store each in bws, set `REPORT_ED25519_PRIVATE_KEY` and `REPORT_ED25519_PUBLIC_KEY` as account Worker secrets bench first, and upload the pinned Noto subsets to `data.rediacc.com/fonts/`.
+  Owns: none -- Cloudflare secrets, bws entries and public-bucket objects only, no tracked file
+  Depends on: FR5, FR6.
+  Accept: `npx wrangler secret list` for each account Worker shows both names, and `curl -sI https://data.rediacc.com/fonts/<file>` answers 200 for each pinned file, quoted in the tick.
+- [x] FR13 [writer] Playwright spec under TEST_MODE: fill the inputs, generate an early warning, download the JSON, drop it on the verify page and see it valid, then edit one byte and see it invalid, all from the keyboard.
+  Owns: private/account/e2e/tests/27-console/27-6*-forensics-reports.test.ts
+  Depends on: FR8.
+  Accept: `(cd private/account/e2e && npx playwright test tests/27-console/27-60-forensics-reports.test.ts --project=chromium)` rc 0.
+    (ticked) 2026-11-26T11:56:53Z by d778be9d: FR13 spec 27-60-forensics-reports passes live against a local TEST_MODE account server (chromium, 1 passed rc 0), report generation signing with the TEST_MODE report keys; web vitest 112 passed, check:i18n rc 0 commit:cb4565c16e plan:agent/plans/PLAN-forensics-reports.md
+- [ ] LP-bench [live] Deploy the branch's account Worker to the eu bench (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu`), declare an incident on a bench repo with captured flows, generate the early-warning and notification stages, scan the PDF's QR to the bench verify route, and verify the JSON with `./rdc.sh --config eu-bench forensics verify --report <file>`; cli-bench runs as additional verification.
+  Accept: live-proof bench account-smoke
+
+## Risks
+
+- **Template drift.** The NIS Cooperation Group and DORA templates may be revised; FR3 records the retrieval date per regime and the map is one file to update.
+- **A report read as legal advice.** D2's fixed disclaimer and the `customer` basis keep significance and reportability with the customer.
+- **Font loading in the Worker.** The fonts are fetched per generation with sha256 pins; a fetch failure fails the generation with a named error instead of an unreadable PDF.
+- **Indicators that name shared infrastructure.** A destination on a large cloud provider's ASN is a weak indicator; D1's confidence label and the ASN on every IP indicator let the recipient weigh it.

@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import os
+import stat
 import threading
+
+import pytest
 
 from rediacc_hooks import hookio
 
@@ -52,3 +55,33 @@ def test_a_stale_temporary_name_is_cleared(tmp_path):
     hookio.ensure_world_symlink(new, link)
     assert os.readlink(link) == str(new)
     assert not os.path.lexists(stale)
+
+
+def test_golden_world_creates_a_private_directory(tmp_path, monkeypatch):
+    """0c9a169c.4 control: a fresh name becomes a 0700 directory this user owns, and a second call admits it."""
+    monkeypatch.setattr(hookio, "GOLDEN_TEMP_DIR", str(tmp_path))
+    path = hookio.golden_world("rediacc-guard-fresh")
+    st = os.lstat(path)
+    assert path == str(tmp_path / "rediacc-guard-fresh")
+    assert stat.S_ISDIR(st.st_mode)
+    assert st.st_uid == os.getuid()
+    assert stat.S_IMODE(st.st_mode) == 0o700
+    assert hookio.golden_world("rediacc-guard-fresh") == path
+
+
+def test_golden_world_refuses_a_planted_symlink(tmp_path, monkeypatch):
+    """0c9a169c.4: a symlink pre-planted at the predictable path is refused, so no fixture write follows it."""
+    monkeypatch.setattr(hookio, "GOLDEN_TEMP_DIR", str(tmp_path))
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    os.symlink(elsewhere, tmp_path / "rediacc-guard-planted")
+    with pytest.raises(RuntimeError, match="not a directory this user"):
+        hookio.golden_world("rediacc-guard-planted")
+
+
+def test_golden_world_refuses_a_plain_file(tmp_path, monkeypatch):
+    """0c9a169c.4: a non-directory at the path is refused rather than written into."""
+    monkeypatch.setattr(hookio, "GOLDEN_TEMP_DIR", str(tmp_path))
+    (tmp_path / "rediacc-guard-file").write_text("x", encoding="utf-8")
+    with pytest.raises(RuntimeError, match="not a directory this user"):
+        hookio.golden_world("rediacc-guard-file")

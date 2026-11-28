@@ -1,6 +1,6 @@
 r"""Every shell script INVOKED as `./path.sh` must be committed executable.
 
-Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-script-exec-bit.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-script-exec-bit.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHY THIS EXISTS, in the twin's own words, because the incident is the design:
 
@@ -93,6 +93,15 @@ MEASURED END TO END ON THE REAL TREE, 2026-09-06: `git grep -nP` returns 830 hit
 Python's is unicode-aware and would admit an accented letter in a path, which would change which references are extracted. This is the class of difference that does not show up in any fixture and shows up once, on a real path, years later.
 
 EXIT 2 IS THE REFUSAL AND IS PRESERVED EXACTLY. It is not exit 1: the twin distinguishes "the control could not fire" from "the tree has offenders", and a port that collapsed them would make an unrunnable gate look like a failing tree.
+
+---- gate ----
+step: Block non-executable invoked scripts
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -202,7 +211,7 @@ def referenced_paths(hits: list[tuple[str, int, str]]) -> list[str]:
 
     A PURE FUNCTION over the grep output on purpose, so the selftest can drive the parent-reference control without building a git repository. `sort -u` in the
     twin; `sorted(set(...))` here, and both run under `LC_ALL=C`, which
-    `scripts/lib/shadow-gate.ts:buildEnv` pins for both sides.
+    `the shadow gate (commit:bf054adcd4):buildEnv` pins for both sides.
     """
     out: set[str] = set()
     for src, _number, text in hits:
@@ -408,4 +417,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_script_exec_bit.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

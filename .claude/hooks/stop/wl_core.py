@@ -3,8 +3,10 @@
 Stdlib-only, no sibling imports, no I/O beyond what each helper documents. Everything here is used by at least two sibling modules; single-consumer logic lives with its consumer. WHY comments for each check stay with the check, not here.
 """
 
+import contextlib
 import datetime
 import glob
+import hashlib
 import json
 import os
 import pathlib
@@ -365,7 +367,7 @@ def lease_main(tree):
     return main if theirs is not None and theirs[1] == mine[1] else None
 
 
-# The landing record (agent/plans/PLAN-two-track-merge-dev.md, box LT1): one JSON object {"path": <realpath>, "branch": <MMDD-N>} in the COMMON git dir, so every tree of the repository reads the same file. commit_policy.py writes and validates it; this module reads it without a subprocess, because project_root is a hot path.
+# The landing record (agent/plans/PLAN-two-track-merge-dev.md, box LT1): one JSON object {"path": <realpath>, "branch": <MMDD-N>} in the COMMON git dir, so every tree of the repository reads the same file. commit_policy.py writes and validates it. This module looks for the file without a subprocess, because project_root is a hot path, and validates an existing one through commit_policy once per record version (read_landing_record).
 LANDING_RECORD_NAME = "rediacc-landing.json"
 # The git config key naming a common dir's main checkout, `core.<this>`. worklist.py's twin assembles the same string from two halves.
 CORE_TREE_KEY = "worktree"
@@ -395,25 +397,67 @@ def _common_main(common):
     return main if theirs is not None and theirs[0] == theirs[1] == common else None
 
 
-def landing_record(tree):
-    """The landing record of `tree`'s repository as {"path", "branch"}, or None when there is none or it is not a well-formed binding of an existing tree of this repository. commit_policy.read_landing_record is the full validator and names the defect; a defective record here simply binds nothing."""
+# One validation per record version per process: commit_policy's reader asks git (the common dir, the linked-tree check), and project_root is a hot path, so its answer is kept keyed on the record file's (path, mtime_ns, size). A rewrite of the record changes the key.
+_LANDING_READS: dict[tuple[str, str, int, int, int, int, int, int], tuple[dict | None, str]] = {}
+
+
+def _commit_policy():
+    """commit_policy from `.claude/rediacc_hooks`, through the canonical sys.path hop loaded by file (this module lives outside that package)."""
+    import importlib.util
+
+    helper = pathlib.Path(__file__).resolve().parents[2] / "rediacc_hooks" / "syspath.py"
+    spec = importlib.util.spec_from_file_location("_rediacc_syspath", helper)
+    if spec is None or spec.loader is None:
+        raise ImportError("cannot load %s" % helper)
+    syspath = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(syspath)
+    syspath.on_sys_path(syspath.CLAUDE_DIR)
+    from rediacc_hooks import commit_policy
+
+    return commit_policy
+
+
+def read_landing_record(tree):
+    """`(record, problem)` for `tree`'s repository: the validated `{"path", "branch"}` and "", `(None, "")` when there is no record, or `(None, <defect>)` when one exists and binds nothing.
+
+    The validation is commit_policy.read_landing_record's, the one validator, so a record every guard refuses binds nothing here either. Only an existing record is validated (a missing one costs no subprocess), and its answer is kept per record version.
+    """
     dirs = _git_dirs(pathlib.Path(tree))
     if dirs is None:
-        return None
+        return None, ""
+    where = dirs[1] / LANDING_RECORD_NAME
     try:
-        data = json.loads((dirs[1] / LANDING_RECORD_NAME).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(data, dict) or sorted(data) != ["branch", "path"]:
-        return None
-    path, branch = data["path"], data["branch"]
-    if not isinstance(path, str) or not isinstance(branch, str) or not os.path.isabs(path):
-        return None
-    land = pathlib.Path(path)
-    theirs = _git_dirs(land) if (land / ".git").is_file() else None
-    if theirs is None or theirs[1] != dirs[1]:
-        return None
-    return {"path": path, "branch": branch}
+        st = os.lstat(where)
+    except FileNotFoundError:
+        return None, ""
+    except OSError as exc:
+        return None, "%s cannot be read: %s: %s" % (where, type(exc).__name__, exc)
+    # The tree is part of the key (read_landing_record validates against it) and so are the inode and ctime: a same-size rewrite inside the mtime granularity replaces the inode or moves ctime. The verdict also reads the tree's `.git` entry, whose version joins the key, so a tree re-pointed within one process is read again (review 1cd88702.4).
+    try:
+        dot = os.lstat(os.path.join(str(tree), ".git"))
+        dot_key = (dot.st_mtime_ns, dot.st_size)
+    except OSError:
+        dot_key = (0, 0)
+    key = (str(tree), str(where), st.st_mtime_ns, st.st_ctime_ns, st.st_ino, st.st_size, *dot_key)
+    if key not in _LANDING_READS:
+        try:
+            policy = _commit_policy()
+        except Exception as exc:
+            return (
+                None,
+                "commit_policy, the landing record's validator, could not be loaded (%s: %s)"
+                % (type(exc).__name__, exc),
+            )
+        _LANDING_READS[key] = policy.read_landing_record(str(tree))
+    return _LANDING_READS[key]
+
+
+def landing_record(tree):
+    """The landing record of `tree`'s repository as {"path", "branch"}, or None when there is none or it binds nothing.
+
+    The callers of this form only route (project_root's landing redirect, projects_dirs, wl_worktrees' lease sweep), so a defect reads as no record here and nothing is said: the stop names it once, in the `landing-stack` advisory, where wl_stack.stack_state reads the same validator's problem. A caller that speaks takes read_landing_record and names the problem itself.
+    """
+    return read_landing_record(tree)[0]
 
 
 def landing_main(tree):
@@ -568,18 +612,252 @@ def commit_only_env(args):
 
 
 def _git(root, *args):
+    got = git_run(root, args, timeout=20)
+    if got is None:
+        return ""
+    rc, out = got
+    return git_text(out).strip() if rc == 0 else ""
+
+
+# ---- GIT ANSWERS KEYED ON HEAD (agent/plans/PLAN-tooling-speed.md D2) ---------
+#
+# A Stop run started 15-25 git processes for answers that change only when HEAD, a ref, the index or the config moves. git_run answers a READ-ONLY query (git_cacheable) from a cache keyed on that state, read from the git directory's own files without a process: the HEAD text, the sha its branch ref names, the mtime and size of the index, packed-refs,
+# FETCH_HEAD and the config files, the mtime of every directory under refs/ (a ref update is a lock-file rename, which moves its directory's mtime) and any rebase, merge or cherry-pick in progress. The answers persist across processes in `<git-dir>/rediacc-gitcache.json`, written once at exit, so a second stop on an unchanged HEAD starts no git process for them. A
+# working-tree query (status, diff without --cached, ls-files) is never cached, nor one whose answer moves with the clock (--since, relative dates). A miss runs git once. A GIT_* variable that changes which repository git reads (_GIT_REPO_ENV), or WORKLIST_READ_MEMO=off, turns the cache off; the GIT_CONFIG* variables join the key.
+GIT_CACHE_NAME = "rediacc-gitcache.json"
+GIT_CACHE_STATS = {"hit": 0, "miss": 0}
+GIT_CACHE_MAX_ANSWERS = 512
+GIT_CACHE_MAX_ANSWER_BYTES = 1 << 20
+_GIT_CACHEABLE = frozenset(
+    {
+        "rev-parse",
+        "symbolic-ref",
+        "log",
+        "rev-list",
+        "merge-base",
+        "show",
+        "cat-file",
+        "for-each-ref",
+        "describe",
+        "ls-tree",
+        "name-rev",
+        "config",
+    }
+)
+_GIT_REFLOG_ARGS = frozenset({"-g", "--walk-reflogs", "reflog"})
+_GIT_CLOCK_WORDS = (
+    "--since",
+    "--until",
+    "--after",
+    "--before",
+    "relative",
+    "ago",
+    "now",
+    "%cr",
+    "%ar",
+    "%gr",
+)
+# The environment variables that change WHICH repository, index, objects or refs git reads; any of them set turns the cache off. GIT_EDITOR, GIT_PAGER and the like change nothing git answers, and are ignored.
+_GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_COMMON_DIR",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+    "GIT_NAMESPACE",
+    "GIT_REPLACE_REF_BASE",
+    "GIT_NO_REPLACE_OBJECTS",
+    "GIT_GRAFT_FILE",
+    "GIT_SHALLOW_FILE",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+)
+_GIT_DIRS: dict[str, tuple | None] = {}
+_GIT_CACHE: dict[str, dict] = {}
+_GIT_ATEXIT = {"on": False}
+
+
+def git_text(out):
+    """Text of git stdout bytes, as `text=True` would give it (newlines universal); undecodable bytes become U+FFFD rather than raising."""
+    if isinstance(out, str):
+        return out
+    return out.decode("utf-8", "replace").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def git_cacheable(args):
+    """True for a read-only git query whose answer is fixed by the repository state git_state_key reads."""
+    if not args:
+        return False
+    args = [str(a) for a in args]
+    sub = args[0]
+    # Not `submodule status --cached`: its describe text reads the SUBMODULE's refs, which no key of this repository covers.
+    if sub not in _GIT_CACHEABLE:
+        return False
+    if sub == "config" and not any(a in ("--get", "--get-all", "--get-regexp") for a in args[1:]):
+        return False
+    for a in args[1:]:
+        if a in _GIT_REFLOG_ARGS or "@{" in a:
+            return False
+        if any(w in a for w in _GIT_CLOCK_WORDS):
+            return False
+    return True
+
+
+def _repo_git_dirs(root):
+    """(git dir, common dir) of the repository holding `root` (the nearest `.git` at or above it, read by _git_dirs without a process), or None when there is none or it has no HEAD. Memoized per process."""
+    key = str(root)
+    if key in _GIT_DIRS:
+        return _GIT_DIRS[key]
+    dirs = None
+    with contextlib.suppress(OSError, ValueError, RuntimeError):
+        here = pathlib.Path(root).resolve()
+        for base in (here, *here.parents):
+            if (base / ".git").exists():
+                dirs = _git_dirs(base)
+                break
+    if dirs is not None and not (dirs[0] / "HEAD").is_file():
+        dirs = None
+    _GIT_DIRS[key] = dirs
+    return dirs
+
+
+def _stat_sig(path):
     try:
-        r = subprocess.run(
-            ["git", "-C", str(root), *args],
+        st = os.stat(path)
+    except OSError:
+        return None
+    return [st.st_mtime_ns, st.st_size]
+
+
+def git_reads_index(args):
+    """True for a cacheable query whose answer comes from the index (a `:path` or `:<stage>:path` object name)."""
+    args = [str(a) for a in args]
+    return bool(args) and any(a.startswith(":") for a in args[1:])
+
+
+def git_state_key(root, index=False):
+    """The repository state a cacheable answer depends on, as a JSON-able list, or None when there is no readable git directory. The index's mtime and size join the key only for a query that reads the index (`index=True`): `git status` rewrites a racy index on most stops, and a key holding it would expire every ref answer with it."""
+    if any(k in os.environ for k in _GIT_REPO_ENV):
+        return None
+    dirs = _repo_git_dirs(root)
+    if dirs is None:
+        return None
+    gd, cd = dirs
+    try:
+        head = (gd / "HEAD").read_text(encoding="utf-8").strip()
+    except OSError:
+        return None
+    key = [str(gd), head]
+    if head.startswith("ref: "):
+        ref = head[5:].strip()
+        try:
+            key.append((cd / ref).read_text(encoding="utf-8").strip())
+        except OSError:
+            key.append(None)
+    files = (
+        cd / "packed-refs",
+        cd / "FETCH_HEAD",
+        cd / "config",
+        gd / "config.worktree",
+        gd / "rebase-merge",
+        gd / "rebase-apply",
+        gd / "MERGE_HEAD",
+        gd / "CHERRY_PICK_HEAD",
+        pathlib.Path(os.environ.get("GIT_CONFIG_GLOBAL") or os.path.expanduser("~/.gitconfig")),
+        pathlib.Path(os.path.expanduser("~/.config/git/config")),
+    )
+    key.extend(_stat_sig(p) for p in files)
+    # GIT_CONFIG_GLOBAL, GIT_CONFIG_NOSYSTEM and GIT_CONFIG_COUNT/KEY_n/VALUE_n change what `config --get` answers, so their values are part of the state.
+    key.append(sorted([k, v] for k, v in os.environ.items() if k.startswith("GIT_CONFIG")))
+    key.extend([dirpath, _stat_sig(dirpath)] for dirpath, _d, _f in os.walk(cd / "refs"))
+    if index:
+        key.append(["index", _stat_sig(gd / "index")])
+    return key
+
+
+def _key_hash(key):
+    return hashlib.sha1(json.dumps(key).encode("utf-8")).hexdigest()[:16]
+
+
+def _git_cache_for(gd):
+    """The answer table of git dir `gd`, loaded from disk once per process: {answer key: [rc, stdout, state hash]}."""
+    entry = _GIT_CACHE.get(str(gd))
+    if entry is None:
+        entry = {"answers": {}, "dirty": False}
+        with contextlib.suppress(OSError, ValueError):
+            disk = json.loads((gd / GIT_CACHE_NAME).read_text(encoding="utf-8"))
+            if (
+                isinstance(disk, dict)
+                and disk.get("v") == 2
+                and isinstance(disk.get("answers"), dict)
+            ):
+                entry["answers"] = disk["answers"]
+        _GIT_CACHE[str(gd)] = entry
+    return entry
+
+
+def flush_git_cache():
+    """Write each git dir's answers once (tmp + rename). The last writer wins, and every answer carries the hash of the state it was read at, so a merged-away answer costs one git call, never a stale one."""
+    for gd, entry in list(_GIT_CACHE.items()):
+        if not entry.get("dirty"):
+            continue
+        entry["dirty"] = False
+        path = pathlib.Path(gd) / GIT_CACHE_NAME
+        with contextlib.suppress(OSError, ValueError):
+            fd, tmp = tempfile.mkstemp(dir=gd, prefix=GIT_CACHE_NAME)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                json.dump({"v": 2, "answers": entry["answers"]}, fh)
+            os.replace(tmp, path)
+
+
+def git_run(root, args, timeout=20, opts=()):
+    """(returncode, stdout bytes) of `git <opts> -C root <args>`, or None when git could not run or timed out. A cacheable query on a readable repository is answered from the HEAD-keyed cache when the state it was read at still holds."""
+    args = [str(a) for a in args]
+    cached = read_memo_on() and git_cacheable(args)
+    index = git_reads_index(args)
+    key = git_state_key(root, index=index) if cached else None
+    entry, akey, kh = None, None, None
+    if key is not None:
+        entry = _git_cache_for(_repo_git_dirs(root)[0])
+        akey = json.dumps([os.path.realpath(str(root)), args])
+        kh = _key_hash(key)
+        hit = entry["answers"].get(akey)
+        if isinstance(hit, list) and len(hit) == 3 and hit[2] == kh:
+            GIT_CACHE_STATS["hit"] += 1
+            return int(hit[0]), str(hit[1]).encode("utf-8", "surrogateescape")
+    try:
+        proc = subprocess.run(
+            ["git", *opts, "-C", str(root), *args],
             capture_output=True,
-            text=True,
-            timeout=20,
+            timeout=timeout,
             check=False,
             env=commit_only_env(args),
         )
-        return r.stdout.strip() if r.returncode == 0 else ""
     except (OSError, subprocess.SubprocessError):
-        return ""
+        return None
+    GIT_CACHE_STATS["miss"] += 1
+    if (
+        entry is not None
+        and len(proc.stdout) <= GIT_CACHE_MAX_ANSWER_BYTES
+        and git_state_key(root, index=index) == key
+    ):
+        answers = entry["answers"]
+        if len(answers) >= GIT_CACHE_MAX_ANSWERS:
+            # Full: keep only the answers read at the current state.
+            for k in [
+                k for k, v in answers.items() if not (isinstance(v, list) and v[-1:] == [kh])
+            ]:
+                del answers[k]
+        if len(answers) < GIT_CACHE_MAX_ANSWERS:
+            answers[akey] = [proc.returncode, proc.stdout.decode("utf-8", "surrogateescape"), kh]
+            entry["dirty"] = True
+            if not _GIT_ATEXIT["on"]:
+                import atexit
+
+                atexit.register(flush_git_cache)
+                _GIT_ATEXIT["on"] = True
+    return proc.returncode, proc.stdout
 
 
 AGENT_BRANCH_RE = re.compile(r"[^A-Za-z0-9._-]+")
@@ -739,11 +1017,10 @@ def _resolve_tasks_dir(session_id, transcript_path=None):
     resolved = None
     if transcript_path and os.path.isfile(transcript_path):
         try:
-            with open(transcript_path, "rb") as fh:
-                fh.seek(0, os.SEEK_END)
-                size = fh.tell()
-                fh.seek(max(0, size - TRANSCRIPT_TAIL_BYTES))
-                tail = fh.read().decode("utf-8", "replace")
+            got = tail_bytes(transcript_path, TRANSCRIPT_TAIL_BYTES)
+            if got is None:
+                raise OSError("transcript unreadable")
+            tail = got[2].decode("utf-8", "replace")
             # Newest creations first: the last one is the least likely to have been deleted since. Subjects are read out of JSONL, so cut each at the first escape sequence and prefix-match on what is left.
             matches = _TASK_CREATED_RE.findall(tail)[-5:][::-1]
             cands = set()
@@ -884,6 +1161,98 @@ def strip_quoted_spans(text):
 TRANSCRIPT_TAIL_BYTES = int(os.environ.get("WORKLIST_TAIL_BYTES", "2000000"))
 
 
+# ---- ONE TRANSCRIPT READ PER STOP (agent/plans/PLAN-tooling-speed.md D1) ------
+#
+# The Stop run read the transcript tail about twelve times: the tasks-dir join, transcript_tail, wl_admit, wl_deflect, wl_uncommitted, each its own open, seek and parse. The memo below keeps the LAST bytes read per path, keyed on (mtime_ns, size), and serves any later request whose start lies inside them; a request reaching further back, or a file whose mtime or size moved, reads
+# again. A miss reads at least TRANSCRIPT_TAIL_BYTES, so the standard-size readers that follow are all served by the first. The parsed records of one (path, mtime, size, start) are memoized too, and every caller gets its own list.
+#
+# A memo can serve a stale read only if a write keeps both mtime_ns and size, which an append cannot. WORKLIST_READ_MEMO=off turns it off (the control in test_wl_stop_speed_reads.py proves the open counter is not blind with it off).
+READ_MEMO_STATS = {"hit": 0, "miss": 0}
+_TAIL_MEMO: dict[str, tuple] = {}
+_RECS_MEMO: dict[tuple, list] = {}
+_MEMO_PATHS_MAX = 4
+
+
+def read_memo_on():
+    """False only under WORKLIST_READ_MEMO=off."""
+    return os.environ.get("WORKLIST_READ_MEMO", "on").strip().lower() != "off"
+
+
+def clear_read_memo():
+    _TAIL_MEMO.clear()
+    _RECS_MEMO.clear()
+    READ_MEMO_STATS.update(hit=0, miss=0)
+
+
+def tail_bytes(path, max_bytes=None, start=None):
+    """(size, start, data): the bytes of `path` from `start`, or the last `max_bytes` when no start is given, to the end. None when the file cannot be read.
+
+    Served from the per-process memo when the file's mtime and size are unchanged and the memo's bytes reach back to the requested start.
+    """
+    try:
+        st = os.stat(path)
+    except (OSError, TypeError, ValueError):
+        return None
+
+    def want_of(size):
+        if start is not None:
+            return min(max(0, int(start)), size)
+        return max(0, size - int(max_bytes or 0))
+
+    key = os.path.abspath(os.fsdecode(path))
+    on = read_memo_on()
+    m = _TAIL_MEMO.get(key) if on else None
+    want = want_of(st.st_size)
+    if m is not None and m[0] == st.st_mtime_ns and m[1] == st.st_size and m[2] <= want:
+        READ_MEMO_STATS["hit"] += 1
+        return st.st_size, want, m[3][want - m[2] :]
+    try:
+        with open(path, "rb") as fh:
+            fst = os.fstat(fh.fileno())
+            size, mtime = fst.st_size, fst.st_mtime_ns
+            want = want_of(size)
+            read_from = min(want, max(0, size - TRANSCRIPT_TAIL_BYTES)) if on else want
+            fh.seek(read_from)
+            data = fh.read(size - read_from)
+    except OSError:
+        return None
+    READ_MEMO_STATS["miss"] += 1
+    if on:
+        if len(_TAIL_MEMO) >= _MEMO_PATHS_MAX:
+            _TAIL_MEMO.clear()
+            _RECS_MEMO.clear()
+        _TAIL_MEMO[key] = (mtime, size, read_from, data)
+    return size, want, data[want - read_from :]
+
+
+def tail_records(path, max_bytes):
+    """The JSON objects in the last `max_bytes` of the file at `path`, oldest first, or None when there is no such file or it cannot be read; wl_common.tail_records' contract, served from the memo. When the read starts mid-file its first line is dropped, because it is probably partial."""
+    if not path or not os.path.exists(path):
+        return None
+    got = tail_bytes(path, max_bytes)
+    if got is None:
+        return None
+    size, start, chunk = got
+    on = read_memo_on()
+    rkey = None
+    if on:
+        m = _TAIL_MEMO.get(os.path.abspath(os.fsdecode(path)))
+        rkey = (os.path.abspath(os.fsdecode(path)), m[0] if m else None, size, start)
+        if rkey in _RECS_MEMO:
+            return list(_RECS_MEMO[rkey])
+    lines = chunk.split(b"\n")
+    if start > 0:
+        lines = lines[1:]
+    recs = list(wl_common.records(lines))
+    if rkey is not None:
+        _RECS_MEMO[rkey] = recs
+    return list(recs)
+
+
+# wl_admit.turn_text and wl_deflect read the tail through wl_common.tail_records; rebinding the shared name here serves them from the same memo without a second copy of the reader. Same contract, same return value. A reader that opens the transcript itself (wl_admit.turn_tools, wl_uncommitted.scan_transcript) is served only once it calls tail_bytes, and test_wl_stop_speed_reads.py names each one that still opens it.
+wl_common.tail_records = tail_records
+
+
 def transcript_tail(path, want=None, tries=6, delay=0.25):
     """(last_assistant_text, tool_names_since_last_user, readable) from the tail.
 
@@ -895,7 +1264,7 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
     Tail-read, because the transcript is tens of MB and the hook runs on every stop. Measured: 2 MB tail + parse is 0.08s / 15 MB RSS on a 36 MB file, so this is not the expensive part of anything.
     """
     # The first (probably partial) line is dropped unless the read started at byte 0.
-    recs = wl_common.tail_records(path, TRANSCRIPT_TAIL_BYTES)
+    recs = tail_records(path, TRANSCRIPT_TAIL_BYTES)
     if recs is None:
         return "", [], False
     turn_texts, since_user = [], []
@@ -925,7 +1294,7 @@ def transcript_tail(path, want=None, tries=6, delay=0.25):
     return last_text, since_user, readable
 
 
-# ARM THE EXIT RECORDER, LAST, and inside a suppress that swallows everything.
+# ARM THE EXIT RECORDER, LAST, and inside a guard that turns any Exception into one stderr line.
 #
 # wl_core is imported by 16 modules and by every one of the ~880 python3 invocations the case suite makes, so this line is the single seam that turns "profile every hook process" into one edit with no settings change, no wrapper and no per-guard work. It is also, for the same reason, the single line that could break every hook at once -- which is why the import itself is guarded,
 # why wl_resprofile.install() never raises, why its exit handler writes nothing to
@@ -935,5 +1304,12 @@ try:
     import wl_resprofile as _resprofile
 
     _resprofile.install()
-except BaseException:
-    pass
+except Exception as _profiler_exc:
+    # Only Exception: SystemExit and KeyboardInterrupt are the hook's own to raise and must propagate. The failure is named once on stderr and never changes the exit code or stdout of the hook it measures.
+    # A closed or broken stderr cannot carry the line; the hook's exit code stays its own.
+    # sys.stderr is None when fd 2 was invalid at startup, so the write raises AttributeError; that is suppressed too.
+    with contextlib.suppress(OSError, ValueError, AttributeError):
+        sys.stderr.write(
+            "wl_core: resprofile profiler not armed (%s: %s)\n"
+            % (type(_profiler_exc).__name__, _profiler_exc)
+        )

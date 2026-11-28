@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.ci_scans_tracked_paths` against the bash it replaces.
 
-WHAT IS WORTH TESTING HERE. The shadow ledger `.ci/shadow/w7p2-ci-scans-tracked-paths.observations.jsonl` drives the whole gate over five distinct trees: an offender in a workflow, one in a CI script, one in both, an `npx tsx` form, and a two-level ignored root. What a ledger row cannot isolate is the piece the twin spends most of its comments on: the pair of tests that decide
+WHAT IS WORTH TESTING HERE. The shadow ledger the ledger (deleted in commit:936280cd35) drives the whole gate over five distinct trees: an offender in a workflow, one in a CI script, one in both, an `npx tsx` form, and a two-level ignored root. What a ledger row cannot isolate is the piece the twin spends most of its comments on: the pair of tests that decide
 whether a line is EXECUTING an ignored path or merely NAMING one.
 
 That pair is a bash `case` statement with eleven patterns and a second `case` that strips the command keyword. It is re-run here as real bash, over the same inputs, and compared token for token. A port that widened it by one pattern would turn every artifact path list into a finding, and a gate that cries wolf is one the next session learns to route around.

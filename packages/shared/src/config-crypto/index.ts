@@ -22,6 +22,28 @@ export {
   randomBytes,
   toBase64,
 } from './aes.js';
+// Agent grants: split-secret wrap of one config's content key and its policy keys (PLAN-rmcp-agent-grants.md Design 1, AG-P1)
+export type { AgentBearer, AgentGrantBinding, AgentGrantPolicyKeyBinding } from './agent-grant.js';
+export {
+  AGENT_BEARER_PREFIX,
+  AGENT_GRANT_INFO,
+  AGENT_GRANT_SECRET_BYTES,
+  agentGrantHkdf,
+  agentGrantPolicyWrapAad,
+  agentGrantSlotInfo,
+  agentGrantWrapAad,
+  deriveAgentGrantKey,
+  deriveAgentGrantSlotKeyRaw,
+  deriveAuthTag,
+  formatAgentBearer,
+  hashAuthTag,
+  newAgentGrantSecret,
+  parseAgentBearer,
+  unwrapConfigKeyForAgentGrant,
+  unwrapPolicyKeyForAgentGrant,
+  wrapConfigKeyForAgentGrant,
+  wrapPolicyKeyForAgentGrant,
+} from './agent-grant.js';
 export type { CommitmentValueKind } from './canonical.js';
 // Canonical serialization for field-commitment HMACs
 export { canonicalize, valueKind } from './canonical.js';
@@ -40,8 +62,17 @@ export {
   generateFckSalt,
   verifyCommitment,
 } from './commitments.js';
+// Per-config content keys (envelope v4, D56)
+export type { ConfigContentKey, ConfigKeyBinding } from './config-key.js';
+export {
+  configKeyWrapAad,
+  generateConfigKey,
+  unwrapConfigKey,
+  wrapConfigKey,
+} from './config-key.js';
 // Constants
 export {
+  BOUND_ENVELOPE_VERSION,
   ENVELOPE_FIELDS,
   ENVELOPE_VERSION,
   HKDF_INFO,
@@ -67,21 +98,58 @@ export { hkdfDeriveKey, hkdfDeriveRaw } from './hkdf.js';
 export { hmacCompute, hmacVerify } from './hmac.js';
 // Triple-layer encryption
 export { configDecrypt, configEncrypt, orgDecrypt, orgEncrypt } from './layers.js';
+// Policy record (its own record under the CEK, PLAN-rmcp-policy-record.md Design 1)
+export type {
+  PolicyKey,
+  PolicyKeyBinding,
+  PolicyRecord,
+  PolicyRecordBinding,
+} from './policy-record.js';
+export {
+  decryptPolicyRecord,
+  derivePolicyKey,
+  encryptPolicyRecord,
+  PolicyRecordIntegrityError,
+  policyKeyInfo,
+  policyRecordAad,
+} from './policy-record.js';
+// Recovery kit content and save check (D43)
+export type { RecoveryKit, RecoveryKitInput } from './recovery-kit.js';
+export { buildRecoveryKit, checkRecoveryKitSaved, KIT_CHECK_LENGTH } from './recovery-kit.js';
 // SDK time-windowed derivation
 export { generateSdkMaster, sdkDerive, sdkGetEpoch } from './sdk.js';
 // Selective encryption
-export type { PriorEnvelope } from './selective.js';
-export { envelopeAad, selectiveDecrypt, selectiveEncrypt } from './selective.js';
-// CEK key slots (passkey / password / recovery-code)
-export type { SlotKdfParams, SlotMethod } from './slots.js';
+export type { PriorEnvelope, SelectiveEncryptOptions } from './selective.js';
 export {
-  derivePasswordSlotSecret,
+  envelopeAad,
+  envelopeAadV4,
+  selectiveDecrypt,
+  selectiveDecryptWithConfigKey,
+  selectiveEncrypt,
+  unwrapEnvelopeConfigKey,
+} from './selective.js';
+// CEK key slots (passkey / recovery-code) and machine secrets (D46)
+export type {
+  MachineSecretKdfParams,
+  PasskeyTransport,
+  SlotKdfParams,
+  SlotMethod,
+} from './slots.js';
+export {
+  deriveMachineSecretSlotSecret,
   deriveRecoverySlotSecret,
+  generateMachineSecret,
   generateRecoveryCode,
-  newPasswordSlotParams,
+  MachineSecretKdfParamsSchema,
+  newMachineSecretParams,
+  newPasskeySlotParams,
   newRecoverySlotParams,
-  PASSWORD_PBKDF2_ITERATIONS,
+  PASSKEY_TRANSPORTS,
+  parseMachineSecret,
   parseRecoveryCode,
+  parseSlotKdfParams,
+  SLOT_METHODS,
+  SlotKdfParamsSchema,
   unwrapCekForSlot,
   wrapCekForSlot,
 } from './slots.js';

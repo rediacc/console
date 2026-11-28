@@ -31,6 +31,7 @@
  */
 
 import { z } from 'zod';
+import { FEEDBACK_LIMITS } from '../feedback/schema.js';
 
 /** Header carrying the CLI version, so an executor can reject an incompatible client. */
 export const CLI_VERSION_HEADER = 'x-rdc-cli-version';
@@ -110,6 +111,133 @@ export const WireEventSchema = z.object({
 type WireEvent = z.infer<typeof WireEventSchema>;
 
 export type { WireEvent };
+
+/**
+ * The command an AI approval covers, exactly as `/console/exec` would receive it. The executor binds
+ * the approval token to the hash of this triple, so an answer naming any other argv is refused.
+ */
+export const AiApprovalCommandSchema = z.strictObject({
+  pathKey: z.string().min(1).max(256),
+  params: z.record(z.string(), z.unknown()),
+  positionals: z.record(z.string(), z.unknown()),
+});
+
+type AiApprovalCommand = z.infer<typeof AiApprovalCommandSchema>;
+
+export type { AiApprovalCommand };
+
+/**
+ * How an approval is shown (PLAN-console-ai-assistant D2): `safe` and `caution` requests group into
+ * one batch card, `destructive` and `grand` each take a popup of their own.
+ */
+export const AI_APPROVAL_RISKS = ['safe', 'caution', 'destructive', 'grand'] as const;
+
+export type AiApprovalRisk = (typeof AI_APPROVAL_RISKS)[number];
+
+/** One step of the model's `plan` tool. */
+const AiPlanStepSchema = z.strictObject({ title: z.string().min(1).max(500) });
+
+/** One structured answer of the model's `present` tool: a table, a status line, or choice chips. */
+export const AiPresentCardSchema = z.discriminatedUnion('type', [
+  z.strictObject({
+    type: z.literal('table'),
+    columns: z.array(z.string().max(200)).min(1).max(20),
+    rows: z.array(z.array(z.string().max(2000)).max(20)).max(200),
+  }),
+  z.strictObject({
+    type: z.literal('status'),
+    tone: z.enum(['ok', 'warn', 'error', 'info']),
+    title: z.string().max(200).optional(),
+    text: z.string().min(1).max(4000),
+  }),
+  z.strictObject({
+    type: z.literal('choices'),
+    choices: z
+      .array(z.strictObject({ label: z.string().min(1).max(200), value: z.string().max(2000) }))
+      .min(1)
+      .max(12),
+  }),
+]);
+
+type AiPresentCard = z.infer<typeof AiPresentCardSchema>;
+
+export type { AiPresentCard };
+
+/**
+ * One event of an AI chat turn (agent/plans/PLAN-console-ai-providers.md D8), carried by the
+ * `kind: 'ai'` stream line. Kept apart from WireEventSchema, which stays renet-shaped so every
+ * renet reader is untouched. A tool's own renet events travel as `event` lines tagged with the
+ * tool call id.
+ *
+ * `approval_required` carries the executor's single-use `approvalToken`, bound to the verified
+ * principal, the conversation, the tool call and the hash of `command`; the page posts the token
+ * and the command back unchanged, and the executor refuses any other pairing.
+ */
+export const AiEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('text_delta'), text: z.string() }),
+  z.object({
+    type: z.literal('tool_call'),
+    toolCallId: z.string().min(1),
+    name: z.string().min(1),
+    input: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('tool_result'),
+    toolCallId: z.string().min(1),
+    ok: z.boolean(),
+    output: z.unknown().optional(),
+  }),
+  z.object({
+    type: z.literal('approval_required'),
+    toolCallId: z.string().min(1),
+    name: z.string().min(1),
+    input: z.unknown().optional(),
+    approvalToken: z.string().min(1).max(4096),
+    command: AiApprovalCommandSchema,
+    risk: z.enum(AI_APPROVAL_RISKS),
+    /** Why the command waits: the policy's confirmation, or the conversation's mode. */
+    reason: z.string().max(2000).optional(),
+  }),
+  z.object({
+    type: z.literal('plan'),
+    toolCallId: z.string().min(1),
+    steps: z.array(AiPlanStepSchema).min(1).max(30),
+  }),
+  z.object({
+    type: z.literal('present'),
+    toolCallId: z.string().min(1),
+    card: AiPresentCardSchema,
+  }),
+  z.object({
+    type: z.literal('usage'),
+    inputTokens: z.number().int().nonnegative(),
+    outputTokens: z.number().int().nonnegative(),
+  }),
+  /**
+   * A drafted bug report the page previews and the user sends, edits or declines
+   * (agent/plans/PLAN-console-ai-feedback.md D1, D2). The draft is already scrubbed; the account
+   * worker rebuilds the exact body from the run row on preview and send.
+   */
+  z.object({
+    type: z.literal('feedback_offer'),
+    runId: z.string().min(1),
+    draft: z.object({
+      message: z.string().max(FEEDBACK_LIMITS.message).optional(),
+      stderrTail: z.string().max(FEEDBACK_LIMITS.stderrTail).optional(),
+      env: z.object({
+        cliVersion: z.string().max(FEEDBACK_LIMITS.cliVersion),
+        os: z.string().max(FEEDBACK_LIMITS.os),
+        arch: z.string().max(FEEDBACK_LIMITS.arch),
+      }),
+    }),
+  }),
+  z.object({ type: z.literal('finish'), reason: z.string() }),
+  z.object({ type: z.literal('error'), message: z.string(), code: z.string().optional() }),
+]);
+
+type AiEvent = z.infer<typeof AiEventSchema>;
+
+export type { AiEvent };
 
 /** A job's lifecycle state, as renet's status file records it. */
 export const JobStateSchema = z.enum(['running', 'succeeded', 'failed', 'cancelled']);
@@ -248,6 +376,16 @@ export const StreamLineSchema = z.discriminatedUnion('kind', [
      * stream, where there is no spool to resume from.
      */
     line: z.number().int().positive().optional(),
+    /**
+     * The AI tool call whose execution produced this event, set only inside an AI chat turn
+     * (PLAN-console-ai-providers.md D8). A command stream never emits it; the schema leaves the
+     * field optional on every event line and does not enforce that.
+     */
+    toolCallId: z.string().min(1).optional(),
+  }),
+  z.object({
+    kind: z.literal('ai'),
+    ai: AiEventSchema,
   }),
   z.object({
     kind: z.literal('result'),
@@ -360,4 +498,14 @@ export const PROXY_ROUTES = {
   /** Cancel a job: `POST ?machine=<m>`, authorized as `job cancel`. */
   jobCancel: (jobId: string) => `/v1/jobs/${jobId}/cancel`,
   jobCancelPattern: '/v1/jobs/:id/cancel',
+  /** One AI chat turn, answered as an NDJSON stream with `ai` lines. */
+  aiChat: '/v1/ai/chat',
+  /** Test a provider profile with one short call. */
+  aiTest: '/v1/ai/test',
+  /** How many dispatches the executor is running, `{ busy: n }`. Asked only by the proxy's OrgExecutor alarm from inside; the forward refuses it from outside. */
+  busy: '/v1/busy',
+  /** One hosted MCP `tools/call` under an agent grant, `{grantId, secret, tool, args, requestId, attachMs}`. Posted only by the proxy's OrgExecutor `mcpCall` from inside; the forward refuses it from outside. */
+  mcpCall: '/v1/mcp/call',
+  /** One pushed grant revocation, `{grantId}`, answered `{dropped}`. Posted only by the proxy's OrgExecutor `revokeGrant` from inside; the forward refuses it from outside. */
+  mcpRevoke: '/v1/mcp/revoke',
 } as const;

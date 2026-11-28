@@ -14,7 +14,7 @@ import type { PolicyDocument } from '@rediacc/shared/policy';
 import { describe, expect, it, vi } from 'vitest';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { authorize, PolicyDenied } from '../../services/serve/policy.js';
-import { loadDaemonConfig } from '../serve.js';
+import { auditFailureNotice, loadDaemonConfig } from '../serve.js';
 
 await vi.hoisted(async () => {
   const { mkdtempSync } = await import('node:fs');
@@ -72,5 +72,21 @@ describe('rdc serve --mode daemon config loader', () => {
     expect(authorize({ ...args, commandPath: 'machine status' }).allowed).toBe(true);
     // An owner with no document is allowed everything; the document narrows it to one command.
     expect(() => authorize({ ...args, commandPath: 'machine prune' })).toThrow(PolicyDenied);
+  });
+});
+
+describe('auditFailureNotice (review c95d780e.3)', () => {
+  const event = { commandPath: 'repo delete', principal: OWNER } as Parameters<
+    typeof auditFailureNotice
+  >[1];
+
+  it('names the command, the user and the reason', () => {
+    expect(auditFailureNotice(new Error('ECONNREFUSED'), event)).toBe(
+      'Could not record "repo delete" for owner@example.com: ECONNREFUSED'
+    );
+  });
+
+  it('control: a non-Error reason is stringified', () => {
+    expect(auditFailureNotice('boom', event)).toContain(': boom');
   });
 });

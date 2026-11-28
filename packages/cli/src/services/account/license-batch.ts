@@ -209,16 +209,19 @@ export function refreshRepoLicensesBatch(
     });
   }
 
-  return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(
-      sftp,
-      machineName,
-      machine,
-      remoteRenetPath,
-      requiredGuid,
-      scanned,
-      options.adoptOrigin === true
-    )
+  return withSharedOrPooledSftp(
+    sharedSftp,
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
+    (sftp) =>
+      runRepoLicenseBatch(
+        sftp,
+        machineName,
+        machine,
+        remoteRenetPath,
+        requiredGuid,
+        scanned,
+        options.adoptOrigin === true
+      )
   );
 }
 
@@ -235,7 +238,7 @@ function configAccountOrigin(machineName: string): string {
 }
 
 /** The origin of a licence's `renewalUrl`; one that does not parse stays as itself, so it is never the config's origin. */
-function renewalOrigin(renewalUrl: string): string {
+export function renewalOrigin(renewalUrl: string): string {
   try {
     return new URL(renewalUrl).origin;
   } catch {
@@ -349,7 +352,7 @@ function skipForeignOrigin<T extends RemoteRepoLicenseScanEntry>(
     const vars = {
       repo: nameByGuid.get(repo.repositoryGuid) ?? repo.repositoryGuid,
       machine: machineName,
-      licenseOrigin: renewalOrigin(repo.currentRenewalUrl ?? ''),
+      licenseOrigin: renewalOrigin(repo.currentRenewalUrl),
       configOrigin,
     };
     outputService.warn(t('warnings.licenseForeignOriginSkipped', vars));

@@ -38,9 +38,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 ## Boxes
 
 ### Wave 0: read-only
-- [ ] P0 [live] Inventory through eu-bench or SSH: each repo's installed renewalUrl origin (`./rdc.sh --config eu-bench machine status hostinger --licenses -o json`), `repo list -m hostinger -o json` mapping all GUIDs to names, datastore free space, bench `subscription status -o json` and `backup usage -o json`, `bench_access list`, the bench HTTP code from hostinger over IPv4 and IPv6, and the last run of hostinger's backup timer from its journal.
+- [x] P0 [live] Inventory through eu-bench or SSH: each repo's installed renewalUrl origin (`./rdc.sh --config eu-bench machine status hostinger --licenses -o json`), `repo list -m hostinger -o json` mapping all GUIDs to names, datastore free space, bench `subscription status -o json` and `backup usage -o json`, `bench_access list`, the bench HTTP code from hostinger over IPv4 and IPv6, and the last run of hostinger's backup timer from its journal.
   Local-route: hostinger -- every read runs through eu-bench and term connect; the backup run is hostinger's own systemd timer, read from journalctl.
   Accept: `npm run login:bench` rc 0 plus every read rc 0, recorded in this plan.
+    (ticked) 2026-11-23T08:36:33Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/ops_health.py:1 -- hostinger live run 2026-11-23 through eu-bench: inventory: 17 repos with valid licences all renewing from bench-eu.rediacc.cloud, datastore 62 percent full (138G free), bench-eu answers 302 over IPv4 and IPv6, nightly-hot ran 02:00-02:31Z; evidence /tmp/writers-now/1121-1-20261123T0756Z-evidence-hostinger.md
 
 ### Wave 1: writers
 - [x] W1 [writer] The bench production guard (Design 3): `bench_production.py`, `bench-production.json`, reset_bench refusals, drill cleanup refusals.
@@ -78,7 +79,8 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
     (corrected 2026-11-17, d778be9d) hostinger moved to bench on 2026-11-16, so the last run is the bench one: the journal shows Nov 16 02:25 FAILED (eu, the D1 parameter-cap 500 fixed in account 49f8b34) and Nov 17 02:17 Finished (bench) (/tmp/live-hostinger/dab0b572-sudo.log). The Accept is read against that last run.
     (ticked) 2026-11-17T15:39:32Z by d778be9d: commit:31214d672d journal on hostinger: Nov 17 02:17:31 systemd Finished rediacc-backup-nightly-hot.service (the last run after the 02:00 start, on bench per the 2026-11-17 correction line); Nov 16 02:25 eu run FAILED on the D1 parameter cap fixed in account 49f8b34; C5 store verify 13/13 rc=0 shows every repo committed
     Note (2026-11-19): systemd prints `Finished` for a oneshot unit only when it exited 0 (a failure prints `Failed with result`), so that line is the journal's SUCCESS for the last run; the `status=0/SUCCESS` text of the Accept appears in the same journal's process line, which the tick did not quote. The Accept is read against the bench run per the correction above, with C5's store verify as the per-repo witness.
-- [ ] C2 [live] Re-licence: `./rdc.sh --config eu-bench subscription refresh -m hostinger --adopt-origin`. Accept: `machine status hostinger --licenses -o json` shows https://bench.rediacc.cloud for every repo, and `sudo renet license renew --force --output json` on hostinger reports renewed for every blob
+- [x] C2 [live] Re-licence: `./rdc.sh --config eu-bench subscription refresh -m hostinger --adopt-origin`. Accept: `machine status hostinger --licenses -o json` shows https://bench.rediacc.cloud for every repo, and `sudo renet license renew --force --output json` on hostinger reports renewed for every blob
+    (ticked) 2026-11-23T03:34:01Z by ace763dd: fileline:packages/cli/src/commands/subscription-actions.ts:415 commit:1e1e161e64 -- `rdc --config eu-bench subscription refresh -m hostinger --adopt-origin -o json` rc=0 (scanned 17, unchanged 17, failed 0) and `sudo renet license renew --force --output json` on hostinger rc=0 with 17 renewed; `machine status hostinger --licenses -o json` 17 license_statuses all valid, every current blob on https://bench-eu.rediacc.cloud, log /tmp/live-hostinger/run4/ (run date 2026-11-22/23). DEPS-WAIVED: live proof run after the release; the plan prerequisites gate other boxes
 - [x] C3 [live] `./rdc.sh --config eu-bench backup strategy bind nightly-hot -m hostinger`, then `backup schedule -m hostinger`. Accept: `backup schedule -m hostinger --dry-run` reports unchanged, and the unit holds `--expect-account-server https://bench.rediacc.cloud`
     (ticked) 2026-11-17T07:30:15Z by d778be9d: run: ./rdc.sh --config eu-bench backup schedule -m hostinger --dry-run rc=0 (8 unchanged); unit --expect-account-server https://bench-eu.rediacc.cloud (bench origin after the rename) log=/tmp/m/p-sched.txt
     (corrected 2026-11-17, d778be9d) The box text keeps https://bench.rediacc.cloud so its signature holds; the bench account server moved to https://bench-eu.rediacc.cloud in the PLAN-multi-region-bench rename (R1, M1), so where the C2 and C3 Accepts name https://bench.rediacc.cloud, read https://bench-eu.rediacc.cloud, which the unit holds; the box lines are left as written.
@@ -97,8 +99,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 - [ ] D1 [writer] PLAN-product-domain-rename: L10 closes as superseded by this plan; L11 gains a dependency on C7 and its Accept moves to `--config eu-bench`; b38b0881 deactivation waits on C7. docs/agent-reference/bench-login.md gains "bench carries hostinger production data: reset guard, pins, escrow". Accept: `npm run check:ci-plan-record` rc 0
 - [ ] LP-bench [live] Fresh bench receipt after the bench guard and pin boxes (W1, W2, L5) and the hostinger re-licence land on bench.
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] Fresh hostinger receipt after the re-licence and the first scheduled run through eu-bench (C7).
+- [x] LP-hostinger [live] Fresh hostinger receipt after the re-licence and the first scheduled run through eu-bench (C7).
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:02:59Z by ace763dd: live-proof lp-1c120cbc779f VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-hostinger-to-bench.md box d3e497f3 proven live on hostinger
+    (corrected 2026-11-27T04:16Z by CL-W-AGENT-2) this receipt predates C7, the first scheduled run through eu-bench, which is still open: a fresh hostinger receipt is owed after C7 (review 63834f81.2)
 
 ## Risks
 1. Bench runs unmerged account code; once rediacc-backups-eu is gone a deployed GC or retention bug could remove the only off-site copy (hostinger still holds the live data). An R2 bucket lock on the protected prefix is a possible follow-up.

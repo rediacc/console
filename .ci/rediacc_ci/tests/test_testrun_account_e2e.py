@@ -95,7 +95,6 @@ def fixture(directory: pathlib.Path, report: bool = True) -> pathlib.Path:
     (account / "package.json").write_text("{}")
     for name, body in {
         "01-auth/a.spec.ts": "x",
-        "10-stripe/s.spec.ts": "y",
         "20-webauthn/w.spec.ts": "@webauthn",
     }.items():
         target = account / "e2e" / "tests" / name
@@ -324,39 +323,6 @@ def test_shard_files_are_appended(tmp_path: pathlib.Path, reap: list[int | None]
     assert argv[-1] == "01-auth/a.spec.ts"
     assert old.out.code == new.out.code == 0
     assert norm_calls(old) == norm_calls(new)
-
-
-def test_stripe_listen_is_started_for_the_stripe_leg(
-    tmp_path: pathlib.Path, reap: list[int | None]
-) -> None:
-    env = {
-        "STRIPE_SANDBOX_SECRET_KEY": "sk_test_x",
-        "FAKE_OUT_STRIPE": "Ready! signing secret is whsec_fake123",
-    }
-    old = drive(tmp_path, "bash", [], env, tools=("npx", "npm", "stripe"))
-    new = drive(tmp_path, "py", [], env, tools=("npx", "npm", "stripe"))
-    reap.extend([old.orphan, new.orphan])
-    assert old.out.code == new.out.code == 0, (old.out.err, new.out.err)
-    stripe_calls = [c for c in norm_calls(old) if c[0] == "stripe"]
-    assert stripe_calls
-    assert any(c[1][:2] == ["tsx", "scripts/stripe-sync.ts"] for c in norm_calls(old)), (
-        "the sandbox sync ran before listening"
-    )
-    # Deliberate delta: the twin passed the key as `--api-key <key>`, visible to every user through `ps`; the port hands it to the Stripe CLI in STRIPE_API_KEY instead. Every other call is unchanged.
-    twin_calls = norm_calls(old)
-    port_calls = norm_calls(new)
-    twin_stripe = [c for c in twin_calls if c[0] == "stripe"]
-    assert all("--api-key" in c[1] for c in twin_stripe), (
-        "control: the twin really passed --api-key"
-    )
-    expected = [
-        (c[0], [a for a in c[1] if a not in ("--api-key", "sk_test_x")], *c[2:])
-        if c[0] == "stripe"
-        else c
-        for c in twin_calls
-    ]
-    assert port_calls == expected
-    assert not any("sk_test_x" in a for c in port_calls for a in c[1]), "the key reached an argv"
 
 
 def test_test_failure_is_exit_one(tmp_path: pathlib.Path, reap: list[int | None]) -> None:
@@ -716,6 +682,17 @@ def test_a_dry_run_failure_with_whitespace_only_stderr_shows_stdout() -> None:
         account_e2e.install_system_deps("chromium", ".", failing)
 
 
+def _real_report_pair() -> tuple[str, str]:
+    done = subprocess.run(
+        ["node", "-e", account_e2e.ED25519_PROGRAM],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    pair = json.loads(done.stdout)
+    return pair["private"], pair["public"]
+
+
 def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> None:
     """6325a494.1: the e2e users never accept the Terms, so the backend gets TERMS_GATE=false beside TEST_MODE=true."""
     seen: dict[str, typing.Any] = {}
@@ -723,19 +700,71 @@ def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> N
     class StopHereError(Exception):
         pass
 
-    def fake_popen(*_args: typing.Any, **kwargs: typing.Any) -> typing.NoReturn:
+    caller_priv, caller_pub = _real_report_pair()
+    real_popen = account_e2e.subprocess.Popen
+
+    def fake_popen(*args: typing.Any, **kwargs: typing.Any) -> typing.Any:
+        if args[0][0] == "node":
+            return real_popen(*args, **kwargs)
         seen.update(kwargs["env"])
         raise StopHereError
 
     monkeypatch.setattr(account_e2e.subprocess, "Popen", fake_popen)
     monkeypatch.setenv("ACCOUNT_X25519_PRIVATE_KEY", "xpriv")
     monkeypatch.setenv("ACCOUNT_X25519_PUBLIC_KEY", "xpub")
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", caller_priv)
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", caller_pub)
     monkeypatch.setenv("TERMS_GATE", "true")
     run = account_e2e.Run.__new__(account_e2e.Run)
     run.api_port = "3001"
     run.e2e_port = "5173"
     run.account_dir = pathlib.Path()
     with pytest.raises(StopHereError):
-        run.start_backend("")
+        run.start_backend()
     assert seen["TEST_MODE"] == "true"
     assert seen["TERMS_GATE"] == "false"
+    assert (seen["REPORT_ED25519_PRIVATE_KEY"], seen["REPORT_ED25519_PUBLIC_KEY"]) == (
+        caller_priv,
+        caller_pub,
+    )
+
+
+def test_backend_env_carries_a_report_signing_pair_that_verifies(monkeypatch) -> None:
+    """TEST_MODE report generation stopped at REPORT_KEY_NOT_CONFIGURED: both REPORT_ED25519_* names reach the backend as PKCS8/SPKI base64, minted per start-up, and a signature by the private half verifies under the public one."""
+    monkeypatch.delenv("REPORT_ED25519_PRIVATE_KEY", raising=False)
+    monkeypatch.delenv("REPORT_ED25519_PUBLIC_KEY", raising=False)
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    priv, pub = run.report_pair()
+    assert (priv, pub) != run.report_pair()
+    program = (
+        "const c=require('crypto');"
+        "const k=c.createPrivateKey({key:Buffer.from(process.env.P,'base64'),format:'der',type:'pkcs8'});"
+        "const u=c.createPublicKey({key:Buffer.from(process.env.U,'base64'),format:'der',type:'spki'});"
+        "const m=Buffer.from('report');const s=c.sign(null,m,k);"
+        "process.exit(c.verify(null,m,u,s)?0:1)"
+    )
+    done = subprocess.run(
+        ["node", "-e", program],
+        env={**os.environ, "P": priv, "U": pub},
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert done.returncode == 0, done.stderr
+    caller = _real_report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", caller[0])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", caller[1])
+    assert run.report_pair() == caller
+
+
+def test_a_mismatched_caller_report_pair_is_refused(monkeypatch) -> None:
+    """d7ff84ce.2: a REPORT_ED25519_* pair whose halves are from different keys is refused, as the ACCOUNT_ED25519 pair is."""
+    first, second = _real_report_pair(), _real_report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", first[0])
+    monkeypatch.setenv("REPORT_ED25519_PUBLIC_KEY", second[1])
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    with pytest.raises(account_e2e.RefusedError, match="not one pair"):
+        run.report_pair()
+    monkeypatch.setenv("REPORT_ED25519_PRIVATE_KEY", "not-a-key")
+    with pytest.raises(account_e2e.RefusedError, match="could not derive"):
+        run.report_pair()

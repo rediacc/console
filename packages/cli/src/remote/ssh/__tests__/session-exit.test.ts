@@ -136,38 +136,42 @@ describe('waitForSessionEnd over a fake ssh', () => {
   });
 });
 
-describe('waitForSessionEnd over a real shell whose child inherits the stream', () => {
-  // POSIX sh is the remote side here; the background sleep keeps the stderr pipe open as it would keep sshd's channel.
-  const run = (script: string) =>
-    spawn('sh', ['-c', script], { stdio: ['ignore', 'ignore', 'pipe'] });
+// BLOCKER: spawns a real POSIX `sh` with a background `sleep` holding the stderr pipe open (the remote side of the session); Windows has no `sh` on PATH.
+describe.skipIf(process.platform === 'win32')(
+  'waitForSessionEnd over a real shell whose child inherits the stream',
+  () => {
+    // POSIX sh is the remote side here; the background sleep keeps the stderr pipe open as it would keep sshd's channel.
+    const run = (script: string) =>
+      spawn('sh', ['-c', script], { stdio: ['ignore', 'ignore', 'pipe'] });
 
-  it('ends with the command, not with the child, and reports the command exit code', async () => {
-    const marker = newExitMarker();
-    const child = run(`${exitTrapShell(marker)}; sleep 30 & echo started >&2; exit 3`);
-    let shown = '';
-    const started = Date.now();
-    const end = await waitForSessionEnd(child, {
-      marker,
-      onStderr: (t) => {
-        shown += t;
-      },
-      graceMs: 300,
-    });
-    expect(Date.now() - started).toBeLessThan(10_000);
-    // The shell itself exited; its stderr pipe stayed open in the sleep.
-    expect(end).toEqual({ code: 3, forced: false });
-    expect(shown).toBe('started\n');
-  }, 20_000);
-
-  it('the same shell without the trap is held open by the child (the defect, as a control)', async () => {
-    const child = run('sleep 3 & exit 3');
-    const closed = await new Promise<boolean>((resolve) => {
-      const timer = setTimeout(() => resolve(false), 1_000);
-      child.on('close', () => {
-        clearTimeout(timer);
-        resolve(true);
+    it('ends with the command, not with the child, and reports the command exit code', async () => {
+      const marker = newExitMarker();
+      const child = run(`${exitTrapShell(marker)}; sleep 30 & echo started >&2; exit 3`);
+      let shown = '';
+      const started = Date.now();
+      const end = await waitForSessionEnd(child, {
+        marker,
+        onStderr: (t) => {
+          shown += t;
+        },
+        graceMs: 300,
       });
-    });
-    expect(closed).toBe(false);
-  }, 10_000);
-});
+      expect(Date.now() - started).toBeLessThan(10_000);
+      // The shell itself exited; its stderr pipe stayed open in the sleep.
+      expect(end).toEqual({ code: 3, forced: false });
+      expect(shown).toBe('started\n');
+    }, 20_000);
+
+    it('the same shell without the trap is held open by the child (the defect, as a control)', async () => {
+      const child = run('sleep 3 & exit 3');
+      const closed = await new Promise<boolean>((resolve) => {
+        const timer = setTimeout(() => resolve(false), 1_000);
+        child.on('close', () => {
+          clearTimeout(timer);
+          resolve(true);
+        });
+      });
+      expect(closed).toBe(false);
+    }, 10_000);
+  }
+);

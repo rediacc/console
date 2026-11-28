@@ -178,7 +178,7 @@ def ci_query(owner, name, ref, cursor):
     after = ',after:"%s"' % cursor if cursor else ""
     return (
         '{repository(owner:"%s",name:"%s"){pushedAt pullRequests(headRefName:"%s",states:OPEN,first:1)'
-        "{nodes{number url isDraft commits(last:1){nodes{commit{oid statusCheckRollup{state "
+        "{nodes{number url isDraft createdAt commits(last:1){nodes{commit{oid statusCheckRollup{state "
         "contexts(first:100%s){totalCount pageInfo{hasNextPage endCursor} nodes{__typename "
         "... on CheckRun{name status conclusion databaseId detailsUrl "
         "checkSuite{workflowRun{databaseId workflow{name}}}} "
@@ -398,6 +398,8 @@ def _rollup_pages(root, owner, name, ref, build_query, extract, source, keep=Non
         "url": (pr or {}).get("url") or "",
         # Carried so a GREEN verdict can name the next action. A reader must not flip the PR itself -- several watches can be armed at once and the ready-flip is a one-way PR state change -- but it CAN stop the finish sequence depending on the agent remembering it exists.
         "draft": bool((pr or {}).get("isDraft")),
+        # When the PR opened: the long-red wall (wl_longred, 72 h) counts from it.
+        "created_at": (pr or {}).get("createdAt") or "",
         "sha": (commit or {}).get("oid") or "",
         "rollup": rollup,
         "total": total,
@@ -704,8 +706,18 @@ def ci_gate(info, require_complete=True):
     return gate
 
 
+# Why the last `_load_diagnose` returned None ("" when it has not failed), so the callers that read None as "no diagnosis" can name the exception in the text they already emit.
+_DIAGNOSE_ERROR = [""]
+
+
+def _diagnose_failure():
+    """The load failure to append to a "did not load" reason: " (RuntimeError: ...)", or "" when the module simply was not found."""
+    return " (%s)" % _DIAGNOSE_ERROR[0] if _DIAGNOSE_ERROR[0] else ""
+
+
 def _load_diagnose():
     """rediacc_ci.ci.ci_diagnose loaded by file path, or None. Lazy and defensive like _sanctioned_match: a missing module must not take the Stop hook down."""
+    _DIAGNOSE_ERROR[0] = ""
     try:
         path = (
             pathlib.Path(__file__).resolve().parents[3]
@@ -720,8 +732,9 @@ def _load_diagnose():
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod
-    except Exception:
-        # A broken diagnoser is not a verdict: the caller reads None as "no diagnosis" and the Stop hook goes on.
+    except Exception as exc:
+        # A broken diagnoser is not a verdict: the caller reads None as "no diagnosis" and the Stop hook goes on, naming this failure in its own text (`_diagnose_failure`).
+        _DIAGNOSE_ERROR[0] = "%s: %s" % (type(exc).__name__, exc)
         return None
 
 
@@ -738,7 +751,13 @@ def ci_cancel_cause(root, info, gate):
     run_id = next(
         (c["run"] for c in gate.get("cancelled") or [] if c.get("run")), None
     ) or gate.get("run")
+    # Cleared here as well as inside _load_diagnose: a stub of the loader that returns None must not inherit an earlier call's failure text.
+    _DIAGNOSE_ERROR[0] = ""
     diag = _load_diagnose()
+    if diag is None and _DIAGNOSE_ERROR[0]:
+        return dict(
+            unknown, kind="unreadable", detail="ci_diagnose did not load%s" % _diagnose_failure()
+        )
     if diag is None or not run_id or not info.get("owner"):
         return unknown
     # The Stop hook's budget: at most two reads and one 2 s pause on a transient 5xx (PLAN-gh-retry G8).
@@ -751,8 +770,12 @@ def ci_cancel_cause(root, info, gate):
     jobs, _err = diag.run_jobs(fetch, run_id, run.get("run_attempt"))
     try:
         return diag.cancel_cause(fetch, run, pr_head=info.get("sha") or None, jobs=jobs)
-    except Exception:
-        return unknown
+    except Exception as exc:
+        return dict(
+            unknown,
+            kind="unreadable",
+            detail="the cancel cause could not be read (%s: %s)" % (type(exc).__name__, exc),
+        )
 
 
 def ci_cancel_note(detail):
@@ -772,7 +795,7 @@ def ci_cancel_note(detail):
             " [watchdog run %s]" % cause["watchdog_run"] if cause.get("watchdog_run") else "",
             " (run %s)" % run if run else "",
         )
-    )
+    ) + ("\n  %s" % info["longred"] if info.get("longred") else "")
 
 
 # ---- CARRIED REDS (worklist #e3fca920). A PR that carries a red on purpose (`.ci/config/carried-reds.json`, the push guard's file) failed CI on exactly that finding and nothing else, and the check below used to block every stop on it as "nothing is watching" until the per-set budget ran out: run 37613276374 on PR #599, whose one failed job, Quality / Branch, failed only on
@@ -907,12 +930,18 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
 
     `cached` is the ci_trouble steps cache for this tip; a carried or real verdict is stored under `_carry` and reused, an unreadable one is not, so the next stop reads again. A derived row (CI Complete, a downstream sentinel) is carried only beside at least one carried row and no real one.
     """
+    _DIAGNOSE_ERROR[0] = ""
     diag = diag or _load_diagnose()
     if diag is None:
         for row in hard:
-            row["carry"] = {"verdict": "unreadable", "why": "ci_diagnose did not load", "keys": []}
+            row["carry"] = {
+                "verdict": "unreadable",
+                "why": "ci_diagnose did not load%s" % _diagnose_failure(),
+                "keys": [],
+            }
         return list(hard), []
     memo = cached.setdefault("_carry", {})
+    cats = cached.setdefault("_cat", {})
     carried, cwhy = carried_at(root, tip)
     if fetch is None and info.get("owner"):
         fetch = diag.GhFetcher(
@@ -927,8 +956,12 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
     for row in roots:
         key = str(row.get("job") or "")
         if carried is None:
+            # No log is read without a carry file (a cost guard), so the category stays unread; the row's signature says so, and the ledger shows a red that was never classified instead of one the classifier could not place.
             row["carry"] = {"verdict": "unreadable", "why": cwhy, "keys": []}
+            row["signature"] = "category-unread: %s" % cwhy
             continue
+        if key and isinstance(cats.get(key), list) and len(cats[key]) == 2:
+            row["category"], row["signature"] = cats[key]
         if key and isinstance(memo.get(key), dict):
             row["carry"] = memo[key]
             continue
@@ -937,19 +970,35 @@ def ci_carry_split(root, info, tip, hard, cached, diag=None, fetch=None, clock=t
             continue
         if looked >= CI_CARRY_LOOKUPS or clock() > deadline:
             row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
         looked += 1
         job, err = fetch.json("actions/jobs/%s" % key)
         if job is None:
             row["carry"] = {"verdict": "unreadable", "why": "job read failed: %s" % err, "keys": []}
+            # A failed read leaves the category unread like a spent budget does: ci_longred holds the round back, so a transient failure is not recorded as `unknown` for good.
+            row["category_pending"] = not row.get("category")
             continue
         if clock() > deadline:
             row["carry"] = {"verdict": "unreadable", "why": "carry read budget spent", "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
         log, err = diag.job_log(fetch, key, completed=job.get("status") == "completed")
         if log is None:
             row["carry"] = {"verdict": "unreadable", "why": "log read failed: %s" % err, "keys": []}
+            row["category_pending"] = not row.get("category")
             continue
+        # THE RED'S CATEGORY for the long-red ledger (wl_longred): the tracer's own classifier over the failing step's slice, read from the log this loop already holds, so it costs no extra call.
+        try:
+            row["category"], row["signature"] = diag.classify(diag.failing_step_slice(log, job)[1])
+            if job.get("status") == "completed":
+                cats[key] = [row["category"], row["signature"]]
+        except Exception as exc:
+            # Named in the ledger row's signature, so an `unknown` red says the classifier failed instead of reading as an unclassified log.
+            row["category"], row["signature"] = (
+                "unknown",
+                "classify-failed: %s: %s" % (type(exc).__name__, exc),
+            )
         row["carry"] = judge_job_carry(diag, job, log, carried)
         if row["carry"]["verdict"] != "unreadable" and job.get("status") == "completed":
             memo[key] = row["carry"]
@@ -1024,10 +1073,10 @@ def ci_watch_only(live_bg):
 # The sanctioned CI reader. A watch that is not this is a hand-rolled loop, and hand-rolled loops failed four ways on 2026-08-25 while landing console#574: a stale recipe in nine places, a verdict from a SUPERSEDED attempt, a verdict
 # from a run a later push had cancelled, and a network blip that only a
 # correctly-written retry arm survived. See .ci/scripts/ci/ci-trace.py.
-def _sanctioned_match(blob):
+def _sanctioned_match(blob, problems=None):
     """True when the blob carries a shape the sanctioned registry replaces.
 
-    Imported lazily and defensively: this module runs on every stop, and a missing or broken registry must not take the whole hook down with it.
+    Imported lazily and defensively: this module runs on every stop, and a missing or broken registry must not take the whole hook down with it. A registry that fails to load reads as no match (the block is never widened) and appends the failure to `problems` when the caller passes a list.
     """
     try:
         lib = pathlib.Path(__file__).resolve().parent.parent / "lib" / "sanctioned.py"
@@ -1037,7 +1086,9 @@ def _sanctioned_match(blob):
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
         return mod.match(blob) is not None
-    except Exception:
+    except Exception as exc:
+        if problems is not None:
+            problems.append("sanctioned registry: %s: %s" % (type(exc).__name__, exc))
         return False
 
 
@@ -1047,7 +1098,7 @@ GH_EVIDENCE_RE = re.compile(r"\bgh\b|actions/runs/\d+|ci-trace", re.IGNORECASE)
 CI_TRACE_RE = re.compile(r"ci-trace(?:\.py)?\b", re.IGNORECASE)
 
 
-def adhoc_watch(live_bg):
+def adhoc_watch(live_bg, problems=None):
     """(task_id, blob) for a RUNNING background task watching CI by hand, or ("","").
 
     "By hand" means: it looks like a CI watch (CI_WATCH_RE, the same shape the idle checks already use) and it is NOT ci-trace.py. The caller blocks the turn on this, which is safe to make unconditional -- unlike ci_trouble, the remedy is entirely within the session's reach: stop the task and run the script. Nothing another session's push or an infrastructure flake can do makes
@@ -1062,7 +1113,7 @@ def adhoc_watch(live_bg):
         # blocking the turn. A guard that stops unrelated work is a guard that gets removed.
         if not GH_EVIDENCE_RE.search(blob):
             continue
-        if CI_WATCH_RE.search(blob) or _sanctioned_match(blob):
+        if CI_WATCH_RE.search(blob) or _sanctioned_match(blob, problems):
             return str(b.get("id") or "?"), blob.strip()[:160]
     return "", ""
 
@@ -1505,8 +1556,87 @@ def ci_queue_state(root, worklist, session_id):
     return state, detail
 
 
+def ci_longred(root, info, tip, red_rows, extra_reds=(), now=None):
+    """Record the finished round behind `info` in the landing ledger and return the long-red verdict dict (wl_longred, agent/plans/PLAN-simple-two-tree-loop.md D4), or None. Sets `info["longred"]` to the verdict's line ("" for none).
+
+    A round is recorded once: wl_longred.round_kind keys it on the head and the job ids, so the next stop over the same finished run appends nothing and only re-reads the verdict, which moves with the clock (an outage gap falling due, the 72 h wall). The fix a push aimed at is read from its commits since the previous round's head (`Fix-Target:` trailers, else the previous reds the messages name).
+
+    Never raises: a ledger that cannot be read or written must not take the stop down, and the red is still reported without the line.
+    """
+    try:
+        import wl_longred as L
+
+        pr = (info or {}).get("pr")
+        if not pr:
+            return None
+        contexts = [
+            c
+            for c in latest_per_job(info.get("contexts"))
+            if c.get("name") and c["name"] not in CI_NONBLOCKING_CONTEXTS
+        ]
+        ids = {c["name"]: _job_id(c) for c in contexts if _job_id(c)}
+        greens = [c["name"] for c in contexts if (c.get("conclusion") or "").upper() == "SUCCESS"]
+        reds = [
+            {
+                "check": r.get("name"),
+                "category": r.get("category") or "unknown",
+                "signature": r.get("signature") or "",
+            }
+            for r in red_rows
+        ] + list(extra_reds)
+        rows = L.read_rows(root, pr)
+        prev = rows[-1] if rows else None
+        kind = L.round_kind(
+            prev,
+            tip,
+            ids,
+            retryable=lambda n: any(p.lower() in n.lower() for p in CI_RETRY_PATTERNS),
+        )
+        if any(r.get("category_pending") for r in red_rows):
+            # A red whose category could not be read yet (the carry read budget spent) is not recorded: a round is keyed on the head and job ids, so a row written now would stay `unknown` for good and hide an operator-only or outage red. The next stop reads the category (ci_carry_split caches what it read) and records then.
+            kind = None
+        if kind:
+            fix: list[str] = []
+            if kind == "push" and prev and prev.get("heads"):
+                msgs = _git(root, "log", "--format=%B", "%s..%s" % (prev["heads"], tip))
+                fix = L.fix_targets(msgs, L.red_names(prev))
+            run_id = next((r.get("run") for r in red_rows if r.get("run")), None) or next(
+                (_ctx_run(c) for c in contexts if _ctx_run(c)), None
+            )
+            row = L.build_row(
+                rows,
+                pr=pr,
+                kind=kind,
+                run_id=run_id,
+                heads=tip,
+                reds=reds,
+                greens=greens,
+                ids=ids,
+                fix_target=fix,
+                opened_at=info.get("created_at"),
+                trigger="stop",
+                now=now,
+            )
+            L.append_row(root, row)
+            rows.append(row)
+        v = L.verdict(rows, now=now)
+        info["longred"] = L.render(v)
+        out = v.as_dict()
+        out["handover"] = L.handover_trigger(v)
+        # The record rides `info` too, so every ci_trouble detail carries it and the handover contract (box B7) reads it there.
+        info["longred_verdict"] = out
+        return out
+    except Exception as exc:
+        # The red is still reported; the line says the long-red verdict is missing and why, instead of the status text simply lacking it.
+        if isinstance(info, dict):
+            info["longred"] = "long-red verdict unavailable (%s: %s)" % (type(exc).__name__, exc)
+        return None
+
+
 def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=False, hold=False):
     """(state, detail) -- is the open PR in trouble nobody is on?
+
+    A FINISHED round (green, red, or cancelled for want of a runner) also writes its one row to the landing ledger through ci_longred, and the long-red verdict rides `info["longred"]` (the line ci_rows_text prints) and `info["longred_verdict"]` (the record).
 
     state: unset | multi-session | no-pr | ok | pending | cancelled | watched | soft |
            carried | fixing | trouble | downgraded | unreadable
@@ -1577,6 +1707,7 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
         gate = ci_gate(info)
         if gate["verdict"] == "green":
             _ci_cache_write(cache_p, tip, state, info, steps, final=True)
+            ci_longred(root, info, tip, [])
             return "ok", info
         if gate["verdict"] == "red" and gate["cancelled"]:
             cause = steps.get("_cause") if isinstance(steps.get("_cause"), dict) else None
@@ -1584,6 +1715,21 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
                 cause = ci_cancel_cause(root, info, gate)
                 steps["_cause"] = cause
             _ci_cache_write(cache_p, tip, state, info, steps, final=True)
+            if (cause or {}).get("kind") == "runner-not-acquired":
+                # GitHub gave the job no runner: an outside outage, recorded as a red round so the long-red retry gaps apply.
+                ci_longred(
+                    root,
+                    info,
+                    tip,
+                    [],
+                    extra_reds=[
+                        {
+                            "check": cause.get("job") or "(run)",
+                            "category": "infra-likely",
+                            "signature": "runner-not-acquired",
+                        }
+                    ],
+                )
             return "cancelled", {
                 "info": info,
                 "hard": [],
@@ -1604,6 +1750,10 @@ def ci_trouble(root, worklist, session_id, live_bg, ack_text, ref=None, owned=Fa
     if hard:
         hard, carried_rows = ci_carry_split(root, info, tip, hard, steps)
     _ci_cache_write(cache_p, tip, state, info, steps, final=not live)
+    if not live:
+        # A FINISHED round: one ledger row, and the long-red verdict rides the status text (ci_rows_text reads info["longred"]). Set after the cache write, so the verdict, which moves with the clock, is never served stale from it.
+        # Only the reds that still block count: a finding `.ci/config/carried-reds.json` carries on purpose is reported as an advisory, so it must not start the wall-ask or outage clocks.
+        ci_longred(root, info, tip, hard)
     if not hard and carried_rows:
         return "carried", {
             "info": info,
@@ -1768,6 +1918,10 @@ def ci_rows_text(rows, _info):
         if carry.get("verdict") in ("real", "unreadable") and carry.get("why"):
             # WHY THIS RED IS NOT A CARRIED ONE, so a carry that stopped matching (a new key, a corrupt file) is named rather than inferred.
             out.append("        not carried: %s" % carry["why"])
+    # THE LONG-RED VERDICT (wl_longred), set by ci_longred on a finished round.
+    longred = _info.get("longred") if isinstance(_info, dict) else ""
+    if longred:
+        out.append("    %s" % longred)
     return "\n".join(out)
 
 

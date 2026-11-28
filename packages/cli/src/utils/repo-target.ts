@@ -15,9 +15,8 @@ import {
   placementViewFromConfig,
   type ResolveMachineOptions,
   resolveMachine,
-  resolveRefLocal,
 } from '../services/addressing/resolve-machine.js';
-import { resolveExecutionTarget } from '../services/cluster/cluster-target.js';
+import { namedDatastoreMount, resolveExecutionTarget } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { expectRepoState } from '../services/executor/executor-factory.js';
 import { probeRepoPresent } from '../services/repo/repo-mount-check.js';
@@ -27,6 +26,8 @@ import { ambiguous, notFound } from './cli-exit-error.js';
 interface DeferredPresence {
   machine: string;
   repoGuid: string;
+  /** The named datastore mount, when the repo is placed on one. */
+  datastoreMount?: string;
 }
 
 /**
@@ -47,7 +48,9 @@ interface DeferredPresence {
  * Two arms still answer here. A converge-to-absent verb (`absentOk`) needs the
  * answer BEFORE it decides whether to dispatch at all, so it keeps the probe
  * (failing open on a probe-infrastructure failure, repo-mount-check
- * convention). The datastore arm is verified at dispatch, as before (#92).
+ * convention). The datastore arm defers like the machine arm: renet's
+ * `probeRepoState` also reads `<datastore>/repos/<guid>`, which is where a kube
+ * repo lives (#92 was the docker-only `repository_list` probe, never run here).
  */
 function withDefaultVerifier(
   options: ResolveMachineOptions,
@@ -57,14 +60,17 @@ function withDefaultVerifier(
   return {
     ...options,
     verifyMount: async ({ machine, datastore, repoGuid }) => {
-      // #92: the presence check serves the MACHINE arm only. repository_list enumerates DOCKER repos under <datastore>/repositories; a kube repo lives at <ds>/repos/<guid> on a NAMED datastore and was structurally invisible to it, so probing the datastore arm false-refused every mutating verb on a cluster repo with exit 12 (found live by the B1
-      // window, the arm's first-ever execution). The datastore arm's routing is verified at dispatch instead: derivation rides the attach hint, and renet errors loudly on an unmounted datastore, a wrong host cannot silently succeed there.
-      if (datastore !== undefined) return true;
+      // A converge-to-absent verb on a named datastore dispatches without the docker-only repository_list probe (#92): renet answers for a kube repo.
+      if (datastore !== undefined && options.absentOk) return true;
       if (options.absentOk) {
         const present = await probeRepoPresent(repoGuid, machine);
         return present !== false;
       }
-      onDeferred({ machine, repoGuid });
+      onDeferred({
+        machine,
+        repoGuid,
+        ...(datastore !== undefined && { datastoreMount: namedDatastoreMount(datastore) }),
+      });
       return true;
     },
   };
@@ -146,6 +152,7 @@ export async function resolveRepoRef(
       repoGuid: deferred.repoGuid,
       repoName: parsed.name,
       expect: 'repo_present',
+      ...(deferred.datastoreMount !== undefined && { datastore: deferred.datastoreMount }),
     });
   }
   return {
@@ -157,47 +164,6 @@ export async function resolveRepoRef(
     tag: resolved.tag,
     ...(resolved.place !== undefined && { place: resolved.place }),
     ...(resolved.imageAbsent && { imageAbsent: true }),
-  };
-}
-
-/**
- * The config-local resolution of a positional repo `<ref>`: the family/tag and
- * the derived identifiers, WITHOUT resolving (or requiring) a placement machine.
- * For verbs whose whole effect lands in the local config and that never dispatch
- * to a machine (`repo secret get|list|set|unset`, `repo branch`), resolving a
- * machine there is both unnecessary and harmful, because it would refuse the verb
- * on a repo whose datastore is currently detached or whose placement has not been
- * reconciled yet.
- */
-export interface ResolvedRepoRefLocal {
-  /** The repo family name parsed from the ref (`shop` for `shop:test`). */
-  name: string;
-  /** The config/renet identifier: the ref minus any `@place` (`shop`, `shop:test`). */
-  repoKey: string;
-  /** The resolved stored tag key (the family's grand tag for a bare/base ref). */
-  tag: string;
-  /** The `@place` the ref carried (advisory for config-local verbs; not verified). */
-  place?: string;
-}
-
-/**
- * Resolve a positional repo `<ref>` to its family/tag WITHOUT machine derivation
- * (spec/03 §2.3 tail). Throws a `CliExitError` (exit 2 grammar / exit 5 unknown
- * family or tag) but never exit 12 for a missing placement or detached datastore.
- */
-export async function resolveRepoRefLocal(ref: string): Promise<ResolvedRepoRefLocal> {
-  const parsed = parseRef(ref);
-  const config = await configService.getCurrent();
-  if (!config) {
-    throw notFound(`repository "${parsed.name}" is not in this config.`);
-  }
-  const view = placementViewFromConfig(config);
-  const { name, tag, place } = resolveRefLocal(ref, view);
-  return {
-    name,
-    repoKey: parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name,
-    tag,
-    ...(place !== undefined && { place }),
   };
 }
 

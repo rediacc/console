@@ -23,6 +23,7 @@ import tempfile
 
 import pytest
 from rediacc_ci import runtmp
+from rediacc_ci.quality import guard_mutants
 
 from rediacc_hooks.tests import hookcases, hooklabels
 
@@ -99,27 +100,42 @@ COUNTED = [
 #
 # DISCOVERED, NOT HAND-MAINTAINED, since 2026-09-22. A hand-maintained list needs a second commit to reach a new script, and the gap is silent: `test-block_push_to_protected_branch.py` was committed, passed its own standalone run, and sat unreached by this module for a full session before anyone noticed. `COUNTED` above stays explicit on purpose -- its counter regex and floor
 # are genuine per-module metadata a filename cannot supply -- but TAILED's contract is uniform (no argv, exit 0, non-empty output), which is exactly what a glob can enforce without a human remembering to.
+GUARDS = HOOKS.parent / "rediacc_hooks" / "guards"
 _TAILED_ROOTS = (
     HOOKS / "context",
     HOOKS / "post-bash",
     HOOKS / "stop",
-    HOOKS.parent / "rediacc_hooks" / "guards",
+    GUARDS,
 )
 
 
-def _discover_tailed(roots=_TAILED_ROOTS) -> list[str]:
-    """Every `test-*.py` standalone script under the hook trees, minus whatever `COUNTED` already claims with its own argv/counter/floor."""
+# A SUITE check:ci-guard-mutations ALREADY RUNS IS NOT RUN AGAIN HERE (PLAN-ciquick-cpu.md W16). For every guard declaring DEFECT or MUTANTS with a sibling `test-<stem>.py`, that gate runs the suite with the unplanted guard loaded and requires exit 0, output, and an empty private TMPDIR (its SILENT and LEAKED verdicts), then runs it once per plant. This module ran the same
+# suite a second time for exactly those three claims, and that second run was most of its wall time. The set is read through the gate's OWN declaration reader (`guard_mutants.scan`), never restated, so a guard that drops its declaration falls back into TAILED the same day the gate stops running its suite.
+def _mutation_gate_suites(guards_dir: pathlib.Path = GUARDS) -> set[str]:
+    """The `test-<stem>.py` names check:ci-guard-mutations runs as pristine suites under `guards_dir`."""
+    return {row["suite"] for row in guard_mutants.scan(str(guards_dir)) if row["suite"]}
+
+
+def _discover_tailed(
+    roots=_TAILED_ROOTS, gate_suites: set[str] | None = None, guards: pathlib.Path = GUARDS
+) -> list[str]:
+    """Every `test-*.py` standalone script under the hook trees, minus whatever `COUNTED` already claims with its own argv/counter/floor, and minus the suites under `guards` that check:ci-guard-mutations runs (`gate_suites`, read from `guards` when None)."""
     counted_names = {pathlib.Path(row[0]).name for row in COUNTED}
+    if gate_suites is None:
+        gate_suites = _mutation_gate_suites(guards)
     found = []
     for root in roots:
         for path in sorted(root.glob("test-*.py")):
             if path.name in counted_names:
                 continue
+            if root == guards and path.name in gate_suites:
+                continue
             found.append(pathlib.Path(os.path.relpath(path, HOOKS)).as_posix())
     return found
 
 
-TAILED = _discover_tailed()
+GATE_SUITES = _mutation_gate_suites()
+TAILED = _discover_tailed(gate_suites=GATE_SUITES)
 # Measured 2026-09-22: 16 (9 guards + 6 stop/ + 1 context/), against COUNTED's 4 -- 20 total hyphenated scripts. A floor well below that, re-measured the same way COUNTED's floors are, catches a renamed or emptied root rather than pinning today's exact count.
 TAILED_FLOOR = 14
 
@@ -177,14 +193,21 @@ def _run(relative: str, tail: list[str]) -> tuple[subprocess.CompletedProcess, l
     scratch = tempfile.mkdtemp(prefix="suite-", dir=runtmp.shared("hook-suite-tmpdir-"))
     try:
         env = dict(os.environ, TMPDIR=scratch)
-        done = subprocess.run(
-            argv,
-            capture_output=True,
-            stdin=subprocess.DEVNULL,
-            timeout=SUITE_TIMEOUT_S,
-            check=False,
-            env=env,
-        )
+        try:
+            done = subprocess.run(
+                argv,
+                capture_output=True,
+                stdin=subprocess.DEVNULL,
+                timeout=SUITE_TIMEOUT_S,
+                check=False,
+                env=env,
+            )
+        except subprocess.TimeoutExpired as expired:
+            # A suite that outlives its budget is a verdict about THAT suite (exit 124, the `timeout(1)` convention, with what it had printed), never a traceback out of the harness.
+            note = ("\n%s timed out after %d s\n" % (relative, SUITE_TIMEOUT_S)).encode()
+            done = subprocess.CompletedProcess(
+                argv, 124, expired.stdout or b"", (expired.stderr or b"") + note
+            )
         leftovers = sorted(n for n in os.listdir(scratch) if not _SHARED_TOOL_CACHE.match(n))
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
@@ -248,6 +271,53 @@ def test_tailed_discovery_meets_its_floor():
     )
 
 
+# Measured 2026-11-23: 55 of the 58 guard suites run under check:ci-guard-mutations. A floor well below that catches a reader that stopped seeing the declarations.
+GATE_SUITES_FLOOR = 40
+
+
+def test_the_suites_skipped_here_are_the_ones_the_mutation_gate_runs():
+    """The skip is a claim about another gate, so it is checked against that gate's own reader: every skipped name is a real `test-<stem>.py` beside a guard that declares DEFECT or MUTANTS, none of them is also in TAILED, and every guard suite runs in exactly one of the two places."""
+    on_disk = {p.name for p in GUARDS.glob("test-*.py")}
+    counted_names = {pathlib.Path(row[0]).name for row in COUNTED}
+    tailed_guards = {
+        pathlib.Path(rel).name
+        for rel in TAILED
+        if (HOOKS / rel).resolve().parent == GUARDS.resolve()
+    }
+    assert len(GATE_SUITES) >= GATE_SUITES_FLOOR, (
+        "only %d guard suite(s) are run by check:ci-guard-mutations, expected >= %d; the "
+        "declaration reader may have stopped seeing DEFECT/MUTANTS"
+        % (len(GATE_SUITES), GATE_SUITES_FLOOR)
+    )
+    assert on_disk >= GATE_SUITES, "the reader names suites that do not exist: %s" % sorted(
+        GATE_SUITES - on_disk
+    )
+    both = tailed_guards & GATE_SUITES
+    assert not both, "a suite runs both here and under the gate: %s" % sorted(both)
+    nowhere = on_disk - tailed_guards - GATE_SUITES - counted_names
+    assert not nowhere, "a guard suite runs NOWHERE: %s" % sorted(nowhere)
+    hooklabels.record(
+        0,
+        "guards: %d suite(s) run by check:ci-guard-mutations, %d here"
+        % (len(GATE_SUITES), len(tailed_guards)),
+        ok=True,
+    )
+
+
+def test_the_skip_control_a_guard_without_a_declaration_stays_here(tmp_path):
+    """CONTROL, on a planted guards directory: the suite of a guard that declares DEFECT is skipped, and the suite of a guard that declares nothing is still run here. Without the second half, a reader that named every suite would empty the guards share of TAILED and still pass the check above."""
+    (tmp_path / "block_declared.py").write_text(
+        'DEFECT = ("if x:", "if True:")\ndef f(x):\n    if x:\n        return 1\n',
+        encoding="utf-8",
+    )
+    (tmp_path / "test-block_declared.py").write_text("# suite\n", encoding="utf-8")
+    (tmp_path / "block_plain.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    (tmp_path / "test-block_plain.py").write_text("# suite\n", encoding="utf-8")
+    assert _mutation_gate_suites(tmp_path) == {"test-block_declared.py"}
+    kept = _discover_tailed(roots=(tmp_path,), guards=tmp_path)
+    assert [pathlib.Path(k).name for k in kept] == ["test-block_plain.py"], kept
+
+
 def test_tailed_discovery_control_an_emptied_root_finds_nothing():
     """CONTROL, on an explicit empty root tuple rather than a renamed real directory (T-12): proves the floor check above would have caught a broken discovery root instead of passing vacuously over zero scripts."""
     broken = _discover_tailed(roots=())
@@ -299,3 +369,21 @@ def test_the_reachability_assertion_fires_on_each_broken_link():
             "the disappearance it exists to detect." % label
         )
         assert "NOWHERE" in problem, problem
+
+
+def test_a_suite_that_outlives_its_budget_is_a_verdict_about_that_suite(tmp_path, monkeypatch):
+    """The timeout arm of `_run`: exit 124 with the suite named and what it printed, where a bare `TimeoutExpired` would be a traceback about the harness. The quick suite is the control: the same call returns its own exit code and no timeout note."""
+    slow = tmp_path / "slow.py"
+    slow.write_text("import sys, time\nprint('partial', flush=True)\ntime.sleep(30)\n")
+    quick = tmp_path / "quick.py"
+    quick.write_text("print('done')\n")
+    monkeypatch.setattr(sys.modules[__name__], "SUITE_TIMEOUT_S", 1)
+
+    done, _ = _run(str(slow), [])
+    assert done.returncode == 124
+    assert b"timed out after 1 s" in done.stderr
+    assert str(slow).encode() in done.stderr
+
+    done, _ = _run(str(quick), [])
+    assert done.returncode == 0
+    assert b"timed out" not in done.stderr

@@ -19,9 +19,14 @@ import { isValidGuid } from '@rediacc/shared/validation';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
-import { classifyMachineRepos, deleteRepoImageByGuid } from '../services/repo/orphan-repos.js';
+import {
+  applyExecutorEvents,
+  classifyMachineRepos,
+  deleteRepoImageByGuid,
+  readExecutorEvents,
+} from '../services/repo/orphan-repos.js';
 import { notFound, stateMismatch } from '../utils/cli-exit-error.js';
-import { assertOrphanDeletePolicy } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { assertMachineExists } from './_validate.js';
@@ -44,15 +49,33 @@ function parseOrphanRef(ref: string): { guid: string; machine: string } {
   return { guid: guid.toLowerCase(), machine };
 }
 
-async function handleOrphanList(machine: string, options: { debug?: boolean }): Promise<void> {
+async function handleOrphanList(
+  machine: string,
+  options: { debug?: boolean; executorEvents?: string }
+): Promise<void> {
   await assertMachineExists(machine);
-  const rows = await classifyMachineRepos(machine, options);
+  const classified = await classifyMachineRepos(machine, options);
+  const rows = options.executorEvents
+    ? applyExecutorEvents(classified, await readExecutorEvents(options.executorEvents), machine)
+    : classified;
   const format = getOutputFormat();
   if (rows.length === 0 && format === 'table') {
     outputService.info(t('commands.repo.admin.orphan.list.none', { machine }));
     return;
   }
   outputService.print(rows, format);
+}
+
+/**
+ * The decision for an orphan delete. The config names no orphan, so the machine's own fork marker
+ * says grand or fork: an image renet does not mark as a fork is judged as a grand, and an agent
+ * needs REDIACC_ALLOW_GRAND_REPO=<guid> (or `*`). The ops VM fleet is exempt by the machine.
+ */
+function enforceOrphanDelete(guid: string, machine: string, isFork: boolean): Promise<void> {
+  return enforceResolvedTarget(CMD.REPO_ADMIN_ORPHAN_DELETE, {
+    machine,
+    identified: { name: guid, state: isFork ? 'fork' : 'grand' },
+  });
 }
 
 async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Promise<void> {
@@ -77,7 +100,7 @@ async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Pr
       })
     );
   }
-  await assertOrphanDeletePolicy(guid, machine, row.isFork);
+  await enforceOrphanDelete(guid, machine, row.isFork);
 
   if (options.dryRun) {
     outputService.print(
@@ -121,10 +144,12 @@ export function registerRepoAdminOrphan(admin: Command): void {
 
   orphan
     .command('list')
+    .summary(t('commands.repo.admin.orphan.list.descriptionShort'))
     .description(t('commands.repo.admin.orphan.list.description'))
     .argument('<machine>', t('options.machineName'))
+    .option('--executor-events <file>', t('commands.repo.admin.orphan.list.executorEventsOption'))
     .option('--debug', t('options.debug'))
-    .action(async (machine: string, options: { debug?: boolean }) => {
+    .action(async (machine: string, options: { debug?: boolean; executorEvents?: string }) => {
       try {
         await handleOrphanList(machine, options);
       } catch (error) {

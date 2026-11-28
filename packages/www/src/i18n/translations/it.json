@@ -455,6 +455,13 @@
         "title": "Changelog - Ultime novità e rilasci | Rediacc"
       },
       "subscribeDescription": "Ricevi una mail ogni volta che rilasciamo qualcosa. Senza fronzoli.",
+      "groupAdded": "Novità",
+      "groupFixed": "Corretto",
+      "groupImproved": "Migliorato",
+      "stableSince": "In stable dalla v{{version}}",
+      "noNotes": "Nessuna nota per i clienti registrata per questa versione",
+      "earlierHistory": "Cronologia precedente",
+      "viewRelease": "Vedi la release su GitHub",
       "subscribeTitle": "Rimani aggiornato sui nuovi rilasci",
       "subtitle": "Scopri le novità, i miglioramenti, le correzioni e i prossimi rilasci.",
       "title": "Cronologia dei rilasci"
@@ -668,7 +675,7 @@
       },
       "hero": {
         "title": "Accordo sul trattamento dei dati",
-        "effectiveDate": "Data di efficacia: 11 novembre 2026"
+        "effectiveDate": "Data di efficacia: 26 novembre 2026"
       },
       "toc": {
         "title": "Indice"
@@ -680,7 +687,7 @@
           "content": [
             "Il presente Accordo sul trattamento dei dati (\"DPA\") fa parte dei <a href=\"terms-of-service\">Termini di servizio</a> tra {{legalName}} (\"Rediacc\", il \"Responsabile del trattamento\") e il Cliente, quando il Cliente utilizza i Servizi come impresa e Rediacc tratta Dati Personali del Cliente per conto del Cliente. I termini definiti nei Termini di servizio hanno qui lo stesso significato. Il presente DPA è redatto in inglese; le traduzioni sono fornite solo per comodità e, in caso di difformità, prevale la versione inglese.",
             "Per i Dati Personali del Cliente, il Cliente è il titolare del trattamento (o un responsabile che agisce per il proprio titolare) e Rediacc è il responsabile del trattamento (o sub-responsabile). Per le registrazioni di Account, di fatturazione e di accettazione e per i Dati di Telemetria, Rediacc è titolare del trattamento autonomo, come descritto nell'<a href=\"privacy-policy\">Informativa sulla privacy</a>, e il presente DPA non si applica a tale trattamento.",
-            "I Dati del Cliente presenti sui Dispositivi del Cliente non sono trattati da Rediacc. L'archiviazione cifrata delle configurazioni e i backup ospitati sono cifrati con chiavi che Rediacc non detiene; Rediacc conserva quindi tali blocchi di dati ma non può leggerne il contenuto."
+            "Fatte salve le prove di network forensics descritte nella Sezione 4, che Rediacc riceve solo per un repository per il quale il Cliente attiva la forensics, Rediacc non tratta i Dati del Cliente presenti sui Dispositivi del Cliente. L'archiviazione cifrata delle configurazioni e i backup ospitati sono cifrati con chiavi che Rediacc non detiene; Rediacc conserva quindi tali blob ma non può leggerne il contenuto."
           ]
         },
         "definitions": {
@@ -705,12 +712,15 @@
           "id": "details",
           "title": "4. Dettagli del trattamento",
           "items": [
-            "<strong>Oggetto e finalità:</strong> fornitura della Piattaforma, compresi la gestione di Account e team, il rilascio delle licenze, l'archiviazione cifrata delle configurazioni, lo storage di backup ospitato e il supporto",
+            "<strong>Oggetto e finalità:</strong> fornitura della Piattaforma, compresi la gestione di Account e team, il rilascio delle licenze, l'archiviazione cifrata delle configurazioni, lo storage di backup ospitato e il supporto e, nei piani a pagamento in cui il Cliente lo attiva per un repository, le prove forensi di rete che servono alla sicurezza di quel repository e all'indagine sugli incidenti",
             "<strong>Durata:</strong> la durata dei Termini di servizio, più il periodo di cancellazione di cui alla Sezione 11",
             "<strong>Natura del trattamento:</strong> raccolta, archiviazione, trasmissione, consultazione e cancellazione",
-            "<strong>Categorie di interessati:</strong> gli Utenti Autorizzati del Cliente, i membri del team invitati e i referenti dei partner",
-            "<strong>Categorie di dati personali:</strong> nomi, indirizzi email, organizzazione e ruolo, dati di autenticazione (hash delle password, chiavi pubbliche delle passkey), indirizzi di rete e user agent delle sessioni, e qualsiasi dato personale contenuto nei dati cifrati che il Cliente archivia sulla Piattaforma",
-            "<strong>Categorie particolari:</strong> nessuna prevista; il Cliente non deve archiviare sulla Piattaforma categorie particolari di dati non cifrati"
+            "<strong>Categorie di interessati:</strong> gli Utenti Autorizzati del Cliente, i membri del team invitati e i referenti dei partner e le persone i cui indirizzi di rete compaiono nei record di flusso di rete di un repository, come i client che si collegano a un servizio gestito dal Cliente",
+            "<strong>Categorie di dati personali:</strong> nomi, indirizzi email, organizzazione e ruolo, dati di autenticazione (hash delle password, chiavi pubbliche delle passkey), indirizzi di rete e user agent delle sessioni, e qualsiasi dato personale contenuto nei dati cifrati che il Cliente archivia sulla Piattaforma; per le prove forensi, metadati dei flussi di rete (indirizzi, porte, conteggi di byte e pacchetti, orari), nomi e risposte DNS, nomi e identificatori di processo e percorsi di file sensibili aperti da un processo",
+            "<strong>Categorie particolari:</strong> nessuna prevista; il Cliente non deve archiviare sulla Piattaforma categorie particolari di dati non cifrati",
+            "<strong>Prove forensi, indirizzi:</strong> gli indirizzi di destinazione dei flussi in uscita sono conservati interi perché costituiscono la prova. L'indirizzo del client di un flusso in ingresso è scritto nel record troncato alla sua parte di rete (/24 per IPv4, /48 per IPv6), mentre l'indirizzo completo viaggia in una sezione separata dello stesso lotto",
+            "<strong>Prove forensi, conservazione:</strong> le prove sono conservate fino alla quota di archiviazione del piano del Cliente e, a quota piena, i file giornalieri più vecchi sono rimossi per primi. Un lotto è bloccato contro la rimozione per 7 giorni, e le prove di un incidente dichiarato dal Cliente sono mantenute fino a 30 giorni dopo la sua chiusura",
+            "<strong>Prove forensi, base:</strong> Rediacc le tratta solo su istruzione documentata del Cliente, quando questi attiva la funzione forense per un repository"
           ]
         },
         "confidentiality": {
@@ -747,7 +757,8 @@
           ],
           "content2": [
             "Rediacc dà un preavviso di almeno trenta (30) giorni prima di aggiungere o sostituire un Sub-responsabile, aggiornando questa pagina e avvisando l'email dell'Account. Il Cliente può opporsi entro tale termine per ragionevoli motivi di protezione dei dati. Se le parti non riescono a risolvere l'opposizione, il Cliente può risolvere i Servizi interessati e ottenere il rimborso dei corrispettivi prepagati per il periodo successivo alla risoluzione.",
-            "L'analisi statistica del sito web (Plausible) non tratta Dati Personali del Cliente ed è disciplinata dall'Informativa sulla privacy."
+            "L'analisi statistica del sito web (Plausible) non tratta Dati Personali del Cliente ed è disciplinata dall'Informativa sulla privacy.",
+            "Un fornitore di modelli che il Cliente collega a un agente IA non è un sub-responsabile, perché Rediacc non lo sceglie né gli impartisce istruzioni. L'output degli strumenti inviato a tale fornitore è regolato dall'accordo proprio del Cliente con esso."
           ]
         },
         "transfers": {
@@ -1320,6 +1331,93 @@
         "lede": "Ogni partner può certificarsi senza costi. Scegli il percorso più adatto: vendite o tecnico. Il programma di studio si trova nel portale, così il tuo team può prepararsi prima dell'esame.",
         "title": "Certificazione gratuita, due percorsi"
       },
+      "growth": {
+        "title": "Cosa ottengono i partner",
+        "lede": "Quattro motivi per cui vendere Rediacc vale il tempo di un partner.",
+        "items": [
+          {
+            "title": "Trattative che nessuno scavalca",
+            "body": "Registra la trattativa di un cliente e, una volta approvata, nessun altro partner può registrare lo stesso cliente durante il periodo di protezione."
+          },
+          {
+            "title": "Un margine che cresce con la trattativa",
+            "body": "I contratti pluriennali, il pagamento anticipato e le trattative più grandi danno un margine in più, e i team certificati salgono nella scala."
+          },
+          {
+            "title": "Certificazione gratuita",
+            "body": "Percorsi commerciale e tecnico con esame gratuito. Si studia nel portale partner."
+          },
+          {
+            "title": "Prove Enterprise di 30 giorni",
+            "body": "I partner consegnano ai clienti prove Enterprise di 30 giorni direttamente, senza aspettare Rediacc."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Lead dal nostro calcolatore dei prezzi",
+        "body": "I clienti che dimensionano la loro installazione nel calcolatore pubblico possono chiedere un'offerta a un partner. Queste richieste vanno ai partner in elenco che servono il paese e la lingua del cliente."
+      },
+      "stance": "Non vendiamo scavalcando i nostri partner. Rediacc vende in diretta solo dove nessun partner serve il cliente.",
+      "directoryCta": {
+        "title": "Entra nell'elenco dei partner",
+        "body": "I partner approvati possono scegliere una scheda pubblica con paesi, lingue e servizi, così i clienti li trovano per primi.",
+        "button": "Sfoglia l'elenco"
+      },
+      "directory": {
+        "meta": {
+          "title": "Elenco dei partner Rediacc per paese",
+          "description": "Trova un partner Rediacc nel tuo paese e nella tua lingua per assistenza locale, fatturazione in valuta locale e aiuto con la migrazione."
+        },
+        "hero": {
+          "eyebrow": "Elenco dei partner",
+          "title": "Trova un partner Rediacc vicino a te",
+          "subtitle": "I partner offrono assistenza locale nella tua lingua, fatturano nella tua valuta e aiutano con la migrazione. Molti propongono un prezzo sotto il listino."
+        },
+        "benefits": {
+          "title": "Perché acquistare tramite un partner",
+          "items": [
+            "Assistenza locale nella tua lingua",
+            "Fatture nella tua valuta locale",
+            "Aiuto con la migrazione da chi l'ha già fatta",
+            "Spesso un prezzo sotto il listino, con extra gratuiti che crescono con l'ordine"
+          ]
+        },
+        "filters": {
+          "country": "Paese",
+          "language": "Lingua",
+          "service": "Servizio",
+          "all": "Qualsiasi",
+          "reset": "Azzera i filtri"
+        },
+        "services": {
+          "resale": "Rivendita",
+          "migration": "Migrazione",
+          "managed": "Servizio gestito",
+          "training": "Formazione"
+        },
+        "tiers": {
+          "registered": "Registrato",
+          "silver": "Argento",
+          "gold": "Oro",
+          "platinum": "Platino"
+        },
+        "card": {
+          "certificates": "Certificati: {{count}}",
+          "visit": "Visita il sito",
+          "countries": "Paesi",
+          "languages": "Lingue",
+          "services": "Servizi"
+        },
+        "status": {
+          "loading": "Caricamento dei partner...",
+          "empty": "Nessun partner corrisponde ancora a questi filtri. Dove non c'è un partner, Rediacc serve i clienti direttamente.",
+          "error": "Impossibile caricare l'elenco. Riprova tra un attimo."
+        },
+        "becomePartner": {
+          "text": "Hai un'attività di rivendita o di servizi?",
+          "link": "Diventa partner"
+        }
+      },
       "finalCta": {
         "button": "Diventa Partner",
         "note": "Sei già approvato? Accedi al portale partner.",
@@ -1423,7 +1521,7 @@
               "Certificazione gratuita vendite e tecnica",
               "Licenze di prova per i tuoi clienti"
             ],
-            "name": "Registered",
+            "name": "Registrato",
             "requirements": ["Fai domanda e ottieni l'approvazione"],
             "tagline": "Il punto di partenza per tutti"
           },
@@ -1432,7 +1530,7 @@
               "Tutto il livello Registered",
               "Uno sconto maggiore sulle trattative registrate"
             ],
-            "name": "Silver",
+            "name": "Argento",
             "requirements": [
               "Tutto quello che fa un partner Registered",
               "Due certificati validi nel team",
@@ -1442,7 +1540,7 @@
           },
           {
             "benefits": ["Tutto il livello Silver", "Uno sconto più alto"],
-            "name": "Gold",
+            "name": "Oro",
             "requirements": [
               "Tutto quello che fa un partner Silver",
               "Si ottiene man mano che il tuo business con noi cresce"
@@ -1451,7 +1549,7 @@
           },
           {
             "benefits": ["Tutto il livello Gold", "Il nostro sconto partner più alto"],
-            "name": "Platinum",
+            "name": "Platino",
             "requirements": [
               "Tutto quello che fa un partner Gold",
               "Riservato ai nostri partner più attivi"
@@ -2394,7 +2492,7 @@
           "community": {
             "floatingLicenses": "4",
             "jobsPerMonth": "1.000",
-            "repositories": "Illimitati",
+            "repositories": "5",
             "repoSize": "20 GB",
             "usersTeams": "Illimitati"
           },
@@ -2469,7 +2567,7 @@
         "title": "Domande?"
       },
       "hero": {
-        "effectiveDate": "Data di efficacia: 11 novembre 2026",
+        "effectiveDate": "Data di efficacia: 26 novembre 2026",
         "title": "Il Nostro Impegno per la Privacy"
       },
       "meta": {
@@ -2520,8 +2618,9 @@
           "items": [
             "<strong>Fornitori di servizi (sub-responsabili del trattamento)</strong> che ospitano e gestiscono la nostra piattaforma, recapitano le email ed elaborano i pagamenti, vincolati da obblighi contrattuali di tutela dei vostri dati. L'elenco aggiornato, con il ruolo e la sede di ciascun fornitore, è nel nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>",
             "<strong>Plausible Analytics</strong> per analisi del sito web senza cookie e anonimizzate (nessun dato personale viene condiviso)",
-            "<strong>Elaborazione della telemetria</strong>: i dati anonimi di utilizzo del prodotto vengono trasmessi al nostro endpoint di telemetria all'interno dell'UE per l'aggregazione e l'analisi. Nessun dato di telemetria viene condiviso con terzi (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
-            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale"
+            "<strong>Elaborazione della telemetria</strong> per i dati anonimi di utilizzo del prodotto, inviati al nostro endpoint di telemetria nell'Unione europea per l'aggregazione e l'analisi. L'endpoint è eseguito su server virtuali forniti da Hostinger, che ospita i dati per nostro conto in qualità di nostro responsabile del trattamento, indicato nel nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>, e non li utilizza per finalità proprie. Non vendiamo i dati di telemetria né li condividiamo con altri (consultate la nostra <a href=\"telemetry-policy\">Informativa sulla Telemetria</a>)",
+            "<strong>Autorità di polizia giudiziaria</strong> se richiesto dalla legge, da normative o da un valido procedimento legale",
+            "<strong>Il fornitore di modelli che collegate</strong>, su vostra indicazione, quando usate un agente IA tramite MCP remoto: l'output degli strumenti restituito all'agente viene inviato a tale fornitore, che lo tratta in base al vostro accordo con esso. Tale fornitore non è né nostro responsabile del trattamento né nostro sub-responsabile, perché Rediacc non lo sceglie e non gli impartisce istruzioni. Alcuni connettori, come il connettore MCP dell'API Claude, non sono idonei alla conservazione zero dei dati"
           ],
           "title": "4. Condivisione dei Dati e Terze Parti"
         },
@@ -3191,7 +3290,7 @@
             "title": "L'Articolo 21(2)(d) è una questione di vendor"
           },
           {
-            "blurb": "Gli Articoli 21(2)(e), (f) e 23 letti insieme. Il fork a tempo costante che rende realistiche le esercitazioni settimanali e la tempistica di notifica dell'Articolo 23 che non puoi rispettare senza artefatti di livello forense. Per SRE e responsabili operativi.",
+            "blurb": "Gli Articoli 21(2)(e), (f) e 23 letti insieme. Il fork a tempo costante che rende realistiche le esercitazioni settimanali e la tempistica di notifica dell'Articolo 23 che non puoi rispettare senza evidenze verificabili. Per SRE e responsabili operativi.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Efficacia continua senza teatrino"
           },
@@ -9859,7 +9958,7 @@
         "title": "Domande?"
       },
       "hero": {
-        "effectiveDate": "Data di entrata in vigore: 1 febbraio 2026",
+        "effectiveDate": "Data di entrata in vigore: 26 novembre 2026",
         "title": "Le Nostre Pratiche di Telemetria"
       },
       "meta": {
@@ -9960,7 +10059,7 @@
             "<strong>Cifratura:</strong> tutti i dati vengono cifrati in transito tramite TLS. Il Renet Agent utilizza inoltre la compressione gzip.",
             "<strong>Conservazione:</strong> le tracce di telemetria grezze vengono archiviate per un massimo di 90 giorni per le attività di debug e le indagini sugli incidenti. Le metriche aggregate vengono conservate per un massimo di 12 mesi e successivamente eliminate.",
             "<strong>Accesso:</strong> i dati di telemetria sono accessibili solo al personale tecnico e operativo di Rediacc su base need-to-know.",
-            "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono condivisi, venduti o resi accessibili a terze parti.",
+            "<strong>Nessuna condivisione con terze parti:</strong> i dati di telemetria non vengono venduti né condivisi con alcuno per uso proprio. Sono archiviati su server virtuali nell'Unione europea forniti da Hostinger, che li ospita per nostro conto in qualità di nostro responsabile del trattamento (consultate il nostro <a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>).",
             "<strong>Infrastruttura:</strong> tutti i dati di telemetria vengono elaborati e archiviati su infrastruttura situata all'interno dell'Unione Europea."
           ],
           "title": "6. Elaborazione e Archiviazione dei Dati"
@@ -9975,7 +10074,7 @@
         "introduction": {
           "content": [
             "I prodotti software Rediacc raccolgono telemetria di utilizzo anonimizzata per aiutarci a migliorare la qualità del prodotto, diagnosticare problemi e capire come vengono utilizzati i nostri strumenti. La presente Informativa sulla Telemetria descrive esattamente quali dati vengono raccolti, perché, come vengono elaborati e come è possibile disattivarla.",
-            "La presente informativa riguarda due prodotti: la <strong>Rediacc CLI</strong> e il <strong>Rediacc Renet Agent</strong>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
+            "La presente informativa riguarda due prodotti: la <strong>Rediacc CLI</strong> e il <strong>Rediacc Renet Agent</strong>. L'acquisizione forense dell'attività di rete di un repository non è telemetria; è trattata come Dati Personali del Cliente ai sensi dell'<a href=\"data-processing-agreement\">Accordo sul trattamento dei dati</a>. Le analisi del sito web (Plausible) sono trattate separatamente nella nostra <a href=\"privacy-policy\">Informativa sulla Privacy</a> e nella nostra <a href=\"cookie-policy\">Informativa sui Cookie</a>."
           ],
           "id": "introduction",
           "title": "1. Introduzione"

@@ -5,76 +5,51 @@ import { basename, join } from 'node:path';
 import {
   createEmptyRdcConfig,
   hasRemoteConfig,
+  isSealed,
   type MigrationContext,
   parseConfig,
   type RdcConfig,
   RdcConfigSchema,
   runMigrations,
   stringifyConfig,
+  usesMasterPassword,
 } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
 import { getSubscriptionTokenFile } from '../services/account/subscription-auth.js';
-import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
+import { replaySavedEdit } from '../services/core/config-delta.js';
+import { currentRequestConfig } from '../services/core/request-context.js';
+import { parseJsonText } from '../utils/json-text.js';
 import {
   decryptConfigFields,
   encryptConfigFields,
   injectEncryptedStubs,
 } from './config-field-crypto.js';
+import {
+  encryptionOfText,
+  hasLegacyBlobs,
+  hasUnopenedBlobs,
+  isReservedFile,
+  refuseInRequestScope,
+  sealIdentity,
+  sealUpgrade,
+  upgradeVerifier,
+  writeScoped,
+} from './config-file-ops.js';
+import { dropKey, SealKeyLostError } from './config-seal-key.js';
 import { nodeCryptoProvider } from './crypto.js';
+
+export { resetFileStoreRefusalNotice } from './config-file-ops.js';
 
 const CONFIG_DIR = getConfigDir();
 const DEFAULT_CONFIG_NAME = 'rediacc';
 
-/** Files in config dir that are not config files */
-const EXCLUDED_FILES = new Set(['update-state.json', 'server.json', 'api-token.json']);
-
 /**
- * True for JSON files in the config dir that are NOT rdc configs: the updater
- * state, and subscription device tokens (api-token-<config>.json, written by
- * services/subscription-auth.ts).
- *
- * `server.json` and the bare `api-token.json` are legacy artifacts from the
- * pre-universe layout; they are never configs. The CLI no longer reads or
- * writes them, but a stray file with either name would otherwise be parsed as
- * a config named `server`/`api-token`, so they stay on the exclusion list.
+ * Called when a sealed config's keyring key is lost (D7): services/config/seal-recovery.ts pulls the
+ * config from its store and re-seals it under a new key. The read or write that hit the loss runs
+ * once more after the handler returns; a second loss propagates.
  */
-function isReservedFile(fileName: string): boolean {
-  return EXCLUDED_FILES.has(fileName) || fileName.startsWith('api-token-');
-}
-
-/**
- * Refuse a file-level operation (create, delete, restore) inside a request that
- * runs against a request-scoped config: there is no file behind it to act on.
- */
-function refuseInRequestScope(what: string, name: string): void {
-  if (currentRequestConfig()) {
-    throw new Error(
-      `Cannot ${what} config "${name}" here: this command runs against the config granted for its session, not a config file.`
-    );
-  }
-}
-
-/**
- * Apply a write to a request-scoped config, in memory only. A spec write is
- * counted, so the executor can say it was not persisted.
- */
-function writeScoped(
-  scope: RequestConfigScope,
-  updater: (config: RdcConfig) => RdcConfig,
-  bumpVersion: boolean
-): RdcConfig {
-  const updated = updater(scope.config);
-  scope.config = bumpVersion ? { ...updated, version: updated.version + 1 } : updated;
-  if (bumpVersion) scope.specWrites += 1;
-  // The memoized resource view was built from the previous config.
-  scope.resourceState = undefined;
-  return scope.config;
-}
-
-function isMasterPassword(config: RdcConfig): boolean {
-  return config.encryption?.mode === 'master-password';
-}
+export type SealKeyLostHandler = (name: string, error: SealKeyLostError) => Promise<void>;
 
 /**
  * Storage adapter for per-file CLI configuration with file locking.
@@ -96,6 +71,7 @@ export type RemoteStateWriter = (
 export class ConfigFileStorage {
   private readonly cache = new Map<string, RdcConfig>();
   private remoteStateWriter: RemoteStateWriter | null = null;
+  private sealKeyLostHandler: SealKeyLostHandler | null = null;
   /**
    * Config names whose file lock the CURRENT async call chain holds. Re-entrancy is a property of
    * the call chain, not of the instance: a per-name counter on the instance made every concurrent
@@ -118,44 +94,80 @@ export class ConfigFileStorage {
   }
 
   /**
-   * Resolve the master password for encrypt/decrypt transforms. Prefers the
-   * REDIACC_MASTER_PASSWORD env, else the interactive resolver (lazy import to
-   * avoid an adapters→services module cycle at eval time).
+   * The master password of `config`, checked against its verifier (process cache, then
+   * REDIACC_MASTER_PASSWORD, then a prompt). Lazy import, to avoid an adapters-to-services module
+   * cycle at eval time.
    */
-  private async requirePassword(): Promise<string> {
-    if (process.env.REDIACC_MASTER_PASSWORD) return process.env.REDIACC_MASTER_PASSWORD;
+  private async requirePassword(config: RdcConfig): Promise<string> {
     const { requireMasterPassword } = await import('../services/core/master-password.js');
-    return requireMasterPassword();
+    return requireMasterPassword(config);
+  }
+
+  /** The password a seal transform of `config` needs, or undefined when its key has no password part. */
+  private passwordFor(config: RdcConfig): Promise<string | undefined> {
+    if (usesMasterPassword(config.encryption?.mode) || hasLegacyBlobs(config)) {
+      return this.requirePassword(config);
+    }
+    return Promise.resolve(undefined);
   }
 
   private async encryptConfig(config: RdcConfig): Promise<RdcConfig> {
-    if (!isMasterPassword(config)) return config;
-    return encryptConfigFields(config, await this.requirePassword());
+    if (!isSealed(config)) return config;
+    return encryptConfigFields(config, await this.passwordFor(config));
   }
 
   private async decryptConfig(config: RdcConfig): Promise<RdcConfig> {
-    if (!isMasterPassword(config)) return config;
-    const fields = config.encryption?.encryptedFields;
-    if (!fields || Object.keys(fields).length === 0) return config;
-    return decryptConfigFields(config, await this.requirePassword());
+    if (!isSealed(config) || !hasUnopenedBlobs(config)) return config;
+    return decryptConfigFields(config, await this.passwordFor(config));
   }
 
   /**
-   * Copy the current config file to a .bak backup.
-   * Skips silently if the source file does not exist (first-ever write).
+   * Run `operation`; when it hits a lost seal key and a handler is registered, let the handler
+   * recover (D7) and run `operation` once more. Without a handler the error propagates.
    */
-  private async createBackup(name: string): Promise<void> {
-    const configPath = this.getPath(name);
-    const backupPath = this.getBackupPath(name);
+  private async withSealRecovery<T>(name: string, operation: () => Promise<T>): Promise<T> {
     try {
-      await fs.copyFile(configPath, backupPath);
-      await fs.chmod(backupPath, 0o600);
+      return await operation();
+    } catch (error) {
+      const handler = this.sealKeyLostHandler;
+      if (!(error instanceof SealKeyLostError) || !handler) throw error;
+      const recovered: Promise<void> = handler(name, error);
+      await recovered;
+      this.cache.delete(name);
+      return operation();
+    }
+  }
+
+  /**
+   * Register the D7 recovery (services/config/seal-recovery.ts). When a write hit the loss, the
+   * handler runs inside that write's file lock, so its own cache write takes the lock re-entrantly.
+   */
+  setSealKeyLostHandler(handler: SealKeyLostHandler | null): void {
+    this.sealKeyLostHandler = handler;
+  }
+
+  /**
+   * Copy the current config file to a .bak backup and return the text it held; null when there
+   * is no file yet (first-ever write).
+   */
+  private async createBackup(name: string): Promise<string | null> {
+    const backupPath = this.getBackupPath(name);
+    let previous: string;
+    try {
+      previous = await fs.readFile(this.getPath(name), 'utf-8');
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        return;
+        return null;
       }
       throw error;
     }
+    await this.writeBackup(backupPath, previous);
+    return previous;
+  }
+
+  private async writeBackup(backupPath: string, content: string): Promise<void> {
+    await fs.writeFile(backupPath, content, { mode: 0o600 });
+    await fs.chmod(backupPath, 0o600);
   }
 
   private async ensureDirectory(): Promise<void> {
@@ -227,7 +239,13 @@ export class ConfigFileStorage {
 
   private migrationContext(): MigrationContext {
     return {
-      getMasterPassword: () => this.requirePassword(),
+      // A v2-era file has no v2 verifier to check against; the blob's own decrypt rejects a wrong password.
+      getMasterPassword: async () => {
+        const { resolveUncheckedMasterPassword } = await import(
+          '../services/core/master-password.js'
+        );
+        return resolveUncheckedMasterPassword();
+      },
       // The v2 compound-blob unpack needs AES-GCM. The schema package is runtime-portable and carries no crypto provider, so the host injects one.
       decryptLegacyBlob: (data, password) => nodeCryptoProvider.decrypt(data, password),
     };
@@ -263,7 +281,7 @@ export class ConfigFileStorage {
     content: string,
     name: string
   ): Promise<{ config: RdcConfig; migrated: boolean }> {
-    const raw = JSON.parse(content) as unknown;
+    const raw = parseJsonText(content) as unknown;
     const migration = await runMigrations(raw, this.migrationContext());
     // Hydrate encrypted leaves with type-valid stubs so the strict parse of the at-rest form succeeds without prompting for the master password. Sensitive values are decrypted lazily (loadDecrypted / update), never at load.
     const hydrated = injectEncryptedStubs(migration.config as RdcConfig);
@@ -281,7 +299,8 @@ export class ConfigFileStorage {
       await fs.readFile(this.getPath(name), 'utf-8'),
       name
     );
-    if (migrated) await this.saveUnlocked(config, name);
+    // A sealed config's at-rest copy carries blobs that only a key or a password can re-seal; a public load must touch neither (D4), so its migrated shape lands with the next decrypted write instead.
+    if (migrated && !isSealed(config)) await this.saveUnlocked(config, name, true, false);
   }
 
   /**
@@ -313,28 +332,79 @@ export class ConfigFileStorage {
     const scoped = currentRequestConfig();
     if (scoped) return scoped.config;
 
-    const config = await this.load(name);
-    return this.decryptConfig(config);
+    const decrypted = await this.withSealRecovery(name, async () =>
+      this.decryptConfig(await this.load(name))
+    );
+    await this.persistVerifierUpgrade(name, decrypted);
+    return decrypted;
   }
 
   /**
-   * Save a config atomically. Encrypts per field when in master-password mode.
-   * Bumps the version counter unless `bumpVersion` is false (state writes).
+   * After a read that verified a legacy master-password verifier, write it back as v2 under the lock
+   * (D8). Inside a held lock the enclosing write rewrites it. Best-effort: a read-only filesystem
+   * must not fail the read.
    */
-  private async saveUnlocked(config: RdcConfig, name: string, bumpVersion = true): Promise<void> {
+  private async persistVerifierUpgrade(name: string, config: RdcConfig): Promise<void> {
+    const verifier = config.credentials?.masterPasswordVerifier;
+    if (!verifier || !usesMasterPassword(config.encryption?.mode)) return;
+    if (this.heldLocks.getStore()?.has(name)) return;
+    const mp = await import('../services/core/master-password.js');
+    if (!mp.isLegacyVerifier(verifier) || !mp.isVerifiedMasterPassword(config.id, verifier)) return;
+    try {
+      await this.mutate(name, (current) => current, false, { createIfMissing: false });
+    } catch {
+      // The next write rewrites it.
+    }
+  }
+
+  /**
+   * Save a config atomically. Seals per field in every sealed mode, and on a remote-enabled config
+   * upgrades to a keyring seal first (D5) unless `transform` is false (the migration persist, which
+   * must touch no key and prompt for nothing). Bumps the version counter unless `bumpVersion` is
+   * false (state writes).
+   *
+   * Order: a newly minted keyring key is stored BEFORE the temp-file rename and deleted when the
+   * write does not land, so the file never names a key secure storage lacks. When the seal identity
+   * changes (seal, re-seal, unseal, password change), `.bak` is overwritten with the new bytes.
+   */
+  private async saveUnlocked(
+    config: RdcConfig,
+    name: string,
+    bumpVersion = true,
+    transform = true
+  ): Promise<void> {
     await this.ensureDirectory();
-    await this.createBackup(name);
+    const previousText = await this.createBackup(name);
+    const previous = previousText === null ? undefined : encryptionOfText(previousText);
     const configPath = this.getPath(name);
 
     const versioned: RdcConfig = bumpVersion ? { ...config, version: config.version + 1 } : config;
-    const encrypted = await this.encryptConfig(versioned);
+    const upgraded = transform
+      ? await sealUpgrade(versioned, name, previous)
+      : { config: versioned };
 
-    // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME name that land in the same millisecond compute the identical tempPath. Whichever renames second then hits ENOENT, because the first already moved that path away (observed live: run 30512465488, storage.test.ts's "should not corrupt file under concurrent writes", a lock-window race under CI-runner load that did not reproduce under local stress testing). The random suffix makes every tempPath unique regardless of timing.
-    const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}.${randomUUID()}`;
-    const content = stringifyConfig(encrypted);
+    let encrypted: RdcConfig;
+    let content: string;
+    try {
+      const prepared = transform
+        ? await upgradeVerifier(upgraded.config, (c) => this.requirePassword(c))
+        : upgraded.config;
+      encrypted = await this.encryptConfig(prepared);
 
-    await fs.writeFile(tempPath, content, { mode: 0o600 });
-    await fs.rename(tempPath, configPath);
+      // `pid.Date.now()` alone can collide: two saveUnlocked calls for the SAME name that land in the same millisecond compute the identical tempPath. Whichever renames second then hits ENOENT, because the first already moved that path away (observed live: run 30512465488, storage.test.ts's "should not corrupt file under concurrent writes", a lock-window race under CI-runner load that did not reproduce under local stress testing). The random suffix makes every tempPath unique regardless of timing.
+      const tempPath = `${configPath}.tmp.${process.pid}.${Date.now()}.${randomUUID()}`;
+      content = stringifyConfig(encrypted);
+
+      await fs.writeFile(tempPath, content, { mode: 0o600 });
+      await fs.rename(tempPath, configPath);
+    } catch (error) {
+      if (upgraded.minted) await dropKey(upgraded.minted).catch(() => undefined);
+      throw error;
+    }
+
+    if (previousText !== null && sealIdentity(previous) !== sealIdentity(encrypted.encryption)) {
+      await this.writeBackup(this.getBackupPath(name), content);
+    }
 
     this.cache.set(name, encrypted);
   }
@@ -346,7 +416,9 @@ export class ConfigFileStorage {
   async save(config: RdcConfig, name: string = DEFAULT_CONFIG_NAME): Promise<void> {
     const scoped = currentRequestConfig();
     if (scoped) {
-      writeScoped(scoped, () => config, true);
+      // The caller saves a whole document built from the copy it read; replay only its edit, so a replay after a lost compare-and-swap keeps what another device wrote.
+      const read = scoped.readCopy;
+      await writeScoped(scoped, (newest) => replaySavedEdit(newest, read, config), 'spec');
       return;
     }
     await this.withLock(name, async () => {
@@ -361,17 +433,18 @@ export class ConfigFileStorage {
     opts: { createIfMissing?: boolean } = {}
   ): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return Promise.resolve(writeScoped(scoped, updater, bumpVersion));
+    if (scoped) return writeScoped(scoped, updater, bumpVersion ? 'spec' : 'state');
     return this.withLock(
       name,
-      async () => {
-        this.cache.delete(name);
-        const raw = await this.loadUnlocked(name);
-        const plain = await this.decryptConfig(raw);
-        const updated = updater(plain);
-        await this.saveUnlocked(updated, name, bumpVersion);
-        return this.cache.get(name)!;
-      },
+      () =>
+        this.withSealRecovery(name, async () => {
+          this.cache.delete(name);
+          const raw = await this.loadUnlocked(name);
+          const plain = await this.decryptConfig(raw);
+          const updated = updater(plain);
+          await this.saveUnlocked(updated, name, bumpVersion);
+          return this.cache.get(name)!;
+        }),
       opts
     );
   }
@@ -393,7 +466,7 @@ export class ConfigFileStorage {
    */
   async updateState(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return writeScoped(scoped, updater, false);
+    if (scoped) return writeScoped(scoped, updater, 'state');
     // A STATE write must never CREATE a config file. Status is subordinate to the config's existence: when the file is gone (the tutorial preambles `rm` it between runs; `config prune` removes it), a background writer , the executor daemon's post-request provision bookkeeping above all, must not resurrect an empty config. Observed live: the daemon recreated the file between a preamble's `rm` and its `config init`, which then died on "Config already exists" and cascaded through the whole tutorial sequence. Callers of updateState are best-effort by contract, so a missing config surfaces as a rejected promise they already tolerate.
     try {
       await fs.access(this.getPath(name));
@@ -432,7 +505,7 @@ export class ConfigFileStorage {
    */
   async updateCache(name: string, updater: (config: RdcConfig) => RdcConfig): Promise<RdcConfig> {
     const scoped = currentRequestConfig();
-    if (scoped) return writeScoped(scoped, updater, false);
+    if (scoped) return writeScoped(scoped, updater, 'cache');
     try {
       await fs.access(this.getPath(name));
     } catch {
@@ -576,7 +649,7 @@ export class ConfigFileStorage {
     try {
       const stat = await fs.stat(backupPath);
       const content = await fs.readFile(backupPath, 'utf-8');
-      const config = JSON.parse(content) as RdcConfig;
+      const config = parseJsonText(content) as RdcConfig;
       return {
         path: backupPath,
         version: config.version,

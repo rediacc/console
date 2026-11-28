@@ -117,37 +117,27 @@ def _map(tmp_path: pathlib.Path, baseline: str | None = BASELINE) -> pathlib.Pat
 
 
 def _gate(root: pathlib.Path, map_path: pathlib.Path, *argv: str) -> harness.RunResult:
-    return harness.run(
-        [
-            sys.executable,
-            str(GATE),
-            "--root",
-            str(root),
-            "--base",
-            "main",
-            "--proof-map",
-            str(map_path),
-            *argv,
-        ],
-        cwd=paths.repo_root(),
-    )
+    return _gate_on_base(root, map_path, "main", *argv)
 
 
+# PLAN-ciquick-cpu.md W17. Every planted-tree run skips the gate's `controls_first` (`harness.without_controls`): about thirty runs each repeated the same 3.5 s of controls. `test_selftest_alone_is_green` and `test_the_real_tree_gets_a_verdict_not_a_crash` still run them, and check:ci-plan-live-proof runs them first on every CI run.
 def _gate_on_base(
     root: pathlib.Path, map_path: pathlib.Path, base: str, *argv: str
 ) -> harness.RunResult:
     return harness.run(
-        [
-            sys.executable,
-            str(GATE),
-            "--root",
-            str(root),
-            "--base",
-            base,
-            "--proof-map",
-            str(map_path),
-            *argv,
-        ],
+        harness.without_controls(
+            [
+                sys.executable,
+                str(GATE),
+                "--root",
+                str(root),
+                "--base",
+                base,
+                "--proof-map",
+                str(map_path),
+                *argv,
+            ]
+        ),
         cwd=paths.repo_root(),
     )
 

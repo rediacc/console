@@ -32,11 +32,11 @@ NO `BASH_TWIN`: this is a new gate, not a port of a bash one, so `test_twin_pari
 from __future__ import annotations
 
 import ast
-import pathlib
 
-from rediacc_ci import paths
+from rediacc_ci import gitx, paths
 
-HERE = pathlib.Path(__file__).resolve().parent
+#: Measured 2026-11-26: the real scan lists 1523 modules (879 under .ci/rediacc_ci/tests, 644 under .claude); under 500 means the listing failed, not that the tree shrank.
+CORPUS_FLOOR = 500
 
 # The calls that hand work to a subject process. `harness.run` is included because it is this tree's own wrapper around `subprocess.run` and forwards `timeout` straight through -- gating only the stdlib name would miss every gate test in the directory, which is most of them.
 RUNNERS = frozenset({"run", "Popen", "check_output", "call"})
@@ -382,40 +382,44 @@ def test_the_analyser_still_discriminates(gate):
 
 
 def test_every_fanout_driver_lets_its_subjects_declare_a_timeout(gate):
-    """The real scan. Anti-vacuity first: an empty class is a FAILURE."""
-    modules = sorted(HERE.glob("test_gate_*.py")) + sorted(HERE.glob("*.py"))
-    seen: set[pathlib.Path] = set()
-    drivers: list[tuple[pathlib.Path, str]] = []
-    for path in modules:
-        if path in seen:
-            continue
-        seen.add(path)
-        source = path.read_text(encoding="utf-8")
+    """The real scan. Anti-vacuity first: an empty corpus and an empty class are both FAILURES.
+
+    THE CORPUS IS EVERY TEST MODULE, NOT THIS DIRECTORY. It was `tests/gates/*.py` while `test_twin_parity.py` lived there and was the one member; agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (bf054adcd4), and the directory then held no driver while `.claude/rediacc_hooks/tests/test_hooks_delegates.py` (`_discover_tailed` globs `test-*.py` across its `_TAILED_ROOTS` at import time and runs each one) sat outside the scan. Tracked and untracked `.py` under `.ci/rediacc_ci/tests` and, because a git pathspec `*` crosses `/`, every `.py` anywhere under `.claude` (`is_fanout_driver` filters the extras), read from git so a lease tree under `.claude/worktrees/` never enters the corpus.
+    """
+    root = paths.repo_root()
+    modules = gitx.ls_files(
+        ".ci/rediacc_ci/tests/*.py", ".claude/*.py", root=root, untracked=True, existing=True
+    )
+    if len(modules) < CORPUS_FLOOR:
+        gate.log_fail(
+            "only %d test module(s) listed under .ci/rediacc_ci/tests and .claude against a floor "
+            "of %d; the listing is not seeing the tree, and a scan over it would find no driver "
+            "for that reason alone." % (len(modules), CORPUS_FLOOR)
+        )
+    drivers: list[tuple[str, str]] = []
+    for rel in modules:
+        source = (root / rel).read_text(encoding="utf-8")
         if is_fanout_driver(source):
-            drivers.append((path, source))
+            drivers.append((rel, source))
 
     if not drivers:
         gate.log_fail(
-            "no fan-out driver found under %s, so the scan below compared nothing and "
-            "its silence means nothing. `test_twin_parity.py` is the known member; if it "
-            "was renamed or stopped globbing its subjects, fix this detector before "
-            "trusting a green here." % paths.relative_to_root(HERE)
+            "no fan-out driver found among %d test module(s), so the scan below compared "
+            "nothing and its silence means nothing. `.claude/rediacc_hooks/tests/"
+            "test_hooks_delegates.py` is the known member; if it was renamed or stopped "
+            "globbing its subjects, fix this detector before trusting a green here." % len(modules)
         )
 
-    for path, source in drivers:
+    for rel, source in drivers:
         broken = problems(source)
         if broken:
             gate.log_fail(
                 "%s discovers its subjects but does not keep the promise that implies:\n  %s\n"
-                "A subject must be able to declare what it costs (`TWIN_TIMEOUT` is the "
-                "existing spelling), and a timeout must arrive as a verdict about the "
-                "subject, never as a traceback about the harness."
-                % (paths.relative_to_root(path), "\n  ".join(broken))
+                "A subject must be able to declare what it costs (a derived timeout, never a "
+                "bare literal), and a timeout must arrive as a verdict about the "
+                "subject, never as a traceback about the harness." % (rel, "\n  ".join(broken))
             )
-        gate.ok(
-            "%s: subjects declare their own timeout and a timeout is a verdict"
-            % paths.relative_to_root(path)
-        )
+        gate.ok("%s: subjects declare their own timeout and a timeout is a verdict" % rel)
 
     gate.log_info("fan-out drivers scanned: %d" % len(drivers))
     gate.tally_finish("fan-out timeout declarability")

@@ -7,7 +7,7 @@ This repo localizes `packages/www` into 12 languages. **English is the single so
 - English (`packages/www/src/i18n/translations/en.json`) must read as **natural, daily
 language**: grade 5-7 for marketing copy; precise and technical for docs. Clear, natural English is easier to translate well; convoluted or jargon-heavy English produces awkward translations.
 - English is optimized **first**, then **locked**: after any English value change, run
-`npm run i18n:generate-hashes` (updates `.translation-hashes.json`, the per-key English CRC32 manifest) so the freshness gates pass.
+`npm run i18n:generate-hashes` (updates `.translation-hashes.json`, the per-key English CRC32 manifest) so the freshness gates pass. The bare form rewrites every surface's manifest; `npm run i18n:generate-hashes -- --surface <name>` (`www`, `cli`, `account-web`, `account-emails`, repeatable, unknown names are an error) rewrites only that surface's manifest and prints the manifests written, which keeps parallel translators on different surfaces from colliding.
 - Every English change cascades to 12 languages. Avoid churning English after
 translating — it re-stales the translations of the changed keys.
 

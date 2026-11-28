@@ -34,7 +34,9 @@ fast-forwards it. The last stdout line is the tree's absolute path.
 
 Refused: main, a branch the main checkout holds, another MMDD-N branch checked
 out in the main checkout, a second path, and a dirty tree. The main checkout
-must be off the PR branch, since git holds one branch in one tree.
+must be off the PR branch, since git holds one branch in one tree. A landing
+tree sitting on main or a detached HEAD after the merge is not refreshed: the
+exit is --promote.
 """
 
 
@@ -120,12 +122,7 @@ def choose_branch(root, gh):
             % branch
         )
         raise LandingRefusedError(message)
-    if current and current != branch and shape.match(current):
-        message = (
-            "the main checkout is on the development branch %s while the open PR is on %s: "
-            "switch the main checkout to %s, or land %s first" % (current, branch, branch, branch)
-        )
-        raise LandingRefusedError(message)
+    # The main checkout on another MMDD-N branch is the two-tree shape itself (the development branch, stacked on the PR's): it is returned, never refused.
     if current == branch and not prs:
         # No open PR, so the landing branch is the main checkout's own (review finding 2623001e.4): the advice names what to cut, not the branch already held.
         message = (
@@ -134,12 +131,7 @@ def choose_branch(root, gh):
             "branch) in the main checkout first" % branch
         )
         raise LandingRefusedError(message)
-    if current == branch:
-        message = (
-            "the main checkout holds %s and git keeps one branch in one tree: "
-            "switch the main checkout to the development branch first" % branch
-        )
-        raise LandingRefusedError(message)
+    # current == branch with an open PR: the first switch-over, which make_landing runs (`_switch_over`).
     return branch
 
 
@@ -192,8 +184,23 @@ def _guard_path(root, path):
     return True
 
 
-def _reuse(path, branch):
+def _refuse_on_main(path):
+    """Refuse while the landing tree sits on main or a detached HEAD (a hotfix after the merge, PLAN-simple-two-tree-loop ruling 10): it is not refreshed there, and the exit is promote."""
     held = spike.out(path, "symbolic-ref", "-q", "--short", "HEAD")
+    if held in ("", lease.BASE_BRANCH):
+        message = (
+            "the landing tree %s sits on %s, so it is not refreshed. After the PR merged "
+            "(a hotfix may run there) the exit is `./run.sh worktree landing --promote` from "
+            "the main checkout once the release is green; with the PR still open, put the "
+            "tree back on the PR's branch: git -C %s switch <the PR's branch>"
+            % (path, held or "a detached HEAD", path)
+        )
+        raise LandingRefusedError(message)
+    return held
+
+
+def _reuse(path, branch):
+    held = _refuse_on_main(path)
     if held != branch:
         message = "the landing tree is on %r, not the open PR's %s: git -C %s switch %s" % (
             held,
@@ -255,7 +262,8 @@ def _add_sub(store, tree, branch, sha):
     if _has_ref(store, "refs/heads/%s" % branch):
         spike.must(store, "worktree", "add", *lock, str(tree), branch)
     else:
-        spike.must(store, "worktree", "add", *lock, "-b", branch, str(tree), sha)
+        # A submodule the PR does not touch has no branch of that name, and creating one would add a live branch it never pushes (and the git-level hook, run from the module store, refuses it as a cut off main): its tree sits detached at the gitlink, as a lease's does.
+        spike.must(store, "worktree", "add", *lock, "--detach", str(tree), sha)
 
 
 def _rollback(root, repo, path):
@@ -302,7 +310,97 @@ def _create(root, path, branch, seed):
         raise LandingRefusedError(message) from exc
 
 
-def make_landing(root, *, gh=run_gh, seed=None):
+def _moved(stuck):
+    """What to tell the operator about the trees `_give_back` could not switch back."""
+    if not stuck:
+        return "nothing moved"
+    return "%s stays detached" % ", ".join(stuck)
+
+
+def _give_back(trees, branch):
+    """Switch each of `trees` back to `branch` and return the trees where that failed (named, never silent)."""
+    stuck = []
+    for tree in trees:
+        back = spike.git(tree, "switch", "--quiet", branch)
+        if back.returncode != 0:
+            log.warn("could not switch %s back to %s: %s" % (tree, branch, back.stderr.strip()))
+            stuck.append(str(tree))
+    return stuck
+
+
+def _undo_landing(root, path, branch):
+    """Remove a landing tree this run made, its submodule trees and its record."""
+    tip, _local = _tip_of(root, branch)
+    held = lease.gitlinks_at(root, tip) if tip else []
+    _rollback(root, spike.Repo(root, [sub for sub, _ in held]), path)
+    (root / ".git" / "rediacc-landing.json").unlink(missing_ok=True)
+
+
+def _switch_over(root, path, branch, seed, next_name, today):
+    """The first switch-over: the main checkout holds the open PR's `branch`, so it hands that branch to a new landing tree and cuts the next MMDD-N here, stacked on it (operator ruling ASKED:2026-11-20T18:46Z).
+
+    Order matters to the git-level hooks: the main checkout and its submodule trees detach, the landing tree is made on `branch` and the record written, then the console cuts first (a submodule branch carries the console's name) at `branch`'s tip, which `reference-transaction` admits as the stacked cut, then each submodule tree that held `branch` cuts at its own HEAD.
+    """
+    try:
+        cut = (next_name or landing_promote._default_next_name)(
+            root, today or landing_promote._today()
+        )
+    except (OSError, RuntimeError) as exc:
+        message = "the next branch name could not be read, so nothing moved: %s" % exc
+        raise LandingRefusedError(message) from exc
+    subs = [
+        sub
+        for sub in landing_promote._submodule_trees(root).values()
+        if spike.out(sub, "symbolic-ref", "-q", "--short", "HEAD") == branch
+    ]
+    detached = []
+    try:
+        for tree in (*subs, root):
+            spike.must(tree, "switch", "--quiet", "--detach")
+            detached.append(tree)
+    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
+        stuck = _give_back(detached, branch)
+        message = "the main checkout could not be detached, so %s: %s" % (_moved(stuck), exc)
+        raise LandingRefusedError(message) from exc
+    try:
+        _create(root, path, branch, seed)
+    except LandingRefusedError as exc:
+        stuck = _give_back([root, *subs], branch)
+        if stuck:
+            raise LandingRefusedError("%s (%s)" % (exc, _moved(stuck))) from exc
+        raise
+    done = spike.git(root, "switch", "--quiet", "--no-track", "-c", cut, "refs/heads/%s" % branch)
+    if done.returncode != 0:
+        # The landing tree and its record exist and hold `branch`, so the main checkout cannot switch back until they are gone: undo both, then give the branch back, so a rerun starts from the first-switch shape instead of taking the reuse branch over a detached main checkout.
+        _undo_landing(root, path, branch)
+        stuck = _give_back([root, *subs], branch)
+        message = (
+            "the development branch %s could not be cut here, so the landing tree %s was removed%s: %s"
+            % (
+                cut,
+                path,
+                (" and %s stays detached" % ", ".join(stuck))
+                if stuck
+                else " and the branch was given back",
+                done.stderr.strip(),
+            )
+        )
+        raise LandingRefusedError(message)
+    for sub in subs:
+        made = spike.git(sub, "switch", "--quiet", "--no-track", "-c", cut)
+        if made.returncode != 0:
+            message = (
+                "the submodule tree %s could not cut %s at its HEAD (run `git -C %s switch "
+                "--no-track -c %s` there once the cause is fixed): %s"
+                % (sub, cut, sub, cut, made.stderr.strip())
+            )
+            raise LandingRefusedError(message)
+    log.info(
+        "landing tree %s holds %s; the main checkout holds %s, stacked on it" % (path, branch, cut)
+    )
+
+
+def make_landing(root, *, gh=run_gh, seed=None, next_name=None, today=None):
     """Make or reuse the landing tree and return its absolute path. Raises `LandingRefusedError`."""
     try:
         root = lease._main_checkout(root)
@@ -310,9 +408,14 @@ def make_landing(root, *, gh=run_gh, seed=None):
         raise LandingRefusedError(str(exc)) from exc
     path = landing_path(root)
     exists = _guard_path(root, path)
+    if exists:
+        # Read before the PR lookup: after the merge no PR is open, and the refusal names promote rather than the missing PR.
+        _refuse_on_main(path)
     branch = choose_branch(root, gh)
     if exists:
         _reuse(path, branch)
+    elif spike.out(root, "symbolic-ref", "-q", "--short", "HEAD") == branch:
+        _switch_over(root, path, branch, seed or lease._run_seed, next_name, today)
     else:
         _create(root, path, branch, seed or lease._run_seed)
     return str(path)

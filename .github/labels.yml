@@ -51,7 +51,7 @@
   color: "D93F0B"
   description: "Marks a merged PR as rolled back; blocks stable promotion while one exists inside the soak window"
 
-# Automation / triage (referenced by report-nightly-status.cjs)
+# Automation / triage
 - name: bug
   color: "d73a4a"
   description: "Something isn't working"
@@ -60,9 +60,13 @@
   color: "0E8A16"
   description: "Automated pull request"
 
+# nightly-red stays declared while main's housekeeping still runs the budget-check poster that applies it
+# (issue #604); 668632dae5 retires that poster on this branch, and the live label is deleted once that
+# commit reaches main.
 - name: nightly-red
   color: "b60205"
   description: "The scheduled nightly CI run is failing (opened and closed automatically)"
+  guide: false
 
 # Version Bump Labels
 #

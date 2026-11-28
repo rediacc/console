@@ -1,12 +1,13 @@
 ---
 description: Rebase the current branch (console + every submodule that has a matching branch) onto its base branch, submodule-first, resolving the gitlink conflicts that plain `git rebase` gets wrong. Rebase and verify, then republish only through step 5's guarded lease push - merges nothing, lands nothing, opens no PR. Use to refresh a long-running branch onto a moved main before or during a PR.
 argument-hint: "[base]  (optional; defaults to main. A feature branch is legal: see below)"
-allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*)
+allowed-tools: Bash(git branch:*), Bash(git status:*), Bash(git submodule status:*), Bash(git log:*), Bash(git rev-parse:*), Bash(git rev-list:*), Bash(git ls-tree:*), Bash(git remote:*), Bash(gh pr list:*), Bash(./run.sh worktree landing --status)
 ---
 
 ## Current state
 
 - Branch: !`git branch --show-current`
+- Landing tree (the record `rediacc-landing.json` in `git rev-parse --git-common-dir` names its path and branch): !`./run.sh worktree landing --status`
 - Working tree: !`git status --short | grep -v '.claude/settings.local.json' || echo '(clean aside from settings.local.json)'`
 - Submodule pointers: !`git submodule status private/renet private/account private/elite private/homebrew-tap 2>/dev/null || echo '(unavailable)'`
 - Base: !`echo "origin/${ARGUMENTS:-main}" | tr -d ' '`
@@ -139,9 +140,12 @@ submodule before console. Note it for step 5; nothing pushes before step 4 verif
 
 ### 3. Rebase the console branch
 
+In the main checkout, `block_rebase_over_foreign_dirt` refuses a rebase onto a base whose `.claude/hooks/stop/wl_git.py` lacks `def operation_in_progress` (origin/main until the stand-down merges), because a halted step would run that base's hooks without the stand-down: run the rebase in the landing tree while it is idle on main, move the branch from the main checkout with `git switch -q --detach <rebased tip>`, `git branch -f <dev branch> <rebased tip>` and `git switch -q <dev branch>`, and never run `git submodule update --init` in the landing tree.
+
 The rebase runs inside a skip-worktree window on `.claude/settings.local.json`: the bit is set just before it, stays set while the rebase is stopped, and is cleared as soon as no rebase is in progress. `git rebase --continue` refuses over the modified file exactly as the start does (measured 2026-10-20, git 2.53: rc 1, with the misleading `You must edit all merge conflicts`), and the harness can rewrite the file while a conflict waits, so clearing the bit at the first stop breaks the next `--continue`.
 
 ```bash
+# In the main checkout onto a base without the stand-down, run this block in the landing tree instead (the paragraph above).
 git update-index --skip-worktree .claude/settings.local.json
 git rebase "origin/${BASE:-main}"
 # THE RELEASE LINE: clears the bit once no rebase is in progress, a no-op while one is stopped, under either backend.

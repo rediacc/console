@@ -8,7 +8,6 @@ import {
   isAgentByAncestry,
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
-  OVERRIDE_VAR_CONFIG_EDIT,
   OVERRIDE_VAR_GRAND,
 } from './process-ancestry.js';
 
@@ -109,52 +108,6 @@ export async function assertAgentRepoCreate(
     throw new ValidationError(t(errorKey, { name: repoName, platform: process.platform }));
   }
   throw new ValidationError(t('errors.agent.createGuard', { name: repoName }));
-}
-
-// ─── Config-edit override ────────────────────────────────────────────────
-
-/**
- * Check the REDIACC_ALLOW_CONFIG_EDIT override.
- * Scope is a pointer-glob string like `*`, `/credentials/*`, or a comma-separated
- * list of pointer templates. Returns the matched scope or null.
- *
- * Following the REDIACC_ALLOW_GRAND_REPO convention, the override is only
- * legitimate if it was set by the human before the agent started (ancestry check).
- */
-export function configEditOverrideScope(): string | null {
-  const raw = process.env[OVERRIDE_VAR_CONFIG_EDIT];
-  if (!raw) return null;
-  if (isAgentEnvironment() && !isOverrideAllowed(OVERRIDE_VAR_CONFIG_EDIT)) {
-    // Agent set its own override, reject.
-    return null;
-  }
-  return raw;
-}
-
-/**
- * Does a given JSON-Pointer match an allowed scope glob?
- * - `*` matches everything.
- * - Exact pointer strings match themselves.
- * - Templates containing `*` match segment-by-segment.
- * - Multiple scopes can be separated by commas.
- */
-export function scopeAllows(allowedScope: string, pointer: string): boolean {
-  for (const scope of allowedScope
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)) {
-    if (scope === '*') return true;
-    if (scope === pointer) return true;
-    if (scope.includes('*') && templateMatches(scope, pointer)) return true;
-  }
-  return false;
-}
-
-function templateMatches(template: string, concrete: string): boolean {
-  const t = template.split('/');
-  const c = concrete.split('/');
-  if (t.length !== c.length) return false;
-  return t.every((seg, i) => seg === '*' || seg === c[i]);
 }
 
 /** Reset cached state (for testing only). */

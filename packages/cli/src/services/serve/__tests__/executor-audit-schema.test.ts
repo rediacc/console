@@ -117,4 +117,28 @@ describe('executor audit payload against AuditEventsRequestSchema', () => {
     });
     expect(typeof parsed.data.cliVersion).toBe('string');
   });
+
+  it('the command request id rides the event data, for a cli.command and a mapped function', async () => {
+    const plain = parse(
+      await shipped(event({ commandPath: 'machine status', requestId: 'req-abc.1' }))
+    );
+    expect(plain.data).toMatchObject({ requestId: 'req-abc.1' });
+    const mapped = parse(
+      await shipped(
+        event({
+          commandPath: 'repo up',
+          functionName: 'repository_up',
+          machineName: 'prod-1',
+          requestId: 'req-abc.2',
+        })
+      )
+    );
+    expect(mapped.type).toBe('cli.repo.up');
+    expect(mapped.data).toMatchObject({ requestId: 'req-abc.2' });
+  });
+
+  it('an event without a request id ships none', async () => {
+    const parsed = parse(await shipped(event({ commandPath: 'machine status' })));
+    expect(parsed.data).not.toHaveProperty('requestId');
+  });
 });

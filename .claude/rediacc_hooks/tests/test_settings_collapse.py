@@ -4,7 +4,7 @@
 
 CLAUSE 1 IS THE COUNT, and on its own it is worthless. A settings file with eleven entries that run nothing at all satisfies it perfectly, which is why the box that asked for this collapse wrote the second clause down in the same breath.
 
-CLAUSE 2 IS THE VERDICT SET. Every payload the guard corpus recovers is driven twice: once through the members as SEPARATE commands, the way the harness ran them before the collapse, and once through `.claude/hooks/chain-head.sh`, the single command that replaced them. The comparison is on the whole observable contract -- exit code, stdout and stderr, byte for byte -- rather than
+CLAUSE 2 IS THE VERDICT SET. A stratified sample of the payloads the guard corpus recovers, one per guard per verdict its suite asserts, is driven twice: once through the members as SEPARATE commands, the way the harness ran them before the collapse (answered in this process since agent/plans/PLAN-ciquick-cpu.md W19, see `member_inprocess`), and once through `.claude/hooks/chain-head.sh`, the single command that replaced them, as a real process. The comparison is on the whole observable contract -- exit code, stdout and stderr, byte for byte -- rather than
 on a refused/allowed bit, because "blocked, here is the correct command" and "blocked, good luck" are the same bit and a different answer.
 
 WHAT MAKES THE GREEN MEAN SOMETHING. A differential between two runs of the same table would pass with every member deleted from both sides, so the controls delete a member from ONE side and require the comparison to go red. One member, `why-on-edit.py`, is not reachable from the harvested corpus at all: its refusal needs a `tool_name` of Write and a `file_path`, and the suite's
@@ -24,6 +24,7 @@ import tempfile
 import pytest
 
 from rediacc_hooks import guards, lifecycle
+from rediacc_hooks.guards import _harness
 from rediacc_hooks.tests import guardcorpus
 
 ROOT = guardcorpus.repo_root()
@@ -132,6 +133,27 @@ def hook_env():
     return with_stubs(env)
 
 
+def member_inprocess(member, payload, env):
+    """`(rc, stdout, stderr)` of one member answered in this process, or None when it has to run as the command it is.
+
+    IN PROCESS (agent/plans/PLAN-ciquick-cpu.md W19), for the two member kinds that are nearly every call: a `dispatch.py --chain <c>` member runs through `_harness.run_chain_inprocess` (each guard through `dispatch.run_one`, with the case's environment swapped in), and a head `--check <tool>` member whose tool IS on the member's PATH is the silent exit 0 `chain-head.sh` gives it. Everything else, why-on-edit.py and a check whose tool is missing (the controls' PATH farms), stays a real command. The real `chain-head.sh` side still runs as a process on the stratified sample, so both shortcuts are compared against the thing they stand for on every guard and verdict.
+    """
+    command = member["command"]
+    chain = (
+        command.rsplit(" --chain ", 1)[1]
+        if '/rediacc_hooks/dispatch.py" --chain ' in command
+        else None
+    )
+    if chain is not None:
+        return _harness.run_chain_inprocess(
+            chain, payload, env=env, timeout=member.get("timeout", lifecycle.DEFAULT_TIMEOUT)
+        )
+    for tool in lifecycle.head_checks():
+        if command.endswith("--check " + tool) and shutil.which(tool, path=env.get("PATH", "")):
+            return 0, "", ""
+    return None
+
+
 def run_separately(members, payload, env):
     """The members as the harness ran them before the collapse: one command each.
 
@@ -139,20 +161,24 @@ def run_separately(members, payload, env):
     """
     out, err, failed = [], [], False
     for member in members:
-        proc = subprocess.run(
-            ["bash", "-c", member["command"]],
-            input=payload,
-            capture_output=True,
-            text=True,
-            check=False,
-            env=env,
-            timeout=member.get("timeout", lifecycle.DEFAULT_TIMEOUT),
-        )
-        out.append(proc.stdout)
-        err.append(proc.stderr)
-        if proc.returncode == 2:
+        answered = member_inprocess(member, payload, env)
+        if answered is None:
+            proc = subprocess.run(
+                ["bash", "-c", member["command"]],
+                input=payload,
+                capture_output=True,
+                text=True,
+                check=False,
+                env=env,
+                timeout=member.get("timeout", lifecycle.DEFAULT_TIMEOUT),
+            )
+            answered = (proc.returncode, proc.stdout, proc.stderr)
+        rc, one_out, one_err = answered
+        out.append(one_out)
+        err.append(one_err)
+        if rc == 2:
             return 2, lifecycle.merge_stdout(out), "".join(err)
-        if proc.returncode != 0:
+        if rc != 0:
             failed = True
     return (1 if failed else 0), lifecycle.merge_stdout(out), "".join(err)
 
@@ -202,15 +228,15 @@ def run_pair(members, chain, payload, env):
     )
 
 
-def corpus_by_chain():
-    """`{chain: {payload: label}}` for the driven patterns, deduplicated by payload.
+def routed_cases():
+    """`[(chain, guard, payload, label, rc)]`: every harvested case of a driven pattern.
 
-    A payload is routed by the chain of the guard whose case it came from, because that is the pattern the harness would have handed it to. Duplicates collapse: the chain runs every member regardless of which guard a case was written for, so the same bytes twice is the same comparison twice.
+    A payload is routed by the chain of the guard whose case it came from, because that is the pattern the harness would have handed it to.
     """
     cases, _ = guardcorpus.harvest_cases()
     live = set(guards.stems())
-    routed = {}
-    for guard, payload, label, _rc in cases:
+    routed = []
+    for guard, payload, label, rc in cases:
         if guard.startswith("guards/"):
             stem = guard[len("guards/") : -len(".py")]
             # A RETIRED GUARD's recorded cases name a module that no longer exists, so nothing says which chain they belonged to. The frozen suite keeps them (it is a recording, not a list of live guards); the first retirement was `block_shell_background_waiter`, removed with cross-session messaging on 2026-09-24.
@@ -220,11 +246,33 @@ def corpus_by_chain():
         else:
             chain = guard.split("/")[0]
         if chain in DRIVEN:
-            routed.setdefault(chain, {}).setdefault(payload, label)
+            routed.append((chain, guard, payload, label, rc))
     return routed
 
 
-CORPUS = corpus_by_chain()
+def by_chain(rows):
+    """`{chain: {payload: label}}`, deduplicated by payload. Duplicates collapse: the chain runs every member regardless of which guard a case was written for, so the same bytes twice is the same comparison twice."""
+    out: dict[str, dict[str, str]] = {}
+    for chain, _guard, payload, label, _rc in rows:
+        out.setdefault(chain, {}).setdefault(payload, label)
+    return out
+
+
+ROUTED = routed_cases()
+# The whole pool: the controls fish their plants out of it, and the in-process old side makes that cheap.
+CORPUS = by_chain(ROUTED)
+
+
+def sampled_rows(rows):
+    """`rows` cut to `guardcorpus.stratified_sample`'s one per `(guard, rc)`, in the same `(chain, guard, payload, label, rc)` shape."""
+    picked = guardcorpus.stratified_sample(
+        [(guard, payload, label, rc, chain) for chain, guard, payload, label, rc in rows]
+    )
+    return [(chain, guard, payload, label, rc) for guard, payload, label, rc, chain in picked]
+
+
+# THE STRATIFIED SAMPLE (agent/plans/PLAN-ciquick-cpu.md W19): one payload per guard per verdict its suite asserts, the set the real `chain-head.sh` side runs on. Every payload of the pool cost two runs of the chain as processes (910 s of check:ci-pytest in one module); the sample keeps every guard and every verdict in front of the real collapsed command at a fraction of that, and `test_the_sample_covers_every_guard_and_verdict` proves no stratum fell out.
+SAMPLE = by_chain(sampled_rows(ROUTED))
 
 
 def without(tool, tmp_path):
@@ -530,17 +578,50 @@ VERDICT_CHUNK = 20
 
 
 def verdict_chunks(chain):
-    """The `(payload, label)` slices `test_verdict_set_is_unchanged` runs for `chain`, in sorted order. At least one, so an empty chain still reaches the test and fails there."""
-    items = sorted(CORPUS.get(chain, {}).items())
+    """The `(payload, label)` slices of the stratified SAMPLE `test_verdict_set_is_unchanged` runs for `chain`, in sorted order. At least one, so an empty chain still reaches the test and fails there."""
+    items = sorted(SAMPLE.get(chain, {}).items())
     return [items[i : i + VERDICT_CHUNK] for i in range(0, len(items), VERDICT_CHUNK)] or [[]]
 
 
-def test_the_verdict_chunks_partition_the_corpus():
-    """CONTROL for the split: the chunks together are the whole pool, each payload once, so splitting the item dropped nothing."""
+def test_the_verdict_chunks_partition_the_sample():
+    """CONTROL for the split: the chunks together are the whole sample, each payload once, so splitting the item dropped nothing."""
     for chain in DRIVEN:
         flat = [item for chunk in verdict_chunks(chain) for item in chunk]
-        assert flat == sorted(CORPUS[chain].items()), chain
+        assert flat == sorted(SAMPLE[chain].items()), chain
         assert all(len(chunk) <= VERDICT_CHUNK for chunk in verdict_chunks(chain))
+
+
+def test_the_sample_covers_every_guard_and_verdict():
+    """The sample is a cut of the pool and drops no stratum: every `(guard, rc)` pair a driven pattern's cases assert has a payload in SAMPLE that its own guard's cases carry with that rc, and no payload outside the pool."""
+    sampled = {payload for chain in DRIVEN for payload in SAMPLE.get(chain, {})}
+    strata: dict[tuple[str, str, int], set[str]] = {}
+    for chain, guard, payload, _label, rc in ROUTED:
+        strata.setdefault((chain, guard, rc), set()).add(payload)
+    missing = sorted(
+        "%s %s rc=%s" % key for key, payloads in strata.items() if not payloads & sampled
+    )
+    assert not missing, "the sample lost %d stratum/strata: %s" % (len(missing), missing[:10])
+    pool = {payload for chain in DRIVEN for payload in CORPUS.get(chain, {})}
+    assert sampled <= pool, "the sample holds payloads the pool does not"
+    assert len(strata) >= 50, (
+        "only %d (guard, verdict) strata; the corpus is not being routed" % len(strata)
+    )
+
+
+def test_the_sample_control_a_dropped_stratum_is_reported():
+    """CONTROL. `stratified_sample` keeps one row per (guard, rc) and the coverage check above would see one missing: dropping a stratum's rows from the input drops it from the output."""
+    rows = [
+        ("g/a.py", "p2", "l", "0"),
+        ("g/a.py", "p1", "l", "0"),
+        ("g/a.py", "p3", "l", "2"),
+        ("g/b.py", "p4", "l", "2"),
+    ]
+    assert guardcorpus.stratified_sample(rows) == [
+        ("g/a.py", "p1", "l", "0"),
+        ("g/a.py", "p3", "l", "2"),
+        ("g/b.py", "p4", "l", "2"),
+    ]
+    assert ("g/b.py", "2") not in {(r[0], r[3]) for r in guardcorpus.stratified_sample(rows[:3])}
 
 
 @pytest.mark.parametrize(
@@ -552,7 +633,7 @@ def test_the_verdict_chunks_partition_the_corpus():
     ],
 )
 def test_verdict_set_is_unchanged(chain, chunk):
-    """The whole corpus, through the members separately and through the one collapsed command (one chunk of the chain's pool per item)."""
+    """The stratified sample, through the members separately and through the one collapsed command (one chunk of the chain's sample per item)."""
     env = hook_env()
     members = lifecycle.flat_commands(chain)
     wrong = []

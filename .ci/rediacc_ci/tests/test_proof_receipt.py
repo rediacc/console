@@ -179,6 +179,15 @@ def test_a_missing_envelope_field_is_named() -> None:
     assert R.envelope_errors([]) == ["receipt is not an object"]
 
 
+def test_the_win_tier_validates_and_an_unknown_tier_does_not() -> None:
+    receipt = _healthy()
+    receipt["tier"] = "nope"
+    assert any("tier 'nope'" in e for e in R.envelope_errors(receipt)), "control: unknown tier"
+    receipt["tier"] = "win"
+    assert R.envelope_errors(receipt) == []
+    assert R.envelope("win", 1, R.VERIFIED, receipt)["tier"] == "win"
+
+
 # ------------------------------------------------------------------ identity on a real checkout
 
 

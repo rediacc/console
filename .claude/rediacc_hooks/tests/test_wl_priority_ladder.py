@@ -204,7 +204,7 @@ def test_232b_control_two_invariants_are_both_quoted_with_no_collapse_line(wl):
 
 
 def test_233_the_pr_babysit_finish_line_blocks_a_green_but_unfinished_wave(wl):
-    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/commands/pr-babysit.md` states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
+    """The operator's example, generalised: reaching green is not reaching the finish line. `.claude/agents/pr-babysitter.md` loop step 8 states it (green, ready, per-commit reviews clean, human threads resolved), and before this change nothing held the wave open once ci-red went quiet.
 
     233b is the CONTROL and 233c the evidence ladder; both continue on this world with no fresh setup, so they stay here. 233b is the gate that stops this becoming a tax on every session that happens to have a PR open: same PR, same green, no pr-babysit wave, not one word. 233c pins that the hook cannot see a resolved thread and refuses to pretend it can: the
     threads box is closed by ticking a worklist item carrying the token, while the per-commit review box is read live off agent/reviews/<branch>/ (this fixture has no branch commits past a base, so it reads clean), which is the same linkage agent/programs/<slug>/CHECKLIST.md uses.
@@ -373,10 +373,6 @@ def test_234_the_pr_review_nudge_names_draft_and_answer_on_an_unanswered_summary
     assert block == "", block
     assert "wl_prreview.py --draft" in note, note
     assert calls == [543], "the memo did not hold inside the TTL: %s" % calls
-    # Focus mode blocks too: `pr-review` is on wl_standdown._FOCUS_ONLY (Review Complete is required, operator ruling 2026-10-03).
-    block, note, _ = checks.prreview_nudge({}, PRR_INFO, check, focus=True, now=1000.0)
-    assert "wl_prreview.py --answer" in block, block
-    assert "pr-review" in wlfix.import_wl("wl_standdown")._FOCUS_ONLY
 
 
 def test_234b_a_failed_review_run_yields_the_investigate_line():

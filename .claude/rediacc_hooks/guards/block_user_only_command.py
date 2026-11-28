@@ -20,10 +20,13 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 import pathlib
 
 from rediacc_hooks import hookio, model_invocation
+from rediacc_hooks.guards import _write_rules, tables
+
+__getattr__ = tables("block_user_only_command", "EDGE_CASES", "_C", "_FM")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
-ORDER = 15
+ORDER = 14
 # Read by check:ci-guard-mention-anchoring: this guard judges the RESULTING command file's frontmatter, so a sentence appended to a valid command file passes; only a frontmatter key line is refused.
 ANCHORING = "structure: refuses a command or skill file whose resulting frontmatter declares disable-model-invocation, never a sentence naming it"
 
@@ -51,141 +54,6 @@ MESSAGE = (
     "(.ci/config/model-invocation-exceptions.json) keeps the key exactly as listed.\n"
 )
 
-_C = ".claude/commands/x.md"
-_FM = "---\ndescription: x\n%s---\n\nBody.\n"
-
-EDGE_CASES = [
-    (
-        "a Write adding the key",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/" + _C,
-                "content": _FM % "disable-model-invocation: true\n",
-            },
-        },
-    ),
-    (
-        "a Write with an explicit false",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/.claude/skills/s/SKILL.md",
-                "content": _FM % "disable-model-invocation: false\n",
-            },
-        },
-    ),
-    (
-        "a Write with another spelling",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/" + _C,
-                "content": _FM % "Disable_Model_Invocation : 'Yes'\n",
-            },
-        },
-    ),
-    (
-        "a nested command tree",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/private/account/.claude/commands/t.md",
-                "content": _FM % "disableModelInvocation: on\n",
-            },
-        },
-    ),
-    (
-        "a NotebookEdit naming a command path",
-        {
-            "tool_name": "NotebookEdit",
-            "tool_input": {
-                "notebook_path": "/r/" + _C,
-                "new_source": _FM % "disable-model-invocation: 1\n",
-            },
-        },
-    ),
-    (
-        "a Write whose body only mentions the key",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/" + _C,
-                "content": _FM % "" + "Never set `disable-model-invocation: true`.\n",
-            },
-        },
-    ),
-    (
-        "a Write outside the command directories",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/docs/x.md",
-                "content": _FM % "disable-model-invocation: true\n",
-            },
-        },
-    ),
-    (
-        "a Write to a sub-agent definition",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/.claude/agents/x.md",
-                "content": _FM % "disable-model-invocation: true\n",
-            },
-        },
-    ),
-    (
-        "a commented-out key",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "/r/" + _C,
-                "content": _FM % "# disable-model-invocation: true\n",
-            },
-        },
-    ),
-    (
-        "an Edit of the exception list",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "/r/.ci/config/model-invocation-exceptions.json",
-                "old_string": "[",
-                "new_string": "[{}",
-            },
-        },
-    ),
-    ("no path", {"tool_name": "Write", "tool_input": {"content": "x"}}),
-]
-
-
-def _result_text(doc, path):
-    """The text the tool call would leave at `path`, or None when the call fails on its own and there is nothing to judge."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None
-    if doc.get("tool_name") == "NotebookEdit":
-        return str(tin.get("new_source") or "")
-    if "content" in tin:
-        return str(tin.get("content") or "")
-    try:
-        text = path.read_text(encoding="utf-8")
-    except (OSError, UnicodeDecodeError):
-        return None
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text
-
 
 def run(ev):
     doc = ev.doc
@@ -209,7 +77,7 @@ def run(ev):
         return hookio.DENY
     if not model_invocation.in_scope(path.as_posix()):
         return hookio.ALLOW
-    text = _result_text(doc, path)
+    text, _why = _write_rules.result_text(doc, path)
     if text is None:
         return hookio.ALLOW
     rel, exceptions = model_invocation.exceptions_for(path)

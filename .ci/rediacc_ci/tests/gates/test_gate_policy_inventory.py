@@ -265,8 +265,8 @@ def test_the_five_migrated_readers_go_through_the_seam(gate):
         ".ci/rediacc_ci/quality/go_deps.py",
         ".ci/rediacc_ci/quality/plan_housekeeping.py",
         ".ci/rediacc_ci/quality/profiler_coverage.py",
-        ".ci/scripts/quality/check_language_policy.py",
-        ".ci/scripts/quality/check_runner_advice.py",
+        ".ci/rediacc_ci/quality/language_policy.py",
+        ".ci/rediacc_ci/quality/runner_advice.py",
     ]
     missing_import = []
     for rel in readers:

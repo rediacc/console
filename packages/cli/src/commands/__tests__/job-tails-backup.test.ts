@@ -34,6 +34,8 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 vi.mock('../../utils/repo-target.js', () => ({
   resolveRepoRef: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
+}));
+vi.mock('../../utils/repo-ref-local.js', () => ({
   resolveRepoRefLocal: () =>
     Promise.resolve({ name: 'app', repoKey: 'app', machineName: 'm1', tag: 'latest' }),
 }));
@@ -41,7 +43,7 @@ vi.mock('../../utils/repo-executor.js', () => ({
   recordedDatastoreMount: vi.fn().mockResolvedValue(undefined),
 }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: new Proxy({}, { get: (_t, p) => String(p) }),
 }));
 vi.mock('../../services/repo/repo-key-deployment.js', () => ({

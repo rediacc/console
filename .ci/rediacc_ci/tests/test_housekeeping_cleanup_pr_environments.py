@@ -1,6 +1,6 @@
 """`rediacc_ci.housekeeping.cleanup_pr_environments`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-pr-environments.sh` and the port over the same fixture and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger `.ci/shadow/w7p6-cleanup-pr-environments.observations.jsonl` recorded that comparison over five distinct trees, in a disposable scratch repo outside this checkout. The
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/housekeeping/cleanup-pr-environments.sh` and the port over the same fixture and compared exit code, stdout, stderr and the `gh` call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees, in a disposable scratch repo outside this checkout. The
 twin has now been deleted and every case that executed it compares against `goldens/cleanup-pr-environments/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `gh` ON PATH, the seam its sibling `test_housekeeping_cleanup_github_deployments.py` established. Nothing here reaches the network, and the real `gh` is never on the PATH handed to the subject. That is not tidiness: this script DELETES GitHub environment objects, which GitHub cannot restore, and its `--repo` comes straight from the command line, so a case

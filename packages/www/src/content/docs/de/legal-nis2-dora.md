@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 8
 language: de
-sourceHash: "9179eb8e594f2ed0"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e1cdb4848a2124ae"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 NIS2 und DORA sind EU-Verordnungen, die Cybersicherheits- und operationelle Resilienzanforderungen an kritische Infrastruktur- und Finanzsektor-Organisationen stellen. Beide traten 2025 in Kraft und gelten breit über EU-Branchen hinweg.
@@ -24,13 +24,13 @@ Volltext: [Richtlinie (EU) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022/255
 | NIS2-Anforderung | Rediacc-Fähigkeit |
 |-----------------|-------------------|
 | Risikomanagement-Maßnahmen (Art. 21) | LUKS2-Verschlüsselung im Ruhezustand, Netzwerkisolation pro Repository, ausschließlicher SSH-Zugang, Audit-Logging (70+ Ereignistypen einschließlich Maschinenoperationen) |
-| Vorfallsbehandlung (Art. 21(2)(b)) | 70+ Ereignistypen (Auth, Tokens, Config, Lizenzierung, Maschinenoperationen) bieten forensischen Trail. Repository-Isolation begrenzt den Wirkungsradius. |
+| Vorfallsbehandlung (Art. 21(2)(b)) | Netzwerk-Flow-Records pro Repository in einer vom Kunden gewählten Stufe (Ziel, Port und Protokoll; in höheren Stufen Prozess, DNS-Name und Öffnen sensibler Dateien) werden nur in kostenpflichtigen Plänen als signierte, hash-verkettete Batches in einen Bucket geliefert, in den die Admins des Kunden nicht schreiben können. Eine Untersuchungs-Timeline pro Repository verifiziert die Kette im Browser, und „Declare incident“ startet die Fristuhren. Flow-Records zeigen Volumen und Ziel, nicht Inhalt. Free- und Community-Pläne zeichnen nichts auf. Repository-Isolation begrenzt den Wirkungsradius. Die 70+ Audit-Ereignistypen (Auth, Tokens, Config, Lizenzierung, Maschinenoperationen) halten fest, wer was getan hat. |
 | Geschäftskontinuität (Art. 21(2)(c)) | `rdc repo push/pull` mit verschlüsseltem Multi-Destination-Backup. CoW-Snapshots für sofortiges Rollback. |
 | Lieferkettensicherheit (Art. 21(2)(d)) | Self-Hosting eliminiert SaaS-Lieferkettenrisiken. Kein Drittanbieter-Cloud-Provider verarbeitet Ihre Daten. |
 | Netzwerksicherheit (Art. 21(2)(e)) | Pro-Repository Docker Daemons, iptables-Regeln, Loopback-IP-Isolation (/26-Subnetze). |
 | Verschlüsselung (Art. 21(2)(h)) | Obligatorische LUKS2 AES-256-Verschlüsselung. Zero-Knowledge-Config-Store mit AES-256-GCM. |
 | Zugangskontrolle (Art. 21(2)(i)) | SSH-Schlüssel-Authentifizierung, bereichsbezogene API-Tokens mit IP-Bindung, Zwei-Faktor-Authentifizierung (TOTP). |
-| Vorfallsmeldung, 24h-Frühwarnung (Art. 23) | Audit-Logging ermöglicht schnelle Vorfallserkennung und -eingrenzung. |
+| Vorfallsmeldung, 24h-Frühwarnung (Art. 23) | „Declare incident“ hält den Zeitpunkt der Kenntnisnahme fest und startet davon ausgehend drei Fristuhren: 24 Stunden für die Frühwarnung, 72 Stunden für die Vorfallsmeldung und ein Kalendermonat nach der Meldung für den Abschlussbericht (Art. 23(4)). Jede Stufe wird als signierter Bericht in PDF, JSON und STIX 2.1 vorbereitet, mit einer Feldzuordnung von jedem Berichtsfeld zur Richtlinie. Ob ein Vorfall erheblich ist und was an das CSIRT oder die zuständige Behörde gesendet wird, bleibt Beurteilung und Meldung des Kunden. |
 
 ### Lieferkettenrisiko
 
@@ -52,7 +52,7 @@ Volltext: [Verordnung (EU) 2022/2554](https://eur-lex.europa.eu/eli/reg/2022/255
 |-----------------|-------------------|
 | ICT-Risikomanagement-Framework (Art. 6) | Verschlüsselung, Isolation, Audit-Logging und Backup bilden die technische Kontrollschicht. |
 | Schutz und Prävention (Art. 9) | LUKS2 AES-256-Verschlüsselung im Ruhezustand. Netzwerkisolation verhindert laterale Bewegung. Ausschließlicher SSH-Zugang. |
-| Erkennung (Art. 10) | 70+ Ereignistypen einschließlich Maschinenoperationen (Repository-Lebenszyklus, Backup, Sync, Terminal). Admin-Dashboard und Portal mit Filterung pro Benutzer und Team. Maschinenoperationen auch in Systemlogs für Verteidigungstiefe. |
+| Erkennung (Art. 10) | Anomalie-Detektoren laufen auf der Maschine (auch offline) und auf dem Server über die gelieferten Flow-Records und lösen bei ungewöhnlichem Traffic einen Sicherheitshinweis aus. Detektoren melden Abweichungen von einer gelernten Baseline pro Repository; sie beweisen keine Kompromittierung und erfassen nur Repositories mit aktivierter Aufzeichnung in einem kostenpflichtigen Plan. Die 70+ Audit-Ereignistypen (Repository-Lebenszyklus, Backup, Sync, Terminal) bleiben mit Filterung pro Benutzer und Team im Admin-Dashboard und Portal sowie in Systemlogs für Verteidigungstiefe verfügbar. |
 | Reaktion und Wiederherstellung (Art. 11) | CoW-Snapshots für sofortiges Rollback. `rdc repo push/pull` für Multi-Destination-Recovery. Fork-basierte Disaster-Recovery-Tests. |
 | ICT-Drittanbieter-Risiko (Art. 28-30) | Self-Hosting eliminiert die Klassifikation als "kritischer ICT-Drittanbieter" vollständig. |
 | Digitale operationelle Resilienztests (Art. 24-27) | CoW-Kloning ermöglicht bedrohungsgeleitete Penetrationstests auf produktionsnahen Umgebungen ohne Datenexposition. Klonen, testen, zerstören. |

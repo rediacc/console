@@ -38,6 +38,7 @@ from rediacc_ci.deploy import r2_promote
 from rediacc_ci.housekeeping import cf_leftovers as cfl
 from rediacc_ci.ops import backup_d1, cf_auth
 from rediacc_ci.ops import r2_bucket_copy as rbc
+from rediacc_ci.well_known import PUBLIC_DATA_BUCKET
 
 PLAN_NAME = "PLAN-product-domain-rename.md"
 TERMS_PATH = ".ci/config/retired-terms.json"
@@ -45,7 +46,7 @@ RECORD_DIR = ".ci/state/cf-retire"
 REGIONS = ("eu", "us", "asia")
 OLD_PREFIXES = ("edge-rediacc-", "rediacc-")
 # Operator ruling ASKED:2026-11-13T10:07Z: the public data bucket stays.
-KEEP_NAMES = frozenset({"rediacc-public-data"})
+KEEP_NAMES = frozenset({PUBLIC_DATA_BUCKET})
 KEEP_RE = re.compile(r"(?:^|-)proof-loss(?:-|$)")
 ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 STEPS = ("unbind", "worker", "container", "queue", "d1", "r2", "pages")
@@ -544,21 +545,51 @@ def archive_r2_dir(name: str, jur: str | None, out_dir: pathlib.Path) -> dict:
     }
 
 
+def superset_problems(src: list, dst: list) -> tuple[list[str], int]:
+    """Source keys the destination lacks or holds with another size or single-part ETag, and the count of destination-only keys, which a superset replacement legitimately holds."""
+    have = {o.rel: o for o in dst}
+    problems = []
+    for o in src:
+        d = have.get(o.rel)
+        if d is None:
+            problems.append("missing in destination: %s" % o.rel)
+        elif d.size != o.size:
+            problems.append(
+                "size differs: %s (source %d, destination %d)" % (o.rel, o.size, d.size)
+            )
+        elif rbc._single_part(o.etag) and rbc._single_part(d.etag) and o.etag != d.etag:
+            problems.append(
+                "etag differs: %s (source %s, destination %s)" % (o.rel, o.etag, d.etag)
+            )
+    return problems, len(have.keys() - {o.rel for o in src})
+
+
 def archive_r2_bucket(name: str, jur: str | None, dst: str) -> dict:
+    """Copy the source delta into `dst`, then require every SOURCE key in `dst` with the same size, the same ETag where both are single-part (a multipart ETag depends on the part size, so it is not comparable across buckets), and the same sha256 of its bytes. Destination-only keys are counted, never a difference: `dst` is a superset replacement."""
     endpoint = rbc.endpoint_for(rbc.default_endpoint(), jur)
-    rc = rbc.copy(endpoint, name, dst)
+    if name == dst:
+        raise RetireError("source and destination are the same bucket: %s" % name)
     reader = r2_promote.Transfers(rbc.SELF, endpoint, rbc.RETRY_DELAY_S, bucket=name)
-    keys = [o.rel for o in reader.list_tree("")]
-    diffs = (
-        rbc.deep_differences(endpoint, name, endpoint, dst, keys)
-        if rc == 0
-        else ["copy exited %d" % rc]
+    writer = r2_promote.Transfers(
+        rbc.SELF, endpoint, rbc.RETRY_DELAY_S, bucket=dst, src_bucket=name, preserve_metadata=True
     )
+    source = reader.list_tree("")
+    diffs: list[str] = []
+    extras = 0
+    if not source:
+        diffs.append("VACUOUS: %s lists 0 objects" % name)
+    else:
+        todo = rbc.plan_copy(source, writer.list_tree(""))
+        writer.copy_all([(o.rel, o.rel) for o in todo])
+        diffs, extras = superset_problems(source, writer.list_tree(""))
+        if not diffs:
+            diffs = rbc.deep_differences(endpoint, name, endpoint, dst, [o.rel for o in source])
     return {
         "to_bucket": dst,
-        "objects": len(keys),
+        "objects": len(source),
+        "destination_only_keys": extras,
         "mismatches": diffs,
-        "verified": rc == 0 and not diffs,
+        "verified": bool(source) and not diffs,
     }
 
 

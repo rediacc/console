@@ -281,9 +281,9 @@ def test_seller_fields_agree_on_the_real_tree(gate):
     """The live `account-dev` and `legal-entity` profiles bind exactly the fields `bws_env` declares. The fixture cases prove the comparison can fail; this proves the committed tree is on the passing side of it."""
     python3 = harness.require_tool("python3", "install python3; the subject is a python3 program")
     probe = (
-        "import sys; sys.path.insert(0, %r); import check_bws_map as g; "
+        "import sys; sys.path.insert(0, %r); import rediacc_ci.quality.bws_map as g; "
         "p, n = g.seller_field_problems(); print('\\n'.join(p)); print('fields=%%d' %% n); "
-        "sys.exit(1 if p else 0)" % str(GATE.parent)
+        "sys.exit(1 if p else 0)" % str(paths.from_root(".ci"))
     )
     result = harness.run([python3, "-c", probe])
     gate.assert_exit(

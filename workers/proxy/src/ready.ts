@@ -3,11 +3,9 @@
  *
  * Unauthenticated, so a deploy smoke can poll it. There is no org-less token to introspect, so it asks the issuer's `probe()` (writes nothing and mints nothing: the issuer env parses, D1 answers, and the scopes an issued token would carry are listed) and then `GET server-info` over ACCOUNT, which together prove the ISSUER binding answers, the ACCOUNT binding answers, and a token would carry the scopes the executor needs. It answers 200 `{ ready: true, workerVersion }` with the `[version_metadata]` id, which is how the smoke tells the new version from an old one still rolling out, or 503 `{ ready: false, reason }` with a reason code.
  *
- * A ready answer on a version with the EXECUTOR_CAPACITY binding also carries `executors`, the coordinator's `count()`: how many executor containers hold a live lease (`total`, of which `heavy`) and the caps in force. It is what a bench drill reads to watch a slot free or a heavy start land (agent/plans/PLAN-executor-durable-object-policy.md box L0). The count never decides readiness: a coordinator that cannot answer, or does not answer within COORDINATOR_TIMEOUT_MS, leaves `executors` out, so the deploy smoke keeps meaning what it meant.
+ * The public answer carries no occupancy, for every caller (D52, PLAN-rmcp-executor-hardening.md Design 8). Executor occupancy (`total`, `heavy` and the caps in force) is readable only through `GET /v1/internal/occupancy`, which answers the account Worker alone: the request must carry an internal credential that the account Worker mints and the ISSUER binding verifies (`verifyInternal`), and every other caller, with no credential, a forged one or an expired one, gets the same 404 as an unknown path. The account server's root-only `GET /admin/executor-occupancy` is the one consumer. This replaces the earlier unauthenticated count (review 900c1e14.2), whose series told any poller when load rose and when heavy-tier runs started.
  *
- * What the unauthenticated route discloses, weighed (review 900c1e14.2): anyone who polls learns the deployment's aggregate executor occupancy, `total` and `heavy`, at most once per READY_CACHE_MS per isolate (the cache is per isolate, so several isolates or cold starts read it more often), and from the series when load rises and when heavy-tier runs start. It names no org, executor, placement or size of any one org, and the caps are the deployed config's, so no tenant's activity can be told apart from another's; on a deployment with a single active org the series is that org's activity timing, which is the residual cost. Against that, the drill needs the count without a credential, from the same smoke that polls readiness. The trade is accepted for that reason, and a deployment that must not publish occupancy drops the EXECUTOR_CAPACITY binding from this Worker's ready path.
- *
- * Each upstream call (the issuer probe, server-info, the coordinator count) is bounded by COORDINATOR_TIMEOUT_MS: a call that stalls instead of failing would otherwise hold the shared in-flight answer forever, so /v1/ready would never answer (review 900c1e14.1).
+ * Each upstream call (the issuer probe, server-info, the internal occupancy count) is bounded by COORDINATOR_TIMEOUT_MS: a call that stalls instead of failing would otherwise hold the shared in-flight answer forever, so /v1/ready would never answer (review 900c1e14.1).
  *
  * The answer, ready or not, is cached for READY_CACHE_MS and computed once per isolate at a time, so polling the endpoint cannot drive the issuer into a mint storm, nor the coordinator into one request per poll.
  */
@@ -21,13 +19,16 @@ export const READY_CACHE_MS = 30_000;
 /** The scopes an issued executor token must carry. */
 const REQUIRED_SCOPES = ['proxy:exec', 'audit:write'] as const;
 
+/** The header the account Worker attaches to its internal occupancy request. */
+const INTERNAL_CREDENTIAL_HEADER = 'x-rediacc-internal';
+
 export interface ReadyEnv extends ForwardEnv {
   CF_VERSION_METADATA?: WorkerVersionMetadata;
   EXECUTOR_CAPACITY?: DurableObjectNamespace<ExecutorCapacity>;
 }
 
 export type ReadyAnswer =
-  | { status: 200; body: { ready: true; workerVersion: string; executors?: CapacityCount } }
+  | { status: 200; body: { ready: true; workerVersion: string } }
   | { status: 503; body: { ready: false; reason: string } };
 
 let cachedAnswer: { at: number; answer: ReadyAnswer } | undefined;
@@ -52,14 +53,7 @@ async function computeReady(env: ReadyEnv): Promise<ReadyAnswer> {
   if (probeFailure !== undefined) return notReady(probeFailure);
   const reason = await serverInfoFailure(env);
   if (reason !== undefined) return notReady(reason);
-  const executors = await executorCount(env);
-  return {
-    status: 200,
-    body:
-      executors === undefined
-        ? { ready: true, workerVersion }
-        : { ready: true, workerVersion, executors },
-  };
+  return { status: 200, body: { ready: true, workerVersion } };
 }
 
 /** The coordinator's live count with only its four integers copied out, or undefined without the binding or when the coordinator cannot answer. */
@@ -71,7 +65,7 @@ async function executorCount(env: ReadyEnv): Promise<CapacityCount | undefined> 
     );
     return { total, heavy, cap, heavyCap };
   } catch {
-    console.warn('proxy: ready: executor count unavailable');
+    console.warn('proxy: occupancy: executor count unavailable');
     return undefined;
   }
 }
@@ -100,6 +94,31 @@ async function serverInfoFailure(env: ReadyEnv): Promise<string | undefined> {
   } catch {
     return 'server-info-unreachable';
   }
+}
+
+function notFound(): Response {
+  return new Response('Not Found', { status: 404 });
+}
+
+/**
+ * `GET /v1/internal/occupancy`: the coordinator's count, to the account Worker only. A wrong method, a missing credential and one the issuer does not verify (forged, expired, or an issuer that cannot answer) all answer the same bare 404 as an unknown path, so the route cannot be told from one that does not exist. A verified caller gets `{ executors }`, or a 503 when the coordinator cannot answer.
+ */
+export async function internalOccupancy(request: Request, env: ReadyEnv): Promise<Response> {
+  if (request.method !== 'GET') return notFound();
+  const credential = request.headers.get(INTERNAL_CREDENTIAL_HEADER);
+  if (!credential || !env.ISSUER) return notFound();
+  let verified: unknown;
+  try {
+    verified = await bounded(env.ISSUER.verifyInternal(credential));
+  } catch {
+    return notFound();
+  }
+  if (verified !== true) return notFound();
+  const executors = await executorCount(env);
+  if (executors === undefined) {
+    return Response.json({ error: 'occupancy unavailable' }, { status: 503 });
+  }
+  return Response.json({ executors });
 }
 
 /** The cached readiness answer, recomputed at most once per READY_CACHE_MS per isolate. */

@@ -45,6 +45,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARRIED_REL, carryStepProblem } from './advance-carry';
 import {
   CORES_ENV,
   type ExecOutcome,
@@ -62,6 +63,7 @@ import {
   refusingNewGates,
 } from './exec';
 import { findingsSelftest, receiptFindings } from './findings';
+import { gateCoresSelftest } from './gate-cores';
 import { retiredFieldFindings } from './gate-spec';
 import {
   GATE_TIMEOUT_FLOOR_MS,
@@ -74,6 +76,7 @@ import {
   CARRY_EXEMPT_REL,
   computeGateHashes,
   exemptIdsOf,
+  exemptRowsOf,
   type GateHash,
   inputHashSelftest,
   type LockEntry,
@@ -90,10 +93,22 @@ import {
   scriptsMapOf,
   WHOLE_TREE_GLOB,
 } from './input-hash';
-import { stepDurationsMs } from './lanes';
+import {
+  baselineCostsOf,
+  HEAVY_RSS_MB,
+  heavyOf,
+  type LaneCapabilities,
+  lanePricesFrom,
+  liveStepDurations,
+  measuredHeavyFindings,
+  readBaselineCosts,
+  type ShardInput,
+  shardPlan,
+  stepDurationsMs,
+} from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
-import { seedReceipt } from './lease-seed';
+import { publicKeyLines, seedPublicKeys, seedReceipt, seedTypecheckCache } from './lease-seed';
 import {
   cappedChanged,
   type GateLedger,
@@ -109,10 +124,15 @@ import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
   type CoreBudget,
+  DEFAULT_SCHED,
   type GateCost,
   type GateResult,
+  type LoadGate,
+  type LoadWaitState,
+  loadVerdict,
   type PoolLease,
   planAdmission,
+  releasedGrant,
   runPool,
   type Sched,
 } from './pool';
@@ -137,6 +157,8 @@ import {
   planRanking,
   type RankingDecision,
   rankSelftest,
+  resumeOf,
+  reuseFloor,
 } from './rank';
 import {
   type CarriedEntry,
@@ -165,6 +187,7 @@ import {
 } from './select';
 import { legIds, parseShardManifest, shardManifestPath } from './shard-manifest';
 import { predictMakespan, reclaimLoopSelftest, schedulerSelftest } from './sim';
+import { cacheDirFor } from './typecheck-cache-dir';
 import { unitsFrom } from './unit-enumerators';
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -207,7 +230,7 @@ const EWMA_ALPHA = 0.3;
 interface Options {
   jobs?: number;
   heavyLimit?: number;
-  /** `--sched` / CI_SCHED; undefined means the default, `cores`. */
+  /** `--sched` / CI_SCHED; undefined means the default, `cores` (pool.ts DEFAULT_SCHED, shared with the pool's own fallback). */
   sched?: Sched;
   failFast: boolean;
   json: boolean;
@@ -1397,6 +1420,118 @@ function startCpuSampler(): {
   };
 }
 
+/** The /proc fields one busy-sampler tick reads per process: its process group, its parent and its CPU ticks, own and reaped children. */
+function readProcGroups():
+  | { ticks: Map<number, number>; group: Map<number, number>; parent: Map<number, number> }
+  | undefined {
+  let pids: string[];
+  try {
+    pids = fs.readdirSync('/proc').filter((d) => /^\d+$/.test(d));
+  } catch {
+    return undefined;
+  }
+  const ticksOf = new Map<number, number>();
+  const group = new Map<number, number>();
+  const parent = new Map<number, number>();
+  for (const pid of pids) {
+    let stat: string;
+    try {
+      stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8');
+    } catch {
+      continue; // exited between the listing and the read
+    }
+    // The comm field may hold spaces and parentheses, so the fields after it are split from the LAST ')'.
+    const rest = stat.slice(stat.lastIndexOf(')') + 2).split(' ');
+    // rest[0] is field 3 (state): ppid is field 4, pgrp is field 5, utime..cstime are fields 14-17.
+    const pgrp = Number(rest[2]);
+    const ticks = Number(rest[11]) + Number(rest[12]) + Number(rest[13]) + Number(rest[14]);
+    if (!Number.isFinite(pgrp) || !Number.isFinite(ticks)) continue;
+    ticksOf.set(Number(pid), ticks);
+    group.set(Number(pid), pgrp);
+    parent.set(Number(pid), Number(rest[1]));
+  }
+  return { ticks: ticksOf, group, parent };
+}
+
+/**
+ * Each live elastic gate's own busy cores (W12, pool.ts releasedGrant), once a second, from /proc. Every gate leads its own process group (exec.ts LIVE), so its tree is every process in that group, plus every descendant of the leader that left the group while its parent chain is still alive (a tool that calls setsid or setpgid keeps that chain, review c428c052.1). A worker whose intermediate parent has exited is reparented to init or a subreaper, the chain walk stops at pid 1, and that worker is not counted: its gate's cores can be released while it still runs, a limit of this reader (review 2b62b14e.1). The counter per gate only ever grows: each tick adds, per process, the rise in its utime+stime+cutime+cstime since the last tick (a new process adds all of it), so a worker that exits takes nothing back. A child reaped inside the group is counted again in its reaper's cutime, which over-reads the gate as busy: the safe direction, since an over-read only keeps cores. Linux only; elsewhere the reader covers no window and nothing is released. Unreferenced, and it reads /proc only while an elastic gate is live.
+ */
+function startBusySampler(elasticIds: ReadonlySet<string>): {
+  stop: () => void;
+  busyCores: (id: string, fromMs: number, toMs: number) => number | undefined;
+} {
+  let clkTck = 100;
+  try {
+    clkTck = Number(execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' }).trim()) || 100;
+  } catch {
+    /* 100 is the Linux default */
+  }
+  const prev = new Map<number, number>();
+  const series = new Map<string, { t: number; ms: number }[]>();
+  const take = (): void => {
+    const live = liveGates().filter((g) => elasticIds.has(g.id));
+    if (live.length === 0) {
+      prev.clear();
+      return;
+    }
+    const snap = readProcGroups();
+    if (snap === undefined) return;
+    const t = Date.now();
+    const rise = new Map<number, number>();
+    const leaders = new Set(live.map((g) => g.pgid));
+    // The gate a process belongs to: its own group when a gate leads it, else the first gate leader on its parent chain. The 64-hop bound only ends a walk over a racy read, it does not make the owner right: a cycle that runs out the bound reports no owner (review 2b62b14e.3).
+    const ownerOf = (pid: number): number | undefined => {
+      const grp = snap.group.get(pid);
+      if (grp !== undefined && leaders.has(grp)) return grp;
+      let at = snap.parent.get(pid);
+      for (let hop = 0; at !== undefined && at > 1 && hop < 64; hop++) {
+        if (leaders.has(at)) return at;
+        at = snap.parent.get(at);
+      }
+      return undefined;
+    };
+    for (const [pid, ticks] of snap.ticks) {
+      const owner = ownerOf(pid);
+      if (owner === undefined) continue;
+      rise.set(owner, (rise.get(owner) ?? 0) + Math.max(0, ticks - (prev.get(pid) ?? 0)));
+    }
+    prev.clear();
+    for (const [pid, ticks] of snap.ticks) prev.set(pid, ticks);
+    for (const g of live) {
+      const s = series.get(g.id) ?? [];
+      const last = s.at(-1)?.ms ?? 0;
+      // The first tick of a gate has no previous reading of its processes, so it only anchors the series.
+      s.push({ t, ms: s.length === 0 ? 0 : last + ((rise.get(g.pgid) ?? 0) * 1000) / clkTck });
+      series.set(g.id, s);
+    }
+  };
+  const timer = setInterval(take, 1000);
+  timer.unref();
+  return {
+    stop: () => clearInterval(timer),
+    busyCores: (id, fromMs, toMs) => {
+      const s = series.get(id);
+      if (s === undefined) return undefined;
+      // The newest reading at or before each end; a window whose start predates the series, or whose end is more than one tick and a half stale, is not covered.
+      const before = (at: number): { t: number; ms: number } | undefined => {
+        let hit: { t: number; ms: number } | undefined;
+        for (const p of s) if (p.t <= at) hit = p;
+        return hit;
+      };
+      const a = before(fromMs);
+      const b = before(toMs);
+      if (a === undefined || b === undefined || toMs - b.t > 1500) return undefined;
+      // A window inside one tick reads the rate of the tick span that holds it.
+      if (b.t <= a.t) {
+        const next = s.find((p) => p.t > a.t);
+        if (next === undefined) return undefined;
+        return ((next.ms - a.ms) / (next.t - a.t)) * (toMs - fromMs);
+      }
+      return ((b.ms - a.ms) / (b.t - a.t)) * (toMs - fromMs);
+    },
+  };
+}
+
 /** What a gate's /proc sampler capture says: peak summed RSS and the largest summed CPU any one tick saw. */
 function readCapture(file: string, runId: string | undefined): { rssMb?: number; cpuMs?: number } {
   let text: string;
@@ -1835,6 +1970,547 @@ const SELFTEST_ASSERTION_FLOOR = 413;
 const SELFTEST_REQUIRE_FLOOR = 150;
 
 /**
+ * W12 (agent/plans/PLAN-ciquick-cpu.md): core release through the real pool loop. Budget C 24 with no epsilon; an elastic gate (min 2, max 18) that the area rule grants 18 beside a queued fixed 15-core gate, so 18 + 15 > 24 holds the second until cores come back. The busy reader is the seam run.ts fills from /proc (`startBusySampler`); here it reports a constant width. Returns the failures, empty when every case holds.
+ */
+async function coreReleaseSelftest(): Promise<string[]> {
+  const failures: string[] = [];
+  const WIDE = 'selftest:release-wide';
+  const QUEUED = 'selftest:release-queued';
+  const scenario = async (
+    busyWidth: number | undefined
+  ): Promise<{ queuedAt: number; wideEnd: number; results: GateResult[] }> => {
+    const t0 = Date.now();
+    const at = new Map<string, number>();
+    let wideEnd = Number.NaN;
+    const results = await runPool(
+      [
+        { ...syntheticSpec(WIDE, 'true'), cores: { min: 2, max: 18 } },
+        syntheticSpec(QUEUED, 'true'),
+      ],
+      {
+        jobs: 24,
+        heavyLimit: 1,
+        failFast: false,
+        durations: new Map([
+          [WIDE, 60_000],
+          [QUEUED, 1_000],
+        ]),
+        sched: 'cores',
+        budget: { cores: 24, epsilon: 0, maxProcs: 48, memMb: 64 * 1024 },
+        costs: new Map<string, GateCost>([
+          [WIDE, { cpuMs: 1_080_000, wallMs: 60_000, perCore: 1 }],
+          [QUEUED, { cpuMs: 15_000, wallMs: 1_000 }],
+        ]),
+        busyCores:
+          busyWidth === undefined
+            ? () => undefined
+            : (id, from, to) => (id === WIDE ? busyWidth * (to - from) : undefined),
+        releaseWindowMs: 100,
+        releasePollMs: 10,
+        exec: async (spec) => {
+          at.set(spec.id, Date.now() - t0);
+          if (spec.id === WIDE) {
+            await new Promise((r) => setTimeout(r, 700));
+            wideEnd = Date.now() - t0;
+          }
+          return { code: 0, stdout: '', stderr: '', ms: 1 };
+        },
+      }
+    );
+    return { queuedAt: at.get(QUEUED) ?? Number.NaN, wideEnd, results };
+  };
+
+  const drop = await scenario(4);
+  const dropWide = drop.results.find((r) => r.id === WIDE);
+  if (
+    !(drop.queuedAt < drop.wideEnd) ||
+    dropWide?.grantedCores !== 18 ||
+    dropWide.released?.from !== 18 ||
+    dropWide.released.to !== 5 ||
+    drop.results.find((r) => r.id === QUEUED)?.blockedBy !== 'cpu'
+  )
+    failures.push(
+      `an elastic gate granted 18 of 24 that drops to 4 busy workers must release to 5 and let the queued 15-core gate start before it ends, got queued at ${drop.queuedAt} ms, wide ended ${drop.wideEnd} ms, granted ${dropWide?.grantedCores}, released ${JSON.stringify(dropWide?.released)}`
+    );
+
+  const busy = await scenario(18);
+  if (!(busy.queuedAt >= busy.wideEnd) || busy.results.find((r) => r.id === WIDE)?.released)
+    failures.push(
+      `CONTROL: a gate whose 18 workers stay busy must keep its grant, so the 15-core gate waits for its end, got queued at ${busy.queuedAt} ms, wide ended ${busy.wideEnd} ms, released ${JSON.stringify(busy.results.find((r) => r.id === WIDE)?.released)}`
+    );
+
+  const blind = await scenario(undefined);
+  if (!(blind.queuedAt >= blind.wideEnd) || blind.results.find((r) => r.id === WIDE)?.released)
+    failures.push(
+      `CONTROL: a reader that covers no window must never release a core, got queued at ${blind.queuedAt} ms, wide ended ${blind.wideEnd} ms`
+    );
+
+  // The pure rule's edges: too young releases nothing; a low bucket among busy ones is a pause, not a tail; a fixed-width gate is never released.
+  const el = {
+    id: 'g',
+    slots: 18,
+    cores: 18,
+    memMb: 0,
+    estMs: 1,
+    heavy: false,
+    mutex: [],
+    reads: [],
+    cpuMs: 1,
+    elastic: { min: 2, max: 18, workMs: 1, perCore: 1, measured: true },
+  };
+  const low = (): number => 4 * 2_000;
+  if (releasedGrant(el, 0, 10_000, low) !== 5)
+    failures.push('releasedGrant: 4 busy cores over a full 10 s window must keep 5 of 18');
+  if (releasedGrant(el, 1, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a gate younger than the window must release nothing');
+  if (releasedGrant(el, 0, 10_000, (f) => (f >= 8_000 ? 18 * 2_000 : 4 * 2_000)) !== undefined)
+    failures.push('CONTROL releasedGrant: one busy bucket in the window must hold the whole grant');
+  if (releasedGrant({ ...el, elastic: undefined }, 0, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a fixed-width gate must never be released');
+  if (releasedGrant({ ...el, cores: 5 }, 0, 10_000, low) !== undefined)
+    failures.push('CONTROL releasedGrant: a gate already at its kept width must not release again');
+  return failures;
+}
+
+/**
+ * The comparison behind the busy sampler's selftest, pure so its negative controls can drive it. `avg` is the cores the probe's workers averaged in the window, measured in that window; `read` is what the sampler said for the same window. Returns the failure text, or undefined when the read fits. The read must sit within half to one and a half of the window's own average (plus 0.2), so contention that starves the workers shifts both sides; a window averaging under 0.05 cores cannot tell a reader from a dead one and fails loudly instead of passing.
+ */
+function busyReadVerdict(avg: number, read: number | undefined, what: string): string | undefined {
+  if (avg < 0.05)
+    return `busy sampler: the probe's ${what} averaged ${avg.toFixed(2)} cores in the window, too few to tell busy from idle (a machine this loaded cannot run the probe)`;
+  if (read === undefined || read < avg * 0.5 || read > avg * 1.5 + 0.2)
+    return `busy sampler: a gate running ${what} must read near its own in-window average of ${avg.toFixed(2)} cores, read ${read === undefined ? 'no window' : read.toFixed(2)}`;
+  return undefined;
+}
+
+/** The clock-tick rate a reader answers, or undefined when it throws or answers no positive number. */
+function readClkTck(read: () => string): number | undefined {
+  try {
+    const n = Number(read().trim());
+    return Number.isFinite(n) && n > 0 ? n : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The real reader behind W12 (`startBusySampler`), on real processes: a gate running two `yes` workers reads near the average its own two workers report over the same one-second window (each worker's utime+stime read from /proc/<pid>/stat at both ends, so host contention moves the expectation and the reading together) and a gate running `sleep` reads about none, both live at once so one /proc scan serves both. The expectation is the gate's measured average, not 2: on a shared machine (load 67 on 24 cores, measured 2026-11-23) two `yes` workers got 0.93 cores, and the reader was right. A reader that never covered a window would leave core release dead with every pool fixture still green, so this is the case that proves the seam is fed. Linux only: elsewhere the reader is documented to cover nothing, and the case says so instead of passing. Returns the failures.
+ */
+async function busySamplerSelftest(): Promise<string[]> {
+  if (process.platform !== 'linux') {
+    // Without /proc the reader must cover no window, so nothing is ever released: assert that, rather than pass on a skipped probe (review c428c052.3).
+    const only = 'selftest:busy-nolinux';
+    const probe = startBusySampler(new Set([only]));
+    const gate = execGate(syntheticSpec(only, 'sleep 1.6'), { cwd: REPO_ROOT, mergeOutput: false });
+    await new Promise((r) => setTimeout(r, 1_400));
+    const at = Date.now();
+    const window = probe.busyCores(only, at - 1_000, at);
+    await gate;
+    probe.stop();
+    return window === undefined
+      ? []
+      : [
+          `busy sampler: on ${process.platform} (no /proc) the reader must cover no window, so no core is released, read ${window}`,
+        ];
+  }
+  const BUSY = 'selftest:busy-two';
+  const IDLE = 'selftest:busy-idle';
+  const SETSID = 'selftest:busy-setsid';
+  const sampler = startBusySampler(new Set([BUSY, IDLE, SETSID]));
+  const opts = { cwd: REPO_ROOT, mergeOutput: false };
+  // The window opens 2.5 s after the workers start and lasts 2 s, so the one-second sampler has a reading at or before each end even when its ticks slip under a loaded ci:quick (2026-11-27 ci:quick 20: a 1.3 s lead and a 1 s window read `no window` at load 30 and passed alone).
+  // The expectation is measured INSIDE the window the sampler is asked about: the probe script reads its own two workers' utime+stime from /proc/<pid>/stat (a direct read, not the sampler's group walk) at both ends of a two-second window and prints `startMs ticks endMs ticks`. A busy host starves the workers in that window and in the sampler's read of it alike, so contention moves both sides (2026-11-27: whole-life times said 0.69 cores while the window's last second held 0.33, and the old comparison failed a healthy reader).
+  const probe = (prefix: string): string =>
+    `${prefix}yes >/dev/null & a=$!; ${prefix}yes >/dev/null & b=$!; sleep 2.5; ` +
+    `s1=$(date +%s%3N); x1=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); sleep 2.0; ` +
+    `s2=$(date +%s%3N); x2=$(awk '{sub(/.*\\) /,""); t+=$12+$13} END {print t+0}' /proc/$a/stat /proc/$b/stat); ` +
+    `kill $a $b; wait 2>/dev/null; echo "PROBE $s1 $x1 $s2 $x2"`;
+  const [busyRun, , detachedRun] = await Promise.all([
+    execGate(syntheticSpec(BUSY, probe('')), opts),
+    execGate(syntheticSpec(IDLE, 'sleep 5.0'), opts),
+    // The same two workers, each moved into its own session: their CPU leaves the gate's process group but not its parent chain.
+    execGate(syntheticSpec(SETSID, probe('setsid ')), opts),
+  ]);
+  sampler.stop();
+  // The tick rate scales /proc ticks to seconds; a guessed rate would scale the expectation wrong without a word (review 58ffb4eb.2).
+  // review 3ba9b867.1: the refusal is forced through the same helper with readers that throw or answer nothing usable.
+  for (const [label, bad] of [
+    [
+      'throws',
+      () => {
+        throw new Error('no getconf');
+      },
+    ],
+    ['empty', () => ''],
+    ['zero', () => '0'],
+    ['non-numeric', () => 'abc'],
+  ] as const) {
+    if (readClkTck(bad) !== undefined)
+      return [`busy sampler: a tick-rate reader that ${label} must be refused`];
+  }
+  const clkTck =
+    readClkTck(() => execFileSync('getconf', ['CLK_TCK'], { encoding: 'utf8' })) ?? Number.NaN;
+  if (!(clkTck > 0)) {
+    return [
+      'busy sampler: getconf CLK_TCK gave no tick rate, so the in-window average cannot be computed',
+    ];
+  }
+  // The window the script measured, and the cores its workers averaged in it. undefined when the script did not report (it died, or /proc was unreadable).
+  const measured = (out: string): { from: number; to: number; avg: number } | undefined => {
+    const m = /PROBE (\d+) (\d+) (\d+) (\d+)/.exec(out);
+    if (m === null) return undefined;
+    const [from, x1, to, x2] = [Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4])];
+    if (to <= from) return undefined;
+    return { from, to, avg: ((x2 - x1) * 1000) / clkTck / (to - from) };
+  };
+  const rate = (id: string, w: { from: number; to: number }): number | undefined => {
+    const cores = sampler.busyCores(id, w.from, w.to);
+    return cores === undefined ? undefined : cores / (w.to - w.from);
+  };
+  const failures: string[] = [];
+  const busyWin = measured(busyRun.stdout);
+  if (busyWin === undefined)
+    failures.push(
+      `busy sampler: the probe gate printed no PROBE line (stdout ${JSON.stringify(busyRun.stdout.slice(0, 120))}, stderr ${JSON.stringify(busyRun.stderr.slice(0, 120))})`
+    );
+  else {
+    const verdict = busyReadVerdict(busyWin.avg, rate(BUSY, busyWin), 'two yes workers');
+    if (verdict !== undefined) failures.push(verdict);
+  }
+  // Idle: read over the busy probe's window, and judged against that window's average as well, so a loaded host cannot make `sleep` look busy by a relative standard either.
+  if (busyWin !== undefined) {
+    const idleRead = rate(IDLE, busyWin);
+    if (idleRead === undefined || idleRead > Math.min(0.3, busyWin.avg / 3))
+      failures.push(
+        `CONTROL busy sampler: a gate running sleep must read about 0 busy cores, read ${idleRead === undefined ? 'no window' : idleRead.toFixed(2)}`
+      );
+  }
+  // Review c428c052.1: workers that called setsid still count for their gate, or their cores would read idle and be released while they run.
+  const detachedWin = measured(detachedRun.stdout);
+  if (detachedWin === undefined)
+    failures.push('busy sampler: the setsid probe printed no PROBE line, so it measured nothing');
+  else {
+    const verdict = busyReadVerdict(
+      detachedWin.avg,
+      rate(SETSID, detachedWin),
+      'two setsid yes workers'
+    );
+    if (verdict !== undefined) failures.push(verdict);
+  }
+  // Negative control: the verdict must still fire for a sampler that reads zero, none, or far too much, and must not fire for a faithful read at any load. Without this the load-relative comparison could pass a dead reader.
+  if (busyReadVerdict(0.69, 0, 'control') === undefined)
+    failures.push(
+      'CONTROL busy sampler: a sampler reading zero beside a 0.69-core window must fail the comparison'
+    );
+  if (busyReadVerdict(0.69, undefined, 'control') === undefined)
+    failures.push('CONTROL busy sampler: a sampler covering no window must fail the comparison');
+  if (busyReadVerdict(0.4, 2.5, 'control') === undefined)
+    failures.push(
+      'CONTROL busy sampler: a sampler reading 2.5 cores beside a 0.4-core window must fail the comparison'
+    );
+  for (const load of [1.9, 0.69, 0.33, 0.12])
+    if (busyReadVerdict(load, load, 'control') !== undefined)
+      failures.push(
+        `CONTROL busy sampler: a faithful read at ${load} cores must pass the comparison (load-insensitivity)`
+      );
+  if (busyReadVerdict(0.01, 0, 'control') === undefined)
+    failures.push(
+      'CONTROL busy sampler: a window too starved to measure must fail loudly, not pass'
+    );
+  if (sampler.busyCores('selftest:never-ran', Date.now() - 1_000, Date.now()) !== undefined)
+    failures.push('CONTROL busy sampler: a gate it never saw must cover no window');
+  return failures;
+}
+
+/** One `--list` row: every selected gate and every prerequisite, in manifest order, with the scheduling facts a reader checks (`slow`, `needs`, `heavy`, `cores`). The text table prints three of these columns; `--json` prints them all. */
+interface ListRow {
+  id: string;
+  gate: boolean;
+  run: string;
+  slow: boolean;
+  needs: string[];
+  heavy?: true;
+  cores?: GateSpec['cores'];
+}
+
+/** The load gate of a run: only a run sized to the machine (no `--jobs`, no grant it was launched under) waits on the machine's load; a width someone chose, or a nested runner under a grant, is a ceiling the caller owns (review c2c50947.3). */
+function loadGateFor(jobs: number | undefined, granted: boolean): LoadGate | undefined {
+  if (jobs !== undefined || granted) return undefined;
+  return {
+    read: () => os.loadavg()[0],
+    cores: Math.max(1, os.availableParallelism()),
+    say: (m) => process.stderr.write(`${m}\n`),
+  };
+}
+
+function listRows(specs: readonly GateSpec[], selected: ReadonlySet<string>): ListRow[] {
+  return specs
+    .filter((spec) => !spec.gate || selected.has(spec.id))
+    .map((spec) => ({
+      id: spec.id,
+      gate: spec.gate,
+      run: spec.run,
+      slow: spec.slow === true,
+      needs: [...(spec.needs ?? [])],
+      ...(spec.heavy === true ? { heavy: true as const } : {}),
+      ...(spec.cores !== undefined ? { cores: spec.cores } : {}),
+    }));
+}
+
+/**
+ * W14: two fixture lanes priced only by a gate-costs-shaped baseline split into legs of equal cost, where pricing by count (no map) leaves one leg twice the other; a step p90 outranks the baseline for the same id; `heavy` follows the measurement where there is one and the declaration where there is not; and the real lock agrees with the real gate-costs.json. Returns the failures.
+ */
+function laneCostSelftest(): string[] {
+  const failures: string[] = [];
+  const cap = (job: string): LaneCapabilities => ({
+    job,
+    runsOn: 'ubuntu-latest',
+    timeoutMinutes: 30,
+    submodules: [],
+    node: true,
+    tools: [],
+  });
+  const caps = new Map([
+    ['lane-a', cap('lane-a')],
+    ['lane-b', cap('lane-b')],
+  ]);
+  const gate = (id: string, job: string, heavy?: boolean): ShardInput => ({
+    id,
+    ci: { kind: 'step', job, step: id },
+    ...(heavy === true ? { heavy } : {}),
+  });
+  const lock: ShardInput[] = [
+    gate('a1', 'lane-a'),
+    gate('a2', 'lane-a'),
+    gate('a3', 'lane-a'),
+    gate('a4', 'lane-a'),
+    gate('b1', 'lane-b'),
+    gate('b2', 'lane-b'),
+    gate('b3', 'lane-b'),
+    gate('b4', 'lane-b'),
+  ];
+  // Walls in seconds, the gate-costs.json shape: a1 alone costs what a2..a4 cost together, and so do b4 + b3 against b1 + b2. b4's baseline says 5 s, its step p90 50 s: the step wins.
+  const wall: Record<string, number> = {
+    a1: 60,
+    a2: 20,
+    a3: 20,
+    a4: 20,
+    b1: 30,
+    b2: 30,
+    b3: 10,
+    b4: 5,
+  };
+  const baseline = baselineCostsOf({
+    gates: Object.fromEntries(
+      Object.entries(wall).map(([id, w]) => [id, { cpu_s: w, wall_s: w, peak_rss_mb: 100 }])
+    ),
+  });
+  const prices = lanePricesFrom({ b4: 50_000 }, baseline);
+  if (prices.b4 !== 50_000 || prices.a1 !== 60_000)
+    failures.push(
+      `lanePricesFrom: the step p90 must outrank the baseline wall, got ${JSON.stringify(prices)}`
+    );
+  const legCosts = (
+    plan: ReturnType<typeof shardPlan>,
+    lane: string,
+    price: Readonly<Record<string, number>>
+  ): number[] => {
+    if ('error' in plan) return [];
+    const l = plan.lanes.find((x) => x.lane === lane);
+    return (l?.shards ?? []).map((sh) => sh.ids.reduce((n, id) => n + (price[id] ?? 0), 0));
+  };
+  const measured = shardPlan(lock, caps, { 'lane-a': 2, 'lane-b': 2 }, prices);
+  for (const lane of ['lane-a', 'lane-b']) {
+    const c = legCosts(measured, lane, prices);
+    if (c.length !== 2 || c[0] !== 60_000 || c[1] !== 60_000)
+      failures.push(
+        `${lane} priced by the baseline must split into two 60 s legs, got ${'error' in measured ? measured.error : JSON.stringify(c)}`
+      );
+  }
+  const counted = shardPlan(lock, caps, { 'lane-a': 2, 'lane-b': 2 });
+  const countedA = legCosts(counted, 'lane-a', prices);
+  if (countedA.length !== 2 || Math.max(...countedA) <= 60_000)
+    failures.push(
+      `CONTROL: lane-a priced by count must NOT balance its cost (the baseline is what balances it), got ${JSON.stringify(countedA)}`
+    );
+
+  // HEAVY: measured light and declared heavy is a finding; measured over the line and undeclared is one; an unmeasured declared heavy keeps its flag, in heavyOf and in the plan.
+  const hb = baselineCostsOf({
+    gates: {
+      light: { cpu_s: 1, wall_s: 1, peak_rss_mb: 700 },
+      big: { cpu_s: 1, wall_s: 1, peak_rss_mb: 5000 },
+      bigdecl: { cpu_s: 1, wall_s: 1, peak_rss_mb: 5000 },
+      norss: { cpu_s: 1, wall_s: 1 },
+    },
+  });
+  const hlock = [
+    { id: 'light', heavy: true },
+    { id: 'big' },
+    { id: 'bigdecl', heavy: true },
+    { id: 'norss', heavy: true },
+    { id: 'unmeasured', heavy: true },
+  ];
+  const hf = measuredHeavyFindings(hlock, hb);
+  if (
+    hf.length !== 2 ||
+    !hf.some((f) => f.startsWith('light: declared `heavy`') && f.includes('drop `heavy: true`')) ||
+    !hf.some((f) => f.startsWith('big: measured at 5000 MB') && f.includes('Add `heavy: true`'))
+  )
+    failures.push(
+      `measuredHeavyFindings: exactly light (drop) and big (add), got ${JSON.stringify(hf)}`
+    );
+  if (
+    heavyOf({ id: 'light', heavy: true }, hb) ||
+    !heavyOf({ id: 'big' }, hb) ||
+    !heavyOf({ id: 'unmeasured', heavy: true }, hb) ||
+    !heavyOf({ id: 'norss', heavy: true }, hb)
+  )
+    failures.push('heavyOf: the measurement decides where it exists, the declaration elsewhere');
+  const twoHeavy = shardPlan(
+    [
+      gate('u1', 'lane-a', true),
+      gate('u2', 'lane-a', true),
+      gate('u3', 'lane-a'),
+      gate('u4', 'lane-a'),
+    ],
+    caps,
+    { 'lane-a': 2 },
+    lanePricesFrom({}, baselineCostsOf({ gates: { u3: { cpu_s: 1, wall_s: 1, peak_rss_mb: 50 } } }))
+  );
+  const heavyLegs =
+    'error' in twoHeavy ? [] : (twoHeavy.lanes[0]?.shards ?? []).map((sh) => sh.heavy);
+  if (heavyLegs.join() !== '1,1')
+    failures.push(
+      `CONTROL: two unmeasured heavy gates keep their flag and land one per leg, got ${'error' in twoHeavy ? twoHeavy.error : JSON.stringify(heavyLegs)}`
+    );
+
+  // THE FILE WIRING, on a temp root rather than the real one (the selftest's declared paths hold gate-costs.json, not lane-durations.json): liveStepDurations prices a gate the step table lacks at its baseline wall, and keeps the step figure where both exist.
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lanes-'));
+  try {
+    fs.mkdirSync(path.join(root, '.ci', 'config'), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, '.ci', 'config', 'lane-durations.json'),
+      JSON.stringify({ gate_step_p90_seconds: { both: 9 } })
+    );
+    fs.writeFileSync(
+      path.join(root, '.ci', 'config', 'gate-costs.json'),
+      JSON.stringify({
+        gates: { both: { cpu_s: 1, wall_s: 1 }, onlyBase: { cpu_s: 2, wall_s: 3 } },
+      })
+    );
+    const wired = liveStepDurations(root);
+    if (wired.both !== 9_000 || wired.onlyBase !== 3_000)
+      failures.push(
+        `liveStepDurations must take the step p90 first and the baseline wall for the rest, got ${JSON.stringify(wired)}`
+      );
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+
+  // A malformed baseline throws and an absent one reads empty (review 36622f0d.2): a silent {} would drop every measured price.
+  const costsDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-costs-'));
+  try {
+    if (Object.keys(readBaselineCosts(costsDir)).length !== 0)
+      failures.push('an absent gate-costs.json must read as an empty baseline');
+    fs.mkdirSync(path.join(costsDir, '.ci', 'config'), { recursive: true });
+    fs.writeFileSync(path.join(costsDir, '.ci', 'config', 'gate-costs.json'), '{ not json');
+    let threw = false;
+    try {
+      readBaselineCosts(costsDir);
+    } catch (err) {
+      threw = /not valid JSON/.test((err as Error).message);
+    }
+    if (!threw)
+      failures.push('a malformed gate-costs.json must throw, not read as an empty baseline');
+  } finally {
+    fs.rmSync(costsDir, { recursive: true, force: true });
+  }
+
+  // THE REAL TREE: gate-costs.json is read (an empty baseline would make the check below vacuous), and no declared `heavy` disagrees with a measurement.
+  const realBaseline = readBaselineCosts(REPO_ROOT);
+  const measuredCount = Object.keys(realBaseline).length;
+  if (measuredCount < 100)
+    failures.push(
+      `the real .ci/config/gate-costs.json yields ${measuredCount} measured gate(s); under 100 means the baseline is not being read and every lane falls back to the median`
+    );
+  const withRss = Object.values(realBaseline).filter((b) => b.rssMb !== undefined).length;
+  const heavyFindings = measuredHeavyFindings(GATES, realBaseline);
+  for (const f of heavyFindings) failures.push(`real lock: ${f}`);
+  process.stderr.write(
+    `ci-runner: baseline: ${measuredCount} gate(s) in gate-costs.json, ${withRss} with a peak RSS; heavy: ${GATES.filter((g) => g.heavy === true).length} declared, ${heavyFindings.length === 0 ? `every measured one agrees with the ${HEAVY_RSS_MB} MB line` : `${heavyFindings.length} disagree with the ${HEAVY_RSS_MB} MB line`}\n`
+  );
+  return failures;
+}
+
+/**
+ * W13: a runPool or planAdmission call that names no rule runs `cores`. Three gates each measured at half a core (1 cpu-s over 2 s wall) on `jobs` 2: the core budget fits all three at once (1.5 <= 2), the slots rule only two. Returns the failures.
+ */
+async function defaultSchedSelftest(): Promise<string[]> {
+  const failures: string[] = [];
+  const ids = ['selftest:half-1', 'selftest:half-2', 'selftest:half-3'];
+  const specs = ids.map((id) => syntheticSpec(id, 'true'));
+  const costs = new Map<string, GateCost>(ids.map((id) => [id, { cpuMs: 1_000, wallMs: 2_000 }]));
+  const peakOf = async (sched: Sched | undefined): Promise<number> => {
+    let live = 0;
+    let peak = 0;
+    await runPool(specs, {
+      jobs: 2,
+      heavyLimit: 1,
+      failFast: false,
+      durations: new Map(),
+      costs,
+      ...(sched === undefined ? {} : { sched }),
+      exec: async () => {
+        live += 1;
+        peak = Math.max(peak, live);
+        await new Promise((r) => setTimeout(r, 40));
+        live -= 1;
+        return { code: 0, stdout: '', stderr: '', ms: 1 };
+      },
+    });
+    return peak;
+  };
+  const unnamed = await peakOf(undefined);
+  if (unnamed !== 3)
+    failures.push(
+      `runPool with no sched must pack by the core budget (three half-core gates at once on jobs 2), ran ${unnamed} at once`
+    );
+  const slots = await peakOf('slots');
+  if (slots !== 2)
+    failures.push(
+      `CONTROL: an explicit sched 'slots' must keep one slot per gate (2 at once), ran ${slots}`
+    );
+  if (DEFAULT_SCHED !== 'cores')
+    failures.push(
+      `the default rule the pool and the runner share must be 'cores', is '${DEFAULT_SCHED}'`
+    );
+  // `--list --json` carries the facts W13's Accept reads: an unselected gate is left out, a prerequisite is kept, and `slow` and `needs` ride each row.
+  const rows = listRows(
+    [
+      { ...syntheticSpec('selftest:list-slow', 'true', ['selftest:list-pre']), slow: true },
+      { ...syntheticSpec('selftest:list-pre', 'true'), gate: false },
+      syntheticSpec('selftest:list-off', 'true'),
+    ],
+    new Set(['selftest:list-slow'])
+  );
+  if (
+    rows.map((r) => r.id).join() !== 'selftest:list-slow,selftest:list-pre' ||
+    rows[0]?.slow !== true ||
+    rows[0].needs.join() !== 'selftest:list-pre' ||
+    rows[1]?.slow !== false
+  )
+    failures.push(
+      `listRows: selected gate plus prerequisite with slow and needs, got ${JSON.stringify(rows)}`
+    );
+  const planned = planAdmission(specs, { jobs: 2, durations: new Map(), costs }).byId.get(ids[0]);
+  if (planned?.cores !== 0.5)
+    failures.push(
+      `planAdmission with no sched must budget a measured gate at its width (0.5 cores), got ${planned?.cores}`
+    );
+  return failures;
+}
+
+/**
  * The runner's anti-vacuity control, wired into the `ci` npm key itself so it
  * cannot sit behind a flag nothing invokes -- the exact failure
  * check-gate-reachability recorded for check-i18n-cross-locale, which shipped
@@ -2002,7 +2678,7 @@ async function selftest(): Promise<number> {
   // operator by an instrument that could not have shown otherwise.
   //
   // A unit test on select() cannot see that; only the real argv path can. The first draft of this spawned `process.execPath run.ts`, which fails because node cannot execute TypeScript -- so it drives main() in-process with argv set and stdout captured. Same path, no interpreter, no subprocess.
-  const listGateLines = async (argv: string[]): Promise<number> => {
+  const listOutput = async (argv: string[]): Promise<string> => {
     const realArgv = process.argv;
     const realWrite = process.stdout.write.bind(process.stdout);
     let captured = '';
@@ -2017,8 +2693,26 @@ async function selftest(): Promise<number> {
       process.argv = realArgv;
       (process.stdout as { write: unknown }).write = realWrite;
     }
-    return captured.split('\n').filter((l) => l.startsWith('gate ')).length;
+    return captured;
   };
+  const listGateLines = async (argv: string[]): Promise<number> =>
+    (await listOutput(argv)).split('\n').filter((l) => l.startsWith('gate ')).length;
+  // `--list --json` prints the rows as JSON and not the text table (review a8eb317e.1): one object per selected gate carrying `slow` and `needs`, and no `gate ` text line.
+  const jsonList = await listOutput(['--list', '--json', '--only', 'check:ci-npmrc']);
+  const jsonRows = ((): unknown => {
+    try {
+      return JSON.parse(jsonList);
+    } catch {
+      return null;
+    }
+  })();
+  require_(
+    Array.isArray(jsonRows) &&
+      jsonRows.some((r) => (r as ListRow).id === 'check:ci-npmrc') &&
+      jsonRows.every((r) => typeof (r as ListRow).slow === 'boolean') &&
+      !jsonList.split('\n').some((l) => l.startsWith('gate ')),
+    `--list --json must print the rows as JSON and not the text table, got ${jsonList.slice(0, 200)}`
+  );
   const onlyOne = await listGateLines(['--list', '--only', 'check:ci-npmrc']);
   require_(
     onlyOne === 1,
@@ -2102,12 +2796,11 @@ async function selftest(): Promise<number> {
     narrowingFlags(parseArgs(['--quick', '--fail-fast'])).includes('--fail-fast'),
     '--fail-fast must narrow the receipt: the gates it skips are written blocked'
   );
+  // K2: a stage stop writes no receipt, and a run it did not stop judged the whole lane, so the flag must not narrow; quick-clone.ts passes =preflight on every whole-lane run.
   require_(
-    narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red'])).includes('--stop-on-stage-red') &&
-      narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red=preflight'])).includes(
-        '--stop-on-stage-red'
-      ),
-    '--stop-on-stage-red (bare and =preflight) must narrow the receipt'
+    narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red'])).length === 0 &&
+      narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red=preflight'])).length === 0,
+    '--stop-on-stage-red (bare and =preflight) must not narrow the receipt: a stopped run writes none, an unstopped one ran the whole lane'
   );
   require_(
     narrowingFlags(parseArgs(['--quick', '--narrow'])).includes('--narrow'),
@@ -2216,6 +2909,123 @@ async function selftest(): Promise<number> {
       'CONTROL: git that cannot answer yields no change set, not an empty one read as clean'
     );
   }
+  {
+    // DT7: in a lease the anchor is the merge-base with the main checkout's branch tip; the receipt is not consulted.
+    const fake = (a: readonly string[]): string | undefined => {
+      if (a.join(' ') === '-C /m symbolic-ref --short HEAD') return '1125-1';
+      if (a.join(' ') === '-C /m rev-parse 1125-1') return 'TIP';
+      if (a.join(' ') === 'merge-base HEAD TIP') return 'BASE';
+      return undefined;
+    };
+    require_(
+      leaseAnchor('/m', fake) === 'BASE',
+      'a lease anchors on merge-base(HEAD, live branch tip)'
+    );
+    {
+      // The lease branch of narrowPlan's receipt choice never reads the copied main receipt (review be935e63.2).
+      let reads = 0;
+      const viaLease = narrowReceipt('BASE', () => {
+        reads++;
+        return '{"head":"MAIN","failed":["x"]}';
+      });
+      require_(
+        reads === 0 && viaLease?.head === 'BASE' && viaLease.failed?.length === 0,
+        'in a lease narrowPlan must take the anchor receipt and never read the main receipt'
+      );
+      const viaMain = narrowReceipt(undefined, () => '{"head":"MAIN","failed":["x"]}');
+      require_(
+        viaMain?.head === 'MAIN' && viaMain.failed?.[0] === 'x',
+        'CONTROL: outside a lease the receipt is read'
+      );
+      require_(
+        narrowReceipt(undefined, () => '{ nope') === undefined,
+        'CONTROL: an unreadable receipt outside a lease gives undefined, so --narrow names the missing receipt'
+      );
+      for (const text of ['null', '[]', '3', '"x"'])
+        require_(
+          narrowReceipt(undefined, () => text) === undefined,
+          `CONTROL: a receipt whose JSON is ${text} gives undefined, not a value narrowPlan would dereference`
+        );
+    }
+    {
+      const r = leaseReceipt('BASE');
+      require_(
+        r.head === 'BASE' && r.failed?.length === 0 && Object.keys(r.findings ?? {}).length === 0,
+        'a lease narrows on its anchor with no carried fails, never on the copied main receipt'
+      );
+    }
+    {
+      const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'selftest-key-'));
+      fs.mkdirSync(path.join(dir, 'scripts/ci-runner'), { recursive: true });
+      fs.mkdirSync(path.join(dir, 'scripts/lib'), { recursive: true });
+      fs.writeFileSync(path.join(dir, 'package.json'), '{}');
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'one');
+      const k1 = selftestKey(dir);
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'two');
+      const k2 = selftestKey(dir);
+      require_(k1 !== k2, 'a runner source edit must change the selftest key');
+      fs.writeFileSync(path.join(dir, 'scripts/ci-runner/a.ts'), 'one');
+      require_(selftestKey(dir) === k1, 'CONTROL: restoring the source restores the key');
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+    {
+      // selftestCached (review be935e63.3): skip only in a lease, record only a pass, and let the override re-run.
+      const passDir = fs.mkdtempSync(path.join(os.tmpdir(), 'selftest-pass-'));
+      try {
+        let ran = 0;
+        const drive = (inLease: boolean, force: boolean, rc: number): Promise<number> =>
+          selftestCached({
+            inLease,
+            force,
+            passDir,
+            key: () => 'K',
+            run: async () => {
+              ran++;
+              return rc;
+            },
+          });
+        await drive(false, false, 0);
+        require_(
+          ran === 1 && !fs.existsSync(path.join(passDir, 'K')),
+          'outside a lease the selftest always runs and records no pass'
+        );
+        await drive(true, false, 1);
+        require_(
+          ran === 2 && !fs.existsSync(path.join(passDir, 'K')),
+          'a failing selftest in a lease records no pass marker'
+        );
+        await drive(true, false, 0);
+        require_(
+          ran === 3 && fs.existsSync(path.join(passDir, 'K')),
+          'a passing selftest in a lease records the marker'
+        );
+        const skipped = await drive(true, false, 1);
+        require_(
+          ran === 3 && skipped === 0,
+          'a lease with a marker for this key skips the run and reports 0'
+        );
+        await drive(true, true, 0);
+        require_(ran === 4, 'CI_RUNNER_SELFTEST_FORCE re-runs despite the marker');
+      } finally {
+        fs.rmSync(passDir, { recursive: true, force: true });
+      }
+    }
+    require_(
+      leaseAnchor('/m', () => undefined) === undefined,
+      'CONTROL: git that cannot answer gives no lease anchor, so the receipt reading applies'
+    );
+    const oneFile = narrowChangeSet({}, 'BASE', (a) =>
+      a.join(' ') === 'diff --cached --name-only'
+        ? ''
+        : a.join(' ') === 'diff --name-only BASE HEAD'
+          ? 'scripts/ci-runner/lease-seed.ts'
+          : undefined
+    );
+    require_(
+      oneFile?.paths.length === 1 && oneFile.paths[0] === 'scripts/ci-runner/lease-seed.ts',
+      'in a lease a one-file change is the whole change set, anchored on the base'
+    );
+  }
   require_(
     receiptDue(parseArgs(['--quick']), false) &&
       !receiptDue(parseArgs(['--quick', '--narrow']), false) &&
@@ -2269,6 +3079,122 @@ async function selftest(): Promise<number> {
       require_(
         fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
         "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // DT8: a lease's typecheck cache is seeded from the main checkout's, prefix rewritten, stamps left out, the main side untouched.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-tscache-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'trees', 'lease');
+    try {
+      fs.mkdirSync(live, { recursive: true });
+      fs.mkdirSync(lease, { recursive: true });
+      require_(
+        seedTypecheckCache(lease, live, dir).includes('none') &&
+          !fs.existsSync(cacheDirFor(lease, dir)),
+        'CONTROL: a main checkout with no typecheck cache seeds no lease directory'
+      );
+      const src = cacheDirFor(live, dir);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.mkdirSync(src, { recursive: true });
+      // The `tree-write: safe` pragmas below lean on this: the cache root is the mkdtemp dir, so nothing lands in the tree (review b8289f14.2).
+      require_(
+        path.relative(dir, src) !== '' && !path.relative(dir, src).startsWith('..'),
+        'the lease typecheck-cache control must write under its own temp directory, never the tree'
+      );
+      const prefixLive = path.relative(src, live).split(path.sep).join('/');
+      const prefixLease = path.relative(cacheDirFor(lease, dir), lease).split(path.sep).join('/');
+      const body = `{"packageJsons":["${prefixLive}/node_modules/a/package.json"]}`;
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.writeFileSync(path.join(src, 'p.tsbuildinfo'), body);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.writeFileSync(path.join(src, 'p.stamp.json'), '{}');
+      seedTypecheckCache(lease, live, dir);
+      const got = fs.readFileSync(path.join(cacheDirFor(lease, dir), 'p.tsbuildinfo'), 'utf8');
+      require_(
+        got === body.split(prefixLive).join(prefixLease) && prefixLive !== prefixLease,
+        "the seeded tsbuildinfo must name the lease's files, not the main checkout's"
+      );
+      require_(
+        !fs.existsSync(path.join(cacheDirFor(lease, dir), 'p.stamp.json')),
+        "a stamp holds the other tree's mtimes and must not be seeded"
+      );
+      require_(
+        fs.readFileSync(path.join(src, 'p.tsbuildinfo'), 'utf8') === body,
+        "the seed must never write into the main checkout's cache"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // A tsbuildinfo that cannot be read costs a cold typecheck, never the lease seed (review 91209a47.1).
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-tsbad-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'trees', 'lease');
+    try {
+      fs.mkdirSync(live, { recursive: true });
+      fs.mkdirSync(lease, { recursive: true });
+      const src = cacheDirFor(live, dir);
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.mkdirSync(path.join(src, 'bad.tsbuildinfo'), { recursive: true });
+      // tree-write: safe under the mkdtemp dir passed to cacheDirFor as the cache root, never the tree
+      fs.writeFileSync(path.join(src, 'good.tsbuildinfo'), '{}');
+      let note = '';
+      let threw = false;
+      try {
+        note = seedTypecheckCache(lease, live, dir);
+      } catch {
+        threw = true;
+      }
+      require_(
+        !threw &&
+          note.includes('1 tsbuildinfo') &&
+          note.includes('1 unreadable') &&
+          fs.existsSync(path.join(cacheDirFor(lease, dir), 'good.tsbuildinfo')),
+        `an unreadable tsbuildinfo must be skipped while a readable one still seeds, got ${threw ? 'a throw' : note}`
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  // seedPublicKeys: copies only the public lines, and each skip branch says why (review 4de21416.1).
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-keys-'));
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'lease');
+    const keyRel = 'private/account/.cache/public-keys.env';
+    try {
+      fs.mkdirSync(path.join(lease, 'private', 'account'), { recursive: true });
+      require_(
+        seedPublicKeys(lease, live).includes('none in the main checkout') &&
+          !fs.existsSync(path.join(lease, keyRel)),
+        'CONTROL: a main checkout with no public-key cache seeds none'
+      );
+      fs.mkdirSync(path.dirname(path.join(live, keyRel)), { recursive: true });
+      const text =
+        '# rediacc public-key cache v1\nACCOUNT_ED25519_PUBLIC_KEY=abc\n# secret note\nACCOUNT_PRIVATE_KEY_X=zzz\nOTHER=1\n';
+      fs.writeFileSync(path.join(live, keyRel), text);
+      require_(
+        publicKeyLines(text).join('|') ===
+          '# rediacc public-key cache v1|ACCOUNT_ED25519_PUBLIC_KEY=abc',
+        'only the version header and ACCOUNT_*_PUBLIC_KEY= lines may travel'
+      );
+      seedPublicKeys(lease, live);
+      require_(
+        fs.readFileSync(path.join(lease, keyRel), 'utf8') ===
+          '# rediacc public-key cache v1\nACCOUNT_ED25519_PUBLIC_KEY=abc\n',
+        'the seeded cache must hold the public lines and nothing else'
+      );
+      const bare = path.join(dir, 'bare');
+      fs.mkdirSync(bare);
+      require_(
+        seedPublicKeys(bare, live).includes('no private/account in this tree') &&
+          !fs.existsSync(path.join(bare, keyRel)),
+        'a tree with no private/account gets no cache directory'
       );
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
@@ -2492,6 +3418,19 @@ async function selftest(): Promise<number> {
     const hungPid = Number(fs.readFileSync(hungPidFile, 'utf8').trim());
     fs.rmSync(hungPidFile, { force: true });
     await new Promise((r) => setTimeout(r, 100));
+    // `tail -f` dies at once when the host's inotify instances are exhausted, which reads as "the timer did not fire". Name the cause: the fix is a sysctl, not the timer (`./run.sh setup --check` reports the floor).
+    // CONTROL for the matcher: it must fire on the real kernel text and stay quiet on the timer's own message, or the refusal below is unproven.
+    const inotifyRe = /file watch limit reached|inotify/i;
+    require_(
+      inotifyRe.test('tail: OS file watch limit reached') &&
+        inotifyRe.test('tail: inotify cannot be used, reverting to polling: Too many open files') &&
+        !inotifyRe.test('selftest:hung TIMED OUT after 300ms'),
+      "the host-inotify matcher must match tail's limit messages and not the kill-timer message"
+    );
+    require_(
+      !inotifyRe.test(hung.stderr),
+      `host inotify limit: \`tail -f\` failed with "${hung.stderr.trim().split('\n')[0]}" (fs.inotify.max_user_instances exhausted), so the kill-timer control cannot run; raise it with: sudo sysctl -w fs.inotify.max_user_instances=1024 fs.inotify.max_user_watches=524288 (./run.sh setup writes /etc/sysctl.d/60-rediacc-inotify.conf)`
+    );
     require_(
       hung.timedOutMs === 300 &&
         hung.code === null &&
@@ -2518,7 +3457,7 @@ async function selftest(): Promise<number> {
   require_(cannot[0]?.status === 'blocked', `exit 77 must stay blocked, got ${cannot[0]?.status}`);
   require_(
     cannot[0]?.startAt !== undefined &&
-      cannot[0]?.endAt !== undefined &&
+      cannot[0].endAt !== undefined &&
       cannot[0].endAt >= cannot[0].startAt,
     'the pool must stamp startAt/endAt on a result'
   );
@@ -2535,7 +3474,7 @@ async function selftest(): Promise<number> {
   fs.rmSync(cpuDir, { recursive: true, force: true });
   const kept = cpuRecords.get('selftest:cpu-a');
   require_(
-    kept?.cpu?.[0] === 1500 && kept?.rssMb?.[0] === 120,
+    kept?.cpu?.[0] === 1500 && kept.rssMb?.[0] === 120,
     `cpu/rssMb must survive a cache round trip, got ${JSON.stringify(kept)}`
   );
   require_(
@@ -2567,7 +3506,7 @@ async function selftest(): Promise<number> {
   fs.rmSync(failDir, { recursive: true, force: true });
   const only = failCosts.get('selftest:only-failed');
   require_(
-    only?.cpuMs === 9_000_000 && only?.wallMs === 1_000_000 && only?.perCore === 0.9,
+    only?.cpuMs === 9_000_000 && only.wallMs === 1_000_000 && only.perCore === 0.9,
     `a gate that has only failed must be costed from its failed run, got ${JSON.stringify(only)}`
   );
   require_(
@@ -2624,6 +3563,12 @@ async function selftest(): Promise<number> {
     badSched = true;
   }
   require_(badSched, "CONTROL: --sched core (a typo) must be refused, not read as 'slots'");
+  // W13 (PLAN-ciquick-cpu, carrying PLAN-ci-quick-cpu-scheduling P2): `cores` is the pool's OWN default, not only the runner's, so a caller that names no rule packs by measured width.
+  const schedDefault = await defaultSchedSelftest();
+  require_(schedDefault.length === 0, schedDefault.join('\n'));
+  // W14 (PLAN-ciquick-cpu, carrying PLAN-ci-quick-cpu-scheduling P4): lanes balance on the baseline cost, and `heavy` is the measurement wherever gate-costs.json has one, on fixtures and on the real lock.
+  const lanesCost = laneCostSelftest();
+  require_(lanesCost.length === 0, lanesCost.join('\n'));
 
   // THE INCREMENTAL RECEIPT (input-hash.ts and the carry in this file): INCREMENTAL-PROOF-1..3 and their controls.
   const inc = incrementalSelftest(os.tmpdir());
@@ -2691,7 +3636,7 @@ async function selftest(): Promise<number> {
   }
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
-    // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
+    // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it. The leaves sit outside scripts/ci-runner/, since a change there is a GLOBAL_INPUTS change that selects every scoped gate (rule 1) and would hide the leaf rule the same way.
     const slowSpec = (id: string, leaf: string): GateSpec => ({
       ...syntheticSpec(id, 'true'),
       slow: true,
@@ -2701,8 +3646,8 @@ async function selftest(): Promise<number> {
     });
     const qSpecs = [
       syntheticSpec('selftest:q-fast', 'true'),
-      slowSpec('selftest:q-touched', 'scripts/ci-runner/quick-select.ts'),
-      slowSpec('selftest:q-untouched', 'scripts/ci-runner/gate-spec.ts'),
+      slowSpec('selftest:q-touched', 'scripts/lib/crc32.ts'),
+      slowSpec('selftest:q-untouched', 'scripts/lib/doc-regions.ts'),
     ];
     const deps = (files: string[] | undefined, disposable = false): QuickDiffDeps => ({
       diff: () => ({ files, label: 'selftest-base' }),
@@ -2714,7 +3659,7 @@ async function selftest(): Promise<number> {
       said += t;
     };
     const quick = { ...EMPTY_OPTS, quick: true };
-    const sel = select(qSpecs, quick, capture, deps(['scripts/ci-runner/quick-select.ts']));
+    const sel = select(qSpecs, quick, capture, deps(['scripts/lib/crc32.ts']));
     require_(
       sel.ids.has('selftest:q-touched'),
       '--quick must SELECT a slow gate whose leaf is in the diff'
@@ -2729,7 +3674,7 @@ async function selftest(): Promise<number> {
       `the untouched slow gate must be LISTED as deferred, said: ${said}`
     );
     require_(
-      select(qSpecs, quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts'])).ids.has(
+      select(qSpecs, quick, () => {}, deps(['scripts/lib/doc-regions.ts'])).ids.has(
         'selftest:q-untouched'
       ),
       'CONTROL: the deferred gate must be selectable when ITS leaf changes, or its deferral above says nothing about the diff'
@@ -2762,12 +3707,7 @@ async function selftest(): Promise<number> {
       mutex: ['tree:repo'],
       writesTree: 'appends a fixture row',
     };
-    const wSel = select(
-      [qSpecs[0], writer],
-      quick,
-      capture,
-      deps(['scripts/ci-runner/quick-select.ts'])
-    );
+    const wSel = select([qSpecs[0], writer], quick, capture, deps(['scripts/lib/crc32.ts']));
     require_(
       !wSel.ids.has('selftest:q-touched') &&
         /DROPPED selftest:q-touched.*writes the shared tree/.test(said),
@@ -2780,12 +3720,12 @@ async function selftest(): Promise<number> {
         wDrop[0].id === 'selftest:q-touched' &&
         wDrop[0].kind === 'tree' &&
         wDrop[0].run.includes('--only selftest:q-touched') &&
-        wDrop[0].why.includes('quick-select.ts'),
+        wDrop[0].why.includes('crc32.ts'),
       `a dropped touched gate must reach sel.droppedTouched with kind tree and its --only command, got ${JSON.stringify(wDrop)}`
     );
     require_(
       (
-        select([qSpecs[0], writer], quick, () => {}, deps(['scripts/ci-runner/gate-spec.ts']))
+        select([qSpecs[0], writer], quick, () => {}, deps(['scripts/lib/doc-regions.ts']))
           .droppedTouched ?? ['unset']
       ).length === 0,
       'CONTROL: the same writer with its leaf outside the diff must leave droppedTouched empty'
@@ -2795,18 +3735,13 @@ async function selftest(): Promise<number> {
         [qSpecs[0], writer],
         { ...quick, receiptOut: '/snap/r.json' },
         () => {},
-        deps(['scripts/ci-runner/quick-select.ts'])
+        deps(['scripts/lib/crc32.ts'])
       ).droppedTouched ?? [])[0]?.run.endsWith('--receipt-out /snap/r.json') === true,
       "a dropped gate's command must carry this run's --receipt-out, so its re-run lands in the same receipt"
     );
     // A CLEAN, DISPOSABLE CLONE admits the writer; the shared checkout does not.
     said = '';
-    const dSel = select(
-      [qSpecs[0], writer],
-      quick,
-      capture,
-      deps(['scripts/ci-runner/quick-select.ts'], true)
-    );
+    const dSel = select([qSpecs[0], writer], quick, capture, deps(['scripts/lib/crc32.ts'], true));
     require_(
       dSel.ids.has('selftest:q-touched') &&
         /SELECTED selftest:q-touched \(tree writer; disposable clone/.test(said) &&
@@ -3078,6 +4013,93 @@ async function selftest(): Promise<number> {
       mine === 0,
       `the lone gate's tokens must be released when the pool drains, ${mine} held`
     );
+    // LOAD-AWARE ADMISSION (L1, pool.ts LoadGate): a fake load of 2C starts no gate while it lasts, prints the wait message once, and the bound ends the wait; a fake 0.5C starts the gates at once; a load that falls ends the wait early.
+    {
+      const loadRun = async (
+        read: () => number | undefined,
+        maxWaitMs: number
+      ): Promise<{ startedAt: number[]; said: string[]; ms: number; ok: boolean }> => {
+        const t1 = Date.now();
+        const startedAt: number[] = [];
+        const said: string[] = [];
+        const load: LoadGate = { read, cores: 4, maxWaitMs, pollMs: 10, say: (m) => said.push(m) };
+        const out = await runPool([syntheticSpec('selftest:load-a', 'true')], {
+          jobs: 4,
+          heavyLimit: 1,
+          failFast: false,
+          durations: new Map(),
+          sched: 'cores',
+          budget: { cores: 4, epsilon: 0, maxProcs: 8, memMb: 64 * 1024 },
+          load,
+          exec: async () => {
+            startedAt.push(Date.now() - t1);
+            return { code: 0, stdout: '', stderr: '', ms: 1 };
+          },
+        });
+        return { startedAt, said, ms: Date.now() - t1, ok: out.every((r) => r.status === 'ok') };
+      };
+      const high = await loadRun(() => 8, 150);
+      require_(
+        high.ok &&
+          high.startedAt.length === 1 &&
+          high.startedAt[0] >= 150 &&
+          high.said.length === 2 &&
+          /holding gate starts/.test(high.said[0]) &&
+          /starting gates anyway/.test(high.said[1]),
+        `a load of 2C must hold every start until the bound, print the wait message and the bound message once each, then start the gate, got ${JSON.stringify(high)}`
+      );
+      const calm = await loadRun(() => 2, 150);
+      require_(
+        calm.ok && calm.startedAt.length === 1 && calm.startedAt[0] < 100 && calm.said.length === 0,
+        `a load of 0.5C must start the gate at once and print nothing, got ${JSON.stringify(calm)}`
+      );
+      const t2 = Date.now();
+      const falling = await loadRun(() => (Date.now() - t2 < 60 ? 8 : 1), 5_000);
+      require_(
+        falling.ok &&
+          falling.startedAt[0] >= 50 &&
+          falling.startedAt[0] < 1_000 &&
+          falling.said.length === 1,
+        `a load that falls must end the wait before the bound, got ${JSON.stringify(falling)}`
+      );
+      require_(
+        loadGateFor(undefined, false) !== undefined &&
+          loadGateFor(2, false) === undefined &&
+          loadGateFor(undefined, true) === undefined,
+        'the load gate is built only for a run with no --jobs and no inherited grant'
+      );
+      const unread = await loadRun(() => undefined, 150);
+      require_(
+        unread.ok && unread.startedAt[0] < 100 && unread.said.length === 0,
+        `a machine that reports no load must never hold, got ${JSON.stringify(unread)}`
+      );
+      // A hold clock left armed across a gap with no reading must restart, not end the next wait at once (review c2c50947.1).
+      const gate: LoadGate = { read: () => 8, cores: 4, maxWaitMs: 120_000, pollMs: 2_000 };
+      const state: LoadWaitState = { expired: false };
+      const steady = [0, 2_000, 4_000].map((t) => loadVerdict(gate, state, t));
+      const afterGap = loadVerdict(gate, state, 400_000);
+      const stillHeld = loadVerdict(gate, state, 402_000);
+      // The run's own gates are off the reading: load 8 on 4 cores with 4 of them its own is 4, under the line (review c2c50947.2).
+      const selfLoad = loadVerdict(gate, { expired: false }, 0, 4);
+      const outsideLoad = loadVerdict(gate, { expired: false }, 0, 1);
+      require_(
+        selfLoad === 'go' && outsideLoad === 'wait',
+        `a run's own cores must not count toward the load that holds it, got own=4 ${selfLoad}, own=1 ${outsideLoad}`
+      );
+      const edge: LoadWaitState = { expired: false };
+      let control = 'wait';
+      for (let t = 0; t <= 120_000; t += 2_000) control = loadVerdict(gate, edge, t);
+      require_(
+        steady.every((v) => v === 'wait') &&
+          afterGap === 'wait' &&
+          stillHeld === 'wait' &&
+          control === 'go',
+        `a hold clock must survive polls, restart after a silent gap, and still end at the bound, got ${JSON.stringify({ steady, afterGap, stillHeld, control })}`
+      );
+    }
+    // CORE RELEASE (W12, pool.ts releasedGrant): an elastic gate granted 18 of 24 cores whose workers drop to 4 busy gives cores back, and a queued 15-core gate starts BEFORE it ends; a gate whose workers stay busy keeps its grant, and so does one the reader cannot see.
+    const releaseFailures = [...(await coreReleaseSelftest()), ...(await busySamplerSelftest())];
+    require_(releaseFailures.length === 0, releaseFailures.join('\n'));
     // The borrow through the real pool loop, and the reading (both in sim.ts, so they run with the scheduler's other cases).
     for (const failure of await reclaimLoopSelftest()) require_(false, failure);
   }
@@ -3111,6 +4133,10 @@ async function selftest(): Promise<number> {
   // THE LEASE CLIENT against fake brokers (lease-client.ts).
   const leaseCheck = await leaseClientSelftest(os.tmpdir());
   for (const f of leaseCheck.failures) require_(false, `lease-client: ${f}`);
+
+  // PER-GATE GRANTS for launchers outside the pool (gate-cores.ts, PR-TASK 79b7e92e): a full 4-token lease makes a third take wait until a give, and an unleased run still names every gate's width.
+  const gateCoreFailures = await gateCoresSelftest();
+  require_(gateCoreFailures.length === 0, `gate-cores: ${gateCoreFailures.join('; ')}`);
 
   // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule, the carried-input rule and the chain. 22 assertions.
   {
@@ -3265,9 +4291,21 @@ async function selftest(): Promise<number> {
       gates: { 'g:tree': carriedEntry(['**']) },
     };
     const unreadPlan = plan(carryingOther, ['agent/reviews/x.md']);
+    // PLAN-ciquick-gate-contract R1: a carried verdict over a touched input that no record lists as a reader is re-run ALONE beside the readers and refreshed; it never sends a record-only commit through the lane.
     require_(
-      unreadPlan.kind === 'full' && unreadPlan.why.includes('g:tree'),
-      `a carried verdict over a touched input that is no reader of it must run the lane and be named, got ${JSON.stringify(unreadPlan)}`
+      unreadPlan.kind === 'advance' &&
+        unreadPlan.readers.join() === 'g:plan' &&
+        unreadPlan.refresh.join() === 'g:tree',
+      `a carried verdict over a touched input that is no reader of it must be re-run alone and refreshed, not the lane, got ${JSON.stringify(unreadPlan)}`
+    );
+    const redUnread = plan({ ...carryingOther, exitCode: 1, failed: ['g:tree'] }, [
+      'agent/reviews/x.md',
+    ]);
+    require_(
+      redUnread.kind === 'full' &&
+        redUnread.code === 'red-reader' &&
+        redUnread.why.includes('g:tree'),
+      `CONTROL: the same carried entry listed as failed falls under the red rule and runs the lane, got ${JSON.stringify(redUnread)}`
     );
     // NAME-SHAPED CARRIED INPUTS (W2.4): a carried entry recording `lists`/`names` is stale when the step changed the listing, which no content glob of it sees; one recording `refs` is stale on every step.
     const lsEntry = (p: string): LsEntry => ({ mode: '100644', type: 'blob', oid: 'o', path: p });
@@ -3331,8 +4369,8 @@ async function selftest(): Promise<number> {
       'agent/reviews/new.md',
     ]);
     require_(
-      listNonReader.kind === 'full' && listNonReader.why.includes('g:tree'),
-      `a carried lists entry whose listing moved and that no touched record re-runs must run the lane and be named, got ${JSON.stringify(listNonReader)}`
+      listNonReader.kind === 'advance' && listNonReader.refresh.join() === 'g:tree',
+      `a carried lists entry whose listing moved and that no touched record reads must be re-run alone and refreshed, got ${JSON.stringify(listNonReader)}`
     );
     require_(
       planNamed(
@@ -3340,11 +4378,14 @@ async function selftest(): Promise<number> {
         ['agent/reviews/old.md'],
         () => undefined
       ).kind === 'advance' &&
-        planNamed(
-          { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
-          ['agent/reviews/old.md'],
-          () => undefined
-        ).kind === 'full',
+        (() => {
+          const p = planNamed(
+            { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
+            ['agent/reviews/old.md'],
+            () => undefined
+          );
+          return p.kind === 'advance' && p.refresh.join() === 'g:tree';
+        })(),
       'a tree git cannot list counts a lists entry as moved: the re-run direction, never a carry'
     );
     const refReader = planNamed({ 'g:plan': namedEntry({ refs: ['HEAD'] }) }, [
@@ -3356,9 +4397,9 @@ async function selftest(): Promise<number> {
     require_(
       refReader.kind === 'advance' &&
         refReader.refresh.join() === 'g:plan' &&
-        refOther.kind === 'full' &&
-        refOther.why.includes('g:tree'),
-      `a carried refs entry is stale on every step (a new commit moves HEAD): a reader is refreshed, any other runs the lane, got ${JSON.stringify([refReader, refOther])}`
+        refOther.kind === 'advance' &&
+        refOther.refresh.join() === 'g:tree',
+      `a carried refs entry is stale on every step (a new commit moves HEAD): reader or not, it is re-run and refreshed, got ${JSON.stringify([refReader, refOther])}`
     );
     require_(
       planNamed({ 'g:tree': carriedEntry(['src/**']) }, ['agent/reviews/new.md']).kind ===
@@ -3458,6 +4499,175 @@ async function selftest(): Promise<number> {
         'string' && typeof parseRecordPolicy('not json') === 'string',
       'a malformed policy must be refused with a reason, never half-read'
     );
+    // K2 + K3 WIRED THROUGH decideRanking (PLAN-ciquick-gate-contract): an aged-pin gate in the preflight floor (a clock kind in carry-exempt.json, here 13 s, p_red 0.01 and in neither clock_set nor an association) is ranked into the preflight, and its red stops a --stop-on-stage-red=preflight run when the preflight settles, inside 60 s and long before the 600 s gate ends; nothing reaches the receipt (stopRun exits 3). CONTROL: with no floor the same gate is not preflight and its red stops nothing. The resume order pins the last receipt's failed gate, and only when a prior receipt was read.
+    {
+      const fxGate = (obs: number, pr: number, wall: number) => ({
+        obs,
+        p_red: pr,
+        p_red_by_class: {},
+        wall_ms: wall,
+        class: 'real',
+      });
+      const parsedModel = parseModel(
+        JSON.stringify({
+          v: 1,
+          built_at: '2026-11-28T00:00:00Z',
+          cold_start: { on: false, reason: '' },
+          runs: 20,
+          gates: {
+            'fx:pin-age': fxGate(20, 0.01, 13_000),
+            'fx:slow': fxGate(20, 0.02, 600_000),
+            'fx:other': fxGate(20, 0.05, 30_000),
+            'fx:quiet': fxGate(20, 0.0, 20_000),
+          },
+          clock_set: [],
+          clusters: [],
+          associations: {},
+          companions: [],
+        })
+      );
+      const fxGraph = ['fx:pin-age', 'fx:slow', 'fx:other', 'fx:quiet'].map(
+        (id) => ({ id, run: `true ${id}`, gate: true, leaves: [] }) as unknown as GateSpec
+      );
+      const fxDurations = new Map([
+        ['fx:pin-age', 13_000],
+        ['fx:slow', 600_000],
+        ['fx:other', 30_000],
+        ['fx:quiet', 20_000],
+      ]);
+      const rankWith = (extra: Partial<RunContext>): RankingDecision =>
+        decideRanking(
+          fxGraph,
+          { model: parsedModel, classes: [], carried: [], ...extra } as unknown as RunContext,
+          { jobs: 4, heavyLimit: 1, durations: fxDurations, sched: 'slots' }
+        );
+      // A FAKE CLOCK (review 7de2a5ff.1): every gate starts at 0 and settles at its duration, fed to the stream in settling order; the stop's time is the moment the stream returns it, so a stop that waits on the 600 s gate reads 600 s and fails the 60 s bound.
+      const stopsAt = (decision: RankingDecision): { stop?: StageStop; atMs: number } => {
+        const st = createStream({
+          run: 'r',
+          out: () => {},
+          events: { file: undefined, emit: () => {} },
+          stages: decision.on
+            ? { preflight: decision.order.preflight, stage1: decision.order.stage1 }
+            : undefined,
+          carried: [],
+          stopAt: 'preflight',
+        });
+        const settling = [...fxDurations].sort(([, a], [, b]) => a - b);
+        for (const [id, ms] of settling) {
+          const red = id === 'fx:pin-age';
+          const result: GateResult = {
+            id,
+            gate: true,
+            status: red ? 'fail' : 'ok',
+            ms,
+            exitCode: red ? 1 : 0,
+            stdout: red ? '::finding::pin-age:cli-tool:msys2-libzstd\n' : '',
+            stderr: '',
+            rerun: `npm run ${id}`,
+          };
+          const stop = st.finish(result, ms);
+          if (stop !== undefined) return { stop, atMs: ms };
+        }
+        return { atMs: Math.max(...fxDurations.values()) };
+      };
+      const floored = rankWith({ floor: reuseFloor(new Map([['fx:pin-age', 'clock']])) });
+      const flooredStop = stopsAt(floored);
+      require_(
+        floored.on &&
+          floored.order.preflight.includes('fx:pin-age') &&
+          flooredStop.stop?.stage === 'preflight' &&
+          flooredStop.stop.reds.join() === 'fx:pin-age' &&
+          flooredStop.atMs <= 60_000,
+        `K2: an aged-pin floor gate must be preflight and its red must stop a =preflight run within 60 s, got ${JSON.stringify(floored.on ? floored.order.preflight : floored)} / ${JSON.stringify(flooredStop)}`
+      );
+      const bare = rankWith({});
+      require_(
+        bare.on && !bare.order.preflight.includes('fx:pin-age') && stopsAt(bare).stop === undefined,
+        `K2 CONTROL: with no floor the same gate is not preflight and its red stops nothing, got ${JSON.stringify(bare.on ? bare.order.preflight : bare)}`
+      );
+      const resumed = rankWith({ lastFailed: ['fx:other', 'fx:gone'] });
+      require_(
+        resumed.on && resumed.order.pinned.has('fx:other') && !resumed.order.pinned.has('fx:gone'),
+        `K3: the last receipt's failed gate must be pinned first, and one not about to run dropped, got ${JSON.stringify(resumed.on ? [...resumed.order.pinned] : resumed)}`
+      );
+      require_(
+        bare.on && !bare.order.pinned.has('fx:other'),
+        'K3 CONTROL: with no prior receipt read the same gate is not pinned'
+      );
+      require_(
+        failedOfPrior({ failed: ['a', 1, 'b'] })?.join() === 'a,b' &&
+          failedOfPrior({}) === undefined &&
+          failedOfPrior(undefined) === undefined,
+        'failedOfPrior reads the string ids of a held receipt and nothing else'
+      );
+      const warned: string[] = [];
+      require_(
+        floorOf(
+          '{"schema": 1, "exempt": [{"id": "g:a", "kind": "network"}, {"id": "g:b", "kind": "history"}]}',
+          (l) => warned.push(l)
+        )?.has('g:a') === true &&
+          floorOf('not json', (l) => warned.push(l)) === undefined &&
+          warned.length === 1 &&
+          floorOf(undefined, (l) => warned.push(l)) === undefined,
+        `floorOf: network/clock rows form the floor, an unreadable file is no floor and says so once, got ${JSON.stringify(warned)}`
+      );
+    }
+    // THE PARITY CORPUS (PLAN-ciquick-gate-contract R1): every case of ADVANCE_PARITY_REL gets its expected verdict here, as block_unverified_push plan_advance gives it in test-block_unverified_push.py (PARITY cases).
+    {
+      const corpus = JSON.parse(
+        fs
+          .readFileSync(path.join(REPO_ROOT, ADVANCE_PARITY_REL), 'utf8')
+          // `<carried-reds>` stands for the carry file path, so the json inventory does not read the corpus as its wiring.
+          .replaceAll('<carried-reds>', CARRIED_REL)
+      ) as {
+        cases: Array<{
+          name: string;
+          receipt: unknown;
+          headTree: string;
+          policy: unknown;
+          paths: string[] | null;
+          known?: string[];
+          entries?: Record<string, [string, string, string, string][]>;
+          carried?: Record<string, unknown>;
+          expect: { kind: string; code?: string; readers?: string[]; refresh?: string[] };
+        }>;
+      };
+      const verdictOf = (c: (typeof corpus.cases)[number]) => {
+        const got = planAdvance({
+          receipt: c.receipt,
+          headTree: c.headTree,
+          policy: c.policy === null ? undefined : parseRecordPolicy(JSON.stringify(c.policy)),
+          diff: () => c.paths ?? undefined,
+          known: c.known === undefined ? undefined : new Set(c.known),
+          entriesAt: (t) =>
+            c.entries?.[t]?.map(([mode, type, oid, p]) => ({ mode, type, oid, path: p })),
+          carriedAt: (t) => {
+            const raw = c.carried?.[t];
+            return raw === undefined
+              ? undefined
+              : typeof raw === 'string'
+                ? raw
+                : JSON.stringify(raw);
+          },
+        });
+        return got.kind === 'full'
+          ? { kind: 'full', code: got.code }
+          : { kind: 'advance', readers: got.readers, refresh: got.refresh };
+      };
+      const parted = corpus.cases.filter(
+        (c) => JSON.stringify(verdictOf(c)) !== JSON.stringify(c.expect)
+      );
+      require_(
+        corpus.cases.length >= 30 && parted.length === 0,
+        `planAdvance must give every ${ADVANCE_PARITY_REL} case its expected verdict (block_unverified_push plan_advance does): ${parted
+          .map(
+            (c) =>
+              `${c.name}: got ${JSON.stringify(verdictOf(c))}, want ${JSON.stringify(c.expect)}`
+          )
+          .join('; ')}`
+      );
+    }
     require_(
       Array.isArray(policy) && policy.length === 3,
       'CONTROL: the well-formed fixture policy must parse, or every refusal above is about the parser'
@@ -3717,9 +4927,9 @@ function narrowingFlags(opts: Options): string[] {
   if (opts.changed) flags.push('--changed');
   if (opts.slowRotation !== undefined) flags.push('--slow-rotation');
   if (opts.noDiffSlow) flags.push('--no-diff-slow');
-  // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). A stage stop and --narrow run less than the lane by design.
+  // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). --narrow runs less than the lane by design.
+  // --stop-on-stage-red IS NOT ONE (PLAN-ciquick-gate-contract K2): a run that stops writes no receipt at all (stopRun exits 3 before main reaches it), and a run that does not stop ran the whole lane, so counting the flag marked every green quick-clone run narrowed and the push guard refused its receipt.
   if (opts.failFast) flags.push('--fail-fast');
-  if (opts.stopOnStageRed !== undefined) flags.push('--stop-on-stage-red');
   if (opts.narrow) flags.push('--narrow');
   return flags;
 }
@@ -4654,6 +5864,37 @@ interface RunContext {
   classes: string[];
   carried: CarriedEntry[];
   stopAt?: 'preflight' | '1';
+  /** K2: the preflight floor, carry-exempt.json's clock and network gates (rank.ts reuseFloor); undefined when the file does not read. */
+  floor?: ReadonlySet<string>;
+  /** K3: the newest held receipt's `failed` list; undefined when this run read no prior receipt, which leaves the learned order alone. */
+  lastFailed?: readonly string[];
+}
+
+/** K3: what the resume order adds to a ranking input: the newest receipt's failed gates pinned first and every other gate about to run marked never-run (rank.ts resumeOf), or nothing when no prior receipt was read. */
+function resumeInput(
+  lastFailed: readonly string[] | undefined,
+  run: readonly string[]
+): { failedFirst?: string[]; neverRan?: Set<string> } {
+  return lastFailed === undefined ? {} : resumeOf(lastFailed, run);
+}
+
+/** The `failed` ids of a held receipt, read off the raw document (PriorReceipt does not type the field); undefined when there is no receipt or no list. */
+function failedOfPrior(prior: unknown): string[] | undefined {
+  const failed = (prior as { failed?: unknown } | null | undefined)?.failed;
+  return Array.isArray(failed)
+    ? failed.filter((x): x is string => typeof x === 'string')
+    : undefined;
+}
+
+/** K2: carry-exempt.json's text to the preflight floor; undefined, with the reason printed, when the file is absent or does not read. */
+function floorOf(text: string | undefined, warn: (line: string) => void): Set<string> | undefined {
+  if (text === undefined) return undefined;
+  try {
+    return reuseFloor(exemptRowsOf(text));
+  } catch (e) {
+    warn(`ranking: no preflight floor (${(e as Error).message})\n`);
+    return undefined;
+  }
 }
 
 /** The narrow re-run's two commands, printed by a stage stop. */
@@ -4698,6 +5939,8 @@ function decideRanking(
         width: (id) => byId.get(id)?.cores ?? 1,
         cores: plan.budget?.cores ?? plan.jobs,
         classes: ctx.classes,
+        floor: ctx.floor,
+        ...resumeInput(ctx.lastFailed, gateIds),
       },
       (order) => predictMakespan(graph, { ...plan, order }, machineCores())
     );
@@ -4742,7 +5985,7 @@ async function runGraph(
       return [spec.id, gateTimeoutMs(spec, measured, opts.gateTimeoutMs)] as const;
     })
   );
-  const sched: Sched = opts.sched ?? 'cores';
+  const sched: Sched = opts.sched ?? DEFAULT_SCHED;
   // Under `cores`, --jobs names C, the core budget, rather than a slot count.
   const lease: RunnerLease | undefined =
     sched === 'cores' ? await openLease({ root: REPO_ROOT, warn: humanOut }) : undefined;
@@ -4798,9 +6041,9 @@ async function runGraph(
               : '')
         : `ranking: OFF for this run (${ranking.reason}); today's order runs\n`
     );
-    if (ctx.stopAt !== undefined && !ranking.on)
+    if (!ranking.on)
       humanOut(
-        `ci-runner: --stop-on-stage-red has no stage to stop at, since ranking is OFF; this run goes to the end\n`
+        `ci-runner: ranking is OFF, so neither the stage stop${ctx.stopAt !== undefined ? ` (--stop-on-stage-red=${ctx.stopAt})` : ''} nor the resume order (the last receipt's failed gates first, never-run gates next) applies; this run goes to the end in today's order\n`
       );
     ctx.events.emit({
       ev: 'run-start',
@@ -4882,6 +6125,11 @@ async function runGraph(
     }, 50);
   };
   const cpuSampler = startCpuSampler();
+  // W12: each elastic gate's own busy cores, so the pool can release what its tail no longer uses. `cores` only, like the release itself.
+  const busySampler =
+    sched === 'cores'
+      ? startBusySampler(new Set(graph.filter((s) => s.cores !== undefined).map((s) => s.id)))
+      : undefined;
   let pooled: GateResult[];
   try {
     pooled = await runPool(graph, {
@@ -4897,6 +6145,9 @@ async function runGraph(
       // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
+      busyCores: busySampler?.busyCores,
+      // Only a run sized to the machine waits on its load: a width someone chose, or a nested runner under a grant, is a ceiling the caller owns.
+      load: loadGateFor(opts.jobs, grantFromEnv() !== undefined),
       exec: async (spec, grant: Grant) =>
         softenLocalWarn(
           spec,
@@ -4961,6 +6212,7 @@ async function runGraph(
       },
     });
   } finally {
+    busySampler?.stop();
     lease?.close();
   }
   // A SIGNAL CUT THIS RUN SHORT: its last gate may settle before the handler's exit, and finishing from here would print a footer and a --json document over a run that has no verdict. The handler exits the process; this only stops the run from finishing first.
@@ -4983,6 +6235,12 @@ async function runGraph(
     if (r.overLease !== undefined)
       humanOut(
         `ci-runner: ${r.id} ran on ${r.overLease.granted} core(s) holding ${r.overLease.held} lease token(s): its lease hold reached its bound\n`
+      );
+  // A core release (W12) changes what the pool budgeted mid-gate, so each one is named with when it happened.
+  for (const r of results)
+    if (r.released !== undefined)
+      humanOut(
+        `ci-runner: core release: ${r.id} ${r.released.from} -> ${r.released.to} core(s) at ${Math.round((r.released.at - started) / 1000)} s (its workers went idle; ${r.released.from - r.released.to} core(s) back to the pool)\n`
       );
   return { results, exitCode, wallMs: meta.wallMs, util, startedAt: started, ranking };
 }
@@ -5059,10 +6317,46 @@ type AdvancePlan =
       to: string;
       paths: string[];
       readers: string[];
-      /** Readers whose receipt entry is CARRIED over inputs the step touched: `runAdvance` rewrites each as judged at `to` once it passes there (`refreshCarried`). */
+      /** CARRIED receipt entries whose inputs the step touched, readers or not: `runAdvance` runs each beside the readers and rewrites it as judged at `to` once it passes there (`refreshCarried`). */
       refresh: string[];
     }
-  | { kind: 'full'; why: string };
+  | {
+      kind: 'full';
+      /** The refusal's id, the one block_unverified_push `plan_advance` returns for the same input (scripts/ci-runner/advance-parity.json). */
+      code: AdvanceRefusal;
+      why: string;
+    };
+
+/** Every refusal of the record-only decision, in the order both halves judge them. */
+type AdvanceRefusal =
+  | 'not-whole'
+  | 'schema'
+  | 'no-tree'
+  | 'failed-damaged'
+  | 'red-unlisted'
+  | 'head-unreadable'
+  | 'same-tree'
+  | 'policy'
+  | 'no-diff'
+  | 'outside'
+  | 'unknown-reader'
+  | 'red-reader'
+  | 'carry-file';
+
+/** The parity corpus (PLAN-ciquick-gate-contract R1): this planner and block_unverified_push `plan_advance` must give each case its expected verdict. */
+const ADVANCE_PARITY_REL = 'scripts/ci-runner/advance-parity.json';
+
+/** A record glob as block_unverified_push `record_glob_re` and check_record_paths read it: `**` spans directories, `*` and `?` stop at `/`. Not `globToRegExp`, whose `?` crosses `/`. */
+function recordGlobRe(glob: string): RegExp {
+  const body = glob.replace(/\*\*\/|\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
+    if (token === '**/') return '(?:.*/)?';
+    if (token === '**') return '.*';
+    if (token === '*') return '[^/]*';
+    if (token === '?') return '[^/]';
+    return `\\${token}`;
+  });
+  return new RegExp(`^${body}$`);
+}
 
 /**
  * The carried receipt entries whose recorded inputs cover a changed path. block_unverified_push recomputes every carried entry's `filesHash` at the pushed tree (`_carried_refusal`), so each of these is refused there with "filesHash differs" unless the advance replaces it. Reproduced 2026-11-16: check:ci-plan-bindings is carried in 12 of the last 40 receipts and its `paths` cover agent/plans/**, so a plan-only advance over such a receipt was written by the runner and then refused at the push. Pure.
@@ -5159,90 +6453,120 @@ function advancedReceipt(
 }
 
 /**
- * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, no gate the receipt lists as failed reads a record that moved, and a carried-reds.json change is a shrink of that file alone. A CARRIED verdict whose inputs the step touched is re-run beside the readers (`refresh`), never a reason to run the lane (PLAN-ciquick-gate-contract R1: on 2026-11-28 three such carried gates sent four record-only commits through the whole lane, ~15 min each, while the push guard said "advance"). A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ *
+ * THE SAME DECISION AS block_unverified_push `plan_advance`, refusal for refusal and code for code, pinned by ADVANCE_PARITY_REL on both sides.
  */
 function planAdvance(input: {
   receipt: unknown;
   headTree: string;
   policy: RecordGlob[] | string | undefined;
   diff: (from: string, to: string) => string[] | undefined;
-  known: ReadonlySet<string>;
+  /** The manifest gate ids; undefined skips the check (the guard's call). */
+  known?: ReadonlySet<string>;
   /** The tracked entries of a tree, for carried entries that record `lists` or `names`; absent or undefined counts their inputs as moved. */
   entriesAt?: (tree: string) => readonly LsEntry[] | undefined;
+  /** carried-reds.json text at a tree, undefined when absent; read only when the step touches that file. */
+  carriedAt?: (tree: string) => string | undefined;
 }): AdvancePlan {
+  const full = (code: AdvanceRefusal, why: string): AdvancePlan => ({ kind: 'full', code, why });
   const r = input.receipt as Partial<Receipt> | null | undefined;
   if (r === null || typeof r !== 'object' || r.whole !== true)
-    return { kind: 'full', why: 'no whole-lane receipt to advance' };
+    return full('not-whole', 'no whole-lane receipt to advance');
   if (r.schema !== SCHEMA)
-    return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
+    return full('schema', `the receipt is not schema ${SCHEMA}; a whole run writes one`);
   if (typeof r.headTree !== 'string' || r.headTree === '')
-    return { kind: 'full', why: 'the receipt vouches for no tree' };
+    return full('no-tree', 'the receipt vouches for no tree');
   // A RED RECEIPT ADVANCES ONLY PAST RECORDS ITS REDS DO NOT READ (operator ruling 2026-11-16, judged below once the readers are known). A red with no `failed` list names nothing to compare the readers with, so it runs the lane.
   // A `failed` that is present but not a list of ids is a damaged receipt: reading it as an empty list would advance a receipt that may be red.
   if (
     r.failed !== undefined &&
     (!Array.isArray(r.failed) || r.failed.some((g) => typeof g !== 'string'))
   )
-    return { kind: 'full', why: "the receipt's failed list is not a list of gate ids" };
+    return full('failed-damaged', "the receipt's failed list is not a list of gate ids");
   const failed = Array.isArray(r.failed) ? r.failed : [];
   if (r.exitCode !== 0 && failed.length === 0)
-    return {
-      kind: 'full',
-      why: 'the receipt is red and lists no failed gate to judge the records against',
-    };
+    return full(
+      'red-unlisted',
+      'the receipt is red and lists no failed gate to judge the records against'
+    );
   const chain = Array.isArray(r.advances) ? r.advances : [];
-  const from = chain.length > 0 ? chain[chain.length - 1].to : r.headTree;
-  if (input.headTree === '') return { kind: 'full', why: 'HEAD^{tree} is unreadable' };
-  if (from === input.headTree) return { kind: 'full', why: 'the receipt already names this tree' };
+  let from: unknown = r.headTree;
+  if (chain.length > 0) {
+    const last = chain[chain.length - 1] as Partial<Advance> | null;
+    from = last !== null && typeof last === 'object' ? last.to : undefined;
+    if (typeof from !== 'string' || from === '')
+      return full('no-tree', "the receipt's last advance names no tree");
+  }
+  const start = from as string;
+  if (input.headTree === '') return full('head-unreadable', 'HEAD^{tree} is unreadable');
+  if (start === input.headTree) return full('same-tree', 'the receipt already names this tree');
   if (input.policy === undefined)
-    return { kind: 'full', why: 'HEAD carries no .ci/policy/record-paths.json' };
-  if (typeof input.policy === 'string') return { kind: 'full', why: input.policy };
-  const paths = input.diff(from, input.headTree);
+    return full('policy', 'HEAD carries no .ci/policy/record-paths.json');
+  if (typeof input.policy === 'string') return full('policy', input.policy);
+  const paths = input.diff(start, input.headTree);
   if (paths === undefined || paths.length === 0)
-    return {
-      kind: 'full',
-      why: `git could not list what changed between ${from.slice(0, 9)} and ${input.headTree.slice(0, 9)}`,
-    };
+    return full(
+      'no-diff',
+      `git could not list what changed between ${start.slice(0, 9)} and ${input.headTree.slice(0, 9)}`
+    );
   const policy = input.policy;
   const matching = (p: string): RecordGlob[] =>
     policy.filter(
-      (g) => globToRegExp(g.glob).test(p) && !g.except.some((e) => globToRegExp(e).test(p))
+      (g) => recordGlobRe(g.glob).test(p) && !g.except.some((e) => recordGlobRe(e).test(p))
     );
   const outside = paths.filter((p) => matching(p).length === 0);
   if (outside.length > 0)
-    return {
-      kind: 'full',
-      why: `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`,
-    };
+    return full(
+      'outside',
+      `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`
+    );
   const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort(
     (a, b) => Number(a > b) - Number(a < b)
   );
-  const unknown = readers.filter((id) => !input.known.has(id));
+  const unknown = input.known === undefined ? [] : readers.filter((id) => !input.known?.has(id));
   if (unknown.length > 0)
-    return {
-      kind: 'full',
-      why: `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`,
-    };
+    return full(
+      'unknown-reader',
+      `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`
+    );
   // THE RED RULE. `failed`, `findings` and `exitCode` keep describing the receipt's own tree after an advance (block_unverified_push step_refusal reads them that way). That stays true only for a red gate whose inputs the step did not touch: a failed gate that reads a touched record would be re-run here and its old verdict left standing beside the new one, so the lane runs again and judges it whole.
   const redReaders = readers.filter((id) => failed.includes(id));
   if (redReaders.length > 0)
-    return {
-      kind: 'full',
-      why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
-    };
-  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`). When the step re-runs that gate, its entry is refreshed; when no touched record lists it as a reader, nothing here re-judges it and the guard would refuse the push, so the lane runs.
-  const stale = carriedOverPaths(r.gates, paths, {
-    from,
+    return full(
+      'red-reader',
+      `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`
+    );
+  // A CARRY-FILE STEP: the push guard admits it only as a shrink of that file alone (`carried_shrink_refusal`), so an advance over anything else would be written here and refused there.
+  if (paths.includes(CARRIED_REL)) {
+    const problem = carryStepProblem(
+      paths,
+      start,
+      input.headTree,
+      input.carriedAt ?? (() => undefined),
+      {
+        failed: new Set(failed),
+        findings:
+          r.findings !== null && typeof r.findings === 'object'
+            ? (r.findings as Record<string, unknown>)
+            : {},
+      }
+    );
+    if (problem !== undefined) return full('carry-file', problem);
+  }
+  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`): the push guard recomputes it at the pushed tree, so the step re-runs it beside the readers and refreshes its entry. A carried RED over a touched input falls under the red rule.
+  const refresh = carriedOverPaths(r.gates, paths, {
+    from: start,
     to: input.headTree,
     entriesAt: input.entriesAt ?? (() => undefined),
   });
-  const unread = stale.filter((id) => !readers.includes(id));
-  if (unread.length > 0)
-    return {
-      kind: 'full',
-      why: `the receipt carries ${unread.length} verdict(s) whose inputs changed and that no touched record lists as a reader (${unread.slice(0, 3).join(', ')}${unread.length > 3 ? ', ...' : ''}); the push guard would refuse them at this tree`,
-    };
-  return { kind: 'advance', from, to: input.headTree, paths, readers, refresh: stale };
+  const redRefresh = refresh.filter((id) => failed.includes(id));
+  if (redRefresh.length > 0)
+    return full(
+      'red-reader',
+      `the receipt is red on ${redRefresh.join(', ')}, carried over input(s) the change touched; the lane must judge them again`
+    );
+  return { kind: 'advance', from: start, to: input.headTree, paths, readers, refresh };
 }
 
 /** The record-set policy as HEAD carries it (the guard reads the same copy), parsed; undefined when HEAD has none. */
@@ -5285,24 +6609,31 @@ async function runAdvance(
   humanOut: (text: string) => void
 ): Promise<number> {
   const shown = plan.paths.slice(0, 5).join(', ') + (plan.paths.length > 5 ? ', ...' : '');
+  const extra = plan.refresh.filter((id) => !plan.readers.includes(id));
+  const toRun = [...plan.readers, ...extra];
   humanOut(
     `ci-runner: --quick ADVANCE ${plan.from.slice(0, 9)} -> ${plan.to.slice(0, 9)}: ${plan.paths.length} record path(s) changed (${shown}); ` +
       (plan.readers.length > 0
-        ? `running their ${plan.readers.length} reader(s) instead of the lane: ${plan.readers.join(', ')}\n`
-        : 'no gate reads them, so nothing runs\n')
+        ? `running their ${plan.readers.length} reader(s) instead of the lane: ${plan.readers.join(', ')}`
+        : 'no gate reads them') +
+      (extra.length > 0
+        ? `; re-running ${extra.length} carried verdict(s) whose inputs changed: ${extra.join(', ')}\n`
+        : toRun.length === 0
+          ? ', so nothing runs\n'
+          : '\n')
   );
   let gates: Record<string, number> = {};
   let findings: Record<string, string[] | null> = {};
   let exitCode = 0;
-  if (plan.readers.length > 0) {
+  if (toRun.length > 0) {
     const ran = await runGraph(
-      buildGraph(specs, new Set(plan.readers)),
+      buildGraph(specs, new Set(toRun)),
       opts,
-      `--quick advance (readers of ${plan.paths.length} record path(s))`,
+      `--quick advance (${plan.readers.length} reader(s) of ${plan.paths.length} record path(s), ${extra.length} carried re-run(s))`,
       humanOut
     );
     exitCode = ran.exitCode;
-    ({ gates, findings } = advanceOutcome(plan.readers, ran.results, humanOut));
+    ({ gates, findings } = advanceOutcome(toRun, ran.results, humanOut));
   }
   if (receiptTree(plan.to, headTreeNow()) === '') {
     humanOut(
@@ -5546,6 +6877,102 @@ function narrowChangeSet(
 }
 
 /**
+ * THE LEASE ANCHOR for `--narrow`: the merge-base of the lease's HEAD with the branch the main checkout holds. That is the commit the lease was cut from until the lease merges main in; from then on it is main's tip at that merge. Undefined when git cannot answer, and the receipt reading then applies. `git` is a parameter so the selftest can plant answers.
+ */
+function leaseAnchor(
+  main: string,
+  git: (args: readonly string[]) => string | undefined
+): string | undefined {
+  const branch = git(['-C', main, 'symbolic-ref', '--short', 'HEAD']);
+  const tip = branch
+    ? git(['-C', main, 'rev-parse', branch])
+    : git(['-C', main, 'rev-parse', 'HEAD']);
+  if (tip === undefined || tip === '') return undefined;
+  const base = git(['merge-base', 'HEAD', tip]);
+  return base === undefined || base === '' ? undefined : base;
+}
+
+/** The receipt a lease narrows against, standing in for the copied main receipt: the anchor as head, nothing failed. The copied receipt's fails belong to other work, and re-running them cost about 146 s a run (PLAN-drain-throughput DT7). Pure, so the selftest pins that the lease branch never reads a receipt. */
+function leaseReceipt(leaseBase: string): Partial<Receipt> {
+  return { head: leaseBase, failed: [], findings: {} };
+}
+
+/** The receipt `--narrow` judges against: a lease's anchor stand-in WITHOUT calling `read` (the copied main receipt is never consulted there), else the parsed receipt `read` returns, undefined when it cannot be read, cannot be parsed, or parses to anything but a JSON object (`null` included). */
+export function narrowReceipt(
+  leaseBase: string | undefined,
+  read: () => string
+): Partial<Receipt> | undefined {
+  if (leaseBase !== undefined) return leaseReceipt(leaseBase);
+  try {
+    const parsed: unknown = JSON.parse(read());
+    return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)
+      ? (parsed as Partial<Receipt>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The runner's own sources and the inputs its `--selftest` reads: any edit to one changes the key. */
+const SELFTEST_KEY_ROOTS = ['scripts/ci-runner', 'scripts/lib', 'package.json'];
+
+/** SHA-256 over every file under the key roots (path and bytes, sorted), every directory named `node_modules` skipped and `__tests__` included: a test edit changes what the selftest drives. Pure over `root`. */
+export function selftestKey(root: string): string {
+  const hash = createHash('sha256');
+  const walk = (rel: string): void => {
+    const abs = path.join(root, rel);
+    const stat = fs.statSync(abs, { throwIfNoEntry: false });
+    if (stat === undefined) return;
+    if (stat.isDirectory()) {
+      for (const name of fs.readdirSync(abs).sort())
+        if (name !== 'node_modules') walk(path.join(rel, name));
+      return;
+    }
+    hash.update(`${rel}\0`);
+    hash.update(fs.readFileSync(abs));
+  };
+  for (const rel of SELFTEST_KEY_ROOTS) walk(rel);
+  return hash.digest('hex');
+}
+
+/** Where a lease's selftest pass is recorded: under the home directory, outside every tree, one empty file per source key. */
+const SELFTEST_PASS_DIR = path.join(os.homedir(), '.cache', 'rediacc-selftest-pass');
+
+/**
+ * `--selftest`, skipped in a lease when the same runner sources already passed it. The 17 s preflight of `npm run ci -- --narrow` re-proved an unchanged runner on every call (PLAN-drain-throughput DT7). Only a lease takes the shortcut: the main checkout and CI always run it, because the receipt is minted only by a runner that proved it can fail. A pass is recorded only by a real run that returned 0, and the key covers every runner source, so a runner edit in the lease runs the selftest again.
+ */
+async function selftestCached(
+  io: {
+    inLease: boolean;
+    force: boolean;
+    passDir: string;
+    key: () => string;
+    run: () => Promise<number>;
+  } = {
+    inLease: leaseMainOf(REPO_ROOT) !== undefined,
+    force: process.env.CI_RUNNER_SELFTEST_FORCE === '1',
+    passDir: SELFTEST_PASS_DIR,
+    key: () => selftestKey(REPO_ROOT),
+    run: selftest,
+  }
+): Promise<number> {
+  if (!io.inLease || io.force) return io.run();
+  const marker = path.join(io.passDir, io.key());
+  if (fs.existsSync(marker)) {
+    process.stderr.write('ci-runner: --selftest skipped: these runner sources already passed it\n');
+    return 0;
+  }
+  const code = await io.run();
+  if (code === 0) {
+    // tree-write: safe the pass marker sits under the home directory (the selftest passes a temp dir), outside every tree
+    fs.mkdirSync(io.passDir, { recursive: true });
+    // tree-write: safe the pass marker sits under the home directory (the selftest passes a temp dir), outside every tree
+    fs.writeFileSync(marker, '');
+  }
+  return code;
+}
+
+/**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
 function narrowPlan(
@@ -5555,16 +6982,15 @@ function narrowPlan(
   anchors: readonly Anchor[],
   carried: readonly CarriedEntry[]
 ): { ids?: Set<string>; lines: string[]; error?: string } {
+  const leaseMain = leaseMainOf(REPO_ROOT);
+  const leaseBase = leaseMain === undefined ? undefined : leaseAnchor(leaseMain, gitTry);
   const dest = receiptPathFor(opts);
-  let receipt: Partial<Receipt>;
-  try {
-    receipt = JSON.parse(fs.readFileSync(dest, 'utf8')) as Partial<Receipt>;
-  } catch {
+  const receipt = narrowReceipt(leaseBase, () => fs.readFileSync(dest, 'utf8'));
+  if (receipt === undefined)
     return {
       lines: [],
       error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
     };
-  }
   const gates = specs.filter((s) => s.gate);
   const known = new Set(gates.map((s) => s.id));
   const findings = receipt.findings ?? {};
@@ -5632,7 +7058,7 @@ function narrowPlan(
     return a.length === 0 ? '0' : `${a.length}: ${a.join(', ')}`;
   };
   const lines = [
-    `ci-runner: --narrow from ${dest} (tree ${(receipt.headTree ?? '').slice(0, 9) || '(none)'}, head ${head.slice(0, 9) || '(none)'}, ${failed.length} failed, ${carriedF.length} of them carried):\n`,
+    `ci-runner: --narrow from ${leaseBase === undefined ? dest : `the lease base ${leaseBase.slice(0, 9)} (main receipt not read)`} (tree ${(receipt.headTree ?? '').slice(0, 9) || '(none)'}, head ${head.slice(0, 9) || '(none)'}, ${failed.length} failed, ${carriedF.length} of them carried):\n`,
     `  F  non-carried fails ${list(F)}\n`,
     `  C  their learned clusters ${list(C)}${modelNote}\n`,
     changed === undefined
@@ -5704,7 +7130,7 @@ async function main(): Promise<number> {
       return 1;
     }
   }
-  if (opts.selftest) return selftest();
+  if (opts.selftest) return selftestCached();
 
   const specs = await loadManifest(opts.manifest);
   if (specs.length === 0) {
@@ -5758,6 +7184,7 @@ async function main(): Promise<number> {
       diff: (from, to) =>
         gitTry(['diff', '--name-only', '--no-renames', from, to])?.split('\n').filter(Boolean),
       known: new Set(specs.map((spec) => spec.id)),
+      carriedAt: (tree) => gitTry(['show', `${tree}:${CARRIED_REL}`]),
       entriesAt: (() => {
         const memo = new Map<string, LsEntry[] | undefined>();
         return (tree: string) => {
@@ -5816,10 +7243,14 @@ async function main(): Promise<number> {
     throw err;
   }
   if (opts.list) {
-    for (const spec of specs) {
-      if (spec.gate && !selection.ids.has(spec.id)) continue;
-      process.stdout.write(`${spec.gate ? 'gate ' : 'prereq'} ${spec.id.padEnd(48)} ${spec.run}\n`);
+    const rows = listRows(specs, selection.ids);
+    // `--json` was ignored here until 2026-11-23, so `--list --json` printed the text table and a reader asking whether a gate is slow or what it needs got neither (PLAN-ciquick-cpu W13's Accept reads exactly that).
+    if (opts.json) {
+      process.stdout.write(`${JSON.stringify(rows, null, 2)}\n`);
+      return 0;
     }
+    for (const row of rows)
+      process.stdout.write(`${row.gate ? 'gate ' : 'prereq'} ${row.id.padEnd(48)} ${row.run}\n`);
     return 0;
   }
 
@@ -5833,8 +7264,10 @@ async function main(): Promise<number> {
   let carry = new Map<string, PriorGate>();
   let hashes = new Map<string, GateHash>();
   let salt = '';
+  let lastFailed: string[] | undefined;
   if (recording && headTreeAtStart !== '') {
     const priors = loadPriorReceipts(receiptPathFor(opts));
+    lastFailed = failedOfPrior(priors[0]) ?? (priors.length > 0 ? [] : undefined);
     // NOTHING CARRIES when quick-clone.ts says so: a clone made this run holds no build output while a carried prerequisite leaves `needs` and is not rebuilt, and `--no-carry` asks for every gate to be judged again.
     const noCarry = process.env[NO_CARRY_ENV] === '1';
     if (noCarry) humanOut('incremental: carry is off for this run, every selected gate runs\n');
@@ -5968,6 +7401,10 @@ async function main(): Promise<number> {
     classes,
     carried,
     stopAt: opts.stopOnStageRed,
+    floor: synthetic
+      ? undefined
+      : floorOf(gitTry(['show', `${headTreeAtStart || 'HEAD'}:${CARRY_EXEMPT_REL}`]), humanOut),
+    lastFailed,
   };
   abortHooks.push(() => {
     events.emit({ ev: 'run-end', run: runId, exit: null, receipt: 'none', why: 'signal' });

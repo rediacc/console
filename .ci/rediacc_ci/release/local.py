@@ -1,10 +1,13 @@
-"""Publish an edge release from the local machine (box W2-B of agent/plans/PLAN-local-release.md).
+"""Publish an edge release, or promote edge to stable, from the local machine (box W2-B of agent/plans/PLAN-local-release.md; the stable path is box S7 of agent/plans/PLAN-retire-nightlies-and-mentions.md).
 
     npm run release:local -- --channel edge [--dry-run] [--workers-only [--regions eu,us] [--branch-release]]
+    RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z npm run release:local -- --channel stable [--dry-run]
 
 npm consumes a `--dry-run` placed before `--`, so the flag goes after it: `npm run release:local -- --channel edge --dry-run`.
 
-EDGE ONLY. Public eu/us/asia run on ONE shared Worker set (`account-<r>`, `proxy-<r>` and `signer-<r>` per region at `<r>.rediacc.cloud`, plus `www`; ENVIRONMENT=edge, regions.json; PLAN-product-domain-rename ruling 5), so an edge run is what deploys public production. `--channel stable` is refused here, with or without `--workers-only`, and names cd-release-stable.yml: stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12), promoted through CI/CD only (operator ruling ASKED:2026-10-27T09:45Z). cd-release-edge.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
+EDGE ONLY. Public eu/us/asia run on ONE shared Worker set (`account-<r>`, `proxy-<r>` and `signer-<r>` per region at `<r>.rediacc.cloud`, plus `www`; ENVIRONMENT=edge, regions.json; PLAN-product-domain-rename ruling 5), so an edge run is what deploys public production. cd-release-edge.yml keeps releasing edge on merge, so this entry is a second edge path, and the two share the release lock: the R2 sentinel `cli/v<V>/.released` and the tag/Release check of `check_existing_release`.
+
+STABLE IS A PROMOTION, AND IT ALWAYS ASKS. Stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12). The operator's answer to Q1 of PLAN-retire-nightlies-and-mentions (2026-11-16, "also allow release:local for stable") lifted the 2026-10-27 refusal, so `--channel stable` is a second promotion path beside the cd-release-stable.yml dispatch. It refuses before reading anything, the dry run included, unless its environment carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`; block_unasked_release proves that minute against the operator's answer before the run starts. It cuts, builds, seals and tags nothing and takes none of `--workers-only`, `--regions`, `--branch-release` or `--commit`: `STABLE_STEPS` reads the live edge version (`cli/edge/manifest.json`), runs `local_gates --channel stable` (the stable soak gate: tagged, sealed, an edge record with smoke_rc 0, SOAK_DAYS old), refuses when a merged PR labelled `rollback` landed since the edge tag, then does what the promote job of cd-release-stable.yml does in the same order: `promote_r2_to_stable`, the Docker `:<V>` to `:stable` retags of renet and rdc, `verify_stable_endpoints`, and `mark_production` last, since it claims the version is live. Its dry run reads the edge record through the public releases origin, so the soak is judged with no secret.
 
 `--workers-only` deploys those shared edge Workers (www, and per region the signer, account and proxy) from the release clone of HEAD, at the version `cli/edge/manifest.json` names; it cuts, builds, seals, tags and publishes no CLI.
 
@@ -56,16 +59,24 @@ from rediacc_ci import paths
 from rediacc_ci import proc as child_proc
 from rediacc_ci.core import awscli, bws_env, gh_retry
 from rediacc_ci.deploy import deploy_record
-from rediacc_ci.release import create_github_release, local_gates, order
+from rediacc_ci.release import cache_prune, create_github_release, local_gates, order
 
 SELF = "rediacc_ci.release.local"
 CHANNEL = "edge"
-CHANNELS = ("edge", "stable")
-STABLE_REFUSAL = (
-    "--channel stable is the CLI channel Enterprise company Workers ride through rings, promoted "
-    "through CI/CD only (.github/workflows/cd-release-stable.yml); release:local publishes edge "
-    "(operator ruling ASKED:2026-10-27T09:45Z)"
+STABLE = "stable"
+CHANNELS = (CHANNEL, STABLE)
+# Every stable run asks, the dry run included (PLAN-retire-nightlies-and-mentions S7: "keeping RELEASE_ASKED required for every stable run").
+STABLE_ASK_REFUSAL = (
+    "--channel stable promotes the CLI channel Enterprise company Workers ride through rings, so "
+    "every stable run, the dry run included, needs RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z naming "
+    "the operator's answer"
 )
+STABLE_USAGE = (
+    "--workers-only, --regions, --branch-release and --commit apply to --channel edge only"
+)
+# The Docker images cd-release-stable.yml retags `:<V>` -> `:stable`.
+STABLE_IMAGES = ("renet", "rdc")
+ROLLBACK_LABEL = "rollback"
 SECTIONS = (
     "version",
     "gates",
@@ -79,6 +90,7 @@ SECTIONS = (
     "release",
     "record",
 )
+STABLE_SECTIONS = ("version", "gates", "promote", "verify")
 RETRIES_NO_FAIL = 3
 # Seconds slept before the 2nd and 3rd attempt of a `can_fail=False` row: a transient remote or R2 error gets time to clear.
 RETRY_BACKOFF = (5.0, 20.0)
@@ -118,6 +130,7 @@ SUMS_NAME = "SHA256SUMS"
 PREREQS = {
     "full": ("git", "docker", "gh", "npm", "node", "gpg", "aws"),
     "workers": ("git", "gh", "npm", "aws"),
+    "stable": ("git", "gh", "docker", "aws", "curl", "jq"),
 }
 GH_CREDENTIAL = 'git config credential.helper "" && git config --add credential.helper "!gh auth git-credential"'
 
@@ -161,13 +174,11 @@ class Step:
         )
 
 
-# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`). The www Worker takes live billing: the live key and the live EU webhook secret, a pair that stays together.
+# The store names the www Worker secrets read under another spelling (cd-deploy-worker.yml `Set Worker secrets`).
 WWW_BINDS = (
     "AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY_EU > AWS_SES_SECRET_ACCESS_KEY",
     "AWS_SES_REGION_EU > AWS_SES_REGION",
-    "STRIPE_SECRET_KEY > STRIPE_SECRET_KEY",
-    "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET",
 )
 TURNSTILE = ("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY",)
 # The www pages build reads the same widget's site key under Astro's public spelling; seven www forms render no widget without it (production 2026-11-12).
@@ -355,6 +366,10 @@ def _table() -> tuple[Step, ...]:
                 "--rm",
                 "--platform",
                 "linux/arm64",
+                "--user",
+                "{uid}:{gid}",
+                "-e",
+                "HOME=/tmp",
                 "-v",
                 "{clone}:/w",
                 "-w",
@@ -598,6 +613,13 @@ def _table() -> tuple[Step, ...]:
             profiles=("r2-artifacts",),
             env=(("SNAPSHOT_VERSION", "{version}"),),
         ),
+        # PLAN-release-credits-compliance M2: the exact-version source of every third-party binary renet embeds, mirrored write-once beside the release that conveys the binaries (cd-stage.yml runs the same module).
+        Step(
+            "mirror-third-party-src",
+            "stage",
+            (*PY, "rediacc_ci.deploy.mirror_third_party_src"),
+            profiles=("r2-artifacts",),
+        ),
         Step(
             "upload-repos-r2",
             "stage",
@@ -711,6 +733,25 @@ def _table() -> tuple[Step, ...]:
             ),
             profiles=("r2-artifacts",),
         ),
+        # The notes are computed once and uploaded to the immutable cli/v<V>/ prefix before any deploy reads them (PLAN-release-notes D8); github-release renders its body from the same file.
+        Step(
+            "release-notes",
+            "publish",
+            (
+                *PY,
+                "rediacc_ci.release.create_github_release",
+                "--write-notes-json",
+                "dist/release-notes.json",
+                "--upload-notes",
+            ),
+            env=(
+                ("VERSION", "{version}"),
+                ("GITHUB_REPOSITORY", "{repo}"),
+                ("GITHUB_SHA", "{sha}"),
+            ),
+            profiles=("r2-artifacts",),
+            gh_env=("GH_TOKEN",),
+        ),
         Step(
             "promote-renet",
             "publish",
@@ -727,27 +768,6 @@ def _table() -> tuple[Step, ...]:
             _retag(
                 "--image-path", server, "edge", "{version}", "--push-latest", "--skip-if-exists"
             ),
-        ),
-        Step(
-            "stripe-sync",
-            "publish",
-            ("npx", "--no-install", "tsx", "scripts/stripe-sync.ts"),
-            profiles=("release-local",),
-            cwd="clone:private/account",
-        ),
-        Step(
-            "stripe-webhook",
-            "publish",
-            (
-                "npx",
-                "--no-install",
-                "tsx",
-                "private/account/scripts/verify-webhook.ts",
-                "--expected-url",
-                "https://{domain}/account/api/v1/webhooks/stripe",
-            ),
-            profiles=("release-local",),
-            per_region=True,
         ),
         Step(
             "cleanup-channel-tags",
@@ -1111,7 +1131,12 @@ def _table() -> tuple[Step, ...]:
             "github-release",
             "release",
             (*PY, "rediacc_ci.release.create_github_release"),
-            env=(("VERSION", "{version}"), ("GITHUB_REPOSITORY", "{repo}")),
+            env=(
+                ("VERSION", "{version}"),
+                ("GITHUB_REPOSITORY", "{repo}"),
+                ("GITHUB_SHA", "{sha}"),
+                ("RELEASE_NOTES_JSON", "dist/release-notes.json"),
+            ),
             gh_env=("GH_TOKEN",),
         ),
         # ---- 11. the release record
@@ -1129,6 +1154,70 @@ def _table() -> tuple[Step, ...]:
 
 
 STEPS: tuple[Step, ...] = _table()
+
+
+def _stable_table() -> tuple[Step, ...]:
+    """The stable promotion, in the order of cd-release-stable.yml's promote and verify jobs. Every row runs in this checkout (`cwd="root"`): a promotion builds nothing, so no release clone is read."""
+    return (
+        Step(
+            "edge-version",
+            "version",
+            (),
+            cwd="root",
+            kind="channel-version",
+            capture="version",
+            readonly=True,
+        ),
+        Step(
+            "gates",
+            "gates",
+            (*PY, "rediacc_ci.release.local_gates", "--channel", STABLE, "--version", "{version}"),
+            profiles=("r2-artifacts",),
+            cwd="root",
+            kind="gates",
+            readonly=True,
+        ),
+        Step("rollback-labels", "gates", (), cwd="root", kind="rollback-labels", readonly=True),
+        Step(
+            "promote-r2",
+            "promote",
+            (*PY, "rediacc_ci.deploy.promote_r2_to_stable"),
+            profiles=("release-local", "deploy-workers"),
+            binds=(
+                "CLOUDFLARE_R2_ACCESS_KEY_ID > AWS_ACCESS_KEY_ID",
+                "CLOUDFLARE_R2_SECRET_ACCESS_KEY > AWS_SECRET_ACCESS_KEY",
+            ),
+            env=(("EDGE_VERSION", "{version}"), ("AWS_DEFAULT_REGION", "auto")),
+            cwd="root",
+        ),
+        *(
+            Step(
+                "promote-%s" % image,
+                "promote",
+                _retag("--image", image, "{version}", STABLE),
+                cwd="root",
+            )
+            for image in STABLE_IMAGES
+        ),
+        Step(
+            "verify-stable",
+            "verify",
+            (*PY, "rediacc_ci.deploy.verify_stable_endpoints"),
+            cwd="root",
+        ),
+        # After the verification, never before: the production markers claim the version is live and serving (cd-release-stable.yml).
+        Step(
+            "mark-production",
+            "verify",
+            (*PY, "rediacc_ci.release.mark_production", "{version}"),
+            env=(("GITHUB_REPOSITORY", "{repo}"),),
+            gh_env=("GH_TOKEN",),
+            cwd="root",
+        ),
+    )
+
+
+STABLE_STEPS: tuple[Step, ...] = _stable_table()
 
 
 def plan(
@@ -1234,6 +1323,8 @@ def base_context(
         account_pointer=account,
         repo=m.group(1) if m else "",
         clone=str(root / CLONE_REL / tree),
+        uid=str(os.getuid()),
+        gid=str(os.getgid()),
         workers_only="true" if workers_only else "",
         branch_release="",
         build_meta="",
@@ -1420,6 +1511,69 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
     return GateResult([r.line() for r in refusals], notes, 1 + len(ancestry_unjudged))
 
 
+def public_record(releases_origin: str) -> Callable[[str], tuple[dict[str, Any] | None, str]]:
+    """The edge record read through the public releases origin, which writes nothing and needs no credential (the dry-run replacement of `local_gates.live_record`): (record, "") or (None, "absent") or (None, why it could not be read)."""
+
+    def read(key: str) -> tuple[dict[str, Any] | None, str]:
+        url = "%s/%s" % (releases_origin.rstrip("/"), key)
+        try:
+            proc = subprocess.run(
+                ["curl", "-s", "-w", "\n%{http_code}", url],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=60,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            return None, "could not be read: %s" % exc
+        body, _sep, status = proc.stdout.rpartition("\n")
+        if proc.returncode != 0:
+            return None, "could not be read: curl exited %d" % proc.returncode
+        if status == "404":
+            return None, "absent"
+        if status != "200":
+            return None, "could not be read: HTTP %s from %s" % (status, url)
+        try:
+            doc = json.loads(body)
+        except ValueError as exc:
+            return None, "could not be read: not JSON (%s)" % exc
+        return (doc, "") if isinstance(doc, dict) else (None, "could not be read: not an object")
+
+    return read
+
+
+def dry_stable_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResult:
+    """`local_gates.check` on the stable channel with every writing or credentialed reader replaced by a read-only one: origin/main by `git ls-remote`, the sentinel and the edge record through the public releases origin, and no release clone."""
+    notes = [
+        "local-gates: clone: not judged under --dry-run (it writes the release clone %s)"
+        % paths_rel(root, pathlib.Path(ctx["clone"]))
+    ]
+    ancestry_unjudged: list[str] = []
+
+    def ancestor(r: pathlib.Path, base: str, head: str) -> bool | None:
+        verdict = local_gates.live_ancestor(r, base, head)
+        if verdict is None:
+            ancestry_unjudged.append(base[:12])
+        return True if verdict is None else verdict
+
+    refusals = local_gates.check(
+        root,
+        STABLE,
+        fetch=_ls_remote_main,
+        ancestor=ancestor,
+        sentinel=public_sentinel(ctx["releases_origin"]),
+        record=public_record(ctx["releases_origin"]),
+        version=version,
+        clone=lambda _r, _t, _h: None,
+    )
+    notes.extend(
+        "local-gates: origin-main: whether origin/main %s is an ancestor of HEAD is not judged under --dry-run (the object is not fetched)"
+        % base
+        for base in ancestry_unjudged
+    )
+    return GateResult([r.line() for r in refusals], notes, 1 + len(ancestry_unjudged))
+
+
 def paths_rel(root: pathlib.Path, path: pathlib.Path) -> str:
     try:
         return str(path.relative_to(root))
@@ -1437,9 +1591,10 @@ def filter_workers(lines: list[str], workers_only: bool) -> list[str]:
 # --------------------------------------------------------------------------- prerequisites
 
 
-def prereq_refusals(workers_only: bool) -> list[str]:
+def prereq_refusals(workers_only: bool, channel: str = CHANNEL) -> list[str]:
     found: list[str] = []
-    for tool in PREREQS["workers" if workers_only else "full"]:
+    kind = STABLE if channel == STABLE else "workers" if workers_only else "full"
+    for tool in PREREQS[kind]:
         if tool == "aws":
             try:
                 ok = awscli.resolve() is not None
@@ -1694,6 +1849,62 @@ def internal_channel_version(step: Step, run: Run) -> int:
     return 0
 
 
+def _tag_date(root: pathlib.Path, version: str) -> str:
+    """The date the tag `v<version>` was made (an annotated tag's tagger date, else its commit's date) as `YYYY-MM-DD`, or "" when the tag is not in this checkout."""
+    rc, out = _git(root, "for-each-ref", "--format=%(creatordate:short)", "refs/tags/v%s" % version)
+    return out.splitlines()[0].strip() if rc == 0 and out.strip() else ""
+
+
+def rollback_refusal(count: str, since: str) -> str:
+    """ "" when the rollback-label search found nothing, else why the promotion stops. A count that is not a number is a search that did not answer, and refuses."""
+    if not count.strip().isdigit():
+        return "the rollback-label search answered %r, not a count; the promotion stops" % count
+    if int(count) > 0:
+        return (
+            "%s merged PR(s) labelled %s since %s; the promotion stops (cd-release-stable.yml "
+            "blocks on the same search)" % (count.strip(), ROLLBACK_LABEL, since)
+        )
+    return ""
+
+
+def internal_rollback_labels(step: Step, run: Run) -> int:
+    """cd-release-stable.yml's "Check for rollback labels": a merged PR labelled `rollback` since the edge version's tag stops the promotion. Read-only (`gh pr list` through gh_retry), so the dry run runs it too; a tag this checkout lacks or a search that fails refuses."""
+    version = str(run.ctx.get("version") or "")
+    since = _tag_date(run.root, version) if version else ""
+    if not since:
+        print(
+            "%s: %s: the tag v%s is not in this checkout, so the rollback-label search has no date"
+            % (SELF, step.id, version or "<version?>"),
+            file=sys.stderr,
+        )
+        return 1
+    argv = [
+        *PY,
+        "rediacc_ci.core.gh_retry",
+        "rollback-label search",
+        "--",
+        "pr",
+        "list",
+        "--repo",
+        run.ctx.get("repo") or "",
+        "--state",
+        "merged",
+        "--search",
+        "merged:>=%s label:%s" % (since, ROLLBACK_LABEL),
+        "--json",
+        "number",
+        "--jq",
+        "length",
+    ]
+    rc, out = run.runner(argv, run.root, child_env(step, run.ctx, run.root), True)
+    why = rollback_refusal(out, since) if rc == 0 else "the rollback-label search exited %d" % rc
+    if why:
+        print("%s: %s: %s" % (SELF, step.id, why), file=sys.stderr)
+        return 1
+    print("%s: %s: no merged PR labelled %s since %s" % (SELF, step.id, ROLLBACK_LABEL, since))
+    return 0
+
+
 def internal_gates(step: Step, run: Run) -> int:
     """The gates as a child under the r2-artifacts profile, so the lock's sentinel read has its credential and this process none."""
     env = child_env(step, run.ctx, run.root)
@@ -1856,6 +2067,7 @@ INTERNAL = {
     "tag-record": internal_tag_record,
     "stamp": internal_stamp,
     "release-record": internal_release_record,
+    "rollback-labels": internal_rollback_labels,
 }
 
 
@@ -2472,6 +2684,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         parser.error("--regions applies to --workers-only")
     if args.branch_release and (args.channel != CHANNEL or not args.workers_only):
         parser.error(BRANCH_RELEASE_USAGE)
+    if args.channel == STABLE and (args.workers_only or args.commit):
+        parser.error(STABLE_USAGE)
     return args
 
 
@@ -2499,10 +2713,13 @@ def main(
     heads: local_gates.Heads = local_gates.live_heads,
 ) -> int:
     args = parse(argv)
-    if args.channel != CHANNEL:
-        print("%s: refused: %s" % (SELF, STABLE_REFUSAL), file=sys.stderr)
-        return 2
-    asked = os.environ.get("RELEASE_ASKED", "")
+    asked = os.environ.get(ASK_ENV, "")
+    if args.channel == STABLE:
+        # Before anything is read, the dry run included.
+        if not local_gates.ASKED_RE.fullmatch(asked):
+            print("%s: refused: %s (got %r)" % (SELF, STABLE_ASK_REFUSAL, asked), file=sys.stderr)
+            return 2
+        return stable_main(args, asked, root=root, runner=runner, gates=gates, internal=internal)
     if args.branch_release and not local_gates.ASKED_RE.fullmatch(asked):
         print(
             "%s: refused: --branch-release needs %s=ASKED:<YYYY-MM-DDTHH:MM>Z naming the operator's answer (got %r)"
@@ -2548,7 +2765,15 @@ def main(
     ctx["run_id"] = "%s-%s" % (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()), uuid.uuid4().hex[:8])
     ctx["out"] = str(root / CLONE_REL / ("out-%s" % ctx["run_id"]))
     run = Run(root, ctx, runner=runner, internal={**INTERNAL, **(internal or {})})
-    rc = run.execute(steps)
+    store = root / CLONE_REL
+    try:
+        with cache_prune.run_lock(store):
+            rc = run.execute(steps)
+    except cache_prune.PruneRefusedError as err:
+        print("%s: refused: %s" % (SELF, err), file=sys.stderr)
+        return 2
+    if rc == 0 and not run.failed:
+        _prune_after(store)
     if run.failed:
         print(
             "%s: stopped at %s; the release record names every step's rc and wall time"
@@ -2558,6 +2783,69 @@ def main(
     for line in sealed_untagged(run):
         print("%s: %s" % (SELF, line), file=sys.stderr)
     return rc
+
+
+def stable_main(
+    args: argparse.Namespace,
+    asked: str,
+    *,
+    root: pathlib.Path | None,
+    runner: Runner,
+    gates: Callable[..., GateResult] | None,
+    internal: dict[str, Callable[[Step, Run], int]] | None,
+) -> int:
+    """A stable promotion, past the ask: `STABLE_STEPS` in order, or their dry run. A real run takes the same launch check, prerequisites and store lock as an edge run; it writes no release-run record, since it pushes no git ref (mark_production moves `production` through the GitHub API)."""
+    root = root or paths.repo_root()
+    ctx = base_context(root, [], False)
+    ctx["channel"] = STABLE
+    ctx["asked"] = asked
+    steps = list(STABLE_STEPS)
+    if args.dry_run:
+        return dry_run(root, args, steps, ctx, runner, gates or dry_stable_gates)
+    module = _release_run_module(root)
+    why = module.entry_refusal(root, os.getpid())
+    if why:
+        print(
+            "%s: refused: this process is not the release entry: %s" % (SELF, why), file=sys.stderr
+        )
+        print(
+            "%s: launch it as `%s=%s npm run release:local -- --channel stable`"
+            % (SELF, ASK_ENV, asked),
+            file=sys.stderr,
+        )
+        return 2
+    refused = prereq_refusals(False, STABLE)
+    if refused:
+        for line in refused:
+            print("%s: %s" % (SELF, line))
+        return 1
+    ctx["run_id"] = "%s-%s" % (time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()), uuid.uuid4().hex[:8])
+    ctx["out"] = str(root / CLONE_REL / ("out-%s" % ctx["run_id"]))
+    run = Run(root, ctx, runner=runner, internal={**INTERNAL, **(internal or {})})
+    try:
+        with cache_prune.run_lock(root / CLONE_REL):
+            rc = run.execute(steps)
+    except cache_prune.PruneRefusedError as err:
+        print("%s: refused: %s" % (SELF, err), file=sys.stderr)
+        return 2
+    if run.failed:
+        print("%s: stopped at %s" % (SELF, run.failed), file=sys.stderr)
+    return rc
+
+
+def _prune_after(store: pathlib.Path) -> None:
+    """After a successful run: drop the older clones, records and out directories. A path it cannot delete is named with its `sudo rm` line and never fails the release."""
+    try:
+        _deleted, stuck = cache_prune.prune(store)
+    except (cache_prune.PruneRefusedError, OSError) as err:
+        print("%s: cache prune skipped: %s" % (SELF, err), file=sys.stderr)
+        return
+    for path in stuck:
+        print(
+            "%s: cache prune could not delete %s; run: %s"
+            % (SELF, path, cache_prune.sudo_line(path)),
+            file=sys.stderr,
+        )
 
 
 def sealed_untagged(run: Run) -> list[str]:
@@ -2596,10 +2884,18 @@ def dry_run(
     gates: Callable[..., GateResult],
 ) -> int:
     print(
-        "release:local --channel edge%s (dry run): no secret value is read and nothing is written"
-        % _flags(args)
+        "release:local --channel %s%s (dry run): no secret value is read and nothing is written"
+        % (args.channel, _flags(args))
     )
-    run = Run(root, ctx, runner=runner, internal={"channel-version": internal_channel_version})
+    run = Run(
+        root,
+        ctx,
+        runner=runner,
+        internal={
+            "channel-version": internal_channel_version,
+            "rollback-labels": internal_rollback_labels,
+        },
+    )
     for step in steps:
         if step.section == "version" and step.readonly and run.run_step(step) != 0:
             break
@@ -2622,9 +2918,18 @@ def dry_run(
                 ctx["asked"],
             )
         )
-    refusals = list(prereq_refusals(args.workers_only))
+    refusals = list(
+        prereq_refusals(False, STABLE)
+        if args.channel == STABLE
+        else prereq_refusals(args.workers_only)
+    )
     result = gates(root, version, ctx)
     refusals += filter_workers(result.refusals, args.workers_only)
+    # The read-only gate rows past the version (the stable rollback-label search) run too, once the version is known.
+    for step in steps:
+        gate_row = step.section == "gates" and step.readonly and step.kind in run.internal
+        if gate_row and version and run.run_step(step) != 0:
+            refusals.append("%s: refused (see above)" % step.id)
     print("gates:")
     for line in [*refusals, *result.notes] or ["local-gates: admitted"]:
         print("  %s" % line)
@@ -2639,10 +2944,12 @@ def dry_run(
         return 1
     unjudged = result.unjudged
     print(
-        "admitted: every %sgate passes%s; the run above is what `npm run release:local -- --channel edge%s` executes"
+        "admitted: every %sgate passes%s; the run above is what `%snpm run release:local -- --channel %s%s` executes"
         % (
             "judged " if unjudged else "",
             " (%d not judged under --dry-run, see the notes)" % unjudged if unjudged else "",
+            "%s=%s " % (ASK_ENV, ctx["asked"]) if args.channel == STABLE else "",
+            args.channel,
             _flags(args),
         )
     )
@@ -2650,7 +2957,7 @@ def dry_run(
 
 
 def _flags(args: argparse.Namespace) -> str:
-    """The run's flags after `--channel edge`, as typed, `--dry-run` left out."""
+    """The run's flags after `--channel <c>`, as typed, `--dry-run` left out."""
     flags = ""
     if args.workers_only:
         flags += " --workers-only"

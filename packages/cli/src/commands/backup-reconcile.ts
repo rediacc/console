@@ -145,9 +145,12 @@ function reportCheck(res: ReconcileResponse): void {
       })
     );
   }
-  const drift = hasDrift(res);
-  if (drift && table) outputService.warn(t('commands.backup.reconcile.driftFound'));
-  if (drift || skipped.length > 0) setExitCode(1);
+  if (hasDrift(res) && table) outputService.warn(t('commands.backup.reconcile.driftFound'));
+}
+
+/** Whether `--check` fails: drift, or a lineage it never compared. */
+function checkFails(res: ReconcileResponse): boolean {
+  return hasDrift(res) || res.lineages.some((l) => l.skipped);
 }
 
 async function runReconcile(repoRef: string | undefined, options: ReconcileOptions) {
@@ -159,6 +162,8 @@ async function runReconcile(repoRef: string | undefined, options: ReconcileOptio
     body: { ...(lineageGuid ? { lineageGuid } : {}), dryRun },
   });
 
+  // The exit code is set before the result prints, so a JSON envelope of a failed check says success:false.
+  if (options.check && checkFails(res)) setExitCode(1);
   await reportResult(res, dryRun);
 
   if (options.check) reportCheck(res);
@@ -168,6 +173,7 @@ export function registerBackupReconcile(backup: Command): void {
   backup
     .command('reconcile')
     .argument('[repo-ref]', t('commands.backup.reconcile.argRepoRef'))
+    .summary(t('commands.backup.reconcile.descriptionShort'))
     .description(t('commands.backup.reconcile.description'))
     .option('--dry-run', t('commands.backup.reconcile.optionDryRun'))
     .option('--check', t('commands.backup.reconcile.optionCheck'))

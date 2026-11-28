@@ -1,7 +1,7 @@
 """`rediacc_ci.release.deployment_summary`, driven directly.
 
 WHILE BOTH COPIES EXISTED every case below ran `.ci/scripts/release/deployment-summary.sh` over the same environment and compared its `$GITHUB_STEP_SUMMARY` bytes, its stdout and its stderr against the port's.
-The K=5 ledger `.ci/shadow/w7p5a-deployment-summary.observations.jsonl` recorded that verdict over five distinct trees (`npx tsx scripts/lib/shadow-gate.ts --pair w7p5a-deployment-summary --assert --k 5`) and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
+The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that verdict over five distinct trees and licensed the port; W7 P5 retired the twin and the cases that executed it went with it.
 
 THE GOLDEN BLOCK BELOW IS THE TWIN'S, KEPT VERBATIM. The script has no branch at all, only string interpolation into a fixed template, so "these exact bytes" was the whole claim then and remains the whole claim now.
 """

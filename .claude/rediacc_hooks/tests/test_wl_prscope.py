@@ -417,194 +417,45 @@ def test_epic_reader_without_plan_epics_is_empty(monkeypatch):
     assert prscope.epic_items((rel("a"),)) == frozenset()
 
 
-# ---- T9 of agent/plans/PLAN-stop-hook-turbo.md: the turbo picks ------------------------------------
-
-TURBO = "\n## Settings\n\n```stop-hook\neffort: high\nturbo: %s\nbatch_size: 2\nplan_concurrency: 9\nwriter_cap: 4\n```\n"
+# ---- one plan per PR (agent/plans/PLAN-simple-two-tree-loop.md ruling 4, box B4) ----------------
 
 
-def _xplan(name, opened=1, done=0):
-    """A plan with the X fields the picks check (`wl_planconc.spawn_verdict` fails closed without `Owns:`)."""
-    return _plan(opened=opened, done=done).replace(
-        "Priority: P2 -- seed\n",
-        "Priority: P2 -- seed\nConcurrency: parallel\nOwns: docs/%s/**\n" % name,
-    )
-
-
-def turbo_live(world, turbo="on"):
-    world.plans(a=_xplan("a"), b=_xplan("b"), c=_xplan("c"), d=_xplan("d"))
+def test_a_live_pr_carries_its_one_plan_and_never_takes_a_queued_one(world):
+    """Four queued plans and a live PR naming the first: the set is that plan alone, the next plan is the second, and it waits for the next branch. The batch fields that once named queued plans for idle writers are gone from the state."""
+    world.plans(a=_plan(), b=_plan(), c=_plan(), d=_plan())
     world.queue("a", "b", "c", "d")
-    queue = world.root / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(
-        queue.read_text(encoding="utf-8").replace(
-            "\n## Promoted", TURBO % turbo + "\n## Promoted", 1
-        ),
-        "utf-8",
-    )
     world.branch("1003-1")
     world.nodes([node(592, "OPEN", "Plan: agent/plans/PLAN-a.md\n\nBody.")])
-
-
-def turbo_state(world, live):
+    got = state(world)
+    assert (got.kind, got.pr, got.plans) == ("live", 592, (rel("a"),))
+    assert got.next_plan == rel("b")
     prscope = wlfix.import_wl("wl_prscope")
-    return prscope.loop_state(
-        world.root, world.worklist, ME, today="1003", epics=lambda _rel: set(), live=live
-    )
+    fields = {f.name for f in dataclasses.fields(prscope.LoopState)}
+    assert not {f for f in fields if "batch" in f or "pick" in f or "push" in f}, fields
+    assert not hasattr(prscope, "batch_ready")
 
 
-def test_turbo_on_a_live_pr_with_two_free_slots_names_two_plans(world):
-    turbo_live(world)
-    got = turbo_state(world, ((), 2))
-    assert got.turbo is True
-    assert got.batch_size == 2
-    assert got.turbo_picks == (rel("b"), rel("c"))
-    assert got.turbo_more is True
-
-
-def test_turbo_with_no_free_slot_names_none(world):
-    turbo_live(world)
-    got = turbo_state(world, (("PLAN-d.md",), 4))
-    assert got.turbo_picks == ()
-    # Something is still eligible, so the batch is not declared exhausted.
-    assert got.turbo_more is True
-
-
-def test_turbo_picks_skip_the_pr_set_and_a_live_writers_plan_owner(world):
-    turbo_live(world)
-    got = turbo_state(world, (("PLAN-b.md",), 1))
-    assert rel("a") not in got.turbo_picks
-    assert got.turbo_picks == (rel("c"), rel("d"))
-
-
-def test_a_full_plan_concurrency_ceiling_names_none_but_keeps_more(world):
-    """At the ceiling nothing new starts, yet the queue still holds eligible plans, so the batch is not declared exhausted (review 3619cbe0: `more` once came from the capped call)."""
-    turbo_live(world)
-    queue = world.root / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(
-        queue.read_text(encoding="utf-8").replace("plan_concurrency: 9", "plan_concurrency: 2"),
-        "utf-8",
-    )
-    got = turbo_state(
-        world, (("PLAN-b.md",), 1)
-    )  # PR plan a plus live writer b fill the ceiling of 2
-    assert got.turbo_picks == ()
-    assert got.turbo_more is True
-
-
-def test_turbo_holds_an_exclusive_plan_while_a_planless_writer_runs(world):
-    """#1e3ac977: the live writer count reaches `plan_gate.next_turbo`, so one writer serving no plan holds an exclusive queued plan back."""
-    turbo_live(world)
-    b = world.root / "agent" / "plans" / "PLAN-b.md"
-    b.write_text(
-        b.read_text(encoding="utf-8").replace(
-            "Concurrency: parallel", "Concurrency: exclusive -- one program across every package"
-        ),
-        "utf-8",
-    )
-    assert turbo_state(world, ((), 1)).turbo_picks == (rel("c"), rel("d"))
-    # CONTROL: no writer live, so the exclusive plan is the first pick, and c and d join it because their Owns are disjoint from b's (711841c55: an exclusive plan is a mutex over ITS files).
-    assert turbo_state(world, ((), 0)).turbo_picks == (rel("b"), rel("c"), rel("d"))
-
-
-def test_turbo_off_equals_today(world):
-    turbo_live(world, turbo="off")
-    got = turbo_state(world, ((), 0))
-    plain = state(world)
-    assert got == plain
-    assert got.turbo is False
-    assert got.turbo_picks == ()
-    assert got.batch_size == 1
-
-
-def test_batch_ready_waits_for_the_batch_or_an_empty_queue(world):
+def test_release_verdict_names_a_workflow_with_no_run_at_the_merged_sha():
+    """Review 69e02bd5.1: a workflow with no run at the merged sha reads pending AND says so, so a landing stop that waits on a workflow its path filter skips is diagnosable; the controls (a run at the sha) name no such gap."""
     prscope = wlfix.import_wl("wl_prscope")
-    turbo_live(world)
-    got = turbo_state(world, ((), 2))
-    assert not prscope.batch_ready(got, True), "1 finished of 2 with eligible plans left"
-
-    assert prscope.batch_ready(dataclasses.replace(got, finished=2), True)
-    assert prscope.batch_ready(dataclasses.replace(got, turbo_more=False), True)
-    assert not prscope.batch_ready(dataclasses.replace(got, finished=2), False)
-    assert prscope.batch_ready(dataclasses.replace(got, turbo=False), False)
-
-
-# ---- LF3 of agent/plans/PLAN-turbo-local-first.md: a local batch on a no-PR branch ----------------
-
-
-def turbo_no_pr(world, monkeypatch, turbo="on", push=""):
-    """`turbo_live`'s world with no PR on the branch, the hook having named b and c for it; `push` plants a `turbo_push:` line. TMPDIR points into the fixture, so the turbo-named record (kept beside the worklist path) never lands in the machine's shared temp dir."""
-    tmp = world.base / "tmp"
-    tmp.mkdir(exist_ok=True)
-    monkeypatch.setenv("TMPDIR", str(tmp))
-    turbo_live(world, turbo=turbo)
-    world.nodes([])
-    if push:
-        queue = world.root / "agent" / "plans" / "QUEUE.md"
-        queue.write_text(
-            queue.read_text(encoding="utf-8").replace(
-                "turbo: %s\n" % turbo, "turbo: %s\nturbo_push: %s\n" % (turbo, push), 1
-            ),
-            "utf-8",
-        )
-    plan_gate = wlfix.import_wl("wl_prscope")._hooks_pkg()[0]
-    plan_gate.record_turbo_named(str(world.root), "1003-1", [rel("b"), rel("c")])
-    return plan_gate
-
-
-def test_lf3_a_no_pr_branch_under_batch_end_carries_the_head_and_the_named_plans(
-    world, monkeypatch
-):
-    prscope = wlfix.import_wl("wl_prscope")
-    plan_gate = turbo_no_pr(world, monkeypatch)
-    got = turbo_state(world, ((), 0))
-    assert got.kind == "no-pr"
-    assert got.turbo_push == "batch-end"
-    assert got.backup_push_h == 4
-    assert got.local_batch is True
-    assert got.plans == (rel("a"), rel("b"), rel("c"))
-    assert got.prereqs == ()
-    assert got.finished == 0
-    # The picks skip the local batch's own plans, as they skip a live PR's set.
-    assert got.turbo_picks == (rel("d"),)
-    assert not prscope.batch_ready(got, False)
-    # The body `gh pr create` would get names the same batch.
-    assert plan_gate.body_plans(plan_gate.batch_body(str(world.root), "1003-1")) == list(got.plans)
-
-
-def test_lf3_a_finished_local_batch_counts_and_is_ready(world, monkeypatch):
-    prscope = wlfix.import_wl("wl_prscope")
-    turbo_no_pr(world, monkeypatch)
-    world.plans(a=_xplan("a", opened=0, done=1), b=_xplan("b", opened=0, done=1))
-    got = turbo_state(world, ((), 0))
-    assert got.finished == 2
-    assert prscope.batch_ready(got, True)
-
-
-def test_lf3_control_turbo_off_keeps_the_no_pr_set_empty(world, monkeypatch):
-    turbo_no_pr(world, monkeypatch, turbo="off")
-    got = turbo_state(world, ((), 0))
-    assert got.kind == "no-pr"
-    assert got.local_batch is False
-    assert got.plans == ()
-    assert got.finished == 0
-
-
-def test_lf3_control_turbo_push_pr_keeps_the_no_pr_set_empty(world, monkeypatch):
-    turbo_no_pr(world, monkeypatch, push="pr")
-    got = turbo_state(world, ((), 0))
-    assert got.kind == "no-pr"
-    assert got.turbo_push == "pr"
-    assert got.local_batch is False
-    assert got.plans == ()
-    assert got.turbo_picks[0] == rel("a"), "with no local set the queue head is a pick again"
-
-
-def test_lf3_backup_push_h_is_copied_from_the_settings(world, monkeypatch):
-    turbo_no_pr(world, monkeypatch)
-    queue = world.root / "agent" / "plans" / "QUEUE.md"
-    queue.write_text(
-        queue.read_text(encoding="utf-8").replace(
-            "turbo: on\n", "turbo: on\nbackup_push_h: 0\n", 1
-        ),
-        "utf-8",
-    )
-    assert turbo_state(world, ((), 0)).backup_push_h == 0
+    ci, cd = (name for name, _wf in prscope.RELEASE_WORKFLOWS)
+    done = {
+        "headSha": "s1",
+        "status": "completed",
+        "conclusion": "success",
+        "createdAt": "2026-11-26T10:00:00Z",
+        "databaseId": 1,
+    }
+    verdict, detail = prscope.release_verdict({ci: [done], cd: []}, "s1")
+    assert verdict == prscope.CI_PENDING
+    assert cd in detail, detail
+    assert "no run at the merged sha" in detail, detail
+    # Review c4b38c55.2: a missing run may only be late, so the detail never claims it will never come.
+    assert "not started yet" in detail, detail
+    assert "never starts" not in detail, detail
+    verdict, detail = prscope.release_verdict({ci: [done], cd: [dict(done, databaseId=2)]}, "s1")
+    assert (verdict, detail) == (prscope.CI_GREEN, "")
+    pending = dict(done, status="in_progress", conclusion="")
+    verdict, detail = prscope.release_verdict({ci: [done], cd: [pending]}, "s1")
+    assert verdict == prscope.CI_PENDING
+    assert "no run at the merged sha" not in detail, detail

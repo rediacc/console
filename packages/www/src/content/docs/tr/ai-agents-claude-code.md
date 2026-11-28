@@ -10,11 +10,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: tr
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code, `rdc` CLI aracılığıyla Rediacc ile doğal olarak çalışır. Bu kılavuz kurulumu, izinleri ve yaygın iş akışlarını kapsar.
+
+> **Önce güvenlik**: Bir ajanı sırlara dokunan herhangi bir şeye bağlamadan önce [AI Ajan Güvenliği ve Koruyucular](/tr/docs/ai-agents-safety) sayfasını okuyun. `rdc` altında çalışan Claude Code ajan olarak algılanır. Hassas değişiklikler, insanlar ve ajanlar için aynı şekilde `--current <previous-value>` (passwd tarzı ön koşul) gerektirir; `--rotate-secret` (onaylı, denetlenen rotasyon) yalnızca terminaldeki insan için geçerlidir. `rdc config edit` (etkileşimli, `--apply`, `--reveal`) hiçbir geçersiz kılma olmadan reddedilir; grand depolar ve makineye doğrudan SSH, bir insan ilkenin izin verdiği sınırlar içinde açık onay vermedikçe kapalı kalır. Bir ön koşul başarısız olduğunda JSON zarfındaki `errors[].next.options[].run` alanı, ajana kullanıcıya önermesi gereken tam CLI komutunu bildirir. Bunu olduğu gibi iletin.
 
 ## Hızlı Kurulum
 
@@ -38,7 +40,7 @@ Bunu proje kök dizininize yerleştirin. Tam sürüm için [AGENTS.md şablonuna
 - Deploy: rdc repo up <repo>@<machine> --yes
 - Containers: rdc machine status <machine> --containers -o json
 - Health: rdc machine health <machine> -o json
-- SSH: rdc term connect <machine> [repo]
+- SSH: rdc term connect <machine|repo-ref>
 
 ### Rules
 - Always use --output json when parsing output
@@ -86,7 +88,7 @@ You: "Why is the nextcloud container unhealthy?"
 
 Claude Code runs: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Lists container states
-Claude Code runs: rdc term prod-1 -c "docker logs nextcloud-app --tail 50"
+Claude Code runs: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Checks recent logs
 ```
 

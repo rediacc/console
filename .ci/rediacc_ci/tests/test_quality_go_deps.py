@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.go_deps` against the shell text-handling it replaces.
 
 WHAT THE SHADOW LEDGER ALREADY PROVES:
-`.ci/shadow/w7p2-go-deps.observations.jsonl` drives both implementations end to end over five distinct committed trees, with an outdated minor dep, a probe that exits non-zero, a low-effort BLOCKER, an entry with no BLOCKER, and a two-module tree carrying every kind at once (minor, major, blocked, too-fresh, indirect and an unparseable timestamp).
+the ledger (deleted in commit:936280cd35) drives both implementations end to end over five distinct committed trees, with an outdated minor dep, a probe that exits non-zero, a low-effort BLOCKER, an entry with no BLOCKER, and a two-module tree carrying every kind at once (minor, major, blocked, too-fresh, indirect and an unparseable timestamp).
 
 WHAT THE LEDGER CANNOT ISOLATE is the three pieces of shell text handling that decide what any of that MEANS, and each of them is quiet when it goes wrong:
 

@@ -27,6 +27,17 @@ vi.mock('../../utils/errors.js', () => ({
   },
 }));
 vi.mock('../_validate.js', () => ({ assertMachineExists: async () => undefined }));
+// A successful delete retires the image's licence; the account side is faked so no test reaches a real server.
+const retired = vi.hoisted(() => [] as string[]);
+vi.mock('../../services/account/subscription-auth.js', () => ({
+  getSubscriptionTokenState: () => ({ kind: 'ready', token: {} }),
+}));
+vi.mock('../../services/account/account-client.js', () => ({
+  accountServerFetch: (path: string) => {
+    retired.push(path);
+    return Promise.resolve({ retired: true });
+  },
+}));
 vi.mock('../../services/executor/executor-factory.js', () => ({
   getExecutor: () => ({
     execute: (req: { functionName: string; params?: { repository?: string } }) => {

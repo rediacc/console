@@ -23,13 +23,23 @@ written for -- dropping a call site that is inside a YAML comment. The dead one 
 twice. And a port whose first act is to remove a line it judged useless is a port whose verdict nobody can check against the original. It is reported as a finding instead of silently repaired.
 
 THE MISSING LINES ARE NOT MARKED, AND THAT MATTERS TO THE COMPARATOR. The twin prints its findings as ` MISSING <file>:<line> builds www without GITHUB_TOKEN`
-with no severity glyph, so `scripts/lib/shadow-gate.ts` classifies them as chatter
+with no severity glyph, so the shadow gate (commit:bf054adcd4) classifies them as chatter
 and a differential over this gate reports VACUOUS_BOTH_EMPTY -- both sides exit 1
 with zero RECOGNISED findings. That is the comparator behaving correctly and
 saying so: its VACUOUS message names both causes, "plant one" and "the finding extractor does not recognise this gate's output (pass --finding-re)". The differential for this pair therefore runs with `--finding-re '^ *MISSING '`. The text is kept byte-identical to the twin's precisely so that ONE `--finding-re` serves both sides.
 
 THE FLOOR IS THE INTERESTING PART OF THIS GATE. Three call sites exist today, and finding none means the spellings moved -- at which point a green asserts nothing, which is the exact failure the gate is written against. The floor is carried at the same value with the same message. It is a hand-typed count and contract section 6 says a floor should be set-based or corpus-derived;
 that is a real finding about this gate, and it is NOT fixed here, because changing the floor changes the verdict and a port that changes the verdict is not a port.
+
+---- gate ----
+step: www build token
+     # The EXISTING step name, lower case and all. Renaming it is a separate
+     # change from moving which file it invokes.
+needs: none
+lane: quality-code
+why: every www build must pass github.token. Found and fixed by hand at two of
+     three call sites, twice, before the third reddened job 99839065246
+---- end gate ----
 """
 
 import pathlib
@@ -86,7 +96,7 @@ def find_sites(directory: pathlib.Path) -> list[tuple[pathlib.Path, int, str]]:
 
     Files are visited in sorted order so two runs over one directory produce the
     findings in the same order. The shell's glob is already sorted under LC_ALL=C,
-    which `scripts/lib/shadow-gate.ts` pins for exactly this reason.
+    which the shadow gate (commit:bf054adcd4) pins for exactly this reason.
     """
     out: list[tuple[pathlib.Path, int, str]] = []
     for path in sorted(directory.glob("*.yml")):
@@ -351,3 +361,10 @@ def selftest() -> int:
         ctl.check("SPELLINGS MIRROR: a sibling build is not a www build", total, 0)
 
     return 0 if ctl.report() else 1
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_www_build_token.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

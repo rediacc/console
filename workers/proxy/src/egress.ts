@@ -3,21 +3,22 @@
  *
  * The container boots with REDIACC_TOKEN set to EXECUTOR_TOKEN_PLACEHOLDER, never a real token, and addresses the account server as `http://account.internal`, which `OrgExecutor` routes here (`interceptOutboundHttp`, to the `AccountEgress` entrypoint). This function forwards exactly the method and path pairs `rdc serve --mode container` calls (agent/plans/PLAN-proxy-cd-six-targets.md, Context, "Paths the container calls"):
  *
- *   - the four executor-bearer calls require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
- *   - the three unauthenticated calls leave with no Authorization at all;
+ *   - the executor-bearer calls (introspect, audit events, the two executor-token calls, the agent-grant session open, the run index events, and the executor account routes of `EXECUTOR_ACCOUNT_PAIRS`) require `Authorization: Bearer <placeholder>` exactly, and leave with the issued token in its place;
+ *   - the unauthenticated calls leave with no Authorization at all;
+ *   - the config write-back pair, `POST configs/session` and `PUT configs/<id>`, travel like the config pull (an `X-Config-Token`, no Authorization); a push body past `MAX_CONFIG_PUSH_BODY_BYTES` is answered 413 `body-too-large` and nothing is forwarded;
  *   - anything else is answered 403 with a logged reason code, and nothing is forwarded;
  *   - an allowed bearer call is answered 503 with the reason code (`no-issuer`, `issuer-refused`, `issuer-refused:ISSUER_<CODE>` for a coded account refusal, or `issuer-malformed`) when no issued token can be had, and nothing is forwarded.
  *
  * Every forward goes to ACCOUNT (or, without that binding, to ACCOUNT_URL under `wrangler dev`). The ISSUER binding is used only through `issuedToken()`, which calls `issue(orgId)` and nothing else: no container request is ever sent to it. A refused request is decided before any token is obtained, so the container cannot drive the issuer by sending garbage.
  *
- * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. The one container caller seen (bench `wrangler tail`, 2026-10-28) is the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), which the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers.
+ * `POST /account/api/v1/tunnel`, the CLI's E2E tunnel, is refused on purpose (`route-not-allowed`). Its bearer is sealed inside the envelope, so the placeholder swap cannot reach it and the account server would refuse the placeholder anyway; and the tunnel re-dispatches to any route, so admitting it would void this allowlist. Every account call a served command makes (the hosted backup reads, verify, repair, restore, reconcile, the lineage orphan and purge, the licence report, machine deactivate, and the repository licence activate, batch activate and retire) travels instead to the account server's executor router, `/account/api/v1/proxy/account/<inner>` (private/account/src/routes/executor-account.ts), with the principal named in the `X-Rediacc-On-Behalf-Of` header, which is forwarded untouched. The routes are enumerated once in packages/shared/src/subscription/executor-account-routes.ts (`EXECUTOR_ACCOUNT_ROUTES`, read by the CLI's `accountServerFetch` and the account router too); `EXECUTOR_ACCOUNT_PAIRS` below is this worker's literal copy of that table, each pair with its exact admitted query names, held equal to it by the parity test in __tests__/egress-account-routes.test.ts, since the Worker bundle does not import the table at runtime. The CLI's own paths of the same calls (`/account/api/v1/backups/...`, `/account/api/v1/licenses/...`) stay refused. The other tunnel caller seen (bench `wrangler tail`, 2026-10-28), the CLI's core audit flush (packages/cli/src/services/core/audit.ts via accountServerFetch), is skipped in a container, since the container tier's own audit (packages/cli/src/services/serve/audit.ts, the allowlisted `licenses/audit-events`) already covers it.
  *
  * One request is answered here rather than forwarded: `AccountEgress` answers the executor's egress-unreachable report (`POST /executor/v1/egress-unreachable`) itself, from its own OrgExecutor.
  */
 
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { dropIssuedToken, type ExecutorIssuerRpc, IssuerError, issuedToken } from './issued-token';
-import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor';
+import type { EgressReportAnswer, ExecutorEgressProps } from './org-executor-support';
 import { executorName, placementOf } from './placement';
 import { type ProbeTarget, probeTarget, type TargetRefusal } from './reachability';
 import { activeSpan } from './span';
@@ -33,7 +34,136 @@ const BEARER_ROUTES: ReadonlySet<string> = new Set([
   `POST ${API}/licenses/audit-events`,
   `POST ${API}/configs/executor-token`,
   `POST ${API}/configs/executor-grant`,
+  `POST ${API}/configs/agent-session`,
+  `POST ${API}/console/runs/events`,
 ]);
+
+/** One executor account route: the method, the full path pattern under `/account/api/v1/proxy/account/`, and the exact query names admitted (each at most once; empty admits no query). */
+interface ExecutorAccountPair {
+  method: 'GET' | 'POST' | 'DELETE';
+  pattern: RegExp;
+  query: readonly string[];
+}
+
+const NO_QUERY: readonly string[] = [];
+
+/**
+ * The executor account routes, classed `bearer`: a literal copy of `EXECUTOR_ACCOUNT_ROUTES` (packages/shared/src/subscription/executor-account-routes.ts), entry for entry and in its order. Typed segments: a lineage or snapshot id is the account `identifierSchema` `[A-Za-z0-9-]{1,64}`; a machine id is the 64 hex characters of `renet machine-id`, the only shape the CLI sends (the account route itself takes 1-200 characters, so another shape is refused here rather than forwarded); a repository GUID is a lower-case UUID.
+ */
+export const EXECUTOR_ACCOUNT_PAIRS: readonly ExecutorAccountPair[] = [
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/usage$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/status$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/manifests$/,
+    query: ['lineage', 'limit', 'before', 'includeDeleted'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/resolve$/,
+    query: [
+      'lineage',
+      'anchorSnapshotId',
+      'anyStream',
+      'storeId',
+      'at',
+      'needIndex',
+      'includeDeleted',
+    ],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/retention$/,
+    query: ['lineage'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/retention\/preview$/,
+    query: ['lineage'],
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/immutability$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/stores\/lineage\/[A-Za-z0-9-]{1,64}$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/verify$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/[A-Za-z0-9-]{1,64}\/verification$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/backups\/snapshots\/[A-Za-z0-9-]{1,64}\/undelete$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/chunks\/repair$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/reconcile$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/lineages\/[A-Za-z0-9-]{1,64}\/orphan$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/backups\/lineages\/[A-Za-z0-9-]{1,64}$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'GET',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/report$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/licenses\/machines\/[A-Fa-f0-9]{64}\/deactivate$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/activate-repo$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern: /^\/account\/api\/v1\/proxy\/account\/licenses\/activate-repo-batch$/,
+    query: NO_QUERY,
+  },
+  {
+    method: 'POST',
+    pattern:
+      /^\/account\/api\/v1\/proxy\/account\/licenses\/repos\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/retire$/,
+    query: NO_QUERY,
+  },
+];
 
 /** The unauthenticated calls with a fixed path, as `METHOD path`. */
 const OPEN_ROUTES: ReadonlySet<string> = new Set([
@@ -41,32 +171,81 @@ const OPEN_ROUTES: ReadonlySet<string> = new Set([
   `GET ${API}/.well-known/server-info`,
 ]);
 
-/** The config pull, `GET configs/<id>` with an `X-Config-Token`, optionally `?teamId=`. */
+/** The config pull and push, `GET` and `PUT configs/<id>` with an `X-Config-Token`, optionally `?teamId=`. */
 const CONFIG_PULL_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}$/;
+
+/** The config listing, `GET configs` with an `X-Config-Token` and no query: the executor's version check before each command (`revalidate` in packages/cli/src/services/serve/config-writeback.ts). The account route answers metadata only, filtered to what the token's own pull may read. */
+const CONFIG_LIST_PATH = `${API}/configs`;
+
+/** The config policy record, `GET configs/<id>/policy` with an `X-Config-Token`, optionally `?teamId=`: the executor's read of the policy beside a pull (`fetchPolicyRecord` in packages/cli/src/services/serve/config-writeback.ts). Read-only; the account route runs the same token and team checks as the pull. */
+const CONFIG_POLICY_RE = /^\/account\/api\/v1\/configs\/[A-Za-z0-9_-]{1,128}\/policy$/;
+
+/** The config session handshake, `POST configs/session` with an `X-Config-Token` and no query (the executor's write-back, agent/plans/PLAN-rmcp-writeback.md Design 3). */
+const CONFIG_SESSION_PATH = `${API}/configs/session`;
+
+/** The most of a session handshake body forwarded; the call carries no meaningful body. */
+export const MAX_SESSION_BODY_BYTES = 4096;
+
+/** The most of a config push body forwarded: the account route's own cap, `MAX_CONFIG_PUSH_BODY_BYTES` (private/account/src/dto/config.dto.ts, 4 MiB of base64 blob plus 1 MiB of envelope). A larger body is refused 413 here, before the account server sees it. */
+export const MAX_CONFIG_PUSH_BODY_BYTES = 4 * 1024 * 1024 + 1024 * 1024;
 
 type Route = 'bearer' | 'open';
 
-/** The kind of route a request is, or the reason code it is refused with. */
-function classifyEgress(method: string, url: URL): Route | { refused: string } {
-  const route = routeOf(method, url.pathname);
-  if (route === undefined) return { refused: 'route-not-allowed' };
-  const names = [...url.searchParams.keys()];
-  const allowed =
-    route.query === 'teamId'
-      ? names.length === 0 || (names.length === 1 && names[0] === 'teamId')
-      : url.search === '';
-  return allowed ? route.kind : { refused: 'query-not-allowed' };
+/** What the allowlist knows about an admitted request: its kind and the most of its body forwarded. */
+interface Admitted {
+  kind: Route;
+  maxBody?: number;
 }
 
-/** The allowlisted route a method and path are, with the query it admits. */
+/** The query names a route admits: `TEAM_ID` for the config pull family, else none. */
+const TEAM_ID = ['teamId'] as const;
+
+/** Every query name is in the route's set and none repeats; a route with an empty set admits no query string at all. */
+function queryAdmitted(admitted: readonly string[], url: URL): boolean {
+  if (admitted.length === 0) return url.search === '';
+  const seen = new Set<string>();
+  for (const name of url.searchParams.keys()) {
+    if (!admitted.includes(name) || seen.has(name)) return false;
+    seen.add(name);
+  }
+  return true;
+}
+
+/** The kind of route a request is, or the reason code it is refused with. */
+function classifyEgress(method: string, url: URL): Admitted | { refused: string } {
+  const route = routeOf(method, url.pathname);
+  if (route === undefined) return { refused: 'route-not-allowed' };
+  if (!queryAdmitted(route.query, url)) return { refused: 'query-not-allowed' };
+  return route.maxBody === undefined
+    ? { kind: route.kind }
+    : { kind: route.kind, maxBody: route.maxBody };
+}
+
+/** The query names an executor-bearer call admits: none for a fixed pair, the pair's own set for an executor account route, undefined when the call is neither. */
+function bearerQuery(method: string, path: string): readonly string[] | undefined {
+  if (BEARER_ROUTES.has(`${method} ${path}`)) return NO_QUERY;
+  return EXECUTOR_ACCOUNT_PAIRS.find((pair) => pair.method === method && pair.pattern.test(path))
+    ?.query;
+}
+
+/** The allowlisted route a method and path are, with the query names it admits. */
 function routeOf(
   method: string,
   path: string
-): { kind: Route; query: 'none' | 'teamId' } | undefined {
+): { kind: Route; query: readonly string[]; maxBody?: number } | undefined {
   const key = `${method} ${path}`;
-  if (BEARER_ROUTES.has(key)) return { kind: 'bearer', query: 'none' };
-  if (OPEN_ROUTES.has(key)) return { kind: 'open', query: 'none' };
-  if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: 'teamId' };
+  const bearer = bearerQuery(method, path);
+  if (bearer !== undefined) return { kind: 'bearer', query: bearer };
+  if (OPEN_ROUTES.has(key)) return { kind: 'open', query: NO_QUERY };
+  if (key === `GET ${CONFIG_LIST_PATH}`) return { kind: 'open', query: NO_QUERY };
+  if (method === 'GET' && CONFIG_POLICY_RE.test(path)) return { kind: 'open', query: TEAM_ID };
+  if (method === 'GET' && CONFIG_PULL_RE.test(path)) return { kind: 'open', query: TEAM_ID };
+  if (key === `POST ${CONFIG_SESSION_PATH}`) {
+    return { kind: 'open', query: NO_QUERY, maxBody: MAX_SESSION_BODY_BYTES };
+  }
+  if (method === 'PUT' && CONFIG_PULL_RE.test(path) && path !== CONFIG_SESSION_PATH) {
+    return { kind: 'open', query: TEAM_ID, maxBody: MAX_CONFIG_PUSH_BODY_BYTES };
+  }
   return undefined;
 }
 
@@ -91,9 +270,9 @@ interface EgressReporter {
   ): Promise<EgressReportAnswer>;
 }
 
-/** The body as text, or undefined once it passes `max` bytes. */
-async function boundedText(request: Request, max: number): Promise<string | undefined> {
-  if (request.body === null) return '';
+/** The body as bytes, or undefined once it passes `max` bytes. */
+async function boundedBytes(request: Request, max: number): Promise<Uint8Array | undefined> {
+  if (request.body === null) return new Uint8Array(0);
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -113,7 +292,13 @@ async function boundedText(request: Request, max: number): Promise<string | unde
     joined.set(chunk, offset);
     offset += chunk.byteLength;
   }
-  return new TextDecoder().decode(joined);
+  return joined;
+}
+
+/** The body as text, or undefined once it passes `max` bytes. */
+async function boundedText(request: Request, max: number): Promise<string | undefined> {
+  const bytes = await boundedBytes(request, max);
+  return bytes === undefined ? undefined : new TextDecoder().decode(bytes);
 }
 
 /** The report's target: undefined for an empty body, else the admitted `{ host, port }` or why it is refused. */
@@ -270,6 +455,22 @@ async function resendWithFreshToken(
   return response;
 }
 
+/** The body to forward: none for GET and HEAD, bounded by `maxBody` when the route sets one, else read whole; `too-large` when it exceeds the bound. */
+async function readEgressBody(
+  request: Request,
+  maxBody: number | undefined
+): Promise<ArrayBuffer | undefined | 'too-large'> {
+  if (request.method === 'GET' || request.method === 'HEAD') return undefined;
+  if (maxBody === undefined) return request.arrayBuffer();
+  const declared = Number(request.headers.get('content-length'));
+  const bytes =
+    Number.isFinite(declared) && declared > maxBody
+      ? undefined
+      : await boundedBytes(request, maxBody);
+  if (bytes === undefined) return 'too-large';
+  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+}
+
 /** Forward one intercepted container request for the account server, when the allowlist admits it. */
 export async function forwardAccountEgress(
   request: Request,
@@ -278,14 +479,14 @@ export async function forwardAccountEgress(
 ): Promise<Response> {
   const url = new URL(request.url);
   const route = classifyEgress(request.method, url);
-  if (typeof route !== 'string') return refuseEgress(route.refused, request.method, url);
+  if ('refused' in route) return refuseEgress(route.refused, request.method, url);
 
   // Fresh headers without `host`: copied from the container's request it still names account.internal, and a public fetch carrying it fails at DNS with a 530 (bench, 2026-10-24, the first deploy of this forward).
   const headers = new Headers(request.headers);
   headers.delete('host');
   headers.delete('cookie');
   headers.delete('authorization');
-  if (route === 'bearer') {
+  if (route.kind === 'bearer') {
     const swapped = await issuedBearer(request.headers.get('authorization'), env, orgId);
     if (typeof swapped !== 'string') {
       return refuseEgress(swapped.refused, request.method, url, swapped.status);
@@ -293,8 +494,8 @@ export async function forwardAccountEgress(
     headers.set('authorization', swapped);
   }
 
-  const hasBody = request.method !== 'GET' && request.method !== 'HEAD';
-  const body = hasBody ? await request.arrayBuffer() : undefined;
+  const body = await readEgressBody(request, route.maxBody);
+  if (body === 'too-large') return refuseEgress('body-too-large', request.method, url, 413);
   const send = (): Promise<Response> => {
     const forwarded = new Request(`${env.ACCOUNT_URL}${url.pathname}${url.search}`, {
       method: request.method,
@@ -306,7 +507,7 @@ export async function forwardAccountEgress(
   };
   const via = env.ACCOUNT ? 'binding' : 'fetch';
   let response = await send();
-  if (route === 'bearer' && response.status === 401) {
+  if (route.kind === 'bearer' && response.status === 401) {
     response = await resendWithFreshToken(request, url, env, orgId, headers, send);
   }
   // A failed call logs its path and transport only, never a header or a body: this is what `wrangler tail` shows when a container call fails.

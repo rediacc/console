@@ -1,6 +1,6 @@
 """Port of the SHARED CONTRACT in `.ci/scripts/test/proxies/proxy-lib.sh`.
 
-`proxy-lib.sh` is sourced, never executed -- it has no exec bit "by design" (its own header says so) and every real invocation is one of the nine `proxy-*.sh` scripts in that directory sourcing it for its functions. There is therefore no bash TWIN for this file itself to be shadow-gated against: the twin relationship lives one level up, between each `proxy-*.sh` and its
+`proxy-lib.sh` is sourced, never executed -- it has no exec bit "by design" (its own header says so) and every real invocation is one of the nine `proxy-*.sh` scripts in that directory sourcing it for its functions. There is therefore no bash TWIN for this file itself to be compared against: the twin relationship lives one level up, between each `proxy-*.sh` and its
 `rediacc_ci.proxies.*` port, both of which import this module the way the bash scripts source `proxy-lib.sh`.
 
 WHAT A PROXY IS, copied from the bash header because the contract is the point: a heavy CI job that `npm run ci` never exercises gets a local stand-in that runs the SAME subject script CI runs, on a reduced input, so a developer finds the breakage before the push instead of after it.

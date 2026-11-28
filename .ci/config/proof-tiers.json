@@ -92,6 +92,7 @@
         ".ci/rediacc_ci/drills/universe.py": ["account"],
         ".ci/rediacc_ci/drills/transfer.py": ["account"],
         ".ci/rediacc_ci/drills/vm_check.py": ["renet", "account"],
+        ".ci/rediacc_ci/drills/vm_check_winclient.py": ["renet"],
         ".ci/rediacc_ci/drills/lib.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/upgrade_converge.py": ["renet"],
         ".ci/rediacc_ci/drills/tenant_isolation.py": ["renet"],
@@ -133,6 +134,10 @@
         "k3s-ceph": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12", "192.168.111.21", "192.168.111.22", "192.168.111.23"],
           "up": "VM_DSK=48 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+        },
+        "windows-client": {
+          "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.31"],
+          "up": "VM_WINDOWS=31 ./rdc.sh ops up --basic"
         },
         "second-group": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.112.5", "192.168.112.51"],
@@ -419,6 +424,10 @@
         "www-local": {
           "what": "the site built and served from this tree (no bench www Worker exists yet; see tiers.live.checks.www-smoke)",
           "run": ["cd packages/www && npm run build && npm run preview"]
+        },
+        "win-check": {
+          "what": "the Windows client lane on the local fleet: the CLI built from this tree, staged to the windows-client VM and its suites run there, judged from RDC-STEP lines",
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.drills.win_check"]
         },
         "enterprise-bench": {
           "what": "the Enterprise tooling run from this tree against bench: the signer proof (V1) and the region-loss proof (V2), each of which stops or cuts a bench signer and restores it; the lab reads the enterprise bws project id from ENTERPRISE_PROOF_BWS_PROJECT",

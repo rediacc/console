@@ -1,10 +1,13 @@
 """`npm run vm:check`: prove the renet side (the repo shell, sync, SFTP and VS Code paths of `rdc` on the ops VMs) and the account side (private/account's suites and the account drills against a fresh dev gateway), and write the receipt the push guard reads.
 
     npm run vm:check [-- --changed] [--os <image>] [--parent <grand>] [--machine <name>] [--wait <s>] [--selftest] [--keep-work]
+    npm run vm:check -- --windows-client <ip> [--rdc-exe <path>]
     npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
 
 AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); a running worker whose recipe sets VM_DSK=<N> must have a root disk of N GiB or more (`_undersized`, one ssh per VM), else the leg is NOT_VERIFIED `fleet-disk-too-small` naming `ops down` and the recipe, since `ops up` leaves a running VM alone and, like P3's `fleet-os-mismatch`, nothing here tears a running fleet down; A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
+
+TIER B. `--windows-client <ip>` (agent/plans/PLAN-windows-lane.md D14) routes P3's `machine scan-keys`, V1.5's sync round trip, V1.6's `vscode connect --url-only`, `term connect -c` and `doctor` through a Windows client VM as extra `WC-` rows beside the Linux rows, with `rdc.exe` from `--rdc-exe <path>` or the staged bundle on `node`; it makes the renet phase required and does not combine with `--changed` or `--only`. The seam, its staging, its verdicts and its teardown are in `rediacc_ci.drills.vm_check_winclient`; the hooks here are the client's preflight at the top of `_battery`, WC-P3 after P3, the other rows after V1.7, `complete` at the end of `_battery`, and the client's teardown in `_release_forks`.
 
 `--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
@@ -61,10 +64,11 @@ import sys
 import threading
 import time
 import traceback
+import urllib.parse
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
-from rediacc_ci import log, paths
-from rediacc_ci.core import prepare_lock
+from rediacc_ci import log, paths, runtmp
+from rediacc_ci.core import host_slots, prepare_lock
 from rediacc_ci.drills import (
     backup_check_trigger,
     converge_preflight,
@@ -76,6 +80,7 @@ from rediacc_ci.drills import (
     session_teardown,
     tenant_isolation,
     upgrade_converge,
+    vm_check_winclient,
     vm_ssh,
     wire,
 )
@@ -1235,6 +1240,18 @@ class Host:
         """This host's own address on the ops VM network (`wire.bridge_host`), None while no interface sits on it."""
         return wire.bridge_host(net_base)
 
+    def stored_account_server(self, environ: Mapping[str, str]) -> str:
+        """The account server (`account.accountServer`) of the config an unflagged `./rdc.sh` reads (REDIACC_CONFIG, else `rediacc`), "" when the file or the field is absent. Only that one field is read; the token and keys beside it are never touched."""
+        name = (environ.get("REDIACC_CONFIG") or upgrade_converge.DEFAULT_CLI_CONFIG).strip()
+        base = pathlib.Path(environ.get("HOME") or "~").expanduser() / ".config" / "rediacc"
+        try:
+            doc = json.loads((base / ("%s.json" % name)).read_text())
+        except (OSError, ValueError):
+            return ""
+        account = doc.get("account") if isinstance(doc, dict) else None
+        server = account.get("accountServer") if isinstance(account, dict) else None
+        return server.strip() if isinstance(server, str) else ""
+
     def alias_configs(self, environ: Mapping[str, str]) -> list[pathlib.Path]:
         """Every file `vscode connect` may have written its alias to: the Windows home's under the drive mounts first (getSSHHome() on WSL), then $HOME's."""
         found = sorted(pathlib.Path(self.drive_root()).glob("*/Users/*/.ssh/" + ALIAS_CONFIG))
@@ -1242,6 +1259,10 @@ class Host:
         if home:
             found.append(pathlib.Path(home) / ".ssh" / ALIAS_CONFIG)
         return found
+
+    def proc_mounts(self) -> str:
+        """The text of /proc/mounts; an unreadable file raises OSError for the caller to name."""
+        return pathlib.Path("/proc/mounts").read_text()
 
     def disk_space(self, disk_dir: str) -> tuple[int, int]:
         """(bytes available at `disk_dir`, allocated bytes of the VM system and ceph disks under it): the free space is read at the nearest existing parent, as renet does (`inspectFilesystem`), and the disks are the ones `reclaimedDiskBytes` credits."""
@@ -1387,6 +1408,20 @@ class DrillAccount:
 
 
 # --------------------------------------------------------------------------- the lock
+
+
+def tmp_is_tmpfs(mounts: str, path: str = "/tmp") -> bool:
+    """Whether `path` lives on a tmpfs, read from /proc/mounts text: the longest mount point that holds it decides (a /tmp without a mount of its own sits on its parent)."""
+    best = ("", "")
+    for line in mounts.splitlines():
+        fields = line.split()
+        if len(fields) < 3:
+            continue
+        point, fstype = fields[1].replace("\\040", " "), fields[2]
+        inside = point in ("/", path) or path.startswith(point.rstrip("/") + "/")
+        if inside and len(point) >= len(best[0]):
+            best = (point, fstype)
+    return best[1] == "tmpfs"
 
 
 def lock_path(environ: Mapping[str, str] | None = None) -> pathlib.Path:
@@ -1682,6 +1717,11 @@ class Options:
     dry_run: bool = False
     # `--paths <p>[,...]` (only with `--dry-run`) evaluates the given console-relative paths instead of the diff, to ask what a change WOULD select.
     paths: tuple[str, ...] = ()
+    # `--commit <sha>` (agent/plans/PLAN-push-decoupling.md D1.4) runs from the kept ci:quick clone sitting at that ancestor of HEAD, with the clone's own builds and gateway record, and files the receipt archive under the pinned tree.
+    commit: str = ""
+    # `--windows-client <ip>` (Tier B, PLAN-windows-lane D14) routes the `vm_check_winclient.ROWS` calls through that Windows VM; `--rdc-exe <path>` stages that rdc.exe there instead of the bundle.
+    windows_client: str = ""
+    rdc_exe: str = ""
 
 
 def only_step_ids() -> frozenset[str]:
@@ -1709,7 +1749,36 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     parser.add_argument("--only", default="")
     parser.add_argument("--dry-run", dest="dry_run", action="store_true")
     parser.add_argument("--paths", action="append", default=[])
+    parser.add_argument("--commit", default="")
+    parser.add_argument("--windows-client", dest="windows_client", default="")
+    parser.add_argument("--rdc-exe", dest="rdc_exe", default="")
     ns = parser.parse_args(rest)
+    if ns.windows_client:
+        try:
+            ns.windows_client = vm_check_winclient.parse_ip(ns.windows_client)
+        except ValueError as exc:
+            parser.error("--windows-client needs a literal IPv4 address: %s" % exc)
+        if ns.changed:
+            parser.error(
+                "--windows-client rides the whole renet battery, so it does not combine with --changed"
+            )
+        if ns.only:
+            parser.error(
+                "--windows-client does not combine with --only: its rows merge into no receipt"
+            )
+    if ns.rdc_exe:
+        if not ns.windows_client:
+            parser.error(
+                "--rdc-exe stages a CLI on the Windows client, so it needs --windows-client"
+            )
+        if not os.path.isfile(ns.rdc_exe):
+            parser.error("--rdc-exe names no file: %s" % ns.rdc_exe)
+        ns.rdc_exe = os.path.abspath(ns.rdc_exe)
+    ns.commit = ns.commit.strip()
+    if ns.commit and ns.dry_run:
+        parser.error("--commit pins a run; --dry-run reads the diff and judges nothing")
+    if ns.commit and ns.changed:
+        parser.error("--commit judges the whole pinned tree, so it does not combine with --changed")
     paths_ = tuple(p.strip() for chunk in ns.paths for p in chunk.split(",") if p.strip())
     if ns.paths and not paths_:
         parser.error("--paths needs at least one path")
@@ -1745,6 +1814,9 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
         only=only,
         dry_run=ns.dry_run,
         paths=paths_,
+        commit=ns.commit,
+        windows_client=ns.windows_client,
+        rdc_exe=ns.rdc_exe,
     )
 
 
@@ -1772,8 +1844,11 @@ class VmCheck:
         u1_fn: Callable[[VmCheck], None] = upgrade_converge.run,
         extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
         receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
+        publish_root: pathlib.Path | None = None,
     ) -> None:
         self.root = root
+        # A pinned run: the main checkout whose `<tree>.json` archive the push guard reads. `root` is then the kept clone, so every build, script and gateway record is the clone's own.
+        self.publish_root = publish_root
         # Judges a `receipt` area leg (the backup-check receipt) for this run's tree; a test injects a stub.
         self.receipt_fn = receipt_fn
         self.opts = opts
@@ -1798,6 +1873,7 @@ class VmCheck:
         self.rdc_sh = str(root / "rdc.sh")
         self.renet_bin = root / trigger.RENET_SUBMODULE / "bin" / "renet"
         self.ssh_user = vm_ssh.default_user(self.environ)
+        self._disk_tmpdir()
         self.ssh_key = vm_ssh.default_key(self.environ)
         self.bridge_ip = opts.net_base + BRIDGE_SUFFIX
         self.worker_ip = opts.net_base + WORKER_SUFFIX
@@ -1876,8 +1952,30 @@ class VmCheck:
         self.started_mono = 0.0
         self.b_stat = ""
         self.tags: tuple[str, str] = ("", "")
+        # Tier B's seam (`--windows-client`), None on every other run.
+        self.winclient = (
+            vm_check_winclient.WindowsClient(self, opts.windows_client, opts.rdc_exe)
+            if opts.windows_client
+            else None
+        )
 
     # ------------------------------------------------------------------ output
+
+    def _disk_tmpdir(self) -> None:
+        """Points TMPDIR at a run directory under the receipt cache (`.ci/cache/vm-check/vm-check-tmp-<stamp>`, never the tmpfs-backed work dir) when /tmp is a tmpfs, for every child (CLI calls, suites, drills): a per-user tmpfs quota (usrquota) made the A1.1 server suite fail with EDQUOT on a native host (2026-11-25). An exported TMPDIR is the caller's choice and stays; an unreadable /proc/mounts is said, and the environment is left as found."""
+        if self.environ.get("TMPDIR"):
+            return
+        try:
+            on_tmpfs = tmp_is_tmpfs(self.host.proc_mounts())
+        except OSError as exc:
+            self.say("        /proc/mounts is unreadable (%s); TMPDIR is left unset" % exc)
+            return
+        if not on_tmpfs:
+            return
+        cache = self.root / receipt_mod.CACHE_DIR
+        cache.mkdir(parents=True, exist_ok=True)
+        # A stamped run directory, removed at exit and swept by the next run when this one is killed (PLAN-host-temp-disposal HT8a).
+        self.environ["TMPDIR"] = runtmp.run_dir("vm-check-tmp-", base=str(cache))
 
     def say(self, text: str = "") -> None:
         print(text, file=self.out)
@@ -1994,6 +2092,10 @@ class VmCheck:
         # A development CLI holds the machine's renet by default (renetHold 'dev', since 2026-11-05), so `repo fork --up` no longer uploads the branch build and V1.1 found the worker on an older renet (2026-11-11). The worker is a development-only ops VM, so the run lifts the hold for its own calls; an explicit REDIACC_NO_PROVISION from the caller is kept.
         env.setdefault("REDIACC_NO_PROVISION", "0")
         return env
+
+    def cli_config_name(self) -> str:
+        """The config `child_env()` makes every `./rdc.sh` call read: the dev config once P4 minted, else the one P4 kept for its valid stored token. U1, U2 and K1 seed their throwaway configs from it (`upgrade_converge.seed_throwaway_config`)."""
+        return upgrade_converge.run_config_name(self.environ, self.dev_config)
 
     def drill_env(self) -> dict[str, str]:
         """The environment of an A1 suite or an A2 drill: this process's, never `child_env()`, with DRILL_ENV_SCRUB removed and `.ci` on PYTHONPATH by absolute path."""
@@ -2345,6 +2447,10 @@ class VmCheck:
 
     def _battery(self) -> None:
         """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
+        if self.winclient:
+            # Tier B rides fork A of the renet battery, so a run that asks for it proves that phase too; the client must answer before any fleet work.
+            self.phases[SIDE_RENET]["required"] = True
+            self.winclient.preflight()
         renet = self.phases[SIDE_RENET]["required"]
         account = self.phases[SIDE_ACCOUNT]["required"]
         self.say(
@@ -2375,6 +2481,8 @@ class VmCheck:
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        if self.winclient:
+            self.winclient.p3()
         self.p3_leftovers()
         # A2 runs BEFORE the join, beside the A1 worker: the drills need P4, the gateway and the fleet, not the suites' results. The suites are in-memory vitest and `tsc --noEmit` (no port, no database file, no write to the worker), and the preparation lock orders any rebuild a drill's `./rdc.sh` needs behind them. A red A1 still ends the run, now after A2 instead of before it; its rows are recorded at the join, so they follow A2's.
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
@@ -2395,9 +2503,13 @@ class VmCheck:
         self.v1_5_sync()
         self.v1_6_vscode()
         self.v1_7_sftp()
+        if self.winclient:
+            self.winclient.v_rows()
         self.u1_converge()
         for step_id, _deps, _fn in EXTRA_RENET_STEPS:
             self.extra_fns[step_id](self)
+        if self.winclient:
+            self.winclient.complete()
 
     def _steps_only(self) -> None:
         """A `--only <ids>` run: the infra chain to reach the worker, then just the named steps (and their declared prerequisites). The verdict path never writes receipt.json for it (`_finish`)."""
@@ -2941,13 +3053,24 @@ class VmCheck:
 
     def p4_account(self) -> None:
         stored = self.rdc("subscription", "status", "-o", "json")
-        if stored.rc == 0:
-            self.record("P4", "the config's stored token is valid; nothing minted", True)
+        if stored.rc == 0 and self._stored_server_is_dev_gateway():
+            self.record(
+                "P4", "the config's stored token is valid on the dev gateway; nothing minted", True
+            )
             return
+        if stored.rc == 0:
+            self.say(
+                "        the config's stored token is valid, but its account server is not the dev gateway; a production token is no proof the gateway works, so a dev token is minted"
+            )
         if not self.account.gateway_healthy():
+            why = (
+                "the stored token is valid but its account server is not the dev gateway"
+                if stored.rc == 0
+                else "the stored token is refused"
+            )
             raise NotVerifiedError(
                 "account-unavailable",
-                "the stored token is refused and no healthy dev gateway answers; start one with ./run.sh account dev",
+                "%s and no healthy dev gateway answers; start one with ./run.sh account dev" % why,
             )
         addr = self.host.vm_net_address(self.opts.net_base) or ""
         self.minted_on_loopback = not addr
@@ -2957,6 +3080,23 @@ class VmCheck:
                 % self.opts.net_base
             )
         self._mint_on(addr or "localhost")
+
+    def _stored_server_is_dev_gateway(self) -> bool:
+        """True when the active config's account server is the dev gateway this run uses: a loopback or VM-network host on the gateway's port."""
+        server = self.host.stored_account_server(self.environ)
+        if not server:
+            return False
+        try:
+            parsed = urllib.parse.urlsplit(server)
+            port = str(parsed.port or "")
+        except ValueError:
+            return False
+        gateway_port = str(self.account.gateway_state().get("port") or "")
+        local = {"localhost", "127.0.0.1", "::1"}
+        vm_addr = self.host.vm_net_address(self.opts.net_base)
+        if vm_addr:
+            local.add(vm_addr)
+        return bool(gateway_port) and port == gateway_port and (parsed.hostname or "") in local
 
     def _mint_on(self, host: str) -> None:
         """Mint a token, check it, and route every later CLI call to the gateway at `host`. The CLI names that server on every licence request, and the account stamps the licence's renewalUrl from it, so `host` is the address the worker reaches it at (wire.bridge_host: measured 2026-10-20, the worker reaches http://192.168.111.254:<port> and every blob minted over localhost carried a renewalUrl it could not)."""
@@ -3356,6 +3496,34 @@ class VmCheck:
             return
         self.host.kill_suites()
         thread.join(timeout=30)
+
+    def _publish_pinned(self) -> bool:
+        """Copy the clone's `<tree>.json` archive, and only that, into the main checkout's receipt folder, so the push guard finds it there while a newer tree's `receipt.json` stays untouched. False when the copy failed: the push guard then finds no archive, so the caller must not end the run VERIFIED."""
+        if self.publish_root is None or not self.tree:
+            return True
+        name = "%s.json" % self.tree
+        source = receipt_mod.receipt_dir(self.root) / name
+        target = receipt_mod.receipt_dir(self.publish_root) / name
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            partial = target.with_name(name + ".partial")
+            partial.write_bytes(source.read_bytes())
+            os.replace(partial, target)
+        except OSError as exc:
+            self.say("vm:check: the pinned receipt could not be filed at %s: %s" % (target, exc))
+            return False
+        self.say("vm:check: pinned receipt filed at %s" % target)
+        return True
+
+    @staticmethod
+    def _unfiled(status: str, reason: dict[str, str] | None) -> tuple[str, dict[str, str] | None]:
+        """A VERIFIED verdict whose pinned receipt could not be filed is NOT_VERIFIED: nothing the push guard reads backs it."""
+        if status != receipt_mod.VERIFIED:
+            return status, reason
+        return receipt_mod.NOT_VERIFIED, {
+            "class": "pinned-receipt-not-filed",
+            "detail": "the pinned receipt could not be filed in the main checkout, so the push guard would find no archive",
+        }
 
     def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
         folder = receipt_mod.receipt_dir(self.root)
@@ -4109,6 +4277,8 @@ class VmCheck:
             res = self.rdc("vscode", "cleanup", "-c", self.connection, refuse=False)
             if res.rc != 0:
                 leftovers.append("vscode connection %s (cleanup rc=%d)" % (self.connection, res.rc))
+        if self.winclient:
+            leftovers.extend(self.winclient.teardown())
         delete_errors: dict[str, str] = {}
         for fork in self.forks:
             res = self.rdc("repo", "delete", self.ref(fork["tag"]), "-y", refuse=False)
@@ -4197,7 +4367,15 @@ class VmCheck:
             record = self._receipt(status, reason)
             path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
-            path = receipt_mod.write(self.root, self._receipt(status, reason))
+            written = self._receipt(status, reason)
+            path = receipt_mod.write(self.root, written)
+            if not self._publish_pinned():
+                status, reason = self._unfiled(status, reason)
+                if status != written["status"]:
+                    # The receipt on disk must carry the downgrade, or it contradicts the exit code (review ef59d037.2).
+                    path = receipt_mod.write(
+                        self.root, {**written, "status": status, "reason": reason}
+                    )
         else:
             log.error("HEAD^{tree} or the inputs digest is unreadable, so no receipt was written")
             if status == receipt_mod.VERIFIED:
@@ -4289,6 +4467,11 @@ class VmCheck:
             "merged": [*(base.get("merged") or []), receipt_mod.merge_entry(run)],
         }
         path = receipt_mod.write(self.root, merged)
+        if not self._publish_pinned():
+            status, reason = self._unfiled(status, reason)
+            if status != merged["status"]:
+                # A NOT_VERIFIED receipt carries no merged steps, so the FAILED receipt this run started from is restored: the disk never reads VERIFIED for a run that exits NOT_VERIFIED (review ef59d037.3).
+                path = receipt_mod.write(self.root, base)
         self.say(
             "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
             % (
@@ -4627,9 +4810,59 @@ def lease_refusal(root: pathlib.Path, argv: Sequence[str]) -> str | None:
     )
 
 
+def kept_clone_dir(live: pathlib.Path, environ: Mapping[str, str]) -> pathlib.Path:
+    """Where `ci:quick` keeps the clone of `live` (`cloneDirFor`, scripts/ci-runner/quick-clone.ts): `CI_QUICK_CLONE_DIR`, else `<cache>/rediacc/ci-quick-clones/<basename>-<sha8 of the real path>`."""
+    override = environ.get("CI_QUICK_CLONE_DIR")
+    if override:
+        return pathlib.Path(override).resolve()
+    base = environ.get("XDG_CACHE_HOME") or str(
+        pathlib.Path(environ.get("HOME") or "~").expanduser() / ".cache"
+    )
+    real = live.resolve()
+    key = hashlib.sha256(str(real).encode()).hexdigest()[:8]
+    return pathlib.Path(base) / "rediacc" / "ci-quick-clones" / ("%s-%s" % (real.name, key))
+
+
+def resolve_pin(
+    live: pathlib.Path, spec: str, environ: Mapping[str, str]
+) -> tuple[pathlib.Path, str] | str:
+    """`(clone, full sha)` for `--commit <spec>`, or why it cannot run. The commit must be HEAD or an ancestor of it in `live`, and the kept clone must already sit at it (`npm run ci:quick -- --commit <sha>` puts it there), so this run builds nothing but the clone's own tree."""
+    git = trigger.make_git(live)
+    sha = git(["rev-parse", "--verify", "--quiet", "%s^{commit}" % spec])
+    if not sha:
+        return "--commit %s names no commit in %s" % (spec, live)
+    if git(["merge-base", "--is-ancestor", sha, "HEAD"]) is None:
+        return "--commit %s (%s) is not an ancestor of HEAD in %s" % (spec, sha[:12], live)
+    clone = kept_clone_dir(live, environ)
+    at = trigger.make_git(clone)(["rev-parse", "HEAD"]) if clone.is_dir() else None
+    if at != sha:
+        return (
+            "the kept clone %s sits at %s, not at %s; run npm run ci:quick -- --commit %s first, which moves it there"
+            % (clone, at[:12] if at else "no commit", sha[:12], sha[:12])
+        )
+    return clone, sha
+
+
+def clone_environ(
+    environ: Mapping[str, str], live: pathlib.Path, clone: pathlib.Path
+) -> dict[str, str]:
+    """`environ` with every path naming the live tree rewritten to the clone and npm's own variables dropped (`cloneEnv`, quick-clone.ts), so no call quietly reads the live checkout."""
+    out: dict[str, str] = {}
+    named = re.compile(re.escape(str(live)) + r"(?=$|[/:])")
+    for key, value in environ.items():
+        if key.startswith("npm_") or key == "INIT_CWD":
+            continue
+        out[key] = named.sub(str(clone), value)
+    out["PWD"] = str(clone)
+    return out
+
+
 def main(
     argv: Sequence[str],
     *,
+    pin_fn: Callable[
+        [pathlib.Path, str, Mapping[str, str]], tuple[pathlib.Path, str] | str
+    ] = resolve_pin,
     root: pathlib.Path | None = None,
     host: Host | None = None,
     account: Account | None = None,
@@ -4656,10 +4889,27 @@ def main(
         return selftest(out)
     if opts.dry_run:
         return dry_run(root or paths.repo_root(), opts, out)
+    live = root or paths.repo_root()
+    run_root = live
+    publish_root: pathlib.Path | None = None
+    if opts.commit:
+        pin = pin_fn(live, opts.commit, os.environ if environ is None else environ)
+        if isinstance(pin, str):
+            log.error("%s: REFUSED: %s" % (NAME, pin))
+            return EXIT_FAILED
+        run_root, _sha = pin
+        publish_root = live
+        environ = clone_environ(os.environ if environ is None else environ, live, run_root)
     drill = lib.Drill("vmcheck", keep_work=opts.keep_work, stdout=out)
+    if opts.commit:
+        # The gateway record (`.account-state`), `run.sh account dev` and the gateway's environment are the clone's own; the main checkout's gateway is never read or restarted.
+        drill.root = run_root
+        drill.commit = _sha
+        drill._original_env = clone_environ(drill._original_env, live, run_root)
     drill.init()
     check = VmCheck(
-        root=root or paths.repo_root(),
+        root=run_root,
+        publish_root=publish_root,
         opts=opts,
         host=host or Host(),
         account=account or DrillAccount(drill),
@@ -4682,5 +4932,42 @@ def main(
         drill.teardown()
 
 
+# The cores a run holds on the machine-wide pool (`core_lease`) while its battery and drills run. The suites, forks and drills of one run keep several cores busy for tens of minutes, and a run that took none was one of the uncounted loads behind load 134 on 24 cores of 2026-11-24 while `core_lease.py status` showed 24 of 24 tokens free (host_slots, PR-TASK 79b7e92e). Four is a quarter of the pool the tests use and a sixth of a 24-core host: enough that a second lease client sees the run, little enough that a writer wave still fits beside it.
+CORE_SLOTS = 4
+# How long a run waits for its tokens. Past it the run goes ahead and says so, since a long ci:quick holding the pool must not stall a verdict that needs a fleet this run already waited for under `--wait`.
+CORE_SLOT_WAIT_S = 900.0
+
+
+def leased_main(argv: Sequence[str], **kwargs: Any) -> int:
+    """`main`, run holding `CORE_SLOTS` tokens of the machine-wide core pool. A read-only invocation (`LEASE_SAFE_FLAGS`) takes none, and a run already under a held lease (`CI_CORE_LEASE_HELD=1`) takes nothing and waits for nothing, as `host_slots.host_slot` defines."""
+    if LEASE_SAFE_FLAGS.intersection(argv):
+        return main(argv, **kwargs)
+    environ = kwargs.get("environ")
+    env = os.environ if environ is None else environ
+    stack = contextlib.ExitStack()
+    slot = None
+    try:
+        slot = stack.enter_context(
+            host_slots.host_slot(
+                CORE_SLOTS, label="vm:check", timeout=CORE_SLOT_WAIT_S, environ=env
+            )
+        )
+    except TimeoutError as exc:
+        log.warn("%s: %s; going ahead without the tokens" % (NAME, exc))
+    grant = slot.env if slot is not None else {}
+    with stack:
+        # The suites and drills this run starts inherit the grant, so a pytest wrapper under them does not lease the pool a second time.
+        before = dict(os.environ)
+        os.environ.update(grant)
+        try:
+            return main(argv, **kwargs)
+        finally:
+            for key in grant:
+                if key in before:
+                    os.environ[key] = before[key]
+                else:
+                    os.environ.pop(key, None)
+
+
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(leased_main(sys.argv[1:]))

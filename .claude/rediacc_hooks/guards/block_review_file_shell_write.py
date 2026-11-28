@@ -1,6 +1,6 @@
 """Refuse a Bash command that writes a per-commit review record under `agent/reviews/` by hand.
 
-WHY. The pre-bash half of `block_review_file_edit` (agent/plans/PLAN-per-commit-review.md section 6): the Edit/Write tools are refused there, so the same hand edit through the shell is refused here. The shapes are the ones a session reaches for: an output redirection (`>`, `>>`, `>|`), `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`install`/`rsync`/`ln` onto the directory, `truncate`, `dd of=`, and an
+WHY. The pre-bash half of the review record row of `block_guarded_path_edit` (agent/plans/PLAN-per-commit-review.md section 6): the Edit/Write tools are refused there, so the same hand edit through the shell is refused here. The shapes are the ones a session reaches for: an output redirection (`>`, `>>`, `>|`), `tee`, `sed -i`/`perl -i`, `cp`/`mv`/`install`/`rsync`/`ln` onto the directory, `truncate`, `dd of=`, and an
 interpreter one-liner or heredoc (`python3 -c`, `python3 - <<EOF`, `node -e`) whose code names the directory and opens something for writing. A tool's own output option is a write too (`sort -o`, `git diff --output=`, `find -fprint`), and so is any word of a command `shellscan.output_landings` does not list as a reader (`curl -o`, `tar -cf`, `touch`): that reading is a table of non-writers, so a tool
 nobody listed is refused when it names a review path rather than allowed.
 
@@ -13,6 +13,7 @@ THIS GUARD HAS NO BASH TWIN (`OWN_SUITE = True`), so it is judged against `test-
 """
 
 import ast
+import collections
 import contextlib
 import fnmatch
 import functools
@@ -22,9 +23,13 @@ import os
 import posixpath
 import re
 import shlex
+import subprocess
 import types
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _write_rules, tables
+
+__getattr__ = tables("block_review_file_shell_write", "EDGE_CASES", "R")
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -52,120 +57,9 @@ _LITERAL = re.compile(r"'((?:[^'\\\n]|\\.)*)'|\"((?:[^\"\\\n]|\\.)*)\"|`([^`\n]*
 # How deep a command handed to a shell from inside a program is followed; a program that runs a program that runs a shell is two.
 MAX_DEPTH = 4
 
-MESSAGE = (
-    "BLOCKED: this command writes a per-commit review record by hand (%s).\n"
-    "\n"
-    "Review files are written by the reviewer and closed only through the verb, which checks\n"
-    "the fix before it records it. A hand edit is how a high finding disappears without a fix.\n"
-    "\n"
-    "  close a finding:  .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> fixed <sha>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> not-a-bug <evidence path:line>\n"
-    "                    .claude/hooks/stop/worklist.py --review-mark <me> <finding-id> waived #<item> ASKED:<YYYY-MM-DDTHH:MM>Z\n"
-    "  re-review:        python3 .claude/hooks/stop/wl_review.py --run <sha> --branch <branch>\n"
-    "  record them:      .claude/hooks/stop/worklist.py --review-commit <me>\n"
-)
-
-R = "agent/reviews/1231-9/" + "a" * 40 + ".md"
-
-EDGE_CASES = [
-    ("a redirect", "printf 'Resolution: fixed' > %s" % R),
-    ("an append", "echo x >> %s" % R),
-    ("an append to the clean ledger", "echo '{}' >> agent/reviews/1231-9/clean.jsonl"),
-    ("a cat heredoc", "cat > %s <<'EOF'\n# Review\nEOF" % R),
-    ("tee", "echo x | tee %s" % R),
-    ("tee -a", "echo x | tee -a %s >/dev/null" % R),
-    ("sed -i", "sed -i 's/\\[high\\]/[low]/' %s" % R),
-    ("cp onto the directory", "cp /tmp/x.md agent/reviews/1231-9/"),
-    ("mv onto a review file", "mv /tmp/x.md %s" % R),
-    ("cp -t names the directory", "cp -t agent/reviews/1231-9 /tmp/x.md"),
-    # #5077391c: xargs appends its feed, so under `-t` a fed word is a source and without it the last one is the destination.
-    # The fed word as the file an in-place editor, tee or truncate writes. Each was allowed before: the editor's own words named no review file.
-    ("xargs feeds a review file to sed -i", "echo %s | xargs sed -i s/a/b/" % R),
-    ("xargs -I feeds a review file to sed -i", "echo %s | xargs -I{} sed -i s/a/b/ {}" % R),
-    ("xargs feeds a review file to tee", "echo %s | xargs tee" % R),
-    ("xargs feeds a review file to truncate", "echo %s | xargs truncate -s 0" % R),
-    (
-        "xargs -I feeds a review directory to truncate",
-        "echo agent/reviews/1231-9 | xargs -I{} truncate -s 0 {}/x.md",
-    ),
-    ("xargs feeds a review file to a reader", "echo %s | xargs cat" % R),
-    ("xargs feeds another file to sed -i", "echo /tmp/x.md | xargs sed -i s/a/b/"),
-    ("xargs feeds a review file to cp -t elsewhere", "echo %s | xargs cp -t /tmp" % R),
-    (
-        "xargs feeds cp -t the review directory a source",
-        "echo /tmp/x.md | xargs cp -t agent/reviews/1231-9",
-    ),
-    ("xargs feeds cp a review file as its destination", "echo %s | xargs cp /tmp/x.md" % R),
-    (
-        "xargs feeds a review file then a destination elsewhere",
-        "echo %s /tmp/out.md | xargs cp" % R,
-    ),
-    ("a copy OUT through cp -t", "cp -t /tmp %s" % R),
-    ("truncate", "truncate -s 0 %s" % R),
-    ("python -c open for write", "python3 -c \"open('%s','w').write('x')\"" % R),
-    (
-        "python heredoc write_text",
-        "python3 - <<'EOF'\nimport pathlib\npathlib.Path('%s').write_text('x')\nEOF" % R,
-    ),
-    ("after cd", "cd agent/reviews/1231-9 && echo x > a.md"),
-    ("inside sh -c", "sh -c 'echo x > %s'" % R),
-    # allowed
-    ("reading one", "cat %s" % R),
-    ("grep over the directory", "grep -rn high agent/reviews/"),
-    ("echo naming the path", "echo 'see agent/reviews/1231-9/'"),
-    ("a commit that carries them", "git commit -F /tmp/m.txt -- agent/reviews/1231-9/"),
-    ("git add", "git add -- agent/reviews/1231-9/%s.md" % ("a" * 40)),
-    (
-        "the mark verb",
-        ".claude/hooks/stop/worklist.py --review-mark abcd1234 aaaaaaaa.1 fixed %s" % ("b" * 40),
-    ),
-    ("the reviewer", "python3 .claude/hooks/stop/wl_review.py --run abc --branch 1231-9"),
-    ("a copy OUT of the directory", "cp %s /tmp/x.md" % R),
-    ("a python read", "python3 -c \"print(open('%s').read())\"" % R),
-    (
-        "python heredoc rewriting a URL that names the directory",
-        (
-            "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('t.py')\n"
-            "p.write_text(p.read_text().replace('\"https://github.com/o/r/blob/h/agent/reviews/b/x.md\"', 'U'))\nEOF"
-        ),
-    ),
-    ("an unrelated redirect", "echo x > /tmp/out.txt"),
-    ("a sibling directory", "echo x > agent/reviews-old/x.md"),
-    # #503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own.
-    (
-        "sed -i launched by find under the directory",
-        "find agent/reviews -name '*.md' -exec sed -i s/high/low/ {} +",
-    ),
-    (
-        "a launched cp onto what find names",
-        r"find agent/reviews -name '*.md' -exec cp /tmp/x.md {} \;",
-    ),
-    (
-        "a launched copy OUT of the directory",
-        r"find agent/reviews -name '*.md' -exec cp {} /tmp/ \;",
-    ),
-    # A Python program is judged by its write TARGETS: a review path in written content is data.
-    (
-        "a review path only in written content",
-        "python3 - <<'EOF'\nimport pathlib\np = pathlib.Path('/tmp/s/f.py')\ns = p.read_text().replace('X', 'agent/reviews/feat/%02d.md')\np.write_text(s)\nEOF",
-    ),
-    (
-        "a target built from a review path",
-        "python3 - <<'EOF'\nimport pathlib\nT = 'agent/reviews/feat/%02d.md'\npathlib.Path(T % 1).write_text('x')\nEOF",
-    ),
-    # e30f1ad1.1: pathlib's `.open` takes its mode first, `os.open` takes flags.
-    ("Path.open for write", "python3 -c \"import pathlib; pathlib.Path('%s').open('w')\"" % R),
-    ("Path.open for read", "python3 -c \"import pathlib; pathlib.Path('%s').open().read()\"" % R),
-    ("os.open for write", "python3 -c \"import os; os.open('%s', os.O_WRONLY)\"" % R),
-    # e30f1ad1.2: a command a program hands to a shell is judged as the shell line it is.
-    ("os.system redirect", "python3 -c \"import os; os.system('echo x > %s')\"" % R),
-    ("subprocess argv tee", "python3 -c \"import subprocess; subprocess.run(['tee', '%s'])\"" % R),
-    ("node execSync redirect", "node -e \"require('child_process').execSync('echo x > %s')\"" % R),
-    (
-        "os.system reading the directory",
-        "python3 -c \"import os; os.system('cat %s > /tmp/x')\"" % R,
-    ),
-]
+# The refusal (and the edit half's path test and message) are one row of `_write_rules.ROWS`; the shell half keeps its own word test, REVIEW_WORD, since a directory word without the trailing slash is a review target here.
+RULE = _write_rules.ROWS["review_file"]
+MESSAGE = RULE.message[1]
 
 
 def _is_review(word, cwd=None, base=None):
@@ -182,14 +76,10 @@ def _is_review(word, cwd=None, base=None):
 
 # A WORD IS ALSO READ WHERE THE DISK PUTS IT (#816a7c93). With `lnk` a link to `agent/reviews/sub`, `cd lnk && tee x.md`, `echo x > lnk/x.md` and `cp /tmp/a lnk/` write review files while no word, and no directory text the walk keeps, spells the review directory: the lexical reading allowed all three (rc 0), logical `cd` or physical. `base` is the absolute directory the run executes in, and the word is resolved against it on disk.
 # Read only for a word short enough to be a path: a heredoc body or a commit message is not one, and resolving it would only spend system calls.
-_PATH_MAX = 4096
+_PATH_MAX = shellscan.PATH_MAX
 
 
-def _base(where, cwd):
-    """The absolute directory a run in `where` (`shellscan.write_directory`'s answer) executes in, or None when the hook's own directory is not an absolute path."""
-    if not cwd or not os.path.isabs(str(cwd)):
-        return None
-    return os.path.join(str(cwd), str(where)) if where else str(cwd)
+_base = shellscan.run_base
 
 
 def _lands_in_reviews(word, base):
@@ -571,42 +461,19 @@ def _globs_reviews(cmd, cwd):
     return False
 
 
-def _literals(text):
-    """Every quoted string literal in `text` (single, double or backquoted), unescaped no further."""
-    for m in _LITERAL.finditer(text):
-        yield next(g for g in m.groups() if g is not None)
+_literals = functools.partial(_write_rules.literals, pattern=_LITERAL)
 
 
 def _code_writes_through_disk(code, base, program=None):
-    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1).
-
-    A literal that spells the directory is the precise readings' to judge (a read-only `os.open`, a URL); this reading is for a path that reaches it only on disk. A Python `program` that parses is judged by its write TARGETS through `shellscan.python_writes_to`, so a literal bound to a name on one line and written on another is followed, and a link that is only read is not a write (review f25b1360.1, .3). Other code is read line by line, with a name assigned from such a literal standing for it on a later line.
-    """
-
-    def through_link(value):
-        return (
-            isinstance(value, str)
-            and not REVIEW_WORD.search(value)
-            and _lands_in_reviews(value, base)
-        )
-
-    if program is not None:
-        verdict = shellscan.python_writes_to(program, through_link)
-        if verdict is not None:
-            return verdict
-    names = {
-        m.group(1)
-        for m in re.finditer(r"\b([A-Za-z_$][\w$]*)\s*=\s*([^\n=]*)", code)
-        if any(through_link(lit) for lit in _literals(m.group(2)))
-    }
-    for line in code.splitlines():
-        if not WRITE_CODE.search(line):
-            continue
-        if any(through_link(lit) for lit in _literals(line)):
-            return True
-        if any(re.search(r"(?<![\w$])%s(?![\w$])" % re.escape(n), line) for n in names):
-            return True
-    return False
+    """Interpreter code that writes, through a link, to a path inside the review directory that its text never spells: `open('lnk/x.md','w')` with `lnk` a link into it (review 84fdeff8.1). The shared reading, `_write_rules.code_writes_through_disk`, with this guard's spelling and landing tests."""
+    return _write_rules.code_writes_through_disk(
+        code,
+        spells=REVIEW_WORD.search,
+        lands=lambda value: _lands_in_reviews(value, base),
+        write_code=WRITE_CODE,
+        literal=_LITERAL,
+        program=program,
+    )
 
 
 _GLOB = frozenset("*?[")
@@ -724,45 +591,34 @@ def _without_ref_operands(run, argv):
     return out
 
 
-def _operands(argv):
-    return [a for a in argv if not (a.startswith("-") and len(a) > 1)]
+_operands = shellscan.plain_operands
 
 
-def _run_operands(run, argv):
-    """`_operands`, with a `find -exec` run's `{}` read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews`, so the find's starting points (`shellscan.Launch.starts`) stand in for `{}`, in place. A `{}` that is a copy's SOURCE is still not its last operand, so `-exec cp {} /tmp/ ';'` stays a copy out."""
-    ops = _operands(argv)
-    # What xargs reads becomes this command's words, appended or put where its marker stands, whatever the marker is (`shellscan.xargs_fed_operands`). It over-reads the operands and never under-reads them; a file named only inside an option's value (`sort --output=X/kept.md`) is not an operand, fed or typed, and is read by the `shellscan.output_landings` arm of `_offending` instead (worklist item ff3ab826): `echo <review file> | xargs sed -i ...` named no review file among sed's own words and was allowed.
-    ops = shellscan.xargs_fed_operands(run, ops)
-    # What a listing over the review directory or an ancestor feeds is review paths (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` feeds the words `grep -rl x agent/`, none of them a review file.
-    if _fed_a_listing(run):
-        ops.append(_WORST)
-    if run.launch is None or run.launch.launcher != "find":
-        return ops
-    out: list[str] = []
-    for a in ops:
-        out.extend(run.launch.starts if "{}" in a else [a])
-    return out
+# How each `shellscan.run_word_writes` reading is named in the refusal, `%(name)s` the writing command and `%(word)s` the word. "remove" is not taken: `rm` keeps the verdict the reader table gives it (`shellscan._KEPT_VERDICT`), and refusing it is a separate policy decision. `dd of=` is the "option" record of a `dd` run, named as the operand arms name theirs.
+_WORD_WRITES = {
+    "tee": "tee into the review directory",
+    "in-place": "%(name)s -i on a review file",
+    "copy": "%(name)s onto the review directory",
+    "truncate": "truncate of a review file",
+}
+_OUTPUT_WRITES = ("option", "unread")
 
 
-def _operand_write(run, name, argv, where, base, cwd):
-    """A description of the review file `run` writes through one of its operands read from `argv` (tee, an in-place sed or perl, a copy's destination, truncate, `dd of=`), or ""."""
-    operands = _run_operands(run, argv)
-    if name == "tee" and any(_is_review(a, where, base) for a in operands):
-        return "tee into the review directory"
-    # In place is sed's or perl's own option parse (review 3f53e99e.2 sweep): `sed -Ei` and `perl -pi -e` are in place.
-    in_place = shellscan.in_place_edit(run) is not None
-    if in_place and any(_is_review(a, where, base) for a in operands):
-        return "%s -i on a review file" % name
-    # Where a copy lands is `shellscan.run_copies`' getopt reading, not the last operand (review cac47d16.1 sweep): `cp -t agent/reviews/x /tmp/a.md` left the source last.
-    # `cwd` places a relative fed glob in the run's own directory (#e5b0540a). Two kinds of run get the shape reading instead: a command a PROGRAM hands down (the recursion in `_offending` passes no `cwd`, since it runs wherever that program does), and one a launcher starts (`find -exec`, `npx`: `shellscan._feed_directories`, review 9ed30a8a.1).
-    copies = shellscan.run_copies(run, argv, cwd)
-    if copies is not None and any(_is_review(d, where, base) for d in copies[1]):
-        return "%s onto the review directory" % name
-    if name == "truncate" and any(_is_review(a, where, base) for a in operands):
-        return "truncate of a review file"
-    if name == "dd" and any(a.startswith("of=") and _is_review(a[3:], where, base) for a in argv):
+def _word_write(run, name, word, how, where, base):
+    """A description of the review file `run` writes through `word`, one `shellscan.run_word_writes` reading, or "". A `{}` a `find -exec` run holds is read as what the find walks (#503f0ba8): `find agent/reviews -exec sed -i ... {} +` edits files under `agent/reviews` (`shellscan.find_starts`)."""
+    if not any(_is_review(form, where, base) for form in shellscan.find_starts(run, [word])):
+        return ""
+    if how == "option" and name == "dd":
         return "dd of= a review file"
-    return ""
+    if how == "option":
+        return "%s writing %s through its own output option" % (name, word)
+    if how == "unread":
+        return (
+            "%s naming %s, and %s is not a command this guard reads as a reader; "
+            "read a review file with cat, grep, head, sed -n, jq or git show, and call "
+            "a command itself rather than through a shell function"
+        ) % (name, word, name)
+    return _WORD_WRITES[how] % {"name": name, "word": word}
 
 
 def _offending(cmd, depth=0, cwd=None):
@@ -814,23 +670,29 @@ def _offending(cmd, depth=0, cwd=None):
             (words, "" if definite else _UNKNOWN_NOTE % shlex.join(words))
             for words, definite in _argv_readings(run, argv, cmd)
         ]
-        for words, note in variants:
-            what = _operand_write(run, name, list(words), where, base, cwd)
-            if what:
-                return what + note
+        # Each reading is `shellscan.run_word_writes`' (tee; an in-place sed or perl by its own option parse, review 3f53e99e.2, whose script is its program and not a file it writes; a copy's destination by `run_copies`' getopt reading, review cac47d16.1, placed the way the tool places it; truncate; `dd of=`; and `shellscan.output_landings` for every other command), over the words with a git ref verb's refs, refspecs and names dropped (`_without_ref_operands`). What a listing over the review directory or an ancestor feeds is review paths (d218ebf3): `grep -rl x agent/ | xargs sed -i ...` feeds the words `grep -rl x agent/`, none of them a review file, so the fed operands carry `_WORST`. A command a PROGRAM hands down is read with `cwd` None, since it runs wherever that program does: a copy's destination by its shape, and one a launcher starts (`find -exec`, `npx`) the same way (`shellscan._feed_directories`, review 9ed30a8a.1).
         # EVERY OTHER COMMAND IS READ BY `shellscan.output_landings` (worklist item ff3ab826): a command its table lists writes only through its own output spellings (`sort -o`, `git diff --output=`, `find -fprint`, `sed 'w ...'`, `uniq IN OUT`), and one it does not list is read as writing any word it names, since `curl -o`, `tar -cf`, `pandoc -o`, `touch` and `prettier --write` each spell
-        # the write their own way. Each was allowed before (rc 0). The words are read twice, as typed and as bash expands them (`F=<review file>; sort -o $F`).
-        for words, note in variants:
-            for word, how in shellscan.output_landings(run, _without_ref_operands(run, words), cwd):
-                if not _is_review(word, where, base):
-                    continue
-                if how == "option":
-                    return "%s writing %s through its own output option%s" % (name, word, note)
-                return (
-                    "%s naming %s, and %s is not a command this guard reads as a reader; "
-                    "read a review file with cat, grep, head, sed -n, jq or git show, and call "
-                    "a command itself rather than through a shell function%s"
-                ) % (name, word, name, note)
+        # the write their own way. Each was allowed before (rc 0). The operand arms are asked of every reading before the output words are, so a command that writes through both is named by its operand.
+        listing = (_WORST,) if _fed_a_listing(run) else ()
+        readings = [
+            (
+                shellscan.run_word_writes(
+                    run, _without_ref_operands(run, list(words)), cwd, listing
+                ),
+                note,
+            )
+            for words, note in variants
+        ]
+        for output in (False, True):
+            for writes, note in readings:
+                for word, how, _append in writes:
+                    if how == "remove" or output != (
+                        how in _OUTPUT_WRITES and not (how == "option" and name == "dd")
+                    ):
+                        continue
+                    what = _word_write(run, name, word, how, where, base)
+                    if what:
+                        return what + note
         # A script run DIRECTLY by its shebang is the interpreter it names (review 05c4df4d.2): no interpreter word stands in the command.
         shebang = shellscan.shebang_interpreter(run, cwd)
         if shebang and shebang.startswith(INTERPRETERS) and not name.startswith(INTERPRETERS):
@@ -851,6 +713,10 @@ def _offending(cmd, depth=0, cwd=None):
             if _code_writes_through_disk(code, base, program):
                 return "%s code that writes through a link into the review directory" % name
             verdict = _python_writes_review(program, depth) if program is not None else None
+            # An edited tracked script is judged by what its edit adds (r92 seed S8).
+            if verdict and kind == "file":
+                added = _dirty_edit_adds_review_write(run, cwd, program, depth)
+                verdict = verdict if added is None else added
             if verdict is None:
                 verdict = _code_writes_review(code, depth)
             if verdict:
@@ -1057,8 +923,18 @@ def _python_writes_review(program, depth=0):
 
     THE SHELL COMMANDS ARE ADDITIVE (e30f1ad1.2): a program whose only write is `os.system('echo x > agent/reviews/a.md')` names no write target, so each command it hands to a shell is rendered and judged by `_offending` as the shell line it is. A review path in written CONTENT is still data: only a string that reaches a shell is read as a command.
     """
+    found = _python_review_writes(program, depth)
+    return None if found is None else bool(found)
+
+
+def _python_review_writes(program, depth=0):
+    """The writes `_python_writes_review` refuses, as a multiset of line-free keys (`collections.Counter`), empty for none; None when the program does not parse.
+
+    A key is what a write IS, never where it sits: the target as the ast spells it and as `_render` reads it, and for a target fed by a listing the rendered roots of every listing call too, so a comment or a moved block changes no key while a new target, a new value reaching an old one, or a listing re-rooted under the review directory does. `_dirty_edit_adds_review_write` compares the keys of a tracked script's working copy with its HEAD copy's.
+    """
+    found: collections.Counter = collections.Counter()
     if REVIEW_TEXT.rstrip("/") not in program and not _AGENT_SEGMENT.search(program):
-        return False
+        return found
     try:
         tree = ast.parse(program)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
@@ -1069,20 +945,88 @@ def _python_writes_review(program, depth=0):
     def holds_review(expr):
         return shellscan.python_holds(expr, _is_review_string, review_names)
 
+    def spelled(expr):
+        return (ast.unparse(expr), _render(expr, bound, review_names))
+
     imports = shellscan.python_imports(tree)
     targets = list(shellscan.python_write_targets(tree, imports))
-    if any(holds_review(t) for t in targets):
-        return True
+    found.update(("target", *spelled(t)) for t in targets if holds_review(t))
     # A target bound to what a listing over the review directory or an ancestor returns (d218ebf3), and a command handed to a shell with such a name in it, rendered as a review path.
     listed, calls = _python_listing_names(tree, imports, bound, review_names)
-    parents = {id(c): p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
-    if any(_listing_target(t, listed, calls, bound, review_names, parents) for t in targets):
-        return True
+    if calls:
+        roots = tuple(
+            sorted(
+                ast.unparse(n) + "\0" + "\0".join(_render(a, bound, review_names) for a in n.args)
+                for n in ast.walk(tree)
+                if isinstance(n, ast.Call) and id(n) in calls
+            )
+        )
+        parents = {id(c): p for p in ast.walk(tree) for c in ast.iter_child_nodes(p)}
+        found.update(
+            ("listed", *spelled(t), *roots)
+            for t in targets
+            if _listing_target(t, listed, calls, bound, review_names, parents)
+        )
     unbound = {k: v for k, v in bound.items() if k not in listed}
-    return any(
-        REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
+    found.update(
+        ("shell", c)
         for c in _shell_commands(tree, imports, unbound, review_names | listed)
+        if REVIEW_TEXT.rstrip("/") in c and _offending(c, depth + 1)
     )
+    return found
+
+
+def _script_target(run, cwd):
+    """The file a run executes BY PATH, as `shellscan.interpreter_program` resolves it (a script operand, or the run's own word for a script run by its shebang), or None for a run with no such file."""
+    base = run.name.rsplit("/", 1)[-1]
+    if base.startswith(INTERPRETERS):
+        kind, value = shellscan.program_parse(base, list(run.argv))
+        if kind != "file" or not value:
+            return None
+    else:
+        value = run.name
+    return shellscan._script_path(value, run.cwd, cwd)
+
+
+def _head_text(target):
+    """The text HEAD holds for `target` in the checkout that tracks it, or None when no checkout tracks it there (untracked, staged only, outside any checkout, unreadable)."""
+    try:
+        done = subprocess.run(
+            ["git", "--literal-pathspecs", "show", "HEAD:./" + os.path.basename(target)],
+            cwd=os.path.dirname(target) or ".",
+            capture_output=True,
+            check=False,
+            timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if done.returncode != 0:
+        return None
+    return done.stdout.decode("utf-8", "replace")
+
+
+def _dirty_edit_adds_review_write(run, cwd, text, depth):
+    """For a TRACKED Python script with uncommitted edits: False when every write the working copy is refused for is one its HEAD copy already makes, True when the edit adds one, None when the comparison does not apply (the program is not that file on disk, git holds no HEAD copy, or either copy does not parse).
+
+    A TRACKED SCRIPT IS REVIEWED CODE, AND ITS EDIT IS THE DELTA (r92 seed S8). `shellscan` exempts a tracked script only while it matches HEAD (review b922f15c.3), so an edit as small as a comment sent `.ci/scripts/quality/check_plan_record.py` to the full reading, which reads a write of `git ls-files agent` entries into a scratch view as a write of listed review paths, and `python3 .ci/scripts/quality/check_plan_record.py --rendered-only --update` was refused (rc 2) once the script was dirty and allowed (rc 0) while it was clean. What HEAD already does is what the exemption trusts; what the edit adds is judged. A residue: an edit that makes an old target land elsewhere while it spells and renders the same is read as that old write.
+    """
+    target = _script_target(run, cwd)
+    if target is None:
+        return None
+    try:
+        with open(target, encoding="utf-8", errors="replace") as handle:
+            if handle.read() != text:
+                return None
+    except OSError:
+        return None
+    head = _head_text(target)
+    if head is None:
+        return None
+    now = _python_review_writes(text, depth)
+    was = _python_review_writes(head, depth)
+    if now is None or was is None:
+        return None
+    return bool(now - was)
 
 
 def _is_python_run(run, cwd):

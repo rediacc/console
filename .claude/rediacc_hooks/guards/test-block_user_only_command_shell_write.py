@@ -75,13 +75,14 @@ def _own_cases(shared):
     ]
 
 
+# The expanded forms (#7b3f34ae) are `shellscan.write_records`' now (CR5): a record per typed and per expanded word, each with its own `append`. These plants put the typed-only reading back into the guard's use of the records.
 MUTANTS = [
     (
         "a run's redirects read as typed (#7b3f34ae)",
         [
             (
-                "        for target in shellscan.redirect_targets(run):\n            why = redirect_refusal",
-                "        for target in run.writes:\n            why = redirect_refusal",
+                '            if write.run is run and write.how in ("redirect", "append", "tee"):\n',
+                '            if write.run is run and write.how in ("redirect", "append", "tee") and write.word in [*run.writes, *run.argv]:\n',
             )
         ],
     ),
@@ -89,8 +90,8 @@ MUTANTS = [
         "the append flag read as typed (#7b3f34ae)",
         [
             (
-                'appends = {target for op, target in _redirects(analysis) if op in (">>", "&>>")}',
-                'appends = {target for op, target in analysis.writes if op in (">>", "&>>")}',
+                "                why = redirect_refusal(write.word, here, write.append, base)\n",
+                "                why = redirect_refusal(write.word, here, write.append and write.word in run.writes, base)\n",
             )
         ],
     ),
@@ -102,8 +103,8 @@ MUTANTS = [
                 "    for _op, target in analysis.writes:\n        if _is_list(target, base=_base(None, cwd)):",
             ),
             (
-                "        for target in shellscan.redirect_targets(run):\n            if _is_list(target, prefix, base):",
-                "        for target in run.writes:\n            if _is_list(target, prefix, base):",
+                "            if write.run is not run or not _is_list(write.word, prefix, base):\n",
+                "            if write.run is not run or not _is_list(write.word, prefix, base) or write.word not in [*run.writes, *run.argv]:\n",
             ),
         ],
     ),
@@ -112,7 +113,6 @@ MUTANTS = [
 
 def _planted(shared, scratch, pairs):
     """The guard with `old` replaced by `new`, imported in-process from `scratch`; None when `old` is not in the guard outside its DEFECT declaration."""
-    shared._syspath.on_sys_path(str(shared.HERE.parents[2]))
     hookio = importlib.import_module("rediacc_hooks.hookio")
     good = importlib.import_module("rediacc_hooks.guards.%s" % STEM)
     src = pathlib.Path(str(good.__file__)).read_text(encoding="utf-8")

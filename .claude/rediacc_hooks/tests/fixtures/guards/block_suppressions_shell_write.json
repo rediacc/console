@@ -1,0 +1,24 @@
+{
+  "EDGE_CASES": [
+    ["a heredoc writing a python file with a marker", "cat > /r/x.py <<'EOF'\nimport os  # noqa: F401\nEOF"],
+    ["an append to a shell script", "echo '# shellcheck disable=SC2086' >> scripts/x.sh"],
+    ["tee into a TS file", "printf '// @ts-ignore\\n' | tee src/a.ts"],
+    ["sed -i adding a marker", "sed -i 's/x = 1/x = 1  # noqa: B010/' a.py"],
+    ["sed -i appending a marker line", "sed -i '/^import/a # noqa: E402' a.py"],
+    ["python -c writing a marker", "python3 -c \"open('a.py','a').write('x = 1  # noqa: B010')\""],
+    ["python heredoc writing a marker", "python3 - <<'EOF'\nimport pathlib\npathlib.Path('a.py').write_text('x = 1  # noqa: B010\\n')\nEOF"],
+    ["inside sh -c", "sh -c \"echo 'x = 1  # noqa: B010' >> a.py\""],
+    {"//": "CONTROLS."},
+    ["sed -i removing a marker", "sed -i 's/  # noqa: B010//' a.py"],
+    ["echo to the terminal", "echo 'never write # noqa: B010'"],
+    ["a commit message heredoc naming the marker", "git commit -F - <<'EOF'\nfix: drop the # noqa: B010 swaps\nEOF"],
+    ["a heredoc into a Markdown file", "cat > docs/x.md <<'EOF'\nNever write `# noqa: B010`.\nEOF"],
+    ["grep for markers", "grep -rnP '# noqa' .ci"],
+    ["a python program that only reads", "python3 -c \"print(open('a.py').read().count('# noqa'))\""],
+    ["an unrelated redirect", "echo hello > /tmp/out.txt"],
+    ["a heredoc python file with no marker", "cat > /r/x.py <<'EOF'\nimport os\nEOF"],
+    {"//": "#503f0ba8: a command `npx` or `find -exec` LAUNCHES is judged as a run of its own."},
+    ["sed -i launched by find -exec on the *.py it names", "find . -name '*.py' -exec sed -i 's/$/  # noqa: E501/' {} +"],
+    ["a launched grep only reads", "find . -name '*.py' -exec grep -n '# noqa' {} +"]
+  ]
+}

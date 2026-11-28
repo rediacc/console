@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "{{name}} annullato",
+        "descriptionShort": "Annulla un backup in esecuzione su una macchina remota",
         "description": "Annulla un backup in esecuzione su una macchina remota",
         "notRunning": "Nessun backup in esecuzione per la strategia \"{{name}}\""
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "Gestisci i backup",
       "drNudge": "Lo storage di configurazione non è attivato: le credenziali del tuo repository (passphrase LUKS) risiedono solo su questo host, quindi un ripristino bare-metal non può recuperarle. Attivalo con \"rdc config remote enable\" per sincronizzarle all'interno del blob di configurazione cifrato.",
       "list": {
+        "descriptionShort": "Elenca gli artefatti di backup su una macchina",
         "description": "Elenca gli artefatti di backup su una macchina.",
         "examples": {
           "basic": "Elenca i backup salvati per una macchina.",
@@ -42,6 +44,7 @@
         "placementRequired": "Specifica -m <machine> per indicare la macchina di cui vuoi elencare i backup."
       },
       "manifests": {
+        "descriptionShort": "Elenca i manifest degli snapshot di backup registrati sul server",
         "description": "Elenca i manifest degli snapshot di backup registrati sul server",
         "empty": "Nessun manifest di backup trovato.",
         "fetching": "Recupero dei manifest di backup...",
@@ -59,6 +62,7 @@
         "deployed": "{{name}} distribuito su {{machine}}",
         "deployFailed": "Distribuzione di {{name}} ripristinato non riuscita",
         "deploying": "Distribuzione di {{name}} su {{machine}} in corso...",
+        "descriptionShort": "Trasforma un artefatto di backup in un repository attivo",
         "description": "Trasforma un artefatto di backup in un repository attivo. Il posizionamento si specifica qui.",
         "examples": {
           "asNewRepo": "Ripristina un backup come nuovo repository e avvialo.",
@@ -119,13 +123,16 @@
         "salvageNeedsAs": "--salvage richiede --as <nuovo nome>: un'immagine danneggiata non viene mai posizionata sotto un nome esistente.",
         "salvageNeedsSnapshot": "--salvage richiede uno snapshot del chunk store da cui ripristinare.",
         "salvageWholeImage": "--salvage ripristina un'immagine intera; non si può combinare con --path o --to.",
-        "atIndexGap": "Lo snapshot {{snapshot}} non ha un elenco archiviato, quindi si legge {{indexed}}, acquisito {{gap}} prima."
+        "atIndexGap": "Lo snapshot {{snapshot}} non ha un elenco archiviato, quindi si legge {{indexed}}, acquisito {{gap}} prima.",
+        "registrationCleanupFailed": "Impossibile rimuovere la registrazione di {{name}} dopo l’errore ({{error}}); la configurazione la elenca ancora."
       },
       "retention": {
         "clear": {
+          "descriptionShort": "Rimuovi la politica dichiarata, in modo che torni ad applicarsi il valore predefinito del piano o del server",
           "description": "Rimuovi la politica dichiarata, in modo che torni ad applicarsi il valore predefinito del piano o del server."
         },
         "cleared": "Politica di conservazione rimossa per {{name}}. Da ora in poi si applica il valore predefinito del piano o del server.",
+        "descriptionShort": "Mostra la politica di conservazione degli snapshot applicata dal server",
         "description": "Mostra la politica di conservazione degli snapshot applicata dal server.",
         "empty": "Nessuna politica di conservazione dichiarata, quindi si applica il valore predefinito del piano o del server.",
         "knobNotAnInteger": "{{flag}} richiede un numero intero di snapshot da conservare, non \"{{value}}\".",
@@ -137,6 +144,7 @@
         "optionKeepWeekly": "Conserva lo snapshot più recente per ciascuna di queste settimane",
         "optionKeepYearly": "Conserva lo snapshot più recente per ciascuno di questi anni",
         "set": {
+          "descriptionShort": "Indica quanti snapshot conservare",
           "description": "Indica quanti snapshot conservare. Ogni parametro viene sostituito, non unito.",
           "success": "Politica di conservazione impostata per {{name}} ({{count}} regola/e). Gli snapshot esclusi vengono eliminati alla prossima pulizia.",
           "pending": "La modifica conserva meno, quindi attende la finestra di eliminazione ritardata e ha effetto il {{when}} (UTC) per \"{{name}}\". La politica mostrata resta in vigore fino ad allora."
@@ -144,6 +152,7 @@
         "effective": "Conservazione in vigore per {{name}}: {{source}}",
         "optionStream": "Applica solo a questo flusso di backup (un id di flusso); senza, vale il valore predefinito dell'intero repository",
         "preview": {
+          "descriptionShort": "Mostra quali snapshot eliminerebbe la prossima pulizia e quanto spazio libererebbe",
           "description": "Mostra quali snapshot eliminerebbe la prossima pulizia e quanto spazio libererebbe.",
           "nothing": "La prossima pulizia non elimina nulla di {{name}}.",
           "summary": "La prossima pulizia elimina {{count}} snapshot di {{name}}, ne conserva {{kept}} e libera {{bytes}}.",
@@ -163,19 +172,23 @@
         "pendingClear": "La rimozione della politica di \"{{name}}\" attende la finestra di eliminazione ritardata e ha effetto il {{when}} (UTC). La politica in vigore continua ad applicarsi fino ad allora."
       },
       "run": {
+        "descriptionShort": "Eseguire un backup adesso",
         "description": "Avvia immediatamente un backup su una macchina remota",
         "examples": {
           "basic": "Esegui subito una strategia di backup."
         }
       },
       "schedule": {
+        "descriptionShort": "Distribuisci la programmazione dei backup su una macchina remota (timer systemd)",
         "description": "Distribuisci la programmazione dei backup su una macchina remota (timer systemd)",
         "optionDryRun": "Visualizza le unità generate senza distribuirle",
         "optionForce": "Procedi anche se un backup è in esecuzione (la nuova unità si applica al prossimo tick; l'invocazione in corso mantiene la vecchia unità)",
         "optionResetFailed": "Cancella lo stato di errore sui servizi modificati dopo una distribuzione riuscita (disabilitato per default, preserva il segnale di errore)",
+        "optionAdoptOrigin": "Sposta le unità distribuite sul server account di questa configurazione (senza, un invio che cambierebbe il server a cui sono legate le unità viene rifiutato)",
         "success": "Programmazione backup distribuita su {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "Carica uno snapshot su storage a chunk: prima l'inventario completo, poi le celle modificate",
         "bwlimitInvalid": "--bwlimit deve essere una velocità come 100Mbps o 12.5M, ricevuto \"{{value}}\".",
         "completed": "Snapshot salvato per {{name}}",
         "description": "Carica uno snapshot su storage a chunk: prima l'inventario completo, poi le celle modificate",
@@ -206,11 +219,13 @@
         "optionAcceptIdentityChange": "Considera questa immagine come nuova base quando la sua identità LUKS è cambiata o si è ridotta; carica uno snapshot completo"
       },
       "status": {
+        "descriptionShort": "Mostra lo stato del backup e dei timer su una macchina remota",
         "description": "Mostra lo stato del backup e dei timer su una macchina remota"
       },
       "strategy": {
         "bandwidthUnconvertible": "Il limite di banda \"{{value}}\" non può essere convertito ({{reason}}). Usa byte al secondo (12500000), byte decimali (12.5M), byte binari (12Mi) o bit (100Mbps).",
         "bind": {
+          "descriptionShort": "Associa una strategia di backup a una macchina per distribuirvi la sua pianificazione",
           "alreadyBound": "La strategia di backup \"{{strategy}}\" è già associata alla macchina \"{{machine}}\"",
           "bound": "Strategia di backup \"{{strategy}}\" associata alla macchina \"{{machine}}\"",
           "description": "Associa una strategia di backup a una macchina per distribuirvi la sua pianificazione",
@@ -218,10 +233,12 @@
         },
         "description": "Gestisci le strategie di backup con nome (modalità hot/cold, destinazioni, pianificazione)",
         "list": {
+          "descriptionShort": "Elenca tutte le strategie di backup",
           "description": "Elenca tutte le strategie di backup"
         },
         "readBandwidthUnconvertible": "Il limite di banda in lettura \"{{value}}\" non può essere convertito ({{reason}}). Usa byte al secondo (50000000), byte decimali (50M), byte binari (48Mi), bit (400Mbps) oppure 0 per nessun limite.",
         "remove": {
+          "descriptionShort": "Rimuovi una strategia o destinazione di backup",
           "bound": "Impossibile rimuovere la strategia di backup \"{{strategy}}\": {{count}} macchinario/i la associano ancora: {{machines}}.",
           "boundNext": "Dissociala prima da quei macchinari, oppure rimuovila insieme alle sue associazioni.",
           "description": "Rimuovi una strategia o destinazione di backup",
@@ -241,6 +258,7 @@
           "syncFailed": "Impossibile sincronizzare le regole di replica: {{reason}}"
         },
         "set": {
+          "descriptionShort": "Crea o aggiorna una strategia di backup",
           "description": "Crea o aggiorna una strategia di backup",
           "examples": {
             "configure": "Configura la pianificazione e la modalità di una strategia di backup.",
@@ -291,11 +309,13 @@
           "dryRun": "Simulazione: la strategia \"{{strategy}}\" cambierebbe ({{changes}}). Non è stato scritto nulla."
         },
         "show": {
+          "descriptionShort": "Mostra i dettagli della strategia di backup",
           "description": "Mostra i dettagli della strategia di backup",
           "notConfigured": "Nessuna strategia di backup configurata",
           "notFound": "Strategia di backup \"{{name}}\" non trovata"
         },
         "unbind": {
+          "descriptionShort": "Dissocia una strategia di backup da una macchina",
           "description": "Dissocia una strategia di backup da una macchina",
           "notBound": "La strategia di backup \"{{strategy}}\" non è associata alla macchina \"{{machine}}\"",
           "unbound": "Strategia di backup \"{{strategy}}\" dissociata dalla macchina \"{{machine}}\""
@@ -303,6 +323,7 @@
       },
       "reconcile": {
         "checkSkipped": "Le lineage saltate non sono state verificate: {{lineages}}",
+        "descriptionShort": "Riallinea il registro dei byte archiviati di un repository a ciò che lo store contiene davvero (non elimina mai un chunk)",
         "description": "Riallinea il registro dei byte archiviati di un repository a ciò che lo store contiene davvero (non elimina mai un chunk)",
         "argRepoRef": "Repository da riconciliare (predefinito: tutti quelli nell'ambito del token)",
         "optionDryRun": "Mostra i valori senza modificare il registro",
@@ -332,6 +353,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "Mostra la quota di storage dei backup, i byte memorizzati e l'utilizzo per repository",
         "description": "Mostra la quota di storage dei backup, i byte memorizzati e l'utilizzo per repository",
         "empty": "Nessun utilizzo di storage dei backup ancora registrato per repository.",
         "fetching": "Recupero dell'utilizzo dello storage dei backup...",
@@ -341,6 +363,7 @@
         "throttled": "Lo spazio in attesa supera il limite di variazione di {{cap}}: un flusso di backup più rapido di uno all'ora viene rifiutato finché non si svuota."
       },
       "verify": {
+        "descriptionShort": "Verifica l'ancora di backup di un repository rispetto allo storage a chunk",
         "completed": "Backup verificato per {{name}}",
         "description": "Verifica l'ancora di backup di un repository rispetto allo storage a chunk",
         "failed": "Verifica del backup non riuscita per {{name}}",
@@ -367,6 +390,7 @@
         "description": "Gestisci gli snapshot archiviati",
         "snapshotIdArgument": "Id dello snapshot (vedi rdc backup manifests)",
         "delete": {
+          "descriptionShort": "Elimina uno snapshot archiviato. I suoi dati esclusivi vengono liberati dalla prossima garbage collection",
           "description": "Elimina uno snapshot archiviato. I suoi dati esclusivi vengono liberati dalla prossima garbage collection.",
           "notInRepo": "Lo snapshot {{snapshot}} non è nella cronologia archiviata di {{name}}. Per elencarne gli id: rdc backup manifests {{name}}",
           "success": "Eliminati {{count}} snapshot di {{name}}, incluso {{snapshot}}.",
@@ -440,6 +464,7 @@
         "confirmLineage": "Verranno eliminati tutti i {{count}} snapshot archiviati della linea {{name}} ({{bytes}}) e l'operazione è irreversibile. Digita l'id della linea per confermare:"
       },
       "check": {
+        "descriptionShort": "Verifica che uno snapshot si apra con la passphrase ripristinando un file",
         "description": "Verifica che uno snapshot si apra con la passphrase ripristinando un file",
         "needsCredential": "{{name}} non ha credenziali in questa configurazione, quindi il suo listing non può essere aperto.",
         "noIndex": "Lo snapshot {{snapshot}} di {{name}} non ha un listing archiviato e non può essere controllato così. Non è dimostrato.",
@@ -449,6 +474,7 @@
       },
       "repair": {
         "affected": "Snapshot che contengono questi chunk: {{snapshots}}",
+        "descriptionShort": "Ricarica dall'ancora di questa macchina i chunk persi o errati nello store",
         "description": "Ricarica dall'ancora di questa macchina i chunk persi o errati nello store",
         "dryRunDamage": "Trovati {{count}} chunk danneggiati; una simulazione non ha cambiato nulla.",
         "optionDryRun": "Mostra cosa verrebbe eliminato e ricaricato; non modifica nulla"
@@ -456,6 +482,7 @@
       "tocKey": {
         "description": "Gestisce la chiave del listing di navigazione di un repository",
         "sync": {
+          "descriptionShort": "Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa",
           "description": "Installa la chiave di listing del repository sulla sua macchina, o ne sostituisce una diversa",
           "optionDryRun": "Mostra cosa verrebbe fatto; non tocca nulla",
           "optionReplace": "Sostituisce una chiave diversa già presente sulla macchina (invia la passphrase come prova)"
@@ -492,11 +519,13 @@
       "immutability": {
         "description": "Mostrare o impostare la finestra di eliminazione ritardata dei backup archiviati",
         "show": {
+          "descriptionShort": "Mostrare la finestra di eliminazione ritardata in vigore",
           "description": "Mostrare la finestra di eliminazione ritardata in vigore",
           "window": "Eliminazione ritardata: un'eliminazione, una rimozione totale o una conservazione ridotta attende {{days}} giorno/i e fino ad allora può essere annullata.",
           "off": "L'eliminazione ritardata è disattivata: le eliminazioni hanno effetto subito."
         },
         "set": {
+          "descriptionShort": "Impostare la finestra di eliminazione ritardata in giorni (da 0 a 30)",
           "description": "Impostare la finestra di eliminazione ritardata in giorni (da 0 a 30)",
           "daysArgument": "Giorni di attesa di un'eliminazione prima che abbia effetto (da 0 a 30)",
           "applied": "La finestra di eliminazione ritardata è ora di {{days}} giorno/i.",
@@ -506,6 +535,7 @@
         "pending": "La finestra si riduce a {{days}} giorno/i il {{when}} (UTC). Fino ad allora restano in vigore {{current}} giorno/i."
       },
       "undelete": {
+        "descriptionShort": "Annullare l'eliminazione ritardata di uno snapshot prima che abbia effetto",
         "description": "Annullare l'eliminazione ritardata di uno snapshot prima che abbia effetto",
         "success": "Lo snapshot {{snapshot}} è mantenuto: la sua eliminazione è stata annullata.",
         "notWaiting": "Lo snapshot {{snapshot}} non era in attesa di eliminazione."
@@ -612,6 +642,24 @@
         "none": "Nessun cluster configurato. Aggiungine uno con: rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "Stampa uno script di completamento per bash, zsh, fish o PowerShell",
+      "description": "Stampa uno script di completamento per la shell indicata. Le parole di comandi, flag e scelte provengono dal contratto della CLI e si completano senza avviarla; i nomi delle risorse della configurazione, come macchine e repository, arrivano dalla ricerca nascosta __complete e restano in memoria per la sessione della shell finché il file di configurazione non cambia. Caricalo con eval \"$(rdc completion bash)\" o eval \"$(rdc completion zsh)\", rdc completion fish | source oppure rdc completion pwsh | Out-String | Invoke-Expression.",
+      "shellArgument": "Shell per cui stampare lo script: bash, zsh, fish o pwsh",
+      "complete": {
+        "descriptionShort": "Stampa i nomi di un tipo di risorsa della configurazione, uno per riga (interno)",
+        "kindOption": "Tipo di risorsa di cui stampare i nomi: machine, repo, datastore, cluster, provider o strategy",
+        "configOption": "Configurazione di cui leggere il file (predefinita: REDIACC_CONFIG, altrimenti rediacc)"
+      },
+      "errors": {
+        "unknownShell": "Shell sconosciuta \"{{shell}}\". Shell supportate: {{shells}}.",
+        "unknownKind": "Tipo di risorsa sconosciuto \"{{kind}}\". Tipi letti dal file di configurazione: {{kinds}}.",
+        "configMissing": "File di configurazione non trovato: {{path}}",
+        "configInvalid": "Il file di configurazione {{path}} non è una configurazione valida: {{error}}",
+        "remoteConfig": "Il file di configurazione {{path}} punta a una configurazione remota; i nomi delle sue risorse risiedono sul server e non vengono completati.",
+        "unsafeWord": "La parola del contratto \"{{word}}\" non può essere scritta in uno script di completamento della shell."
+      }
+    },
     "config": {
       "access": {
         "add": {
@@ -629,6 +677,7 @@
         "emptyRangeFlag": "{{flag}} richiede almeno un CIDR, ma il valore è vuoto",
         "keyNotFound": "Chiave di accesso \"{{key}}\" non trovata",
         "list": {
+          "descriptionShort": "Elenca le chiavi di accesso della configurazione",
           "description": "Elenca le chiavi di accesso della configurazione",
           "noKeys": "Nessuna chiave di accesso in questa configurazione. Aggiungine una con 'config access add'"
         },
@@ -646,6 +695,7 @@
           "success": "Intervalli di origine della configurazione impostati: {{ranges}}"
         },
         "remove": {
+          "descriptionShort": "Rimuovi una chiave di accesso dalla configurazione",
           "description": "Rimuovi una chiave di accesso dalla configurazione",
           "pushHint": "Le sue righe restano su {{machines}} finché lì non viene eseguito 'machine access push'",
           "success": "Chiave di accesso \"{{key}}\" rimossa"
@@ -654,15 +704,18 @@
       "audit": {
         "description": "Ispeziona il log di audit della configurazione (JSONL con catena di hash in ~/.config/rediacc/audit.log.jsonl)",
         "log": {
+          "descriptionShort": "Stampa le voci di audit recenti come JSON",
           "description": "Stampa le voci di audit recenti come JSON",
           "optionActor": "Filtra per tipo di attore (human|agent)",
           "optionPath": "Filtra per glob JSON Pointer (es. /credentials/*)",
           "optionSince": "Mostra solo le voci più recenti di (es. '24h', '7d', timestamp ISO)"
         },
         "tail": {
+          "descriptionShort": "Trasmette in streaming le nuove voci di audit man mano che vengono scritte (Ctrl+C per fermare)",
           "description": "Trasmette in streaming le nuove voci di audit man mano che vengono scritte (Ctrl+C per fermare)"
         },
         "verify": {
+          "descriptionShort": "Verifica l'integrità della catena di hash SHA-256 su tutte le voci di audit",
           "chainBroken": "Catena interrotta alla riga {{line}}: il file è stato manomesso o corrotto.",
           "chainOk": "Integrità della catena verificata su {{count}} voci.",
           "description": "Verifica l'integrità della catena di hash SHA-256 su tutte le voci di audit"
@@ -688,20 +741,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "Cancella i valori predefiniti (tutti o una chiave specifica)",
         "allCleared": "Tutti i valori predefiniti cancellati",
         "description": "Cancella i valori predefiniti (tutti o una chiave specifica)",
         "keyCleared": "\"{{key}}\" cancellato"
       },
       "current": {
+        "descriptionShort": "Mostra la configurazione attiva: nome, file, server e canale risolti, stato del token",
         "description": "Mostra la configurazione attiva: nome, file, server e canale risolti, stato del token"
       },
       "delete": {
+        "descriptionShort": "Elimina un file di configurazione",
         "description": "Elimina un file di configurazione",
         "success": "Configurazione \"{{name}}\" eliminata"
       },
       "description": "Gestisci i file di configurazione: crea, cambia, modifica, riconcilia lo stato e le funzionalità trasversali (campi, audit, chiavi SSH, sincronizzazione remota).",
       "descriptionShort": "Gestisci i file di configurazione",
       "edit": {
+        "descriptionShort": "Apre la configurazione attiva in $EDITOR come proiezione JSONC oscurata",
         "abortAfterRetries": "Operazione annullata dopo {{count}} tentativi falliti. Bozza conservata in: {{path}}",
         "applied": "Applicato {{path}}",
         "bannerRedacted": "I campi sensibili vengono mostrati come stub <redacted:KIND>:DIGEST che vengono reintrodotti correttamente.",
@@ -715,6 +772,7 @@
         "optionApply": "Applica un file JSONC modificato (ignora l'avvio di $EDITOR)",
         "optionCurrentSecrets": "File JSON che mappa pointer→valore in chiaro precedente per il knowledge-gate su --apply",
         "optionDump": "Stampa la configurazione corrente come JSONC su stdout (sola lettura; sicuro per gli agenti se oscurato)",
+        "optionRedacted": "Oscura i valori sensibili nell'output di --dump (comportamento predefinito; non combinabile con --reveal)",
         "optionEditor": "Sovrascrittura del comando dell'editor (segue la precedenza di git: flag > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
         "optionReveal": "Mostra il testo in chiaro per i valori sensibili (solo TTY interattivo; registrato)",
         "rotateDeclined": "Annullato; bozza conservata nel file temporaneo dell'editor.",
@@ -727,23 +785,27 @@
         "description": "Operazioni sui campi di configurazione con indirizzo tramite pointer (get/set/unset/rotate/list). Pointer JSON (RFC 6901) come /credentials/cfDnsApiToken.",
         "descriptionShort": "Operazioni sui campi di configurazione con indirizzo tramite pointer",
         "get": {
+          "descriptionShort": "Leggi un singolo valore di configurazione tramite JSON Pointer",
           "description": "Leggi un singolo valore di configurazione tramite JSON Pointer. I campi sensibili vengono oscurati a meno che non si usi --reveal (solo per utenti).",
           "optionDigest": "Stampa il digest SHA-256 invece del valore (sicuro da condividere con gli agenti)",
           "optionPointer": "JSON Pointer al campo (es. /credentials/cfDnsApiToken)",
           "optionReveal": "Mostra il testo in chiaro per i valori sensibili (solo TTY interattivo; registrato)"
         },
         "list": {
+          "descriptionShort": "Elenca ogni template di pointer sensibile registrato con il suo tipo e la policy di commit/cifratura",
           "description": "Elenca ogni template di pointer sensibile registrato con il suo tipo e la policy di commit/cifratura.",
           "optionOutput": "Formato di output (json|table)",
           "optionSensitive": "Mostra solo i template sensibili (non pubblici)"
         },
         "rotate": {
+          "descriptionShort": "Ruota un valore sensibile senza --current",
           "description": "Ruota un valore sensibile senza --current. Solo TTY interattivo; registrato in modo esplicito.",
           "optionNew": "Nuovo valore",
           "optionPointer": "JSON Pointer al campo sensibile (es. /credentials/cfDnsApiToken)",
           "success": "Ruotato {{pointer}}"
         },
         "set": {
+          "descriptionShort": "Scrivi un valore di configurazione su un JSON Pointer",
           "description": "Scrivi un valore di configurazione su un JSON Pointer. I percorsi sensibili richiedono --current (knowledge-gate).",
           "optionCurrent": "Valore in chiaro corrente, obbligatorio per le mutazioni su percorsi sensibili (prova per knowledge-gate)",
           "optionNew": "Nuovo valore (analizzato come JSON se sembra JSON: {, [, \", true/false/null/numero)",
@@ -751,6 +813,7 @@
           "success": "Impostato {{pointer}}"
         },
         "unset": {
+          "descriptionShort": "Elimina un valore di configurazione su un JSON Pointer",
           "description": "Elimina un valore di configurazione su un JSON Pointer. I percorsi sensibili richiedono --current.",
           "optionCurrent": "Valore in chiaro corrente, obbligatorio per le eliminazioni su percorsi sensibili",
           "optionPointer": "JSON Pointer al campo (es. /credentials/cfDnsApiToken)",
@@ -770,6 +833,7 @@
         }
       },
       "init": {
+        "descriptionShort": "Crea un nuovo file di configurazione con nome",
         "alreadyExists": "La configurazione \"{{name}}\" esiste già",
         "bareForm": "La configurazione predefinita viene creata automaticamente; usa 'config init <nome>' per una configurazione con nome, oppure passa un flag (--ssh-key, --server, ...) per impostare un'opzione su quella predefinita.",
         "description": "Crea un nuovo file di configurazione con nome",
@@ -783,6 +847,7 @@
         "success": "Configurazione \"{{name}}\" inizializzata"
       },
       "list": {
+        "descriptionShort": "Elenca tutti i file di configurazione",
         "description": "Elenca tutti i file di configurazione",
         "noConfigs": "Nessun file di configurazione trovato. Creane uno con: rdc config init"
       },
@@ -825,6 +890,7 @@
         "droppedGoneMachineState": "{{count}} record di runtime che indicano una macchina non più nella configurazione {{verb}} rimossi:"
       },
       "reconcile": {
+        "descriptionShort": "Ricostruisce lo stato di runtime a partire dallo stato reale delle macchine",
         "acceptObservedUnfiltered": "--accept-observed non può essere combinato con --machine: una scansione parziale non può dimostrare che un posizionamento sia inequivocabile, quindi la riscrittura sarebbe un'ipotesi. Esegui 'rdc config reconcile --accept-observed' senza filtri.",
         "description": "Ricostruisce lo stato di runtime a partire dallo stato reale delle macchine. Corregge dati di collegamento e instradamento obsoleti.",
         "optionAcceptObserved": "Riscrive un posizionamento dichiarato in modo che corrisponda a dove si trova realmente l'immagine, ma solo quando ciò è inequivocabile (osservato su esattamente una macchina). I duplicati restano conflitti.",
@@ -833,6 +899,7 @@
         "listFailed": "renet list all non è riuscito (codice di uscita {{exitCode}})."
       },
       "recover": {
+        "descriptionShort": "Ripristina la configurazione dal file di backup (.bak)",
         "confirm": "Ripristinare la configurazione \"{{name}}\" dal backup?",
         "description": "Ripristina la configurazione dal file di backup (.bak)",
         "failed": "Impossibile ripristinare la configurazione \"{{name}}\" dal backup",
@@ -841,15 +908,16 @@
       },
       "remote": {
         "conflictRetryExhausted": "La configurazione \"{{config}}\" è ancora in conflitto con un altro dispositivo dopo 3 tentativi. Esegui di nuovo il comando.",
-        "preconditionFailed": "Configurazione \"{{config}}\": il server ha rifiutato una modifica che rimuove {{paths}}, perché questo dispositivo non ha potuto dimostrare di aver visto i valori salvati. Aggiorna con \"rdc config remote refresh\" ed esegui di nuovo il comando.",
+        "preconditionFailed": "Configurazione \"{{config}}\": il server ha rifiutato una modifica che rimuove {{paths}}, perché questo dispositivo non ha potuto dimostrare di aver visto i valori salvati. Aggiorna con \"{{cmd}}\" ed esegui di nuovo il comando.",
         "description": "Gestisci la connessione allo storage di configurazione remoto",
         "disable": {
+          "descriptionShort": "Disconnetti dallo storage remoto e salva la configurazione in locale",
           "description": "Disconnetti dallo storage remoto e salva la configurazione in locale",
           "optionLocal": "Scollega solo su questo dispositivo, dalla copia in cache, senza contattare il server",
           "notEnabled": "La configurazione remota non è abilitata.",
           "serverRequired": "Impossibile disabilitare: il server di configurazione {{server}} non è raggiungibile, e la disabilitazione deve prima recuperare l'ultima copia del server (disabilitare da una cache obsoleta potrebbe perdere le scritture di un altro dispositivo). Riprova quando il server sarà raggiungibile.",
-          "accessLost": "Impossibile disabilitare: il server di configurazione rifiuta questo account per la configurazione \"{{name}}\" ({{error}}), e la disabilitazione deve prima recuperare l'ultima copia del server. Se l'accesso all'archivio non tornerà, togli il collegamento e tieni la copia in cache su questo dispositivo con: rdc config remote disable --local",
-          "localNoCache": "La configurazione \"{{name}}\" non ha su questo dispositivo alcuna copia in cache della configurazione del server: non è mai stata scaricata qui, oppure la copia è stata rimossa. Il file contiene solo il collegamento e le impostazioni proprie di questo dispositivo, quindi non c'è nulla da tenere, e non è stato modificato nulla. Il contenuto può arrivare solo dal server (rdc config remote enable); per rimuovere invece il file locale, esegui: rdc config delete {{name}}",
+          "accessLost": "Impossibile disabilitare: il server di configurazione rifiuta questo account per la configurazione \"{{name}}\" ({{error}}), e la disabilitazione deve prima recuperare l'ultima copia del server. Se l'accesso all'archivio non tornerà, togli il collegamento e tieni la copia in cache su questo dispositivo con: {{cmd}}",
+          "localNoCache": "La configurazione \"{{name}}\" non ha su questo dispositivo alcuna copia in cache della configurazione del server: non è mai stata scaricata qui, oppure la copia è stata rimossa. Il file contiene solo il collegamento e le impostazioni proprie di questo dispositivo, quindi non c'è nulla da tenere, e non è stato modificato nulla. Il contenuto può arrivare solo dal server ({{cmd}}); per rimuovere invece il file locale, esegui: rdc config delete {{name}}",
           "localUnreadable": "Non è stato possibile aprire su questo dispositivo la copia in cache della configurazione \"{{name}}\" (versione {{version}} del server) ({{error}}), quindi non è stato modificato nulla. La copia è cifrata con la password principale della configurazione: con quella (REDIACC_MASTER_PASSWORD) si può tenere l'intera copia; senza, qui non se ne recupera nulla, e solo il server ne conserva una leggibile.",
           "localConfirm": "Scollegare la configurazione \"{{name}}\" da {{server}} solo su questo dispositivo? La copia in cache qui presente (versione {{version}} del server, salvata il {{cachedAt}}) diventa una configurazione locale. I dati più recenti sul server, se ce ne sono, non vengono scaricati, e sul server non cambia nulla.",
           "localNeedsYes": "Scollegare la configurazione \"{{name}}\" solo su questo dispositivo mantiene la copia in cache qui presente (versione {{version}} del server) e non scarica i dati più recenti del server, se ce ne sono. Non è stato modificato nulla. Conferma in un terminale interattivo, oppure esegui di nuovo il comando con --yes.",
@@ -862,15 +930,17 @@
           "keyringUnusable": "Questo dispositivo non ha dove tenere la sua chiave per l'archivio di configurazione: una chiave di prova scritta con `keyctl` nel keyring utente del kernel non è stata salvata e riletta. Non è stato salvato nulla. Si comporta così un keyring di sessione che non collega il keyring utente (un servizio, un container, un job di CI); `keyctl link @u @s` lo collega per la sessione. Oppure imposta REDIACC_SECRET_STORE=file per tenere la chiave in un file su disco (modalità 0600).",
           "toolMissing": "Questo dispositivo non ha dove tenere la sua chiave per l'archivio di configurazione: non è stato possibile eseguire `{{tool}}`, quindi {{store}} è fuori portata. Non è stato salvato nulla. Rimetti `{{tool}}` nel PATH, oppure imposta REDIACC_SECRET_STORE=file per tenere la chiave in un file su disco.",
           "storeUnusable": "Questo dispositivo non ha dove tenere la sua chiave per l'archivio di configurazione: una chiave di prova scritta in {{store}} con `{{tool}}` non è stata salvata e riletta. Non è stato salvato nulla. Sblocca o ripara {{store}}, oppure imposta REDIACC_SECRET_STORE=file per tenere la chiave in un file su disco.",
+          "storeTimedOut": "Non è stato possibile verificare che questo dispositivo possa tenere la sua chiave per l'archivio di configurazione: `{{tool}}` non ha risposto entro {{seconds}} secondi, quindi {{store}} non è stato provato fino in fondo. Non è stato salvato nulla. Una macchina molto carica si comporta così; riesegui il comando quando è a riposo, oppure imposta REDIACC_SECRET_STORE=file per tenere la chiave in un file su disco.",
           "unsupportedPlatform": "Questo dispositivo non ha dove tenere la sua chiave per l'archivio di configurazione: su {{platform}} non è supportato alcun archivio dei segreti nativo. Non è stato salvato nulla. Imposta REDIACC_SECRET_STORE=file per tenere la chiave in un file su disco (modalità 0600).",
           "invalidChoice": "REDIACC_SECRET_STORE vale \"{{value}}\", che non è un archivio dei segreti. L'unico valore è \"file\"; senza valore si usa l'archivio nativo di questo sistema.",
           "fileNotice": "REDIACC_SECRET_STORE=file: la chiave di questo dispositivo per l'archivio di configurazione è tenuta in {{path}} (modalità 0600), protetta solo dai permessi del file."
         },
         "enable": {
-          "alreadyEnabled": "La configurazione \"{{name}}\" è già collegata allo storage remoto e questo dispositivo riesce ad aprirla, quindi non c'è nulla da abilitare. Per scollegarla, esegui: rdc config remote disable",
+          "descriptionShort": "Collega questa configurazione allo storage cifrato remoto",
+          "alreadyEnabled": "La configurazione \"{{name}}\" è già collegata allo storage remoto e questo dispositivo riesce ad aprirla, quindi non c'è nulla da abilitare. Per scollegarla, esegui: {{cmd}}",
           "description": "Collega questa configurazione allo storage cifrato remoto",
           "expired": "Codice dispositivo scaduto. Riprova.",
-          "handoffUnreadable": "Impossibile leggere il passaggio di configurazione dal browser. Ricomincia con: rdc config remote enable",
+          "handoffUnreadable": "Impossibile leggere il passaggio di configurazione dal browser. Ricomincia con: {{cmd}}",
           "prereqHeader": "Prima di continuare, l'account del portale che approva l'operazione deve avere:",
           "prereqSignedIn": "L'accesso al portale: {{url}}",
           "prereqTotp": "L'autenticazione a due fattori (TOTP) attiva nelle Impostazioni: {{url}}",
@@ -879,7 +949,7 @@
           "prereqMissing": "Non è ancora possibile attivare il config storage. All'account del portale {{email}} manca:",
           "prereqTotpMissing": "Autenticazione a due fattori (TOTP): attivala nelle Impostazioni su {{url}}",
           "prereqUnavailable": "Il config storage non è disponibile su {{apiUrl}}",
-          "prereqRetry": "Poi esegui di nuovo: rdc config remote enable",
+          "prereqRetry": "Poi esegui di nuovo: {{cmd}}",
           "attachEntry": "{{id}} (v{{version}}, modificata {{modified}})",
           "attachNew": "Crea una nuova voce da questa configurazione locale",
           "attachPrompt": "Questo storage contiene già delle configurazioni. Vuoi collegarne una o creare una nuova voce?",
@@ -888,23 +958,9 @@
           "optionApiUrl": "URL del server account",
           "optionConfigId": "Collega a questa configurazione esistente dello storage invece di creare una nuova voce",
           "optionForce": "Sostituisci il contenuto locale differente con la copia del server senza conferma",
-          "optionMasterPassword": "Iscriviti in modalità headless con un password slot pre-provisionato (senza browser)",
-          "optionMasterPasswordStdin": "Come --master-password, ma legge la password master da stdin",
           "overwriteAborted": "Attivazione interrotta: la configurazione locale \"{{config}}\" contiene dati che differiscono dalla copia del server. Esegui di nuovo con --force per sostituirla, oppure conferma in un terminale interattivo.",
           "overwriteConfirm": "La configurazione locale \"{{config}}\" ha {{machines}} macchina/e e {{repos}} repository che verranno sostituiti dalla copia del server (il file precedente viene mantenuto in {{backupPath}}). Continuare?",
-          "masterPasswordConfigNotReadable": "Il server degli account non può offrire quella config a questo login: {{error}}",
-          "masterPasswordForbidden": "Il server account ha rifiutato l'iscrizione della config: {{error}}",
-          "masterPasswordMissingScope": "Il token API in REDIACC_TOKEN non porta lo scope config:enroll. Emetti un token con quello scope dal portale web e riprova.",
-          "masterPasswordNonInteractive": "È richiesta una password master. Imposta REDIACC_STORE_MASTER_PASSWORD, oppure esegui il comando senza --master-password in un terminale interattivo.",
-          "masterPasswordNoSlot": "Nessun password slot è provisionato per il tuo config storage. Aggiungine uno dal portale (Config Storage > key slots), poi riprova.",
-          "masterPasswordNoStorage": "Il config storage non è configurato per la tua organizzazione. Configuralo dal portale (Config Storage), poi riprova.",
-          "masterPasswordNotFound": "Il server degli account non ha trovato ciò che serve all'enrollment: {{error}}",
-          "masterPasswordPrompt": "Password master:",
-          "masterPasswordRequirePasskey": "Questa organizzazione richiede una passkey per sbloccare il config storage; l'iscrizione con password è disabilitata. Iscriviti da un browser con: rdc config remote enable",
-          "masterPasswordStdinEmpty": "--master-password-stdin non ha letto alcuna password da stdin.",
-          "masterPasswordTeamGone": "Il team a cui appartiene questo token API è stato archiviato o rimosso. Emetti un nuovo token per un team attivo dal portale web e riprova.",
-          "masterPasswordTokenNotEnrollable": "Questo token API non può iscrivere un config slot perché non è legato a un utente all'interno di un'organizzazione. Emetti un token personale dal tuo account nel portale web e riprova.",
-          "masterPasswordWrong": "Impossibile sbloccare la config con quella password. Verifica REDIACC_STORE_MASTER_PASSWORD (o la password inserita) e riprova.",
+          "backupKept": "Il file di configurazione precedente viene mantenuto in {{backupPath}}",
           "received": "Handoff ricevuto",
           "reenrollConfigIdMismatch": "La configurazione \"{{name}}\" è collegata alla configurazione remota {{linkedConfig}}, quindi --config-id {{requestedConfig}} non può essere usato per registrarla di nuovo. Non è stato modificato nulla. Riesegui senza --config-id, oppure con --config-id {{linkedConfig}}.",
           "reenrollConfigMismatch": "La configurazione \"{{name}}\" è collegata alla configurazione remota {{linkedConfig}}, ma l'iscrizione è stata approvata per la configurazione remota {{offeredConfig}}. Non è stato modificato nulla. Esegui di nuovo il comando e approvala per {{linkedConfig}}.",
@@ -919,17 +975,31 @@
           "cancelled": "Annullato. Il link non funziona più; esegui di nuovo il comando per ricominciare.",
           "serverUnreachableRetrying": "Al momento {{apiUrl}} non è raggiungibile. Continuo a riprovare finché il link non scade.",
           "handoffNotForThisRun": "Il relay del server ha restituito un passaggio non emesso per questa esecuzione, quindi non è stato salvato nulla. Esegui di nuovo il comando e apri solo il link che stampa.",
-          "loginRequired": "L'archivio delle configurazioni richiede che questa CLI abbia effettuato l'accesso a {{apiUrl}}, così il server può verificare che il browser che approva il link usi lo stesso account. Esegui prima `rdc subscription login`, poi di nuovo questo comando.",
+          "loginRequired": "L'archivio delle configurazioni richiede che questa CLI abbia effettuato l'accesso a {{apiUrl}}, così il server può verificare che il browser che approva il link usi lo stesso account. Esegui prima `{{cmd}}`, poi di nuovo questo comando.",
           "relayRefused": "Il server degli account ha rifiutato il passaggio (HTTP {{status}}): {{error}}",
           "seeded": "Lo storage era vuoto; la configurazione locale è stata inviata come versione 1.",
-          "success": "Configurazione remota abilitata. La configurazione \"{{name}}\" è ora sincronizzata con {{apiUrl}}."
+          "success": "Configurazione remota abilitata. La configurazione \"{{name}}\" è ora sincronizzata con {{apiUrl}}.",
+          "optionMachineSecret": "Registra senza browser con il segreto macchina di questo id, creato nel portale; il segreto arriva da REDIACC_MACHINE_SECRET, da stdin in pipe o da un prompt nascosto, mai dalla riga di comando",
+          "machineSecretPrompt": "Segreto macchina:",
+          "machineSecretEmpty": "Nessun segreto macchina fornito: imposta {{env}} oppure passa il segreto su stdin.",
+          "machineSecretInvalid": "Il segreto macchina non è valido: {{error}}",
+          "machineSecretConfigIdConflict": "--config-id non si può combinare con --machine-secret: il segreto macchina indica già la sua config.",
+          "machineSecretRevoked": "Questo segreto macchina è stato revocato, oppure la chiave dello store è stata ruotata dopo la sua creazione. Creane uno nuovo nel portale (Config Storage > Segreti macchina) e riprova.",
+          "machineSecretTeamForbidden": "Il team del segreto macchina non è raggiungibile con questo token API: {{error}}",
+          "machineSecretMissingScope": "Il token API in REDIACC_TOKEN non ha lo scope config:enroll. Emetti un token con quello scope dal portale web e riprova.",
+          "machineSecretTokenNotEnrollable": "Questo token API non può registrare una macchina perché non è legato a un utente di un'organizzazione. Emetti un token personale dall'account che ha creato il segreto macchina e riprova.",
+          "machineSecretForbidden": "Il server degli account ha rifiutato la registrazione della macchina: {{error}}",
+          "machineSecretNotFound": "Il segreto macchina {{id}} non è disponibile per questo token API. Controlla l'id e usa un token del membro che l'ha creato. ({{error}})",
+          "machineSecretWrong": "Impossibile sbloccare la config con quel segreto macchina. Controlla {{env}} (o il segreto su stdin) e riprova."
         },
         "handoffUndecryptable": "Il relay del server ha restituito un passaggio che questo dispositivo non può aprire ({{error}}): è stato sigillato con una chiave diversa da quella generata da questa esecuzione. Esegui di nuovo il comando e apri solo il link che stampa.",
-        "storeCopyGone": "L'archivio {{storeId}} non contiene più la configurazione remota {{configId}}, a cui è collegata la configurazione \"{{name}}\". Non è stato modificato nulla; il file locale è l'ultima copia vista da questo dispositivo. Per togliere il collegamento e tenere quella copia come configurazione locale, esegui: rdc config remote disable --local",
+        "storeCopyGone": "L'archivio {{storeId}} non contiene più la configurazione remota {{configId}}, a cui è collegata la configurazione \"{{name}}\". Non è stato modificato nulla; il file locale è l'ultima copia vista da questo dispositivo. Per togliere il collegamento e tenere quella copia come configurazione locale, esegui: {{cmd}}",
         "offlineCacheWarning": "Il server di configurazione {{server}} non è raggiungibile; la configurazione \"{{config}}\" viene servita dalla cache offline (versione server {{version}}, salvata in cache {{age}} fa). Le modifiche non possono essere salvate finché il server non è raggiungibile.",
-        "offlineNoCache": "Il server di configurazione {{server}} non è raggiungibile e la configurazione \"{{config}}\" non ha ancora una cache offline. Esegui \"rdc config remote refresh\" quando il server sarà raggiungibile per popolare la cache.",
-        "passkeySecretMissing": "Questo dispositivo non possiede più la sua chiave per l'archivio di configurazione (su Linux il keyring del kernel viene svuotato a ogni riavvio). Iscrivi di nuovo questo dispositivo con: rdc config remote enable",
+        "offlineNoCache": "Il server di configurazione {{server}} non è raggiungibile e la configurazione \"{{config}}\" non ha ancora una cache offline. Esegui \"{{cmd}}\" quando il server sarà raggiungibile per popolare la cache.",
+        "passkeySecretMissing": "Questo dispositivo non possiede più la sua chiave per l'archivio di configurazione (su Linux il keyring del kernel viene svuotato a ogni riavvio). Iscrivi di nuovo questo dispositivo con: {{cmd}}",
+        "passkeySecretNotEnrolled": "Questa configurazione non è iscritta su questo dispositivo per l'archivio delle configurazioni. Iscrivi il dispositivo con: {{cmd}}",
         "refresh": {
+          "descriptionShort": "Forza il recupero della configurazione dallo storage remoto",
           "description": "Forza il recupero della configurazione dallo storage remoto",
           "notEnabled": "La configurazione remota non è abilitata.",
           "pulled": "Configurazione recuperata",
@@ -937,76 +1007,46 @@
           "success": "Configurazione aggiornata dal remoto (versione {{version}}).",
           "replacedLocal": "Configurazione \"{{config}}\": il file locale differiva dalla versione {{version}} del server ed è stato sostituito: {{changes}}"
         },
-        "staleSlot": "Il tuo key slot non è aggiornato (la chiave di cifratura della config è stata ruotata). Ripeti l'iscrizione con: rdc config remote enable",
+        "staleSlot": "Il tuo key slot non è aggiornato (la chiave di cifratura della config è stata ruotata). Ripeti l'iscrizione con: {{cmd}}",
         "status": {
+          "descriptionShort": "Mostra lo stato della connessione remota",
           "description": "Mostra lo stato della connessione remota",
-          "deviceKeyMissing": "Questo dispositivo non riesce più ad aprire l'archivio remoto di questa configurazione: la sua chiave è sparita (un riavvio può svuotare l'archivio delle chiavi). Registra di nuovo il dispositivo con: rdc config remote enable",
-          "deviceCannotOpen": "Questo dispositivo non riesce ad aprire l'archivio remoto di questa configurazione: la sua registrazione è stata rifiutata, ad esempio dopo la rotazione della chiave. Registra di nuovo il dispositivo con: rdc config remote enable"
+          "deviceKeyMissing": "Questo dispositivo non riesce più ad aprire l'archivio remoto di questa configurazione: la sua chiave è sparita (un riavvio può svuotare l'archivio delle chiavi). Registra di nuovo il dispositivo con: {{cmd}}",
+          "deviceNotEnrolled": "Questo dispositivo non è registrato per questa configurazione, quindi non può aprirne l'archivio remoto. Registra il dispositivo con: {{cmd}}",
+          "deviceCannotOpen": "Questo dispositivo non riesce ad aprire l'archivio remoto di questa configurazione: la sua registrazione è stata rifiutata, ad esempio dopo la rotazione della chiave. Registra di nuovo il dispositivo con: {{cmd}}"
         },
-        "masterPassword": {
-          "description": "Gestisci la password master di questo membro (il password slot)",
-          "change": {
-            "descriptionShort": "Cambia la password master",
-            "description": "Cambia la password master: riavvolge la chiave della config dall'enrollment di questo dispositivo sotto un nuovo password slot",
-            "emailPrompt": "Email dell'account",
-            "loginPasswordPrompt": "Password dell'account",
-            "newPasswordConfirm": "Ripeti la nuova password master",
-            "newPasswordMismatch": "Le due nuove password master non coincidono.",
-            "newPasswordMissing": "Serve la nuova password master: passala in pipe con --new-master-password-stdin oppure imposta {{env}}.",
-            "newPasswordPrompt": "Nuova password master",
-            "newPasswordStdinEmpty": "--new-master-password-stdin ha letto una password vuota.",
-            "newPasswordTooShort": "La nuova password master deve avere almeno {{min}} caratteri.",
-            "optionNewMasterPasswordStdin": "Leggi la nuova password master da stdin (altrimenti REDIACC_NEW_STORE_MASTER_PASSWORD, o un prompt su TTY)",
-            "slotRefused": "Il server ha rifiutato il nuovo password slot (HTTP {{status}}): {{error}}",
-            "stepUpPrompt": "Codice a due fattori per la riautenticazione (di un intervallo di 30 secondi successivo a quello del codice di accesso)",
-            "stepUpRefused": "Riautenticazione rifiutata (HTTP {{status}}): {{error}}. {{field}} deve essere un codice di un intervallo di 30 secondi successivo a quello del codice di accesso.",
-            "stepUpRequired": "Cambiare la password master richiede una riautenticazione: imposta {{field}} su un codice a due fattori di un intervallo di 30 secondi successivo a quello di {{loginField}}.",
-            "stepUpSameCode": "{{field}} ripete {{loginField}}; un codice a due fattori viene accettato una sola volta, quindi serve il codice dell'intervallo successivo.",
-            "success": "Password master della config \"{{name}}\" cambiata; la nuova password sblocca lo storage.",
-            "totpPrompt": "Codice a due fattori per l'accesso",
-            "unlocked": "Chiave della config sbloccata",
-            "unlocking": "Sblocco della chiave della config dall'enrollment di questo dispositivo...",
-            "verified": "La nuova password sblocca lo storage",
-            "verifyFailed": "Il nuovo password slot è stato scritto, ma lo sblocco con la nuova password non è riuscito: {{error}}",
-            "verifying": "Sblocco dello storage con la nuova password...",
-            "verifyNoUnlock": "la nuova password non apre il password slot del server",
-            "verifyOtherKey": "il password slot contiene una chiave della config diversa da quella di questo dispositivo",
-            "verifyOtherStore": "il server ha risposto per un config storage diverso",
-            "writing": "Scrittura del nuovo password slot...",
-            "written": "Password slot scritto"
-          }
-        },
-        "tokenExpired": "Token della configurazione remota scaduto. Autenticati di nuovo con: rdc config remote enable",
-        "tokenIpMismatch": "Il token di configurazione di questo dispositivo è legato a un altro indirizzo di rete. Esegui di nuovo \"rdc config remote enable\" per ottenere un token per questo dispositivo.",
-        "tokenExhausted": "Il token di configurazione di questo dispositivo è già stato consumato da un'altra richiesta (cambia a ogni utilizzo). Autenticati di nuovo con: rdc config remote enable",
-        "tokenInvalid": "Il server di configurazione non riconosce il token di configurazione di questo dispositivo. Autenticati di nuovo con: rdc config remote enable",
-        "tokenRejected": "Il server di configurazione ha rifiutato il token di configurazione di questo dispositivo ({{reason}}). Autenticati di nuovo con: rdc config remote enable",
+        "tokenExpired": "Token della configurazione remota scaduto. Autenticati di nuovo con: {{cmd}}",
+        "tokenIpMismatch": "Il token di configurazione di questo dispositivo è legato a un altro indirizzo di rete. Esegui di nuovo \"{{cmd}}\" per ottenere un token per questo dispositivo.",
+        "tokenExhausted": "Il token di configurazione di questo dispositivo è già stato consumato da un'altra richiesta (cambia a ogni utilizzo). Autenticati di nuovo con: {{cmd}}",
+        "tokenInvalid": "Il server di configurazione non riconosce il token di configurazione di questo dispositivo. Autenticati di nuovo con: {{cmd}}",
+        "tokenRejected": "Il server di configurazione ha rifiutato il token di configurazione di questo dispositivo ({{reason}}). Autenticati di nuovo con: {{cmd}}",
         "integrityFailed": "La configurazione {{configId}} nell'archivio {{storeId}} non ha superato il controllo di integrità: la copia restituita dal server non è stata sigillata per questa configurazione, questo team e questa versione, oppure è stata cifrata con una chiave diversa da quella del tuo slot. Su questo dispositivo non è stato modificato nulla. Se la chiave è diversa, chiedi a un amministratore di condividere di nuovo la chiave dell'archivio con questo dispositivo dal portale (Archivio configurazioni > slot delle chiavi).",
-        "envelopeTooNew": "La configurazione {{configId}} è stata scritta da una versione più recente della CLI (busta v{{envelope}}); questa versione legge v{{legacy}} e v{{current}}. Aggiorna rdc, poi esegui di nuovo il comando. Su questo dispositivo non è stato modificato nulla.",
-        "undecryptableSession": "La config {{configId}} si è sbloccata con la tua chiave, ma il livello di sessione del server si è rifiutato di aprirla ({{detail}}). Riprova il comando; se continua a fallire, reiscriviti con: rdc config remote enable",
+        "envelopeTooNew": "La configurazione {{config}} è stata scritta da una versione più recente della CLI (busta v{{envelope}}); questa versione legge v{{legacy}} e v{{current}}. Aggiorna rdc, poi esegui di nuovo il comando. Su questo dispositivo non è stato modificato nulla.",
+        "undecryptableSession": "La config {{configId}} si è sbloccata con la tua chiave, ma il livello di sessione del server si è rifiutato di aprirla ({{detail}}). Riprova il comando; se continua a fallire, reiscriviti con: {{cmd}}",
         "rollback": "La configurazione {{configId}} è tornata alla versione {{version}}, più vecchia della versione {{highWater}} che questo dispositivo aveva già visto. Il server ha restituito una copia vecchia: è stata rifiutata e su questo dispositivo non è stato modificato nulla.",
-        "envelopeDowngrade": "La configurazione {{configId}} è tornata nel vecchio formato di busta, mentre questo dispositivo aveva già visto quello nuovo. Il server ha restituito una copia vecchia: è stata rifiutata e su questo dispositivo non è stato modificato nulla.",
-        "legacyEnvelope": "La configurazione {{configId}} è ancora salvata nel vecchio formato di busta. La prossima modifica inviata da questo dispositivo la aggiornerà.",
+        "envelopeDowngrade": "La configurazione {{config}} è tornata nel vecchio formato di busta, mentre questo dispositivo aveva già visto quello nuovo. Il server ha restituito una copia vecchia: è stata rifiutata e su questo dispositivo non è stato modificato nulla.",
+        "legacyEnvelope": "La configurazione {{config}} è ancora salvata nel vecchio formato di busta. La prossima modifica inviata da questo dispositivo la aggiornerà.",
         "unreachable": "Il server di configurazione {{server}} non è raggiungibile",
         "serverFailed": "Il server di configurazione {{server}} ha risposto con un errore (HTTP {{status}})",
         "writeFailedClosed": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che non è raggiungibile. La modifica NON è stata salvata.",
         "writeFailedServerError": "Impossibile salvare: la configurazione \"{{config}}\" è memorizzata su {{server}}, che ha risposto con un errore (HTTP {{status}}). La modifica NON è stata salvata.",
         "teamForbidden": "La configurazione \"{{config}}\" appartiene a un team di cui questo account non fa parte, quindi il server di configurazione l'ha rifiutata. Chiedi al proprietario o a un amministratore dell'organizzazione di aggiungere questo account a quel team.",
         "teamForbiddenCachePurged": "La copia offline della configurazione \"{{config}}\" è stata rimossa da questo dispositivo. Le copie fatte in precedenza non vengono recuperate.",
-        "teamNotFound": "La configurazione \"{{config}}\" indica il team {{team}}, che non appartiene a questa organizzazione. Esegui di nuovo \"rdc config remote enable\" per scegliere un team dell'organizzazione.",
+        "teamNotFound": "La configurazione \"{{config}}\" indica il team {{team}}, che non appartiene a questa organizzazione. Esegui di nuovo \"{{cmd}}\" per scegliere un team dell'organizzazione.",
         "tokenRefresh": {
-          "noLogin": "Su questo dispositivo non è salvato alcun accesso per {{apiUrl}}, quindi il token di configurazione non è stato rinnovato automaticamente. Esegui \"rdc subscription login\" e riprova, oppure esegui di nuovo \"rdc config remote enable\".",
-          "loginInvalid": "Il server degli account ha rifiutato l'accesso di questo dispositivo durante il rinnovo del token di configurazione. Esegui \"rdc subscription login\" e riprova.",
-          "loginScope": "L'accesso di questo dispositivo non può rinnovare i token di configurazione: risale a prima di questa funzione, oppure il suo team non esiste più. Esegui di nuovo \"rdc subscription login\", poi riprova.",
-          "loginIpMismatch": "Il token di configurazione non è stato rinnovato perché l'accesso di questo dispositivo è legato a un altro indirizzo di rete. {{error}} In alternativa esegui di nuovo \"rdc config remote enable\" per ottenere un nuovo token di configurazione per questo dispositivo.",
-          "notStoreMember": "L'account dell'accesso di questo dispositivo non è membro dell'archivio di configurazione {{storeId}}, quindi il token di configurazione non è stato rinnovato. Accedi con l'account che ha attivato questa configurazione (\"rdc subscription login\") e riprova.",
-          "storeMismatch": "L'archivio di configurazione {{storeId}} non appartiene all'organizzazione dell'accesso di questo dispositivo, quindi il token di configurazione non è stato rinnovato. Accedi all'organizzazione proprietaria di questa configurazione (\"rdc subscription login\") e riprova.",
-          "staleGeneration": "La chiave di cifratura della configurazione è stata ruotata e nessuno slot di chiave di questo account apre quella nuova, quindi il token di configurazione non è stato rinnovato. Registra di nuovo il dispositivo con: rdc config remote enable",
+          "noLogin": "Su questo dispositivo non è salvato alcun accesso per {{apiUrl}}, quindi il token di configurazione non è stato rinnovato automaticamente. Esegui \"{{loginCmd}}\" e riprova, oppure esegui di nuovo \"{{cmd}}\".",
+          "loginInvalid": "Il server degli account ha rifiutato l'accesso di questo dispositivo durante il rinnovo del token di configurazione. Esegui \"{{cmd}}\" e riprova.",
+          "loginScope": "L'accesso di questo dispositivo non può rinnovare i token di configurazione: risale a prima di questa funzione, oppure il suo team non esiste più. Esegui di nuovo \"{{cmd}}\", poi riprova.",
+          "loginIpMismatch": "Il token di configurazione non è stato rinnovato perché l'accesso di questo dispositivo è legato a un altro indirizzo di rete. {{error}} In alternativa esegui di nuovo \"{{cmd}}\" per ottenere un nuovo token di configurazione per questo dispositivo.",
+          "notStoreMember": "L'account dell'accesso di questo dispositivo non è membro dell'archivio di configurazione {{storeId}}, quindi il token di configurazione non è stato rinnovato. Accedi con l'account che ha attivato questa configurazione (\"{{cmd}}\") e riprova.",
+          "storeMismatch": "L'archivio di configurazione {{storeId}} non appartiene all'organizzazione dell'accesso di questo dispositivo, quindi il token di configurazione non è stato rinnovato. Accedi all'organizzazione proprietaria di questa configurazione (\"{{cmd}}\") e riprova.",
+          "staleGeneration": "La chiave di cifratura della configurazione è stata ruotata e nessuno slot di chiave di questo account apre quella nuova, quindi il token di configurazione non è stato rinnovato. Registra di nuovo il dispositivo con: {{cmd}}",
           "rateLimited": "Il server degli account sta limitando i rinnovi dei token di configurazione ({{error}}). Attendi un minuto ed esegui di nuovo il comando.",
           "refused": "Il server degli account non ha rinnovato il token di configurazione di questo dispositivo ({{error}}). Su questo dispositivo non è stato modificato nulla; esegui di nuovo il comando."
         },
         "pushVisibility": "configurazione {{config}}: v{{from}} → v{{to}} inviata da \"{{command}}\": {{changes}}",
         "versions": {
+          "descriptionShort": "Elenca le versioni precedenti di questa configurazione conservate sul server",
           "description": "Elenca le versioni precedenti di questa configurazione conservate sul server",
           "optionExplain": "Mostra i puntatori JSON modificati da ogni versione, in base alle versioni conservate dal server",
           "explainUnreadable": "(illeggibile: {{reason}})",
@@ -1014,6 +1054,7 @@
           "empty": "Il server non conserva versioni precedenti della configurazione \"{{config}}\"."
         },
         "restore": {
+          "descriptionShort": "Pubblica una versione precedente di questa configurazione come versione più recente",
           "description": "Pubblica una versione precedente di questa configurazione come versione più recente",
           "argVersion": "Versione da ripristinare (vedi rdc config remote versions)",
           "confirm": "Pubblicare il contenuto della versione {{version}} della configurazione \"{{config}}\" come nuova versione sopra la versione {{current}}? Ogni dispositivo lo riceverà al prossimo download.",
@@ -1022,10 +1063,11 @@
           "success": "Versione {{restored}} della configurazione \"{{config}}\" ripristinata come versione {{version}}."
         },
         "localEditsPushed": "Configurazione \"{{config}}\": il file locale conteneva modifiche fatte dalla versione {{from}} del server; inviate come versione {{to}}: {{changes}}",
-        "localEditsConflict": "Configurazione \"{{config}}\": il file locale contiene modifiche fatte dalla versione {{cached}} del server ({{changes}}), e il server è passato alla versione {{server}}. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"rdc config remote refresh\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo.",
-        "localEditsUnverifiable": "Configurazione \"{{config}}\": il file locale differisce dalla versione {{server}} del server ({{changes}}) e la versione {{cached}} da cui proviene non è leggibile ({{reason}}), quindi una modifica locale non è distinguibile da una del server. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"rdc config remote refresh\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo."
+        "localEditsConflict": "Configurazione \"{{config}}\": il file locale contiene modifiche fatte dalla versione {{cached}} del server ({{changes}}), e il server è passato alla versione {{server}}. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"{{cmd}}\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo.",
+        "localEditsUnverifiable": "Configurazione \"{{config}}\": il file locale differisce dalla versione {{server}} del server ({{changes}}) e la versione {{cached}} da cui proviene non è leggibile ({{reason}}), quindi una modifica locale non è distinguibile da una del server. Non è stato sovrascritto nulla. Mettere da parte le modifiche, eseguire \"{{cmd}}\" per prendere la versione {{server}} (sostituisce il file locale) e poi applicarle di nuovo."
       },
       "rotateCek": {
+        "descriptionShort": "Ruota la chiave di cifratura della configurazione dell'organizzazione",
         "cancelled": "Rotazione annullata. Nessuna modifica effettuata.",
         "confirm": "Ruotare ora la chiave di cifratura della configurazione?",
         "waiting": "In attesa che la rotazione termini nel browser (premi Ctrl+C per interrompere)...",
@@ -1042,10 +1084,12 @@
         "warning": "Questa operazione ruota la chiave con cui è cifrata l'intera configurazione dell'organizzazione. Tutti gli altri dispositivi dovranno ricollegarsi in seguito."
       },
       "set": {
+        "descriptionShort": "Imposta un valore predefinito (team, regione, bridge)",
         "description": "Imposta un valore predefinito (team, regione, bridge)",
         "success": "\"{{key}}\" impostato su \"{{value}}\""
       },
       "show": {
+        "descriptionShort": "Mostra i dettagli della configurazione corrente",
         "description": "Mostra i dettagli della configurazione corrente",
         "noConfig": "Nessuna configurazione attiva. Creane una con: rdc config init",
         "optionReveal": "Mostra il testo in chiaro per i valori sensibili (solo interattivo)"
@@ -1053,11 +1097,13 @@
       "ssh": {
         "description": "Gestisci la configurazione delle chiavi SSH",
         "remove": {
+          "descriptionShort": "Rimuovi la chiave SSH dalla configurazione corrente",
           "description": "Rimuovi la chiave SSH dalla configurazione corrente",
           "noKey": "Nessuna chiave SSH configurata",
           "success": "Chiave SSH rimossa"
         },
         "set": {
+          "descriptionShort": "Imposta la chiave SSH per la configurazione corrente",
           "description": "Imposta la chiave SSH per la configurazione corrente",
           "invalidKey": "Il file non contiene una chiave privata SSH valida",
           "keyNotFound": "File della chiave SSH non trovato: {{path}}",
@@ -1066,6 +1112,7 @@
           "success": "Chiave SSH configurata"
         },
         "show": {
+          "descriptionShort": "Mostra la configurazione della chiave SSH corrente",
           "description": "Mostra la configurazione della chiave SSH corrente",
           "noKey": "Nessuna chiave SSH configurata"
         }
@@ -1084,6 +1131,9 @@
         "refused": "{{count}} voci differiscono dalla configurazione di origine; non è stato scritto nulla.",
         "summary": "{{count}} modifiche copiate per la macchina \"{{machine}}\" dalla configurazione \"{{from}}\".",
         "summaryDryRun": "Verrebbero copiate {{count}} modifiche per la macchina \"{{machine}}\" dalla configurazione \"{{from}}\"."
+      },
+      "seal": {
+        "fileStoreRefused": "La configurazione {{name}} non è stata sigillata: REDIACC_SECRET_STORE=file conserva le chiavi in un normale file, quindi il sigillo non proteggerebbe nulla."
       }
     },
     "credits": {
@@ -1214,7 +1264,10 @@
         "subscriptionStatus": "Stato",
         "subscriptionToken": "Token",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "Visual Studio Code",
+        "remoteSsh": "Estensione Remote-SSH",
+        "opensshClient": "Client OpenSSH"
       },
       "description": "Esegue controlli diagnostici sull'ambiente CLI: versione di Node.js, disponibilita del binario renet, validita del file di configurazione, stato delle chiavi SSH e connettivita di rete. Produce un report di salute strutturato con indicatori di successo/errore.",
       "descriptionShort": "Diagnostica l'ambiente CLI e l'integrazione renet",
@@ -1235,7 +1288,13 @@
       "subscriptionUnreachable": "impossibile raggiungere il server di abbonamento",
       "title": "Diagnostica CLI Rediacc",
       "tofuInstallHint": "Esegui: rdc tools install tofu",
-      "rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema"
+      "rsyncInstallHint": "Installa rsync con il gestore di pacchetti del sistema",
+      "installedValue": "installato",
+      "notDetectedValue": "non rilevato",
+      "rsyncInstallHintWin32": "Esegui: rdc tools install rsync (o in MSYS2: pacman -S rsync)",
+      "vscodeInstallHint": "Installa VS Code da https://code.visualstudio.com/ per usare rdc vscode",
+      "remoteSshInstallHint": "Installa l'estensione Remote - SSH (ms-vscode-remote.remote-ssh) dalla vista Estensioni di VS Code",
+      "sshClientMissingHint": "Aggiungi il client OpenSSH in Impostazioni di Windows > Funzionalità facoltative"
     },
     "feedback": {
       "description": "Invia un feedback strutturato o una segnalazione di bug. Il contenuto viene creato solo con dati ripuliti, mostrato per intero e inviato dopo la conferma (o con --yes) usando il token API salvato o una licenza Free installata.",
@@ -1261,6 +1320,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "Annulla un job in background in esecuzione",
         "alreadyFinished": "Il job {{jobId}} è già {{state}}; niente da annullare.",
         "confirm": "Annullare il job {{jobId}} ({{function}}) su {{machine}}? L'operazione verrà interrotta.",
         "description": "Annulla un job in background in esecuzione",
@@ -1275,6 +1335,7 @@
         "succeeded": "Il job {{jobId}} è riuscito."
       },
       "gc": {
+        "descriptionShort": "Rimuove i job terminati e i relativi log",
         "confirm": "Rimuovere i job su {{machine}} terminati da più di {{hours}}h fa? I relativi log verranno eliminati.",
         "description": "Rimuove i job terminati e i relativi log",
         "invalidOlderThan": "--older-than deve essere un numero di ore, ad es. 168 o 168h (ricevuto \"{{value}}\")",
@@ -1283,6 +1344,7 @@
       },
       "idOption": "ID del job",
       "list": {
+        "descriptionShort": "Elenca i job in background su una macchina, dal più recente",
         "description": "Elenca i job in background su una macchina, dal più recente",
         "empty": "Nessun job su {{machine}}.",
         "examples": {
@@ -1293,6 +1355,7 @@
         "allOption": "Includi i ticket scaduti e scartati"
       },
       "logs": {
+        "descriptionShort": "Riproduce o segue il log degli eventi di un job in background",
         "description": "Riproduce o segue il log degli eventi di un job in background",
         "detached": "Disconnesso dal job {{jobId}}. È ancora in esecuzione su {{machine}} e NON è stato annullato. Ricollegati con: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1305,6 +1368,7 @@
       },
       "machineOption": "Nome della macchina di destinazione",
       "status": {
+        "descriptionShort": "Mostra lo stato di un job in background",
         "description": "Mostra lo stato di un job in background",
         "examples": {
           "basic": "Mostra lo stato di un job."
@@ -1313,14 +1377,18 @@
       "stepsUnfinished": "{{verb}}: il job è terminato, ma i passaggi {{steps}} no. rdc job wait li porta a termine.",
       "summary": "Gestisce i job in background su una macchina",
       "machineRequired": "Nessun ticket per il job {{jobId}} in questa configurazione. Indica con -m <machine> dove viene eseguito.",
+      "noJobId": "La richiesta {{requestId}} su {{machine}} non ha un id di job ({{state}}): il suo avvio non è mai stato confermato, quindi sulla macchina non c'è alcun job da interrogare. Scarta il ticket con: rdc job dismiss {{requestId}}",
+      "notAJobId": "\"{{value}}\" non è un id di job (gli id di job di renet hanno questa forma: j18b2c3d4e5f6a7b8-0123abcd) e nessun ticket di questa configurazione lo riporta.",
       "ticketMachineOption": "Nome della macchina di destinazione (facoltativo se questa configurazione conserva un ticket per il job)",
       "wait": {
+        "descriptionShort": "Riprendere il monitoraggio di un job dal suo ticket, poi confermarlo e uscire con il codice di uscita del job",
         "description": "Riprendere il monitoraggio di un job dal suo ticket, poi confermarlo e uscire con il codice di uscita del job",
         "timeoutOption": "Smettere di attendere dopo questo tempo (30s, 5m, 2h; un numero da solo indica secondi). Il job continua a girare.",
         "invalidTimeout": "--timeout deve essere una durata come 30s, 5m o 2h (ricevuto \"{{value}}\")",
         "timedOut": "Attesa del job {{jobId}} interrotta. È ancora in esecuzione su {{machine}}. Riprendi con: rdc job wait {{jobId}}",
         "detached": "Scollegato dal job {{jobId}}. È ancora in esecuzione su {{machine}} e NON è stato annullato. Riprendi con: rdc job wait {{jobId}}",
         "startingUnresolved": "Il job {{jobId}} non ha ancora un ID: il suo avvio non è mai stato confermato e questo renet non può cercarlo per ID di richiesta.",
+        "neverStarted": "Il job {{jobId}} non è mai partito: renet su {{machine}} non ha alcun job per il suo id di richiesta. Il ticket è chiuso.",
         "proxyUnsupported": "Il job {{jobId}} è stato avviato tramite il proxy, e seguire un ticket del proxy non è disponibile in questa build.",
         "examples": {
           "basic": "Attendere la fine di un job e uscire con il suo codice di uscita."
@@ -1368,6 +1436,7 @@
         "success": "Macchinario \"{{name}}\" aggiunto ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "Distruggi una macchina provisioned nel cloud e rimuovila dalla configurazione",
         "completed": "Macchina {{name}} distrutta e rimossa dalla configurazione",
         "confirm": "Questa operazione distruggera permanentemente la macchina \"{{name}}\" e tutti i suoi dati. Continuare?",
         "deactivateFailed": "Impossibile liberare lo slot di attivazione dell'account per {{name}}: {{reason}}. Lo slot si libera da solo 5 ore dopo l'ultima attività.",
@@ -1386,6 +1455,7 @@
       "description": "Ispeziona lo stato delle macchine remote: risorse di sistema, container in esecuzione, servizi systemd, repository distribuiti e diagnostica di salute. Query di sola lettura; per modificare i repository usa `repo`. Sottocomandi principali: status (stato completo, filtrabile con --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Gestisci macchine remote (stato, salute, elenco, aggiunta, rimozione, configurazione, pulizia)",
       "health": {
+        "descriptionShort": "Controlla la salute della macchina per pipeline CI/CD",
         "containersSection": "\nContainer:",
         "containersSummary": "  {{running}}/{{total}} in esecuzione ({{healthy}} sani, {{unhealthy}} non sani)",
         "description": "Controlla la salute della macchina per pipeline CI/CD",
@@ -1452,19 +1522,23 @@
         "cert": {
           "clear": {
             "cleared": "Cache certificati rimossa",
+            "descriptionShort": "Rimuovi la cache dei certificati",
             "description": "Rimuovi la cache dei certificati",
             "noCache": "Nessuna cache certificati da rimuovere"
           },
           "description": "Gestisci i certificati TLS in cache",
           "pull": {
+            "descriptionShort": "Scarica e memorizza nella cache i certificati TLS da un macchinario",
             "description": "Scarica e memorizza nella cache i certificati TLS da un macchinario",
             "optionNoPrune": "Ignora la rimozione dei certificati con ID di rete obsoleti"
           },
           "push": {
+            "descriptionShort": "Carica i certificati TLS in cache su un macchinario",
             "description": "Carica i certificati TLS in cache su un macchinario"
           },
           "status": {
             "certCount": "{{count}} certificato/i, {{size}} compressi",
+            "descriptionShort": "Mostra l'inventario dei certificati in cache",
             "description": "Mostra l'inventario dei certificati in cache",
             "header": "Cache certificati per {{baseDomain}}",
             "noCache": "Nessuna cache certificati archiviata",
@@ -1491,11 +1565,13 @@
           "success": "Configurazione infrastruttura aggiornata per \"{{name}}\""
         },
         "show": {
+          "descriptionShort": "Mostra la configurazione dell'infrastruttura per un macchinario",
           "description": "Mostra la configurazione dell'infrastruttura per un macchinario",
           "noInfra": "Nessuna configurazione infrastruttura impostata per \"{{name}}\""
         }
       },
       "list": {
+        "descriptionShort": "Elenca le macchine",
         "description": "Elenca le macchine",
         "examples": {
           "basic": "Elenca tutte le macchine registrate.",
@@ -1505,6 +1581,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "Aggiungi un provider cloud",
           "description": "Aggiungi un provider cloud",
           "optionImage": "Immagine SO predefinita",
           "optionImageAttr": "Personalizzato: nome dell'attributo per l'immagine SO",
@@ -1528,15 +1605,18 @@
         },
         "description": "Gestisci i provider cloud per il provisioning automatizzato dei macchinari",
         "list": {
+          "descriptionShort": "Elenca i provider cloud configurati",
           "description": "Elenca i provider cloud configurati",
           "noProviders": "Nessun provider cloud configurato. Aggiungine uno con: rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "Rimuovi una configurazione di provider cloud",
           "description": "Rimuovi una configurazione di provider cloud",
           "success": "Provider cloud \"{{name}}\" rimosso"
         }
       },
       "provision": {
+        "descriptionShort": "Provvisiona una nuova macchina su un provider cloud usando OpenTofu",
         "completed": "Macchina {{name}} provisioned e pronta ({{ip}})",
         "configuringInfra": "Configurazione infrastruttura (proxy + DNS) per {{name}} in corso...",
         "description": "Provvisiona una nuova macchina su un provider cloud usando OpenTofu",
@@ -1614,6 +1694,7 @@
         "clusterMember": "Impossibile rimuovere il macchinario \"{{name}}\": è membro del cluster \"{{cluster}}\".",
         "clusterMemberNext": "Rimuovi prima il nodo dal suo cluster.",
         "confirm": "Rimuovere la macchina \"{{name}}\" dalla configurazione?",
+        "descriptionShort": "Rimuovere una macchina dalla configurazione",
         "description": "Rimuovi un macchinario dalla configurazione corrente",
         "forceDangling": "Macchinario \"{{name}}\" rimosso con {{count}} posizionamento/i di repository ancora su di esso: {{repos}}. Quei posizionamenti ora sono pendenti. Reindirizzali con \"rdc repo migrate\" o eliminali con \"rdc repo delete\".",
         "forceOption": "Rimuovi il macchinario anche se vi sono repository posizionati su di esso o strategie di backup associate, lasciando pendenti quei riferimenti.",
@@ -1645,6 +1726,7 @@
       },
       "scanKeys": {
         "completed": "Scansionati {{count}}/{{total}} macchinari",
+        "descriptionShort": "Esegui la scansione delle chiavi host SSH per i macchinari nella configurazione corrente",
         "description": "Esegui la scansione delle chiavi host SSH per i macchinari nella configurazione corrente",
         "keysScanned": "Chiavi host scansionate per \"{{name}}\"",
         "noKeys": "Impossibile eseguire la scansione delle chiavi host per \"{{name}}\"",
@@ -1729,6 +1811,7 @@
           "unchanged": "Le chiavi di accesso su \"{{name}}\" sono già aggiornate ({{path}})"
         },
         "remove": {
+          "descriptionShort": "Dissocia una chiave di accesso da una macchina",
           "description": "Dissocia una chiave di accesso da una macchina. Il prossimo 'machine access push' ne rimuove la riga",
           "success": "Chiave di accesso \"{{key}}\" dissociata da \"{{name}}\". Rimuovi la sua riga con 'machine access push {{name}}'"
         },
@@ -1740,6 +1823,7 @@
           "success": "Chiave di accesso \"{{key}}\" associata a \"{{name}}\". Applicala con 'machine access push {{name}}'"
         },
         "show": {
+          "descriptionShort": "Mostra le chiavi di accesso associate a una macchina e gli intervalli che ciascuna ha lì",
           "description": "Mostra le chiavi di accesso associate a una macchina e gli intervalli che ciascuna ha lì",
           "noKeys": "Nessuna chiave di accesso associata a \"{{name}}\"",
           "path": "authorized_keys dell'utente {{user}} su \"{{name}}\" (~/.ssh/authorized_keys)"
@@ -1750,6 +1834,7 @@
       "description": "Espone la CLI come server Model Context Protocol (MCP) per l'integrazione con agenti AI. Il server racchiude i comandi CLI come strumenti MCP con input/output JSON strutturato. Sottocomando principale: serve (avvia il server MCP basato su stdio).",
       "descriptionShort": "Server Model Context Protocol per agenti AI",
       "serve": {
+        "descriptionShort": "Avvia il server MCP (trasporto stdio)",
         "configOption": "Nome della configurazione da usare per tutti i comandi",
         "description": "Avvia il server MCP (trasporto stdio)",
         "timeoutOption": "Timeout predefinito dei comandi in millisecondi"
@@ -1757,6 +1842,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "Verifica i prerequisiti per la virtualizzazione",
         "allPassed": "Tutti i prerequisiti soddisfatti",
         "description": "Verifica i prerequisiti per la virtualizzazione",
         "hasMissing": "{{count}} prerequisito/i mancante/i",
@@ -1766,12 +1852,15 @@
       "description": "Provisioning e gestione locale di VM usando KVM/QEMU/Hyper-V (rilevamento automatico della piattaforma). Non per macchine remote: usa `machine` per quelle. Sottocomandi principali: up (avvia VM), down (arresta), status (elenca VM in esecuzione), ssh (connettiti alla VM), setup (installa prerequisiti), check (verifica idoneità dell'host).",
       "descriptionShort": "Operazioni VM locali (provisioning, gestione, distruzione)",
       "down": {
+        "descriptionShort": "Distruggi il cluster VM",
         "completed": "Cluster VM distrutto con successo",
         "description": "Distruggi il cluster VM",
         "failed": "Distruzione del cluster VM fallita",
-        "starting": "Distruzione del cluster VM in corso..."
+        "starting": "Distruzione del cluster VM in corso...",
+        "windowsClients": "Vengono distrutte anche le VM client Windows: {{vms}}"
       },
       "setup": {
+        "descriptionShort": "Installa i prerequisiti per la virtualizzazione",
         "brewFailed": "Installazione tramite Homebrew fallita",
         "completed": "Prerequisiti installati con successo",
         "description": "Installa i prerequisiti per la virtualizzazione",
@@ -1782,19 +1871,73 @@
         "windows": "Configurazione prerequisiti Hyper-V in corso..."
       },
       "ssh": {
+        "descriptionShort": "Connettiti a una VM via SSH",
         "connecting": "Connessione alla VM {{id}} in corso...",
         "description": "Connettiti a una VM via SSH",
         "vmNotFound": "VM con ID {{id}} non trovata o non in esecuzione"
       },
       "status": {
+        "descriptionShort": "Mostra lo stato del cluster VM",
         "description": "Mostra lo stato del cluster VM",
         "noVMs": "Nessuna VM trovata"
       },
       "up": {
+        "descriptionShort": "Provisioning del cluster VM in locale",
         "completed": "Cluster VM provisioned con successo",
         "description": "Provisioning del cluster VM in locale",
         "failed": "Provisioning del cluster VM fallito",
-        "starting": "Avvio provisioning cluster VM in corso..."
+        "starting": "Avvio provisioning cluster VM in corso...",
+        "windowsInvalid": "--windows richiede un elenco di ID di VM separati da virgole (ad esempio 31 o 31,32), ricevuto \"{{value}}\""
+      }
+    },
+    "preview": {
+      "description": "Passa questa configurazione a un'anteprima di una pull request: rdc e il renet di ogni server che rdc tocca passano alle build dell'anteprima, e `rdc preview leave` torna a quelle pubblicate. Esegui `rdc preview use <name>` con il nome che ti è stato dato.",
+      "descriptionShort": "Prova la build di una PR sulle tue macchine e torna indietro",
+      "leave": {
+        "description": "Elenca i server che usano il renet dell'anteprima, chiede conferma e riporta indietro esattamente quelli; poi ripristina il rdc precedente e rilicenzia dall'account reale i repository creati nell'anteprima. Un server irraggiungibile resta in elenco; completalo più tardi con --machine.",
+        "descriptionShort": "Torna a rdc e renet pubblicati",
+        "machine": "Riporta indietro solo questo server"
+      },
+      "msg": {
+        "banner": "L'anteprima {{name}} è attiva (le sue licenze terminano il {{date}}). Esegui `rdc preview leave` per tornare a rdc e renet pubblicati.",
+        "binaryNotRestored": "rdc non è stato ripristinato. Il canale precedente ({{channel}}) è fallito, come la copia conservata ({{copy}}). Reinstalla rdc dal canale pubblicato; una copia conservata potrebbe ancora esistere in {{path}}.",
+        "binaryRestored": "rdc v{{version}} ripristinato.",
+        "binaryRestoredFromCopy": "rdc v{{version}} ripristinato dalla copia conservata prima dell'anteprima ({{reason}}).",
+        "confirmSwitchBack": "Riportare {{count}} server al renet che avevano prima dell'anteprima?",
+        "emergencyExit": "Se la CLI dell'anteprima non riesce a partire, esci con la copia conservata: {{command}}",
+        "expiryMessage": "Questa macchina è sull'anteprima {{name}}, una build di prova di una correzione. Le sue licenze terminano il {{date}} e si rinnovano solo finché l'anteprima esiste. Dopo, le app in esecuzione continuano a funzionare e possono essere fermate e avviate, ma nuovi repository, fork, ridimensionamenti e backup vengono rifiutati. Esegui `rdc preview leave` per tornare a {{server}} e a rdc e renet pubblicati; i repository creati nell'anteprima vengono poi licenziati dall'account reale, entro i limiti del suo piano.",
+        "formatChange": "Questa anteprima modifica un formato su disco ({{formats}}): {{reason}}. Tornando indietro potrebbe non essere possibile leggere i dati scritti dall'anteprima.",
+        "formatChangeConfirm": "Passare comunque a questa anteprima ({{formats}})?",
+        "leaveDone": "Sei uscito dall'anteprima {{name}}. Questa configurazione è tornata su {{server}}.",
+        "leavePending": "L'anteprima {{name}} resta attiva finché tutti i server non sono tornati: {{machines}}. Esegui di nuovo `rdc preview leave` quando saranno raggiungibili.",
+        "licenceNotIssued": "il server degli account non ha emesso alcuna licenza",
+        "licenceRefused": "{{repo}} su {{machine}} non è stato licenziato da {{server}}: {{reason}}. Continua a funzionare e può essere fermato e avviato; la crescita viene rifiutata finché il piano non la consente.",
+        "licencesFailed": "Le licenze su {{machine}} non sono state spostate sull'account reale: {{detail}}. Esegui: rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}: rilicenziato da {{server}}: {{repos}}.",
+        "notActive": "Questa configurazione non è su un'anteprima.",
+        "reprovisionFailed": "lo slot renet fissato è {{slot}} e il nuovo provisioning è fallito: {{detail}}",
+        "statusName": "Anteprima {{name}} su {{host}}",
+        "statusNoServers": "Nessun server usa ancora il renet dell'anteprima.",
+        "statusPrevious": "Prima dell'anteprima: rdc v{{version}} su {{server}}.",
+        "statusServer": "  {{machine}}: renet v{{version}} conservato in {{slot}}",
+        "statusServers": "{{count}} server usano il renet dell'anteprima:",
+        "statusSince": "Attivata il {{date}}; le licenze terminano il {{end}}.",
+        "switchedBack": "{{machine}} è di nuovo su renet v{{version}}.",
+        "touchedHeader": "Server sul renet dell'anteprima {{name}}:",
+        "touchedLine": "  {{machine}}: renet v{{current}} ora, v{{recorded}} prima dell'anteprima",
+        "unreachable": "Non è stato possibile riportare indietro {{machine}} ({{detail}}); resta in elenco. Completa con: rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "irraggiungibile",
+        "useDone": "Passato all'anteprima {{name}} (rdc v{{version}})."
+      },
+      "status": {
+        "description": "Mostra l'anteprima attiva, la data di fine delle sue licenze, i server sul suo renet e la via del ritorno.",
+        "descriptionShort": "Mostra l'anteprima attiva"
+      },
+      "use": {
+        "acceptFormatChange": "Accetta senza chiedere l'avviso che questa anteprima modifica un formato su disco",
+        "description": "Verifica la build della CLI dell'anteprima su entrambe le sue origini, conserva la CLI attuale come rdc.pre-preview, installa la CLI dell'anteprima e punta questa configurazione al server dell'anteprima. Un server riceve il renet dell'anteprima solo la prima volta che la CLI lo predispone.",
+        "descriptionShort": "Passa a un'anteprima",
+        "nameArgument": "Il nome dell'anteprima, ad esempio pv-amber-river-stone"
       }
     },
     "repo": {
@@ -1802,16 +1945,19 @@
         "archive": {
           "description": "Gestione dei record dei repository archiviati.",
           "list": {
+            "descriptionShort": "Elencare i record di repository archiviati",
             "description": "Elenca le credenziali dei repository archiviati",
             "noArchived": "Nessun repository archiviato"
           },
           "purge": {
             "confirm": "Eliminare definitivamente tutti i record archiviati scaduti?",
+            "descriptionShort": "Eliminare definitivamente i record archiviati",
             "description": "Elimina definitivamente tutte le credenziali archiviate",
             "noArchived": "Nessun repository archiviato da eliminare",
             "success": "Eliminate {{count}} credenziale/i archiviata/e"
           },
           "restore": {
+            "descriptionShort": "Ripristinare un record archiviato nella configurazione",
             "description": "Ripristina una credenziale di repository archiviata",
             "success": "\"{{name}}\" ripristinato ({{guid}})"
           }
@@ -1819,8 +1965,13 @@
         "orphan": {
           "description": "Immagini di repository su una macchina che nessuna configurazione nomina.",
           "list": {
+            "descriptionShort": "Mostra le immagini di repository di una macchina e indica per ciascuna se è orfana, cioè non nominata da alcuna configurazione",
             "description": "Mostra le immagini di repository di una macchina e indica per ciascuna se è orfana, cioè non nominata da alcuna configurazione.",
-            "none": "Nessuna immagine di repository su {{machine}}"
+            "none": "Nessuna immagine di repository su {{machine}}",
+            "executorEventsOption": "Legge gli eventi dell'executor (righe JSON dello strumento executor_orphans) e segna come creata dall'executor l'immagine orfana che nominano",
+            "executorReason": "Creata dall'executor ospitato, scrittura della configurazione scartata (evento {{at}})",
+            "executorEventsBadLine": "File degli eventi dell'executor: la riga {{line}} non è un oggetto JSON",
+            "executorEventsUnreadable": "Impossibile leggere il file degli eventi dell'executor {{file}}: {{error}}"
           },
           "delete": {
             "description": "Elimina un'immagine di repository orfana tramite il suo GUID. Un GUID nominato da una configurazione viene rifiutato, così come un'immagine montata o in esecuzione, salvo con --force-delete-mounted.",
@@ -1840,6 +1991,7 @@
         "autostart": {
           "description": "Gestisci l'avvio automatico del repository al boot",
           "disable": {
+            "descriptionShort": "Disabilita l'avvio automatico per un repository (ometti il nome per disabilitare tutti)",
             "completed": "Avvio automatico disabilitato",
             "completedAll": "Avvio automatico disabilitato per tutti i repository",
             "description": "Disabilita l'avvio automatico per un repository (ometti il nome per disabilitare tutti)",
@@ -1849,6 +2001,7 @@
             "startingAll": "Disabilitazione dell'avvio automatico per tutti i repository su \"{{machine}}\"..."
           },
           "enable": {
+            "descriptionShort": "Abilita l'avvio automatico per un repository (ometti il nome per abilitare tutti)",
             "completed": "Avvio automatico abilitato",
             "completedAll": "Avvio automatico abilitato per tutti i repository",
             "description": "Abilita l'avvio automatico per un repository (ometti il nome per abilitare tutti)",
@@ -1858,6 +2011,7 @@
             "startingAll": "Abilitazione dell'avvio automatico per tutti i repository su \"{{machine}}\"..."
           },
           "list": {
+            "descriptionShort": "Elenca i repository con avvio automatico abilitato",
             "description": "Elenca i repository con avvio automatico abilitato",
             "empty": "Nessun repository con avvio automatico su \"{{machine}}\"",
             "failed": "Impossibile elencare i repository con avvio automatico",
@@ -1954,6 +2108,7 @@
         "weightOption": "Percentuale di traffico instradata verso il canary (intero 0-100; 0 = dark, 100 = passaggio completo)"
       },
       "cat": {
+        "descriptionShort": "Leggere una finestra delimitata di un file di un repository su stdout (la diagnostica va su stderr)",
         "description": "Legge una finestra delimitata di un file all'interno di un repository e la scrive su stdout (delimitato lato server; i messaggi diagnostici vanno su stderr)",
         "examples": {
           "basic": "Stampa un file dall'interno di un repository."
@@ -1986,6 +2141,7 @@
         "messageOption": "Messaggio del commit"
       },
       "create": {
+        "descriptionShort": "Crea un nuovo repository",
         "alreadyExists": "Il repository \"{{name}}\" esiste già nella configurazione",
         "completed": "Repository creato",
         "datastoreNotAttached": "il datastore \"{{datastore}}\" non è collegato a nessuna macchina. Collegalo con: rdc datastore attach {{datastore}} --to <machine>. Se è già collegato ma la configurazione non lo sa, esegui rdc config reconcile.",
@@ -2134,6 +2290,7 @@
         "nothing": "Niente da raccogliere su {{machine}}: ogni commit e raggiungibile"
       },
       "list": {
+        "descriptionShort": "Elenca i repository su un macchinario",
         "completed": "Elenco completato",
         "datastoreOption": "Elenca i repository in questo datastore (risolto sulla macchina che attualmente lo detiene)",
         "description": "Elenca i repository su un macchinario",
@@ -2414,12 +2571,14 @@
         "valueOption": "Valore del segreto. Passa `-` per leggere da stdin (evita l'esposizione nella cronologia della shell)."
       },
       "status": {
+        "descriptionShort": "Ottieni lo stato del repository (stato del mount, daemon Docker in esecuzione, numero di contenitori, utilizzo del disco)",
         "completed": "Stato recuperato",
         "description": "Ottieni lo stato del repository (stato del mount, daemon Docker in esecuzione, numero di contenitori, utilizzo del disco)",
         "failed": "Verifica dello stato non riuscita",
         "starting": "Recupero dello stato di \"{{repository}}\" su \"{{machine}}\"..."
       },
       "health": {
+        "descriptionShort": "Esegue i controlli health() dei Rediaccfile del repository ed esce con 0 (ok), 1 (avviso) o 2 (errore)",
         "description": "Esegue i controlli health() dei Rediaccfile del repository ed esce con 0 (ok), 1 (avviso) o 2 (errore)",
         "header": "\nStato di {{repository}}:",
         "levelOk": "✓ In salute",
@@ -2579,7 +2738,17 @@
           "failed": "Impossibile leggere la concessione",
           "unreadable": "L'output delle concessioni della macchina non è leggibile"
         }
-      }
+      },
+      "flows": {
+        "description": "Elenca i flussi di rete registrati per un repository in una finestra temporale: ora, processo, destinazione, byte in uscita e in entrata, più ASN e paese della destinazione quando noti. Un intervallo senza evidenze appare come riga di vuoto. Richiede lo scope forensics:read e un piano a pagamento.",
+        "descriptionShort": "Elenca i flussi di rete registrati di un repository"
+      },
+      "opens": {
+        "description": "Elenca le aperture di file registrate per un repository in una finestra temporale: ora, processo e percorso, con i percorsi sensibili contrassegnati. Un intervallo senza evidenze appare come riga di vuoto. Richiede lo scope forensics:read e un piano a pagamento.",
+        "descriptionShort": "Elenca le aperture di file registrate di un repository"
+      },
+      "rowsSinceOption": "Inizio della finestra: un istante ISO 8601 oppure un intervallo a ritroso da ora, come 90m, 24h o 7d (predefinito: 24h)",
+      "rowsUntilOption": "Fine della finestra, nelle stesse forme (predefinito: adesso)"
     },
     "serve": {
       "description": "Esegui questo processo come esecutore in modo che i client possano eseguire comandi tramite esso invece di connettersi da soli via SSH",
@@ -2590,11 +2759,18 @@
         "customPort": "Avvia il server executor su una porta specifica."
       },
       "hint": "Punta un client verso di esso con: rdc --proxy <url> <command>",
-      "listening": "Esecutore in ascolto su http://{{host}}:{{port}} (modalità: {{mode}})",
-      "optionHost": "Indirizzo a cui associarsi",
+      "listening": "Esecutore in ascolto su {{scheme}}://{{host}}:{{port}} (modalità: {{mode}})",
+      "optionHost": "Indirizzo a cui associarsi (predefinito 127.0.0.1 per un daemon, 0.0.0.0 in un container)",
+      "optionTlsCert": "File del certificato PEM; insieme a --tls-key serve HTTPS",
+      "optionTlsKey": "File della chiave privata PEM per --tls-cert",
       "optionMode": "Posizionamento: daemon (host del cliente) o container",
       "optionPort": "Porta su cui restare in ascolto",
-      "summary": "Esegui come esecutore per client remoti"
+      "summary": "Esegui come esecutore per client remoti",
+      "errors": {
+        "tlsRequired": "Un esecutore daemon su {{host}} trasmetterebbe i token bearer su HTTP in chiaro. Associalo al loopback (l'impostazione predefinita, 127.0.0.1) oppure indica --tls-cert e --tls-key per servire HTTPS.",
+        "tlsPairIncomplete": "--tls-cert e --tls-key vanno insieme: indicali entrambi o nessuno dei due.",
+        "tlsUnreadable": "Impossibile leggere {{path}}: {{reason}}"
+      }
     },
     "server": {
       "summary": "Installare ed eseguire il server di account Rediacc self-hosted",
@@ -2621,31 +2797,33 @@
         "optionTlsCert": "File del certificato in formato PEM (con --tls byo), che copra entrambi i domini",
         "optionTlsKey": "File della chiave privata di quel certificato (con --tls byo)",
         "optionTlsCa": "Certificato CA da cui discende il certificato del server, usato per il controllo di integrità",
-        "optionLicence": "auto: un certificato dell'account connesso oppure, se manca, il livello gratuito; free: avviare con il livello gratuito",
+        "optionLicence": "auto (predefinito): un certificato di delega dell'account registrato con cui si è effettuato l'accesso. free viene rifiutato: un server on-premise richiede un account registrato (rdc subscription login)",
         "optionCert": "File del certificato di delega per un'installazione offline; deve indicare la chiave generata sulla macchina",
         "optionImage": "Immagine del server da eseguire (predefinito: ghcr.io/rediacc/server:latest)",
         "optionImageFile": "Archivio di immagine salvato (docker save) da trasferire invece di scaricarla",
+        "termsHint": "Se i Termini di servizio non sono stati accettati, rieseguire con --accept-terms (oppure impostare RDC_ACCEPT_TERMS=1)",
         "optionLocalImage": "Salvare l'--image dal Docker locale e trasferirla invece di scaricarla",
         "optionNoDnsWait": "Mostrare i record DNS senza attendere che si risolvano",
         "optionBwsProject": "Copiare anche le chiavi generate in questo progetto di Bitwarden Secrets Manager; senza questa opzione nessuna chiave lascia la macchina",
         "optionRotate": "Con --bws-project, sostituire un valore memorizzato diverso invece di rifiutare",
         "optionYes": "Non chiedere nulla: usare i valori predefiniti e rifiutare un valore mancante",
-        "help": "Passaggi, in ordine (ciascuno viene registrato, quindi una nuova esecuzione salta ciò che è fatto):\n  preflight  sudo -n, architettura, porte 80 e 443, spazio su disco e sfasamento dell'orologio\n  setup      rdc machine setup, quando renet manca\n  dns        mostrare i record A e AAAA, poi attendere che entrambi i domini si risolvano verso la macchina\n  tls        Let's Encrypt, Cloudflare DNS-01 o un certificato esistente\n  repo       creare il repository e applicare il template elite\n  keys       generare tutte le chiavi sulla macchina, nel secrets.env del repository\n  licence    --cert, altrimenti un certificato dell'account connesso, altrimenti il livello gratuito\n  image      scaricare l'immagine sulla macchina oppure trasferire --image-file\n  up         avviare il server e attendere https://<domain>/health\n  owner      creare l'account del proprietario\n\nUna macchina non ancora registrata si aggiunge con --ip e --user. Una VM cloud viene creata prima con rdc machine provision.\nI record DNS vengono mostrati e mai scritti in una zona del cliente.\nIn un terminale l'installazione termina con un pacchetto di ripristino monouso. Conservarlo in un luogo sicuro: non viene mai registrato nei log né incluso in --output json, e rdc server backup lo mostra di nuovo in seguito.",
+        "help": "Passaggi, in ordine (ciascuno viene registrato, quindi una nuova esecuzione salta ciò che è fatto):\n  preflight  sudo -n, architettura, porte 80 e 443, spazio su disco e sfasamento dell'orologio\n  setup      rdc machine setup, quando renet manca\n  dns        mostrare i record A e AAAA, poi attendere che entrambi i domini si risolvano verso la macchina\n  tls        Let's Encrypt, Cloudflare DNS-01 o un certificato esistente\n  repo       creare il repository e applicare il template elite\n  keys       generare tutte le chiavi sulla macchina, nel secrets.env del repository\n  licence    --cert, altrimenti un certificato dell'account registrato con cui si è effettuato l'accesso\n  image      scaricare l'immagine sulla macchina oppure trasferire --image-file\n  up         avviare il server e attendere https://<domain>/health\n  owner      creare l'account del proprietario\n\nUn'installazione richiede un account registrato: accedere con rdc subscription login (Community o superiore) prima di eseguirla, oppure passare --cert. La licenza gratuita anonima non può far funzionare un server on-premise, quindi un'installazione senza nessuno dei due viene rifiutata prima di toccare la macchina.\nLa creazione del repository richiede l'accettazione dei Termini di servizio: in un'esecuzione non presidiata passare l'opzione radice --accept-terms (oppure impostare RDC_ACCEPT_TERMS=1).\nUna macchina non ancora registrata si aggiunge con --ip e --user. Una VM cloud viene creata prima con rdc machine provision.\nI record DNS vengono mostrati e mai scritti in una zona del cliente.\nIn un terminale l'installazione termina con un pacchetto di ripristino monouso. Conservarlo in un luogo sicuro: non viene mai registrato nei log né incluso in --output json, e rdc server backup lo mostra di nuovo in seguito.",
         "step": "Passaggio: {{step}}",
         "skipped": "Passaggio {{step}}: già completato, saltato",
         "done": "Il server di account è in esecuzione su https://{{domain}}",
-        "freeTier": "{{domain}} funziona con il livello gratuito. Eseguire `rdc server licence {{domain}}` per assegnargli la licenza.",
         "backupHint": "Salvare il pacchetto di ripristino con `rdc server backup {{domain}} --out <file>`. La prima password del proprietario è in {{ownerFile}}.",
         "examples": {
           "brought": "Registrare un server esistente tramite il suo indirizzo e installarvi.",
           "configured": "Installare su una macchina configurata senza alcuna richiesta.",
-          "lan": "Installare su una macchina della LAN con un certificato esistente, con il livello gratuito."
+          "lan": "Installare su una macchina della LAN con il proprio certificato TLS e un file di certificato di licenza."
         },
         "optionBundle": "Directory del bundle offline scritta da 'rdc server bundle'",
+        "optionSigner": "Impronta stampata da 'rdc server bundle'; il bundle deve essere firmato con quella chiave",
         "optionOffline": "Installare in modalità air-gapped da --bundle: nessuna chiamata a upstream, registry o gestore di pacchetti",
         "helpOffline": "Ambiente isolato: crea il bundle online con rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> lo verifica, carica l'immagine del proxy, configura la macchina offline e non contatta nulla all'esterno. L'installazione si ferma al passaggio della licenza e scrive una richiesta: emetti un certificato online con rdc server licence mint, poi riesegui con --cert."
       },
       "status": {
+        "descriptionShort": "Mostrare stato di salute, livello, certificato e immagine di un server installato",
         "description": "Mostrare stato di salute, livello, certificato e immagine di un server installato",
         "certRefused": "RIFIUTATO ({{reason}}) alle {{at}}",
         "certRefusedRun": "esegui: rdc server licence {{domain}}",
@@ -2653,6 +2831,7 @@
         "certExpiring": "Il certificato di licenza scade tra {{days}} giorni; rinnovarlo (rdc server licence)"
       },
       "backup": {
+        "descriptionShort": "Mostrare il pacchetto di ripristino (le chiavi) di un server installato oppure scriverlo in un file",
         "description": "Mostrare il pacchetto di ripristino (le chiavi) di un server installato oppure scriverlo in un file",
         "optionOut": "Scrivere il pacchetto in questo file (modalità 0600) invece che su stdout",
         "written": "Pacchetto di ripristino scritto in {{file}} (modalità 0600)",
@@ -2676,19 +2855,16 @@
         "templateNoBaseline": "Questa casella non ha registrato checksum del template, quindi le modifiche locali non possono essere rilevate; si applica il template più recente"
       },
       "licence": {
+        "descriptionShort": "Passare un server dal livello gratuito a un certificato di delega dell'account connesso, oppure da --cert",
         "description": "Passare un server dal livello gratuito a un certificato di delega dell'account connesso, oppure da --cert",
         "done": "{{domain}} ha la licenza dell'abbonamento {{subscription}}",
         "certUnreadable": "Impossibile leggere il file del certificato {{file}}",
         "certInvalid": "{{file}} non è un certificato di delega utilizzabile: {{error}}",
         "keyMismatch": "{{file}} è stato emesso per una chiave diversa da quella generata sulla macchina. Emettere un certificato per la chiave della macchina.",
         "issuedKeyMismatch": "Il server di account ha emesso un certificato per una chiave diversa da quella generata sulla macchina",
-        "noLogin": "Nessun account connesso: il server si avvia con il livello gratuito",
-        "planDisallows": "L'abbonamento non può contenere un certificato di delega ({{error}}); il server si avvia con il livello gratuito",
         "otherKey": "L'abbonamento contiene già un certificato di delega attivo per un'altra chiave ({{certId}}). Revocarlo nel portale, quindi rieseguire l'installazione. {{error}}",
-        "missingScope": "Questo accesso non può emettere un certificato di delega. Rieseguire `rdc subscription login` come proprietario o amministratore con 2FA, oppure installare con --licence free.",
-        "offerFree": "Avviare invece il server con il livello gratuito?",
+        "missingScope": "Questo accesso non può emettere un certificato di delega. Rieseguire `rdc subscription login` come proprietario o amministratore con 2FA.",
         "noCertForUpgrade": "Nessun certificato di delega disponibile: accedere con `rdc subscription login` come proprietario o amministratore con 2FA, oppure passare --cert <file>",
-        "freeProbeHoldsCert": "Il server risponde come se avesse un certificato, benché non ne sia stato installato alcuno",
         "viaInbox": "Il server ha applicato il certificato dalla sua casella dei certificati; non è servito alcun riavvio",
         "alreadyCurrent": "Il server ha già questo certificato ({{certId}}); non c’è niente da applicare",
         "rejected": "Il server ha rifiutato il certificato ({{reason}}): {{detail}}",
@@ -2701,6 +2877,7 @@
         "noUpstreamKey": "Il server non ha UPSTREAM_PUBLIC_KEY, quindi non può verificare alcun certificato e uno nuovo non serve. Imposta UPSTREAM_PUBLIC_KEY nei segreti di {{domain}}, poi esegui `rdc server upgrade {{domain}}`.",
         "bootRefusalStays": "Il certificato è stato applicato, ma il server segnala ancora un rifiuto all'avvio ({{reason}}); controlla i log del server",
         "mint": {
+          "descriptionShort": "Emettere un certificato di licenza per la richiesta di una casella offline (da eseguire online, con accesso effettuato)",
           "description": "Emettere un certificato di licenza per la richiesta di una casella offline (da eseguire online, con accesso effettuato)",
           "done": "Certificato scritto in {{file}} (valido fino al {{until}}); portarlo sulla casella e installarlo con --cert",
           "optionOut": "File in cui scrivere il certificato",
@@ -2721,6 +2898,9 @@
         "downloadingCli": "Download della CLI {{version}} per {{platform}}",
         "pulling": "Download di {{image}} ({{platform}})",
         "saving": "Salvataggio di {{image}} in {{file}}",
+        "optionNoModels": "Lascia fuori dal bundle i modelli di rilevamento",
+        "fetchingModels": "Scarico i modelli di rilevamento stabili",
+        "signer": "Impronta del firmatario del bundle: {{fingerprint}}. Passala come --signer sul lato air-gapped, trasmessa per una via diversa dal bundle.",
         "written": "Bundle scritto in {{dir}} ({{arch}})",
         "errors": {
           "cliChecksumFile": "{{url}} non contiene alcuna somma sha256",
@@ -2741,7 +2921,12 @@
           "sumsLine": "SHA256SUMS contiene una riga che non ha la forma '<sha256>  <file>': {{line}}",
           "tagAndImage": "--tag e --image non possono essere combinati",
           "tampered": "{{file}} non corrisponde a SHA256SUMS né al manifest: il bundle è stato modificato o danneggiato",
-          "unreadable": "Impossibile leggere {{file}} dal bundle {{dir}}"
+          "unreadable": "Impossibile leggere {{file}} dal bundle {{dir}}",
+          "unsigned": "Il bundle {{dir}} non ha un {{file}} leggibile; un bundle creato prima della firma non si può installare",
+          "signerMismatch": "Il bundle è firmato con la chiave {{actual}}, non con il --signer {{expected}}",
+          "badSignature": "manifest.sig non è la firma del firmatario su manifest.json",
+          "modelsShape": "Il file di modelli {{file}} non ha il formato previsto",
+          "modelsSha256Mismatch": "{{url}} ha dato l'hash {{actual}}, atteso {{expected}}"
         }
       },
       "bws": {
@@ -2825,7 +3010,10 @@
         "bundleIncomplete": "In secrets.env sulla macchina mancano {{keys}}",
         "boxScriptFailed": "Il comando su {{machine}} è terminato con {{code}}: {{detail}}",
         "rdcFailed": "{{command}} non riuscito (codice di uscita {{code}})",
-        "certAndFree": "--cert e --licence free non possono essere combinati"
+        "rdcFailedDetail": "{{command}} non riuscito (codice di uscita {{code}}): {{detail}}",
+        "accountRequired": "Un server on-premise richiede un account registrato e questa configurazione non ha alcun accesso, quindi sulla macchina non è stato modificato nulla. Accedere con `rdc subscription login` (un account registrato parte da Community o superiore), poi rieseguire questa installazione.",
+        "licenceFreeRefused": "--licence free viene rifiutato: un server on-premise richiede un account registrato, mai la licenza gratuita anonima. Accedere con `rdc subscription login` (Community o superiore), poi rieseguire questa installazione senza --licence free.",
+        "freeTierInstalled": "{{domain}} è stato installato con il livello gratuito anonimo, che non fa più funzionare un server on-premise. Assegnargli la licenza con `rdc server licence {{domain}}` dopo l'accesso con `rdc subscription login`."
       },
       "offline": {
         "archMismatch": "La macchina è {{box}} ma il bundle è per {{bundle}}",
@@ -2837,9 +3025,9 @@
         "mintNoLogin": "L'emissione richiede una configurazione con accesso effettuato (rdc subscription login)",
         "missingEssentials": "Mancano sulla macchina (la configurazione offline non può installarli): {{missing}}",
         "needsBundle": "--offline richiede --bundle <dir>",
+        "needsSigner": "Un bundle richiede --signer <fingerprint>, l'impronta stampata da 'rdc server bundle'",
         "noBws": "--bws-project richiede la rete e non può essere usato con --offline",
         "noCfToken": "--cf-token richiede la rete e non può essere usato con --offline",
-        "noFree": "--licence free contatta il server di account e non può essere usato con --offline; usare il flusso richiesta più --cert",
         "noProxyImage": "Il bundle non contiene l'immagine del proxy {{ref}}",
         "requestInvalid": "{{file}} non è una richiesta di delega scritta da un'installazione offline",
         "tlsByoOnly": "--tls {{tls}} richiede Internet; usare --tls byo con --tls-cert e --tls-key (--tls-ca per una CA privata)"
@@ -2877,6 +3065,7 @@
       "description": "Gestisci le licenze e i token di abbonamento. Accedi con login, ispeziona con status, riemetti le licenze con refresh.",
       "descriptionShort": "Gestisci le licenze e l'abbonamento delle macchine",
       "login": {
+        "descriptionShort": "Autentica tramite browser o token API",
         "backupNeedsTwoFactor": "Accesso eseguito senza la gestione dell'archiviazione dei backup. Attiva l'autenticazione a due fattori nelle impostazioni su {{url}}, poi accedi di nuovo.",
         "channelSynced": "Canale di aggiornamento impostato su {{channel}}.",
         "description": "Autentica tramite browser o token API",
@@ -2911,20 +3100,24 @@
         "waitingApproval": "In attesa dell'autorizzazione del browser..."
       },
       "register": {
+        "descriptionShort": "Crea un account nel browser (e-mail precompilata) e accedi",
         "description": "Crea un account nel browser (e-mail precompilata) e accedi",
         "optionEmail": "Indirizzo e-mail da precompilare nella pagina di registrazione",
         "invalidEmail": "Inserisci un indirizzo e-mail valido."
       },
       "logout": {
+        "descriptionShort": "Cancella il token di abbonamento memorizzato",
         "description": "Cancella il token di abbonamento memorizzato",
         "success": "Token di abbonamento rimosso"
       },
       "proxyToken": {
+        "descriptionShort": "Emetti un token proxy:exec di breve durata dall'accesso di questo dispositivo, da usare con --proxy",
         "description": "Emetti un token proxy:exec di breve durata dall'accesso di questo dispositivo, da usare con --proxy",
         "jsonOption": "Stampa in JSON il token e il relativo expiresAt",
         "noToken": "Il server dell'account non ha restituito alcun token proxy."
       },
       "refresh": {
+        "descriptionShort": "Aggiorna le licenze dal server account",
         "account": {
           "failed": "Impossibile leggere lo stato dell'account dal server account.",
           "refreshed": "Stato dell'account aggiornato",
@@ -2972,6 +3165,7 @@
         }
       },
       "status": {
+        "descriptionShort": "Mostra l'abbonamento e lo stato delle licenze per una macchina",
         "description": "Mostra l'abbonamento e lo stato delle licenze per una macchina.",
         "issuanceLimitReached": "Limite mensile di emissione licenze repository raggiunto per il mese solare UTC corrente.",
         "issuanceUsageHigh80": "Le emissioni mensili di licenze repository superano l'80% del limite UTC corrente.",
@@ -3005,9 +3199,10 @@
         "othersHeader": "  Licenze eliminate e sconosciute:",
         "overLimitCell": "OLTRE IL LIMITE",
         "refreshHint": "Rinnova con: rdc subscription refresh",
-        "retireHint": "Ritira quelle scadute definitivamente: rdc subscription retire --expired",
+        "retireHint": "Elenca quelle scadute definitivamente da ritirare: rdc subscription retire --expired (--apply le ritira)",
         "whereAbsent": "non presente in questa configurazione",
-        "whereDeleted": "eliminato"
+        "whereDeleted": "eliminato",
+        "whereGone": "non più su {{machine}}"
       },
       "licenceState": {
         "valid": "valida",
@@ -3022,23 +3217,25 @@
         "needsYes": "Ritirare una licenza richiede conferma e stdin non è un terminale. Passa --yes per confermare.",
         "confirm": "Ritirare la licenza di {{name}} ({{guid}}, {{state}})? Un rinnovo non la riporta indietro.",
         "success": "Licenza ritirata: {{name}}",
+        "descriptionShort": "Ritira la licenza di un repository che non esiste più, così esce dai conteggi delle licenze e dagli avvisi",
         "description": "Ritira la licenza di un repository che non esiste più, così esce dai conteggi delle licenze e dagli avvisi.",
         "argGuid": "GUID del repository, o almeno 8 caratteri di una licenza del report dell'account",
         "optionForce": "Ritira una licenza il cui repository è ancora in questa configurazione e non è scaduta definitivamente",
-        "dryRunNeedsExpired": "--dry-run va usato con --expired.",
-        "expiredConfirm": "Ritirare {{count}} licenze? Un rinnovo non le riporta indietro.",
-        "expiredDryRun": "Prova a vuoto: non è stato ritirato nulla.",
+        "expiredDryRun": "Prova a vuoto: non è stato ritirato nulla. Per ritirarle: rdc subscription retire --expired --apply",
         "expiredFailed": "Impossibile ritirare {{name}}: {{error}}",
-        "expiredList": "{{count}} licenze scadute definitivamente di repository eliminati o sconosciuti:",
+        "expiredList": "{{count}} licenze scadute definitivamente di repository che non esistono più:",
         "expiredNeedsConfig": "Questa configurazione non contiene repository, quindi --expired non può capire quali licenze siano orfane. Scegli la configurazione con --config.",
-        "expiredNone": "Nessuna licenza scaduta definitivamente di un repository eliminato o sconosciuto da ritirare.",
-        "expiredResult": "Ritirate: {{retired}}, saltate: {{skipped}} (repository attivi), fallite: {{failed}}.",
+        "expiredNone": "Nessuna licenza scaduta definitivamente di un repository che non esiste più.",
+        "expiredResult": "Ritirate: {{retired}}, mantenute: {{skipped}} (ancora su una macchina o non verificabili), fallite: {{failed}}.",
         "expiredWithGuid": "--expired ritira ogni licenza scaduta definitivamente e non accetta un GUID.",
         "needsGuidOrExpired": "Indica il GUID di un repository oppure --expired.",
-        "optionDryRun": "Con --expired: elenca cosa verrebbe ritirato senza cambiare nulla",
-        "optionExpired": "Ritira ogni licenza scaduta definitivamente di un repository eliminato o non presente in questa configurazione"
+        "optionExpired": "Elenca ogni licenza scaduta definitivamente di un repository che non esiste più: eliminato, assente da questa configurazione o sparito dalla sua macchina",
+        "applyNeedsExpired": "--apply va usato con --expired.",
+        "expiredListFailed": "Impossibile elencare i repository su {{place}} ({{error}}). Le licenze dei repository che si trovano lì restano.",
+        "optionApply": "Con --expired: ritira le licenze elencate (senza questa opzione --expired si limita a elencarle)"
       },
       "notices": {
+        "descriptionShort": "Elenca gli avvisi dell'account: scadenza delle licenze, stato dei backup, rinnovi, certificati e termini",
         "description": "Elenca gli avvisi dell'account: scadenza delle licenze, stato dei backup, rinnovi, certificati e termini.",
         "optionAll": "Include gli avvisi ignorati e tutte le pagine, non solo gli ultimi 30 giorni",
         "optionUnread": "Solo gli avvisi non ancora letti",
@@ -3052,7 +3249,21 @@
           "licenceRenewal": "{{planCode}} si rinnova il {{date}}",
           "certExpiry": "Il certificato {{track}} {{number}} scade il {{date}}",
           "evalExpiry": "La prova di {{planCode}} termina il {{date}}",
-          "termsNotice": "I termini {{version}} entrano in vigore il {{date}}"
+          "termsNotice": "I termini {{version}} entrano in vigore il {{date}}",
+          "forensicsQuota": {
+            "warning": "L'archiviazione forense occupa {{used}} GB su {{quota}} GB, di cui {{locked}} GB bloccati.",
+            "levelCapped": "L'acquisizione forense è passata a Basic perché la finestra bloccata non entra più. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati.",
+            "refused": "I batch forensi vengono rifiutati perché nemmeno l'acquisizione Basic entra. Usati {{used}} GB su {{quota}} GB, {{locked}} GB bloccati."
+          },
+          "securityIncident": {
+            "earlyWarning": "Il {{date}} Rediacc ha pubblicato un preallarme su un incidente di sicurezza.",
+            "notification": "Il {{date}} Rediacc ha pubblicato una notifica di incidente di sicurezza.",
+            "final": "Il {{date}} Rediacc ha pubblicato il rapporto finale su un incidente di sicurezza."
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} ha rilevato un'anomalia su {{repo}} il {{date}}. Cronologia: {{path}}",
+            "delayed": "{{detector}} ha rilevato un'anomalia su {{repo}} il {{date}}; l'avviso è arrivato in ritardo. Cronologia: {{path}}"
+          }
         }
       }
     },
@@ -3074,10 +3285,16 @@
       "noChanges": "Nessuna modifica da sincronizzare.",
       "previewingChanges": "\nAnteprima modifiche...\n",
       "skippedMore": "{{names}} e altri {{count}}",
+      "deleted": "File eliminati: {{count}}",
+      "rsyncUnusable": "rsync è installato ma non si avvia ({{reason}}). Il trasferimento passa da SFTP (senza sincronizzazione delta).",
+      "rsyncUnusableNoFallback": "rsync è installato ma non si avvia ({{reason}}).",
       "skippedNonRegular": "Avviso: collegamenti simbolici e file speciali non trasferiti, totale: {{count}} (una sincronizzazione con privilegi trasferisce solo file regolari): {{names}}",
       "status": {
         "description": "Confronto dry-run di file locali e remoti (mostra cosa verrebbe trasferito senza trasferire effettivamente)",
-        "descriptionShort": "Confronta file locali e remoti (dry-run)"
+        "descriptionShort": "Confronta file locali e remoti (dry-run)",
+        "localOnly": "Solo in locale, non sul remoto: {{count}}",
+        "localOnlyMore": "  ... e altri {{count}}",
+        "localOnlyNeedsRsync": "I file presenti solo in locale non sono elencati: questo confronto richiede rsync."
       },
       "totalSize": "Dimensione totale: {{size}}",
       "upload": {
@@ -3091,6 +3308,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "Apri una shell su una macchina, oppure all'interno di un repository con il suo Docker configurato",
         "description": "Apri una shell su una macchina, oppure all'interno di un repository con il suo Docker configurato.",
         "examples": {
           "machine": "Apri un terminale SSH verso una macchina.",
@@ -3104,6 +3322,7 @@
       "fetchingDetails": "Recupero dettagli di connessione in corso...",
       "launchingTerminal": "Avvio terminale {{type}} in corso...",
       "launchSuccess": "Terminale avviato con successo.",
+      "externalFallback": "Impossibile aprire un terminale esterno ({{error}}). Si continua in questo terminale con SSH diretto.",
       "testingConnectivity": "Test connettivita verso {{host}}:{{port}} in corso..."
     },
     "update": {
@@ -3146,6 +3365,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "Controlla l'installazione e la configurazione di VS Code",
         "activeConnections": "Connessioni attive: {{count}}",
         "configuration": "\nConfigurazione:",
         "configured": "  Configurato: {{status}}",
@@ -3166,12 +3386,14 @@
         "yes": "Si"
       },
       "cleanup": {
+        "descriptionShort": "Rimuovi le configurazioni SSH di VS Code",
         "cleaned": "Rimossa: {{connection}}",
         "cleanedAll": "{{count}} connessione/i SSH VS Code rimossa/e.",
         "description": "Rimuovi le configurazioni SSH di VS Code",
         "removedKeys": "Tutte le chiavi SSH persistenti rimosse."
       },
       "connect": {
+        "descriptionShort": "Apri VS Code su una macchina o all'interno di un repository",
         "browserUrl": "Apri VS Code nel browser: {{url}}",
         "configuringSSH": "Configurazione SSH in corso...",
         "configuringVSCode": "Configurazione impostazioni VS Code in corso...",
@@ -3200,6 +3422,7 @@
       "description": "Apri VS Code con Remote SSH su una macchina o un repository con ambiente per repository isolato. Stessa connessione SSH di `term` ma avvia VS Code invece. Sottocomandi principali: connect (o abbreviazione posizionale), list (mostra le connessioni configurate), cleanup (rimuove le voci di configurazione SSH), check (verifica l'installazione di VS Code).",
       "descriptionShort": "Apri VS Code Remote SSH su una macchina o un repository",
       "list": {
+        "descriptionShort": "Elenca le connessioni SSH VS Code configurate",
         "configFile": "\nFile di configurazione: {{path}}",
         "description": "Elenca le connessioni SSH VS Code configurate",
         "header": "Connessioni SSH VS Code configurate:\n",
@@ -3210,15 +3433,31 @@
       "serve": {
         "description": "Gestisci il server VS Code nel browser all'interno della sandbox",
         "status": {
+          "descriptionShort": "Mostra se il server VS Code nel browser è in esecuzione",
           "description": "Mostra se il server VS Code nel browser è in esecuzione",
           "running": "{{provider}} in esecuzione (pid {{pid}}, porta {{port}})",
           "stopped": "{{provider}} non è in esecuzione"
         },
         "stop": {
+          "descriptionShort": "Ferma il server VS Code nel browser",
           "description": "Ferma il server VS Code nel browser",
           "notRunning": "{{provider}} non era in esecuzione",
           "stopped": "{{provider}} fermato"
         }
+      },
+      "expose": {
+        "descriptionShort": "Espone il VS Code di un repository sul suo nome host pubblico",
+        "description": "Avvia il VS Code da browser del repository come container sul suo daemon Docker, pubblicato su vscode.<repo>.<machine>.<domain> dietro il controllo del token del portale. Si apre dalla console web, che emette il token; si ferma dopo 15 minuti senza heartbeat.",
+        "exposed": "VS Code esposto su {{url}}",
+        "openHint": "Aprilo dalla console web: l'editor accetta solo un token emesso dal portale.",
+        "noResult": "Il job di esposizione è terminato senza riportare l'URL dell'editor",
+        "failed": "Impossibile esporre VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "Ferma il VS Code esposto di un repository",
+        "description": "Ferma e rimuove subito il container VS Code esposto del repository, chiudendo tutte le sessioni dell'editor aperte.",
+        "stopped": "VS Code esposto di {{name}} fermato",
+        "failed": "Impossibile fermare il VS Code esposto"
       }
     },
     "tools": {
@@ -3226,12 +3465,15 @@
       "description": "Gestisce gli strumenti locali che rdc esegue su questa macchina. `rdc tools install tofu` scarica la release di OpenTofu fissata, ne confronta lo SHA-256 con il checksum integrato in rdc prima di estrarla e colloca il binario nella directory degli strumenti di rdc. `rdc tools list` mostra ogni strumento con la sua versione e dove è stato trovato.",
       "install": {
         "descriptionShort": "Installa uno strumento fissato e verificato tramite checksum",
-        "description": "Scarica la release di OpenTofu fissata in questa CLI, ne verifica il checksum SHA-256 e la installa nella directory degli strumenti di rdc. Se il checksum non corrisponde, il download viene eliminato e non si installa nulla. Terraform non viene mai installato; se è già nel PATH, viene usato così com'è.",
-        "argTool": "Strumento da installare (tofu)",
+        "description": "Scarica una release di uno strumento fissata in questa CLI, ne verifica il checksum SHA-256 e la installa nella directory degli strumenti di rdc. `tofu` installa OpenTofu su qualsiasi piattaforma. `rsync` installa l'rsync di MSYS2 e le librerie di runtime che carica, solo su Windows; altrove rsync si ottiene dal gestore di pacchetti del sistema. Se il checksum non corrisponde, il download viene eliminato e non viene installato nulla. Terraform non viene mai installato; se è già nel PATH, viene usato così com'è.",
+        "argTool": "Strumento da installare (tofu, oppure rsync su Windows)",
         "optionForce": "Reinstalla anche se la versione fissata è già presente",
         "downloading": "Download di OpenTofu {{version}} per {{platform}}...",
+        "downloadingPackage": "Download del pacchetto MSYS2 {{name}} {{version}}...",
         "installed": "OpenTofu {{version}} installato in {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} è già installato in {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} è già installato in {{path}}",
+        "rsyncInstalled": "rsync {{version}} installato in {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} è già installato in {{path}}"
       },
       "list": {
         "descriptionShort": "Mostra gli strumenti installati, le versioni e la provenienza",
@@ -3241,14 +3483,16 @@
       "sources": {
         "env": "variabile REDIACC_TOFU",
         "rdc": "installato da rdc",
-        "path": "PATH di sistema"
+        "path": "PATH di sistema",
+        "notInstalled": "non installato"
       },
       "errors": {
         "unknownTool": "Strumento sconosciuto \"{{tool}}\". Strumenti disponibili: {{available}}",
         "unsupportedPlatform": "Non esiste una build fissata di OpenTofu per {{platform}}/{{arch}}",
         "insecureUrl": "Download rifiutato da un URL senza HTTPS: {{url}}",
         "checksumMismatch": "Checksum non corrispondente per {{url}}: atteso {{expected}}, ottenuto {{actual}}. Il download è stato eliminato e non è stato installato nulla.",
-        "badArchive": "L'archivio scaricato non è utilizzabile: {{reason}}"
+        "badArchive": "L'archivio scaricato non è utilizzabile: {{reason}}",
+        "rsyncFromSystem": "rdc tools install rsync funziona solo su Windows. Su {{platform}}, rsync si ottiene dal gestore di pacchetti del sistema (ad esempio apt install rsync, dnf install rsync o brew install rsync)."
       }
     },
     "version": {
@@ -3275,6 +3519,73 @@
       "notAccepted": "Accettato: non accettato",
       "terms": "Termini di servizio: versione {{version}}, in vigore dal {{effective}}",
       "upcoming": "La prossima versione {{version}} entra in vigore il {{effective}}"
+    },
+    "proxyBlocked": {
+      "backupChurn": "un ciclo di sonde lato client che può durare ore e deve dimenticare la propria base quando termina",
+      "backupDownload": "Copia l'immagine del repository in una directory locale con un rsync lato client; un executor remoto scriverebbe l'immagine sul proprio disco. Eseguilo senza --proxy.",
+      "localTooling": "Strumenti locali che non raggiungono mai una macchina, quindi non c'è nulla da instradare tramite proxy. Eseguilo senza --proxy.",
+      "localConfig": "Funziona interamente sulla configurazione locale e non raggiunge mai una macchina, quindi non c'è nulla da instradare tramite proxy. Eseguilo senza --proxy.",
+      "backupUpload": "Invia un file immagine locale con un rsync lato client e registra il repository nella configurazione locale; un executor remoto non può vedere il file. Eseguilo senza --proxy.",
+      "clusterKubeconfig": "Salva il kubeconfig in un file locale 0600 e stampa quel percorso; un executor remoto scriverebbe il file sul proprio disco. Eseguilo senza --proxy.",
+      "interactive": "Richiede un terminale o non termina da solo (shell interattiva, editor, tunnel, stream o demone), quindi un executor senza terminale non può eseguirlo. Eseguilo senza --proxy.",
+      "machineAccessPush": "Riscrive chi può accedere alla macchina a partire dalle chiavi di accesso del CHIAMANTE; un executor non riscrive mai l'accesso con cui si connette e invierebbe le chiavi della propria configurazione. Eseguilo senza --proxy.",
+      "machineInfraCertPull": "Il suo effetto è scrivere l'acme.json della macchina nella configurazione locale del chiamante; un executor remoto lo scriverebbe nella propria. Eseguilo senza --proxy.",
+      "repoAdminOrphanDelete": "Rifiuta un GUID che una configurazione leggibile dal CHIAMANTE nomina ancora; un executor remoto controllerebbe le proprie configurazioni e potrebbe eliminare un'immagine che la configurazione del chiamante nomina. Eseguilo senza --proxy.",
+      "repoAdminOrphanList": "Valuta ogni immagine rispetto a tutte le configurazioni che il CHIAMANTE può leggere; un executor remoto valuterebbe rispetto alle proprie configurazioni e segnalerebbe i repository del chiamante come orfani. Eseguilo senza --proxy.",
+      "repoSyncDownload": "Scarica nel filesystem locale con rsync/SFTP; un executor remoto scriverebbe i file sul proprio disco. Eseguilo senza --proxy.",
+      "repoSyncStatus": "Confronta la macchina con il filesystem locale con un rsync lato client; un executor remoto non ha una copia dell'albero locale. Eseguilo senza --proxy.",
+      "repoSyncUpload": "Carica dal filesystem locale con rsync/SFTP; un executor remoto non può vedere i percorsi di origine. Eseguilo senza --proxy.",
+      "serverBackup": "Scrive il pacchetto di ripristino (le chiavi del server) nel terminale o nel file del chiamante; tramite un executor le chiavi passerebbero per un'altra macchina. Eseguilo senza --proxy.",
+      "serverBundle": "Esegue il docker locale del chiamante (pull e save) e scrive il bundle sul disco del chiamante; un executor remoto lo scriverebbe sul proprio. Eseguilo senza --proxy.",
+      "serverLicence": "Emette il certificato con il login del chiamante e lo registra nel registro di installazione locale del chiamante; un executor remoto non possiede né l'uno né l'altro. Eseguilo senza --proxy.",
+      "serverLicenceMint": "Emette il certificato con il login del chiamante e lo scrive nel file del chiamante; un executor remoto non possiede né l'uno né l'altro. Eseguilo senza --proxy.",
+      "serverStatus": "Trova il server tramite il registro di installazione locale del chiamante; un executor remoto non ne ha nessuno. Eseguilo senza --proxy.",
+      "serverUpgrade": "Pilota comandi figli e il registro di installazione locale del chiamante (e, con --local-image, il Docker del chiamante); un executor remoto agirebbe dal proprio. Eseguilo senza --proxy."
+    },
+    "incident": {
+      "description": "Dichiara, legge e chiude un incidente dell'organizzazione: il record dell'account con i suoi timer delle scadenze, il fork forense e la cattura di livello full del repository, più la finestra di evidenze. Le letture richiedono lo scope forensics:read, la dichiarazione e la chiusura lo scope incident:manage; un login CLI include entrambi per proprietari e amministratori dopo un'approvazione rafforzata nel browser, con un piano a pagamento.",
+      "descriptionShort": "Leggere un incidente ed esportare la sua finestra di evidenze",
+      "idArgument": "ID dell'incidente, o un suo prefisso che nessun altro incidente condivide",
+      "status": {
+        "description": "Elenca gli incidenti dell'organizzazione, oppure ne mostra uno con ambito, finestra, passaggi per macchina e i timer delle scadenze di preallarme, notifica e rapporto finale.",
+        "descriptionShort": "Elenca gli incidenti o ne mostra uno con i suoi timer delle scadenze"
+      },
+      "export": {
+        "description": "Scrive la finestra dell'incidente in una directory: il record dell'incidente con i suoi timer, la timeline unificata, gli aggregati dei byte in uscita, il manifest della catena grezza e i file grezzi che elenca, sotto le loro chiavi del manifest. Quando il manifest elenca un file giornaliero di audit o un file di header forensi, la catena dei file giornalieri di audit e le catene firmate dei batch forensi vengono verificate lungo il percorso con le chiavi delle macchine fissate dal server, e il report viene scritto in verification.json. Termina con codice 1 se le evidenze mostrano un vuoto o una modifica. Lo stesso controllo sulla directory si ripete con rdc forensics verify. Con --stage il comando scrive un rapporto d'incidente firmato (un file PDF, JSON o STIX) chiamato come il suo id di rapporto.",
+        "descriptionShort": "Esportare e verificare la timeline e le evidenze di un incidente",
+        "outOption": "Directory in cui scrivere (predefinito: incident-<id>)",
+        "stageOption": "Scrivere un rapporto firmato invece della finestra di prove: early-warning, notification o final (il rapporto finale segue una notifica)",
+        "formatOption": "Formato del rapporto con --stage: json (predefinito), stix o pdf"
+      },
+      "declare": {
+        "description": "Dichiara un incidente su un repository. Il record dell'account viene creato per primo: l'incidente con la sua finestra, un blocco di conservazione sulla finestra e le regole di blocco R2, che avviano i timer di preallarme, notifica e rapporto finale. Poi il repository viene clonato come snapshot forense (repo fork <ref> --tag incident-<id>) e il suo livello di cattura passa a full, quindi l'esito di ogni passaggio viene registrato sull'incidente. Un passaggio fallito lascia in vigore il record e il relativo blocco, termina con codice 1 e indica il comando --resume che riesegue i passaggi falliti.",
+        "descriptionShort": "Dichiarare un incidente: record, fork forense e cattura completa",
+        "awareAtOption": "Momento in cui l'organizzazione ne è venuta a conoscenza, come istante ISO 8601, mai successivo alla dichiarazione (predefinito: adesso)",
+        "resumeOption": "Riesegue i passaggi sulle macchine di questo incidente già dichiarato, solo quelli il cui ultimo esito non è ok"
+      },
+      "close": {
+        "description": "Chiude un incidente. Nulla viene rilasciato subito: il blocco di conservazione e le regole di blocco R2 terminano 30 giorni dopo la chiusura.",
+        "descriptionShort": "Chiudere un incidente; il blocco termina 30 giorni dopo"
+      }
+    },
+    "forensics": {
+      "description": "Controlla le evidenze forensi su questa workstation, con chiavi delle macchine prese da fuori delle evidenze, e imposta il livello di cattura di un repository.",
+      "descriptionShort": "Verificare le evidenze forensi",
+      "verify": {
+        "description": "Ricalcola la catena di hash dei file giornalieri di audit e le catene firmate dei batch forensi di una directory di evidenze, e stampa ogni vuoto e ogni modifica trovati. La directory contiene i file grezzi sotto le loro chiavi del manifest (audit/<org>/days/<day>.ndjson.gz e f/<subscription>/<machine>/days/<day>/...). Termina con codice 1 se trova un vuoto o una modifica. Le firme dei batch si verificano solo con chiavi esterne alla directory: una voce --machine-key oppure, in sua assenza, la chiave fissata dal server degli account per l'incidente indicato da una directory di rdc incident export. Una chiave scritta nel raw-manifest.json della directory non è mai considerata attendibile, e una macchina senza chiave esterna fallisce. Con --report si verifica invece un rapporto d'incidente firmato, confrontandolo con il record pubblico del suo id e con la chiave pubblicata per i rapporti; il codice di uscita è 1 quando contenuto o firma non corrispondono.",
+        "descriptionShort": "Verificare le catene di hash di audit e forensi di una directory di evidenze",
+        "dirOption": "Directory di evidenze da verificare",
+        "reportOption": "Verificare invece un rapporto d'incidente firmato (un file JSON chiamato <id del rapporto>.json, come lo scrive rdc incident export --stage)",
+        "idOption": "Id del rapporto, quando il nome del file non lo contiene",
+        "machineKeyOption": "Chiave pubblica dello spool della macchina come <machine>=<64 hex characters>, usata al posto della chiave fissata dal server degli account (ripetibile)",
+        "sinceOption": "Inizio della finestra: un istante ISO 8601 o un intervallo a ritroso da adesso come 90m, 24h o 7d (predefinito: il primo giorno nella directory)",
+        "untilOption": "Fine della finestra, nelle stesse forme (predefinito: l'ultimo giorno nella directory)"
+      },
+      "level": {
+        "description": "Imposta il livello di cattura forense di un repository tramite la funzione forensics_level sulla sua macchina: basic, standard o full. Il collector limita il livello a quanto incluso nel piano.",
+        "descriptionShort": "Impostare il livello di cattura forense di un repository",
+        "levelArgument": "Livello di cattura: basic, standard o full"
+      }
     }
   },
   "docs": {
@@ -3330,11 +3641,15 @@
       "datastore": "Gestione del datastore",
       "doctor": "Diagnostica di sistema",
       "job": "Job in background",
+      "incident": "Incidenti",
+      "forensics": "Prove forensi",
       "machine": "Gestione delle macchine",
       "mcp": "Server MCP",
       "ops": "Operazioni VM locali",
+      "preview": "Anteprime delle PR",
       "repo": "Ciclo di vita del repository",
       "serve": "Servizio executor",
+      "completion": "Completamento della shell",
       "shortcuts": "Comandi rapidi (scorciatoie)",
       "storage": "Gestione dello storage",
       "subscription": "Gestione dell'abbonamento",
@@ -3373,8 +3688,7 @@
     "agent": {
       "clusterOpBlocked": "Il comando cluster \"{{command}}\" è bloccato in modalità agente. Le operazioni sui cluster creano o smantellano infrastruttura reale, quindi un agente non può autorizzarle da solo. Utente: per consentirlo, imposta REDIACC_ALLOW_CLUSTER_OPS=<nome-cluster> (o * per tutti i cluster) nel terminale PRIMA di avviare la sessione dell'agente. Un override impostato dall'interno dell'agente non è accettato.",
       "commandBlocked": "Il comando \"{{command}}\" non è disponibile in modalità agente.\n\nQuesto comando esegue funzioni di basso livello arbitrarie senza protezioni di sicurezza. Usa invece i comandi CLI tipizzati o gli strumenti MCP.\n\nAlternative:\n  - Strumenti MCP: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - Comandi CLI: rdc repo up, rdc repo down, rdc term connect\n  - Esegui \"rdc --help\" per vedere tutti i comandi disponibili\n\nSe hai bisogno di accesso diretto, chiedi all'utente di eseguire il comando.",
-      "configEdit": "L'editor interattivo è bloccato negli ambienti agente.\n\nAlternative:\n  • rdc config edit --dump > config.jsonc    (ispezione sicura con redazione)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nPer ignorare il blocco, imposta REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> nella shell padre\nPRIMA di avviare il tuo agente (deve essere visibile nella catena di processi antenati dell'agente).",
-      "configEditAncestry": "L'editor interattivo è bloccato negli ambienti agente (REDIACC_ALLOW_CONFIG_EDIT era impostato ma la verifica degli antenati ha fallito: l'override deve essere impostata dalla tua shell, non da un agente).\n\nAlternative:\n  • rdc config edit --dump > config.jsonc    (ispezione sicura con redazione)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\nImposta REDIACC_ALLOW_CONFIG_EDIT=<scope-glob> nella shell padre PRIMA di avviare il tuo agente.",
+      "configEdit": "La modifica della configurazione è bloccata negli ambienti degli agenti: l'editor interattivo, --apply e --reveal possono riscrivere l'intera configurazione o stamparne i segreti, e non esiste alcuna deroga.\n\nAlternative:\n  • rdc config edit --dump --redacted > config.jsonc    (sola lettura, oscurato)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>",
       "createGuard": "Impossibile creare un nuovo repository grand \"{{name}}\" in modalità agente.\n\nGli agenti operano in modalità solo-fork. I repository grand sono ambienti di produzione a cui gli agenti non possono accedere dopo la creazione.\n\nIn alternativa, crea un fork di un repository esistente:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUtente: per consentire la creazione di repository, imposta REDIACC_ALLOW_GRAND_REPO=* (o il nome di un repo specifico) nel terminale prima di avviare la sessione dell'agente.",
       "createGuardOverride": "Impossibile creare un nuovo repository grand \"{{name}}\". Le override avviate dall'agente non sono accettate.\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzare questo prima che l'agente venga avviato.\n\nIn alternativa, crea un fork di un repository esistente:\n  rdc repo fork <parent-ref> --tag {{name}}",
       "createGuardOverrideNonLinux": "Impossibile creare un nuovo repository grand \"{{name}}\". La variabile REDIACC_ALLOW_GRAND_REPO è impostata, ma la sua origine non ha potuto essere verificata su {{platform}} (l'helper di verifica dell'ascendenza non è disponibile o ha avuto un errore).\n\nInvece, crea un fork di un repository esistente:\n  rdc repo fork <parent-ref> --tag {{name}}\n\nUtente: la verifica funziona su Linux, macOS e Windows con un'installazione rdc intatta. Reinstalla rdc se il problema persiste e imposta la variabile nel tuo terminale prima di avviare l'agente.",
@@ -3386,20 +3700,27 @@
       "machineGuard": "L'accesso diretto alla macchina \"{{machine}}\" non è consentito in modalità agente.\n\nGli agenti devono connettersi tramite il contesto di un repository per un accesso in sandbox. Prima crea un fork di un repository, poi connettiti al fork.\n\nFlusso di lavoro:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtente: l'accesso a livello di macchina richiede il carattere jolly: imposta REDIACC_ALLOW_GRAND_REPO=* nel terminale prima di avviare la sessione dell'agente. Il nome di un repository specifico non sblocca l'accesso diretto alla macchina.",
       "machineGuardOverride": "L'accesso diretto alla macchina \"{{machine}}\" non è consentito. Le override avviate dall'agente non sono accettate.\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzare questo prima che l'agente venga avviato.\n\nPrima crea un fork di un repository, poi connettiti al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "L'accesso diretto alla macchina \"{{machine}}\" ha un override impostato, ma la sua origine non ha potuto essere verificata su {{platform}} (l'helper di verifica dell'ascendenza non è disponibile o ha avuto un errore), quindi l'override non è accettato.\n\nCrea prima un fork di un repository, poi connettiti al fork:\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\nUtente: la verifica funziona su Linux, macOS e Windows con un'installazione rdc intatta. Reinstalla rdc se il problema persiste e imposta la variabile nel tuo terminale prima di avviare l'agente.",
-      "mcpGrandGuard": "\"{{name}}\" è un repository grand (di produzione). Gli agenti non possono modificare i repository grand direttamente.\n\nUsa repo_fork per creare una copia sandbox sicura e isolata, poi lavora sul fork.\nSe hai bisogno di accesso diretto, chiedi all'utente di esportare REDIACC_ALLOW_GRAND_REPO prima di avviare l'agente.",
-      "mcpGrandGuardOverride": "\"{{name}}\" è un repository grand (di produzione). Le override avviate dall'agente non sono accettate.\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO.\n\nUsa repo_fork per creare una copia sandbox sicura e isolata, poi lavora sul fork.",
-      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" è un repository grand (di produzione). L'override REDIACC_ALLOW_GRAND_REPO non ha potuto essere verificata su {{platform}} (l'helper di verifica dell'ascendenza non è disponibile o ha avuto un errore) e non è accettato.\n\nUsa repo_fork per creare una copia sandbox sicura e isolata, poi lavora sul fork.",
       "revealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di stampare il valore sensibile su una pipe.",
       "rotateNotSensitive": "Il puntatore \"{{pointer}}\" non è un campo sensibile; usa 'config field set'.",
-      "rotateRequiresTty": "config field rotate richiede conferma su TTY interattivo; rifiuto in contesto non interattivo (imposta REDIACC_ALLOW_CONFIG_EDIT per ignorare il blocco).",
+      "rotateRequiresTty": "config field rotate richiede conferma su TTY interattivo; rifiuto in contesto non interattivo.",
       "showReveal": "--reveal è bloccato negli ambienti agente. Usa `rdc config show` (con redazione) o `rdc config field get --pointer <pointer> --digest` per un'impronta sicura.",
       "showRevealRequiresTty": "--reveal richiede un TTY interattivo; rifiuto di inviare testo in chiaro a un sink non-TTY.",
+      "applyRequiresTty": "config edit --apply richiede un terminale interattivo su stdin; rifiutato in un contesto non interattivo.",
       "rootGrantBlocked": "Gli agenti non possono dare a \"{{name}}\" una concessione root: il suo Rediaccfile verrebbe eseguito senza abbandono dei privilegi.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente.",
       "rootGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per la concessione root di \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato.",
       "pathGrantBlocked": "Gli agenti non possono modificare le concessioni di percorso del repo grand \"{{name}}\": il suo Rediaccfile raggiungerebbe percorsi dell'host che l'utente non ha mai approvato.\n\nUtente: per consentirlo, imposta REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repo) nel terminale prima di avviare la sessione dell'agente. Un fork non richiede alcuna sostituzione.",
       "pathGrantOverride": "Le sostituzioni avviate dall'agente non sono accettate per una concessione di percorso sul repo grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO: solo l'utente può autorizzarlo prima che l'agente venga avviato.",
       "limitsGrantBlocked": "Gli agenti non possono modificare i limiti di risorse del repository grand \"{{name}}\": un tetto più basso può far terminare per OOM i suoi container.\n\nUtente: per consentirlo, impostare REDIACC_ALLOW_GRAND_REPO={{name}} (o * per tutti i repository) nel terminale prima di avviare la sessione dell'agente. Un fork non richiede deroghe.",
-      "limitsGrantOverride": "Le deroghe avviate da un agente non sono accettate per una modifica dei limiti sul repository grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO. Solo l'utente può autorizzarlo prima dell'avvio dell'agente."
+      "limitsGrantOverride": "Le deroghe avviate da un agente non sono accettate per una modifica dei limiti sul repository grand \"{{name}}\".\n\nNon tentare di impostare REDIACC_ALLOW_GRAND_REPO. Solo l'utente può autorizzarlo prima dell'avvio dell'agente.",
+      "policyDenied": "La policy in vigore non consente \"rdc {{command}}\". I dettagli indicano la regola che l'ha rifiutato.",
+      "policyUnjudged": "\"rdc {{command}}\" deve essere valutato dalla policy della configurazione \"{{name}}\", ma non è stato possibile aprire la sessione e questo dispositivo non conserva alcuna valutazione di una sessione precedente, quindi non è stato eseguito nulla: {{error}}\n\nRipristina l'accesso (rdc subscription login, oppure rdc config remote status), poi eseguilo di nuovo.",
+      "grandRepoDenied": "\"rdc {{command}}\" modificherebbe \"{{name}}\", un repository grand (produzione), e la policy in vigore non consente modifiche ai repository grand.\n\nLavora invece su un fork:\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "\"rdc {{command}}\" è un'operazione di cluster, e la policy in vigore non consente operazioni di cluster.",
+      "confirmationRequired": "\"rdc {{command}}\" è distruttivo e modificherebbe \"{{name}}\", un repository grand (produzione).\n\nChiedi conferma all'utente, poi esegui di nuovo lo stesso comando con {{flag}} {{value}}.",
+      "confirmTitle": "Conferma",
+      "confirmDeclined": "L'utente non ha confermato, quindi non è stato eseguito nulla.",
+      "confirmStale": "Questa conferma non corrisponde più alla chiamata. Richiama lo strumento per ricevere di nuovo la richiesta.",
+      "confirmByArgument": "Per procedere, chiedi all'utente, poi richiama {{tool}} con gli stessi argomenti e confirm impostato su \"{{value}}\"."
     },
     "authRequired": "Autenticazione richiesta. Esegui: rdc subscription login",
     "cluster": {
@@ -3488,6 +3809,9 @@
       }
     },
     "proxy": {
+      "configConflict": "\"rdc {{command}}\" non è riuscito a salvare la modifica alla configurazione: la configurazione memorizzata è cambiata nel frattempo in tutti i {{attempts}} tentativi. Esegui di nuovo il comando.",
+      "configWriteFailed": "\"rdc {{command}}\" non è riuscito a salvare la modifica nell'archivio delle configurazioni: {{reason}}.",
+      "configWriteUnavailable": "\"rdc {{command}}\" modifica la configurazione, ma l'executor non può ancora salvare le modifiche alla configurazione, quindi non è stato cambiato nulla. Eseguilo in locale finché la riscrittura non sarà disponibile.",
       "timeout": "L'executor proxy su {{host}} non ha risposto entro {{seconds}} s. Verifica che sia in esecuzione o aumenta REDIACC_PROXY_TIMEOUT_MS.",
       "unreachable": "Impossibile raggiungere l'executor proxy su {{host}}: {{reason}}"
     },
@@ -3506,7 +3830,8 @@
       "networkIdInUse": "L'ID di rete {{networkId}} del repository \"{{repository}}\" è già occupato da {{holder}} sulla macchina \"{{machine}}\". Esegui `rdc config reconcile` per adottare gli ID registrati sulla macchina.",
       "networkIdNotRecorded": "La macchina \"{{machine}}\" contiene il repository \"{{repository}}\" ma non registra alcun ID di rete per esso, quindi non se ne può adottare nessuno. Avvia il repository una volta sulla macchina, poi esegui `rdc config reconcile`.",
       "networkIdUndiscoverable": "Il repository \"{{repository}}\" non ha un ID di rete in questa configurazione e non è stato possibile interrogare la macchina \"{{machine}}\". Riprova quando la macchina è raggiungibile oppure esegui `rdc config reconcile`.",
-      "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina."
+      "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina.",
+      "slugCollision": "Il repository \"{{ref}}\" è in conflitto con \"{{existing}}\": entrambi producono il nome \"{{slug}}\" per i set di repliche e i fork del datastore. Scegli un altro nome o tag."
     },
     "repoNotDeployed": "Il repository \"{{repository}}\" non è distribuito su {{machine}}.\n\nDistribuiscilo prima:\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "Il repository \"{{name}}\" è già montato su \"{{machine}}\". Migrare su un repo attivo lo corromperebbe. Esegui prima: rdc repo down {{name}} --unmount",
@@ -3533,6 +3858,8 @@
         "notFirstUse": "Questo token non è legato all'indirizzo IP da cui è stato usato la prima volta, quindi non si può spostare su un altro. Controlla il vincolo IP del token nel portale web.",
         "nonInteractive": "Il tuo indirizzo IP è cambiato e questo accesso funziona solo da quello vecchio. Per spostarlo qui, fornisci il codice della tua app di autenticazione: esegui un qualsiasi comando rdc in un terminale interattivo (per esempio `rdc subscription status`), oppure imposta `REDIACC_IP_REBIND_CODE` sul codice attuale a 6 cifre ed esegui di nuovo il comando. Oppure esegui `rdc subscription login` per accedere di nuovo.",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` deve essere il codice a 6 cifre della tua app di autenticazione.",
+        "codeCommandFailed": "Il programma indicato in `REDIACC_IP_REBIND_CODE_COMMAND` ({{command}}) non ha fornito alcun codice di autenticazione ({{detail}}), quindi questo accesso non è stato spostato sul nuovo indirizzo IP. Correggi il programma, imposta `REDIACC_IP_REBIND_CODE` con il codice attuale a 6 cifre oppure accedi di nuovo con `rdc subscription login`.",
+        "codeCommandMalformed": "ha stampato qualcosa che non è un codice a 6 cifre",
         "stillMismatched": "Dopo lo spostamento il server degli account vede ancora un indirizzo IP diverso. La tua connessione potrebbe alternare più indirizzi (per esempio IPv4 e IPv6). Esegui di nuovo il comando oppure esegui `rdc subscription login`.",
         "attemptsExhausted": "Tre codici errati di fila. Esegui di nuovo il comando per riprovare, oppure esegui `rdc subscription login` per accedere di nuovo."
       }
@@ -3544,13 +3871,15 @@
       "pathTraversalBlocked": "Il percorso --remote non deve contenere traversamenti \"..\" del percorso. Usa un percorso all'interno del repository.",
       "remoteAndRemoteFile": "Impossibile usare --remote e --remote-file insieme. Scegline uno.",
       "remoteFileLocalNotDir": "Quando --remote-file è impostato, --local deve essere una directory esistente: {{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file richiede esattamente un percorso --local che punti a un file."
+      "remoteFileRequiresSingleFile": "--remote-file richiede esattamente un percorso --local che punti a un file.",
+      "mirrorNeedsRsync": "--mirror richiede rsync: SFTP non può eliminare file, quindi non è stato trasferito nulla."
     },
     "term": {
       "connectivityFailed": "Impossibile raggiungere {{host}}:{{port}}. {{error}}\n\nRisoluzione dei problemi:\n  - Verifica che la macchina sia accesa e connessa alla rete\n  - Controlla che l'indirizzo IP sia corretto nel vault della macchina\n  - Assicurati che la porta {{port}} non sia bloccata da un firewall\n  - Prova a eseguire il ping della macchina: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" non è consentito nel contesto del repository.\n\nUsa \"renet compose -- <args>\" in modo che vengano applicati gli IP di loopback per repo, l'iniezione della rete host, le capability CRIU e la validazione di compose. L'uso diretto di \"docker compose\" aggira tutto questo e corrompe silenziosamente il deployment.\n\nPer deploy orchestrati, preferisci: rdc repo up <repo-ref>",
       "fileWriteDetected": "Rilevata scrittura di file ({{detected}}). Usa invece rdc repo sync:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync trasferisce i file con compressione delta, checksum e permessi corretti.",
       "launchFailed": "Avvio del terminale non riuscito: {{error}}",
+      "externalRefused": "È stato indicato --external, ma non è stato possibile aprire un terminale esterno ({{error}}). Non è stato avviato nulla; riesegui senza --external per una sessione in questo terminale.",
       "noHostKey": "La macchina '{{machine}}' non ha una host key configurata nel vault",
       "noIpAddress": "La macchina '{{machine}}' non ha un indirizzo IP configurato",
       "noPrivateKey": "Il team '{{team}}' non ha una chiave privata SSH configurata",
@@ -3582,7 +3911,9 @@
       "repoRequired": "Questo server VS Code richiede una destinazione repository. Passa un riferimento di repository.",
       "serverInstallFailed": "Installazione di {{provider}} non riuscita: {{error}}",
       "serverStartFailed": "Avvio di {{provider}} non riuscito: {{error}}",
-      "unsupportedArch": "Architettura della macchina non supportata per VS Code nel browser: {{arch}}"
+      "unsupportedArch": "Architettura della macchina non supportata per VS Code nel browser: {{arch}}",
+      "exposeNeedsDocker": "l'editor esposto gira su un daemon Docker di repository",
+      "exposeRepoNotFound": "Il repository \"{{name}}\" non è nella configurazione"
     },
     "backupImage": {
       "targetDirMissing": "La directory di destinazione {{dir}} non esiste o non è scrivibile. Non viene mai creata: monta prima il disco o crea la directory.",
@@ -3658,7 +3989,26 @@
       "holderOther": "un altro job",
       "orStopIt": "  Oppure fermalo: rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence"
+    "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence",
+    "preview": {
+      "invalidName": "«{{name}}» non è un nome di anteprima. Un nome di anteprima è pv- seguito da tre parole minuscole, ad esempio pv-amber-river-stone.",
+      "alreadyActive": "Questa configurazione usa già l'anteprima {{name}}. Esci prima da quell'anteprima.",
+      "serversPending": "L'anteprima {{name}} ha ancora {{count}} server sul proprio renet: {{machines}}. Riportali indietro prima di rimuovere l'anteprima.",
+      "noBuild": "L'anteprima {{name}} non risponde con alcuna build, quindi non è possibile passarvi. Controlla il nome e che l'anteprima esista ancora.",
+      "badBuild": "L'anteprima {{name}} risponde con una build illeggibile ({{detail}}).",
+      "noBinary": "L'anteprima {{name}} non ha una build della CLI per {{platform}}.",
+      "versionMismatch": "Anteprima {{name}}: il manifest della release indica v{{manifest}} e il server dell'anteprima indica v{{server}}. Non è stato installato nulla.",
+      "hashMismatch": "Anteprima {{name}}: il checksum {{platform}} nel manifest della release differisce da quello del server dell'anteprima. Non è stato installato nulla.",
+      "noChannel": "L'anteprima {{name}} pubblica le sue build all'indirizzo {{url}}, che non è un canale di anteprima dell'origine delle release. Non è stato installato nulla.",
+      "channelEmpty": "L'anteprima {{name}} fornisce un manifest della CLI senza alcun binario, quindi non se ne può ricavare il canale. Non è stato installato nulla.",
+      "channelSplit": "L'anteprima {{name}} fornisce binari da più di una directory ({{dirs}}), quindi non se ne può ricavare un canale univoco. Non è stato installato nulla.",
+      "notSea": "Un'anteprima sostituisce il binario rdc installato, quindi serve il rdc in pacchetto (non un'esecuzione da npm o dai sorgenti).",
+      "unsupportedPlatform": "Questa piattaforma non ha una build di anteprima.",
+      "formatChangeDeclined": "Non si è passati all'anteprima {{name}}: la modifica del formato su disco non è stata accettata.",
+      "leaveDeclined": "Non si è usciti dall'anteprima {{name}}: il ritorno dei server non è stato confermato.",
+      "machineNotTouched": "{{machine}} non è sul renet dell'anteprima {{name}}.",
+      "machineUnnamed": "L'anteprima {{name}} è attiva e questa chiamata non indica alcuna macchina della configurazione (\"{{machine}}\"), quindi il renet da sostituire non è stato registrato. Non è stato sostituito nulla."
+    }
   },
   "feedback": {
     "ambiguousId": "Più di una segnalazione inizia con \"{{id}}\"; indica una parte più lunga dell'ID.",
@@ -3694,6 +4044,54 @@
     "sendDescription": "Invia la segnalazione di cui hai visto l'anteprima",
     "sent": "Segnalazione {{id}} inviata (impronta {{fingerprint}}).",
     "sentDuplicate": "La segnalazione {{id}} corrisponde a un errore noto ed è stata conteggiata (impronta {{fingerprint}})."
+  },
+  "forensics": {
+    "badInstant": "{{flag}} \"{{value}}\" non è un istante ISO 8601 né un intervallo come 90m, 24h o 7d.",
+    "sinceAfterUntil": "--since è successivo a --until.",
+    "windowTooLong": "Una finestra copre al massimo 31 giorni.",
+    "reauthRequired": "Le letture forensi richiedono un'approvazione rafforzata recente. Apri il portale dell'account, autenticati di nuovo ed esegui di nuovo il comando.",
+    "notEntitled": "L'indagine forense è disponibile nei piani a pagamento.",
+    "ambiguousIncident": "Più di un incidente inizia con \"{{id}}\"; indica una parte più lunga dell'ID.",
+    "noSuchIncident": "Nessun incidente \"{{id}}\" in questa organizzazione.",
+    "timelineNeverEnds": "La timeline non è terminata dopo il limite di pagine: il server dell'account ha continuato a restituire pagine.",
+    "flowBytes": "uscita {{out}} ingresso {{in}} byte",
+    "sensitive": "sensibile",
+    "gapLine": "-- nessuna evidenza da {{from}} a {{to}} ({{machine}}, {{reason}})",
+    "noFlows": "Nessun flusso di rete registrato in questa finestra.",
+    "noOpens": "Nessuna apertura di file registrata in questa finestra.",
+    "unreadable": "Non è stato possibile leggere {{count}} record archiviati in questa finestra.",
+    "noRepoGuid": "Il repository \"{{name}}\" non ha un GUID in questa configurazione.",
+    "noEvidenceDir": "Impossibile leggere la directory di evidenze \"{{dir}}\".",
+    "severalOrgs": "La directory di evidenze contiene file di audit di più organizzazioni: {{orgs}}.",
+    "noEvidence": "Nessun file giornaliero di audit o header forense trovato in \"{{dir}}\".",
+    "badMachineKey": "\"{{entry}}\" non ha la forma <machine>=<64 hex characters>.",
+    "badManifest": "Impossibile leggere l'id dell'incidente di \"{{file}}\".",
+    "trustedKeysUnavailable": "Non è stato possibile leggere le chiavi delle macchine fissate dal server degli account per l'incidente {{id}} ({{reason}}). Passa --machine-key <machine>=<64 hex characters> per ogni macchina per verificare senza il server.",
+    "badEvidenceKey": "Il server dell'account ha indicato un file di evidenze fuori dalla directory di esportazione: \"{{key}}\".",
+    "rawFileTruncated": "Il file di evidenze \"{{key}}\" è arrivato con una lunghezza diversa da quella dichiarata dal server.",
+    "verifyWindow": "Finestra da {{from}} a {{to}}",
+    "verifyFiles": "{{count}} file di evidenze controllati",
+    "verifyGap": "vuoto  {{ref}}: {{reason}}",
+    "verifyEdit": "modifica {{ref}}: {{reason}}",
+    "verifyClean": "Nessun vuoto e nessuna modifica trovati.",
+    "verifyFailed": "Le evidenze non superano la verifica: vedi i vuoti e le modifiche qui sopra.",
+    "badLevel": "\"{{level}}\" non è un livello di cattura; valori ammessi: {{levels}}.",
+    "levelStarting": "Impostazione del livello di cattura di {{repository}} su {{level}} su {{machine}}...",
+    "levelCompleted": "Livello di cattura di {{repository}} impostato su {{level}}.",
+    "levelFailed": "Impossibile impostare il livello di cattura di {{repository}}.",
+    "ticketRequired": "Le letture forensi sull'executor richiedono il ticket di lettura monouso emesso da un'indagine aperta. Fai la domanda dalla pagina Indaga oppure esegui il comando in locale.",
+    "ticketRefused": "Il ticket di lettura forense è stato rifiutato: {{reason}}",
+    "ticketOtherScope": "il ticket riguarda un altro repository o un'altra macchina",
+    "verifyNeedsOne": "Indicare esattamente uno tra --dir <cartella delle prove> e --report <file>.",
+    "reportIdUnknown": "L'id del rapporto non si ricava dal nome del file \"{{file}}\"; passare --id <id del rapporto>.",
+    "reportPdfNotCheckable": "\"{{file}}\" è un PDF e qui non si può ricalcolare l'hash; verificare il rapporto JSON da cui deriva, oppure trascinare il PDF nella pagina di verifica del portale.",
+    "reportPdfUnreadable": "Il PDF del rapporto {{id}} è arrivato danneggiato dal server dell'account: non è il base64 completo di un file PDF. Non è stato scritto nulla; rieseguire l'esportazione.",
+    "noSuchReport": "Nessun rapporto \"{{id}}\" è registrato.",
+    "reportValid": "Il rapporto {{id}} è autentico: fase {{stage}}, firmato con la chiave {{keyId}}.",
+    "reportInvalid_unreadable": "Il rapporto {{id}} non supera la verifica: il file non è JSON leggibile.",
+    "reportInvalid_hash": "Il rapporto {{id}} non supera la verifica: il contenuto differisce dal rapporto firmato.",
+    "reportInvalid_signature": "Il rapporto {{id}} non supera la verifica: la firma non corrisponde al contenuto.",
+    "reportInvalid_key": "Il rapporto {{id}} non supera la verifica: è firmato con una chiave diversa da quella pubblicata per i rapporti."
   },
   "help": {
     "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Un riferimento di repository (repo[:tag]) determina da sé la propria macchina, quindi -m non è necessario\n    • L'output JSON è automatico: tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo, non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n\n",
@@ -3745,6 +4143,38 @@
       "repo": "Apri il repository in VS Code"
     }
   },
+  "incident": {
+    "none": "Nessun incidente.",
+    "detailHead": "Incidente {{id}} ({{status}})",
+    "detailScope": "Ambito: {{kind}} {{ref}}",
+    "detailWindow": "Finestra: da {{from}} a {{to}}",
+    "detailDeclared": "Dichiarato da {{by}} il {{at}}, noto dal {{aware}}",
+    "detailFork": "Fork forense: {{ref}}",
+    "detailRelease": "Le regole di conservazione e blocco terminano: {{at}}",
+    "detailStep": "Passaggio {{name}}: {{status}} alle {{at}} {{detail}}",
+    "clockEarlyWarning": "Preallarme in scadenza il {{at}} ({{state}})",
+    "clockNotification": "Notifica in scadenza il {{at}} ({{state}})",
+    "clockFinalReport": "Rapporto finale in scadenza il {{at}} ({{state}})",
+    "exported": "Incidente {{id}} esportato in {{dir}} ({{rows}} righe della timeline).",
+    "rawTooLarge": "Il materiale grezzo della catena supera il limite del manifest e non viene elencato.",
+    "rawListed": "Scaricati {{count}} file grezzi; nessuno è un file giornaliero di audit né un file di header forensi per rdc forensics verify.",
+    "rawVerified": "Evidenze grezze scaricate e verificate: {{count}} file di catena, nessun vuoto e nessuna modifica.",
+    "rawNotVerified": "Le evidenze scaricate non risultano valide: vuoti {{gaps}}, modifiche {{edits}}, elencati sopra e in verification.json.",
+    "declared": "Incidente {{id}} dichiarato per la finestra da {{from}} a {{to}}.",
+    "stepOk": "Passaggio {{name}}: ok",
+    "stepSkipped": "Passaggio {{name}}: già ok, saltato",
+    "stepFailed": "Passaggio {{name}}: non riuscito {{detail}}",
+    "retry": "Il record dell'incidente e il relativo blocco restano in vigore. I passaggi falliti si rieseguono con: {{command}}",
+    "closed": "Incidente {{id}} chiuso. Il blocco e le regole di blocco terminano il {{at}}.",
+    "resumeScope": "L'incidente {{id}} riguarda {{scope}}, non il repository {{name}}.",
+    "resumeClosed": "L'incidente {{id}} è chiuso; i suoi passaggi non vengono più eseguiti.",
+    "resumeWindow": "--resume mantiene la finestra e la data di conoscenza con cui l'incidente è stato dichiarato; --since, --until e --aware-at vanno omessi.",
+    "badStage": "\"{{stage}}\" non è una fase del rapporto; usare una tra {{stages}}.",
+    "badFormat": "\"{{format}}\" non è un formato di rapporto; usare uno tra {{formats}}.",
+    "formatNeedsStage": "--format vale per un rapporto: aggiungere --stage early-warning, notification o final.",
+    "reportExported": "Il rapporto {{stage}} è stato scritto come {{format}} in {{file}}.",
+    "reportVerifyHint": "Verificarlo con: rdc forensics verify --report {{file}}"
+  },
   "options": {
     "acceptTerms": "Accetta i Termini di servizio per una licenza gratuita senza chiedere (oppure imposta RDC_ACCEPT_TERMS=1)",
     "apiToken": "Token API (rdt_...). Passa `-` per leggerlo da stdin (resta fuori dall'elenco dei processi).",
@@ -3787,7 +4217,7 @@
     "name": "Nome della risorsa",
     "newName": "Nuovo nome della risorsa",
     "newWindow": "Apri in una nuova finestra di VS Code",
-    "opsBackend": "Backend di virtualizzazione (kvm|qemu, rilevato automaticamente)",
+    "opsBackend": "Backend di virtualizzazione (kvm|qemu|hyperv, rilevato automaticamente)",
     "opsBasic": "Cluster minimale (bridge + 1 worker)",
     "opsForce": "Forza il riavvio di tutte le VM",
     "opsLite": "Salta il provisioning delle VM (solo stato)",
@@ -3836,7 +4266,9 @@
     "vscodeNoOpen": "Stampa l'URL senza aprire il browser locale",
     "vscodeServerArchive": "Percorso del tarball del server pre-caricato sul macchinario (installazioni air-gap)",
     "vscodeServerProvider": "Implementazione del server VS Code nel browser (openvscode, code-server)",
-    "yes": "Salta la richiesta di conferma"
+    "yes": "Salta la richiesta di conferma",
+    "confirmGrand": "Conferma una modifica distruttiva a un repository grand ripetendo il nome richiesto dal rifiuto",
+    "opsWindows": "ID delle VM client Windows da predisporre (separati da virgole, intervallo riservato 31-39; imposta VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "Annullato",
@@ -3863,8 +4295,9 @@
       "licenseActivated": "Licenza attivata ({{duration}})",
       "loading": "Caricamento configurazione in corso...",
       "machineVerified": "Macchina verificata ({{duration}})",
+      "renetUpdated": "Renet aggiornato ({{duration}})",
+      "renetUnchanged": "Renet invariato, la macchina esegue già questa build ({{duration}})",
       "provisioning": "Provisioning di renet in corso...",
-      "renetProvisioned": "Renet disponibile ({{duration}})",
       "verifying": "Verifica della macchina in corso..."
     }
   },

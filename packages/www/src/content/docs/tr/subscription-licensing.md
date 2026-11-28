@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: tr
-sourceHash: "53e0bdad5b3654a2"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Abonelik ve Lisanslama
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Makine slotları (sunucu tarafı)
 
-Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder. Her self-servis plan (Community, Professional, Business) bir makine slotu içerir; çok makineli dağıtımlar ortaklarımızla birlikte boyutlandırılan bir Enterprise kurulumudur. Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Bir slot yalnızca aktif olarak sağlama yaparken tutulduğundan, tek bir slot bir ay boyunca yine de birden fazla makineyi kapsayabilir.
+Makine slot takibi sunucu tarafında uygulanır. CLI bir depo lisansı düzenlediğinde, hesap sunucusu aboneliğin makine slot kotasını kontrol eder. Kayıtlı (ücretsiz) hesap ve ücretsiz Professional bir makine slotu içerir. Professional ve Business, her değişken lisans için bir makine slotu taşır (self-servis olarak 1 ila 5 ve 1 ila 39); daha büyük dağıtımlar ortaklarımızla birlikte boyutlandırılan bir Enterprise kurulumudur. Bir slot, o makinedeki son depo lisansı düzenlemesinden itibaren 5 saat süresince tutulur ve inaktiviteden sonra otomatik olarak serbest bırakılır. Bir slot yalnızca aktif olarak sağlama yaparken tutulduğundan, tek bir slot bir ay boyunca yine de birden fazla makineyi kapsayabilir.
 
-Tavan, sabit kodlanmış bir plan sabitinden değil aboneliğinizin kaydından okunur; dolayısıyla pazarlıkla belirlenmiş bir etkinleştirme sayısı, abonelikte tanımlandığı anda geçerli olur. Plan seviyesi yalnızca başlangıç değerini belirler.
+Tavan, sabit kodlanmış bir plan sabitinden değil abonelik kaydından okunur; dolayısıyla pazarlıkla belirlenmiş bir etkinleştirme sayısı, abonelikte tanımlandığı anda geçerli olur. Plan seviyesi yalnızca başlangıç değerini belirler.
 
 Düzenleme ile yenileme farklı şekilde uygulanır ve bu fark önemlidir:
 
@@ -125,17 +125,27 @@ Bir kümeyi boyutlandırmak bir sohbettir, bir onay kutusu değil. Kümeler içi
 
 Depo boyutu hak düzeyine bağlıdır:
 
-- Community: `10 GB`'a kadar
+- Kayıtlı (ücretsiz) hesap, yani Community planı: `10 GB`'a kadar
+- ücretsiz Professional: `100 GB`'a kadar
 - ücretli planlar: plan veya sözleşme limiti
 
-Ücretli plan varsayılan limitleri:
+Professional ve Business, ortak kataloğundaki ilgili sürümün liste fiyatı üzerinden değişken lisans başına fiyatlandırılır: Professional yıllık `$550`, Business yıllık `$700`, Enterprise yıllık `$900`. Aylık faturalandırma yıllığa göre %15 daha pahalıdır (yıllık fiyat x 1,15 / 12) ve aylık `$53`, `$67` ve `$86` olarak yuvarlanır. Professional self-servis olarak 1 ila 5 değişken lisans, Business 1 ila 39 lisans satar; Enterprise 40'tan başlar (ortak kataloğundaki asgari makine sayısı).
 
-| Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Delegasyon sertifikası varsayılan / maks |
-|------|---------------------|-------------|----------------------------------|----------------------------------------|
-| Community | 1 | 10 GB | 100 | 15g / 30g |
-| Professional | 1 | 100 GB | 2.000+ | 60g / 120g |
-| Business | 1 | 500 GB | 5.000+ | 90g / 180g |
-| Enterprise | Özel | 1 TB+ | 15.000+ | 120g / 365g |
+Varsayılan limitler:
+
+| Plan | Değişken Lisanslar | Depo Boyutu | Aylık depo lisansı düzenlemeleri | Kullanıcılar | Depolar | Makine başına CPU | Barındırılan R2 | Lisans başına fiyat | Delegasyon sertifikası varsayılan / maks |
+|------|---------------------|-------------|----------------------------------|--------------|---------|-------------------|-----------------|---------------------|----------------------------------------|
+| Kayıtlı (ücretsiz) | 1 | 10 GB | 100 | 1 | 5 | 16 | Yok | Ücretsiz | 15g / 30g |
+| Ücretsiz Professional | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Ücretsiz | 60g / 120g |
+| Professional | 1-5 | 100 GB | 2.000+ | 25 | Lisans başına 100 | 32 | Lisans başına 100 GiB | $53 / $550 | 60g / 120g |
+| Business | 1-39 | 500 GB | 5.000+ | Sınırsız | Lisans başına 250 | 64 | Lisans başına 500 GiB | $67 / $700 | 90g / 180g |
+| Enterprise | 40+ | 1 TB+ | 15.000+ | Sınırsız | Teklife göre | Sınırsız | 2.048 GiB | $86 / $900 | 120g / 365g |
+
+Fiyat sütunu aylık / yıllık olarak okunur ve değişken lisans başına ABD doları cinsindendir. Kullanıcılar kuruluş üyeleridir: aktif üyeler ile bekleyen davetler. Depolarda yalnızca orijinaller sayılır; çatal (fork) hiçbir zaman sayılmaz. Lisans başına sütunlar (Professional ve Business'ta depolar, düzenlemeler ve barındırılan R2) abonelikteki değişken lisans sayısıyla çarpılır; kullanıcı ve CPU üst sınırları çarpılmaz. CPU'lar, işletim sisteminin bildirdiği mantıksal CPU'lardır; hyperthread'ler ve sanal makine vCPU'ları dahildir.
+
+Kayıtlı (ücretsiz) hesaplar barındırılan R2 yedekleme depolaması almaz ve kendi S3 depolarını getirir. Barındırılan R2, ücretsiz Professional ve ücretli planlar içindir.
+
+Büyük makine eklentisi, adı belirtilmiş tek bir makinenin CPU tavanını geçiş başına 8 CPU yükseltir; geçiş başına aylık `$50` veya yıllık `$200` tutarındadır. Bir makinede en fazla 4 geçiş, abonelik başına geçişli en fazla 3 makine olabilir. Bunun ötesi Enterprise kapsamındadır.
 
 Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırabilir veya azaltabilir. Delegasyon sertifikası geçerliliği aynı zamanda `subscription.expiresAt + 3 günlük ek süre` ile kesin olarak sınırlandırılmıştır; dolayısıyla aylık faturalandırılan abonelikler doğal olarak faturalama döngüleriyle uyumlu sertifikalar alır. Tam kurallar için [Lisans Zinciri ve Delegasyon - Geçerlilik Politikası](/tr/docs/license-chain) sayfasına bakın.
 
@@ -143,7 +153,7 @@ Sözleşmeye özgü limitler, belirli bir müşteri için bu değerleri artırab
 
 Yeni kayıtlar Professional veya Business planında 14 günlük ücretsiz denemeyle başlar. Kayıt sırasında bir kredi kartı alınır; ilk ücretlendirme yalnızca deneme süresi bittiğinde yapılır, dolayısıyla deneme bitmeden iptal etmenin hiçbir maliyeti yoktur. Müşteri başına bir deneme hakkı vardır.
 
-Community, kalıcı ücretsiz tabandır. Artık yeni hesaplar için doğrudan kayıt seçeneği değildir; bunun yerine bir abonelik sona erdiğinde (deneme sırasında iptal, ücretli bir planın sonradan iptali veya başarısız bir ödeme) hesap Community'ye düşer. Community geri dönüşünde bir makine, depo başına 10 GB ve ayda 100 kurulum hakkınız kalır. Deneme tabanlı model başlamadan önce oluşturulmuş hesaplar mevcut Community erişimlerini korur.
+Community, Kayıtlı (ücretsiz) olarak gösterilir; kalıcı ücretsiz tabandır ve bir plan olarak pazarlanmaz. Artık yeni hesaplar için doğrudan kayıt seçeneği değildir; bunun yerine bir abonelik sona erdiğinde (deneme sırasında iptal, ücretli bir planın sonradan iptali veya başarısız bir ödeme) hesap Community'ye düşer. Community geri dönüşünde bir makine, depo başına 10 GB ve ayda 100 kurulum hakkı kalır; barındırılan R2 yedekleme depolaması yoktur. Deneme tabanlı model başlamadan önce oluşturulmuş hesaplar mevcut Community erişimlerini korur.
 
 Uygulama en çok önem taşıdığı yerde yumuşak kalmaya devam eder: çalışan depolar (`up`, `down`, `delete`, otomatik başlatma) abonelik sona erse bile çalışmaya devam eder. Bunun ötesinde iki ayrı kural geçerlidir ve 60 günlük ek süreyi tutarsız gösteren şey, bu ikisinin birbirine karıştırılmasıdır:
 

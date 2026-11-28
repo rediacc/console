@@ -4,7 +4,7 @@ CI runs `set_account_worker_secrets` with its environment hydrated by the deploy
 
 WHAT IT DOES, in order. Every step refuses, and nothing later runs after a refusal.
 
-  1. Derives the non-secret inputs from `regions.json`: WORKER_NAME, TARGET, SUFFIX, AWS_SES_REGION, the backup bucket name and R2_JURISDICTION. TARGET is always `stable`: every Worker is the one shared Worker of its region, and `stable` is the pusher's channel that takes Stripe.
+  1. Derives the non-secret inputs from `regions.json`: WORKER_NAME, TARGET, SUFFIX, AWS_SES_REGION, the backup bucket name and R2_JURISDICTION. TARGET is always `stable`: every Worker is the one shared Worker of its region, and `stable` is the pusher's stable channel.
   2. Checks the wrangler pin (`wrangler_pin`): constants.sh, workers/account/package.json and the install must agree.
   3. Hydrates the profile `account-secrets-<region>` of `.ci/config/secret-supply.json` through `bws_env.hydrate`. Values live in this process's environment only, never on argv.
   4. Runs the Turnstile drift preflight (`turnstile_drift`) and refuses on drift or on no verdict. A stale `CLOUDFLARE_TURNSTILE_SECRET_KEY` pushed to a Worker fails every login (2026-09-24).
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Mapping
 
 SELF = "rediacc_ci.deploy.account_secrets_local"
-# The pusher's channel that demands Stripe: the only channel a shared Worker has.
+# The pusher's stable channel: the only channel a shared Worker has.
 TARGET = "stable"
 USAGE = "usage: %s --region <id> [--dry-run]" % SELF
 

@@ -1,0 +1,10 @@
+{
+  "EDGE_CASES": [
+    ["writer-on-files-with-three-fixed-findings", {"tool_name": "Agent", "session_id": "c0ffee11-1111-2222-3333-444444444444", "cwd": "/nonexistent-writer-brief-fixture", "tool_input": {"subagent_type": "general-purpose", "description": "fixture", "prompt": "work\nOwns: a/**"}}],
+    ["writer-on-an-untouched-file", {"tool_name": "Agent", "session_id": "c0ffee11-1111-2222-3333-444444444444", "cwd": "/nonexistent-writer-brief-fixture", "tool_input": {"subagent_type": "general-purpose", "description": "fixture", "prompt": "work\nOwns: b/untouched/**"}}],
+    ["reader-on-the-same-files", {"tool_name": "Agent", "session_id": "c0ffee11-1111-2222-3333-444444444444", "cwd": "/nonexistent-writer-brief-fixture", "tool_input": {"subagent_type": "Explore", "description": "fixture", "prompt": "read\nOwns: a/**"}}],
+    ["writer-that-edits-nothing", {"tool_name": "Agent", "session_id": "c0ffee11-1111-2222-3333-444444444444", "cwd": "/nonexistent-writer-brief-fixture", "tool_input": {"subagent_type": "general-purpose", "description": "fixture", "prompt": "work\nOwns: none -- this writer only reports what it reads"}}],
+    ["writer-with-no-owns-line", {"tool_name": "Agent", "session_id": "c0ffee11-1111-2222-3333-444444444444", "cwd": "/nonexistent-writer-brief-fixture", "tool_input": {"subagent_type": "general-purpose", "description": "fixture", "prompt": "fix the docstring in a/x.py"}}],
+    ["not-a-spawn", {"tool_name": "Bash", "tool_input": {"command": "true"}}]
+  ]
+}

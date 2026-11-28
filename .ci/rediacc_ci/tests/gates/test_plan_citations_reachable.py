@@ -7,20 +7,9 @@ import importlib.util
 import pathlib
 import subprocess
 
-from rediacc_ci import paths
 
-GATE = paths.repo_root() / ".ci" / "scripts" / "quality" / "check_plan_citations.py"
-
-
-def _gate_module(monkeypatch):
-    # The script imports its sibling `_cipath` (the hop to `.ci`), as it does when run directly.
-    monkeypatch.syspath_prepend(str(GATE.parent))
-    spec = importlib.util.spec_from_file_location("check_plan_citations_under_test", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+def _gate_module():
+    return importlib.import_module("rediacc_ci.quality.plan_citations")
 
 
 def _git(cwd, *args):
@@ -43,7 +32,7 @@ def _git(cwd, *args):
     ).stdout.strip()
 
 
-def test_an_unfetched_committed_blob_in_a_blob_none_clone_is_reachable(tmp_path, monkeypatch):
+def test_an_unfetched_committed_blob_in_a_blob_none_clone_is_reachable(tmp_path):
     origin = tmp_path / "origin"
     origin.mkdir()
     _git(origin, "init", "-q", "-b", "main")
@@ -71,14 +60,14 @@ def test_an_unfetched_committed_blob_in_a_blob_none_clone_is_reachable(tmp_path,
     assert missing.returncode != 0, (
         "the fixture must leave the blob unfetched, or it proves nothing"
     )
-    mod = _gate_module(monkeypatch)
+    mod = _gate_module()
     assert mod.content_object_is_reachable(clone, blob[:12])
     assert not mod.content_object_is_reachable(clone, "0123456789ab")
 
 
-def test_a_failed_listing_defers_to_the_callers_presence_check(tmp_path, monkeypatch):
+def test_a_failed_listing_defers_to_the_callers_presence_check(tmp_path):
     """When git cannot list objects the reachability answer is True by design, because `unresolved` asks only after proving presence; the caller still refuses an object that is not there."""
-    mod = _gate_module(monkeypatch)
+    mod = _gate_module()
     not_a_repo = pathlib.Path(tmp_path)
     assert mod._reachable_objects(not_a_repo) is None
     assert mod.content_object_is_reachable(not_a_repo, "0123456789ab")
@@ -87,7 +76,7 @@ def test_a_failed_listing_defers_to_the_callers_presence_check(tmp_path, monkeyp
 
 
 def test_an_ambiguous_prefix_is_not_reachable(tmp_path, monkeypatch):
-    mod = _gate_module(monkeypatch)
+    mod = _gate_module()
     monkeypatch.setattr(
         mod, "_reachable_objects", lambda _root: ["abcd1111" + "0" * 32, "abcd2222" + "0" * 32]
     )

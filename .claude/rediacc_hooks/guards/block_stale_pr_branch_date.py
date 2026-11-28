@@ -3,7 +3,7 @@
 WHAT WENT WRONG, 2026-08-26: PR #575 was opened from branch `0825-2`. The branch itself was created correctly at 23:50 the previous night, but the PR was filed the NEXT day, so it shipped with yesterday's number. Nothing noticed, because every existing pr-create guard asks a different question: block-nondraft-pr-create.sh asks "is it a draft", block-second-open-pr.sh asks "is one
 already open". Neither looks at the branch NAME.
 
-The convention is stated in .claude/commands/pr-babysit.md's state block:
+The convention is stated in .claude/agents/pr-babysitter.md loop step 2 (branch naming):
 
     Today (branch base): `date +%m%d`   (feature branches are `MMDD-N`)
 
@@ -208,7 +208,7 @@ def _stale(branch, cwd):
         "❌ BLOCKED: branch '%s' carries an OLD date; today is %s.\n"
         "\n"
         "Feature branches are MMDD-N keyed to the day the wave is FILED\n"
-        "(.claude/commands/pr-babysit.md). A PR opened from '%s' is invisible to\n"
+        "(.claude/agents/pr-babysitter.md, loop step 2). A PR opened from '%s' is invisible to\n"
         "the lookup every session uses to find today's waves:\n"
         "\n"
         '    git branch -r | grep "$(date +%%m%%d)-"\n'

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
-"""Entry point for check:ci-gate-tree-writes. Logic is in `rediacc_ci.quality.gate_tree_writes`.
+"""Run `rediacc_ci.quality.gate_tree_writes` by path, with the same argument check its own entry makes.
 
-Same 2-import shape as `check_pool_writer_safety.py`, its sibling: that gate holds GATE TESTS to "a tree writer declares an exclusive tree: claim", this one holds the GATES themselves to it. `--report` prints every site and exits 0; `--selftest` runs the controls alone.
-
----- gate ----
-step: Gates that write the real tree declare it
-needs: node
-lane: quality-code
-selftest: true
-why: A gate that writes the shared tree without an exclusive tree: claim runs beside its readers and leaves residue on a hard kill; check:ci-pool-writer-safety only sees gate tests
----- end gate ----
+The gate is declared by the `---- gate ----` header in `.ci/rediacc_ci/quality/gate_tree_writes.py` and registered from it
+(`npm run gen:gates`), which runs the module directly; this file stays for callers that run it by path.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import gate_tree_writes
 
 if __name__ == "__main__":
+    _gate_args.parse(
+        "check_gate_tree_writes.py",
+        sys.argv[1:],
+        switches=("--selftest", "--report"),
+        valued=("--root", "--lock", "--pkg"),
+    )
     raise SystemExit(gate_tree_writes.main(sys.argv[1:]))

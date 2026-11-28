@@ -4,7 +4,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 
 ONE CASE DRIVES THE REAL 213 MB renet binary. The rest point the twin's own `RENET_BINARY` override (`:144`) at a two-line shim that prints a canned report, which is the only way to drive a malformed one: the Go type `Checks []HostCheckResult` (`private/renet/cmd/renet/ops_host.go:29`) cannot emit anything else.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-ops-host-check.observations.jsonl` (9 rows,
+K=5 LEDGER: the ledger (deleted in commit:936280cd35) (9 rows,
 9 distinct trees, 9 distinct finding sets), re-recorded on 2026-09-10 after the jq-abort fix; the pre-fix rows were DISCARDED rather than appended to, because two of them recorded the exit 0 the twin no longer gives.
 """
 
@@ -39,6 +39,9 @@ FIXTURE_FILES = (
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",
     ".ci/rediacc_ci/proxies/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     PORT_REL,
 )
 

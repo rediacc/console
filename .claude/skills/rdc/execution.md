@@ -32,7 +32,7 @@ rdc repo exec <repo> -c <container> -i -- bash      # interactive shell in the c
 
 ## rdc run — Low-Level Escape Hatch (hidden, debugging only)
 
-`rdc run` executes raw bridge functions on a machine. It is **hidden from help output and MCP** but still functional as a last resort. **Do NOT use it unless there is no higher-level alternative.** It bypasses safety checks and uses internal function names that may change. Always prefer typed commands (`rdc repo`, `rdc machine`, `rdc term`) over `rdc run`.
+`rdc run` executes raw bridge functions on a machine. It is **hidden from help output and MCP** (local and remote), refused to agents (`AGENT_BLOCKED`) whatever the policy or opt-in says, and still functional for a human as a last resort. **Do NOT use it unless there is no higher-level alternative.** It bypasses safety checks and uses internal function names that may change. Always prefer typed commands (`rdc repo`, `rdc machine`, `rdc term`) over `rdc run`.
 
 The function name is passed with `-f`, not positionally:
 

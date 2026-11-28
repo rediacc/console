@@ -452,6 +452,77 @@ with tempfile.TemporaryDirectory() as d:
     finally:
         R.load_metas, R.session_subagents_dir, R.proven_finished = saved
 
+print("== 12. sweep() ROWS ARE NEVER KILL TARGETS (review f493c5be.2) ==")
+os.environ["WORKLIST_HARNESS_PID"] = "1"
+LIVE_TABLE = [
+    (1, 0, "claude", 0),
+    (2, 1, WRAP % "tail -f /dev/null", LIM * 2),
+    (3, 2, "python3 -m rediacc_ci.housekeeping.cf_retire archive media", LIM * 2),
+]
+LIVE_ANCHORS = [(p, pp, c) for p, pp, c, _a in LIVE_TABLE]
+swept = B.sweep(LIVE_TABLE, LIVE_ANCHORS)
+ck("sweep() lists an undeclared shell carrying live work", [r[0] for r in swept] == [2], swept)
+live_f = [f for f in B.findings(LIVE_TABLE, LIVE_ANCHORS, pgid_of=lambda _p: 2) if f.pid == 2]
+ck(
+    "the same shell is live work, never a kill order, and gets no kill command",
+    len(live_f) == 1
+    and live_f[0].kind == B.LIVE_WORK
+    and not B.is_kill_order(live_f[0])
+    and B.kill_command(live_f[0]) == "",
+    live_f,
+)
+idle_f = B.findings(LIVE_TABLE[:2], LIVE_ANCHORS[:2], pgid_of=lambda _p: 2)
+ck(
+    "control: without the live descendant the shell is an orphan with a kill command",
+    [(f.kind, B.kill_command(f)) for f in idle_f] == [(B.ORPHAN, "kill -- -2")],
+    idle_f,
+)
+os.environ.pop("WORKLIST_HARNESS_PID", None)
+
+SWEEP_CALL_RE = r"\b%s\.sweep\("
+
+
+def sweep_callers(paths):
+    """Every non-test module that imports wl_bgsweep and calls its sweep(): such a caller could read live work as a kill target."""
+    import re as _re
+
+    hits = []
+    for path in paths:
+        name = path.name
+        if name.startswith(("test-", "test_")) or "tests" in path.parts:
+            continue
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for m in _re.finditer(r"^\s*import wl_bgsweep(?: as (\w+))?", text, _re.MULTILINE):
+            alias = m.group(1) or "wl_bgsweep"
+            if _re.search(SWEEP_CALL_RE % _re.escape(alias), text):
+                hits.append(str(path))
+    return hits
+
+
+HOOKS = pathlib.Path(__file__).resolve().parents[1]
+REPO = HOOKS.parents[1]
+scanned = [*HOOKS.rglob("*.py"), *(REPO / ".claude" / "rediacc_hooks").rglob("*.py")]
+ck(
+    "no module of the hook tree calls wl_bgsweep.sweep(), so none reads its rows as kill targets",
+    sweep_callers(scanned) == [],
+    sweep_callers(scanned),
+)
+checks_src = (HOOKS / "stop" / "wl_checks.py").read_text(encoding="utf-8")
+ck(
+    "the Stop hook's kill rows pass through is_kill_order",
+    "wl_bgsweep.is_kill_order(" in checks_src,
+)
+with tempfile.TemporaryDirectory() as d:
+    planted = pathlib.Path(d) / "wl_planted.py"
+    planted.write_text("import wl_bgsweep as BG\nfor pid, _a, _c in BG.sweep():\n    pass\n")
+    ck(
+        "control: a planted module that kills from sweep() rows is caught",
+        sweep_callers([planted]) == [str(planted)],
+    )
+
 print()
 if Tally.count < 60:
     print("VACUOUS: only %d checks ran; this suite has 60+" % Tally.count)

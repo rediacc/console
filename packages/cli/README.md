@@ -55,7 +55,8 @@ See the [canonical CLI reference](https://www.rediacc.com/en/docs/cli-applicatio
 `rdc` detects AI coding assistants (Claude Code, Cursor, Gemini CLI, Copilot CLI) via environment signals and `/proc` ancestry, then applies a reduced permission set:
 
 - Sensitive writes require the knowledge-gate (`--current <old>`)
-- Interactive editor, `--reveal`, and direct machine SSH are refused unless the operator has set an ancestry-verified `REDIACC_ALLOW_CONFIG_EDIT` override
+- `rdc config edit` (interactive, `--apply`, `--reveal`) is refused for every agent, with no override; agents inspect with `rdc config edit --dump --redacted` and write one field at a time with `rdc config field set --current`
+- Direct machine SSH is refused unless the operator has set an ancestry-verified `REDIACC_ALLOW_GRAND_REPO=*` override
 - Every mutation / refusal / `--reveal` grant is written to a hash-chained JSONL log at `~/.config/rediacc/audit.log.jsonl` — inspect with `rdc config audit {log, tail, verify}`
 
 See the [AI Agent Safety & Guardrails](https://www.rediacc.com/en/docs/ai-agents-safety) doc for the full firewall matrix and worked examples.

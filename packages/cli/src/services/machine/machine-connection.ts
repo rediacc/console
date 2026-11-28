@@ -106,9 +106,9 @@ function connectionKey(config: SFTPClientConfig): string {
 /**
  * The canonical SFTP connect options for a configured machine.
  *
- * `machineName` is passed through so a host-key mismatch can name the machine
- * in its remedy (`rdc machine scan-keys <name>`). Without it the error falls
- * back to the IP, and the command it suggests would not resolve.
+ * Pass `machineName` whenever the caller has it: a host-key mismatch names it
+ * in its remedy (`rdc machine scan-keys <name>`), which takes a machine name,
+ * never an IP. Without it the remedy carries a `<machine-name>` placeholder.
  */
 export function sftpConfigForMachine(
   machine: MachineConfig,

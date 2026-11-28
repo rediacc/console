@@ -60,6 +60,8 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'repo sync status': LOCAL_SYNC,
   'repo sync upload': LOCAL_SYNC,
   'repo tunnel': INTERACTIVE,
+  'preview leave':
+    "interactive and local: asks before it switches each touched server's renet over SSH, then replaces the local CLI (section 24)",
   'term connect': INTERACTIVE,
   'vscode connect': INTERACTIVE,
   serve: 'the executor daemon itself (section 24)',
@@ -76,7 +78,7 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
     'one raw write of a local file with no renet call (J0b, proposed; the alternative is a cert-write allow-list entry)',
   'machine deprovision': 'local tofu destroy and config removal, with no SSH leg (J0b finding 6)',
   'machine scan-keys':
-    'local ssh-keyscan; the config write is the command (section 24 not-proxyable row)',
+    'local ssh2 host-key read; the config write is the command (section 24 not-proxyable row)',
   'datastore list': 'reads config and state only, with no machine call',
   // Not proxyable (PROXY_EXCLUSIONS): the verdict reads every config the caller can read, which a job unit on the machine cannot.
   'repo admin orphan delete':
@@ -125,6 +127,8 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo list',
   'repo policy get',
   'repo policy set',
+  // PLAN-forensics-investigation FI8: one forensics_level job.
+  'forensics level',
   // One first job each, then a tail step that starts the further jobs, because a fork's licence needs the id the fork mints.
   'repo replicate',
   'repo replicate refresh',
@@ -155,6 +159,9 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo prune',
   'repo resize',
   'repo trim',
+  // PLAN-vscode-browser-exposure V3: one repository_vscode_expose or repository_vscode_unexpose job each.
+  'vscode expose',
+  'vscode unexpose',
   // J17: backup run is one backup-unit job; its ad-hoc form stages a oneshot unit first.
   'backup run',
   // J17: list is one backup_list read job with its table as a step; cancel is one backup-cancel job naming every unit; schedule is one backup-schedule job carrying the unit bodies as its stdin payload, with retention seeding and the DR nudge as steps.

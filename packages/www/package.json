@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build",
+    "build": "PYTHONPATH=../../.ci python3 -m rediacc_ci.release.changelog_data && astro build",
     "typecheck": "astro sync && tsc --noEmit",
     "check:cta-bolt": "node scripts/check-cta-bolt-uniqueness.js",
     "probe:region-picker": "tsx scripts/probe-region-picker.ts",
@@ -48,7 +48,7 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/unist": "^3.0.3",
-    "@videojs/react": "10.6.0",
+    "@videojs/react": "10.7.0",
     "@vitest/coverage-v8": "^5.0.2",
     "@vitest/ui": "^5.0.2",
     "@vitest/utils": "^5.0.2",

@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench-eu --profile bench-login-eu -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.email_routing_drill [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (`CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `STRIPE_SANDBOX_WEBHOOK_SECRET` to sign the two events, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` and `BENCH_ROOT_TOTP_SEED` for the root session that runs the digest) unless both are already bound. A missing sandbox webhook secret is a named error before any request. Secrets travel only in a child environment or a request body; the Stripe signature header carries an HMAC, never the secret. Plan: agent/plans/PLAN-email-sender-separation.md, box R1.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (`CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` and `CF_EMAIL` when no token is set, for the D1 queries, `STRIPE_SANDBOX_WEBHOOK_SECRET` to sign the two events, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` and `BENCH_ROOT_TOTP_SEED` for the root session that runs the digest) unless both are already bound. A missing sandbox webhook secret is a named error before any request. Secrets travel only in a child environment or a request body; the Stripe signature header carries an HMAC, never the secret. Plan: agent/plans/PLAN-email-sender-separation.md, box R1.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 

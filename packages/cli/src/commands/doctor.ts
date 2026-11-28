@@ -1,12 +1,13 @@
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
+import { dirname, join, resolve } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_DOCKER_INSTALL_DOCS, WK_GO_DL_BASE } from '@rediacc/shared/config/well-known.generated';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { getRsyncPath } from '../remote/msys2/paths.js';
-import { getSubscriptionServerUrl } from '../services/account/subscription-auth.js';
+import { getConfiguredServerUrl } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import {
   getEmbeddedMetadata,
@@ -24,7 +25,9 @@ import { resolveChannel } from '../services/update/updater.js';
 import type { OutputFormat } from '../types/index.js';
 import { getInstallMethod, isSEA } from '../utils/platform.js';
 import { VERSION } from '../version.js';
+import { checkSecretStore, type SecretStoreCheckDeps } from './doctor-secret-store.js';
 import { checkSubscription } from './doctor-subscription.js';
+import { checkWindowsClient, type WindowsClientDeps } from './doctor-windows.js';
 import { toolSourceLabel } from './tools.js';
 
 const UNKNOWN_VERSION = 'unknown';
@@ -43,13 +46,23 @@ export interface CheckSection {
   checks: CheckResult[];
 }
 
-function runCommand(cmd: string, args: string[]): { ok: boolean; output: string } {
+/** A version probe is one quick spawn. */
+const PROBE_TIMEOUT_MS = 10_000;
+/** `renet ops host check` runs several host probes (libvirt, KVM, ssh); a loaded Windows VM needs far more than a version probe. */
+export const OPS_CHECK_TIMEOUT_MS = 60_000;
+
+function runCommand(
+  cmd: string,
+  args: string[],
+  timeout = PROBE_TIMEOUT_MS
+): { ok: boolean; output: string; timedOut?: boolean } {
   try {
-    const result = spawnSync(cmd, args, { encoding: 'utf-8', timeout: 10_000 });
+    const result = spawnSync(cmd, args, { encoding: 'utf-8', timeout });
     if (result.status === 0) {
       return { ok: true, output: result.stdout.trim() };
     }
-    return { ok: false, output: (result.stderr || result.stdout).trim() };
+    const timedOut = (result.error as NodeJS.ErrnoException | undefined)?.code === 'ETIMEDOUT';
+    return { ok: false, output: (result.stderr || result.stdout).trim(), timedOut };
   } catch {
     return { ok: false, output: '' };
   }
@@ -78,8 +91,40 @@ function checkToolVersion(
   return { name: t(nameKey), value: version, status: 'ok' };
 }
 
-function checkEnvironment(): CheckSection {
-  const isDev = getInstallMethod() === 'dev';
+export interface EnvironmentCheckDeps {
+  /** Whether this is a source checkout that builds renet; the real install method and tree by default. */
+  isDevTree?: () => boolean;
+  /** The account server the config names, or undefined when none; the real config by default. */
+  accountServer?: () => string | undefined;
+}
+
+/** A development install run inside a checkout that holds renet's source: the only place Go and Docker matter. */
+export function defaultIsDevTree(
+  installMethod: string = getInstallMethod(),
+  cwd: string = process.cwd(),
+  exists: (path: string) => boolean = existsSync
+): boolean {
+  // The walk up from a subdirectory is deliberate (see findRenetSource); a non-dev install never counts, wherever it runs (230852f9.1).
+  return installMethod === 'dev' && findRenetSource(cwd, exists) !== null;
+}
+
+/** The checkout root at or above `start` that holds `private/renet`, so `rdc doctor` run from a subdirectory still finds it. */
+export function findRenetSource(
+  start: string,
+  exists: (path: string) => boolean = existsSync
+): string | null {
+  let dir = resolve(start);
+  for (;;) {
+    if (exists(join(dir, 'private', 'renet'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return null;
+    dir = parent;
+  }
+}
+
+export function checkEnvironment(deps: EnvironmentCheckDeps = {}): CheckSection {
+  const isDev = (deps.isDevTree ?? defaultIsDevTree)();
+  const accountServer = (deps.accountServer ?? getConfiguredServerUrl)();
   const checks: CheckResult[] = [
     { name: t('commands.doctor.checks.nodeVersion'), value: process.version, status: 'ok' },
     { name: t('commands.doctor.checks.cliVersion'), value: VERSION, status: 'ok' },
@@ -94,14 +139,9 @@ function checkEnvironment(): CheckSection {
       status: 'ok',
     },
     { name: 'Update channel', value: resolveChannel(), status: 'ok' },
-    (() => {
-      try {
-        return { name: 'Account server', value: getSubscriptionServerUrl(), status: 'ok' as const };
-      } catch {
-        return { name: 'Account server', value: 'not configured', status: 'warn' as const };
-      }
-    })(),
   ];
+  // A local-only config names no account server, so there is nothing to report.
+  if (accountServer) checks.push({ name: 'Account server', value: accountServer, status: 'ok' });
 
   // Go and Docker are only relevant for development (building renet from source)
   if (isDev) {
@@ -132,6 +172,10 @@ export interface ToolsCheckDeps {
   pathLookup?: PathLookupOptions;
   /** Output of `rsync --version`, or null when it does not run. */
   rsyncVersion?: (path: string) => string | null;
+  /** The platform the hints and the client checks follow; the real one by default. */
+  platform?: NodeJS.Platform;
+  /** Probes for the Windows client checks. */
+  windows?: WindowsClientDeps;
 }
 
 /** A local rsync: the MSYS2 one rdc's sync uses on Windows, else the first on PATH. */
@@ -163,24 +207,34 @@ async function checkTofu(resolve: () => Promise<TofuResolution>): Promise<CheckR
   return { name, value: describeTofuFailure(result), status: 'warn', hint };
 }
 
-/** Local tools rdc runs itself: the provisioning engine and rsync. */
-export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
-  const checks: CheckResult[] = [await checkTofu(deps.resolveTofu ?? (() => resolveTofu()))];
-
-  const rsyncName = t('commands.doctor.checks.rsync');
+function checkRsync(deps: ToolsCheckDeps, platform: NodeJS.Platform): CheckResult {
+  const name = t('commands.doctor.checks.rsync');
   const rsyncPath = findRsync(deps.pathLookup);
   if (rsyncPath) {
     const out = (deps.rsyncVersion ?? defaultRsyncVersion)(rsyncPath);
     const version = out ? (/version\s+(\S+)/.exec(out)?.[1] ?? UNKNOWN_VERSION) : UNKNOWN_VERSION;
-    checks.push({ name: rsyncName, value: version, status: 'ok' });
-  } else {
-    checks.push({
-      name: rsyncName,
-      value: t('commands.doctor.notInstalled'),
-      status: 'warn',
-      hint: t('commands.doctor.rsyncInstallHint'),
-    });
+    return { name, value: version, status: 'ok' };
   }
+  return {
+    name,
+    value: t('commands.doctor.notInstalled'),
+    status: 'warn',
+    hint: t(
+      platform === 'win32'
+        ? 'commands.doctor.rsyncInstallHintWin32'
+        : 'commands.doctor.rsyncInstallHint'
+    ),
+  };
+}
+
+/** Local tools rdc runs itself: the provisioning engine and rsync. */
+export async function checkTools(deps: ToolsCheckDeps = {}): Promise<CheckSection> {
+  const platform = deps.platform ?? process.platform;
+  const checks: CheckResult[] = [
+    await checkTofu(deps.resolveTofu ?? (() => resolveTofu())),
+    checkRsync(deps, platform),
+  ];
+  if (platform === 'win32') checks.push(...(await checkWindowsClient(deps.windows)));
   return { title: t('commands.doctor.sections.tools'), checks };
 }
 
@@ -227,7 +281,8 @@ function pushEmbedAssetChecks(
 }
 
 function checkDevEmbedAssets(checks: CheckResult[]): void {
-  const hasEmbedAssets = existsSync('private/renet/pkg/embed/assets');
+  const root = findRenetSource(process.cwd()) ?? process.cwd();
+  const hasEmbedAssets = existsSync(join(root, 'private/renet/pkg/embed/assets'));
   pushEmbedAssetChecks(
     checks,
     hasEmbedAssets ? 'yes (dev embed assets found)' : 'no (dev embed assets missing)',
@@ -306,7 +361,7 @@ function checkSshKey(checks: CheckResult[], hasInlineKey: boolean): void {
   });
 }
 
-async function checkConfiguration(): Promise<CheckSection> {
+export async function checkConfiguration(deps: SecretStoreCheckDeps = {}): Promise<CheckSection> {
   const checks: CheckResult[] = [];
   const contextName = configService.getCurrentName();
   const context = await configService.getCurrent();
@@ -322,10 +377,21 @@ async function checkConfiguration(): Promise<CheckSection> {
   );
   await checkMachineCount(checks);
   checkSshKey(checks, Boolean(context?.credentials?.ssh?.privateKey));
+  checks.push(await checkSecretStore(deps));
   return { title: t('commands.doctor.sections.configuration'), checks };
 }
 
-async function checkVirtualization(): Promise<CheckSection> {
+/** The Tools section already reports the OpenSSH client on Windows, so renet's own `ssh` row is dropped there. */
+export function dropDuplicateClientRows<T extends { name: string }>(
+  checks: T[],
+  platform: NodeJS.Platform
+): T[] {
+  return platform === 'win32' ? checks.filter((check) => check.name !== 'ssh') : checks;
+}
+
+export async function checkVirtualization(
+  platform: NodeJS.Platform = process.platform
+): Promise<CheckSection> {
   const checks: CheckResult[] = [];
   const renetPath = await findRenetPath();
   if (!renetPath) {
@@ -338,7 +404,16 @@ async function checkVirtualization(): Promise<CheckSection> {
     return { title: t('commands.doctor.sections.virtualization'), checks };
   }
 
-  const result = runCommand(renetPath, ['ops', 'host', 'check', '--json']);
+  const result = runCommand(renetPath, ['ops', 'host', 'check', '--json'], OPS_CHECK_TIMEOUT_MS);
+  if (!result.ok && result.timedOut) {
+    checks.push({
+      name: t('commands.doctor.checks.opsPrereqs'),
+      value: `check timed out after ${OPS_CHECK_TIMEOUT_MS / 1000}s`,
+      status: 'warn',
+      hint: 'The machine may be under load: run the checks again when it is idle, or run renet ops host check directly',
+    });
+    return { title: t('commands.doctor.sections.virtualization'), checks };
+  }
   if (!result.ok) {
     checks.push({
       name: t('commands.doctor.checks.opsPrereqs'),
@@ -351,7 +426,12 @@ async function checkVirtualization(): Promise<CheckSection> {
 
   try {
     const response = JSON.parse(result.output);
-    for (const check of response.checks) {
+    for (const check of dropDuplicateClientRows<{
+      name: string;
+      value: string;
+      status: CheckStatus;
+      hint?: string | null;
+    }>(response.checks, platform)) {
       checks.push({
         name: check.name,
         value: check.value,

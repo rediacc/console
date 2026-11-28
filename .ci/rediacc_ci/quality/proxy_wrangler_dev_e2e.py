@@ -30,7 +30,7 @@ and then four requests through the Worker, in this order:
      container is started;
   3. THE CALLER's bearer, which `route()` answers with the caller's org: 200 with
      `mode: "container"` and a `cliVersion` equal to `node cli-bundle.cjs --version` of the bundle
-     staged into the image; then GET /v1/jobs/<id>/events with the same bearer answers 400 (the
+     staged into the image; then GET /v1/jobs/<id>/poll with the same bearer answers 400 (the
      executor authenticated it, then refused the missing `machine` query), which makes the executor
      introspect the caller through the Worker's egress; the stub issuer was asked to `issue()` for that org (the token is keyed by
      org) and the executor's own introspection reached the fake account carrying it, and a
@@ -44,7 +44,7 @@ TEARDOWN, ALWAYS. `wrangler dev` does NOT remove its containers when it exits (m
 
 THE RENET IT SHIPS. Staged exactly as check:ci-proxy-image-smoke stages it (`proxy_image_smoke._stage_local`, which runs `executor_artifacts stage-local`): an already staged `workers/proxy/stage/manifest.json` is used as is, otherwise the stage is written for the run and removed afterwards.
 
-LOCAL-ONLY AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). It is registered `local-only` with that BLOCKER in scripts/ci-runner/manifest.ts.
+NATIVE-LINUX AND SLOW. It needs a docker daemon and the Containers runtime of `wrangler dev`, and it builds the executor image (minutes cold, seconds on a warm layer cache). The daemon must be a native-Linux one: Docker Desktop's host-gateway cannot reach workerd's egress listener, so on a Docker Desktop host (the WSL2 development machines) the gate exits 77 and names the CI job that does run it, ci-build-renet.yml job `proxy-wrangler-dev` on ubuntu-latest (agent/plans/PLAN-tooling-speed.md D8). That job sits beside proxy-image-smoke and ships the renet artifact the same run built, under the 15-minute lane cap. `CI_JOB` and `CI_STEP` below are the names that refusal prints; `ci_lane_findings` holds them, the job's timeout and its artifact download to the workflow, and two live-tree controls hold them to the real ci-build-renet.yml and the gate's gates.lock.json pointer on every run, so the refusal cannot name a job that is gone.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail, 77 (the pool's CANNOT_RUN, reported `blocked`, never green) when docker or wrangler is absent or no renet can be staged.
 """
@@ -70,7 +70,7 @@ import typing
 import urllib.error
 
 from rediacc_ci import paths
-from rediacc_ci.controls import Checker, controls_first
+from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.core import https
 from rediacc_ci.deploy import executor_artifacts
 from rediacc_ci.quality import proxy_image_smoke
@@ -85,16 +85,25 @@ WORKER_DIR = ("workers", "proxy")
 DEV_CONFIG = "wrangler.dev.toml"
 DEPLOY_CONFIG = "wrangler.eu.toml"
 WRANGLER_BIN = ("node_modules", ".bin", "wrangler")
-# workerd names a dev container `workerd-<worker name>-<class name>-<id>`, and its egress sidecar the same plus `-proxy`. The worker name is wrangler.dev.toml's, which is what scopes this prefix to this gate.
-CONTAINER_PREFIX = "workerd-rediacc-proxy-dev-"
+# workerd names a dev container `workerd-<worker name>-<class name>-<id>`, and its egress sidecar the same plus `-proxy`; wrangler 4.167 inserts a hex instance id after `workerd-` (measured 2026-11-25: `workerd-bcd06b0321f117e4-rediacc-proxy-dev-OrgExecutor-<id>`). The worker name is wrangler.dev.toml's, which is what scopes the match to this gate; both spellings match, so a wrangler bump either way neither hides the container nor leaves one behind at teardown.
+DEV_WORKER_NAME = "rediacc-proxy-dev"
+CONTAINER_PREFIX = "workerd-[<instance>-]%s-" % DEV_WORKER_NAME
+_DEV_CONTAINER = re.compile(r"^workerd-(?:[0-9a-f]+-)?%s-" % re.escape(DEV_WORKER_NAME))
+
+
+def is_dev_container(name: str) -> bool:
+    """Whether docker container `name` is one workerd started for this gate's dev Worker, with or without the instance id."""
+    return _DEV_CONTAINER.match(name) is not None
+
+
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 PROBE_PATH = "/v1/server-info"
 SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
 # The org the fake account routes the caller to; the stub issuer is asked to issue for exactly this org.
 CALLER_ORG = "org-wrangler-dev-e2e"
 READY_PATH = "/v1/ready"
-# An authenticated executor route that needs no job and no machine: the executor verifies the bearer first, then answers 400 for the missing `machine` query, so a 400 (never a 401) proves the caller was authenticated through the Worker's egress.
-AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/events"
+# The poll route of a proxied machine job; the held `/events` route it replaced was removed with the detached-jobs work (PLAN-detached-jobs J2), and an unknown route answers a bare 404.
+AUTH_PATH = "/v1/jobs/wrangler-dev-e2e/poll"
 AUTH_OK_STATUS = 400
 # The stub issuer Worker this gate writes per run, and the one binding wrangler.dev.toml may declare: ISSUER on its ExecutorIssuer entrypoint, as the deployed configs bind the account Worker's.
 STUB_ISSUER_NAME = "rediacc-executor-issuer-dev"
@@ -103,8 +112,26 @@ VERSION_METADATA_BINDING = "CF_VERSION_METADATA"
 STUB_ISSUER_TTL_S = 45 * 60
 
 CANNOT_RUN = 77
-READY_TIMEOUT_S = 1800
+# The one CI lane that runs this gate (agent/plans/PLAN-tooling-speed.md D8). The Docker Desktop refusal names it, so a rename that leaves these behind makes the refusal point at nothing; ci_lane_findings is the check.
+CI_WORKFLOW = ".github/workflows/ci-build-renet.yml"
+CI_JOB = "proxy-wrangler-dev"
+# ci.yml calls ci-build-renet.yml as `Build (Renet)`, so Actions shows the job under that prefix.
+CI_CALLER_DISPLAY = "Build (Renet)"
+CI_JOB_DISPLAY = CI_CALLER_DISPLAY + " / Proxy Wrangler Dev"
+CI_STEP = "Proxy wrangler dev e2e"
+GATE_ID = "check:ci-proxy-wrangler-dev-e2e"
+CI_RUN = "npm run " + GATE_ID
+CI_RUNNER = "ubuntu-latest"
+# The renet the image ships is this artifact of the same run (ci-build-renet.yml's build-renet or extract-renet), never one the lane builds.
+CI_RENET_ARTIFACT = "renet-binaries-${{ github.sha }}"
+# The lane cap check:ci-lane-budget check 7 holds every CI job to; the job's timeout-minutes must not exceed it.
+CI_TIMEOUT_MAX_MIN = 15
+DOCKER_DESKTOP_OS = "Docker Desktop"
+# The ready wait plus one request timeout must end inside the job's timeout-minutes with SETUP_MARGIN_S to spare, so a slow start is reported by this gate rather than by a job kill (ci_lane_findings holds the job to it). The smoke's measured image build on the same runner is 29 s (Proxy image smoke, job 137284910716), so 420 s is roomy.
+READY_TIMEOUT_S = 420
 REQUEST_TIMEOUT_S = 180
+# Checkout, setup-workspace, the CLI bundle, the artifact download and `npm ci` for wrangler before the gate starts: 58 s measured for the same steps of Proxy image smoke (job 137284910716), less wrangler's install.
+SETUP_MARGIN_S = 180
 SETTLE_S = 3
 STOP_GRACE_S = 20
 
@@ -154,10 +181,10 @@ def dev_config_findings(dev: dict, deploy: dict) -> list[str]:
             "%s reuses the deployed name %r; give it its own, so its containers and images are "
             "never confused with the deployed Worker's" % (DEV_CONFIG, deploy.get("name"))
         )
-    elif not CONTAINER_PREFIX.startswith("workerd-%s-" % dev.get("name")):
+    elif dev.get("name") != DEV_WORKER_NAME:
         out.append(
-            "%s is named %r but the gate cleans up containers named %s*; change one to match the other"
-            % (DEV_CONFIG, dev.get("name"), CONTAINER_PREFIX)
+            "%s is named %r but must be named %r, since the gate cleans up containers named %s*"
+            % (DEV_CONFIG, dev.get("name"), DEV_WORKER_NAME, CONTAINER_PREFIX)
         )
     out.extend(
         "%s `%s` is %r but %s has %r; copy the deployed value, or this gate proves a different Worker"
@@ -337,7 +364,7 @@ HEALTHY: dict = {
     "caller_auth_status": 400,
     "caller_introspected": True,
     "caller_issued_for_org": True,
-    "caller_containers": [CONTAINER_PREFIX + "OrgExecutor-abc"],
+    "caller_containers": ["workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME],
     "left_behind": [],
 }
 
@@ -752,6 +779,17 @@ def selftest() -> bool:
         dev_image_tags(log) == {"cloudflare-dev/orgexecutor:1008f582"},
     )
     check(
+        "a dev container is recognised with or without the instance id",
+        is_dev_container("workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME)
+        and is_dev_container("workerd-bcd06b0321f117e4-%s-OrgExecutor-abc-proxy" % DEV_WORKER_NAME),
+    )
+    check(
+        "CONTROL: a deployed or unrelated workerd container is not a dev container",
+        not is_dev_container("workerd-rediacc-proxy-OrgExecutor-abc")
+        and not is_dev_container("workerd-bcd06b0321f117e4-other-worker-OrgExecutor-abc")
+        and not is_dev_container("x-workerd-%s-OrgExecutor-abc" % DEV_WORKER_NAME),
+    )
+    check(
         "a log naming no dev image yields no tag",
         dev_image_tags("naming to docker.io/library/node:24") == set(),
     )
@@ -775,6 +813,138 @@ def selftest() -> bool:
     for label, patch in PLANTS:
         check(label, len(verdict({**HEALTHY, **patch})) == 1)
     _fake_account_controls(check)
+
+    desktop = docker_host_refusal("Docker Desktop\n") or ""
+    check(
+        "a Docker Desktop daemon is refused, naming the CI job and step that run the gate",
+        CI_JOB in desktop and CI_STEP in desktop and CI_WORKFLOW in desktop,
+    )
+    check(
+        "a native-Linux daemon is not refused",
+        docker_host_refusal("Ubuntu 24.04.3 LTS") is None and docker_host_refusal("") is None,
+    )
+    lane = (
+        "jobs:\n"
+        "  other:\n"
+        "    name: Other\n"
+        "    runs-on: ubuntu-slim\n"
+        "  %s:\n"
+        "    name: %s\n"
+        "    runs-on: %s\n"
+        "    needs: [build-renet, extract-renet]\n"
+        "    timeout-minutes: %d # the lane cap\n"
+        "    steps:\n"
+        "      - uses: ./.github/actions/setup-workspace\n"
+        "      - uses: actions/download-artifact@0000000000000000000000000000000000000000\n"
+        "        with:\n"
+        "          name: %s\n"
+        "          path: private/bin/\n"
+        "      - name: %s\n"
+        "        run: %s\n"
+        "  after:\n"
+        "    name: After\n"
+        "    timeout-minutes: 99\n"
+        "    steps:\n"
+        "      - uses: actions/download-artifact@0000000000000000000000000000000000000000\n"
+        "        with:\n"
+        "          name: %s\n"
+        "      - name: %s\n"
+        "        run: true\n"
+    ) % (
+        CI_JOB,
+        CI_JOB_DISPLAY.split(" / ", 1)[1],
+        CI_RUNNER,
+        CI_TIMEOUT_MAX_MIN,
+        CI_RENET_ARTIFACT,
+        CI_STEP,
+        CI_RUN,
+        CI_RENET_ARTIFACT,
+        CI_STEP,
+    )
+    check("the lane the refusal names, as written, has no findings", ci_lane_findings(lane) == [])
+    check(
+        "the gate's ready wait, one request and setup fit inside the %dm lane cap"
+        % CI_TIMEOUT_MAX_MIN,
+        READY_TIMEOUT_S + REQUEST_TIMEOUT_S + SETUP_MARGIN_S <= CI_TIMEOUT_MAX_MIN * 60,
+    )
+    ci_yml = (paths.repo_root() / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    check(
+        "the caller prefix is the name of the ci.yml job that calls the lane's workflow",
+        re.search(
+            r"^    name: %s\n(?:(?!^  \S).*\n)*?    uses: \./%s$"
+            % (re.escape(CI_CALLER_DISPLAY), re.escape(CI_WORKFLOW)),
+            ci_yml,
+            re.MULTILINE,
+        )
+        is not None,
+    )
+    for label, broken in (
+        (
+            "a workflow without the named job is a finding",
+            plant(lane, "  %s:\n" % CI_JOB, "  renamed:\n"),
+        ),
+        (
+            "the lane on a slim runner is a finding",
+            plant(lane, "runs-on: %s" % CI_RUNNER, "runs-on: ubuntu-slim"),
+        ),
+        (
+            "a renamed job display is a finding",
+            plant(lane, "name: Proxy Wrangler Dev", "name: Wrangler"),
+        ),
+        (
+            "a renamed gate step is a finding",
+            plant(
+                lane,
+                "      - name: %s\n        run: %s" % (CI_STEP, CI_RUN),
+                "      - name: Wrangler e2e\n        run: %s" % CI_RUN,
+            ),
+        ),
+        (
+            "a step running something else is a finding",
+            plant(lane, "run: %s" % CI_RUN, "run: .ci/scripts/quality/check_proxy_image_smoke.py"),
+        ),
+        (
+            "a timeout over the lane cap is a finding",
+            plant(
+                lane,
+                "timeout-minutes: %d #" % CI_TIMEOUT_MAX_MIN,
+                "timeout-minutes: %d #" % (CI_TIMEOUT_MAX_MIN + 30),
+            ),
+        ),
+        (
+            "a timeout shorter than the gate's own waits is a finding",
+            plant(lane, "timeout-minutes: %d #" % CI_TIMEOUT_MAX_MIN, "timeout-minutes: 5 #"),
+        ),
+        (
+            "a job with no timeout is a finding",
+            plant(lane, "    timeout-minutes: %d # the lane cap\n" % CI_TIMEOUT_MAX_MIN, ""),
+        ),
+        (
+            "a job that does not download the renet artifact is a finding",
+            plant(
+                lane,
+                "          name: %s\n          path:" % CI_RENET_ARTIFACT,
+                "          name: renet-built-here\n          path:",
+            ),
+        ),
+    ):
+        check(label, len(ci_lane_findings(broken)) == 1)
+    # LIVE-TREE CONTROLS: the refusal above is printed on every Docker Desktop run, so the lane it names is checked against the real workflow and the real manifest pointer (gates.lock.json, the generated copy of scripts/ci-runner/manifest.ts) each time the controls run.
+    root = paths.repo_root()
+    live = ci_lane_findings((root / CI_WORKFLOW).read_text())
+    check(
+        "CONTROL: the live workflow holds the lane the refusal names, %s job %s"
+        % (CI_WORKFLOW, CI_JOB)
+        + "".join("; " + f for f in live),
+        live == [],
+    )
+    lock = json.loads((root / "scripts" / "ci-runner" / "gates.lock.json").read_text())
+    pointer = [e.get("ci") for e in lock if e.get("id") == GATE_ID]
+    check(
+        "CONTROL: gates.lock.json points this gate's CI at that job's step %r (found %r)"
+        % (CI_STEP, pointer),
+        pointer == [{"kind": "step", "workflow": CI_WORKFLOW, "job": CI_JOB, "step": CI_STEP}],
+    )
     print("  %d control(s)" % check.count)
     return not check.ok
 
@@ -805,8 +975,8 @@ def _docker(*args: str, timeout: int = 120) -> subprocess.CompletedProcess:
 
 
 def prefixed_containers() -> set[str]:
-    r = _docker("ps", "-a", "--filter", "name=" + CONTAINER_PREFIX, "--format", "{{.Names}}")
-    return {n for n in r.stdout.split() if n.startswith(CONTAINER_PREFIX)}
+    r = _docker("ps", "-a", "--filter", "name=%s-" % DEV_WORKER_NAME, "--format", "{{.Names}}")
+    return {n for n in r.stdout.split() if is_dev_container(n)}
 
 
 def _free_port() -> int:
@@ -960,6 +1130,102 @@ def observe(root: pathlib.Path, renet_version: str, plant: str | None = None) ->
     return obs, shape
 
 
+def docker_host_refusal(operating_system: str) -> str | None:
+    """Why a docker daemon reporting `operating_system` (`docker info --format {{.OperatingSystem}}`) cannot run the gate, naming the CI lane that can; None for any other daemon."""
+    # Docker Desktop's host-gateway (192.168.65.254) cannot reach workerd's egress listener, which falls back to loopback, so every interceptOutboundHttp call fails with "fetch failed" (measured 2026-10-31: the egress sidecar logs `dialing gateway: dial tcp 192.168.65.254:<port>: connect: connection refused`). CI's Linux runners bind it on the docker0 bridge.
+    if operating_system.strip() != DOCKER_DESKTOP_OS:
+        return None
+    return (
+        "Docker Desktop's host-gateway cannot reach workerd's egress listener, so the container's "
+        "intercepted egress never arrives; CI runs this gate on a native-Linux docker host, %s job "
+        "`%s` (%s), step `%s`, so read that job's result for a verdict, or rerun here on a "
+        "native-Linux docker daemon" % (CI_WORKFLOW, CI_JOB, CI_JOB_DISPLAY, CI_STEP)
+    )
+
+
+def ci_lane_findings(workflow_text: str) -> list[str]:
+    """What is wrong with the CI lane the refusal names, read from the workflow's text: the job must exist, run on `CI_RUNNER`, be named so it displays as `CI_JOB_DISPLAY`, declare a `timeout-minutes` no higher than `CI_TIMEOUT_MAX_MIN` that still outlasts the gate's own waits, download `CI_RENET_ARTIFACT` rather than build a renet, and hold a step `CI_STEP` whose `run:` is `CI_RUN`. A line-oriented read, as scripts/ci-runner/lanes.ts reads the same file, so no YAML dependency is needed."""
+    lines = workflow_text.splitlines()
+    start = None
+    for i, line in enumerate(lines):
+        if line.rstrip() == "  %s:" % CI_JOB:
+            start = i
+            break
+    if start is None:
+        return [
+            "%s has no job `%s`, which the Docker Desktop refusal names" % (CI_WORKFLOW, CI_JOB)
+        ]
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        if re.match(r"^  [A-Za-z0-9_-]+:\s*$", lines[j]) or re.match(r"^\S", lines[j]):
+            end = j
+            break
+    body = lines[start + 1 : end]
+    found: list[str] = []
+    name = next((ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    name:")), "")
+    shown = "%s / %s" % (CI_CALLER_DISPLAY, name)
+    if shown != CI_JOB_DISPLAY:
+        found.append(
+            "job `%s` is named %r, so it displays as %r, not %r"
+            % (CI_JOB, name, shown, CI_JOB_DISPLAY)
+        )
+    raw_timeout = next(
+        (
+            ln.split(":", 1)[1].split("#", 1)[0].strip()
+            for ln in body
+            if ln.startswith("    timeout-minutes:")
+        ),
+        "",
+    )
+    floor_s = READY_TIMEOUT_S + REQUEST_TIMEOUT_S + SETUP_MARGIN_S
+    if not raw_timeout.isdigit():
+        found.append(
+            "job `%s` declares timeout-minutes %r, not a literal number of minutes"
+            % (CI_JOB, raw_timeout)
+        )
+    elif int(raw_timeout) > CI_TIMEOUT_MAX_MIN:
+        found.append(
+            "job `%s` has timeout-minutes %s, over the %dm lane cap check:ci-lane-budget holds it to"
+            % (CI_JOB, raw_timeout, CI_TIMEOUT_MAX_MIN)
+        )
+    elif int(raw_timeout) * 60 < floor_s:
+        found.append(
+            "job `%s` has timeout-minutes %s, which ends before the gate's ready wait (%ds), one "
+            "request (%ds) and setup (%ds) can, so a slow start would be a job kill rather than "
+            "this gate's finding; lower READY_TIMEOUT_S"
+            % (CI_JOB, raw_timeout, READY_TIMEOUT_S, REQUEST_TIMEOUT_S, SETUP_MARGIN_S)
+        )
+    if not any(ln.strip() == "name: %s" % CI_RENET_ARTIFACT for ln in body):
+        found.append(
+            "job `%s` does not download the %s artifact, so the image would not ship the renet "
+            "this run built" % (CI_JOB, CI_RENET_ARTIFACT)
+        )
+    runs_on = next(
+        (ln.split(":", 1)[1].strip() for ln in body if ln.startswith("    runs-on:")), ""
+    )
+    if runs_on != CI_RUNNER:
+        found.append(
+            "job `%s` runs on %r, not %r: the gate needs a native-Linux docker daemon"
+            % (CI_JOB, runs_on, CI_RUNNER)
+        )
+    step_at = [k for k, ln in enumerate(body) if ln.strip() == "- name: %s" % CI_STEP]
+    if len(step_at) != 1:
+        found.append(
+            "job `%s` holds %d step(s) named `%s`, not 1" % (CI_JOB, len(step_at), CI_STEP)
+        )
+        return found
+    step_run = ""
+    for ln in body[step_at[0] + 1 :]:
+        if ln.lstrip().startswith("- "):
+            break
+        if ln.strip().startswith("run:"):
+            step_run = ln.split(":", 1)[1].strip()
+            break
+    if step_run != CI_RUN:
+        found.append("step `%s` runs %r, not %r" % (CI_STEP, step_run, CI_RUN))
+    return found
+
+
 def static_findings(root: pathlib.Path) -> list[str]:
     worker = root.joinpath(*WORKER_DIR)
     try:
@@ -974,9 +1240,9 @@ def cannot_run(root: pathlib.Path) -> str | None:
     """Why this host cannot run the gate, with the fix, or None."""
     if shutil.which("docker") is None or _docker("version").returncode != 0:
         return "docker is not available here (no `docker` on PATH, or its daemon does not answer `docker version`); start docker, then rerun"
-    # Docker Desktop's host-gateway (192.168.65.254) cannot reach workerd's egress listener, which falls back to loopback, so every interceptOutboundHttp call fails with "fetch failed" (measured 2026-10-31: the egress sidecar logs `dialing gateway: dial tcp 192.168.65.254:<port>: connect: connection refused`). CI's Linux runners bind it on the docker0 bridge.
-    if _docker("info", "--format", "{{.OperatingSystem}}").stdout.strip() == "Docker Desktop":
-        return "Docker Desktop's host-gateway cannot reach workerd's egress listener, so the container's intercepted egress never arrives; run the gate on a native-Linux docker host (CI does)"
+    refusal = docker_host_refusal(_docker("info", "--format", "{{.OperatingSystem}}").stdout)
+    if refusal:
+        return refusal
     wrangler = root.joinpath(*WORKER_DIR, *WRANGLER_BIN)
     if not wrangler.exists():
         return "%s is missing; run `cd workers/proxy && npm ci`" % wrangler.relative_to(root)

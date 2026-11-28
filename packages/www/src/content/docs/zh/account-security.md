@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: zh
-sourceHash: "55c979711279a92e"
-sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
+sourceHash: "b7d7781263ab1386"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 ### 身份验证
@@ -79,6 +79,8 @@ rdc subscription login
 - 基于Passkey的密钥派生（WebAuthn + PRF）
 - 按请求轮换的轮换令牌
 
+[安全模型](/zh/docs/security-model)页面说明了谁能看到什么、密钥如何划定范围，以及哪些内容可以恢复。
+
 ### 会话安全
 
 | 令牌类型 | 有效期 | 存储 | 刷新 |
@@ -117,6 +119,6 @@ rdc update --status            # Show current channel
 
 ### AI 智能体的 CLI 安全态势
 
-调用 `rdc` 的编程智能体是一个真实的威胁面，因此我们将其视为独立的主体。每次 `rdc` 调用在启动时基于环境信号（CLAUDECODE、GEMINI_CLI、COPILOT_CLI、CURSOR_TRACE_ID、REDIACC_AGENT）以及 Linux `/proc` 进程树遍历，被分类为**人类**或**智能体**。检测是尽力而为的，有意为之的包装器可以伪造环境变量，这正是进程树遍历重要的原因。智能体获得缩减后的权限集：敏感的配置变更需要知识门控（`--current <旧值>`），交互式编辑器在没有经过进程树验证的 `REDIACC_ALLOW_CONFIG_EDIT` 覆盖的情况下会被拒绝，任何显示命令上的 `--reveal` 都会被屏蔽。每一个决策（允许、拒绝或授予 `--reveal`）都会向 `~/.config/rediacc/audit.log.jsonl` 写入一条哈希链式 JSONL 记录。运行 `rdc config audit verify` 可检查链的完整性。
+调用 `rdc` 的编程智能体是一个真实的威胁面，因此我们将其视为独立的主体。每次 `rdc` 调用在启动时基于环境信号（CLAUDECODE、GEMINI_CLI、COPILOT_CLI、CURSOR_TRACE_ID、REDIACC_AGENT）以及 Linux `/proc` 进程树遍历，被分类为**人类**或**智能体**。检测是尽力而为的，有意为之的包装器可以伪造环境变量，这正是进程树遍历重要的原因。智能体获得缩减后的权限集：敏感的配置变更需要知识门控（`--current <旧值>`），`rdc config edit`（交互式、`--apply`、`--reveal`）会被拒绝且没有任何覆盖方式，任何显示命令上的 `--reveal` 都会被屏蔽。智能体只在人类的主动授权和策略上限都允许的范围内行动（[AI 智能体安全](/zh/docs/ai-agents-safety)）。每一个决策（允许、拒绝或授予 `--reveal`）都会向 `~/.config/rediacc/audit.log.jsonl` 写入一条哈希链式 JSONL 记录。运行 `rdc config audit verify` 可检查链的完整性。
 
 请参阅 [AI 智能体安全与防护](/zh/docs/ai-agents-safety)，了解智能体能做和不能做的完整矩阵、知识门控的示例以及范围覆盖机制。

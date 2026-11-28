@@ -812,6 +812,184 @@ def test_mark_fixed_falls_back_to_the_flat_legacy_stub_when_the_fix_tree_has_non
     assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % fix)
 
 
+def _lease_fix(world, fid, body="a = 1\nb = 2\nc = 4\n"):
+    """A fix commit naming `fid` in a `Fixes-Review:` trailer, made off the branch the way a lease makes it; the branch is checked out again."""
+    world.git("checkout", "-q", "-b", "lease-side")
+    fix = world.commit("f.py", body=body, msg="fix(x): z\n\nFixes-Review: %s\nPR-TASK: 1" % fid)
+    world.git("checkout", "-q", BRANCH)
+    return fix
+
+
+def test_a_landing_pick_marks_the_planted_high_finding_its_trailer_names(world):
+    """DT10: the lead runs the printed `git cherry-pick -x` itself, and the post-bash hook marks the finding the picked commit's `Fixes-Review:` trailer names, fixed by the LANDED sha. CONTROL: the next call, with HEAD unmoved, marks nothing again."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    assert R.parse(world.review_file(sha).read_text()).findings[0].severity == "high"
+    fix = _lease_fix(world, fid)
+    world.hook("git status")
+    world.git("cherry-pick", "-x", fix)
+    landed = world.git("rev-parse", "HEAD").stdout.strip()
+    assert landed != fix
+    _rc, out, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    text = _context(out)
+    assert "Fixes-Review %s marked fixed %s" % (fid, landed[:10]) in text, text
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % landed)
+    assert review.findings[1].resolution == "open", "a finding no trailer names was marked"
+    _rc, again, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    assert "Fixes-Review" not in _context(again)
+
+
+def test_a_trailer_naming_an_already_closed_finding_leaves_it(world):
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    fix = _lease_fix(world, fid)
+    first = world.commit("f.py", body="a = 1\nb = 2\nc = 5\n")
+    R.mark(world.repo, BRANCH, fid, "fixed", [first], "deadbeef")
+    world.hook("git status")
+    world.git("cherry-pick", "-x", "--strategy-option=theirs", fix)
+    _rc, out, _e, _t = world.hook("git cherry-pick -x %s" % fix)
+    assert "Fixes-Review %s" % fid in _context(out)
+    assert "already closed" in _context(out)
+    review = R.parse(world.review_file(sha).read_text())
+    assert review.findings[0].resolution.startswith("fixed %s | deadbeef " % first)
+
+
+def test_a_trailer_the_mark_refuses_is_named_with_the_manual_command(world):
+    """A trailer on a commit that does not touch the finding's file is refused by the mark's own checks, and said so."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    world.commit("other.py", body="z = 1\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "Fixes-Review %s NOT marked" % fid in text, text
+    assert "worklist.py --review-mark deadbeef %s" % fid in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+def test_an_empty_fixes_review_line_does_not_capture_the_next_trailer(world):
+    """f8f8c82a.2: `Fixes-Review:` with no id, followed by a one-word trailer line (`PR-TASK:`), names no finding; the pattern blank must not cross the newline and send `PR-TASK:` to --review-mark. CONTROL: the same commit with an id still marks it."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review:\nPR-TASK:")
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "PR-TASK" not in text, text
+    assert "Fixes-Review" not in text, text
+    world.commit(
+        "f.py",
+        body="a = 1\nb = 2\nc = 5\n",
+        msg="fix(x): z\n\nFixes-Review: %s\nPlan-Box: none -- x" % fid,
+    )
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    assert "Fixes-Review %s marked fixed" % fid in _context(out), _context(out)
+
+
+def test_a_range_over_the_scan_cap_is_named_not_silently_skipped(world):
+    """f8f8c82a.1: more than FIXES_SCAN_MAX commits after one command is a pull or a reset, so no trailer is marked, and the skip is said with the ids and the manual command. CONTROL: a range inside the cap marks the same trailer."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    world.hook("git status")
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i)
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert "Fixes-Review %s not marked: the range holds more than 50 commits" % fid in text, text
+    assert "worklist.py --review-mark deadbeef" in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+def test_an_over_cap_notice_counts_the_ids_past_the_eighth(world):
+    """e81cd4f8.1: the notice names the first eight ids and says how many more, so none vanishes."""
+    sha = world.commit()
+    world.run_child(sha)
+    world.hook("git status")
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i)
+    ids = ["%s.%d" % (sha[:8], n) for n in range(1, 12)]
+    world.commit(
+        "f.py",
+        body="a = 1\nb = 2\nc = 4\n",
+        msg="fix(x): z\n\n" + "\n".join("Fixes-Review: %s" % i for i in ids),
+    )
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    text = _context(out)
+    assert ids[7] in text, text
+    assert ids[8] not in text, text
+    assert "and 3 more" in text, text
+
+
+def test_an_over_cap_range_in_a_lease_is_named_for_the_report(world):
+    """e81cd4f8.2: inside a lease an over-cap range prints a notice too (no --review-mark from a lease)."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    lease = world.repo / ".claude" / "worktrees" / "l2"
+    world.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
+    env = {"CLAUDE_PROJECT_DIR": str(lease)}
+    world.hook("git status", cwd=lease, extra_env=env)
+    for i in range(51):
+        world.git("commit", "-q", "--allow-empty", "-m", "filler %d" % i, repo=lease)
+    (lease / "f.py").write_text("a = 1\nb = 2\nc = 4\n", encoding="utf-8")
+    world.git("commit", "-q", "-m", "fix(x): z\n\nFixes-Review: %s" % fid, "--", "f.py", repo=lease)
+    _rc, out, _e, _t = world.hook("git commit -m z -- f.py", cwd=lease, extra_env=env)
+    text = _context(out)
+    assert "Fixes-Review %s not read: the range holds more than 50 commits" % fid in text, text
+    assert "--review-mark" in text, text
+    assert "never" in text, text
+
+
+def test_a_head_that_is_not_a_fast_forward_marks_nothing(world):
+    """f8f8c82a.1: a reset followed by a new commit (a HEAD that does not descend from the recorded one) is not a landing, so its trailer is neither marked nor reported."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    tip = world.commit("g.py", body="x = 1\n", msg="feat(x): g")
+    world.hook("git status")
+    world.git("reset", "-q", "--hard", sha)
+    assert world.git("merge-base", "--is-ancestor", tip, "HEAD", check=False).returncode != 0
+    world.commit("f.py", body="a = 1\nb = 2\nc = 4\n", msg="fix(x): z\n\nFixes-Review: %s" % fid)
+    _rc, out, _e, _t = world.hook("git commit -m z")
+    assert "Fixes-Review" not in _context(out), _context(out)
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
+@pytest.mark.parametrize(
+    "project_dir",
+    [lambda repo, _lease: repo, lambda _repo, lease: lease],
+    ids=["project-is-the-main-checkout", "project-is-the-lease"],
+)
+def test_a_lease_commit_names_its_trailer_for_the_report_and_marks_nothing(world, project_dir):
+    """Inside a lease the commit is not the landed one: the trailer is named back to the writer (its report says fixed by that commit), and the record stays open until the landing pick. A writer's project directory is the main checkout (measured in a round-44 lease, where the note never fired), and the lease's HEAD is recorded from the call's cwd."""
+    sha = world.commit()
+    world.run_child(sha)
+    fid = "%s.1" % sha[:8]
+    lease = world.repo / ".claude" / "worktrees" / "l1"
+    world.git("worktree", "add", "-q", "--detach", str(lease), "HEAD")
+    env = {"CLAUDE_PROJECT_DIR": str(project_dir(world.repo, lease))}
+    world.hook("git status", cwd=lease, extra_env=env)
+    (lease / "f.py").write_text("a = 1\nb = 2\nc = 4\n", encoding="utf-8")
+    world.git("commit", "-q", "-m", "fix(x): z\n\nFixes-Review: %s" % fid, "--", "f.py", repo=lease)
+    leased = world.git("rev-parse", "HEAD", repo=lease).stdout.strip()
+    _rc, out, _e, _t = world.hook("git commit -m z -- f.py", cwd=lease, extra_env=env)
+    text = _context(out)
+    want = "Fixes-Review %s in lease commit %s: name it fixed by %s in the report" % (
+        fid,
+        leased[:10],
+        leased[:10],
+    )
+    assert want in text, text
+    assert R.parse(world.review_file(sha).read_text()).findings[0].resolution == "open"
+
+
 def test_mark_not_a_bug_needs_a_resolvable_citation(world):
     sha = world.commit()
     world.run_child(sha)
@@ -1557,7 +1735,7 @@ def test_the_worklist_arm_supplies_the_triage_verdict_and_the_transcript_check(
     tmp_path, monkeypatch
 ):
     """worklist._review_cli hands wl_review.verb the fold as (state, text, triage verdict) and an `asked_ok` reading the lead transcript, so wl_review never imports wl_checks (PLAN-deferred-findings-block-merge L2)."""
-    wl = wlfix.import_wl("worklist")
+    wl = wlfix.import_wl("worklist").CLI
     transcript = _transcript(tmp_path, "2026-10-08T10:00:30+00:00")
     fold = types.SimpleNamespace(
         items=[

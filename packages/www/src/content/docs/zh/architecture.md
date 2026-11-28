@@ -9,8 +9,8 @@ tags:
 subcategory: architecture
 order: 0
 language: zh
-sourceHash: "146542a7b1508613"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "2b96a611633a6129"
+sourceCommit: "45ae253620c97f781ac426d3a84bca6b9a8bc528"
 ---
 
 # 架构
@@ -239,6 +239,8 @@ rdc config audit verify
 > 此文件包含敏感数据（SSH 私钥、LUKS 凭据、Cloudflare 令牌）。它以 `0600` 权限存储（仅所有者可读写）。请勿共享或提交到版本控制系统。当任何 `rdc` 命令读取此文件时，敏感字段默认会被[编辑](/en/docs/ai-agents-safety)：纯文本仅在交互式人工 TTY 上使用 `--reveal` 时显示。
 
 ### Envelope v2 和服务器端强制执行
+
+谁能看到什么、密钥如何划定范围，请参阅[安全模型](/zh/docs/security-model)。
 
 当配置同步到[加密配置存储](/en/docs/config-storage)时，CLI 为每个敏感字段包装一个按字段 HMAC 承诺，并在纯文本 envelope 中携带这些承诺。服务器仅看到十六进制摘要：绝不看到值：但可对每次写操作强制执行知识门控：
 

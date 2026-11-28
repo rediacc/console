@@ -1,32 +1,26 @@
 name: CD - Release to Stable
 
 on:
-  schedule:
-    - cron: '0 6 * * *' # Daily at 6:00 UTC
+  # Dispatch only (PLAN-retire-nightlies-and-mentions D1): no schedule and no
+  # workflow_run trigger, so nothing promotes stable by itself. The TEST EVIDENCE
+  # is the newest completed scheduled Console CI run on main, weekly: the "Find
+  # the weekly fleet run" step reads it, and check_soak_period waives the soak
+  # only when that run is at most 8 days old, is green or red on drift steps
+  # only (nightly_tested_edge.drift_steps(), PLAN-plan-per-pr-loop R1), and its
+  # head provably contains the edge tag's commit. Anything else is no waiver and
+  # the 7-day soak decides. `force` skips both.
   workflow_dispatch:
     inputs:
       force:
         description: 'Force promotion (skip 7-day soak period)'
         type: boolean
         default: false
-  # PLAN-health-checks-local D4 (ruling 6): the daily `CI - Drift` run fires
-  # this, in addition to the 06:00 soak run above. A drift run that concluded
-  # success or failure qualifies (every step of that job is drift by
-  # construction, so its reds keep the waiver); cancelled and startup_failure
-  # never do, and the promote job's `if:` keeps only the qualifying ones.
-  # The TEST EVIDENCE is the newest completed scheduled Console CI run on main,
-  # now weekly: the "Find the weekly fleet run" step reads it, and
-  # check_soak_period waives the soak only when that run is at most 8 days old,
-  # is green or red on drift steps only (nightly_tested_edge.drift_steps(),
-  # PLAN-plan-per-pr-loop R1), and its head provably contains the edge tag's
-  # commit. Anything else is no waiver and the 7-day soak decides.
-  workflow_run:
-    workflows: ["CI - Drift"]
-    types: [completed]
-    branches: [main]
+      dry_run:
+        description: 'Select and report only: every step after Check soak period is skipped'
+        type: boolean
+        default: false
 
-# The 06:00 soak run, a nightly-triggered run and a manual dispatch must never
-# promote at the same time. Queued, never cancelled: a cancelled promotion
+# Two dispatches must never promote at the same time. Queued, never cancelled: a cancelled promotion
 # half-way through the R2/Docker writes is worse than a late one.
 concurrency:
   group: cd-release-stable
@@ -44,16 +38,6 @@ jobs:
   promote:
     name: Release to Stable
     runs-on: ubuntu-latest
-    # workflow_run fires on EVERY CI - Drift completion on main (red or green);
-    # only a scheduled drift run that concluded success or failure may proceed
-    # (cancelled and startup_failure never do; check_soak_period repeats that
-    # refusal from DRIFT_CONCLUSION). The schedule and workflow_dispatch
-    # triggers pass unconditionally, as before.
-    if: >-
-      github.event_name != 'workflow_run'
-      || (github.event.workflow_run.event == 'schedule'
-          && (github.event.workflow_run.conclusion == 'success'
-              || github.event.workflow_run.conclusion == 'failure'))
     # actions: read for check_soak_period's read of a failed nightly's jobs and
     # steps (actions/runs/<id>/jobs), pull-requests: read for the
     # `gh pr list --search label:rollback` guard,
@@ -71,8 +55,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          # Full commit graph and tags, no blobs: the nightly waiver runs
-          # `git merge-base --is-ancestor v<edge>^{commit} <nightly head_sha>`,
+          # Full commit graph and tags, no blobs: the weekly waiver runs
+          # `git merge-base --is-ancestor v<edge>^{commit} <weekly head_sha>`,
           # which a depth-1 checkout cannot answer (it would fall back to soak).
           fetch-depth: 0
           filter: blob:none
@@ -127,12 +111,12 @@ jobs:
           CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.list_channel_snapshots
 
-      # The test evidence for a drift-triggered run (D-promote): the newest
-      # completed scheduled Console CI run on main, at most 8 days old. No
-      # qualifying run writes conclusion=none, which check_soak_period reads as
-      # "no waiver", so the 7-day soak decides.
+      # The test evidence for a dispatch (D-promote): the newest completed
+      # scheduled Console CI run on main, at most 8 days old. No qualifying run
+      # writes conclusion=none, which check_soak_period reads as "no waiver", so
+      # the 7-day soak decides. A forced dispatch skips the read.
       - name: Find the weekly fleet run
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && github.event_name == 'workflow_run'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && inputs.force != true
         id: weekly
         env:
           GH_TOKEN: ${{ github.token }}
@@ -149,7 +133,6 @@ jobs:
           FORCE: ${{ inputs.force }}
           PROMOTE_TRIGGER: ${{ github.event_name }}
           EDGE_VERSION: ${{ steps.edge.outputs.version }}
-          DRIFT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
           NIGHTLY_HEAD_SHA: ${{ steps.weekly.outputs.head_sha }}
           NIGHTLY_CONCLUSION: ${{ steps.weekly.outputs.conclusion }}
           NIGHTLY_RUN_ID: ${{ steps.weekly.outputs.run_id }}
@@ -170,7 +153,7 @@ jobs:
       # aws cp, a partially-failed release) because its oracle -- git tags and
       # the Releases API -- is independent of the manifest it judges.
       - name: Assert the edge version is actually released
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
           CLOUDFLARE_R2_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
@@ -179,7 +162,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.assert_edge_tag_exists "${{ steps.soak.outputs.version }}"
 
       - name: Check for rollback labels
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true' && inputs.dry_run != true
         env:
           GH_TOKEN: ${{ github.token }}
           EDGE_DATE: ${{ steps.soak.outputs.date }}
@@ -202,7 +185,7 @@ jobs:
       # =====================================================================
 
       - name: Promote R2 artifacts (CLI, Repos)
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true' && inputs.dry_run != true
         env:
           AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
@@ -214,7 +197,7 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.promote_r2_to_stable
 
       - name: Login to GHCR
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true' && inputs.dry_run != true
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
@@ -222,12 +205,13 @@ jobs:
           password: ${{ github.token }}
 
       - name: Load well-known
+        if: inputs.dry_run != true
         run: grep '^WK_' .ci/config/well-known.env >> "$GITHUB_ENV"
 
       # The selected version's own tag (CD pushes <image>:<version> beside :edge),
       # never the moving :edge, which a release landing mid-run would change.
       - name: Promote Docker images (:<version> -> :stable)
-        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true'
+        if: steps.edge.outputs.skip != 'true' && steps.stable.outputs.same != 'true' && steps.soak.outputs.ready == 'true' && inputs.dry_run != true
         env:
           VERSION: ${{ steps.soak.outputs.version }}
         run: |
@@ -241,6 +225,7 @@ jobs:
           echo "Docker promotion complete"
 
       - name: Set promotion result
+        if: inputs.dry_run != true
         id: result
         run: |
           if [[ "${{ steps.edge.outputs.skip }}" == "true" ]] || \
@@ -251,8 +236,17 @@ jobs:
             echo "promoted=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Dry run summary
+        if: inputs.dry_run == true
+        run: |
+          {
+            echo "## Stable Promotion (dry run, nothing written)"
+            echo "- Selected version: ${{ steps.soak.outputs.version }} (newest edge: ${{ steps.edge.outputs.version }})"
+            echo "- Ready: ${{ steps.soak.outputs.ready }}, decided by: ${{ steps.soak.outputs.path }} (soak days: ${{ env.SOAK_DAYS }})"
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Summary
-        if: steps.result.outputs.promoted == 'true'
+        if: steps.result.outputs.promoted == 'true' && inputs.dry_run != true
         run: |
           {
             echo "## Stable Promotion"

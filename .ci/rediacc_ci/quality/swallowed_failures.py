@@ -114,16 +114,27 @@ TEXT, so a `(` inside a string keeps the folder swallowing lines. That is the tw
 `validate_blocker_quality` IS A THIN WRAPPER HERE. The rule (both banned-phrase lists, the 30-character floor) lives in `rediacc_ci.core.allowlist.validate_reason`, which the wrapper calls; it was once copied in from the retired `.ci/scripts/lib/blocker-validator.sh`. The wrapper keeps only the stream split.
 
 `ci_error` PRINTS `::error::<msg>` ON STDOUT UNDER CI=true AND `✗ <msg>` ON
-STDERR OTHERWISE. Both are reproduced, because `scripts/lib/shadow-gate.ts` strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.
+STDERR OTHERWISE. Both are reproduced, because the shadow gate (commit:bf054adcd4) strips either prefix to the same normalized finding and a port that always used one would still be equivalent, but a human reading a CI log would lose the annotation.
 
 `find ... | sort` IS SORTED HERE, unlike the sibling gate, so the finding ORDER
 is stable across machines. `sorted()` under `LC_ALL=C` is byte order, which is
 what `sort` gives.
 
-STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in `shadow-gate.ts`: "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
+STREAMS. The banner, the quoted source line under each finding and the advice block are bare `echo` on STDOUT; the finding identity lines are `log_error` on stderr. The twin's own comment about this split is in the shadow gate (commit:bf054adcd4): "the stderr half carries the `<path>:<line>: <var>: <reason>` identity, which is the half that decides equivalence, so the split costs precision rather
 than soundness."
+
+---- gate ----
+step: Swallowed failures
+needs: none
+selftest: true
+lane: quality-code
+why: a gate that captures a probe whose failure is indistinguishable from an empty
+     result reports success it never verified. This is the scanner for that class, and
+     it ran nowhere from the day it was written until 2026-09-08.
+---- end gate ----
 """
 
+import ast
 import json
 import os
 import pathlib
@@ -134,6 +145,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import allowlist
+from rediacc_ci.quality import seams
 
 # The seams the twin exposes so its own controls, and any gate test, can drive it against fixtures instead of the real tree.
 ROOT_ENV = "SWALLOWED_SCAN_ROOT"
@@ -397,7 +409,7 @@ def scan_text(text: str, file: str) -> list[Row]:
 # COLLAPSED 2026-09-09. This module used to carry its own copy of both banned-phrase tables, the 30-character floor and all four message bodies, 150 lines transcribed from `.ci/scripts/lib/blocker-validator.sh`. Two things had already drifted in that copy and neither was visible from here:
 #
 # * the messages spelled the separator `--` where the bash twin this module ports prints U+2014, so the two disagreed byte for byte on every rejection
-#     from line 2 onward. It never reddened anything because `shadow-gate`
+#     from line 2 onward. It never reddened anything because `shadow gate`
 # classifies only the ci_error line as a FINDING and the rest as chatter. * the trim was `re.sub(r"^[ \t]*", ...)`, space and tab only, where the twin's
 #     `sed 's/^[[:space:]]*//'` under LC_ALL=C also eats \v \f \r. A reason led by
 # a carriage return normalised to a different length in the two.
@@ -432,6 +444,14 @@ def scan_dirs(env: dict[str, str] | None = None) -> tuple[str, ...]:
     """The scanned directories: the seam, split on whitespace, or the default."""
     environ = os.environ if env is None else env
     override = environ.get(DIRS_ENV, "")
+    # Redirecting the scanned directories is a scan-root override like the root itself, so a process environment sets it only together with a scratch root.
+    if override and env is None and not seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV)):
+        print(
+            "NOTE: %s is ignored without a scratch %s inside the temp directory."
+            % (DIRS_ENV, ROOT_ENV),
+            file=sys.stderr,
+        )
+        override = ""
     if override:
         return tuple(override.split())
     return DEFAULT_SCAN_DIRS
@@ -452,8 +472,303 @@ def discover(root: pathlib.Path, dirs: tuple[str, ...]) -> list[pathlib.Path]:
     return [pathlib.Path(p) for p in sorted(out)]
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Run the gate. Exit 0 clean, 1 finding or refusal, 2 usage error."""
+# -----------------------------------------------------------------------------
+# THE PYTHON MODE (PLAN-silent-failure-sweep.md D7, box SF9).
+# -----------------------------------------------------------------------------
+#
+# THE SAME CLASS, WRITTEN IN PYTHON. A Stop hook handler catches everything, keeps nothing of the exception, and hands back the value a clean read would have given: `except Exception: return []`. The stop then reads "nothing to report" where the truth was "could not look". SF2 to SF7 named those failures by hand across the hook modules; this mode keeps the count from growing back.
+#
+# THE RULE (the plan's Context 6). A handler is a finding when it catches `Exception`, `BaseException` or everything (a bare `except:`), contains no `raise`, never reads the name it binds, and its LAST statement is `pass`, `continue`, a bare `return`, or a `return` / assignment of an empty value: None, False, 0, "", b"", an empty list, tuple, set or dict literal, or a no-argument `list()`, `dict()`, `set()`, `tuple()`, `str()` or `frozenset()`. False and 0 count because the SF5 writers waived exactly those shapes as swallows; a handler that returns a NON-empty sentinel ("unknown (the store could not be read)") already names its failure and is not one.
+#
+# THE WAIVER is the shell mode's marker, `# swallowed-failure-ok: <reason>`, on the line directly above the `except`, held to the same bar (`validate_blocker_quality`, the wrapper over `validate_reason`). A waiver one line too high covers nothing.
+#
+# THE RATCHET. `.ci/config/swallowed-except-baseline.json` maps a module to the count of unwaived findings it may still hold. A module above its row is red; a module BELOW its row is red too, telling the author to lower the row, which is what keeps the set shrinking. A module with no row allows 0. The row is hand-edited, never regenerated: a regeneration would absorb a fresh finding in a neighbouring module, and the counts are small enough to read.
+#
+# THE SEAM is its own: SWALLOWED_PY_SCAN_ROOT and SWALLOWED_PY_SCAN_DIR, not the shell mode's SWALLOWED_SCAN_ROOT. Every shell fixture test points the shell seam at a tree with no hook modules, and the shell mode's verdict on those trees must not change, so the Python half keeps reading the real hooks there.
+#
+# THE FLOOR. Fewer than PY_FLOOR modules is a refusal: 92 exist at 2026-11-23, and a scan that collapsed to a handful would print a clean ratchet over nothing.
+
+PY_ROOT_ENV = "SWALLOWED_PY_SCAN_ROOT"
+PY_DIR_ENV = "SWALLOWED_PY_SCAN_DIR"
+DEFAULT_PY_DIR = ".claude/hooks/stop"
+PY_FLOOR = 60
+PY_BASELINE_REL = ".ci/config/swallowed-except-baseline.json"
+PY_WAIVER = "# swallowed-failure-ok:"
+_EMPTY_CALLS = frozenset(("list", "dict", "set", "tuple", "str", "frozenset"))
+
+
+class PyRow:
+    """One FINDING or WAIVER row of the Python mode."""
+
+    __slots__ = ("file", "kind", "line", "reason", "text")
+
+    def __init__(self, kind: str, file: str, line: int, text: str, reason: str) -> None:
+        self.kind = kind
+        self.file = file
+        self.line = line
+        self.text = text
+        self.reason = reason
+
+
+def _is_empty_value(node: ast.expr | None) -> bool:
+    if node is None:
+        return True
+    if isinstance(node, ast.Constant):
+        return node.value in (None, False, 0, "", b"")
+    if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+        return not node.elts
+    if isinstance(node, ast.Dict):
+        return not node.keys
+    return (
+        isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id in _EMPTY_CALLS
+        and not node.args
+        and not node.keywords
+    )
+
+
+def _is_broad(handler: ast.ExceptHandler) -> bool:
+    caught = handler.type
+    if caught is None:
+        return True
+    names = caught.elts if isinstance(caught, ast.Tuple) else [caught]
+    return any(isinstance(n, ast.Name) and n.id in ("Exception", "BaseException") for n in names)
+
+
+_SCOPES = (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)
+
+
+def _reraises_here(node: ast.AST) -> bool:
+    """Whether a `raise` runs in the handler's own scope: one inside a nested def, lambda or class body only runs if that body is called, so it re-raises nothing."""
+    if isinstance(node, ast.Raise):
+        return True
+    if isinstance(node, _SCOPES):
+        # A handler statement that is itself a def, lambda or class only defines code; its body runs later, if ever.
+        return False
+    return any(
+        _reraises_here(child)
+        for child in ast.iter_child_nodes(node)
+        if not isinstance(child, _SCOPES)
+    )
+
+
+def is_swallowing_handler(handler: ast.ExceptHandler) -> bool:
+    """The Context 6 rule; see the block comment above."""
+    if not _is_broad(handler):
+        return False
+    for stmt in handler.body:
+        if _reraises_here(stmt):
+            return False
+        for node in ast.walk(stmt):
+            if handler.name and isinstance(node, ast.Name) and node.id == handler.name:
+                return False
+    last = handler.body[-1]
+    if isinstance(last, (ast.Pass, ast.Continue)):
+        return True
+    if isinstance(last, ast.Return):
+        return _is_empty_value(last.value)
+    if isinstance(last, ast.Assign):
+        return _is_empty_value(last.value)
+    if isinstance(last, ast.AnnAssign):
+        # A bare annotation (`x: T`) does nothing with the exception, so it swallows like `pass` (review 775034ca.1).
+        return last.value is None or _is_empty_value(last.value)
+    return False
+
+
+def py_scan_text(text: str, file: str) -> list[PyRow]:
+    """Every swallowing handler in `text`, as a FINDING or (waived) WAIVER row. Raises SyntaxError on a module that does not parse."""
+    tree = ast.parse(text, filename=file)
+    lines = text.split("\n")
+    owner: dict[ast.AST, str] = {}
+    for fn in ast.walk(tree):
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            for inner in ast.walk(fn):
+                owner[inner] = fn.name
+    rows: list[PyRow] = []
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ExceptHandler) and is_swallowing_handler(node)):
+            continue
+        above = lines[node.lineno - 2].strip() if node.lineno >= 2 else ""
+        # The innermost function wins: ast.walk visits outer functions first, so a nested def overwrites its parent's name.
+        shown = "%s in %s()" % (lines[node.lineno - 1].strip(), owner.get(node, "<module>"))
+        if above.startswith(PY_WAIVER):
+            reason = above[len(PY_WAIVER) :].removeprefix(" ")
+            rows.append(PyRow("WAIVER", file, node.lineno, shown, reason))
+        else:
+            rows.append(PyRow("FINDING", file, node.lineno, shown, ""))
+    return sorted(rows, key=lambda r: r.line)
+
+
+def py_discover(root: pathlib.Path, rel: str) -> list[pathlib.Path]:
+    """The hook modules: `<rel>/*.py`, not recursive, without the `test-*.py` controls."""
+    base = root / rel
+    if not base.is_dir():
+        return []
+    return sorted(p for p in base.glob("*.py") if p.is_file() and not p.name.startswith("test-"))
+
+
+def read_py_baseline(path: pathlib.Path) -> dict[str, int]:
+    """The ratchet's rows. A missing file is no rows (every module allows 0); an unreadable or malformed one raises ValueError naming what is wrong, never reads as empty."""
+    if not path.exists():
+        return {}
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise ValueError("%s cannot be read as JSON (%s)" % (path, exc)) from exc
+    files = doc.get("files") if isinstance(doc, dict) else None
+    if not isinstance(files, dict) or not all(
+        isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) and v > 0
+        for k, v in files.items()
+    ):
+        raise ValueError(
+            '%s must be {"files": {"<repo-relative module>": <positive count>}}' % path
+        )
+    return dict(files)
+
+
+def py_mode(json_rows: dict | None = None) -> int:
+    """Run the Python mode over the hook modules. 0 clean, 1 finding, ratchet drift or refusal."""
+    scratch = seams.scratch_root(PY_ROOT_ENV, os.environ.get(PY_ROOT_ENV, ""))
+    root = scratch or paths.repo_root()
+    # The directory is relative to the root, so redirecting it is honoured only together with a scratch root.
+    rel_override = os.environ.get(PY_DIR_ENV, "")
+    if rel_override and not scratch:
+        print(
+            "NOTE: %s is ignored without a scratch %s inside the temp directory."
+            % (PY_DIR_ENV, PY_ROOT_ENV),
+            file=sys.stderr,
+        )
+        rel_override = ""
+    rel = rel_override or DEFAULT_PY_DIR
+    modules = py_discover(root, rel)
+    if len(modules) < PY_FLOOR:
+        log.error(
+            "Python mode: %d module(s) under %s, floor %d. The scan is not seeing the hook "
+            "tree, so its verdict would mean nothing." % (len(modules), root / rel, PY_FLOOR)
+        )
+        if json_rows is not None:
+            json_rows.update({"ok": False, "scanned": len(modules), "refused": "floor"})
+        return 1
+    try:
+        baseline = read_py_baseline(root / PY_BASELINE_REL)
+    except ValueError as exc:
+        log.error("Python mode: %s. Refusing to report a verdict." % exc)
+        if json_rows is not None:
+            json_rows.update({"ok": False, "refused": "baseline"})
+        return 1
+
+    findings: list[PyRow] = []
+    waivers: list[PyRow] = []
+    for path in modules:
+        shown = str(path.relative_to(root))
+        try:
+            rows = py_scan_text(path.read_text(encoding="utf-8"), shown)
+        except (OSError, UnicodeDecodeError, SyntaxError) as exc:
+            log.error("Python mode: could not read or parse %s (%s)." % (shown, exc))
+            log.error("A scanner that cannot read a module reports it clean. Refusing a verdict.")
+            return 1
+        for row in rows:
+            (waivers if row.kind == "WAIVER" else findings).append(row)
+
+    waiver_bad = False
+    for waiver in waivers:
+        if not validate_blocker_quality(
+            "%s:%d (except)" % (waiver.file, waiver.line), waiver.reason, waiver.file
+        ):
+            waiver_bad = True
+
+    per_file: dict[str, list[PyRow]] = {}
+    for row in findings:
+        per_file.setdefault(row.file, []).append(row)
+    over: list[tuple[str, int, int]] = []
+    under: list[tuple[str, int, int]] = []
+    present = {str(p.relative_to(root)) for p in modules}
+    for name in sorted(set(per_file) | set(baseline)):
+        have = len(per_file.get(name, []))
+        allowed = baseline.get(name, 0)
+        if have > allowed:
+            over.append((name, have, allowed))
+        elif have < allowed:
+            under.append((name, have, allowed))
+    stale = sorted(name for name in baseline if name not in present)
+    ok = not over and not under and not waiver_bad
+
+    if json_rows is not None:
+        json_rows.update(
+            {
+                "ok": ok,
+                "scanned": len(modules),
+                "waived": len(waivers),
+                "baselined": sum(baseline.values()),
+                "findings": [{"file": r.file, "line": r.line, "text": r.text} for r in findings],
+                "over": [{"file": n, "count": h, "allowed": a} for n, h, a in over],
+                "under": [{"file": n, "count": h, "allowed": a} for n, h, a in under],
+            }
+        )
+        return 0 if ok else 1
+
+    print()
+    print("Swallowed exceptions (Python)")
+    print("============================================================")
+    print(
+        "%d hook module(s) scanned in %s; %d swallowing handler(s): %d waived, %d baselined "
+        "in %d module(s) of %s."
+        % (
+            len(modules),
+            rel,
+            len(findings) + len(waivers),
+            len(waivers),
+            sum(baseline.values()),
+            len(baseline),
+            PY_BASELINE_REL,
+        )
+    )
+    # The baselined debt is PRINTED every run, site by site, so it cannot be forgotten.
+    for name in sorted(baseline):
+        for row in per_file.get(name, []):
+            print("  baselined %s:%d: %s" % (row.file, row.line, row.text))
+    print()
+    if ok:
+        log.info(
+            "OK: no hook module holds more swallowing handlers than its baseline row, and no "
+            "row is above its count."
+        )
+        return 0
+    for name, have, allowed in over:
+        log.error("%s: %d swallowing handler(s), baseline allows %d:" % (name, have, allowed))
+        for row in per_file[name]:
+            log.error("  %s:%d: %s" % (row.file, row.line, row.text))
+    if over:
+        print()
+        print("Each one catches everything, keeps nothing of the exception, and hands back the")
+        print("value a clean read would give, so the stop reads 'nothing to report'. Fix one way:")
+        print("  - Raise a typed read error the caller answers (wl_stack.StackReadError).")
+        print("  - Return the reason with the value, as (value, problem).")
+        print("  - Put the reason into the text of the check that already speaks on that path.")
+        print("  - Narrow the exception type to what the code really expects.")
+        print("  - Add '%s <reason>' on the line above the except when the" % PY_WAIVER)
+        print("    default genuinely is the answer. Do not add it to the baseline.")
+    for name, have, allowed in under:
+        if name in stale:
+            log.error(
+                "%s: baseline row %d names a module that is gone. Delete the row from %s."
+                % (name, allowed, PY_BASELINE_REL)
+            )
+        else:
+            log.error(
+                "%s: %d swallowing handler(s), baseline row says %d. Lower the row to %d in %s "
+                "(delete it at 0): a fixed site leaves the baseline in the same commit."
+                % (name, have, allowed, have, PY_BASELINE_REL)
+            )
+    return 1
+
+
+def shell_main(argv: list[str] | None = None, python_json: dict | None = None) -> int:
+    """The shell mode, unchanged in verdict. Exit 0 clean, 1 finding or refusal, 2 usage error.
+
+    `python_json` is the Python mode's JSON object, carried under a `python` key when `--json` is given, so one JSON document still reaches stdout.
+    """
     args = list(argv or [])
     if args and args[0] == "--selftest":
         return selftest()
@@ -469,8 +784,7 @@ def main(argv: list[str] | None = None) -> int:
             log.error("unknown argument: %s" % arg)
             return 2
 
-    override_root = os.environ.get(ROOT_ENV, "")
-    root = pathlib.Path(override_root).resolve() if override_root else paths.repo_root()
+    root = seams.scratch_root(ROOT_ENV, os.environ.get(ROOT_ENV, "")) or paths.repo_root()
     dirs = scan_dirs()
 
     files = discover(root, dirs)
@@ -520,17 +834,15 @@ def main(argv: list[str] | None = None) -> int:
             }
             for row in findings
         ]
-        print(
-            json.dumps(
-                {
-                    "ok": not findings and not waiver_bad,
-                    "scanned": len(files),
-                    "waived": len(waivers),
-                    "findings": rows,
-                },
-                separators=(", ", ": "),
-            )
-        )
+        doc = {
+            "ok": not findings and not waiver_bad,
+            "scanned": len(files),
+            "waived": len(waivers),
+            "findings": rows,
+        }
+        if python_json is not None:
+            doc["python"] = python_json
+        print(json.dumps(doc, separators=(", ", ": ")))
         return 0 if (not findings and not waiver_bad) else 1
 
     print()
@@ -569,9 +881,29 @@ def main(argv: list[str] | None = None) -> int:
     return 1
 
 
+def main(argv: list[str] | None = None) -> int:
+    """Run both modes: the shell scan, then the Python scan of the hook modules. The worse exit code wins.
+
+    An argument other than `--json` goes to the shell mode alone, which prints the help text (rc 0) or refuses (rc 2) exactly as it always did.
+    """
+    args = list(argv or [])
+    if args and args[0] == "--selftest":
+        return selftest()
+    if any(a != "--json" for a in args):
+        return shell_main(args)
+    if args:
+        py_json: dict = {}
+        rc_py = py_mode(py_json)
+        rc_sh = shell_main(args, python_json=py_json)
+        return max(rc_sh, rc_py)
+    rc_sh = shell_main(args)
+    rc_py = py_mode()
+    return max(rc_sh, rc_py)
+
+
 def selftest() -> int:
     """Both directions on every one of the four rules and on the classifier."""
-    ctl = Controls("swallowed-failures", floor=36, verbose=True)
+    ctl = Controls("swallowed-failures", floor=50, verbose=True)
 
     def rows(body: str) -> list[Row]:
         return scan_text(body, "F")
@@ -714,7 +1046,7 @@ def selftest() -> int:
     ctl.check("MIRROR: a line with no assignment yields no name", capture_var("echo $(probe)"), "")
 
     # -- the whole gate, over a fixture tree -------------------------------
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         root = pathlib.Path(tmp)
         scan = root / ".ci" / "scripts" / "quality"
         scan.mkdir(parents=True)
@@ -725,7 +1057,7 @@ def selftest() -> int:
             os.environ[ROOT_ENV] = str(root)
             os.environ[DIRS_ENV] = ".ci/scripts/quality"
             try:
-                return main([])
+                return shell_main([])
             finally:
                 for name, value in ((ROOT_ENV, saved_root), (DIRS_ENV, saved_dirs)):
                     if value is None:
@@ -741,7 +1073,7 @@ def selftest() -> int:
         (scan / "dirty.sh").write_text("v=$(probe || true)\necho done\n", encoding="utf-8")
         ctl.check("PLANT: one swallowed capture exits 1", run(), 1)
 
-    with tempfile.TemporaryDirectory() as tmp:
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
         empty_root = pathlib.Path(tmp)
 
         def run_empty() -> int:
@@ -750,7 +1082,7 @@ def selftest() -> int:
             os.environ[ROOT_ENV] = str(empty_root)
             os.environ[DIRS_ENV] = "nowhere"
             try:
-                return main([])
+                return shell_main([])
             finally:
                 for name, value in ((ROOT_ENV, saved_root), (DIRS_ENV, saved_dirs)):
                     if value is None:
@@ -764,8 +1096,130 @@ def selftest() -> int:
             1,
         )
 
+    # -- the Python mode (SF9) ------------------------------------------------
+    def py_rows(body: str) -> list[PyRow]:
+        return py_scan_text(body, "m.py")
+
+    def handler(body: str, caught: str = "Exception") -> str:
+        return "def f():\n    try:\n        g()\n    except %s:\n%s" % (caught, body)
+
+    ctl.check(
+        "PLANT: `except Exception: return []` is a finding",
+        len(py_rows(handler("        return []\n"))),
+        1,
+    )
+    ctl.check(
+        "PLANT: a bare `except: pass` is a finding",
+        len(py_rows("try:\n    g()\nexcept:\n    pass\n")),
+        1,
+    )
+    ctl.check(
+        "PLANT: a handler that binds exc and never reads it is a finding",
+        len(py_rows(handler("        return None\n", "Exception as exc"))),
+        1,
+    )
+    ctl.check(
+        "PLANT: `return False` is an empty value",
+        len(py_rows(handler("        return False\n"))),
+        1,
+    )
+    ctl.check("PLANT: assigning `{}` is a finding", len(py_rows(handler("        x = {}\n"))), 1)
+    ctl.check("MIRROR: a re-raise is not a finding", len(py_rows(handler("        raise\n"))), 0)
+    ctl.check(
+        "MIRROR: a handler that puts exc into its returned text is not a finding",
+        len(py_rows(handler('        return "read failed: %s" % exc\n', "Exception as exc"))),
+        0,
+    )
+    ctl.check(
+        "MIRROR: a non-empty sentinel names the failure",
+        len(py_rows(handler('        return "unknown"\n'))),
+        0,
+    )
+    ctl.check(
+        "MIRROR: a narrow exception type is not this class",
+        len(py_rows(handler("        return []\n", "OSError"))),
+        0,
+    )
+    py_waived = py_rows(
+        "def f():\n    try:\n        g()\n    # swallowed-failure-ok: the default is the conservative answer when the probe is unreachable\n"
+        "    except Exception:\n        return []\n"
+    )
+    ctl.check(
+        "CONTROL: a waiver directly above the except makes a WAIVER row",
+        [r.kind for r in py_waived],
+        ["WAIVER"],
+    )
+    ctl.truthy(
+        "CONTROL: a 30+ character waiver reason clears the bar",
+        validate_blocker_quality("x", py_waived[0].reason, "m.py"),
+    )
+    ctl.falsy(
+        "PLANT: a short waiver reason is refused",
+        validate_blocker_quality(
+            "x",
+            py_rows(
+                handler("        return []\n").replace(
+                    "    except", "    # swallowed-failure-ok: fine\n    except"
+                )
+            )[0].reason,
+            "m.py",
+        ),
+    )
+    with tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:
+        root = pathlib.Path(tmp)
+        hooks = root / DEFAULT_PY_DIR
+        hooks.mkdir(parents=True)
+
+        def py_run(count: int, row: int | None) -> int:
+            for k in range(PY_FLOOR):
+                body = handler("        return []\n") if k == 0 and count else "x = 1\n"
+                (hooks / ("m%02d.py" % k)).write_text(
+                    body * (count if k == 0 and count else 1), encoding="utf-8"
+                )
+            base = root / PY_BASELINE_REL
+            base.parent.mkdir(parents=True, exist_ok=True)
+            if row is None:
+                base.unlink(missing_ok=True)
+            else:
+                base.write_text(
+                    json.dumps({"files": {DEFAULT_PY_DIR + "/m00.py": row}}), encoding="utf-8"
+                )
+            saved = os.environ.get(PY_ROOT_ENV)
+            os.environ[PY_ROOT_ENV] = str(root)
+            try:
+                return py_mode({})
+            finally:
+                if saved is None:
+                    os.environ.pop(PY_ROOT_ENV, None)
+                else:
+                    os.environ[PY_ROOT_ENV] = saved
+
+        ctl.check("CONTROL: a module at its baseline row is green", py_run(1, 1), 0)
+        ctl.check("PLANT: a module above its baseline row is red", py_run(2, 1), 1)
+        ctl.check("PLANT: a module below its baseline row is red (lower the row)", py_run(1, 2), 1)
+        ctl.check("PLANT: a module with no row allows 0", py_run(1, None), 1)
+        ctl.check("CONTROL: no finding and no row is green", py_run(0, None), 0)
+        (hooks / "m00.py").unlink()
+        (hooks / "m01.py").unlink()
+        saved = os.environ.get(PY_ROOT_ENV)
+        os.environ[PY_ROOT_ENV] = str(root)
+        try:
+            ctl.check("VACUITY: fewer than the module floor is refused", py_mode({}), 1)
+        finally:
+            if saved is None:
+                os.environ.pop(PY_ROOT_ENV, None)
+            else:
+                os.environ[PY_ROOT_ENV] = saved
+
     return 0 if ctl.report() else 1
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_swallowed_failures.py",
+        sys.argv[1:],
+        switches=("--selftest", "--json", "--help", "-h"),
+    )
     raise SystemExit(main(sys.argv[1:]))

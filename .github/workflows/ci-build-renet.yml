@@ -134,9 +134,14 @@ jobs:
       # a real clang/bpf2go rebuild, before a fallback build silently ships
       # the wrong bytes.
       - name: Verify committed BPF objects match a clang rebuild
+        shell: bash
         run: |
           cd private/renet
-          git diff --exit-code -- pkg/ebpf/socketisolation_arm64_bpfel.o pkg/ebpf/socketisolation_x86_bpfel.o
+          committed=$(git ls-files -- 'pkg/ebpf/*_bpfel.o' | sort)
+          generated=$(find pkg/ebpf -name '*_bpfel.o' | sort)
+          [ -n "$committed" ] || { echo "::error::no committed BPF objects found"; exit 1; }
+          [ "$committed" = "$generated" ] || { echo "::error::committed and generated BPF object lists differ"; exit 1; }
+          git diff --exit-code -- 'pkg/ebpf/*_bpfel.o'
 
       - name: Run renet unit tests (repodiff/delta/fiemap/kernel/procwalk)
         run: |
@@ -155,6 +160,13 @@ jobs:
           PYTHONPATH=.ci python3 -m rediacc_ci.build.build_renet \
             --version "${{ inputs.next_version }}" \
             --output ./private/bin
+
+      # The Go dependency report of the module just built, at the pinned go-licenses
+      # (rediacc_ci.infra.build_renet GO_LICENSES_VERSION), renet's own packages
+      # ignored. It rides the renet-binaries artifact into private/bin/ so the six
+      # CLI SEA legs, which check out no submodule, still ship a real Go section.
+      - name: Write the Go dependency licence report
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet go-licenses ./private/bin/renet-go-licenses.csv
 
       # The step above states "OTLP credentials are NOT baked at build time any
       # more". Nothing verified it: check:ci-no-otlp-creds was in `npm run ci`
@@ -209,6 +221,7 @@ jobs:
             private/bin/csiprovisioner-linux-*
             private/bin/csisnapshotter-linux-*
             private/bin/snapshotcontroller-linux-*
+            private/bin/renet-go-licenses.csv
             private/bin/checksums.sha256
           retention-days: 1
           if-no-files-found: error
@@ -453,12 +466,15 @@ jobs:
           if-no-files-found: error
 
   # Native macOS/Windows tests for pkg/procwalk (the process-ancestry walker
-  # behind the agent-override legitimacy checks). renet's lint.sh analyzes the
-  # darwin/windows build tags statically (golangci-lint per GOOS), but the real
-  # kern.procargs2 / PEB ReadProcessMemory code paths only execute on their
-  # native OS, so this is their sole RUNTIME coverage. Scope is strictly
-  # ./pkg/procwalk/...: cmd/renet and pkg/ebpf need the BPF go:generate step
-  # (clang/libbpf), which exists only on the Linux runners.
+  # behind the agent-override legitimacy checks) and for pkg/chunkstore's hole
+  # punch twins. renet's lint.sh analyzes the darwin/windows build tags
+  # statically (golangci-lint per GOOS), but the real kern.procargs2 / PEB
+  # ReadProcessMemory and F_PUNCHHOLE / FSCTL_SET_ZERO_DATA code paths only
+  # execute on their native OS, so this is their sole RUNTIME coverage. Scope is
+  # strictly those two packages: cmd/renet and pkg/ebpf need the BPF go:generate
+  # step (clang/libbpf), which exists only on the Linux runners. The job keeps
+  # its Procwalk name because gate tests and the recorded lane durations key
+  # on it.
   platform-tests:
     name: Procwalk (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -677,3 +693,71 @@ jobs:
 
       - name: Proxy image smoke
         run: .ci/scripts/quality/check_proxy_image_smoke.py
+
+  # check:ci-proxy-wrangler-dev-e2e (agent/plans/PLAN-tooling-speed.md D8, box
+  # SP7): the proxy Worker and its executor container run TOGETHER under
+  # `wrangler dev`, and a valid bearer must reach `rdc serve --mode container`
+  # while a missing or inactive one gets 401 and starts no container.
+  #
+  # WHY A NATIVE-LINUX RUNNER. The gate needs a docker daemon whose host-gateway
+  # reaches workerd's egress listener. Docker Desktop (the WSL2 development
+  # hosts) cannot, so the gate refuses it with exit 77 and names this job; a
+  # hosted ubuntu-latest runner binds it on the docker0 bridge.
+  #
+  # WHY HERE AND NOT IN A QUALITY LANE. The image ships the release
+  # renet-linux-amd64 this workflow builds (or extracts), and a ci-quality.yml
+  # job cannot await a sibling reusable workflow's artifact, so it would have to
+  # build its own renet (submodule checkout, Go, embed assets, a production key),
+  # which no 15-minute lane holds. Beside proxy-image-smoke it downloads the same
+  # artifact on both the full and cached paths, and needs no secret, no submodule
+  # and no Go. The CLI bundle is built here for the reason the smoke builds its
+  # own: ci-build-docker.yml's cli-bundle artifact belongs to a sibling reusable
+  # workflow. Its own job, not a step of the smoke, so each is measured under its
+  # own display name.
+  #
+  # TIMEOUT 15. The gate's ready wait (READY_TIMEOUT_S in
+  # .ci/rediacc_ci/quality/proxy_wrangler_dev_e2e.py) plus one request timeout
+  # fits inside it with room for setup, and the gate's controls hold the two
+  # together, so a slow start is the gate's own finding, not a job kill.
+  proxy-wrangler-dev:
+    name: Proxy Wrangler Dev
+    runs-on: ubuntu-latest
+    needs: [build-renet, extract-renet]
+    # Plain checkout, an artifact from this same run and the local docker
+    # daemon. No registry credential, no secrets, no GitHub API; the image
+    # build's base image (workers/proxy/Dockerfile, a digest-pinned node:slim)
+    # is one anonymous Docker Hub pull.
+    permissions:
+      contents: read
+    if: ${{ !cancelled() && (needs.build-renet.result == 'success' || needs.extract-renet.result == 'success') }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # The image stage reads the tree's CLI bundle and the lockfile-pinned ssh2
+      # and cpu-features from node_modules (natives: true), exactly as
+      # proxy-image-smoke's does; the gate's fake account server runs under node.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          natives: 'true'
+          build-packages: 'true'
+
+      - name: Build the CLI bundle for the image stage
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+        with:
+          name: renet-binaries-${{ github.sha }}
+          path: private/bin/
+
+      # Artifacts drop the executable bit; the Dockerfile asserts `test -x`.
+      - name: Make the downloaded renet executable
+        run: chmod +x private/bin/renet-linux-amd64
+
+      - name: Install the proxy Worker's wrangler
+        run: npm ci --prefix workers/proxy
+
+      - name: Proxy wrangler dev e2e
+        run: npm run check:ci-proxy-wrangler-dev-e2e

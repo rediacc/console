@@ -1,6 +1,6 @@
 """`rediacc_ci.ops.derive_shadow_pass_list`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `scripts/ops/derive-shadow-pass-list.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr and the fake `gh`'s call log. The K=5 ledger `.ci/shadow/w9p3-derive-shadow-pass-list.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted and every
+WHILE BOTH COPIES EXISTED this file ran `scripts/ops/derive-shadow-pass-list.sh` and the port over the same throwaway root, one after the other, and compared exit code, stdout, stderr and the fake `gh`'s call log. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted and every
 case compares against `goldens/derive-shadow-pass-list/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE TWO STREAMS CARRY DIFFERENT HALVES OF THE ANSWER and both are compared. stdout is the deletable list, which is the artifact an operator acts on; stderr is every count, every SKIP line and the refusal, which is the reasoning that makes the list trustworthy. A port that printed the right list for the wrong reason would pass a stdout-only comparison, and a port that dropped a

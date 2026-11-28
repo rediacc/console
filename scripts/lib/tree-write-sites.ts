@@ -204,6 +204,13 @@ function joinVals(vals: Val[], resolve: boolean): Val {
   return { o: out.o, rel: null };
 }
 
+/** The directory `mkdtemp(prefix)` makes: a tree or scratch prefix keeps its origin, anything else is temp. */
+function mkdtempVal(p: Val): Val {
+  if (p.o === 'TREE' || p.o === 'REL') return { o: 'TREE', rel: null };
+  if (p.o === 'SCRATCH') return { o: 'SCRATCH', rel: null };
+  return TEMP;
+}
+
 export type FinalOrigin = 'TEMP' | 'OUTSIDE' | 'SCRATCH' | 'TREE' | 'UNRESOLVED';
 
 /** The value at a WRITE: a relative path lands under the gate's cwd, which is the repo root. */
@@ -355,6 +362,16 @@ const FS_SINKS: Record<string, number[]> = {
   createWriteStream: [0],
   open: [0],
 };
+
+/**
+ * scripts/lib/runtmp.ts, the per-run temp directory library, resolved by its repo-relative SOURCE (never by a bare
+ * function name, so a local `shared` stays unresolved). `runDir(prefix, base?)` and `shared(prefix, base?)` return
+ * `mkdtemp(<base or the temp root>/<stamp>)`, so their value follows the mkdtemp rule on `base`; each call with a `base`
+ * is a write site on that base, and `removeTree(x)` is an `rm` of x. Imported function returns are otherwise not
+ * followed across a module, which is why these three are named here.
+ */
+const RUNTMP_SOURCE = 'scripts/lib/runtmp.ts';
+const RUNTMP_SINKS: Record<string, number[]> = { runDir: [1], shared: [1], removeTree: [0] };
 
 const SCRIPT_EXT = /\.(py|mjs|cjs|js|ts|sh)$/;
 const ROOT_FN_NAMES = new Set(['findRepoRoot', 'repoRoot', 'getRepoRoot']);
@@ -1159,10 +1176,10 @@ class ModuleWalker {
     const args = cs(e, 'arguments');
     this.m.calls.push({ callee, args, scope, guard, fnPath });
     const ev = new Evaluator(this.a, this.m);
-    // `xs.push(v)` is a binding of `xs`: a later `for (const x of xs)` takes v's origin.
+    // `xs.push(v)` (and a Set's `xs.add(v)`) is a binding of `xs`: a later `for (const x of xs)` takes v's origin.
     const u = unwrap(callee);
     const obj = u?.type === 'MemberExpression' ? nameOf(unwrap(c(u, 'object'))) : null;
-    if (obj && ['push', 'unshift'].includes(propName(c(u, 'property')) ?? '')) {
+    if (obj && ['push', 'unshift', 'add'].includes(propName(c(u, 'property')) ?? '')) {
       for (const a of args)
         if (a && a.type !== 'SpreadElement')
           this.pendingAssign.push({ scope, name: obj, b: { kind: 'expr', expr: a, scope } });
@@ -1193,6 +1210,15 @@ class ModuleWalker {
       for (const i of idx) {
         const arg = args[i];
         if (arg) add(`fs.${base}`, arg, (x) => x.ev(arg, scope));
+      }
+      return;
+    }
+    const rtm = /^runtmp\.([A-Za-z]+)$/.exec(canon);
+    if (rtm) {
+      const fn = rtm[1] ?? '';
+      for (const i of RUNTMP_SINKS[fn] ?? []) {
+        const arg = args[i];
+        if (arg && arg.type !== 'SpreadElement') add(`runtmp.${fn}`, arg, (x) => x.ev(arg, scope));
       }
       return;
     }
@@ -1321,7 +1347,7 @@ class Evaluator {
     const imp = this.importOf(head, scope);
     let lead = head;
     if (imp) {
-      const fam = this.family(imp.spec);
+      const fam = this.family(imp.spec) ?? (imp.source === RUNTMP_SOURCE ? 'runtmp' : null);
       if (fam)
         lead = imp.imported === '*' || imp.imported === 'default' ? fam : `${fam}.${imp.imported}`;
     }
@@ -1596,14 +1622,10 @@ class Evaluator {
       return { o: 'REL', rel: null };
     if (canon === 'os.tmpdir') return TEMP;
     if (canon === 'os.homedir') return OUTSIDE;
-    if (/^fs(\.promises)?\.mkdtemp(Sync)?$/.test(canon)) {
-      const p = av(0);
-      return p.o === 'TREE' || p.o === 'REL'
-        ? { o: 'TREE', rel: null }
-        : p.o === 'SCRATCH'
-          ? { o: 'SCRATCH', rel: null }
-          : TEMP;
-    }
+    if (/^fs(\.promises)?\.mkdtemp(Sync)?$/.test(canon)) return mkdtempVal(av(0));
+    // runtmp's run dir is `mkdtemp(<base>/<stamp>)`, and with no base `mkdtemp(<temp root>/<stamp>)`.
+    if (canon === 'runtmp.runDir' || canon === 'runtmp.shared')
+      return args[1] ? mkdtempVal(av(1)) : TEMP;
     if (/^fs(\.promises)?\.realpath(Sync)?(\.native)?$/.test(canon)) return av(0);
     if (canon === 'process.cwd') return treeAt('');
     const u = unwrap(callee);
@@ -2029,6 +2051,21 @@ interface Plant {
 // A product-source directory for the BOUNDARY plant below, extension-less so the dead-path detector (test_gate_paths_exist.py) leaves the bare literal alone (Tier B only checks a literal that carries a known extension or ends in `/`); the plant's fixture filenames build the rest via template literal rather than a whole quoted `packages/.../w.ts` literal.
 const PRODUCT_W_DIR = 'packages/cli/src';
 
+/** Line N of the RUNTMP plant is line N of this text; the stub has no fs call, so every site is the caller's. */
+const RUNTMP_PLANT_HEAD = (spec: string): string =>
+  "import fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\n" +
+  `import { runDir, shared, removeTree } from '${spec}';\n` +
+  'const ROOT = path.resolve(import.meta.dirname);\n' +
+  "fs.writeFileSync(path.join(shared('a-'), 'f'), '');\n" +
+  "fs.writeFileSync(path.join(runDir('b-', os.tmpdir()), 'f'), '');\n" +
+  "fs.writeFileSync(path.join(runDir('c-', ROOT), 'f'), '');\n" +
+  "removeTree(path.join(ROOT, 'x'));\n" +
+  "runDir('d-', process.argv[2]);\n";
+const RUNTMP_PLANT_STUB =
+  'export function runDir(p: string, b?: string): string { return p + (b ?? ""); }\n' +
+  'export function shared(p: string, b?: string): string { return p + (b ?? ""); }\n' +
+  'export function removeTree(t: string): void { void t; }\n';
+
 const PLANTS: Plant[] = [
   {
     label: 'C1: the lint-rule-liveness wave-2 shape is TREE at both sites',
@@ -2107,6 +2144,28 @@ const PLANTS: Plant[] = [
   },
   {
     label:
+      'ADD: a Set that only receives mkdtemp dirs through .add(v) makes its loop write TEMP (review 013da5e0.1)',
+    entry: 'g.ts',
+    files: {
+      'g.ts':
+        "import fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\nconst owned = new Set<string>();\nowned.add(fs.mkdtempSync(path.join(os.tmpdir(), 'o-')));\nfor (const d of owned) fs.rmSync(d, { recursive: true });\n",
+    },
+    want: (st) =>
+      st.filter((x) => x.sink === 'fs.rm').every((x) => x.origin === 'TEMP') &&
+      st.some((x) => x.sink === 'fs.rm'),
+  },
+  {
+    label:
+      'ADD: the same loop over a Set given a repo path through .add(v) stays TREE, so the binding is not a blanket TEMP',
+    entry: 'g.ts',
+    files: {
+      'g.ts':
+        "import fs from 'node:fs';\nconst owned = new Set<string>();\nowned.add(process.cwd());\nfor (const d of owned) fs.rmSync(d, { recursive: true });\n",
+    },
+    want: (st) => st.some((x) => x.sink === 'fs.rm' && x.origin === 'TREE'),
+  },
+  {
+    label:
       'C3 PARAM: a parameter called with the repo root is TREE; the same body called with mkdtemp is TEMP',
     entry: 'g.ts',
     files: {
@@ -2160,6 +2219,30 @@ const PLANTS: Plant[] = [
         "import path from 'node:path';\nexport const ROOT = path.resolve(import.meta.dirname);\n",
     },
     want: (st) => st.length === 1 && st[0]?.origin === 'TREE',
+  },
+  {
+    label:
+      'RUNTMP: runDir/shared from scripts/lib/runtmp.ts are temp with no base or a temp base; a ROOT base, a removeTree of ROOT, and an argv base still red',
+    entry: 'g.ts',
+    files: {
+      'g.ts': RUNTMP_PLANT_HEAD('./scripts/lib/runtmp.js'),
+      [RUNTMP_SOURCE]: RUNTMP_PLANT_STUB,
+    },
+    want: (st) =>
+      st.map((x) => `${x.line}:${x.sink}:${x.origin}`).join(' ') ===
+      '6:fs.writeFile:TEMP 7:fs.writeFile:TEMP 7:runtmp.runDir:TEMP 8:fs.writeFile:TREE 8:runtmp.runDir:TREE 9:runtmp.removeTree:TREE 10:runtmp.runDir:UNRESOLVED',
+  },
+  {
+    label:
+      'CONTROL: the same names imported from any other module are not runtmp, and the write stays UNRESOLVED',
+    entry: 'g.ts',
+    files: {
+      'g.ts': RUNTMP_PLANT_HEAD('./scripts/lib/other.js'),
+      'scripts/lib/other.ts': RUNTMP_PLANT_STUB,
+    },
+    want: (st) =>
+      st.map((x) => `${x.line}:${x.sink}:${x.origin}`).join(' ') ===
+      '6:fs.writeFile:UNRESOLVED 7:fs.writeFile:UNRESOLVED 8:fs.writeFile:UNRESOLVED',
   },
 ];
 

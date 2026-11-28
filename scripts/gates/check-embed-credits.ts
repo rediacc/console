@@ -126,18 +126,39 @@ function main(): void {
 
   // 1b. ATTRIBUTION URLS MUST NAME THE VERSION ACTUALLY SHIPPED.
   //
-  // Found by review on PR #551 after a k3s/zot bump moved `version` and left upstreamSourceUrl/plannedMirrorUrl pointing at the PREVIOUS release. These are not decorative: credits.ts prints them verbatim as "Source:" and "Mirror:", and this file exists to satisfy Apache-2.0 s4 source attribution for the embedded binaries. A URL naming a different release than the one shipped is a
+  // Found by review on PR #551 after a k3s/zot bump moved `version` and left upstreamSourceUrl/mirrorUrl pointing at the PREVIOUS release. These are not decorative: credits.ts prints them verbatim as "Source:" and "Mirror:", and this file exists to satisfy Apache-2.0 s4 source attribution for the embedded binaries. A URL naming a different release than the one shipped is a
   // compliance defect, not a typo -- it offers the user a source archive that is not the source of what they are running.
   //
   // Substring, not equality, because the two URL shapes differ (a GitHub archive path repeats the version, a mirror names a tarball) and the point is only that neither can still be naming a version we no longer ship.
   for (const [base, c] of components) {
-    for (const field of ['upstreamSourceUrl', 'plannedMirrorUrl'] as const) {
+    for (const field of ['upstreamSourceUrl', 'mirrorUrl'] as const) {
       const url = c[field];
       if (url === '') continue;
+      if (typeof url !== 'string') {
+        errors.push(
+          `${base}: ${field} is missing from the lockfile (an empty string says there is none)`
+        );
+        continue;
+      }
       if (!url.includes(c.version)) {
         errors.push(`${base}: ${field} does not name version '${c.version}' — ${url}`);
       }
     }
+  }
+
+  // 1c. Every component pins the sha256 of its source archive, and a static library carries a licence and a source URL: the mirror upload refuses an unpinned component, so the gap is caught here first.
+  for (const [base, c] of components) {
+    if (!/^[0-9a-f]{64}$/.test(c.sourceSha256 ?? '')) {
+      errors.push(`${base}: sourceSha256 is missing or not a 64-character lowercase hex digest`);
+    }
+  }
+  for (const l of lock.staticLibraries ?? []) {
+    if (!l.spdx || !l.license || !l.upstreamSourceUrl) {
+      errors.push(`static library '${l.name}' lacks spdx, license or upstreamSourceUrl`);
+    }
+  }
+  if ((lock.staticLibraries ?? []).length === 0) {
+    errors.push('the lockfile lists no static libraries for rsync; rsync is linked statically');
   }
 
   // 2. Generated artifacts must be current.

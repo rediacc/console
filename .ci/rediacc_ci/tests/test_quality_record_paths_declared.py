@@ -39,11 +39,9 @@ POLICY = {
         },
     ],
 }
-#: The seven gates whose only path to agent/worklist/*.jsonl was the gate table: each carried a notReader with a manifest.ts reason until F1 deleted it.
+#: The five gates whose only path to agent/worklist/*.jsonl was the gate table: each carried a notReader with a manifest.ts reason until F1 deleted it.
 TABLE_IMPORTERS = (
     "check:ci-embed-asset-versions",
-    "check:ci-gates-lock",
-    "check:ci-gen-manifest",
     "check:ci-package-key-budget",
     "check:ci-pin-registry",
     "check:ci-selftest-reachability",
@@ -52,15 +50,9 @@ TABLE_IMPORTERS = (
 
 
 @pytest.fixture
-def gate(monkeypatch):
-    """The gate module, loaded by file (its `import _cipath` only puts `.ci` on sys.path, which pytest already has)."""
-    monkeypatch.setitem(sys.modules, "_cipath", type(sys)("_cipath"))
-    spec = importlib.util.spec_from_file_location("check_record_paths", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+def gate():
+    """The gate module, imported from the package that holds its logic."""
+    return importlib.import_module("rediacc_ci.quality.record_paths")
 
 
 def _findings(gate, root, entry, policy=POLICY):
@@ -149,16 +141,23 @@ def test_a_record_glob_only_in_the_gate_table_or_trace_ledger_makes_no_reader(ga
     assert not reads("trace-ledger")
 
 
+#: A record glob the real gate table still carries as a literal: the subject of the real-tree control below.
+TABLE_RECORD = ".ci/config/plan-boxes.json"
+
+
 def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
-    """The seven gates that import the gate table, against the real policy and lock: the table still holds an agent/worklist/** literal, and none of them is derived as a reader of the worklist record."""
-    assert "'agent/worklist/**'" in MANIFEST.read_text(encoding="utf-8"), (
+    """Every gate whose closure reaches the gate table (the TABLE_IMPORTERS floor and any gate that starts importing it), against the real policy and lock: the table still holds a record glob literal, and none of them is derived as a reader of that record THROUGH the table (bb047f9d.2). The subject was agent/worklist/** until 9a66691457 dropped check:ci-plan-bindings' declared paths, the last place the table named it; .ci/config/plan-boxes.json is a record glob the table still names (check:ci-plan-boxes' paths)."""
+    assert "'%s'" % TABLE_RECORD in MANIFEST.read_text(encoding="utf-8"), (
         "the control's subject moved"
     )
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
-    chosen = [g for g in lock if g["id"] in TABLE_IMPORTERS]
-    assert len(chosen) == len(TABLE_IMPORTERS), sorted(
-        set(TABLE_IMPORTERS) - {g["id"] for g in chosen}
-    )
+    # Review ec98a3e3.4: the subjects are every gate whose closure reaches manifest.ts, read from the lock, so a gate that starts importing the table (check:ci-gen-gates did) is covered without a hand-kept entry. TABLE_IMPORTERS stays as the floor.
+    chosen = [
+        g for g in lock if g.get("leaves") and MANIFEST.resolve() in gate.closure(g["leaves"], ROOT)
+    ]
+    missing = set(TABLE_IMPORTERS) - {g["id"] for g in chosen}
+    assert not missing, sorted(missing)
+    assert "check:ci-gen-gates" in {g["id"] for g in chosen}, "check:ci-gen-gates left the table"
     for g in chosen:
         files = gate.closure(g["leaves"], ROOT)
         assert MANIFEST.resolve() in files, "%s no longer imports the gate table" % g["id"]
@@ -169,14 +168,18 @@ def test_on_the_real_tree_the_gate_table_makes_no_reader(gate):
                 paths.from_root(".ci", "policy", "record-paths.json").read_text(encoding="utf-8")
             )
         )
-        if r["glob"] == WORKLIST
+        if r["glob"] == TABLE_RECORD
     ]
+    assert len(records) == 1, "SETUP: %s is no record glob in the policy" % TABLE_RECORD
     derived = gate.derive_readers(chosen, records, ROOT)[0]
-    assert derived[WORKLIST] == {}, derived[WORKLIST]
+    # No importer reads the record THROUGH the table: a reader derived for another reason (check:ci-gen-gates cites it through its own gen-docs.ts config read) is that gate's own citation, so only a manifest.ts citation fails here.
+    through_table = {gid: why for gid, why in derived[TABLE_RECORD].items() if "manifest.ts" in why}
+    assert through_table == {}, through_table
+    assert not set(derived[TABLE_RECORD]) & set(TABLE_IMPORTERS), derived[TABLE_RECORD]
 
 
 def test_the_seven_table_importers_listing_agent_are_flagged_through_declared(tmp_path):
-    """The real-tree control the F1 brief names, as a process: the real lock with `agent` added to those seven gates' `lists`. Each is flagged, every flag is the declared tier's, and none cites manifest.ts. MIRROR: the unplanted lock is green."""
+    """The real-tree control the F1 brief names, as a process: the real lock with `agent` added to those five gates' `lists`. Each is flagged, every flag is the declared tier's, and none cites manifest.ts. MIRROR: the unplanted lock is green."""
     lock = json.loads(LOCK.read_text(encoding="utf-8"))
     for g in lock:
         if g["id"] in TABLE_IMPORTERS:

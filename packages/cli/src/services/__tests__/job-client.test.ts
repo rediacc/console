@@ -148,6 +148,36 @@ describe('createEventLineReader spool-line ordinals', () => {
   });
 });
 
+describe('createEventLineReader large records', () => {
+  /**
+   * A `backup browse -o json` listing is one output event of several MiB, and SSH hands it over in many chunks. Each chunk used to be decoded on its own, so a multi-byte character split across a chunk boundary turned into U+FFFD and the listing came out corrupted; and the whole buffered partial line was re-split on every chunk, quadratic in the record size.
+   */
+  it('delivers a 3 MiB record whole when multi-byte characters straddle chunk boundaries', () => {
+    const msg = 'é'.repeat(3 * 512 * 1024); // 3 MiB of 2-byte characters
+    const line = `${JSON.stringify({ type: 'output', msg })}\n${JSON.stringify({ type: 'log', msg: 'after' })}\n`;
+    const bytes = Buffer.from(line);
+
+    const events: { type?: string; msg?: string }[] = [];
+    const seen: (number | undefined)[] = [];
+    const read = createEventLineReader((event, n) => {
+      events.push(event as { type?: string; msg?: string });
+      seen.push(n);
+    });
+
+    // An odd chunk size puts boundaries inside the 2-byte characters.
+    const chunkSize = 16 * 1024 + 1;
+    for (let off = 0; off < bytes.length; off += chunkSize) {
+      read(bytes.subarray(off, off + chunkSize));
+    }
+
+    expect(events).toHaveLength(2);
+    expect(events[0]?.msg?.length).toBe(msg.length);
+    expect(events[0]?.msg === msg).toBe(true);
+    expect(events[1]?.msg).toBe('after');
+    expect(seen).toEqual([1, 2]);
+  });
+});
+
 describe('createJobOutputCollector', () => {
   it('reconstructs stdout from output events, newline-terminated', () => {
     const collector = createJobOutputCollector();

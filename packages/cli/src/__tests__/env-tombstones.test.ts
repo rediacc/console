@@ -57,8 +57,10 @@ const BANNED: Banned[] = [
   { token: 'RDC_SKIP_SETUP_CHECK' },
   { token: 'RDC_DEBUG_RENET_PROVISION' },
   { token: 'RDC_TIMING_CHART' },
-  // The store's master password (#06c28cd5): renamed REDIACC_STORE_MASTER_PASSWORD /
-  // REDIACC_NEW_STORE_MASTER_PASSWORD, with no fallback read of the old names.
+  // The store's master password left with the password key slot (K1/K2/K4 of PLAN-rmcp-policy-record):
+  // no code reads any of its four names, the earlier STORE_MASTER_PASSWORD pair and the CONFIG_PASSWORD pair.
+  { token: 'REDIACC_STORE_MASTER_PASSWORD' },
+  { token: 'REDIACC_NEW_STORE_MASTER_PASSWORD' },
   { token: 'REDIACC_CONFIG_PASSWORD' },
   { token: 'REDIACC_NEW_CONFIG_PASSWORD' },
   // `docs/environment-variables.md:107` retires this in favour of the REDIACC_DEBUG scopes, and until 2026-09-09 nothing enforced it -- the bare name could not be added
@@ -73,7 +75,7 @@ const BANNED: Banned[] = [
   { token: 'loadServerConfig' },
   { token: 'saveServerConfig' },
   // The bare reserved-file literal is allowed only in the storage exclusion list.
-  { token: "'server.json'", allow: ['adapters/config-file-storage.ts'] },
+  { token: "'server.json'", allow: ['adapters/config-file-ops.ts'] },
 ];
 
 /** A locale message file: a `.json` anywhere under an `i18n/locales/` directory. */

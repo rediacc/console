@@ -61,7 +61,7 @@ def test_a_silent_stdin_is_refused_in_bounded_time():
     try:
         with _StdinFromFd(r):
             started = time.monotonic()
-            body, arrived = mod._read_document(seconds=1.0)
+            body, arrived = mod.CLI._read_document(seconds=1.0)
             elapsed = time.monotonic() - started
         assert arrived is False, "a stdin that produced nothing must not report a body"
         assert body == ""
@@ -111,7 +111,7 @@ def test_a_document_that_does_arrive_is_read_whole():
     t = threading.Thread(target=_write_slowly, daemon=True)
     t.start()
     with _StdinFromFd(r):
-        body, arrived = mod._read_document(seconds=5.0)
+        body, arrived = mod.CLI._read_document(seconds=5.0)
     t.join(timeout=5.0)
     assert arrived is True
     assert body == payload, "the document was truncated: got %d of %d chars" % (
@@ -123,8 +123,8 @@ def test_a_document_that_does_arrive_is_read_whole():
 def test_the_default_budget_is_a_real_bound():
     """A deadline nobody would wait out is a deadline in name only, and one of a few seconds would refuse a legitimate slow writer."""
     mod = _load()
-    assert 5.0 <= mod.STATE_STDIN_WAIT_SECONDS <= 120.0
-    assert mod.STATE_STDIN_WAIT_SECONDS > mod.STDIN_WAIT_SECONDS, (
+    assert 5.0 <= mod.CLI.STATE_STDIN_WAIT_SECONDS <= 120.0
+    assert mod.CLI.STATE_STDIN_WAIT_SECONDS > mod.STDIN_WAIT_SECONDS, (
         "the document budget must exceed the Stop-payload budget: a person or a "
         "generator producing 4 KB is not a hook pipe handing over a small JSON event"
     )

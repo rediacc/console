@@ -14,11 +14,13 @@ import type { SFTPClient } from '../../remote/sftp/index.js';
 import { EXIT_CODES, type MachineConfig } from '../../types/index.js';
 import { CliExitError } from '../../utils/cli-exit-error.js';
 import { askConfirm } from '../../utils/prompt.js';
+import { StatCheckedCache } from '../../utils/stat-checked-cache.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
 import { isSEA } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import type { ExtraMachine } from '../executor/types.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { previewTouchOption } from '../preview/touch.js';
 import { isSetupVerifiedFresh, recordSetupVerified } from './provision-state.js';
 import {
   assertRenetSourceClean,
@@ -61,11 +63,14 @@ export interface RenetSpawnOptions {
   skipRouterRestart?: boolean;
 }
 
+/** PATH lookups (`where`/`which`) already answered this process, by binary name; a miss is never cached, and a hit is re-checked on its file before reuse (StatCheckedCache states what that re-check does and does not prove). */
+const pathLookupCache = new StatCheckedCache();
+
 /**
  * Resolve a renet binary path, falling back to PATH lookup if the configured
  * path doesn't exist (e.g. stale config from another OS or worktree).
  */
-function resolveRenetPath(configuredPath: string): string {
+export function resolveRenetPath(configuredPath: string): string {
   // Absolute path, verify it exists before using it
   if (path.isAbsolute(configuredPath)) {
     try {
@@ -79,8 +84,14 @@ function resolveRenetPath(configuredPath: string): string {
   // Bare name or missing absolute, resolve via PATH (handles .exe on Windows)
   const cmd = process.platform === 'win32' ? 'where' : 'which';
   const name = path.isAbsolute(configuredPath) ? 'renet' : configuredPath;
+  const cached = pathLookupCache.get(name);
+  if (cached !== undefined) return cached;
   try {
-    return execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+    const found = execSync(`${cmd} ${name}`, { encoding: 'utf-8' }).trim().split(/\r?\n/)[0];
+    // `which`/`where` can exit 0 with no output; an empty answer is a miss and is never cached.
+    if (!found) throw new Error('empty PATH lookup');
+    pathLookupCache.set(name, found);
+    return found;
   } catch {
     throw new Error(
       `Renet binary not found at "${configuredPath}" and not in PATH. ` +
@@ -144,7 +155,7 @@ async function acquireReadOnly(
 ): Promise<RenetAcquireResult> {
   const executor = inExecutor();
   const inspected = await renetProvisioner.inspect(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     { localBinaryPath, ...(executor && { fresh: true }) },
     sftp
   );
@@ -203,7 +214,7 @@ async function confirmReplacement(
   const known = replacementAnswers.get(hostKey);
   if (known !== undefined) return known;
   const inspected = await renetProvisioner.inspect(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     { localBinaryPath },
     sftp
   );
@@ -275,12 +286,13 @@ export async function acquireRemoteRenet(
 
   const start = Date.now();
   const result = await renetProvisioner.provision(
-    sftpConfigForMachine(machine, sshPrivateKey),
+    sftpConfigForMachine(machine, sshPrivateKey, machineName),
     {
       localBinaryPath: uploadPath,
       restartServices,
       deferRouterRefresh: options.deferRouterRefresh,
       debug: options.debug,
+      ...previewTouchOption(options.machineName),
       ...(selection?.guarded === true && {
         uploadGuard: () => assertRenetSourceClean(selection.localBinaryPath, machine),
       }),

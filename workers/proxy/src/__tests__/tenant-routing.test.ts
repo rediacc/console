@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import worker, { type Env } from '../index';
 import type { ExecutorIssuerRpc } from '../issued-token';
-import type { PinAnswer } from '../org-executor';
+import type { PinAnswer } from '../org-executor-support';
 
 /** Which org a caller token belongs to; anything else is refused. */
 const ORG_OF: Record<string, string> = { rdt_a: 'org-a', rdt_b: 'org-b' };

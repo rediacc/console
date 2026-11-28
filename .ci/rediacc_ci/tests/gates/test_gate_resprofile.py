@@ -205,6 +205,22 @@ def test_seed_refuses_empty_corpus(gate):
         gate.log_pass("an empty seed is refused; accumulation is the only silent direction")
 
 
+def test_a_reseed_keeps_the_installed_anchor_the_kill_trigger_measures_from(gate):
+    gate.log_test("e7bba9da.1: seeding writes `installed` once and a later seed keeps it")
+    with harness.temp_dir() as work:
+        root = build_fixture(gate, work)
+        baseline = root / ".ci" / "config" / "resprofile-baseline.json"
+        gate.assert_exit(0, run_gate(root, "--seed", str(work / "quiet")), "first seed")
+        doc = json.loads(baseline.read_text(encoding="utf-8"))
+        gate.assert_contains(json.dumps(doc), "installed", "the first seed writes the anchor")
+        doc["installed"] = "2001-02-03T04:05:06Z"
+        baseline.write_text(json.dumps(doc), encoding="utf-8")
+        gate.assert_exit(0, run_gate(root, "--seed", str(work / "caps")), "second seed")
+        again = json.loads(baseline.read_text(encoding="utf-8"))
+        gate.assert_contains(again.get("installed", ""), "2001-02-03", "a reseed keeps the anchor")
+        gate.log_pass("a reseed cannot extend the kill-trigger window")
+
+
 def test_mutant_wall_scaling_removed(gate):
     gate.log_test("MUTANT: a no-op dilate must red the gate's own control")
     with harness.temp_dir() as work:

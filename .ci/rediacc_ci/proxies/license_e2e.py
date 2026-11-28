@@ -10,7 +10,7 @@ PRIVILEGE. The subject installs license fixtures under `/var/lib/rediacc/license
 with no env override, so passwordless sudo is a hard requirement, not a
 convenience, and its absence is cannot-run.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-license-e2e.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -118,4 +118,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("license_e2e.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

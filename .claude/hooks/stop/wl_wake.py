@@ -142,6 +142,31 @@ def wake_report(me: str, minutes: float, root: pathlib.Path) -> str:
     ) % (minutes, me, arm_command(me), listing)
 
 
+def _writers_now_due_in(me: str, root=None) -> float:
+    """Minutes until this session's next /writers-now round is due (at least 1), or WAKE_DEFAULT_MIN when no round is due to be waited for or the round ledger cannot be read. A timer armed without --minutes wakes no later than that, so an idle wait does not overshoot the round's WINDOW_MIN cadence (20 minutes since 2026-11-26) by up to a whole sleep (operator report 2026-11-25: rounds 63 to 107 min apart).
+
+    Only at an effort level where `writers-now-due` blocks or advises (wl_effort.advises): below it no round is asked for, so a session with no round row, or any other, keeps the plain sleep (review d09c81b0.1). `root` defaults to the repository this file sits in."""
+    try:
+        import wl_core as C
+        import wl_effort
+        import wl_planqueue
+        import wl_writersnow
+
+        root = pathlib.Path(root) if root else pathlib.Path(__file__).resolve().parents[3]
+        level = wl_planqueue.settings_for(root)[0].effort
+        if not wl_effort.advises("writers-now-due", level):
+            return float(WAKE_DEFAULT_MIN)
+        mine = [
+            r for r in wl_writersnow.read_rounds(root) if str(r.get("session", "")).startswith(me)
+        ]
+        if not mine:
+            return 1.0
+        age = (C.utcnow() - C.parse_stamp(mine[-1]["at"])).total_seconds() / 60.0
+        return max(1.0, wl_writersnow.WINDOW_MIN - age)
+    except Exception:
+        return float(WAKE_DEFAULT_MIN)
+
+
 def main(argv) -> int:
     args = list(argv[1:])
     if not args or not SESSION_RE.match(args[0]):
@@ -151,6 +176,8 @@ def main(argv) -> int:
     minutes: float = WAKE_DEFAULT_MIN
     rest = args[1:]
     # AN UNKNOWN ARGUMENT IS REFUSED. `wl_wake.py <me> --status` once armed a 30-minute timer instead of reporting one (2026-10-04), and a typo that arms a timer is a sleeper under the harness default timeout nobody asked for.
+    if not rest:
+        minutes = min(minutes, _writers_now_due_in(me))
     if rest[:1] == ["--minutes"]:
         try:
             minutes = float(rest[1])

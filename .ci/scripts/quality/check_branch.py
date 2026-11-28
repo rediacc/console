@@ -8,18 +8,17 @@ The three-line hop below is what makes a path invocation work at all: nothing pu
 NO `---- gate ----` HEADER, deliberately. `.ci/scripts/quality/check-branch.sh` carries none either: this pair is hand-registered in `.github/workflows/ci-quality.yml` and excused from the local gate set by `.ci/policy/.ci-parity-exempt`, and `check:ci-parity` is what holds those two ends together. Writing a header here would hand the step to `gate:bind`, which is a different
 change from moving which file the step runs.
 
-THE TWIN IS GONE. W7 P5 batch G2 deleted `.ci/scripts/quality/check-branch.sh` after `.ci/shadow/w7p2-branch.observations.jsonl` asserted equivalence over five distinct trees; its recorded bytes live in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha they were captured from.
+THE TWIN IS GONE. W7 P5 batch G2 deleted `.ci/scripts/quality/check-branch.sh` after the shadow ledger (deleted in commit:99a4de363d) asserted equivalence over five distinct trees; its recorded bytes live in `.ci/rediacc_ci/tests/goldens/`, headed with the blob sha they were captured from.
 
-THE LEDGER CONDITION IS MET. Driven 2026-09-08:
-
-    npx tsx scripts/lib/shadow-gate.ts --pair w7p2-branch --assert --k 5
-    -> equivalence holds over 5 distinct trees
+THE LEDGER CONDITION WAS MET. Driven 2026-09-08 with the shadow gate (deleted in commit:bf054adcd4): equivalence holds over 5 distinct trees.
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import branch
 
 if __name__ == "__main__":
+    _gate_args.parse("check_branch.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(branch.main(sys.argv[1:]))

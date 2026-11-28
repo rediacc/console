@@ -149,6 +149,15 @@ describe('SessionStore.sessionForExec (the X-Config-Session selection rule)', ()
     expect(store.sessionForExec(ALICE, first)).toBe(first);
   });
 
+  it('a tie on grantedAt goes to the later grant (reviews af915fdb.1, f4efd5b3.1)', async () => {
+    const store = new SessionStore({ now: () => 5_000_000 });
+    const first = await openAndGrant(store, ALICE);
+    const second = await openAndGrant(store, ALICE);
+
+    expect(store.sessionFor(ALICE)).toBe(second);
+    expect(store.sessionFor(ALICE)).not.toBe(first);
+  });
+
   it('refuses a named session that belongs to someone else, indistinguishably', async () => {
     const store = new SessionStore();
     const alices = await openAndGrant(store, ALICE);

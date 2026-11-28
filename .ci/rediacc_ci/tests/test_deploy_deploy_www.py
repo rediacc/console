@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.deploy_www` against its twin `.ci/scripts/deploy/deploy-www.sh`.
 
-A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+A RECORDING FAKE FOR `npx`/`npm` ON A SCRATCH PATH, INSIDE A FIXTURE REPO. Nothing here reaches Cloudflare; every case pins a fixture token, account and D1 state file, and the fake `npx` is a MODEL of `wrangler d1` rather than wrangler. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG AND THE GENERATED CONFIG ARE THE EVIDENCE. Everything the script prints goes through `log_step`/`log_info`, which any classifier reads as progress; the observable effect of a run is the ordered list of `npx wrangler` subcommands and the exact bytes of the `wrangler.preview.toml` the preview lane generates. The fake records both: every invocation as a `call: ` line in
@@ -20,6 +20,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tomllib
 import typing
 
 import pytest
@@ -28,6 +29,7 @@ from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_www as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
+from rediacc_ci.well_known import GH_REPO
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -987,3 +989,229 @@ def test_a_failed_preview_deploy_pushes_no_secret(tmp_path) -> None:
     proc, calls, _config = _run_live(root, "new", "--name", "pr-9", FAKE_NPX_FAIL_ON_CALL="5")
     assert proc.returncode != 0
     assert not any("secret put" in c for c in _calls(calls)), calls
+
+
+# ---- word-named previews (PLAN-preview-signer D5). Port only: the twin predates the names. ----
+
+
+WORD = "pv-able-baker-charlie"
+SHA_A = "a" * 64
+SHA_B = "b" * 64
+MANIFEST = {
+    "version": "1.4.0-preview.abc1234",
+    "releaseDate": "2026-11-23T00:00:00Z",
+    "releaseNotesUrl": "",
+    "commit": "abc1234",
+    "binaries": {
+        "linux-x64": {"url": "https://releases.example/cli/x/rdc-linux-x64", "sha256": SHA_A},
+        "mac-arm64": {"url": "https://releases.example/cli/x/rdc-mac-arm64", "sha256": SHA_B},
+    },
+}
+FORMAT_DIFF = """diff --git a/pkg/chunkstore/manifest.go b/pkg/chunkstore/manifest.go
+--- a/pkg/chunkstore/manifest.go
++++ b/pkg/chunkstore/manifest.go
+@@ -17,7 +17,7 @@
+-const ManifestVersion = 1
++const ManifestVersion = 2
+"""
+
+
+def _word_inputs(
+    root: pathlib.Path, *, diff: str = "", manifest: dict | None = None
+) -> tuple[str, ...]:
+    m = root / "manifest.json"
+    m.write_text(json.dumps(MANIFEST if manifest is None else manifest), encoding="utf-8")
+    d = root / "renet.diff"
+    d.write_text(diff, encoding="utf-8")
+    return ("--name", WORD, "--manifest", str(m), "--renet-diff", str(d))
+
+
+def test_a_word_named_preview_keeps_its_pr_numbered_database(tmp_path) -> None:
+    """The D1 is account-pr-<n> and is created and migrated before the preview's own signer is deployed; the fixture holds no signer template (box S2), so the run stops there, before the Worker deploy, naming the box."""
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", *_word_inputs(root), PR_NUMBER="42")
+    assert proc.returncode == 1, proc.stderr
+    names = _calls(calls)
+    assert "npx --no-install wrangler d1 create account-pr-42 --location eeur" in names
+    assert any(
+        n.startswith("npx --no-install wrangler d1 migrations apply account-pr-42") for n in names
+    )
+    assert not any(n.startswith("npx --no-install wrangler deploy") for n in names)
+    assert "box S2" in proc.stderr
+    assert "account-pv-" not in calls, "the database never takes the word name"
+
+
+def test_a_word_named_preview_without_a_pr_number_is_refused_before_any_call(tmp_path) -> None:
+    for label, pr in (("unset", None), ("letters", "4x")):
+        root = fixture(tmp_path / label)
+        if pr is None:
+            proc, calls, _config = _run_live(root, "new", *_word_inputs(root))
+        else:
+            proc, calls, _config = _run_live(root, "new", *_word_inputs(root), PR_NUMBER=pr)
+        assert proc.returncode == 1, label
+        assert "needs PR_NUMBER (digits)" in proc.stderr, label
+        assert _calls(calls) == [], label
+
+
+def test_a_signer_name_is_never_deployed_as_the_www_preview(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", "--name", "pv-able-baker-charlie-signer", PR_NUMBER="42"
+    )
+    assert proc.returncode == 1
+    assert "-signer name" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_the_old_pr_name_still_derives_its_database_from_the_name() -> None:
+    """The control: a pr-<n> name is the twin's lane and ignores PR_NUMBER."""
+    assert port.preview_db_name("pr-7", "") == ("account-pr-7", "")
+    assert port.preview_db_name("pr-7", "99") == ("account-pr-7", "")
+
+
+def _build(**over) -> dict:
+    marker = over.pop("marker", None)
+    return port.preview_build(WORD, json.dumps({**MANIFEST, **over}), marker)
+
+
+def test_preview_build_carries_one_sha256_per_platform_and_no_marker_means_no_format_change() -> (
+    None
+):
+    build = _build()
+    assert build == {
+        "name": WORD,
+        "version": "1.4.0-preview.abc1234",
+        "sha256": {"linux-x64": SHA_A, "mac-arm64": SHA_B},
+        "formatChange": None,
+    }
+
+
+@pytest.mark.parametrize(
+    ("over", "reason"),
+    [
+        ({"binaries": {}}, "lists no binary"),
+        ({"binaries": {"linux-x64": {"sha256": "abc"}}}, "no valid sha256"),
+        ({"version": ""}, "names no version"),
+    ],
+)
+def test_a_manifest_that_proves_nothing_is_refused(over, reason) -> None:
+    with pytest.raises(port.PreviewBuildError, match=reason):
+        _build(**over)
+
+
+def test_a_marker_file_reaches_format_change_and_a_malformed_one_is_refused() -> None:
+    marker = json.dumps({"formats": ["chunkstore manifest v2"], "reason": "new chunk index"})
+    assert _build(marker=marker)["formatChange"] == {
+        "formats": ["chunkstore manifest v2"],
+        "reason": "new chunk index",
+    }
+    with pytest.raises(port.PreviewBuildError, match="must be"):
+        _build(marker=json.dumps({"formats": [], "reason": "x"}))
+
+
+def test_the_format_backstop_sees_a_changed_constant_and_ignores_other_lines() -> None:
+    assert port.format_constant_changes(FORMAT_DIFF) == [
+        "pkg/chunkstore/manifest.go: ManifestVersion"
+    ]
+    unrelated = FORMAT_DIFF.replace("const ManifestVersion = 2", "// ManifestVersion is documented")
+    unrelated = unrelated.replace("-const ManifestVersion = 1", "-// old comment")
+    assert port.format_constant_changes(unrelated) == []
+    other_file = FORMAT_DIFF.replace("pkg/chunkstore/manifest.go", "pkg/other/thing.go")
+    assert port.format_constant_changes(other_file) == []
+
+
+def test_a_format_constant_change_without_a_marker_refuses_before_any_call(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", *_word_inputs(root, diff=FORMAT_DIFF), PR_NUMBER="42"
+    )
+    assert proc.returncode == 1
+    assert "on-disk format constant (pkg/chunkstore/manifest.go: ManifestVersion)" in proc.stderr
+    assert _calls(calls) == []
+    marker = root.joinpath(*port.FORMAT_MARKER)
+    marker.write_text(
+        json.dumps({"formats": ["chunkstore manifest v2"], "reason": "r"}), encoding="utf-8"
+    )
+    proc, calls, _config = _run_live(
+        root, "new", *_word_inputs(root, diff=FORMAT_DIFF), PR_NUMBER="42"
+    )
+    assert "on-disk format constant" not in proc.stderr
+    assert _calls(calls), "with the marker the deploy proceeds"
+
+
+def test_a_typed_go_format_constant_is_seen_by_the_backstop() -> None:
+    """Review 53ad5866.1: `const VaultVersion uint32 = 3` sets a format constant as `VaultVersion = 3` does."""
+    diff = (
+        "--- a/pkg/functions/vault/schema.go\n"
+        "+++ b/pkg/functions/vault/schema.go\n"
+        "-const VaultVersion uint32 = 2\n"
+        "+const VaultVersion uint32 = 3\n"
+    )
+    assert port.format_constant_changes(diff) == ["pkg/functions/vault/schema.go: VaultVersion"]
+    # CONTROL: a line that only mentions the name is no change.
+    mention = diff.replace("= 3", "// bumped VaultVersion").replace("= 2", "// was VaultVersion")
+    assert port.format_constant_changes(mention) == []
+
+
+def test_a_fork_head_word_preview_is_refused_before_any_wrangler_call(tmp_path) -> None:
+    """Review 53ad5866.2: the D1 create and migrations must not run for a fork head."""
+    root = fixture(tmp_path)
+    event = root / "event.json"
+    event.write_text(
+        json.dumps(
+            {
+                "pull_request": {
+                    "head": {"repo": {"full_name": "fork/console"}},
+                    "base": {"repo": {"full_name": GH_REPO}},
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc, calls, _config = _run_live(
+        root, "new", *_word_inputs(root), PR_NUMBER="42", GITHUB_EVENT_PATH=str(event)
+    )
+    assert proc.returncode == 1, proc.stderr
+    assert "head repository is a fork" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_a_word_named_preview_without_its_manifest_or_diff_is_refused_before_any_call(
+    tmp_path,
+) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", WORD, PR_NUMBER="42")
+    assert proc.returncode == 1
+    assert "needs --manifest" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_the_word_preview_config_binds_its_own_signer_and_carries_its_build() -> None:
+    build = _build()
+    body = port.word_preview_toml(WORD, "account-pr-42", "u", build)
+    doc = tomllib.loads(body)
+    assert "SIGNERLESS_PREVIEW" not in body
+    assert "ED25519_PRIVATE_KEY" not in body
+    assert "signer-bench" not in "\n".join(x for x in body.splitlines() if not x.startswith("#"))
+    assert doc["vars"]["ENVIRONMENT"] == "preview"
+    assert json.loads(doc["vars"]["PREVIEW_BUILD"]) == build
+    signer = [svc for svc in doc["services"] if svc["binding"] == "LICENSE_SIGNER"]
+    assert signer == [
+        {
+            "binding": "LICENSE_SIGNER",
+            "service": WORD + "-signer",
+            "entrypoint": "LicenseSigner",
+            "props": {"tier": "shared", "region": "eu"},
+        }
+    ]
+    assert "route" not in doc
+    # The control: every other line is the twin's config.
+    service = port.SIGNER_SERVICE % (WORD + "-signer")
+    assert body.endswith(service)
+    kept = [
+        line
+        for line in body[: -len(service)].splitlines(keepends=True)
+        if not line.startswith(("PREVIEW_BUILD = ", "# The build this preview serves"))
+    ]
+    twin = port.preview_toml(WORD, "account-pr-42", "u")
+    assert "".join(kept) == twin.replace(port.SIGNERLESS_BLOCK, "")

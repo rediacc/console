@@ -40,6 +40,13 @@ THE DRIVER IS A CHILD PROCESS, NOT AN IMPORT. `run_summary` loads the harness fr
 THE HARNESS IS ASKED FOR BOTH HALVES: "Returns `<exit-code>|<stdout>` so callers can assert on BOTH. Asserting only on the exit code is what let the original defect through."
 
 `tail_summary` is a 200-byte tail of the summary with newlines flattened to spaces (plus one trailing space), the window a failure message quotes.
+
+---- gate ----
+lane: quality-static
+step: Drill verdict logic
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -400,4 +407,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_drill_verdicts.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

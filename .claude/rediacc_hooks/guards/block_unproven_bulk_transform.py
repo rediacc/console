@@ -27,9 +27,13 @@ import shlex
 import subprocess
 
 from rediacc_hooks import commit_policy, hookio, shellscan
-from rediacc_hooks.guards import _repo_scope
+from rediacc_hooks.guards import _repo_scope, tables
 from rediacc_hooks.guards import block_prose_style_commit as PSC
 from rediacc_hooks.guards import block_unverified_push as PUSH
+
+__getattr__ = tables(
+    "block_unproven_bulk_transform", "EDGE_CASES", "ENVS", "FIXTURES", "_bulk_staged_world"
+)
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -968,48 +972,3 @@ def _warn_range_split(ev, cmd, verb):
             shellscan.earlier_mutators(cmd, verb, {"commit"}), verb, "the commits in the range"
         )
     )
-
-
-EDGE_CASES = [
-    ("a bulk commit with no proof quoted", 'git commit -m "reflow the tree"'),
-    ("a small commit, well under threshold", 'git commit -m "fix: a small thing"'),
-    ("a plain command is not a target", "ls -la"),
-    ("gh pr view is not a write", "gh pr view 1"),
-    ("git log is not git commit", 'git log --grep "shape_cluster_diff.py"'),
-]
-
-
-def _bulk_staged_world(target):
-    """A scratch repo with a bulk-sized change already staged, so the commit branch has something to refuse."""
-    target.mkdir(parents=True, exist_ok=True)
-    quiet = {
-        "capture_output": True,
-        "env": {
-            "PATH": "/usr/bin:/bin:/usr/local/bin",
-            "HOME": "/nonexistent",
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-        },
-    }
-
-    def run_git(*args):
-        subprocess.run(["git", "-C", str(target), *args], check=True, **quiet)
-
-    run_git("init", "-q", "-b", "main")
-    (target / "base.txt").write_text("x\n", encoding="utf-8")
-    run_git("add", ".")
-    run_git("commit", "-q", "-m", "base")
-    for i in range(BULK_FILE_THRESHOLD + 2):
-        (target / ("bulk-%02d.py" % i)).write_text("x = %d\n" % i, encoding="utf-8")
-    run_git("add", ".")
-    return target
-
-
-FIXTURES = {"bulk-staged": _bulk_staged_world}
-
-# CLAUDE_PROJECT_DIR is the guard's fallback working directory when the payload carries none, so pointing it at the fixture is what puts the staged files under the commit case.
-ENVS = [("bulk-staged", {"CLAUDE_PROJECT_DIR": "{FIXTURE:bulk-staged}"}, {})]

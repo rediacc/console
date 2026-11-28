@@ -1,0 +1,20 @@
+{
+  "_comment": "Cloudflare AI Gateway settings as code (agent/plans/PLAN-console-ai-credits.md D3), applied by `rediacc_ci.ops.cf_ai_gateway`. One gateway per region: logging on, caching off, a rate limit. Every key in the merged settings is an AI Gateway API field and is compared by `--check`.",
+  "settings_defaults": {
+    "collect_logs": true,
+    "cache_ttl": null,
+    "cache_invalidate_on_update": false,
+    "rate_limiting_interval": 60,
+    "rate_limiting_limit": 600,
+    "rate_limiting_technique": "sliding",
+    "authentication": true
+  },
+  "gateways": {
+    "rediacc-eu": {},
+    "rediacc-us": {},
+    "rediacc-asia": {}
+  },
+  "dashboard_only": {
+    "spend_limit": "The gateway spend limit, the Unified Billing top-up and the low-balance email have no API field; they are the operator's dashboard steps (PLAN-console-ai-credits.md AC12). The limit stays below the purchased balance."
+  }
+}

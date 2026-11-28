@@ -158,6 +158,7 @@ function registerRemove(access: Command): void {
   access
     .command('remove')
     .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.access.remove.descriptionShort'))
     .description(t('commands.machine.access.remove.description'))
     .requiredOption('--key <key>', t('commands.machine.access.optionKey'))
     .action(async (machineName: string, options: { key: string }) => {
@@ -178,6 +179,7 @@ function registerShow(access: Command, program: Command): void {
   access
     .command('show')
     .argument('<machine>', t('options.machine'))
+    .summary(t('commands.machine.access.show.descriptionShort'))
     .description(t('commands.machine.access.show.description'))
     .action(async (machineName: string) => {
       try {

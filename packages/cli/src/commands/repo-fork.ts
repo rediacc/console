@@ -21,24 +21,20 @@
  * - "Total:" is printed once, at the true end, as wall time since entry.
  */
 
-import { randomUUID } from 'node:crypto';
 import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { validateTag } from '../services/addressing/ref-parser.js';
 import { repoChangeMovesSchedule } from '../services/backup/backup-schedule-repo-change.js';
 import { reconcileBackupSchedules } from '../services/backup/repo-change-hook.js';
 import { configService } from '../services/config/config-resources.js';
-import {
-  rerunAfterNetworkIdConflict,
-  targetFloor,
-} from '../services/config/network-id-discovery.js';
+import { rerunAfterNetworkIdConflict } from '../services/config/network-id-discovery.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { type ExecuteResult, getExecutor } from '../services/executor/executor-factory.js';
 import type { ExecuteOptions } from '../services/executor/types.js';
-import { servedRecordGuid } from '../services/jobs/attach.js';
 import {
   type CommandJobOutcome,
+  JobDispatchedError,
   pendingExitCode,
   runCommandJob,
 } from '../services/jobs/command-job.js';
@@ -52,24 +48,23 @@ import {
   type MachineConnectionLease,
   machineConnections,
 } from '../services/machine/machine-connection.js';
-import {
-  deployRepoKeyIfNeeded,
-  removeRepoKeyIfDeployed,
-} from '../services/repo/repo-key-deployment.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { assertNoSlugCollision, repoDisplayKey } from '../services/repo/repo-slug-collision.js';
+import { handleError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { ensureRecordedNetworkId, recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
-import { generateSSHKeyPair } from '../utils/ssh-keygen.js';
 import { recordTimelineStep, type TimelineStep } from '../utils/timeline.js';
 import { assertMachineExists } from './_validate.js';
 import { ensureDns, postRepoUpTasks } from './repo-batch-utils.js';
+import { type ForkKeyState, registerFork, rollbackFork } from './repo-fork-registration.js';
 import {
   createForkEventHandler,
   finishTimeline,
   recordTicketStepTimings,
   startIdentityRefresh,
 } from './repo-fork-timeline.js';
+import { rollbackRefusedStart } from './repo-rollback.js';
 
 const DEFAULT_VERB = 'repo fork';
 
@@ -98,120 +93,6 @@ export interface ForkActionOptions {
   verb?: string;
   /** Success steps the caller adds to the fork job's ticket (`repo checkout` records the new fork's tip). */
   extraSteps?: PlannedStep[];
-}
-
-/** Where a fork's repo key was put, recorded BEFORE the deploy so a failure in the deploy itself is cleaned up too. */
-interface ForkKeyState {
-  machine?: string;
-  guid?: string;
-}
-
-/** Remove the fork's authorized_keys line when this invocation attempted to deploy it; best-effort. */
-async function removeDeployedForkKey(forkKey: string, keyState: ForkKeyState): Promise<void> {
-  if (keyState.machine === undefined || keyState.guid === undefined) return;
-  await removeRepoKeyIfDeployed(forkKey, keyState.machine, keyState.guid);
-}
-
-/**
- * Rollback a fork registration if it is still the one this fork made, and the repo key it deployed. The GUID is the
- * identity: a same-named fork registered since the failure (the step can run after a later command) is left alone.
- */
-async function rollbackFork(forkKey: string, keyState: ForkKeyState, guid: string): Promise<void> {
-  const exists = await configService.getRepository(forkKey);
-  if (exists?.repositoryGuid === guid) {
-    await configService.removeRepository(forkKey);
-    outputService.warn(t('commands.repo.fork.rollback', { repository: forkKey }));
-  }
-  await removeDeployedForkKey(forkKey, keyState);
-}
-
-/** The fork image exists once its reflink or clone step completed: a failure after it is an up-phase failure. */
-const FORK_IMAGE_STEPS = ['cow_reflink', 'cow_clone'] as const;
-
-bindStepHandler('rollbackFork', async ({ params, markers }) => {
-  const text = (key: string) =>
-    typeof params[key] === 'string' && params[key] !== '' ? String(params[key]) : undefined;
-  const repo = text('repo');
-  const guid = text('guid');
-  if (repo === undefined) throw new Error('step param "repo" is missing');
-  if (guid === undefined) throw new Error('step param "guid" is missing');
-  // A compound --up failure can happen AFTER the remote fork exists (mount, compose, readiness); rolling back the local registration then would orphan a live remote repo. An observer that did not see the stream from its start cannot tell, so it keeps the registration too.
-  if (
-    markers === undefined ||
-    markers.some((m) => (FORK_IMAGE_STEPS as readonly string[]).includes(m))
-  ) {
-    outputService.warn(
-      `Fork "${repo}" may exist on the machine; keeping the local registration. ` +
-        `Retry with: rdc repo up ${repo}${text('machine') ? ` -m ${text('machine')}` : ''}`
-    );
-    return;
-  }
-  await rollbackFork(repo, { machine: text('machine'), guid }, guid);
-});
-
-/** Validate and register a new fork in the config. Returns the new GUID and networkId. */
-async function registerFork(
-  parent: string,
-  forkKey: string,
-  tagName: string,
-  machineName: string,
-  parentConfig: NonNullable<Awaited<ReturnType<typeof configService.getRepository>>>,
-  immutable: boolean,
-  timeline: TimelineStep[]
-): Promise<{ repositoryGuid: string; networkId: number; reattached?: true }> {
-  const existing = await configService.getRepository(forkKey);
-  // A POST retried with the same body id, machine and immutability finds the row its first attempt registered (the guid derives from all three): attach to it, so the fork job dedupes on the request id instead of the retry failing as a duplicate. The same id asking for another machine or immutability is a different request, and a row with no network ID cannot run a fork, so both meet the duplicate error.
-  const servedGuid = servedRecordGuid(`fork:${forkKey}@${machineName}:${String(immutable)}`);
-  const existingNetworkId = existing?.networkId ?? 0;
-  if (
-    existing?.repositoryGuid === servedGuid &&
-    servedGuid !== undefined &&
-    existingNetworkId > 0
-  ) {
-    return {
-      repositoryGuid: servedGuid,
-      networkId: existingNetworkId,
-      reattached: true,
-    };
-  }
-  if (existing) {
-    // Exit 2 (INVALID_ARGUMENTS): the requested fork tag is already taken.
-    throw new ValidationError(t('commands.repo.fork.alreadyExists', { name: forkKey }));
-  }
-
-  const repositoryGuid = servedGuid ?? randomUUID();
-  // D3(a): the floor is the fork machine's used set, so a lagging counter skips IDs other devices placed there.
-  // The floor read is a whole `network_used` session on the machine (connect, renet check, verify), so it is timed.
-  const floor = await recordTimelineStep(timeline, 'network_floor', () =>
-    targetFloor({ machine: machineName })
-  );
-  const networkId = await configService.allocateNetworkId({ floor });
-  const { privateKey: sshPrivateKey, publicKey: sshPublicKey } = generateSSHKeyPair();
-
-  await configService.addRepository(forkKey, {
-    repositoryGuid,
-    tag: tagName,
-    credential: parentConfig.credential,
-    networkId,
-    grandGuid: parentConfig.grandGuid ?? parentConfig.repositoryGuid,
-    parentGuid: parentConfig.repositoryGuid,
-    ...(immutable ? { immutable: true } : {}),
-    sshPrivateKey,
-    sshPublicKey,
-  });
-
-  outputService.info(
-    t('commands.repo.fork.registered', {
-      repository: forkKey,
-      guid: repositoryGuid.slice(0, 8),
-      networkId,
-    })
-  );
-  outputService.info(
-    t('commands.repo.fork.starting', { parent, repository: forkKey, machine: machineName })
-  );
-
-  return { repositoryGuid, networkId };
 }
 
 /** Validate mutually-exclusive fork option combinations. */
@@ -269,11 +150,29 @@ function executeForkLeg(
   renetSteps: TimelineStep[],
   steps: PlannedStep[]
 ): Promise<CommandJobOutcome> {
-  return runCommandJob(
-    plan.options.verb ?? DEFAULT_VERB,
-    forkLegOptions(plan, params, renetSteps),
-    steps
-  );
+  return startForkJob(plan, params, renetSteps, steps);
+}
+
+/** `runCommandJob`, noting on the plan once the job exists so a later throw never undoes the registration the job owns. */
+async function startForkJob(
+  plan: ForkPlan,
+  params: Record<string, unknown>,
+  renetSteps: TimelineStep[],
+  steps: PlannedStep[]
+): Promise<CommandJobOutcome> {
+  try {
+    const outcome = await runCommandJob(
+      plan.options.verb ?? DEFAULT_VERB,
+      forkLegOptions(plan, params, renetSteps),
+      steps
+    );
+    // From here the registration is the job's: a failed job's rollbackFork step removes it, a finished one keeps it, and the caller's catch touches neither.
+    plan.keyState.jobStarted = true;
+    return outcome;
+  } catch (error) {
+    if (error instanceof JobDispatchedError) plan.keyState.jobStarted = true;
+    throw error;
+  }
 }
 
 function forkLegOptions(
@@ -541,6 +440,11 @@ export async function handleForkAction(
     }
 
     await assertMachineExists(options.machine);
+    // Before any config write: a fork whose slug equals another repo's would share its replica set and datastore fork tag.
+    assertNoSlugCollision(
+      repoDisplayKey(forkKey),
+      (await configService.listRepositories()).map((repo) => repoDisplayKey(repo.name))
+    );
 
     const { repositoryGuid, networkId, reattached } = await registerFork(
       parent,
@@ -579,8 +483,9 @@ export async function handleForkAction(
       lease.release();
     }
   } catch (error) {
-    if (forkGuid !== undefined) {
-      await rollbackFork(forkKey, keyState, forkGuid);
+    // Once the job exists on the machine, or its state is unknown after a timeout, the registration and the deployed key stay: a failed job's own rollbackFork step settles them, and a finished one keeps them.
+    if (keyState.jobStarted !== true && forkGuid !== undefined) {
+      await rollbackRefusedStart(error, rollbackFork, forkKey, keyState, forkGuid);
     }
     handleError(error);
   }

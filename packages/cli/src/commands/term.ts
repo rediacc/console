@@ -4,12 +4,10 @@ import { t } from '../i18n/index.js';
 import { generateSetupCommand, generateSourceCommand } from '../remote/repository/index.js';
 import { SSHConnection, spawnSSH, testSSHConnectivity } from '../remote/ssh/index.js';
 import { exitTrapShell, newExitMarker, waitForSessionEnd } from '../remote/ssh/session-exit.js';
-import { getDefaultTerminalType, launchTerminal } from '../remote/terminal/index.js';
-import { getPlatform } from '../remote/utils/platform.js';
+import { sweepStaleTermTempFiles } from '../remote/utils/stale-temp.js';
 import { applyClusterConnectionContext } from '../services/cluster/cluster-target.js';
 import { configService } from '../services/config/config-resources.js';
 import { auditService } from '../services/core/audit.js';
-import { outputService } from '../services/core/output.js';
 import { writeStderr } from '../services/core/request-context.js';
 import {
   type ConnectionDetails,
@@ -24,7 +22,7 @@ import {
   isLegitimateWildcardOverride,
 } from '../utils/agent-guard.js';
 import { assertCommandNotBlank } from '../utils/command-blank.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import {
@@ -43,6 +41,7 @@ import {
 } from '../utils/secret-env.js';
 import { shellQuote } from '../utils/shell-quote.js';
 import { withSpinner } from '../utils/spinner.js';
+import { launchExternalTerminal, reportExternalLaunchFailure } from './term-external.js';
 import { createStderrTail, sshExitError } from './term-ssh-exit.js';
 
 /**
@@ -285,7 +284,7 @@ async function enforceTermPolicy(
 
   if (target.kind === 'repo') {
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
-    await assertCommandPolicy(CMD.TERM_CONNECT, target.repoKey);
+    await enforceResolvedTarget(CMD.TERM_CONNECT, { ref: target.repoKey });
   } else {
     await assertAgentMachineAccess(target.machineName);
   }
@@ -305,6 +304,8 @@ async function executeSSH(
   useExternal: boolean,
   quiet: boolean,
   machineName: string,
+  /** `--external` was passed: a failed launch refuses instead of going inline. */
+  externalRequired: boolean,
   /** The inline form of a `-c` command: the same command carrying the exit trap, and its marker. */
   inline?: { remoteCommand: string; exitMarker: string }
 ): Promise<void> {
@@ -331,9 +332,7 @@ async function executeSSH(
       connectionDetails
     );
   } catch (error) {
-    debugLog(
-      `External terminal failed: ${error instanceof Error ? error.message : String(error)}, falling back to inline SSH`
-    );
+    reportExternalLaunchFailure(error, externalRequired);
     await runInlineSSH(
       sshConnection,
       destination,
@@ -382,6 +381,7 @@ function splitTargetRoles(target: ConnectTarget): {
 async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {
   assertCommandNotBlank(options);
   const startTime = Date.now();
+  sweepStaleTermTempFiles();
 
   const target = await resolveConnectTarget(targetRef, { readOnly: true });
   await enforceTermPolicy(options, target);
@@ -420,7 +420,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port, forceTTY: !noTTY }
+    { host: connectionDetails.host, port: connectionDetails.port, forceTTY: !noTTY }
   );
 
   let success = true;
@@ -459,6 +459,7 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       shouldUseExternalTerminal(options),
       quietOutput,
       machineName,
+      options.external === true,
       inline
     );
   } catch (err) {
@@ -477,83 +478,6 @@ async function connectTerminal(targetRef: string, options: TermConnectOptions): 
       error,
     });
   }
-}
-
-export async function launchExternalTerminal(
-  sshConnection: SSHConnection,
-  destination: string,
-  remoteCommand: string | undefined,
-  title: string,
-  connectionDetails: ConnectionDetails
-): Promise<void> {
-  const sshArgv = ['ssh', ...sshConnection.sshOptions, destination];
-  if (remoteCommand) {
-    sshArgv.push(remoteCommand);
-  }
-  // The external terminal's ssh outlives this process's 500 ms wait, so on POSIX the credentials move to it: it gets the agent socket in its env and its shell removes the key and stops the agent when ssh ends. Windows shells cannot run that wrapper and keep parent-side cleanup.
-  const resources = getPlatform() === 'windows' ? undefined : sshConnection.handoffResources;
-  // All or nothing: with an agent pid the wrapper cannot put in its script, everything stays with the parent, whose cleanup stops that agent. Handing off only the files would not help, since the parent would still stop the agent the external ssh authenticates through.
-  const handoff =
-    resources && (!resources.agentPid || isNumericPid(resources.agentPid)) ? resources : undefined;
-  const argv = handoff ? buildHandoffArgv(sshArgv, handoff) : sshArgv;
-  const terminalType = getDefaultTerminalType();
-
-  outputService.info(t('commands.term.launchingTerminal', { type: terminalType }));
-
-  const result = launchTerminal(terminalType, {
-    argv,
-    title,
-    keepOpen: true,
-    environmentVariables: {
-      ...splitSecretEnv(connectionDetails.environment).plain,
-      ...(handoff?.agentSocketPath && { SSH_AUTH_SOCK: handoff.agentSocketPath }),
-    },
-    workingDirectory: connectionDetails.workingDirectory,
-  });
-
-  if (!result.success) {
-    throw new Error(t('errors.term.launchFailed', { error: result.error }));
-  }
-
-  // Wait briefly for async spawn errors (e.g. ENOENT when terminal binary is missing)
-  if (result.process) {
-    await new Promise<void>((resolve, reject) => {
-      const timer = setTimeout(resolve, 500);
-      result.process!.once('error', (err: Error) => {
-        clearTimeout(timer);
-        reject(new Error(t('errors.term.launchFailed', { error: err.message })));
-      });
-    });
-  }
-
-  // Launched: the terminal's shell now owns the credentials.
-  if (handoff) sshConnection.release();
-
-  outputService.info(t('commands.term.launchSuccess'));
-}
-
-function isNumericPid(pid: string): boolean {
-  return /^\d+$/.test(pid);
-}
-
-/**
- * Wraps the ssh argv in `sh -c` so the launched terminal removes the temp key
- * files and stops the agent when ssh exits or the terminal is hung up. Only
- * paths and a numeric pid appear on argv, never key material.
- */
-export function buildHandoffArgv(
-  sshArgv: string[],
-  res: { keyFilePath?: string; knownHostsPath?: string; agentPid?: string }
-): string[] {
-  const files = [res.keyFilePath, res.knownHostsPath].filter((f): f is string => !!f);
-  const pid = res.agentPid && isNumericPid(res.agentPid) ? res.agentPid : undefined;
-  const steps = [
-    files.length > 0 ? `rm -f -- ${files.map(shellQuote).join(' ')}` : '',
-    pid ? `kill ${pid} 2>/dev/null` : '',
-  ].filter(Boolean);
-  if (steps.length === 0) return sshArgv;
-  const script = `cleanup() { ${steps.join('; ')}; }; trap cleanup EXIT; trap 'exit 129' HUP; trap 'exit 143' TERM; "$@"`;
-  return ['sh', '-c', script, 'sh', ...sshArgv];
 }
 
 async function runInlineSSH(
@@ -617,6 +541,7 @@ ${t('help.examples')}
 
   term
     .command('connect')
+    .summary(t('commands.term.connect.descriptionShort'))
     .description(t('commands.term.connect.description'))
     .argument('<target>', t('options.connectTarget'))
     .option('-c, --command <cmd>', t('options.command'))

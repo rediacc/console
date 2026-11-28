@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import pathlib
     from collections.abc import Callable, Collection
 
-TIERS = ("vm", "live")
+TIERS = ("vm", "live", "win")
 VERIFIED = "VERIFIED"
 FAILED = "FAILED"
 NOT_VERIFIED = "NOT_VERIFIED"

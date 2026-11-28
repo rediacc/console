@@ -1,14 +1,15 @@
 """The effort level through the real Stop hook (agent/plans/PLAN-stop-hook-effort.md boxes E3 and E4).
 
-E3: one key of each family is driven through all five levels, and the FLOOR blocks at `quiet`. The table verdicts are read from .claude/config/effort.json through `wl_effort`; the stops run `worklist.py` with a Stop event, as the harness does, against a fixture project whose QUEUE.md names the level.
+E3: one key of each family is driven through all four levels (`ultra` left with agent/plans/PLAN-simple-two-tree-loop.md B5), and the FLOOR blocks at `quiet`. The table verdicts are read from .claude/config/effort.json through `wl_effort`; the stops run `worklist.py` with a Stop event, as the harness does, against a fixture project whose QUEUE.md names the level.
 
-E4: `--focus` is gone (an unknown verb, exit 2), `--phase` replaces it, and a phase only parks work.
+E4: `--focus` is gone (an unknown verb, exit 2), and so is its successor, the phase verb (agent/plans/PLAN-simple-two-tree-loop.md B10): a wind-down phase event left in the append-only store parks nothing.
 """
 
 from __future__ import annotations
 
 import itertools
 import json
+import time
 
 import pytest
 
@@ -16,7 +17,7 @@ from rediacc_hooks.tests import wlfix
 
 E = wlfix.import_wl("wl_effort")
 FLOOR = wlfix.import_wl("wl_floor")
-LEVELS = ("quiet", "low", "smart", "high", "ultra")
+LEVELS = ("quiet", "low", "smart", "high")
 
 
 @pytest.fixture
@@ -48,14 +49,14 @@ def untuned_table():
     return table
 
 
-# (family, key, verdict at quiet, low, smart, high, ultra)
+# (family, key, verdict at quiet, low, smart, high)
 FAMILIES = [
-    ("floor", "ci-red", ("block",) * 5),
-    ("mission", "open-items", ("off", "block", "block", "block", "block")),
-    ("owed", "bg-report", ("off", "advise", "block", "block", "block")),
-    ("integrity", "completion", ("off", "advise", "block", "block", "block")),
-    ("advise-at-smart", "no-remaining", ("off", "off", "advise", "block", "block")),
-    ("hygiene", "plan-drift", ("off", "off", "advise", "block", "block")),
+    ("floor", "ci-red", ("block",) * 4),
+    ("mission", "open-items", ("off", "block", "block", "block")),
+    ("owed", "bg-report", ("off", "advise", "block", "block")),
+    ("integrity", "completion", ("off", "advise", "block", "block")),
+    ("advise-at-smart", "no-remaining", ("off", "off", "advise", "block")),
+    ("hygiene", "plan-drift", ("off", "off", "advise", "block")),
 ]
 
 
@@ -69,7 +70,7 @@ def test_one_key_per_family_through_every_level(family, key, want):
 
 
 def test_the_floor_blocks_at_quiet_whatever_the_table_says():
-    planted = {"checks": {k: {"block": "ultra", "advise": "ultra"} for k in FLOOR.FLOOR}}
+    planted = {"checks": {k: {"block": "high", "advise": "high"} for k in FLOOR.FLOOR}}
     for key in FLOOR.FLOOR:
         assert E.verdict(key, "quiet", planted) == "block", key
     # STATE.md joins the floor only while compaction is due.
@@ -84,14 +85,8 @@ def test_an_unreadable_table_or_an_unlisted_key_blocks():
 
 
 def test_advisory_keys_follow_their_advise_level():
-    assert [E.advises("agent-hint", lv) for lv in LEVELS] == [False, False, True, True, True]
-    assert [E.advises("ci-report:pr-review", lv) for lv in LEVELS] == [
-        False,
-        True,
-        True,
-        True,
-        True,
-    ]
+    assert [E.advises("agent-hint", lv) for lv in LEVELS] == [False, False, True, True]
+    assert [E.advises("ci-report:pr-review", lv) for lv in LEVELS] == [False, True, True, True]
     assert E.advises("unread-reports", "quiet") is True  # a FLOOR key advises at every level too
     assert E.advises("agent-hint", None) is True  # no stop in progress: everything passes
 
@@ -103,7 +98,7 @@ def test_advisory_keys_follow_their_advise_level():
 REPORT_KEYS = ("no-remaining", "agent-state")
 
 
-def test_e3_one_world_through_all_five_levels(world):
+def test_e3_one_world_through_all_four_levels(world):
     """An open item and a message with no `## Remaining`: `open-items` (mission), `no-remaining` and `agent-state` fire, and each level blocks on exactly its share as the real table gives it. A fresh world per level, so every level judges the same first stop."""
     seen = {}
     for level in LEVELS:
@@ -202,7 +197,7 @@ def test_quiet_replaces_the_off_switch_and_stop_hook_is_refused(world):
     assert "open-items" in blocked_keys(world)
 
 
-# ---- E4: the phase -----------------------------------------------------------------------------
+# ---- E4: no wind-down verb ----------------------------------------------------------------------
 
 
 def test_e4_focus_is_an_unknown_verb(world):
@@ -211,40 +206,31 @@ def test_e4_focus_is_an_unknown_verb(world):
     assert "--focus" in got.err
 
 
-def test_e4_phase_records_build_babysit_and_merge(world):
-    status = world.cli("--phase", wlfix.ME)
-    assert status.rc == 0
-    assert "build" in status.out
-    on = world.cli("--phase", wlfix.ME, "babysit", "--pr", "77", "--branch", "1014-1")
-    assert on.rc == 0, on.err
-    assert "phase babysit" in on.out
-    events = [json.loads(line) for line in world.wl_events().splitlines() if line.strip()]
-    phases = [e for e in events if e.get("ev") == "phase"]
-    assert phases
-    assert (phases[-1]["mode"], phases[-1]["pr"]) == ("babysit", 77)
-    assert "babysit" in world.cli("--phase", wlfix.ME).out
-    off = world.cli("--phase", wlfix.ME, "build")
-    assert off.rc == 0
-    events = [json.loads(line) for line in world.wl_events().splitlines() if line.strip()]
-    assert [e for e in events if e.get("ev") == "phase"][-1]["mode"] == "build"
-    assert world.cli("--phase", wlfix.ME, "sprint").rc == 2
+def _plant_phase(world, mode):
+    """A `phase` event as the deleted verb wrote it (the event builder it used went with it): the store is append-only, so old ones stay in the log."""
+    event = {
+        "ev": "phase",
+        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "by": wlfix.ME,
+        "o": wlfix.ME,
+        "mode": mode,
+        "branch": "1014-1",
+        "pr": 77,
+        "why": "operator",
+    }
+    with world.events.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(event) + "\n")
 
 
-def test_e4_a_phase_parks_and_never_adds_a_block(world):
-    """At effort quiet nothing outside the FLOOR blocks, and a babysit phase adds nothing to that."""
+def test_e4_a_babysit_phase_left_in_the_store_parks_nothing(world):
+    """At effort smart the open item blocks; a fresh babysit phase event of this session (which once parked it, since the item carries no pr:77) changes nothing."""
     assert world.cli("--add", wlfix.ME, "(%s) unrelated work" % wlfix.ME).rc == 0
     world.say("done")
-    world.settings(effort="quiet")
-    assert world.run().decision == "allow"
-    assert world.cli("--phase", wlfix.ME, "babysit", "--pr", "77", "--branch", "1014-1").rc == 0
-    got = world.run()
-    assert got.decision == "allow", got.out[:300]
-    # At smart the open item blocks in build (effort.json `open-items` block moved low -> smart in
-    # 35afbb54e, tuner e8); under the babysit phase it is parked (it carries no pr:77).
     world.settings(effort="smart")
-    assert world.cli("--phase", wlfix.ME, "build").rc == 0
     assert world.run().decision == "block"
-    blocked_keys(world)
-    assert world.cli("--phase", wlfix.ME, "babysit", "--pr", "77", "--branch", "1014-1").rc == 0
-    parked = world.run()
-    assert "open-items" not in blocked_keys(world), parked.out[:300]
+    assert "open-items" in blocked_keys(world)
+    _plant_phase(world, "babysit")
+    got = world.run()
+    assert got.decision == "block", got.out[:300]
+    assert "open-items" in blocked_keys(world), got.out[:300]
+    assert "PHASE babysit" not in got.out

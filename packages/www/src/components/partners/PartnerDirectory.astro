@@ -1,0 +1,340 @@
+---
+import { createTranslator } from '../../i18n/utils';
+import type { Language } from '../../i18n/types';
+
+interface Props {
+  lang: Language;
+}
+
+const { lang } = Astro.props;
+const { t } = createTranslator(lang);
+const ns = 'pages.partners.directory';
+
+const serviceKeys = ['resale', 'migration', 'managed', 'training'];
+const serviceLabels: Record<string, string> = {};
+for (const key of serviceKeys) serviceLabels[key] = t(`${ns}.services.${key}`);
+const tierLabels: Record<string, string> = {};
+for (const key of ['registered', 'silver', 'gold', 'platinum']) {
+  tierLabels[key] = t(`${ns}.tiers.${key}`);
+}
+
+// Strings the client script renders; the page itself carries no hardcoded copy.
+const strings = JSON.stringify({
+  services: serviceLabels,
+  tiers: tierLabels,
+  certificates: t(`${ns}.card.certificates`),
+  visit: t(`${ns}.card.visit`),
+  countries: t(`${ns}.card.countries`),
+  languages: t(`${ns}.card.languages`),
+  servicesLabel: t(`${ns}.card.services`),
+  all: t(`${ns}.filters.all`),
+  loading: t(`${ns}.status.loading`),
+  empty: t(`${ns}.status.empty`),
+  error: t(`${ns}.status.error`),
+});
+---
+
+<div data-pd-directory data-strings={strings}>
+  <form class="pd-filters" data-pd-filters>
+    <label class="pd-field">
+      <span>{t(`${ns}.filters.country`)}</span>
+      <select name="country" data-pd-country>
+        <option value="">{t(`${ns}.filters.all`)}</option>
+      </select>
+    </label>
+    <label class="pd-field">
+      <span>{t(`${ns}.filters.language`)}</span>
+      <select name="language" data-pd-language>
+        <option value="">{t(`${ns}.filters.all`)}</option>
+      </select>
+    </label>
+    <label class="pd-field">
+      <span>{t(`${ns}.filters.service`)}</span>
+      <select name="service" data-pd-service>
+        <option value="">{t(`${ns}.filters.all`)}</option>
+        {serviceKeys.map((key) => <option value={key}>{serviceLabels[key]}</option>)}
+      </select>
+    </label>
+    <button type="reset" class="pd-reset">{t(`${ns}.filters.reset`)}</button>
+  </form>
+
+  <p class="pd-status" data-pd-status role="status" aria-live="polite">{t(`${ns}.status.loading`)}</p>
+  <ul class="pd-grid" data-pd-grid></ul>
+</div>
+
+<script>
+  interface DirectoryEntry {
+    id: string;
+    name: string;
+    tier: string;
+    website: string | null;
+    description: string | null;
+    logoUrl: string | null;
+    countries: string[];
+    languages: string[];
+    services: string[];
+    certificateCount: number;
+  }
+  interface Strings {
+    services: Record<string, string>;
+    tiers: Record<string, string>;
+    certificates: string;
+    visit: string;
+    countries: string;
+    languages: string;
+    servicesLabel: string;
+    all: string;
+    loading: string;
+    empty: string;
+    error: string;
+  }
+
+  /** Only http(s) URLs reach an href or src, whatever the directory row holds. */
+  function safeUrl(value: string | null): string | null {
+    if (!value) return null;
+    try {
+      const url = new URL(value);
+      return url.protocol === 'https:' || url.protocol === 'http:' ? url.href : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function el<K extends keyof HTMLElementTagNameMap>(
+    tag: K,
+    className?: string,
+    text?: string
+  ): HTMLElementTagNameMap[K] {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function initDirectory(root: HTMLElement) {
+    const strings = JSON.parse(root.dataset.strings ?? '{}') as Strings;
+    const form = root.querySelector<HTMLFormElement>('[data-pd-filters]');
+    const country = root.querySelector<HTMLSelectElement>('[data-pd-country]');
+    const language = root.querySelector<HTMLSelectElement>('[data-pd-language]');
+    const service = root.querySelector<HTMLSelectElement>('[data-pd-service]');
+    const status = root.querySelector<HTMLElement>('[data-pd-status]');
+    const grid = root.querySelector<HTMLElement>('[data-pd-grid]');
+    if (!form || !country || !language || !service || !status || !grid) return;
+
+    let optionsBuilt = false;
+    let request = 0;
+
+    function fillOptions(select: HTMLSelectElement, values: Set<string>) {
+      for (const value of [...values].sort((a, b) => a.localeCompare(b))) {
+        const option = el('option', undefined, value);
+        option.value = value;
+        select.append(option);
+      }
+    }
+
+    function line(label: string, values: string[], map?: Record<string, string>) {
+      if (values.length === 0) return null;
+      const row = el('p', 'pd-meta');
+      row.append(el('strong', undefined, `${label}: `));
+      row.append(document.createTextNode(values.map((v) => map?.[v] ?? v).join(', ')));
+      return row;
+    }
+
+    function card(entry: DirectoryEntry) {
+      const item = el('li', 'pd-card');
+      const head = el('div', 'pd-card-head');
+      const logo = safeUrl(entry.logoUrl);
+      if (logo) {
+        const img = el('img', 'pd-logo');
+        img.src = logo;
+        img.alt = '';
+        img.loading = 'lazy';
+        img.width = 48;
+        img.height = 48;
+        head.append(img);
+      }
+      const title = el('div', 'pd-card-title');
+      title.append(el('h3', undefined, entry.name));
+      title.append(el('span', `pd-tier pd-tier--${entry.tier}`, strings.tiers[entry.tier] ?? entry.tier));
+      head.append(title);
+      item.append(head);
+      if (entry.description) item.append(el('p', 'pd-desc', entry.description));
+      for (const row of [
+        line(strings.countries, entry.countries),
+        line(strings.languages, entry.languages),
+        line(strings.servicesLabel, entry.services, strings.services),
+      ]) {
+        if (row) item.append(row);
+      }
+      item.append(
+        el('p', 'pd-meta', strings.certificates.replace('{{count}}', String(entry.certificateCount)))
+      );
+      const site = safeUrl(entry.website);
+      if (site) {
+        const link = el('a', 'pd-visit', strings.visit);
+        link.href = site;
+        link.rel = 'noopener noreferrer';
+        link.target = '_blank';
+        item.append(link);
+      }
+      return item;
+    }
+
+    async function load() {
+      const mine = ++request;
+      const params = new URLSearchParams();
+      if (country.value) params.set('country', country.value);
+      if (language.value) params.set('language', language.value);
+      if (service.value) params.set('service', service.value);
+      const query = params.toString();
+      status.textContent = strings.loading;
+      status.hidden = false;
+      try {
+        const res = await fetch(
+          `${window.location.origin}/account/api/v1/partners/directory${query ? `?${query}` : ''}`
+        );
+        if (!res.ok) throw new Error(String(res.status));
+        const body = (await res.json()) as { partners: DirectoryEntry[] };
+        if (mine !== request) return;
+        if (!optionsBuilt) {
+          optionsBuilt = true;
+          fillOptions(country, new Set(body.partners.flatMap((p) => p.countries)));
+          fillOptions(language, new Set(body.partners.flatMap((p) => p.languages)));
+        }
+        grid.replaceChildren(...body.partners.map(card));
+        status.textContent = strings.empty;
+        status.hidden = body.partners.length > 0;
+      } catch {
+        if (mine !== request) return;
+        grid.replaceChildren();
+        status.textContent = strings.error;
+        status.hidden = false;
+      }
+    }
+
+    form.addEventListener('change', () => void load());
+    form.addEventListener('reset', () => setTimeout(() => void load(), 0));
+    void load();
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll<HTMLElement>('[data-pd-directory]').forEach(initDirectory);
+  });
+</script>
+
+<style>
+  .pd-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: var(--space-8);
+  }
+
+  .pd-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-medium);
+    min-width: 180px;
+  }
+
+  .pd-field select {
+    padding: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg);
+    color: var(--color-text);
+    font: inherit;
+  }
+
+  .pd-reset {
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .pd-reset:hover {
+    background: var(--color-bg-alt);
+  }
+
+  .pd-status {
+    text-align: center;
+    color: var(--color-text-secondary);
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  .pd-grid {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-6) 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-6);
+  }
+
+  .pd-grid :global(.pd-card) {
+    background: var(--color-bg-alt);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-6);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .pd-grid :global(.pd-card-head) {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .pd-grid :global(.pd-logo) {
+    border-radius: var(--radius-md);
+    object-fit: contain;
+  }
+
+  .pd-grid :global(.pd-card-title h3) {
+    margin: 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+
+  .pd-grid :global(.pd-tier) {
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--color-text-secondary);
+  }
+
+  .pd-grid :global(.pd-desc),
+  .pd-grid :global(.pd-meta) {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+
+  .pd-grid :global(.pd-meta strong) {
+    color: var(--color-text);
+  }
+
+  .pd-grid :global(.pd-visit) {
+    align-self: flex-start;
+    margin-top: auto;
+    color: var(--color-brand-primary);
+    font-weight: var(--font-weight-semibold);
+    text-decoration: none;
+  }
+
+  .pd-grid :global(.pd-visit:hover) {
+    text-decoration: underline;
+  }
+</style>

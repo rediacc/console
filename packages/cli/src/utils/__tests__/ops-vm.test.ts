@@ -20,6 +20,14 @@ describe('isOpsVmAddress', () => {
     }
   });
 
+  it('admits the Hyper-V NAT /24 and keeps 192.168.112, loopback and look-alikes protected', () => {
+    expect(VM_NETWORK.HYPERV_NAT_NET).toBe('192.168.113.0');
+    expect(isOpsVmAddress('192.168.113.5')).toBe(true);
+    for (const ip of ['127.0.0.1', '192.168.112.5', '192.168.113.5.example.com']) {
+      expect(isOpsVmAddress(ip), ip).toBe(false);
+    }
+  });
+
   it('refuses addresses just outside the range', () => {
     for (const ip of ['192.168.110.11', '192.168.112.11', '192.168.11.11', '192.169.111.11']) {
       expect(isOpsVmAddress(ip), ip).toBe(false);

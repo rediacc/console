@@ -23,7 +23,7 @@ export interface SFTPClientConfig {
   /**
    * Machine name as configured, used only to make a host-key mismatch error
    * actionable (it names the machine to pass to `rdc machine scan-keys`).
-   * Falls back to `host` when absent.
+   * When absent the remedy shows a `<machine-name>` placeholder, never `host`.
    */
   machineName?: string;
   /** Known hosts entries for host-key verification (OpenSSH format) */

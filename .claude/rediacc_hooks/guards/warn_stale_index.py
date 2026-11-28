@@ -23,9 +23,19 @@ translation is the ORDER and the DEDUPLICATION: `sort -u` under `LC_ALL=C`
 PORT NOTE ON `grep -c .`. That is a count of records matching the regex `.`, i.e. NON-EMPTY lines, not a line count. It happens to equal the number of paths here because `comm` never emits a blank line, but the two are different questions and the port answers the one the bash asked.
 """
 
-import subprocess
-
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables(
+    "warn_stale_index",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "_disjoint_tree",
+    "_fixture_git",
+    "_seeded",
+    "_stale_tree",
+)
 
 CHAIN = "pre-bash"
 ORDER = 21
@@ -39,100 +49,6 @@ COMMIT_AT_COMMAND_POS = hookio.rx(r"(^|[;&|(]|&&|\|\|)[{S}]*git[{S}]+commit")
 
 # `-a` / `--all`: the index is not what gets committed, so there is nothing to be stale.
 WORKING_TREE_FORM = hookio.rx(r"git +commit[^|;&]*(-a[{S}]|--all\b)")
-
-
-def _fixture_git(cwd, *args):
-    """`git` for the fixture builders, with the ambient config shut out."""
-    subprocess.run(
-        ["git", *args],
-        cwd=str(cwd),
-        check=True,
-        capture_output=True,
-        env={
-            "PATH": "/usr/bin:/bin:/usr/local/bin",
-            "HOME": "/nonexistent",
-            "GIT_AUTHOR_NAME": "Fixture",
-            "GIT_AUTHOR_EMAIL": "fixture@example.invalid",
-            "GIT_COMMITTER_NAME": "Fixture",
-            "GIT_COMMITTER_EMAIL": "fixture@example.invalid",
-            "GIT_CONFIG_GLOBAL": "/dev/null",
-            "GIT_CONFIG_SYSTEM": "/dev/null",
-        },
-    )
-
-
-def _seeded(path, names):
-    path.mkdir(parents=True)
-    _fixture_git(path, "init", "-q", "--initial-branch=main")
-    for name in names:
-        (path / name).write_text("v1\n", encoding="utf-8")
-    _fixture_git(path, "add", "-A")
-    _fixture_git(path, "commit", "-qm", "seed")
-    return path
-
-
-def _stale_tree(path):
-    """staged {a, b}, unstaged {a, c} -- the intersection is exactly {a}.
-
-    `b` and `c` are not padding: without `b` the intersection would equal the staged set and without `c` it would equal the unstaged set, and a port that printed either whole set instead of the intersection would still pass.
-    """
-    _seeded(path, ["a.txt", "b.txt", "c.txt"])
-    (path / "a.txt").write_text("v2\n", encoding="utf-8")
-    (path / "b.txt").write_text("v2\n", encoding="utf-8")
-    _fixture_git(path, "add", "a.txt", "b.txt")
-    # THEN edited, which is the whole defect this guard exists for.
-    (path / "a.txt").write_text("v3\n", encoding="utf-8")
-    (path / "c.txt").write_text("v2\n", encoding="utf-8")
-    return path
-
-
-def _disjoint_tree(path):
-    """staged {b}, unstaged {c}: both sets non-empty, no overlap.
-
-    The ALLOW side that a fixture with nothing staged could not provide, since that one leaves through the earlier `-n` test and never reaches `comm`.
-    """
-    _seeded(path, ["a.txt", "b.txt", "c.txt"])
-    (path / "b.txt").write_text("v2\n", encoding="utf-8")
-    _fixture_git(path, "add", "b.txt")
-    (path / "c.txt").write_text("v2\n", encoding="utf-8")
-    return path
-
-
-FIXTURES = {"stale-index": _stale_tree, "disjoint-index": _disjoint_tree}
-
-# BOTH variables, not just GIT_WORK_TREE. This guard's `git diff` calls take no `-C` and run in whatever directory the harness invoked it in, so leaving GIT_DIR to discovery would diff THIS checkout's index against the fixture's work tree -- a comparison of two unrelated trees, and a very large one.
-ENVS = [
-    (
-        "stale",
-        {
-            "GIT_DIR": "{FIXTURE:stale-index}/.git",
-            "GIT_WORK_TREE": "{FIXTURE:stale-index}",
-        },
-        {},
-    ),
-    (
-        "disjoint",
-        {
-            "GIT_DIR": "{FIXTURE:disjoint-index}/.git",
-            "GIT_WORK_TREE": "{FIXTURE:disjoint-index}",
-        },
-        {},
-    ),
-]
-
-EDGE_CASES = [
-    ("the plain commit", "git commit -m x"),
-    # Defect 1 above, in the form it took.
-    ("the -F form the first defect took", "git commit -F /tmp/msg.txt"),
-    ("a commit after &&", "git add -A && git commit -m x"),
-    # `-a` and `--all` commit the WORKING TREE for those paths.
-    ("-a takes the working tree", "git commit -a -m x"),
-    ("--all takes the working tree", "git commit --all -m x"),
-    # The mention-vs-target anchor, in both directions.
-    ("quoted prose is not a command", "echo 'do not run git commit here'"),
-    ("a wrapper payload is still a command", "sh -c 'git commit -m x'"),
-    ("a different git verb", "git status"),
-]
 
 
 def run(ev):

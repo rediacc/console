@@ -33,6 +33,9 @@ const TEMPLATE_FILES = [
   'digest.ts',
   // Added 2026-11-12 (PLAN-licence-expiry-notices N1): the delegation cert countdown mail.
   'delegation-expiry.ts',
+  // Added 2026-11-26 (PLAN-forensics-alerts-notices FN5): the security incident stage mail.
+  'security-incident.ts',
+  'forensics.ts',
 ];
 
 /** The CLDR plural categories `Intl.PluralRules` can select. */

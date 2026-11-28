@@ -613,9 +613,10 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Accept: `./run.sh drill backup` and `./run.sh drill backup-onprem` rc 0, and the receipt `block_backup_unverified_push` reads is fresh for this tree.
     (ticked) 2026-11-05T17:56:40Z by d778be9d: commit:4e665bbc8 every clause read: legs t to x run with controls firing on a real worker, 115 of 115; drill backup rc=0 427 of 427, backup-onprem rc=0 17 of 17; receipt VERIFIED for tree e448b9115dc0
   (corrected 2026-11-06, review 2e764bc9.1) The receipt tree e448b9115dc0 is the git tree of the ledger row's head: `git rev-parse --short=12 4e665bbc8^{tree}` prints e448b9115dc0, so the receipt is fresh for the tree the drills ran on.
-- [ ] Y3: The D1 clone check covers migration 0074.
+- [x] Y3: The D1 clone check covers migration 0074.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
   (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
+    (ticked) 2026-11-23T09:16:34Z by ace763dd: Y3 local test_d1_migrations rc 0 for eu, us, asia (all 3 passed, 0 FK violations); production already has every migration so no pending apply; /tmp/bench-live4/test-d1-migrations.log DEPS-WAIVED: live bench proof run 2026-11-23; the plan prerequisite gates other boxes, not this run
 
 ### Z: bench, after the merge and edge deploy (lead)
 

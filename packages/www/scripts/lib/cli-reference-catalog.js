@@ -12,6 +12,8 @@ const LOCAL_GROUPS = [
   'mcp',
   'repo',
   'job',
+  'incident',
+  'forensics',
   'backup',
   'vscode',
   'term',
@@ -19,6 +21,7 @@ const LOCAL_GROUPS = [
   'subscription',
   'server',
   'update',
+  'preview',
   'credits',
   'legal',
   'version',
@@ -27,6 +30,7 @@ const LOCAL_GROUPS = [
   'tools',
   'ops',
   'serve',
+  'completion',
 ];
 
 const TARGET_DOC_CATEGORIES = new Set([

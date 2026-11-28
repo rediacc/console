@@ -1,6 +1,6 @@
 r"""`agent-browser open`'s exit status must never decide control flow.
 
-Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-agent-browser-exit.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-agent-browser-exit.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 THE TWIN'S OWN HEADER, carried over because the measurement IS the gate and a paraphrase of it would be a different gate:
 
@@ -72,6 +72,16 @@ SELF-EXCLUSION IS BY EXACT FILENAME AND APPLIES ONLY TO THE SHELL HALF. The twin
 FILE IS LIKEWISE INVISIBLE TO BOTH HALVES, being `.py`, which is worth stating because a reader who notices the literal `execFileSync('agent-browser', ...)` in the selftest below will otherwise wonder whether the gate reads itself.
 
 ORDER MATTERS AND IS PRESERVED: the JS half runs FIRST and exits before the shell half is reached. A tree with both defects reports only the JavaScript one, which is a property of the twin's control flow and would silently change if the two scans were merged into one report.
+
+---- gate ----
+needs-not: submodules
+blocker: BLOCKER: it lists tracked files with `git ls-files --recurse-submodules` and runs in quality-static, which checks out no submodule, so its corpus there is the console tree alone. That held while its header sat on the entry shim, whose source carried no such call to infer from; placing it in a submodule lane is its own change.
+lane: quality-static
+step: agent-browser exit status
+needs: none
+selftest: true
+slow: true
+---- end gate ----
 """
 
 import itertools
@@ -682,4 +692,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_agent_browser_exit.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

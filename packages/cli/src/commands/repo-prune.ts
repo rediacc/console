@@ -8,7 +8,6 @@ import { runCommandJob } from '../services/jobs/command-job.js';
 import { requireStepOutput } from '../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { createRepoNameResolver, loadGuidMap } from '../utils/guid-resolver.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
@@ -212,7 +211,6 @@ async function pruneOne(
 async function handleRefPrune(ref: string, options: PruneOptions): Promise<void> {
   // Gate A read-only resolution: the prune run is itself the verification.
   const resolved = await resolveRepoRef(ref, { readOnly: true });
-  await assertCommandPolicy(CMD.REPO_PRUNE, resolved.repoKey);
   const repo = await configService.getRepository(resolved.repoKey);
   if (!repo) {
     throw new Error(t('commands.repo.prune.repoNotFound', { name: resolved.name }));

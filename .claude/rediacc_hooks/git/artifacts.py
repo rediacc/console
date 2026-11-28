@@ -338,7 +338,7 @@ def run_check(
             detail="`%s` could not start: %s" % (artifact.check[0], exc),
         )
     seconds = time.monotonic() - started
-    said = ((proc.stderr or "") + (proc.stdout or "")).strip()[-TAIL_CHARS:]
+    said = said_tail(proc.stdout, proc.stderr)
     if proc.returncode == 0:
         return Verdict(artifact, "clean", hits, seconds)
     if proc.returncode == artifact.stale_exit:
@@ -353,8 +353,33 @@ def run_check(
     )
 
 
+def said_tail(stdout: str | None, stderr: str | None) -> str:
+    """The checker's words, stdout first and stderr LAST, cut to the last TAIL_CHARS. A checker writes its findings to stderr; with stderr first, check_plan_record's ✗ verdict sat above its stdout RF WARNING paragraphs, the cut kept only the warnings' tail, and the refusal showed a continuation line and no problem (worklist #e01814e8, measured twice on 2026-11-27)."""
+    said = ((stdout or "").rstrip() + "\n" + (stderr or "")).strip()
+    if len(said) <= TAIL_CHARS:
+        return said
+    # The cut lands mid-line; a fragment of a WARNING paragraph without its `WARNING` head would survive `_indent` and read as the checker's first words.
+    tail = said[-TAIL_CHARS:]
+    return tail.partition("\n")[2] or tail
+
+
 def _indent(text: str, lines: int = 14) -> str:
-    return "\n".join("    " + line for line in text.splitlines()[-lines:])
+    """The checker's last `lines` lines, its advisory WARNING paragraphs left out first: a checker that prints its verdict above a run of warnings (check_plan_record's RF notes) otherwise shows only warnings, and the refusal names no problem at all."""
+    kept: list[str] = []
+    skipping = False
+    for line in text.splitlines():
+        stripped = line.lstrip()
+        if stripped.startswith("WARNING "):
+            skipping = True
+            continue
+        if skipping and line.startswith((" " * 6, "\t")) and not stripped.startswith(("✗", "x ")):
+            continue
+        # A blank line between WARNING paragraphs belongs to the run being skipped; kept, 14 of them filled the tail and hid the verdict again (review 63ba8d75.1).
+        if skipping and not stripped:
+            continue
+        skipping = False
+        kept.append(line)
+    return "\n".join("    " + line for line in (kept or text.splitlines())[-lines:])
 
 
 def _paths(hits: tuple[str, ...]) -> str:

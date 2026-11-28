@@ -8,6 +8,7 @@ BOTH DIRECTIONS FOR EACH GATE. The CI arm proves the refusal fires; the local ar
 """
 
 import json
+import shlex
 
 import pytest
 
@@ -15,6 +16,7 @@ from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
 PACKAGE_JSON = paths.from_root("package.json")
+LOCK = paths.from_root("scripts/ci-runner/gates.lock.json")
 
 # npm script -> the gate file it runs. Read against package.json below, so a renamed script fails here loudly instead of `npm run` exiting 1 with nothing on either stream.
 GATES = {
@@ -28,16 +30,30 @@ GATES = {
 
 
 def run_script(gate, script: str, env: dict[str, str]) -> harness.RunResult:
-    text = PACKAGE_JSON.read_text(encoding="utf-8")
-    if '"%s":' % script not in text or GATES[script] not in text:
+    """Run the gate by the command the lock schedules: its `npm run` key when it keeps one, `tsx <file>` when it runs directly (CR2 removed those keys)."""
+    entry = next(
+        (g for g in json.loads(LOCK.read_text(encoding="utf-8")) if g["id"] == script), None
+    )
+    run = entry["run"] if entry else ""
+    command = shlex.split(run)
+    if not command or (GATES[script] not in run and command[:2] != ["npm", "run"]):
         gate.log_fail(
-            "package.json has no %r running %s; the control would drive nothing"
+            "gates.lock.json has no %r running %s; the control would drive nothing"
             % (script, GATES[script])
         )
-    npm = harness.require_tool("npm", "install node; the subjects are npm scripts running tsx")
-    return harness.run(
-        [npm, "run", "--silent", script], cwd=paths.repo_root(), env=env, timeout=900
-    )
+    if command[:2] == ["npm", "run"]:
+        text = PACKAGE_JSON.read_text(encoding="utf-8")
+        if '"%s":' % script not in text or GATES[script] not in text:
+            gate.log_fail(
+                "package.json has no %r running %s; the control would drive nothing"
+                % (script, GATES[script])
+            )
+        npm = harness.require_tool("npm", "install node; the subjects are npm scripts running tsx")
+        argv = [npm, "run", "--silent", script]
+    else:
+        npx = harness.require_tool("npx", "install node; the subjects run under tsx")
+        argv = [npx, *command]
+    return harness.run(argv, cwd=paths.repo_root(), env=env, timeout=900)
 
 
 @pytest.mark.parametrize("script", sorted(GATES))

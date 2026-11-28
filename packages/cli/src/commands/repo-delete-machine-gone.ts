@@ -14,7 +14,6 @@ import { placementViewFromConfig, resolveMachine } from '../services/addressing/
 import { configService } from '../services/config/config-resources.js';
 import { machineExists } from '../services/config/machine-gone-repos.js';
 import { outputService } from '../services/core/output.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { isFork, settleCloudBackups, settleRepoLicense } from './repo-delete-settle.js';
 
@@ -43,7 +42,6 @@ export async function deleteOnGoneMachine(
   const parsed = parseRef(ref);
   const repoKey = parsed.tag ? `${parsed.name}:${parsed.tag}` : parsed.name;
   const { key: target, config: repoConfig } = await configService.resolveDestructiveTarget(repoKey);
-  await assertCommandPolicy(CMD.REPO_DELETE, target);
   if (options.purgeBackups && isFork(repoConfig)) {
     throw new ValidationError(t('commands.repo.delete.purgeForkRefused', { repository: target }));
   }

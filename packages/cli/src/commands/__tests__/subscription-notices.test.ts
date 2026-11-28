@@ -237,6 +237,137 @@ describe('subscription notices', () => {
     expect(summaries[1]).toBe('brand_new_kind');
   });
 
+  it.each([
+    ['warning', 'warning'],
+    ['level_capped', 'levelCapped'],
+    ['refused', 'refused'],
+  ])('summarizes a forensics_quota notice in the %s state', async (state, key) => {
+    respondWith([
+      {
+        notices: [
+          notice('f1', 1, {
+            kind: 'forensics_quota',
+            payload: { state, usedBytes: 8.5e9, quotaBytes: 10e9, lockedBytes: 6e9 },
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe(
+      `commands.subscription.notices.summary.forensicsQuota.${key}:{"used":"8.5","quota":"10.0","locked":"6.0"}`
+    );
+  });
+
+  it('prints the bare kind for a forensics_quota notice with a state it does not know (control)', async () => {
+    respondWith([
+      {
+        notices: [notice('f2', 1, { kind: 'forensics_quota', payload: { state: 'novel' } })],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe('forensics_quota');
+  });
+
+  it.each([
+    ['early_warning', 'earlyWarning'],
+    ['notification', 'notification'],
+    ['final', 'final'],
+  ])('summarizes a security_incident notice in the %s stage', async (stage, key) => {
+    respondWith([
+      {
+        notices: [
+          notice('s1', 1, {
+            kind: 'security_incident',
+            severity: 'critical',
+            payload: { incidentId: 'inc-1', stage, publishedAt: '2026-11-25T10:00:00.000Z' },
+          }),
+        ],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe(
+      `commands.subscription.notices.summary.securityIncident.${key}:{"date":"2026-11-25"}`
+    );
+  });
+
+  it.each([
+    [false, 'live'],
+    [true, 'delayed'],
+  ])(
+    'summarizes a forensics_anomaly notice (delayed=%s) with the timeline path',
+    async (delayed, key) => {
+      respondWith([
+        {
+          notices: [
+            notice('a1', 1, {
+              kind: 'forensics_anomaly',
+              severity: 'warning',
+              payload: {
+                repoGuid: 'aaaaaaaa-1111-4111-8111-111111111111',
+                detector: 'spike',
+                findingId: 'f-1',
+                detectedAt: '2026-11-25T10:00:00.000Z',
+                delayed,
+                source: 'machine',
+                reasonFeatures: ['file_writes'],
+              },
+            }),
+          ],
+          nextCursor: null,
+        },
+      ]);
+      await executeSubscriptionNotices();
+      const path =
+        '/account/console/forensics?repo=aaaaaaaa-1111-4111-8111-111111111111&from=2026-11-25T09%3A00%3A00.000Z&to=2026-11-25T11%3A00%3A00.000Z';
+      expect(printedRows()[0].summary).toBe(
+        `commands.subscription.notices.summary.forensicsAnomaly.${key}:${JSON.stringify({ detector: 'spike', repo: 'aaaaaaaa', date: '2026-11-25', path })}`
+      );
+    }
+  );
+
+  it.each([
+    ['repoGuid', { detectedAt: '2026-11-25T10:00:00.000Z' }, { repo: '-', date: '2026-11-25' }],
+    [
+      'detectedAt',
+      { repoGuid: 'aaaaaaaa-1111-4111-8111-111111111111' },
+      { repo: 'aaaaaaaa', date: '-' },
+    ],
+  ])(
+    'prints a "-" timeline path when a forensics_anomaly notice lacks its %s',
+    async (_missing, payload, shown) => {
+      respondWith([
+        {
+          notices: [
+            notice('a2', 1, {
+              kind: 'forensics_anomaly',
+              severity: 'warning',
+              payload: { detector: 'spike', delayed: false, ...payload },
+            }),
+          ],
+          nextCursor: null,
+        },
+      ]);
+      await executeSubscriptionNotices();
+      expect(printedRows()[0].summary).toBe(
+        `commands.subscription.notices.summary.forensicsAnomaly.live:${JSON.stringify({ detector: 'spike', ...shown, path: '-' })}`
+      );
+    }
+  );
+
+  it('prints the bare kind for a security_incident notice with a stage it does not know (control)', async () => {
+    respondWith([
+      {
+        notices: [notice('s2', 1, { kind: 'security_incident', payload: { stage: 'novel' } })],
+        nextCursor: null,
+      },
+    ]);
+    await executeSubscriptionNotices();
+    expect(printedRows()[0].summary).toBe('security_incident');
+  });
+
   it('prints a line, not an empty table, when there are no notices', async () => {
     respondWith([{ notices: [], nextCursor: null }]);
     await executeSubscriptionNotices();

@@ -110,6 +110,13 @@ containing a space therefore keeps it. `split(maxsplit=1)` is the same rule.
 THE DATE COMPARISON IS A STRING COMPARISON in the twin (`[[ "$TODAY" > "$exp" ]]`) and it is a string comparison here. Both are correct for ISO-8601 and both are wrong in the same way for anything else, which is the property that matters: an allowlist carrying `2026-1-5` sorts as later than `2026-12-01` on BOTH sides.
 
 EXIT CODES ARE UNCHANGED: 0 clean, 1 offender or refusal, 2 setup error.
+
+---- gate ----
+step: Plan file housekeeping
+needs: none
+selftest: true
+lane: quality-i18n
+---- end gate ----
 """
 
 import datetime as dt
@@ -123,6 +130,7 @@ import tempfile
 
 from rediacc_ci import gitx, paths
 from rediacc_ci.controls import Controls, git_isolated
+from rediacc_ci.core import gate_clock
 from rediacc_ci.policy_paths import policy_rel
 
 # The environment seams, all of which the gate-test drives.
@@ -177,7 +185,7 @@ def age_days(value: str, now: dt.datetime | None = None) -> int:
         return UNPARSEABLE
     if then.tzinfo is None:
         then = then.replace(tzinfo=dt.UTC)
-    moment = dt.datetime.now(dt.UTC) if now is None else now
+    moment = gate_clock.now() if now is None else now
     return (moment - then).days
 
 
@@ -376,8 +384,9 @@ def inline_controls(delete_days: int) -> list[str]:
     Every one of these is a plant with its mirror: an over-age date and an under-age one, a real blob and an all-zero one, a real header and the same word in prose, a 40-hex pointer and a 41-hex one, a header inside the window and one below it.
     """
     failures: list[str] = []
-    old = age_days((dt.datetime.now(dt.UTC) - dt.timedelta(days=40)).isoformat())
-    new = age_days((dt.datetime.now(dt.UTC) - dt.timedelta(days=2)).isoformat())
+    wall = dt.datetime.now(dt.UTC)
+    old = age_days((wall - dt.timedelta(days=40)).isoformat(), wall)
+    new = age_days((wall - dt.timedelta(days=2)).isoformat(), wall)
     if old < delete_days:
         failures.append(
             "control: a 40-day date did not read as over %d (got %d)" % (delete_days, old)
@@ -606,7 +615,7 @@ def main(argv: list[str] | None = None) -> int:
     warnings: list[tuple[str, int, str, str]] = []
     n_exempt = 0
     n_compacted = 0
-    today = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d")
+    today = gate_clock.now().strftime("%Y-%m-%d")
 
     rows: list[tuple[str, int, str]] = []
     undated: list[str] = []
@@ -629,7 +638,7 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             if then.tzinfo is None:
                 then = then.replace(tzinfo=dt.UTC)
-            days = (dt.datetime.now(dt.UTC) - then).days
+            days = (gate_clock.now() - then).days
             red_on = (then + dt.timedelta(days=delete_days)).date().isoformat()
             rows.append((plan, days, red_on))
 
@@ -850,10 +859,12 @@ def selftest() -> int:
     now = dt.datetime.now(dt.UTC)
     ctl.truthy(
         "AGE: a 40-day date reads as 40 days",
-        age_days((now - dt.timedelta(days=40)).isoformat()) == 40,
+        age_days((now - dt.timedelta(days=40)).isoformat(), now) == 40,
     )
     ctl.check(
-        "AGE: a 2-day date reads as 2 days", age_days((now - dt.timedelta(days=2)).isoformat()), 2
+        "AGE: a 2-day date reads as 2 days",
+        age_days((now - dt.timedelta(days=2)).isoformat(), now),
+        2,
     )
     ctl.check(
         "AGE MIRROR: an unparseable date reports -1, never an age",
@@ -862,7 +873,7 @@ def selftest() -> int:
     )
     ctl.check(
         "AGE: a naive timestamp is read as UTC",
-        age_days((now - dt.timedelta(days=5)).replace(tzinfo=None).isoformat()),
+        age_days((now - dt.timedelta(days=5)).replace(tzinfo=None).isoformat(), now),
         5,
     )
 
@@ -1180,4 +1191,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_plan_housekeeping.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

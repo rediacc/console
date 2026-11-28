@@ -89,6 +89,7 @@ export function registerBackupTocKey(backup: Command): void {
   tocKey
     .command('sync')
     .argument('<repo-ref>', t('options.repoRef'))
+    .summary(t('commands.backup.tocKey.sync.descriptionShort'))
     .description(t('commands.backup.tocKey.sync.description'))
     .option('--replace', t('commands.backup.tocKey.sync.optionReplace'))
     .option('--dry-run', t('commands.backup.tocKey.sync.optionDryRun'))
@@ -96,9 +97,9 @@ export function registerBackupTocKey(backup: Command): void {
       try {
         const results = await runTocKeySync(repoRef, options);
         const format = getOutputFormat();
+        if (results.some((r) => FAILING.has(r.outcome))) setExitCode(1);
         outputService.print({ results }, format === 'table' ? 'json' : format);
         for (const warning of tocKeyWarnings(results)) outputService.warn(warning);
-        if (results.some((r) => FAILING.has(r.outcome))) setExitCode(1);
       } catch (error) {
         handleError(error);
       }

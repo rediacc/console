@@ -192,6 +192,16 @@ describe('a local edit of the cache file is not overwritten by the next read', (
     expect(disk()).toEqual(editedCache());
   });
 
+  it.each([
+    ['the conflict', undefined],
+    ['the unverifiable case', 'version 7 was pruned'],
+  ])('aims the refresh command of %s at the config it names', (_label, reason) => {
+    const named = new RemoteLocalEditConflictError('eu-remote', 7, 8, '/x', reason);
+    expect(named.message).toContain('"rdc --config eu-remote config remote refresh"');
+    const plain = new RemoteLocalEditConflictError('rediacc', 7, 8, '/x', reason);
+    expect(plain.message).toContain('"rdc config remote refresh"');
+  });
+
   it('refuses when the cached version cannot be read back to tell an edit from a server change', async () => {
     h.versions.set(8, { ...serverV7(), defaults: { language: 'de' } });
     h.serverVersion = 8;

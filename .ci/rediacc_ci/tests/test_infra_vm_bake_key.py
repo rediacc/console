@@ -168,6 +168,8 @@ def test_a_classified_file_that_disappears_is_a_finding(renet: pathlib.Path) -> 
         # cephpkg's pins, plans and embedded Ceph keys shape no image; only fingerprint.go is an input.
         "pkg/infra/cephpkg/cephpkg.go",
         "pkg/infra/cephpkg/keys/RPM-GPG-KEY-CentOS-SIG-Storage",
+        # sshexec's output capture only reports what a command printed; it does not shape what the bake runs.
+        "pkg/infra/sshexec/capture.go",
         "cmd/renet/main.go",
         "cmd/renet/repository_up.go",
         "cmd/renet/setup_command_test.go",
@@ -197,6 +199,9 @@ def test_touching_an_excluded_path_leaves_the_key_unchanged(renet: pathlib.Path,
         "pkg/infra/pkgset/pkgset.go",
         "pkg/infra/opsconfig/images.go",
         "pkg/infra/image/one_shot_builder.go",
+        # the ssh/scp argv and deadlines and the remote path quoting the builder sends its commands through (review 855a7b7a.1)
+        "pkg/infra/sshexec/sshexec.go",
+        "pkg/infra/sshexec/remote.go",
         "pkg/config/paths.go",
         "pkg/embed/embed.go",
         "embed-assets.lock.json",

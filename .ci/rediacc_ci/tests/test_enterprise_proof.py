@@ -11,6 +11,8 @@ import pytest
 from rediacc_ci.enterprise import proof
 from rediacc_ci.enterprise.proof import AddResult, Answer, LabError, ReleaseResult, Reply
 
+UNSETTLED = "the release did not settle in 1200 s (1 runs)"
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -85,6 +87,15 @@ class FakeLab:
     skip_without_order_admitted: bool = False
     stop_names: str = ""
     fast_moves_on_stop: bool = False
+    # The 2026-11-25 bench run: the planted run ends rc 1 on the settle bound after canary and small, before it reaches the planted company, so nothing is stopped.
+    planted_unsettled: bool = False
+    # An earlier rehearsal of the same version: the ring whose company it stopped on (the stop latches until a reset), or one that finished, so every ring company already runs it.
+    left_stop: str = ""
+    left_finished: bool = False
+    # A reset that runs without error and takes nothing out.
+    reset_keeps: bool = False
+    # The versions reset_release was asked to reset, in order.
+    resets: list[str] = dataclasses.field(default_factory=list)
     # replay / proxy
     cross_accepts: str = ""
     shared_container: bool = False
@@ -257,7 +268,7 @@ class FakeLab:
         self._rec("ensure_company")
         cid = "c" + format(abs(hash(label)) % (16**8), "08x")
         self.companies[cid] = (label, ring)
-        self.version.setdefault(cid, "0.9.0")
+        self.version.setdefault(cid, "0.9.1" if ring and self.left_finished else "0.9.0")
         self.version.setdefault("fast", "0.9.1")
         self.regions.append(region)
         if label in self.left_exported:
@@ -374,6 +385,14 @@ class FakeLab:
         if skip_pauses and not order and not self.skip_without_order_admitted:
             return ReleaseResult(rc=2, error="--skip-pauses needs --order")
         ids = self._ring_ids()
+        if self.left_stop:
+            # A latched stop: nothing deploys, whatever is planted, until the stopped company is resumed.
+            if resume != ids[self.left_stop]:
+                return ReleaseResult(rc=1, stopped=ids[self.left_stop])
+            self.left_stop = ""
+        if self.left_finished and plant_failure:
+            # Every ring already runs the version: the run is done before it reaches the planted company.
+            return ReleaseResult(rc=0)
         if plant_failure:
             for ring in proof.RELEASE_RINGS:
                 if ids[ring] == plant_failure:
@@ -381,11 +400,24 @@ class FakeLab:
                 self.version[ids[ring]] = "0.9.1"
             if self.fast_moves_on_stop:
                 self.version["fast"] = "0.9.2"
+            if self.planted_unsettled:
+                return ReleaseResult(rc=1, error=UNSETTLED)
             return ReleaseResult(rc=1, stopped=self.stop_names or plant_failure)
         for cid in ids.values():
             self.version[cid] = "0.9.1"
-        del resume
         return ReleaseResult(rc=0)
+
+    def reset_release(self, version: str) -> list[str]:
+        self._rec("reset_release")
+        self.resets.append(version)
+        if self.reset_keeps:
+            return []
+        ids = self._ring_ids()
+        self.left_stop, self.left_finished = "", False
+        for cid in ids.values():
+            if self.version.get(cid) == version:
+                self.version[cid] = "0.9.0"
+        return sorted(ids.values())
 
     # -- tokens, proxy, executor
     def mint(self, company: str, kind: str) -> str:
@@ -581,6 +613,19 @@ BREAKS: list[tuple[str, FakeLab, str]] = [
     ("release", FakeLab(skip_without_order_admitted=True), "--skip-pauses without --order"),
     ("release", FakeLab(stop_names="cdeadbeef"), "the stop names the failed company"),
     ("release", FakeLab(fast_moves_on_stop=True), "fast is unchanged by the stop"),
+    ("release", FakeLab(planted_unsettled=True), "a planted failure stops the release"),
+    # The 2026-11-24 bench run: a stop an earlier rehearsal latched, which a reset that takes nothing out leaves in place.
+    (
+        "release",
+        FakeLab(left_stop="canary", reset_keeps=True),
+        "the stop names the failed company",
+    ),
+    (
+        "release",
+        FakeLab(left_finished=True, reset_keeps=True),
+        "no ring company runs 0.9.1 before the release",
+    ),
+    ("release", FakeLab(raise_on="reset_release"), "progress on 0.9.1 is reset"),
     ("replay", FakeLab(cross_accepts="config-token"), "config-token: refused by the other"),
     ("proxy", FakeLab(cross_accepts="proxy-token"), "refused by the other proxy"),
     ("proxy", FakeLab(shared_container=True), "own container app"),
@@ -608,6 +653,60 @@ def test_a_broken_claim_exits_non_zero_and_is_named(verb: str, lab: FakeLab, cla
     rc, lines = run(verb, lab, bench=verb not in proof.PRODUCTION_VERBS)
     assert rc == 1
     assert any(claim in line for line in broken(lines)), broken(lines)
+
+
+@pytest.mark.parametrize(
+    "lab", [FakeLab(left_stop="canary"), FakeLab(left_finished=True)], ids=["stop", "finished"]
+)
+def test_release_resets_an_earlier_rehearsal_before_it_releases(lab: FakeLab) -> None:
+    rc, lines = run("release", lab)
+    assert broken(lines) == []
+    assert rc == 0, lines
+    assert lab.resets == ["0.9.1"]
+    assert lab.calls.index("reset_release") < lab.calls.index("release")
+
+
+def test_release_stops_after_a_failed_reset_and_releases_nothing() -> None:
+    lab = FakeLab(raise_on="reset_release")
+    rc, lines = run("release", lab)
+    assert rc == 1
+    assert "release" not in lab.calls
+    assert len(broken(lines)) == 1, lines
+
+
+@dataclasses.dataclass
+class ResumeFails(FakeLab):
+    """A resume that stops again with no error line, as the ring runner's latched `stop` decision does (it prints the decision on stdout only)."""
+
+    def release(
+        self,
+        *,
+        skip_pauses: bool = False,
+        order: str = "",
+        plant_failure: str = "",
+        resume: str = "",
+    ) -> ReleaseResult:
+        if resume:
+            return ReleaseResult(rc=1, stopped="c0badc0de")
+        return super().release(skip_pauses=skip_pauses, order=order, plant_failure=plant_failure)
+
+
+def test_a_resume_that_fails_names_its_rc_and_stop() -> None:
+    rc, lines = run("release", ResumeFails())
+    assert rc == 1
+    line = next(x for x in broken(lines) if "the resume finishes" in x)
+    assert "rc 1, stopped on 'c0badc0de': no error line" in line
+
+
+def test_a_planted_run_without_a_stop_breaks_both_stop_claims_and_quotes_its_error() -> None:
+    """An rc 1 that names no stopped company is no stop: the 2026-11-25 bench run passed `a planted failure stops the release` on the settle bound's rc 1, and `named ''` hid why."""
+    rc, lines = run("release", FakeLab(planted_unsettled=True))
+    assert rc == 1
+    bad = broken(lines)
+    stops = next(x for x in bad if "a planted failure stops the release" in x)
+    names = next(x for x in bad if "the stop names the failed company" in x)
+    assert UNSETTLED in stops
+    assert UNSETTLED in names
 
 
 def test_every_verb_has_at_least_one_break_case() -> None:

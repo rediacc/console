@@ -54,6 +54,14 @@ HERE = pathlib.Path(__file__).resolve().parent
 # The chains, in the order `.claude/settings.json` declares them. `post-bash` is here because `check-hook-integrity.sh` added it on 2026-08-28 after finding a whole registered chain outside its inventory: "that was a filename prefix escaping the net, this was a whole chain".
 CHAINS = ("pre-bash", "pre-edit", "pre-ask", "pre-agent", "post-bash")
 
+# Retired guard stems and the guard that now carries their policy. The CR7 fire ledger (`.ci/cache/hook-ledger/chains.jsonl`) keys a refusal by the refusing guard's stem, so a row written before a merge names a stem that is no longer on disk; a reader folding fires per guard counts such a row under the stem this maps it to rather than dropping it. Each source must be gone and each target present (test_guard_cases.py).
+RENAMED = {
+    # PLAN-tooling-code-reduction CR5: the three path-judged edit halves are one guard per chain.
+    "block_review_file_edit": "block_guarded_path_edit",
+    "block_live_proof_ledger_write": "block_guarded_path_edit",
+    "block_roundlog_write": "block_guarded_path_edit",
+}
+
 
 def stems():
     """Every guard module name in this package, sorted.
@@ -73,6 +81,30 @@ def stems():
 
 def load(stem):
     return importlib.import_module("%s.%s" % (PACKAGE, stem))
+
+
+# A guard's test tables live in `tests/guard_cases/<stem>.py` (PLAN-tooling-code-reduction CR5, D5), and `tables` forwards them back onto the guard module on demand.
+TABLES = "rediacc_hooks.tests.guard_cases"
+
+
+def tables(stem, *names):
+    """A module `__getattr__` for the guard `stem` that serves `names` from `tests/guard_cases/<stem>.py`: a guard declares `__getattr__ = tables("<stem>", "EDGE_CASES", ...)`.
+
+    WHY THE TABLES MOVED. `dispatch.run_chain` imports EVERY guard module on every hook call, and about 7,400 of this package's lines were EDGE_CASES rows, fixture-world builders and their `ENVS`, unmarshalled on each call and read by nothing but the tests.
+
+    WHY A FORWARDER AND NOT A NEW LOOKUP. The tables are read as module attributes in many places: the golden differential (`getattr(module, "EDGE_CASES", [])`, `FIXTURES`, `ENVS`), the guards' own `test-<stem>.py` suites (`G.FIXTURES[name]`), `.ci` tests, and `from rediacc_hooks.guards.<stem> import <helper>`. A module-level `__getattr__` (PEP 562) answers all of them unchanged, and Python calls it only for a name the module does not define, so a hook call never reaches it.
+
+    THE NAMES ARE LISTED, NOT GUESSED, and the stem is written out rather than derived from `__name__`. Any other missing attribute raises AttributeError at once without importing the table, which keeps this registry's own probes (`getattr(module, "OWN_SUITE", False)`, the differential's `datetime` check) from loading test data; and the guard's text names its table, so a reader and the hook-reach closure in scripts/lib/doc-providers.ts (which follows names) find it.
+    """
+    module_name = "%s.%s" % (PACKAGE, stem)
+    wanted = frozenset(names)
+
+    def forward(attr):
+        if attr not in wanted:
+            raise AttributeError("module %r has no attribute %r" % (module_name, attr))
+        return getattr(importlib.import_module("%s.%s" % (TABLES, stem)), attr)
+
+    return forward
 
 
 def modules():

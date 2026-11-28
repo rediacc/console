@@ -32,7 +32,7 @@ PHASE 4'S FILE ORDER IS NONDETERMINISTIC IN THE TWIN, AND SORTED HERE. The twin 
     commands/alpha.ts commands/zeta.ts commands/mike.ts commands/bravo.ts ...
     commands/bravo.ts commands/sub/yankee.ts commands/alpha.ts ...
 
-So there is no order to transliterate: two runs of the twin on ONE tree already disagree with each other. This port sorts, which is the only reproducible choice and is what phase 5 already does for its own two lists. `scripts/lib/shadow-gate.ts` compares findings as a MULTISET and fingerprints a SORTED list, so the two sides are ruled equivalent either way; the sorting is for the
+So there is no order to transliterate: two runs of the twin on ONE tree already disagree with each other. This port sorts, which is the only reproducible choice and is what phase 5 already does for its own two lists. the shadow gate (commit:bf054adcd4) compares findings as a MULTISET and fingerprints a SORTED list, so the two sides are ruled equivalent either way; the sorting is for the
 human reading a diff. Reported as a defect in the twin rather than treated as an ordering preference.
 
 THE `/commands/` FILTER IN PHASE 4 IS DEAD CODE. `grep -rl` is rooted at `$CLI_SRC/commands/`, so every path it can possibly return already contains
@@ -58,6 +58,13 @@ THE ABSENT-INPUT PATHS ARE ASYMMETRIC, and that asymmetry is the twin's. Phases 
 the twin, preserved because closing it would change the verdict, and reported.
 
 `grep -q 'auditService\.recordOperation'` IS A BRE WITH AN ESCAPED DOT, so it is a plain substring test and is written as one here. `'cli\.[a-z._]+[a-z_]'` is an ERE and is written as a regex. The two are not the same kind of pattern and are not treated as if they were.
+
+---- gate ----
+lane: quality-static
+step: Check audit logging coverage for CLI operations
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -543,4 +550,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_audit_coverage.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -10,7 +10,7 @@ THE TWO CONTRACTS THIS FILE IS JUDGED ON.
   IDEMPOTENCE. `.ci/lib/setup.sh:17`: "EVERY FUNCTION HERE IS IDEMPOTENT and
   returns 0 early when its condition is already met ... a second run must do no
   work." Enforced per phase in `host.py` and driven twice per phase by
-  `shadow_driver.py`.
+  `the shadow driver` (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc).
 
   `--check` MUTATES NOTHING. `check()` below runs no installer, writes no file
   and starts no container. `.ci/rediacc_ci/quality/setup_idempotency.py` check B
@@ -36,9 +36,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox
+from rediacc_ci.core import bws_env, devbox, dockerx
 from rediacc_ci.core import env as envfile
-from rediacc_ci.setup import bridge, githooks, host, phases
+from rediacc_ci.setup import bridge, githooks, host, inotify, phases
 from rediacc_ci.setup.ctx import Ctx
 
 if TYPE_CHECKING:  # pragma: no cover - `pathlib` is only ever an annotation here
@@ -96,7 +96,7 @@ def parse_args(argv: list[str]) -> Options:
 def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str, str]) -> None:
     """`reexec_with_docker_group`, `.ci/lib/local-common.sh:630`. Returns or EXECS.
 
-    After `usermod -aG docker` the current shell keeps the group set it was created with, so `docker ps` keeps failing until the operator logs out. `sg` runs a command with a group the user is entitled to but has not activated, so re-executing ourselves under it fixes the problem in place.
+    After `usermod -aG docker` the current shell keeps the group set it was created with, so `docker ps` keeps failing until the operator logs out. `dockerx.group_command` runs a command with a group the user is entitled to but has not activated (`sg`, or `sudo -n -u` where `sg` is absent), so re-executing ourselves under it fixes the problem in place.
 
     MEMBERSHIP IS READ FROM `getent group docker`, NOT FROM `id -nG`, and the bash's comment at `:626-628` is the reason: "id reports the CURRENT process's groups, which is exactly the stale information we are working around, so it would answer 'no' in the one case that matters".
 
@@ -107,7 +107,7 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
     probe = Ctx(root=root, env=env)
     if probe.run(["docker", "version"], timeout=30).rc == 0:
         return
-    if not probe.which("docker") or not probe.which("sg"):
+    if not probe.which("docker"):
         return
     group = probe.run(["getent", "group", "docker"], timeout=10)
     if group.rc != 0:
@@ -119,13 +119,17 @@ def reexec_with_docker_group(root: pathlib.Path, argv: list[str], env: dict[str,
     if not user or user not in [m for m in members.split(",") if m]:
         return
     # Prove it actually helps before re-executing, so a broken daemon does not send us round a pointless loop.
-    if probe.run(["sg", "docker", "-c", "docker version"], timeout=30).rc != 0:
+    guard = {"REDIACC_DOCKER_GROUP_REEXEC": "1"}
+    check = dockerx.group_command("docker version", user=user, env=env, extra_env=guard)
+    if check is None or probe.run(check, timeout=30).rc != 0:
         return
 
     probe.info("Applying your docker group membership to this run (no logout needed)")
     os.environ["REDIACC_DOCKER_GROUP_REEXEC"] = "1"
     command = shlex.join([str(root / "run.sh"), "setup", *argv])
-    proc.exec_replace(["sg", "docker", "-c", command])
+    wrapped = dockerx.group_command(command, user=user, env=env, extra_env=guard)
+    if wrapped is not None:
+        proc.exec_replace(wrapped)
 
 
 # --------------------------------------------------------------------------- the report ---------------------------------------------------------------------------
@@ -237,6 +241,10 @@ def check(ctx: Ctx, constants: dict[str, str], started: float | None = None) -> 
     row, hooks_pending = githooks.check_row(ctx.root)
     ctx.say(row)
     pending += hooks_pending
+
+    inotify_row, inotify_pending = inotify.check_row()
+    ctx.say(inotify_row)
+    pending += int(inotify_pending)
 
     email = host._git_global(ctx, "user.email")
     if email:
@@ -362,6 +370,9 @@ def run_setup(ctx: Ctx, options: Options, _constants: dict[str, str]) -> int:
     if host.gh_cli(ctx) != 0:
         return 1
     ctx.say()
+
+    # Advisory, never fatal: the sysctl floors `npm run ci` and `wrangler dev` need.
+    inotify.ensure(ctx)
 
     # KEPT, not replaced by `system_tools`. `ensure_host_tools` also checks zstd, curl and git, which none of the installers cover, so deleting it would quietly narrow the preflight while looking like a simplification.
     if bridge.call("ensure_host_tools", ctx.root, ctx.env) != 0:

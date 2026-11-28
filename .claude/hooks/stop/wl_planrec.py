@@ -416,16 +416,17 @@ _CITATION_GATE: list = []
 
 
 def _citation_gate():
-    """The `check_plan_citations.py` module, loaded once by file. Raises RecordError when it cannot be loaded.
+    """The `rediacc_ci.quality.plan_citations` module, imported once. Raises RecordError when it cannot be loaded.
 
     THE GATE'S OWN EXTRACTOR AND RESOLVER, imported rather than re-derived: `citations()` knows which tokens are pointers (fenced hex, digests, agent ids and fingerprints are not) and `unresolved()` knows what each kind has to land on. A second copy here would be a second opinion about what a dead citation is, which is how a bare `run.ts:352` reached a plan and only the gate caught it. Loaded lazily because the gate itself imports this module.
     """
     if _CITATION_GATE:
         return _CITATION_GATE[0]
+    import importlib
     import importlib.util
 
-    qdir = pathlib.Path(__file__).resolve().parents[3] / ".ci" / "scripts" / "quality"
-    gate = qdir / "check_plan_citations.py"
+    cidir = pathlib.Path(__file__).resolve().parents[3] / ".ci"
+    gate = cidir / "rediacc_ci" / "quality" / "plan_citations.py"
     if not gate.is_file():
         raise RecordError(
             "cannot resolve citations: %s is missing, and a line written without that check "
@@ -437,19 +438,12 @@ def _citation_gate():
         raise RecordError("cannot load %s" % hop)
     syspath = importlib.util.module_from_spec(hop_spec)
     hop_spec.loader.exec_module(syspath)
-    inserted = syspath.on_sys_path(str(qdir))
+    # `.ci` stays on sys.path: the gate imports more of `rediacc_ci` lazily, after this returns.
+    syspath.on_sys_path(str(cidir))
     try:
-        spec = importlib.util.spec_from_file_location("_check_plan_citations_for_planrec", gate)
-        if spec is None or spec.loader is None:
-            raise RecordError("cannot load %s" % gate)
-        mod = importlib.util.module_from_spec(spec)
-        try:
-            spec.loader.exec_module(mod)
-        except (SystemExit, ImportError) as exc:
-            raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
-    finally:
-        if inserted and str(qdir) in sys.path:
-            sys.path.remove(str(qdir))
+        mod = importlib.import_module("rediacc_ci.quality.plan_citations")
+    except (SystemExit, ImportError) as exc:
+        raise RecordError("cannot load %s: %s" % (gate, exc)) from exc
     _CITATION_GATE.append(mod)
     return mod
 
@@ -634,9 +628,31 @@ def resolve(root, kind, token):
         return CK.citation_state(root, token)
     if kind == "gate":
         scripts = _package_scripts(root)
-        if not scripts:
-            return False, "package.json has no scripts block to check against"
-        return (token in scripts), ("package.json scripts" if token in scripts else "no such gate")
+        if token in scripts:
+            return True, "package.json scripts"
+        # A gate the runner runs directly (no npm key, e.g. check:ci-gen-gates) is real when the lock registers it with `gate: true`, with or without a scripts block.
+        lock = pathlib.Path(root) / "scripts/ci-runner/gates.lock.json"
+        try:
+            data = json.loads(lock.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            if not scripts:
+                return (
+                    False,
+                    "package.json has no scripts block to check against, and %s could not be read (%s)"
+                    % (
+                        lock.name,
+                        exc,
+                    ),
+                )
+            return False, "no such package.json script, and %s could not be read (%s)" % (
+                lock.name,
+                exc,
+            )
+        rows = data if isinstance(data, list) else []
+        row = next((r for r in rows if isinstance(r, dict) and r.get("id") == token), None)
+        if row is not None and row.get("gate") is True:
+            return True, "gates.lock.json gate"
+        return False, "no such gate"
     if kind == "plan":
         # A BARE SLUG IS TRIED IN EVERY FOLDER, deepest first, because a closed plan lives under `agent/plans/_done/` and the slug in a citation does not say so. A full path is taken as written: the stub left at a moved plan's old path used to be a real file, so the legacy spelling resolved there and the citation kept its meaning rather than silently following the move.
         if token.startswith("agent/"):
@@ -2459,6 +2475,98 @@ def merge_ledger(doc, rel, row):
     return out
 
 
+#: The header fields `--plan-new` demands before it registers a plan (agent/plans/PLAN-plan-verbs.md T14), in the order its refusal names them.
+PLAN_NEW_FIELDS = ("Status", "Owner", "First-Seen", "Depends-On", "Priority", "Concurrency", "Owns")
+PLAN_NEW_RE = re.compile(r"^agent/plans/PLAN-[A-Za-z0-9._-]+\.md$")
+PLAN_NEW_LIST_HEADER = (
+    "plans under agent/plans/ that --plan-new can register (no box-ledger row yet):"
+)
+
+
+def _plain_value(value):
+    """A FieldSpec parse for the three fields read as plain text (Status, Owner, First-Seen): any non-empty value."""
+    v = (value or "").strip()
+    return v, ([] if v else ["the value is empty"])
+
+
+def _plan_new_specs():
+    plain = {
+        name: PD.FieldSpec(name, PD.X_HEADER_LINES, _plain_value)
+        for name in ("Status", "Owner", "First-Seen")
+    }
+    typed = {name: PD.FIELD_SPECS[name] for name in PLAN_NEW_FIELDS if name in PD.FIELD_SPECS}
+    return {name: plain.get(name) or typed[name] for name in PLAN_NEW_FIELDS}
+
+
+def _read_ledger(root):
+    try:
+        doc = json.loads((pathlib.Path(root) / LEDGER_REL).read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RecordError("cannot read %s (%s)" % (LEDGER_REL, exc)) from exc
+    return doc if isinstance(doc, dict) else {}
+
+
+def plan_new(root, rel):
+    """(ledger_doc, row) for registering ONE new plan. Raises RecordError. WRITES NOTHING.
+
+    Refused, before anything is touched: a path that is not `agent/plans/PLAN-<slug>.md` or is missing, a header without every PLAN_NEW_FIELDS field (or one whose value does not parse), a plan with no box, and a plan the ledger already carries (that one is `--plan-tick`'s). The caller stages the file, writes the ledger and refreshes the index in that order; the row is computed here through `ledger_row`, the same function every surgical ledger write uses.
+    """
+    rel = str(rel or "").strip()
+    if not PLAN_NEW_RE.match(rel):
+        raise RecordError(
+            "%r is not a plan path under agent/plans/: --plan-new registers a new live plan, "
+            "spelled agent/plans/PLAN-<slug>.md" % rel
+        )
+    p = pathlib.Path(root) / rel
+    if not p.is_file():
+        raise RecordError("%s does not exist" % rel)
+    text = p.read_text(encoding="utf-8", errors="replace")
+    if is_record(text):
+        raise RecordError("%s is a COMPACTED RECORD, not a new plan" % rel)
+    header = PD.parse_header(text, _plan_new_specs())
+    problems = []
+    for name in PLAN_NEW_FIELDS:
+        field = header.get(name)
+        if field is None:
+            problems.append("  %s: missing" % name)
+        elif field.errors:
+            problems.append("  %s: %s" % (name, "; ".join(str(e) for e in field.errors)))
+    problems += ["  %s: %s" % (name, why) for name, why in header.errors]
+    if problems:
+        raise RecordError(
+            "%s cannot be registered; its header needs every one of %s:\n%s"
+            % (rel, ", ".join(PLAN_NEW_FIELDS), "\n".join(problems))
+        )
+    open_t, done_t = PF.plan_boxes(text)
+    if not open_t and not done_t:
+        raise RecordError(
+            "%s has no box: a plan is registered by its boxes, so write its `- [ ]` tasks first"
+            % rel
+        )
+    doc = _read_ledger(root)
+    if rel in (doc.get("plans") or {}):
+        raise RecordError(
+            "%s already has a row in %s, so it is not new. A box change goes through "
+            "`worklist.py --plan-tick <me> %s <box> <evidence> --write`." % (rel, LEDGER_REL, rel)
+        )
+    row = ledger_row(root, rel, text)
+    return merge_ledger(doc, rel, row), row
+
+
+def plan_new_candidates(root):
+    """Every top-level plan under agent/plans/ the ledger has no row for, name-sorted. The listing `--plan-new <me>` prints."""
+    try:
+        known = set(_read_ledger(root).get("plans") or {})
+    except RecordError:
+        known = set()
+    folder = pathlib.Path(root) / "agent" / "plans"
+    try:
+        names = sorted(f.name for f in folder.glob("PLAN-*.md") if f.is_file())
+    except OSError:
+        return []
+    return [r for r in ("agent/plans/%s" % n for n in names) if r not in known]
+
+
 TICKABLE_HEADER = "open boxes that --plan-tick can flip in place (records are excluded):"
 
 
@@ -2561,12 +2669,33 @@ def _investigation_identity(rec):
     return json.dumps({k: v for k, v in rec.items() if k != "at"}, sort_keys=True)
 
 
+# ONE LEDGER READ PER PROCESS (agent/plans/PLAN-tooling-code-reduction.md D7). The ledger is about 3 MB and a Stop run decoded it once per reader (wl_claimcheck, wl_plandeps, wl_planpreflight, this module). The parsed rows are memoized on the file's (path, inode, mtime_ns, size), the same key discipline as wl_store's SP1 fold memo: an append moves the
+# size, so a write between two reads is re-read (the control in test_wl_data_hotpath.py), and a stat that races a write stores newer bytes under the older key, which costs one extra read later. The key cannot see an in-place rewrite of the same size inside one mtime tick (a coarse-mtime filesystem), which the append-only ledger never does. WORKLIST_READ_MEMO=off, the one switch for every read memo, turns it off. A failed read is never remembered.
+INVESTIGATION_MEMO_STATS = {"hit": 0, "miss": 0}
+_INVESTIGATION_MEMO: dict[tuple, list] = {}
+
+
 def read_investigations(root):
     """[row] from the ledger, oldest first. [] when it does not exist.
 
     NEVER RAISES on a malformed line: the ledger is append-only and two writers under one flock cannot tear a line, but a hand-edit could, and one bad line must not make every row after it invisible. A skipped line is a row that cannot testify, which fails CLOSED here -- the tick it would have licensed is refused for want of a row rather than allowed for want of a reader.
+
+    SERVED FROM THE MEMO above when the file has not moved; each call gets its own list of its own top-level row dicts, so a caller setting a key on a row cannot change what the next caller reads. Nested lists and dicts inside a row are shared with the memo and stay read-only for callers.
     """
     path = investigation_path(root)
+    key = None
+    if C.read_memo_on():
+        try:
+            st = os.stat(path)
+        except OSError:
+            st = None
+        if st is not None:
+            key = (str(path), st.st_ino, st.st_mtime_ns, st.st_size)
+            cached = _INVESTIGATION_MEMO.get(key)
+            if cached is not None:
+                INVESTIGATION_MEMO_STATS["hit"] += 1
+                return [dict(r) for r in cached]
+    INVESTIGATION_MEMO_STATS["miss"] += 1
     out: list[Any] = []
     try:
         raw = path.read_text(encoding="utf-8", errors="replace")
@@ -2582,6 +2711,11 @@ def read_investigations(root):
             continue
         if isinstance(rec, dict):
             out.append(rec)
+    if key is not None:
+        if len(_INVESTIGATION_MEMO) >= 4:
+            _INVESTIGATION_MEMO.clear()
+        _INVESTIGATION_MEMO[key] = out
+        return [dict(r) for r in out]
     return out
 
 
@@ -2980,10 +3114,12 @@ def clause2_falsifiable(root, row, evidence):
     return ""
 
 
-def plan_tick(root, rel, selector, evidence, me, now=None):
+def plan_tick(root, rel, selector, evidence, me, now=None, inv_row=None):
     """(new_plan_text, new_ledger_doc, note) for one tick. Raises RecordError.
 
-    Writes NOTHING. The caller writes both files, so a refusal on the second cannot leave the first half-applied.
+    Writes NOTHING. The caller writes the plan and the ledger (and, with `inv_row`, appends the investigation row first), so a refusal here cannot leave any of them half-applied.
+
+    `inv_row` is an investigation row built in the same call (`--plan-tick ... --investigate present`, agent/plans/PLAN-plan-verbs.md T15) and not yet appended; given, it stands in for the ledger lookup, and the caller appends it only after this returns.
     """
     root = pathlib.Path(root)
     p = root / rel
@@ -3029,7 +3165,13 @@ def plan_tick(root, rel, selector, evidence, me, now=None):
     #
     # Measured corpus-wide before this was written: 13 `    (ticked) ` evidence lines across all four plan folders, all of them in ONE file, against 589 done boxes. `--plan-tick` has been used on about 2% of the boxes it was written for and the rest were flipped with the Edit tool carrying no evidence of any kind. There is nothing to re-check on them and never will be, so this
     # binds the NEXT tick and never a past one. Saying so here is what stops a later "strengthening" into a rule that reds 576 boxes it cannot possibly judge.
-    inv_row = investigation_for(root, rel, sig)
+    if inv_row is not None and inv_row.get("sig") != sig:
+        raise RecordError(
+            "the investigation row passed in is for box %s, not box %s of %s"
+            % (inv_row.get("sig"), sig, rel)
+        )
+    if inv_row is None:
+        inv_row = investigation_for(root, rel, sig)
     if inv_row is not None and inv_row.get("retro"):
         # A RETRO ROW DESCRIBES A PAST CLOSE and never licenses a new one. It can only exist for a box that was ticked, so reaching it here means the box was re-opened; the re-opened box gets a live investigation like any other.
         raise RecordError(

@@ -22,12 +22,16 @@ Uploads are implicit: once remote is enabled, config writes go to the store. The
 device-code handoff, so it is not available to agents unattended
 - **Member management**: Requires web portal (elevated + 2FA) — not available to agents
 - Agents can read config storage status via the account web API but cannot modify
+- **Config writes**: agents change one field at a time with `rdc config field set --current`; `rdc config edit` (interactive, `--apply`, `--reveal`) has no agent path and no override
+- **Remote MCP**: an agent grant (minted in the portal, one config, 7 days by default, 30 at most) lets a remote agent run tools on the org executor; it is not a key holder and cannot edit the policy record
 
 ## Architecture
 
 - One store per organization, configs scoped per team
 - Triple-layer encryption: SDK (time-windowed) + CEK (client-controlled) + Org passphrase (server-side)
-- Passkey provides PRF-derived secret — no password to remember
+- Two unlock slots, passkey (PRF; on the device or a phone over QR) and the recovery kit; no password slot
+- Every member holds a mandatory recovery kit, saved at enrollment with a save check
+- Safety net: the server refuses a deletion that leaves fewer than two key holders and no recovery slot (`CONFIG_SAFETY_NET`); machine secrets and agent grants are not key holders
 - Rotating tokens self-destruct after each use, IP-bound
 
 ## Setup Flow (Web Portal Only)
@@ -38,6 +42,10 @@ device-code handoff, so it is not available to agents unattended
 4. Derive encryption keys via PRF (touch again)
 5. Server creates store, client generates CEK
 6. passkey_secret stored in OS keyring for future CLI use
+
+## Headless enrollment
+
+A machine with no browser enrolls with a machine secret (`RM1-`, minted in the portal, shown once): `REDIACC_MACHINE_SECRET=... rdc config remote enable --machine-secret <id>`, with an API token holding the `config:enroll` scope. `<id>` is the machine secret's id (`machineSecretId`), not the secret (`RM1-...`) itself. The secret comes from the environment, stdin or a hidden prompt, never argv.
 
 ## PRF Provider Compatibility
 
@@ -64,7 +72,7 @@ device-code handoff, so it is not available to agents unattended
 |-------|-------|-----|
 | "Config storage not configured" | Server doesn't have blob storage | Admin must configure R2/RustFS |
 | "passkey_secret not found" | OS secure storage cleared | Re-run setup via web portal |
-| "PRF not supported" | Authenticator lacks PRF | Use YubiKey, iCloud Keychain, 1Password, or Dashlane |
+| "PRF not supported" | Authenticator lacks PRF | Use YubiKey, iCloud Keychain, 1Password, Dashlane, or a phone over QR |
 | "X25519 not supported" | Browser too old | Update to Chrome 133+, Edge 133+, Firefox 130+, Safari 17+ |
 | "Already configured" | Store exists for org | Visit /account/config-storage to manage |
 | "Cannot remove last member" | Would lock out store | Add another member first |

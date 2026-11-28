@@ -61,6 +61,10 @@ MAX_EXECUTOR_CAP = 25
 MAX_EXECUTOR_HEAVY_CAP = 5
 ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
+# The credit ledger entrypoint AiEgress reserves and commits through (workers/account/src/credit-ledger.ts, PLAN-console-ai-credits.md D4).
+CREDITS_BINDING = ("CREDITS", "CreditLedgerGate")
+# The Cloudflare account that owns the AI Gateways of .ci/config/ai-gateway.json (the same account cf_auth defaults to).
+AI_GATEWAY_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
 TARGET_KEYS = ("eu", "us", "asia", "bench-eu", "bench-us", "bench-asia", "dev")
@@ -170,6 +174,11 @@ def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
     )
 
 
+def ai_variables(rid: str) -> tuple[tuple[str, str], ...]:
+    """The AI Gateway vars of a target serving region `rid`: the owning account and the region's gateway (`rediacc-<region>` in .ci/config/ai-gateway.json)."""
+    return (("AI_GATEWAY_ACCOUNT_ID", AI_GATEWAY_ACCOUNT_ID), ("AI_GATEWAY_ID", "rediacc-%s" % rid))
+
+
 def bench_key(rid: str) -> str:
     """The target key of region `rid`'s bench: `bench-<r>`."""
     return "bench-%s" % rid
@@ -202,10 +211,16 @@ def _bench_target(region: dict) -> Target:
         name=name,
         routes=(proxy_host, *RETIRING_BENCH_PROXY_HOSTS.get(rid, ())),
         account_url=account_url,
-        variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", "bench")),
+        variables=(
+            ("ACCOUNT_URL", account_url),
+            ("REGION", rid),
+            ("ENVIRONMENT", "bench"),
+            *ai_variables(rid),
+        ),
         services=(
             (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
             (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+            (CREDITS_BINDING[0], account, CREDITS_BINDING[1]),
         ),
         destinations=("otlp-%s-logs" % otlp, "otlp-%s-traces" % otlp),
         version_metadata=True,
@@ -240,10 +255,12 @@ def targets(regions: list[dict]) -> dict[str, Target]:
                 ("ACCOUNT_URL", account_url),
                 ("REGION", rid),
                 ("ENVIRONMENT", SHARED_ENVIRONMENT),
+                *ai_variables(rid),
             ),
             services=(
                 (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
                 (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+                (CREDITS_BINDING[0], account, CREDITS_BINDING[1]),
             ),
             destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
             version_metadata=True,
@@ -306,10 +323,12 @@ def company_target(company: str, region_id: str, regions: list[dict], domain: st
             ("ACCOUNT_URL", account_url),
             ("REGION", region_id),
             ("ENVIRONMENT", COMPANY_ENVIRONMENT),
+            *ai_variables(region_id),
         ),
         services=(
             (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
             (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+            (CREDITS_BINDING[0], account, CREDITS_BINDING[1]),
         ),
         destinations=("otlp-%s-logs" % region_id, "otlp-%s-traces" % region_id),
         version_metadata=True,
@@ -341,6 +360,8 @@ def render(template: str, target: Target, extra_vars: tuple[tuple[str, str], ...
         "ACCOUNT_URL": target.account_url,
         "REGION": dict(target.variables)["REGION"],
         "ENVIRONMENT": dict(target.variables)["ENVIRONMENT"],
+        "AI_GATEWAY_ACCOUNT_ID": dict(target.variables)["AI_GATEWAY_ACCOUNT_ID"],
+        "AI_GATEWAY_ID": dict(target.variables)["AI_GATEWAY_ID"],
         "ACCOUNT_SERVICE": account,
         "OTLP_LOGS": target.destinations[0],
         "OTLP_TRACES": target.destinations[1],

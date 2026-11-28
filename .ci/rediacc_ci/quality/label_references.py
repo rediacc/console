@@ -74,6 +74,14 @@ SITE ORDER IS FILESYSTEM STATE, NOT REPOSITORY CONTENT, AND THE TWO SIDES NEED N
 AGREE ON IT. `grep -rl` emits in the order its directory walk produces and `os.walk` does the same, and the two orders are NOT the same walk: measured 2026-09-06 over one directory of four files, ugrep 7.8.4 returned bravo, mike, zeta, alpha and `os.walk` returned bravo, mike, alpha, zeta. So a finding naming TWO OR MORE sites can differ between the implementations in the order of
 that one bracketed list, while naming the same set. This is not fixable by sorting: sorting would guarantee a difference wherever the twin's readdir order is not sorted, which is most of the time. It is stated here because it is the one place this port is not byte-deterministic against its twin, and because the differential specimens are therefore built with exactly one site per
 finding.
+
+---- gate ----
+kind: test
+id: check:ci-label-refs
+test: .ci/rediacc_ci/tests/gates/test_gate_label_references.py
+blocker: BLOCKER: test_gate_label_references.py:test_real_tree_is_clean_and_excludes_this_file runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security, "Python package tests"), so the real sweep over .github/.ci executes every CI run; the fixture cases around it prove both fire directions
+needs: none
+---- end gate ----
 """
 
 import os
@@ -92,14 +100,15 @@ MIN_DISTINCT_ENV = "LABEL_REFS_MIN_DISTINCT"
 
 DEFAULT_LABELS_FILE = ".github/labels.yml"
 # Space-separated for the test seam; defaults to the real surfaces.
-DEFAULT_SCAN_DIRS = ".github .ci"
+# `scripts` joined on 2026-11-24 when the nightly-status reporter was retired and its labels lost their consumer surface. The poster that took over is gone too (PLAN-retire-nightlies-and-mentions N1), so the real sweep now finds 5.
+DEFAULT_SCAN_DIRS = ".github .ci scripts"
 # "The tree carries well over this many distinct referenced labels; finding fewer means the sweep itself broke (wrong root, bad glob), not a clean tree."
-DEFAULT_MIN_DISTINCT = 8
+DEFAULT_MIN_DISTINCT = 5
 
 # Excluded by BASENAME, because both files carried planted sample lines that were instrument fixtures rather than label references. Both have since been retired, so the list matches nothing today and is kept because the twin's recorded output was produced with it in place.
 GREP_EXCLUDES = ("check-label-references.sh", "test-label-references.sh")
-# Recorded state, never code that consumes a label: the untracked build cache, and the shadow ledgers (observations of commands already run).
-RECORDED_PARTS = ("/.ci/cache/", "/.ci/shadow/")
+# Recorded state, never code that consumes a label: the untracked build cache.
+RECORDED_PARTS = ("/.ci/cache/",)
 
 # The token every planted sample must yield, ASSEMBLED rather than written.
 #
@@ -463,4 +472,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_label_references.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(main(sys.argv[1:]))

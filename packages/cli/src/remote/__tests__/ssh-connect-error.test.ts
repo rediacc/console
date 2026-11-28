@@ -5,7 +5,7 @@ import type { Client as SSHClient } from 'ssh2';
 import { afterEach, describe, expect, it } from 'vitest';
 import { seamedSftpClient } from '../../__tests__/sftp-client-seam.js';
 import { EXIT_CODES } from '../../types/index.js';
-import { resolveWithin, type SFTPClient } from '../sftp/client.js';
+import { forgetLearnedIpv6, resolveWithin, type SFTPClient } from '../sftp/client.js';
 import {
   classifySshConnectFailure,
   SshConnectError,
@@ -146,6 +146,8 @@ describe('SFTPClient.connect classification', () => {
 });
 
 describe('SFTPClient.connect IPv6 retry', () => {
+  // Each test starts with nothing learned: a successful IPv6 retry is remembered for the process.
+  afterEach(() => forgetLearnedIpv6());
   const v4 = '192.0.2.10';
   const v6 = '2001:db8::22';
   type Outcome = 'unreachable' | 'refused' | 'auth' | 'ready';
@@ -338,5 +340,90 @@ describe('SFTPClient.connect IPv6 retry', () => {
     await client.connect();
     clients[0]?.emit('close');
     expect(client.isConnected()).toBe(true);
+  });
+
+  // A warm container executor (eu-bench's, 2026-11-27) reaches hostinger only over IPv6: every connect used to pay the full readyTimeout on the dead IPv4 first.
+  describe('the learned IPv6 address', () => {
+    it('reports the address the session connected over', async () => {
+      const { create } = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, create, noAaaa);
+      expect(client.dialedHost).toBe(v4);
+      await client.connect();
+      expect(client.dialedHost).toBe(v6);
+    });
+
+    it('is dialed first by a later connect to the same host, with no IPv4 attempt', async () => {
+      const first = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+      await seamedSftpClient({ ...base, host: v4, ipv6: v6 }, first.create, noAaaa).connect();
+      const second = byHost({ [v4]: 'unreachable', [v6]: 'ready' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, second.create, noAaaa);
+      await client.connect();
+      expect(second.tried).toEqual([v6]);
+      expect(client.dialedHost).toBe(v6);
+    });
+
+    it('is forgotten once it stops answering, and the configured host is dialed again', async () => {
+      await seamedSftpClient(
+        { ...base, host: v4, ipv6: v6 },
+        byHost({ [v4]: 'unreachable', [v6]: 'ready' }).create,
+        noAaaa
+      ).connect();
+      const later = byHost({ [v4]: 'ready', [v6]: 'unreachable' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, later.create, noAaaa);
+      await client.connect();
+      expect(later.tried).toEqual([v6, v4]);
+      expect(client.dialedHost).toBe(v4);
+      const third = byHost({ [v4]: 'ready' });
+      await seamedSftpClient({ ...base, host: v4, ipv6: v6 }, third.create, noAaaa).connect();
+      expect(third.tried).toEqual([v4]);
+    });
+
+    it('a machine down on both addresses costs two dials, not three', async () => {
+      await seamedSftpClient(
+        { ...base, host: v4, ipv6: v6 },
+        byHost({ [v4]: 'unreachable', [v6]: 'ready' }).create,
+        noAaaa
+      ).connect();
+      const down = byHost({ [v4]: 'unreachable', [v6]: 'unreachable' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: v6 }, down.create, noAaaa);
+      await expect(client.connect()).rejects.toBeInstanceOf(SshConnectError);
+      expect(down.tried).toEqual([v6, v4]);
+    });
+
+    it('is dropped when the recorded IPv6 changed since it was learned', async () => {
+      await seamedSftpClient(
+        { ...base, host: v4, ipv6: v6 },
+        byHost({ [v4]: 'unreachable', [v6]: 'ready' }).create,
+        noAaaa
+      ).connect();
+      const moved = '2001:db8::99';
+      const later = byHost({ [v4]: 'unreachable', [moved]: 'ready' });
+      const client = seamedSftpClient({ ...base, host: v4, ipv6: moved }, later.create, noAaaa);
+      await client.connect();
+      expect(later.tried).toEqual([v4, moved]);
+      expect(client.dialedHost).toBe(moved);
+    });
+
+    it('is not learned for another port of the same host', async () => {
+      await seamedSftpClient(
+        { ...base, host: v4, ipv6: v6 },
+        byHost({ [v4]: 'unreachable', [v6]: 'ready' }).create,
+        noAaaa
+      ).connect();
+      const other = byHost({ [v4]: 'ready' });
+      await seamedSftpClient({ ...base, host: v4, port: 2222 }, other.create, noAaaa).connect();
+      expect(other.tried).toEqual([v4]);
+    });
+  });
+
+  it('an unreachable IPv4 with no IPv6 address names how to record one', async () => {
+    const { create } = byHost({ [v4]: 'unreachable' });
+    const error = await connectError(seamedSftpClient({ ...base, host: v4 }, create, noAaaa));
+    expect(error.errorCode).toBe('EGRESS_UNREACHABLE');
+    expect(error.message).toContain('--public-ipv6');
+    const hostname = await connectError(
+      seamedSftpClient({ ...base, host: 'm.example.test' }, byHost({}).create, noAaaa)
+    );
+    expect(hostname.message).not.toContain('--public-ipv6');
   });
 });

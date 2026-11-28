@@ -11,6 +11,8 @@ import json
 import pathlib
 import re
 
+import wl_reggate
+
 from rediacc_hooks.tests import wlfix
 
 # A package.json whose `ci` key really runs `check:ci-real`, which is what makes a citation of that name resolvable rather than hallucinated.
@@ -182,12 +184,110 @@ def test_86_proof_a_new_gate_wired_transitively_and_green_settles_as_proven(wl):
             instruction="gate written",
         )
     )
+    # The stop only reads the verdict `--prove` recorded; the gate's own run happens here, off the stop path.
+    assert "exit 0 (recorded)" in "\n".join(wl_reggate.prove_cli(wl.proj))
     wl.checkj(
         "allow", "settled as proven", "a wired (ci -> batch -> gate), green gate is the proof"
     )
     text = marker.read_text(encoding="utf-8")
     assert '"exit": 0' in text, "no cached gate run in the marker: %s" % text[:300]
     assert "check-newgate.sh" in text, "no cached gate run in the marker: %s" % text[:300]
+
+
+def test_86e_prove_cli_records_the_gates_stdout_and_stderr_in_the_persisted_log(wl):
+    """Review 31b8b02f.3: `prove_cli` drives the real run and the log it keeps carries both streams as text, plus the exit trailer; a red exit is recorded as red."""
+    wl.reg_repo()
+    (wl.proj / "package.json").write_text(
+        '{"name":"p","version":"0.0.0","scripts":{"ci":"npm run check:ci-loud",'
+        '"check:ci-loud":"bash .ci/scripts/quality/check-loud.sh"}}\n',
+        encoding="utf-8",
+    )
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    gate = quality / "check-loud.sh"
+    gate.write_text(
+        "#!/bin/bash\necho OUT-SENTINEL-1\necho ERR-SENTINEL-2 >&2\nexit 3\n", encoding="utf-8"
+    )
+    rel = ".ci/scripts/quality/check-loud.sh"
+    lines = wl_reggate.prove_cli(wl.proj)
+    assert any("exit 3 (recorded)" in x for x in lines), lines
+    digest = wl_reggate._hash_file(str(gate))
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) == 3
+    rows = json.loads(wl_reggate._verdict_path(wl.proj).read_text(encoding="utf-8"))
+    log = (wl_reggate._log_dir(wl.proj) / rows[rel]["log"]).read_text(encoding="utf-8")
+    assert "OUT-SENTINEL-1" in log, log
+    assert "ERR-SENTINEL-2" in log, log
+
+
+def test_86b_control_a_gate_with_no_recorded_verdict_is_not_run_by_the_stop_and_does_not_prove(wl):
+    """CONTROL for test_86: the same wired, green gate with no `--prove` run leaves the finding open and starts no npm."""
+    wl.say("done for now")
+    wl.brief_now()
+    marker = wl.reg_repo()
+    (wl.proj / "package.json").write_text(
+        '{"name":"p","version":"0.0.0","scripts":{"ci":"npm run check:ci-batch",'
+        '"check:ci-batch":"npm run check:ci-newgate",'
+        '"check:ci-newgate":"bash .ci/scripts/quality/check-newgate.sh"}}\n',
+        encoding="utf-8",
+    )
+    wl.run()
+    wl.fixcommit("src.ts", "fix: the recurring defect")
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    (quality / "check-newgate.sh").write_text(
+        "#!/bin/bash\ntouch ran-by-the-stop\nexit 0\n", encoding="utf-8"
+    )
+    wl.shim_judge(
+        judge_verdict(
+            blind_spot="nothing asserted the invariant",
+            recurring=True,
+            gate_needed=True,
+            gate_proven=True,
+            instruction="gate written",
+        )
+    )
+    wl.checkj("block", "no recorded verdict", "the stop names `--prove` instead of running npm")
+    assert not (wl.proj / "ran-by-the-stop").exists()
+    assert '"exit": 0' not in marker.read_text(encoding="utf-8")
+
+
+def _forge_setup(wl):
+    wl.reg_repo()
+    quality = wl.proj / ".ci" / "scripts" / "quality"
+    quality.mkdir(parents=True, exist_ok=True)
+    gate = quality / "check-forged.sh"
+    gate.write_text("#!/bin/bash\nexit 0\n", encoding="utf-8")
+    rel = ".ci/scripts/quality/check-forged.sh"
+    return rel, wl_reggate._hash_file(str(gate)), wl_reggate._verdict_path(wl.proj)
+
+
+def test_86c_a_forged_verdict_row_with_no_log_is_not_a_recorded_verdict(wl):
+    rel, digest, path = _forge_setup(wl)
+    path.write_text(json.dumps({rel: {"hash": digest, "exit": 0}}), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None
+    # A row naming a log that does not exist, or one outside the log dir, is refused too.
+    row = {"hash": digest, "exit": 0, "log": "../x.log", "log_sha256": "0" * 64}
+    path.write_text(json.dumps({rel: row}), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None
+
+
+def test_86d_control_a_recorded_run_reads_back_and_any_tamper_refuses_it(wl):
+    rel, digest, path = _forge_setup(wl)
+    wl_reggate._record_verdict(wl.proj, rel, digest, 0, "gate output\n")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) == 0
+    assert wl_reggate.recorded_verdict(wl.proj, rel, "f" * 64) is None, "different content hash"
+    rows = json.loads(path.read_text(encoding="utf-8"))
+    log = wl_reggate._log_dir(wl.proj) / rows[rel]["log"]
+    good = log.read_text(encoding="utf-8")
+    log.write_text(good.replace("exit=0", "exit=1"), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "log edited after the run"
+    log.write_text(good, encoding="utf-8")
+    rows[rel]["exit"] = "0"
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "non-int exit"
+    rows[rel]["exit"] = 1
+    path.write_text(json.dumps(rows), encoding="utf-8")
+    assert wl_reggate.recorded_verdict(wl.proj, rel, digest) is None, "exit disagrees with the log"
 
 
 def test_87_control_a_gate_defined_but_not_reachable_from_ci_does_not_prove(wl):

@@ -8,6 +8,8 @@ THE ERROR LOG BLOCKS (plan PLAN-trap-enforcement.md section 4.3.4). `.claude/hoo
 
 THE FIRE LOG ADVISES (section 5, defence 3: "a measured hit rate, or the rule is retired"). Every note the dispatcher shows appends `{rule, ts, session}` to `fires.jsonl`. A rule with more than RETIRE_FIRES fires and no row in `confirmed.jsonl` is a retirement candidate: it speaks often, and nobody has ever said it was right. The report names it; it never removes anything, because a rule that fires on real traps every time is also a rule with many fires.
 
+THE GUARD REPORT GENERALISES THIS (agent/plans/PLAN-tooling-code-reduction.md CR8). `wl_hookreport.py` applies the same retirement rule to the guard chain ledger's refusals, through the same `confirmed.jsonl`, so `wl_hookreport.py --confirm <stem>` and `--trap-confirm <rule>` record one kind of fact, and `retire_candidates` here calls `wl_hookreport.unconfirmed`.
+
 THE MESSAGES LIVE HERE, not in worklist_messages.py, so the producer and its text change together.
 """
 
@@ -86,9 +88,10 @@ def retire_candidates(base=None):
     fires = Counter(str(r.get("rule") or "") for r in read_jsonl(base / "fires.jsonl"))
     fires.pop("", None)
     confirmed = {str(r.get("rule") or "") for r in read_jsonl(base / "confirmed.jsonl")}
-    return [
-        (rule, n) for rule, n in fires.most_common() if n > RETIRE_FIRES and rule not in confirmed
-    ]
+    # The one retirement rule, shared with the guard report (wl_hookreport.unconfirmed, CR8); imported here because wl_hookreport imports this module.
+    import wl_hookreport
+
+    return wl_hookreport.unconfirmed(fires, confirmed, RETIRE_FIRES)
 
 
 def retire_note(base=None):

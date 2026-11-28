@@ -7,6 +7,7 @@ PATH is manipulated per case rather than mocked, so "the host lacks it" is a fac
 """
 
 import atexit
+import glob
 import importlib.util
 import json
 import os
@@ -16,10 +17,12 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 import _hookpath
 
 from rediacc_hooks import guards
+from rediacc_hooks.guards import _harness
 
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
@@ -68,7 +71,7 @@ def _case_env(path, extra):
 
 def run(cmd, path=None, extra=None):
     env = _case_env(path, extra)
-    return subprocess.run(
+    return _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
@@ -80,7 +83,7 @@ def run(cmd, path=None, extra=None):
 
 def run_full(cmd, path=None, extra=None):
     env = _case_env(path, extra)
-    return subprocess.run(
+    return _harness.run(
         GUARD_ARGV,
         input=json.dumps({"tool_input": {"command": cmd}}),
         capture_output=True,
@@ -137,7 +140,7 @@ box_name = subprocess.run(
 ).stdout.strip()
 have_box = box_name != ""
 
-cases = []
+cases: list[tuple[Any, Any, str]] = []
 
 # --- ALLOW: the half that decides whether this guard survives ---------------
 cases.append(
@@ -148,7 +151,7 @@ cases.append((0, run("git status"), "CONTROL: a non-npm command is out of scope"
 cases.append(
     (
         0,
-        run("./run.sh devbox exec -- npm run check:ci-python-lint"),
+        run("./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint"),
         "CONTROL: already routed through the devbox is out of scope",
     )
 )
@@ -160,12 +163,12 @@ cases.append(
     )
 )
 
-# The host HAS the tool -> never route. Proven by shimming one onto PATH.
+# The host HAS the tool -> never route. Proven by shimming one onto PATH. The gate runs as its module since CR2 (no npm key), so the module spelling is what a session types.
 fake("ruff")
 cases.append(
     (
         0,
-        run("npm run check:ci-python-lint", WITH_SHIM),
+        run("PYTHONPATH=.ci python3 -m rediacc_ci.quality.lint_config_liveness", WITH_SHIM),
         "CONTROL: host HAS ruff, so the guard leaves it alone",
     )
 )
@@ -188,7 +191,7 @@ if have_box:
         cases.append(
             (
                 2,
-                run("npm run check:ci-python-lint", REAL),
+                run("npm run ci -- --only check:ci-python-lint", REAL),
                 "host lacks ruff and the devbox has it -> REFUSED with the devbox form",
             )
         )
@@ -196,7 +199,7 @@ if have_box:
         cases.append(
             (
                 0,
-                run("npm run check:ci-python-lint", REAL),
+                run("npm run ci -- --only check:ci-python-lint", REAL),
                 "CONTROL: this host actually has ruff, so no routing is correct",
             )
         )
@@ -204,10 +207,80 @@ else:
     cases.append(
         (
             0,
-            run("npm run check:ci-python-lint", REAL),
+            run("npm run ci -- --only check:ci-python-lint", REAL),
             "CONTROL: no devbox running, so the guard notes rather than blocks",
         )
     )
+
+# --- A GATE WITH NO NPM KEY (CR2): the module spellings and the runner spelling -----
+# check:ci-python-lint lost its package.json key, so `npm run check:ci-python-lint` no longer exists and block_missing_npm_script refuses it. These cases are CONSTRUCTED rather than ambient, because the refusal arm needs a running devbox carrying ruff and this host may have neither: a fake `docker` answers `ps` with one box and `exec` with 0, and `_path_without` hides ruff. Whether this machine has a devbox or ruff must not decide which arm runs.
+_FAKEBOX = tempfile.mkdtemp(dir=RUN_TMP)
+atexit.register(shutil.rmtree, _FAKEBOX, ignore_errors=True)
+with open(os.path.join(_FAKEBOX, "docker"), "w", encoding="utf-8") as fh:
+    fh.write('#!/bin/sh\nif [ "$1" = ps ]; then echo fake-devbox; fi\nexit 0\n')
+os.chmod(os.path.join(_FAKEBOX, "docker"), 0o700)
+NORUFF_BOX = "%s:%s" % (_FAKEBOX, _path_without("ruff", REAL))
+for module in ("rediacc_ci.quality.lint_config_liveness", "rediacc_ci.quality.python_lint"):
+    typed = "PYTHONPATH=.ci python3 -m %s" % module
+    r = run_full(typed, NORUFF_BOX)
+    cases.append((2, r.returncode, "NEEDS_SCRIPT: %s without ruff, box has it -> REFUSED" % module))
+    cases.append(
+        (
+            True,
+            "this command needs 'ruff'" in r.stderr
+            and ("./run.sh devbox exec -- %s" % typed) in r.stderr,
+            "NEEDS_SCRIPT: %s is routed as the command typed" % module,
+        )
+    )
+r = run_full("npm run ci -- --only check:ci-python-lint", NORUFF_BOX)
+cases.append((2, r.returncode, "gate key with no npm script: the runner spelling is REFUSED"))
+cases.append(
+    (
+        True,
+        "gate 'check:ci-python-lint' needs 'ruff'" in r.stderr
+        and "./run.sh devbox exec -- npm run ci -- --only check:ci-python-lint" in r.stderr,
+        "gate key with no npm script: named as the gate, routed as the command typed",
+    )
+)
+cases.append(
+    (
+        False,
+        "devbox exec -- npm run check:ci-python-lint" in r.stderr,
+        "gate key with no npm script: never routed to the npm key that no longer exists",
+    )
+)
+cases.append(
+    (
+        0,
+        run("python3 -m pytest -k rediacc_ci.quality.lint_config_liveness", NORUFF_BOX),
+        "CONTROL: a pytest selection naming the lint module is a mention, not a run",
+    )
+)
+# THE OTHER DIRECTION: a gate key that IS still a root npm script keeps the npm route, so the CR2 branch cannot swallow every gate-key hit. `--silent` makes the typed command differ from the npm route, so a guard routing every hit as typed fails here instead of agreeing by accident (a plain `npm run check:ci-renet` is the same string both ways, and that control did not fire).
+r = run_full("npm run check:ci-renet --silent", "%s:%s" % (_FAKEBOX, _path_without("go", REAL)))
+cases.append((2, r.returncode, "CONTROL: check:ci-renet (an npm script) without go -> REFUSED"))
+cases.append(
+    (
+        True,
+        "./run.sh devbox exec -- npm run check:ci-renet\n" in r.stderr,
+        "CONTROL: a gate key that is a root npm script keeps the npm route",
+    )
+)
+# A present but unusable package.json keeps the npm form too (review f70b84ef.1): malformed JSON is the ValueError arm, a top-level array the AttributeError arm.
+_BAD_JSON = tempfile.mkdtemp(dir=RUN_TMP)
+pathlib.Path(_BAD_JSON, "package.json").write_text('{"scripts": {', encoding="utf-8")
+_ARRAY_JSON = tempfile.mkdtemp(dir=RUN_TMP)
+pathlib.Path(_ARRAY_JSON, "package.json").write_text("[]", encoding="utf-8")
+cases.extend(
+    (want, guards.load("block_host_toolchain_run")._root_script_absent(root, name), label)
+    for want, root, name, label in (
+        (True, REPO, "check:ci-python-lint", "package.json: the python-lint key is gone (CR2)"),
+        (False, REPO, "release:local", "CONTROL: a present root script is not absent"),
+        (False, RUN_TMP, "check:ci-python-lint", "CONTROL: no package.json keeps the npm form"),
+        (False, _BAD_JSON, "check:ci-python-lint", "CONTROL: malformed package.json keeps npm"),
+        (False, _ARRAY_JSON, "check:ci-python-lint", "CONTROL: array package.json keeps npm"),
+    )
+)
 
 # --- BARE TOOL: the same class, for a directly-typed command ---------------- The NEEDS table above matches a GATE KEY string in the command (`check:ci-python-lint`); it is blind to `go build ./...`, which names no gate at all. BARE_TOOLS exists to catch exactly that shape. Constructed rather than ambient: whether THIS host happens to have `go` on PATH must not decide which branch
 # of the guard gets exercised. Strip every PATH entry that actually resolves `go`, so the REFUSE branch runs deterministically instead of silently degrading to a no-op CONTROL assertion on a host that has go (which is exactly what happened the first time this case was written: it passed while testing nothing, because `go` was on this host's PATH the whole time).
@@ -303,7 +376,9 @@ if have_box:
     ):
         if not os.path.exists(os.path.join(REPO, path)):
             continue
-        cases.append((want, run(f"npm run check:ci-python-lint --prefix {path}", REAL), why))
+        cases.append(
+            (want, run(f"npm run ci --prefix {path} -- --only check:ci-python-lint", REAL), why)
+        )
 
 # A command that uploads to R2 without its credentials does not fail, it half-succeeds: 52 files copied locally, 0 uploaded, exit 0, and a closing warning that named the wrong cause. The credentials come from Bitwarden through `bws_env exec --profile publish-media` (PLAN-account-env-to-bws). Only asserted where the account submodule is checked out, since the guard is deliberately silent without it.
 if os.path.exists(os.path.join(REPO, "private/account/package.json")):
@@ -437,6 +512,72 @@ for tool in ALL_TOOLS:
     cases.append(
         (0, run(f"{tool} --version", with_shim), f"CONTROL: {tool} present on PATH is left alone")
     )
+
+# --------------------------------------------------------------------------- THE HOST-BUILT TOOLCHAIN ARM, ON A FIXTURE THAT NEEDS NO REAL DEVBOX AND NO REAL .venv.
+#
+# The submodule cases above run only when a devbox is up and the private/ trees exist, so on a runner with neither the `if hostbound:` branch was never reached and dropping it changed no verdict (check:ci-guard-mutations, DEFECT, 2026-11-21). Here the devbox is a shim `docker` that lists one container and succeeds at `exec`, so the ONLY thing standing between a missing `go` and the refusal is the host-built check; the directory is a temp one holding a `.venv`, named relative to the repo root because the guard resolves a token under that root.
+_FAKE_DOCKER_DIR = tempfile.mkdtemp(dir=RUN_TMP)
+with open(os.path.join(_FAKE_DOCKER_DIR, "docker"), "w", encoding="utf-8") as fh:
+    fh.write('#!/bin/sh\nif [ "$1" = ps ]; then echo fixture-box; fi\nexit 0\n')
+os.chmod(os.path.join(_FAKE_DOCKER_DIR, "docker"), 0o700)
+_HB_PATH = "%s:%s" % (_FAKE_DOCKER_DIR, _path_without("go", REAL))
+
+
+# INSIDE THE REPO ROOT, NOT UNDER /tmp: the guard walks the token's ancestors as STRINGS, so a `..` path climbs through the real checkout's parents and finds a `node_modules` there (measured: the plain control read as host-built). Under the root the walk stops at the root. The `.tmp` suffix is matched by the existing gitignore rule, and atexit removes it.
+# A run killed by a signal skips atexit and leaves its directory behind: every directory whose pid is no longer alive is swept at the next start (review 3d240dbf.1).
+def _sweep_stale_fixtures(directory):
+    """Removes each `.hostguard-fixture.<pid>.tmp` under `directory` whose pid is dead; a live pid, a pid it may not signal and a name that carries no pid are kept."""
+    for stale in glob.glob(os.path.join(directory, ".hostguard-fixture.*.tmp")):
+        try:
+            os.kill(int(stale.rsplit(".", 2)[-2]), 0)
+        except ProcessLookupError:
+            shutil.rmtree(stale, ignore_errors=True)
+        except (ValueError, PermissionError):
+            pass
+
+
+_sweep_stale_fixtures(REPO)
+# The sweep itself (review 5def89ce.2): a dead pid's directory is removed, a live pid's and a pid-less name's are kept.
+_dead = subprocess.Popen([sys.executable, "-c", "pass"])
+_dead.wait()
+_SWEEP = tempfile.mkdtemp(dir=RUN_TMP)
+for _name in (_dead.pid, os.getpid(), "nopid"):
+    os.makedirs(os.path.join(_SWEEP, ".hostguard-fixture.%s.tmp" % _name))
+_sweep_stale_fixtures(_SWEEP)
+cases.append(
+    (
+        [False, True, True],
+        [
+            os.path.isdir(os.path.join(_SWEEP, ".hostguard-fixture.%s.tmp" % n))
+            for n in (_dead.pid, os.getpid(), "nopid")
+        ],
+        "stale sweep: a dead pid's fixture directory goes, a live pid's and a pid-less one stay",
+    )
+)
+_HB_ROOT = os.path.join(REPO, ".hostguard-fixture.%d.tmp" % os.getpid())
+atexit.register(shutil.rmtree, _HB_ROOT, ignore_errors=True)
+_HB_BUILT = os.path.join(_HB_ROOT, "built")
+_HB_PLAIN = os.path.join(_HB_ROOT, "plain")
+os.makedirs(os.path.join(_HB_BUILT, ".venv"))
+os.makedirs(_HB_PLAIN)
+cases.append(
+    (
+        2,
+        run("go build %s" % os.path.relpath(_HB_PLAIN, REPO), _HB_PATH),
+        "host-built arm, CONTROL: a directory with no .venv is routed into the devbox",
+    )
+)
+_hb = run_full("go build %s" % os.path.relpath(_HB_BUILT, REPO), _HB_PATH)
+cases.append(
+    (0, _hb.returncode, "host-built arm: a directory owning a .venv is NOT routed into the devbox")
+)
+cases.append(
+    (
+        True,
+        "HOST-BUILT toolchain" in _hb.stderr,
+        "host-built arm: the note says why the devbox is not the answer",
+    )
+)
 
 # --------------------------------------------------------------------------- aws, bw, bws -- the three the tables did not cover until 2026-09-23.
 #
@@ -723,8 +864,6 @@ _AWS_ARGV = re.compile(r"""[\[(]\s*(?:["']aws["']|awscli\.AWS)\s*[,\]]""")
 _AWS_EXEMPT = {
     # A multi-verb library CLI: aws is one verb (s3api list-objects-v2) of many, so a module row would refuse every other verb on a host without aws.
     "rediacc_ci.core.common",
-    # A shadow-run driver for tests; it replays the bash common.sh, it is not run against R2.
-    "rediacc_ci.core.common_stub_shadow_driver",
     # The check:ci-aws-resolver gate, which refuses a literal "aws" argv head; its selftest plants carry one, and it never runs aws.
     "rediacc_ci.quality.aws_resolver",
     # The toolchain doctor: `aws --version` is one probe among every pinned tool, and a row would refuse the doctor on exactly the host that lacks aws and needs it told so.

@@ -8,8 +8,8 @@ tags:
 subcategory: regulations
 order: 3
 language: tr
-sourceHash: "1a0a2df716f6628b"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "3fa7dcd465e26d0b"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Sağlık Sigortası Taşınabilirlik ve Hesap Verebilirlik Yasası (HIPAA), hassas hasta sağlık bilgilerinin (PHI) korunması için standartlar belirleyen bir ABD federal yasasıdır. Kapsanan kuruluşlar (sağlık hizmeti sağlayıcıları, sağlık planları, sağlık takas odaları) ve iş ortakları için geçerlidir.
@@ -35,7 +35,7 @@ HIPAA idari, teknik ve fiziksel güvenceler gerektirir. Aşağıdaki tablo bunla
 | Gereksinim | Rediacc Yeteneği |
 |-----------|-----------------|
 | İş gücü erişim yönetimi | Kapsamlı izinlerle API token'ları. Ekip tabanlı erişim kontrolü. Ekipten çıkarılma durumunda otomatik token iptali. |
-| Güvenlik olayı prosedürleri | Denetim günlükleri tüm işlemlerin adli izini sağlar. Depo başına izolasyon etki alanını sınırlar. |
+| Güvenlik olayı prosedürleri | Denetim günlükleri, kapsadıkları işlemler için kimin ne yaptığını kaydeder. Depo başına ağ akış kayıtları (ücretli planlar, depo başına seçilen düzeyde) ve inceleme zaman çizelgesi bir olay için kanıt sağlar; akış kayıtları hacmi ve hedefi gösterir, içeriği değil. HIPAA'ya özgü bir rapor üretilmez. Depo başına izolasyon etki alanını sınırlar. |
 | Acil durum planlaması | `rdc repo push/pull` çoklu hedefli şifreli yedeklemeyi destekler. CoW anlık görüntüleri anlık kurtarmayı sağlar. |
 
 ### Fiziksel Güvenceler

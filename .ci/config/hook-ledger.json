@@ -1,0 +1,550 @@
+{
+  "$comment": [
+    "Written ONLY by `python3 .claude/hooks/stop/wl_hookreport.py --snapshot` from the local",
+    "guard chain ledger .ci/cache/hook-ledger/chains.jsonl (dispatch.run_chain, CR7). No session id.",
+    "Read by `--check-snapshot` (freshness registry, nightly) and by the chainLatencyP50Ms budget."
+  ],
+  "refreshed_at": "2026-11-23T08:17:47Z",
+  "window": {
+    "from": "2026-11-23T06:36:46Z",
+    "to": "2026-11-23T08:17:46Z",
+    "days": 0.07,
+    "rows": 2227,
+    "sessions": 3
+  },
+  "chains": {
+    "pre-agent": {
+      "runs": 59,
+      "p50_ms": 557.9,
+      "p90_ms": 2368.8
+    },
+    "pre-ask": {
+      "runs": 2,
+      "p50_ms": 153.3,
+      "p90_ms": 171.5
+    },
+    "pre-bash": {
+      "runs": 2003,
+      "p50_ms": 198.9,
+      "p90_ms": 576.4
+    },
+    "pre-edit": {
+      "runs": 163,
+      "p50_ms": 100.5,
+      "p90_ms": 204.5
+    }
+  },
+  "guards": {
+    "block_adhoc_sanctioned": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_admin_merge": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_agent_browser_repo_output": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1,
+      "slow_p50_ms": 20.8
+    },
+    "block_agent_state_shape": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_away_questions": {
+      "chain": "pre-ask",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_backup_unverified_push": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_bash_write_to_running_script": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1,
+      "slow_p50_ms": 21.5
+    },
+    "block_binary_deploy": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_blanket_git_add": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 692,
+      "slow_p50_ms": 31.1
+    },
+    "block_ci_polling": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_ci_reverse_poll": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1,
+      "slow_p50_ms": 24.4
+    },
+    "block_ci_skip_token": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 19,
+      "slow_p50_ms": 28.7
+    },
+    "block_cli_bundle": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_commit_meta": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 141,
+      "slow_p50_ms": 30.7
+    },
+    "block_commit_of_live_writer_file": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 69,
+      "slow_p50_ms": 502.6
+    },
+    "block_commit_on_main": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 98,
+      "slow_p50_ms": 34.6
+    },
+    "block_compacted_plan_edit": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_destructive_git_restore": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1288,
+      "slow_p50_ms": 38.5
+    },
+    "block_edit_of_running_script": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_git_amend": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 28,
+      "slow_p50_ms": 27.5
+    },
+    "block_git_empty_commit": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_git_force_push": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 751,
+      "slow_p50_ms": 30.8
+    },
+    "block_git_hook_bypass": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 122,
+      "slow_p50_ms": 28.7
+    },
+    "block_guarded_path_edit": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_host_toolchain_run": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1,
+      "slow_p50_ms": 21.6
+    },
+    "block_inline_python": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 19,
+      "slow_p50_ms": 65.5
+    },
+    "block_inline_workflow_run": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_landing_one_way": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 4,
+      "slow_p50_ms": 51.3
+    },
+    "block_lease_boundary": {
+      "chain": "pre-bash",
+      "fires": 2,
+      "slow_runs": 61,
+      "slow_p50_ms": 39.7
+    },
+    "block_live_proof_ledger_shell_write": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 3,
+      "slow_p50_ms": 61.0
+    },
+    "block_long_sleep": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 25,
+      "slow_p50_ms": 28.2
+    },
+    "block_merge_with_unpushed": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_missing_npm_script": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_no_review_ineligible": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 22,
+      "slow_p50_ms": 29.3
+    },
+    "block_nondraft_pr_create": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_nonstandard_branch_name": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 532,
+      "slow_p50_ms": 31.9
+    },
+    "block_origin_clone": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 41,
+      "slow_p50_ms": 28.8
+    },
+    "block_pathspecless_git_commit": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_plan_box_rewrite": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 23,
+      "slow_p50_ms": 33.1
+    },
+    "block_plan_concurrency": {
+      "chain": "pre-agent",
+      "fires": 7,
+      "slow_runs": 52,
+      "slow_p50_ms": 902.2
+    },
+    "block_plan_without_depends": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_plan_without_tasks": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_pr_freeze_commit": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 2,
+      "slow_p50_ms": 51.7
+    },
+    "block_premature_ready": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_prose_style_commit": {
+      "chain": "pre-bash",
+      "fires": 13,
+      "slow_runs": 55,
+      "slow_p50_ms": 30.8
+    },
+    "block_prose_style_edit": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 24,
+      "slow_p50_ms": 24.1
+    },
+    "block_protected_files": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 2,
+      "slow_p50_ms": 22.1
+    },
+    "block_protected_files_edit": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_push_to_protected_branch": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_push_with_unrecorded_reviews": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_raw_ci_read": {
+      "chain": "pre-bash",
+      "fires": 2,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_raw_pr_body_edit": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_rebase_over_foreign_dirt": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_renet_untested_push": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_review_file_shell_write": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 14,
+      "slow_p50_ms": 31.4
+    },
+    "block_roundlog_truncate": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 2,
+      "slow_p50_ms": 23.6
+    },
+    "block_second_branch": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_second_open_pr": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_self_matching_pgrep": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_settled_questions": {
+      "chain": "pre-ask",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_shape_lessons": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 148,
+      "slow_p50_ms": 28.0
+    },
+    "block_short_wake_timeout": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_ssh_docker": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_ssh_file_write": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_stale_pr_branch_date": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_suppressions": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 12,
+      "slow_p50_ms": 44.8
+    },
+    "block_suppressions_shell_write": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_unasked_release": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_unlinked_commit_author": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 9,
+      "slow_p50_ms": 28.0
+    },
+    "block_unproven_bulk_transform": {
+      "chain": "pre-bash",
+      "fires": 4,
+      "slow_runs": 46,
+      "slow_p50_ms": 28.4
+    },
+    "block_unpushed_submodule_pin": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 1,
+      "slow_p50_ms": 20.6
+    },
+    "block_unsatisfiable_pid_wait": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_unscoped_formatter_run": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_untagged_commit": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 23,
+      "slow_p50_ms": 26.5
+    },
+    "block_unverified_push": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_user_only_command": {
+      "chain": "pre-edit",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_user_only_command_shell_write": {
+      "chain": "pre-bash",
+      "fires": 1,
+      "slow_runs": 5,
+      "slow_p50_ms": 27.5
+    },
+    "block_vm_unverified_push": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "block_worktree_add": {
+      "chain": "pre-bash",
+      "fires": 10,
+      "slow_runs": 608,
+      "slow_p50_ms": 32.8
+    },
+    "warn_hook_change": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "warn_remote_drift": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 0,
+      "slow_p50_ms": null
+    },
+    "warn_staged_shape_duplication": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 8,
+      "slow_p50_ms": 29.2
+    },
+    "warn_stale_index": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 57,
+      "slow_p50_ms": 33.3
+    },
+    "warn_submodule_deletions": {
+      "chain": "pre-bash",
+      "fires": 0,
+      "slow_runs": 20,
+      "slow_p50_ms": 26.0
+    },
+    "warn_writer_brief": {
+      "chain": "pre-agent",
+      "fires": 0,
+      "slow_runs": 21,
+      "slow_p50_ms": 357.5
+    }
+  },
+  "overlaps": []
+}

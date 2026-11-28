@@ -4,27 +4,26 @@
     npm run login:bench -- --region us       # the us bench (host and D1 name from regions.json `bench`, config us-bench)
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.login_bench [--region eu|us|asia] [--server URL] [--config NAME]
 
-`--region` picks the bench; `--server` and `--config` may only repeat that region's own values. A regional bench has no recorded store entry, so `config remote enable` runs without `--config-id` for it and its first link creates the entry.
+`--region` picks the bench; `--server` and `--config` may only repeat that region's own values. The store entry each bench config attaches to is named by the scope of that bench's machine secret, never by `--config-id` (the CLI refuses the two together).
 
 BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the selected region's bench origin and any rdc config other than that region's, before it reads a credential. The one exception is the internal `--mail-token` child entry, which the re-enrolment starts under its bench's deploy profile (`deploy-bench-<region>`, `deploy-bench-<region>`): it reads the Cloudflare keys to query that bench's D1 and prints one reauth token. Edge and stable keep human login; no profile binds an account for them.
 
 THE STEPS, in order:
 
-  1. Re-execute under the bench's own login profile (`rediacc_ci.core.bws_env exec`), unless it is already bound: `bench-login-<region>`, which maps that bench's `_<REGION>` store entries onto the names the tool reads. The profile binds ROOT_EMAIL, BENCH_ROOT_PASSWORD, BENCH_ROOT_TOTP_SEED and BENCH_STORE_MASTER_PASSWORD. Another bench's login profile already bound is refused with exit 2, because `bws_env exec` never overwrites a name already set.
+  1. Re-execute under the bench's own login profile (`rediacc_ci.core.bws_env exec`), unless it is already bound: `bench-login-<region>`, which maps that bench's `_<REGION>` store entries onto the names the tool reads. The profile binds ROOT_EMAIL, BENCH_ROOT_PASSWORD, BENCH_ROOT_TOTP_SEED, REDIACC_MACHINE_SECRET (the ONE machine secret every config enrolls with, operator ruling ASKED:2026-11-24T13:43Z) and REDIACC_MACHINE_SECRET_ID (that bench's own id for it, from `REDIACC_MACHINE_SECRET_ID_BENCH_<REGION>`: the account server gives each store's mint its own id). Another bench's login profile already bound is refused with exit 2, because `bws_env exec` never overwrites a name already set.
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
-  3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
+  3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The bench values are removed from that child's environment.
   3b. Probe the account with its own password login (`POST /auth/login`, the same route the CLI uses). Three outcomes:
       - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a first refusal (a 4xx) is retried once with the next window's code; a 429 or 5xx is a rate-limit or server fault and stops at once with a fault message, never the stale-seed one (the account refuses a code already spent, so a second run inside one window is refused with a good seed), and a second refusal is the STALE-SEED refusal (TOTP is on but the seed in `BENCH_ROOT_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and does not retry again.
       - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench-<region>` (`deploy-bench-<region>` for another bench) that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to that bench's own Bitwarden entry, `BENCH_ROOT_TOTP_SEED` for eu and `BENCH_ROOT_TOTP_SEED_<REGION>` for the others (`seed_entry`; `bws_env store-from-env`, the value in the writer's child environment as `BENCH_ROOT_TOTP_SEED_NEW`; argv names that variable and never holds the value) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
   3c. In the same session, accept the current Terms of Service when the account's acceptance does not satisfy them (`GET`/`POST /portal/terms[/accept]`, the version and digest the server reports; operator ruling ASKED:2026-11-11T17:38Z, bench only).
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
-  5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
+  5. Always run `./rdc.sh --config eu-bench config remote enable --machine-secret <REDIACC_MACHINE_SECRET_ID> --api-url <BENCH_ORIGIN>` with REDIACC_MACHINE_SECRET in the child environment (the id rides argv, the secret never does; the login's api token carries the `config:enroll` scope the enrollment needs); `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
   4b. Before the subscription login, run `./rdc.sh config init <config> --server <origin>` when the region's rdc config file does not exist yet.
-  5b. When `config remote enable` refuses with the no-storage message (`ENABLE_NO_STORE`) (a regional bench's first link), set the store up with the session this run elevates (`POST /auth/reauth` as `reenrol` does), the request body built by the product's own crypto helper (`lab.ts_crypto`, `op: setup`, the master password) and posted to `POST /configs/setup`, which answers 201 with the store and an initial token; then run `config remote enable` once more.
   5c. When the config's `remote.apiUrl` names another origin (the pre-rename `https://bench.rediacc.cloud`), run `config remote disable --local -y` before step 5 and add `--force` to it: the store's copy replaces the local file (kept as `.bak`), never the reverse.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
-WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).
+WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`). A changed IP alone needs no login at all: `./rdc.sh` exports `REDIACC_IP_REBIND_CODE_COMMAND` for a bench config, so the CLI moves the token with the code `rediacc_ci.ops.rebind_code` derives from this bench's seed and the command continues.
 
 SECRETS. Every value travels by name in a child's environment: never on argv, never printed, never logged. Each `rdc` child gets only the values its own step needs, and `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from it, so an inherited dev selection cannot redirect the login to another server or config. A failed step exits 1 naming the step.
 """
@@ -33,7 +32,6 @@ from __future__ import annotations
 
 import dataclasses
 import http.client
-import importlib
 import json
 import os
 import re
@@ -59,43 +57,41 @@ REGIONS = ("eu", "us", "asia")
 REGION_CONFIGS = {"eu": CONFIG, "us": "us-bench", "asia": "asia-bench"}
 # Every CLI config name that reaches bench, and the one place a consumer reads it from (ops_health's bench hint, the post-bash bench hint `.claude/hooks/stop/wl_benchblock.py`): the three regional configs and rdc.sh's `./rdc.sh --config bench <cmd>`.
 BENCH_CONFIGS = (*REGION_CONFIGS.values(), "bench")
-# The store entry the home bench's config attaches to. A regional bench has no recorded entry: its first `config remote enable` creates one, so no `--config-id` is passed for it.
-CONFIG_IDS = {DEFAULT_REGION: "1880812c-2086-4daa-a620-8f84aa3b6e7c"}
-CONFIG_ID = CONFIG_IDS[DEFAULT_REGION]
 PLACEHOLDER = "PLACEHOLDER-operator-fills"
 MIN_WINDOW_LEFT = 5
 
 EMAIL_ENV = "ROOT_EMAIL"
 PW_ENV = "BENCH_ROOT_PASSWORD"
 TOTP_SEED_ENV = "BENCH_ROOT_TOTP_SEED"
-MASTER_PW_ENV = "BENCH_STORE_MASTER_PASSWORD"
-SOURCE_NAMES = (EMAIL_ENV, PW_ENV, TOTP_SEED_ENV, MASTER_PW_ENV)
+SOURCE_NAMES = (EMAIL_ENV, PW_ENV, TOTP_SEED_ENV)
+# The enrollment pair (operator ruling ASKED:2026-11-24T13:43Z: one shared machine secret for every config). The secret is read under the very name the CLI reads (packages/cli/src/commands/config-remote-machine-secret.ts MACHINE_SECRET_ENV); the id is per store, bound from `REDIACC_MACHINE_SECRET_ID_BENCH_<REGION>`. `read_values` leaves them out because root_grants and feedback sign in with it and enroll nothing.
+MS_ID_ENV = "REDIACC_MACHINE_SECRET_ID"
+MS_ENV = "REDIACC_MACHINE_SECRET"
+ENROLL_NAMES = (MS_ID_ENV, MS_ENV)
 
-# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/commands/config-remote-master-password.ts).
+# The names the CLI reads (packages/cli/src/services/account/subscription-password-auth.ts).
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
+# The store's recovery code, bound optional by the bench-login profiles for an agent minting a machine secret; no child of this tool needs it.
+RECOVERY_CODE_ENV = "BENCH_STORE_RECOVERY_CODE"
 # The CLI refusal for a config that is linked and whose device can open it (no distinct error code exists).
 # packages/cli/src/i18n/locales/en/cli.json `commands.config.remote.enable.alreadyEnabled`, with {{name}} as the quoted config name.
 ENABLE_ALREADY_OPEN = re.compile(
     r'Config "[^"]+" is already linked to remote storage and this device can open it, so there is nothing to enable\.'
 )
-# The CLI's refusal when the organization has no config store yet (packages/cli/src/commands/config-remote-master-password.ts maps the server's "Config storage is not configured" to `commands.config.remote.masterPasswordNoStorage`); it carries no error code either.
-ENABLE_NO_STORE = "Config storage is not configured for your organization"
-# The account's store-setup route (the same path `rediacc_ci.enterprise.lab.SETUP_PATH` posts, and a test holds the two equal); lab imports this module, so the value is repeated here and lab is imported only when the setup runs.
-STORE_SETUP_PATH = "/account/api/v1/configs/setup"
 # The CLI reads configs from `$XDG_CONFIG_HOME/rediacc/<name>.json` (packages/cli/src/commands/config.ts).
 CONFIG_DIR_NAME = "rediacc"
 # The CLI refusal carries no error code, so its text is matched; the child's language is pinned to the English catalogue the template comes from (packages/cli/src/i18n/config.ts and config-base.ts `getLanguage` read this variable first).
 CLI_LANG_ENV = "REDIACC_LANG"
 CLI_LANG = "en"
-CLI_STORE_MASTER_PW_ENV = "REDIACC_STORE_MASTER_PASSWORD"
 CHILD_SECRET_NAMES = (
     *SOURCE_NAMES,
+    *ENROLL_NAMES,
     LOGIN_EMAIL_ENV,
     LOGIN_PW_ENV,
     LOGIN_TOTP_ENV,
-    CLI_STORE_MASTER_PW_ENV,
+    RECOVERY_CODE_ENV,
 )
 # Inherited selections that would point `./rdc.sh` somewhere other than eu-bench on bench.
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
@@ -218,12 +214,11 @@ def _bws_entry(name: str) -> str:
 
 @dataclasses.dataclass(frozen=True)
 class Target:
-    """One bench region's login target: its account origin, rdc config, the store entry to attach to (None: the first link creates it) and the D1 database and wrangler config the re-enrolment reads captured mail from (None, None: the deploy_bench defaults of the home bench)."""
+    """One bench region's login target: its account origin, rdc config, and the D1 database and wrangler config the re-enrolment reads captured mail from (None, None: the deploy_bench defaults of the home bench)."""
 
     region: str
     server: str
     config: str
-    config_id: str | None
     d1_name: str | None
     d1_config: str | None
 
@@ -249,7 +244,6 @@ def target_for(region: str) -> Target:
         region,
         "https://" + host,
         REGION_CONFIGS[region],
-        CONFIG_IDS.get(region),
         d1_name,
         "wrangler.bench-%s.toml" % region,
     )
@@ -297,16 +291,24 @@ def parse_args(argv: Sequence[str]) -> tuple[str, str]:
     return target.server, target.config
 
 
-def read_values(env: Mapping[str, str], region: str = DEFAULT_REGION) -> dict[str, str]:
-    """The four bench values of REGION's bench; a missing one or the placeholder is a LoginError (rc 2) naming the Bitwarden entry."""
+def _entry_of(name: str, region: str) -> str:
+    """The Bitwarden entry the `bench-login-<region>` profile binds onto NAME: the per-store id entry for the machine-secret id, the shared entry for the secret, `store_name` for the rest."""
+    if name == MS_ID_ENV:
+        return "%s_BENCH_%s" % (MS_ID_ENV, region.upper())
+    if name == MS_ENV:
+        return MS_ENV
+    return store_name(name, region)
+
+
+def _read(env: Mapping[str, str], names: Sequence[str], region: str) -> dict[str, str]:
     values: dict[str, str] = {}
-    for name in SOURCE_NAMES:
+    for name in names:
         value = env.get(name) or ""
         if not value.strip():
             raise LoginError(
                 "%s is not set: run under `bws_env exec --profile %s` (npm run login:bench does)"
                 % (
-                    _bws_entry(store_name(name, region)),
+                    _bws_entry(_entry_of(name, region)),
                     bench_preflight.profile_for(PROFILE_ROLE, region),
                 ),
                 rc=2,
@@ -314,10 +316,21 @@ def read_values(env: Mapping[str, str], region: str = DEFAULT_REGION) -> dict[st
         if value.strip() == PLACEHOLDER:
             raise LoginError(
                 "%s still holds the placeholder %r: the operator fills that Bitwarden entry first"
-                % (_bws_entry(store_name(name, region)), PLACEHOLDER),
+                % (_bws_entry(_entry_of(name, region)), PLACEHOLDER),
                 rc=2,
             )
         values[name] = value.strip()
+    return values
+
+
+def read_enroll_values(env: Mapping[str, str], region: str = DEFAULT_REGION) -> dict[str, str]:
+    """The machine-secret id and the shared machine secret `config remote enable` takes; a missing one or the placeholder is a LoginError (rc 2) naming the Bitwarden entry."""
+    return _read(env, ENROLL_NAMES, region)
+
+
+def read_values(env: Mapping[str, str], region: str = DEFAULT_REGION) -> dict[str, str]:
+    """The three sign-in values of REGION's bench (email, password, TOTP seed); a missing one or the placeholder is a LoginError (rc 2) naming the Bitwarden entry."""
+    values = _read(env, SOURCE_NAMES, region)
     try:
         totp.decode_seed(values[TOTP_SEED_ENV])
     except totp.TotpError as exc:
@@ -396,14 +409,20 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str, target: Target | None = None) -> list[dict]:
-    """`wrangler d1 execute` against the bench D1 with the Global API Key pair the deploy-bench-<region> profile binds; stdout is never printed (it holds live links)."""
+    """`wrangler d1 execute` against the bench D1 with the Bearer token in `CLOUDFLARE_API_TOKEN` (the Global API Key pair only when no token is set); stdout is never printed (it holds live links)."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
-    if not (key and mail):
-        raise LoginError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
     env = dict(os.environ)
-    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
-        env.pop(name, None)
-    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    if env.get("CLOUDFLARE_API_TOKEN"):
+        # The Bearer token (the resolved Auth) authenticates; the global-key names must not shadow it.
+        for name in ("CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL", "CF_API_KEY"):
+            env.pop(name, None)
+    elif key and mail:
+        env.pop("CF_API_KEY", None)
+        env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    else:
+        raise LoginError(
+            "CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY and CF_EMAIL, are required to read the captured email"
+        )
     env["CLOUDFLARE_ACCOUNT_ID"] = deploy_bench.ACCOUNT_ID
     argv = [
         *wrangler.ARGV,
@@ -622,31 +641,6 @@ def _error_messages(out: str) -> list[str]:
     ]
 
 
-def enable_needs_store(rc: int, out: str) -> bool:
-    """True when `config remote enable` failed because the organization has no config store: a nonzero exit whose JSON envelope carries the CLI's no-storage message."""
-    return rc != 0 and any(ENABLE_NO_STORE in m for m in _error_messages(out))
-
-
-def setup_store(
-    api: Poster,
-    password: str,
-    crypto: Callable[[dict], dict],
-) -> None:
-    """Create the organization's config store with one master-password slot, on the elevated session in `api`: the request body comes from the product's own crypto helper (`op: setup`), and the account answers 201 with the store and its initial token (neither is printed)."""
-    material = crypto({"op": "setup", "password": password})
-    body = material.get("body") if isinstance(material, dict) else None
-    if not isinstance(body, dict):
-        raise LoginError("the crypto helper's setup answered no request body")
-    status, answer = api.post(STORE_SETUP_PATH, body)
-    store = answer.get("store")
-    store_id = store.get("id") if isinstance(store, dict) else None
-    token = answer.get("initialToken")
-    if status != 201 or not store_id or not isinstance(token, str) or not token:
-        raise LoginError(
-            "POST %s answered HTTP %d with no store and initial token" % (STORE_SETUP_PATH, status)
-        )
-
-
 def _config_path(config: str, env: Mapping[str, str]) -> str | None:
     """`$XDG_CONFIG_HOME/rediacc/<config>.json` (`$HOME/.config` when unset); None when neither variable is set, since a relative base would read a stray file in the working directory."""
     base = env.get("XDG_CONFIG_HOME") or (
@@ -674,13 +668,6 @@ def linked_api_url(config: str, env: Mapping[str, str]) -> str | None:
     remote = data.get("remote") if isinstance(data, dict) else None
     url = remote.get("apiUrl") if isinstance(remote, dict) else None
     return url if isinstance(url, str) and url else None
-
-
-def _default_crypto(request: dict) -> dict:
-    # lab imports this module, so it is loaded when the setup runs, never at import.
-    lab = importlib.import_module("rediacc_ci.enterprise.lab")
-    answer: dict = lab.ts_crypto(request)
-    return answer
 
 
 def _rdc(config: str, *args: str) -> list[str]:
@@ -768,7 +755,6 @@ def login(
     sleep: Callable[[float], None] = time.sleep,
     capture: Capture = _subprocess_capture,
     api: Poster | None = None,
-    crypto: Callable[[dict], dict] = _default_crypto,
     config_exists: Callable[[str, Mapping[str, str]], bool] = config_file_exists,
     linked_url: Callable[[str, Mapping[str, str]], str | None] = linked_api_url,
 ) -> None:
@@ -776,6 +762,7 @@ def login(
     target = parse_target(argv)
     server, config = target.server, target.config
     values = read_values(env, target.region)
+    enroll = read_enroll_values(env, target.region)
     clean = base_env(env)
 
     ci = str(paths.repo_root() / ".ci")
@@ -860,7 +847,7 @@ def login(
 
     enable_env = dict(clean)
     enable_env[CLI_LANG_ENV] = CLI_LANG
-    enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
+    enable_env[MS_ENV] = enroll[MS_ENV]
     # A config linked to another origin (the pre-rename `https://bench.rediacc.cloud`) is refused by `enable` ("can only be enrolled again there"). Unlink it locally (`disable --local`, which touches no server data), then enable again with `--force`. `--force` only skips the confirmation before the local file is replaced by the store's copy (packages/cli/src/commands/config-remote-enable.ts, finalizeEnable): the server copy stays authoritative and is never overwritten, and the CLI keeps the replaced file as `<config>.json.bak`. A config already linked to the target gets neither. A config not linked to the target (linked elsewhere, or unlinked by an earlier run whose enable then failed) gets `--force`, so a rerun after that failure does not hit the refusal again; only one linked elsewhere is unlinked first.
     force = False
     if config_exists(config, env):
@@ -881,27 +868,17 @@ def login(
         "config",
         "remote",
         "enable",
-        "--master-password",
+        "--machine-secret",
+        enroll[MS_ID_ENV],
         *(["--force"] if force else []),
-        *(["--config-id", target.config_id] if target.config_id else []),
         "--api-url",
         server,
     )
 
-    def enable() -> tuple[int, str]:
-        log.step("Enabling the remote config store (config remote enable)")
-        rc, out = capture(enable_argv, enable_env)
-        if out:
-            print(out, end="" if out.endswith("\n") else "\n")
-        return rc, out
-
-    enable_rc, enable_out = enable()
-    if enable_needs_store(enable_rc, enable_out):
-        # The organization has no config store yet (a regional bench's first link): set it up with the session this run elevates, then enable again.
-        log.step("The organization has no config store: setting it up (POST /configs/setup)")
-        elevate(account, values[EMAIL_ENV], clean, capture, now, target.region)
-        setup_store(account, values[MASTER_PW_ENV], crypto)
-        enable_rc, enable_out = enable()
+    log.step("Enabling the remote config store (config remote enable --machine-secret)")
+    enable_rc, enable_out = capture(enable_argv, enable_env)
+    if enable_out:
+        print(enable_out, end="" if enable_out.endswith("\n") else "\n")
     if not enable_settled(enable_rc, enable_out):
         detail = ""
         if enable_rc == 2 and not _is_json(enable_out):

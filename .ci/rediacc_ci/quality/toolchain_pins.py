@@ -1,6 +1,6 @@
 r"""Every gate-tool version is defined ONCE, and nothing acquires unpinned.
 
-Ported from `.ci/scripts/quality/check-toolchain-pins.sh`, which W7 P5 batch C1 retired once `.ci/shadow/w7p2-toolchain-pins.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-toolchain-pins.sh`, which W7 P5 batch C1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS.
@@ -92,6 +92,15 @@ the outcome".
 STREAMS. `fail()` is `✗ <msg>` on STDERR and `pass()` is `ok <msg>` on STDOUT,
 neither through a logger. The A1/A2/A8 detail lists follow their `✗` on STDERR;
 the A10 detail list goes to STDOUT with a nine-space indent, which is an inconsistency in the twin and is preserved because moving it would change which stream a reader greps.
+
+---- gate ----
+step: Toolchain pins
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, and its subject IS the setup path. Emitting it into the region would gate it on setup succeeding, so the gate that explains a broken setup would be the one silenced by it.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import fnmatch
@@ -416,6 +425,20 @@ def check_a6(report: Report, root: pathlib.Path) -> None:
         report.fail("A6. these trust PATH instead of acquiring at the pin: %s" % " ".join(missing))
 
 
+def bare_env() -> dict[str, str]:
+    """The environment of a BARE source: this process's, minus every key the pins file defines.
+
+    A CI job exports the pins before this gate runs (the toolchain step writes them to the job's environment), so a subshell that inherited them resolved a pin even from a library whose `toolchain_load` was a no-op: the A9 control failed in Console CI run 46109550206 ("the mutant still resolved a pin ('0.11.0')") while passing on a host with nothing exported. Removing the pinned keys makes "bare" mean bare on both.
+    """
+    pins = pathlib.Path(__file__).resolve().parents[3] / PINS_REL
+    keys = set()
+    for line in read_lines(pins) if pins.is_file() else ():
+        m = re.match(r"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=", line)
+        if m:
+            keys.add(m.group(1))
+    return {k: v for k, v in os.environ.items() if k not in keys}
+
+
 def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
     """`bash -c "source <lib>; toolchain_pin_for <tool>"`. Never raises.
 
@@ -428,8 +451,9 @@ def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
             stderr=subprocess.DEVNULL,
             text=True,
             check=False,
+            env=bare_env(),
         )
-    except OSError:
+    except (OSError, ValueError):
         return ""
     return proc.stdout
 
@@ -903,4 +927,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_toolchain_pins.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

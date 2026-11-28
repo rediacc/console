@@ -14,3 +14,7 @@
 {"kind":"debt","sig":"bfb157ab4027","blind_spot":"No check validates the stop hook's signal derivation (items_sig) matches the demand that signal answers. This inconsistency is internal to the hook and invisible to external gates.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_wl_remaining_bank.py","charged":11,"at":"2026-09-24T17:23:56Z","br":"0923-1"}
 {"kind":"charge","sig":"bfb157ab4027","why":"capped","at":"2026-09-24T17:23:56Z","br":"0923-1"}
 {"kind":"charge","sig":"10f2b8836d45","why":"proven","at":"2026-09-24T19:43:53Z","br":"0923-1"}
+{"kind":"materialize","sig":"a36ca2883098","item":"5a181897","at":"2026-11-27T07:57:56Z","br":"0923-1"}
+{"kind":"materialize","sig":"8d05ac51018b","item":"6a728d55","at":"2026-11-27T07:57:56Z","br":"0923-1"}
+{"kind":"materialize","sig":"bfb157ab4027","item":"08373f91","at":"2026-11-27T07:57:56Z","br":"0923-1"}
+{"kind":"discharge","sig":"bfb157ab4027","artifact":".claude/rediacc_hooks/tests/test_wl_remaining_bank.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_remaining_bank.py last committed 2026-10-14T12:32:58+02:00, after the debt (2026-09-24T17:23:56Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:57:57Z","br":"0923-1"}

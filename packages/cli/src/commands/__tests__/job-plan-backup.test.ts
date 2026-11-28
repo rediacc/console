@@ -22,11 +22,13 @@ const STRATEGY = vi.hoisted(() => ({
   destinations: [{ kind: 'hosted-service', name: 'd' }],
 }));
 
-/** The store columns of a unit with no destination data: one home row. */
+/** The store columns of the home row, read from the account's status for the machine's repositories. */
 const HOME_COLUMNS = {
   store: 'home',
-  newestSnapshot: '-',
-  verify: '-',
+  lastRun: '2026-11-27T02:00:00Z',
+  result: 'stored',
+  newestSnapshot: '2026-11-27T02:00:59Z',
+  verify: 'ok',
   cleanup: 'enabled',
   copyLag: '-',
 };
@@ -40,9 +42,49 @@ vi.mock('../../services/config/config-resources.js', () => ({
         ssh: { privateKeyPath: '/k' },
       }),
     listBackupStrategies: () => Promise.resolve({ nightly: STRATEGY }),
-    listRepositories: () => Promise.resolve([]),
+    listRepositories: () =>
+      Promise.resolve([
+        { name: 'gitlab:latest', config: { repositoryGuid: 'G1', placement: { machine: 'm1' } } },
+      ]),
   },
 }));
+
+/** The account's `GET /backups/status` for the one repository on m1 (lineage G1). */
+const STATUS_RESPONSE = {
+  stores: [{ storeId: 'home', cleanup: 'enabled' }],
+  streams: [
+    {
+      storeId: 'home',
+      lineageGuid: 'G1',
+      lastRunAt: '2026-11-27T02:00:00Z',
+      lastRunStatus: 'stored',
+      newestSnapshotAt: '2026-11-27T02:00:59Z',
+      lastVerifyStatus: 'proven',
+    },
+  ],
+};
+vi.mock('../../services/account/account-client.js', async (orig) => ({
+  ...(await orig<typeof import('../../services/account/account-client.js')>()),
+  accountServerFetch: (path: string) =>
+    path === '/account/api/v1/backups/status'
+      ? Promise.resolve(STATUS_RESPONSE)
+      : Promise.reject(new Error(`unexpected account call ${path}`)),
+}));
+
+/** What the status step must receive: the store columns of the machine's repositories, not `-`. */
+const TARGETS = {
+  byStrategy: { nightly: ['home'] },
+  replicas: {},
+  stores: {
+    home: {
+      lastRunAt: '2026-11-27T02:00:00Z',
+      lastRunStatus: 'stored',
+      newestSnapshotAt: '2026-11-27T02:00:59Z',
+      verify: 'ok',
+      cleanup: 'enabled',
+    },
+  },
+};
 
 const schedule = vi.hoisted(() => ({
   units: ['nightly', 'nightly.ds.fast', 'nightly.repo.gitlab'],
@@ -424,7 +466,12 @@ describe('backup status', () => {
     expect(executed[0].jobSteps).toEqual([
       expect.objectContaining({
         name: 'renderBackupStatus',
-        params: { machine: 'm1', expected: JSON.stringify(EXPECTED) },
+        // `targets` reaches the step: undeclared, planStep dropped it and every store column printed `-` (hostinger 2026-11-27).
+        params: {
+          machine: 'm1',
+          expected: JSON.stringify(EXPECTED),
+          targets: JSON.stringify(TARGETS),
+        },
       }),
     ]);
   });
@@ -434,12 +481,7 @@ describe('backup status', () => {
 
     await rdcBackup('status', '-m', 'm1');
 
-    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith(
-      'm1',
-      EXPECTED,
-      SHOW,
-      undefined
-    );
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW, TARGETS);
   });
 
   it('renders the units the job read, though the bindings changed after it started', async () => {
@@ -448,12 +490,7 @@ describe('backup status', () => {
 
     await rdcBackup('status', '-m', 'm1');
 
-    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith(
-      'm1',
-      EXPECTED,
-      SHOW,
-      undefined
-    );
+    expect(schedule.renderBackupScheduleStatus).toHaveBeenCalledWith('m1', EXPECTED, SHOW, TARGETS);
   });
 
   it('hands the ticket back past the attach window and renders nothing yet', async () => {
@@ -517,6 +554,41 @@ describe('backup status', () => {
     );
   });
 
+  it('control: the strategy journal goes to stdout in table format', async () => {
+    answer = { ...FINISHED, stdout: SHOW };
+    const { writeStdout, writeStderr } = await import('../../services/core/request-context.js');
+    vi.mocked(writeStdout).mockClear();
+    vi.mocked(writeStderr).mockClear();
+
+    await rdcBackup('status', 'nightly', '-m', 'm1');
+
+    expect(vi.mocked(writeStdout)).toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+    expect(vi.mocked(writeStderr)).not.toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+  });
+
+  it.each(['json', 'yaml', 'csv'] as const)(
+    '-o %s keeps the journal text off stdout so the table document stays parseable',
+    async (format) => {
+      answer = { ...FINISHED, stdout: SHOW };
+      const { writeStdout, writeStderr } = await import('../../services/core/request-context.js');
+      const { setCurrentOutputFormat, currentOutputFormat } = await import(
+        '../../services/core/output-format.js'
+      );
+      vi.mocked(writeStdout).mockClear();
+      vi.mocked(writeStderr).mockClear();
+      const previous = currentOutputFormat();
+      setCurrentOutputFormat(format);
+      try {
+        await rdcBackup('status', 'nightly', '-m', 'm1');
+      } finally {
+        setCurrentOutputFormat(previous);
+      }
+
+      expect(vi.mocked(writeStdout)).not.toHaveBeenCalled();
+      expect(vi.mocked(writeStderr)).toHaveBeenCalledWith(expect.stringContaining('Id=rediacc'));
+    }
+  );
+
   it('the table step refuses a missing or malformed expected param, and renders with a valid one', async () => {
     const { resolveStepHandler } = await import('../../services/jobs/steps.js');
     const handler = await resolveStepHandler('renderBackupStatus');
@@ -579,8 +651,6 @@ describe('backup status with the real renderer', () => {
           strategy: 'nightly',
           unit: 'nightly',
           status: 'scheduled',
-          lastRun: '-',
-          result: '-',
           nextRun: '-',
           missed: '-',
           ...HOME_COLUMNS,
@@ -589,8 +659,6 @@ describe('backup status with the real renderer', () => {
           strategy: 'nightly',
           unit: 'nightly.repo.gitlab',
           status: 'not scheduled',
-          lastRun: '-',
-          result: '-',
           nextRun: '-',
           missed: 'not scheduled: no timer on the machine (run: rdc backup schedule)',
           ...HOME_COLUMNS,

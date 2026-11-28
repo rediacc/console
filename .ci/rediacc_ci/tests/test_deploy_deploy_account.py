@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.deploy_account` against its twin `.ci/scripts/deploy/deploy-account.sh`.
 
-RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything: the fakes log their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were handed. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
+RECORDING FAKE `npx` AND `npm` ON A SCRATCH PATH, AND A FIXTURE REPO ROOT. Nothing here reaches Cloudflare and nothing installs anything: the fakes log their exact argv, their cwd, and the value of `CLOUDFLARE_API_TOKEN` they were handed. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity
 ledger is a separate, achievable piece of work. This is that piece.
 
 HOW THE TWO SIDES ARE MADE TO AGREE ABOUT THE REPO ROOT: the port's `common.repo_root()` delegates to `paths.repo_root()`, which honours `$REDIACC_CI_ROOT`, so the port is the REAL file under test and the variable points it at the fixture. The twin resolved its root from a copy of `common.sh` inside `tmp_path`; its answers are frozen in `goldens/twins/deploy.deploy-account.jsonl`, so the twin file is not needed to run this module, and `test_the_twin_ignores_the_root_override` asserts the variable did not steer the bash side.

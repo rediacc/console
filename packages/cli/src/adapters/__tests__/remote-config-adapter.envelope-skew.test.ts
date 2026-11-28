@@ -25,11 +25,12 @@ vi.mock('../../services/config/config-server-client.js', () => ({
 }));
 
 import {
-  derivePasswordSlotSecret,
+  deriveRecoverySlotSecret,
   generateCek,
+  generateRecoveryCode,
   generateServerSecret,
   importAesKey,
-  newPasswordSlotParams,
+  newRecoverySlotParams,
   randomBytes,
   toBase64,
   wrapCekForSlot,
@@ -52,9 +53,12 @@ const REMOTE: RemoteConfig = {
   storageKeyId: 'rdc:pw:44444444-4444-4444-8444-444444444444',
 };
 
-/** A v3-envelope config of eu-remote's shape (schemaVersion 3, resources), sealed by the current code. */
+/** A v4-envelope config of eu-remote's shape (schemaVersion 3, resources), sealed by the current code. */
 async function enrolled() {
-  const slotSecret = await derivePasswordSlotSecret('fixture password', newPasswordSlotParams());
+  const slotSecret = await deriveRecoverySlotSecret(
+    generateRecoveryCode(),
+    newRecoverySlotParams()
+  );
   const serverSecret = generateServerSecret();
   const cek = await generateCek();
   const wrappedCek = await wrapCekForSlot(cek, slotSecret, serverSecret);
@@ -72,6 +76,7 @@ async function enrolled() {
       sdkEpoch: SDK_EPOCH,
       sdkDerived: await importAesKey(rawSdk),
       cek,
+      cekGeneration: 1,
       teamId: TEAM_ID,
     }
   );
@@ -86,6 +91,9 @@ async function enrolled() {
       lastModified: '2026-01-01T00:00:00Z',
       sdkEpoch: SDK_EPOCH,
       commitments: payload.envelope.commitments,
+      wrappedConfigKey: payload.envelope.wrappedConfigKey,
+      configKeyVersion: payload.envelope.configKeyVersion,
+      cekGeneration: payload.envelope.cekGeneration,
     },
     hmac: payload.hmac,
     sdk_derived: toBase64(rawSdk),
@@ -138,35 +146,39 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
     mockConfigServerFetch.mockReset();
   });
 
-  it('reads a config enrolled by the current code (v3 envelope)', async () => {
+  it('reads a config enrolled by the current code (v4 envelope)', async () => {
     const f = await enrolled();
-    wire(f.session, f.pull(3));
+    wire(f.session, f.pull(4));
     const result = await f.adapter().pull();
     expect(result.version).toBe(7);
     expect(result.config.resources?.machines?.m1).toMatchObject({ ip: '10.0.0.9' });
   });
 
-  it('a v3 blob relabelled v2 fails the integrity check closed, never returning the config', async () => {
-    const f = await enrolled();
-    wire(f.session, f.pull(2));
-    await expect(f.adapter().pull()).rejects.toBeInstanceOf(RemoteConfigUndecryptableError);
-    const err = await f
-      .adapter()
-      .pull()
-      .then(
-        () => null,
-        (e: unknown) => e
-      );
-    expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
-    const message = (err as Error).message;
-    expect(message).toContain(CONFIG_ID);
-    expect(message).toContain('failed its integrity check');
-    expect(message).not.toMatch(/newer version of the CLI/);
-  });
+  it.each([3, 2])(
+    'a v4 blob relabelled v%i fails the integrity check closed, never returning the config',
+    async (relabel) => {
+      const f = await enrolled();
+      wire(f.session, f.pull(relabel));
+      await expect(f.adapter().pull()).rejects.toBeInstanceOf(RemoteConfigUndecryptableError);
+      const err = await f
+        .adapter()
+        .pull()
+        .then(
+          () => null,
+          (e: unknown) => e
+        );
+      expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
+      const message = (err as Error).message;
+      expect(message).toContain(CONFIG_ID);
+      expect(message).toContain('failed its integrity check');
+      expect(message).not.toMatch(/newer version of the CLI/);
+    }
+  );
 
   it('an envelope newer than this reader names the version gap, not the slot key', async () => {
     const f = await enrolled();
-    wire(f.session, f.pull(4));
+    // v5: the shared reader writes and reads envelope v4 (per-config content keys), so only a version past it is "newer".
+    wire(f.session, f.pull(5));
     const err = await f
       .adapter()
       .pull()
@@ -176,9 +188,10 @@ describe('RemoteConfigAdapter: envelope skew between rdc releases', () => {
       );
     expect(err).toBeInstanceOf(RemoteConfigUndecryptableError);
     const message = (err as Error).message;
-    expect(message).toContain(CONFIG_ID);
     expect(message).toMatch(/newer version of the CLI/);
-    expect(message).toContain('envelope v4');
+    expect(message).toContain('envelope v5');
+    expect(message).toContain('envelope-skew');
+    expect(message).not.toContain(CONFIG_ID);
     expect(message).toMatch(/Upgrade rdc/);
     expect(message).not.toMatch(/key slot|enrolled|different key/i);
   });

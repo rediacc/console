@@ -39,14 +39,16 @@ The plant was reverted from a `cp` backup, verified back at its pre-plant sha256
 with `sha256sum -c`, and `git status --porcelain` diffed against its pre-plant
 capture with no difference.
 
-INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-editorconfig.sh` stayed on disk as the differential twin until `.ci/shadow/w7p2-editorconfig.observations.jsonl` asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
+INVARIANT 5 HELD UNTIL THE LEDGER LICENSED THIS PORT: `.ci/scripts/quality/check-editorconfig.sh` stayed on disk as the differential twin until the shadow ledger (deleted in commit:99a4de363d) asserted equivalence over five distinct trees. W7 P5 batch A2 retired it, and the cases that ran it were retired with it.
 
 """
 
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import editorconfig
 
 if __name__ == "__main__":
+    _gate_args.parse("check_editorconfig.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(editorconfig.main(sys.argv[1:]))

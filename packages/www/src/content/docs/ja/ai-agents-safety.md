@@ -1,7 +1,10 @@
 ---
 title: AIエージェントの安全性とガードレール
 description: >-
-  RediaccのCLIがAIコーディングアシスタントによるシークレット漏洩、認証情報の上書き、権限昇格を防ぐ仕組み。ナレッジゲート、秘匿化、祖先検証済みオーバーライド、ハッシュ連鎖監査ログ。
+  RediaccがAIコーディングアシスタントによる秘密の漏えい、認証情報の上書き、
+  権限昇格をどのように防ぐか。すべてのインターフェースに共通する1つの判断、
+  オプトインとポリシー上限の両立、ナレッジゲート、秘匿化、ハッシュチェーン
+  監査ログ（サーバーでは組織と日ごと、CLIではローカルファイル）。
 category: Concepts
 tags:
   - ai-agents
@@ -9,8 +12,8 @@ tags:
 subcategory: ai-agents
 order: 35
 language: ja
-sourceHash: "34d12ee4f0a3791c"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "43350a2e682cebcc"
+sourceCommit: "cc655e698ed2c42faef5311e268425c04997f243"
 ---
 
 あなたのインフラストラクチャを管理するAIコーディングアシスタントを使用しているとします。Claude Code、Cursor、Gemini CLI、Copilot CLIなど、AIアシスタントが `rdc` を操作する場合、CLIはキーボードを操作する人間とは異なるルールセットを適用します。このページでは、エージェントが何ができるか・できないか、そしてエージェントがガードレールを回避しようとしても保護が機能する仕組みについて説明します。
@@ -24,17 +27,21 @@ sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
 | `rdc config field get --pointer <pointer> --digest` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（公開フィールド） | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（機密フィールド、**正しい `--current` あり**） | ✅ allowed |  |
-| `rdc config edit --dump`（秘匿化済みJSONC） | ✅ allowed |  |
+| `rdc config edit --dump --redacted`（秘匿化済み JSONC） | ✅ allowed |  |
 | `rdc config audit {log, tail, verify}` | ✅ allowed |  |
 | `rdc config field set --pointer <pointer>`（機密フィールド、`--current` なし） | 🔴 refused | `--current "<古い値>"` を指定する |
+| `rdc repo secret set <repo> --rotate-secret`（`--current` なしのローテーション） | 🔴 refused | `--current` を指定する、または人間がターミナルでローテーションを実行 |
 | `rdc config field get --pointer <pointer> --reveal` | 🔴 refused | 代わりに `--digest` を使用する |
 | `rdc config show --reveal` | 🔴 refused | オプションなしの `rdc config show` を使用する |
-| `rdc config edit`（インタラクティブエディタ） | 🔴 refused | エージェント起動前に人間が `REDIACC_ALLOW_CONFIG_EDIT=*` を設定する |
-| `rdc config edit --apply <file>` | 🔴 refused | 同じオーバーライド |
-| `rdc config field rotate --pointer <pointer>` | 🔴 refused | 同じオーバーライド。インタラクティブ確認を使用 |
+| `rdc config edit`（インタラクティブエディタ） | 🔴 refused、オーバーライドなし | `--dump --redacted` で確認し、1つのフィールドは `config field set --current` で変更 |
+| `rdc config edit --apply <file>` | 🔴 refused、オーバーライドなし | 同上。ドキュメント全体の編集はターミナル上の人間が適用 |
+| `rdc config edit --reveal` | 🔴 refused、オーバーライドなし | 同上 |
+| `rdc config field rotate --pointer <pointer>` | 🔴 refused | 人間がインタラクティブなターミナルで実行 |
+| grand（本番）リポジトリの変更 | 🔴 refused | grand リポジトリの変更を許可するポリシーの範囲内で、そのリポジトリに対する人間のオプトイン（[下記](#one-decision-opt-in-and-policy-ceiling)） |
+| クラスターまたはデータストアのライフサイクル操作 | 🔴 refused | クラスター操作を許可するポリシーの範囲内で、そのクラスターに対する人間のオプトイン |
 | `rdc term connect <machine>`（マシンへの直接SSH） | 🔴 refused | 最初にリポジトリをフォークしてフォークに接続する |
 
-エージェントが拒否されたすべての操作は `outcome: refused` と理由とともに監査ログに記録されます。
+エージェントに対する拒否はすべて、`outcome: refused` と理由とともに監査ログに書き込まれます。設定ドキュメント全体の編集には、エージェント向けの経路がまったくありません。設定にはすべてのリポジトリの LUKS 認証情報が含まれており、それを書き換えられるエージェントは、暗号化ボリュームを開くのに必要な認証情報を削除することもできてしまうからです。
 
 ## エージェントの検出方法
 
@@ -43,7 +50,22 @@ CLIは以下のいずれかに該当する場合、プロセスをエージェ�
 - `REDIACC_AGENT`、`CLAUDECODE`、`GEMINI_CLI`、`COPILOT_CLI` のいずれかが `"1"` に設定されている、または `CURSOR_TRACE_ID` が設定されている。
 - Linux上：祖先チェーン上の親プロセスがそれらの変数のいずれかを環境変数として持っている（`/proc/<pid>/environ` 経由）。エージェントが `env -i` やラッパースクリプトで自分の変数を削除しても、親チェーンがCLIに誰が起動したかを伝えます。
 
-検出はプロセスごとに一度実行されてキャッシュされます。無効化することはできません。
+検出はプロセスごとに1回実行され、キャッシュされます。無効にすることはできません。リモート MCP のグラントは、エグゼキューター側でその呼び出しをエージェント呼び出しとして扱うため、検出は不要です。
+
+## 1つの判断: オプトインとポリシー上限の両立
+
+`rdc` コマンドを実行するすべてのインターフェース（CLI、ローカル MCP サーバー、リモート MCP サーバー、`rdc --proxy`、Web コンソール）は同じ判断関数に問い合わせるため、拒否も許可もすべて同じ結果になります。判断関数は2つの条件を適用し、エージェントは両方が満たされる場所でのみ動作できます。
+
+1. **ポリシー上限。** チームポリシーで絞り込まれた組織ポリシーが、呼び出し元の使用できるコマンド、マシン、リポジトリを決め、grand リポジトリの変更（`allowGrandRepos`）とクラスター操作（`allowClusterOps`）をそもそも許可するかどうかも決めます。ポリシーレコードのない設定は、ロールごとのデフォルトにフォールバックします。オーナーと管理者は操作でき、メンバーはできません。ポリシーはオーナーと管理者だけが書き込める独立した封印済みレコードで（[セキュリティモデル](/ja/docs/security-model#policy)）、どのエージェントも CLI コマンドもこれを編集できません。
+2. **人間のオプトイン。** 上限の内側でも、エージェントには、変更してよい grand リポジトリまたはクラスターを人間が指名することが必要です。
+   - **ローカルエージェント**（CLI とローカル MCP）: 人間がエージェントを起動する前にターミナルで `REDIACC_ALLOW_GRAND_REPO`（リポジトリ名、または `*`）または `REDIACC_ALLOW_CLUSTER_OPS`（クラスター名、または `*`）をエクスポートします。CLI はプロセスの祖先を確認するため、エージェントがセッション途中で設定した変数は無効です（[各 OS での確認方法](#how-a-local-opt-in-is-verified-on-each-os)）。
+   - **リモートエージェント**（リモート MCP）: オプトインは、人間がアカウント画面で作成するグラントに含まれます（[リモートサーバー](/ja/docs/ai-agents-mcp#remote-server)）。
+
+オプトインが上限を広げることはありません。ポリシーが閉じているリポジトリは、環境やグラントの内容にかかわらず閉じたままです。フォークにオプトインは不要です。CLI が識別できないリポジトリは grand として扱われます。
+
+**破壊的な変更は先に確認を求めます。** エージェントが grand リポジトリへの破壊的な変更（たとえば `repo delete`）を許可されている場合、応答は `needs_confirmation` になります。MCP クライアントはユーザーに確認プロンプトを表示し、プロンプトを持たないクライアントには、ユーザーに確認したうえで送り返す `confirm` 引数が渡されます。CLI では、人間が `--confirm-grand <repo>` を付けてコマンドを再実行します。
+
+すべての応答には安定したコード（`POLICY_DENIED`、`GRAND_REPO_DENIED`、`CLUSTER_OPS_DENIED`、`AGENT_OPT_IN_MISSING`、`FORK_BLOCKED`、`AGENT_BLOCKED`、`CONFIRMATION_REQUIRED`）が付くため、スクリプトやエージェントはメッセージではなくコードで分岐できます（[JSON 出力](/ja/docs/ai-agents-json-output)）。
 
 ## ナレッジゲートモデル
 
@@ -52,7 +74,7 @@ CLIは以下のいずれかに該当する場合、プロセスをエージェ�
 - `/credentials/cfDnsApiToken` に保存されているAPIトークンをローテーションしたい場合
 - CLIが「現在の値は何ですか？」と尋ねます
 - エージェント（または人間）が `--current "$OLD"` でプレーンテキストを提供します。CLIは `$OLD` をSHA-256でハッシュ化し、現在保存されている値のダイジェストと比較します。一致 → 書き込み実行。不一致 → 拒否、監査記録。
-- 事前の値検証なしでローテーションするには、`--rotate-secret` を渡します（`--current` と相互排他的）。これは監査ログに明示的に記録されます。
+- 以前の値を確認せずにローテーションするには、`--rotate-secret` を渡します（`--current` とは同時に指定できません）。これはローテーションとして明確に監査され、インタラクティブなターミナル上の人間にのみ有効です。エージェント、または stdin にターミナルのないスクリプトには、引き続き `--current` が必要です。
 
 このモデルは3つの攻撃面を閉じます：
 
@@ -82,7 +104,7 @@ CLIは以下のいずれかに該当する場合、プロセスをエージェ�
 }
 ```
 
-**エージェントは `next.options[].run` を人間に逐語的に中継すべきです。** これにより「エージェントが存在しないコマンドを作り出す」という失敗モードを避け、オペレーターが実際のアクションを制御できるようにします。
+**エージェントは、独自のコマンドを作り出すのではなく、`next.options[].run` を人間にそのまま伝えるべきです。** これにより、エージェントが存在しないコマンドをでっち上げる失敗を防ぎ、実際の操作の主導権をオペレーターが保てます。ローテーションの選択肢は人間がターミナルで実行するためのもので、エージェント自身には拒否されます。
 
 ### 実例
 
@@ -93,7 +115,7 @@ $ rdc config field get --pointer /credentials/cfDnsApiToken
 
 # 証明なしに上書きを試みる：拒否。
 $ rdc config field set --pointer /credentials/cfDnsApiToken --new '"agent-picked-value"'
-✗ Precondition failed: sensitive path requires --current (or --rotate-secret)
+✗ Precondition failed: sensitive path requires --current
 
 # 現在のプレーンテキストを提供する：許可。
 $ rdc config field set --pointer /credentials/cfDnsApiToken \
@@ -102,11 +124,11 @@ $ rdc config field set --pointer /credentials/cfDnsApiToken \
 Set /credentials/cfDnsApiToken
 ```
 
-エージェントが `$OLD_CF_TOKEN` を持っていない場合、前提条件を満たすことができず、ローテーションは拒否されます。それを持っているユーザーは、エディタを通じて、またはシェルから `--current` を渡して操作できます。
+エージェントが `$OLD_CF_TOKEN` を持っていなければ、前提条件を満たせず、ローテーションは拒否されます。値を知っている人は、自分のシェルから `--current` を渡すか、インタラクティブなターミナルで `rdc config field rotate` を使えば実行できます。
 
 ## デフォルトの秘匿化
 
-機密状態を読む `rdc` コマンド：`config show`、`config field get`、`config machine list`、`config edit --dump`：はシークレットフィールドに対してプレーンテキストではなく **秘匿化スタブ** を返します：
+機密状態を読む `rdc` コマンド：`config show`、`config field get`、`config machine list`、`config edit --dump --redacted`：はシークレットフィールドに対してプレーンテキストではなく **秘匿化スタブ** を返します：
 
 ```
 "sshKey":       "<redacted:credential>:9f3a2c1b"
@@ -118,28 +140,9 @@ Set /credentials/cfDnsApiToken
 
 `--reveal` はインタラクティブなTTY上の人間に対して秘匿化を解除します。エージェントはTTYの状態に関係なく拒否されます。各許可は `reveal_granted` 監査エントリを書き込み、各拒否はアクターのエージェントシグナルが添付された `refused` エントリを書き込みます。
 
-## `REDIACC_ALLOW_CONFIG_EDIT` オーバーライド
+## ローカルのオプトインを各 OS でどう確認するか
 
-インタラクティブエディタ、`--apply`、`field rotate` などの一部の操作は人間向けに存在し、エージェントに安全なパスがありません。エージェントにそれらを実行させたい場合は、次のように設定します：
-
-```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'          # 完全なバイパス
-# または
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId'
-# （カンマ区切りのスコープグロブ：セグメントごとに * ワイルドカード使用可）
-```
-
-…エージェントはこれを継承します。
-
-**重要な詳細**：オーバーライドは祖先チェーンでエージェントより **上** のプロセスに存在する必要があります。エージェントが自分の環境（またはスポーンしたサブシェル）に設定した場合、CLIは拒否してその旨を通知します：
-
-> `Interactive editor is blocked in agent environments (REDIACC_ALLOW_CONFIG_EDIT was set but ancestry verification failed: the override must be set by your shell, not by an agent).`
-
-効果：エージェントはセッション途中で `export REDIACC_ALLOW_CONFIG_EDIT='*'` を実行してガードレールを回避することはできません。親プロセス（エージェント起動前のあなたのターミナル）のみがそのドアを開けることができます。
-
-## プラットフォームサポート：各OSでオーバーライドがどのように検証されるか
-
-`REDIACC_ALLOW_CONFIG_EDIT` と `REDIACC_ALLOW_GRAND_REPO` はいずれも、オーバーライドがエージェントによって注入されたものではなくあなた自身によって設定されたものであることを証明するために、祖先検証に依存しています。検証はLinux、macOS、Windowsで動作しますが、読み取るウィットネス（目撃者）はプラットフォームごとに異なり、保証の強度も異なります：
+`REDIACC_ALLOW_GRAND_REPO` と `REDIACC_ALLOW_CLUSTER_OPS` はいずれも、オプトインがエージェントによる注入ではなく人間によって設定されたことを証明するために、祖先確認に依存しています。確認は Linux、macOS、Windows で動作しますが、読み取る証拠はプラットフォームごとに異なり、保証の強さも異なります。
 
 | プラットフォーム | ウィットネス | 強度 |
 |---|---|---|
@@ -147,9 +150,9 @@ export REDIACC_ALLOW_CONFIG_EDIT='/credentials/ssh/privateKey,/infra/cfDnsZoneId
 | macOS | `kern.procargs2` sysctl（`rdc` に含まれる小さなヘルパーで読み取られる） | Linuxと同じexec時点のスナップショット特性。ルートなしで自分のプロセスから読み取り可能。 |
 | Windows | 各祖先プロセスのライブ環境ブロック（PEB）。同じヘルパーで読み取られ、PID再利用ガードあり | より弱い：Windowsはexec時点のスナップショットを保持していないため、チェックは現在のメモリを読み取る。祖先がエージェント側で通常実行するものでは上書きされないが、ウィットネスはLinuxやmacOSのようにカーネル固定ではない。 |
 
-macOSとWindowsでは、CLIはバンドルされた `renet` バイナリを起動してこの読み取りを実行します。ヘルパーは監視対象の変数を各祖先が保持しているかを報告し、すべての判定ロジックはCLIに留まります。ヘルパーが不足している、古い、または何らかの理由で失敗している場合、CLIはオーバーライドを検証できず、**フェイルクローズします**：オーバーライドは拒否され、エラーは検証が利用できなかったこと、あなたが何か間違えたのではないことを述べます。正常にインストールされているものは決してそのメッセージを表示しません。`rdc` を再インストールするとヘルパーが復元されます。
+macOS と Windows では、CLI が同梱の `renet` バイナリを起動して読み取りを行います。ヘルパーは各祖先が監視対象のどの変数を持っているかを報告し、判断ロジックはすべて CLI に残ります。ヘルパーが見つからない、古い、またはなんらかの理由で失敗した場合、CLI はオプトインを確認できず、**安全側に倒して失敗します**。オプトインは拒否され、エラーには、何かが間違っていたのではなく確認が利用できなかったことが示されます。正常なインストールではこのメッセージは表示されません。`rdc` を再インストールするとヘルパーが復元されます。
 
-どのプラットフォームでも変わらないこと：オーバーライドはエージェント起動時にすでにそのプロセスの環境に存在している必要があります。あなたのターミナルでエクスポートしてからエージェントを起動してください。セッション途中で変数を設定するエージェントは拒否されます。
+どのプラットフォームでも変わらないこと: オプトインは、エージェントプロセスの起動時にその環境にすでに存在していなければなりません。ターミナルでエクスポートしてからエージェントを起動します。セッション途中で変数を設定したエージェントは拒否されます。
 
 ## 監査ログ
 
@@ -157,7 +160,7 @@ macOSとWindowsでは、CLIはバンドルされた `renet` バイナリを起�
 
 ```jsonl
 {"ts":"2026-04-21T10:02:47.831Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config field set","paths":["/credentials/cfDnsApiToken"],"outcome":"ok","configId":"...","configVersion":48,"prevHash":"sha256:9f3a..."}
-{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent without REDIACC_ALLOW_CONFIG_EDIT=*","prevHash":"sha256:abc1..."}
+{"ts":"2026-04-21T10:02:51.114Z","actor":{"kind":"agent","agentSignals":["CLAUDECODE"]},"command":"config edit","paths":[],"outcome":"refused","reason":"agent environment","prevHash":"sha256:abc1..."}
 {"ts":"2026-04-21T10:03:05.220Z","actor":{"kind":"human"},"command":"config show --reveal","paths":[],"outcome":"reveal_granted","configId":"...","configVersion":48,"prevHash":"sha256:deac..."}
 ```
 
@@ -212,7 +215,7 @@ rdc config audit verify
 | リポジトリデータ、マウント名前空間、Dockerスコープ、エージェントガード、監査ログ、デプロイ時のシークレット注入 | Rediacc |
 | これらのシークレットを使用するアプリケーションコード、およびビルド時にイメージに焼き込まれた認証情報 | リポジトリ開発者 |
 
-主な対策は組み込まれています：**[リポジトリごとのシークレット](/ja/docs/repositories#secrets)** は暗号化されたリポジトリイメージとは別の領域に保存され、フォーク境界を越えてコピーされません。フォークのコンテナは空のシークレットマップでブートし、親とは異なる外部プリンシパルとして自身を識別します。`rdc repo secret set` で設定してください（compose補間用のenvモード、tmpfs `secrets:` ブロック用のfileモード）。変更ゲートは対称的です。人間とエージェント両者が、既存の値を上書きまたは削除するには `--current`（passwd形式の前提条件）または `--rotate-secret`（監査対象のローテーション）を供給する必要があります。
+主な対策は組み込まれています：**[リポジトリごとのシークレット](/ja/docs/repositories#secrets)** は暗号化されたリポジトリイメージとは別の領域に保存され、フォーク境界を越えてコピーされません。フォークのコンテナは空のシークレットマップでブートし、親とは異なる外部プリンシパルとして自身を識別します。`rdc repo secret set` で設定してください（compose補間用のenvモード、tmpfs `secrets:` ブロック用のfileモード）。変更ゲートは対称的です。人間とエージェント両者が、既存の値を上書きまたは削除するには `--current`（passwd形式の前提条件）を供給する必要があります。`--rotate-secret`（監査対象のローテーション）は、ターミナル上の人間向けの代替手段です。
 
 **リポジトリ間の分離は強制されます。** リポジトリBの悪意あるまたは不注意なcompose ファイルは、リポジトリAのシークレットディレクトリを参照することはできません。Renetのcompose バリデーターは、現在のリポジトリの `${REDIACC_NETWORK_ID}` ディレクトリの外を指す `secrets: file:`、`configs: file:`、または `env_file:` パスを厳しく拒否し、その拒否は `--unsafe` でもオーバーライド不可です。多層防御：Rediaccfile bashサブプロセスの周りのLandlockサンドボックスは、ファイルシステムの読み取りを現在のネットワークのシークレットディレクトリのみにスコープするため、悪意のあるRediaccfileからの `cat /var/run/rediacc/net-<other>/secrets/X` はカーネル層でEACCESで失敗します。Docker API でも同じです。各リポジトリのDockerソケットはrenetのポリシープロキシが受け持ち、`--privileged`、ホストの `pid`・`ipc`・`uts`、デバイスの要求、別のリポジトリのランタイムやデータに届くバインドを `403` で拒否します。そのため `${DOCKER_SOCKET}` を持つコンテナがAPIを使って別のリポジトリに到達することはできず、チェックの対象はcomposeファイルだけではありません。バインドのルールを、名前を指定したホストディレクトリに限って広げられるのはオペレーターだけで、その方法はどのコンテナも書き込めないroot所有の許可ファイルです。
 
@@ -225,24 +228,24 @@ Rediaccはデプロイ時の注入、フォーク間の分離、リポジトリ�
 
 ## クイックレシピ
 
-### エージェントに単一のクラウドトークンのローテーションを許可する
+### エージェントに1つの grand リポジトリで作業させる
 
 ```bash
-# あなた自身として、エージェント起動前に：
-export REDIACC_ALLOW_CONFIG_EDIT='/credentials/cfDnsApiToken'
-claude-code              # または cursor、gemini など
+# 人間として、エージェントを起動する前に:
+export REDIACC_ALLOW_GRAND_REPO='gitlab'
+claude              # または cursor、gemini など
 ```
 
-これでエージェントは `config field rotate /credentials/cfDnsApiToken --new …` を実行できますが、`/credentials/ssh/privateKey` の編集やインタラクティブエディタの起動は引き続き不可能です。
+エージェントは、ポリシーが grand リポジトリの変更を許可している範囲で `gitlab` を変更でき、ほかの grand リポジトリは変更できません。`repo delete gitlab` のような破壊的な変更では、引き続き確認が求められます。
 
-### エージェントに幅広い設定編集セッションを許可する
+### 古い値を知らずにクラウドトークンをローテーションする
 
 ```bash
-export REDIACC_ALLOW_CONFIG_EDIT='*'
-claude-code
+# 人間として、インタラクティブなターミナルで:
+rdc config field rotate --pointer /credentials/cfDnsApiToken --new "$NEW_CF_TOKEN"
 ```
 
-エージェントは `rdc config edit` を開き、`--reveal` を使用して `field rotate` を実行できます。すべてのアクションは引き続き `actor.kind: agent` と `CLAUDECODE` シグナルとともに監査ログに記録されます。
+`--current` なしのローテーションは人間の担当です。現在の値を知っているエージェントは、代わりに `rdc config field set --current` を使います。
 
 ### エージェントが触れることのできるフィールドを確認する
 
@@ -255,6 +258,8 @@ rdc config field list --sensitive --output json
 ## 関連項目
 
 - [AIエージェント統合の概要](/ja/docs/ai-agents-overview)：トップレベルのツアー
+- [MCPサーバー](/ja/docs/ai-agents-mcp): ローカルとリモートの MCP、グラントとそのオプトイン
+- [セキュリティモデル](/ja/docs/security-model): ポリシーレコードと、それを書き込める人
 - [Claude Code のセットアップ](/ja/docs/ai-agents-claude-code)：統合テンプレート
 - [JSON出力エンベロープ](/ja/docs/ai-agents-json-output)：マシン可読レスポンス
 - [暗号化された設定ストア](/ja/docs/config-storage)：サーバー側の暗号学的強制

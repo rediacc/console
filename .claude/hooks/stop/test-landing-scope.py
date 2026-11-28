@@ -10,6 +10,7 @@ A landing stop sees only the PR branch's items and no queue; a development stop 
 
 import dataclasses
 import importlib.util
+import inspect
 import os
 import pathlib
 import subprocess
@@ -110,7 +111,7 @@ def node(number, body, draft=False):
     return {"number": number, "state": "OPEN", "body": body, "isDraft": draft}
 
 
-def loop(wl_prscope, wl_ci, tree, record, nodes, branches=None, settings=None, gh=True):
+def loop(wl_prscope, wl_ci, tree, record, nodes, branches=None, gh=True):
     """`loop_state` for `tree` with the PR read stubbed from `nodes` (branch -> node list)."""
     real = wl_ci.pr_link
     wl_ci.pr_link = lambda _top, _wl, _sid, branch: (list(nodes.get(branch, ())), "")
@@ -122,7 +123,6 @@ def loop(wl_prscope, wl_ci, tree, record, nodes, branches=None, settings=None, g
             today="1120",
             epics=lambda _rel: (),
             gh=gh,
-            settings=settings,
             landing=record,
             branches=branches,
         )
@@ -161,14 +161,12 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
     )
 
     # The landing tree: the PR's babysit and merge loop, no queue, only its own branch's items.
-    on = dataclasses.replace(wl_prscope._hooks_pkg()[0].settings_at(str(landing))[0], turbo=True)
-    land = loop(wl_prscope, wl_ci, landing, record, nodes, branches=ITEMS, settings=on)
+    land = loop(wl_prscope, wl_ci, landing, record, nodes, branches=ITEMS)
     check("landing: the role", land.role, wl_prscope.LANDING)
     check("landing: the PR is live", (land.kind, land.pr), (wl_prscope.LIVE, 7))
     check("landing: the PR's plan set", land.plans, (rel("pr"),))
     check("landing: no queue head", land.queue_head, "")
     check("landing: no next plan", land.next_plan, "")
-    check("landing: turbo is off", land.turbo, False)
     check(
         "landing: every item of another branch is foreign",
         land.foreign_items,
@@ -177,7 +175,7 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
     # A detached landing tree (mid-rebase, a bisect): its own branch is the record's, so the PR's items stay in scope.
     git(landing, "switch", "-q", "--detach")
     try:
-        detached = loop(wl_prscope, wl_ci, landing, record, nodes, branches=ITEMS, settings=on)
+        detached = loop(wl_prscope, wl_ci, landing, record, nodes, branches=ITEMS)
     finally:
         git(landing, "switch", "-q", PR_BRANCH)
     check(
@@ -185,10 +183,9 @@ def control_loop_state(tmp, wl_prscope, wl_ci, wl_checks):
         detached.foreign_items,
         {"bbbb0002", "dddd0004"},
     )
-    lbare = loop(wl_prscope, wl_ci, landing, None, nodes, branches=ITEMS, settings=on)
+    lbare = loop(wl_prscope, wl_ci, landing, None, nodes, branches=ITEMS)
     check("CONTROL landing, no record: the queue head", lbare.queue_head, rel("q"))
     check("CONTROL landing, no record: the next plan", lbare.next_plan, rel("q"))
-    check("CONTROL landing, no record: turbo stays on", lbare.turbo, True)
     check("CONTROL landing, no record: nothing foreign", lbare.foreign_items, frozenset())
 
     # The merge offer: the landing tree's, never the development tree's draft.
@@ -307,13 +304,13 @@ def control_scope_and_parks(wl_prscope, wl_checks):
         wl_prscope.DEVELOPMENT_PARKS,
     )
     check("CONTROL no record parks nothing", wl_prscope.tree_parks(bare), frozenset())
+    # B2 (agent/plans/PLAN-simple-two-tree-loop.md): the tree role alone decides; a phase no longer overrides it, so tree_parks takes the state and nothing else.
     check(
-        "CONTROL a focus parks nothing",
-        wl_prscope.tree_parks(dev, {"mode": "babysit"}),
-        frozenset(),
+        "tree_parks reads no focus argument",
+        list(inspect.signature(wl_prscope.tree_parks).parameters),
+        ["state"],
     )
     check("development parks ci-red", "ci-red" in wl_prscope.DEVELOPMENT_PARKS, True)
-    check("landing parks turbo-next", "turbo-next" in wl_prscope.LANDING_PARKS, True)
 
     advised = []
     violations = [

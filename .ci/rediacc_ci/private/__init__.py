@@ -7,8 +7,8 @@ NO `---- gate ----` HEADER ON ANYTHING HERE, INCLUDING `run_renet`. That header 
 module form while the ownership stays where it was.
 
 WHAT "VERIFIED-EQUIVALENT" MEANS HERE. Each module has a differential under `.ci/rediacc_ci/tests/` that runs BOTH subjects on the same fixture in the same run and compares exit code, stdout, stderr and the recorded argv of every
-external command, plus a K=5 shadow-gate ledger
-(`.ci/shadow/w7p6-<slug>.observations.jsonl`) recorded through `scripts/lib/shadow-gate.ts`. The differentials never invoke a real `go`, `sudo` or `mount`: every one of those is a recording fake on a scratch PATH, because the real ones need root, a bpffs and a Go toolchain, and a test that quietly skipped when they were missing would be certifying nothing.
+external command, plus a K=5 shadow gate ledger
+(the ledger (deleted in commit:936280cd35)) recorded through the shadow gate (commit:bf054adcd4). The differentials never invoke a real `go`, `sudo` or `mount`: every one of those is a recording fake on a scratch PATH, because the real ones need root, a bpffs and a Go toolchain, and a test that quietly skipped when they were missing would be certifying nothing.
 
 CUTOVER LANDED IN W7P4-W FOR TWO OF THE THREE. `check:ci-renet` and `check:ci-account-server` now run `python3 -m rediacc_ci.private.run_renet` / `...run_account` from `package.json`, from their gate headers and from the workflows, with `scripts/ci-runner/manifest.ts` `leaves` following, on the `w7p4b-run-renet` and `w7p4b-run-account` ledgers. `compose_healthcheck_smoke_test` went
 with them on `w7p4b-compose-healthcheck-smoke-test`. The remaining root-only runners still invoke their bash twins from `.github/workflows/ct-tests.yml`.

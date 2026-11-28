@@ -22,7 +22,7 @@ G = wlfix.import_wl("wl_gh")
 STOP_DIR = pathlib.Path(G.__file__).resolve().parent
 WL_GH = STOP_DIR / "wl_gh.py"
 REPO = STOP_DIR.parents[2]
-REGISTRY = REPO / ".ci" / "policy" / "worklist-env-registry.json"
+REGISTRY = REPO / ".ci" / "config" / "env-manifest.json"
 
 
 @pytest.fixture(autouse=True)
@@ -429,7 +429,7 @@ def test_t13b_no_hook_module_spawns_gh_outside_wl_gh():
 
 
 def test_t13c_wl_gh_is_sealed_and_its_bounds_are_literals():
-    reg = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    reg = json.loads(REGISTRY.read_text(encoding="utf-8"))["worklist"]
     entry = reg["sealed_modules"].get(".claude/hooks/stop/wl_gh.py")
     assert entry, "wl_gh.py is not in %s sealed_modules" % REGISTRY
     pins = entry.get("literals") or {}
@@ -438,3 +438,13 @@ def test_t13c_wl_gh_is_sealed_and_its_bounds_are_literals():
         "control: the scanner must see a planted read"
     )
     assert R.scan_env_any(WL_GH.read_text(encoding="utf-8"), "wl_gh.py") == []
+
+
+def test_a_cache_loads_where_the_platform_has_no_getuid(tmp_path, monkeypatch):
+    """5f716ec0.1 and 9e34e7c2.1: without os.getuid (off POSIX) the owner check is skipped, so cache_load reads the file instead of raising AttributeError. Control: with getuid present a file of this user loads."""
+    p = tmp_path / "c.json"
+    p.write_text('{"at": 1}', encoding="utf-8")
+    assert G.cache_load(p) == {"at": 1}
+    monkeypatch.delattr(G.os, "getuid")
+    assert G.cache_load(p) == {"at": 1}
+    assert G.cache_load(tmp_path / "absent.json") is None

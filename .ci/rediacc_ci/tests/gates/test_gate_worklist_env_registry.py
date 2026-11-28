@@ -1,6 +1,6 @@
-"""The gate test for `check:ci-worklist-env-registry`, which has no bash twin.
+"""The process test for the `worklist` section of check:ci-env-registry (`worklist_env_registry.py`).
 
-NEW GATE, NOT A PORT. The selftest proves the predicate against a four-name fixture repository; nothing in it says the registry matches the 133-name tree. These cases drive the entry point as a PROCESS against the real corpus, and plant into the real files.
+The selftest proves the predicate against a four-name fixture repository; nothing in it says the registry matches the 133-name tree. These cases drive the real gate (`python3 -m rediacc_ci.quality.env_registry`) as a PROCESS against the real corpus, and each plant drives the section's own `check()` in a child process against a tmp copy of the whole registry document, so a plant costs one section's scan rather than all three.
 
 TWO KINDS OF PLANT, and the pairing is the point. Planting into the REGISTRY exercises the comparison against a real scan; planting into a real SOURCE file exercises the scanner against a real registry. A gate can pass one and fail the other, and this gate did neither until both were driven.
 
@@ -15,17 +15,56 @@ import subprocess
 import sys
 import tempfile
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.tests.gates import harness
 
-GATE = paths.from_root(".ci", "scripts", "quality", "check_worklist_env_registry.py")
-REGISTRY = paths.from_root(".ci", "policy", "worklist-env-registry.json")
+CI_DIR = str(paths.from_root(".ci"))
+GATE = [sys.executable, "-m", "rediacc_ci.quality.env_registry"]
+CHECK = [
+    sys.executable,
+    "-c",
+    "from rediacc_ci.quality import worklist_env_registry as m; raise SystemExit(m.check())",
+]
+DOC = paths.from_root(".ci", "config", "env-manifest.json")
+SECTION = "worklist"
+
+
+def _registry() -> dict:
+    return json.loads(DOC.read_text(encoding="utf-8"))[SECTION]
+
+
 SOURCE_PLANT = paths.from_root(".claude", "hooks", "stop", "test-reggate-ledger.py")
 SOURCE_PLANT_REL = str(SOURCE_PLANT.relative_to(paths.repo_root()))
 
 
 def _run(*args, env=None) -> harness.RunResult:
-    return harness.run([sys.executable, str(GATE), *args], cwd=paths.repo_root(), env=env)
+    return harness.run(
+        [*GATE, *args], cwd=paths.repo_root(), env={"PYTHONPATH": CI_DIR, **(env or {})}
+    )
+
+
+# THE CLEAN REAL-TREE RUN HAPPENS ONCE PER SESSION (PLAN-ciquick-cpu.md W17). Five cases read it: the verdict and shape, the count, the absent prose-only name, the class breakdown, and the green after the typo plant. Each used to scan all tracked files for itself. The run goes through the real gate, controls first, exactly as check:ci-env-registry runs it.
+REAL_TREE = pytest.mark.xdist_group("worklist-env-registry-real-tree")
+
+
+def _clean() -> harness.RunResult:
+    return harness.run_once(GATE, cwd=paths.repo_root(), env={"PYTHONPATH": CI_DIR})
+
+
+def _planted(env) -> harness.RunResult:
+    """A plant run: the section's own `check()` with one override set. It runs no controls; the selftest case runs them."""
+    return harness.run(CHECK, cwd=paths.repo_root(), env={"PYTHONPATH": CI_DIR, **env})
+
+
+def _mutated_doc(td, mutate) -> str:
+    """A tmp copy of the whole registry document with its `worklist` section mutated; the tracked file is only read."""
+    doc = json.loads(DOC.read_text(encoding="utf-8"))
+    mutate(doc[SECTION])
+    path = pathlib.Path(td) / "env-manifest-mutated.json"
+    path.write_text(json.dumps(doc, indent=2) + "\n", encoding="utf-8")
+    return str(path)
 
 
 def _rel(path) -> str:
@@ -42,12 +81,13 @@ def _unmodified(gate, path) -> None:
     gate.assert_exit(0, proc, "%s is unmodified against the index" % _rel(path))
 
 
+@REAL_TREE
 def test_the_real_tree_is_fully_registered(gate):
     gate.log_test("133 names, the real corpus, through the real entry point")
-    for subject in (GATE, REGISTRY, SOURCE_PLANT):
+    for subject in (DOC, SOURCE_PLANT):
         if not subject.is_file():
             gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(subject))
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean tree")
     gate.assert_contains(result.combined, "all registered and all read", "set equality both ways")
     gate.assert_contains(result.combined, "read site(s)", "prints the site count")
@@ -58,11 +98,12 @@ def test_the_real_tree_is_fully_registered(gate):
     gate.log_pass("the registry and the tree are one set, and the shape is printed")
 
 
+@REAL_TREE
 def test_the_registry_size_matches_the_shape_line(gate):
     gate.log_test("the number the gate prints is the number in the file")
-    registered = len(json.loads(REGISTRY.read_text(encoding="utf-8"))["names"])
+    registered = len(_registry()["names"])
     gate.assert_eq(registered >= 100, True, "%d names registered" % registered)
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_contains(
         result.combined, "%d name(s)" % registered, "and the gate reports the same count"
@@ -72,43 +113,46 @@ def test_the_registry_size_matches_the_shape_line(gate):
 
 def test_dropping_a_registered_name_reds(gate):
     gate.log_test("PLANT: remove a name from a REAL registry copy while the code still reads it")
-    # WORKLIST_REGISTRY_OVERRIDE_FILE (registered, kind=path) points run() at a
-    # tmp copy instead of the tracked file. The comparison is still against the REAL corpus scan (scan_corpus reads the real tree unchanged) -- only the registry side is a copy, so a hard kill here corrupts a tmp file, never `.ci/policy/worklist-env-registry.json`. That file used to be written and restored in a `finally`, and a kill landing in that window deleted WORKLIST_FOCUS
+    # ENV_REGISTRY_OVERRIDE_FILE (registered, gate-seam) points run() at a tmp copy of the
+    # whole document instead of the tracked file. The comparison is still against the REAL corpus scan (scan_corpus reads the real tree unchanged) -- only the registry side is a copy, so a hard kill here corrupts a tmp file, never `.ci/config/env-manifest.json`. The registry used to be written and restored in a `finally`, and a kill landing in that window deleted WORKLIST_FOCUS
     # from it for real, twice in one session.
-    original = REGISTRY.read_bytes()
+    original = DOC.read_bytes()
     with tempfile.TemporaryDirectory() as td:
-        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
-        obj = json.loads(original.decode("utf-8"))
-        del obj["names"]["WORKLIST_JUDGE"]
-        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+        result = _planted(
+            {
+                "ENV_REGISTRY_OVERRIDE_FILE": _mutated_doc(
+                    td, lambda o: o["names"].pop("WORKLIST_JUDGE")
+                )
+            }
+        )
     gate.assert_exit(1, result, "an unregistered read must red")
     gate.assert_contains(result.combined, "UNREGISTERED WORKLIST_JUDGE", "names it")
     gate.assert_contains(result.combined, "reads as UNSET", "and says which way it fails")
-    gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
+    gate.assert_eq(DOC.read_bytes(), original, "never touched on disk, not merely restored")
     gate.log_pass("a read the registry does not know about reds, with no real file at risk")
 
 
 def test_a_registered_name_nobody_reads_reds(gate):
     gate.log_test("PLANT: the OTHER direction, a phantom entry in a REAL registry copy")
-    original = REGISTRY.read_bytes()
-    with tempfile.TemporaryDirectory() as td:
-        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
-        obj = json.loads(original.decode("utf-8"))
+    original = DOC.read_bytes()
+
+    def mutate(obj):
         obj["names"]["WORKLIST_ZZZ_PHANTOM"] = {"kind": "tuning", "defaults": ["'1'"]}
-        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
+
+    with tempfile.TemporaryDirectory() as td:
+        result = _planted({"ENV_REGISTRY_OVERRIDE_FILE": _mutated_doc(td, mutate)})
     gate.assert_exit(1, result, "a dead entry must red")
     gate.assert_contains(result.combined, "DEAD WORKLIST_ZZZ_PHANTOM", "names it")
-    gate.assert_eq(REGISTRY.read_bytes(), original, "never touched on disk, not merely restored")
+    gate.assert_eq(DOC.read_bytes(), original, "never touched on disk, not merely restored")
     gate.log_pass("the direction that rots is the one this case covers, with no real file at risk")
 
 
+@REAL_TREE
 def test_a_typo_in_a_real_source_file_reds(gate):
     gate.log_test("PLANT: a misspelled expansion, scanned in place of a real tracked file")
     # WORKLIST_SOURCE_OVERRIDE_FILE (registered, kind=path) substitutes CONTENT
     # for one real corpus entry without ever writing to the tracked file: the
-    # real `git ls-files` list, the real file count and the real everything-else are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of disk. A hard kill mid-test now leaves a tmp file orphaned, never the tracked one -- the same class of hazard the WORKLIST_FOCUS registry corruption was (that half fixed by the registry-path seam above), one file over.
+    # real `git ls-files` list, the real file count and the real everything-else are unchanged, only SOURCE_PLANT's bytes come from a tmp copy instead of disk. A hard kill mid-test now leaves a tmp file orphaned, never the tracked one -- the same class of hazard the WORKLIST_FOCUS registry corruption was (that half fixed by the document seam above), one file over.
     original = SOURCE_PLANT.read_bytes()
     with tempfile.TemporaryDirectory() as td:
         mutated = pathlib.Path(td) / "reggate-ledger-mutated.py"
@@ -120,7 +164,7 @@ def test_a_typo_in_a_real_source_file_reds(gate):
             original
             + b'\n# gate probe\nimport os\n_probe = os.environ.get("WORKLIST_CADENEC", "on")\n'
         )
-        result = _run(env={"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
+        result = _planted({"WORKLIST_SOURCE_OVERRIDE_FILE": "%s:%s" % (SOURCE_PLANT_REL, mutated)})
     gate.assert_exit(1, result, "a typo'd name must red")
     gate.assert_contains(result.combined, "WORKLIST_CADENEC", "names the misspelling")
     gate.assert_contains(result.combined, "test-reggate-ledger.py", "and the file it is in")
@@ -128,18 +172,20 @@ def test_a_typo_in_a_real_source_file_reds(gate):
         SOURCE_PLANT.read_bytes(), original, "never touched on disk, not merely restored"
     )
     _unmodified(gate, SOURCE_PLANT)
-    after = _run()
+    # The session's one clean run: the two checks above prove the plant left the tracked bytes and the index exactly as they were, so the verdict on the tree after the plant IS the clean verdict, whichever case ran it first.
+    after = _clean()
     gate.assert_exit(0, after, "green with no override set, since nothing was ever mutated")
     gate.log_pass("the scanner sees a real typo without a real file ever being at risk")
 
 
+@REAL_TREE
 def test_prose_under_agent_is_not_a_read(gate):
     gate.log_test("ANTI-SILENCER: a name that exists only in agent/ prose must stay invisible")
     # WORKLIST_EMAIL is the real case: one mention, in a comment, describing a name that no longer exists. If the exclusion or the scanner ever admitted prose, it would appear as an unregistered read.
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_not_contains(result.combined, "WORKLIST_EMAIL", "the prose-only name is absent")
-    registered = json.loads(REGISTRY.read_text(encoding="utf-8"))["names"]
+    registered = _registry()["names"]
     gate.assert_eq("WORKLIST_EMAIL" in registered, False, "and it is not registered either")
     gate.log_pass(
         "the grep answer (134) and the read answer (133) differ, and the gate uses the read answer"
@@ -164,26 +210,23 @@ def test_the_selftest_covers_both_directions(gate):
 
 
 def _planted_registry(mutate) -> harness.RunResult:
-    """Run the real gate against a mutated TMP COPY of the registry; the tracked file is never written."""
-    original = REGISTRY.read_bytes()
+    """Run the section check against a mutated TMP COPY of the document; the tracked file is never written."""
+    original = DOC.read_bytes()
     with tempfile.TemporaryDirectory() as td:
-        mutated = pathlib.Path(td) / "worklist-env-registry-mutated.json"
-        obj = json.loads(original.decode("utf-8"))
-        mutate(obj)
-        mutated.write_text(json.dumps(obj, indent=2) + "\n", encoding="utf-8")
-        result = _run(env={"WORKLIST_REGISTRY_OVERRIDE_FILE": str(mutated)})
-    assert REGISTRY.read_bytes() == original, "the tracked registry must never be written"
+        result = _planted({"ENV_REGISTRY_OVERRIDE_FILE": _mutated_doc(td, mutate)})
+    assert DOC.read_bytes() == original, "the tracked registry must never be written"
     return result
 
 
+@REAL_TREE
 def test_every_registered_name_carries_a_class(gate):
     gate.log_test("the class each name renders into env-manifest under, on every entry")
-    obj = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    obj = _registry()
     entries = list(obj["names"].values()) + list(obj.get("foreign_reads", {}).values())
     gate.assert_eq(len(entries) >= 100, True, "%d entries" % len(entries))
     missing = [e for e in entries if e.get("class") not in ("harness", "gate-seam")]
     gate.assert_eq(missing, [], "every entry has a class")
-    result = _run()
+    result = _clean()
     gate.assert_exit(0, result, "clean run")
     gate.assert_contains(result.combined, "classes gate-seam ", "the class breakdown is printed")
     gate.assert_contains(

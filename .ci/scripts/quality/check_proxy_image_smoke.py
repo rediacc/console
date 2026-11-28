@@ -11,7 +11,9 @@ Hand-registered, with no gate header: CI runs it in `.github/workflows/ci-build-
 import sys
 
 import _cipath
+import _gate_args
 from rediacc_ci.quality import proxy_image_smoke
 
 if __name__ == "__main__":
+    _gate_args.parse("check_proxy_image_smoke.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(proxy_image_smoke.main(sys.argv[1:]))

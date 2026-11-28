@@ -1,0 +1,179 @@
+/**
+ * Command Safety Coverage (CS2)
+ *
+ * The severity and preview table must cover exactly the live contract
+ * commands, never declare an MCP-destructive command harmless, and classify
+ * every command that takes --dry-run or --apply. The check functions take the
+ * tables as arguments so a control fixture can turn each one red.
+ */
+import { describe, expect, it } from 'vitest';
+import {
+  createDescriptionResolver,
+  loadLocale,
+  walkContractCommands,
+} from '../../../scripts/lib/command-tree-lib.js';
+import { cli } from '../../cli.js';
+import { omitKey } from '../../utils/omit-key.js';
+import { COMMAND_METADATA } from '../command-metadata.js';
+import {
+  COMMAND_PREVIEW,
+  COMMAND_SEVERITY,
+  type CommandPreview,
+  type CommandSeverity,
+  NOT_PREVIEW,
+} from '../command-safety.js';
+
+interface Cmd {
+  pathKey: string;
+  longs: string[];
+}
+
+const resolver = createDescriptionResolver(loadLocale('en'));
+const COMMANDS: Cmd[] = walkContractCommands(cli, resolver).map((c) => ({
+  pathKey: c.pathKey,
+  longs: c.options.flatMap((o) => (/--([a-z0-9-]+)/.exec(o.flags)?.[1] ?? []) as string[]),
+}));
+const MCP_DESTRUCTIVE = new Set(
+  Object.entries(COMMAND_METADATA)
+    .filter(([, m]) => m.mcp?.destructive)
+    .map(([k]) => k)
+);
+
+type Sev = Readonly<Record<string, CommandSeverity>>;
+type Prev = Readonly<Record<string, CommandPreview>>;
+type NotPrev = Readonly<Record<string, string>>;
+
+const missingSeverity = (cmds: Cmd[], sev: Sev): string[] =>
+  cmds.filter((c) => !(c.pathKey in sev)).map((c) => c.pathKey);
+
+const staleKeys = (cmds: Cmd[], table: Readonly<Record<string, unknown>>): string[] => {
+  const live = new Set(cmds.map((c) => c.pathKey));
+  return Object.keys(table).filter((k) => !live.has(k));
+};
+
+const destructiveAtNone = (mcp: Set<string>, sev: Sev): string[] =>
+  [...mcp].filter((k) => sev[k] === 'none');
+
+const unclassifiedPreview = (cmds: Cmd[], prev: Prev, notPrev: NotPrev): string[] =>
+  cmds
+    .filter((c) => c.longs.includes('dry-run') || c.longs.includes('apply'))
+    .filter((c) => !(c.pathKey in prev) && !(c.pathKey in notPrev))
+    .map((c) => c.pathKey);
+
+const badPreviewFlags = (cmds: Cmd[], prev: Prev): string[] =>
+  Object.entries(prev)
+    .filter(([k, p]) => !cmds.find((c) => c.pathKey === k)?.longs.includes(p.flag))
+    .map(([k]) => k);
+
+describe('command safety table', () => {
+  it('walks 241 commands', () => {
+    expect(COMMANDS.length).toBe(241);
+  });
+
+  it('has a severity for every command, and the check names a missing one', () => {
+    expect(missingSeverity(COMMANDS, COMMAND_SEVERITY)).toEqual([]);
+    const without = omitKey(COMMAND_SEVERITY, 'repo list');
+    expect(missingSeverity(COMMANDS, without)).toEqual(['repo list']);
+  });
+
+  it('has no stale key in any table, and the check names one', () => {
+    expect(staleKeys(COMMANDS, COMMAND_SEVERITY)).toEqual([]);
+    expect(staleKeys(COMMANDS, COMMAND_PREVIEW)).toEqual([]);
+    expect(staleKeys(COMMANDS, NOT_PREVIEW)).toEqual([]);
+    expect(staleKeys(COMMANDS, { ...COMMAND_SEVERITY, 'no such cmd': 'none' })).toEqual([
+      'no such cmd',
+    ]);
+  });
+
+  it('declares no MCP-destructive command at none, and the check names one', () => {
+    expect(MCP_DESTRUCTIVE.size).toBeGreaterThan(0);
+    expect(destructiveAtNone(MCP_DESTRUCTIVE, COMMAND_SEVERITY)).toEqual([]);
+    expect(
+      destructiveAtNone(MCP_DESTRUCTIVE, { ...COMMAND_SEVERITY, 'repo delete': 'none' })
+    ).toEqual(['repo delete']);
+  });
+
+  // Review 1121-1 90db5f63.1 and f87608d7.1: a status command only reads, so it sits at none; walking the live commands means one with no table entry is named too.
+  const statusAboveNone = (cmds: Cmd[], severity: Sev): string[] =>
+    cmds
+      .filter((c) => /(^| )status$/.test(c.pathKey) && severity[c.pathKey] !== 'none')
+      .map((c) => c.pathKey);
+
+  it('declares every status command at none, and the check names one', () => {
+    expect(COMMANDS.some((c) => /(^| )status$/.test(c.pathKey))).toBe(true);
+    expect(statusAboveNone(COMMANDS, COMMAND_SEVERITY)).toEqual([]);
+    expect(statusAboveNone(COMMANDS, { ...COMMAND_SEVERITY, 'server status': 'caution' })).toEqual([
+      'server status',
+    ]);
+    // A status command absent from the table is not at none either.
+    expect(statusAboveNone(COMMANDS, omitKey(COMMAND_SEVERITY, 'server status'))).toEqual([
+      'server status',
+    ]);
+  });
+
+  // Review 1121-1 90db5f63.2 and .3: --dry-run previews when present (opt-in), --apply executes only when present (default), so each flag fixes its polarity.
+  const POLARITY: Readonly<Record<string, CommandPreview['polarity']>> = {
+    'dry-run': 'opt-in',
+    apply: 'default',
+  };
+  const wrongPolarity = (prev: Prev): string[] =>
+    Object.entries(prev)
+      .filter(([, p]) => POLARITY[p.flag] !== p.polarity)
+      .map(([k]) => k);
+  const dryRunProblems = (cmds: Cmd[], prev: Prev): string[] =>
+    cmds
+      .filter((c) => c.longs.includes('dry-run'))
+      .filter((c) => prev[c.pathKey]?.flag !== 'dry-run' || prev[c.pathKey]?.polarity !== 'opt-in')
+      .map((c) => c.pathKey);
+
+  it('pairs every preview flag with its polarity, and the check names a mismatch', () => {
+    expect(wrongPolarity(COMMAND_PREVIEW)).toEqual([]);
+    expect(
+      wrongPolarity({ ...COMMAND_PREVIEW, 'repo list': { flag: 'apply', polarity: 'opt-in' } })
+    ).toEqual(['repo list']);
+    expect(
+      wrongPolarity({ ...COMMAND_PREVIEW, 'repo list': { flag: 'dry-run', polarity: 'default' } })
+    ).toEqual(['repo list']);
+  });
+
+  it('declares repo prune destructive with polarity default on --apply', () => {
+    expect(COMMAND_SEVERITY['repo prune']).toBe('destructive');
+    expect(COMMAND_PREVIEW['repo prune']).toEqual({ flag: 'apply', polarity: 'default' });
+    expect(COMMAND_PREVIEW['repo gc']).toEqual({ flag: 'apply', polarity: 'default' });
+    expect(COMMAND_SEVERITY['subscription retire']).toBe('destructive');
+    expect(COMMAND_PREVIEW['subscription retire']).toEqual({ flag: 'apply', polarity: 'default' });
+  });
+
+  it('previews every --dry-run command: 22 opt-in rows plus repo gc, repo prune and subscription retire', () => {
+    expect(Object.keys(COMMAND_PREVIEW).length).toBe(25);
+    expect(COMMANDS.filter((c) => c.longs.includes('dry-run')).length).toBe(22);
+    expect(dryRunProblems(COMMANDS, COMMAND_PREVIEW)).toEqual([]);
+    // Controls: a dropped row and a wrong-polarity row are each named.
+    const dry = COMMANDS.find((c) => c.longs.includes('dry-run'))?.pathKey ?? '';
+    expect(dryRunProblems(COMMANDS, omitKey(COMMAND_PREVIEW, dry))).toEqual([dry]);
+    expect(
+      dryRunProblems(COMMANDS, {
+        ...COMMAND_PREVIEW,
+        [dry]: { flag: 'dry-run', polarity: 'default' },
+      })
+    ).toEqual([dry]);
+  });
+
+  it('classifies every --dry-run/--apply command, and the check names an unclassified one', () => {
+    expect(unclassifiedPreview(COMMANDS, COMMAND_PREVIEW, NOT_PREVIEW)).toEqual([]);
+    const withoutGc = omitKey(COMMAND_PREVIEW, 'repo gc');
+    expect(unclassifiedPreview(COMMANDS, withoutGc, NOT_PREVIEW)).toEqual(['repo gc']);
+    expect(Object.keys(NOT_PREVIEW)).toEqual(['config edit']);
+    expect(NOT_PREVIEW['config edit'].length).toBeGreaterThan(0);
+  });
+
+  it('names a real option as every preview flag, and the check names a bad one', () => {
+    expect(badPreviewFlags(COMMANDS, COMMAND_PREVIEW)).toEqual([]);
+    expect(
+      badPreviewFlags(COMMANDS, {
+        ...COMMAND_PREVIEW,
+        'repo list': { flag: 'dry-run', polarity: 'opt-in' },
+      })
+    ).toEqual(['repo list']);
+  });
+});

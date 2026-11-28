@@ -11,7 +11,6 @@ Auto-discovered by TAILED in .claude/rediacc_hooks/tests/test_hooks_delegates.py
 """
 
 import ast
-import datetime
 import importlib.util
 import json
 import os
@@ -200,24 +199,21 @@ out = {
 print(json.dumps({k: str(v) for k, v in out.items()}))
 """
 
-# The two guards read CLAUDE_PROJECT_DIR, else show-toplevel. `_acts` and `_pushes` are the first calls handed the root, so the capture reads what their ledger lines would join to.
+# The guard reads CLAUDE_PROJECT_DIR, else show-toplevel. `_pushes` is the first call handed the root, so the capture reads what its ledger lines would join to. (Its twin, the batch loop's early-push guard, was deleted with that loop: agent/plans/PLAN-simple-two-tree-loop.md B4.)
 GUARD_ROOTS = """
 import json, os, sys
 sys.path.insert(0, sys.argv[1])
 from rediacc_hooks import hookio
 from rediacc_hooks.guards import block_backup_unverified_push as B
-from rediacc_hooks.guards import block_turbo_early_push as P
 seen = {}
 def capture(name):
     def fn(cmd, root, base):
         seen[name] = str(root)
         return []
     return fn
-P._acts = capture("turbo")
 B._pushes = capture("backup")
 env = {"CLAUDE_PROJECT_DIR": sys.argv[2]} if sys.argv[2] else {}
 payload = json.dumps({"tool_input": {"command": "git status"}, "cwd": os.getcwd()})
-P.run(hookio.Event(payload, env=env))
 B.run(hookio.Event(payload, env=env))
 print(json.dumps(seen))
 """
@@ -269,15 +265,13 @@ def control_guards(tmp, main, lease):
     code, out, err = pyrun(tmp, lease, GUARD_ROOTS, claude, main)
     if check("guards: read with the variable set (%s)" % err[-200:], code, 0):
         seen = json.loads(out)
-        check("block_turbo_early_push: the variable gives main", seen.get("turbo"), str(main))
         check(
             "block_backup_unverified_push: the variable gives main", seen.get("backup"), str(main)
         )
-    # Why W5 has to confirm the variable: without it these two read the lease itself.
+    # Why W5 has to confirm the variable: without it the guard reads the lease itself.
     code, out, err = pyrun(tmp, lease, GUARD_ROOTS, claude, "")
     if check("guards: read with the variable unset (%s)" % err[-200:], code, 0):
         seen = json.loads(out)
-        check("block_turbo_early_push: no variable reads the lease", seen.get("turbo"), str(lease))
         check(
             "block_backup_unverified_push: no variable reads the lease",
             seen.get("backup"),
@@ -503,7 +497,7 @@ SURVEY = """
 import json, subprocess, sys
 sys.path.insert(0, sys.argv[1])
 import wl_worktrees as W
-root, session, live, items, cache_path = sys.argv[2:7]
+root, session, live, items, cache_path, role = sys.argv[2:8]
 real = subprocess.run
 statuses = []
 def counting(argv, *a, **k):
@@ -526,7 +520,7 @@ if cache_path:
             cache = json.load(fh)
     except OSError:
         pass
-got = W.survey(root, session, json.loads(items), lambda: live, cache)
+got = W.survey(root, session, json.loads(items), lambda: live, cache, role=role)
 if cache_path:
     with open(cache_path, "w", encoding="utf-8") as fh:
         json.dump(got["cache"], fh)
@@ -538,7 +532,7 @@ print(json.dumps(got))
 NOBODY: dict[str, list[str]] = {"ids": [], "trees": []}
 
 
-def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):
+def read(tmp, main, session=SID, live=NOBODY, items=(), cache="", role=""):
     """One `survey` in a child process. `statuses` counts its `git status` calls through a stub over `subprocess.run`."""
     code, out, err = pyrun(
         tmp,
@@ -550,6 +544,7 @@ def read(tmp, main, session=SID, live=NOBODY, items=(), cache=""):
         json.dumps(live),
         json.dumps(list(items)),
         cache,
+        role,
     )
     if code != 0:
         raise SystemExit("survey: %s" % err[-600:])
@@ -693,6 +688,99 @@ def control_live(tmp):
     check("a blind roster blocks nothing", got["unlanded"], [])
     check("a blind roster leaves the lease unjudged", got["unknown"], ["w1"])
     check("a blind roster says so", "w1" in got["report"], True)
+
+
+def write_hold(main, lease_id, item, reason="waits on its dependencies", session=ME):
+    store = main / ".git/rediacc-worktrees"
+    store.mkdir(exist_ok=True)
+    body = {"item": item, "reason": reason, "held_at": "2026-11-23T08:00:00Z"}
+    if session is not None:
+        body["session"] = session
+    (store / ("%s.hold" % lease_id)).write_text(json.dumps(body), encoding="utf-8")
+
+
+def control_hold(tmp):
+    main = lease_main_repo(tmp, "hold")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    open_item = {"id": "ac6a4f6b", "state": " ", "text": "preview signer", "owner": ME}
+    got = read(tmp, main, items=[open_item])
+    check("an unheld lease blocks", ids(got["unlanded"]), ["w1"])
+    check("an unheld lease parks nothing", got["parked"], [])
+    write_hold(main, "w1", "ac6a4f6b")
+    got = read(tmp, main, items=[open_item])
+    check("a held lease with an open item does not block", got["unlanded"], [])
+    check("the hold is one parked row", got["parked"][0]["id"], "w1")
+    check("a parked lease spends no git status", got["statuses"], 0)
+    check(
+        "the advisory names the item and the reason",
+        "parked lease w1, held for #ac6a4f6b: waits on its dependencies" in got["report"],
+        True,
+    )
+    for state in ("?", ">"):
+        got = read(tmp, main, items=[{**open_item, "state": state}])
+        check("a [%s] item still holds the lease" % state, got["unlanded"], [])
+    got = read(tmp, main, items=[{**open_item, "state": "x"}])
+    check("a ticked item blocks again", ids(got["unlanded"]), ["w1"])
+    check("a ticked item parks nothing", got["parked"], [])
+    got = read(tmp, main, items=[])
+    check("a gone item blocks again", got["unlanded"][0]["commits"], {".": [sha]})
+    # 0c0cdceb.1: a hold names the item's full id; a prefix, a peer's item and a peer's write are not honoured.
+    got = read(tmp, main, items=[{**open_item, "id": "ac6a4f6b0001"}])
+    check("a hold naming a prefix of an open id does not hold", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac")
+    got = read(tmp, main, items=[open_item])
+    check("a two-letter prefix hold holds nothing", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b")
+    got = read(tmp, main, items=[{**open_item, "owner": "babe0000"}])
+    check("another session's item does not hold it", ids(got["unlanded"]), ["w1"])
+    check("another session's item is said", any("babe0000" in d for d in got["doubts"]), True)
+    got = read(tmp, main, items=[{**open_item, "owner": None}])
+    check("an untagged item does not hold it", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b", session="babe0000")
+    got = read(tmp, main, items=[open_item])
+    check("a hold another session wrote does not hold", ids(got["unlanded"]), ["w1"])
+    check("a foreign writer is said", any("babe0000" in d for d in got["doubts"]), True)
+    write_hold(main, "w1", "ac6a4f6b", session=None)
+    got = read(tmp, main, items=[open_item])
+    check("a hold with no writer session does not hold", ids(got["unlanded"]), ["w1"])
+    # a921ed04.1: a session tag of one or two characters agrees with every owner that starts with it, so it is no tag. The owner is the item's `owner` field, not its id, so the tags are spelled as prefixes of that field (review c2e8d43b).
+    owner = open_item["owner"]
+    write_hold(main, "w1", "ac6a4f6b", session=owner[:2])
+    got = read(tmp, main, items=[open_item])
+    check("a two-character writer tag of the owner does not hold", ids(got["unlanded"]), ["w1"])
+    write_hold(main, "w1", "ac6a4f6b", session=owner[:4])
+    got = read(tmp, main, items=[open_item])
+    check("CONTROL a four-character writer tag of the owner still holds", got["unlanded"], [])
+    write_hold(main, "w1", "ac6a4f6b")
+    got = read(tmp, main, items=[{**open_item, "id": "ffff0000"}])
+    check("another open item does not hold it", ids(got["unlanded"]), ["w1"])
+    got = read(tmp, main, items=[open_item])
+    check("the owner's exact hold is honoured again", got["unlanded"], [])
+    # 0c0cdceb.2: a live writer and a blind roster are judged before the hold.
+    running = {"ids": ["wa"], "trees": [str(lease)], "prompts": []}
+    got = read(tmp, main, items=[open_item], live=running)
+    check("a held lease with a live writer reads held", got["held"], ["w1"])
+    check("a held lease with a live writer is not parked", got["parked"], [])
+    got = read(tmp, main, items=[open_item], live=None)
+    check("a held lease under a blind roster reads unknown", got["unknown"], ["w1"])
+    check("a held lease under a blind roster is not parked", got["parked"], [])
+    (main / ".git/rediacc-worktrees/w1.hold").write_text("{", encoding="utf-8")
+    got = read(tmp, main, items=[open_item])
+    check("a damaged hold blocks", ids(got["unlanded"]), ["w1"])
+    check("a damaged hold is said", "w1: its hold record could not be read" in got["doubts"], True)
+    for name, body in (
+        ("a hold with an item and no reason", '{"item": "ac6a4f6b"}'),
+        ("a hold with a reason and no item", '{"reason": "r"}'),
+        ("a hold with neither item nor reason", '{"item": "x"}'),
+    ):
+        (main / ".git/rediacc-worktrees/w1.hold").write_text(body, encoding="utf-8")
+        got = read(tmp, main, items=[open_item])
+        check(
+            name + " reads as damaged",
+            "w1: its hold record could not be read" in got["doubts"],
+            True,
+        )
 
 
 def control_landed(tmp):
@@ -1014,6 +1102,134 @@ def control_submodule(tmp):
     check("a dirty submodule tree blocks", read(tmp, main)["unlanded"][0]["dirty"] > 0, True)
 
 
+def _cut_from(main, lease_id, branch):
+    """Stamp a record with the `cut_from` the `lease` verb writes (`worktree_lease.tree_branch`)."""
+    path = main / ".git/rediacc-worktrees" / ("%s.json" % lease_id)
+    path.write_text(json.dumps({**json.loads(path.read_text()), "cut_from": branch}), "utf-8")
+
+
+def _stamp(main, lease_id, **fields):
+    """Stamp fields onto a lease record, as the `lease` verb writes `tree` and as a lander would be named."""
+    path = main / ".git/rediacc-worktrees" / ("%s.json" % lease_id)
+    path.write_text(json.dumps({**json.loads(path.read_text()), **fields}), "utf-8")
+
+
+def control_lander(tmp):
+    """B7 (agent/plans/PLAN-simple-two-tree-loop.md D5): a lease cut with `--tree landing` counts as unlanded for its lander only. The development session that owns it lists it as handed over and is not blocked; the landing tree's stop is. A named `lander` narrows that to one session."""
+    main = lease_main_repo(tmp, "lander")
+    lease = new_lease(tmp, main, "h1")
+    _stamp(main, "h1", tree="landing")
+    commit_in(tmp, lease, "h.txt", "h\n")
+    got = read(tmp, main, role="development")
+    check("the owner's development stop does not block on a landing-cut lease", got["unlanded"], [])
+    check("...and lists it as handed over", ids(got["handed"]), ["h1"])
+    check("...in its report", "handed lease h1 (the landing tree lands it)" in got["report"], True)
+    got = read(tmp, main, session=PEER, role="landing")
+    check("the landing tree's stop blocks on it", ids(got["unlanded"]), ["h1"])
+    check("...and lists nothing as handed", got["handed"], [])
+    got = read(tmp, main, session=PEER, role="")
+    check(
+        "a peer with no landing role neither blocks nor lists it as handed",
+        (got["unlanded"], got["handed"]),
+        ([], []),
+    )
+    _stamp(main, "h1", lander=PEER[:8])
+    got = read(tmp, main, session=PEER, role="")
+    check("a named lander blocks wherever its stop runs", ids(got["unlanded"]), ["h1"])
+    third = "f00d0000-0000-4000-8000-000000000000"
+    got = read(tmp, main, session=third, role="landing")
+    check(
+        "another landing-tree session does not block on a lease another lander holds",
+        got["unlanded"],
+        [],
+    )
+    got = read(tmp, main, role="development")
+    check(
+        "...and the owner still lists it as handed, naming the lander",
+        got["handed"][0]["lander"] if got["handed"] else "",
+        PEER[:8],
+    )
+    # CONTROL: a lease cut from the development tree is still its owner's to land.
+    dev = new_lease(tmp, main, "d2")
+    _stamp(main, "d2", tree="development")
+    commit_in(tmp, dev, "d.txt", "d\n")
+    got = read(tmp, main, role="development")
+    check("a development-cut lease still blocks its owner", ids(got["unlanded"]), ["d2"])
+    got = read(tmp, main, session=PEER, role="landing")
+    check("...and never the landing tree", "d2" in ids(got["unlanded"]), False)
+
+
+def control_landing_cut(tmp):
+    """R20261123.6's twin, R20261123.7: lease ace763dd-1 was cut from the landing tree, its one commit was picked into landing, and the block still listed it, because the survey judged it against the development HEAD."""
+    # The landing branch holds a commit the development HEAD lacks, as 1104-1 held 36 when ace763dd-1 was cut from it.
+    main = lease_main_repo(tmp, "landing-cut")
+    land = tmp / "landing-cut" / "landing"
+    git(tmp, main, "worktree", "add", "-q", "-b", "1104-1", land, "HEAD")
+    (main / ".git/rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-1", "path": str(land)}), encoding="utf-8"
+    )
+    landed_only = commit_in(tmp, land, "l.txt", "l\n", "landing work")
+    lease = main / ".claude/worktrees/l1"
+    git(tmp, main, "worktree", "add", "-q", "--detach", lease, "1104-1")
+    write_record(main, "l1")
+    _cut_from(main, "l1", "1104-1")
+    check(
+        "the development HEAD really lacks the landing commit",
+        git(tmp, main, "cherry", "HEAD", landed_only),
+        "+ " + landed_only,
+    )
+    check("a fresh landing-cut lease inherits nothing unlanded", read(tmp, main)["unlanded"], [])
+    sha = commit_in(tmp, lease, "b.txt", "b\n")
+    got = read(tmp, main)
+    check(
+        "an unpicked landing-cut commit is listed, and only it",
+        got["unlanded"][0]["commits"] if got["unlanded"] else {},
+        {".": [sha]},
+    )
+    # A pick without -x: only the tip the lease is judged against can read it landed, never the `--branches` search for a -x line.
+    git(tmp, land, "cherry-pick", sha)
+    check(
+        "a landing-cut commit picked into landing gives no worktree-unlanded",
+        read(tmp, main)["unlanded"],
+        [],
+    )
+    sha2 = commit_in(tmp, lease, "c.txt", "c\n")
+    got = read(tmp, main)
+    check(
+        "an unpicked second commit of that lease is still listed",
+        got["unlanded"][0]["commits"] if got["unlanded"] else {},
+        {".": [sha2]},
+    )
+    # CONTROL: a lease cut from the development branch keeps today's tip, so landing's copy lands nothing for it.
+    dev = new_lease(tmp, main, "d1")
+    _cut_from(main, "d1", "main")
+    dsha = commit_in(tmp, dev, "e.txt", "e\n")
+    git(tmp, land, "cherry-pick", dsha)
+    got = read(tmp, main)
+    check(
+        "a development-cut lease is still judged against the development HEAD",
+        "d1" in ids(got["unlanded"]),
+        True,
+    )
+    # A landing branch git does not hold: named as a doubt, never judged against the development HEAD in its place.
+    gone = lease_main_repo(tmp, "landing-gone")
+    gland = tmp / "landing-gone" / "landing"
+    git(tmp, gone, "worktree", "add", "-q", "-b", "1104-1", gland, "HEAD")
+    (gone / ".git/rediacc-landing.json").write_text(
+        json.dumps({"branch": "1104-9", "path": str(gland)}), encoding="utf-8"
+    )
+    glease = new_lease(tmp, gone, "g1")
+    _cut_from(gone, "g1", "1104-9")
+    commit_in(tmp, glease, "b.txt", "b\n")
+    got = read(tmp, gone)
+    check("a landing branch with no ref judges nothing", got["unlanded"], [])
+    check(
+        "and the doubt names the lease and the missing ref",
+        any("g1" in d and "refs/heads/1104-9" in d for d in got["doubts"]),
+        True,
+    )
+
+
 def control_effort_table(tmp):
     script = _REAL.parents[3] / ".ci/scripts/quality/check_plan_record.py"
 
@@ -1037,7 +1253,7 @@ def control_effort_table(tmp):
         check("the rule reds with %s removed" % key, judged(str(path)), 1)
 
 
-# The gh shim of test_wl_focus.py, whose imports reach pytest: this file runs under a bare python3.
+# The gh shim of rediacc_hooks/tests/prloop_world.py, whose imports reach pytest: this file runs under a bare python3.
 GH_SHIM = """#!/bin/bash
 for a in "$@"; do
     case "$a" in
@@ -1099,7 +1315,7 @@ def hook_state(fix):
 def control_real_hook(tmp):
     """The real Stop hook over a fixture: the wiring, the effort row and the stand-down keep."""
     sys.path[:0] = [str(_CI.parent), str(SOURCE)]
-    from rediacc_hooks.tests import test_wl_ci_status as ci_status
+    from rediacc_hooks.tests import ci_status_world as ci_status
     from rediacc_hooks.tests import wlfix
 
     needle = "UNLANDED LEASE"
@@ -1123,13 +1339,9 @@ def control_real_hook(tmp):
 
     runtime = fix.base / "xdg"
     runtime.mkdir(mode=0o700)
-    # A private ci:quick clone path too, for the same reason: a real ci:quick on this machine holds its own clone lock.
-    ciq_clone = fix.base / "ciq" / "clone"
-    ciq_clone.parent.mkdir()
     env = {
         "CLAUDE_CONFIG_DIR": str(config),
         "XDG_RUNTIME_DIR": str(runtime),
-        "CI_QUICK_CLONE_DIR": str(ciq_clone),
     }
 
     got = hook_stop(fix, env)
@@ -1196,109 +1408,6 @@ def control_real_hook(tmp):
     check("a free fleet lock blocks again", got.decision, "block")
     check("a free fleet lock names the lease again", needle in got.out, True)
 
-    # A running ci:quick (#b872c325): landing moves HEAD and voids the receipt it writes, so its clone lock holds the landing the way the fleet lock does. The marker is `<clone>.lock`, `{"pid", "at"}` written by quick-clone.ts acquireLock; only a live pid whose argv names the script counts.
-    ciq_lock = pathlib.Path(str(ciq_clone) + ".lock")
-    held_text = "held for the running ci:quick"
-    dead = subprocess.Popen([sys.executable, "-c", "pass"])
-    dead.wait(timeout=30)
-    for label, owner in (
-        ("a stale marker (its pid is gone)", json.dumps({"pid": dead.pid, "at": "x"})),
-        ("a marker whose pid is not ci:quick", json.dumps({"pid": os.getpid(), "at": "x"})),
-        ("a malformed marker", "{not json"),
-    ):
-        ciq_lock.write_text(owner, encoding="utf-8")
-        got = hook_stop(fix, env)
-        check("%s still blocks" % label, got.decision, "block")
-        check("%s is not reported as held" % label, held_text in got.out, False)
-    ciq_lock.unlink()
-    # The stand-in writes the owner the way acquireLock does, `at` from `new Date().toISOString()` shifted by argv[2] seconds, from the cwd it is started in.
-    ciq_stand_in = (
-        "import datetime, json, os, sys\n"
-        "at = datetime.datetime.now(datetime.timezone.utc) - datetime.timedelta(seconds=int(sys.argv[2]))\n"
-        "stamp = at.strftime('%Y-%m-%dT%H:%M:%S.000Z')\n"
-        "open(sys.argv[1], 'x').write(json.dumps({'pid': os.getpid(), 'at': stamp}))\n"
-        "print('held', flush=True)\n"
-        "sys.stdin.read()\n"
-        "os.remove(sys.argv[1])\n"
-    )
-
-    ciq_script = fix.base / "standins" / "scripts" / "ci-runner" / "quick-clone.ts"
-    ciq_script.parent.mkdir(parents=True)
-    ciq_script.write_text(ciq_stand_in, encoding="utf-8")
-
-    def ciq_stop(age_s, cwd):
-        """One Stop while a ci:quick stand-in, its lock `age_s` old and its cwd `cwd`, holds the marker."""
-        holder = subprocess.Popen(
-            [sys.executable, str(ciq_script), str(ciq_lock), str(age_s)],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            cwd=str(cwd),
-        )
-        stand_in_in, stand_in_out = holder.stdin, holder.stdout
-        if stand_in_in is None or stand_in_out is None:
-            holder.kill()
-            holder.wait(timeout=30)
-            for pipe in (stand_in_in, stand_in_out):
-                if pipe is not None:
-                    pipe.close()
-            raise SystemExit("the ci:quick stand-in was started without its stdin/stdout pipes")
-        try:
-            check("the ci:quick stand-in holds the marker", stand_in_out.readline().strip(), "held")
-            return hook_stop(fix, env)
-        finally:
-            stand_in_in.close()
-            stand_in_out.close()
-            holder.wait(timeout=30)
-
-    # The design review of 581e1fe96: a live matching pid is not enough. A lock older than twice quick-clone.ts's LOCK_WAIT_MS (3 h) is not a run worth holding for, and a ci:quick whose cwd is another checkout is not this checkout's run.
-    got = ciq_stop(4 * 3600, fix.proj)
-    check("a ci:quick lock older than twice the wait still blocks", got.decision, "block")
-    check("an old ci:quick lock is not reported as held", held_text in got.out, False)
-    foreign = fix.base / "another-checkout"
-    foreign.mkdir()
-    got = ciq_stop(0, foreign)
-    check("a ci:quick of another checkout still blocks", got.decision, "block")
-    check("a foreign ci:quick is not reported as held", held_text in got.out, False)
-
-    got = ciq_stop(0, fix.proj)
-    check("a running ci:quick lifts the block", got.decision, "allow")
-    check("a running ci:quick reports the hold", held_text in got.out, True)
-    check("the hold names the lease", "    w1 (" in got.out, True)
-    check("the run ended and removed its marker", ciq_lock.exists(), False)
-    got = hook_stop(fix, env)
-    check("a free ci:quick marker blocks again", got.decision, "block")
-    check("a free ci:quick marker names the lease again", needle in got.out, True)
-
-    # The age cap mirrors quick-clone.ts's LOCK_WAIT_MS; a change on either side alone fails here.
-    ts_text = (_REAL.parents[3] / "scripts/ci-runner/quick-clone.ts").read_text(encoding="utf-8")
-    ts_wait = re.search(r"^const LOCK_WAIT_MS = ([0-9_ *]+);$", ts_text, re.MULTILINE)
-    checks_tree = ast.parse((SOURCE / "hooks/stop/wl_checks.py").read_text(encoding="utf-8"))
-    py_wait = next(
-        (
-            node.value
-            for node in checks_tree.body
-            if isinstance(node, ast.Assign)
-            and any(getattr(t, "id", "") == "CI_QUICK_LOCK_WAIT_S" for t in node.targets)
-        ),
-        None,
-    )
-
-    def _product(text):
-        out = 1
-        for part in text.replace("_", "").split("*"):
-            out *= int(part.strip())
-        return out
-
-    check("quick-clone.ts still declares LOCK_WAIT_MS", ts_wait is not None, True)
-    check("wl_checks still declares CI_QUICK_LOCK_WAIT_S", py_wait is not None, True)
-    if ts_wait is not None and py_wait is not None:
-        check(
-            "CI_QUICK_LOCK_WAIT_S is quick-clone.ts's LOCK_WAIT_MS in seconds",
-            _product(ast.unparse(py_wait)) * 1000,
-            _product(ts_wait.group(1)),
-        )
-
     fix.bg = json.dumps(
         [{"id": "wa1", "type": "subagent", "status": "running", "description": "w"}]
     )
@@ -1310,13 +1419,6 @@ def control_real_hook(tmp):
     got = hook_stop(fix, env, json.dumps(inside))
     check("a stop from inside the lease is not this block", needle in got.out, False)
 
-    phase = ("--phase", wlfix.ME, "babysit", "--branch", "pub", "--pr", "543")
-    check("the phase is declared", fix.cli(*phase).rc, 0)
-    got = hook_stop(fix, env)
-    check("a babysit phase keeps the block", got.decision, "block")
-    check("a babysit phase keeps the text", needle in got.out, True)
-    check("the phase ends", fix.cli("--phase", wlfix.ME, "build").rc, 0)
-
     write_record(fix.proj, "w1", owner="cafe1234", agent="wa1")
     got = hook_stop(fix, env)
     check("a peer's lease is no block", got.decision, "allow")
@@ -1325,52 +1427,16 @@ def control_real_hook(tmp):
 
 
 def control_probes(tmp):
-    """The lock-owner readers, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one), an `Infinity` pid reads False, and a host with no /proc reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
+    """The vm:check lock-owner reader, called directly over a fake /proc: the argv must be an interpreter run of the script (a `tail` or `grep` that carries the path is not one) and an `Infinity` pid reads False (reviews a90d9cb2.1, d640b348.1 to .3)."""
     _by_file("paths").on_sys_path(SOURCE / "hooks/stop")
     import wl_checks
 
     fake = tmp / "fakeproc"
-    root = tmp / "probe-root"
-    root.mkdir()
     pid = 4242
     (fake / str(pid)).mkdir(parents=True)
-    (fake / str(pid) / "cwd").symlink_to(root)
-    stamp = datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
-    lock = tmp / "probe.lock"
 
     def argv_is(*words):
         (fake / str(pid) / "cmdline").write_bytes(b"\0".join(w.encode() for w in words) + b"\0")
-
-    def ciq(raw=None, proc=str(fake)):
-        lock.write_text(raw or json.dumps({"pid": pid, "at": stamp}), encoding="utf-8")
-        return wl_checks.ci_quick_running(str(root), path=str(lock), proc=proc)
-
-    script = "scripts/ci-runner/quick-clone.ts"
-    argv_is("node", "--require", "p.cjs", script)
-    check("ci:quick: an interpreter run of the script holds", ciq(), True)
-    argv_is("grep", script)
-    check("ci:quick: a grep naming the script is not a run", ciq(), False)
-    argv_is("node", "xci-runner/quick-clone.ts")
-    check("ci:quick: a word that only ends with the path is not the script", ciq(), False)
-    argv_is("node", "xscripts/ci-runner/quick-clone.ts")
-    check("ci:quick: a directory glued before the path is not the script", ciq(), False)
-    argv_is("tsx", script)
-    check("ci:quick: the tsx launcher holds", ciq(), True)
-    argv_is("bun", "run", script)
-    check("ci:quick: bun run names the script after the subcommand", ciq(), True)
-    argv_is("deno", "run", "--allow-all", script)
-    check("ci:quick: deno run holds", ciq(), True)
-    argv_is("python3", "-", script)
-    check("ci:quick: a stdin program with the path as an argument is not a run", ciq(), False)
-    argv_is("python3", "tools/lint.py", script)
-    check("ci:quick: a script that only takes the path as an argument is not a run", ciq(), False)
-    argv_is("node", script)
-    check(
-        "ci:quick: pid Infinity reads False, not a raise",
-        ciq('{"pid": Infinity, "at": "x"}'),
-        False,
-    )
-    check("ci:quick: a host with no /proc reads False", ciq(proc=str(tmp / "no-proc")), False)
 
     vm = "rediacc_ci.drills.vm_check"
     holder = wl_checks.vm_check_holder
@@ -1402,10 +1468,13 @@ def section_stop():
     control_peer(tmp)
     control_live(tmp)
     control_landed(tmp)
+    control_hold(tmp)
     control_orphans(tmp)
     control_index(tmp)
     control_cache(tmp)
     control_submodule(tmp)
+    control_landing_cut(tmp)
+    control_lander(tmp)
     control_effort_table(tmp)
     control_real_hook(tmp)
     control_probes(tmp)

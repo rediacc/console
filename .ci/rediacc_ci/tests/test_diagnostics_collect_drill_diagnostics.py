@@ -1,6 +1,6 @@
 """`rediacc_ci.diagnostics.collect_drill_diagnostics`, driven against the bytes its bash twin produced.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/test/collect-drill-diagnostics.sh` and the port over one shared fixture tree and compared stdout with each side's own `$RUNNER_TEMP` masked out. The K=5 ledger `.ci/shadow/w7p6-collect-drill-diagnostics.observations.jsonl` recorded that comparison over five distinct trees. The twin has now been deleted, and every case
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/test/collect-drill-diagnostics.sh` and the port over one shared fixture tree and compared stdout with each side's own `$RUNNER_TEMP` masked out. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees. The twin has now been deleted, and every case
 compares against `goldens/collect-drill-diagnostics/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. The provenance header carries the twin's blob sha, so `git cat-file -p <sha>` still yields the program that produced them.
 
 BOTH SUBJECTS DERIVE THE CONSOLE ROOT FROM THEIR OWN FILE LOCATION, three directories up, so the fixture tree still holds a COPY of the port at that relative depth rather than running the tracked file in place. The tool is read-only with respect to that tree: it only ever creates a fresh `$RUNNER_TEMP/drill-diagnostics`.

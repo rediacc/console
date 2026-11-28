@@ -17,19 +17,23 @@ ONE LOGGER. The twin had two (`common.sh`'s stderr loggers, and a private `echo`
 THE ONE KNOWN DIVERGENCE, PINNED BY A TEST RATHER THAN HIDDEN. common.sh logs through `echo -e`, which interprets backslash escapes IN THE MESSAGE, and the error branches interpolate `gh`'s own output into the message. So a `gh` failure whose text contains a literal `\\n` prints a newline through the twin and two characters through this port. `rediacc_ci.log` formats the message as
 data on purpose (see its module docstring); the differential asserts the two disagree there, so nobody later "fixes" the Python to re-interpret escapes.
 
-K=5 LEDGER: `.ci/shadow/w7p6-mark-production.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 
 from rediacc_ci import log
 from rediacc_ci.core import gh_retry
+from rediacc_ci.deploy import promote_r2_to_stable as stable
+from rediacc_ci.deploy import r2_promote
 from rediacc_ci.well_known import GH_REPO
 
 # `^v[0-9]+\.[0-9]+\.[0-9]+$`: a malformed version must NOT become a tag, because `production` is the thing humans will trust.
@@ -40,6 +44,14 @@ DEFAULT_REPO = GH_REPO
 
 # The two substrings that mean "this version was never published", as opposed to "the lookup itself failed". Everything else takes the did-NOT-run branch.
 NOT_FOUND_MARKERS = ("release not found", "Not Found")
+
+
+# THE STABLE RECORD'S BACKFILL (PLAN-release-notes D9). `cli/stable/history.json` is appended by the stable promote itself; versions promoted before that landed are recovered once from the successful `cd-release-stable.yml` runs. A run proves a promotion only through its `Release to Stable` job log line `R2 promotion complete: edge v<V> -> stable` (a green run that found nothing to promote prints none), so a version with no such line is not recorded, and runs past GitHub's log retention are lost.
+STABLE_WORKFLOW = "cd-release-stable.yml"
+PROMOTE_JOB_NAME = "Release to Stable"
+PROMOTED_LINE_RE = re.compile(r"R2 promotion complete: edge v?(\d+\.\d+\.\d+) -> stable")
+BACKFILL_RUN_LIMIT = 200
+SELF = "rediacc_ci.release.mark_production"
 
 
 class _Loggers:
@@ -111,7 +123,140 @@ def _inherit(args: list[str]) -> int:
     return subprocess.run(["gh", *args], check=False).returncode
 
 
+def _promoted_version(repo: str, run_id: int) -> tuple[str, str] | None:
+    """`(version, promoted_at)` of the promotion run `run_id` made, or None when it made none. Raises RuntimeError when a read fails, because a run that could not be read is not a run that promoted nothing."""
+    jobs = gh_retry.gh(
+        ["api", "repos/%s/actions/runs/%d/jobs?per_page=100" % (repo, run_id), "--jq", ".jobs"]
+    )
+    if not jobs.ok:
+        raise RuntimeError("could not list the jobs of run %d: %s" % (run_id, jobs.stderr.strip()))
+    for job in json.loads(jobs.stdout_raw or "[]"):
+        if job.get("name") != PROMOTE_JOB_NAME or job.get("conclusion") != "success":
+            continue
+        logs = gh_retry.gh(["api", "repos/%s/actions/jobs/%d/logs" % (repo, job["id"])])
+        if not logs.ok:
+            if "HTTP 410" in logs.stderr:
+                # Past retention: nothing provable, and nothing a retry would change.
+                return None
+            raise RuntimeError(
+                "could not read the log of job %d (run %d): %s"
+                % (job["id"], run_id, logs.stderr.strip())
+            )
+        found = PROMOTED_LINE_RE.search(logs.stdout_raw)
+        if found:
+            return found.group(1), str(job.get("completed_at") or "")
+    return None
+
+
+def backfill_rows(repo: str) -> list[dict[str, str]]:
+    """One `{version, promoted_at}` row per version the successful stable runs provably promoted, oldest first. A version promoted twice keeps its first row."""
+    listed = gh_retry.gh(
+        [
+            "run",
+            "list",
+            "--workflow",
+            STABLE_WORKFLOW,
+            "--status",
+            "success",
+            "--limit",
+            # One more than the cap: a listing that fills the cap exactly may have nothing older, and only the extra row proves there is.
+            str(BACKFILL_RUN_LIMIT + 1),
+            "--json",
+            "databaseId",
+        ]
+    )
+    if not listed.ok:
+        raise RuntimeError(
+            "could not list the %s runs: %s" % (STABLE_WORKFLOW, listed.stderr.strip())
+        )
+    rows: dict[str, dict[str, str]] = {}
+    listed_runs = json.loads(listed.stdout_raw or "[]")
+    capped = len(listed_runs) > BACKFILL_RUN_LIMIT
+    listed_runs = listed_runs[:BACKFILL_RUN_LIMIT]
+    if capped:
+        log.warn(
+            "%s: backfill read the newest %d successful runs, the cap; older promoted versions are not in the rows"
+            % (SELF, BACKFILL_RUN_LIMIT)
+        )
+    for run in listed_runs:
+        proved = _promoted_version(repo, int(run["databaseId"]))
+        if proved is None or not proved[1]:
+            continue
+        version, promoted_at = proved
+        if version not in rows or promoted_at < rows[version]["promoted_at"]:
+            rows[version] = {"version": version, "promoted_at": promoted_at}
+    return sorted(rows.values(), key=lambda row: row["promoted_at"])
+
+
+def latest_release_tag(repo: str) -> str:
+    """The tag GitHub's Latest badge names, or "" when it names none."""
+    latest = gh_retry.gh(["api", "repos/%s/releases/latest" % repo, "--jq", ".tag_name"])
+    return latest.stdout_raw.strip() if latest.ok else ""
+
+
+def backfill(argv: list[str]) -> int:
+    """`--backfill [--dry-run]`: print the rows the runs prove and check the newest against the Latest release. Without `--dry-run` the rows missing from `cli/stable/history.json` are merged in (R2 credentials as for the promote)."""
+    unknown = [arg for arg in argv if arg != "--dry-run"]
+    if unknown:
+        log.error("unknown option(s) %s; --backfill takes only --dry-run" % " ".join(unknown))
+        return 2
+    dry = "--dry-run" in argv
+    repo = os.environ.get("GITHUB_REPOSITORY") or DEFAULT_REPO
+    try:
+        rows = backfill_rows(repo)
+    except RuntimeError as exc:
+        log.error("%s: backfill: %s" % (SELF, exc))
+        return 1
+    for row in rows:
+        print("v%s\t%s" % (row["version"], row["promoted_at"]))
+    latest = latest_release_tag(repo)
+    if rows and not latest:
+        log.warn(
+            "%s: the Latest release could not be read; the newest backfilled row was not checked against it"
+            % SELF
+        )
+    if rows and latest:
+        newest = "v" + rows[-1]["version"]
+        verdict = "agrees with" if newest == latest else "DIFFERS FROM"
+        log.info(
+            "%s: the newest backfilled row (%s) %s the Latest release (%s)"
+            % (SELF, newest, verdict, latest)
+        )
+    log.info("%s: backfill proved %d promoted version(s)" % (SELF, len(rows)))
+    if dry:
+        return 0
+    return _write_backfill(rows)
+
+
+def _write_backfill(rows: list[dict[str, str]]) -> int:
+    endpoint = stable.environment()["CLOUDFLARE_R2_ENDPOINT"]
+    if not endpoint:
+        log.error("%s: backfill: CLOUDFLARE_R2_ENDPOINT must be set" % SELF)
+        return 1
+    run = r2_promote.Transfers(SELF, endpoint, 10.0)
+    stage_root = tempfile.mkdtemp(prefix="stable-backfill-")
+    try:
+
+        def merge(current: list[dict[str, str]]) -> tuple[list[dict[str, str]], int]:
+            merged, added = current, 0
+            for row in rows:
+                merged, was_added = stable.append_row(merged, row["version"], row["promoted_at"])
+                added += was_added
+            merged.sort(key=lambda row: row["promoted_at"])
+            return merged, added
+
+        added = stable.update_history(run, merge, stage_root)
+        log.info("%s: backfill wrote %d new row(s)" % (SELF, added))
+        return 0
+    except r2_promote.PromoteError as exc:
+        return exc.status
+    finally:
+        shutil.rmtree(stage_root, ignore_errors=True)
+
+
 def main(argv: list[str]) -> int:
+    if argv and argv[0] == "--backfill":
+        return backfill(argv[1:])
     out = _Loggers()
 
     if not out.require_cmd("gh"):

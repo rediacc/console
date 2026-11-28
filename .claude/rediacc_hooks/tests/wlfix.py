@@ -1,7 +1,7 @@
 """The fixture layer for the worklist Stop-hook control suite, ported from bash.
 
 REPLACES `.claude/hooks/stop/worklist-cases/_harness.sh`, which was the ONE copy of every fixture helper for a 16,000-line bash suite whose whole subject is Python: `worklist.py` and the `wl_*` modules beside it. The suite drove that Python through `python3 "$HOOK"` and asserted on its stdout with `grep -qF`, so every helper below is the same subprocess call with the same
-environment; what moves is the language the assertions are written in, not what is executed.
+environment; what moves is the language the assertions are written in, not what is executed. Since PLAN-ciquick-cpu.md W18 that call is a fork of a parent that has the standard library imported already, rather than a fresh interpreter; the hook, its argv, stdin, environment, cwd and `sys.path` are the call's own (`_ForkParent` below says what is and is not shared).
 
 WHY THE SANDBOX IS REBUILT PER TEST RATHER THAN SHARED. The bash suite carried one `$BASE` for all 802 cases and `setup()` began with `rm -rf "$BASE"`, so a case that forgot the call inherited its predecessor's world. pytest gives each test its own `tmp_path`, which makes that inheritance unrepresentable instead of merely discouraged, and the cases that DELIBERATELY chain (a second
 stop on an unmoved world, a third that trips the stuck detector) chain inside one test function, where the sequence is visible in one place.
@@ -13,6 +13,7 @@ THE AMBIENT SCRUB IS STILL LOAD-BEARING and is done here rather than once at imp
 
 from __future__ import annotations
 
+import atexit
 import importlib
 import json
 import os
@@ -140,6 +141,194 @@ def import_wl(name: str):
     return __import__(name)
 
 
+# ONE PRE-IMPORTED PARENT PER PYTEST PROCESS, AND A FORK PER CASE (PLAN-ciquick-cpu.md W18). Every hook call used to be a fresh `python3 worklist.py`: an interpreter start plus about 800 ms of imports under load, of which about 310 ms is the standard library (measured 2026-11-23 with `-X importtime`), paid again by each of the suite's thousands of calls. The parent
+# below imports that standard-library set ONCE and forks a child per call; the child applies the call's environment, cwd, argv, stdin and `sys.path` as a fresh interpreter would (the parent's own `-c` entry, '', is left out of BASE_PATH, so the caller's cwd is never on the path), then runs the hook as `__main__`. What only an interpreter start can set (START_ONLY_KNOBS, the hash seed) is the parent's, so a case that asks for another value runs fresh.
+#
+# THE HOOK'S OWN MODULES ARE NEVER PRE-IMPORTED, and that is the line that keeps this honest. 31 `wl_*` modules read a WORKLIST_* knob into a module constant at import (`BGSWEEP_AGE_MIN = int(os.environ.get(...))` and the like), and several register atexit or signal work at import. Imported in the parent, they would freeze the parent's environment into every child. So the
+# child imports `worklist.py` and everything under `.claude` and `.ci` fresh, with the case's environment already in place; only modules from the interpreter's own library, which read no WORKLIST_* knob, come from the parent.
+#
+# EXIT IS A NORMAL EXIT. The child joins non-daemon threads and runs its atexit handlers (the resource recorder runs at the exit of every hook process) before `os._exit`, and an uncaught exception prints the traceback from the hook's own frame down, as a fresh interpreter would, with exit code 1.
+_PRELOAD = (
+    "ast base64 bisect bz2 calendar collections contextlib copy dataclasses datetime difflib dis "
+    "enum fcntl fnmatch functools glob grp hashlib heapq hmac importlib inspect io ipaddress "
+    "itertools json keyword locale lzma math operator pathlib pwd random re reprlib secrets select "
+    "selectors shlex shutil signal socket struct subprocess tarfile tempfile threading tokenize "
+    "tomllib traceback typing urllib.parse warnings weakref zlib"
+)
+
+_FORK_SERVER = r"""
+import importlib, json, os, sys
+for _name in %(preload)r.split():
+    try:
+        importlib.import_module(_name)
+    except ImportError:
+        pass
+import atexit, io, runpy, tempfile, threading, time, traceback
+
+_pp = set(p for p in os.environ.get("PYTHONPATH", "").split(os.pathsep) if p)
+BASE_PATH = [p for p in sys.path if p and p not in _pp]
+SCRATCH = tempfile.mkdtemp(prefix="wlfix-fork-")
+reply = os.fdopen(os.dup(1), "w", encoding="utf-8")
+devnull = os.open(os.devnull, os.O_RDWR)
+os.dup2(devnull, 1)
+
+
+def child(req, out_path, err_path, in_path):
+    os.chdir(req["cwd"])
+    os.environ.clear()
+    os.environ.update(req["env"])
+    time.tzset()
+    tempfile.tempdir = None
+    hook = req["argv"][0]
+    extra = [os.path.abspath(p) for p in req["env"].get("PYTHONPATH", "").split(os.pathsep) if p]
+    seen, path = set(), []
+    for entry in [os.path.dirname(os.path.abspath(hook)), *extra, *BASE_PATH]:
+        if entry not in seen:
+            seen.add(entry)
+            path.append(entry)
+    sys.path[:] = path
+    sys.dont_write_bytecode = bool(req["env"].get("PYTHONDONTWRITEBYTECODE"))
+    sys.argv = list(req["argv"])
+    for fd, name, flags in ((0, in_path, os.O_RDONLY), (1, out_path, os.O_WRONLY), (2, err_path, os.O_WRONLY)):
+        handle = os.open(name, flags)
+        os.dup2(handle, fd)
+        os.close(handle)
+    sys.stdin = open(0, "r", encoding="utf-8", closefd=False)
+    sys.stdout = open(1, "w", encoding="utf-8", closefd=False)
+    sys.stderr = open(2, "w", encoding="utf-8", errors="backslashreplace", closefd=False)
+    sys.__stdin__, sys.__stdout__, sys.__stderr__ = sys.stdin, sys.stdout, sys.stderr
+    code = 0
+    try:
+        runpy.run_path(hook, run_name="__main__")
+    except SystemExit as exc:
+        if exc.code is None:
+            code = 0
+        elif isinstance(exc.code, int):
+            code = exc.code
+        else:
+            print(exc.code, file=sys.stderr)
+            code = 1
+    except BaseException as exc:
+        tb = exc.__traceback__
+        while tb is not None and os.path.abspath(tb.tb_frame.f_code.co_filename) != os.path.abspath(hook):
+            tb = tb.tb_next
+        traceback.print_exception(type(exc), exc, tb or exc.__traceback__)
+        code = 1
+    try:
+        threading._shutdown()
+        atexit._run_exitfuncs()
+    finally:
+        # A flush that fails is said on fd 2 and turns a clean exit into 1 (c0cc1b2d.4): a truncated output file must not read back under the hook's own exit code.
+        for label, stream in (("stdout", sys.stdout), ("stderr", sys.stderr)):
+            try:
+                stream.flush()
+            except Exception as exc:
+                os.write(2, ("wlfix fork child: flushing %%s failed (%%s: %%s)\n" %% (label, type(exc).__name__, exc)).encode("utf-8", "replace"))
+                code = code or 1
+        os._exit(code & 0xFF)
+
+
+for line in sys.stdin:
+    req = json.loads(line)
+    out_path = os.path.join(SCRATCH, "out")
+    err_path = os.path.join(SCRATCH, "err")
+    in_path = os.path.join(SCRATCH, "in")
+    with open(in_path, "w", encoding="utf-8") as handle:
+        handle.write(req["stdin"])
+    for name in (out_path, err_path):
+        open(name, "w").close()
+    pid = os.fork()
+    if pid == 0:
+        try:
+            child(req, out_path, err_path, in_path)
+        except BaseException:
+            # A failure before the hook runs (chdir, the environment, the fd setup) lands in the case's stderr file with its traceback, never as a bare rc 70 (c0cc1b2d.3).
+            try:
+                with open(err_path, "a", encoding="utf-8") as handle:
+                    handle.write("wlfix fork child failed before the hook ran:\n")
+                    traceback.print_exc(file=handle)
+            finally:
+                os._exit(70)
+        finally:
+            os._exit(70)
+    _, status = os.waitpid(pid, 0)
+    rc = os.waitstatus_to_exitcode(status)
+    with open(out_path, encoding="utf-8", errors="surrogateescape") as handle:
+        out = handle.read()
+    with open(err_path, encoding="utf-8", errors="surrogateescape") as handle:
+        err = handle.read()
+    reply.write(json.dumps({"rc": rc, "out": out, "err": err}) + "\n")
+    reply.flush()
+import shutil
+shutil.rmtree(SCRATCH, ignore_errors=True)
+""" % {"preload": _PRELOAD}
+
+
+# THE PARENT'S OWN ENVIRONMENT IS THE PYTEST PROCESS'S AS IMPORTED, never the case's that happens to start it. A case that monkeypatches the fixture's env into os.environ (test_wl_stop_speed_reads.py's `memo`, TMPDIR among it) and is the first to call a hook started the parent with that TMPDIR, so SCRATCH lived inside that case's fixture directory; once the directory went, the next case's request died writing `in` and read as "the wlfix fork parent died". Each child still gets its case's environment from the request.
+_PARENT_ENV = dict(os.environ)
+
+# THE KNOBS AN INTERPRETER READS ONLY AT START. A forked child keeps the parent's: its hash secret is fixed before any request arrives (c0cc1b2d.2). A case that sets one to a value the parent does not hold (a case omitting it keeps the parent's, whatever the pytest process holds, 5fb22d3c.1) runs as a fresh `python3 <hook>` instead, so it gets what a fresh interpreter gives. `random` and `tempfile` need no such route: `random` reseeds in a forked child (os.register_at_fork) and tempfile's name sequence rebuilds its generator when the pid changes.
+START_ONLY_KNOBS = ("PYTHONHASHSEED",)
+
+
+class _ForkParent:
+    """The pre-imported parent of this pytest process, started on first use and stopped at exit."""
+
+    proc: subprocess.Popen | None = None
+    served = 0
+
+    @classmethod
+    def run(cls, argv: list[str], stdin: str, env: dict[str, str]) -> tuple[int, str, str]:
+        if any(k in env and env[k] != _PARENT_ENV.get(k) for k in START_ONLY_KNOBS):
+            fresh = subprocess.run(
+                [sys.executable, *argv],
+                input=stdin,
+                env=env,
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="surrogateescape",
+                check=False,
+            )
+            return fresh.returncode, fresh.stdout, fresh.stderr
+        if cls.proc is None or cls.proc.poll() is not None:
+            cls.proc = subprocess.Popen(
+                [sys.executable, "-c", _FORK_SERVER],
+                env=_PARENT_ENV,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                text=True,
+                encoding="utf-8",
+            )
+            atexit.register(cls.stop)
+        to_parent, from_parent = cls.proc.stdin, cls.proc.stdout
+        if to_parent is None or from_parent is None:
+            raise RuntimeError("the wlfix fork parent was started without its pipes")
+        request = {"argv": argv, "stdin": stdin, "env": env, "cwd": os.getcwd()}
+        to_parent.write(json.dumps(request) + "\n")
+        to_parent.flush()
+        line = from_parent.readline()
+        if not line:
+            raise RuntimeError(
+                "the wlfix fork parent died (rc %r) while running %r; rerun the case to see "
+                "whether the hook or the parent is at fault" % (cls.proc.poll(), argv)
+            )
+        reply = json.loads(line)
+        cls.served += 1
+        return reply["rc"], reply["out"], reply["err"]
+
+    @classmethod
+    def stop(cls) -> None:
+        if cls.proc is not None and cls.proc.poll() is None:
+            if cls.proc.stdin is not None:
+                cls.proc.stdin.close()
+            try:
+                cls.proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                cls.proc.kill()
+
+
 class Result:
     """One hook invocation: its stdout, its stderr and its exit code."""
 
@@ -176,6 +365,7 @@ class Fixture:
         self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
+        self.cadence = "off"
         self.gha = ""
         self.wl = base / "placeholder.md"
 
@@ -202,7 +392,7 @@ class Fixture:
         return pathlib.Path(self.env.get("WORKLIST_STORE_DIR", str(self.base / "store")))
 
     def settings(self, **kw) -> None:
-        """Write `kw` (`cadence=False`, `agent_hint="off"`, `writer_cap=2`, ...) into the fixture project's agent/plans/QUEUE.md settings block, through `wl_planqueue.set_settings`, the verb's own writer. A bool becomes on|off; anything else is stringified."""
+        """Write `kw` (`effort="smart"`, the one key the fence takes) into the fixture project's agent/plans/QUEUE.md settings block, through `wl_planqueue.set_settings`, the verb's own writer. A bool becomes on|off; anything else is stringified."""
         paths.on_sys_path(STOP_DIR)
         wl_planqueue = importlib.import_module("wl_planqueue")
 
@@ -247,6 +437,7 @@ class Fixture:
         self.waker = True
         self.crons = json.dumps(DEFAULT_CRONS)
         self.judge_mode = "off"
+        self.cadence = "off"
         # PINNED, NOT INHERITED. The hook no-ops when GITHUB_ACTIONS=true, so a suite that inherits the ambient value passes locally and silently no-ops in CI, where the empty output reads as a failure.
         self.gha = ""
         for knob in RESET_KNOBS:
@@ -279,8 +470,8 @@ class Fixture:
         slug = re.sub(r"[^A-Za-z0-9._-]", "_", str(self.proj)).lstrip("_")
         self.wl = self.base / "tmp" / "claude-worklist" / ("%s.md" % slug)
         self.wl.write_text("", encoding="utf-8")
-        # CADENCE OFF BY DEFAULT, through the same QUEUE.md switch the operator uses (see `run`).
-        self.settings(cadence="off")
+        # The fixture QUEUE.md names the fail-safe level, so `--queue-set` finds a file and a block. CADENCE OFF BY DEFAULT rides `self.cadence` into WORKLIST_CADENCE (see `run`): the fence takes `effort` alone (agent/plans/PLAN-simple-two-tree-loop.md B5).
+        self.settings(effort="high")
 
         self.transcript.write_text(
             json.dumps({"type": "user", "message": {"content": "go"}}) + "\n", encoding="utf-8"
@@ -507,17 +698,10 @@ class Fixture:
         base.setdefault("WORKLIST_TASKS_DIR", str(self.base / "tasks"))
         # A Stop event (no argv): snapshot the `.lastevent-` files so check_quiet can tell a battery that ran and had nothing to say from a hook that died before deciding.
         before = self._lastevents() if not argv else None
-        proc = subprocess.run(
-            [sys.executable, str(self.hook), *argv],
-            input=stdin,
-            capture_output=True,
-            text=True,
-            env=base,
-            check=False,
-        )
-        got = Result(proc.stdout, proc.stderr, proc.returncode)
+        rc, out, err = _ForkParent.run([str(self.hook), *argv], stdin, base)
+        got = Result(out, err, rc)
         if before is not None:
-            got.battery_ran = proc.returncode == 0 and self._lastevents() != before
+            got.battery_ran = rc == 0 and self._lastevents() != before
         return got
 
     def _lastevents(self) -> dict:
@@ -555,6 +739,7 @@ class Fixture:
         env["CLAUDE_PROJECT_DIR"] = str(self.proj)
         env["WORKLIST_TASKS_DIR"] = str(self.base / "tasks")
         env["WORKLIST_JUDGE"] = self.judge_mode
+        env["WORKLIST_CADENCE"] = self.cadence
         env["GITHUB_ACTIONS"] = self.gha
         if extra:
             env.update(extra)
@@ -563,7 +748,7 @@ class Fixture:
     def run(self, extra_env: dict | None = None, event: str | None = None) -> Result:
         """Feed the hook a Stop event and return its raw verdict.
 
-        CADENCE OFF BY DEFAULT, deliberately (`setup()` writes `cadence: off` into the fixture QUEUE.md): the cadence stands the hook down for one turn after it demanded and the session answered, so any case shaped block, then a new say, then a block would see a pause instead of the second block. The dedicated cadence tests set it on explicitly.
+        CADENCE OFF BY DEFAULT, deliberately (`self.cadence` is `off`, sent as WORKLIST_CADENCE, the wl_checks.cadence_on seam): the cadence stands the hook down for one turn after it demanded and the session answered, so any case shaped block, then a new say, then a block would see a pause instead of the second block. The dedicated cadence tests set it on explicitly.
         """
         return self.python([], stdin=event or self.event(), env=self.stop_env(extra_env))
 

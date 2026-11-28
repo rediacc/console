@@ -25,6 +25,7 @@
       },
       "cancel": {
         "cancelled": "已取消 {{name}}",
+        "descriptionShort": "取消远程机器上正在运行的备份",
         "description": "取消远程机器上正在运行的备份",
         "notRunning": "策略 \"{{name}}\" 没有正在运行的备份"
       },
@@ -32,6 +33,7 @@
       "descriptionShort": "管理备份",
       "drNudge": "配置存储未启用：您的仓库凭据（LUKS 密码短语）仅存在于此主机上，因此裸机恢复无法找回它们。请使用 \"rdc config remote enable\" 启用，将它们同步到加密的配置数据块中。",
       "list": {
+        "descriptionShort": "列出机器上的备份产物",
         "description": "列出机器上的备份产物。",
         "examples": {
           "basic": "列出某台机器已保存的备份。",
@@ -42,6 +44,7 @@
         "placementRequired": "使用 -m <machine> 指定要列出其备份的机器。"
       },
       "manifests": {
+        "descriptionShort": "列出服务器上记录的备份快照清单",
         "description": "列出服务器上记录的备份快照清单",
         "empty": "未找到备份清单。",
         "fetching": "正在获取备份清单...",
@@ -59,6 +62,7 @@
         "deployed": "已在 {{machine}} 上部署 {{name}}",
         "deployFailed": "已恢复的 {{name}} 部署失败",
         "deploying": "正在 {{machine}} 上部署 {{name}}...",
+        "descriptionShort": "将备份产物还原为可运行的仓库",
         "description": "将备份产物转换为可运行的仓库。放置位置在此指定。",
         "examples": {
           "asNewRepo": "将备份恢复为新仓库并启动它。",
@@ -119,13 +123,16 @@
         "salvageNeedsAs": "--salvage 需要 --as <新名称>:损坏的镜像绝不会放在已有名称之下。",
         "salvageNeedsSnapshot": "--salvage 需要一个数据块存储快照作为恢复来源。",
         "salvageWholeImage": "--salvage 恢复整个镜像,不能与 --path 或 --to 同时使用。",
-        "atIndexGap": "快照 {{snapshot}} 没有已存储的列表,因此改为读取早 {{gap}} 的 {{indexed}}。"
+        "atIndexGap": "快照 {{snapshot}} 没有已存储的列表,因此改为读取早 {{gap}} 的 {{indexed}}。",
+        "registrationCleanupFailed": "失败后无法移除 {{name}} 的注册（{{error}}）；配置中仍保留该项。"
       },
       "retention": {
         "clear": {
+          "descriptionShort": "移除已声明的策略，使套餐或服务器默认值重新生效",
           "description": "移除已声明的策略，改回套餐或服务器的默认设置。"
         },
         "cleared": "已移除 {{name}} 的保留策略。此后将采用套餐或服务器的默认设置。",
+        "descriptionShort": "显示服务器当前执行的快照保留策略",
         "description": "显示服务器正在执行的快照保留策略。",
         "empty": "未声明保留策略，因此采用套餐或服务器的默认设置。",
         "knobNotAnInteger": "{{flag}} 需要一个表示保留快照数量的整数，而不是 \"{{value}}\"。",
@@ -137,6 +144,7 @@
         "optionKeepWeekly": "为这么多周中的每一周保留最新的快照",
         "optionKeepYearly": "为这么多年中的每一年保留最新的快照",
         "set": {
+          "descriptionShort": "声明要保留的快照数量",
           "description": "指定要保留的快照数量。每个选项都会被整体替换，而不是合并。",
           "success": "已为 {{name}} 设置保留策略（{{count}} 条规则）。范围之外的快照将在下一次清理时被删除。",
           "pending": "此更改保留得更少,因此会等待延迟删除窗口,并于 {{when}}(UTC)对 \"{{name}}\" 生效。所示策略在此之前保持有效。"
@@ -144,6 +152,7 @@
         "effective": "{{name}} 当前生效的保留策略:{{source}}",
         "optionStream": "仅应用于此备份流(流 ID);省略时使用整个仓库的默认值",
         "preview": {
+          "descriptionShort": "显示下次清理将删除的快照以及可释放的空间",
           "description": "显示下一次清理将删除哪些快照,以及可释放的空间。",
           "nothing": "下一次清理不会删除 {{name}} 的任何内容。",
           "summary": "下一次清理将删除 {{name}} 的 {{count}} 个快照,保留 {{kept}} 个,并释放 {{bytes}}。",
@@ -163,19 +172,23 @@
         "pendingClear": "移除 \"{{name}}\" 的策略会等待延迟删除窗口,并于 {{when}}(UTC)生效。在此之前,当前生效的策略继续适用。"
       },
       "run": {
+        "descriptionShort": "立即运行备份",
         "description": "在远程机器上立即触发备份",
         "examples": {
           "basic": "立即执行备份策略。"
         }
       },
       "schedule": {
+        "descriptionShort": "将备份计划 (systemd 定时器) 部署到远程机器",
         "description": "将备份计划部署到远程机器（systemd 定时器）",
         "optionDryRun": "预览生成的单元而不部署",
         "optionForce": "即使当前有备份正在运行也继续执行（新单元在下次定时器触发时生效；正在运行的调用保留其旧单元）",
         "optionResetFailed": "部署成功后清除已修改服务的 failed 状态（默认关闭，保留故障信号）",
+        "optionAdoptOrigin": "将已部署的单元迁移到此配置的账户服务器（不带此标志时，会更改单元所绑定服务器的推送将被拒绝）",
         "success": "已将备份计划部署到 {{machine}}"
       },
       "snapshot": {
+        "descriptionShort": "上传块存储快照: 先上传完整清单，之后只上传有变化的单元",
         "bwlimitInvalid": "--bwlimit 必须是 100Mbps 或 12.5M 这样的速率，当前为 \"{{value}}\"。",
         "completed": "已保存 {{name}} 的快照",
         "description": "上传分块存储快照：首次为完整清单，之后仅为变更单元",
@@ -206,11 +219,13 @@
         "optionAcceptIdentityChange": "当镜像的 LUKS 标识变化或镜像缩小时,将其作为新基线;上传完整快照"
       },
       "status": {
+        "descriptionShort": "显示远程机器上的备份状态和定时器状态",
         "description": "显示远程机器上的备份状态和定时器状态"
       },
       "strategy": {
         "bandwidthUnconvertible": "无法转换带宽限制 \"{{value}}\"（{{reason}}）。请使用字节/秒（12500000）、十进制字节（12.5M）、二进制字节（12Mi）或比特（100Mbps）。",
         "bind": {
+          "descriptionShort": "将备份策略绑定到机器，使其计划部署到该机器上",
           "alreadyBound": "备份策略 \"{{strategy}}\" 已经绑定到机器 \"{{machine}}\"",
           "bound": "备份策略 \"{{strategy}}\" 已绑定到机器 \"{{machine}}\"",
           "description": "将备份策略绑定到机器，以便其调度部署到该机器",
@@ -218,10 +233,12 @@
         },
         "description": "管理命名备份策略（热/冷模式、目标、调度）",
         "list": {
+          "descriptionShort": "列出所有备份策略",
           "description": "列出所有备份策略"
         },
         "readBandwidthUnconvertible": "无法转换读取带宽限制 \"{{value}}\"（{{reason}}）。请使用字节/秒（50000000）、十进制字节（50M）、二进制字节（48Mi）、比特（400Mbps），或用 0 表示不限速。",
         "remove": {
+          "descriptionShort": "移除备份策略或目标",
           "bound": "无法删除备份策略 \"{{strategy}}\"：仍有 {{count}} 台机器绑定了它：{{machines}}。",
           "boundNext": "请先从这些机器上解除绑定，或连同绑定一起删除。",
           "description": "删除备份策略或目标",
@@ -241,6 +258,7 @@
           "syncFailed": "无法同步复制规则：{{reason}}"
         },
         "set": {
+          "descriptionShort": "创建或更新备份策略",
           "description": "创建或更新备份策略",
           "examples": {
             "configure": "配置备份策略的计划与模式。",
@@ -291,11 +309,13 @@
           "dryRun": "试运行:策略 \"{{strategy}}\" 将发生更改({{changes}})。未写入任何内容。"
         },
         "show": {
+          "descriptionShort": "显示备份策略详情",
           "description": "显示备份策略详情",
           "notConfigured": "未配置备份策略",
           "notFound": "备份策略 \"{{name}}\" 未找到"
         },
         "unbind": {
+          "descriptionShort": "解除备份策略与机器的绑定",
           "description": "将备份策略从机器解绑",
           "notBound": "备份策略 \"{{strategy}}\" 未绑定到机器 \"{{machine}}\"",
           "unbound": "备份策略 \"{{strategy}}\" 已从机器 \"{{machine}}\" 解绑"
@@ -303,6 +323,7 @@
       },
       "reconcile": {
         "checkSkipped": "已跳过的谱系未检查：{{lineages}}",
+        "descriptionShort": "将仓库的已存字节账本重置为存储实际持有的量 (绝不删除任何块)",
         "description": "将仓库的已存储字节台账重置为存储中的实际内容(绝不删除任何数据块)",
         "argRepoRef": "要核对的仓库(默认:令牌范围内的所有仓库)",
         "optionDryRun": "只显示数据,不修改台账",
@@ -332,6 +353,7 @@
         }
       },
       "usage": {
+        "descriptionShort": "显示备份存储配额、已存字节数以及各仓库的用量",
         "description": "显示备份存储配额、已存储字节数和各仓库的使用情况",
         "empty": "尚未记录任何按仓库统计的备份存储使用情况。",
         "fetching": "正在获取备份存储使用情况...",
@@ -341,6 +363,7 @@
         "throttled": "等待中的存储超过 {{cap}} 的变化上限:快于每小时一次的备份流会被拒绝,直到存储腾空。"
       },
       "verify": {
+        "descriptionShort": "对照块存储验证仓库的备份锚点",
         "completed": "已验证 {{name}} 的备份",
         "description": "对照分块存储验证仓库的备份锚点",
         "failed": "{{name}} 的备份验证失败",
@@ -367,6 +390,7 @@
         "description": "管理已存储的快照",
         "snapshotIdArgument": "快照 ID(参见 rdc backup manifests)",
         "delete": {
+          "descriptionShort": "删除一个已存储的快照，其独占的数据会在下次垃圾回收时释放",
           "description": "删除一个已存储的快照。其独占的数据会在下一次垃圾回收时释放。",
           "notInRepo": "快照 {{snapshot}} 不在 {{name}} 的已存储历史中。可用以下命令列出其 ID:rdc backup manifests {{name}}",
           "success": "已删除 {{name}} 的 {{count}} 个快照,包括 {{snapshot}}。",
@@ -440,6 +464,7 @@
         "confirmLineage": "此操作将删除谱系 {{name}} 的全部 {{count}} 个已存储快照({{bytes}}),且无法撤销。输入谱系 ID 以确认:"
       },
       "check": {
+        "descriptionShort": "通过还原一个文件，证明已存储的快照可以用口令打开",
         "description": "通过恢复一个文件,证明已存储的快照可以用口令打开",
         "needsCredential": "此配置中没有 {{name}} 的凭据,因此无法打开其列表。",
         "noIndex": "{{name}} 的快照 {{snapshot}} 没有已存储的列表,无法用这种方式检查。它未获证明。",
@@ -449,6 +474,7 @@
       },
       "repair": {
         "affected": "引用这些数据块的快照:{{snapshots}}",
+        "descriptionShort": "从本机的锚点重新上传存储丢失或持有有误的块",
         "description": "从本机的锚点重新上传存储丢失或有误的数据块",
         "dryRunDamage": "发现 {{count}} 个损坏的数据块;试运行未更改任何内容。",
         "optionDryRun": "报告将被删除并重新上传的内容;不做任何更改"
@@ -456,6 +482,7 @@
       "tocKey": {
         "description": "管理仓库的浏览列表密钥",
         "sync": {
+          "descriptionShort": "在仓库所在机器上安装其列表密钥，或替换为不同的密钥",
           "description": "在仓库所在机器上安装其列表密钥,或替换不同的密钥",
           "optionDryRun": "报告将要执行的操作;不触碰任何内容",
           "optionReplace": "替换机器上已有的不同密钥(会发送口令作为证明)"
@@ -492,11 +519,13 @@
       "immutability": {
         "description": "显示或设置已存储备份的延迟删除窗口",
         "show": {
+          "descriptionShort": "显示当前生效的延迟删除窗口",
           "description": "显示当前生效的延迟删除窗口",
           "window": "延迟删除:删除、整体清除或缩减保留都会等待 {{days}} 天,在此之前可以撤销。",
           "off": "延迟删除已关闭:删除立即生效。"
         },
         "set": {
+          "descriptionShort": "以天为单位设置延迟删除窗口 (0 到 30)",
           "description": "以天为单位设置延迟删除窗口(0 到 30)",
           "daysArgument": "删除生效前等待的天数(0 到 30)",
           "applied": "延迟删除窗口现在是 {{days}} 天。",
@@ -506,6 +535,7 @@
         "pending": "窗口将于 {{when}}(UTC)缩短为 {{days}} 天。在此之前 {{current}} 天仍然有效。"
       },
       "undelete": {
+        "descriptionShort": "在延迟的快照删除生效之前将其取消",
         "description": "在生效前取消快照的延迟删除",
         "success": "快照 {{snapshot}} 已保留:它的删除已取消。",
         "notWaiting": "快照 {{snapshot}} 并未等待删除。"
@@ -612,6 +642,24 @@
         "none": "尚未配置集群。使用以下命令添加：rdc cluster create <cluster>"
       }
     },
+    "completion": {
+      "descriptionShort": "输出 bash、zsh、fish 或 PowerShell 的补全脚本",
+      "description": "输出指定 shell 的补全脚本。命令、标志和选项取值来自 CLI 契约，无需启动 CLI 即可补全；机器、仓库等配置资源的名称来自隐藏的 __complete 查询，会在每个 shell 会话内缓存，直到配置文件发生变化。可用 eval \"$(rdc completion bash)\" 或 eval \"$(rdc completion zsh)\"、rdc completion fish | source、rdc completion pwsh | Out-String | Invoke-Expression 加载。",
+      "shellArgument": "要输出脚本的 shell：bash、zsh、fish 或 pwsh",
+      "complete": {
+        "descriptionShort": "按行输出某一类配置资源的名称，每行一个（内部命令）",
+        "kindOption": "要输出名称的资源类型：machine、repo、datastore、cluster、provider 或 strategy",
+        "configOption": "读取其文件的配置（默认：REDIACC_CONFIG，否则为 rediacc）"
+      },
+      "errors": {
+        "unknownShell": "未知的 shell“{{shell}}”。支持的 shell：{{shells}}。",
+        "unknownKind": "未知的资源类型“{{kind}}”。从配置文件读取的类型：{{kinds}}。",
+        "configMissing": "未找到配置文件：{{path}}",
+        "configInvalid": "配置文件 {{path}} 不是有效的配置：{{error}}",
+        "remoteConfig": "配置文件 {{path}} 指向远程配置，其资源名称保存在服务器上，不会被补全。",
+        "unsafeWord": "契约词“{{word}}”无法写入 shell 补全脚本。"
+      }
+    },
     "config": {
       "access": {
         "add": {
@@ -629,6 +677,7 @@
         "emptyRangeFlag": "{{flag}} 至少需要一个 CIDR，但收到的是空值",
         "keyNotFound": "未找到访问密钥 \"{{key}}\"",
         "list": {
+          "descriptionShort": "列出配置中的访问密钥",
           "description": "列出配置的访问密钥",
           "noKeys": "此配置中没有访问密钥。请用 'config access add' 添加"
         },
@@ -646,6 +695,7 @@
           "success": "已设置整个配置的来源范围：{{ranges}}"
         },
         "remove": {
+          "descriptionShort": "从配置中移除访问密钥",
           "description": "从配置中移除访问密钥",
           "pushHint": "它的行会保留在 {{machines}} 上，直到在那里运行 'machine access push'",
           "success": "已移除访问密钥 \"{{key}}\""
@@ -654,15 +704,18 @@
       "audit": {
         "description": "查看配置审计日志(~/.config/rediacc/audit.log.jsonl 中的哈希链 JSONL)",
         "log": {
+          "descriptionShort": "以 JSON 格式输出最近的审计条目",
           "description": "以 JSON 格式打印最近的审计条目",
           "optionActor": "按操作者类型过滤(human|agent)",
           "optionPath": "按 JSON 指针通配符过滤(例如 /credentials/*)",
           "optionSince": "仅显示指定时间之后的条目(例如 '24h'、'7d'、ISO 时间戳)"
         },
         "tail": {
+          "descriptionShort": "实时输出新写入的审计条目 (按 Ctrl+C 停止)",
           "description": "实时输出新写入的审计条目(Ctrl+C 停止)"
         },
         "verify": {
+          "descriptionShort": "校验所有审计条目的 SHA-256 哈希链是否完整",
           "chainBroken": "第 {{line}} 行的链断裂：文件已被篡改或损坏。",
           "chainOk": "已对 {{count}} 条目验证链完整性。",
           "description": "验证所有审计条目上 SHA-256 哈希链的完整性"
@@ -688,20 +741,24 @@
         }
       },
       "clear": {
+        "descriptionShort": "清除默认值 (全部或指定的键)",
         "allCleared": "已清除所有默认值",
         "description": "清除默认值（全部或特定键）",
         "keyCleared": "已清除 \"{{key}}\""
       },
       "current": {
+        "descriptionShort": "显示当前生效的配置: 名称、文件、解析出的服务器和渠道、令牌状态",
         "description": "显示当前配置：名称、文件、解析出的服务器和渠道、令牌状态"
       },
       "delete": {
+        "descriptionShort": "删除配置文件",
         "description": "删除配置文件",
         "success": "配置 \"{{name}}\" 已删除"
       },
       "description": "管理配置文件：创建、切换、编辑、协调状态，以及各类横切功能（字段、审计、SSH 密钥、远程同步）。",
       "descriptionShort": "管理配置文件",
       "edit": {
+        "descriptionShort": "在 $EDITOR 中以脱敏的 JSONC 形式打开当前配置",
         "abortAfterRetries": "在 {{count}} 次失败尝试后中止。草稿已保留于:{{path}}",
         "applied": "已应用 {{path}}",
         "bannerRedacted": "敏感字段以 <redacted:KIND>:DIGEST 占位符显示,可安全往返转换。",
@@ -715,6 +772,7 @@
         "optionApply": "应用已编辑的 JSONC 文件(跳过启动 $EDITOR)",
         "optionCurrentSecrets": "指针→旧明文 的 JSON 映射文件,用于 --apply 时的知识门控",
         "optionDump": "将当前配置以 JSONC 形式输出到 stdout,不打开编辑器(只读;脱敏时代理也可安全使用)",
+        "optionRedacted": "在 --dump 输出中隐去敏感值(默认行为;不能与 --reveal 同时使用)",
         "optionEditor": "编辑器命令(遵循 git 优先级:--editor > $GIT_EDITOR > git config core.editor > $VISUAL > $EDITOR)",
         "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)",
         "rotateDeclined": "已中止;草稿已保留在编辑器临时文件中。",
@@ -727,23 +785,27 @@
         "description": "基于 JSON 指针(RFC 6901)的配置字段操作(get/set/unset/rotate/list),如 /credentials/cfDnsApiToken。",
         "descriptionShort": "基于指针的配置字段操作",
         "get": {
+          "descriptionShort": "按 JSON Pointer 读取单个配置值",
           "description": "按 JSON 指针读取单个配置值。敏感字段默认脱敏,除非使用 --reveal(仅限人工)。",
           "optionDigest": "输出 SHA-256 摘要而非数值(可安全地分享给代理)",
           "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "optionReveal": "以明文显示敏感值(仅限交互式 TTY;记入审计日志)"
         },
         "list": {
+          "descriptionShort": "列出所有已注册的敏感指针模板及其类型和提交/加密策略",
           "description": "列出每个已注册的敏感字段指针模板及其类别和提交/加密策略。",
           "optionOutput": "输出格式(json|table)",
           "optionSensitive": "仅显示敏感(非公开)模板"
         },
         "rotate": {
+          "descriptionShort": "无需 --current 即可轮换敏感值",
           "description": "在不提供 --current 的情况下轮换敏感值。仅交互式 TTY;详尽审计。",
           "optionNew": "新值",
           "optionPointer": "指向敏感字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
           "success": "已轮换 {{pointer}}"
         },
         "set": {
+          "descriptionShort": "在指定的 JSON Pointer 处写入配置值",
           "description": "在 JSON 指针位置写入配置值。敏感路径需提供 --current(知识门控)。",
           "optionCurrent": "当前明文值，修改敏感路径时必填(知识门控证明)",
           "optionNew": "新值(若以 {、[、\" 开头或为 true/false/null/数字,则按 JSON 解析)",
@@ -751,6 +813,7 @@
           "success": "已设置 {{pointer}}"
         },
         "unset": {
+          "descriptionShort": "删除指定 JSON Pointer 处的配置值",
           "description": "删除 JSON 指针位置的配置值。敏感路径需提供 --current。",
           "optionCurrent": "当前明文值，删除敏感路径时必填",
           "optionPointer": "指向字段的 JSON 指针（例如 /credentials/cfDnsApiToken）",
@@ -770,6 +833,7 @@
         }
       },
       "init": {
+        "descriptionShort": "创建新的命名配置文件",
         "alreadyExists": "配置 \"{{name}}\" 已存在",
         "bareForm": "默认配置会自动创建；如需命名配置，请使用 'config init <name>'，或传入标志（--ssh-key、--server 等）为默认配置设置选项。",
         "description": "创建新的命名配置文件",
@@ -783,6 +847,7 @@
         "success": "配置 \"{{name}}\" 已初始化"
       },
       "list": {
+        "descriptionShort": "列出所有配置文件",
         "description": "列出所有配置文件",
         "noConfigs": "未找到配置文件。请使用以下命令创建：rdc config init"
       },
@@ -825,6 +890,7 @@
         "droppedGoneMachineState": "{{count}} 条指向已不在配置中的机器的运行时记录 {{verb}} 删除："
       },
       "reconcile": {
+        "descriptionShort": "根据机器的实际状态重建运行时状态",
         "acceptObservedUnfiltered": "--accept-observed 不能与 --machine 同时使用：部分扫描无法证明放置位置是无歧义的，因此重写将只是猜测。请不加过滤地运行 'rdc config reconcile --accept-observed'。",
         "description": "根据机器上的真实状态重建运行时状态。修复过时的挂接和路由数据。",
         "optionAcceptObserved": "将声明的放置位置重写为镜像的实际所在位置，但仅当结果是无歧义时才这样做（恰好在一台机器上观察到）。重复项仍视为冲突。",
@@ -833,6 +899,7 @@
         "listFailed": "renet list all 执行失败(退出码 {{exitCode}})。"
       },
       "recover": {
+        "descriptionShort": "从备份 (.bak) 文件恢复配置",
         "confirm": "从备份恢复配置 \"{{name}}\"？",
         "description": "从备份文件 (.bak) 恢复配置",
         "failed": "从备份恢复配置 \"{{name}}\" 失败",
@@ -841,15 +908,16 @@
       },
       "remote": {
         "conflictRetryExhausted": "配置 \"{{config}}\" 在 3 次尝试后仍与另一台设备冲突。请重新运行该命令。",
-        "preconditionFailed": "配置“{{config}}”：服务器拒绝了删除 {{paths}} 的更改，因为此设备无法证明它见过已存储的值。请用“rdc config remote refresh”刷新后重新运行该命令。",
+        "preconditionFailed": "配置“{{config}}”：服务器拒绝了删除 {{paths}} 的更改，因为此设备无法证明它见过已存储的值。请用“{{cmd}}”刷新后重新运行该命令。",
         "description": "管理远程配置存储连接",
         "disable": {
+          "descriptionShort": "断开与远程存储的连接，并将配置保存到本地",
           "description": "断开远程存储连接并将配置保存到本地",
           "optionLocal": "仅在此设备上解除链接：使用缓存副本，不联系服务器",
           "notEnabled": "远程配置未启用。",
           "serverRequired": "无法禁用：配置服务器 {{server}} 不可达，而禁用必须先拉取最新的服务器副本（从过期缓存禁用可能会丢失另一台设备的写入）。服务器恢复可达后重试。",
-          "accessLost": "无法禁用：配置服务器拒绝此账户访问配置 \"{{name}}\"（{{error}}），而禁用必须先拉取最新的服务器副本。如果对该存储的访问权限不会恢复，可解除链接并保留此设备上缓存的副本：rdc config remote disable --local",
-          "localNoCache": "配置 \"{{name}}\" 在此设备上没有服务器配置的缓存副本：从未在此拉取过，或副本已被移除。文件中只有链接和此设备自身的设置，因此没有可保留的内容，也未做任何更改。内容只能来自服务器（rdc config remote enable）；如要改为删除本地文件，请运行：rdc config delete {{name}}",
+          "accessLost": "无法禁用：配置服务器拒绝此账户访问配置 \"{{name}}\"（{{error}}），而禁用必须先拉取最新的服务器副本。如果对该存储的访问权限不会恢复，可解除链接并保留此设备上缓存的副本：{{cmd}}",
+          "localNoCache": "配置 \"{{name}}\" 在此设备上没有服务器配置的缓存副本：从未在此拉取过，或副本已被移除。文件中只有链接和此设备自身的设置，因此没有可保留的内容，也未做任何更改。内容只能来自服务器（{{cmd}}）；如要改为删除本地文件，请运行：rdc config delete {{name}}",
           "localUnreadable": "配置 \"{{name}}\" 的缓存副本（服务器版本 {{version}}）无法在此设备上打开（{{error}}），因此未做任何更改。该副本用配置的主密码加密：提供主密码（REDIACC_MASTER_PASSWORD）即可保留整个缓存副本；没有主密码，这里无法恢复副本中的任何内容，只有服务器持有可读的副本。",
           "localConfirm": "仅在此设备上解除配置 \"{{name}}\" 与 {{server}} 的链接？此处缓存的副本（服务器版本 {{version}}，缓存于 {{cachedAt}}）将成为本地配置。服务器上即使有更新的数据也不会拉取，服务器上不会有任何更改。",
           "localNeedsYes": "仅在此设备上解除配置 \"{{name}}\" 的链接会保留此处缓存的副本（服务器版本 {{version}}），服务器上即使有更新的数据也不会拉取。未做任何更改。请在交互式终端中确认，或加上 --yes 重新运行该命令。",
@@ -862,15 +930,17 @@
           "keyringUnusable": "此设备没有地方保存其配置存储密钥： 用 `keyctl` 写入内核用户密钥环的测试密钥无法保存并读回。 未保存任何内容。 未链接用户密钥环的会话密钥环（服务、容器、CI 作业）就是这样；`keyctl link @u @s` 可为当前会话建立链接。 或者设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
           "toolMissing": "此设备没有地方保存其配置存储密钥： 无法运行 `{{tool}}`，因此无法使用 {{store}}。 未保存任何内容。 请将 `{{tool}}` 重新加入 PATH， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
           "storeUnusable": "此设备没有地方保存其配置存储密钥： 用 `{{tool}}` 写入 {{store}} 的测试密钥无法保存并读回。 未保存任何内容。 请解锁或修复 {{store}}， 或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
+          "storeTimedOut": "无法确认此设备能保存其配置存储密钥：`{{tool}}` 在 {{seconds}} 秒内没有响应，因此未对 {{store}} 完成测试。未保存任何内容。负载很高的机器会出现这种情况；请在机器空闲时重新运行该命令，或设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中。",
           "unsupportedPlatform": "此设备没有地方保存其配置存储密钥： {{platform}} 上没有受支持的原生机密存储。 未保存任何内容。 请设置 REDIACC_SECRET_STORE=file，改为将密钥保存在磁盘上的文件中（权限 0600）。",
           "invalidChoice": "REDIACC_SECRET_STORE 被设置为 \"{{value}}\"，这不是一个机密存储。唯一可用的值是 \"file\"；不设置则使用本系统的原生存储。",
           "fileNotice": "REDIACC_SECRET_STORE=file：此设备的配置存储密钥保存在 {{path}}（权限 0600）中，仅受文件权限保护。"
         },
         "enable": {
-          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储，且此设备可以打开它，因此无需启用。如需取消链接，请运行：rdc config remote disable",
+          "descriptionShort": "将此配置关联到远程加密存储",
+          "alreadyEnabled": "配置 \"{{name}}\" 已链接到远程存储，且此设备可以打开它，因此无需启用。如需取消链接，请运行：{{cmd}}",
           "description": "将此配置链接到远程加密存储",
           "expired": "设备代码已过期。请重试。",
-          "handoffUnreadable": "无法读取浏览器传来的配置。请重新运行：rdc config remote enable",
+          "handoffUnreadable": "无法读取浏览器传来的配置。请重新运行：{{cmd}}",
           "prereqHeader": "继续之前，批准此操作的门户账户需要：",
           "prereqSignedIn": "已登录门户：{{url}}",
           "prereqTotp": "已在设置中开启双因素认证（TOTP）：{{url}}",
@@ -879,7 +949,7 @@
           "prereqMissing": "暂时无法启用配置存储。门户账户 {{email}} 还缺少：",
           "prereqTotpMissing": "双因素认证（TOTP）：请在 {{url}} 的设置中开启",
           "prereqUnavailable": "{{apiUrl}} 上不可用配置存储",
-          "prereqRetry": "完成后请再次运行：rdc config remote enable",
+          "prereqRetry": "完成后请再次运行：{{cmd}}",
           "attachEntry": "{{id}}（v{{version}}，修改于 {{modified}}）",
           "attachNew": "用这份本地配置新建条目",
           "attachPrompt": "此存储中已有配置。要连接到其中一份，还是新建条目？",
@@ -888,23 +958,9 @@
           "optionApiUrl": "账户服务器URL",
           "optionConfigId": "连接到存储中已有的这份配置，而不是新建条目",
           "optionForce": "无需确认，直接用服务器副本替换不同的本地内容",
-          "optionMasterPassword": "使用预先配置好的密码槽位进行无头注册（无需浏览器）",
-          "optionMasterPasswordStdin": "与 --master-password 类似，从 stdin 读取主密码",
           "overwriteAborted": "已中止启用：本地配置 \"{{config}}\" 的内容与服务器副本不同。使用 --force 重新运行以替换它，或在交互式终端中确认。",
           "overwriteConfirm": "本地配置 \"{{config}}\" 包含 {{machines}} 台机器和 {{repos}} 个仓库，将被服务器副本替换（旧文件保留在 {{backupPath}}）。是否继续？",
-          "masterPasswordConfigNotReadable": "账户服务器无法向此次登录提供该配置：{{error}}",
-          "masterPasswordForbidden": "账户服务器拒绝了配置注册：{{error}}",
-          "masterPasswordMissingScope": "REDIACC_TOKEN 中的 API 令牌不携带 config:enroll 权限范围。请从网页门户签发具有该权限范围的令牌后重试。",
-          "masterPasswordNonInteractive": "需要主密码。请设置 REDIACC_STORE_MASTER_PASSWORD，或在交互式终端中不带 --master-password 运行。",
-          "masterPasswordNoSlot": "你的配置存储尚未配置密码槽位。请从门户（Config Storage > key slots）添加一个，然后重试。",
-          "masterPasswordNoStorage": "你的组织尚未设置配置存储。请从门户（Config Storage）设置后重试。",
-          "masterPasswordNotFound": "账户服务器找不到注册所需的内容：{{error}}",
-          "masterPasswordPrompt": "主密码：",
-          "masterPasswordRequirePasskey": "该组织要求使用 passkey 才能解锁配置存储；密码注册已被禁用。请在浏览器中使用以下命令注册：rdc config remote enable",
-          "masterPasswordStdinEmpty": "--master-password-stdin 没有从 stdin 读到密码。",
-          "masterPasswordTeamGone": "此 API 令牌所属的团队已被归档或移除。请从网页门户为活跃团队签发新令牌后重试。",
-          "masterPasswordTokenNotEnrollable": "此 API 令牌未关联组织内的用户，因此无法注册配置槽位。请在网页门户使用你自己的账户签发个人令牌后重试。",
-          "masterPasswordWrong": "无法使用该密码解锁配置。请检查 REDIACC_STORE_MASTER_PASSWORD（或你输入的密码）后重试。",
+          "backupKept": "旧配置文件保留在 {{backupPath}}",
           "received": "已接收移交数据",
           "reenrollConfigIdMismatch": "配置 \"{{name}}\" 已关联到远程配置 {{linkedConfig}}，因此不能用 --config-id {{requestedConfig}} 重新注册。未做任何更改。请不带 --config-id 重新运行，或使用 --config-id {{linkedConfig}}。",
           "reenrollConfigMismatch": "配置 \"{{name}}\" 链接到远程配置 {{linkedConfig}}，但注册是针对远程配置 {{offeredConfig}} 批准的。未做任何更改。请重新运行命令，并针对 {{linkedConfig}} 批准。",
@@ -919,17 +975,31 @@
           "cancelled": "已取消。该链接已失效；请重新运行命令以重新开始。",
           "serverUnreachableRetrying": "暂时无法连接 {{apiUrl}}。将继续重试，直到链接过期。",
           "handoffNotForThisRun": "服务器中继返回的交接数据并非为本次运行签发，因此未保存任何内容。请重新运行命令，并只打开它输出的链接。",
-          "loginRequired": "配置存储要求此 CLI 已登录 {{apiUrl}}，以便服务器确认批准链接的浏览器使用的是同一账户。请先运行 `rdc subscription login`，然后再次运行此命令。",
+          "loginRequired": "配置存储要求此 CLI 已登录 {{apiUrl}}，以便服务器确认批准链接的浏览器使用的是同一账户。请先运行 `{{cmd}}`，然后再次运行此命令。",
           "relayRefused": "账户服务器拒绝了交接（HTTP {{status}}）：{{error}}",
           "seeded": "存储为空；本地配置已作为版本 1 推送。",
-          "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。"
+          "success": "远程配置已启用。配置 \"{{name}}\" 现已与 {{apiUrl}} 同步。",
+          "optionMachineSecret": "使用在门户中创建的此 ID 的机器密钥进行无浏览器注册；密钥本身从 REDIACC_MACHINE_SECRET、管道传入的 stdin 或隐藏的终端提示读取，绝不从命令行传入",
+          "machineSecretPrompt": "机器密钥：",
+          "machineSecretEmpty": "未提供机器密钥：请设置 {{env}}，或通过 stdin 传入密钥。",
+          "machineSecretInvalid": "机器密钥无效：{{error}}",
+          "machineSecretConfigIdConflict": "--config-id 不能与 --machine-secret 同时使用：机器密钥已经指定了它的配置。",
+          "machineSecretRevoked": "此机器密钥已被吊销，或创建后存储密钥已轮换。请在门户（Config Storage > 机器密钥）中新建一个，然后重试。",
+          "machineSecretTeamForbidden": "此 API 令牌无法访问机器密钥所属的团队：{{error}}",
+          "machineSecretMissingScope": "REDIACC_TOKEN 中的 API 令牌没有 config:enroll 权限范围。请在 Web 门户中签发带有该范围的令牌，然后重试。",
+          "machineSecretTokenNotEnrollable": "此 API 令牌未关联到组织中的用户，无法注册机器。请从创建该机器密钥的账户签发个人令牌，然后重试。",
+          "machineSecretForbidden": "账户服务器拒绝了机器注册：{{error}}",
+          "machineSecretNotFound": "此 API 令牌无法使用机器密钥 {{id}}。请检查 ID，并使用创建它的成员的令牌。（{{error}}）",
+          "machineSecretWrong": "无法用该机器密钥解锁配置。请检查 {{env}}（或 stdin 中的密钥）后重试。"
         },
         "handoffUndecryptable": "服务器中继返回了此设备无法打开的交接数据（{{error}}）：它所用的密钥并非本次运行生成的密钥。请重新运行命令，并只打开它输出的链接。",
-        "storeCopyGone": "存储 {{storeId}} 中已不存在配置 \"{{name}}\" 所链接的远程配置 {{configId}}。未做任何更改；本地文件是此设备最后看到的副本。要解除链接并将该副本保留为本地配置，请运行：rdc config remote disable --local",
+        "storeCopyGone": "存储 {{storeId}} 中已不存在配置 \"{{name}}\" 所链接的远程配置 {{configId}}。未做任何更改；本地文件是此设备最后看到的副本。要解除链接并将该副本保留为本地配置，请运行：{{cmd}}",
         "offlineCacheWarning": "配置服务器 {{server}} 不可达；正在从离线缓存提供配置 \"{{config}}\"（服务器版本 {{version}}，缓存于 {{age}} 前）。在服务器恢复可达之前无法保存更改。",
-        "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"rdc config remote refresh\" 以生成缓存。",
-        "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：rdc config remote enable",
+        "offlineNoCache": "配置服务器 {{server}} 不可达，且配置 \"{{config}}\" 尚无离线缓存。服务器恢复可达后运行 \"{{cmd}}\" 以生成缓存。",
+        "passkeySecretMissing": "此设备已不再持有配置存储的密钥（在 Linux 上，内核密钥环每次重启都会被清空）。请使用以下命令重新注册此设备：{{cmd}}",
+        "passkeySecretNotEnrolled": "此配置尚未在此设备上注册配置存储。请使用以下命令注册此设备：{{cmd}}",
         "refresh": {
+          "descriptionShort": "强制从远程存储重新获取配置",
           "description": "强制从远程存储重新获取配置",
           "notEnabled": "远程配置未启用。",
           "pulled": "配置已拉取",
@@ -937,76 +1007,46 @@
           "success": "已从远程服务器刷新配置（版本 {{version}}）。",
           "replacedLocal": "配置“{{config}}”：本地文件与服务器版本 {{version}} 不同，已被其替换：{{changes}}"
         },
-        "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：rdc config remote enable",
+        "staleSlot": "你的密钥槽位已过期（配置加密密钥已被轮换）。请使用以下命令重新注册：{{cmd}}",
         "status": {
+          "descriptionShort": "显示远程连接状态",
           "description": "显示远程连接状态",
-          "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（重启可能会清空密钥存储）。请用以下命令重新注册此设备：rdc config remote enable",
-          "deviceCannotOpen": "此设备无法打开该配置的远程存储：它的注册已被拒绝，例如在密钥轮换之后。请用以下命令重新注册此设备：rdc config remote enable"
+          "deviceKeyMissing": "此设备已无法打开该配置的远程存储：它的密钥已丢失（重启可能会清空密钥存储）。请用以下命令重新注册此设备：{{cmd}}",
+          "deviceNotEnrolled": "此设备尚未注册该配置，因此无法打开其远程存储。请用以下命令注册此设备：{{cmd}}",
+          "deviceCannotOpen": "此设备无法打开该配置的远程存储：它的注册已被拒绝，例如在密钥轮换之后。请用以下命令重新注册此设备：{{cmd}}"
         },
-        "masterPassword": {
-          "description": "管理该成员的主密码（密码槽位）",
-          "change": {
-            "descriptionShort": "更改主密码",
-            "description": "更改主密码：将配置密钥从此设备的注册信息重新封装到新的密码槽位",
-            "emailPrompt": "账户邮箱",
-            "loginPasswordPrompt": "账户密码",
-            "newPasswordConfirm": "再次输入新的主密码",
-            "newPasswordMismatch": "两次输入的新主密码不一致。",
-            "newPasswordMissing": "需要新的主密码：通过管道配合 --new-master-password-stdin 传入，或设置 {{env}}。",
-            "newPasswordPrompt": "新的主密码",
-            "newPasswordStdinEmpty": "--new-master-password-stdin 读取到空密码。",
-            "newPasswordTooShort": "新的主密码至少需要 {{min}} 个字符。",
-            "optionNewMasterPasswordStdin": "从 stdin 读取新的主密码（否则使用 REDIACC_NEW_STORE_MASTER_PASSWORD，或在 TTY 中提示输入）",
-            "slotRefused": "服务器拒绝了新的密码槽位（HTTP {{status}}）：{{error}}",
-            "stepUpPrompt": "重新认证用的双重验证码（需来自比登录验证码更晚的 30 秒时间步）",
-            "stepUpRefused": "重新认证被拒绝（HTTP {{status}}）：{{error}}。{{field}} 必须是比登录验证码更晚的 30 秒时间步的验证码。",
-            "stepUpRequired": "更改主密码需要重新认证：请将 {{field}} 设为比 {{loginField}} 更晚的 30 秒时间步的双重验证码。",
-            "stepUpSameCode": "{{field}} 与 {{loginField}} 相同；同一个双重验证时间步只能使用一次，因此需要下一个时间步的验证码。",
-            "success": "配置“{{name}}”的主密码已更改；新密码可以解锁存储。",
-            "totpPrompt": "登录用的双重验证码",
-            "unlocked": "配置密钥已解锁",
-            "unlocking": "正在通过此设备的注册信息解锁配置密钥...",
-            "verified": "新密码可以解锁存储",
-            "verifyFailed": "新的密码槽位已写入，但使用新密码解锁失败：{{error}}",
-            "verifying": "正在使用新密码解锁存储...",
-            "verifyNoUnlock": "新密码无法打开服务器上的密码槽位",
-            "verifyOtherKey": "密码槽位中的配置密钥与此设备的不同",
-            "verifyOtherStore": "服务器返回的是另一个配置存储的应答",
-            "writing": "正在写入新的密码槽位...",
-            "written": "密码槽位已写入"
-          }
-        },
-        "tokenExpired": "远程配置令牌已过期。请重新认证: rdc config remote enable",
-        "tokenIpMismatch": "此设备的配置令牌绑定到了另一个网络地址。请再次运行 \"rdc config remote enable\" 为此设备获取令牌。",
-        "tokenExhausted": "此设备的配置令牌已被另一个请求用掉（每次使用都会轮换）。请重新认证: rdc config remote enable",
-        "tokenInvalid": "配置服务器无法识别此设备的配置令牌。请重新认证: rdc config remote enable",
-        "tokenRejected": "配置服务器拒绝了此设备的配置令牌（{{reason}}）。请重新认证: rdc config remote enable",
+        "tokenExpired": "远程配置令牌已过期。请重新认证: {{cmd}}",
+        "tokenIpMismatch": "此设备的配置令牌绑定到了另一个网络地址。请再次运行 \"{{cmd}}\" 为此设备获取令牌。",
+        "tokenExhausted": "此设备的配置令牌已被另一个请求用掉（每次使用都会轮换）。请重新认证: {{cmd}}",
+        "tokenInvalid": "配置服务器无法识别此设备的配置令牌。请重新认证: {{cmd}}",
+        "tokenRejected": "配置服务器拒绝了此设备的配置令牌（{{reason}}）。请重新认证: {{cmd}}",
         "integrityFailed": "存储 {{storeId}} 中的配置 {{configId}} 未通过完整性校验：服务器返回的副本不是为此配置、团队和版本封装的，或者使用了与你的槽位所持密钥不同的密钥加密。此设备上未做任何更改。如果密钥不同，请让管理员在门户中（配置存储 > 密钥槽）将存储密钥重新共享给此设备。",
-        "envelopeTooNew": "配置 {{configId}} 由更新版本的 CLI 写入(信封 v{{envelope}});当前版本可读取 v{{legacy}} 和 v{{current}}。请升级 rdc 后重新运行该命令。此设备上未做任何更改。",
-        "undecryptableSession": "配置 {{configId}} 已用你的密钥解锁，但服务器会话层拒绝打开它（{{detail}}）。请重试该命令；如果持续失败，请使用以下命令重新注册：rdc config remote enable",
+        "envelopeTooNew": "配置 {{config}} 由更新版本的 CLI 写入(信封 v{{envelope}});当前版本可读取 v{{legacy}} 和 v{{current}}。请升级 rdc 后重新运行该命令。此设备上未做任何更改。",
+        "undecryptableSession": "配置 {{configId}} 已用你的密钥解锁，但服务器会话层拒绝打开它（{{detail}}）。请重试该命令；如果持续失败，请使用以下命令重新注册：{{cmd}}",
         "rollback": "配置 {{configId}} 返回的是版本 {{version}}，比此设备已见过的版本 {{highWater}} 更旧。服务器返回了旧副本，因此已被拒绝，此设备上未做任何更改。",
-        "envelopeDowngrade": "此设备已见过新的信封格式，但配置 {{configId}} 仍以旧格式返回。服务器返回了旧副本，因此已被拒绝，此设备上未做任何更改。",
-        "legacyEnvelope": "配置 {{configId}} 仍以旧的信封格式存储。此设备下一次推送更改时会将其升级。",
+        "envelopeDowngrade": "此设备已见过新的信封格式，但配置 {{config}} 仍以旧格式返回。服务器返回了旧副本，因此已被拒绝，此设备上未做任何更改。",
+        "legacyEnvelope": "配置 {{config}} 仍以旧的信封格式存储。此设备下一次推送更改时会将其升级。",
         "unreachable": "配置服务器 {{server}} 不可达",
         "serverFailed": "配置服务器 {{server}} 返回了错误 (HTTP {{status}})",
         "writeFailedClosed": "无法保存：配置 \"{{config}}\" 存储在不可达的 {{server}} 上。更改未保存。",
         "writeFailedServerError": "无法保存：配置 \"{{config}}\" 存储在 {{server}} 上，服务器返回了错误 (HTTP {{status}})。更改未保存。",
         "teamForbidden": "配置 \"{{config}}\" 属于此账户不在其中的团队，因此配置服务器拒绝了请求。请让组织的所有者或管理员将此账户加入该团队。",
         "teamForbiddenCachePurged": "已从此设备删除配置 \"{{config}}\" 的离线副本。此前已复制出去的副本无法收回。",
-        "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"rdc config remote enable\" 以选择本组织的团队。",
+        "teamNotFound": "配置 \"{{config}}\" 指向的团队 {{team}} 不属于此组织。请再次运行 \"{{cmd}}\" 以选择本组织的团队。",
         "tokenRefresh": {
-          "noLogin": "此设备没有保存 {{apiUrl}} 的登录信息，因此无法自动续期配置令牌。请运行 \"rdc subscription login\" 后重试，或重新运行 \"rdc config remote enable\"。",
-          "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"rdc subscription login\" 后重试。",
-          "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"rdc subscription login\"，然后重试。",
-          "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"rdc config remote enable\"，为此设备获取新的配置令牌。",
-          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"rdc subscription login\"），然后重试。",
-          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"rdc subscription login\"），然后重试。",
-          "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：rdc config remote enable",
+          "noLogin": "此设备没有保存 {{apiUrl}} 的登录信息，因此无法自动续期配置令牌。请运行 \"{{loginCmd}}\" 后重试，或重新运行 \"{{cmd}}\"。",
+          "loginInvalid": "续期配置令牌时，账户服务器拒绝了此设备的登录。请运行 \"{{cmd}}\" 后重试。",
+          "loginScope": "此设备的登录无法续期配置令牌：该登录早于此功能，或其团队已不存在。请重新运行 \"{{cmd}}\"，然后重试。",
+          "loginIpMismatch": "此设备的登录绑定在另一个网络地址上，因此无法续期配置令牌。{{error}} 或者重新运行 \"{{cmd}}\"，为此设备获取新的配置令牌。",
+          "notStoreMember": "此设备登录的账户不是配置存储 {{storeId}} 的成员，因此未续期配置令牌。请用启用此配置的账户登录（\"{{cmd}}\"），然后重试。",
+          "storeMismatch": "配置存储 {{storeId}} 不属于此设备登录的组织，因此未续期配置令牌。请登录拥有此配置的组织（\"{{cmd}}\"），然后重试。",
+          "staleGeneration": "配置加密密钥已轮换，而此账户的所有密钥槽都无法打开新密钥，因此未续期配置令牌。请重新注册：{{cmd}}",
           "rateLimited": "账户服务器正在限制配置令牌续期（{{error}}）。请等待一分钟后重新运行命令。",
           "refused": "账户服务器未续期此设备的配置令牌（{{error}}）。此设备上未做任何更改；请重新运行该命令。"
         },
         "pushVisibility": "配置 {{config}}：v{{from}} → v{{to}}，由 \"{{command}}\" 推送：{{changes}}",
         "versions": {
+          "descriptionShort": "列出服务器上保留的此配置的历史版本",
           "description": "列出服务器保存的此配置的早期版本",
           "optionExplain": "根据服务器保存的版本，显示每个版本更改的 JSON 指针",
           "explainUnreadable": "(无法读取: {{reason}})",
@@ -1014,6 +1054,7 @@
           "empty": "服务器未保存配置 \"{{config}}\" 的任何早期版本。"
         },
         "restore": {
+          "descriptionShort": "将此配置的某个历史版本发布为最新版本",
           "description": "将此配置的某个早期版本发布为最新版本",
           "argVersion": "要恢复的版本（参见 rdc config remote versions）",
           "confirm": "要将配置 \"{{config}}\" 版本 {{version}} 的内容作为新版本发布在版本 {{current}} 之上吗？每台设备都会在下次拉取时获得它。",
@@ -1022,10 +1063,11 @@
           "success": "已将配置 \"{{config}}\" 的版本 {{restored}} 恢复为版本 {{version}}。"
         },
         "localEditsPushed": "配置“{{config}}”：本地文件包含服务器版本 {{from}} 之后的修改，已作为版本 {{to}} 推送：{{changes}}",
-        "localEditsConflict": "配置“{{config}}”：本地文件包含服务器版本 {{cached}} 之后的修改（{{changes}}），而服务器已更新到版本 {{server}}。未覆盖任何内容。请先另存这些修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。",
-        "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“rdc config remote refresh”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
+        "localEditsConflict": "配置“{{config}}”：本地文件包含服务器版本 {{cached}} 之后的修改（{{changes}}），而服务器已更新到版本 {{server}}。未覆盖任何内容。请先另存这些修改，运行“{{cmd}}”获取版本 {{server}}（会替换本地文件），再重新应用修改。",
+        "localEditsUnverifiable": "配置“{{config}}”：本地文件与服务器版本 {{server}} 不同（{{changes}}），且无法读回其缓存来源版本 {{cached}}（{{reason}}），因此无法区分本地修改与服务器变更。未覆盖任何内容。请先另存修改，运行“{{cmd}}”获取版本 {{server}}（会替换本地文件），再重新应用修改。"
       },
       "rotateCek": {
+        "descriptionShort": "轮换组织的配置加密密钥",
         "cancelled": "轮换已取消。未做任何更改。",
         "confirm": "现在轮换配置加密密钥吗？",
         "waiting": "正在等待浏览器中的轮换完成（按 Ctrl+C 停止）...",
@@ -1042,10 +1084,12 @@
         "warning": "此操作会轮换整个组织配置所使用的加密密钥。之后所有其他设备都必须重新关联。"
       },
       "set": {
+        "descriptionShort": "设置默认值 (团队、区域、网桥)",
         "description": "设置默认值（team、region、bridge）",
         "success": "已将 \"{{key}}\" 设置为 \"{{value}}\""
       },
       "show": {
+        "descriptionShort": "显示当前配置的详细信息",
         "description": "显示当前配置详情",
         "noConfig": "没有活跃的配置。请使用以下命令创建：rdc config init",
         "optionReveal": "以明文显示敏感值（仅限交互模式）"
@@ -1053,11 +1097,13 @@
       "ssh": {
         "description": "管理 SSH 密钥配置",
         "remove": {
+          "descriptionShort": "从当前配置中移除 SSH 密钥",
           "description": "从当前配置中移除 SSH 密钥",
           "noKey": "未配置 SSH 密钥",
           "success": "SSH 密钥已移除"
         },
         "set": {
+          "descriptionShort": "为当前配置设置 SSH 密钥",
           "description": "为当前配置设置 SSH 密钥",
           "invalidKey": "文件不包含有效的 SSH 私钥",
           "keyNotFound": "未找到 SSH 密钥文件：{{path}}",
@@ -1066,6 +1112,7 @@
           "success": "SSH 密钥已配置"
         },
         "show": {
+          "descriptionShort": "显示当前的 SSH 密钥配置",
           "description": "显示当前 SSH 密钥配置",
           "noKey": "未配置 SSH 密钥"
         }
@@ -1084,6 +1131,9 @@
         "refused": "有 {{count}} 个条目与源配置不同，未写入任何内容。",
         "summary": "已从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。",
         "summaryDryRun": "将从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。"
+      },
+      "seal": {
+        "fileStoreRefused": "配置 {{name}} 未加封：REDIACC_SECRET_STORE=file 会把密钥保存在普通文件中，加封起不到任何保护作用。"
       }
     },
     "credits": {
@@ -1214,7 +1264,10 @@
         "subscriptionStatus": "状态",
         "subscriptionToken": "访问令牌",
         "tofu": "OpenTofu",
-        "rsync": "rsync"
+        "rsync": "rsync",
+        "vscode": "Visual Studio Code",
+        "remoteSsh": "Remote-SSH 扩展",
+        "opensshClient": "OpenSSH 客户端"
       },
       "description": "诊断CLI环境和renet集成",
       "descriptionShort": "诊断CLI环境和renet集成",
@@ -1235,7 +1288,13 @@
       "subscriptionUnreachable": "无法连接订阅服务器",
       "title": "Rediacc CLI 诊断工具",
       "tofuInstallHint": "运行：rdc tools install tofu",
-      "rsyncInstallHint": "请用系统包管理器安装 rsync"
+      "rsyncInstallHint": "请用系统包管理器安装 rsync",
+      "installedValue": "已安装",
+      "notDetectedValue": "未检测到",
+      "rsyncInstallHintWin32": "请运行：rdc tools install rsync（在 MSYS2 中：pacman -S rsync）",
+      "vscodeInstallHint": "要使用 rdc vscode，请从 https://code.visualstudio.com/ 安装 VS Code",
+      "remoteSshInstallHint": "请在 VS Code 的扩展视图中安装 Remote - SSH 扩展（ms-vscode-remote.remote-ssh）",
+      "sshClientMissingHint": "请在 Windows 设置 > 可选功能中添加 OpenSSH 客户端"
     },
     "feedback": {
       "description": "提交结构化反馈或错误报告。报告仅由已脱敏的数据生成,会完整显示,并在确认后(或使用 --yes 时)通过已保存的 API 令牌或已安装的 Free 许可证发送。",
@@ -1261,6 +1320,7 @@
     },
     "job": {
       "cancel": {
+        "descriptionShort": "取消正在运行的分离作业",
         "alreadyFinished": "任务 {{jobId}} 已经{{state}},无需取消。",
         "confirm": "确定要取消 {{machine}} 上的任务 {{jobId}}({{function}})吗?该操作将被停止。",
         "description": "取消正在运行的分离任务",
@@ -1275,6 +1335,7 @@
         "succeeded": "任务 {{jobId}} 已成功完成。"
       },
       "gc": {
+        "descriptionShort": "清理已完成的作业及其日志",
         "confirm": "确定要删除 {{machine}} 上完成时间超过 {{hours}} 小时的任务吗?其日志也将被删除。",
         "description": "删除已完成的任务及其日志",
         "invalidOlderThan": "--older-than 必须是小时数,例如 168 或 168h(得到的是 \"{{value}}\")",
@@ -1283,6 +1344,7 @@
       },
       "idOption": "任务 ID",
       "list": {
+        "descriptionShort": "按时间从新到旧列出机器上的分离作业",
         "description": "列出机器上的分离任务,按最新排列在前",
         "empty": "{{machine}} 上没有任务。",
         "examples": {
@@ -1293,6 +1355,7 @@
         "allOption": "同时显示已过期和已忽略的票据"
       },
       "logs": {
+        "descriptionShort": "回放或持续跟踪分离作业的事件日志",
         "description": "回放或跟踪分离任务的事件日志",
         "detached": "已从任务 {{jobId}} 断开连接。该任务仍在 {{machine}} 上运行,并未被取消。重新连接: rdc job logs {{jobId}} -m {{machine}} --follow",
         "examples": {
@@ -1305,6 +1368,7 @@
       },
       "machineOption": "目标机器名称",
       "status": {
+        "descriptionShort": "显示分离作业的状态",
         "description": "显示分离任务的状态",
         "examples": {
           "basic": "显示单个任务的状态。"
@@ -1313,14 +1377,18 @@
       "stepsUnfinished": "{{verb}}：作业已结束，但步骤 {{steps}} 未完成。可用 rdc job wait 完成这些步骤。",
       "summary": "管理机器上的分离任务",
       "machineRequired": "此配置中没有任务 {{jobId}} 的凭据。请用 -m <machine> 指明它运行在哪台机器上。",
+      "noJobId": "{{machine}} 上的请求 {{requestId}} 没有作业 ID（{{state}}）：其启动从未得到确认，因此机器上没有可查询的作业。丢弃该票据：rdc job dismiss {{requestId}}",
+      "notAJobId": "“{{value}}”不是作业 ID（renet 作业 ID 形如 j18b2c3d4e5f6a7b8-0123abcd），此配置中也没有票据带有它。",
       "ticketMachineOption": "目标机器名称(此配置持有该任务的凭据时可省略)",
       "wait": {
+        "descriptionShort": "凭票据继续跟踪作业，随后确认并以作业的退出码退出",
         "description": "根据凭据继续跟踪任务,随后确认并以该任务的退出码退出",
         "timeoutOption": "超过此时长后不再等待(30s、5m、2h;纯数字表示秒)。任务会继续运行。",
         "invalidTimeout": "--timeout 必须是 30s、5m 或 2h 这样的时长(收到 \"{{value}}\")",
         "timedOut": "已停止等待任务 {{jobId}}。它仍在 {{machine}} 上运行。继续等待请执行:rdc job wait {{jobId}}",
         "detached": "已与任务 {{jobId}} 断开。它仍在 {{machine}} 上运行,并且没有被取消。继续等待请执行:rdc job wait {{jobId}}",
         "startingUnresolved": "任务 {{jobId}} 还没有任务 ID:它的启动从未得到确认,而此 renet 无法按请求 ID 查找。",
+        "neverStarted": "作业 {{jobId}} 从未启动：{{machine}} 上的 renet 没有对应其请求 ID 的作业。票据已关闭。",
         "proxyUnsupported": "任务 {{jobId}} 是通过代理启动的,当前版本不支持跟踪代理凭据。",
         "examples": {
           "basic": "等待任务结束,并以其退出码退出。"
@@ -1368,6 +1436,7 @@
         "success": "已添加机器 \"{{name}}\" ({{user}}@{{ip}})"
       },
       "deprovision": {
+        "descriptionShort": "销毁云上预配的机器，并从配置中移除",
         "completed": "机器 {{name}} 已销毁并从配置中移除",
         "confirm": "这将永久销毁机器 \"{{name}}\" 及其所有数据。是否继续？",
         "deactivateFailed": "无法释放 {{name}} 在账户中的激活名额：{{reason}}。名额会在最后一次活动 5 小时后自动释放。",
@@ -1386,6 +1455,7 @@
       "description": "检查远程机器状态：系统资源、运行中的容器、systemd 服务、已部署的仓库以及健康诊断。只读查询；如需修改仓库请使用 `repo`。关键子命令：status（完整状态，可用 --system、--containers、--repositories、--services 缩小范围）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "管理远程机器（status、health、list、add、remove、setup、prune）",
       "health": {
+        "descriptionShort": "为 CI/CD 流水线检查机器健康状况",
         "containersSection": "\n容器：",
         "containersSummary": "  {{running}}/{{total}} 正在运行（{{healthy}} 健康，{{unhealthy}} 不健康）",
         "description": "检查 CI/CD 流水线的机器健康状况",
@@ -1452,19 +1522,23 @@
         "cert": {
           "clear": {
             "cleared": "证书缓存已清除",
+            "descriptionShort": "清除证书缓存",
             "description": "移除证书缓存",
             "noCache": "没有可清除的证书缓存"
           },
           "description": "管理缓存的 TLS 证书",
           "pull": {
+            "descriptionShort": "从机器下载 TLS 证书并缓存",
             "description": "从机器下载并缓存 TLS 证书",
             "optionNoPrune": "跳过清理过期的网络 ID 证书"
           },
           "push": {
+            "descriptionShort": "将缓存的 TLS 证书上传到机器",
             "description": "将缓存的 TLS 证书上传到机器"
           },
           "status": {
             "certCount": "{{count}} 个证书，{{size}} 压缩",
+            "descriptionShort": "显示已缓存证书的清单",
             "description": "显示缓存的证书清单",
             "header": "{{baseDomain}} 的证书缓存",
             "noCache": "没有已存储的证书缓存",
@@ -1491,11 +1565,13 @@
           "success": "已更新 \"{{name}}\" 的基础设施配置"
         },
         "show": {
+          "descriptionShort": "显示机器的基础设施配置",
           "description": "显示机器的基础设施配置",
           "noInfra": "\"{{name}}\" 未设置基础设施配置"
         }
       },
       "list": {
+        "descriptionShort": "列出机器",
         "description": "列出机器",
         "examples": {
           "basic": "列出所有已注册的机器。",
@@ -1505,6 +1581,7 @@
       },
       "provider": {
         "add": {
+          "descriptionShort": "添加云服务商",
           "description": "添加云服务提供商",
           "optionImage": "默认操作系统镜像",
           "optionImageAttr": "自定义：操作系统镜像的属性名",
@@ -1528,15 +1605,18 @@
         },
         "description": "管理用于自动配置机器的云服务提供商",
         "list": {
+          "descriptionShort": "列出已配置的云服务商",
           "description": "列出已配置的云服务提供商",
           "noProviders": "未配置云提供商。使用以下命令添加：rdc machine provider add <name>"
         },
         "remove": {
+          "descriptionShort": "移除云服务商配置",
           "description": "移除云服务提供商配置",
           "success": "已移除云提供商 \"{{name}}\""
         }
       },
       "provision": {
+        "descriptionShort": "使用 OpenTofu 在云服务商上预配新机器",
         "completed": "机器 {{name}} 已配置完成并就绪 ({{ip}})",
         "configuringInfra": "正在为 {{name}} 配置基础设施（代理 + DNS）...",
         "description": "使用OpenTofu在云提供商上配置新机器",
@@ -1614,6 +1694,7 @@
         "clusterMember": "无法移除机器 \"{{name}}\"：它是集群 \"{{cluster}}\" 的成员。",
         "clusterMemberNext": "请先将该节点从其集群中逐出。",
         "confirm": "从配置中移除机器 \"{{name}}\"？",
+        "descriptionShort": "从配置中移除机器",
         "description": "从当前配置中移除机器",
         "forceDangling": "已移除机器 \"{{name}}\"，但其上仍有 {{count}} 个仓库放置：{{repos}}。这些放置现已悬空。请使用 \"rdc repo migrate\" 重新指向它们，或使用 \"rdc repo delete\" 删除它们。",
         "forceOption": "即使仓库仍放置在该机器上，或备份策略仍绑定到该机器，也移除该机器，使这些引用处于悬空状态。",
@@ -1645,6 +1726,7 @@
       },
       "scanKeys": {
         "completed": "已扫描 {{count}}/{{total}} 台机器",
+        "descriptionShort": "扫描当前配置中各机器的 SSH 主机密钥",
         "description": "扫描当前配置中机器的 SSH 主机密钥",
         "keysScanned": "已扫描 \"{{name}}\" 的主机密钥",
         "noKeys": "无法扫描 \"{{name}}\" 的主机密钥",
@@ -1729,6 +1811,7 @@
           "unchanged": "\"{{name}}\" 上的访问密钥已是最新（{{path}}）"
         },
         "remove": {
+          "descriptionShort": "解除访问密钥与机器的绑定",
           "description": "解除访问密钥与机器的绑定。下一次 'machine access push' 会删除它的行",
           "success": "访问密钥 \"{{key}}\" 已与 \"{{name}}\" 解除绑定。请用 'machine access push {{name}}' 删除它的行"
         },
@@ -1740,6 +1823,7 @@
           "success": "访问密钥 \"{{key}}\" 已绑定到 \"{{name}}\"。请用 'machine access push {{name}}' 应用"
         },
         "show": {
+          "descriptionShort": "显示绑定到机器的访问密钥，以及每个密钥在该机器上对应的范围",
           "description": "显示绑定到机器的访问密钥，以及每个密钥在该机器上生效的范围",
           "noKeys": "\"{{name}}\" 没有绑定任何访问密钥",
           "path": "\"{{name}}\" 上用户 {{user}} 的 authorized_keys (~/.ssh/authorized_keys)"
@@ -1750,6 +1834,7 @@
       "description": "用于 AI 代理的 Model Context Protocol 服务器",
       "descriptionShort": "用于 AI 代理的 Model Context Protocol 服务器",
       "serve": {
+        "descriptionShort": "启动 MCP 服务器 (stdio 传输)",
         "configOption": "用于所有命令的配置名称",
         "description": "启动 MCP 服务器（stdio 传输）",
         "timeoutOption": "默认命令超时时间（毫秒）"
@@ -1757,6 +1842,7 @@
     },
     "ops": {
       "check": {
+        "descriptionShort": "检查虚拟化所需的前置组件",
         "allPassed": "所有前置条件均已满足",
         "description": "验证虚拟化前置条件",
         "hasMissing": "缺少 {{count}} 个前置条件",
@@ -1766,12 +1852,15 @@
       "description": "使用 KVM/QEMU/Hyper-V 进行本地 VM 配置和管理（自动检测平台）。不适用于远程机器。远程机器请使用 `machine`。关键子命令：up（启动 VM）、down（停止）、status（列出运行中的 VM）、ssh（连接到 VM）、setup（安装前置条件）、check（验证主机就绪状态）。",
       "descriptionShort": "本地 VM 操作（创建、管理、销毁）",
       "down": {
+        "descriptionShort": "销毁虚拟机集群",
         "completed": "VM 集群已成功销毁",
         "description": "销毁 VM 集群",
         "failed": "VM 集群销毁失败",
-        "starting": "正在销毁 VM 集群..."
+        "starting": "正在销毁 VM 集群...",
+        "windowsClients": "同时销毁 Windows 客户端虚拟机:{{vms}}"
       },
       "setup": {
+        "descriptionShort": "安装虚拟化所需的前置组件",
         "brewFailed": "Homebrew 安装失败",
         "completed": "前置条件安装成功",
         "description": "安装虚拟化前置条件",
@@ -1782,19 +1871,73 @@
         "windows": "正在设置 Hyper-V 前置条件..."
       },
       "ssh": {
+        "descriptionShort": "通过 SSH 登录虚拟机",
         "connecting": "正在连接到 VM {{id}}...",
         "description": "通过 SSH 连接到 VM",
         "vmNotFound": "未找到 ID 为 {{id}} 的 VM 或该 VM 未运行"
       },
       "status": {
+        "descriptionShort": "显示虚拟机集群状态",
         "description": "显示 VM 集群状态",
         "noVMs": "未找到任何 VM"
       },
       "up": {
+        "descriptionShort": "在本地预配虚拟机集群",
         "completed": "VM 集群创建成功",
         "description": "在本地创建 VM 集群",
         "failed": "VM 集群创建失败",
-        "starting": "正在开始创建 VM 集群..."
+        "starting": "正在开始创建 VM 集群...",
+        "windowsInvalid": "--windows 需要逗号分隔的虚拟机 ID 列表(例如 31 或 31,32),收到的是 \"{{value}}\""
+      }
+    },
+    "preview": {
+      "description": "将此配置切换到某个拉取请求的预览：rdc 以及 rdc 所操作的每台服务器上的 renet 都会换成预览的构建，`rdc preview leave` 则切回已发布版本。请用你拿到的名称运行 `rdc preview use <name>`。",
+      "descriptionShort": "在自己的机器上测试 PR 构建，并可随时切回",
+      "leave": {
+        "description": "列出运行预览 renet 的服务器，询问确认后，只切回这些服务器；然后恢复之前的 rdc,并用真实账户为在预览中创建的仓库重新授权。无法连接的服务器会保留在列表中，之后可用 --machine 完成。",
+        "descriptionShort": "切回已发布的 rdc 和 renet",
+        "machine": "只切回这台服务器"
+      },
+      "msg": {
+        "banner": "预览 {{name}} 已启用（其许可证于 {{date}} 到期）。运行 `rdc preview leave` 即可切回已发布的 rdc 和 renet。",
+        "binaryNotRestored": "未能恢复 rdc。先前渠道（{{channel}}）失败，保留的副本（{{copy}}）也失败了。请从已发布渠道重新安装 rdc；{{path}} 处可能仍有保留的副本。",
+        "binaryRestored": "已恢复 rdc v{{version}}。",
+        "binaryRestoredFromCopy": "已从预览之前保留的副本恢复 rdc v{{version}}（{{reason}}）。",
+        "confirmSwitchBack": "要将 {{count}} 台服务器切回预览之前的 renet 吗？",
+        "emergencyExit": "如果预览的 CLI 无法运行，请用保留的副本退出：{{command}}",
+        "expiryMessage": "这台机器正在使用预览 {{name}}，这是某个修复的测试构建。其许可证于 {{date}} 到期，且仅在预览存在期间续期。之后，正在运行的应用会继续运行，也可以停止和启动，但新建仓库、分叉、调整大小和备份都会被拒绝。运行 `rdc preview leave` 即可回到 {{server}} 以及已发布的 rdc 和 renet；在预览中创建的仓库随后会在套餐范围内由真实账户授权。",
+        "formatChange": "此预览会更改磁盘数据格式（{{formats}}）：{{reason}}。切回后，可能无法读取预览写入的数据。",
+        "formatChangeConfirm": "仍要切换到此预览吗（{{formats}}）？",
+        "leaveDone": "已退出预览 {{name}}。此配置已回到 {{server}}。",
+        "leavePending": "在所有服务器切回之前，预览 {{name}} 会保持启用：{{machines}}。待它们可连接后，请再次运行 `rdc preview leave`。",
+        "licenceNotIssued": "账户服务器未签发许可证",
+        "licenceRefused": "{{machine}} 上的 {{repo}} 未能通过 {{server}} 授权：{{reason}}。它会继续运行，也可以停止和启动；在套餐允许之前，扩容会被拒绝。",
+        "licencesFailed": "{{machine}} 上的许可证未能转移到真实账户：{{detail}}。请运行：rdc subscription refresh -m {{machine}} --adopt-origin",
+        "licencesRelicensed": "{{machine}}：已通过 {{server}} 重新授权：{{repos}}。",
+        "notActive": "此配置当前没有使用预览。",
+        "reprovisionFailed": "固定的 renet 槽位为 {{slot}}，重新配置失败：{{detail}}",
+        "statusName": "{{host}} 上的预览 {{name}}",
+        "statusNoServers": "目前还没有服务器使用预览的 renet。",
+        "statusPrevious": "预览之前：{{server}} 上的 rdc v{{version}}。",
+        "statusServer": "  {{machine}}：renet v{{version}} 保存在 {{slot}}",
+        "statusServers": "有 {{count}} 台服务器使用预览的 renet:",
+        "statusSince": "切换于 {{date}}；许可证于 {{end}} 到期。",
+        "switchedBack": "{{machine}} 已切回 renet v{{version}}。",
+        "touchedHeader": "使用预览 {{name}} 的 renet 的服务器：",
+        "touchedLine": "  {{machine}}：renet 当前为 v{{current}}，预览之前为 v{{recorded}}",
+        "unreachable": "无法切回 {{machine}}（{{detail}}）；它仍保留在列表中。请运行以下命令完成：rdc preview leave --machine {{machine}}",
+        "unreachableVersion": "无法连接",
+        "useDone": "已切换到预览 {{name}}（rdc v{{version}}）。"
+      },
+      "status": {
+        "description": "显示当前预览、其许可证到期日期、使用其 renet 的服务器以及切回的方法。",
+        "descriptionShort": "显示当前预览"
+      },
+      "use": {
+        "acceptFormatChange": "不再询问，直接接受此预览会更改磁盘数据格式的警告",
+        "description": "用预览的两个来源核对其 CLI 构建，将当前 CLI 保留为 rdc.pre-preview,安装预览的 CLI,并让此配置指向预览服务器。服务器只有在 CLI 首次为其配置时，才会获得预览的 renet。",
+        "descriptionShort": "切换到预览",
+        "nameArgument": "预览名称，例如 pv-amber-river-stone"
       }
     },
     "repo": {
@@ -1802,16 +1945,19 @@
         "archive": {
           "description": "已归档仓库记录的簿记管理。",
           "list": {
+            "descriptionShort": "列出已归档的仓库记录",
             "description": "列出已归档的仓库凭据",
             "noArchived": "没有已归档的仓库"
           },
           "purge": {
             "confirm": "清除所有已过期的归档记录？",
+            "descriptionShort": "永久删除已归档的记录",
             "description": "永久删除所有已归档的凭据",
             "noArchived": "没有需要清除的已归档仓库",
             "success": "已清除 {{count}} 个已归档的凭证"
           },
           "restore": {
+            "descriptionShort": "将已归档的记录恢复到配置中",
             "description": "恢复已归档的仓库凭据",
             "success": "已恢复 \"{{name}}\"（{{guid}}）"
           }
@@ -1819,8 +1965,13 @@
         "orphan": {
           "description": "机器上没有任何配置引用的仓库镜像。",
           "list": {
+            "descriptionShort": "列出机器上的仓库镜像，并标明每个镜像是否为没有任何配置引用的孤立镜像",
             "description": "列出机器上的仓库镜像，并标明每个镜像是否为孤立镜像，即没有任何配置引用它。",
-            "none": "{{machine}} 上没有仓库镜像"
+            "none": "{{machine}} 上没有仓库镜像",
+            "executorEventsOption": "读取执行器事件(executor_orphans 工具输出的 JSON 行),并把其中点名的孤立镜像标记为由执行器创建",
+            "executorReason": "由托管执行器创建,配置写入已丢弃(事件 {{at}})",
+            "executorEventsBadLine": "执行器事件文件:第 {{line}} 行不是 JSON 对象",
+            "executorEventsUnreadable": "无法读取执行器事件文件 {{file}}:{{error}}"
           },
           "delete": {
             "description": "按 GUID 删除一个孤立的仓库镜像。任何配置引用的 GUID 都会被拒绝；已挂载或正在运行的镜像也会被拒绝，除非指定 --force-delete-mounted。",
@@ -1840,6 +1991,7 @@
         "autostart": {
           "description": "管理开机时仓库的自动启动",
           "disable": {
+            "descriptionShort": "为仓库禁用自动启动 (省略名称则全部禁用)",
             "completed": "自动启动已禁用",
             "completedAll": "已禁用所有仓库的自动启动",
             "description": "为仓库禁用自动启动",
@@ -1849,6 +2001,7 @@
             "startingAll": "正在为 \"{{machine}}\" 上的所有仓库禁用自动启动..."
           },
           "enable": {
+            "descriptionShort": "为仓库启用自动启动 (省略名称则全部启用)",
             "completed": "自动启动已启用",
             "completedAll": "已启用所有仓库的自动启动",
             "description": "为仓库启用自动启动",
@@ -1858,6 +2011,7 @@
             "startingAll": "正在为 \"{{machine}}\" 上的所有仓库启用自动启动..."
           },
           "list": {
+            "descriptionShort": "列出已启用自动启动的仓库",
             "description": "列出已启用自动启动的仓库",
             "empty": "\"{{machine}}\" 上没有已启用自动启动的仓库",
             "failed": "获取自动启动仓库列表失败",
@@ -1954,6 +2108,7 @@
         "weightOption": "路由到 canary 的流量百分比（整数 0-100；0 表示暗启动，100 表示完全切换）"
       },
       "cat": {
+        "descriptionShort": "将仓库中某个文件的一段内容读取到标准输出 (诊断信息输出到标准错误)",
         "description": "读取仓库内文件的有界窗口并写入 stdout（服务端限制；诊断信息输出到 stderr）",
         "examples": {
           "basic": "打印仓库内的一个文件。"
@@ -1986,6 +2141,7 @@
         "messageOption": "Commit 信息"
       },
       "create": {
+        "descriptionShort": "创建新仓库",
         "alreadyExists": "仓库 \"{{name}}\" 已存在于上下文中",
         "completed": "仓库已创建",
         "datastoreNotAttached": "数据存储 \"{{datastore}}\" 未挂接到任何机器。请挂接它：rdc datastore attach {{datastore}} --to <machine>。如果已挂接但配置未识别，请运行 rdc config reconcile。",
@@ -2134,6 +2290,7 @@
         "datastorePathUnsupported": "数据存储路径 {{path}} 含有“,”或“@”，任务的列表参数无法承载。请重命名该路径。"
       },
       "list": {
+        "descriptionShort": "列出机器上的仓库",
         "completed": "列表获取完成",
         "datastoreOption": "列出此数据存储中的仓库（解析为当前持有该数据存储的机器）",
         "description": "列出机器上的仓库",
@@ -2414,12 +2571,14 @@
         "valueOption": "密钥值。传递 `-` 以从 stdin 读取（避免在 shell 历史记录中暴露）。"
       },
       "status": {
+        "descriptionShort": "获取仓库状态 (挂载状态、Docker 守护进程是否运行、容器数量、磁盘用量)",
         "completed": "状态已获取",
         "description": "获取仓库状态",
         "failed": "状态检查失败",
         "starting": "正在获取 \"{{machine}}\" 上 \"{{repository}}\" 的状态..."
       },
       "health": {
+        "descriptionShort": "运行仓库 Rediaccfile 的 health() 检查，并以 0 (正常)、1 (警告) 或 2 (错误) 退出",
         "description": "运行仓库 Rediaccfile 中的 health() 检查，并以 0（正常）、1（警告）或 2（错误）退出",
         "header": "\n{{repository}} 的健康状况：",
         "levelOk": "✓ 健康",
@@ -2579,7 +2738,17 @@
           "failed": "无法读取授权",
           "unreadable": "无法读取机器的授权输出"
         }
-      }
+      },
+      "flows": {
+        "description": "列出某个仓库在指定时间窗口内记录的网络流量：时间、进程、目标地址、出入字节数，已知时还包括目标的 ASN 和国家。没有证据的时段会显示为空缺行。需要 forensics:read 权限范围和付费套餐。",
+        "descriptionShort": "列出仓库已记录的网络流量"
+      },
+      "opens": {
+        "description": "列出某个仓库在指定时间窗口内记录的文件打开事件：时间、进程和路径，敏感路径会被标记。没有证据的时段会显示为空缺行。需要 forensics:read 权限范围和付费套餐。",
+        "descriptionShort": "列出仓库已记录的文件打开事件"
+      },
+      "rowsSinceOption": "窗口起点：ISO 8601 时间点，或从现在往前推的时长，如 90m、24h、7d（默认：24h）",
+      "rowsUntilOption": "窗口终点，格式同上（默认：现在）"
     },
     "serve": {
       "description": "将此进程作为执行器运行，让客户端可以通过它执行命令，而不必自己通过 SSH 连接",
@@ -2590,11 +2759,18 @@
         "customPort": "在指定端口启动执行器服务。"
       },
       "hint": "使用以下命令连接客户端：rdc --proxy <url> <command>",
-      "listening": "执行器正在 http://{{host}}:{{port}} 上监听（模式：{{mode}}）",
-      "optionHost": "绑定地址",
+      "listening": "执行器正在 {{scheme}}://{{host}}:{{port}} 上监听（模式：{{mode}}）",
+      "optionHost": "绑定地址（守护进程默认 127.0.0.1，容器中默认 0.0.0.0）",
+      "optionTlsCert": "PEM 证书文件；与 --tls-key 一起使用时提供 HTTPS",
+      "optionTlsKey": "与 --tls-cert 配套的 PEM 私钥文件",
       "optionMode": "部署位置：daemon（客户主机）或 container",
       "optionPort": "监听端口",
-      "summary": "作为执行器运行，供远程客户端使用"
+      "summary": "作为执行器运行，供远程客户端使用",
+      "errors": {
+        "tlsRequired": "{{host}} 上的守护进程执行器会通过未加密的 HTTP 传输 Bearer 令牌。请绑定到回环地址（默认 127.0.0.1），或提供 --tls-cert 和 --tls-key 以提供 HTTPS。",
+        "tlsPairIncomplete": "--tls-cert 和 --tls-key 必须同时提供：要么都提供，要么都不提供。",
+        "tlsUnreadable": "无法读取 {{path}}：{{reason}}"
+      }
     },
     "server": {
       "summary": "安装并运行自托管的 Rediacc 账户服务器",
@@ -2621,31 +2797,33 @@
         "optionTlsCert": "PEM 格式的证书文件（配合 --tls byo），需覆盖两个域名",
         "optionTlsKey": "该证书的私钥文件（配合 --tls byo）",
         "optionTlsCa": "服务器证书所链接的 CA 证书，用于健康检查",
-        "optionLicence": "auto：使用当前登录账户的证书，没有则使用免费版；free：以免费版启动",
+        "optionLicence": "auto（默认）：已登录注册账户的委托证书。free 会被拒绝：本地部署的服务器需要注册账户（rdc subscription login）",
         "optionCert": "用于离线安装的委托证书文件，必须指明机器上生成的密钥",
         "optionImage": "要运行的服务器镜像（默认：ghcr.io/rediacc/server:latest）",
         "optionImageFile": "已保存的镜像归档（docker save），用于传输而不是拉取",
+        "termsHint": "如果尚未接受服务条款，请加上 --accept-terms 重新运行（或设置 RDC_ACCEPT_TERMS=1）",
         "optionLocalImage": "从本地 Docker 保存 --image 并传输，而不是拉取",
         "optionNoDnsWait": "只打印 DNS 记录，不等待其解析生效",
         "optionBwsProject": "同时将生成的密钥复制到此 Bitwarden Secrets Manager 项目；不指定则密钥不会离开机器",
         "optionRotate": "配合 --bws-project，替换值不同的已存储项，而不是拒绝",
         "optionYes": "不询问任何内容：采用默认值，缺失的值直接拒绝",
-        "help": "步骤，按顺序（每一步都会被记录，重新运行时会跳过已完成的步骤）：\n  preflight  sudo -n、架构、80 和 443 端口、磁盘空间和时钟偏差\n  setup      缺少 renet 时执行 rdc machine setup\n  dns        打印 A 和 AAAA 记录，然后等待两个域名都解析到该机器\n  tls        Let's Encrypt、Cloudflare DNS-01 或现有证书\n  repo       创建仓库并应用 elite 模板\n  keys       在机器上生成所有密钥，写入仓库的 secrets.env\n  licence    --cert，否则使用当前登录账户的证书，再否则使用免费版\n  image      在机器上拉取镜像，或传输 --image-file\n  up         启动服务器并等待 https://<domain>/health\n  owner      创建所有者账户\n\n尚未注册的机器可用 --ip 和 --user 添加。云 VM 需先用 rdc machine provision 创建。\nDNS 记录只会打印，绝不会写入客户的区域。\n在终端中，安装结束时会显示一次性的恢复包。请妥善保存：它不会被记录到日志，也不会出现在 --output json 中，之后可用 rdc server backup 再次打印。",
+        "help": "步骤，按顺序（每一步都会被记录，重新运行时会跳过已完成的步骤）：\n  preflight  sudo -n、架构、80 和 443 端口、磁盘空间和时钟偏差\n  setup      缺少 renet 时执行 rdc machine setup\n  dns        打印 A 和 AAAA 记录，然后等待两个域名都解析到该机器\n  tls        Let's Encrypt、Cloudflare DNS-01 或现有证书\n  repo       创建仓库并应用 elite 模板\n  keys       在机器上生成所有密钥，写入仓库的 secrets.env\n  licence    --cert，否则使用已登录注册账户的证书\n  image      在机器上拉取镜像，或传输 --image-file\n  up         启动服务器并等待 https://<domain>/health\n  owner      创建所有者账户\n\n安装需要注册账户：运行前请先用 rdc subscription login 登录（Community 或更高版本），或传入 --cert。匿名免费许可无法运行本地部署的服务器，因此两者都没有的安装会在触及机器之前被拒绝。\n创建仓库需要已接受服务条款：无人值守运行时请传入根选项 --accept-terms（或设置 RDC_ACCEPT_TERMS=1）。\n尚未注册的机器可用 --ip 和 --user 添加。云 VM 需先用 rdc machine provision 创建。\nDNS 记录只会打印，绝不会写入客户的区域。\n在终端中，安装结束时会显示一次性的恢复包。请妥善保存：它不会被记录到日志，也不会出现在 --output json 中，之后可用 rdc server backup 再次打印。",
         "step": "步骤：{{step}}",
         "skipped": "步骤 {{step}}：此前已完成，已跳过",
         "done": "账户服务器已在 https://{{domain}} 运行",
-        "freeTier": "{{domain}} 正在以免费版运行。运行 `rdc server licence {{domain}}` 为其授权。",
         "backupHint": "使用 `rdc server backup {{domain}} --out <file>` 保存恢复包。所有者的初始密码在 {{ownerFile}} 中。",
         "examples": {
           "brought": "按地址注册现有服务器并在其上安装。",
           "configured": "在已配置的机器上无提示安装。",
-          "lan": "使用现有证书，在 LAN 机器上以免费版安装。"
+          "lan": "使用自带的 TLS 证书和许可证书文件，在 LAN 机器上安装。"
         },
         "optionBundle": "由 'rdc server bundle' 生成的离线安装包目录",
+        "optionSigner": "'rdc server bundle' 输出的指纹；离线包必须由该密钥签名",
         "optionOffline": "通过 --bundle 离线安装：不访问上游、镜像仓库或包管理器",
         "helpOffline": "离线（气隙）环境：先在联网环境用 rdc server bundle --out <dir> 生成离线包。rdc server install --offline --bundle <dir> 会校验离线包、加载代理镜像、以离线方式配置机器，并且不访问任何外部服务。安装会在许可证步骤停下并写出一个请求文件：请在联网环境用 rdc server licence mint 签发证书，然后加上 --cert 重新运行。"
       },
       "status": {
+        "descriptionShort": "显示已安装服务器的健康状况、层级、证书和镜像",
         "description": "显示已安装服务器的健康状况、版本等级、证书和镜像",
         "certRefused": "已拒绝 ({{reason}})，时间 {{at}}",
         "certRefusedRun": "请运行：rdc server licence {{domain}}",
@@ -2653,6 +2831,7 @@
         "certExpiring": "许可证书将在 {{days}} 天后到期；请续期（rdc server licence）"
       },
       "backup": {
+        "descriptionShort": "输出已安装服务器的恢复包 (密钥)，或将其写入文件",
         "description": "打印已安装服务器的恢复包（密钥），或将其写入文件",
         "optionOut": "将恢复包写入此文件（权限 0600），而不是 stdout",
         "written": "恢复包已写入 {{file}}（权限 0600）",
@@ -2676,19 +2855,16 @@
         "templateNoBaseline": "该机器未记录模板校验和，因此无法检测本地修改；正在应用较新的模板"
       },
       "licence": {
+        "descriptionShort": "将免费层服务器切换为使用已登录账户或 --cert 提供的委派证书",
         "description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
         "done": "{{domain}} 已通过订阅 {{subscription}} 获得授权",
         "certUnreadable": "无法读取证书文件 {{file}}",
         "certInvalid": "{{file}} 不是可用的委托证书：{{error}}",
         "keyMismatch": "{{file}} 是为另一个密钥签发的，并非机器上生成的密钥。请为该机器的密钥签发证书。",
         "issuedKeyMismatch": "账户服务器签发的证书对应另一个密钥，并非机器上生成的密钥",
-        "noLogin": "没有已登录的账户：服务器将以免费版启动",
-        "planDisallows": "该订阅无法持有委托证书（{{error}}）；服务器将以免费版启动",
         "otherKey": "该订阅已持有针对另一个密钥的有效委托证书（{{certId}}）。请在门户中吊销，然后重新运行安装。{{error}}",
-        "missingScope": "此登录无法签发委托证书。请以所有者或管理员身份并通过 2FA 重新运行 `rdc subscription login`，或使用 --licence free 安装。",
-        "offerFree": "是否改为以免费版启动服务器？",
+        "missingScope": "此登录无法签发委托证书。请以所有者或管理员身份并通过 2FA 重新运行 `rdc subscription login`。",
         "noCertForUpgrade": "没有可用的委托证书：请以所有者或管理员身份并通过 2FA 使用 `rdc subscription login` 登录，或传入 --cert <file>",
-        "freeProbeHoldsCert": "尽管未安装任何证书，服务器仍响应为持有证书",
         "viaInbox": "服务器已从证书收件目录应用该证书，无需重启",
         "alreadyCurrent": "服务器已持有此证书（{{certId}}），无需应用",
         "rejected": "服务器拒绝了该证书（{{reason}}）：{{detail}}",
@@ -2701,6 +2877,7 @@
         "noUpstreamKey": "服务器没有 UPSTREAM_PUBLIC_KEY，无法校验任何证书，新证书也无济于事。请在 {{domain}} 的密钥中设置 UPSTREAM_PUBLIC_KEY，然后运行 `rdc server upgrade {{domain}}`。",
         "bootRefusalStays": "证书已应用，但服务器仍报告启动时被拒绝 ({{reason}})；请检查服务器日志",
         "mint": {
+          "descriptionShort": "为离线机器的请求签发许可证书 (需联网并已登录)",
           "description": "为离线机器的请求签发许可证书（需联网并已登录后运行）",
           "done": "证书已写入 {{file}}（有效期至 {{until}}）；请将其带到该机器，并使用 --cert 安装",
           "optionOut": "证书的写入文件",
@@ -2721,6 +2898,9 @@
         "downloadingCli": "正在下载适用于 {{platform}} 的 CLI {{version}}",
         "pulling": "正在拉取 {{image}}（{{platform}}）",
         "saving": "正在将 {{image}} 保存到 {{file}}",
+        "optionNoModels": "不在离线包中包含检测模型",
+        "fetchingModels": "正在下载稳定版检测模型",
+        "signer": "离线包签名者指纹：{{fingerprint}}。请在隔离网络一侧作为 --signer 传入，并通过与离线包不同的途径传递。",
         "written": "安装包已写入 {{dir}}（{{arch}}）",
         "errors": {
           "cliChecksumFile": "{{url}} 中没有 sha256 校验和",
@@ -2741,7 +2921,12 @@
           "sumsLine": "SHA256SUMS 中有一行不符合 '<sha256>  <file>' 格式：{{line}}",
           "tagAndImage": "--tag 与 --image 不能同时使用",
           "tampered": "{{file}} 与 SHA256SUMS 或清单不一致：安装包已被修改或损坏",
-          "unreadable": "无法从安装包 {{dir}} 中读取 {{file}}"
+          "unreadable": "无法从安装包 {{dir}} 中读取 {{file}}",
+          "unsigned": "离线包 {{dir}} 中没有可读取的 {{file}}；签名功能出现之前构建的离线包无法用于安装",
+          "signerMismatch": "离线包由密钥 {{actual}} 签名，而不是指定的 --signer {{expected}}",
+          "badSignature": "manifest.sig 不是签名者对 manifest.json 的签名",
+          "modelsShape": "模型文件 {{file}} 的格式不符合预期",
+          "modelsSha256Mismatch": "{{url}} 的哈希为 {{actual}}，预期为 {{expected}}"
         }
       },
       "bws": {
@@ -2825,7 +3010,10 @@
         "bundleIncomplete": "机器上的 secrets.env 缺少 {{keys}}",
         "boxScriptFailed": "{{machine}} 上的命令退出码为 {{code}}：{{detail}}",
         "rdcFailed": "{{command}} 失败（退出码 {{code}}）",
-        "certAndFree": "--cert 和 --licence free 不能同时使用"
+        "rdcFailedDetail": "{{command}} 失败（退出码 {{code}}）：{{detail}}",
+        "accountRequired": "本地部署的服务器需要注册账户，而此配置中没有登录信息，因此机器上没有任何改动。请用 `rdc subscription login` 登录（注册账户从 Community 或更高版本起），然后重新运行此安装。",
+        "licenceFreeRefused": "--licence free 会被拒绝：本地部署的服务器需要注册账户，匿名免费许可不行。请用 `rdc subscription login` 登录（Community 或更高版本），然后去掉 --licence free 重新运行此安装。",
+        "freeTierInstalled": "{{domain}} 是以匿名免费版安装的，该版本已不再运行本地部署的服务器。请先用 `rdc subscription login` 登录，再运行 `rdc server licence {{domain}}` 为其授权。"
       },
       "offline": {
         "archMismatch": "该机器为 {{box}}，但安装包适用于 {{bundle}}",
@@ -2837,9 +3025,9 @@
         "mintNoLogin": "签发证书需要已登录的配置（rdc subscription login）",
         "missingEssentials": "机器上缺少以下内容（离线设置无法安装）：{{missing}}",
         "needsBundle": "--offline 需要同时指定 --bundle <dir>",
+        "needsSigner": "离线包需要 --signer <fingerprint>，即 'rdc server bundle' 输出的指纹",
         "noBws": "--bws-project 需要联网，不能与 --offline 一起使用",
         "noCfToken": "--cf-token 需要联网，不能与 --offline 一起使用",
-        "noFree": "--licence free 会调用账户服务器，不能与 --offline 一起使用；请改用请求加 --cert 的流程",
         "noProxyImage": "安装包中不包含代理镜像 {{ref}}",
         "requestInvalid": "{{file}} 不是离线安装生成的委托请求",
         "tlsByoOnly": "--tls {{tls}} 需要联网；请使用 --tls byo 并配合 --tls-cert 和 --tls-key（私有 CA 再加 --tls-ca）"
@@ -2877,6 +3065,7 @@
       "description": "管理许可证和订阅令牌。使用 login 登录，使用 status 查看，使用 refresh 重新签发许可证。",
       "descriptionShort": "管理机器许可证和订阅",
       "login": {
+        "descriptionShort": "通过浏览器或 API 令牌进行身份验证",
         "backupNeedsTwoFactor": "已登录，但没有备份存储管理权限。请在 {{url}} 的设置中开启双重身份验证，然后重新登录。",
         "channelSynced": "更新频道已设置为{{channel}}。",
         "description": "使用Web门户的API令牌进行认证",
@@ -2911,20 +3100,24 @@
         "waitingApproval": "等待浏览器授权..."
       },
       "register": {
+        "descriptionShort": "在浏览器中创建账户 (邮箱已预填) 并登录",
         "description": "在浏览器中创建账户（邮箱已预填）并登录",
         "optionEmail": "在注册页面预填的电子邮件地址",
         "invalidEmail": "请输入有效的电子邮件地址。"
       },
       "logout": {
+        "descriptionShort": "清除已保存的订阅令牌",
         "description": "清除已存储的订阅令牌",
         "success": "订阅令牌已删除"
       },
       "proxyToken": {
+        "descriptionShort": "使用此设备的登录状态签发短期 proxy:exec 令牌，供 --proxy 使用",
         "description": "基于本设备的登录签发一个短期有效的 proxy:exec 令牌，供 --proxy 使用",
         "jsonOption": "以 JSON 输出令牌及其 expiresAt",
         "noToken": "账户服务器未返回代理令牌。"
       },
       "refresh": {
+        "descriptionShort": "从账户服务器刷新许可证",
         "account": {
           "failed": "无法从账户服务器读取账户状态。",
           "refreshed": "账户状态已刷新",
@@ -2972,6 +3165,7 @@
         }
       },
       "status": {
+        "descriptionShort": "显示订阅信息以及机器的许可证状态",
         "description": "显示订阅状态以及某台机器的许可证状态。",
         "issuanceLimitReached": "当前 UTC 自然月的仓库许可证签发额度已用尽。",
         "issuanceUsageHigh80": "每月仓库许可证签发量已超过当前 UTC 限额的 80%。",
@@ -3005,9 +3199,10 @@
         "othersHeader": "  已删除和未知的许可证:",
         "overLimitCell": "超出上限",
         "refreshHint": "刷新请用:rdc subscription refresh",
-        "retireHint": "退还已彻底过期的许可证:rdc subscription retire --expired",
+        "retireHint": "列出待退还的已彻底过期许可证:rdc subscription retire --expired (--apply 执行退还)",
         "whereAbsent": "不在此配置中",
-        "whereDeleted": "已删除"
+        "whereDeleted": "已删除",
+        "whereGone": "已不在 {{machine}} 上"
       },
       "licenceState": {
         "valid": "有效",
@@ -3022,23 +3217,25 @@
         "needsYes": "退还许可证需要确认,但 stdin 不是终端。请加上 --yes 来确认。",
         "confirm": "要退还 {{name}}({{guid}},{{state}})的许可证吗?续期不会让它恢复。",
         "success": "许可证已退还: {{name}}",
+        "descriptionShort": "注销已不存在的仓库的许可证，使其不再计入许可证数量和通知",
         "description": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。",
         "argGuid": "仓库 GUID,或账户报告中某个许可证的至少前 8 个字符",
         "optionForce": "退还其仓库仍在此配置中且尚未彻底过期的许可证",
-        "dryRunNeedsExpired": "--dry-run 需要与 --expired 一起使用。",
-        "expiredConfirm": "要退还 {{count}} 个许可证吗?续期不会让它们恢复。",
-        "expiredDryRun": "试运行:没有退还任何许可证。",
+        "expiredDryRun": "试运行:没有退还任何许可证。退还请运行:rdc subscription retire --expired --apply",
         "expiredFailed": "无法退还 {{name}}:{{error}}",
-        "expiredList": "已删除或未知仓库的 {{count}} 个已彻底过期的许可证:",
+        "expiredList": "已不存在的仓库的 {{count}} 个已彻底过期的许可证:",
         "expiredNeedsConfig": "此配置中没有任何仓库,--expired 无法判断哪些许可证已无用。请用 --config 选择配置。",
-        "expiredNone": "没有可退还的许可证(已删除或未知仓库的已彻底过期许可证)。",
-        "expiredResult": "已退还 {{retired}} 个,跳过 {{skipped}} 个(在用的仓库),失败 {{failed}} 个。",
+        "expiredNone": "没有已不存在的仓库的已彻底过期许可证。",
+        "expiredResult": "已退还 {{retired}} 个,保留 {{skipped}} 个(仍在某台机器上,或无法核实),失败 {{failed}} 个。",
         "expiredWithGuid": "--expired 会退还所有已彻底过期的许可证,不接受 GUID。",
         "needsGuidOrExpired": "请提供仓库 GUID,或使用 --expired。",
-        "optionDryRun": "与 --expired 搭配:只列出将要退还的内容,不做任何更改",
-        "optionExpired": "退还已删除或不在此配置中的仓库的所有已彻底过期许可证"
+        "optionExpired": "列出已不存在的仓库(已删除、不在此配置中或已不在其机器上)的所有已彻底过期许可证",
+        "applyNeedsExpired": "--apply 需要与 --expired 一起使用。",
+        "expiredListFailed": "无法列出 {{place}} 上的仓库({{error}})。那里的仓库的许可证予以保留。",
+        "optionApply": "与 --expired 搭配:退还列出的许可证(不加此选项时 --expired 只列出)"
       },
       "notices": {
+        "descriptionShort": "列出账户的通知: 许可证到期、备份健康、续订、证书和条款",
         "description": "列出账户通知:许可证到期、备份状况、续期、证书和条款。",
         "optionAll": "包含已关闭的通知和所有分页,而不只是最近 30 天",
         "optionUnread": "仅显示未读通知",
@@ -3052,7 +3249,21 @@
           "licenceRenewal": "{{planCode}} 将于 {{date}} 续期",
           "certExpiry": "{{track}} 证书 {{number}} 将于 {{date}} 到期",
           "evalExpiry": "{{planCode}} 试用将于 {{date}} 结束",
-          "termsNotice": "条款 {{version}} 将于 {{date}} 生效"
+          "termsNotice": "条款 {{version}} 将于 {{date}} 生效",
+          "forensicsQuota": {
+            "warning": "取证存储已用 {{used}} GB，配额 {{quota}} GB，其中 {{locked}} GB 已锁定。",
+            "levelCapped": "锁定的时间窗口已放不下，取证采集已降为 Basic。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。",
+            "refused": "连 Basic 采集也放不下，取证批次已被拒绝。已用 {{used}} GB，配额 {{quota}} GB，已锁定 {{locked}} GB。"
+          },
+          "securityIncident": {
+            "earlyWarning": "Rediacc 于 {{date}} 发布了一起安全事件的早期预警。",
+            "notification": "Rediacc 于 {{date}} 发布了一起安全事件的通报。",
+            "final": "Rediacc 于 {{date}} 发布了一起安全事件的最终报告。"
+          },
+          "forensicsAnomaly": {
+            "live": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常。时间线：{{path}}",
+            "delayed": "{{detector}} 于 {{date}} 在 {{repo}} 上检测到异常，告警延迟送达。时间线：{{path}}"
+          }
         }
       }
     },
@@ -3074,10 +3285,16 @@
       "noChanges": "没有要同步的更改。",
       "previewingChanges": "\n正在预览更改...\n",
       "skippedMore": "{{names}}，以及另外 {{count}} 个",
+      "deleted": "已删除文件:{{count}}",
+      "rsyncUnusable": "rsync 已安装但无法运行({{reason}})。改用 SFTP 传输(无增量同步)。",
+      "rsyncUnusableNoFallback": "rsync 已安装但无法运行({{reason}})。",
       "skippedNonRegular": "警告：符号链接和特殊文件未传输，共计：{{count}}（特权同步仅传输常规文件）：{{names}}",
       "status": {
         "description": "检查同步状态并比较本地/远程文件",
-        "descriptionShort": "比较本地和远程文件（模拟运行）"
+        "descriptionShort": "比较本地和远程文件（模拟运行）",
+        "localOnly": "仅存在于本地、远程没有:{{count}}",
+        "localOnlyMore": "  ……另有 {{count}} 个",
+        "localOnlyNeedsRsync": "仅存在于本地的文件不会列出:该比较需要 rsync。"
       },
       "totalSize": "总大小：{{size}}",
       "upload": {
@@ -3091,6 +3308,7 @@
     },
     "term": {
       "connect": {
+        "descriptionShort": "在机器上打开 shell，或在已配置好 Docker 的仓库内打开",
         "description": "在机器上打开 shell，或在已配置好 Docker 的仓库内部打开 shell。",
         "examples": {
           "machine": "打开到某台机器的 SSH 终端。",
@@ -3104,6 +3322,7 @@
       "fetchingDetails": "正在获取连接详情...",
       "launchingTerminal": "正在启动 {{type}} 终端...",
       "launchSuccess": "终端已成功启动。",
+      "externalFallback": "无法打开外部终端（{{error}}）。将在当前终端中直接使用 SSH 继续。",
       "testingConnectivity": "正在测试与 {{host}}:{{port}} 的连接..."
     },
     "update": {
@@ -3146,6 +3365,7 @@
     },
     "vscode": {
       "check": {
+        "descriptionShort": "检查 VS Code 的安装和配置",
         "activeConnections": "活跃连接：{{count}}",
         "configuration": "\n配置：",
         "configured": "  已配置：{{status}}",
@@ -3166,12 +3386,14 @@
         "yes": "是"
       },
       "cleanup": {
+        "descriptionShort": "移除 VS Code SSH 配置",
         "cleaned": "已清除：{{connection}}",
         "cleanedAll": "已清除 {{count}} 个 VS Code SSH 连接。",
         "description": "移除 VS Code SSH 配置",
         "removedKeys": "已移除所有保存的 SSH 密钥。"
       },
       "connect": {
+        "descriptionShort": "在机器或仓库内打开 VS Code",
         "browserUrl": "在浏览器中打开 VS Code：{{url}}",
         "configuringSSH": "正在配置 SSH...",
         "configuringVSCode": "正在配置 VS Code 设置...",
@@ -3200,6 +3422,7 @@
       "description": "打开 VS Code Remote SSH 连接到机器或仓库",
       "descriptionShort": "打开 VS Code Remote SSH 连接到机器或仓库",
       "list": {
+        "descriptionShort": "列出已配置的 VS Code SSH 连接",
         "configFile": "\n配置文件：{{path}}",
         "description": "列出已配置的 VS Code SSH 连接",
         "header": "已配置的 VS Code SSH 连接：\n",
@@ -3210,15 +3433,31 @@
       "serve": {
         "description": "管理沙盒内的浏览器 VS Code 服务器",
         "status": {
+          "descriptionShort": "显示浏览器版 VS Code 服务器是否正在运行",
           "description": "显示浏览器 VS Code 服务器是否正在运行",
           "running": "{{provider}} 正在运行（pid {{pid}}，端口 {{port}}）",
           "stopped": "{{provider}} 未在运行"
         },
         "stop": {
+          "descriptionShort": "停止浏览器版 VS Code 服务器",
           "description": "停止浏览器 VS Code 服务器",
           "notRunning": "{{provider}} 本来就未在运行",
           "stopped": "{{provider}} 已停止"
         }
+      },
+      "expose": {
+        "descriptionShort": "在仓库的公共主机名上公开其 VS Code",
+        "description": "在仓库自己的 Docker 守护进程上以容器形式启动该仓库的浏览器版 VS Code，并在门户令牌关卡之后发布到 vscode.<repo>.<machine>.<domain>。从签发令牌的 Web 控制台打开；15 分钟收不到心跳即停止。",
+        "exposed": "VS Code 已公开在 {{url}}",
+        "openHint": "请从 Web 控制台打开：编辑器只接受门户签发的令牌。",
+        "noResult": "公开任务已结束，但未报告编辑器的 URL",
+        "failed": "无法公开 VS Code"
+      },
+      "unexpose": {
+        "descriptionShort": "停止仓库已公开的 VS Code",
+        "description": "立即停止并删除仓库已公开的 VS Code 容器，关闭所有打开的编辑器会话。",
+        "stopped": "{{name}} 已公开的 VS Code 已停止",
+        "failed": "无法停止已公开的 VS Code"
       }
     },
     "tools": {
@@ -3226,12 +3465,15 @@
       "description": "管理 rdc 在本机运行的本地工具。`rdc tools install tofu` 会下载固定版本的 OpenTofu，在解压前将其 SHA-256 与 rdc 内置的校验和比对，然后把二进制文件放入 rdc 的工具目录。`rdc tools list` 显示每个工具的版本及其来源。",
       "install": {
         "descriptionShort": "安装经过校验和验证的固定版本工具",
-        "description": "下载此 CLI 中固定的 OpenTofu 版本，验证其 SHA-256 校验和后安装到 rdc 的工具目录。校验和不匹配时会删除下载的文件，不安装任何内容。rdc 从不安装 Terraform；PATH 中已有的会原样使用。",
-        "argTool": "要安装的工具 （tofu）",
+        "description": "下载此 CLI 中固定版本的工具，校验其 SHA-256 校验和，然后安装到 rdc 的工具目录。`tofu` 可在任何平台上安装 OpenTofu。`rsync` 仅在 Windows 上安装 MSYS2 版 rsync 及其加载的运行时库；在其他系统上，rsync 由系统包管理器提供。校验和不匹配时会删除下载内容，不安装任何东西。rdc 从不安装 Terraform；如果 PATH 中已有，则直接使用。",
+        "argTool": "要安装的工具（tofu，在 Windows 上也可以是 rsync）",
         "optionForce": "即使固定版本已存在也重新安装",
         "downloading": "正在下载适用于 {{platform}} 的 OpenTofu {{version}}...",
+        "downloadingPackage": "正在下载 MSYS2 软件包 {{name}} {{version}}...",
         "installed": "已将 OpenTofu {{version}} 安装到 {{path}}",
-        "alreadyInstalled": "OpenTofu {{version}} 已安装在 {{path}}"
+        "alreadyInstalled": "OpenTofu {{version}} 已安装在 {{path}}",
+        "rsyncInstalled": "已将 rsync {{version}} 安装到 {{path}}",
+        "rsyncAlreadyInstalled": "rsync {{version}} 已安装在 {{path}}"
       },
       "list": {
         "descriptionShort": "显示已安装的工具、版本和来源",
@@ -3241,14 +3483,16 @@
       "sources": {
         "env": "REDIACC_TOFU 变量",
         "rdc": "由 rdc 安装",
-        "path": "系统 PATH"
+        "path": "系统 PATH",
+        "notInstalled": "未安装"
       },
       "errors": {
         "unknownTool": "未知工具“{{tool}}”。可用工具：{{available}}",
         "unsupportedPlatform": "没有适用于 {{platform}}/{{arch}} 的固定 OpenTofu 构建",
         "insecureUrl": "拒绝从非 HTTPS 地址下载：{{url}}",
         "checksumMismatch": "{{url}} 的校验和不匹配：应为 {{expected}}，实际为 {{actual}}。已删除下载的文件，未安装任何内容。",
-        "badArchive": "下载的归档文件无法使用：{{reason}}"
+        "badArchive": "下载的归档文件无法使用：{{reason}}",
+        "rsyncFromSystem": "rdc 仅在 Windows 上安装 rsync。在 {{platform}} 上，rsync 由系统包管理器提供（例如 apt install rsync、dnf install rsync 或 brew install rsync）。"
       }
     },
     "version": {
@@ -3275,6 +3519,73 @@
       "notAccepted": "已接受：尚未接受",
       "terms": "服务条款：版本 {{version}}，自 {{effective}} 起生效",
       "upcoming": "下一版本 {{version}} 将于 {{effective}} 生效"
+    },
+    "proxyBlocked": {
+      "backupChurn": "这是客户端侧的一轮探测，可能持续数小时，结束时还必须丢弃其基准",
+      "backupDownload": "通过客户端侧的 rsync 将仓库镜像复制到本地目录；远程执行端会把镜像写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "localTooling": "这是从不连接机器的本地工具，因此没有可代理的对象。请不要加 --proxy 运行。",
+      "localConfig": "完全针对本地配置运行，不会连接机器，因此没有可代理的对象。请不要加 --proxy 运行。",
+      "backupUpload": "通过客户端侧的 rsync 发送本地镜像文件，并在本地配置中登记仓库；远程执行端看不到该文件。请不要加 --proxy 运行。",
+      "clusterKubeconfig": "将 kubeconfig 缓存到本地权限为 0600 的文件并输出其路径；远程执行端会把文件写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "interactive": "需要终端，或自身不会结束 (交互式 shell、编辑器、隧道、流或守护进程)，因此无头执行端无法运行。请不要加 --proxy 运行。",
+      "machineAccessPush": "根据调用方的访问密钥重写谁可以登录该机器；执行端从不改写自己用来连接的访问权限，而且会推送它自己配置中的密钥。请不要加 --proxy 运行。",
+      "machineInfraCertPull": "它的作用是把机器的 acme.json 写入调用方的本地配置；远程执行端会把它写入自己的配置。请不要加 --proxy 运行。",
+      "repoAdminOrphanDelete": "拒绝调用方能读取的任一配置仍然引用的 GUID；远程执行端只检查它自己的配置，可能删除调用方配置所引用的镜像。请不要加 --proxy 运行。",
+      "repoAdminOrphanList": "对照调用方能读取的所有配置来判断每个镜像；远程执行端只会对照它自己的配置判断，并把调用方的仓库报告为孤立镜像。请不要加 --proxy 运行。",
+      "repoSyncDownload": "通过 rsync/SFTP 下载到本地文件系统；远程执行端会把文件写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "repoSyncStatus": "通过客户端侧的 rsync 对比机器与本地文件系统的差异；远程执行端没有本地目录树的副本。请不要加 --proxy 运行。",
+      "repoSyncUpload": "通过 rsync/SFTP 从本地文件系统上传；远程执行端看不到源路径。请不要加 --proxy 运行。",
+      "serverBackup": "把恢复包 (服务器的密钥) 写到调用方的终端或文件；经过执行端的话，密钥会经过另一台机器。请不要加 --proxy 运行。",
+      "serverBundle": "运行调用方本地的 docker (pull 和 save)，并把包写到调用方的磁盘；远程执行端会写到它自己的磁盘上。请不要加 --proxy 运行。",
+      "serverLicence": "使用调用方的登录状态签发证书，并记录到调用方本地的安装记录中；远程执行端两者都没有。请不要加 --proxy 运行。",
+      "serverLicenceMint": "使用调用方的登录状态签发证书，并写入调用方的文件；远程执行端两者都没有。请不要加 --proxy 运行。",
+      "serverStatus": "通过调用方本地的安装记录查找服务器；远程执行端没有这份记录。请不要加 --proxy 运行。",
+      "serverUpgrade": "驱动子命令和调用方本地的安装记录 (使用 --local-image 时还有调用方的 Docker)；远程执行端会从它自己的环境执行。请不要加 --proxy 运行。"
+    },
+    "incident": {
+      "description": "声明、查看并关闭组织的某起事件：包含各项期限倒计时的账户记录、仓库的取证分支和 Full 完整捕获，以及证据时间窗口。读取需要 forensics:read 权限范围，声明和关闭需要 incident:manage；所有者和管理员通过 CLI 登录并在浏览器中完成提权批准后即可同时获得二者，需要付费套餐。",
+      "descriptionShort": "查看事件并导出其证据时间窗口",
+      "idArgument": "事件 ID，或不与其他事件重复的 ID 前缀",
+      "status": {
+        "description": "列出组织的事件，或显示某一起事件的范围、时间窗口、各机器的处理步骤，以及早期预警、通报和最终报告的期限倒计时。",
+        "descriptionShort": "列出事件，或显示某起事件及其期限倒计时"
+      },
+      "export": {
+        "description": "将事件的时间窗口写入目录：包含倒计时的事件记录、合并后的时间线、出站字节汇总、原始链清单，以及清单中列出的原始文件（以清单键命名）。当清单列出审计日文件或取证头文件时，导出过程中会用服务器固定的机器密钥校验审计日文件链和已签名的取证批次链，并将报告写入 verification.json。证据存在空缺或改动时以退出码 1 结束。可通过 rdc forensics verify 对该目录重复同一校验。使用 --stage 时，该命令写出一份已签名的事件报告（PDF、JSON 或 STIX 文件），文件以报告 ID 命名。",
+        "descriptionShort": "导出并校验事件的时间线和证据",
+        "outOption": "写入的目录（默认：incident-<id>）",
+        "stageOption": "写出已签名的报告，而不是证据窗口：early-warning、notification 或 final（final 报告在 notification 之后）",
+        "formatOption": "配合 --stage 使用的报告格式：json（默认）、stix 或 pdf"
+      },
+      "declare": {
+        "description": "为仓库声明一起事件。先写入账户记录：事件及其时间窗口、覆盖该窗口的清除保留，以及 R2 锁定规则，这些会启动早期预警、通报和最终报告的倒计时。随后将仓库派生为取证快照（repo fork <ref> --tag incident-<id>），并把捕获级别切换为 full，每一步的结果都记录在事件上。某一步失败时，记录及其保留仍然有效，命令以退出码 1 结束，并给出可重新执行失败步骤的 --resume 命令。",
+        "descriptionShort": "声明事件：记录、取证分支和 full 捕获",
+        "awareAtOption": "组织获知事件的时间，使用 ISO 8601 时间点；不得晚于声明时间（默认：当前时间）",
+        "resumeOption": "重新执行这起已声明事件的机器步骤，仅限上次结果不是 ok 的步骤"
+      },
+      "close": {
+        "description": "关闭事件。不会立即解除任何限制：清除保留和 R2 锁定规则在关闭 30 天后结束。",
+        "descriptionShort": "关闭事件；其保留在 30 天后结束"
+      }
+    },
+    "forensics": {
+      "description": "在本工作站上校验取证证据，使用取自证据之外的机器密钥，并设置仓库的捕获级别。",
+      "descriptionShort": "校验取证证据",
+      "verify": {
+        "description": "重新计算证据目录中审计日文件的哈希链和已签名的取证批次链，并打印发现的每处空缺和改动。目录中按清单键存放原始文件（audit/<org>/days/<day>.ndjson.gz 和 f/<subscription>/<machine>/days/<day>/...）。发现任何空缺或改动时以退出码 1 结束。批次签名只用目录之外的密钥校验：优先用 --machine-key 条目，否则用账户服务器为该事件固定的密钥，该事件由 rdc incident export 导出的目录指明。目录中 raw-manifest.json 写入的密钥永远不被信任，没有外部密钥的机器会校验失败。使用 --report 时，改为验证一份已签名的事件报告：对照其 ID 的公开记录和已发布的报告密钥；内容或签名不符时退出码为 1。",
+        "descriptionShort": "校验证据目录的审计和取证哈希链",
+        "dirOption": "要校验的证据目录",
+        "reportOption": "改为验证已签名的事件报告（名为 <报告 ID>.json 的 JSON 文件，即 rdc incident export --stage 写出的文件）",
+        "idOption": "文件名不含报告 ID 时，指定报告 ID",
+        "machineKeyOption": "机器 spool 公钥，格式为 <machine>=<64 hex characters>，用于替代账户服务器固定的密钥（可重复指定）",
+        "sinceOption": "时间窗口起点：ISO 8601 时间点，或从现在向前推的时长，如 90m、24h 或 7d（默认：目录中的第一天）",
+        "untilOption": "时间窗口终点，格式相同（默认：目录中的最后一天）"
+      },
+      "level": {
+        "description": "通过仓库所在机器上的 forensics_level 函数设置仓库的取证捕获级别：basic、standard 或 full。采集器会把级别限制在套餐所含范围内。",
+        "descriptionShort": "设置仓库的取证捕获级别",
+        "levelArgument": "捕获级别：basic、standard 或 full"
+      }
     }
   },
   "docs": {
@@ -3330,11 +3641,15 @@
       "datastore": "数据存储管理",
       "doctor": "系统诊断",
       "job": "分离任务",
+      "incident": "事件",
+      "forensics": "取证证据",
       "machine": "机器管理",
       "mcp": "MCP 服务器",
       "ops": "本地 VM 操作",
+      "preview": "PR 预览",
       "repo": "仓库生命周期",
       "serve": "执行器服务",
+      "completion": "Shell 补全",
       "shortcuts": "快捷命令（快捷方式）",
       "storage": "存储管理",
       "subscription": "订阅管理",
@@ -3373,8 +3688,7 @@
     "agent": {
       "clusterOpBlocked": "集群命令 \"{{command}}\" 在代理模式下被阻止。集群操作会创建或销毁真实的基础设施，因此代理无法自行授权这些操作。用户：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_CLUSTER_OPS=<cluster-name>（或 * 表示所有集群）。从代理内部设置的覆盖不被接受。",
       "commandBlocked": "\"{{command}}\" 命令在代理模式下不可用。\n\n此命令在没有安全防护的情况下执行任意低级函数。请改用类型化的 CLI 命令或 MCP 工具。\n\n替代方案：\n  - MCP tools: repo_up, repo_down, repo_fork, repo_logs, repo_exec, machine_status\n  - CLI commands: rdc repo up, rdc repo down, rdc term connect\n  - 运行 \"rdc --help\" 查看所有可用命令\n\n如果需要直接访问，请让用户直接运行该命令。",
-      "configEdit": "交互式编辑器在代理环境中被阻止。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n如需覆盖,请在启动代理之前,在父 shell 中\n设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>(必须出现在代理进程祖先链中)。",
-      "configEditAncestry": "交互式编辑器在代理环境中被阻止(REDIACC_ALLOW_CONFIG_EDIT 已设置但祖先验证失败：该覆盖必须由您的 shell 而不是代理设置)。\n\n替代方案:\n  • rdc config edit --dump > config.jsonc    (安全的脱敏查看)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>\n  • rdc config edit --apply config.jsonc\n\n在启动代理之前在父 shell 中设置 REDIACC_ALLOW_CONFIG_EDIT=<scope-glob>。",
+      "configEdit": "在代理环境中禁止编辑配置:交互式编辑器、--apply 和 --reveal 可能重写整个配置或打印其中的机密,且没有任何绕过方式。\n\n替代方案:\n  • rdc config edit --dump --redacted > config.jsonc    (只读,已脱敏)\n  • rdc config field set --pointer <pointer> --current <old> --new <new>",
       "createGuard": "在代理模式下无法创建新的 grand 仓库 \"{{name}}\"。\n\n代理在仅 fork 模式下运行。Grand 仓库是生产环境，代理在创建后无法访问。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent-ref> --tag {{name}}\n\n用户提示：要允许创建仓库，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO=*（或特定仓库名称）。",
       "createGuardOverride": "无法创建新的 grand 仓库 \"{{name}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent-ref> --tag {{name}}",
       "createGuardOverrideNonLinux": "无法创建新的 grand 仓库 \"{{name}}\"。REDIACC_ALLOW_GRAND_REPO 已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败）。\n\n请改为 fork 现有仓库：\n  rdc repo fork <parent-ref> --tag {{name}}\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
@@ -3386,20 +3700,27 @@
       "machineGuard": "在代理模式下不允许直接访问机器 \"{{machine}}\"。\n\n代理必须通过仓库上下文连接以获得沙箱访问。请先 fork 一个仓库，然后连接到 fork。\n\n工作流程：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：机器级别的访问需要通配符：请在启动代理会话之前，在终端中设置 REDIACC_ALLOW_GRAND_REPO=*。指定特定的仓库名称不会解锁直接机器访问。",
       "machineGuardOverride": "不允许直接访问机器 \"{{machine}}\"。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。\n\n请先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"",
       "machineGuardOverrideNonLinux": "对 \"{{machine}}\" 的直接机器访问覆盖已设置，但其来源无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受此覆盖。\n\n先 fork 一个仓库，然后连接到 fork：\n  1. rdc repo fork <repo> --tag <tag-name>\n  2. rdc term connect <repo>:<tag-name> -c \"<command>\"\n\n用户提示：在完整的 rdc 安装中，验证在 Linux、macOS 和 Windows 上都有效。如果问题仍然存在，请重新安装 rdc，并在启动代理前在终端中设置环境变量。",
-      "mcpGrandGuard": "\"{{name}}\" 是一个 grand（生产）仓库。代理无法直接修改 grand 仓库。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。\n如需直接访问，请要求用户在启动代理前导出 REDIACC_ALLOW_GRAND_REPO。",
-      "mcpGrandGuardOverride": "\"{{name}}\" 是一个 grand（生产）仓库。不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
-      "mcpGrandGuardOverrideNonLinux": "\"{{name}}\" 是一个 grand（生产）仓库。REDIACC_ALLOW_GRAND_REPO 覆盖无法在 {{platform}} 上验证（祖先验证辅助程序不可用或失败），因此不接受。\n\n使用 repo_fork 创建安全、隔离的沙箱副本，然后在 fork 上操作。",
       "revealRequiresTty": "--reveal 需要交互式 TTY;拒绝将敏感值打印到管道。",
       "rotateNotSensitive": "指针“{{pointer}}”不是敏感字段;请改用 'config field set'。",
       "rootGrantBlocked": "代理不能给“{{name}}”授予 root 权限：其 Rediaccfile 将在不降权的情况下运行。\n\n用户提示：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。",
       "rootGrantOverride": "“{{name}}”的 root 授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
       "pathGrantBlocked": "代理不能更改 grand 仓库“{{name}}”的路径授权：其 Rediaccfile 将触及用户从未批准的主机路径。\n\n用户提示：要允许此操作，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或 * 表示所有仓库）。fork 无需覆盖。",
       "pathGrantOverride": "grand 仓库“{{name}}”的路径授权不接受代理发起的覆盖。\n\n不要尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权此操作。",
-      "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝(如需覆盖请设置 REDIACC_ALLOW_CONFIG_EDIT)。",
+      "rotateRequiresTty": "config field rotate 需要交互式 TTY 确认;在非交互式上下文中被拒绝。",
       "showReveal": "在代理环境中禁止使用 --reveal。请使用 `rdc config show`（脱敏）或 `rdc config field get --pointer <pointer> --digest` 获取安全指纹。",
       "showRevealRequiresTty": "--reveal 需要交互式 TTY;拒绝将明文重定向到非 TTY 目标。",
+      "applyRequiresTty": "config edit --apply 需要 stdin 连接交互式终端;在非交互式上下文中被拒绝。",
       "limitsGrantBlocked": "代理无法更改主仓库 “{{name}}” 的资源限制：更低的上限可能导致其容器因 OOM 被终止。\n\n用户：如需允许，请在启动代理会话之前在终端中设置 REDIACC_ALLOW_GRAND_REPO={{name}}（或用 * 表示所有仓库）。分叉无需此设置。",
-      "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。"
+      "limitsGrantOverride": "对于主仓库 “{{name}}” 的限制更改，不接受由代理发起的覆盖。\n\n请勿尝试设置 REDIACC_ALLOW_GRAND_REPO。只有用户可以在代理启动前授权。",
+      "policyDenied": "当前策略不允许“rdc {{command}}”。拒绝它的规则见详细信息。",
+      "policyUnjudged": "“rdc {{command}}”须由配置“{{name}}”的策略判定，但无法打开其会话，且本设备没有保存先前会话的判定，因此未执行任何操作：{{error}}\n\n请先恢复访问（rdc subscription login 或 rdc config remote status），再重新运行。",
+      "grandRepoDenied": "“rdc {{command}}”会更改 grand（生产）仓库“{{name}}”，而当前策略不允许更改 grand 仓库。\n\n请改为在分叉上操作：\n  rdc repo fork {{name}} --tag <tag-name>",
+      "clusterOpsDenied": "“rdc {{command}}”是集群操作，而当前策略不允许集群操作。",
+      "confirmationRequired": "“rdc {{command}}”是破坏性命令，会更改 grand（生产）仓库“{{name}}”。\n\n请先征得用户确认，然后加上 {{flag}} {{value}} 再次运行同一命令。",
+      "confirmTitle": "确认",
+      "confirmDeclined": "用户未确认，因此没有执行任何操作。",
+      "confirmStale": "此确认已与本次调用不符。请重新调用该工具，以便再次请求确认。",
+      "confirmByArgument": "如需继续，请先征得用户同意，然后使用相同参数并将 confirm 设为 \"{{value}}\"，再次调用 {{tool}}。"
     },
     "authRequired": "需要身份验证。运行：rdc subscription login",
     "cluster": {
@@ -3488,6 +3809,9 @@
       }
     },
     "proxy": {
+      "configConflict": "“rdc {{command}}” 无法保存其配置更改：在全部 {{attempts}} 次尝试中，已存储的配置都在此期间被修改。请重新运行该命令。",
+      "configWriteFailed": "“rdc {{command}}” 无法将配置更改保存到配置存储：{{reason}}。",
+      "configWriteUnavailable": "“rdc {{command}}” 会修改配置，但执行器暂时无法保存配置更改，因此未做任何更改。在回写功能上线之前，请在本地运行该命令。",
       "timeout": "{{host}} 上的代理执行器在 {{seconds}} 秒内没有响应。请确认它正在运行，或调大 REDIACC_PROXY_TIMEOUT_MS。",
       "unreachable": "无法连接到 {{host}} 上的代理执行器：{{reason}}"
     },
@@ -3506,7 +3830,8 @@
       "networkIdInUse": "仓库“{{repository}}”的网络 ID {{networkId}} 在机器“{{machine}}”上已被 {{holder}} 占用。运行 `rdc config reconcile` 可采用机器上记录的 ID。",
       "networkIdNotRecorded": "机器 \"{{machine}}\" 持有仓库 \"{{repository}}\"，但没有记录其网络 ID，因此无法采用。请先在该机器上启动一次该仓库，然后运行 `rdc config reconcile`。",
       "networkIdUndiscoverable": "仓库“{{repository}}”在此配置中没有网络 ID，且无法向机器“{{machine}}”查询。请在机器可访问后重试，或运行 `rdc config reconcile`。",
-      "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。"
+      "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。",
+      "slugCollision": "仓库 \"{{ref}}\" 与 \"{{existing}}\" 冲突：两者在副本集和数据存储分叉中都会变成同一个名称 \"{{slug}}\"。请换一个名称或标签。"
     },
     "repoNotDeployed": "仓库 \"{{repository}}\" 未部署在 {{machine}} 上。\n\n请先部署：\n  rdc repo up {{repository}}",
     "repositoryAlreadyMounted": "仓库 \"{{name}}\" 已挂载在 \"{{machine}}\" 上。对活跃仓库进行迁移会导致数据损坏。请先执行: rdc repo down {{name}} --unmount",
@@ -3533,6 +3858,8 @@
         "notFirstUse": "此令牌并未绑定到首次使用时的 IP 地址，因此无法迁移到其他地址。请在网页门户中检查该令牌的 IP 绑定设置。",
         "nonInteractive": "你的 IP 地址已变化，而此登录只能从原来的地址使用。要把它迁移到这里，请提供身份验证器应用中的验证码：在交互式终端中运行任意 rdc 命令（例如 `rdc subscription status`），或将 `REDIACC_IP_REBIND_CODE` 设为当前的 6 位验证码后重新运行命令。也可以运行 `rdc subscription login` 重新登录。",
         "envCodeMalformed": "`REDIACC_IP_REBIND_CODE` 必须是身份验证器应用中的 6 位验证码。",
+        "codeCommandFailed": "`REDIACC_IP_REBIND_CODE_COMMAND` 中的程序（{{command}}）没有提供身份验证码（{{detail}}），因此无法将此登录迁移到新的 IP 地址。请修复该程序，或将 `REDIACC_IP_REBIND_CODE` 设为当前的 6 位验证码，或使用 `rdc subscription login` 重新登录。",
+        "codeCommandMalformed": "它输出的不是 6 位验证码",
         "stillMismatched": "迁移之后，账户服务器看到的仍是另一个 IP 地址。你的连接可能在多个地址之间切换（例如 IPv4 和 IPv6）。请再次运行该命令，或运行 `rdc subscription login`。",
         "attemptsExhausted": "连续三次输入了错误的验证码。要重试，请再次运行该命令，或运行 `rdc subscription login` 重新登录。"
       }
@@ -3544,13 +3871,15 @@
       "pathTraversalBlocked": "--remote 路径不得包含 \"..\" 路径遍历。请使用仓库内的路径。",
       "remoteAndRemoteFile": "--remote 和 --remote-file 不能同时使用。请选择其中一个。",
       "remoteFileLocalNotDir": "设置了 --remote-file 时，--local 必须是已存在的目录：{{path}}",
-      "remoteFileRequiresSingleFile": "--remote-file 要求恰好一个指向文件的 --local 路径。"
+      "remoteFileRequiresSingleFile": "--remote-file 要求恰好一个指向文件的 --local 路径。",
+      "mirrorNeedsRsync": "--mirror 需要 rsync:SFTP 无法删除文件,因此未传输任何内容。"
     },
     "term": {
       "connectivityFailed": "无法到达 {{host}}:{{port}}。{{error}}\n\n故障排除：\n  - 检查机器是否已启动并连接到网络\n  - 验证 IP 地址在机器保险箱中是否正确\n  - 确保端口 {{port}} 未被防火墙阻止\n  - 尝试 ping 机器：ping {{host}}",
       "dockerComposeForbidden": "在仓库上下文中不允许使用 \"docker compose\"。\n\n请改用 \"renet compose -- <args>\"，这样才会应用每个仓库的回环 IP、主机网络注入、CRIU 能力和 compose 验证。直接运行 \"docker compose\" 会绕过所有这些并在不知不觉中破坏部署。\n\n对于编排部署，推荐使用：rdc repo up <repo-ref>",
       "fileWriteDetected": "检测到文件写入 ({{detected}})。请改用 rdc repo sync 命令：\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync 使用增量压缩、校验和和正确的权限传输文件。",
       "launchFailed": "无法启动终端：{{error}}",
+      "externalRefused": "已指定 --external，但无法打开外部终端（{{error}}）。未启动任何会话；如需在当前终端中使用，请去掉 --external 重新运行。",
       "noHostKey": "机器 '{{machine}}' 在保险箱中没有配置主机密钥",
       "noIpAddress": "机器 '{{machine}}' 没有配置 IP 地址",
       "noPrivateKey": "团队 '{{team}}' 没有配置 SSH 私钥",
@@ -3582,7 +3911,9 @@
       "repoRequired": "此 VS Code 服务器需要一个仓库目标。请传入仓库引用。",
       "serverInstallFailed": "安装 {{provider}} 失败：{{error}}",
       "serverStartFailed": "启动 {{provider}} 失败：{{error}}",
-      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}"
+      "unsupportedArch": "不支持的机器架构，无法运行浏览器 VS Code：{{arch}}",
+      "exposeNeedsDocker": "公开的编辑器运行在 Docker 仓库守护进程上",
+      "exposeRepoNotFound": "配置中没有仓库 \"{{name}}\""
     },
     "backupImage": {
       "targetDirMissing": "目标目录 {{dir}} 不存在或不可写。该目录不会自动创建，请先挂载驱动器或创建目录。",
@@ -3658,7 +3989,26 @@
       "holderOther": "另一个作业",
       "orStopIt": "  或停止它:rdc job cancel {{id}} -m {{machine}}"
     },
-    "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
+    "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence",
+    "preview": {
+      "invalidName": "“{{name}}”不是预览名称。预览名称为 pv- 加三个小写单词，例如 pv-amber-river-stone。",
+      "alreadyActive": "此配置已在预览 {{name}} 上。请先退出该预览。",
+      "serversPending": "预览 {{name}} 的 renet 上仍有 {{count}} 台服务器：{{machines}}。请先将它们切回，再移除该预览。",
+      "noBuild": "预览 {{name}} 没有返回构建，因此无法切换。请检查名称，以及该预览是否仍然存在。",
+      "badBuild": "预览 {{name}} 返回了无法读取的构建（{{detail}}）。",
+      "noBinary": "预览 {{name}} 没有适用于 {{platform}} 的 CLI 构建。",
+      "versionMismatch": "预览 {{name}}：发布清单显示为 v{{manifest}}，而预览服务器显示为 v{{server}}。未安装任何内容。",
+      "hashMismatch": "预览 {{name}}：发布清单中 {{platform}} 的校验和与预览服务器的不一致。未安装任何内容。",
+      "noChannel": "预览 {{name}} 的构建发布在 {{url}}，该地址不是发布源下的预览渠道。未安装任何内容。",
+      "channelEmpty": "预览 {{name}} 提供的 CLI 清单中没有任何二进制文件，因此无法确定其渠道。未安装任何内容。",
+      "channelSplit": "预览 {{name}} 从多个目录（{{dirs}}）提供二进制文件，因此无法确定唯一的渠道。未安装任何内容。",
+      "notSea": "预览会替换已安装的 rdc 二进制文件，因此需要打包版 rdc（不能通过 npm 或源码运行）。",
+      "unsupportedPlatform": "此平台没有预览构建。",
+      "formatChangeDeclined": "未切换到预览 {{name}}：未接受磁盘数据格式的变更。",
+      "leaveDeclined": "未退出预览 {{name}}：未确认切回服务器。",
+      "machineNotTouched": "{{machine}} 不在预览 {{name}} 的 renet 上。",
+      "machineUnnamed": "预览 {{name}} 已启用，但此次调用没有指定配置中的机器（\"{{machine}}\"），因此无法记录将被替换的 renet。未替换任何内容。"
+    }
   },
   "feedback": {
     "ambiguousId": "有多份报告以 \"{{id}}\" 开头;请提供更长的 ID。",
@@ -3694,6 +4044,54 @@
     "sendDescription": "发送已预览的报告",
     "sent": "报告 {{id}} 已提交(指纹 {{fingerprint}})。",
     "sentDuplicate": "报告 {{id}} 与已知故障匹配,已计入统计(指纹 {{fingerprint}})。"
+  },
+  "forensics": {
+    "badInstant": "{{flag}} 的值 \"{{value}}\" 既不是 ISO 8601 时间点，也不是 90m、24h、7d 这样的时长。",
+    "sinceAfterUntil": "--since 晚于 --until。",
+    "windowTooLong": "时间窗口最长为 31 天。",
+    "reauthRequired": "取证读取需要近期的提权批准。请打开账户门户重新验证身份，然后再次运行该命令。",
+    "notEntitled": "取证调查功能适用于付费套餐。",
+    "ambiguousIncident": "有多起事件的 ID 以 \"{{id}}\" 开头，请提供更长的 ID。",
+    "noSuchIncident": "此组织中没有 ID 为 \"{{id}}\" 的事件。",
+    "timelineNeverEnds": "达到页数上限后时间线仍未结束，账户服务器一直在返回新的页面。",
+    "flowBytes": "出 {{out}} 入 {{in}} 字节",
+    "sensitive": "敏感",
+    "gapLine": "-- {{from}} 至 {{to}} 无证据（{{machine}}，{{reason}}）",
+    "noFlows": "此时间窗口内没有记录到网络流量。",
+    "noOpens": "此时间窗口内没有记录到文件打开事件。",
+    "unreadable": "此时间窗口内有 {{count}} 条已存储的记录无法读取。",
+    "noRepoGuid": "在此配置中，仓库 \"{{name}}\" 没有 GUID。",
+    "noEvidenceDir": "无法读取证据目录 \"{{dir}}\"。",
+    "severalOrgs": "证据目录中包含多个组织的审计文件：{{orgs}}。",
+    "noEvidence": "在 \"{{dir}}\" 下未找到审计日文件或取证头文件。",
+    "badMachineKey": "\"{{entry}}\" 不符合 <machine>=<64 hex characters> 的格式。",
+    "badManifest": "无法读取 \"{{file}}\" 中的事件 ID。",
+    "trustedKeysUnavailable": "无法读取账户服务器为事件 {{id}} 固定的机器密钥（{{reason}}）。为每台机器传入 --machine-key <machine>=<64 hex characters>，即可不经服务器校验。",
+    "badEvidenceKey": "账户服务器指定了导出目录之外的证据文件：\"{{key}}\"。",
+    "rawFileTruncated": "证据文件 \"{{key}}\" 的长度与服务器声明的不一致。",
+    "verifyWindow": "时间窗口：{{from}} 至 {{to}}",
+    "verifyFiles": "已检查 {{count}} 个证据文件",
+    "verifyGap": "空缺  {{ref}}：{{reason}}",
+    "verifyEdit": "改动 {{ref}}：{{reason}}",
+    "verifyClean": "未发现空缺或改动。",
+    "verifyFailed": "证据未通过校验，请查看上方列出的空缺和改动。",
+    "badLevel": "\"{{level}}\" 不是有效的捕获级别，可选值：{{levels}}。",
+    "levelStarting": "正在 {{machine}} 上将 {{repository}} 的捕获级别设置为 {{level}}...",
+    "levelCompleted": "{{repository}} 的捕获级别已设置为 {{level}}。",
+    "levelFailed": "无法设置 {{repository}} 的捕获级别。",
+    "ticketRequired": "在执行器上读取取证数据，需要由已打开的调查签发的一次性读取票据。请从“调查”页面提问，或在本地运行该命令。",
+    "ticketRefused": "取证读取票据被拒绝：{{reason}}",
+    "ticketOtherScope": "该票据对应的是另一个仓库或另一台机器",
+    "verifyNeedsOne": "--dir <证据目录> 与 --report <文件> 必须且只能给出一个。",
+    "reportIdUnknown": "无法从文件名 \"{{file}}\" 读出报告 ID；请传入 --id <报告 ID>。",
+    "reportPdfNotCheckable": "\"{{file}}\" 是 PDF，无法在此重新计算哈希；请验证生成它的 JSON 报告，或把 PDF 拖到门户的验证页面。",
+    "reportPdfUnreadable": "报告 {{id}} 的 PDF 从账户服务器传来时已损坏：它不是一个 PDF 文件的完整 base64。未写入任何内容；请重新运行导出。",
+    "noSuchReport": "没有 ID 为 \"{{id}}\" 的报告记录。",
+    "reportValid": "报告 {{id}} 真实有效：阶段 {{stage}}，由密钥 {{keyId}} 签名。",
+    "reportInvalid_unreadable": "报告 {{id}} 未通过验证：文件不是可读的 JSON。",
+    "reportInvalid_hash": "报告 {{id}} 未通过验证：内容与已签名的报告不同。",
+    "reportInvalid_signature": "报告 {{id}} 未通过验证：签名与内容不符。",
+    "reportInvalid_key": "报告 {{id}} 未通过验证：它由已发布报告密钥以外的密钥签名。"
   },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",
@@ -3745,6 +4143,38 @@
       "repo": "在 VS Code 中打开仓库"
     }
   },
+  "incident": {
+    "none": "没有事件。",
+    "detailHead": "事件 {{id}}（{{status}}）",
+    "detailScope": "范围：{{kind}} {{ref}}",
+    "detailWindow": "时间窗口：{{from}} 至 {{to}}",
+    "detailDeclared": "由 {{by}} 于 {{at}} 声明，知晓时间为 {{aware}}",
+    "detailFork": "取证分支：{{ref}}",
+    "detailRelease": "保留和锁定规则结束于：{{at}}",
+    "detailStep": "步骤 {{name}}：{{status}}，时间 {{at}} {{detail}}",
+    "clockEarlyWarning": "早期预警截止 {{at}}（{{state}}）",
+    "clockNotification": "通报截止 {{at}}（{{state}}）",
+    "clockFinalReport": "最终报告截止 {{at}}（{{state}}）",
+    "exported": "事件 {{id}} 已导出到 {{dir}}（时间线共 {{rows}} 行）。",
+    "rawTooLarge": "原始链数据超出清单上限，未被列出。",
+    "rawListed": "已下载 {{count}} 个原始文件；其中没有可供 rdc forensics verify 使用的审计日文件或取证头文件。",
+    "rawVerified": "原始证据已下载并校验：{{count}} 个链文件，无空缺，无改动。",
+    "rawNotVerified": "已下载的证据未通过校验：{{gaps}} 处空缺，{{edits}} 处改动，详见上方及 verification.json。",
+    "declared": "事件 {{id}} 已声明，时间窗口为 {{from}} 至 {{to}}。",
+    "stepOk": "步骤 {{name}}：ok",
+    "stepSkipped": "步骤 {{name}}：已是 ok，已跳过",
+    "stepFailed": "步骤 {{name}}：失败 {{detail}}",
+    "retry": "事件记录及其保留仍然有效。可用以下命令重新执行失败的步骤：{{command}}",
+    "closed": "事件 {{id}} 已关闭。保留和锁定规则结束于 {{at}}。",
+    "resumeScope": "事件 {{id}} 的范围是 {{scope}}，而不是仓库 {{name}}。",
+    "resumeClosed": "事件 {{id}} 已关闭，其步骤不会再次执行。",
+    "resumeWindow": "--resume 沿用事件声明时的时间窗口和获知时间；应去掉 --since、--until 和 --aware-at。",
+    "badStage": "\"{{stage}}\" 不是报告阶段；请使用 {{stages}} 之一。",
+    "badFormat": "\"{{format}}\" 不是报告格式；请使用 {{formats}} 之一。",
+    "formatNeedsStage": "--format 适用于报告：请加上 --stage early-warning、notification 或 final。",
+    "reportExported": "{{stage}} 报告已按 {{format}} 格式写入 {{file}}。",
+    "reportVerifyHint": "用以下命令验证：rdc forensics verify --report {{file}}"
+  },
   "options": {
     "acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",
     "apiToken": "API令牌 (rdt_...)。传递 `-` 以从 stdin 读取（令牌不会出现在进程列表中）。",
@@ -3787,7 +4217,7 @@
     "name": "资源名称",
     "newName": "新资源名称",
     "newWindow": "在新 VS Code 窗口中打开",
-    "opsBackend": "虚拟化后端 (kvm|qemu，自动检测)",
+    "opsBackend": "虚拟化后端 (kvm|qemu|hyperv，自动检测)",
     "opsBasic": "最小集群（网桥 + 1 个工作节点）",
     "opsForce": "强制重启所有 VM",
     "opsLite": "跳过 VM 配置（仅查看状态）",
@@ -3836,7 +4266,9 @@
     "vscodeNoOpen": "输出 URL 而不启动本地浏览器",
     "vscodeServerArchive": "机器上预先暂存的服务器压缩包路径（离线安装）",
     "vscodeServerProvider": "浏览器 VS Code 服务器实现（openvscode、code-server）",
-    "yes": "跳过确认提示"
+    "yes": "跳过确认提示",
+    "confirmGrand": "重复拒绝信息中要求的名称，以确认对 grand 仓库的破坏性更改",
+    "opsWindows": "要预配的 Windows 客户端虚拟机 ID(逗号分隔,保留范围 31-39;设置 VM_WINDOWS)"
   },
   "prompts": {
     "cancelled": "已取消",
@@ -3863,8 +4295,9 @@
       "licenseActivated": "许可证已激活 ({{duration}})",
       "loading": "正在加载配置...",
       "machineVerified": "机器已验证 ({{duration}})",
+      "renetUpdated": "Renet 已更新 ({{duration}})",
+      "renetUnchanged": "Renet 未更改，机器已在运行此版本 ({{duration}})",
       "provisioning": "正在配置 renet...",
-      "renetProvisioned": "renet 已配置 ({{duration}})",
       "verifying": "正在验证机器..."
     }
   },

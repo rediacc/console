@@ -1,6 +1,6 @@
 """`.editorconfig` compliance across every tracked text file.
 
-Ported from `.ci/scripts/quality/check-editorconfig.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-editorconfig.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-editorconfig.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN ENFORCES, carried over from its own header verbatim because the list IS the gate:
 
@@ -291,7 +291,7 @@ def main(argv: list[str] | None = None) -> int:
             continue
         log.error("%s (%d):" % (header, len(hits)))
         for path in hits:
-            # STDOUT, deliberately. The twin uses a bare `echo " $f"` for the list while the header goes through log_error to stderr, and `scripts/lib/shadow-gate.ts` attaches these indented lines to the header above them as individual findings. Un-indenting or moving them would turn N findings into one.
+            # STDOUT, deliberately. The twin uses a bare `echo " $f"` for the list while the header goes through log_error to stderr, and the shadow gate (commit:bf054adcd4) attaches these indented lines to the header above them as individual findings. Un-indenting or moving them would turn N findings into one.
             print("  %s" % path)
         if kind == "NUL":
             log.error(NUL_ADVICE)
@@ -505,4 +505,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_editorconfig.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

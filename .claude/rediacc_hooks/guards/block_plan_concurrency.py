@@ -3,7 +3,7 @@
 THE ASK (operator, 2026-09-25, section X): "The concurrency field is really about files. 'Exclusive' is only needed when two plans touch the same files, like today's A3 and scanner collision. Declaring the owned paths lets the hook decide instead of relying on a label." Plan: agent/plans/PLAN-plan-priority-concurrency.md section 5a (T5).
 
 THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdict`, shared with the roster's queue):
-  1. not a spawn, or a read-only type (`wl_roster.read_only_types`, as the cap guard) -> ALLOW;
+  1. not a spawn, or a read-only type (`wl_roster.read_only_types`) -> ALLOW;
   2. S = the plans the spawn serves (`spawn_plans`: none for a `Plan: none -- <reason>` line, else a `Plan: PLAN-x.md` line, else
      the `#<id>` items it names, else a bare `PLAN-x.md [<8hex>]`); L = the plans live writers serve (`live_plans`: this
      session's live writers through their first prompts, every session's fresh leases on plan-linked items), minus S;
@@ -17,9 +17,11 @@ THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdic
      line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
      parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
-The writer cap still applies first: `block_agent_cap` is ORDER 3 and `block_focus_spawn` ORDER 4 on the same chain.
+  7. a spawn briefed `Handover: #<id>` with no `Plan:` line is ADMITTED past every file rule (an exclusive plan's mutex is over its files) and still recorded as a claim, with a stderr note, when that id is a handover in the store answered `lease:<lease>` and that lease's record says it was cut with `--tree landing` (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7): the writer works in a tree cut from the landing branch, which no live plan of the development checkout shares. Any other `Handover:` brief (an unknown id, an answer naming no lease, a development-cut lease, or a `Plan:` line beside it) is judged by the rules above, and the note says why the handover did not admit it.
 
-SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so either hook order is safe. The cap is decided here too, because a count read at ORDER 3 and a claim appended at ORDER 5 would leave two racing spawns both under it: this session's live writers plus its claims must stay under `wl_roster.writer_cap`. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 6, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
+NO WRITER LIMIT (operator ruling #3ca908ee, 2026-11-23; agent/plans/PLAN-unlimited-writers.md): any number of writers may run, so no count refuses a spawn here; only the file rules above do.
+
+SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so two racing spawns cannot both miss each other's claim. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 4, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
 
 THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11): a missing Owns fails closed as `**` and a spawn for such a plan is refused.
 
@@ -30,18 +32,22 @@ NO ENVIRONMENT READ. This file is a sealed module in `.ci/policy/worklist-env-re
 ITS EVIDENCE. `OWN_SUITE = True`, so `.claude/rediacc_hooks/guards/test-block_plan_concurrency.py` drives it through the dispatcher in both directions against fixture trees and stores; `.claude/hooks/stop/test-plandeps.py` covers `spawn_verdict` and the overlap engine it calls.
 """
 
-import datetime
-import json
 import os
 import pathlib
-import tempfile
+import re
 import time
 
 from rediacc_hooks import hookio, syspath
+from rediacc_hooks.guards import tables
 
 CHAIN = "pre-agent"
 OWN_SUITE = True
-ORDER = 5
+ORDER = 3
+
+# The refusal kinds of `wl_planconc.spawn_verdict` that are file rules, the only ones a landing-cut handover is admitted past (rule 7).
+HANDOVER_WAIVED_KINDS = frozenset(("mutex", "overlap"))
+
+__getattr__ = tables("block_plan_concurrency", "FIXTURES", "ENVS", "EDGE_CASES")
 
 # The mutex refusal, planted away: the differential's mutex EDGE_CASE must then stop speaking.
 DEFECT = ("return _refuse(event, verdict, kind, MUTEX_EXITS)", "return hookio.ALLOW")
@@ -52,85 +58,6 @@ ISOLATED_SPAWN = "worktree"
 # How long a spawn waits on the claim lock before failing open; each holder keeps it for milliseconds.
 LOCK_WAIT_S = 30
 
-# ---- the differential's world: a tree with an exclusive plan E held by a peer's fresh lease ------
-WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-planconc-world")
-_SID = "c0ffee11-1111-2222-3333-444444444444"
-_PEER = "0dd0dd00"
-_PLAN = "# PLAN: %s\n\nStatus: in-progress\nOwner: %s\nDepends-On: no-dep -- a fixture plan for the concurrency guard\nPriority: P2\nConcurrency: %s\nOwns: %s\n\n## Tasks\n\n- [ ] T1 a box\n"
-
-
-def _conc_world(_unused):
-    """WORLD/tree (a plan tree: E exclusive, F parallel with Owns inside E's) and WORLD/store (a peer's fresh lease on an E-linked item).
-
-    F overlaps E because an exclusive plan is a mutex over ITS files (711841c55, operator ruling 2026-10-28): a disjoint F would be admitted, and the mutex refusal the DEFECT removes would never be reached."""
-    tree = pathlib.Path(WORLD) / "tree"
-    plans = tree / "agent" / "plans"
-    plans.mkdir(parents=True, exist_ok=True)
-    (tree / ".git").mkdir(exist_ok=True)
-    hookio.write_world_file(
-        plans / "PLAN-e.md",
-        _PLAN % ("e", _PEER, "exclusive -- regenerates every golden file", "docs/e/**"),
-    )
-    hookio.write_world_file(
-        plans / "PLAN-f.md", _PLAN % ("f", _SID[:8], "parallel", "docs/e/golden/**")
-    )
-    store = pathlib.Path(WORLD) / "store"
-    store.mkdir(parents=True, exist_ok=True)
-    (pathlib.Path(WORLD) / "tmp").mkdir(parents=True, exist_ok=True)
-    now = datetime.datetime.now(datetime.UTC)
-    at = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    until = (now + datetime.timedelta(minutes=100)).strftime("%Y-%m-%dT%H:%MZ")
-    rows = [
-        {"ev": "add", "id": "e0e0e0e0", "at": at, "by": _PEER, "s": " ", "o": _PEER, "t": "(%s) regenerate goldens PLAN-e.md [e1e1e1e1]" % _PEER},
-        {"ev": "lease", "id": "e0e0e0e0", "at": at, "by": _PEER, "until": until, "worker": "a9e9e9e9e9", "note": "", "worker_verified": True},
-        {"ev": "add", "id": "f0f0f0f0", "at": at, "by": _SID[:8], "s": " ", "o": _SID[:8], "t": "(%s) edit docs PLAN-f.md [f1f1f1f1]" % _SID[:8]},
-    ]  # fmt: skip
-    hookio.write_world_file(
-        store / ("%s.jsonl" % _PEER), "".join(json.dumps(r) + "\n" for r in rows)
-    )
-    return WORLD
-
-
-FIXTURES = {"planconc-world": _conc_world}
-
-# The variables are read by wl_core / wl_store, never by this guard.
-ENVS: list[tuple[str, dict[str, str], dict[str, str]]] = [
-    (
-        "planconc",
-        {
-            "CLAUDE_PROJECT_DIR": "{FIXTURE:planconc-world}/tree",
-            "WORKLIST_STORE_DIR": "{FIXTURE:planconc-world}/store",
-            "TMPDIR": "{FIXTURE:planconc-world}/tmp",
-        },
-        {},
-    )
-]
-
-
-def _spawn(kind, text, session=_SID):
-    return {
-        "tool_name": "Agent",
-        "session_id": session,
-        "cwd": "/nonexistent-plan-concurrency-fixture",
-        "tool_input": {"subagent_type": kind, "description": "fixture", "prompt": text},
-    }
-
-
-EDGE_CASES = [
-    ("writer-for-another-plan-under-a-live-mutex", _spawn("general-purpose", "work #f0f0f0f0")),
-    ("writer-for-the-exclusive-plan-itself", _spawn("general-purpose", "Plan: PLAN-e.md")),
-    ("reader-under-a-live-mutex", _spawn("Explore", "Plan: PLAN-f.md")),
-    ("planless-writer-with-unknown-files", _spawn("general-purpose", "fix a typo")),
-    (
-        "planless-writer-with-disjoint-owns",
-        _spawn("general-purpose", "fix a typo\nOwns: docs/zz/**"),
-    ),
-    (
-        "the-holder-session-itself",
-        _spawn("general-purpose", "Plan: PLAN-f.md", session=_PEER + "-aaaa"),
-    ),
-    ("not-a-spawn", {"tool_name": "Bash", "tool_input": {"command": "true"}}),
-]
 
 MUTEX_EXITS = """
 Do one of these:
@@ -150,21 +77,12 @@ Do one of these:
   - stop the holder (TaskStop <id>) and release its lease
 """
 
-CAP_EXITS = """
-Do one of these:
-  - queue the work until a slot frees, naming its brief and files in the todo list:
-      .claude/hooks/stop/worklist.py --lease <me> <id> +120 worker:queue
-  - dispatch read-only work as subagent_type Plan or Explore, which the cap does not count
-  - do the work inline in this session
-"""
-
 # Printed when a refusal's holder is a claim, which has no task id to stop.
 CLAIM_NOTE = """
 A `spawn claim` is a sibling admitted moments ago, with no agent on disk yet. It clears when that agent appears and expires by itself; a refused spawn sent again after it has started is judged on the live writer.
 """
 
 HEAD = {
-    "cap": "BLOCKED: this %r writer would pass the writer cap, counting the spawns of this message.",
     "mutex": "BLOCKED: a live plan holds the mutex, so this %r writer does not start.",
     "mutex-own": "BLOCKED: this %r writer serves an exclusive plan, and other plans are live.",
     "overlap": "BLOCKED: this %r writer would edit files a live plan already owns.",
@@ -189,12 +107,45 @@ UNEXAMINED = (
 )
 
 
+# `Handover: #<id>` on a line of its own in the brief (rule 7).
+HANDOVER_LINE = re.compile(r"(?m)^\s*Handover:\s*#([0-9a-f]{8})\b")
+
+
+def handover_lease(text, root, worklist):
+    """(lease id, "") when the brief's `Handover: #<id>` names a handover answered `lease:<lease>` whose record was cut with `--tree landing`; ("", why) for a brief that names a handover the rule does not admit; ("", "") for a brief with no Handover line. A read that fails raises, and the caller judges the spawn by the plan rules."""
+    found = HANDOVER_LINE.search(text)
+    if not found:
+        return "", ""
+    import wl_core as C
+    import wl_handover
+    import wl_worktrees
+
+    hid = found.group(1)
+    record = wl_handover.fold(worklist, root=root).get(hid)
+    if record is None:
+        return "", "handover #%s is not in the store" % hid
+    lease = wl_handover.lease_of(record)
+    if not lease:
+        return "", "handover #%s is answered %r, which names no lease" % (
+            hid,
+            record.get("answer") or "nothing yet",
+        )
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return "", "the record store of %s cannot be located" % root
+    base = pathlib.Path(os.path.realpath(pathlib.Path(root) / ".claude" / "worktrees"))
+    lease_record = wl_worktrees.read_records(dirs[1], base).get(lease)
+    if not lease_record or not wl_worktrees.landing_cut(lease_record):
+        return "", "lease %s of handover #%s was not cut with `--tree landing`" % (lease, hid)
+    return lease, ""
+
+
 def _refuse(event, verdict, kind, exits):
     head = HEAD.get(
         verdict.kind, "BLOCKED: this %r writer breaks plan concurrency (" + verdict.kind + ")."
     )
     facts = "\n".join("  " + ln for ln in verdict.lines)
-    note = CLAIM_NOTE if "spawn claim" in facts or verdict.kind == "cap" else ""
+    note = CLAIM_NOTE if "spawn claim" in facts else ""
     event.warn_raw("%s\n\n%s\n%s%s" % (head % kind, facts, exits, note))
     return hookio.DENY
 
@@ -221,6 +172,26 @@ def run(event):
         root = C.project_root(C.project_start({"cwd": cwd}))
         if kind in wl_roster.read_only_types(root):
             return hookio.ALLOW
+        # RULE 7: a handover fix in a landing-cut lease, briefed with no plan line, shares no tree with a live plan here.
+        handover_why = ""
+        admitted_lease = ""
+        if HANDOVER_LINE.search(text):
+            if X.spawn_plans(text):
+                handover_why = "the brief also names a plan, which the plan rules judge"
+            else:
+                try:
+                    worklist = C.worklist_for(C.project_start({"cwd": cwd}))
+                    lease, handover_why = handover_lease(text, root, worklist)
+                except Exception as exc:
+                    lease, handover_why = (
+                        "",
+                        "the handover could not be read (%s: %s)"
+                        % (
+                            type(exc).__name__,
+                            str(exc)[:160],
+                        ),
+                    )
+                admitted_lease = lease
         declared = X.declared_owns(text)
         owns_problem = X.owns_line_problem(text) if declared is None else None
         # A brief `Owns: none -- <reason>` (the grammar refuses a bare `none`, which reads as None above) is a runner: it holds no plan, as `live_plans` already treats such an agent once it is live, so it serves none here and claims nothing (#79b7e92e).
@@ -230,16 +201,15 @@ def run(event):
         cheap = not names_work and declared is None and not X.exclusive_plans(root)
         serving: set[str] = set()
         live: dict[str, list[str]] | None = X.LivePlans()
-        if not cheap:
-            import wl_store as S
+        # ONE ESTIMATE PER RUN: `live_plans` asks `live_estimate` again inside, and each ask re-read the whole roster (10.7 s per spawn for the two on the 2026-11-24 lead session); the pin serves the second ask from the first.
+        with wl_roster.pinned_estimate(cwd, session_id) as (_rows, metas):
+            if not cheap:
+                import wl_store as S
 
-            fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
-            by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
-            serving = set() if runner else X.spawn_plans(text, by_id)
-            live = X.live_plans(cwd, session_id, fold)
-        rows, metas = wl_roster.live_estimate(cwd, session_id)
-        writers = sum(1 for r in rows or () if r.get("writer"))
-        cap = wl_roster.writer_cap(root)
+                fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
+                by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
+                serving = set() if runner else X.spawn_plans(text, by_id)
+                live = X.live_plans(cwd, session_id, fold)
         claims_path = C.worklist_for(C.project_start({"cwd": cwd})).with_suffix(X.CLAIMS_SUFFIX)
     except Exception as exc:
         event.warn_raw(
@@ -268,9 +238,10 @@ def run(event):
                 root=root,
                 isolated=isolated,
             )
-        if not verdict.allow:
-            return verdict
-        return X.cap_verdict(writers, pending, session_id, cap) or verdict
+        if not verdict.allow and admitted_lease and verdict.kind in HANDOVER_WAIVED_KINDS:
+            # Rule 7: a landing-cut tree shares no file with a plan of this checkout, so the FILE rules (an exclusive plan's mutex, an Owns overlap) do not refuse it; the claim row is still appended. Any other refusal (a brief that also serves a plan through an item ref, a missing Owns on such a plan) is not a file rule and stands.
+            verdict = X.Verdict(True, "handover", (), verdict.note)
+        return verdict
 
     row = X.claim_row(
         session_id, serving, declared, tool_input.get("description"), isolated, entered
@@ -287,10 +258,17 @@ def run(event):
             (*verdict.lines, OWNS_UNREAD % owns_problem),
             verdict.note,
         )
+    if admitted_lease and verdict.allow:
+        event.warn_raw(
+            "plan-concurrency: this %r spawn serves a handover in lease %s, cut with `--tree landing`; no live plan of this checkout shares its tree, so no file rule refuses it.\n"
+            % (kind, admitted_lease)
+        )
+    if handover_why:
+        event.warn_raw(
+            "plan-concurrency: the `Handover:` line did not admit this spawn: %s.\n" % handover_why
+        )
     if verdict.kind in ("mutex", "mutex-own"):
         return _refuse(event, verdict, kind, MUTEX_EXITS)
-    if verdict.kind == "cap":
-        return _refuse(event, verdict, kind, CAP_EXITS)
     if not verdict.allow:
         return _refuse(event, verdict, kind, OVERLAP_EXITS)
     if cheap:

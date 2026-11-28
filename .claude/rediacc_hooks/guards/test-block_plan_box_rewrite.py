@@ -22,6 +22,10 @@ import sys
 import tempfile
 from unittest import mock
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_box_rewrite.py"
 DISPATCH = str(HERE.parent / "dispatch.py")
@@ -345,7 +349,7 @@ CASES = [
 
 
 def run_case(cmd, root):
-    proc = subprocess.run(
+    proc = _harness.run(
         ARGV,
         input=json.dumps(payload(cmd)),
         capture_output=True,

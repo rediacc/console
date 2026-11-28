@@ -23,7 +23,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
-import { coveredByCarried, parseCarried } from './report.js';
+import type { CarriedEntry } from './report.js';
 
 const RECEIPT_REL = path.join('.ci', 'cache', 'prepush-receipt.json');
 /** Where a pinned run's runner writes its receipt. Removed before each pinned run, so the runner never advances an earlier pinned receipt and always leaves a whole one to archive. */
@@ -40,7 +40,7 @@ export const NO_CARRY_ENV = 'CI_QUICK_NO_CARRY';
 /** How long a second session waits for the clone before it runs in the shared checkout instead. */
 const LOCK_WAIT_MS = 90 * 60_000;
 const LOCK_POLL_MS = 2_000;
-/** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version. */
+/** Linked with `ln -sfn` when the live tree has them: pinned tool installs, far too big to copy and addressed by version, plus `.ci/cache/registry` (Docker Hub tag listings, which change upstream and are shared so every tree reads one listing). */
 const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.ci/cache/registry', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
@@ -831,43 +831,108 @@ export function headCarriedText(live: string): string | undefined {
   return shTry('git', ['show', 'HEAD:.ci/config/carried-reds.json'], live);
 }
 
-/** carried-reds.json text without the entries whose reason is under the push guard's bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`): the guard reads such an entry as carrying nothing. Unparseable text passes through for parseCarried to reject. */
-function withReasonBar(text: string | undefined): string | undefined {
+/** A carried finding-key pattern as an anchored regex: `*` matches any run of characters, every other character is literal. The twin of block_unverified_push.carry_pattern_re. */
+function carryPatternRe(glob: string): RegExp {
+  const body = glob
+    .split('*')
+    .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('.*');
+  return new RegExp(`^${body}$`, 's');
+}
+
+/** carried-reds.json as the push guard's parse_carry_doc reads it, for what `carriedOnly` needs: the keyed and whole-gate entries over the reason bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`; an entry under it carries nothing), the pattern entries over REASON_MIN grouped by gate with their expiry, and whether the text is usable at all. A pattern entry with no `expires` date is a schema error, which the guard refuses, so it makes the whole file unusable here too. Unparseable text is unusable. */
+function readCarry(text: string | undefined):
+  | {
+      entries: CarriedEntry[];
+      patterns: Map<string, Map<string, string>>;
+      carrying: Map<string, Map<string, string>>;
+    }
+  | undefined {
   if (text === undefined) return undefined;
   try {
     const doc = JSON.parse(text) as { carried?: unknown };
-    if (!Array.isArray(doc.carried)) return text;
-    doc.carried = doc.carried.filter((e) => {
-      const entry = e as { findings?: unknown; reason?: unknown };
-      const reason = typeof entry.reason === 'string' ? entry.reason : '';
-      return reason.length >= (entry.findings === '*' ? 160 : 80);
-    });
-    return JSON.stringify(doc);
+    if (!Array.isArray(doc.carried)) return undefined;
+    const entries: CarriedEntry[] = [];
+    const patterns = new Map<string, Map<string, string>>();
+    const carrying = new Map<string, Map<string, string>>();
+    for (const e of doc.carried) {
+      const x = e as {
+        gate?: unknown;
+        findings?: unknown;
+        patterns?: unknown;
+        reason?: unknown;
+        expires?: unknown;
+      };
+      if (typeof x.gate !== 'string') return undefined;
+      const reason = typeof x.reason === 'string' ? x.reason : '';
+      if (x.patterns !== undefined) {
+        const globs = x.patterns;
+        if (
+          x.findings !== undefined ||
+          !Array.isArray(globs) ||
+          globs.length === 0 ||
+          !globs.every((g) => typeof g === 'string' && g !== '') ||
+          typeof x.expires !== 'string' ||
+          !/^\d{4}-\d{2}-\d{2}$/.test(x.expires)
+        )
+          return undefined;
+        const mine = patterns.get(x.gate) ?? new Map<string, string>();
+        // The expiry is read before the reason bar: an expired pattern refuses whatever its reason, and `carrying` holds only the globs whose reason clears the bar, the ones that may cover a key.
+        for (const g of globs as string[]) {
+          const was = mine.get(g) ?? '';
+          mine.set(g, x.expires > was ? x.expires : was);
+          if (reason.length >= 80) {
+            const live = carrying.get(x.gate) ?? new Map<string, string>();
+            live.set(g, mine.get(g) ?? x.expires);
+            carrying.set(x.gate, live);
+          }
+        }
+        patterns.set(x.gate, mine);
+        continue;
+      }
+      if (x.findings === '*') {
+        if (reason.length >= 160) entries.push({ gate: x.gate, findings: '*' });
+      } else if (Array.isArray(x.findings) && x.findings.every((k) => typeof k === 'string')) {
+        if (reason.length >= 80) entries.push({ gate: x.gate, findings: x.findings as string[] });
+      } else return undefined;
+    }
+    return { entries, patterns, carrying };
   } catch {
-    return text;
+    return undefined;
   }
 }
 
-/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`) or on exactly the keys the receipt recorded for it. Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Pure. */
+/** Whether a RED receipt is red only on gates `.ci/config/carried-reds.json` carries, the way the push guard reads it (block_unverified_push.carried_verdict): something failed and every failed gate is carried whole (`*`), or every key the receipt recorded for it is a carried key or matches a pattern still inside its `expires` day (`today`, UTC `YYYY-MM-DD`).
+ * Such a run is not green, and its exit stays 1, but it may still be carried forward to HEAD, because the push guard would admit it there (#68452957). Like the guard it WARNS and does not refuse on a carried key the run did not report (flapping findings), refuses on any key nothing carries, refuses on a pattern past its expiry anywhere in the file, and refuses on a keyed or whole-gate carry of a gate that is not failing. Pure. */
 export function carriedOnly(
   receipt: ReceiptShape | undefined,
-  carriedText: string | undefined
+  carriedText: string | undefined,
+  today: string = new Date().toISOString().slice(0, 10)
 ): boolean {
   if (receipt === undefined || receipt.whole !== true) return false;
   const failed = receipt.failed ?? [];
   // A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
   if (failed.length === 0) return false;
-  const carried = parseCarried(withReasonBar(carriedText));
-  // A carried gate that is not red is stale, and so is a carried key the gate no longer prints: the guard refuses both.
-  if (carried.some((c) => !failed.includes(c.gate))) return false;
+  const carry = readCarry(carriedText);
+  if (carry === undefined) return false;
+  const live = new Map<string, RegExp[]>();
+  for (const globs of carry.patterns.values())
+    for (const expires of globs.values()) if (expires < today) return false;
+  for (const [gate, globs] of carry.carrying)
+    for (const glob of globs.keys())
+      live.set(gate, [...(live.get(gate) ?? []), carryPatternRe(glob)]);
+  // A keyed or whole-gate carry of a gate that is not red is stale: the guard refuses it. A gate carried only by patterns that did not fail is a warning there.
+  if (carry.entries.some((c) => !failed.includes(c.gate))) return false;
   return failed.every((id) => {
     const keys = receipt.findings?.[id] ?? null;
-    if (!coveredByCarried(id, keys, carried)) return false;
-    const entry = carried.find((c) => c.gate === id);
-    return (
-      entry?.findings === '*' ||
-      (keys !== null && new Set(keys).size === new Set(entry?.findings).size)
-    );
+    const entry = carry.entries.find((c) => c.gate === id);
+    const res = live.get(id) ?? [];
+    if (entry === undefined && res.length === 0) return false;
+    if (entry?.findings === '*') return true;
+    // A red that names no key is not covered by a keyed or pattern carry: `every` on an empty list would pass it.
+    if (keys === null || keys.length === 0) return false;
+    const set = new Set(entry?.findings ?? []);
+    return keys.every((k) => set.has(k) || res.some((re) => re.test(k)));
   });
 }
 
@@ -1077,14 +1142,32 @@ function finishWhole(
   return exit;
 }
 
-export async function quickMain(args: readonly string[], seams: QuickSeams): Promise<number> {
+/** K2: the flag a whole-lane run in the kept clone passes the runner, so a red in the preflight (the carry-exempt clock and network gates, the learned leaders) ends the run within about a minute with exit 3 and no receipt. `--keep-going` is the escape that runs the whole lane for every red. */
+export const STOP_ON_PREFLIGHT = '--stop-on-stage-red=preflight';
+
+/** The runner arguments of a lane: `--quick`, the pass-through flags, and the preflight stop on a whole-lane clone run (not an advance, which runs no lane, and not under `--keep-going`). */
+export function laneOf(route: Exclude<Route, { kind: 'refused' }>, keepGoing: boolean): string[] {
+  // Whole-lane only: every pass-through flag is one routeOf lets a clone run keep, so a gate selection (`--only`, `--skip`, `--narrow`) never gets the stop even if a caller builds such a route by hand.
+  const whole = route.pass.every(
+    (arg, i, all) =>
+      PASS_THROUGH_FLAGS.has(arg) ||
+      PASS_THROUGH_VALUE_FLAGS.has(arg) ||
+      PASS_THROUGH_VALUE_FLAGS.has(all[i - 1] ?? '')
+  );
+  const stop = route.kind === 'clone' && whole && !keepGoing && route.advanceOnly !== true;
+  return ['--quick', ...route.pass, ...(stop ? [STOP_ON_PREFLIGHT] : [])];
+}
+
+export async function quickMain(rawArgs: readonly string[], seams: QuickSeams): Promise<number> {
   const startedAt = seams.now();
+  const keepGoing = rawArgs.includes('--keep-going');
+  const args = rawArgs.filter((arg) => arg !== '--keep-going');
   const route = routeOf(args, seams.env, seams.live);
   if (route.kind === 'refused') {
     seams.log(`ci:quick: REFUSED: ${route.why}\n`);
     return 1;
   }
-  const lane = ['--quick', ...route.pass];
+  const lane = laneOf(route, keepGoing);
   if (route.kind === 'here') {
     const whole = route.pass.length === 0;
     seams.log(`ci:quick: running in this checkout, ${seams.live} (${route.why})\n`);
@@ -2001,6 +2084,44 @@ export async function quickCloneSelftest(
         routed.log.includes('in the kept clean clone'),
       `the summary line must give the counts and the place, got: ${routed.log}`
     );
+    // K2: the clone lane stops on a preflight red; --keep-going is the escape; a preflight red (runner exit 3, no receipt) is the run's exit, not a follow pass.
+    check(
+      routed.calls[1].args.includes(STOP_ON_PREFLIGHT),
+      `K2: a whole-lane clone run must pass ${STOP_ON_PREFLIGHT}, got ${JSON.stringify(routed.calls[1].args)}`
+    );
+    const keptGoing = await drive({ receipt: greenAtTree, args: ['--keep-going'] });
+    check(
+      keptGoing.calls.length === 2 &&
+        !keptGoing.calls[1].args.some((arg) => arg.startsWith('--stop-on-stage-red')) &&
+        !keptGoing.calls[1].args.includes('--keep-going'),
+      `K2 CONTROL: --keep-going must run the whole lane, and the runner never sees the flag, got ${JSON.stringify(keptGoing.calls)}`
+    );
+    check(
+      !laneOf({ kind: 'clone', pass: [], noCarry: false, advanceOnly: true }, false).includes(
+        STOP_ON_PREFLIGHT
+      ) && !laneOf({ kind: 'here', why: 'x', pass: [] }, false).includes(STOP_ON_PREFLIGHT),
+      'K2 CONTROL: an advance and a shared-checkout run never take the stop'
+    );
+    const stopped = await quickMain([], {
+      live: fs.mkdtempSync(path.join(root, 'stop-')),
+      env: { HOME: root } as NodeJS.ProcessEnv,
+      log: () => undefined,
+      prepare: (input) => ({
+        clone: input.clone,
+        head: 'H',
+        tree: 'T',
+        branch: 'topic',
+        fresh: false,
+        notes: [],
+      }),
+      runner: (_cwd, runArgs) => Promise.resolve(runArgs[0] === '--selftest' ? 0 : 3),
+      acquire: () => Promise.resolve(true),
+      now: () => Date.now() - 1000,
+    });
+    check(
+      stopped === 3,
+      `K2: a preflight stop (runner exit 3, no receipt) must be the run's exit, got ${stopped}`
+    );
     const fellBack = await drive({
       prepare: () => {
         throw new Error('no disk');
@@ -2333,13 +2454,87 @@ export async function quickCloneSelftest(
         !carriedOnly(redOn(['a', 'c']), doc(star)) &&
         carriedOnly({ ...redOn(['a']), blocked: ['x'] }, doc(star)) &&
         !carriedOnly(redOn(['b'], { b: ['k1', 'k9'] }), doc(keyed)) &&
-        !carriedOnly(redOn(['b'], { b: ['k1'] }), doc(keyed)) &&
+        carriedOnly(redOn(['b'], { b: ['k1'] }), doc(keyed)) &&
         !carriedOnly(redOn(['b']), doc(keyed)) &&
         !carriedOnly(redOn(['a']), doc(star, keyed)) &&
         !carriedOnly({ whole: true, exitCode: 0, failed: [] }, doc(star)) &&
         !carriedOnly(redOn(['a']), undefined) &&
         !carriedOnly(redOn(['a']), doc({ ...star, reason: 'r'.repeat(159) })),
-      'carriedOnly mirrors the push guard: red only on gates carried whole or on exactly their recorded keys; a gate that could not run does not count against it; an uncarried gate, a new or stale key, a keyless red, a stale carried gate, a green receipt, a missing file or an entry under the reason bar is not'
+      'carriedOnly mirrors the push guard: red only on gates carried whole or on carried keys; a gate that could not run does not count against it; an uncarried gate, a new key, a keyless red, a stale carried gate, a green receipt, a missing file or an entry under the reason bar is not'
+    );
+    // R3: a carried key the run did not report is a warning in the guard, not a refusal; a pattern carries the keys it matches until its expiry day; a new red is still not carried.
+    const patDoc = (expires: string | undefined, ...globs: string[]): string =>
+      JSON.stringify({
+        version: 2,
+        carried: [
+          {
+            gate: 'p',
+            patterns: globs,
+            reason: 'r'.repeat(80),
+            ...(expires === undefined ? {} : { expires }),
+          },
+        ],
+      });
+    const slow = redOn(['p'], { p: ['pytest-slow:tests/a.py::t1', 'pytest-slow:tests/b.py::t2'] });
+    check(
+      carriedOnly(redOn(['b'], { b: ['k1'] }), doc(keyed)),
+      'R3: a carried key the run did not report (stale key) is carried'
+    );
+    check(
+      carriedOnly(slow, patDoc('2026-12-01', 'pytest-slow:*'), '2026-11-28') &&
+        carriedOnly(slow, patDoc('2026-11-28', 'pytest-slow:*'), '2026-11-28'),
+      'R3: keys an unexpired pattern matches are carried, through the expiry day'
+    );
+    check(
+      !carriedOnly(slow, patDoc('2026-11-27', 'pytest-slow:*'), '2026-11-28'),
+      'R3 CONTROL: an expired pattern carries nothing'
+    );
+    check(
+      !carriedOnly(
+        redOn(['p'], { p: ['pytest-slow:tests/a.py::t1', 'other:new'] }),
+        patDoc('2026-12-01', 'pytest-slow:*'),
+        '2026-11-28'
+      ) && !carriedOnly(redOn(['b'], { b: ['k1', 'k9'] }), doc(keyed)),
+      'R3 CONTROL: a new red no key or pattern covers is not carried'
+    );
+    // Review findings: expiry is read before the reason bar, an empty key list is no cover, and the stop is whole-lane only.
+    const shortPat = JSON.stringify({
+      version: 2,
+      carried: [{ gate: 'p', patterns: ['pytest-slow:*'], reason: 'short', expires: '2026-11-27' }],
+    });
+    check(
+      !carriedOnly(slow, shortPat, '2026-11-28') &&
+        !carriedOnly(
+          slow,
+          patDoc('2026-12-01', 'pytest-slow:*').replace('r'.repeat(80), 'short'),
+          '2026-11-28'
+        ),
+      'R3 review: an under-bar pattern past its expiry refuses, and an unexpired under-bar pattern carries nothing'
+    );
+    check(
+      !carriedOnly(redOn(['b'], { b: [] }), doc(keyed)) &&
+        !carriedOnly(
+          redOn(['p'], { p: [] }),
+          patDoc('2026-12-01', 'pytest-slow:*'),
+          '2026-11-28'
+        ) &&
+        carriedOnly(redOn(['a'], { a: [] }), doc(star)),
+      'R3 review: a red naming no key is not carried by a keyed or pattern carry, and a whole-gate carry still is'
+    );
+    check(
+      !laneOf({ kind: 'clone', pass: ['--only', 'x'], noCarry: false }, false).includes(
+        STOP_ON_PREFLIGHT
+      ) &&
+        laneOf(
+          { kind: 'clone', pass: ['--jobs', '4', '--verbose'], noCarry: false },
+          false
+        ).includes(STOP_ON_PREFLIGHT),
+      'the preflight stop is for a whole-lane run: a gate selection never gets it, the pass-through flags still do'
+    );
+    check(
+      !carriedOnly(slow, patDoc(undefined, 'pytest-slow:*'), '2026-11-28') &&
+        !carriedOnly(redOn(['p']), patDoc('2026-12-01', 'pytest-slow:*'), '2026-11-28'),
+      'R3 CONTROL: a pattern with no expires is a schema error, and a keyless red is not covered by a pattern'
     );
     {
       const repo = fs.mkdtempSync(path.join(root, 'head-carried-'));

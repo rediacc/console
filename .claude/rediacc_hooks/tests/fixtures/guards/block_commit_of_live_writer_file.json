@@ -1,0 +1,9 @@
+{
+  "EDGE_CASES": [
+    ["a live writer's file", {"tool_name": "Bash", "session_id": "f1x7ure0-live-writer-guard-000000000000", "tool_input": {"command": "git commit -F m -- zz-live-writer-fixture/live.txt"}}],
+    ["a directory covering a live writer's file", {"tool_name": "Bash", "session_id": "f1x7ure0-live-writer-guard-000000000000", "tool_input": {"command": "git commit -F m -- zz-live-writer-fixture/"}}],
+    ["a finished writer's file", {"tool_name": "Bash", "session_id": "f1x7ure0-live-writer-guard-000000000000", "tool_input": {"command": "git commit -F m -- zz-live-writer-fixture/done.txt"}}],
+    ["a file no writer touched", {"tool_name": "Bash", "session_id": "f1x7ure0-live-writer-guard-000000000000", "tool_input": {"command": "git commit -F m -- zz-live-writer-fixture/other.txt"}}],
+    ["not a commit", {"tool_name": "Bash", "session_id": "f1x7ure0-live-writer-guard-000000000000", "tool_input": {"command": "git status --short"}}]
+  ]
+}

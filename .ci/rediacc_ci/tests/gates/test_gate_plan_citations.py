@@ -309,18 +309,7 @@ def test_an_orphan_commit_is_named_as_one(gate, tmp_path):
 
 
 def _unresolved_fn():
-    spec = importlib.util.spec_from_file_location("_plan_citations_under_test", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    already = str(GATE.parent.resolve()) in sys.path
-    added = paths.on_sys_path(GATE.parent)
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        if not already:
-            sys.path.remove(added)
-    return module.unresolved
+    return importlib.import_module("rediacc_ci.quality.plan_citations").unresolved
 
 
 def test_a_commit_kind_on_origin_main_but_not_head_passes(gate, tmp_path):
@@ -640,18 +629,7 @@ def test_unimportable_resolvers_exit_2_in_plan_mode_and_1_in_the_diff_gate(tmp_p
 
 
 def _citations_fn():
-    spec = importlib.util.spec_from_file_location("_plan_citations_snapshot_test", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    already = str(GATE.parent.resolve()) in sys.path
-    added = paths.on_sys_path(GATE.parent)
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        if not already:
-            sys.path.remove(added)
-    return module.citations
+    return importlib.import_module("rediacc_ci.quality.plan_citations").citations
 
 
 def test_a_backup_snapshot_id_is_not_an_object_citation_but_a_bare_hex_run_still_is(gate):
@@ -685,18 +663,7 @@ def test_an_lp_prefixed_sha_that_no_ledger_row_carries_is_still_judged(gate):
 
 
 def _problems_for_fn():
-    spec = importlib.util.spec_from_file_location("_plan_citations_problems_test", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    already = str(GATE.parent.resolve()) in sys.path
-    added = paths.on_sys_path(GATE.parent)
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        if not already:
-            sys.path.remove(added)
-    return module.problems_for
+    return importlib.import_module("rediacc_ci.quality.plan_citations").problems_for
 
 
 def _correction_plan(tmp_path, lines):

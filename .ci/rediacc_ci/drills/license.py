@@ -503,7 +503,7 @@ class License:
             [self.rdc, "ops", "status", "-o", "json"],
             capture_output=True,
             text=True,
-            env=d.cli_env(),
+            env=d.probe_env(),
             check=False,
         )
         if proc.returncode != 0:

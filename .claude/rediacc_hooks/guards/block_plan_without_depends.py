@@ -26,6 +26,9 @@ import re
 import sys
 
 from rediacc_hooks import hookio, syspath
+from rediacc_hooks.guards import _write_rules, tables
+
+__getattr__ = tables("block_plan_without_depends", "EDGE_CASES", "_ABS")
 
 CHAIN = "pre-edit"
 OWN_SUITE = True
@@ -69,163 +72,6 @@ A proposal from what the plan cites:
 
     .ci/scripts/quality/check_plan_deps.py --draft %s
 """
-
-_ABS = "/nonexistent-plan-deps-probe/agent/plans"
-
-EDGE_CASES = [
-    # The refusals, on a new plan in this tree.
-    (
-        "a new live plan without the field",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\n",
-            },
-        },
-    ),
-    (
-        "a malformed value (a path token)",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: agent/plans/PLAN-x.md\n",
-            },
-        },
-    ),
-    (
-        "a dangling token",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: PLAN-zz-nowhere.md\n",
-            },
-        },
-    ),
-    (
-        "a self-dependency",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: PLAN-zz-probe.md\n",
-            },
-        },
-    ),
-    (
-        "no-dep with a placeholder reason",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- n/a\n",
-            },
-        },
-    ),
-    # The allows: the same plan, fixed; and everything out of scope or exempt.
-    (
-        "no-dep with a reason",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\n",
-            },
-        },
-    ),
-    (
-        "a stub",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-zz-probe.md\n",
-            },
-        },
-    ),
-    (
-        "a finished record",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: compacted\n",
-            },
-        },
-    ),
-    (
-        "a _done/ path",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/_done/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\n",
-            },
-        },
-    ),
-    (
-        "a harness plan",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": ".claude/plans/zz-probe.md",
-                "content": "# P\n\nStatus: draft\n",
-            },
-        },
-    ),
-    (
-        "a non-plan doc",
-        {
-            "tool_name": "Write",
-            "tool_input": {"file_path": "docs/zz-probe.md", "content": "Status: draft\n"},
-        },
-    ),
-    (
-        "an Edit to a plan that does not exist (the tool itself fails)",
-        {
-            "tool_name": "Edit",
-            "tool_input": {
-                "file_path": "%s/PLAN-zz-probe.md" % _ABS,
-                "old_string": "a",
-                "new_string": "b",
-            },
-        },
-    ),
-    ("no file path at all", {"tool_name": "Write", "tool_input": {"content": "Status: draft\n"}}),
-    # The X fields and the operator freeze.
-    (
-        "a malformed Priority",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P7\n",
-            },
-        },
-    ),
-    (
-        "the AI introducing an operator Priority with no operator turn",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P1 (operator)\n",
-            },
-        },
-    ),
-    (
-        "an AI Priority",
-        {
-            "tool_name": "Write",
-            "tool_input": {
-                "file_path": "agent/plans/PLAN-zz-probe.md",
-                "content": "# P\n\nStatus: draft\nDepends-On: no-dep -- a probe plan with no upstream work\nPriority: P1 -- proposed by AI\nConcurrency: parallel\nOwns: docs/zz-probe.md\n",
-            },
-        },
-    ),
-]
 
 
 FROZEN = """BLOCKED: Priority on %s is operator-set; the AI never changes it.
@@ -475,31 +321,6 @@ def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     return out
 
 
-def _result_text(doc, path):
-    """(text, reason) for the document the tool call would leave, or (None, why) when it cannot be computed (the tool itself would fail, so there is nothing to judge)."""
-    tin = doc.get("tool_input") or {}
-    if not isinstance(tin, dict):
-        return None, "no tool_input"
-    if "content" in tin:
-        return str(tin.get("content") or ""), ""
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return None, "the file does not exist, so the Edit fails on its own"
-    edits = tin.get("edits")
-    if not isinstance(edits, list):
-        edits = [tin]
-    for edit in edits:
-        if not isinstance(edit, dict):
-            return None, "an edit is not an object"
-        old = str(edit.get("old_string") or "")
-        new = str(edit.get("new_string") or "")
-        if not old or old not in text:
-            return None, "old_string is absent, so the Edit fails on its own"
-        text = text.replace(old, new) if edit.get("replace_all") else text.replace(old, new, 1)
-    return text, ""
-
-
 def run(ev):
     doc = ev.doc
     if not isinstance(doc, dict):
@@ -514,7 +335,7 @@ def run(ev):
     tree = path.parents[2]
     rel = "agent/plans/%s" % path.name
 
-    text, _why = _result_text(doc, path)
+    text, _why = _write_rules.result_text(doc, path)
     if text is None:
         return hookio.ALLOW
 

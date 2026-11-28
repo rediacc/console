@@ -7,7 +7,6 @@ import inspect
 import json
 import subprocess
 import threading
-import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
@@ -464,6 +463,7 @@ def _bench_env(monkeypatch, **overrides):
         "ACCOUNT_JWT_SECRET": "jw",
         "FREE_LICENSE_HMAC_KEY": "hm",
         "ACCOUNT_AE_READ_TOKEN": "ae-read",
+        "AI_GATEWAY_LOGS_TOKEN": "ai-logs",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
         "ACCOUNT_BACKUP_STORE_KEK": "kk",
         "ROOT_EMAIL": "root@example.invalid",
@@ -473,9 +473,6 @@ def _bench_env(monkeypatch, **overrides):
         "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
         **overrides,
     }
-    # Both Stripe variables are cleared here, never inherited from the runner: a half-set pair on a lane (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
-    for name in ("STRIPE_SANDBOX_SECRET_KEY", "STRIPE_SANDBOX_WEBHOOK_SECRET"):
-        monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
@@ -676,6 +673,77 @@ def test_a_queue_preflight_failure_refuses_before_any_build_or_write(monkeypatch
     assert events == []
 
 
+def _declare(directory, *deps, dev=()):
+    directory.mkdir(parents=True, exist_ok=True)
+    doc = {"dependencies": dict.fromkeys(deps, "1.0.0"), "devDependencies": dict.fromkeys(dev, "1")}
+    (directory / "package.json").write_text(json.dumps(doc))
+
+
+def _install(node_modules, name):
+    (node_modules / name).mkdir(parents=True)
+    (node_modules / name / "package.json").write_text("{}")
+
+
+def test_a_declared_dependency_missing_from_node_modules_is_refused_before_any_build(
+    monkeypatch, tmp_path
+):
+    """2026-11-25: the lockfile preflight passed while tw-animate-css, declared in private/account/web/package.json, was absent from node_modules, and vite then failed `Can't resolve 'tw-animate-css'`. The preflight now names it and the exact fix before anything builds."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    web = tmp_path / "private" / "account" / "web"
+    _declare(web, "react", "tw-animate-css")
+    _install(web / "node_modules", "react")
+    with pytest.raises(deploy_bench.DeployError) as raised:
+        deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert "declares tw-animate-css," in str(raised.value)
+    assert str(raised.value).endswith("fix: npm ci --prefix %s" % web)
+    assert events == []
+
+
+def test_every_declared_dependency_installed_passes_the_preflight(monkeypatch, tmp_path):
+    """Control: the same world with tw-animate-css installed builds."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    web = tmp_path / "private" / "account" / "web"
+    _declare(web, "react", "tw-animate-css")
+    _install(web / "node_modules", "react")
+    _install(web / "node_modules", "tw-animate-css")
+    deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert any("vite" in e for e in events)
+
+
+def test_missing_installs_resolves_upward_scoped_and_dev_names(tmp_path):
+    """A dependency hoisted into a parent node_modules resolves (as Node and vite resolve it); a scoped name and a devDependency are checked too; nothing above the root counts."""
+    root = tmp_path / "repo"
+    web = root / "private" / "account" / "web"
+    _declare(web, "hoisted", "@scope/pkg", dev=("vite",))
+    (web / "node_modules").mkdir()
+    _install(root / "private" / "account" / "node_modules", "hoisted")
+    _install(tmp_path / "node_modules", "vite")
+    assert deploy_bench.missing_installs(web, root) == ["@scope/pkg", "vite"]
+    _install(web / "node_modules", "@scope/pkg")
+    _install(root / "node_modules", "vite")
+    assert deploy_bench.missing_installs(web, root) == []
+
+
+def test_a_package_json_that_is_not_an_object_is_a_named_refusal(tmp_path):
+    web = tmp_path / "web"
+    web.mkdir()
+    (web / "package.json").write_text("[]", encoding="utf-8")
+    with pytest.raises(deploy_bench.DeployError, match="not a JSON object"):
+        deploy_bench.missing_installs(web, tmp_path)
+
+
+def test_a_package_without_node_modules_is_left_to_the_install_step(tmp_path):
+    web = tmp_path / "web"
+    _declare(web, "react")
+    assert deploy_bench.installs_refusal([web], tmp_path) is None
+    (web / "node_modules").mkdir()
+    refusal = deploy_bench.installs_refusal([web], tmp_path)
+    assert refusal is not None
+    assert "declares react, but node_modules does not hold it" in refusal
+
+
 def test_the_payload_carries_the_cloudflare_account_id(monkeypatch):
     """The AE SQL reads need the account id the regional pusher also sends; the region-consistency gate compares the two key sets (review c5be449f.2)."""
     _bench_env(monkeypatch)
@@ -722,116 +790,198 @@ def test_a_failed_shared_build_refuses_the_deploy_before_vite():
     assert "stale dist" in src[guard : refusal + 160]
 
 
-def _clear_stripe(monkeypatch):
-    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
-    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
+FORENSICS_BENCH = {
+    "ACCOUNT_FORENSICS_S3_ENDPOINT": "https://evidence.example.invalid",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID": "fk",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY": "fs",
+}
 
 
-def test_a_sandbox_stripe_pair_is_bound_under_the_worker_names(monkeypatch, capsys):
-    _bench_env(
-        monkeypatch,
-        STRIPE_SANDBOX_SECRET_KEY="sk_test_abc",
-        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
-    )
-    payload = deploy_bench.secrets_payload()
-    assert payload["STRIPE_SANDBOX_SECRET_KEY"] == "sk_test_abc"
-    assert payload["STRIPE_SANDBOX_WEBHOOK_SECRET"] == "whsec_abc"
-    assert payload["STRIPE_SECRET_KEY"] == ""
-    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
-    out = capsys.readouterr()
-    assert "sk_test_abc" not in out.out + out.err
-    assert "whsec_abc" not in out.out + out.err
-
-
-def test_the_live_stripe_names_in_the_environment_are_never_bound(monkeypatch):
-    _bench_env(monkeypatch, STRIPE_SECRET_KEY="sk_live_x", STRIPE_WEBHOOK_SECRET="whsec_x")
-    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
-    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
-    payload = deploy_bench.secrets_payload()
-    assert payload["STRIPE_SECRET_KEY"] == ""
-    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
-
-
-def test_a_restricted_test_key_is_accepted(monkeypatch):
-    _bench_env(
-        monkeypatch,
-        STRIPE_SANDBOX_SECRET_KEY="rk_test_abc",
-        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
-    )
-    assert deploy_bench.secrets_payload()["STRIPE_SANDBOX_SECRET_KEY"] == "rk_test_abc"
-
-
-@pytest.mark.parametrize("key", ["sk_live_SECRETVALUE", "rk_live_SECRETVALUE", "garbage"])
-def test_a_non_test_stripe_key_is_refused_without_printing_it(monkeypatch, capsys, key):
-    _bench_env(
-        monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_SECRETHOOK"
-    )
-    with pytest.raises(deploy_bench.DeployError, match="not a Stripe test key") as err:
-        deploy_bench.secrets_payload()
-    out = capsys.readouterr()
-    shown = str(err.value) + out.out + out.err
-    assert "SECRETVALUE" not in shown
-    assert "SECRETHOOK" not in shown
-    assert key not in shown
-
-
-def test_an_absent_stripe_pair_keeps_the_blanks_and_says_so(monkeypatch, capsys):
+def test_the_payload_carries_the_forensics_triple(monkeypatch):
+    """The bench forensics store reaches the Worker under its Worker names (PLAN-forensics-shipping FS12), and an unbound triple is pushed empty."""
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
     _bench_env(monkeypatch)
-    _clear_stripe(monkeypatch)
     payload = deploy_bench.secrets_payload()
-    for name in (
-        "STRIPE_SECRET_KEY",
-        "STRIPE_WEBHOOK_SECRET",
-        "STRIPE_SANDBOX_SECRET_KEY",
-        "STRIPE_SANDBOX_WEBHOOK_SECRET",
-    ):
-        assert payload[name] == ""
-    assert "Stripe sandbox pair absent" in capsys.readouterr().out
+    assert [payload[name] for name in FORENSICS_BENCH] == ["", "", ""]
+    _bench_env(monkeypatch, **FORENSICS_BENCH)
+    payload = deploy_bench.secrets_payload()
+    assert {name: payload[name] for name in FORENSICS_BENCH} == FORENSICS_BENCH
+    assert payload["ACCOUNT_FORENSICS_S3_BUCKET"] == "forensics-bench"
+    assert payload["ACCOUNT_FORENSICS_S3_REGION"] == "auto"
 
 
-@pytest.mark.parametrize(
-    ("key", "hook", "missing"),
-    [
-        ("sk_test_abc", "", "STRIPE_SANDBOX_WEBHOOK_SECRET"),
-        ("", "whsec_abc", "STRIPE_SANDBOX_SECRET_KEY"),
-    ],
-)
-def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missing):
-    _bench_env(monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET=hook)
-    with pytest.raises(deploy_bench.DeployError, match=missing):
+def test_an_unbound_forensics_triple_blanks_the_bucket_and_region_too(monkeypatch):
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
+    _bench_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["ACCOUNT_FORENSICS_S3_BUCKET"] == ""
+    assert payload["ACCOUNT_FORENSICS_S3_REGION"] == ""
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_no_bench_config_carries_a_forensics_var(region):
+    """A bucket or region var without the secret triple made forensicsStoreFromEnv throw on every request."""
+    path = (
+        deploy_bench.paths.repo_root() / "workers" / "account" / ("wrangler.bench-%s.toml" % region)
+    )
+    doc = deploy_bench.tomllib.loads(path.read_text(encoding="utf-8"))
+    assert [k for k in doc["vars"] if k.startswith("ACCOUNT_FORENSICS_")] == []
+
+
+@pytest.mark.parametrize("missing", sorted(FORENSICS_BENCH))
+def test_a_half_configured_forensics_triple_refuses_the_bench_push(monkeypatch, missing):
+    """A partly bound triple is refused by name, since the Worker throws on a half-configured store."""
+    for name in FORENSICS_BENCH:
+        monkeypatch.delenv(name, raising=False)
+    _bench_env(monkeypatch, **{k: v for k, v in FORENSICS_BENCH.items() if k != missing})
+    with pytest.raises(deploy_bench.DeployError, match="half configured.*%s" % missing):
         deploy_bench.secrets_payload()
 
 
-def _consent_switches(directory):
-    """{config or config#env: STRIPE_CONSENT_COLLECTION} over every account wrangler config in `directory`, each `[env.<name>.vars]` table read as a config of its own, since wrangler deploys it with --env."""
+def test_the_payload_carries_the_ai_gateway_logs_token(monkeypatch):
+    """PLAN-console-ai-credits D8: the bench Worker gets the AI Gateway logs-read token; an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["AI_GATEWAY_LOGS_TOKEN"] == "ai-logs"
+    _bench_env(monkeypatch, AI_GATEWAY_LOGS_TOKEN="")
+    with pytest.raises(deploy_bench.DeployError, match="AI_GATEWAY_LOGS_TOKEN"):
+        deploy_bench.secrets_payload()
+
+
+def test_the_rotation_check_runs_directly_off_the_rotation_profile(monkeypatch, tmp_path):
     seen = {}
-    for config in sorted(directory.glob("wrangler*.toml")):
-        doc = tomllib.loads(config.read_text(encoding="utf-8"))
-        seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
-        for env_name, env in (doc.get("env") or {}).items():
-            seen["%s#%s" % (config.name, env_name)] = (env.get("vars") or {}).get(
-                "STRIPE_CONSENT_COLLECTION"
-            )
-    return seen
+
+    class Proc:
+        returncode = 0
+        stderr = None
+
+        def __init__(self, argv, **kw):
+            seen["argv"], seen["cwd"] = argv, kw.get("cwd")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", Proc)
+    deploy_bench._rotation_check(tmp_path)
+    assert seen["argv"] == [
+        "npx",
+        "--no-install",
+        "tsx",
+        "scripts/rotation/index.ts",
+        "check",
+        "--for=bench",
+    ]
+    assert seen["cwd"] == str(tmp_path / "private" / "account")
 
 
-def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
-    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
-    seen = _consent_switches(paths.from_root("workers", "account"))
-    assert seen, "no account wrangler config found"
-    assert seen.get(deploy_bench.CONFIG) == "1", seen
-    # The regional benches (wrangler.bench-<r>.toml) bill the same sandbox pair and carry the switch too.
-    on = [name for name, value in seen.items() if value == "1"]
-    assert deploy_bench.CONFIG in on, seen
-    assert all(name.startswith("wrangler.bench") for name in on), seen
+def test_the_rotation_check_hands_its_env_to_the_child(monkeypatch, tmp_path):
+    """The bootstrap token reaches the child through env=, not only through the helper."""
+    seen: dict[str, Any] = {}
+
+    class Proc:
+        returncode = 0
+        stderr = None
+
+        def __init__(self, _argv, **kw):
+            seen["env"] = kw.get("env")
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setenv("BWS_ACCESS_TOKEN", "tok-for-child")
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", Proc)
+    deploy_bench._rotation_check(tmp_path)
+    assert seen["env"]["BWS_ACCESS_TOKEN"] == "tok-for-child"
 
 
-def test_control_an_env_table_switch_is_seen(tmp_path):
-    (tmp_path / "wrangler.eu.toml").write_text(
-        '[vars]\nREGION = "eu"\n\n[env.preview.vars]\nSTRIPE_CONSENT_COLLECTION = "1"\n',
-        encoding="utf-8",
-    )
-    assert _consent_switches(tmp_path) == {
-        "wrangler.eu.toml": None,
-        "wrangler.eu.toml#preview": "1",
-    }
+def test_the_rotation_check_gets_the_token_from_the_file_when_not_exported(monkeypatch, tmp_path):
+    token_file = tmp_path / "bws-access-token"
+    token_file.write_text("0.client.secret:key\n", encoding="utf-8")
+    token_file.chmod(0o600)
+    tmp_path.chmod(0o700)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("BWS_ACCESS_TOKEN_FILE", str(token_file))
+    assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "0.client.secret:key"
+    monkeypatch.setenv("BWS_ACCESS_TOKEN", "exported")
+    assert deploy_bench._rotation_check_env()["BWS_ACCESS_TOKEN"] == "exported"
+
+
+def test_the_d1_reader_falls_back_to_the_key_pair_and_refuses_with_neither(monkeypatch):
+    for name in ("CLOUDFLARE_API_TOKEN", "CF_GLOBAL_API_KEY", "CF_EMAIL", "CF_API_KEY"):
+        monkeypatch.delenv(name, raising=False)
+    with pytest.raises(deploy_bench.SeedError, match="CF_GLOBAL_API_KEY and CF_EMAIL"):
+        deploy_bench._d1_rows("SELECT 1")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": []}]'
+
+    def run(*_a, **kw):
+        seen.update(kw["env"])
+        return Done()
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    deploy_bench._d1_rows("SELECT 1")
+    assert seen["CLOUDFLARE_API_KEY"] == "k"
+    assert seen["CLOUDFLARE_EMAIL"] == "e@example.invalid"
+    assert "CLOUDFLARE_API_TOKEN" not in seen
+
+
+def test_the_payload_binds_no_stripe_secret(monkeypatch):
+    """The Worker reads no Stripe secret, so the push carries no STRIPE_ name and no stale value needs resetting."""
+    _bench_env(monkeypatch)
+    assert not [name for name in deploy_bench.secrets_payload() if name.startswith("STRIPE")]
+
+
+def test_the_rotation_check_env_refuses_an_unreadable_token_file_as_a_deploy_error(
+    monkeypatch, tmp_path
+):
+    """Review 851b6d63.3: a token file group or other can read is a RefusalError in bws_env and a DeployError here; the child never starts."""
+    token_file = tmp_path / "bws-access-token"
+    token_file.write_text("0.client.secret:key\n", encoding="utf-8")
+    token_file.chmod(0o644)
+    tmp_path.chmod(0o700)
+    monkeypatch.delenv("BWS_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("BWS_ACCESS_TOKEN_FILE", str(token_file))
+    with pytest.raises(deploy_bench.bws_env.RefusalError):
+        deploy_bench.bws_env.read_token()
+    with pytest.raises(deploy_bench.DeployError):
+        deploy_bench._rotation_check_env()
+
+    def no_child(*_a, **_kw):
+        raise AssertionError("the rotation check started despite the refused token")
+
+    monkeypatch.setattr(deploy_bench.subprocess, "Popen", no_child)
+    with pytest.raises(deploy_bench.DeployError):
+        deploy_bench._rotation_check(tmp_path)
+
+
+def test_the_d1_reader_prefers_the_bearer_token_over_the_key_pair(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "tok")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    seen = {}
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": []}]'
+
+    def run(*_a, **kw):
+        seen.update(kw["env"])
+        return Done()
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    deploy_bench._d1_rows("SELECT 1")
+    assert seen["CLOUDFLARE_API_TOKEN"] == "tok"
+    assert "CLOUDFLARE_API_KEY" not in seen
+    assert "CLOUDFLARE_EMAIL" not in seen

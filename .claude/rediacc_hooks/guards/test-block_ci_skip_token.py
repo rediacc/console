@@ -14,6 +14,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_ci_skip_token"
@@ -206,7 +210,7 @@ def run(command, broken=False, mutant=False):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(REPO)
     )
     if (broken or mutant) and proc.returncode not in (0, 2):

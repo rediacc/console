@@ -1,6 +1,6 @@
 """The stop-gate judge obeys the effort table (operator ruling 2026-10-14T09:27Z, agent/plans/PLAN-stop-hook-effort-tuning.md).
 
-At effort smart `no-remaining` and `out-of-sync` advise and do not block, and the judge still blocked on exactly those demands. A `continue` now names its `basis`; one resting only on a report key that does not block at the level is read as stop and its order rides the advisory queue under that key. At high the same answer blocks.
+At effort smart `no-remaining` advises and does not block, and the judge still blocked on exactly that demand. (`out-of-sync` left the bases with the missing-ids fact, agent/plans/PLAN-stop-hook-store-status.md J1; a status-table continue is read as stop at every level by `settle_status_demand`, test_wl_judge_facts.py.) A `continue` now names its `basis`; one resting only on a report key that does not block at the level is read as stop and its order rides the advisory queue under that key. At high the same answer blocks.
 
 Three layers: `settle_by_effort` alone, `run_judge` through a canned `claude` that records its argv (the prompt and the schema it was handed), and the real Stop hook.
 """
@@ -32,17 +32,16 @@ def wl(tmp_path):
 
 REPORT_ONLY = {
     "verdict": "continue",
-    "reason": "The wait is real, but the message omits open items by id.",
-    "next_action": "List every open item by id.",
-    "basis": "out-of-sync",
+    "reason": "The wait is real, but the report gives no designation for the parked decision.",
+    "next_action": "Add the designation line for the parked decision.",
+    "basis": "no-remaining",
 }
 
 
-# The live effort.json moves with every tuner run (35afbb54e made `no-remaining` and `out-of-sync` block at smart), so nothing here reads it: the report keys advise at smart and block at high in this pinned table, which is the shape the judge's settle logic exists for.
+# The live effort.json moves with every tuner run (35afbb54e made `no-remaining` block at smart), so nothing here reads it: the report keys advise at smart and block at high in this pinned table, which is the shape the judge's settle logic exists for.
 PINNED = {
     "checks": {
         "no-remaining": {"block": "high", "advise": "smart"},
-        "out-of-sync": {"block": "high", "advise": "smart"},
     }
 }
 
@@ -79,14 +78,13 @@ def test_smart_reads_a_report_only_continue_as_stop_and_hands_back_the_order():
     assert got["next_action"] == ""
     assert "read as stop at effort smart" in got["reason"]
     [(key, text)] = got["effort_advised"]
-    assert key == "out-of-sync"
-    assert "omits open items by id" in text
-    assert "List every open item by id." in text
+    assert key == "no-remaining"
+    assert "no designation for the parked decision" in text
+    assert "Add the designation line for the parked decision." in text
 
 
-@pytest.mark.parametrize("level", ["high", "ultra"])
-def test_high_and_ultra_keep_the_block(level):
-    got = J.settle_by_effort(dict(REPORT_ONLY), level)
+def test_high_keeps_the_block():
+    got = J.settle_by_effort(dict(REPORT_ONLY), "high")
     assert got["verdict"] == "continue", got
     assert "effort_advised" not in got
 
@@ -99,7 +97,7 @@ def test_the_handed_back_order_is_sanitized_like_a_blocking_one():
     assert "rejected by the stop gate" in text, text
     assert "Next: Merge 563" not in text, text
     control = J.settle_by_effort(dict(REPORT_ONLY), "smart")["effort_advised"][0][1]
-    assert "List every open item by id." in control
+    assert "Add the designation line for the parked decision." in control
 
 
 @pytest.mark.parametrize(
@@ -118,15 +116,11 @@ def test_controls_that_stand_at_smart(label, change):
 
 
 def test_the_table_decides_not_a_list_in_the_judge():
-    """A planted table where out-of-sync blocks at smart keeps the continue: the threshold is read, not assumed."""
-    table = {
-        "checks": {
-            "out-of-sync": {"block": "smart", "advise": "low"},
-            "no-remaining": {"block": "high", "advise": "smart"},
-        }
-    }
+    """A planted table where no-remaining blocks at smart keeps the continue: the threshold is read, not assumed."""
+    table = {"checks": {"no-remaining": {"block": "smart", "advise": "low"}}}
     assert J.settle_by_effort(dict(REPORT_ONLY), "smart", table)["verdict"] == "continue"
-    assert J.report_bases_quiet("smart", table) == ("no-remaining",)
+    assert J.report_bases_quiet("smart", table) == ()
+    assert J.report_bases_quiet("smart", PINNED) == ("no-remaining",)
     # A key the table does not list blocks (wl_effort's fail-closed rule), so it is never quiet.
     assert J.report_bases_quiet("smart", {"checks": {}}) == ()
     assert J.report_bases_quiet(None) == ()
@@ -187,7 +181,7 @@ def test_run_judge_at_smart_asks_the_basis_and_settles(judge):
     assert "BASIS." in prompt
     assert "basis" in schema["required"]
     assert verdict["verdict"] == "stop", verdict
-    assert verdict["effort_advised"][0][0] == "out-of-sync"
+    assert verdict["effort_advised"][0][0] == "no-remaining"
 
 
 def test_run_judge_sends_the_prompt_on_stdin_and_never_on_argv(judge):
@@ -245,7 +239,7 @@ def test_the_stop_hook_at_smart_advises_instead_of_blocking(wl):
     got = wl.runj()
     assert "judge says continue" not in got.out, got.out[:800]
     shown = got.out + "".join(queued(wl).values())
-    assert "advised at effort smart (out-of-sync" in shown, got.out[:800]
+    assert "advised at effort smart (no-remaining" in shown, got.out[:800]
 
 
 def test_the_stop_hook_at_high_blocks_on_the_same_answer(wl):
@@ -253,3 +247,20 @@ def test_the_stop_hook_at_high_blocks_on_the_same_answer(wl):
     got = wl.runj()
     assert got.decision == "block", got.out[:800]
     assert "judge says continue" in got.out, got.out[:800]
+
+
+def test_the_schema_no_longer_accepts_out_of_sync():
+    """J1: `out-of-sync` left the basis enum and REPORT_BASES; `no-remaining` and `work` stay."""
+    assert J.JUDGE_SCHEMA["properties"]["basis"]["enum"] == ["work", "no-remaining"]
+    assert J.REPORT_BASES == ("no-remaining",)
+    assert "out-of-sync" not in J.JUDGE_BASIS
+
+
+def test_the_settle_chain_still_applies_settle_by_effort_to_no_remaining(judge):
+    """Through run_judge: the status-demand rule sits beside the wait-only rule and does not swallow a no-remaining continue, which settle_by_effort still reads at smart."""
+    judge.answer(dict(REPORT_ONLY))
+    verdict, err = ask("smart")
+    assert err is None, err
+    assert verdict["verdict"] == "stop", verdict
+    assert verdict["effort_advised"][0][0] == "no-remaining"
+    assert "status_demand" not in verdict

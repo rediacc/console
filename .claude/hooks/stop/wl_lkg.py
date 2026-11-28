@@ -96,6 +96,7 @@ def snapshot(d=None):
             (root / "crash-since").unlink()
         return dg
     except Exception:
+        # Safe to ignore: the snapshot is an optional last-known-good cache, and `fallback` degrades to the committed hook at HEAD (then to the ordinary crash block) when none exists.
         return ""
 
 
@@ -140,6 +141,7 @@ def _git_snapshot(live):
         d = out / STOP_REL
         return d if (d / "worklist.py").is_file() else None
     except Exception:
+        # Safe to ignore: None makes `fallback` return None, which is the LOUD path (the ordinary Stop hook crash block fires), never a quiet pass.
         return None
 
 

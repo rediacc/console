@@ -1,6 +1,6 @@
 """A feature branch is `MMDD-N`. No suffixes, no words, no decoration.
 
-WHY. `.claude/commands/pr-babysit.md` and `.claude/commands/pr-merge.md` both state the convention, and pr-merge's hand-back section warns that guessing a name produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a session created `0826-1-prerebase` in the console AND in a submodule, as safety copies before a rebase. Reasonable intent, wrong shape: the suffix
+WHY. `.claude/agents/pr-babysitter.md` (loop step 2) and `.claude/commands/pr-merge.md` both state the convention, and pr-merge's hand-back section warns that guessing a name produces stray refs the next `/pr-babysit` has to clean up. On 2026-08-26 a session created `0826-1-prerebase` in the console AND in a submodule, as safety copies before a rebase. Reasonable intent, wrong shape: the suffix
 makes the ref sort next to a wave branch while belonging to no wave, and nothing downstream -- not pr-babysit's branch listing, not the submodule same-name matching in branch-rebase.md's submodule step, not pr-merge's coordinated-PR lookup -- can tell the two apart.
 
 THE SUBMODULE POINT IS THE SHARP ONE. `/pr-merge` finds a submodule's PRs by matching the console branch name EXACTLY. A console branch carrying a suffix silently matches nothing, so a coordinated submodule PR is invisible to the merge path and gets left behind.
@@ -19,6 +19,9 @@ THE START-POINT CARVE-OUT IS GONE WITH THE REGEXES. The old reader could land on
 import re
 
 from rediacc_hooks import commit_policy, hookio
+from rediacc_hooks.guards import tables
+
+__getattr__ = tables("block_nonstandard_branch_name", "EDGE_CASES")
 
 CHAIN = "pre-bash"
 ORDER = 16
@@ -33,33 +36,6 @@ SHAPE = re.compile(r"^[0-9]{4}-[0-9]+$")
 
 # The creation kinds this guard judges the NAME of. A push, a `gh pr create --head` and a `git/refs` POST name a REMOTE branch; whether that may exist at all is `block_second_branch`'s question, and it refuses every such name that is not the one live branch.
 JUDGED = frozenset(("checkout-b", "switch-c", "branch", "rename", "copy"))
-
-EDGE_CASES = [
-    ("the 2026-08-26 shape", "git checkout -b 0826-1-prerebase"),
-    ("a conforming name", "git checkout -b 0901-1"),
-    ("a slashed name is still a name being created", "git checkout -b feature/x"),
-    ("switch has its own flag letters", "git switch -c 0901-2-wip"),
-    ("a start point is not a name being created", "git checkout -b 0901-3 origin/main"),
-    # `git branch` reads are none of this hook's business.
-    ("deleting a branch", "git branch -d 0826-1"),
-    ("listing branches", "git branch --show-current"),
-    ("a plain create", "git branch 0901-4"),
-    ("a plain create with a bad name", "git branch prerebase-copy"),
-    # The rename form judges the SECOND positional.
-    ("a rename into a legal name", "git branch -m old 0901-5"),
-    ("a rename into a suffixed one", "git branch -m old 0901-5-prerebase"),
-    # The two things the anchor and the stripper exist for.
-    ("a variable assignment runs nothing", "SLASH='git checkout -b some/name'"),
-    ("a heredoc body is data", "cat > note.md <<'EOF'\ngit checkout -b some/name\nEOF"),
-    ("switching to main", "git checkout main"),
-    # F1, refused live on 2026-09-25: a quoted grep PATTERN is not a branch being created.
-    (
-        "F1: a grep for the verbs runs grep",
-        'grep -n -e "checkout -b" -e "git branch [a-z0-9]" x.py',
-    ),
-    ("a wrapper payload is still walked", "sh -c 'git checkout -b feature/x'"),
-    ("a remote-looking name is a name being created", "git checkout -b origin/x"),
-]
 
 
 def run(ev):
@@ -92,7 +68,7 @@ def run(ev):
     ev.warn_raw(
         "BLOCKED: '%s' is not a branch name this repo uses.\n"
         "\n"
-        "Feature branches are MMDD-N and carry NO suffix. pr-babysit.md and pr-merge.md\n"
+        "Feature branches are MMDD-N and carry NO suffix. pr-babysitter.md and pr-merge.md\n"
         "both say so, and pr-merge's hand-back section warns that invented names\n"
         "leave stray refs for the next session to clean up.\n"
         "\n"

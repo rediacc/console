@@ -36,7 +36,7 @@ export class AwaitingCert extends ServerError {}
 function offlineOptionProblems(opts: InstallOptions): string[] {
   const problems: string[] = [];
   if (!opts.bundle) problems.push(t('commands.server.offline.needsBundle'));
-  if (opts.licence === 'free') problems.push(t('commands.server.offline.noFree'));
+  if (!opts.signer) problems.push(t('commands.server.offline.needsSigner'));
   if (opts.tls !== undefined && opts.tls !== 'byo') {
     problems.push(t('commands.server.offline.tlsByoOnly', { tls: opts.tls }));
   }
@@ -155,8 +155,6 @@ function mintRefusal(outcome: Exclude<IssueOutcome, { kind: 'issued' }>): string
       return t('commands.server.offline.mintNoLogin');
     case 'missing-scope':
       return t('commands.server.licence.missingScope');
-    case 'plan-disallows':
-      return t('commands.server.licence.planDisallows', { error: outcome.message });
     case 'other-key':
       return t('commands.server.licence.otherKey', {
         certId: outcome.certId,

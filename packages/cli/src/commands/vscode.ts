@@ -39,12 +39,13 @@ import { acquireRemoteRenet, readSSHKey } from '../services/renet/renet-executio
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertRepoMountedOnMachine } from '../services/repo/repo-mount-check.js';
 import { assertAgentMachineAccess } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
+import { CMD, enforceResolvedTarget } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { resolveConnectTarget } from '../utils/repo-target.js';
 import { withSpinner } from '../utils/spinner.js';
 import { connectVSCodeBrowser, verifySSHConnectivity } from './vscode-browser.js';
+import { registerVSCodeExposeCommands } from './vscode-expose.js';
 import { registerVSCodeServeCommands } from './vscode-serve.js';
 import {
   displayActiveConnections,
@@ -106,7 +107,10 @@ async function setupSSHConfig(
     );
   });
 
-  const knownHostsFile = persistKnownHosts(teamName, machineName, connectionDetails.known_hosts);
+  const knownHostsFile = persistKnownHosts(teamName, machineName, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
+    port: connectionDetails.port,
+  });
   const connectionName = generateConnectionName(teamName, machineName, repositoryName);
 
   await withSpinner(t('commands.vscode.connect.configuringSSH'), () => {
@@ -207,6 +211,7 @@ async function preparePerRepoVSCodeServer(
   const sandboxServerPath = `${connectionDetails.datastore}/mounts/${connectionDetails.repositoryGuid}/.vscode-server`;
   const sharedServerPath = `${connectionDetails.datastore}/.vscode-server`;
   const sshConn = new SSHConnection(teamKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
   });
 
@@ -250,6 +255,7 @@ async function pinClusterNamespace(
   if (!kubeconfig) return;
 
   const sshConn = new SSHConnection(connectionDetails.privateKey, connectionDetails.known_hosts, {
+    host: connectionDetails.host,
     port: connectionDetails.port,
   });
   const ns = namespace.replaceAll("'", "'\\''");
@@ -285,7 +291,7 @@ async function setupRemoteEnvironment(
   const sshConnection = new SSHConnection(
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
-    { port: connectionDetails.port }
+    { host: connectionDetails.host, port: connectionDetails.port }
   );
 
   const serverInstallPath =
@@ -356,7 +362,7 @@ async function resolveVSCodeTarget(target: string, options: VSCodeConnectOptions
 
   if (resolved.kind === 'repo') {
     // Gate B on the repo arm only; the place arm below is a machine shell (class A).
-    await assertCommandPolicy(CMD.VSCODE_CONNECT, resolved.repoKey);
+    await enforceResolvedTarget(CMD.VSCODE_CONNECT, { ref: resolved.repoKey });
   } else {
     await assertAgentMachineAccess(resolved.machineName);
   }
@@ -560,6 +566,7 @@ ${t('help.examples')}
   // Connect subcommand
   vscode
     .command('connect')
+    .summary(t('commands.vscode.connect.descriptionShort'))
     .description(t('commands.vscode.connect.description'))
     .argument('<target>', t('options.connectTarget'))
     .option('-f, --folder <path>', t('options.folder'))
@@ -586,10 +593,12 @@ ${t('help.examples')}
     });
 
   registerVSCodeServeCommands(vscode);
+  registerVSCodeExposeCommands(vscode);
 
   // List subcommand
   vscode
     .command('list')
+    .summary(t('commands.vscode.list.descriptionShort'))
     .description(t('commands.vscode.list.description'))
     .action(() => {
       try {
@@ -602,6 +611,7 @@ ${t('help.examples')}
   // Cleanup subcommand
   vscode
     .command('cleanup')
+    .summary(t('commands.vscode.cleanup.descriptionShort'))
     .description(t('commands.vscode.cleanup.description'))
     .option('--all', t('options.cleanupAll'))
     .option('-c, --connection <name>', t('options.connectionName'))
@@ -616,6 +626,7 @@ ${t('help.examples')}
   // Check subcommand
   vscode
     .command('check')
+    .summary(t('commands.vscode.check.descriptionShort'))
     .description(t('commands.vscode.check.description'))
     .option('--insiders', t('options.insiders'))
     .action(async (options: { insiders?: boolean }) => {

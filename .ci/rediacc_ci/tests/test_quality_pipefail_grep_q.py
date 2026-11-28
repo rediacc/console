@@ -1,7 +1,7 @@
 """`rediacc_ci.quality.pipefail_grep_q`, driven directly.
 
 WHILE BOTH COPIES EXISTED a bash child ran the REAL `.ci/scripts/quality/check-pipefail-grep-q.sh` over a git fixture with stdout and stderr captured SEPARATELY, and its bytes were compared against the port's. The twin had no environment seam -- it resolved its root from its OWN location and enumerated through `git -C "$ROOT" ls-files` -- so the fixture was a real git
-repository holding BOTH implementations. Same recipe as the committed ledger, `.ci/shadow/w7p2-pipefail-grepq.observations.jsonl`, which licensed the port at K=5. The twin was retired in W7 P5 and the whole-gate cases went with it.
+repository holding BOTH implementations. Same recipe as the committed ledger, the ledger (deleted in commit:936280cd35), which licensed the port at K=5. The twin was retired in W7 P5 and the whole-gate cases went with it.
 
 THE MECHANISM CONTROL STILL RUNS FOR REAL, below: a 300 KB producer piped into `grep -q` under pipefail, asserted to report MISSED. It is the one control that cannot be a pure assertion, because the claim is about what the kernel does to a writer whose reader has exited. If the host ever stops reproducing the race, the gate is guarding a myth and these cases say so rather than
 quietly agreeing about one.

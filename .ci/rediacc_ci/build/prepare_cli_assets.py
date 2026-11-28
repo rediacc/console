@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/build/prepare-cli-assets.sh` (228 lines).
 
+`--release` (implied by a `CLI_VERSION` other than `0.0.0-dev`, which `build_cli_executables` exports to this child) makes an incomplete THIRD_PARTY_LICENSES fatal: a failed generator, a `NOT GENERATED` section, an SPDX id with no committed text or a missing Node.js LICENSE section fails the build. Dev builds keep the placeholder.
+
 Stages everything the CLI's SEA build embeds: the renet binaries the target platform needs, a `renet-metadata.json` describing them, the third-party credits inventory, a generated `THIRD_PARTY_LICENSES`, and a platform-specific `sea-config.generated.json` listing all of it.
 
 WHICH BINARIES, and why. Every platform embeds BOTH Linux binaries, because the CLI provisions remote Linux machines from wherever it runs. macOS additionally embeds its own `darwin-<arch>` for local renet execution, and Windows its own `windows-<arch>`. The Windows binary is `renet-windows-<arch>.exe` ON DISK and `renet-windows-<arch>` as a SEA asset key, so the copy renames it.
@@ -99,6 +101,27 @@ LICENSES_PLACEHOLDER = (
     "npx tsx scripts/gen/generate-third-party-licenses.ts\n"
 )
 
+# `--release`: markers a shipped notice file must not carry. Each is text the generator writes in place of something it could not produce.
+RELEASE_REFUSED_MARKERS = (
+    "NOT GENERATED",
+    "UNRESOLVED PACKAGE",
+    "Full license text:",
+    "LICENSE TEXT MISSING",
+    "generation failed at build time",
+)
+
+# `--release`: the header the generator writes above the Node.js runtime LICENSE.
+RELEASE_NODE_HEADER = "Node.js v"
+
+
+def release_problems(text: str) -> list[str]:
+    """What makes a notice file unfit to ship: one of RELEASE_REFUSED_MARKERS (the text the generator writes for a section it could not produce, `LICENSE TEXT MISSING` being its mark for an SPDX id with no committed text), or no Node.js LICENSE section. SPDX ids themselves are not read here."""
+    problems = ["contains %r" % marker for marker in RELEASE_REFUSED_MARKERS if marker in text]
+    if not any(line.startswith(RELEASE_NODE_HEADER) for line in text.splitlines()):
+        problems.append("has no %r Node.js LICENSE section" % RELEASE_NODE_HEADER)
+    return problems
+
+
 # The lines bash names in a `set -u` death when an option's value is missing:
 # `SEA_PLATFORM="$2"` is `:32`, `SEA_ARCH="$2"` is `:36`. These are the lines of
 # the ASSIGNMENT, not of the `case` label above it, and the differential drove the twin to establish which.
@@ -182,6 +205,11 @@ def asset_count(asset_pairs: list[tuple[str, str]]) -> int:
     return max(len(asset_pairs) - 1, 0)
 
 
+def split_release_flag(argv: list[str]) -> tuple[list[str], bool]:
+    """`--release` is the one flag the retired twin never had; it is taken out before `parse_args` so the twin's argument handling stays byte-identical."""
+    return [a for a in argv if a != "--release"], "--release" in argv
+
+
 def parse_args(argv: list[str]) -> tuple[str, str, int | None, str]:
     """`:29-48`. Returns `(platform, arch, exit_code, message)`.
 
@@ -252,6 +280,10 @@ def file_sha256(path: pathlib.Path) -> tuple[str, str | None]:
 
 
 def main(argv: list[str]) -> int:
+    argv, release = split_release_flag(argv)
+    # `build_cli_executables` exports CLI_VERSION to this child (`_resolve_version`); any value but the dev placeholder is a publishable build. Passed through the environment, not argv, so the frozen build_cli_executables call-log golden is unchanged.
+    cli_version = os.environ.get("CLI_VERSION", "")
+    release = release or (cli_version not in {"", "0.0.0-dev"})
     platform, arch, code, message = parse_args(argv)
     if code is not None:
         if code == 0:
@@ -372,7 +404,22 @@ def main(argv: list[str]) -> int:
         status = 126
     except OSError:
         status = 127
-    if status == 0:
+    licenses_path = assets_dir / "THIRD_PARTY_LICENSES"
+    if release:
+        # A release build fails closed: no placeholder, and the file is read rather than the status trusted.
+        if status != 0 or not licenses_path.is_file():
+            log.error(
+                "THIRD_PARTY_LICENSES generation failed (status %d); a release build ships no placeholder"
+                % status
+            )
+            return 1
+        problems = release_problems(licenses_path.read_text(encoding="utf-8", errors="replace"))
+        if problems:
+            for problem in problems:
+                log.error("THIRD_PARTY_LICENSES %s" % problem)
+            return 1
+        log.info("Generated THIRD_PARTY_LICENSES")
+    elif status == 0:
         log.info("Generated THIRD_PARTY_LICENSES")
     else:
         log.warn("THIRD_PARTY_LICENSES generation failed; writing placeholder")

@@ -6,7 +6,7 @@ deleted by an EXIT trap, including on failure; no worker is deployed and no publ
 
 NOTHING HERE REACHES CLOUDFLARE IN A TEST. `npx` (wrangler) is the only tool that carries a credential, so the differential (`.ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py`) puts a RECORDING FAKE
 for it on a scratch PATH with an on-disk D1 state file, and drives both sides
-through it. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
+through it. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This is that piece.
 
 THE CALL LOG IS THE PRIMARY EVIDENCE. What the run PRINTS is `::group::` directives and one `log_info` line; the observable effect is the ordered set of `npx wrangler d1` invocations, one clone-d1.sh invocation per region, and the bytes of the generated `wrangler-migration-test.toml`.
 
@@ -69,7 +69,7 @@ bash's own refusal names the bash FILE and a bash LINE NUMBER before the twin's 
 
 A SECOND, SMALLER DIVERGENCE: a `cd workers/www` that cannot happen is bash's own `cd: ...: No such file or directory` with the script's path and a line number. This port prints its own sentence, on the same stream, with the same exit status 1.
 
-K=5 LEDGER: `.ci/shadow/w7p6-test-d1-migrations.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

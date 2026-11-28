@@ -9,27 +9,29 @@
  */
 
 import * as fs from 'node:fs/promises';
-import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
-import { busy, CliExitError } from '../../utils/cli-exit-error.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
+import { ValidationError } from '../../utils/errors.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { VERSION } from '../../version.js';
 import { reportStateWriteRefused } from '../config/state-write-failure.js';
-import {
-  computeSha256,
-  getEmbeddedRenetBinary,
-  isSEA,
-  type RenetArch,
-} from '../core/embedded-assets.js';
+import { computeSha256, isSEA, type RenetArch } from '../core/embedded-assets.js';
 import { outputService } from '../core/output.js';
 import { currentRequestContext } from '../core/request-context.js';
 import { withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import type { SwitchBackOutcome } from '../preview/slot.js';
+import {
+  isPreviewTouchReplacement,
+  pinAndRecordTouch,
+  runSwitchBack,
+} from '../preview/slot-ops.js';
 import {
   dropProvisionEntry,
   getFreshProvisionEntry,
   recordProvisionVerified,
 } from './provision-state.js';
+import { resolveRenetBinary } from './renet-binary-source.js';
 import { stageRenetBinary } from './renet-binary-transfer.js';
 import { reportDaemonUpgrade, upgradeDaemons } from './renet-daemons.js';
 import {
@@ -47,43 +49,32 @@ import type {
   ProvisionOptions,
   ProvisionResult,
 } from './renet-provisioner-types.js';
+import {
+  buildStagingPath,
+  installWithRemoteLock,
+  REMOTE_CURRENT_DIR,
+  REMOTE_CURRENT_PATH,
+  REMOTE_FLOCK_TIMEOUT_EXIT,
+  REMOTE_INSTALL_ROOT,
+  REMOTE_LOCK_PATH,
+} from './renet-remote-install.js';
 import { detectRemoteArch, getRemoteHashAndVersion } from './renet-remote-probe.js';
 import {
   decideRenetReplacement,
   type RenetRefusalCode,
   readRenetBuild,
 } from './renet-replacement.js';
-import { buildSlotPruneStep } from './renet-slot-prune.js';
-
-/** Root directory for versioned renet installs on remote machines */
-const REMOTE_INSTALL_ROOT = '/usr/lib/rediacc/renet';
-const REMOTE_CURRENT_DIR = `${REMOTE_INSTALL_ROOT}/current`;
-const REMOTE_CURRENT_PATH = `${REMOTE_CURRENT_DIR}/renet`;
 
 /** Default renet binary path on remote machines (for ad-hoc invocations). */
 export const REMOTE_RENET_PATH = REMOTE_CURRENT_PATH;
 
 /**
  * Version-specific install path used by `acquireRemoteRenet` as the
- * committed binary location. Exported so the backup reconciler's dry-run
- * can match the exact ExecStart= path a real deploy would write.
+ * committed binary location (the slot `current` points at). Persistent
+ * artifacts such as scheduled backup units name REMOTE_RENET_PATH instead,
+ * so an upgrade never leaves them on a replaced binary.
  */
 export const REMOTE_INSTALL_PATH = `${REMOTE_INSTALL_ROOT}/${VERSION}/renet`;
-
-/** Prefix for per-attempt staging uploads (no sudo needed for /tmp) */
-const STAGING_PATH_PREFIX = '/tmp/.rdc-staging-renet';
-
-/** Remote host-scoped lock file for install/restart critical section */
-const REMOTE_LOCK_PATH = '/tmp/.rdc-renet-provision.lock';
-
-/** Versioned renet slots kept after an install, `current` included: current plus the 2 previous. Matches renet's `daemons upgrade --keep-slots` default. */
-const REMOTE_KEEP_SLOTS = 3;
-
-/** Where systemd units that name a renet slot live. */
-const REMOTE_UNIT_DIR = '/etc/systemd/system';
-
-/** flock's `-E` exit status, chosen outside anything the install body emits. */
-const REMOTE_FLOCK_TIMEOUT_EXIT = 75;
 
 /** Cache TTL in milliseconds (1 hour) */
 const CACHE_TTL_MS = 60 * 60 * 1000;
@@ -208,7 +199,7 @@ class RenetProvisionerService {
 
     return withSharedOrPooledSftp(sharedSftp, config, async (sftp) => {
       const arch = await this.resolveArch(sftp, cacheKey);
-      const { binary, sourcePath } = await this.resolveBinary(arch, options?.localBinaryPath);
+      const { binary, sourcePath } = await resolveRenetBinary(arch, options?.localBinaryPath);
       const localHash = await this.computeLocalHash(arch, binary, sourcePath);
       const paths = { slot: REMOTE_INSTALL_PATH, current: REMOTE_CURRENT_PATH };
       const { result, bothMatch } = classifyInspect(
@@ -304,6 +295,44 @@ class RenetProvisionerService {
     );
   }
 
+  /** The first replacement of a server's renet while a preview is active: pinned and recorded before any upload (D9, preview/slot-ops.ts). */
+  private async pinAndRecordPreviewTouch(
+    sftp: SFTPClient,
+    options: ProvisionOptions | undefined,
+    slot: { hash: string | null; version: string | null },
+    current: { hash: string | null; version: string | null },
+    context: ProvisionContext
+  ): Promise<void> {
+    const touch = options?.previewTouch;
+    if (!touch) return;
+    const running = current.hash ? current : slot;
+    if (touch.refusal && isPreviewTouchReplacement(running, context.localHash)) throw touch.refusal;
+    if (touch.machine === undefined) return;
+    await pinAndRecordTouch(sftp, touch.machine, {
+      running,
+      localHash: context.localHash,
+      binaryPath: current.hash ? REMOTE_CURRENT_PATH : context.remoteInstallPath,
+    });
+  }
+
+  /**
+   * Point `current` back at a pinned slot (the other half of D9), under the same host lock as an install,
+   * then move the router and daemons onto it as after any install.
+   */
+  async switchBackToPinnedSlot(
+    sftp: SFTPClient,
+    pinned: { slotDir: string; sha256: string }
+  ): Promise<SwitchBackOutcome> {
+    const outcome = await runSwitchBack(sftp, pinned, {
+      currentDir: REMOTE_CURRENT_DIR,
+      currentPath: REMOTE_CURRENT_PATH,
+      lockPath: REMOTE_LOCK_PATH,
+      flockTimeoutExit: REMOTE_FLOCK_TIMEOUT_EXIT,
+    });
+    if (outcome === 'switched') await this.refreshRouter(sftp, `${pinned.slotDir}/renet`);
+    return outcome;
+  }
+
   private async provisionInternal(
     config: SFTPClientConfig,
     options?: ProvisionOptions,
@@ -317,7 +346,7 @@ class RenetProvisionerService {
       // Fail open: a machine that failed to provision must not be skipped by the persistent cache on the next attempt.
       await dropProvisionEntry(this.buildCacheKey(config)).catch(() => undefined);
       // Any CliExitError is a coded refusal (today BUSY on the remote install lock) and keeps its code, exit status and next action; an uncoded failure becomes a failed result.
-      if (error instanceof CliExitError) throw error;
+      if (error instanceof CliExitError || error instanceof ValidationError) throw error;
       const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         success: false,
@@ -345,11 +374,12 @@ class RenetProvisionerService {
     });
     const versionRejected = this.buildVersionRejectedResult(config.host, remote, current, context);
     if (versionRejected) return versionRejected;
+    // The only point where a binary is about to leave this workstation: the guard runs here, ahead of the pin and its record so a refusal leaves neither behind, and a no-op provision (hashes already match) never pays for it.
+    if (remote.hash !== context.localHash) await options?.uploadGuard?.();
+    await this.pinAndRecordPreviewTouch(sftp, options, remote, current, context);
 
-    const stagingPath = this.buildStagingPath();
+    const stagingPath = buildStagingPath();
     if (remote.hash !== context.localHash) {
-      // The only point where a binary is about to leave this workstation: the guard runs here, so a no-op provision (hashes already match) never pays for it.
-      await options?.uploadGuard?.();
       await stageRenetBinary(sftp, config, stagingPath, context.binary, context.localHash, {
         installRoot: REMOTE_INSTALL_ROOT,
         currentPath: REMOTE_CURRENT_PATH,
@@ -358,7 +388,7 @@ class RenetProvisionerService {
     if (options?.debug) {
       outputService.info(`Activating remote renet slot ${context.remoteInstallPath}...`);
     }
-    const installResult = await this.installWithRemoteLock(
+    const installResult = await installWithRemoteLock(
       sftp,
       stagingPath,
       context.localHash,
@@ -369,7 +399,7 @@ class RenetProvisionerService {
     // Best-effort: restart route server so it picks up the new binary, now or, when deferred, by the caller.
     let servicesRestarted = false;
     const routerRefreshOwed = options?.restartServices === true && installResult.currentUpdated;
-    const routerRefreshDue = routerRefreshOwed && options?.deferRouterRefresh === true;
+    const routerRefreshDue = routerRefreshOwed && options.deferRouterRefresh === true;
     if (routerRefreshOwed && !routerRefreshDue) {
       servicesRestarted = await this.refreshRouter(sftp, context.remoteInstallPath);
     }
@@ -399,7 +429,7 @@ class RenetProvisionerService {
     const remoteInstallPath = REMOTE_INSTALL_PATH;
     const cacheKey = this.buildCacheKey(config);
     const arch = await this.resolveArch(sftp, cacheKey);
-    const { binary, sourcePath } = await this.resolveBinary(arch, localBinaryPath);
+    const { binary, sourcePath } = await resolveRenetBinary(arch, localBinaryPath);
     return {
       arch,
       binary,
@@ -518,43 +548,6 @@ class RenetProvisionerService {
   }
 
   /**
-   * Get the binary data from either embedded assets or a local file.
-   * On non-Linux platforms, resolves the cross-compiled Linux binary
-   * (e.g. renet-linux-amd64) instead of the local platform binary.
-   * Returns the resolved source path (null for embedded SEA assets) so
-   * the hash memo can be keyed by file identity.
-   */
-  private async resolveBinary(
-    arch: RenetArch,
-    localBinaryPath?: string
-  ): Promise<{ binary: Buffer; sourcePath: string | null }> {
-    if (isSEA()) {
-      return { binary: getEmbeddedRenetBinary('linux', arch), sourcePath: null };
-    }
-
-    if (localBinaryPath) {
-      // localBinaryPath is the HOST binary (e.g. private/renet/bin/renet). It is only the right thing to send when the remote runs the host's own arch: on a non-Linux host it never is (the host binary is mac/win, not the linux binary a VM needs), and on a Linux host only when the remote arch matches. Otherwise use the cross-compiled renet-linux-<arch> staged next to it by ./rdc.sh
-      // / build.sh dev. This is what lets an amd64 workstation provision an arm64 machine (and vice-versa) without building the SEA.
-      const hostArch: RenetArch = process.arch === 'arm64' ? 'arm64' : 'amd64';
-      if (process.platform !== 'linux' || arch !== hostArch) {
-        const dir = path.dirname(localBinaryPath);
-        const linuxBinaryPath = path.join(dir, `renet-linux-${arch}`);
-        try {
-          return { binary: await fs.readFile(linuxBinaryPath), sourcePath: linuxBinaryPath };
-        } catch {
-          throw new Error(
-            `Cross-compiled Linux binary not found at ${linuxBinaryPath}. ` +
-              'Rebuild renet with ./rdc.sh or ./build.sh dev to generate Linux binaries.'
-          );
-        }
-      }
-      return { binary: await fs.readFile(localBinaryPath), sourcePath: localBinaryPath };
-    }
-
-    throw new Error('Cannot provision renet: not running as SEA and no localBinaryPath provided');
-  }
-
-  /**
    * Re-install and restart an active rediacc-router from `remoteInstallPath`
    * ({@link buildRouterRefreshCommand}), then move the other renet daemons onto
    * the new binary (`upgradeDaemons`, renet-daemons.ts). Both halves run after every binary
@@ -583,109 +576,6 @@ class RenetProvisionerService {
     this.archByHost.clear();
     this.localHashMemo.clear();
     this.embeddedHashMemo.clear();
-  }
-
-  private buildStagingPath(): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(16).slice(2, 10);
-    return `${STAGING_PATH_PREFIX}-${process.pid}-${timestamp}-${random}`;
-  }
-
-  private async installWithRemoteLock(
-    sftp: SFTPClient,
-    stagingPath: string,
-    localHash: string,
-    remoteInstallPath: string
-  ): Promise<InstallResult> {
-    try {
-      const output = await sftp.exec(
-        this.buildLockedInstallCommand(stagingPath, localHash, remoteInstallPath)
-      );
-      const trimmed = output.trim();
-      const statusTokens = new Set(trimmed.split(/\s+/).filter(Boolean));
-      const binaryUpdated = statusTokens.has('UPDATED');
-      const currentUpdated = statusTokens.has('CURRENT_UPDATED') || binaryUpdated;
-      if (binaryUpdated || statusTokens.has('VERIFIED') || statusTokens.has('CURRENT_UPDATED')) {
-        return { binaryUpdated, currentUpdated };
-      }
-      throw new Error(`Unexpected provisioning result: ${trimmed || '(empty output)'}`);
-    } catch (error) {
-      try {
-        await sftp.exec(`rm -f ${stagingPath}`);
-      } catch {
-        // Best-effort cleanup only.
-      }
-      if (error instanceof Error && error.message.includes('FLOCK_MISSING')) {
-        throw new Error(
-          "Remote machine is missing 'flock', which is required for safe concurrent renet provisioning"
-        );
-      }
-      if (error instanceof Error && error.message.includes('FLOCK_TIMEOUT')) {
-        // The competing process may belong to a different workstation entirely, so unlike the local lock there is no pid worth naming here.
-        throw busy(
-          `Another process on the machine held the renet install lock for over 120s, so provisioning was skipped.`,
-          {
-            details: [`Lock: ${REMOTE_LOCK_PATH}`],
-            next: {
-              summary: 'Wait for the other provisioning run to finish, then retry.',
-              options: [
-                {
-                  description: 'Find the process holding the remote lock',
-                  run: `rdc term connect <machine> -c "fuser -v ${REMOTE_LOCK_PATH}"`,
-                },
-              ],
-            },
-          }
-        );
-      }
-      throw error;
-    }
-  }
-
-  private buildLockedInstallCommand(
-    stagingPath: string,
-    localHash: string,
-    remoteInstallPath: string
-  ): string {
-    const escapedHash = shellQuote(localHash);
-    const escapedStagingPath = shellQuote(stagingPath);
-    const escapedInstallPath = shellQuote(remoteInstallPath);
-    const escapedLockPath = shellQuote(REMOTE_LOCK_PATH);
-    const escapedInstallDir = shellQuote(path.dirname(remoteInstallPath));
-    const escapedCurrentDir = shellQuote(REMOTE_CURRENT_DIR);
-    const escapedCurrentPath = shellQuote(REMOTE_CURRENT_PATH);
-    const escapedCurrentTmpPath = shellQuote(`${REMOTE_CURRENT_PATH}.tmp`);
-
-    const body = [
-      // Execute under POSIX sh on remote hosts; do not rely on bash-only options.
-      'set -eu',
-      `hash_remote() { (${escapedInstallPath} hash 2>/dev/null || sha256sum ${escapedInstallPath} | cut -d' ' -f1) 2>/dev/null || true; }`,
-      `current_target() { readlink ${escapedCurrentPath} 2>/dev/null || true; }`,
-      'result=',
-      `sudo mkdir -p ${escapedInstallDir}`,
-      `sudo mkdir -p ${escapedCurrentDir}`,
-      `if [ "$(hash_remote)" = ${escapedHash} ]; then rm -f ${escapedStagingPath}; else sudo chmod 755 ${escapedStagingPath}; sudo mv -f ${escapedStagingPath} ${escapedInstallPath}; result=UPDATED; fi`,
-      `if [ "$(current_target)" != ${escapedInstallPath} ]; then sudo ln -sfn ${escapedInstallPath} ${escapedCurrentTmpPath}; sudo mv -Tf ${escapedCurrentTmpPath} ${escapedCurrentPath}; if [ -n "$result" ]; then result="$result CURRENT_UPDATED"; else result=CURRENT_UPDATED; fi; fi`,
-      // Ensure /usr/bin/renet symlinks to current so "sudo renet" always resolves to the provisioned binary
-      `if [ ! -L /usr/bin/renet ] || [ "$(readlink /usr/bin/renet)" != ${escapedCurrentPath} ]; then sudo ln -sf ${escapedCurrentPath} /usr/bin/renet; fi`,
-      // Prune old slots inside the same lock, after current points at the new slot.
-      `(${buildSlotPruneStep({
-        root: REMOTE_INSTALL_ROOT,
-        currentPath: REMOTE_CURRENT_PATH,
-        installPath: remoteInstallPath,
-        unitDir: REMOTE_UNIT_DIR,
-        keep: REMOTE_KEEP_SLOTS,
-        sudo: 'sudo',
-      })}) || true`,
-      'if [ -z "$result" ]; then result=VERIFIED; fi',
-      'echo "$result"',
-    ].join('; ');
-    const quotedBody = shellQuote(body);
-    // `-E ${REMOTE_FLOCK_TIMEOUT_EXIT}` gives the lock-not-acquired case its own
-    // exit status. Without it flock exits 1, which the install body can also produce, so a machine busy with another operator's provision was reported as "Unexpected provisioning result: (empty output)" and looked like a
-    // broken install. -E is util-linux >= 2.20 (2011); the probe above still
-    // only checks for flock's presence, and an -E-less flock fails loudly rather than silently mis-reporting.
-    return `command -v flock >/dev/null 2>&1 || { echo FLOCK_MISSING >&2; exit 127; }; flock -w 120 -E ${REMOTE_FLOCK_TIMEOUT_EXIT} ${escapedLockPath} sh -c ${quotedBody} || { rc=$?; [ "$rc" = ${REMOTE_FLOCK_TIMEOUT_EXIT} ] && echo FLOCK_TIMEOUT >&2; exit "$rc"; }`;
   }
 }
 

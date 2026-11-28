@@ -156,11 +156,15 @@ else:
 
 # The `gh` the --run cases are driven against: one shim, four routed answers.
 RUN_SHIM = """#!/bin/bash
+# `gh api repos/<repo>/actions/runs/<id>` is the run object; `.../jobs?per_page=..&page=..` its jobs.
 case "$*" in
-  *999999*) echo "failed to get run: HTTP 404: Not Found" >&2; exit 1 ;;
-  *inflight*) echo '{"status":"in_progress","conclusion":null,"jobs":[{"name":"Tag & Release","conclusion":null}]}' ;;
-  *redrun*)  echo '{"status":"completed","conclusion":"failure","jobs":[{"name":"Publish","conclusion":"failure"}]}' ;;
-  *)         echo '{"status":"completed","conclusion":"success","jobs":[{"name":"Tag & Release","conclusion":"success"}]}' ;;
+  *999999*) echo "gh: Not Found (HTTP 404)" >&2; exit 1 ;;
+  *inflight/jobs*) echo '{"total_count":1,"jobs":[{"id":1,"name":"Tag & Release","status":"in_progress","conclusion":null}]}' ;;
+  *redrun/jobs*) echo '{"total_count":1,"jobs":[{"id":2,"name":"Publish","status":"completed","conclusion":"failure"}]}' ;;
+  *jobs*) echo '{"total_count":1,"jobs":[{"id":3,"name":"Tag & Release","status":"completed","conclusion":"success"}]}' ;;
+  *inflight*) echo '{"id":1,"status":"in_progress","conclusion":null,"name":"Release"}' ;;
+  *redrun*)  echo '{"id":2,"status":"completed","conclusion":"failure","name":"Release"}' ;;
+  *)         echo '{"id":3,"status":"completed","conclusion":"success","name":"Release"}' ;;
 esac
 """
 

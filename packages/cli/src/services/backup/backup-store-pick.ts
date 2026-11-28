@@ -412,9 +412,21 @@ export async function readStoreStatuses(lineages: string[]): Promise<Record<stri
   }
 }
 
+/** A listed store says its own run, `-` when it has none; only an unlisted store keeps the unit's columns. */
+function storeRun(known: Pick<StoreStatus, 'lastRunAt' | 'lastRunStatus'> | undefined): {
+  lastRun?: string;
+  result?: string;
+} {
+  if (!known) return {};
+  return {
+    lastRun: known.lastRunAt ?? '-',
+    result: known.lastRunAt ? (known.lastRunStatus ?? '-') : '-',
+  };
+}
+
 /**
  * One printed row per destination store of the row's strategy (`home` when it names none), carrying that store's
- * last run and outcome (the unit's own when the account has none), newest snapshot, last verify and clean-up state.
+ * last run and outcome (the unit's own only when the account lists no status for the store), newest snapshot, last verify and clean-up state.
  */
 export function expandStatusRows<R extends { strategy: string; unit: string }>(
   rows: R[],
@@ -434,9 +446,7 @@ export function expandStatusRows<R extends { strategy: string; unit: string }>(
     return (stores && stores.length > 0 ? stores : [HOME_STORE]).map((store) => {
       const known = targets?.stores[store];
       const from = targets?.replicas?.[strategy]?.[store];
-      const run = known?.lastRunAt
-        ? { lastRun: known.lastRunAt, result: known.lastRunStatus ?? '-' }
-        : {};
+      const run = storeRun(known);
       return {
         strategy,
         unit,

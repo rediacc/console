@@ -39,6 +39,7 @@ NOTHING HERE REACHES R2 OR CLOUDFLARE IN A TEST: `.ci/rediacc_ci/tests/test_depl
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import sys
@@ -57,8 +58,8 @@ BUCKET = r2_promote.BUCKET
 PUBLIC_HOST = r2_promote.PUBLIC_HOST
 CC_MUTABLE = r2_promote.CC_MUTABLE
 
-# The catch-all that ends every tree's copy: no filters, as the twin's recursive copy had none. `r2_promote.promote_tree` never copies a key twice, so it moves only what the soak-gated phases leave out (`latest-linux.yml`, `repodata/comps.xml`).
-CATCH_ALL: tuple[str, ...] = ()
+# The catch-all that ends every tree's copy: no filters beyond the history record (`HISTORY_EXCLUDE`), which is written by `record_stable` and never copied. `r2_promote.promote_tree` never copies a key twice, so it moves only what the soak-gated phases leave out (`latest-linux.yml`, `repodata/comps.xml`).
+CATCH_ALL: tuple[str, ...] = promote_r2_to_stable.HISTORY_EXCLUDE
 
 # The stamps, shared with the soak-gated sibling through `channel_stamp`.
 CONFIG_SED = channel_stamp.CHANNEL_SED
@@ -180,6 +181,33 @@ def _promote_dirs(endpoint: str) -> list[str]:
     return urls
 
 
+def _record_stable(endpoint: str, delay: str) -> None:
+    """Append the version this lane just promoted to the stable record (`promote_r2_to_stable.record_stable`). The lane takes no version input: it promotes the live edge, and the `cli/stable/manifest.json` it has just written names it."""
+    run = r2_promote.Transfers(SELF, endpoint, float(delay or "0"))
+    stage_root = tempfile.mkdtemp(prefix="promote-history-")
+    try:
+        manifest = os.path.join(stage_root, "manifest.json")
+        run.get("cli/stable/manifest.json", manifest)
+        with open(manifest, encoding="utf-8") as handle:
+            data = json.load(handle)
+        version = str(data.get("version") or "") if isinstance(data, dict) else ""
+        if not version or version == "null":
+            print(
+                "%s: cli/stable/manifest.json names no version; the stable record was not updated"
+                % SELF,
+                file=sys.stderr,
+            )
+            raise BashExitError(1)
+        promote_r2_to_stable.record_stable(run, version)
+    except r2_promote.PromoteError as exc:
+        raise BashExitError(exc.status) from exc
+    except ValueError as exc:
+        print("%s: cli/stable/manifest.json is not valid JSON: %s" % (SELF, exc), file=sys.stderr)
+        raise BashExitError(1) from exc
+    finally:
+        shutil.rmtree(stage_root, ignore_errors=True)
+
+
 def _purge(urls: list[str], zone: str) -> None:
     """`printf '%s\\n' "${PURGE_URLS[@]}" | cf-purge-urls.sh --zone <zone>` (twin :115-118).
 
@@ -230,13 +258,20 @@ def main(argv: list[str]) -> int:
 
     print("R2 promoted to stable")
 
+    # The purge follows the promote that landed even when the record step fails, so the CDN never serves a stale edge copy of a promotion that succeeded; the record's failure still decides the exit code.
+    record_code = 0
+    try:
+        _record_stable(endpoint, env["PROMOTE_RETRY_DELAY_S"])
+    except BashExitError as exc:
+        record_code = exc.code
+
     if purge_urls:
         try:
             # `${CLOUDFLARE_ZONE_ID:-}`: unset and empty are the same argument.
             _purge(purge_urls, env["CLOUDFLARE_ZONE_ID"])
         except BashExitError as exc:
-            return exc.code
-    return 0
+            return record_code or exc.code
+    return record_code
 
 
 if __name__ == "__main__":

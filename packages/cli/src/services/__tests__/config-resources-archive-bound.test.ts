@@ -30,6 +30,11 @@ vi.mock('../config/config-base.js', () => ({
           mockDeleted = next;
           return Promise.resolve();
         },
+        setRepositoriesAndArchive: (repos: typeof mockRepos, archive: typeof mockDeleted) => {
+          mockRepos = repos;
+          mockDeleted = archive;
+          return Promise.resolve();
+        },
       });
     }
   },

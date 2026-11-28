@@ -407,7 +407,7 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
     },
     {
       command:
-        'rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes',
+        'rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --cert licence.cert --no-dns-wait --yes',
       descriptionKey: 'commands.server.install.examples.lan',
     },
   ],

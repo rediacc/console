@@ -685,9 +685,6 @@ def test_main_preflight_returns_zero_without_credentials(monkeypatch):
     assert ba.main(["preflight"]) == 0
 
 
-STRIPE_WEBHOOK = "/account/api/v1/webhooks/stripe"
-
-
 def _blocked(expr: str, *, method: str, path: str, ip: str, host: str = BENCH_HOST) -> bool:
     """Evaluate the rule expression for one request by its own clauses: the rule is `(host) and (not ip) and (not (...exempt...))`, and a request is blocked when every clause holds."""
     clauses = expr[1:-1].split(") and (")
@@ -715,36 +712,31 @@ def _blocked(expr: str, *, method: str, path: str, ip: str, host: str = BENCH_HO
     return True
 
 
-def test_the_rule_admits_only_a_post_of_the_exact_stripe_webhook_path():
-    """Stripe's deliveries come from rotating AWS addresses; the handler verifies Stripe-Signature, so the exact path is open to POST from any IP and nothing broader."""
+def test_the_rule_exempts_only_a_get_of_the_health_paths():
+    """ops-telemetry-probe.yml probes the health paths from runners with no fixed IP, so a GET of exactly those is open from any address and nothing broader is."""
     expr = ba.expression(HOSTS, ["198.51.100.7"])
     stranger = "203.0.113.9"
-    assert not _blocked(expr, method="POST", path=STRIPE_WEBHOOK, ip=stranger)
-    assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip=stranger)
-    assert _blocked(expr, method="POST", path=STRIPE_WEBHOOK + "/x", ip=stranger)
-    assert _blocked(expr, method="POST", path="/account/api/v1/webhooks", ip=stranger)
-    assert _blocked(expr, method="GET", path=STRIPE_WEBHOOK, ip=stranger)
-    assert _blocked(expr, method="PUT", path=STRIPE_WEBHOOK, ip=stranger)
     assert not _blocked(expr, method="GET", path="/v1/health", ip=stranger)
-    # The rule covers both bench hosts with the same exemption.
-    assert not _blocked(
-        expr, method="POST", path=STRIPE_WEBHOOK, ip=stranger, host=PROXY_BENCH_HOST
+    assert not _blocked(expr, method="GET", path="/account/api/v1/health", ip=stranger)
+    assert _blocked(expr, method="POST", path="/v1/health", ip=stranger)
+    assert _blocked(expr, method="GET", path="/v1/health/x", ip=stranger)
+    assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip=stranger)
+    assert _blocked(expr, method="POST", path="/account/api/v1/webhooks/stripe", ip=stranger), (
+        "the retired Stripe webhook route is no longer exempt"
     )
+    # The rule covers both bench hosts with the same exemption.
+    assert not _blocked(expr, method="GET", path="/v1/health", ip=stranger, host=PROXY_BENCH_HOST)
 
 
-def test_an_allowlisted_ip_passes_login_root_and_the_stripe_webhook():
+def test_an_allowlisted_ip_passes_login_and_root():
     expr = ba.expression(HOSTS, ["198.51.100.7"])
-    for method, path in (
-        ("POST", "/account/api/v1/auth/login"),
-        ("GET", "/"),
-        ("POST", STRIPE_WEBHOOK),
-    ):
+    for method, path in (("POST", "/account/api/v1/auth/login"), ("GET", "/")):
         assert not _blocked(expr, method=method, path=path, ip="198.51.100.7")
 
 
 def test_with_no_ips_only_the_exempt_requests_pass():
     expr = ba.expression(HOSTS, [])
-    assert not _blocked(expr, method="POST", path=STRIPE_WEBHOOK, ip="203.0.113.9")
+    assert not _blocked(expr, method="GET", path="/v1/health", ip="203.0.113.9")
     assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip="203.0.113.9")
 
 
@@ -929,3 +921,10 @@ def test_the_committed_tree_lists_every_regional_account_and_proxy_host():
     for region in ("us", "asia"):
         assert f"bench-{region}.rediacc.cloud" in found
         assert f"proxy.bench-{region}.rediacc.cloud" in found
+
+
+def test_a_stored_job_token_skips_the_profile_reexec(monkeypatch):
+    for name in ("CF_MANAGEMENT_TOKEN", "CF_GLOBAL_API_KEY", "CF_EMAIL", "REDIACC_BWS_PROFILES"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("CF_JOB_TOKEN", "stored")
+    assert ba._reexec_under_profile(["list"]) is None

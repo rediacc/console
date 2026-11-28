@@ -14,6 +14,7 @@ import subprocess
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.infra import build_renet
 from rediacc_ci.well_known import RENET_REPO
 
 ROOT = paths.repo_root()
@@ -314,3 +315,63 @@ def test_a_stale_cache_hit_is_announced_before_the_restage(tmp_path):
     _stage_receipt(good)
     quiet = _run(good, env_extra={"RENET_EMBED_CACHE_HIT": "true"})
     assert "::warning" not in quiet["stdout"]
+
+
+# -- the go-licenses report (`build_renet go-licenses <output>`): refusals driven in process --
+
+
+def _go_licenses_run(monkeypatch, tmp_path, stdout="", rc=0, raises=None):
+    def fake_run(argv, **_kwargs):
+        if raises:
+            raise raises
+        return subprocess.CompletedProcess(argv, rc, stdout=stdout)
+
+    monkeypatch.setattr(build_renet.subprocess, "run", fake_run)
+    out = tmp_path / "out" / "licences.csv"
+    return build_renet.write_go_licenses(tmp_path, out), out
+
+
+def test_go_licenses_writes_the_report_it_was_given(monkeypatch, tmp_path):
+    rows = "a/b,https://x,MIT\nc/d,https://y,BSD\n"
+    rc, out = _go_licenses_run(monkeypatch, tmp_path, stdout=rows)
+    assert rc == 0
+    assert out.read_text(encoding="utf-8") == rows
+
+
+def test_go_licenses_refuses_an_empty_report(monkeypatch, tmp_path):
+    rc, out = _go_licenses_run(monkeypatch, tmp_path, stdout="\n  \n")
+    assert rc == 1
+    assert not out.exists()
+
+
+def test_go_licenses_refuses_a_renet_package_row(monkeypatch, tmp_path):
+    stdout = f"a/b,https://x,MIT\ngithub.com/{RENET_REPO}/cmd,x,Unknown\n"
+    rc, out = _go_licenses_run(monkeypatch, tmp_path, stdout=stdout)
+    assert rc == 1
+    assert not out.exists()
+
+
+def test_go_licenses_passes_the_tool_failure_code_through(monkeypatch, tmp_path):
+    rc, out = _go_licenses_run(monkeypatch, tmp_path, stdout="a,b,c\n", rc=3)
+    assert rc == 3
+    assert not out.exists()
+
+
+def test_go_licenses_that_cannot_start_is_a_refusal(monkeypatch, tmp_path):
+    rc, out = _go_licenses_run(monkeypatch, tmp_path, raises=FileNotFoundError("go"))
+    assert rc == 1
+    assert not out.exists()
+
+
+def test_go_licenses_usage_is_rc_2():
+    assert build_renet.main(["go-licenses"]) == 2
+    assert build_renet.main(["go-licenses", "a", "b"]) == 2
+
+
+def test_the_go_licenses_pin_comment_names_a_registered_id():
+    pins = json.loads((ROOT / ".ci/config/pins.json").read_text(encoding="utf-8"))
+    ids = {e["id"] for e in pins["entries"]}
+    assert "devcontainer:go-licenses" in ids
+    src = PORT.read_text(encoding="utf-8")
+    assert "`devcontainer:go-licenses`" in src
+    assert "toolchain:go-licenses" not in src

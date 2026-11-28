@@ -366,3 +366,24 @@ def test_the_pin_matches_the_host_in_any_letter_case(monkeypatch):
     for url in ("https://NEW.example.test/x", "https://Other.example.test/x"):
         handler.https_open(pc.urllib.request.Request(url))
     assert dialed == [("198.51.100.7", 443), ("Other.example.test", 443)]
+
+
+def test_a_bundle_larger_than_four_megabytes_still_shows_its_key(monkeypatch):
+    """2026-11-28: the portal bundle grew to 5.46 MB and the key sat past a 4 MB read, so the smoke called a keyed bundle keyless and stopped a release. http() reads the whole bundle up to MAX_BODY_BYTES."""
+    body = ("x" * 5_500_000 + KEY).encode("utf-8")
+
+    class Resp:
+        status = 200
+
+        def read(self, n: int = -1) -> bytes:
+            return body if n < 0 else body[:n]
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+    monkeypatch.setattr(pc, "_open", lambda _request, _pin: Resp())
+    reply = pc.http("GET", "https://eu.example.test/account/assets/index-x.js")
+    assert pc.SITEKEY_RE.search(reply.body), "the key past 4 MB was cut off"

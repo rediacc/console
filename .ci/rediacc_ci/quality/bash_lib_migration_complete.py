@@ -14,6 +14,16 @@ THE RETIREMENT IS BUILT IN, AND IT WAITS FOR THE LAST RETIRED LIBRARY. When a li
 `blocker-validator.sh` and `emit-advisory.sh`, so `toolchain.sh` is the one row left, and it is KEEP-BASH by ruling D2: `.ci/bootstrap.sh:87` sources it before any Python exists. Operator ruling D9 (2026-10-08) keeps this gate for as long as that library is kept, since the workflows read the Python `toolchain pairs/report` while `bootstrap.sh` reads the bash, and this gate is what keeps the two complete. The gate retires with `toolchain.sh`, not before.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
+
+---- gate ----
+id: check:ci-bash-lib-ported
+step: Bash-lib port completeness
+needs: none
+lane: quality-static
+selftest: true
+why: account.sh reached 22 of 22 ported functions on 2026-09-24 by a hand count;
+     nothing stopped a new bash function or a renamed Python def from reopening the gap
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -276,4 +286,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_bash_lib_ported.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

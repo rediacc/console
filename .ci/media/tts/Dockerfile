@@ -20,7 +20,7 @@
 # so a container and the host, or two containers, each take their OWN lease and both load
 # VoxCPM. Two VoxCPM jobs do not degrade, they OOM. The runner MUST bind-mount a shared
 # lock path and set MEDIA_GPU_LOCK_FILE to it. See .ci/media/tools/run-in-tts.sh.
-ARG CUDA_TAG=13.0.1-runtime-ubuntu24.04
+ARG CUDA_TAG=13.5.0-runtime-ubuntu24.04
 FROM nvidia/cuda:${CUDA_TAG}
 
 ENV DEBIAN_FRONTEND=noninteractive PYTHONUNBUFFERED=1

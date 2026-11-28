@@ -114,7 +114,11 @@ function advanceCursorRead(cursor: unknown, segment: string): { next: unknown } 
     return { next: cursor[idx] };
   }
   if (typeof cursor === 'object') {
-    return { next: (cursor as Record<string, unknown>)[segment] };
+    return {
+      next: Object.hasOwn(cursor, segment)
+        ? (cursor as Record<string, unknown>)[segment]
+        : undefined,
+    };
   }
   return undefined;
 }
@@ -138,21 +142,62 @@ export function getByPointer(root: unknown, pointer: string): unknown {
   return cursor;
 }
 
+function isContainer(value: unknown): value is Record<string, unknown> | unknown[] {
+  return value !== null && typeof value === 'object';
+}
+
+/** A segment that is a plain array index, so a missing parent it descends into is an array. */
+function isIndexSegment(segment: string | undefined): boolean {
+  return segment !== undefined && /^(0|[1-9]\d*)$/.test(segment);
+}
+
+/** `__proto__` is never a member: reading or writing it would reach Object.prototype. */
+function isForbiddenSegment(segment: string): boolean {
+  return segment === '__proto__';
+}
+
 /**
  * Advance a mutable cursor (Record or Array) by one intermediate segment.
  * Returns the child container, or `undefined` if traversal should abort
- * (invalid array index or out-of-bounds).
+ * (invalid array index, an index past the end of an array, a primitive on the
+ * path, or the `__proto__` segment). With `create` set, a missing member is
+ * created: an array when the segment after it (`nextSegment`) is an array index
+ * and an object otherwise; an array grows only by appending at its end.
  */
 function advanceCursorWrite(
   cursor: Record<string, unknown> | unknown[],
-  segment: string
+  segment: string,
+  nextSegment: string | undefined,
+  create: boolean
 ): Record<string, unknown> | unknown[] | undefined {
-  if (Array.isArray(cursor)) {
-    const idx = Number.parseInt(segment, 10);
-    if (!Number.isFinite(idx) || idx < 0 || idx >= cursor.length) return undefined;
-    return cursor[idx] as Record<string, unknown> | unknown[];
+  if (isForbiddenSegment(segment)) return undefined;
+  const fresh = (): Record<string, unknown> | unknown[] => (isIndexSegment(nextSegment) ? [] : {});
+  if (Array.isArray(cursor)) return advanceArrayWrite(cursor, segment, fresh, create);
+  const child = Object.hasOwn(cursor, segment) ? cursor[segment] : undefined;
+  if (isContainer(child)) return child;
+  if (child !== undefined || !create) return undefined;
+  const created = fresh();
+  cursor[segment] = created;
+  return created;
+}
+
+/** The array half of `advanceCursorWrite`: an index within the array, or exactly one past its end when creating. */
+function advanceArrayWrite(
+  cursor: unknown[],
+  segment: string,
+  fresh: () => Record<string, unknown> | unknown[],
+  create: boolean
+): Record<string, unknown> | unknown[] | undefined {
+  const idx = Number.parseInt(segment, 10);
+  if (!Number.isFinite(idx) || idx < 0 || idx > cursor.length) return undefined;
+  if (idx < cursor.length) {
+    const item = cursor[idx];
+    return isContainer(item) ? item : undefined;
   }
-  return cursor[segment] as Record<string, unknown> | unknown[];
+  if (!create) return undefined;
+  const created = fresh();
+  cursor.push(created);
+  return created;
 }
 
 /**
@@ -166,14 +211,18 @@ function writeAtLeaf(
   if (Array.isArray(cursor)) {
     const idx = Number.parseInt(segment, 10);
     if (Number.isFinite(idx)) cursor[idx] = newValue;
-  } else {
+  } else if (!isForbiddenSegment(segment)) {
     cursor[segment] = newValue;
   }
 }
 
 /**
  * Set a value at a JSON Pointer within a deep-cloned tree. Returns the cloned root.
- * Intermediate objects/arrays are created as needed; missing paths are a no-op on the clone.
+ * Missing intermediate members are created (an array when the next segment is an array index,
+ * an object otherwise), except when `newValue` is undefined (removing a leaf under a missing parent
+ * creates nothing). A path through a primitive, through the `__proto__` segment, or through an
+ * array index more than one past the array's end is a no-op on the clone. The final segment is
+ * written as given: a leaf index past the end of an array extends it, leaving holes.
  */
 export function setByPointer(root: unknown, pointer: string, newValue: unknown): unknown {
   if (pointer === '') return newValue;
@@ -184,7 +233,7 @@ export function setByPointer(root: unknown, pointer: string, newValue: unknown):
   const clone = deepClone(root);
   let cursor: Record<string, unknown> | unknown[] = clone as Record<string, unknown>;
   for (let i = 0; i < segments.length - 1; i++) {
-    const next = advanceCursorWrite(cursor, segments[i]);
+    const next = advanceCursorWrite(cursor, segments[i], segments[i + 1], newValue !== undefined);
     if (next === undefined) return clone;
     cursor = next;
   }

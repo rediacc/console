@@ -82,7 +82,7 @@ vi.mock('../../services/tofu/provider-resolver.js', () => ({
 }));
 vi.mock('../../services/tofu/tf-generator.js', () => ({ generateTfJson: () => ({}) }));
 vi.mock('../../services/renet/machine-bootstrap.js', () => ({
-  scanHostKeys: () => '',
+  scanHostKeys: () => Promise.reject(new Error('host-key scan is not exercised here')),
   waitForSSH: async () => undefined,
 }));
 vi.mock('../../services/renet/renet-execution.js', () => ({

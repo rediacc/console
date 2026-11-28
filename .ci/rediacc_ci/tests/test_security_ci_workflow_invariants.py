@@ -1,6 +1,6 @@
 """`rediacc_ci.security.ci_workflow_invariants`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/check-ci-workflow-invariants.sh` and the port over the same workflow and compared exit code, stdout and stderr byte for byte, with one exemption. The ledger `.ci/shadow/w7p6-check-ci-workflow-invariants.observations.jsonl` holds 5 rows of that comparison.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/security/check-ci-workflow-invariants.sh` and the port over the same workflow and compared exit code, stdout and stderr byte for byte, with one exemption. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison.
 
 Byte equality was affordable because 103 of the twin's 224 lines were ALREADY Python inside a `python3 - <<'PY'` heredoc (`:66-168`), so anything short of it would have been a transcription error rather than a legitimate rewrite. Every fixture case now compares against `goldens/ci-workflow-invariants/`, which holds the twin's OWN recorded bytes, captured on its last day in the
 tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
@@ -40,8 +40,10 @@ import sys
 import typing
 
 import pytest
+import yaml
 
 from rediacc_ci import paths, workflows
+from rediacc_ci.core import toolchain
 from rediacc_ci.quality import workflows as quality_workflows
 from rediacc_ci.security import ci_workflow_invariants
 from rediacc_ci.tests import differential, frozen
@@ -336,7 +338,7 @@ def compare(tmp_path: pathlib.Path, name: str) -> tuple[int, str, str]:
 def assert_red(result: tuple[int, str, str], token: str) -> None:
     """Anti-vacuity for one recording: the twin really did fail, for the reason meant.
 
-    Two implementations that both print nothing and both exit 0 agree perfectly and prove nothing; `scripts/lib/shadow-gate.ts` calls that VACUOUS_BOTH_EMPTY and refuses it, and this is the same refusal against a recording.
+    Two implementations that both print nothing and both exit 0 agree perfectly and prove nothing; the shadow gate (commit:bf054adcd4) calls that VACUOUS_BOTH_EMPTY and refuses it, and this is the same refusal against a recording.
     """
     assert result[0] == 1, "expected the twin to fail, got exit %s\n%s" % (result[0], result[2])
     assert token in result[2], "expected %r in the recorded stderr, got:\n%s" % (token, result[2])
@@ -672,8 +674,8 @@ def test_unconditional_ancestors_and_conditional_descendants_pass():
 #
 # CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-release-edge's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-release-edge.yml.
 
-# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
-PRE_FIX_CD_COMMIT = "0e6af2d1cb918135c79c057ee9d29b5dfb276af1"
+# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous, and an origin/main sha so a fetch-depth 0 checkout can read it (0e6af2d1c, the same tree before the history rewrite, sits only on the gitlab remote).
+PRE_FIX_CD_COMMIT = "95dd35ae1ca75f23d3a4565178fb64426be70799"
 
 TAG_RUN = 'git -c user.name="$N" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"\ngit push origin "v${VERSION}"\n'
 PERMS_RUN = (
@@ -956,20 +958,11 @@ REAL_ACTION = ROOT / ".github/actions/app-token/action.yml"
 def test_the_real_pre_fix_cd_workflow_is_refused(tmp_path: pathlib.Path) -> None:
     """THE HISTORICAL CONTROL: the cd-release-edge.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
 
-    Skipped, loudly, when the commit is unreachable (a shallow clone): a missing object is not evidence of a working gate.
+    An unreachable commit FAILS through `git_blob`: a skipped historical control is a control that did not run.
     """
-    show = subprocess.run(
-        ["git", "show", "%s:.github/workflows/cd-v2.yml" % PRE_FIX_CD_COMMIT],
-        cwd=str(ROOT),
-        capture_output=True,
-        text=True,
-        check=False,
+    proc = run_real(
+        tmp_path, CD_WORKFLOW_FILE=git_blob(PRE_FIX_CD_COMMIT, ".github/workflows/cd-v2.yml")
     )
-    if show.returncode != 0:
-        pytest.skip(
-            "pre-fix commit %s unreachable here: %s" % (PRE_FIX_CD_COMMIT, show.stderr.strip())
-        )
-    proc = run_real(tmp_path, CD_WORKFLOW_FILE=show.stdout)
     assert proc.returncode == 1, proc.stderr
     assert (
         "sits in tag-and-release behind publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published"
@@ -998,15 +991,35 @@ def test_dropping_permission_workflows_from_the_real_action_is_refused(
     assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
 
 
-def test_dropping_the_cd_arms_workflows_line_from_the_real_action_is_refused(
+REAL_PERMS = ROOT / ".github/actions/app-token/perms.py"
+
+
+def test_dropping_the_cd_presets_workflows_grant_from_the_real_perms_script_is_refused(
     tmp_path: pathlib.Path,
 ) -> None:
-    text = cut_once(
-        REAL_ACTION.read_text(encoding="utf-8"),
-        '            echo "perm-workflows=write" >> "$GITHUB_OUTPUT"\n',
-        "",
+    """The cd preset lives in perms.py since the inline-run cap moved it out of action.yml; dropping its `workflows: write` entry must still be red."""
+    text = cut_once(REAL_PERMS.read_text(encoding="utf-8"), '        ("workflows", "write"),\n', "")
+    proc = run_real(tmp_path, APP_TOKEN_PERMS_FILE=text)
+    assert proc.returncode == 1, proc.stderr
+    assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
+    assert "Restore `perm-workflows=write` and `permission-workflows`" in proc.stderr
+    # CONTROL: the unmutated script through the same seam is green, so the red above is the mutation and not the seam.
+    clean_dir = tmp_path / "clean"
+    clean_dir.mkdir()
+    clean = run_real(clean_dir, APP_TOKEN_PERMS_FILE=REAL_PERMS.read_text(encoding="utf-8"))
+    assert clean.returncode == 0, clean.stderr
+
+
+def test_a_workflows_grant_on_another_preset_does_not_satisfy_the_cd_check(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Moving the grant from `cd` to `housekeeping` keeps the string in the file and must still be red."""
+    source = REAL_PERMS.read_text(encoding="utf-8")
+    moved = cut_once(source, '        ("workflows", "write"),\n', "").replace(
+        '        ("deployments", "write"),\n',
+        '        ("deployments", "write"),\n        ("workflows", "write"),\n',
     )
-    proc = run_real(tmp_path, APP_TOKEN_ACTION_FILE=text)
+    proc = run_real(tmp_path, APP_TOKEN_PERMS_FILE=moved)
     assert proc.returncode == 1, proc.stderr
     assert "INVARIANT-FAIL: cd-preset:" in proc.stderr
 
@@ -2264,10 +2277,10 @@ def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> No
 
 # ---- the workflow-estate pins (2026-10-23; asked for by the Stop hook's regression judge) ----
 #
-# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
+# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 2f3035966): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit b0bf0b164): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
 
-PIPEFAIL_FIX = "41437ea6fec97878060164859b01984c1108d32a"
-DISPATCH_FIX = "f8d184807ca93051f04bd554b68adfddd5dd81d5"
+PIPEFAIL_FIX = "2f30359664c23b47f446875a2f6d1050d04e604e"
+DISPATCH_FIX = "b0bf0b1649dcc9dae1f7ab8ff9da97e84f0a6f7a"
 GUARD = ci_workflow_invariants.DEFAULT_BRANCH_GUARD
 
 
@@ -2835,14 +2848,17 @@ def test_local_order_refuses_a_stable_row_and_a_vacuous_table() -> None:
     )
 
 
-def test_local_stable_admitted_needs_a_named_refusal() -> None:
-    class Refuses:
-        CHANNEL = "edge"
+def test_local_stable_unasked_needs_a_named_refusal(monkeypatch: pytest.MonkeyPatch) -> None:
+    ask_name = ci_workflow_invariants.LOCAL_ASK_ENV
 
+    class Refuses:
         @staticmethod
         def main(argv, root=None):
             del argv, root
-            sys.stderr.write("refused: cd-release-stable.yml\n")
+            # The probe removes the ask first, so a caller's own value cannot admit it.
+            if ask_name in dict(os.environ):
+                return 0
+            sys.stderr.write("refused: needs RELEASE_ASKED=ASKED:<minute>Z\n")
             return 2
 
     class Admits(Refuses):
@@ -2851,8 +2867,84 @@ def test_local_stable_admitted_needs_a_named_refusal() -> None:
             del argv, root
             return 0
 
-    assert ci_workflow_invariants.local_stable_admitted(Refuses) == ""
-    assert "returned 0" in ci_workflow_invariants.local_stable_admitted(Admits)
+    class Silent(Refuses):
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            return 2
+
+    class Crashes(Refuses):
+        @staticmethod
+        def main(argv, root=None):
+            del argv, root
+            raise SystemExit(2)
+
+    monkeypatch.setenv(ask_name, "ASKED:2026-01-01T00:00Z")
+    assert ci_workflow_invariants.local_stable_unasked(Refuses) == ""
+    # The probe restores the caller's environment.
+    assert dict(os.environ).get(ask_name) == "ASKED:2026-01-01T00:00Z"
+    assert "returned 0" in ci_workflow_invariants.local_stable_unasked(Admits)
+    assert "without naming it" in ci_workflow_invariants.local_stable_unasked(Silent)
+    assert "SystemExit" in ci_workflow_invariants.local_stable_unasked(Crashes)
+    assert "no callable main" in ci_workflow_invariants.local_stable_unasked(object())
+
+
+def _stable_table() -> list[_Row]:
+    py = ("python3", "-m")
+    retag = ("python3", ".ci/scripts/docker/retag_image.py", "--image", "renet")
+    return [
+        _Row("edge-version", (), kind="channel-version"),
+        _Row(
+            "gates",
+            (*py, "rediacc_ci.release.local_gates", "--channel", "stable", "--version", "{v}"),
+            kind="gates",
+        ),
+        _Row("rollback-labels", (), kind="rollback-labels"),
+        _Row("promote-r2", (*py, "rediacc_ci.deploy.promote_r2_to_stable")),
+        _Row("promote-renet", (*retag, "--from", "{v}", "--to", "stable")),
+        _Row("verify-stable", (*py, "rediacc_ci.deploy.verify_stable_endpoints")),
+        _Row("mark-production", (*py, "rediacc_ci.release.mark_production", "{v}")),
+    ]
+
+
+def _stable_kinds(rows: list[_Row]) -> list[str]:
+    return [k for k, _n in ci_workflow_invariants.analyse_stable_steps(rows)[0]]
+
+
+def test_local_stable_order_holds_on_a_well_formed_table() -> None:
+    findings, shape = ci_workflow_invariants.analyse_stable_steps(_stable_table())
+    assert findings == []
+    assert shape["gate"] == "gates"
+    assert shape["writes"] == ["promote-r2", "promote-renet", "mark-production"]
+
+
+def test_local_stable_order_catches_each_break() -> None:
+    rows = _stable_table()
+    # The promotion moved ahead of the gate.
+    assert _stable_kinds([rows[0], rows[3], rows[1], *rows[4:]]) == ["local-stable-before-gate"]
+    # A gate on the edge channel is no stable gate, and also names edge.
+    edge_gate = rows[1]._replace(
+        argv=("python3", "-m", "rediacc_ci.release.local_gates", "--channel", "edge")
+    )
+    assert _stable_kinds([rows[0], edge_gate, *rows[2:]]) == [
+        "local-stable-no-gate",
+        "local-stable-edge-step",
+    ]
+    # No R2 promotion at all.
+    assert _stable_kinds([r for r in rows if r.id != "promote-r2"]) == ["local-stable-no-promote"]
+    # Production marked before, or without, the verification.
+    assert _stable_kinds([*rows[:5], rows[6], rows[5]]) == ["local-stable-mark-unverified"]
+    assert _stable_kinds([r for r in rows if r.id != "verify-stable"]) == [
+        "local-stable-mark-unverified"
+    ]
+    # An edge publisher inside the promotion.
+    seal = _Row("seal", ("python3", "-m", "rediacc_ci.deploy.write_release_sentinel"))
+    deploy = _Row("www", ("python3", "-m", "rediacc_ci.deploy.deploy_www"))
+    assert _stable_kinds([*rows, seal, deploy]) == ["local-stable-edge-step"] * 2
+    # tag_submodules is not the version tag.
+    subs = _Row("subs", ("python3", "-m", "rediacc_ci.release.tag_submodules"))
+    assert _stable_kinds([*rows, subs]) == []
+    assert set(_stable_kinds([])) == {"local-stable-no-gate", "local-stable-no-promote"}
 
 
 def test_local_order_holds_on_the_real_entry() -> None:
@@ -2860,3 +2952,122 @@ def test_local_order_holds_on_the_real_entry() -> None:
     assert errors == []
     (line,) = info
     assert "tag unit tag-create, tag-record, tag-push" in line
+    assert "rows in rediacc_ci.release.local.STABLE_STEPS: gate 'gates'" in line
+    assert "an unasked --channel stable is refused" in line
+
+
+# --- the `node` step of .github/actions/setup-workspace (review findings 6359c982.2, 6359c982.3, 4c11fd21.2) ---
+NODE_IMAGE_DIGEST = "ab" * 32
+NODE_IMAGE = "ghcr.io/example/runner@sha256:" + NODE_IMAGE_DIGEST
+
+
+def _node_step_script() -> str:
+    action = ROOT / ".github" / "actions" / "setup-workspace" / "action.yml"
+    steps = yaml.safe_load(action.read_text(encoding="utf-8"))["runs"]["steps"]
+    return next(st["run"] for st in steps if st.get("id") == "node")
+
+
+def _node_stub(path: pathlib.Path, body: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("#!/bin/sh\n" + body + "\n", encoding="utf-8")
+    path.chmod(0o755)
+
+
+def _run_node_step(tmp_path: pathlib.Path, **over: str) -> tuple[subprocess.CompletedProcess, str]:
+    """Run the step. `over` replaces any of: FROM_IMAGE, NODE_MAJOR, CI_RUNNER_IMAGE, NODE_V, NPM_V, ON_NVM (0 puts node elsewhere), NO_REPO (any value runs outside the repository, so the pin read fails)."""
+    nvm = tmp_path / "nvm"
+    _node_stub(nvm / "current" / "bin" / "node", 'echo "${NODE_V}"')
+    elsewhere = tmp_path / "other" / "node"
+    _node_stub(elsewhere, 'echo "${NODE_V}"')
+    on_path = nvm / "current" / "bin" if over.get("ON_NVM", "1") == "1" else elsewhere.parent
+    _node_stub(tmp_path / "bin" / "npm", 'echo "${NPM_V}"')
+    out = tmp_path / "github_output"
+    env = {
+        **os.environ,
+        "PATH": "%s:%s:%s" % (tmp_path / "bin", on_path, os.environ["PATH"]),
+        "FROM_IMAGE": over.get("FROM_IMAGE", "true"),
+        "NODE_MAJOR": over.get("NODE_MAJOR", "22"),
+        "CI_RUNNER_IMAGE": over.get("CI_RUNNER_IMAGE", NODE_IMAGE),
+        "NVM_DIR": str(nvm),
+        "NODE_V": over.get("NODE_V", "v22.3.0"),
+        "NPM_V": over.get("NPM_V", toolchain.pin_for("npm")),
+        "GITHUB_OUTPUT": str(out),
+    }
+    done = subprocess.run(
+        ["bash", "-c", _node_step_script()],
+        cwd=tmp_path if over.get("NO_REPO") else ROOT,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return done, out.read_text(encoding="utf-8") if out.exists() else ""
+
+
+def test_a_host_lane_keys_on_the_node_major_alone(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, FROM_IMAGE="false", CI_RUNNER_IMAGE="")
+    assert done.returncode == 0, done.stderr
+    assert out == "key=node22\n"
+
+
+def test_the_image_lane_keys_on_node_npm_and_the_image_digest(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path)
+    assert done.returncode == 0, done.stderr
+    assert out == "key=img-node%s-npm%s-%s\n" % (
+        "v22.3.0",
+        toolchain.pin_for("npm"),
+        NODE_IMAGE_DIGEST[:12],
+    )
+
+
+def test_a_rebuilt_image_with_the_same_node_patch_gets_a_new_key(tmp_path: pathlib.Path) -> None:
+    # Review 7536188b.1: each run has its own directory and output file, and both must succeed and print a key, so a refused second run (empty output) cannot satisfy the inequality.
+    (tmp_path / "a").mkdir()
+    (tmp_path / "b").mkdir()
+    done_first, first = _run_node_step(tmp_path / "a")
+    other = "ghcr.io/example/runner@sha256:" + "cd" * 32
+    done_second, second = _run_node_step(tmp_path / "b", CI_RUNNER_IMAGE=other)
+    assert done_first.returncode == 0, done_first.stderr
+    assert done_second.returncode == 0, done_second.stderr
+    assert first.startswith("key=img-node"), first
+    assert second.startswith("key=img-node"), second
+    assert first != second
+    assert second.endswith("-%s\n" % ("cd" * 6)), second
+
+
+@pytest.mark.parametrize("image", ["", "ghcr.io/example/runner:latest", "x@sha256:abc"])
+def test_a_reference_that_is_not_a_digest_is_refused(tmp_path: pathlib.Path, image: str) -> None:
+    done, out = _run_node_step(tmp_path, CI_RUNNER_IMAGE=image)
+    assert done.returncode == 1
+    assert "::error::node-from-image needs CI_RUNNER_IMAGE" in done.stdout
+    assert out == ""
+
+
+def test_a_node_that_is_not_the_images_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, ON_NVM="0")
+    assert done.returncode == 1
+    assert "not the image's" in done.stdout
+    assert out == ""
+
+
+def test_a_node_of_another_major_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, NODE_V="v20.1.0")
+    assert done.returncode == 1
+    assert "not major 22" in done.stdout
+    assert out == ""
+
+
+def test_an_npm_that_is_not_the_pinned_one_is_refused(tmp_path: pathlib.Path) -> None:
+    done, out = _run_node_step(tmp_path, NPM_V="0.0.1")
+    assert done.returncode == 1
+    assert "the pinned NPM_VERSION is" in done.stdout
+    assert out == ""
+
+
+def test_an_unreadable_npm_pin_is_an_error_annotation_not_a_silent_exit(
+    tmp_path: pathlib.Path,
+) -> None:
+    done, out = _run_node_step(tmp_path, NO_REPO="1")
+    assert done.returncode == 1
+    assert "::error::the npm pin could not be read" in done.stdout
+    assert out == ""

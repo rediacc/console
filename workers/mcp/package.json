@@ -1,0 +1,23 @@
+{
+  "name": "@rediacc/mcp-worker",
+  "version": "0.0.0-dev",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "dry-run": "wrangler deploy --config wrangler.eu.toml --dry-run --outdir /tmp/rediacc-mcp-dry-run",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@cloudflare/workers-oauth-provider": "1.3.0",
+    "@modelcontextprotocol/server": "2.4.0",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261120.1",
+    "@modelcontextprotocol/client": "2.4.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1",
+    "wrangler": "4.166.0"
+  }
+}

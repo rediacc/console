@@ -16,8 +16,17 @@ import { ValidationError } from '../../utils/errors.js';
 import { deadlineFetch, describeFetchError } from './account-fetch.js';
 import type { SessionPrincipal } from './sessions.js';
 
-/** How long a resolved identity is trusted before re-asking the account server. */
+/**
+ * How long a resolved identity is trusted before re-asking the account server,
+ * at most: an entry never outlives the token's own `expiresAt`.
+ */
 const CACHE_TTL_MS = 60_000;
+
+/**
+ * The most resolved identities held at once. Past it the least recently used
+ * entry goes, so a flood of distinct bearers costs a bounded amount of memory.
+ */
+export const VERIFIER_CACHE_MAX_ENTRIES = 1_024;
 
 /** The scope the executor's OWN token needs to record what it ran. */
 const AUDIT_WRITE_SCOPE = 'audit:write';
@@ -29,12 +38,16 @@ export interface IntrospectionResponse {
   active: boolean;
   scopes?: string[];
   teamId?: string | null;
+  /** Slug of the token's team; policy `teams` rules are keyed by it. */
+  teamSlug?: string;
   orgId?: string;
   createdByUserId?: string;
   userEmail?: string;
   orgRole?: string;
   /** The presented token's own id, which the audit event is attributed to. */
   tokenId?: string;
+  /** ISO instant the presented token expires; absent for a token with no expiry. */
+  expiresAt?: string;
 }
 
 export interface AuthVerifierOptions {
@@ -59,8 +72,9 @@ interface CacheEntry {
 const PINNED_ORG_ENV = 'REDIACC_EXECUTOR_ORG_ID';
 
 /**
- * The org a container executor is pinned to. Container mode refuses to boot
- * without it, so an executor can never run unpinned; daemon mode has none.
+ * The org a container executor is pinned to by its environment. Container mode
+ * refuses to boot without it; a daemon learns its org from its own token
+ * instead (`resolveExecutorOrgId`).
  */
 export function resolvePinnedOrgId(
   mode: 'daemon' | 'container',
@@ -74,6 +88,51 @@ export function resolvePinnedOrgId(
     );
   }
   return orgId;
+}
+
+/**
+ * The org this executor serves, so that it can be pinned to it and open agent grant
+ * sessions (agent/plans/PLAN-rmcp-agent-grants.md Design 8). A container reads its pin from
+ * the environment. A daemon asks the account server whose its own token is (a `self`
+ * introspection) and serves that org. Nothing here compares it with the org of the store the
+ * daemon enrolled in (the config on disk names no org), so REDIACC_TOKEN must be a token of that
+ * same org: a token of another org pins the daemon to that org while it still runs the enrolled
+ * config. A daemon whose own token the account server will not report refuses to boot, naming why.
+ */
+export async function resolveExecutorOrgId(
+  mode: 'daemon' | 'container',
+  env: NodeJS.ProcessEnv,
+  own: { accountUrl: string; executorToken: string; fetchImpl?: typeof fetch }
+): Promise<string> {
+  const pinned = resolvePinnedOrgId(mode, env);
+  if (pinned !== undefined) return pinned;
+  const fetchImpl = deadlineFetch(own.fetchImpl ?? globalThis.fetch);
+  const refuse = (why: string) =>
+    new ValidationError(`The daemon could not learn its organization: ${why}.`);
+  let body: IntrospectionResponse;
+  try {
+    const response = await fetchImpl(
+      `${own.accountUrl.replace(/\/+$/, '')}/account/api/v1/proxy/introspect`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${own.executorToken}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ token: own.executorToken, self: true }),
+      }
+    );
+    if (!response.ok) {
+      throw refuse(`the account server answered ${response.status} for its own token`);
+    }
+    body = (await response.json()) as IntrospectionResponse;
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    throw refuse(`the account server could not be asked (${describeFetchError(error)})`);
+  }
+  if (!body.active) throw refuse('its own token is not active');
+  if (!body.orgId) throw refuse('the account server named no organization for its own token');
+  return body.orgId;
 }
 
 export class AuthError extends Error {
@@ -110,13 +169,20 @@ export class AuthVerifier {
    *
    * Cached briefly, because a warm container fields many commands per session
    * and re-introspecting each one would add a round trip to every command
-   * without changing the answer. The cache is short enough that a revoked token
-   * stops working within a minute.
+   * without changing the answer. An entry lives `CACHE_TTL_MS` or until the
+   * token's own expiry, whichever comes first, so a revoked token stops working
+   * within a minute and an expired one at its expiry. The cache is an LRU of at
+   * most `VERIFIER_CACHE_MAX_ENTRIES`; an expired entry is dropped when read.
    */
   async verify(bearerToken: string): Promise<SessionPrincipal> {
     const cached = this.cache.get(bearerToken);
-    if (cached && cached.expiresAt > this.now()) {
-      return cached.principal;
+    if (cached) {
+      this.cache.delete(bearerToken);
+      if (cached.expiresAt > this.now()) {
+        // Re-insert to mark it most recently used (Map keeps insertion order).
+        this.cache.set(bearerToken, cached);
+        return cached.principal;
+      }
     }
 
     const response = await this.fetchImpl(`${this.accountUrl}/account/api/v1/proxy/introspect`, {
@@ -138,8 +204,39 @@ export class AuthVerifier {
     const body = (await response.json()) as IntrospectionResponse;
     const principal = this.toPrincipal(body);
 
-    this.cache.set(bearerToken, { principal, expiresAt: this.now() + CACHE_TTL_MS });
+    const now = this.now();
+    let entryExpiresAt = now + CACHE_TTL_MS;
+    if (body.expiresAt !== undefined) {
+      const tokenExpiresAt = Date.parse(body.expiresAt);
+      if (Number.isNaN(tokenExpiresAt)) {
+        throw new AuthError(
+          'The account server returned an unreadable expiry for this token.',
+          401
+        );
+      }
+      entryExpiresAt = Math.min(entryExpiresAt, tokenExpiresAt);
+    }
+    // A token the account server calls active but whose expiry has already
+    // passed on this clock is refused like an inactive one, never answered.
+    if (entryExpiresAt <= now) {
+      throw new AuthError('This token is not valid for the executor.', 401);
+    }
+    this.remember(bearerToken, { principal, expiresAt: entryExpiresAt });
     return principal;
+  }
+
+  /** Number of resolved identities currently held; exposed for the bound's test. */
+  get cacheSize(): number {
+    return this.cache.size;
+  }
+
+  private remember(bearerToken: string, entry: CacheEntry): void {
+    this.cache.set(bearerToken, entry);
+    while (this.cache.size > VERIFIER_CACHE_MAX_ENTRIES) {
+      const oldest = this.cache.keys().next();
+      if (oldest.done) break;
+      this.cache.delete(oldest.value);
+    }
   }
 
   /**
@@ -223,6 +320,7 @@ export class AuthVerifier {
     return {
       orgId: body.orgId,
       teamId: body.teamId ?? null,
+      ...(body.teamId && body.teamSlug ? { teamSlug: body.teamSlug } : {}),
       userId: body.createdByUserId,
       userEmail: body.userEmail,
       orgRole: normalizeRole(body.orgRole),

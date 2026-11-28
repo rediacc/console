@@ -977,7 +977,10 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
 
 def _creation_repo(run, start: str, root: str, created=frozenset(), cmd: str | None = None) -> str:
     """`scoped_repo` for a creation, with a doubt placed in this checkout rather than in "": block_second_branch skips a creation whose repository is "" (a directory git refuses), so `GIT_DIR=<this checkout>/.git git -C <scratch> branch x` and a scratch clone's push to this checkout's `origin` were let through (#f2e3507a)."""
-    return scoped_repo(run, start, root, created, cmd, judged=toplevel(root) or root)
+    # The bound trees are passed (box LT11): a push typed in the landing tree, or in one of its submodule trees, is that tree's push, judged against its own branch; without them it resolved to this checkout's toplevel and was refused as naming a remote branch other than this tree's live one (2026-11-21, `git -C <landing>/private/renet push origin 1104-1`).
+    return scoped_repo(
+        run, start, root, created, cmd, judged=toplevel(root) or root, trees=bound_trees(root)
+    )
 
 
 def _git_creations(

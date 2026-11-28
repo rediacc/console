@@ -86,3 +86,72 @@ def test_a_directory_that_is_no_git_checkout_is_read_in_place(cpr, tmp_path):
     (tmp_path / "agent").mkdir()
     with cpr.index_view(tmp_path) as (view, indexed):
         assert (view, indexed) == (tmp_path, False)
+
+
+# THE TWO MODES RENDER FROM THE SAME INPUTS (worklist #e01814e8). `--rendered-only --update`, the generator `.ci/config/generated-artifacts.json` names for the commit-time `plan-renders` check, read each plan from the index while the full gate's `--update` and the plan verbs read the working tree. A session's own unstaged plan edit, committed in the `git commit -- <paths>` form that takes working-tree bytes, was therefore refused after the named generator ran and passed only after the full `--update`.
+
+
+def _plan(status: str, body: str) -> str:
+    return "# PLAN: %s\n\nStatus: %s\n\n## Tasks\n\n- [ ] T1 %s\n" % (body, status, body)
+
+
+@pytest.fixture
+def corpus(tmp_path: pathlib.Path) -> pathlib.Path:
+    _git(tmp_path, "init", "-q")
+    plans = tmp_path / "agent" / "plans"
+    plans.mkdir(parents=True)
+    for name in ("a", "b", "c"):
+        (plans / ("PLAN-%s.md" % name)).write_text(_plan("approved", name), encoding="utf-8")
+    _git(tmp_path, "add", "--", "agent")
+    _git(tmp_path, *IDENT, "commit", "-q", "-m", "base")
+    return tmp_path
+
+
+def _full_render(cpr, root: pathlib.Path) -> bytes:
+    cpr.rendered_problems(root, update=True)
+    return (root / "agent" / "INDEX.md").read_bytes()
+
+
+def _fast_render(cpr, root: pathlib.Path, staged: bool = False) -> bytes:
+    (root / "agent" / "INDEX.md").unlink(missing_ok=True)
+    cpr.rendered_only(root, update=True, staged=staged)
+    return (root / "agent" / "INDEX.md").read_bytes()
+
+
+def _edit_unstaged_and_add_intent(root: pathlib.Path) -> None:
+    plans = root / "agent" / "plans"
+    with (plans / "PLAN-a.md").open("a", encoding="utf-8") as fh:
+        fh.write("- [ ] T2 an unstaged box this commit carries\n")
+    (plans / "PLAN-d.md").write_text(_plan("approved", "intent to add"), encoding="utf-8")
+    _git(root, "add", "-N", "--", "agent/plans/PLAN-d.md")
+
+
+def test_control_the_staged_render_differs_from_the_full_render(cpr, corpus):
+    """CONTROL FIRST: with an unstaged edit and an intent-to-add plan, the index reading (`--staged`, the old default) and the full gate's reading differ, so the equality below is a statement about inputs and not two renders that cannot disagree."""
+    _edit_unstaged_and_add_intent(corpus)
+    full = _full_render(cpr, corpus)
+    staged = _fast_render(cpr, corpus, staged=True)
+    assert full != staged
+    assert b"PLAN-d.md" in full
+    assert b"PLAN-d.md" not in staged, "an intent-to-add plan has no bytes in the index"
+
+
+def test_rendered_only_update_writes_the_full_update_bytes(cpr, corpus):
+    _edit_unstaged_and_add_intent(corpus)
+    full = _full_render(cpr, corpus)
+    assert _fast_render(cpr, corpus) == full
+
+
+def test_staged_without_rendered_only_is_refused(cpr, capsys):
+    assert cpr.main(["--staged"]) == 2
+    assert "--rendered-only" in capsys.readouterr().err
+
+
+def test_a_disagreement_names_its_first_differing_line(cpr):
+    got = "# INDEX\n| PLAN-a.md | 120 |\n| PLAN-b.md | 99 |\n"
+    want = "# INDEX\n| PLAN-a.md | 123 |\n| PLAN-b.md | 99 |\n"
+    said = cpr.first_difference(got, want)
+    assert "line 2" in said
+    assert "`| PLAN-a.md | 120 |`" in said
+    assert "`| PLAN-a.md | 123 |`" in said
+    assert "line 4: present ends" in cpr.first_difference(got, got + "| PLAN-c.md | 1 |\n")

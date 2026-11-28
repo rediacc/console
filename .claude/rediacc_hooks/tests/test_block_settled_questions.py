@@ -2,6 +2,8 @@
 
 The measured false positive, 2026-10-28T13:27Z: a question about keeping `rdc machine access set` and `rdc machine access push` out of MCP was refused as a push-timing ask, because `push` sat inside the rdc command name and `already` followed the second one. Each payload runs through the real dispatcher in a subprocess, with HOME and TMPDIR pointed at a fresh directory so a
 refusal's ledger row never lands in this machine's live ledger. Both directions are asserted: the rdc questions pass, and the genuine push-timing and permission spellings beside them are still refused, including `git push` and `gh pr create` written in backticks.
+
+The second measured false positive, 2026-11-21 (#073c50c5): an operator design question about the two-tree fix flow DESCRIBED a push ("the landing folder adds it to the PR and pushes, and development picks it up later ...?") and was refused as a push-timing ask, because the time word sat in the next clause. FIX_FLOW passes now; the refusals beside it keep a time word in the push's own clause and an `or wait` alternative after a comma refused, and `test_the_clause_cut_is_what_admits_the_design_question` plants the old whole-sentence scan and watches FIX_FLOW read as a timing ask again.
 """
 
 from __future__ import annotations
@@ -13,6 +15,7 @@ import subprocess
 
 import pytest
 
+from rediacc_hooks.guards import block_settled_questions as guard
 from rediacc_hooks.wellknown import BENCH_ORIGIN
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
@@ -26,8 +29,21 @@ MEASURED = (
     "earlier ruling? They change which source addresses may log in to a machine over SSH."
 )
 
+# The design question #073c50c5 measured, verbatim with its header.
+FIX_FLOW = (
+    "Go with the reviewed fix flow: development supervises a helper that builds the fix on top "
+    "of the PR's code, the landing folder adds it to the PR and pushes, and development picks it "
+    "up later when it needs it or at handover?"
+)
+
 PASS = [
     ("the measured rdc question", MEASURED, "MCP access"),
+    ("the measured fix-flow design question", FIX_FLOW, "Fix flow"),
+    (
+        "a design question naming who pushes, with a condition in the next clause",
+        "Should the landing tree own the push, and development wait until the release is green?",
+        "",
+    ),
     (
         "a permission shape over a backticked rdc verb",
         "Should we bar `rdc machine access push` from MCP?",
@@ -45,8 +61,32 @@ REFUSE = [
     ("push timing: push now", "Push now?", "", "decided by the hooks"),
     ("push timing: ready to push", "Ready to push?", "", "decided by the hooks"),
     (
-        "push timing: the turbo batch",
-        "How should a finished turbo batch push?",
+        "push timing: a finished batch",
+        "How should a finished batch push?",
+        "",
+        "decided by the hooks",
+    ),
+    (
+        "push timing: the time word in the push's own clause",
+        "Should the landing tree push it later?",
+        "",
+        "decided by the hooks",
+    ),
+    (
+        "push timing: an or-wait alternative after a comma",
+        "Push it, or wait?",
+        "",
+        "decided by the hooks",
+    ),
+    (
+        "push timing: now, or keep working",
+        "Push now, or keep working on the plan?",
+        "",
+        "decided by the hooks",
+    ),
+    (
+        "push timing: a condition in the push's own clause",
+        "Should we push until CI is green, or hold?",
         "",
         "decided by the hooks",
     ),
@@ -90,6 +130,13 @@ REFUSE = [
     (
         "push timing: immediately after an unquoted rdc verb",
         "Should we rdc repo push immediately?",
+        "",
+        "BLOCKED",
+    ),
+    ("push timing: a comma straight after the action, a time word", "Push, now?", "", "BLOCKED"),
+    (
+        "push timing: a comma straight after the action, a condition",
+        "Should we push, once the review is in?",
         "",
         "BLOCKED",
     ),
@@ -270,3 +317,20 @@ def test_an_eu_bench_login_ask_is_refused_with_the_remedy(label, question, heade
 def test_a_bench_question_that_is_not_a_login_ask_passes(label, question, header, tmp_path):
     proc = _run(question, header, tmp_path)
     assert proc.returncode == 0, "%s: refused (rc=%d)\n%s" % (label, proc.returncode, proc.stderr)
+
+
+def test_the_push_message_names_the_two_tree_loop(tmp_path):
+    """PUSH_MESSAGE answers with the loop that decides push timing now: the development tree's backup push and promote, and the landing tree's one PR."""
+    proc = _run("Push now?", "", tmp_path)
+    assert proc.returncode == 2, proc.stderr
+    text = proc.stderr + proc.stdout
+    for needle in ("Development tree", "landing --promote", "Landing tree"):
+        assert needle in text, "PUSH_MESSAGE lacks %r:\n%s" % (needle, text)
+
+
+def test_the_clause_cut_is_what_admits_the_design_question(monkeypatch):
+    """The mutant: CLAUSE_AFTER planted to match nothing, the time-word scan reads to the sentence end again and FIX_FLOW is a push-timing ask, as it was on 2026-11-21. The control is the same call on the real pattern, which finds no timing (test_rdc_push_verb_passes drives it through the dispatcher)."""
+    sentence = FIX_FLOW.translate(guard._ASCII_LOWER)
+    assert guard._push_timing(sentence, "") is None
+    monkeypatch.setattr(guard, "CLAUSE_AFTER", r"(?!x)x")
+    assert guard._push_timing(sentence, "") == "pushes"

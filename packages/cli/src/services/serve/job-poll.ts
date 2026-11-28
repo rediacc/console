@@ -27,6 +27,8 @@ interface JobPollStatus {
   startedAt?: string;
   finishedAt?: string;
   function: string;
+  /** The repository the job acts on, from renet's status file; server side only (the wire body drops it). */
+  repoGuid?: string;
 }
 
 interface JobPollEvent {
@@ -113,6 +115,8 @@ function parseStatus(trailer: string): JobPollStatus {
   if (startedAt) status.startedAt = startedAt;
   const finishedAt = nonEmptyString(raw.finished_at);
   if (finishedAt) status.finishedAt = finishedAt;
+  const repoGuid = nonEmptyString(raw.repo_guid);
+  if (repoGuid) status.repoGuid = repoGuid;
   return status;
 }
 
@@ -207,9 +211,16 @@ function isTerminalState(state: string): boolean {
 export interface TerminalLedger {
   /** True exactly once per job id: the first time a terminal state is seen for it. */
   firstTerminal(jobId: string, state: string): boolean;
+  /** Undo `firstTerminal` for a job whose terminal event was not delivered, so the next poll ships it again. */
+  forget(jobId: string): void;
 }
 
-/** In-memory, bounded; the oldest ids are forgotten past `capacity`. */
+/**
+ * In-memory, bounded; the oldest ids are forgotten past `capacity`. Only a cache
+ * that saves repeat deliveries: it is lost on every restart, and a terminal event
+ * shipped again then carries the job's derived idempotency key (audit.ts
+ * auditIdempotencyKey), which the account server keeps once.
+ */
 export function createTerminalLedger(capacity = 10_000): TerminalLedger {
   const seen = new Set<string>();
   return {
@@ -221,6 +232,9 @@ export function createTerminalLedger(capacity = 10_000): TerminalLedger {
         if (oldest !== undefined) seen.delete(oldest);
       }
       return true;
+    },
+    forget(jobId) {
+      seen.delete(jobId);
     },
   };
 }

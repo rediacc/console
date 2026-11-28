@@ -26,3 +26,32 @@
 {"at": "2026-11-10T14:57:56Z", "band": "early", "ev": "tracked", "item": "cb6c78eb", "session": "d778be9d"}
 {"agent": "a3e8877d1c647e3cb", "at": "2026-11-10T15:05:30Z", "band": "early", "ev": "dispatched", "item": "cb6c78eb", "session": "d778be9d"}
 {"at": "2026-11-10T15:20:37Z", "band": "early", "ev": "saved", "item": "cb6c78eb", "plan": "agent/plans/PLAN-stop-hook-retro-20261110.md", "session": "d778be9d", "tasks_open": 8, "tasks_total": 8}
+{"at": "2026-11-16T09:24:12Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "e0f36861", "state_md_at": "2026-11-16T09:24:12Z", "threshold": 967000, "to_off": 8870808, "transcript": "/home/developer/.claude/projects/-home-developer-console/e0f36861-d4e0-424a-a37c-7c15be80b710.jsonl", "usage": 775677}
+{"at": "2026-11-16T09:24:27Z", "band": "early", "ev": "tracked", "item": "54e93865", "session": "e0f36861"}
+{"at": "2026-11-17T13:39:15Z", "band": "late", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-17T13:39:15Z", "band": "late", "epoch": 37, "ev": "ordered", "from_off": 1517665944, "session": "d778be9d", "state_md_at": "2026-11-17T13:39:14Z", "threshold": 967000, "to_off": 1736326440, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 950242}
+{"at": "2026-11-17T13:39:24Z", "band": "late", "ev": "tracked", "item": "e6d2f3a2", "session": "d778be9d"}
+{"at": "2026-11-17T20:03:51Z", "band": "early", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-17T20:03:51Z", "band": "early", "epoch": 38, "ev": "ordered", "from_off": 1517665944, "session": "d778be9d", "state_md_at": "2026-11-17T20:03:49Z", "threshold": 967000, "to_off": 1747609620, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 898483}
+{"at": "2026-11-17T20:04:15Z", "band": "early", "ev": "tracked", "item": "9821cec6", "session": "d778be9d"}
+{"agent": "aa09ed5219a7c43b7", "at": "2026-11-17T20:07:11Z", "band": "early", "ev": "dispatched", "item": "9821cec6", "session": "d778be9d"}
+{"at": "2026-11-17T22:58:14Z", "band": "early", "ev": "saved", "item": "9821cec6", "plan": "agent/plans/PLAN-stop-hook-retro-20261117.md", "session": "d778be9d", "tasks_open": 9, "tasks_total": 9}
+{"at": "2026-11-22T08:50:54Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "ace763dd", "state_md_at": "2026-11-22T08:50:49Z", "threshold": 967000, "to_off": 13815810, "transcript": "/home/developer/.claude/projects/-home-developer-console/ace763dd-04fa-45b1-aa44-0da57b775268.jsonl", "usage": 934209}
+{"at": "2026-11-22T08:51:08Z", "band": "early", "ev": "tracked", "item": "b63f151f", "session": "ace763dd"}
+{"agent": "ab915bcf07b703610", "at": "2026-11-22T11:24:33Z", "band": "early", "ev": "dispatched", "item": "b63f151f", "session": "ace763dd"}
+{"at": "2026-11-22T11:39:41Z", "band": "early", "ev": "saved", "item": "b63f151f", "plan": "agent/plans/PLAN-stop-hook-retro-20261122.md", "session": "ace763dd", "tasks_open": 3, "tasks_total": 3}
+{"at": "2026-11-23T03:24:35Z", "band": "late", "epoch": 2, "ev": "ordered", "from_off": 13815810, "session": "ace763dd", "state_md_at": "2026-11-23T03:24:31Z", "threshold": 967000, "to_off": 46126102, "transcript": "/home/developer/.claude/projects/-home-developer-console/ace763dd-04fa-45b1-aa44-0da57b775268.jsonl", "usage": 949531}
+{"at": "2026-11-23T03:24:48Z", "band": "late", "ev": "tracked", "item": "3b9c59de", "session": "ace763dd"}
+{"at": "2026-11-23T03:33:52Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "fee07197", "state_md_at": "2026-11-23T03:33:51Z", "threshold": 967000, "to_off": 8447420, "transcript": "/home/developer/.claude/projects/-home-developer-console/fee07197-2605-4070-bc9b-20daa3d2b318.jsonl", "usage": 763647}
+{"at": "2026-11-23T03:34:02Z", "band": "early", "ev": "tracked", "item": "a09c08fd", "session": "fee07197"}
+{"at": "2026-11-23T14:52:34Z", "band": "early", "epoch": 0, "ev": "ordered", "from_off": 0, "session": "9b22c347", "state_md_at": "2026-11-23T14:52:33Z", "threshold": 967000, "to_off": 8274541, "transcript": "/home/developer/.claude/projects/-home-developer-console/9b22c347-6311-40c9-bf4c-8f9fe816589b.jsonl", "usage": 726745}
+{"at": "2026-11-23T14:52:58Z", "band": "early", "ev": "tracked", "item": "569958a2", "session": "9b22c347"}
+{"at": "2026-11-24T07:12:52Z", "band": "late#2", "ev": "saved", "item": "e40d41c6", "plan": "agent/plans/PLAN-stop-hook-retro-20261110.md", "session": "d778be9d", "tasks_open": 0, "tasks_total": 0}
+{"at": "2026-11-24T07:12:52Z", "band": "late", "ev": "saved", "item": "e6d2f3a2", "plan": "agent/plans/PLAN-stop-hook-retro-20261117.md", "session": "d778be9d", "tasks_open": 9, "tasks_total": 9}
+{"at": "2026-11-24T17:38:07Z", "band": "late", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-24T17:38:07Z", "band": "late", "epoch": 1, "ev": "ordered", "from_off": 1747609620, "session": "d778be9d", "state_md_at": "2026-11-24T17:38:06Z", "threshold": 967000, "to_off": 1905073288, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 953387}
+{"at": "2026-11-24T17:38:17Z", "band": "late", "ev": "tracked", "item": "6c829f0b", "session": "d778be9d"}
+{"at": "2026-11-25T01:59:40Z", "band": "early", "ev": "rearmed", "session": "d778be9d"}
+{"at": "2026-11-25T01:59:40Z", "band": "early", "epoch": 2, "ev": "ordered", "from_off": 1747609620, "session": "d778be9d", "state_md_at": "2026-11-25T01:59:39Z", "threshold": 967000, "to_off": 1918359412, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 776870}
+{"at": "2026-11-25T01:59:47Z", "band": "early", "ev": "tracked", "item": "deda0678", "session": "d778be9d"}
+{"at": "2026-11-25T02:33:54Z", "band": "early", "ev": "saved", "item": "deda0678", "plan": "agent/plans/PLAN-stop-hook-retro-20261125.md", "session": "d778be9d", "tasks_open": 6, "tasks_total": 6}

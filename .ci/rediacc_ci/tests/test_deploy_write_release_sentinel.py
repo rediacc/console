@@ -19,7 +19,7 @@ STDERR IS COMPARED UNMASKED. `rediacc_ci.core.release_state_validator._log_error
 
 TWO TWIN DEFECTS ARE PINNED RATHER THAN FIXED, because fixing a twin belongs to a later cutover box: FINDING 5 (`--version` with no value exits 1 in silence, not the documented 2 with a message) and FINDING 6 (a failed R2 probe and a genuine sealed-but-empty refusal share exit code 1).
 
-K=5 LEDGER: `.ci/shadow/w7p6-write-release-sentinel.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

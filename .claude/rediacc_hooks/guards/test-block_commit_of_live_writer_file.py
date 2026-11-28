@@ -3,7 +3,7 @@
 
 Every case drives the live guard through the dispatcher against a real repository under a `rediacc_ci.runtmp` run directory, with a planted session under a fixture `CLAUDE_CONFIG_DIR`: a live writer (its transcript ends on a tool call in flight), a finished writer (its turn ended an hour ago), and a finished sub-writer of the live one. The planting is the guard's own `write_session`, so this suite and the differential agree on what a live transcript is.
 
-CONTROLS FIRST, both directions: a live writer's file named, covered by a directory pathspec, staged for a bare commit or swept by `-a` is refused; a finished writer's file, an untouched file, a commit in another repository and an unreadable roster are allowed (the last with a stderr note). Then two MUTATIONS in a copy of the guard: the declared `DEFECT` (the overlap test never matches) and a liveness that calls every writer finished. Each must flip a refusal to allowed, or the refusals never depended on that branch.
+CONTROLS FIRST, both directions: a live writer's file named, covered by a directory pathspec, staged for a bare commit or swept by `-a` is refused; a finished writer's file, an untouched file, a commit in another repository and an unreadable roster are allowed (the last with a stderr note). Then a FORGED roster cache (review 05db4e68.1): a `finished` entry planted for the live writer's own transcript, at its exact signature and every offset, must leave the refusal standing, with the finished writer's genuine entry as the control. Then two MUTATIONS in a copy of the guard: the declared `DEFECT` (the overlap test never matches) and a liveness that calls every writer finished. Each must flip a refusal to allowed, or the refusals never depended on that branch.
 """
 
 import importlib
@@ -14,6 +14,10 @@ import pathlib
 import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 CLAUDE = HERE.parents[1]
@@ -35,6 +39,8 @@ runtmp = _load("runtmp", CLAUDE.parent / ".ci" / "rediacc_ci" / "runtmp.py")
 syspath = _load("rediacc_hooks_syspath", CLAUDE / "rediacc_hooks" / "syspath.py")
 syspath.on_sys_path(str(CLAUDE))
 guard = importlib.import_module("rediacc_hooks.guards." + STEM)
+syspath.on_sys_path(syspath.STOP_DIR)
+roster = importlib.import_module("wl_roster")
 
 RUN_TMP = runtmp.run_dir("guard-live-writer-")
 
@@ -260,7 +266,7 @@ def run(command, session=SESSION, runner=None):
         }
     )
     argv = [sys.executable, "-c", runner] if runner else [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv, input=payload, capture_output=True, text=True, check=False, env=env, cwd=str(REPO)
     )
     if proc.returncode not in (0, 2):
@@ -575,6 +581,53 @@ for name, command, setup, want, needle, session in CASES:
 fails += fired == 0
 print("%-42s %s" % ("cases refused: %d" % fired, "ok" if fired else "*** FAIL ***"))
 
+# ---- a forged roster cache cannot change a verdict (review 05db4e68.1) --------------------------
+# The cache file sits under the git common dir, writable by any Bash-capable agent. A live writer that plants a `finished` entry for its own transcript, at its exact (inode, size, mtime_ns) and at every offset a forger could name, must still be refused.
+CACHE_FILE = REPO / ".git" / roster.ROSTER_CACHE_DIR / ("%s.json" % SESSION)
+SUB = next(CONFIG.glob("projects/*")) / SESSION / "subagents"
+LIVE_JSONL = SUB / ("agent-%s.jsonl" % LIVE)
+DONE_JSONL = SUB / ("agent-%s.jsonl" % DONE)
+
+# CONTROL first: a commit run proves the finished writer finished and records it, and the next run serves it from the cache.
+CACHE_FILE.unlink(missing_ok=True)
+run("git commit -F m -- src/done.ts")
+cached = json.loads(CACHE_FILE.read_text(encoding="utf-8"))["finished"]
+st = DONE_JSONL.stat()
+ok = cached.get(str(DONE_JSONL), [None] * 3)[:3] == [st.st_ino, st.st_size, st.st_mtime_ns]
+ok = ok and str(LIVE_JSONL) not in cached
+got, err = run("git commit -F m -- src/done.ts")
+ok = ok and not got and err == ""
+fails += not ok
+print(
+    "%-42s %s"
+    % ("cache: a finished writer is recorded", "ok" if ok else "*** FAIL *** %r" % cached)
+)
+
+blob = LIVE_JSONL.read_bytes()
+st = LIVE_JSONL.stat()
+line_starts = [0] + [i + 1 for i, b in enumerate(blob) if b == 0x0A and i + 1 < len(blob)]
+forged_ok = True
+# None plants the bare signature, the entry shape a verdict was once served from with no re-check.
+for off in [None, *line_starts, len(blob) - 1, 1]:
+    doc = json.loads(CACHE_FILE.read_text(encoding="utf-8"))
+    sig = [st.st_ino, st.st_size, st.st_mtime_ns]
+    doc["finished"][str(LIVE_JSONL)] = sig if off is None else [*sig, off]
+    CACHE_FILE.write_text(json.dumps(doc), encoding="utf-8")
+    os.utime(LIVE_JSONL, ns=(st.st_atime_ns, st.st_mtime_ns))
+    got, err = run("git commit -F m -- src/live.ts")
+    after = json.loads(CACHE_FILE.read_text(encoding="utf-8"))["finished"]
+    if not got or LIVE not in err or str(LIVE_JSONL) in after:
+        forged_ok = False
+        print(
+            "    forged offset %s: blocked=%s, entry kept=%s" % (off, got, str(LIVE_JSONL) in after)
+        )
+fails += not forged_ok
+print(
+    "%-42s %s"
+    % ("cache: a forged finished entry is refused", "ok" if forged_ok else "*** FAIL ***")
+)
+CACHE_FILE.unlink(missing_ok=True)
+
 # ---- mutations: each must turn a refusal into an allow -----------------------------------------
 RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
@@ -600,7 +653,7 @@ MUTATIONS = [
     (
         "every writer reads as finished",
         (
-            'if roster.proven_finished(jsonl, now, meta.get("name", ""), cwd, session_id):',
+            'if roster.finished_cached(cache, jsonl, now, meta.get("name", ""), cwd, session_id):',
             "if True:",
         ),
     ),
@@ -619,7 +672,10 @@ INCIDENT = "git commit -F m -- .ci/config/plan-boxes.json agent/INDEX.md agent/p
 code = RUNNER % (
     str(CLAUDE),
     str(GUARD),
-    ("roster.edit_paths(member_jsonl, root, strict=True)", "roster.edit_paths(member_jsonl, root)"),
+    (
+        "roster.edit_paths_cached(member_jsonl, root, cache, strict=True)",
+        "roster.edit_paths_cached(member_jsonl, root, cache)",
+    ),
     str(GUARD),
 )
 good, _ = run(INCIDENT, session=READER_SESSION)

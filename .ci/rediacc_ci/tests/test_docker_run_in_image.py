@@ -1,6 +1,6 @@
 """`rediacc_ci.docker.run_in_image` against the recorded bytes of the two twins it replaced.
 
-WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both twins existed while the port was being made: `.ci/rediacc_ci/docker/shadow_driver.py` drives either side, and `.ci/shadow/w7p5c-run-in-web.observations.jsonl` and its render sibling each carry five EQUIVALENT rows over five distinct trees. That instrument stops being available the moment the twins are deleted, and deleting them is
+WHY A RECORDING AND NOT A LIVE DIFFERENTIAL. Both twins existed while the port was being made: `the shadow driver` drove either side, and the ledger (deleted in commit:936280cd35) and its render sibling each carried five EQUIVALENT rows over five distinct trees (all deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc; the half that runs the port lives on below as the harness). That instrument stops being available the moment the twins are deleted, and deleting them is
 the whole point of the port, so on their last day in the tree each one was run over every scenario the differential drove it with and its exit code, stdout, stderr and external-call trace were written to `goldens/docker-run-in-image/`. Nothing here is a hand-written expectation.
 
 THE TWINS ARE RETRIEVABLE. Every golden opens with `# twin .ci/docker/run-in-<target>.sh blob <sha>`, the blob that file carried at recording time, so `git cat-file -p <sha>` prints the program that produced the recorded bytes.
@@ -8,7 +8,7 @@ THE TWINS ARE RETRIEVABLE. Every golden opens with `# twin .ci/docker/run-in-<ta
 WHAT IS NORMALIZED, AND IT IS EXACTLY THREE VALUES PLUS ONE REDUCTION THE DIFFERENTIAL ALREADY MADE (`reduce_stderr` below says which three scenarios and why).
 
   THE REPOSITORY ROOT. Both implementations derive it and then put it in the
-  mount, the working directory and the build context, so it is in almost every recorded line. A golden carrying this checkout's path is one that reds in every other clone. The LEDGER compared it verbatim, which is where that derivation is really checked; `shadow-gate.ts` masks it the same way for the same reason.
+  mount, the working directory and the build context, so it is in almost every recorded line. A golden carrying this checkout's path is one that reds in every other clone. The LEDGER compared it verbatim, which is where that derivation is really checked; the shadow gate (commit:bf054adcd4) masks it the same way for the same reason.
 
   THE SCRATCH DIRECTORY. The fakes live outside the repository under a name
   derived from the root, and `from-outside` runs in it on purpose, so it appears as a working directory. The differential folded it already, because the comparator masks every `/tmp` path.
@@ -30,8 +30,8 @@ from __future__ import annotations
 
 import calendar
 import hashlib
-import json
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -40,7 +40,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci import paths
-from rediacc_ci.docker import run_in_image, shadow_driver
+from rediacc_ci.docker import run_in_image
 from rediacc_ci.tests import frozen
 from rediacc_ci.well_known import WEB_IMAGE_REPO
 
@@ -52,18 +52,249 @@ SLUG = "docker-run-in-image"
 
 TARGETS = tuple(run_in_image.target_names())
 
-# The K the recipe requires of a port's ledger, and the same number `test_dev_www.py` asserts for `e2-dev`.
-LEDGER_K = 5
+# --------------------------------------------------------------------------- The harness ---------------------------------------------------------------------------
+# Moved here from `the shadow driver` when agent/plans/PLAN-tooling-code-reduction.md CR1 deleted it (last at commit:aa829a19dc): the half that runs the port, without the bash side, the observation printer or the CLI.
 
-LEDGERS = {
-    target: ROOT / ".ci" / "shadow" / ("w7p5c-run-in-%s.observations.jsonl" % target)
-    for target in TARGETS
+# The recording fakes' channel back to the driver. The two sides run in different processes, and a shared append-only file is the one record both shapes produce identically.
+TRACE_ENV = "RII_TRACE"
+
+# A docker that records and answers. Its working directory is part of the record: neither twin `cd`s, so every external must inherit the directory the launcher was invoked from. The BUILD line additionally digests the Dockerfile it found in the context it was handed, which is how a context path pointing at the wrong directory becomes visible rather than merely plausible.
+FAKE_DOCKER = """import hashlib
+import os
+import sys
+
+argv = sys.argv[1:]
+with open(os.environ["RII_TRACE"], "a", encoding="utf-8") as fh:
+    fh.write("docker cwd=%s argv=%s\\n" % (os.getcwd(), " ".join(argv)))
+if argv[:2] == ["image", "inspect"]:
+    sys.exit(int(os.environ.get("RII_INSPECT_RC", "0")))
+if argv[:1] == ["build"]:
+    dockerfile = os.path.join(argv[-1], "Dockerfile")
+    digest = "<absent>"
+    if os.path.isfile(dockerfile):
+        with open(dockerfile, "rb") as fh:
+            digest = hashlib.sha256(fh.read()).hexdigest()
+    with open(os.environ["RII_TRACE"], "a", encoding="utf-8") as fh:
+        fh.write("docker build-context-dockerfile=%s\\n" % digest)
+    sys.stdout.write("[fake docker] build\\n")
+    sys.stderr.write("[fake docker] building\\n")
+    sys.exit(int(os.environ.get("RII_BUILD_RC", "0")))
+sys.stdout.write("[fake docker] %s\\n" % " ".join(argv))
+sys.stderr.write("[fake docker] ran\\n")
+sys.exit(int(os.environ.get("RII_RUN_RC", "0")))
+"""
+
+# An `id` that answers two fixed numbers. Fixed rather than real, because the invoking user differs between a developer machine and a CI runner and the comparison is about WHETHER the substitution happened and WHERE its result landed.
+FAKE_ID = """import os
+import sys
+
+with open(os.environ["RII_TRACE"], "a", encoding="utf-8") as fh:
+    fh.write("id argv=%s\\n" % " ".join(sys.argv[1:]))
+sys.stdout.write({"-u": "4242", "-g": "4343"}.get(sys.argv[1], "?") + "\\n")
+"""
+
+# The program the escape-hatch arm execs. It records the directory it inherited, which is the half of `exec "$@"` a stdout comparison cannot see.
+FAKE_HOST = """import os
+import sys
+
+with open(os.environ["RII_TRACE"], "a", encoding="utf-8") as fh:
+    fh.write("hostcmd cwd=%s argv=%s\\n" % (os.getcwd(), " ".join(sys.argv[1:])))
+sys.stdout.write("[fake hostcmd] %s\\n" % " ".join(sys.argv[1:]))
+sys.stderr.write("[fake hostcmd] ran\\n")
+sys.exit(int(os.environ.get("RII_HOST_RC", "0")))
+"""
+
+# The three PATH directories, and which fakes each one carries. `bin-nodocker` and `bin-noid` are the two absences the twins have arms for, and an absence is expressed by a directory that never held the program rather than by a flag either implementation could read.
+BIN_SETS = {
+    "all": ("docker", "id", "hostcmd"),
+    "nodocker": ("id", "hostcmd"),
+    "noid": ("docker", "hostcmd"),
 }
 
-# One case per target per scenario. The target leads so a listing of the golden directory groups by image, which is how a reader looking for one launcher's behaviour actually looks.
-CASES = tuple(
-    "%s-%s" % (target, scenario.name) for target in TARGETS for scenario in shadow_driver.SCENARIOS
+FAKE_BODIES = {"docker": FAKE_DOCKER, "id": FAKE_ID, "hostcmd": FAKE_HOST}
+
+# The real programs the twin needs and this differential is not about, symlinked into every stub directory so that PATH can hold NOTHING ELSE. `bash` runs the twin and `dirname` is how the twin derives its own root.
+#
+# THE TRAP THIS CLOSES, MEASURED ON THE FIRST RUN. The stub directory was originally PREPENDED to `/usr/bin:/bin`, which works for a fake that must WIN and silently defeats a fake that must be ABSENT: `no-id` found the real `/usr/bin/id` and `no-docker-binary` found the real docker, so two of the scenarios drove the arm they were written to avoid and agreed with themselves about
+# it. An absence has to be expressed by a PATH that cannot reach the program at all.
+HOST_TOOLS = ("bash", "dirname")
+
+# The NEW side, as one expression. `main` either returns an exit code or is replaced by docker, so this has to be a process of its own rather than an import into the test.
+NEW_PROGRAM = (
+    "import sys; from rediacc_ci.docker import run_in_image; "
+    "sys.exit(run_in_image.main(sys.argv[1:]))"
 )
+
+
+class Scenario:
+    """One comparable run: what the fakes answer, where it is invoked, and with what."""
+
+    def __init__(
+        self,
+        name: str,
+        *,
+        bins: str = "all",
+        no_docker: bool = False,
+        inspect_rc: int = 0,
+        build_rc: int = 0,
+        run_rc: int = 0,
+        host_rc: int = 0,
+        cwd: str = "root",
+        command: tuple[str, ...] = ("npm", "run", "build"),
+    ) -> None:
+        self.name = name
+        self.bins = bins
+        self.no_docker = no_docker
+        self.inspect_rc = inspect_rc
+        self.build_rc = build_rc
+        self.run_rc = run_rc
+        self.host_rc = host_rc
+        self.cwd = cwd
+        self.command = command
+
+
+# FOURTEEN SCENARIOS, one per claim in the group table above.
+#
+# The four `host-arm-*` ones drive the escape hatch, which is the arm a machine with docker never takes and therefore the arm a reading blesses. `build-fails` is the one that proves `docker run` is NOT reached, which is the half of the contract a healthy machine never exercises. `from-subdir` and `from-outside` are the `case` statement's two branches, and `no-id` is the
+# substitution that fails without aborting.
+SCENARIOS = (
+    Scenario("host-arm", no_docker=True, command=("hostcmd", "ok")),
+    Scenario("host-arm-fails", no_docker=True, host_rc=3, command=("hostcmd", "boom")),
+    Scenario("host-arm-empty", no_docker=True, command=()),
+    Scenario("host-arm-missing", no_docker=True, command=("nosuchprogram",)),
+    Scenario("no-docker-binary", bins="nodocker", command=("hostcmd", "ok")),
+    Scenario("no-docker-binary-empty", bins="nodocker", command=()),
+    Scenario("image-present"),
+    Scenario("image-absent", inspect_rc=1),
+    Scenario("build-fails", inspect_rc=1, build_rc=5),
+    Scenario("run-fails", run_rc=9),
+    Scenario("from-subdir", cwd="subdir", command=("pwd",)),
+    Scenario("from-outside", cwd="outside", command=("pwd",)),
+    Scenario("no-id", bins="noid"),
+    Scenario("run-empty", command=()),
+)
+
+# The subdirectory `from-subdir` runs in. `packages` is tracked in this repository and is planted in every specimen, so the scenario exercises a real directory inside the root rather than one the driver invented.
+SUBDIR = "packages"
+
+
+def build_stubs(base: pathlib.Path) -> dict[str, pathlib.Path]:
+    """The three PATH directories, each holding only what it is meant to hold.
+
+    The fakes get an ABSOLUTE shebang rather than `/usr/bin/env python3`, because these directories are the whole of PATH and `env` is not in them.
+    """
+    out: dict[str, pathlib.Path] = {}
+    for label, names in BIN_SETS.items():
+        directory = base / ("bin-%s" % label)
+        directory.mkdir(parents=True, exist_ok=True)
+        for tool in HOST_TOOLS:
+            found = shutil.which(tool)
+            if found is None:
+                raise RuntimeError(
+                    "%s is not on this host's PATH, so neither side can run at all. "
+                    "This is a broken harness, not a finding about either "
+                    "implementation." % tool
+                )
+            link = directory / tool
+            if not link.exists():
+                link.symlink_to(found)
+        for name in names:
+            target = directory / name
+            target.write_text("#!%s\n%s" % (sys.executable, FAKE_BODIES[name]), encoding="utf-8")
+            target.chmod(0o755)
+        out[label] = directory
+    return out
+
+
+def scenario_cwd(scenario: Scenario, root: pathlib.Path, base: pathlib.Path) -> pathlib.Path:
+    """Where the launcher is invoked from, which is what the `case` statement reads."""
+    if scenario.cwd == "subdir":
+        return root / SUBDIR
+    if scenario.cwd == "outside":
+        return base
+    return root
+
+
+def scenario_env(
+    scenario: Scenario,
+    root: pathlib.Path,
+    cwd: pathlib.Path,
+    trace: pathlib.Path,
+    bins: dict[str, pathlib.Path],
+) -> dict[str, str]:
+    """The environment BOTH sides get. Replaced, never extended.
+
+    A differential that inherits the caller's environment passes or fails depending on whether whoever ran it happens to export `REDIACC_NO_DOCKER` or `REDIACC_CI_ROOT`, which is how a test becomes green on one machine and red on another for reasons nobody can see. `REDIACC_CI_ROOT` is left UNSET on purpose: setting it would hand the port the answer to the one derivation this
+    differential exists to compare.
+    """
+    return {
+        # THE WHOLE OF PATH, with no system directory behind it. See HOST_TOOLS.
+        "PATH": str(bins[scenario.bins]),
+        "HOME": str(base_of(trace)),
+        "LC_ALL": "C",
+        "LANG": "C",
+        "PWD": str(cwd),
+        TRACE_ENV: str(trace),
+        "RII_INSPECT_RC": str(scenario.inspect_rc),
+        "RII_BUILD_RC": str(scenario.build_rc),
+        "RII_RUN_RC": str(scenario.run_rc),
+        "RII_HOST_RC": str(scenario.host_rc),
+        run_in_image.NO_DOCKER_ENV: "1" if scenario.no_docker else "0",
+        "PYTHONPATH": str(root / ".ci"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+
+
+def base_of(trace: pathlib.Path) -> pathlib.Path:
+    """The scratch directory a trace file sits in. `HOME` points there so that nothing either side runs can reach the invoking user's real home."""
+    return trace.parent
+
+
+def run_side(
+    scenario: Scenario,
+    target: str,
+    root: pathlib.Path,
+    trace: pathlib.Path,
+    bins: dict[str, pathlib.Path],
+) -> tuple[int, str, str, list[str]]:
+    """Run one scenario against the port. Returns rc, stdout, stderr and the trace."""
+    trace.write_text("", encoding="utf-8")
+    cwd = scenario_cwd(scenario, root, base_of(trace))
+    cwd.mkdir(parents=True, exist_ok=True)
+    env = scenario_env(scenario, root, cwd, trace, bins)
+    argv = [sys.executable, "-c", NEW_PROGRAM, target, *scenario.command]
+    proc = subprocess.run(
+        argv,
+        cwd=str(cwd),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+        timeout=120,
+    )
+    lines = [line for line in trace.read_text(encoding="utf-8").split("\n") if line]
+    return proc.returncode, proc.stdout, proc.stderr, lines
+
+
+# The two scenarios whose stderr is reduced rather than compared, and what survives the reduction. See the module header.
+REDUCED = {
+    "host-arm-missing": "nosuchprogram",
+    "no-id": "id",
+    "no-docker-binary-empty": "docker",
+}
+
+
+def scenario_reduction(name: str, text: str) -> str | None:
+    """The per-scenario reduction, applied only to the scenarios that earn one."""
+    program = REDUCED.get(name)
+    if program is None:
+        return None
+    hits = sum(1 for line in text.split("\n") if program in line)
+    return "<stderr names %s %d time(s)>" % (program, hits)
+
+
+# One case per target per scenario. The target leads so a listing of the golden directory groups by image, which is how a reader looking for one launcher's behaviour actually looks.
+CASES = tuple("%s-%s" % (target, scenario.name) for target in TARGETS for scenario in SCENARIOS)
 
 # Where the trace joins the recorded shape. `frozen.render` owns the exit line and the two streams; the externals are this subject's fourth stream and need a marker of their own so an empty trace is distinguishable from a missing one.
 TRACE_MARKER = "--- trace ---\n"
@@ -87,9 +318,9 @@ def reduce_stderr(name: str, text: str) -> str:
     """The driver's own per-scenario reduction, applied here for the same reason.
 
     THREE SCENARIOS REPORT A MISSING PROGRAM, and bash reports one as `<file>: line <n>: ...`. A line number inside a shell file is neither reproducible by a port nor worth reproducing, so the differential reduced those three to whether the message names the program and how many times, and a recording that kept the raw text instead would demand of the port exactly the bytes the
-    comparison already agreed to give up. `shadow_driver.reduce_stderr` is called rather than copied: two spellings of one reduction is how a recording and the comparison it replaced come to disagree.
+    comparison already agreed to give up. `scenario_reduction` is called rather than copied: two spellings of one reduction is how a recording and the comparison it replaced come to disagree.
     """
-    reduced = shadow_driver.reduce_stderr(name, text)
+    reduced = scenario_reduction(name, text)
     return text if reduced is None else reduced + "\n"
 
 
@@ -111,19 +342,17 @@ def recorded(case: str) -> tuple[int, str, str, list[str]]:
     )
 
 
-def drive(side: str, base: pathlib.Path) -> dict[str, tuple[int, str, str, list[str]]]:
-    """Run every scenario of every target on one side, against one scratch directory.
+def drive(base: pathlib.Path) -> dict[str, tuple[int, str, str, list[str]]]:
+    """Run every scenario of every target against the port, in one scratch directory.
 
     ONE MODULE-SCOPED RUN AND A LOOKUP, not a fixture per case: each run spawns two dozen processes, and a per-case fixture would rebuild the whole stub PATH for each of them. The scenarios are independent of one another here, unlike the `dev` verb's, so the order carries no meaning and only the cost would.
     """
-    bins = shadow_driver.build_stubs(base)
+    bins = build_stubs(base)
     trace_file = base / "trace.txt"
     out: dict[str, tuple[int, str, str, list[str]]] = {}
     for target in TARGETS:
-        for scenario in shadow_driver.SCENARIOS:
-            code, stdout, stderr, lines = shadow_driver.run_side(
-                side, scenario, target, ROOT, trace_file, bins
-            )
+        for scenario in SCENARIOS:
+            code, stdout, stderr, lines = run_side(scenario, target, ROOT, trace_file, bins)
             out["%s-%s" % (target, scenario.name)] = (
                 code,
                 normalise(stdout, base),
@@ -135,7 +364,7 @@ def drive(side: str, base: pathlib.Path) -> dict[str, tuple[int, str, str, list[
 
 @pytest.fixture(scope="module")
 def observed(tmp_path_factory) -> dict[str, tuple[int, str, str, list[str]]]:
-    return drive("new", tmp_path_factory.mktemp("run-in-image"))
+    return drive(tmp_path_factory.mktemp("run-in-image"))
 
 
 # THE ONE TRACE MASK. The port passes `--build-arg NPM_BEFORE=<cutoff>` when it builds the web image (its Dockerfile refuses an empty one); the twin's recordings predate it. This strips exactly that pair and REFUSES a web build line without it, so the mask cannot hide the arg going missing.
@@ -243,9 +472,7 @@ def test_the_workspace_is_mounted_at_its_identical_host_path() -> None:
 
 def test_the_working_directory_follows_the_caller_inside_the_tree() -> None:
     inside = recorded("web-from-subdir")[3]
-    assert "-w <root>/%s " % shadow_driver.SUBDIR in next(
-        line for line in inside if "argv=run " in line
-    )
+    assert "-w <root>/%s " % SUBDIR in next(line for line in inside if "argv=run " in line)
 
 
 def test_the_working_directory_falls_back_to_the_root_outside_it() -> None:
@@ -344,11 +571,11 @@ def run_plant(name: str, case: str, tmp_path: pathlib.Path) -> tuple[int, str, s
 
     base = tmp_path / "run"
     base.mkdir()
-    bins = shadow_driver.build_stubs(base)
+    bins = build_stubs(base)
     trace_file = base / "trace.txt"
-    scenario = next(s for s in shadow_driver.SCENARIOS if s.name == scenario_name)
-    cwd = shadow_driver.scenario_cwd(scenario, ROOT, base)
-    env = shadow_driver.scenario_env(scenario, ROOT, cwd, trace_file, bins)
+    scenario = next(s for s in SCENARIOS if s.name == scenario_name)
+    cwd = scenario_cwd(scenario, ROOT, base)
+    env = scenario_env(scenario, ROOT, cwd, trace_file, bins)
     env["PYTHONPATH"] = "%s:%s" % (tmp_path / "plant", env["PYTHONPATH"])
     trace_file.write_text("", encoding="utf-8")
     proc = subprocess.run(
@@ -402,42 +629,7 @@ def test_a_work_mount_is_caught(tmp_path: pathlib.Path) -> None:
     assert any("/work" in line for line in got[3]), "the plant did not reach the mount"
 
 
-# --------------------------------------------------------------------------- The ledgers ---------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("target", TARGETS)
-def test_the_ledger_carries_five_equivalent_distinct_trees(target: str) -> None:
-    """THE EVIDENCE THE GOLDENS CANNOT REPLACE, and the reason it is asserted rather than cited.
-
-    A recording proves the port still says what the twin said on the day the twin was read. The ledger proves the two ran side by side over five distinct clean trees and agreed every time. A ledger that is emptied, truncated or hand-edited is exactly as bad as one that was never recorded, so the file is read here rather than pointed at.
-    """
-    ledger = LEDGERS[target]
-    assert ledger.is_file(), "no ledger at %s" % ledger
-    rows = [json.loads(line) for line in ledger.read_text(encoding="utf-8").splitlines() if line]
-    equivalent = [row for row in rows if row.get("verdict") == "EQUIVALENT"]
-    trees = {row["tree"]["id"] for row in equivalent if row["tree"].get("clean")}
-    assert len(trees) >= LEDGER_K, "%d distinct clean tree(s), %d required" % (
-        len(trees),
-        LEDGER_K,
-    )
-    assert len(equivalent) == len(rows), "a non-EQUIVALENT row is in the ledger"
-    fingerprints = {row["old"]["fingerprint"] for row in equivalent}
-    assert len(fingerprints) > 1, "one observation re-shaded, not %d of them" % len(trees)
-
-
 # --------------------------------------------------------------------------- The flip ---------------------------------------------------------------------------
-
-
-@pytest.mark.parametrize("target", TARGETS)
-def test_the_twin_is_gone_and_the_driver_says_so(target: str) -> None:
-    """The refusal is REACHABLE, which is what makes it a guard rather than a comment.
-
-    After the flip there is no bash to drive, and a driver that answered anyway would let a new row be recorded against a twin that no longer exists.
-    """
-    assert not shadow_driver.twin_path(ROOT, target).is_file()
-    assert (
-        shadow_driver.main(["--side", "old", "--target", target]) == shadow_driver.EXIT_CANNOT_RUN
-    )
 
 
 def test_the_policy_lists_no_longer_describe_the_twins() -> None:

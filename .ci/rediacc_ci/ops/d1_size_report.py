@@ -30,7 +30,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from rediacc_ci.core import gh_retry, https
+from rediacc_ci.core import https
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.well_known import CF_API_BASE
 
@@ -394,128 +394,14 @@ def run_compare(
     return 0 if all(v["within"] for v in verdicts) else EXIT_COMPARE_OFF
 
 
-ISSUE_TITLE = "D1 size alert"
-# `gh issue list` returns at most this many open issues; a full page may hide an older alert issue, so it is a refusal rather than a creation of a duplicate.
-ISSUE_LIST_LIMIT = 1000
-
-
-def alert_marker(document: Mapping[str, object]) -> str:
-    """The body marker naming the alerting regions, so a later run can tell a changed alert set from the same one."""
-    regions = document.get("regions")
-    rows = regions if isinstance(regions, list) else []
-    alerting = sorted(str(r["region"]) for r in rows if r.get("alerts"))
-    return "<!-- d1-size-alerts: %s -->" % ",".join(alerting)
-
-
-def _find_alert_issues(gh: Callable[..., str]) -> list[Mapping[str, object]]:
-    """The open alert issues by title. A plain listing, not `--search`: the search index lags a fresh issue, the listing does not."""
-    listing = json.loads(
-        gh(
-            "issue",
-            "list",
-            "--state",
-            "open",
-            "--limit",
-            str(ISSUE_LIST_LIMIT),
-            "--json",
-            "number,title,body,comments",
-        )
-        or "[]"
-    )
-    if len(listing) >= ISSUE_LIST_LIMIT:
-        raise GhError(
-            "gh issue list returned %d open issues, the listing limit: an older '%s' issue may be past it, so no new one is created"
-            % (len(listing), ISSUE_TITLE)
-        )
-    return [i for i in listing if i.get("title") == ISSUE_TITLE]
-
-
-def sync_alert_issue(
-    document: Mapping[str, object], report_md: str, gh: Callable[..., str]
-) -> list[str]:
-    """Create the alert issue, or edit its body to the latest report and comment only when the alerting regions changed. `gh(*args)` returns stdout. Returns the gh verbs run, in order."""
-    marker = alert_marker(document)
-    body = "%s\n%s\n" % (report_md.rstrip("\n"), marker)
-    found = _find_alert_issues(gh)
-    if not found:
-        try:
-            gh("issue", "create", "--title", ISSUE_TITLE, "--body", body)
-        except Exception:
-            # `issue create` runs once, so a 502 after the POST was accepted is looked up again in this run; only a missing issue is a failure.
-            if not _find_alert_issues(gh):
-                raise
-        return ["create"]
-    number = str(found[0]["number"])
-    if marker in str(found[0].get("body") or ""):
-        gh("issue", "edit", number, "--body", body)
-        return ["edit"]
-    # The comment goes first and carries the marker: a failed comment leaves the old marker in the body, so the next run posts it again, and a failed edit leaves the new marker in the latest alert comment, so the next run retries only the edit.
-    if _last_comment_marker(found[0]) == marker:
-        gh("issue", "edit", number, "--body", body)
-        return ["edit"]
-    gh("issue", "comment", number, "--body", body)
-    gh("issue", "edit", number, "--body", body)
-    return ["comment", "edit"]
-
-
-_MARKER_RE = re.compile(r"<!-- d1-size-alerts: [^>]*-->")
-
-
-def _last_comment_marker(issue: Mapping[str, object]) -> str | None:
-    """The marker of the newest alert comment on the issue, or None when no comment carries one."""
-    comments = issue.get("comments")
-    for comment in reversed(comments if isinstance(comments, list) else []):
-        found = _MARKER_RE.search(str(comment.get("body") or ""))
-        if found:
-            return found.group(0)
-    return None
-
-
-_ONCE = {("issue", "create"), ("issue", "comment")}
-
-
-class GhError(Exception):
-    """A `gh` call that failed after its transient retries; the message carries gh's stderr."""
-
-
-def _real_gh(*args: str, runner=None, sleep=None) -> str:
-    """`gh <args>` through the transient-retry wrapper, which never raises for a non-zero exit, so the result is checked here."""
-    # `issue create` and `issue comment` are not idempotent: a 502 after GitHub accepted the POST would retry into a duplicate, so they run once and the next run reconciles.
-    attempts = 1 if tuple(args[:2]) in _ONCE else gh_retry.ATTEMPTS
-    result = gh_retry.gh(list(args), runner=runner, sleep=sleep, attempts=attempts)
-    if not result.ok:
-        raise GhError(
-            "gh %s failed (exit %d): %s"
-            % (" ".join(args[:2]), result.returncode, result.stderr.strip())
-        )
-    return result.stdout_raw
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="d1_size_report")
     parser.add_argument("--region", help="one regions.json id")
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--md-out", type=Path)
     parser.add_argument("--compare-telemetry", action="store_true")
-    parser.add_argument(
-        "--alert-issue",
-        action="store_true",
-        help="sync the alert issue from --json-out and --md-out files (needs GH_TOKEN and GH_REPO)",
-    )
     parser.add_argument("--days", type=int, default=7)
     args = parser.parse_args(argv)
-    if args.alert_issue:
-        if not (args.json_out and args.md_out):
-            print("d1_size_report: --alert-issue needs --json-out and --md-out", file=sys.stderr)
-            return EXIT_UNREACHABLE
-        try:
-            sync_alert_issue(
-                json.loads(args.json_out.read_text()), args.md_out.read_text(), _real_gh
-            )
-        except GhError as exc:
-            print("d1_size_report: %s" % exc, file=sys.stderr)
-            return 1
-        return 0
     if args.compare_telemetry:
         if args.days < 1:
             print("d1_size_report: --days must be at least 1", file=sys.stderr)

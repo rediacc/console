@@ -87,3 +87,33 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-isolation.md","sig":"2878e08d","clause":"all","state":"live-owed","ref":"released #a94e7870","at":"2026-11-15T21:32:16Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-backup-program.md","sig":"0a237b2e","clause":"all","state":"live-owed","ref":"released #fbe192ca","at":"2026-11-19T11:49:12Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-proxy-cd-six-targets.md","sig":"abe9b4eb","clause":"C7","state":"live-owed","ref":"released #0e9506a2","at":"2026-11-19T11:49:14Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-simple-two-tree-loop.md","sig":"c8338630","clause":"all","state":"landed","ref":"d2cad835b3432145c52e192e64b2c1f51bbdc030","at":"2026-11-21T08:33:52Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"ad9b77d5","clause":"all","state":"landed","ref":"e943d92e8af793e955f7ea1bd7d659d46d7d697b","at":"2026-11-23T04:50:44Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"14560416","clause":"all","state":"landed","ref":"e943d92e8af793e955f7ea1bd7d659d46d7d697b","at":"2026-11-23T04:50:44Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"353a2f01","clause":"all","state":"landed","ref":"26dc7587c1b91df6c670c703ee69a456a2507517","at":"2026-11-23T04:50:46Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"0c03386b","clause":"all","state":"landed","ref":"4539b3e265a88aea05669d27e33a1a63cc93f530","at":"2026-11-23T04:50:46Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"0c03386b","clause":"all","state":"landed","ref":"98714b4820d839986a591cb2f55a3a9ef1e1d339","at":"2026-11-23T04:50:46Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"0c03386b","clause":"all","state":"landed","ref":"0fbab17947e6745b6d28121c3d9b1cb836217141","at":"2026-11-23T04:50:46Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"f774d370","clause":"all","state":"landed","ref":"055f887a187bf58155b8b54492e50760e6dba9c0","at":"2026-11-23T04:50:48Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"e5c316b5","clause":"all","state":"landed","ref":"66d9771ff3b1b6ef9f4f2bae6f9a1d8a14c180b3","at":"2026-11-23T04:50:48Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"622da616","clause":"all","state":"landed","ref":"edfc3e69dd3e3a675c1f049b743ad462afed7000","at":"2026-11-23T04:50:50Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"622da616","clause":"all","state":"landed","ref":"19e24353b62dc444fdf072606680db0b5486e279","at":"2026-11-23T04:50:50Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"865f9fd2","clause":"all","state":"landed","ref":"6b78fcc55e142aeca8fbcd7bfce50a630694cc46","at":"2026-11-23T04:50:50Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"865f9fd2","clause":"all","state":"landed","ref":"1d367af7f16694b5593f57eb27b0a3b3be31f61f","at":"2026-11-23T04:50:50Z"}
+{"kind":"progress","by":"ace763dd","plan":"agent/plans/PLAN-stop-hook-retro-20261123.md","sig":"865f9fd2","clause":"all","state":"landed","ref":"24d540ed98a963663cf58ff8a9c5ffc22ff7a3bb","at":"2026-11-23T04:50:50Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-native-host-rdc-feedback.md","sig":"bf5a7979","clause":"all","state":"live-owed","ref":"released #2d84b90e","at":"2026-11-25T13:46:13Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-assistant.md","sig":"c308f2d8","clause":"all","state":"live-owed","ref":"released #8ebda7b2","at":"2026-11-26T04:16:12Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-credits.md","sig":"474574b2","clause":"all","state":"live-owed","ref":"released #ea9d4733","at":"2026-11-26T04:16:17Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-assistant.md","sig":"3e3d0041","clause":"all","state":"live-owed","ref":"released #6e586887","at":"2026-11-26T04:16:23Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-console-ai-feedback.md","sig":"6c3b5aec","clause":"all","state":"live-owed","ref":"released #6e586887","at":"2026-11-26T04:16:24Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-forensics-reports.md","sig":"28cde5ec","clause":"all","state":"live-owed","ref":"released #a3e53611","at":"2026-11-26T06:19:08Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"457c03cd","clause":"all","state":"live-owed","ref":"released #fb9ef587","at":"2026-11-26T06:19:11Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #52aacbd1","at":"2026-11-26T07:18:44Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-ciquick-cpu.md","sig":"64e50145","clause":"all","state":"live-owed","ref":"released #f5f6a1df","at":"2026-11-26T09:17:47Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"2df4a7f5","clause":"all","state":"live-owed","ref":"released #d00585c2","at":"2026-11-27T04:13:20Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-preview-signer.md","sig":"ae54f093","clause":"all","state":"live-owed","ref":"released #d00585c2","at":"2026-11-27T04:13:20Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"7e1402a9","clause":"all","state":"live-owed","ref":"released #dc7abfcd","at":"2026-11-27T04:33:33Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-rmcp-docs.md","sig":"c9790d6c","clause":"all","state":"live-owed","ref":"released #f1d81183","at":"2026-11-27T04:53:38Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"7e1402a9","clause":"all","state":"live-owed","ref":"released #c62aaa1d","at":"2026-11-27T05:11:56Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-tooling-code-reduction.md","sig":"7e1402a9","clause":"all","state":"live-owed","ref":"released #5777d88e","at":"2026-11-27T08:52:05Z"}

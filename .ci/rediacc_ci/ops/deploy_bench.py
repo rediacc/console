@@ -4,7 +4,7 @@
 
 ONE BENCH PER REGION (agent/plans/PLAN-multi-region-bench.md W3). `--region` picks the regions.json row whose `bench` object names the host, Worker, config (`wrangler.bench-eu.toml` for eu, `wrangler.bench-<region>.toml` for the others), signer and control database; `--region all` deploys every row marked `deployable`, in file order, and names each one it skips. A region marked not deployable is refused before anything runs, because its config still carries the placeholder database id. The deploy record is `.ci/cache/live-deploys/bench-<region>.json`; the signer step ensures and deploys THAT region's signer and control database only. `--region eu` is the default and behaves as it always did, with one exception: it no longer deploys `signer-bench-us` (that signer deploys with the us bench).
 
-Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench-eu.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
+Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench-eu.toml`, run `rotation check --for=bench` directly from private/account (not through the `rotation` profile), then push the worker secrets with `wrangler secret bulk`.
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
@@ -50,7 +50,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import resource_lock, wrangler
+from rediacc_ci.core import bws_env, resource_lock, wrangler
 from rediacc_ci.deploy import (
     deploy_account,
     deploy_record,
@@ -152,8 +152,8 @@ bench is IP-restricted (rediacc_ci.ops.bench_access): a 403 from bench means
 run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current first.
 
 Credentials come from the deploy-bench-<region> Bitwarden profile; see
-.ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
-CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
+.ci/config/secret-supply.json. Cloudflare auth: CF_JOB_TOKEN (stored, never
+deleted), CF_MANAGEMENT_TOKEN, or CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
 """
 )
 
@@ -213,6 +213,37 @@ def _backup_values() -> tuple[str, str, str]:
     return endpoint, key_id, secret
 
 
+FORENSICS_NAMES = (
+    "ACCOUNT_FORENSICS_S3_ENDPOINT",
+    "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID",
+    "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY",
+)
+
+
+def _forensics_bucket(region: str) -> str:
+    """The region's bench forensics bucket, from the `forensicsR2` name in the bench row of the region registry. It travels as a secret beside the triple and never as a `[vars]` entry, so a bench config cannot carry the bucket without the endpoint and keys."""
+    try:
+        return str(bench_preflight.bench_object(region)["forensicsR2"]["name"])
+    except (OSError, ValueError, LookupError, TypeError) as exc:
+        raise DeployError("no forensicsR2 bucket for the %s bench: %s" % (region, exc)) from None
+
+
+def _forensics_values() -> tuple[str, str, str]:
+    """The endpoint, key id and secret of the bench forensics bucket (PLAN-forensics-shipping FS12), read by these names. All three empty is valid: the Worker answers 503 FORENSICS_NOT_CONFIGURED until the profile binds them, and the bucket and region are then pushed empty too, so the Worker sees none of the five. A partly set triple is a DeployError, since the Worker throws on a half-configured store."""
+    values = (
+        os.environ.get("ACCOUNT_FORENSICS_S3_ENDPOINT") or "",
+        os.environ.get("ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID") or "",
+        os.environ.get("ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY") or "",
+    )
+    if any(values) and not all(values):
+        unset = [n for n, v in zip(FORENSICS_NAMES, values, strict=True) if not v]
+        raise DeployError(
+            "the bench forensics store is half configured, %s unset: bind all three names "
+            "in the deploy-bench-<region> profile or none of them" % ", ".join(unset)
+        )
+    return values[0], values[1], values[2]
+
+
 def bench_bucket(region: str = DEFAULT_REGION) -> str:
     """The bench backup bucket, read from the BACKUP_BUCKET binding in the region's bench config, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
     return bench_backup_binding(region)[0]
@@ -260,35 +291,6 @@ def otlp_credentials_valid(value: str) -> bool:
     )
 
 
-TEST_KEY_PREFIXES = ("sk_test_", "rk_test_")
-
-
-def stripe_pair() -> tuple[str, str]:
-    """The (secret key, webhook secret) bound as the bench Worker's STRIPE_SANDBOX_* pair, or ("", "") when the pair is absent.
-
-    The deploy-bench-<region> profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
-    """
-    key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY") or ""
-    hook = os.environ.get("STRIPE_SANDBOX_WEBHOOK_SECRET") or ""
-    if not key and not hook:
-        print("Stripe sandbox pair absent: bench keeps the Stripe secrets blank")
-        return "", ""
-    if not key or not hook:
-        missing = "STRIPE_SANDBOX_WEBHOOK_SECRET" if key else "STRIPE_SANDBOX_SECRET_KEY"
-        raise DeployError(
-            "the Stripe sandbox pair is half-set (%s is empty): set both or neither" % missing
-        )
-    if not key.startswith(TEST_KEY_PREFIXES):
-        raise DeployError(
-            "STRIPE_SANDBOX_SECRET_KEY is not a Stripe test key (expected the sk_test_ or rk_test_ "
-            "prefix): bench never takes a live key"
-        )
-    print(
-        "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET"
-    )
-    return key, hook
-
-
 def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
     """The `wrangler secret bulk` body, keys in the order the bash emitted them. Raises DeployError on a missing or empty required value. Only the backup bucket and its endpoint follow REGION; every other value is the profile's."""
     signing = {
@@ -300,6 +302,8 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
         # The Analytics Engine read token the portal's telemetry reads use (agent/plans/PLAN-d1-scaling.md W2).
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN") or "",
+        # The AI Gateway logs-read token the nightly AI credit reconcile calls Cloudflare with (agent/plans/PLAN-console-ai-credits.md D8). Empty refuses the whole push below, like every signing value, not only the reconcile.
+        "AI_GATEWAY_LOGS_TOKEN": os.environ.get("AI_GATEWAY_LOGS_TOKEN") or "",
         # Layer 3 of the config store; the deploy-bench-<region> profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
         # Seals customer backup store credentials; the deploy-bench-<region> profile binds the bench-only vault entry under this name.
@@ -316,7 +320,7 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
     )
     endpoint, backup_key, backup_secret = _backup_values()
     backup_bucket, backup_jurisdiction = bench_backup_binding(region)
-    stripe_key, stripe_hook = stripe_pair()
+    forensics_endpoint, forensics_key, forensics_secret = _forensics_values()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):
@@ -332,15 +336,11 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],
         "FREE_LICENSE_HMAC_KEY": signing["FREE_LICENSE_HMAC_KEY"],
         "ACCOUNT_AE_READ_TOKEN": signing["ACCOUNT_AE_READ_TOKEN"],
+        "AI_GATEWAY_LOGS_TOKEN": signing["AI_GATEWAY_LOGS_TOKEN"],
         # The account whose Analytics Engine datasets the SQL API reads; every regional Worker gets it from the pusher.
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
         "ACCOUNT_BACKUP_STORE_KEK": signing["ACCOUNT_BACKUP_STORE_KEK"],
-        # The live Stripe names stay empty so the worker never presents itself as live billing, as edge does; the sandbox pair (test keys only, checked in stripe_pair) rides the names the app reads for a sandbox, empty when the vault holds none.
-        "STRIPE_SECRET_KEY": "",
-        "STRIPE_WEBHOOK_SECRET": "",
-        "STRIPE_SANDBOX_SECRET_KEY": stripe_key,
-        "STRIPE_SANDBOX_WEBHOOK_SECRET": stripe_hook,
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL") or "",
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",
@@ -355,6 +355,11 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "ACCOUNT_BACKUP_S3_BUCKET": backup_bucket,
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
+        "ACCOUNT_FORENSICS_S3_BUCKET": _forensics_bucket(region) if forensics_endpoint else "",
+        "ACCOUNT_FORENSICS_S3_REGION": "auto" if forensics_endpoint else "",
+        "ACCOUNT_FORENSICS_S3_ENDPOINT": forensics_endpoint,
+        "ACCOUNT_FORENSICS_S3_ACCESS_KEY_ID": forensics_key,
+        "ACCOUNT_FORENSICS_S3_SECRET_ACCESS_KEY": forensics_secret,
         "OBS_OTLP_CREDENTIALS": otlp,
         "SELLER_NAME": os.environ.get("SELLER_NAME") or "",
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER") or "",
@@ -557,6 +562,15 @@ def _reexec_under_profile(argv: list[str], region: str = DEFAULT_REGION) -> int 
 
 # `rotation check` exits 0 in sync, 1 on drift (a live value was read and differs), 2 when nothing drifted but a credential could not be checked (the query failed, so nothing was compared). Pinned to EXIT_COULD_NOT_CHECK in private/account/scripts/rotation/commands/check.ts.
 ROTATION_COULD_NOT_CHECK_RC = 2
+# The TypeScript check run directly from private/account with the deploy environment, as `core.account` does after its profile bind: `./run.sh rotation` would bind the `rotation` bws profile and refuse without its token file.
+ROTATION_CHECK_ARGV = [
+    "npx",
+    "--no-install",
+    "tsx",
+    "scripts/rotation/index.ts",
+    "check",
+    "--for=bench",
+]
 
 
 def _could_not_check_lines(stderr: str) -> list[str]:
@@ -573,13 +587,28 @@ def _could_not_check_lines(stderr: str) -> list[str]:
     return lines
 
 
+def _rotation_check_env() -> dict[str, str]:
+    """The deploy environment plus the bootstrap token, read the way `bws_env` reads it (the environment, else the token file). The check reads the OTLP store through `bws`, and no deploy-bench profile passes the token on, so a region run from a shell without BWS_ACCESS_TOKEN exported failed there. The value is only handed to the child, never printed."""
+    env = dict(os.environ)
+    if not env.get(bws_env.ACCESS_ENV):
+        try:
+            token = bws_env.read_token(env)
+        except bws_env.RefusalError as exc:
+            raise DeployError(str(exc)) from None
+        if token:
+            env[bws_env.ACCESS_ENV] = token
+    return env
+
+
 def _rotation_check(root) -> None:
     """Refuse the secrets push unless the check read every credential and found it in sync. Drift (exit 1) and a check that could not read a credential (exit 2) both refuse, and are worded apart: an unread value is not drift, and rotating does not fix it."""
     log.step("Rotation preflight: ./run.sh rotation check --for=bench")
     # The check's progress goes to stderr; it is echoed as it arrives and kept to name what could not be checked.
     seen: list[str] = []
     with subprocess.Popen(
-        [str(root / "run.sh"), "rotation", "check", "--for=bench"],
+        ROTATION_CHECK_ARGV,
+        cwd=str(root / "private" / "account"),
+        env=_rotation_check_env(),
         stderr=subprocess.PIPE,
         text=True,
         encoding="utf-8",
@@ -741,14 +770,20 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str, region: str = DEFAULT_REGION) -> list[dict]:
-    """`wrangler d1 execute <the region's bench database> --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+    """`wrangler d1 execute <the region's bench database> --remote --json --command SQL` from the worker dir, authenticated with the Bearer token in `CLOUDFLARE_API_TOKEN` (the Global API Key pair only when no token is set), and the result rows. The stdout is never printed: it holds live links."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
-    if not (key and mail):
-        raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
     env = dict(os.environ)
-    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
-        env.pop(name, None)
-    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    if env.get("CLOUDFLARE_API_TOKEN"):
+        # The Bearer token (the resolved Auth) authenticates; the global-key names must not shadow it.
+        for name in ("CLOUDFLARE_API_KEY", "CLOUDFLARE_EMAIL", "CF_API_KEY"):
+            env.pop(name, None)
+    elif key and mail:
+        env.pop("CF_API_KEY", None)
+        env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    else:
+        raise SeedError(
+            "CLOUDFLARE_API_TOKEN, or CF_GLOBAL_API_KEY and CF_EMAIL, are required to read the captured email"
+        )
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
     argv = [
         *wrangler.ARGV,
@@ -850,6 +885,50 @@ def _seed_and_report(region: str = DEFAULT_REGION) -> None:
 def portal_out_dir(worker_dir) -> pathlib.Path:
     """Where the keyless bench portal is built: `<worker>/bench/dist/account`, served at /account/ by the bench config's assets."""
     return worker_dir.joinpath(*BENCH_ASSETS_REL, "account")
+
+
+DECLARED_FIELDS = ("dependencies", "devDependencies")
+
+
+def missing_installs(directory: pathlib.Path, root: pathlib.Path) -> list[str]:
+    """The top-level dependencies `directory/package.json` declares that no `node_modules/<name>/package.json` resolves, looking in `directory` and each parent up to `root`, the way Node and vite resolve a bare import. `npm ls` against the lockfile passed while `tw-animate-css`, declared in private/account/web/package.json and its lockfile, was absent from node_modules, and vite then failed `Can't resolve 'tw-animate-css'` (2026-11-25)."""
+    try:
+        doc = json.loads((directory / "package.json").read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return []
+    except (OSError, ValueError) as exc:
+        raise DeployError("%s cannot be read: %s" % (directory / "package.json", exc)) from None
+    if not isinstance(doc, dict):
+        raise DeployError("%s is not a JSON object" % (directory / "package.json"))
+    names = sorted({name for field in DECLARED_FIELDS for name in (doc.get(field) or {}) if name})
+    top = root.resolve()
+    here = directory.resolve()
+    bases = [here, *(p for p in here.parents if p == top or top in p.parents)]
+    return [
+        name
+        for name in names
+        if not any((base / "node_modules" / name / "package.json").is_file() for base in bases)
+    ]
+
+
+def installs_refusal(dirs: list[pathlib.Path], root: pathlib.Path) -> str | None:
+    """None when every built package with a node_modules resolves each dependency it declares, else the refusal with the exact fix. A package with no node_modules yet is installed by the build step that follows."""
+    for directory in dirs:
+        if not (directory / "node_modules").is_dir():
+            continue
+        missing = missing_installs(directory, root)
+        if missing:
+            return (
+                "%s declares %s, but node_modules does not hold %s (a build cannot resolve %s); fix: npm ci --prefix %s"
+                % (
+                    directory / "package.json",
+                    ", ".join(missing),
+                    "it" if len(missing) == 1 else "them",
+                    "it" if len(missing) == 1 else "them",
+                    directory,
+                )
+            )
+    return None
 
 
 def bench_assets_refusal(worker_dir, region: str = DEFAULT_REGION) -> str | None:
@@ -1048,6 +1127,10 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
     log.step("Preflight: installed dependencies match the lockfiles")
     if bench_preflight.lockfile([str(root), str(root / "private" / "account")]) != 0:
         raise DeployError("preflight failed")
+    web_dir = root / "private" / "account" / "web"
+    refusal = installs_refusal([web_dir, worker_dir], root)
+    if refusal:
+        raise DeployError(refusal)
     log.step("Preflight: every R2 bucket bound in %s exists" % config)
     cwd = os.getcwd()
     os.chdir(worker_dir)
@@ -1069,7 +1152,6 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
     if refusal:
         raise DeployError(refusal)
     out_dir = portal_out_dir(worker_dir)
-    web_dir = root / "private" / "account" / "web"
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")
     # The portal imports @rediacc/shared as a file: dependency, so vite bundles whatever packages/shared/dist holds. Without this build a deploy shipped a stale dist: on 2026-11-11 the bench consent page rendered with an empty notice and no Terms link, because dist predated the regenerated consent notices.

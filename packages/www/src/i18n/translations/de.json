@@ -455,6 +455,13 @@
         "title": "Changelog - Neue Features & Updates | Rediacc"
       },
       "subscribeDescription": "Einfach eine E-Mail bei neuen Releases, ohne Marketing-Floskeln.",
+      "groupAdded": "Neu",
+      "groupFixed": "Behoben",
+      "groupImproved": "Verbessert",
+      "stableSince": "Seit v{{version}} in Stable",
+      "noNotes": "Für diese Version sind keine Kundenhinweise erfasst",
+      "earlierHistory": "Frühere Historie",
+      "viewRelease": "Release auf GitHub ansehen",
       "subscribeTitle": "Bleib über neue Releases informiert",
       "subtitle": "Entdecke Releases, Bugfixes und kommende Updates.",
       "title": "Änderungsprotokoll"
@@ -664,7 +671,7 @@
       },
       "hero": {
         "title": "Auftragsverarbeitungsvertrag",
-        "effectiveDate": "Gültig ab: 11. November 2026"
+        "effectiveDate": "Gültig ab: 26. November 2026"
       },
       "toc": {
         "title": "Inhaltsverzeichnis"
@@ -676,7 +683,7 @@
           "content": [
             "Dieser Auftragsverarbeitungsvertrag („AVV“) ist Bestandteil der <a href=\"terms-of-service\">Nutzungsbedingungen</a> zwischen {{legalName}} („Rediacc“, dem „Auftragsverarbeiter“) und dem Kunden, soweit der Kunde die Dienste geschäftlich nutzt und Rediacc Personenbezogene Kundendaten im Auftrag des Kunden verarbeitet. In den Nutzungsbedingungen definierte Begriffe haben hier dieselbe Bedeutung. Dieser AVV ist in englischer Sprache verfasst; Übersetzungen dienen nur der Information, und bei Abweichungen gilt die englische Fassung.",
             "Für Personenbezogene Kundendaten ist der Kunde der Verantwortliche (oder ein Auftragsverarbeiter, der für seinen eigenen Verantwortlichen handelt) und Rediacc der Auftragsverarbeiter (oder Unterauftragsverarbeiter). Für Konto-, Abrechnungs- und Annahmedaten sowie für Telemetriedaten ist Rediacc eigenständiger Verantwortlicher, wie in der <a href=\"privacy-policy\">Datenschutzerklärung</a> beschrieben; dieser AVV gilt für diese Verarbeitung nicht.",
-            "Kundendaten auf den Maschinen des Kunden werden von Rediacc nicht verarbeitet. Verschlüsselter Konfigurationsspeicher und gehostete Backups sind mit Schlüsseln verschlüsselt, die Rediacc nicht besitzt; Rediacc speichert diese Datenblöcke daher, kann ihren Inhalt aber nicht lesen."
+            "Mit Ausnahme der in Abschnitt 4 beschriebenen Netzwerk-Forensik-Nachweise, die Rediacc nur für ein Repository erhält, für das der Kunde die Forensik einschaltet, verarbeitet Rediacc keine Kundendaten auf den Maschinen des Kunden. Verschlüsselter Konfigurationsspeicher und gehostete Backups sind mit Schlüsseln verschlüsselt, die Rediacc nicht besitzt; Rediacc speichert diese Datenblöcke daher, kann ihren Inhalt aber nicht lesen."
           ]
         },
         "definitions": {
@@ -701,12 +708,15 @@
           "id": "details",
           "title": "4. Einzelheiten der Verarbeitung",
           "items": [
-            "<strong>Gegenstand und Zweck:</strong> Bereitstellung der Plattform, einschließlich Konto- und Teamverwaltung, Lizenzausstellung, verschlüsseltem Konfigurationsspeicher, gehostetem Backup-Speicher und Support",
+            "<strong>Gegenstand und Zweck:</strong> Bereitstellung der Plattform, einschließlich Konto- und Teamverwaltung, Lizenzausstellung, verschlüsseltem Konfigurationsspeicher, gehostetem Backup-Speicher und Support, sowie in kostenpflichtigen Tarifen, in denen der Kunde dies für ein Repository aktiviert, forensische Netzwerkbelege, die der Sicherheit dieses Repositorys und der Untersuchung von Vorfällen dienen",
             "<strong>Dauer:</strong> die Laufzeit der Nutzungsbedingungen zuzüglich der Löschfrist nach Abschnitt 11",
             "<strong>Art der Verarbeitung:</strong> Erhebung, Speicherung, Übermittlung, Abruf und Löschung",
-            "<strong>Kategorien betroffener Personen:</strong> die Autorisierten Benutzer des Kunden, eingeladene Teammitglieder und Ansprechpartner von Partnern",
-            "<strong>Kategorien personenbezogener Daten:</strong> Namen, E-Mail-Adressen, Organisation und Rolle, Authentifizierungsdaten (Passwort-Hashes, öffentliche Passkey-Schlüssel), Netzwerkadressen und User-Agents von Sitzungen sowie alle personenbezogenen Daten innerhalb verschlüsselter Daten, die der Kunde auf der Plattform speichert",
-            "<strong>Besondere Kategorien:</strong> keine vorgesehen; der Kunde darf besondere Kategorien von Daten nicht unverschlüsselt auf der Plattform speichern"
+            "<strong>Kategorien betroffener Personen:</strong> die Autorisierten Benutzer des Kunden, eingeladene Teammitglieder und Ansprechpartner von Partnern und Personen, deren Netzwerkadressen in den Netzwerkflussdaten eines Repositorys erscheinen, etwa Clients, die sich mit einem vom Kunden betriebenen Dienst verbinden",
+            "<strong>Kategorien personenbezogener Daten:</strong> Namen, E-Mail-Adressen, Organisation und Rolle, Authentifizierungsdaten (Passwort-Hashes, öffentliche Passkey-Schlüssel), Netzwerkadressen und User-Agents von Sitzungen sowie alle personenbezogenen Daten innerhalb verschlüsselter Daten, die der Kunde auf der Plattform speichert; bei forensischen Belegen Metadaten des Netzwerkflusses (Adressen, Ports, Byte- und Paketzahlen, Zeitpunkte), DNS-Namen und -Antworten, Prozessnamen und Prozesskennungen sowie die Pfade sensibler Dateien, die ein Prozess geöffnet hat",
+            "<strong>Besondere Kategorien:</strong> keine vorgesehen; der Kunde darf besondere Kategorien von Daten nicht unverschlüsselt auf der Plattform speichern",
+            "<strong>Forensische Belege, Adressen:</strong> Zieladressen ausgehender Flüsse werden vollständig gespeichert, weil sie der Beleg sind. Die Client-Adresse eines eingehenden Flusses wird im Datensatz auf ihren Netzwerkanteil gekürzt (/24 bei IPv4, /48 bei IPv6); die vollständige Adresse wird in einem getrennten Abschnitt derselben Charge übertragen",
+            "<strong>Forensische Belege, Aufbewahrung:</strong> Belege werden bis zum Speicherkontingent des Tarifs des Kunden aufbewahrt; ist das Kontingent voll, werden die ältesten Tagesdateien zuerst entfernt. Eine Charge ist 7 Tage lang gegen Entfernung gesperrt, und Belege zu einem vom Kunden gemeldeten Vorfall werden bis 30 Tage nach dessen Abschluss gehalten",
+            "<strong>Forensische Belege, Grundlage:</strong> Rediacc verarbeitet sie nur auf dokumentierte Weisung des Kunden, indem der Kunde die Forensik für ein Repository aktiviert"
           ]
         },
         "confidentiality": {
@@ -743,7 +753,8 @@
           ],
           "content2": [
             "Rediacc kündigt das Hinzufügen oder Ersetzen eines Unterauftragsverarbeiters mindestens dreißig (30) Tage vorher an, indem es diese Seite aktualisiert und die E-Mail-Adresse des Kontos benachrichtigt. Der Kunde kann innerhalb dieser Frist aus berechtigten datenschutzrechtlichen Gründen widersprechen. Können die Parteien den Widerspruch nicht beilegen, kann der Kunde die betroffenen Dienste kündigen und erhält im Voraus bezahlte Entgelte für den Zeitraum nach der Kündigung erstattet.",
-            "Website-Analysen (Plausible) verarbeiten keine Personenbezogenen Kundendaten und unterliegen der Datenschutzerklärung."
+            "Website-Analysen (Plausible) verarbeiten keine Personenbezogenen Kundendaten und unterliegen der Datenschutzerklärung.",
+            "Ein Modellanbieter, den der Kunde mit einem KI-Agenten verbindet, ist kein Unterauftragsverarbeiter, weil Rediacc ihn weder auswählt noch anweist. Für die an diesen Anbieter gesendete Tool-Ausgabe gilt die eigene Vereinbarung des Kunden mit ihm."
           ]
         },
         "transfers": {
@@ -1315,6 +1326,93 @@
         ],
         "lede": "Jeder Partner kann sich kostenlos zertifizieren. Wählen Sie den passenden Track: Vertrieb oder Technik. Das Lernprogramm liegt im Portal, sodass sich Ihr Team vor der Prüfung vorbereiten kann.",
         "title": "Kostenlose Zertifizierung, zwei Tracks"
+      },
+      "growth": {
+        "title": "Was Partner bekommen",
+        "lede": "Vier Gründe, warum sich der Vertrieb von Rediacc für Partner lohnt.",
+        "items": [
+          {
+            "title": "Deals, die niemand unterbietet",
+            "body": "Registriert ein Kundengeschäft, und nach der Freigabe kann kein anderer Partner denselben Kunden innerhalb der Schutzfrist registrieren."
+          },
+          {
+            "title": "Marge, die mit dem Deal wächst",
+            "body": "Mehrjahresverträge, Vorauszahlung und größere Deals bringen zusätzliche Marge, und zertifizierte Teams steigen auf der Leiter auf."
+          },
+          {
+            "title": "Kostenlose Zertifizierung",
+            "body": "Vertriebs- und Technikpfad mit kostenloser Prüfung. Gelernt wird im Partnerportal."
+          },
+          {
+            "title": "Enterprise-Testphasen über 30 Tage",
+            "body": "Partner vergeben 30-tägige Enterprise-Testlizenzen direkt an Kunden, ohne auf Rediacc zu warten."
+          }
+        ]
+      },
+      "leads": {
+        "title": "Leads aus unserem Preisrechner",
+        "body": "Kunden, die ihr Setup im öffentlichen Preisrechner berechnen, können ein Partnerangebot anfragen. Diese Anfragen gehen an gelistete Partner, die das Land und die Sprache des Kunden bedienen."
+      },
+      "stance": "Wir verkaufen nicht an unseren Partnern vorbei. Rediacc verkauft nur dort direkt, wo kein Partner den Kunden betreut.",
+      "directoryCta": {
+        "title": "Im Partnerverzeichnis gelistet werden",
+        "body": "Freigegebene Partner können sich mit Ländern, Sprachen und Leistungen öffentlich listen lassen, damit Kunden sie zuerst finden.",
+        "button": "Verzeichnis ansehen"
+      },
+      "directory": {
+        "meta": {
+          "title": "Rediacc-Partnerverzeichnis nach Ländern",
+          "description": "Findet einen Rediacc-Partner in Eurem Land und Eurer Sprache für lokalen Support, Rechnungen in Landeswährung und Hilfe bei der Migration."
+        },
+        "hero": {
+          "eyebrow": "Partnerverzeichnis",
+          "title": "Einen Rediacc-Partner in Eurer Nähe finden",
+          "subtitle": "Partner bieten Support in Eurer Sprache, stellen Rechnungen in Eurer Währung aus und helfen bei der Migration. Viele bieten einen Preis unter Liste."
+        },
+        "benefits": {
+          "title": "Warum über einen Partner kaufen",
+          "items": [
+            "Lokaler Support in Eurer Sprache",
+            "Rechnungen in Eurer Landeswährung",
+            "Migrationshilfe von Leuten, die das schon oft gemacht haben",
+            "Oft ein Preis unter Liste, mit kostenlosen Extras, die mit dem Auftrag wachsen"
+          ]
+        },
+        "filters": {
+          "country": "Land",
+          "language": "Sprache",
+          "service": "Leistung",
+          "all": "Alle",
+          "reset": "Filter zurücksetzen"
+        },
+        "services": {
+          "resale": "Wiederverkauf",
+          "migration": "Migrationshilfe",
+          "managed": "Managed Service",
+          "training": "Schulung"
+        },
+        "tiers": {
+          "registered": "Registriert",
+          "silver": "Silber",
+          "gold": "Gold-Partner",
+          "platinum": "Platin"
+        },
+        "card": {
+          "certificates": "Zertifikate: {{count}}",
+          "visit": "Website besuchen",
+          "countries": "Länder",
+          "languages": "Sprachen",
+          "services": "Leistungen"
+        },
+        "status": {
+          "loading": "Partner werden geladen...",
+          "empty": "Noch kein Partner passt zu diesen Filtern. Wo kein Partner aktiv ist, betreut Rediacc Kunden direkt.",
+          "error": "Das Verzeichnis konnte nicht geladen werden. Bitte gleich noch einmal versuchen."
+        },
+        "becomePartner": {
+          "text": "Ihr führt ein Reseller- oder Dienstleistungsgeschäft?",
+          "link": "Partner werden"
+        }
       },
       "finalCta": {
         "button": "Partner werden",
@@ -2390,7 +2488,7 @@
           "community": {
             "floatingLicenses": "2",
             "jobsPerMonth": "100",
-            "repositories": "Unbegrenzt",
+            "repositories": "5",
             "repoSize": "10 GB",
             "usersTeams": "Unbegrenzt"
           },
@@ -2465,7 +2563,7 @@
         "title": "Fragen?"
       },
       "hero": {
-        "effectiveDate": "Gültig ab: 11. November 2026",
+        "effectiveDate": "Gültig ab: 26. November 2026",
         "title": "Unser Datenschutzversprechen"
       },
       "meta": {
@@ -2516,8 +2614,9 @@
           "items": [
             "<strong>Dienstleister (Unterauftragsverarbeiter)</strong>, die unsere Plattform hosten und betreiben, E-Mails zustellen und Zahlungen abwickeln und vertraglich zum Schutz Ihrer Daten verpflichtet sind. Die aktuelle Liste mit Rolle und Standort der einzelnen Anbieter finden Sie in unserem <a href=\"data-processing-agreement\">Auftragsverarbeitungsvertrag</a>",
             "<strong>Plausible Analytics</strong> für cookielose, anonymisierte Webanalytik",
-            "<strong>Telemetrieverarbeitung</strong> — anonymisierte Produktnutzungsdaten werden an unseren eigenen Telemetrie-Endpunkt innerhalb der EU zur Aggregation und Analyse übermittelt. Keine Telemetriedaten werden an Dritte weitergegeben (siehe unsere <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>)",
-            "<strong>Strafverfolgungsbehörden</strong>, wenn gesetzlich vorgeschrieben"
+            "<strong>Telemetrieverarbeitung</strong> für anonymisierte Produktnutzungsdaten, die zur Aggregation und Analyse an unseren eigenen Telemetrie-Endpunkt in der Europäischen Union gesendet werden. Der Endpunkt läuft auf virtuellen Servern von Hostinger, das die Daten als unser Auftragsverarbeiter für uns hostet, aufgeführt in unserer <a href=\"data-processing-agreement\">Datenverarbeitungsvereinbarung</a>, und sie nicht für eigene Zwecke nutzt. Wir verkaufen keine Telemetriedaten und geben sie an niemanden sonst weiter (siehe unsere <a href=\"telemetry-policy\">Telemetrie-Richtlinie</a>)",
+            "<strong>Strafverfolgungsbehörden</strong>, wenn gesetzlich vorgeschrieben",
+            "<strong>Der von Ihnen verbundene Modellanbieter</strong>, auf Ihre Anweisung, wenn Sie einen KI-Agenten über Remote-MCP nutzen: Die an den Agenten zurückgegebene Tool-Ausgabe geht an diesen Anbieter, der sie im Rahmen Ihrer eigenen Vereinbarung mit ihm verarbeitet. Dieser Anbieter ist weder unser Auftragsverarbeiter noch Unterauftragsverarbeiter, da Rediacc ihn weder auswählt noch anweist. Manche Konnektoren, etwa der MCP-Konnektor der Claude API, kommen für Zero Data Retention nicht in Frage"
           ],
           "title": "4. Datenweitergabe und Dritte"
         },
@@ -3177,7 +3276,7 @@
             "title": "Artikel 21(2)(d) ist eine Anbieterfrage"
           },
           {
-            "blurb": "Artikel 21(2)(e), (f) und 23 gemeinsam gelesen. Der Fork mit konstanter Laufzeit, der wöchentliche Übungen realistisch macht, und der Artikel-23-Meldefristen, die ohne forensisch verwertbare Artefakte nicht einzuhalten sind. Für SRE- und Ops-Verantwortliche.",
+            "blurb": "Artikel 21(2)(e), (f) und 23 gemeinsam gelesen. Der Fork mit konstanter Laufzeit, der wöchentliche Übungen realistisch macht, und die Meldefristen nach Artikel 23, die ohne überprüfbare Nachweise nicht einzuhalten sind. Für SRE- und Ops-Verantwortliche.",
             "slug": "nis2-effectiveness-without-theatre",
             "title": "Kontinuierliche Wirksamkeit ohne Theater"
           },
@@ -9845,7 +9944,7 @@
         "title": "Fragen?"
       },
       "hero": {
-        "effectiveDate": "Gültig ab: 1. Februar 2026",
+        "effectiveDate": "Gültig ab: 26. November 2026",
         "title": "Unsere Telemetriepraxis"
       },
       "meta": {
@@ -9946,7 +10045,7 @@
             "<strong>Verschlüsselung:</strong> Alle Daten werden während der Übertragung mit TLS verschlüsselt. Der Renet-Agent verwendet zusätzlich gzip-Komprimierung.",
             "<strong>Aufbewahrung:</strong> Rohe Telemetrie-Traces werden bis zu 90 Tage für Debugging und Vorfalluntersuchungen gespeichert. Aggregierte Metriken werden bis zu 12 Monate aufbewahrt und dann gelöscht.",
             "<strong>Zugriff:</strong> Telemetriedaten sind nur für Rediacc-Engineering- und Betriebspersonal auf Need-to-Know-Basis zugänglich.",
-            "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht an Dritte weitergegeben, verkauft oder zugänglich gemacht.",
+            "<strong>Keine Weitergabe an Dritte:</strong> Telemetriedaten werden nicht verkauft und nicht zu deren eigener Nutzung an andere weitergegeben. Sie werden auf virtuellen Servern in der Europäischen Union gespeichert, die Hostinger bereitstellt und die als unser Auftragsverarbeiter für uns hostet (siehe unsere <a href=\"data-processing-agreement\">Datenverarbeitungsvereinbarung</a>).",
             "<strong>Infrastruktur:</strong> Alle Telemetriedaten werden auf Infrastruktur innerhalb der Europäischen Union verarbeitet und gespeichert."
           ],
           "title": "6. Datenverarbeitung und -speicherung"
@@ -9961,7 +10060,7 @@
         "introduction": {
           "content": [
             "Rediacc-Softwareprodukte erfassen anonymisierte Nutzungstelemetrie, um uns bei der Verbesserung der Produktqualität, der Diagnose von Problemen und dem Verständnis der Nutzung unserer Tools zu helfen. Diese Telemetrie-Richtlinie beschreibt genau, welche Daten erfasst werden, warum, wie sie verarbeitet werden und wie Sie sich abmelden können.",
-            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
+            "Diese Richtlinie gilt für zwei Produkte: die <strong>Rediacc CLI</strong> und den <strong>Rediacc Renet-Agent</strong>. Die forensische Erfassung der Netzwerkaktivität eines Repositorys ist keine Telemetrie; sie wird als Personenbezogene Daten des Kunden gemäß dem <a href=\"data-processing-agreement\">Auftragsverarbeitungsvertrag</a> verarbeitet. Die Webanalyse (Plausible) wird separat in unserer <a href=\"privacy-policy\">Datenschutzrichtlinie</a> und unserer <a href=\"cookie-policy\">Cookie-Richtlinie</a> behandelt."
           ],
           "id": "introduction",
           "title": "1. Einleitung"

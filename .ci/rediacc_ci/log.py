@@ -101,6 +101,35 @@ DEBUG_ENV = "DEBUG"
 DEBUG_ON = "true"
 
 
+def ensure_utf8(stream) -> None:
+    """Make ONE stream UTF-8 when it can be and is not already. A no-op on a UTF-8 stream, which is the usual Linux case; a stream with another encoding (a non-UTF-8 locale, the Windows console) is reconfigured on any OS.
+
+    WHY HERE. Every ported entry point prints the glyphs above (`\u2192`, `\u2713`) through this module, and on Windows stdout and stderr are the console code page (cp1252), which has no arrow: the text came out as the literal escape or a replacement character (measured on a Windows 11 VM, the "Secure Storage (dpapi)" ci-quality job). One seam beats a `reconfigure` in every module, and `errors="replace"` keeps a stray unencodable character from becoming a traceback. A stream without `reconfigure` (StringIO, a mock) is left alone.
+    """
+    reconfigure = getattr(stream, "reconfigure", None)
+    encoding = getattr(stream, "encoding", None)
+    if (
+        reconfigure is None
+        or not encoding
+        or encoding.lower().replace("_", "-") in ("utf-8", "utf8")
+    ):
+        return
+    with contextlib.suppress(OSError, ValueError):
+        reconfigure(encoding="utf-8", errors="replace")
+
+
+def ensure_utf8_std() -> None:
+    """`ensure_utf8` on the process's real stdout and stderr, once, at import.
+
+    A deliberate process-wide effect: importing this module reconfigures each stream that is not already UTF-8 (and can be reconfigured) to UTF-8 with `errors="replace"`, so an unencodable character prints as a replacement instead of raising. A stream already UTF-8 is left exactly as it was. Every importer is a CI entry point whose log line is worth more than its traceback.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        ensure_utf8(stream)
+
+
+ensure_utf8_std()
+
+
 def colour_allowed(stream=None, env=None) -> bool:
     """Should THIS stream carry colour?
 
@@ -170,7 +199,16 @@ class Logger:
         matters most, so the flush is not optional and there is no `flush=`
         argument to get wrong.
         """
-        self.stream.write(self.format(level, message) + "\n")
+        # Only the live `sys.stderr` (which a test or a caller may have replaced since import) is ours to reconfigure; an explicit stream belongs to the caller, whose later writes must keep its encoding.
+        if self._stream is None:
+            ensure_utf8(self.stream)
+        line = self.format(level, message) + "\n"
+        try:
+            self.stream.write(line)
+        except UnicodeEncodeError:
+            # A caller-owned stream keeps its encoding, so encode for it rather than raise.
+            encoding = getattr(self.stream, "encoding", None) or "ascii"
+            self.stream.write(line.encode(encoding, "replace").decode(encoding))
         # A stream without flush(), or a closed one, must not turn a log line into a traceback: the place a logger is called is the place something has already gone wrong.
         with contextlib.suppress(AttributeError, ValueError):
             self.stream.flush()

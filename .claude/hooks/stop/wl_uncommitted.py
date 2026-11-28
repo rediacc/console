@@ -1,6 +1,6 @@
 """wl_uncommitted: the commit reminder's engine (agent/plans/PLAN-fast-loop.md, Part 2).
 
-WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `commit_remind_min` minutes without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
+WHAT IT ANSWERS. "Does this session hold edited files that are still uncommitted, and has the branch gone `COMMIT_REMIND_MIN` minutes (below, shared with wl_checks) without a commit?" The answer feeds two advisories that share this one engine and one piece of state: the Stop hook's `commit-remind` line and the PostToolUse member `.claude/hooks/post-tool/commit_remind.py`. Neither blocks (operator ruling 2026-10-06: a reminder, never a wall).
 
 WHY THE TRANSCRIPT. The worktree is shared, so `git status` alone cannot say whose a dirty file is: a peer session's edit looks the same. The session's own transcript names every file its own Edit, Write, MultiEdit and NotebookEdit calls touched, so the dirty set is intersected with that list and a peer's path never counts.
 
@@ -34,7 +34,12 @@ GIT_TIMEOUT_S = 20
 
 
 def _git(root, *args):
-    """stdout of one read-only git command in `root`, or "" on any failure."""
+    """stdout of one read-only git command in `root`, or "" on any failure. A query wl_core.git_cacheable admits is answered from the HEAD-keyed cache."""
+    import wl_core
+
+    if wl_core.git_cacheable(args):
+        got = wl_core.git_run(root, args, timeout=GIT_TIMEOUT_S)
+        return wl_core.git_text(got[1]) if got is not None and got[0] == 0 else ""
     try:
         proc = subprocess.run(
             ["git", "-C", str(root), *args],
@@ -112,12 +117,13 @@ def scan_transcript(root, transcript_path, state_doc, now=None):
     if start >= size:
         state_doc["uc_cursor"] = start
         return first
-    try:
-        with open(transcript_path, "rb") as handle:
-            handle.seek(start)
-            data = handle.read(size - start)
-    except OSError:
+    # ONE TRANSCRIPT READ PER STOP (wl_core.tail_bytes): the delta from the cursor is served from the bytes the Stop run already read.
+    import wl_core
+
+    got = wl_core.tail_bytes(transcript_path, start=start)
+    if got is None:
         return False
+    size, start, data = got
     if first and start > 0:
         # A bounded catch-up lands mid-line: the partial first line is skipped.
         cut = data.find(b"\n") + 1
@@ -192,11 +198,14 @@ def own_dirty(root, state_doc, now=None):
     return _dirty_match(state_doc.get("uc_files") or {}, cached.get("dirty") or []), ct
 
 
-def remind_min(root):
-    """`commit_remind_min` of the root's QUEUE.md `## Settings` (default 15)."""
-    import wl_planqueue
+# Minutes without a commit before the reminder speaks. Held HERE, in the small module, so the PostToolUse member reads it without importing the whole Stop battery (wl_checks, over 6000 lines) on every Edit or Write; `wl_checks.COMMIT_REMIND_MIN` is this value (review 196fda72.1).
+COMMIT_REMIND_MIN = 15
 
-    return int(wl_planqueue.settings_for(root)[0].commit_remind_min)
+
+def remind_min(root):
+    """`COMMIT_REMIND_MIN`, the one constant the Stop hook passes as `minutes` too (agent/plans/PLAN-simple-two-tree-loop.md ruling 11: fixed in code, no QUEUE.md line). `root` is not read."""
+    del root
+    return COMMIT_REMIND_MIN
 
 
 def evaluate(root, transcript_path, state_doc, now=None, minutes=None):

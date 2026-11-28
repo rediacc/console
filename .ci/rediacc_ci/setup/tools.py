@@ -694,6 +694,49 @@ TOOLS: tuple[Tool, ...] = (
         ),
     ),
     Tool(
+        name="keyctl",
+        purpose=(
+            "On Linux the rdc CLI keeps its device secrets in the kernel user keyring; without keyctl the "
+            "first rdc command after setup fails with 'keyctl is not installed'"
+        ),
+        pin_key=None,
+        install={
+            "apt": "sudo apt-get update && sudo apt-get install -y keyutils",
+            "dnf": "sudo dnf install -y keyutils",
+            "pacman": "sudo pacman -S --noconfirm keyutils",
+            "apk": "sudo apk add keyutils",
+            "brew": "echo 'not needed on macOS: the Keychain backs the rdc secret store'",
+        },
+        provenance="packages/cli/src/utils/secure-storage.ts KeyctlStorage",
+        probe=("keyctl", "--version"),
+        note=(
+            "LINUX-ONLY. The brew arm is an explanation, not an installer, so the darwin answer "
+            "(A4) stays honest: macOS uses the Keychain through `security`, which ships with the OS."
+        ),
+    ),
+    Tool(
+        name="secret-tool",
+        purpose=(
+            "the Secret Service client (GNOME Keyring, KWallet) that rdc can use for its device "
+            "secrets on a Linux desktop"
+        ),
+        pin_key=None,
+        install={
+            "apt": "sudo apt-get update && sudo apt-get install -y libsecret-tools",
+            "dnf": "sudo dnf install -y libsecret",
+            "pacman": "sudo pacman -S --noconfirm libsecret",
+            "apk": "sudo apk add libsecret",
+            "brew": "echo 'not needed on macOS: the Keychain backs the rdc secret store'",
+        },
+        provenance="packages/cli/src/utils/secure-storage.ts, the Secret Service backend",
+        probe=("secret-tool", "--version"),
+        note=(
+            "LINUX-ONLY, and OPTIONAL on a headless host, where keyctl is the backend. dnf, pacman "
+            "and apk ship the tool inside the libsecret package; only apt splits it out as "
+            "libsecret-tools."
+        ),
+    ),
+    Tool(
         name="PyYAML",
         purpose="the workflow-parsing gates read .github/workflows/*.yml with it",
         pin_key="PYYAML_VERSION",
@@ -1287,4 +1330,26 @@ __all__ = [
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `main` tests the three flags by membership and takes the argument right after `--install-plan` as the package manager. A bare argument anywhere else was ignored, so it is refused here.
+    _parsed = gate_args.parse(
+        "tools.py",
+        sys.argv[1:],
+        switches=("--selftest", "--report", "--install-plan"),
+        positional="<manager>",
+    )
+    _tail = sys.argv[1:]
+    _after = (
+        [a for a in _tail[_tail.index("--install-plan") + 1 :][:1] if not a.startswith("-")]
+        if "--install-plan" in _tail
+        else []
+    )
+    if _parsed.positionals != _after:
+        print(
+            "tools.py: a bare argument is only the package manager right after --install-plan, "
+            "got %r (accepted: --selftest, --report, --install-plan [<manager>])" % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))

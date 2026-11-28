@@ -189,9 +189,9 @@ describe('MCP tool definitions', () => {
     });
   });
 
-  describe('repoArgField for grand repo guard', () => {
-    it('is set on guarded destructive tools', () => {
-      const guarded = [
+  describe('repoArgField names the repo field', () => {
+    it('is set on the destructive repo tools', () => {
+      const repoTools = [
         'repo_up',
         'repo_down',
         'repo_delete',
@@ -200,7 +200,7 @@ describe('MCP tool definitions', () => {
         // repo_exec replaced term_exec (w2b): the tool that used to build `term connect -m <machine> -c <cmd>` and whose argv silently went invalid when -m died. It is a real leaf now, so it is auto-derived.
         'repo_exec',
       ];
-      for (const name of guarded) {
+      for (const name of repoTools) {
         const tool = TOOLS.find((t) => t.name === name)!;
         expect(tool.repoArgField, `${name} should have repoArgField`).toBeDefined();
       }
@@ -221,7 +221,7 @@ describe('MCP tool definitions', () => {
     });
 
     it('the positional-converted repo tools bind their repo to the <ref> arg', () => {
-      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the guard's repo field is the positional name, not a dead --name flag.
+      // repo cat/status/delete/fork/migrate/up/down carry a positional <ref> (spec §2.2); the repo field is the positional name, not a dead --name flag.
       for (const name of [
         'repo_cat',
         'repo_status',
@@ -242,22 +242,26 @@ describe('MCP tool definitions', () => {
     });
 
     it('repo_checkout binds its repo to the <commit-or-branch-ref> positional', () => {
-      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the guard field is the positional name.
+      // Checkout clones a commit/branch (not a family) into a fresh fork, so its positional is role-named; the repo field is the positional name.
       expect(TOOLS.find((t) => t.name === 'repo_checkout')!.repoArgField).toBe(
         'commit-or-branch-ref'
       );
     });
 
     it('the backup tools bind their repo to the <ref> positional too', () => {
-      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the grand-repo guard silently no-op'd on repo_push / repo_pull. Binding to the real positional actually enables it.
+      // Previously repoArg was 'repo', but no such field existed in the derived MCP schema (it had 'name'), so the field named nothing on repo_push / repo_pull. It names the real positional now.
       expect(TOOLS.find((t) => t.name === 'repo_push')!.repoArgField).toBe('ref');
       expect(TOOLS.find((t) => t.name === 'repo_pull')!.repoArgField).toBe('ref');
     });
   });
 
   describe('job_wait', () => {
-    it('is not exposed: an agent cannot usefully block on it (Design 12)', () => {
-      expect(TOOLS.find((t) => t.name === 'job_wait')).toBeUndefined();
+    // PLAN-detached-jobs Design 12 kept `rdc job wait` off MCP (it blocks until the job ends). PLAN-rmcp-local-mcp LM6 adds a bounded job_wait instead: repeated `job status` reads for at most 50 s (job-wait.test.ts).
+    it('is the bounded custom tool over job status, not the unbounded `rdc job wait`', () => {
+      const tool = TOOLS.find((t) => t.name === 'job_wait');
+      expect(tool?.commandPath).toBe('job status');
+      expect(tool?.poll?.ceilingMs).toBe(50_000);
+      expect(tool?.command({ 'job-id': 'j-1' })).toEqual(['job', 'status', 'j-1']);
     });
   });
 
@@ -318,9 +322,9 @@ describe('MCP tool definitions', () => {
   });
 
   describe('custom tools', () => {
-    it('has exactly 3 custom tools', () => {
-      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf). 4 -> 3: machine_health retired, it ran `machine status --system`, not the health checker, so the tool named "health" never returned the aggregated issues. `machine health` is no longer experimental, so the contract-derived tool of that name now runs the real command.
-      expect(CUSTOM_TOOLS.length).toBe(3);
+    it('has exactly 4 custom tools', () => {
+      // 5 -> 4: term_exec retired in w2b (repo_exec replaces it as a real leaf). 4 -> 3: machine_health retired, it ran `machine status --system`, not the health checker, so the tool named "health" never returned the aggregated issues. `machine health` is no longer experimental, so the contract-derived tool of that name now runs the real command. 3 -> 4: job_wait (PLAN-rmcp-local-mcp LM6), the bounded poll over `job status`.
+      expect(CUSTOM_TOOLS.length).toBe(4);
     });
 
     it('custom tools are all present in full tool list', () => {

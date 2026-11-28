@@ -14,6 +14,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+
 # THIS HARNESS SITS BESIDE ITS GUARD, which is what .ci/scripts/quality/check-hook-integrity.sh means by a dedicated test file: `test-<stem>.py` next to `<stem>.py` credits the guard with BOTH directions, and it is the only credit these four have because their block direction needs fixture work `test-hooks.sh`'s one-line `check` helper cannot express.
 #
 # THE GUARD IS A PYTHON MODULE NOW. W5 P7 ported it from a bash original that PLAN-retire-bash-oracles A3 later deleted, once the differential compared the two byte for byte and froze the result as a golden (tests/goldens/<stem>.jsonl). This harness drives the LIVE guard, which is the dispatcher, for the reason the cutover exists at all: a suite that kept driving the retired file would keep passing while the thing that actually runs went unchecked. A REAL
@@ -208,7 +212,7 @@ def drive(cmd: str, cwd: str | None = None, project: str | None = None) -> tuple
     env = dict(os.environ, CLAUDE_PROJECT_DIR=project, TMPDIR=RUN_TMP) if project else None
     # check=False is explicit: this harness EXPECTS non-zero exits (a blocked
     # command is the hook working), so raising on them would invert the test.
-    proc = subprocess.run(
+    proc = _harness.run(
         GUARD_ARGV, input=payload, capture_output=True, text=True, check=False, env=env
     )
     return proc.returncode, proc.stderr

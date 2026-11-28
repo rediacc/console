@@ -154,13 +154,14 @@ async function fullDesired() {
   const { machineUnitSpecs } = await import('../backup/backup-schedule-targets.js');
   const { sha256Hex } = await import('../backup/backup-schedule-unit-generator.js');
   const { expectedAccountServerOrigin } = await import('../backup/backup-store-universe.js');
+  const { REMOTE_RENET_PATH } = await import('../renet/renet-provisioner.js');
   const units = computeDesiredUnits(
     machineUnitSpecs(
       [{ name: 'hourly-hot', config: DEFAULT_STRATEGY as never }],
       rdcConfig() as never,
       'hostinger'
     ),
-    '/usr/bin/renet',
+    REMOTE_RENET_PATH,
     8,
     expectedAccountServerOrigin()
   );

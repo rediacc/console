@@ -3,15 +3,15 @@ r"""npm run env:register -- one environment name, registered everywhere it must 
     npm run env:register -- <module> <NAME> [<NAME>...] --class <shard>
                             [--kind <k> --default <spelling>... --why <text>]
 
-SEVERAL NAMES, ONE CALL. Every name in a group is read by that group's <module>, groups are separated by `+` (`<module> <NAME>... + <module> <NAME>...`), and a group with no `--class` takes the previous group's; the manifest and registry are written once and ONE typed `--allow-new` carries every pair. This is not a convenience: the python-env gate refuses a write while any other new read is unnamed, so two new names registered one call at a time can never both succeed. `--kind`, `--default` and `--why` describe one WORKLIST_* name, so they are refused with more than one name.
+SEVERAL NAMES, ONE CALL. Every name in a group is read by that group's <module>, groups are separated by `+` (`<module> <NAME>... + <module> <NAME>...`), and a group with no `--class` takes the previous group's; the registry document is written once and ONE typed `--allow-new` carries every pair. This is not a convenience: the python-env gate refuses a write while any other new read is unnamed, so two new names registered one call at a time can never both succeed. `--kind`, `--default` and `--why` describe one WORKLIST_* name, so they are refused with more than one name.
 
-THE FAN-OUT THIS REPLACES. Adding one environment read used to mean editing up to three files by hand, in an order nobody wrote down, and then running three gates to find out which one had been missed: one hook variable took three commits on 2026-10-04. Each name has exactly ONE authored home, and this verb writes it, then derives everything else:
+THE FAN-OUT THIS REPLACES. Adding one environment read used to mean editing up to three files by hand, in an order nobody wrote down, and then running three gates to find out which one had been missed: one hook variable took three commits on 2026-10-04. The three files are now three sections of ONE document, `.ci/config/env-manifest.json` (`env_doc.py`), held by ONE gate, check:ci-env-registry. Each name has exactly ONE authored home in it, and this verb writes it, then derives everything else:
 
-  WORKLIST_* names   `.ci/policy/worklist-env-registry.json` `names` (with
+  WORKLIST_* names   the `worklist` section's `names` (with
                      `kind`, `class`, pinned `defaults` and, for flag, handle and
                      corpus, a `why`), or `foreign_reads` when the reader is not
                      Python or bash and the registry's scan cannot see it
-  every other name   its shard list in `.ci/config/env-manifest.json`
+  every other name   its shard list under `shards`
 
 THE STEPS, in order, and the order is the contract:
 
@@ -26,16 +26,16 @@ THE STEPS, in order, and the order is the contract:
      name, because both registries pin READS and a name registered before its
      read exists is reported dead by the next gate run.
   2. WRITE the authored home, sorted.
-  3. RE-RENDER the env-manifest WORKLIST_* members from the registry classes
+  3. RE-RENDER the WORKLIST_* shard members from the `worklist` classes
      (`env_manifest.render_worklist`).
   4. RECORD THE READ, for a `.py` module whose `module:NAME` pair is not already
-     in `.ci/config/python-env-registry.json`:
-     `check_python_env_registry.py --write-baseline --allow-new <module>:<NAME>`.
+     under `python_reads`:
+     `python3 -m rediacc_ci.quality.python_env_registry --write-baseline --allow-new <module>:<NAME>`.
      A typed addition, never a blanket reseed.
   5. REGENERATE the docs: `npm run -s gen:docs -- --write`, which feeds the
      doc-registry env-manifest region. It has no `--only`.
-  6. CHECK, read-only, with the three registry gates, and print each verdict.
-     Any red makes this verb exit 1.
+  6. CHECK, read-only, with check:ci-env-registry, and print its verdict.
+     A red makes this verb exit 1.
 
 It NEVER COMMITS, and it writes a file only when its bytes change, so re-running it for a name that is already registered leaves the tree byte-identical before steps 5 and 6.
 
@@ -45,15 +45,13 @@ THE SUBPROCESS SEAM. Steps 4, 5 and 6 run through one `runner(cmd, cwd)` callabl
 from __future__ import annotations
 
 import json
-import os
 import pathlib
 import re
 import subprocess
 import sys
-import tempfile
 
 from rediacc_ci import log, paths
-from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import env_doc
 from rediacc_ci.quality import env_manifest as em
 from rediacc_ci.quality import python_env_registry as per
 from rediacc_ci.quality import worklist_env_registry as wer
@@ -73,11 +71,15 @@ USAGE = (
     % (", ".join(em.LIVE_SHARDS), ", ".join(wer.CLASSES), ", ".join(wer.KINDS))
 )
 
-GATES = (
-    "check_env_manifest.py",
-    "check_worklist_env_registry.py",
-    "check_python_env_registry.py",
-)
+# The `.ci` directory this module was imported from: steps 4 and 6 run its modules with `-m`, whatever the target root.
+CI_DIR = pathlib.Path(__file__).resolve().parents[2]
+GATE_MODULE = "rediacc_ci.quality.env_registry"
+WRITER_MODULE = "rediacc_ci.quality.python_env_registry"
+
+
+def module_cmd(module, *args):
+    """`python3 -m <module> <args>` with this checkout's `.ci` on PYTHONPATH."""
+    return ["env", "PYTHONPATH=%s" % CI_DIR, sys.executable, "-m", module, *args]
 
 
 class RefusalError(Exception):
@@ -169,28 +171,9 @@ def _parse_group(argv, inherited_cls):
 
 def _read_json(path):
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise RefusalError("cannot read %s: %s" % (path, exc)) from exc
-
-
-def _dump(obj):
-    return json.dumps(obj, indent=2, ensure_ascii=False) + "\n"
-
-
-def _write_if_changed(path, text):
-    """Atomic, and only when the bytes differ. Returns True when it wrote."""
-    if path.is_file() and path.read_text(encoding="utf-8") == text:
-        return False
-    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix=".%s." % path.name)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            handle.write(text)
-        os.replace(tmp, path)
-    finally:
-        if os.path.exists(tmp):
-            os.unlink(tmp)
-    return True
+        return env_doc.read(path)
+    except env_doc.DocError as exc:
+        raise RefusalError(str(exc)) from exc
 
 
 def _scanned_by_registry(module):
@@ -254,9 +237,9 @@ def _plan_worklist(root, req, registry):
     if current is not None and current != req.cls:
         raise RefusalError(
             "%s is already registered under class %r, and this asks for %r. Moving a name "
-            "between shards changes who may supply it: edit its `class` in .ci/policy/%s by hand, "
+            "between shards changes who may supply it: edit its `class` in %s `%s` by hand, "
             "with the reason in the commit, rather than as a side effect of registering a reader."
-            % (req.name, current, req.cls, wer.REGISTRY_NAME)
+            % (req.name, current, req.cls, env_doc.DOC_REL, env_doc.WORKLIST)
         )
     if req.why is not None and len(req.why.strip()) < wer.WHY_MIN_CHARS:
         raise RefusalError(
@@ -350,22 +333,24 @@ def _plan_foreign(root, req, names, foreign):
 
 
 def plan(root, req):
-    """(new_registry_text | None, new_manifest_text) for one request. Raises RefusalError; writes nothing."""
+    """The new registry document text for one request. Raises RefusalError; writes nothing."""
     return plan_all(root, [req])
 
 
 def plan_all(root, reqs):
-    """(new_registry_text | None, new_manifest_text) for every request at once. Raises RefusalError; writes nothing."""
+    """The new registry document text for every request at once. Raises RefusalError; writes nothing."""
     root = pathlib.Path(root)
-    manifest_path = root / em.MANIFEST_REL
-    registry_path = policy_path(wer.REGISTRY_NAME, root)
-    manifest = _read_json(manifest_path)
+    manifest = _read_json(root / env_doc.DOC_REL)
     try:
         lists = em.shard_lists(manifest)
     except em.RefusalError as exc:
         raise RefusalError(str(exc)) from exc
-    registry = _read_json(registry_path)
-    before = _dump(registry)
+    registry = manifest.get(env_doc.WORKLIST)
+    if not isinstance(registry, dict):
+        raise RefusalError(
+            "%s has no `%s` section to register a WORKLIST_* name in"
+            % (env_doc.DOC_REL, env_doc.WORKLIST)
+        )
 
     for req in reqs:
         _validate_common(root, req)
@@ -396,8 +381,8 @@ def plan_all(root, reqs):
     lists = em.render_worklist(lists, wer.classes_of(registry))
     for name in em.ALL_SHARDS:
         manifest["shards"][name] = lists[name]
-    new_text = _dump(registry)
-    return (new_text if new_text != before else None), _dump(manifest)
+    manifest[env_doc.WORKLIST] = registry
+    return env_doc.dump(manifest)
 
 
 def _check_python_reads(root, reqs):
@@ -420,7 +405,7 @@ def _check_python_reads(root, reqs):
     for req in todo:
         if req.name not in derived.get(req.module, []):
             raise RefusalError(
-                "%s does not read %s as check_python_env_registry derives it (a tracked module, an "
+                "%s does not read %s as the python_reads derivation sees it (a tracked module, an "
                 "os.environ / getenv read of a literal or a module constant). Write the read, and "
                 "track the file, first." % (req.module, req.name)
             )
@@ -445,15 +430,19 @@ def default_runner(cmd, cwd):
 
 def _recorded_pairs(root):
     try:
-        modules = _read_json(root / per.BASELINE_REL).get("modules") or {}
-    except RefusalError:
-        return set()
+        modules = per.read_baseline(pathlib.Path(root) / env_doc.DOC_REL) or {}
+    except per.RefusalError as exc:
+        raise RefusalError("the recorded python_reads cannot be read: %s" % exc) from exc
     return per.pairs_of(modules)
 
 
 def _verdict(out, err):
-    lines = [ln for ln in (err + out).splitlines() if ln.strip()]
-    return lines[-1].strip() if lines else "(no output at all)"
+    """The gate's last stderr line, where its verdict is logged; stdout only when stderr is empty, since stdout carries the shape tables."""
+    for stream in (err, out):
+        lines = [ln for ln in stream.splitlines() if ln.strip()]
+        if lines:
+            return lines[-1].strip()
+    return "(no output at all)"
 
 
 def register(root, reqs, runner=default_runner):
@@ -461,23 +450,18 @@ def register(root, reqs, runner=default_runner):
     root = pathlib.Path(root)
     if isinstance(reqs, Request):
         reqs = [reqs]
-    registry_text, manifest_text = plan_all(root, reqs)
+    doc_text = plan_all(root, reqs)
     first = reqs[0]
     label = " ".join("%s:%s" % (r.module, r.name) for r in reqs)
 
     wrote = []
-    if registry_text is not None and _write_if_changed(
-        policy_path(wer.REGISTRY_NAME, root), registry_text
-    ):
-        wrote.append(".ci/policy/%s" % wer.REGISTRY_NAME)
-    if _write_if_changed(root / em.MANIFEST_REL, manifest_text):
-        wrote.append(em.MANIFEST_REL)
+    if env_doc.write(root / env_doc.DOC_REL, json.loads(doc_text)):
+        wrote.append(env_doc.DOC_REL)
     print(
         "env:register %s" % " ".join("%s:%s --class %s" % (r.module, r.name, r.cls) for r in reqs)
     )
     print("  wrote: %s" % (", ".join(wrote) if wrote else "nothing (already registered so)"))
 
-    quality = root / ".ci" / "scripts" / "quality"
     recorded = _recorded_pairs(root)
     pairs = ["%s:%s" % (r.module, r.name) for r in reqs if r.module.endswith(".py")]
     fresh = [p for p in pairs if p not in recorded]
@@ -486,14 +470,14 @@ def register(root, reqs, runner=default_runner):
     elif not fresh:
         print("  python-env: %s already recorded" % ", ".join(pairs))
     else:
-        cmd = [sys.executable, str(quality / "check_python_env_registry.py"), "--write-baseline"]
+        cmd = module_cmd(WRITER_MODULE, "--write-baseline")
         for pair in fresh:
             cmd += ["--allow-new", pair]
         rc, out, err = runner(cmd, root)
         print("  python-env: --allow-new %s -> rc %d" % (" ".join(fresh), rc))
         if rc != 0:
             log.error(
-                "check_python_env_registry refused the typed addition, so the read is not "
+                "the python_reads writer refused the typed addition, so the read is not "
                 "recorded:\n%s" % (err + out).rstrip()
             )
             return 1
@@ -506,20 +490,22 @@ def register(root, reqs, runner=default_runner):
         )
         return 1
 
-    failed = 0
-    for gate in GATES:
-        rc, out, err = runner([sys.executable, str(quality / gate)], root)
-        print("  check: %s -> rc %d: %s" % (gate, rc, _verdict(out, err)))
-        failed += rc != 0
-    if failed:
+    rc, out, err = runner(module_cmd(GATE_MODULE), root)
+    print("  check: check:ci-env-registry -> rc %d: %s" % (rc, _verdict(out, err)))
+    if rc != 0:
         log.error(
-            "%d of %d registry gate(s) red after registering %s. Nothing was committed; read "
-            "the verdicts above." % (failed, len(GATES), label)
+            "check:ci-env-registry is red after registering %s. Nothing was committed; read "
+            "its verdict above." % label
         )
         return 1
     log.success(
-        "%s registered; %d gate(s) green. NOT COMMITTED: commit %s with the read."
-        % (label, len(GATES), ", ".join(wrote) or "the read")
+        "%s registered; check:ci-env-registry green. %s"
+        % (
+            label,
+            "NOT COMMITTED: commit %s with the read." % ", ".join(wrote)
+            if wrote
+            else "The registry was already so; nothing to commit for it.",
+        )
     )
     return 0
 

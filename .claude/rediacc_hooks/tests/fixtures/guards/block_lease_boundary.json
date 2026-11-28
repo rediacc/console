@@ -1,0 +1,39 @@
+{
+  "EDGE_CASES": [
+    ["a push", "git push origin HEAD:0923-1"],
+    ["a pin push", "git push origin HEAD:refs/worktrees/x"],
+    ["a switch", "git switch main"],
+    ["a new branch", "git switch -c x"],
+    ["a checkout of a branch", "git checkout 0923-1"],
+    ["a cherry-pick", "git cherry-pick HEAD"],
+    ["gh pr", "gh pr create --title x --body y"],
+    ["a wrapper", "sh -c 'git push origin HEAD:0923-1'"],
+    ["control: status", "git status"],
+    ["control: log", "git log -1"],
+    ["control: prose", "echo git push origin HEAD:0923-1"],
+    ["control: a checkout of paths", "git checkout -- x"]
+  ],
+  "ALLOWED": [
+    ["the pathspec commit", "git commit -F m -- src/x.ts"],
+    ["git status", "git status"],
+    ["git log", "git log"],
+    ["git diff", "git diff"],
+    ["git add", "git add -- src/x.ts"],
+    ["git rev-parse", "git rev-parse HEAD"],
+    ["a checkout of a path", "git checkout -- src/x.ts"],
+    ["a checkout of a path from a tree", "git checkout HEAD -- src/x.ts"],
+    ["a checkout of a lone path", "git checkout src/x.ts"],
+    ["a bare checkout", "git checkout"],
+    ["git branch, listing", "git branch --list"],
+    ["git branch, the current one", "git branch --show-current"],
+    ["git symbolic-ref, a read", "git symbolic-ref -q HEAD"],
+    ["git fetch", "git fetch origin"],
+    ["gh run list", "gh run list"],
+    ["gh api, reading", "gh api repos/o/r/pulls"],
+    ["gh pr --help", "gh pr --help"],
+    ["git push in prose", "echo git push origin HEAD:1104-1"],
+    ["git switch in a heredoc", "cat > n.md <<'EOF'\ngit switch main\nEOF"],
+    ["no git at all", "ls -la"],
+    ["an empty command", ""]
+  ]
+}

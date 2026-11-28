@@ -69,7 +69,7 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
    point. Under `LC_ALL=C` / `C.UTF-8` those agree bytewise, and the order is
    observable only in the argv `cp` receives.
 
-K=5 LEDGER: `.ci/shadow/w7p6-build-pages.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

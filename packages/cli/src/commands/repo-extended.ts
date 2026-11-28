@@ -4,7 +4,6 @@ import { t } from '../i18n/index.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { runCommandJob } from '../services/jobs/command-job.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -98,7 +97,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       ) => {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_RESIZE, repoKey);
           await executeRepoFunction(
             'repository_resize',
             repoKey,
@@ -145,7 +143,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       ) => {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_EXPAND, repoKey);
           await executeRepoFunction(
             'repository_expand',
             repoKey,
@@ -201,7 +198,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
       ) => {
         try {
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_ADMIN_VALIDATE, repoKey);
           await executeRepoFunction(
             'repository_validate',
             repoKey,
@@ -236,6 +232,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
   // the reason rather than silently doing nothing.
   autostart
     .command('enable')
+    .summary(t('commands.repo.admin.autostart.enable.descriptionShort'))
     .description(t('commands.repo.admin.autostart.enable.description'))
     .argument('[ref]', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -252,7 +249,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         try {
           if (ref) {
             const { repoKey, machineName } = await resolveAutostartRef(ref);
-            await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_ENABLE, repoKey);
             await executeRepoFunction(
               'repository_autostart_enable',
               repoKey,
@@ -291,6 +287,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   autostart
     .command('disable')
+    .summary(t('commands.repo.admin.autostart.disable.descriptionShort'))
     .description(t('commands.repo.admin.autostart.disable.description'))
     .argument('[ref]', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -307,7 +304,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         try {
           if (ref) {
             const { repoKey, machineName } = await resolveAutostartRef(ref);
-            await assertCommandPolicy(CMD.REPO_ADMIN_AUTOSTART_DISABLE, repoKey);
             await executeRepoFunction(
               'repository_autostart_disable',
               repoKey,
@@ -346,6 +342,7 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
 
   autostart
     .command('list')
+    .summary(t('commands.repo.admin.autostart.list.descriptionShort'))
     .description(t('commands.repo.admin.autostart.list.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--debug', t('options.debug'))
@@ -385,7 +382,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         try {
           const params = ownershipParams(options);
           const { repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_ADMIN_OWNERSHIP, repoKey);
           // The dry run's answer is the list renet prints on stdout; without capturing it the list reached the terminal only under --debug.
           const listing = options.rootOwned === true && options.dryRun === true;
 
@@ -470,7 +466,6 @@ export function registerExtendedRepoCommands(repo: Command, admin: Command): voi
         try {
           const templateName = options.template;
           const resolved = await resolveRepoRef(ref);
-          await assertCommandPolicy(CMD.REPO_ADMIN_TEMPLATE, resolved.repoKey);
 
           let tmplBase64: string;
 

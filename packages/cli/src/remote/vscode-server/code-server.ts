@@ -7,17 +7,17 @@ import {
   type VSCodeServerProvider,
 } from './types.js';
 
-const VERSION = '4.123.0';
+const VERSION = '4.146.0';
 
 const ARTIFACTS: Record<ServerPlatform, ServerArtifact> = {
   'linux-x64': {
     url: `https://github.com/coder/code-server/releases/download/v${VERSION}/code-server-${VERSION}-linux-amd64.tar.gz`,
-    sha256: 'e54325a6439652f188203fb80a25c303b87f153550e9eee0c078b798b791d657',
+    sha256: 'cf7e82ca5fe1df664d43a43d900c3c9710f8f3403a5e8d0e18f6a12d10d7401b',
     stripComponents: 1,
   },
   'linux-arm64': {
     url: `https://github.com/coder/code-server/releases/download/v${VERSION}/code-server-${VERSION}-linux-arm64.tar.gz`,
-    sha256: '855bdd7b8f522399e951c33a885a138ecf392427fb4464669ee55c9cc8fcb5f3',
+    sha256: '3df88f7f1feecce3583ab0109c5f6bf14f90ae3a44939b4257ccd9850ef37a6e',
     stripComponents: 1,
   },
 };

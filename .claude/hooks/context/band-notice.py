@@ -238,7 +238,13 @@ def main():
         # A crossing that arrives while an earlier order is still unfired queues behind it instead of replacing it (usage can climb from under "early" to past "late" before STATE.md is rewritten once), so each band keeps its own order and they fire one per rewrite, oldest first.
         queued = st.get("retro_queue") or []
         due = st.get("retro_due")
-        if due and mtime is not None and mtime > float(due.get("at") or 0):
+        # NOT WHILE A REBASE IS HALTED (worklist #b07162cf): the order is a row of the TRACKED agent/ledgers/stop-hook-retros.jsonl, and one unstaged tracked change makes `git rebase --continue` refuse. `retro_due` stays pending, so the first tool call after the operation ends places the order.
+        if (
+            due
+            and mtime is not None
+            and mtime > float(due.get("at") or 0)
+            and not B.operation_in_progress(project)
+        ):
             st.pop("retro_due", None)
             if queued:
                 st["retro_due"] = queued.pop(0)

@@ -197,8 +197,10 @@ def test_block_writes_through_d1_and_confirms_with_a_reread(fake, monkeypatch, c
     assert "--remote" in write
     command = write[write.index("--command") + 1]
     assert "SELECT o.id" in read[read.index("--command") + 1]
-    assert command.count("UPDATE ") == 2
+    assert command.count("UPDATE ") == 3
     assert "DELETE FROM config_executor_grants" in command
+    assert "revoked_reason = 'console_blocked'" in command
+    assert "DELETE FROM config_tokens WHERE agent_grant_id IN" in command
     assert "'console_executor.blocked'" in command
     assert "issuer_key LIKE 'executor:%'" in command
     assert "'%s'" % ORG_A in command

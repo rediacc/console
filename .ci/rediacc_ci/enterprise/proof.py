@@ -245,6 +245,7 @@ class Lab(Protocol):
         plant_failure: str = "",
         resume: str = "",
     ) -> ReleaseResult: ...
+    def reset_release(self, version: str) -> list[str]: ...
 
     # Tokens, proxy and executor.
     def mint(self, company: str, kind: str) -> str: ...
@@ -806,14 +807,27 @@ def _role(host: str) -> str:
 
 
 def verb_release(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V5: four companies across the rings; a planted failure stops and names one, the later ring and the fast tier are unchanged, `--skip-pauses` without `--order` is refused, and a resume finishes."""
+    """V5: four companies across the rings; a planted failure stops and names one, the later ring and the fast tier are unchanged, `--skip-pauses` without `--order` is refused, and a resume finishes.
+
+    The rehearsal rolls out the version edge runs, which an earlier rehearsal may have rolled out or stopped on, so the target version's progress is reset first (`Lab.reset_release`) and no ring company may run it before the release starts; either failing ends the verb, since every later claim would read the earlier rehearsal."""
     del bench
     ids = {
         ring: lab.ensure_company(f"proof-ring-{ring}", "eu", ring=ring) for ring in RELEASE_RINGS
     }
     targets = [*ids.values(), "fast"]
     target = lab.target_version()
+    if not p.attempt(
+        f"an earlier rehearsal's progress on {target} is reset",
+        lambda: lab.reset_release(target),
+    ):
+        return
     before = lab.versions(targets)
+    if not p.check(
+        f"no ring company runs {target} before the release",
+        ok=all(before.get(c) != target for c in ids.values()),
+        detail=f"{ {c: before.get(c) for c in ids.values()} }",
+    ):
+        return
 
     bare = lab.release(skip_pauses=True)
     p.check("--skip-pauses without --order is refused", ok=bare.rc != 0, detail="rc 0")
@@ -825,11 +839,17 @@ def verb_release(lab: Lab, p: Proof, *, bench: bool) -> None:
 
     planted = ids["medium"]
     run = lab.release(plant_failure=planted)
-    p.check("a planted failure stops the release", ok=run.rc != 0, detail="rc 0")
+    # A stop is a non-zero exit that names a stopped company: an rc 1 from anything else (the settle bound, an unreachable region) reached no planted step, and the 2026-11-25 bench run passed this claim on one.
+    said = run.error or "no error line"
+    p.check(
+        "a planted failure stops the release",
+        ok=run.rc != 0 and bool(run.stopped),
+        detail=f"rc {run.rc}, stopped on {run.stopped!r}: {said}",
+    )
     p.check(
         "the stop names the failed company",
         ok=run.stopped == planted,
-        detail=f"named {run.stopped!r}",
+        detail=f"named {run.stopped!r}: {said}",
     )
     after = lab.versions(targets)
     for ring in ("canary", "small"):
@@ -846,7 +866,11 @@ def verb_release(lab: Lab, p: Proof, *, bench: bool) -> None:
         )
 
     resumed = lab.release(resume=planted)
-    p.check("the resume finishes", ok=resumed.rc == 0, detail=resumed.error)
+    p.check(
+        "the resume finishes",
+        ok=resumed.rc == 0,
+        detail=f"rc {resumed.rc}, stopped on {resumed.stopped!r}: {resumed.error or 'no error line'}",
+    )
     final = lab.versions(list(ids.values()))
     p.check(
         f"every ring runs {target} after the resume",

@@ -1,6 +1,6 @@
 """`rediacc_ci.infra.docker_pull_ghcr`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/infra/docker-pull-ghcr.sh` and the port over the same fixture and compared exit code, stdout, stderr and the docker CALL LOG; the K=5 ledger `.ci/shadow/w7p6-docker-pull-ghcr.observations.jsonl` recorded that comparison over five distinct trees.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/infra/docker-pull-ghcr.sh` and the port over the same fixture and compared exit code, stdout, stderr and the docker CALL LOG; the K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct trees.
 Every case now compares against `goldens/docker-pull-ghcr/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree, and each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 A RECORDING FAKE `docker` ON A PREPENDED PATH is the seam, the same one `rediacc_ci.tests.test_infra_docker_prepull` established and `rediacc_ci.tests.test_infra_ci_pull_images` reuses. The reason is stronger here than for a plain pull: the subject's second action is `docker login ghcr.io --password-stdin`, which WRITES a credential into `~/.docker/config.json`, and its last action

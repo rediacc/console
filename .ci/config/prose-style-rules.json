@@ -87,6 +87,10 @@
     ],
     "exempt_paths": [
       {
+        "glob": ".ci/config/preview-words.txt",
+        "reason": "BLOCKER: the preview-name word list (2048 lowercase words, one per line, read by rediacc_ci.deploy.preview_name), a data list rather than prose: markdown_lines() reads its consecutive single-word lines as one hard-wrapped paragraph (R19) and one first-person pronoun in the list as first-person prose (R2); swapping a word would change derived preview names, so the file is exempted like the two allowlists above."
+      },
+      {
         "glob": ".ci/config/content-quality-allowlist.txt",
         "reason": "BLOCKER: a one-path-per-line data list, not prose. markdown_lines() reads consecutive short lines as a hard-wrapped paragraph and flags R19, but reflowing a path list would corrupt it -- one path per line is the format, not a wrapping accident."
       },

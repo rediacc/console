@@ -19,6 +19,11 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _harness
+from rediacc_hooks.tests.fixtures.guards.loader import load_table
+
 HERE = pathlib.Path(__file__).resolve().parent
 HOOKS = HERE.parent
 DISPATCH = str(HOOKS / "dispatch.py")
@@ -692,18 +697,7 @@ CODE_TEXT = [
     ("shell", 'echo "absent from the worktree"; git add -A\n', True),
 ]
 
-# (operand, directory, trees on disk, does it name a lease)
-HELPER = [
-    ("w2", "", ["w2", "w9"], True),
-    ("worktrees/w2", "", ["w2"], True),
-    (".claude/worktrees/w2", "", [], True),
-    ("x", ".claude/worktrees", [], True),
-    ("w3", "", ["w2", "w9"], False),
-    ("rktrees/w2", "", ["w2"], False),
-    ("/tmp/w2", "", ["w2"], False),
-    (".", "", ["w2"], False),
-    ("w2", "/tmp", [], False),
-]
+HELPER = load_table("block_worktree_add", "HELPER")
 
 
 def _payload(command, cwd=ROOT):
@@ -747,7 +741,7 @@ def run_guard(command, defect=None, cwd=ROOT):
         argv = [sys.executable, "-c", code]
     else:
         argv = [sys.executable, DISPATCH, STEM]
-    proc = subprocess.run(
+    proc = _harness.run(
         argv,
         input=_payload(command, cwd),
         capture_output=True,
@@ -763,7 +757,7 @@ def run_guard(command, defect=None, cwd=ROOT):
 
 
 def _par(fn, items):
-    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess, so the threads wait on children."""
+    """`fn` over `items` on a thread pool, answers in input order. Each call is a subprocess (the planted-DEFECT runner), so the threads wait on children. The pristine rows call the guard in process through `_harness.run`, which answers only on the main thread, so they run as a plain loop instead."""
     items = list(items)
     if not items:
         return []
@@ -808,13 +802,13 @@ def check(name, want_blocked, command, got=None):
 
 print("== refused (%d rows)" % len(REFUSED))
 for (row_name, row_command), row_got in zip(
-    REFUSED, _par(lambda r: run_guard(r[1]), REFUSED), strict=True
+    REFUSED, [run_guard(r[1]) for r in REFUSED], strict=True
 ):
     check(row_name, True, row_command, row_got)
 
 print("== allowed (%d rows)" % len(ALLOWED))
 for (row_name, row_command), row_got in zip(
-    ALLOWED, _par(lambda r: run_guard(r[1]), ALLOWED), strict=True
+    ALLOWED, [run_guard(r[1]) for r in ALLOWED], strict=True
 ):
     check(row_name, False, row_command, row_got)
 
@@ -885,7 +879,7 @@ for label, command, want_rc in (
     ("the recorded tree removed", "git worktree remove %s" % _lp_elsewhere, 2),
     ("control: a path beside it", "git worktree remove %s-x" % _lp_elsewhere, 0),
 ):
-    _proc = subprocess.run(
+    _proc = _harness.run(
         [sys.executable, DISPATCH, STEM],
         input=_payload(command, str(_lp_main)),
         capture_output=True,

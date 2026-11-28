@@ -744,9 +744,11 @@ def test_control_gate_with_a_configured_origin_and_no_env_url_reads_it(monkeypat
 
 def test_gate_script_runs_the_module_entry():
     script = pathlib.Path(oh.repo_root()) / ".ci/scripts/quality/check_ops_health.py"
-    text = script.read_text(encoding="utf-8")
+    module = pathlib.Path(oh.repo_root()) / ".ci/rediacc_ci/quality/ops_health.py"
+    text = module.read_text(encoding="utf-8")
     assert "ops_health" in text
     assert "gate_main" in text
+    assert "rediacc_ci.quality.ops_health" in script.read_text(encoding="utf-8")
     proc = subprocess.run(
         [str(script), "--help"], capture_output=True, text=True, check=False, timeout=60
     )

@@ -2,10 +2,11 @@ name: D1 Size Report
 
 # PLAN-d1-scaling Z7. Reads every region's account D1 through the D1 query API
 # (rediacc_ci.ops.d1_size_report): tables, rows, value bytes, file size and tenant
-# count. Exit 3 means an alert (tenants >= 25,000 or file >= 5 GB): the step
-# records it, opens or updates one issue, and the job then passes. Exit 2 (a
-# region cannot be read) and any other code fail the job. Read-only: nothing is
-# written to Cloudflare.
+# count. Exit 3 means an alert (tenants >= 25,000 or file >= 5 GB) and fails the
+# step, so an alert reds the scheduled run (wl_schedred surfaces it to a session)
+# with the report in the step summary. Exit 2 (a region cannot be read) and any
+# other non-zero code fail the job too. Read-only: nothing is written to
+# Cloudflare.
 
 on:
   schedule:
@@ -25,7 +26,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: read
-      issues: write # open or update the rolling D1 size alert issue
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -55,14 +55,5 @@ jobs:
           PYTHONPATH=.ci python3 -m rediacc_ci.ops.d1_size_report --json-out d1-size.json --md-out d1-size.md
           rc=$?
           set -e
-          echo "rc=$rc" >> "$GITHUB_OUTPUT"
           if [ -f d1-size.md ]; then cat d1-size.md >> "$GITHUB_STEP_SUMMARY"; fi
-          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then exit "$rc"; fi
-
-      - name: Open or update the alert issue
-        if: steps.report.outputs.rc == '3'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-        shell: bash
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.ops.d1_size_report --alert-issue --json-out d1-size.json --md-out d1-size.md
+          exit "$rc"

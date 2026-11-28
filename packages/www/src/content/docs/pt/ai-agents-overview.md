@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 30
 language: pt
-sourceHash: "c544cf8514d36558"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "8537ee66f8f40126"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Francamente, o `rdc` foi desenhado a pensar em agentes. Claude Code, Cursor, Cline: qualquer assistente de IA que chame `rdc` num subshell recebe saída JSON estruturada, erros legíveis por máquina e os controlos que se esperam para a gestão autónoma de infraestrutura Rediacc. Eis como funciona a integração.
@@ -77,7 +77,7 @@ As respostas de erro incluem os campos `retryable` e `guidance`:
 
 ## Segurança e Controlos
 
-O CLI não trata os agentes da mesma forma que um humano no terminal. As operações sensíveis requerem prova de que já conhece o estado atual (a flag `--current`), os fluxos de editor interativo são recusados por omissão, e cada recusa é registada em auditoria. A referência [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) cobre a tabela completa de firewall, o modelo de knowledge-gate, o scope-override `REDIACC_ALLOW_CONFIG_EDIT`, e o registo de auditoria com cadeia de hashes.
+O CLI não trata os agentes da mesma forma que um humano no terminal. As operações sensíveis requerem prova do estado atual (a flag `--current`), as edições da configuração inteira são recusadas sem substituição, e cada recusa é registada em auditoria. A referência [Segurança e Controlos para Agentes de IA](/en/docs/ai-agents-safety) cobre a tabela completa de firewall, o modelo de knowledge-gate, a regra de adesão explícita E teto de política, e o registo de auditoria com cadeia de hashes.
 
 ## Próximos Passos
 

@@ -9,14 +9,12 @@ import importlib
 import importlib.util
 import io
 import json
-import os
 import re
 import shutil
 import subprocess
 import time
 
 import pytest
-import wl_checks
 import wl_ci
 import wl_core as C
 import wl_loopspeed as L
@@ -297,21 +295,6 @@ def test_receipt_commands_earn_the_early_receipt_note(command, held, monkeypatch
     assert doc["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
 
 
-@pytest.mark.parametrize("filling", [True, False])
-def test_a_filling_local_batch_silences_the_early_receipt_note(filling, held, monkeypatch):
-    """PLAN-turbo-local-first D4: no push is due while a turbo batch fills, so the receipt note stays quiet. Control: a batch that is not filling keeps the note."""
-
-    root, *_ = held
-    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(root))
-    monkeypatch.setattr(wl_checks, "local_batch_open", lambda _state, _root: filling)
-    rc, out = run_member("npm run ci:quick", root)
-    assert rc == 0
-    if filling:
-        assert out == ""
-    else:
-        assert json.loads(out)["hookSpecificOutput"]["additionalContext"] == M.N_RECEIPT_EARLY
-
-
 def test_an_unreadable_loop_state_keeps_the_early_receipt_note(held, monkeypatch):
     """218bef67.1: the advisory fails open to the note when the loop state raises, so a broken state cannot silence it."""
 
@@ -400,7 +383,6 @@ def test_receipt_behind_and_ci_hold_ride_the_allow_queue_only():
         assert 'vadd("%s"' % key not in source
         assert re.search(r'"%s",\s*M\.%s %%' % (key, text), source), key
     for key in ("receipt-behind", "ci-hold"):
-        assert wl_standdown.advisory_kept(key)
         assert key not in wl_standdown.CORE
 
 
@@ -438,74 +420,12 @@ def test_a_full_stop_run_carries_receipt_behind_and_still_allows(tmp_path):
     assert "Do not stop yet" not in got.out
 
 
-# ---- backup push (agent/plans/PLAN-turbo-local-first.md D4, test LF5) -------------------------
+# ---- the batch loop's backup advisory is gone (agent/plans/PLAN-simple-two-tree-loop.md B4) ----
 
 
-def dated_commit(root, rel, epoch):
-    """A commit whose committer date is `epoch`, the clock backup_push_due reads."""
-    path = root / rel
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("x\n", encoding="utf-8")
-    git(root, "add", "--", rel)
-    subprocess.run(
-        ["git", "-C", str(root), "commit", "-q", "-m", "c %s" % rel],
-        check=True,
-        capture_output=True,
-        env=dict(os.environ, GIT_COMMITTER_DATE="@%d +0000" % epoch),
-    )
-
-
-NOW = 2_000_000_000
-
-
-def test_lf5_backup_push_fires_above_the_threshold(repo):
-    root, _base = repo
-    dated_commit(root, "src/old.py", NOW - 5 * 3600)
-    dated_commit(root, "src/new.py", NOW - 600)
-    got = L.backup_push_due(root, 4, now=NOW)
-    assert got is not None
-    assert got["n"] == 2, got
-    assert got["branch"] == "topic", got
-    assert got["hours"] == 4, got
-    assert 4.9 < got["age"] < 5.1, got
-    text = M.N_BACKUP_PUSH % got
-    assert "git push -u origin topic" in text, text
-    assert "never `gh pr create`" in text, text
-
-
-def test_lf5_backup_push_is_silent_below_the_threshold(repo):
-    root, _base = repo
-    dated_commit(root, "src/new.py", NOW - 3 * 3600)
-    assert L.backup_push_due(root, 4, now=NOW) is None
-
-
-def test_lf5_backup_push_is_off_at_zero(repo):
-    root, _base = repo
-    dated_commit(root, "src/old.py", NOW - 50 * 3600)
-    assert L.backup_push_due(root, 0, now=NOW) is None
-    assert L.backup_push_due(root, 4, now=NOW) is not None, "control: the same tree fires at 4"
-
-
-def test_lf5_backup_push_is_silent_with_nothing_unpushed(repo):
-    root, _base = repo
-    assert L.backup_push_due(root, 1, now=NOW) is None
-
-
-def test_lf5_a_branch_never_pushed_counts_from_origin_main(repo):
-    root, _base = repo
-    git(root, "update-ref", "refs/remotes/origin/main", git(root, "rev-parse", "HEAD"))
-    git(root, "switch", "-q", "-c", "1008-9")
-    dated_commit(root, "src/old.py", NOW - 6 * 3600)
-    got = L.backup_push_due(root, 4, now=NOW)
-    assert got is not None
-    assert got["branch"] == "1008-9", got
-    assert got["n"] == 1, got
-    assert L.oldest_unpushed(root)[2] == "origin/main"
-
-
-def test_lf5_backup_push_and_the_quiet_receipt_ride_the_allow_queue_only():
-    """backup-push is an advisory (outq_add), and receipt-behind is not read while a local batch fills (D4)."""
+def test_the_stop_reads_the_receipt_on_every_stop_and_names_no_backup_push():
+    """The development tree pushes as a backup on the session-default-1 cadence and opens no PR, so no stop holds the receipt note back or advises a no-PR backup push: receipt-behind is read unconditionally and `backup-push` is no key of the hook."""
     source = (STOP_DIR / "wl_checks.py").read_text(encoding="utf-8")
-    assert 'vadd("backup-push"' not in source
-    assert re.search(r'"backup-push",\s*M\.N_BACKUP_PUSH %', source)
-    assert "_rb = None if _lb_open else wl_loopspeed.receipt_behind(root)" in source
+    assert "_rb = wl_loopspeed.receipt_behind(root)" in source
+    assert '"backup-push"' not in source
+    assert "backup_push_due" not in source

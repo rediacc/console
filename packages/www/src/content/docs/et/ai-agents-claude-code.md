@@ -8,13 +8,13 @@ tags:
 subcategory: ai-agents
 order: 31
 language: et
-sourceHash: "2c925f7e46d63e9a"
-sourceCommit: "23543669cd22bce3f14d69a0886bac8a12061412"
+sourceHash: "81cd5da23b9747e0"
+sourceCommit: "29bdc2aca2ed2b968e47005622ff9cfbbb66e56a"
 ---
 
 Claude Code töötab Rediacciga natiivselt `rdc` CLI kaudu. See juhend käsitleb seadistust, lubasid ja levinud töövoogusid.
 
-> **Turvalisus ennekõike**: Enne agendi ühendamist millega, mis puutub kokku saladustega, lugege [AI-agendi turvalisus ja kaitsemehhanismid](/et/docs/ai-agents-safety). `rdc` all töötav Claude Code tuvastatakse agendina. Tundlikud muutmised nõuavad kas `--current <eelmine-väärtus>` (passwd-stiilis eeltingimus) või `--rotate-secret` (kinnitatud pööramine, auditeeritud). Sümmeetriline nii inimestele kui agentidele. Interaktiivne redaktor, `--reveal` ja otsene masina SSH keeldutakse vaikimisi, välja arvatud juhul, kui avate need sõnaselgelt `REDIACC_ALLOW_CONFIG_EDIT` kaudu. Kui eeltingimus ebaõnnestub, annab JSON-ümbriku väli `errors[].next.options[].run` agendile täpse CLI-käsu, mida soovitada kasutajale käivitada. Edastage see sõna-sõnalt.
+> **Turvalisus ennekõike**: Enne agendi ühendamist millega, mis puutub kokku saladustega, lugege [AI-agendi turvalisus ja kaitsemehhanismid](/et/docs/ai-agents-safety). `rdc` all töötav Claude Code tuvastatakse agendina. Tundlikud muutmised nõuavad nii inimestele kui agentidele `--current <eelmine-väärtus>` (passwd-stiilis eeltingimus); `--rotate-secret` (kinnitatud pööramine, auditeeritud) loeb ainult terminalis olevale inimesele. `rdc config edit` (interaktiivne, `--apply`, `--reveal`) lükatakse tagasi ilma ühegi ülekatteta ning grand-repod ja otsene masina SSH jäävad suletuks, kuni inimene on poliitika lubatud piirides sõnaselgelt nõusoleku andnud. Kui eeltingimus ebaõnnestub, annab JSON-ümbriku väli `errors[].next.options[].run` agendile täpse CLI-käsu, mida soovitada kasutajale käivitada. Edastage see sõna-sõnalt.
 
 ## Kiirseadistus
 
@@ -86,7 +86,7 @@ Teie: "Miks on nextcloud'i konteiner ebaterve?"
 
 Claude Code käivitab: rdc machine status prod-1 --containers -o json --fields name,status,repository
 → Loetleb konteinerite olekud
-Claude Code käivitab: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50 "docker logs nextcloud-app --tail 50"
+Claude Code käivitab: rdc repo logs nextcloud@prod-1 -c nextcloud-app --lines 50
 → Kontrollib hiljutisi logisid
 ```
 

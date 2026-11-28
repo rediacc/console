@@ -1,5 +1,5 @@
 /**
- * check:ci-gate-bind -- a gate's four registrations must match what its own header says.
+ * gate-bind -- a gate's four registrations must match what its own header says.
  *
  * WHY. Registering a gate means editing package.json, scripts/ci-runner/manifest.ts and
  * .github/workflows/ci-quality.yml by hand, and each has a convention that only ever
@@ -16,14 +16,9 @@
  * yet, so a mismatch is reported rather than silently rewritten -- the migration is
  * coexist-and-drain, and a gate with no header is simply not this gate's business.
  *
- * ---- gate ----
- * step: Gate binding
- * needs: node
- * selftest: true
- * why: four hand-written registrations per gate, each with a convention that only
- *      announces itself as a red gate. The binder declares itself through the same
- *      header it reads, so the first thing it verifies is that IT is registered right
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs its --selftest and then its check, so it registers no gate of its own.
  */
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -31,7 +26,15 @@ import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-
+import { WK_IMAGE_REGISTRY } from '../packages/shared/src/config/well-known.generated.js';
+import type { GateKind } from './ci-runner/gate-spec.js';
+import {
+  derivedId,
+  derivedRun,
+  headerError,
+  inferredNeeds,
+  parseGateHeader,
+} from './ci-runner/gate-spec.js';
 import {
   type LaneCapabilities,
   laneCapabilities,
@@ -55,14 +58,6 @@ import {
   parseShardManifest,
   shardManifestPath,
 } from './ci-runner/shard-manifest.js';
-import type { GateKind } from './lib/gate-header.js';
-import {
-  derivedId,
-  derivedRun,
-  headerError,
-  inferredNeeds,
-  parseGateHeader,
-} from './lib/gate-header.js';
 
 const ROOT = path.resolve(import.meta.dirname, '..');
 const WORKFLOW = '.github/workflows/ci-quality.yml';
@@ -113,25 +108,40 @@ const NOT_SUBJECT = /^$/;
 const read = (rel: string): string => fs.readFileSync(path.join(ROOT, rel), 'utf-8');
 
 /**
- * Tracked subjects that are ACTUALLY PRESENT, plus the ones that are not.
+ * Subjects (tracked, or untracked and not ignored) that are ACTUALLY PRESENT, plus the ones that are not.
  *
- * `git ls-files` reports the INDEX, and this gate then reads the WORKTREE. In a shared
+ * The listing is the INDEX plus untracked, unignored files (`--cached --others --exclude-standard`), and this gate then reads the WORKTREE. In a shared
  * checkout those disagree the moment another session deletes a tracked file: on
  * 2026-09-06 a peer ran this mid-way through a batch that removed docker-compose.yml,
  * Rediaccfile and others, and readFileSync threw ENOENT out of node:fs. A stack trace is
  * not a verdict -- the reader cannot tell "your gates are mis-registered" from "a file
  * moved under me". Absent files are collected and REFUSED by name instead.
  */
-const trackedSubjects = (): { present: string[]; missing: string[] } => {
-  const listed = execFileSync(
+export const listSubjects = (root: string): string[] => {
+  // `--cached --others --exclude-standard`: a new gate file that is not yet staged carries a header too. Reading the index alone dropped it from the region while `--write` exited 0 (finding 8797250f); ignored files stay out.
+  const out = execFileSync(
     'git',
-    ['-C', ROOT, 'ls-files', '.ci/scripts', '.ci/rediacc_ci', 'scripts'],
-    {
-      encoding: 'utf-8',
-    }
-  )
-    .split('\n')
-    .filter((f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f));
+    [
+      '-C',
+      root,
+      'ls-files',
+      '--cached',
+      '--others',
+      '--exclude-standard',
+      '--',
+      '.ci/scripts',
+      '.ci/rediacc_ci',
+      'scripts',
+    ],
+    { encoding: 'utf-8' }
+  );
+  return [...new Set(out.split('\n'))].filter(
+    (f) => f !== '' && SUBJECT.test(f) && !NOT_SUBJECT.test(f)
+  );
+};
+
+export const trackedSubjects = (): { present: string[]; missing: string[] } => {
+  const listed = listSubjects(ROOT);
   const present: string[] = [];
   const missing: string[] = [];
   for (const f of listed) {
@@ -201,11 +211,9 @@ export function planExtract(
     const got = rb === null ? 'nothing' : `${rb.id} / "${rb.step}" / ${rb.run}`;
     return { error: `${reg.file}: header re-derives ${got}, not ${id} / "${reg.step}"` };
   }
-  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave
-  // and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
+  // THE WRITE MODE NOW RUNS THE VERIFIER'S OWN CHECK. Everything above proves the header re-derives the right id, step and run; NONE of it proved the lane can provide what the file needs, which is precisely what the verifier asserts a moment later. So --extract happily wrote headers that gate-bind then rejected, and on 2026-09-06 two of them reddened check:ci-gate-bind mid-wave and had to be stripped by hand. A tool whose write mode does not run its own verify is how a green plan produces a red tree.
   //
-  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (the editorconfig gate needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no
-  // command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
+  // Refusing HERE turns that into a named refusal the caller can act on, which is the difference between "this gate cannot be declared, and here is why" and a broken tree someone else has to diagnose. The two known causes are a genuine lane mismatch (the editorconfig gate needs submodules its lane does not check out) and a false positive in inferredNeeds (its npx probe has no command position check, so it matches a parameter expansion). Both deserve a refusal rather than a write.
   const extractLane = caps.get(reg.job);
   if (extractLane === undefined) {
     return { error: `${reg.file}: lane '${reg.job}' is not a job of ${WORKFLOW}` };
@@ -219,6 +227,17 @@ export function planExtract(
     };
   }
   return { file: reg.file, next, step: reg.step, job: reg.job };
+}
+
+/**
+ * The command a header-declared gate runs, executed DIRECTLY by the runner and by its workflow step.
+ *
+ * A module under `.ci/rediacc_ci/` runs as `PYTHONPATH=.ci python3 -m <module>`: nothing puts `.ci` on `sys.path` for a path invocation, which is the only reason the `.ci/scripts/quality/check_*.py` entry shims exist, and check:ci-parity's resolver maps `-m <module>` to the module's tracked file, so the leaf stays the file. Every other path keeps `derivedRun`'s form (`tsx <file>` with an optional `--selftest &&` leg, or the bare path of an executable script).
+ */
+export function directRun(file: string, selftest = false): string {
+  const mod = /^\.ci\/(rediacc_ci\/.+)\.py$/.exec(file);
+  if (mod !== null) return `PYTHONPATH=.ci python3 -m ${mod[1].replace(/\//g, '.')}`;
+  return derivedRun(file, selftest);
 }
 
 /** Every gate id the manifest declares, in file order. */
@@ -259,6 +278,10 @@ export interface Bound {
   env?: Record<string, string>;
   /** An extra condition ANDed onto the standard guard. Never replaces it. */
   when?: string;
+  /**
+   * Declared by its header ALONE: no package.json key, so `npm run <id>` does not exist and the step runs `run` itself, with each node_modules/.bin command word spelled through `npx` (a workflow step's PATH has no node_modules/.bin). Set by `main` from package.json, never by the header.
+   */
+  direct?: true;
 }
 
 /** A gate a region actually writes: kind `step`, and therefore carrying one. */
@@ -277,11 +300,8 @@ export const emits = (b: Bound): b is Emitting =>
 export function bind(file: string, source: string): Bound | null {
   const h = parseGateHeader(source);
   if (h === null) return null;
-  // The union is the safe default: an author who forgets a need is corrected by the
-  // inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason
-  // (enforced in analyzeGateHeader), because the inference reads string literals and a
-  // control's own description routinely names a tool it does not run. Measured
-  // 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in account_portal.py and a selftest description in check_checkout_cone.py both infer `node` for pure-Python gates. Tightening the pattern instead was REJECTED on measurement: 24 files would lose the inference and at least one of them, test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
+  // The union is the safe default: an author who forgets a need is corrected by the inference. `needs-not` is the ONE way back out, and it costs a `blocker:` reason (enforced in analyzeGateHeader), because the inference reads string literals and a control's own description routinely names a tool it does not run.
+  // Measured 2026-09-07: `ctl.check("TOOLING: an absent npx yields 127, ...")` in account_portal.py and a selftest description in check_checkout_cone.py both infer `node` for pure-Python gates. Tightening the pattern instead was REJECTED on measurement: 24 files would lose the inference and at least one of them, test_gate_policy_path.py, really does execute node_modules/.bin/tsx.
   const denied = new Set(h.needsNot);
   const needs = [...new Set([...h.needs, ...inferredNeeds(source)])]
     .filter((n) => !denied.has(n))
@@ -289,14 +309,13 @@ export function bind(file: string, source: string): Bound | null {
   return {
     file,
     id: h.id ?? derivedId(file),
-    run: h.run ?? derivedRun(file, h.selftest === true),
+    run: h.run ?? directRun(file, h.selftest === true),
     kind: h.kind,
     ...(h.step === undefined ? {} : { step: h.step }),
     ...(h.emit === false ? { emit: false } : {}),
     needs,
     ...(h.lane === undefined ? {} : { lane: h.lane }),
-    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree plant caught after twelve selftest controls had all passed: `emitStep` handled env and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind --dry-run` reported `already matches`. A selftest that
-    // calls `emitStep` directly cannot see this, which is exactly the specialist's rule about a green that only proves the helper functions work.
+    // CARRIED FROM THE HEADER, and the omission of these two lines is what a real-tree plant caught after twelve selftest controls had all passed: `emitStep` handled env and `when` correctly, `Bound` declared them, and NOTHING copied them across, so a gate declaring `env-PROBE_TOKEN` bound to a step with no env and `gate-bind --dry-run` reported `already matches`. A selftest that calls `emitStep` directly cannot see this, which is exactly the specialist's rule about a green that only proves the helper functions work.
     ...(h.env === undefined ? {} : { env: h.env }),
     ...(h.when === undefined ? {} : { when: h.when }),
   };
@@ -438,8 +457,7 @@ const ACQUIRE: Record<string, string[]> = {
     '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "PyYAML==${PYYAML_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
     '          python3 -c "import yaml; print(\'PyYAML\', yaml.__version__)"',
   ],
-  // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate.
-  // The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
+  // NO VERIFY LINE HERE, and the asymmetry with python-yaml above is deliberate. The PyYAML pair prints a version because a library's presence is otherwise invisible until a gate crashes importing it. mypy is a TOOL, and check:ci-toolchain-pins A8 refuses a workflow that invokes a gated tool directly; the gate resolves `python3 -m mypy` itself and refuses unless it answers AT THE PIN, which is a stronger check than an echoed version.
   'python-mypy': [
     '          for attempt in 1 2 3; do python3 -m pip install --user --disable-pip-version-check "mypy==${MYPY_VERSION}" && break; [ "$attempt" = 3 ] && exit 1; sleep 10; done',
   ],
@@ -741,11 +759,22 @@ export function usesLocalBin(run: string): boolean {
   );
 }
 
+/** `run` with every node_modules/.bin command word spelled `npx <bin>`, for a header-declared gate that has no npm key to hop through. */
+export function npxLocalBins(run: string): string {
+  let out = run;
+  for (const bin of LOCAL_BIN_COMMANDS) {
+    out = out.replace(
+      new RegExp(`(^|&&\\s*|\\|\\|\\s*|;\\s*|\\|\\s*)${bin}(?=\\s|$)`, 'g'),
+      `$1npx ${bin}`
+    );
+  }
+  return out;
+}
+
 export function emitStep(b: Emitting, guard = 'setup', stepId?: string): string[] {
-  const cmd = usesLocalBin(b.run) ? `npm run ${b.id}` : b.run;
+  const cmd = !usesLocalBin(b.run) ? b.run : b.direct ? npxLocalBins(b.run) : `npm run ${b.id}`;
   const acquire = b.needs.flatMap((n) => ACQUIRE[n] ?? []);
-  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would
-  // run the step on a failed setup.
+  // `when` IS ANDED ON, NEVER SUBSTITUTED. The standard guard is what stops a gate running after setup failed; a field that could replace it would let a gate opt out of the ordering contract, which is invariant 11 through a side door. Parenthesised so a `when` containing `||` cannot bind looser than the `&&` and swallow the guard -- `a && b || c` is `(a && b) || c`, which would run the step on a failed setup.
   const cond =
     `!cancelled() && steps.${guard}.outcome == 'success'` + (b.when ? ` && (${b.when})` : '');
   // `id:` ONLY when sharded (`stepId` passed), so every unsharded step's YAML stays byte-identical to before D4 -- an added id on a step nothing reads it from is a diff with no reader, which is how a generator trains people to stop reading its diffs at all.
@@ -899,8 +928,7 @@ export function rewriteRegions(
           : {
               ...b,
               when: b.when ? `(${b.when}) && matrix.shard == ${leg}` : `matrix.shard == ${leg}`,
-              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the
-              // receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
+              // T-SCHED B2 D4, second clause. The eventual receipt step counts in LOCK IDS (`check-quality-complete.ts:226` compares against `declaredShard.ids.length`), but it can only see `steps.<id>.outcome`, one outcome per EMITTED STEP -- which is coarser than one per lock id the moment two ids ever share a step (D1's whole reason for merging them). This map is what lets the receipt step translate "this step ran" back into "these lock ids ran", correct today (always exactly `[b.id]`, since no auto-emitted gate currently shares a step with another) and correct if that ever changes, without the receipt script itself needing to know which case it is in.
             };
       if (leg !== undefined) shardedEntries.push(b);
       out.push(...emitStep(step, guard, leg === undefined ? undefined : gateStepId(b.id)));
@@ -1012,6 +1040,222 @@ export function rewriteStrategyRegions(
   return findings;
 }
 
+/**
+ * THE CONTAINER LANES (PLAN-two-track-merge-dev R2): the jobs of ci-quality.yml that run inside the pinned devcontainer image instead of on the bare runner.
+ *
+ * Declared HERE and not in .ci/config/devcontainer-image.json, on purpose. The pin file says what the image IS (repository, digest, stage), and devbox.py, input-hash.ts and this binder all read that one record. Which JOB runs inside it is a statement about the workflow, and this binder is what writes the workflow, so the list sits beside the code that emits it rather than in a file the devbox reads and never needs.
+ *
+ * Adding a lane here is the whole opt-in: `--write` emits its `container:` region, and the check then demands the two hand-placed halves (the job's `packages: read`, and `node-from-image: 'true'` on its setup-workspace step) that make the region work. Removing a lane removes its region on the next `--write`, and the check then refuses the leftover `node-from-image`.
+ */
+export const CONTAINER_LANES: readonly string[] = ['quality-content'];
+
+/** The pin file every consumer of the image reads (.ci/rediacc_ci/core/devbox.py DEVCONTAINER_PIN_REL). */
+export const IMAGE_PIN_FILE = '.ci/config/devcontainer-image.json';
+
+/**
+ * `<registry>/<image>@sha256:<digest>` from the pin file's text, validated exactly as devbox.py `image_pin` validates it, so the reference this binder writes into CI is byte-identical to the `CI_RUNNER_IMAGE` the devbox sets and the salts of the two environments can match (input-hash.ts `imageTerm`). Any defect is an error naming the file: there is no fallback to a floating tag, because a tag would let two different images share one salt.
+ */
+export function readImagePin(text: string, registry: string): { ref: string } | { error: string } {
+  let doc: unknown;
+  try {
+    doc = JSON.parse(text);
+  } catch (e) {
+    return { error: `${IMAGE_PIN_FILE} is not JSON: ${(e as Error).message}` };
+  }
+  const f = (typeof doc === 'object' && doc !== null ? doc : {}) as Record<string, unknown>;
+  const { image, digest, stage } = f;
+  if (
+    typeof image !== 'string' ||
+    !/^[a-z0-9][a-z0-9./_-]*$/.test(image) ||
+    image.includes(':') ||
+    (image.split('/', 1)[0] ?? '').includes('.') ||
+    typeof digest !== 'string' ||
+    !/^sha256:[0-9a-f]{64}$/.test(digest) ||
+    typeof stage !== 'string' ||
+    stage === ''
+  ) {
+    return {
+      error: `${IMAGE_PIN_FILE} is malformed: it needs {image, digest sha256:<64 hex>, stage}, the image a repository name under ${registry} with no tag`,
+    };
+  }
+  return { ref: `${registry}/${image}@${digest}` };
+}
+
+const CONTAINER_OPEN = '    # >>> image-container';
+const CONTAINER_CLOSE = '    # <<< image-container';
+
+/**
+ * The `container:` region for one lane, generated from the pin.
+ *
+ * - `credentials` with `github.token`: ghcr.io/rediacc/* is private (devbox.py's pull refusal says so), and the job's `packages: read` is what lets that token pull. The check demands the permission, so the region is never accepted in a job that cannot use it.
+ * - `env.CI_RUNNER_IMAGE`: the same reference the devbox exports, so `imageTerm` reads `pinned:<ref>` here and in the devbox, and `host` everywhere else.
+ * - No `options: --user`: the image's final `USER` is root (.devcontainer/Dockerfile), which is what the runner's actions need to write `/__w`.
+ */
+export function containerRegion(ref: string): string[] {
+  return [
+    // The marker names the BINDER, not the pin's path: a path here would make the json-inventory record this workflow as the pin's consumer, and the workflow never reads it.
+    `${CONTAINER_OPEN} (generated by scripts/gate-bind.ts --write from the image pin; do not edit inside)`,
+    '    container:',
+    `      image: ${ref}`,
+    '      credentials:',
+    '        username: ${{ github.actor }}',
+    '        password: ${{ github.token }}',
+    '      env:',
+    `        CI_RUNNER_IMAGE: ${ref}`,
+    CONTAINER_CLOSE,
+  ];
+}
+
+/** Line ranges `[start, end)` of every job under the workflow's `jobs:` map, keyed by job id. */
+function jobRanges(lines: readonly string[]): Map<string, [number, number]> {
+  const out = new Map<string, [number, number]>();
+  const jobsAt = lines.findIndex((l) => /^jobs:\s*$/.test(l));
+  if (jobsAt === -1) return out;
+  let cur: string | null = null;
+  let from = 0;
+  for (let i = jobsAt + 1; i <= lines.length; i++) {
+    const l = i < lines.length ? (lines[i] as string) : '';
+    const m = i < lines.length ? /^ {2}([A-Za-z0-9_-]+):\s*$/.exec(l) : null;
+    const topLevel = i < lines.length && /^[^\s#]/.test(l);
+    if (m || topLevel || i === lines.length) {
+      if (cur !== null) out.set(cur, [from, i]);
+      cur = m ? (m[1] as string) : null;
+      from = i;
+      if (topLevel) break;
+    }
+  }
+  return out;
+}
+
+/**
+ * Rewrites every `# >>> image-container` region from the pin: a listed lane's region body is regenerated (and the region inserted immediately before the job's `    steps:` line when absent), and an unlisted job's region is removed.
+ *
+ * A WRITER, unlike `rewriteStrategyRegions`, because the region changes the job's ENVIRONMENT and not its shape: the rendered check name, the matrix and every step stay as they are. A listed lane that is not a job, or a job with no `steps:` line to anchor an insertion, is a finding rather than a silent skip, since "listed and not written" is the vacuity this region exists to avoid.
+ */
+export function rewriteContainerRegions(
+  workflow: string,
+  lanes: readonly string[],
+  ref: string
+): { text: string; findings: string[]; lanes: string[] } {
+  const lines = workflow.split('\n');
+  const ranges = jobRanges(lines);
+  const findings: string[] = [];
+  const written: string[] = [];
+  const out: string[] = [];
+  for (const lane of lanes) {
+    if (!ranges.has(lane)) findings.push(`container lane '${lane}' is not a job of ${WORKFLOW}`);
+  }
+  let cursor = 0;
+  for (const [job, [from, to]] of [...ranges].sort((a, b) => a[1][0] - b[1][0])) {
+    out.push(...lines.slice(cursor, from));
+    cursor = to;
+    const body = lines.slice(from, to);
+    const open = body.findIndex((l) => l.startsWith(CONTAINER_OPEN));
+    const close = open === -1 ? -1 : body.findIndex((l, i) => i > open && l === CONTAINER_CLOSE);
+    if (open !== -1 && close === -1) {
+      findings.push(`job ${job}: an image-container region opens and never closes`);
+      out.push(...body);
+      continue;
+    }
+    const stripped = open === -1 ? body : [...body.slice(0, open), ...body.slice(close + 1)];
+    if (!lanes.includes(job)) {
+      out.push(...stripped);
+      continue;
+    }
+    const anchor = open !== -1 ? open : stripped.findIndex((l) => /^ {4}steps:\s*$/.test(l));
+    if (anchor === -1) {
+      findings.push(
+        `container lane '${job}' has no \`    steps:\` line to place its region before`
+      );
+      out.push(...body);
+      continue;
+    }
+    out.push(...stripped.slice(0, anchor), ...containerRegion(ref), ...stripped.slice(anchor));
+    written.push(job);
+  }
+  out.push(...lines.slice(cursor));
+  return { text: out.join('\n'), findings, lanes: written };
+}
+
+/**
+ * The hand-placed halves a container lane needs, and their absence everywhere else.
+ *
+ * - `packages: read` in the job's own permissions, or the region's pull is denied, and the registry's only word for that is "denied", which reads like a missing image.
+ * - A ubuntu runner that is not `ubuntu-slim`: a job container needs a Linux VM with a Docker daemon, and slim is itself a container.
+ * - Its `./.github/actions/setup-workspace` step passes `node-from-image: 'true'`, so setup-node is skipped and the node on PATH is asserted to be the image's. Without it the action installs a second node over the image's, and the salt names one toolchain while the gates run on another.
+ * - A job NOT listed carries neither a `node-from-image` input nor any `container:` key: the first would skip setup-node on the bare runner and run on whatever node the runner happens to have, and a hand-written `container:` is a lane this binder does not know it is placing.
+ */
+export function containerLaneProblems(workflow: string, lanes: readonly string[]): string[] {
+  const lines = workflow.split('\n');
+  const problems: string[] = [];
+  const ranges = jobRanges(lines);
+  // ANTI-VACUITY: a workflow whose jobs this parser cannot see would pass every check below by having nothing to check.
+  if (ranges.size === 0)
+    return [`${WORKFLOW}: no job found under \`jobs:\`, so no container lane could be checked`];
+  for (const lane of lanes) {
+    if (!ranges.has(lane)) problems.push(`container lane '${lane}' is not a job of ${WORKFLOW}`);
+  }
+  for (const [job, [from, to]] of ranges) {
+    const body = lines.slice(from, to);
+    const open = body.findIndex((l) => l.startsWith(CONTAINER_OPEN));
+    const close = open === -1 ? -1 : body.findIndex((l, i) => i > open && l === CONTAINER_CLOSE);
+    const outside = body.filter((_, i) => open === -1 || i < open || (close !== -1 && i > close));
+    if (!lanes.includes(job)) {
+      if (body.some((l) => /^\s+node-from-image:/.test(l))) {
+        problems.push(
+          `job ${job} passes node-from-image but is not in CONTAINER_LANES, so it would skip setup-node on the bare runner. Remove the input, or add the lane to CONTAINER_LANES and run --write.`
+        );
+      }
+      if (body.some((l) => /^ {4}container:/.test(l))) {
+        problems.push(
+          `job ${job} declares a container: that CONTAINER_LANES does not list. Container lanes come from the pin through --write; add the lane to CONTAINER_LANES instead of writing one by hand.`
+        );
+      }
+      continue;
+    }
+    if (outside.some((l) => /^ {4}container:/.test(l))) {
+      problems.push(
+        `container lane ${job} carries a hand-written container: outside its image-container region. Delete it; the region owns the job's container.`
+      );
+    }
+    const permsAt = body.findIndex((l) => /^ {4}permissions:\s*$/.test(l));
+    let packagesRead = false;
+    if (permsAt !== -1) {
+      for (let i = permsAt + 1; i < body.length && /^ {6}\S/.test(body[i] as string); i++) {
+        if (/^ {6}packages:\s*read\s*$/.test(body[i] as string)) packagesRead = true;
+      }
+    }
+    if (!packagesRead) {
+      problems.push(
+        `container lane ${job} has no \`packages: read\` in its permissions block, so github.token cannot pull the private image. Add it to the job, and to the calling job in .github/workflows/ci.yml (a called workflow never exceeds its caller).`
+      );
+    }
+    const runsOn = body.find((l) => /^ {4}runs-on:/.test(l)) ?? '';
+    if (!/^ {4}runs-on:\s*ubuntu-/.test(runsOn) || runsOn.includes('slim')) {
+      problems.push(
+        `container lane ${job} runs on '${runsOn.trim()}': a job container needs a Linux VM runner (ubuntu-latest), and ubuntu-slim is itself a container.`
+      );
+    }
+    const setupAt = body.findIndex((l) =>
+      /uses:\s*\.\/\.github\/actions\/setup-workspace\s*$/.test(l)
+    );
+    if (setupAt === -1) {
+      problems.push(`container lane ${job} has no ./.github/actions/setup-workspace step`);
+      continue;
+    }
+    let flagged = false;
+    for (let i = setupAt + 1; i < body.length && !/^ {6}- /.test(body[i] as string); i++) {
+      if (/^\s+node-from-image:\s*['"]?true['"]?\s*$/.test(body[i] as string)) flagged = true;
+    }
+    if (!flagged) {
+      problems.push(
+        `container lane ${job}: its setup-workspace step does not pass \`node-from-image: 'true'\`, so it would install a second node over the image's. Add it under the step's \`with:\`.`
+      );
+    }
+  }
+  return problems;
+}
+
 /** What the manifest already says about a hand-registered gate. */
 export interface Registered {
   file: string;
@@ -1096,12 +1340,12 @@ export function headerLines(
   // second is `selftest: true`; the other two are genuinely per-gate, and inventing
   // derivation rules for them would encode five gates' habits as a convention.
   const wanted = r.run;
-  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because derivedRun branches on the flag only there. For a .sh or .py gate derivedRun(f, true) equals derivedRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
+  // `selftest: true` IS ONLY MEANINGFUL FOR .ts, because directRun branches on the flag only there. For a .sh or .py gate directRun(f, true) equals directRun(f), so the first arm always matched and every such header asserted a `--selftest` leg. Measured 2026-09-06 on the file this repo's briefs cite as the model: check-npmrc.sh carried `selftest: true` while containing ZERO
   // occurrences of --selftest. Roughly 30 headers claimed a leg that does not exist. Inert for binding, and a declaration that lies is worse than a missing one, because the next reader trusts it.
   const selftestIsReal = r.file.endsWith('.ts');
-  if (selftestIsReal && wanted !== '' && wanted === derivedRun(r.file, true)) {
+  if (selftestIsReal && wanted !== '' && wanted === directRun(r.file, true)) {
     out.push('selftest: true');
-  } else if (wanted !== '' && wanted !== derivedRun(r.file)) {
+  } else if (wanted !== '' && wanted !== directRun(r.file)) {
     out.push(`run: ${wanted}`);
   }
   if (pinLane) out.push(`lane: ${r.job}`);
@@ -1154,11 +1398,7 @@ export function insertHeader(
       }
     }
   }
-  // A JS/TS FILE NEVER TAKES THE `#` FALLBACK. `#` is a comment in Python and shell and
-  // a SYNTAX ERROR in TypeScript, and the fallback reached eight scripts that open with
-  // `#!/usr/bin/env node`: the block-comment branch wanted `/**` on line 0, the shebang
-  // is on line 0, so each was written with `# ` and stopped parsing. They are all
-  // `tsx`-invoked gates, so the breakage was total and immediate.
+  // A JS/TS FILE NEVER TAKES THE `#` FALLBACK. `#` is a comment in Python and shell and a SYNTAX ERROR in TypeScript, and the fallback reached eight scripts that open with `#!/usr/bin/env node`: the block-comment branch wanted `/**` on line 0, the shebang is on line 0, so each was written with `# ` and stopped parsing. They are all `tsx`-invoked gates, so the breakage was total and immediate.
   const js = /\.(ts|js|cjs|mjs)$/.test(file);
   const after = lines[0]?.startsWith('#!') ? 1 : 0;
   if (js) {
@@ -1173,12 +1413,7 @@ export function insertHeader(
         ].join('\n');
       }
     }
-    // NO DOUBLE BLANK. The separator below used to be unconditional, so a file
-    // that ALREADY had a blank line at the insertion point got two, and
-    // `biome format` (which IS check:format) reds on that. It hit the one
-    // subject with no leading block comment during the 2026-09-06 header wave
-    // and had to be fixed by hand. A binder that writes a format-gate red is a
-    // write mode failing its own verify, the same shape as planExtract above.
+    // NO DOUBLE BLANK. The separator below used to be unconditional, so a file that ALREADY had a blank line at the insertion point got two, and `biome format` (which IS check:format) reds on that. It hit the one subject with no leading block comment during the 2026-09-06 header wave and had to be fixed by hand. A binder that writes a format-gate red is a write mode failing its own verify, the same shape as planExtract above.
     return [
       ...lines.slice(0, after),
       ...body.map((l) => `// ${l}`),
@@ -1186,14 +1421,76 @@ export function insertHeader(
       ...lines.slice(after),
     ].join('\n');
   }
-  // The normal path for .sh, and the fallback for anything else that takes `#`.
-  // Same guard as the `//` branch above, for the same reason.
+  // The normal path for .sh, and the fallback for anything else that takes `#`. Same guard as the `//` branch above, for the same reason.
   return [
     ...lines.slice(0, after),
     ...body.map((l) => `# ${l}`),
     ...(lines[after] === '' ? [] : ['']),
     ...lines.slice(after),
   ].join('\n');
+}
+
+/**
+ * A lock run that IS an npm hop as a whole: optional `NAME=value` prefixes, then an optional `python3 .ci/rediacc_ci/core_lease.py heavy-lock --` wrapper, then `npm run <script>` and plain arguments. No shell operator, command substitution, backtick, backslash or newline is admitted anywhere (review 1e7d515b.3). An env-prefixed hop (`VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run <id>`) is a hop. A compound run (`tsx x.ts && npm run y`) is NOT: an unanchored "`npm run` in command position anywhere" test read it as a hop, which skipped the lock-against-header equality check and let a drifted compound lock run pass (review finding 48d52c93.1).
+ */
+export function isNpmHop(run: string): boolean {
+  // A value expands at most a plain `$NAME` or a balanced `${NAME}` (an unbalanced `${NAME` is refused): `$(...)`, a backtick or a backslash would run or smuggle code, and only spaces or tabs separate words, so a newline cannot start a second command (review 1e7d515b.1).
+  const v = '\\$(?:\\{[A-Za-z_][A-Za-z0-9_]*\\}|[A-Za-z_][A-Za-z0-9_]*)';
+  const value = `(?:"(?:[^"\`$\\\\\\n]|${v})*"|'[^'\\n]*'|(?:[^\\s;&|()<>\`'"$\\\\]|${v})*)`;
+  const word = '[^\\s;&|()<>`$\\\\]+';
+  // The heavy-lock wrapper (`.ci/rediacc_ci/core_lease.py heavy-lock --`) only serialises the hop behind a lease; the script that runs is still the npm one. Exactly that argv is admitted, so a wrapper around any other program or subcommand stays a direct run.
+  const wrapper = 'python3 \\.ci/rediacc_ci/core_lease\\.py heavy-lock --[ \\t]+';
+  return new RegExp(
+    `^(?:[A-Za-z_][A-Za-z0-9_]*=${value}[ \\t]+)*(?:${wrapper})?npm run[ \\t]+${word}(?:[ \\t]+${word})*[ \\t]*$`
+  ).test(run);
+}
+
+/** Whether a hop's `npm run <script>` names `id`: a wrapped or env-prefixed lock whose npm script drifted from the header is refused (review 4db12448.1). */
+function npmHopScript(run: string, id: string): boolean {
+  return new RegExp(`npm run[ \\t]+${id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:[ \\t]|$)`).test(
+    run
+  );
+}
+
+/**
+ * How one declared gate's REGISTRATION disagrees with its header: the lock's direct `run`, or the package.json key it hops through. Exported so the selftest drives both shapes; `main` calls it once per declared gate.
+ */
+export function registrationProblems(
+  b: Bound,
+  lockEntry: { run: string } | undefined,
+  scripts: Readonly<Record<string, string>>
+): string[] {
+  const problems: string[] = [];
+  // A SCRIPT THE LOCK RUNS DIRECTLY IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. `test:install-script` and `test:write-once-guard` are registered as a bare path in `run` with no package.json key, so checking them against package.json would red them for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not an id prefix. (The bash gate-test battery that first needed this is gone; the two entries above are the remaining members.)
+  const runsScriptDirectly =
+    lockEntry !== undefined &&
+    // ANY RUN THAT IS NOT AN npm HOP, not only one ending `.sh` or `.py`. That suffix test was the W7 P4 widening of a `.sh`-only one; a header-declared gate (`gen:gates`, PLAN-tooling-code-reduction.md D2) runs `PYTHONPATH=.ci python3 -m <module>` or `tsx <file> --selftest && tsx <file>`, ends in neither, and under the suffix test fell to the package.json branch below and was refused for lacking the very key D2 retires.
+    !isNpmHop(lockEntry.run);
+  if (runsScriptDirectly) {
+    if (lockEntry.run !== b.run) {
+      problems.push(
+        `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
+      );
+    }
+    if (scripts[b.id] !== undefined) {
+      problems.push(
+        `${b.file}: runs directly from the lock, so it must have NO package.json script, but ` +
+          `'${b.id}' is registered there as "${scripts[b.id]}"`
+      );
+    }
+  } else if (lockEntry !== undefined && !npmHopScript(lockEntry.run, b.id)) {
+    problems.push(
+      `${b.file}: gates.lock.json hops through "${lockEntry.run}", which is not \`npm run ${b.id}\``
+    );
+  } else if (scripts[b.id] === undefined) {
+    problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
+  } else if (scripts[b.id] !== b.run) {
+    problems.push(
+      `${b.file}: package.json runs "${scripts[b.id]}" but its header derives "${b.run}"`
+    );
+  }
+
+  return problems;
 }
 
 /**
@@ -1241,8 +1538,126 @@ function selftest(endToEnd = false): number {
   const b = bind('.ci/scripts/quality/check_a_b.py', py);
   ck(
     'id and run derive from the path',
-    b?.id === 'check:ci-a-b' && b?.run === '.ci/scripts/quality/check_a_b.py',
+    b?.id === 'check:ci-a-b' && b.run === '.ci/scripts/quality/check_a_b.py',
     b
+  );
+  // HEADER-DECLARED GATES (agent/plans/PLAN-tooling-code-reduction.md D2): a module under .ci/rediacc_ci runs itself with no shim, its step runs `run` with no npm key to hop through, and its registration is the lock's direct run.
+  const mod = bind('.ci/rediacc_ci/quality/a_b.py', py);
+  ck(
+    'CONTROL: a .ci/rediacc_ci module header derives `PYTHONPATH=.ci python3 -m <module>`, not its bare path',
+    mod?.run === 'PYTHONPATH=.ci python3 -m rediacc_ci.quality.a_b',
+    mod
+  );
+  const directTs: Emitting = {
+    file: 'scripts/gates/check-a.ts',
+    id: 'check:ci-a',
+    run: 'tsx scripts/gates/check-a.ts --selftest && tsx scripts/gates/check-a.ts',
+    kind: 'step',
+    step: 'A',
+    needs: [],
+    direct: true,
+  };
+  ck(
+    'CONTROL: a direct gate step spells each local bin through npx, since it has no npm key',
+    emitStep(directTs).at(-1)?.trim() ===
+      'run: npx tsx scripts/gates/check-a.ts --selftest && npx tsx scripts/gates/check-a.ts',
+    emitStep(directTs)
+  );
+  ck(
+    'CONTROL (silent): a keyed gate step still hops through `npm run <id>`',
+    emitStep({ ...directTs, direct: undefined })
+      .at(-1)
+      ?.trim() === 'run: npm run check:ci-a',
+    emitStep({ ...directTs, direct: undefined })
+  );
+  const modB = mod ?? directTs;
+  ck(
+    'CONTROL (silent): a direct run the lock records and package.json lacks is a clean registration',
+    registrationProblems(modB, { run: modB.run }, {}).length === 0,
+    registrationProblems(modB, { run: modB.run }, {})
+  );
+  ck(
+    'CONTROL: a direct run the lock records differently from the header is a named problem',
+    registrationProblems(modB, { run: `${modB.run} --other` }, {}).some((p) =>
+      p.includes('gates.lock.json runs')
+    )
+  );
+  ck(
+    'CONTROL: a direct gate that also keeps a package.json key is a named problem',
+    registrationProblems(modB, { run: modB.run }, { [modB.id]: modB.run }).some((p) =>
+      p.includes('NO package.json script')
+    )
+  );
+  ck(
+    'CONTROL: an env-prefixed npm hop is a hop, judged against package.json and not as a direct run',
+    registrationProblems(modB, { run: `X=1 npm run ${modB.id}` }, { [modB.id]: modB.run })
+      .length === 0
+  );
+  ck(
+    'CONTROL: a plain hop, an env-prefixed hop and a quoted-env hop are hops; a compound run is not',
+    isNpmHop('npm run check:ci-a') &&
+      isNpmHop('X=1 npm run check:ci-a') &&
+      isNpmHop('VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-a -- --flag') &&
+      !isNpmHop('tsx scripts/gates/x.ts && npm run check:ci-a') &&
+      !isNpmHop('npm run check:ci-a; rm -rf x') &&
+      !isNpmHop('(cd y && npm run check:ci-a)') &&
+      !isNpmHop('npm run check:ci-a | tee log')
+  );
+  ck(
+    'CONTROL: a heavy-lock wrapped hop is a hop (with or without an env prefix); a wrapper around another program, another subcommand or a compound run is not',
+    isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-a') &&
+      isNpmHop(
+        'X="$CI_RUNNER_CORES" python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-a'
+      ) &&
+      !isNpmHop('python3 .ci/rediacc_ci/other.py heavy-lock -- npm run check:ci-a') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py other-lock -- npm run check:ci-a') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- tsx evil.ts') &&
+      !isNpmHop('python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run a && npm run b')
+  );
+  ck(
+    'CONTROL: an env value that runs code (command substitution, backticks) or a newline separator is not a hop (review 1e7d515b.1); ${VAR} expansion still is',
+    !isNpmHop('X="$(tsx evil.ts)" npm run check:ci-a') &&
+      !isNpmHop('X="`tsx evil.ts`" npm run check:ci-a') &&
+      !isNpmHop('X=$(tsx evil.ts) npm run check:ci-a') &&
+      !isNpmHop('tsx evil.ts\nnpm run check:ci-a') &&
+      !isNpmHop('X=1\nnpm run check:ci-a') &&
+      !isNpmHop('X="${CI_RUNNER_CORES npm run check:ci-a') &&
+      !isNpmHop('X=${CI_RUNNER_CORES npm run check:ci-a') &&
+      isNpmHop('X="${CI_RUNNER_CORES}" npm run check:ci-a') &&
+      isNpmHop("X='$(literal)' npm run check:ci-a")
+  );
+  ck(
+    'CONTROL: a hop whose npm script drifted from the header id is refused, wrapped or not (review 4db12448.1)',
+    registrationProblems(
+      modB,
+      { run: 'python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run check:ci-drifted' },
+      { [modB.id]: modB.run }
+    ).some((p) => p.includes('hops through')) &&
+      registrationProblems(
+        modB,
+        { run: `python3 .ci/rediacc_ci/core_lease.py heavy-lock -- npm run ${modB.id}` },
+        { [modB.id]: modB.run }
+      ).length === 0
+  );
+  ck(
+    'CONTROL: an argument that expands or runs code is not a plain hop argument (review 96ca7df3.1)',
+    !isNpmHop('npm run check:ci-a -- $FOO') &&
+      !isNpmHop('npm run check:ci-a -- $(x)') &&
+      !isNpmHop('npm run check:ci-a -- `x`') &&
+      !isNpmHop('npm run check:ci-a -- a\\b') &&
+      isNpmHop('npm run check:ci-a -- --flag=1')
+  );
+  ck(
+    'CONTROL: a drifted compound lock run is a direct run and is refused against the header',
+    registrationProblems(modB, { run: `${modB.run} && npm run check:ci-other` }, {}).some((p) =>
+      p.includes('gates.lock.json runs')
+    )
+  );
+  ck(
+    'CONTROL: an npm-hop gate with no package.json key is a named problem',
+    registrationProblems(modB, { run: `npm run ${modB.id}` }, {}).some((p) =>
+      p.includes('package.json has no script')
+    )
   );
   ck(
     'CONTROL: --recurse-submodules=no infers no submodules need (it asks for none)',
@@ -1258,8 +1673,7 @@ function selftest(endToEnd = false): number {
       `${py}\ngit ls-files --recurse-submodules`
     )?.needs.includes('submodules') === true
   );
-  // Both controls below are regressions, found by wiring ONE gate through this binder.
-  // Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
+  // Both controls below are regressions, found by wiring ONE gate through this binder. Each mis-inference is silent: it does not fail, it moves the gate to a fatter lane.
   ck(
     'CONTROL: private/account named in PROSE infers nothing (a comment is not code)',
     !bind(
@@ -1337,7 +1751,7 @@ function selftest(endToEnd = false): number {
       );
       if (typeof next !== 'string') return false;
       const b2 = bind('.ci/scripts/quality/check_a_b.py', next);
-      return b2?.id === 'check:ci-a-b' && b2?.step === 'A B';
+      return b2?.id === 'check:ci-a-b' && b2.step === 'A B';
     })()
   );
   ck(
@@ -1422,10 +1836,7 @@ function selftest(endToEnd = false): number {
       return typeof next === 'string' && next.includes('# ---- gate ----');
     })()
   );
-  // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to
-  // assert that a gate-test is OUT of scope, which was true and was also the reason all
-  // 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step`
-  // declaration, so they are subjects now and this asserts the new truth.
+  // THIS CONTROL WAS INVERTED ON 2026-09-06 AND THE INVERSION IS THE POINT. It used to assert that a gate-test is OUT of scope, which was true and was also the reason all 148 of their headers were unread. W2.3 gave every one of them a `kind: shared-step` declaration, so they are subjects now and this asserts the new truth.
   ck(
     'a gate-test IS in scope: it declares kind shared-step, so its header is read like any other',
     !NOT_SUBJECT.test('.ci/scripts/test/gates/test-regions-sync.sh')
@@ -1475,8 +1886,7 @@ function selftest(endToEnd = false): number {
     regionAfterSetup(['  a:', '    steps:', '      - id: setup', ''].join('\n'), 'a')
   );
 
-  // Invariant 11, both directions. ONE gate pinned to a setup-less lane used to make
-  // `--write` refuse for the whole repository, advising a region that must never exist.
+  // Invariant 11, both directions. ONE gate pinned to a setup-less lane used to make `--write` refuse for the whole repository, advising a region that must never exist.
   const LANES = [
     '  with-setup:',
     '    steps:',
@@ -1494,10 +1904,7 @@ function selftest(endToEnd = false): number {
   );
   ck('CONTROL: a job that is not in the workflow cannot emit', !laneCanEmit(LANES, 'absent'));
 
-  // LOCAL-BIN SUBSTITUTION, both directions. The one-directional version of this
-  // -- "tsx becomes npm run" -- was already true and still let `knip` through,
-  // which is exactly the shape a control that only checks the positive case
-  // cannot see.
+  // LOCAL-BIN SUBSTITUTION, both directions. The one-directional version of this -- "tsx becomes npm run" -- was already true and still let `knip` through, which is exactly the shape a control that only checks the positive case cannot see.
   ck('tsx is a node_modules/.bin command', usesLocalBin('tsx scripts/x.ts'));
   ck('knip is one too, even mid-command after &&', usesLocalBin('./a.sh --install && knip --x'));
   ck('knip alone, with no arguments, is still one', usesLocalBin('knip'));
@@ -1525,10 +1932,7 @@ function selftest(endToEnd = false): number {
     }).includes('        run: npm run lint:unused')
   );
 
-  // The guard step is a PER-LANE fact. quality-www-build's gates hang on
-  // `steps.build-www.outcome`, not setup, because they read the dist/ that step
-  // produces; emitting them under the setup guard would run them against a missing
-  // dist/ whenever the build failed.
+  // The guard step is a PER-LANE fact. quality-www-build's gates hang on `steps.build-www.outcome`, not setup, because they read the dist/ that step produces; emitting them under the setup guard would run them against a missing dist/ whenever the build failed.
   ck(
     'the emitted guard defaults to setup, which is what all but one region-bearing lane wants',
     emitStep({ file: 'x.py', id: 'check:ci-x', run: 'x.py', kind: 'step', step: 'X', needs: [] })
@@ -1553,10 +1957,7 @@ function selftest(endToEnd = false): number {
     regionGuard('      # >>> gate-bind (generated by scripts/gate-bind.ts --write)') === 'setup'
   );
 
-  // ACQUIRABLE needs, both directions. `python-yaml` is installed BY the emitted step
-  // (the ACQUIRE table above), so demanding a lane already provide it made two gates
-  // unplaceable while the workflow was already installing PyYAML for them. An unknown
-  // need must still refuse, or a typo in a header places a gate anywhere.
+  // ACQUIRABLE needs, both directions. `python-yaml` is installed BY the emitted step (the ACQUIRE table above), so demanding a lane already provide it made two gates unplaceable while the workflow was already installing PyYAML for them. An unknown need must still refuse, or a typo in a header places a gate anywhere.
   ck(
     'an ACQUIRABLE need does not block placement, because the step installs it',
     satisfies(
@@ -1645,10 +2046,7 @@ function selftest(endToEnd = false): number {
   ck('CONTROL: it does NOT find it in a different job', !stepInJob(wf, 'other', 'Gate binding'));
   ck('CONTROL: a step that is not there is not found', !stepInJob(wf, 'quality-code', 'Nope'));
 
-  // --- kind discriminant (parser v2) ---------------------------------------------
-  // These controls exist because the drain hit the same wall 143 times: a gate-test
-  // cannot own the one shared step every gate-test rides, so under v1 it could not
-  // declare at all. What must hold now is that it CAN declare and STILL not be emitted.
+  // --- kind discriminant (parser v2) --------------------------------------------- These controls exist because the drain hit the same wall 143 times: a gate-test cannot own the one shared step every gate-test rides, so under v1 it could not declare at all. What must hold now is that it CAN declare and STILL not be emitted.
   const sharedStep = [
     '# ---- gate ----',
     '# kind: shared-step',
@@ -1724,10 +2122,7 @@ function selftest(endToEnd = false): number {
     jobsWithStep(TWO_JOBS, 'Nope').length === 0
   );
 
-  // `emit: false` -- a gate that OWNS a hand-written step a region must not take over.
-  // 18 gates in quality-code run BETWEEN `Setup workspace` and `- id: setup`, so their
-  // steps carry no setup guard; emitting them would move them below it and silence
-  // exactly the gates that explain a broken setup.
+  // `emit: false` -- a gate that OWNS a hand-written step a region must not take over. 18 gates in quality-code run BETWEEN `Setup workspace` and `- id: setup`, so their steps carry no setup guard; emitting them would move them below it and silence exactly the gates that explain a broken setup.
   const handWritten = [
     '# ---- gate ----',
     '# step: Toolchain pins',
@@ -1842,9 +2237,7 @@ function selftest(endToEnd = false): number {
     rewriteRegions(rw.text, new Map([['quality-static', [b2]]])).text === rw.text
   );
 
-  // --- the strip guard (box A2) -------------------------------------------------
-  // A REFUSAL NOBODY HAS WATCHED FIRE IS NOT A REFUSAL. Each of these drives
-  // `classifyDrops` directly, which is why it was extracted out of `main`.
+  // --- the strip guard (box A2) ------------------------------------------------- A REFUSAL NOBODY HAS WATCHED FIRE IS NOT A REFUSAL. Each of these drives `classifyDrops` directly, which is why it was extracted out of `main`.
   const DROP = ['quality-static: Check X'];
   const MANIFEST_WITH = "  { id: 'check:x', step: 'Check X' },";
   const none = new Set<string>();
@@ -1985,7 +2378,7 @@ function selftest(endToEnd = false): number {
       return (
         f.length === 1 &&
         f[0]?.includes('no shard-strategy region') &&
-        f[0]?.includes('shard: [1, 2, 3, 4]')
+        f[0].includes('shard: [1, 2, 3, 4]')
       );
     })()
   );
@@ -2004,7 +2397,7 @@ function selftest(endToEnd = false): number {
     (() => {
       const f = rewriteStrategyRegions(ssJobWithRegion('1, 2'), { 'quality-code': 4 });
       return (
-        f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0]?.includes('expected [1, 2, 3, 4]')
+        f.length === 1 && f[0]?.includes('lists [1, 2]') && f[0].includes('expected [1, 2, 3, 4]')
       );
     })()
   );
@@ -2472,6 +2865,7 @@ function selftest(endToEnd = false): number {
   }
 
   selftestNeedsNot(ck);
+  selftestContainer(ck);
   // THE ABSENT-FILE REFUSAL names every path and the remedy. Eleven paths, because the first cut printed ten and dropped the rest.
   const ghosts = Array.from({ length: 11 }, (_, i) => `scripts/gates/ghost-${i}.ts`);
   const refusal = absentRefusal(ghosts).join('\n');
@@ -2492,17 +2886,146 @@ function selftest(endToEnd = false): number {
 
 type Check = (label: string, ok: boolean, detail?: unknown) => void;
 
+/** R2: the pin reader, the container region writer and the lane checks, each with a control that must fire and one that must not. */
+function selftestContainer(ck: Check): void {
+  const digest = `sha256:${'b'.repeat(64)}`;
+  const pinText = JSON.stringify({ image: 'devcontainer', digest, stage: 'full' });
+  const pin = readImagePin(pinText, WK_IMAGE_REGISTRY);
+  ck(
+    'the pin reads as <registry>/<image>@<digest>, the devbox CI_RUNNER_IMAGE form',
+    'ref' in pin && pin.ref === `${WK_IMAGE_REGISTRY}/devcontainer@${digest}`,
+    pin
+  );
+  for (const [label, doc] of [
+    ['a tag in the image', { image: 'devcontainer:latest', digest, stage: 'full' }],
+    ['a short digest', { image: 'devcontainer', digest: 'sha256:abc', stage: 'full' }],
+    ['a registry host in the image', { image: 'quay.io/x', digest, stage: 'full' }],
+    ['no stage', { image: 'devcontainer', digest }],
+  ] as const) {
+    ck(
+      `CONTROL: the pin reader refuses ${label}`,
+      'error' in readImagePin(JSON.stringify(doc), 'r')
+    );
+  }
+  ck('CONTROL: the pin reader refuses non-JSON', 'error' in readImagePin('{', 'r'));
+
+  const ref = `${WK_IMAGE_REGISTRY}/devcontainer@${digest}`;
+  const job = (name: string, opts: { perms?: string[]; runsOn?: string; nfi?: boolean } = {}) => [
+    `  ${name}:`,
+    `    name: ${name}`,
+    `    runs-on: ${opts.runsOn ?? 'ubuntu-latest'}`,
+    '    permissions:',
+    ...(opts.perms ?? ['contents: read']).map((p) => `      ${p}`),
+    '    steps:',
+    '      - uses: actions/checkout@x',
+    '      - id: setup',
+    '        uses: ./.github/actions/setup-workspace',
+    ...(opts.nfi ? ['        with:', "          node-from-image: 'true'"] : []),
+    '      - name: g',
+    '        run: echo g',
+  ];
+  const wf = (...jobs: string[][]) =>
+    ['name: X', 'permissions: {}', 'jobs:', ...jobs.flat(), ''].join('\n');
+
+  const bare = wf(
+    job('lane-a', { perms: ['contents: read', 'packages: read'], nfi: true }),
+    job('lane-b')
+  );
+  const first = rewriteContainerRegions(bare, ['lane-a'], ref);
+  const regionAt = first.text.indexOf('    # >>> image-container');
+  ck(
+    'a listed lane with no region gets one, inserted before its steps: line and inside its own job',
+    first.findings.length === 0 &&
+      first.lanes.join() === 'lane-a' &&
+      regionAt > first.text.indexOf('  lane-a:') &&
+      regionAt < first.text.indexOf('    steps:') &&
+      first.text.includes(`      image: ${ref}`) &&
+      first.text.includes(`        CI_RUNNER_IMAGE: ${ref}`),
+    first
+  );
+  ck(
+    'CONTROL: an unlisted lane gets no region',
+    first.text.split('# >>> image-container').length - 1 === 1
+  );
+  const again = rewriteContainerRegions(first.text, ['lane-a'], ref);
+  ck('CONTROL: a fresh region rewrites to the identical text', again.text === first.text);
+  const moved = rewriteContainerRegions(first.text, ['lane-a'], ref.replace('bbbb', 'cccc'));
+  ck(
+    'a stale digest in the region is rewritten from the pin',
+    moved.text !== first.text &&
+      moved.text.includes('cccc') &&
+      !moved.text.includes(`image: ${ref}`)
+  );
+  const dropped = rewriteContainerRegions(first.text, [], ref);
+  ck(
+    'a region in a job no longer listed is removed',
+    !dropped.text.includes('image-container') && dropped.text === bare,
+    dropped.text
+  );
+  ck(
+    'a listed lane that is not a job is a finding, never a silent skip',
+    rewriteContainerRegions(bare, ['lane-z'], ref).findings.some((f) => f.includes("'lane-z'"))
+  );
+
+  ck(
+    'CONTROL: a complete container lane and a plain lane report nothing',
+    containerLaneProblems(first.text, ['lane-a']).length === 0,
+    containerLaneProblems(first.text, ['lane-a'])
+  );
+  const noPkg = rewriteContainerRegions(wf(job('lane-a', { nfi: true })), ['lane-a'], ref).text;
+  ck(
+    'a container lane without packages: read fires',
+    containerLaneProblems(noPkg, ['lane-a']).some((p) => p.includes('packages: read'))
+  );
+  const noNfi = rewriteContainerRegions(
+    wf(job('lane-a', { perms: ['contents: read', 'packages: read'] })),
+    ['lane-a'],
+    ref
+  ).text;
+  ck(
+    'a container lane whose setup-workspace lacks node-from-image fires',
+    containerLaneProblems(noNfi, ['lane-a']).some((p) => p.includes('node-from-image'))
+  );
+  const slim = rewriteContainerRegions(
+    wf(job('lane-a', { perms: ['packages: read'], nfi: true, runsOn: 'ubuntu-slim' })),
+    ['lane-a'],
+    ref
+  ).text;
+  ck(
+    'a container lane on ubuntu-slim fires',
+    containerLaneProblems(slim, ['lane-a']).some((p) => p.includes('ubuntu-slim'))
+  );
+  ck(
+    'node-from-image on a lane that is not listed fires (it would skip setup-node on the bare runner)',
+    containerLaneProblems(wf(job('lane-b', { nfi: true })), []).some((p) =>
+      p.includes('not in CONTAINER_LANES')
+    )
+  );
+  ck(
+    'a hand-written container: on an unlisted job fires',
+    containerLaneProblems(
+      wf(['  lane-b:', '    runs-on: ubuntu-latest', '    container: node:24', '    steps: []']),
+      []
+    ).some((p) => p.includes('does not list'))
+  );
+  ck(
+    'CONTROL: a listed lane with no job, and a workflow with no jobs, both fire',
+    containerLaneProblems(bare, ['lane-z']).some((p) => p.includes("'lane-z'")) &&
+      containerLaneProblems('name: X\n', ['lane-a']).length === 1
+  );
+}
+
 /**
  * `needs-not` against the REAL gate file it was written for, plus a control each way.
  *
- * check_plan_deps.py lists submodule files only in its hand-run `--overlaps` and `--migrate-x` verbs, so the `submodules` its `git ls-files --recurse-submodules` literal infers is false for the CI path, and its lane (quality-branch) checks none out. The header's `needs-not: submodules` is what keeps the binder from refusing that placement.
+ * plan_deps.py lists submodule files only in its hand-run `--overlaps` and `--migrate-x` verbs, so the `submodules` its `git ls-files --recurse-submodules` literal infers is false for the CI path, and its lane (quality-branch) checks none out. The header's `needs-not: submodules` is what keeps the binder from refusing that placement.
  */
 function selftestNeedsNot(ck: Check): void {
-  const planDeps = '.ci/scripts/quality/check_plan_deps.py';
+  const planDeps = '.ci/rediacc_ci/quality/plan_deps.py';
   const src = read(planDeps);
   const real = bind(planDeps, src);
   ck(
-    'check_plan_deps.py binds WITHOUT submodules: its needs-not scopes the hand-run listing away',
+    'plan_deps.py binds WITHOUT submodules: its needs-not scopes the hand-run listing away',
     real !== null && !real.needs.includes('submodules'),
     real?.needs
   );
@@ -2512,12 +3035,12 @@ function selftestNeedsNot(ck: Check): void {
     'CONTROL: the same file with its needs-not line removed infers submodules',
     stripped !== src && bind(planDeps, stripped)?.needs.includes('submodules') === true
   );
-  // CONTROL: a gate whose CI path really enumerates submodule files keeps the need, so needs-not is scoped to the file that declares it rather than disabling the inference. check_syncpack_sources.py lists every submodule package.json on its check path; its declared `needs: submodules` is blanked first, so only the inference can supply the need.
-  const syncpack = '.ci/scripts/quality/check_syncpack_sources.py';
+  // CONTROL: a gate whose CI path really enumerates submodule files keeps the need, so needs-not is scoped to the file that declares it rather than disabling the inference. syncpack_sources.py lists every submodule package.json on its check path; its declared `needs: submodules` is blanked first, so only the inference can supply the need.
+  const syncpack = '.ci/rediacc_ci/quality/syncpack_sources.py';
   const syncpackSrc = read(syncpack);
   const undeclared = syncpackSrc.replace(/^needs: submodules$/m, 'needs: none');
   ck(
-    'CONTROL: check_syncpack_sources.py, which lists submodule files in CI, still infers submodules',
+    'CONTROL: syncpack_sources.py, which lists submodule files in CI, still infers submodules',
     undeclared !== syncpackSrc && bind(syncpack, undeclared)?.needs.includes('submodules') === true,
     bind(syncpack, undeclared)?.needs
   );
@@ -2631,8 +3154,7 @@ function main(argv: string[]): void {
   const write = argv.includes('--write') || dryRun;
   // `--dry-run --fail-on-drift` is the FRESHNESS check the plain run never was: it passed on 2026-09-28 while the committed quality-code shard manifest and six ci-quality.yml regions no longer matched what `--write` emits, and only CI's shard-receipt aggregator ("ran 16 gate(s) but the plan gives it 18") caught the drift, after the push.
   const failOnDriftFlag = argv.includes('--fail-on-drift');
-  // `--generated-root <dir>` READS AND WRITES THE GENERATED FILES (the workflow and the shard manifests) under <dir> instead of the tree, while every INPUT (headers, lock, manifest.ts, package.json) still comes from the tree. It exists so the selftest can prove the freshness check both ways on a scratch copy -- a stale region fails, a fresh one passes -- without ever writing the real workflow.
-  // Refused outside `--write`/`--dry-run`: the binding check judges the real workflow or nothing.
+  // `--generated-root <dir>` READS AND WRITES THE GENERATED FILES (the workflow and the shard manifests) under <dir> instead of the tree, while every INPUT (headers, lock, manifest.ts, package.json) still comes from the tree. It exists so the selftest can prove the freshness check both ways on a scratch copy -- a stale region fails, a fresh one passes -- without ever writing the real workflow. Refused outside `--write`/`--dry-run`: the binding check judges the real workflow or nothing.
   const genAt = argv.indexOf('--generated-root');
   const genRoot = genAt >= 0 ? path.resolve(argv[genAt + 1] ?? '') : ROOT;
   if (genAt >= 0 && (argv[genAt + 1] === undefined || !write)) {
@@ -2647,8 +3169,7 @@ function main(argv: string[]): void {
     );
     process.exit(1);
   };
-  // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover
-  // cannot be staged at all.
+  // `--lane <job>` STAGES THE CUTOVER ONE LANE AT A TIME, and without it the cutover cannot be staged at all.
   //
   // `--write` rewrites EVERY region from the full declared set. Today 167 declared gates would be emitted while their hand-written copies still exist, so a write meant to convert one lane silently duplicates 46 steps in three others. That is not a hypothetical: it happened twice while this tool was being built, and both times the region bodies had to be restored from `git show HEAD:`.
   //
@@ -2733,8 +3254,7 @@ function main(argv: string[]): void {
       );
       process.exit(1);
     }
-    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates of one aggregate command, not steps. Emitting a header for each would write the same step name N times into a lane. This is the ceiling on what --extract can ever cover, and it is better stated here than
-    // discovered per gate.
+    // A GATE WITH NO STEP OF ITS OWN CANNOT DECLARE ONE. 132 gate-tests share the single step 'Quality-gate unit tests' and 10 i18n checks share 'i18n': they are sub-gates of one aggregate command, not steps. Emitting a header for each would write the same step name N times into a lane. This is the ceiling on what --extract can ever cover, and it is better stated here than discovered per gate.
     const sharers = (
       manifestText.match(
         new RegExp(`step: '${reg.step.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}'`, 'g')
@@ -2801,7 +3321,12 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  const { declared, malformed } = scanDeclarations(present, read);
+  const scanned = scanDeclarations(present, read);
+  const malformed = scanned.malformed;
+  // A header with no npm key is a header-declared gate (D2): its emitted step runs `run` itself, `npx`-spelled, since `npm run <id>` would exit 1 on a missing script (npm prints its "Missing script" error on stderr only, nothing on stdout).
+  const declared: Bound[] = scanned.declared.map((b) =>
+    pkg.scripts[b.id] === undefined ? { ...b, direct: true as const } : b
+  );
 
   // ANTI-VACUITY. Until the drain lands, "no gate declares a header" is what a broken scan looks like and what a clean tree looks like, and they must not be the same.
   if (declared.length === 0) {
@@ -2812,8 +3337,7 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was collected here and then only ever folded into `problems`, which is reached AFTER the `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who planted `---- /gate ----` in a gate-test,
-  // watched `--dry-run` exit 0 without naming the file, and correctly concluded their headers were unread. They were half right: the tree really was out of scope, and this is the OTHER half.
+  // A MALFORMED HEADER REFUSES EVERY MODE, NOT JUST THE VERIFY ONE. This list was collected here and then only ever folded into `problems`, which is reached AFTER the `write` branch returns -- so `--write` and `--dry-run` both ran to completion with a voided declaration in the tree and said nothing. Found 2026-09-06 by two agents who planted `---- /gate ----` in a gate-test, watched `--dry-run` exit 0 without naming the file, and correctly concluded their headers were unread. They were half right: the tree really was out of scope, and this is the OTHER half.
   //
   // Refusing a `--write` matters more than refusing a report. A voided declaration is a gate this binder cannot see, so the region it would have emitted is written WITHOUT it, and `--write` owns whole regions: the gate does not become unregistered, it disappears.
   if (malformed.length > 0) {
@@ -2829,8 +3353,7 @@ function main(argv: string[]): void {
   if (write) {
     const byLane = new Map<string, Emitting[]>();
     const handRegistered: string[] = [];
-    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so
-    // would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
+    // ONLY `kind: step` IS EMITTED. A shared-step gate rides a hand-written step it does not own, and a `test` or `local-only` gate has no step at all; emitting any of them would write one duplicate copy of the shared step per gate into a region. HELD OUT BY THEIR OWN DECLARATION, and NAMED. `emit: false` means the gate owns a hand-written step a region must not take over; not saying so would make "declared and deliberately not emitted" look identical to "declared and forgotten", which is the exact confusion the import guard above exists to end.
     const declaredHoldouts = declared.filter((b) => b.kind === 'step' && b.emit === false);
     if (declaredHoldouts.length > 0) {
       console.log(
@@ -2899,8 +3422,7 @@ function main(argv: string[]): void {
         for (const id of assigned.replicated) console.log(`    ${id}`);
       }
       shardMap.set(job, assigned.legs);
-      // WHY THE LEGS ARE WHAT THEY ARE, every run: kept (and by how little a re-plan would gain) or replaced (and what was wrong with the committed plan).
-      // The findings go to stderr, so `--check` (which runs this as a child with stdout ignored) names what broke the committed plan, not just the file.
+      // WHY THE LEGS ARE WHAT THEY ARE, every run: kept (and by how little a re-plan would gain) or replaced (and what was wrong with the committed plan). The findings go to stderr, so `--check` (which runs this as a child with stdout ignored) names what broke the committed plan, not just the file.
       console.log(`shard plan ${job}: ${assigned.sticky.reason}`);
       for (const f of assigned.sticky.findings) console.error(`  shard plan: ${f}`);
       // T2.10. THE COMMITTED MANIFEST A CI LEG AND `npm run ci -- --lane/--shard` BOTH READ, written from the SAME `assigned.legs` the `matrix.shard` conjunct above comes from, so the two can never name different plans. `--dry-run` reports what would change without writing, same as the workflow rewrite below.
@@ -2952,9 +3474,25 @@ function main(argv: string[]): void {
       for (const f of strategyFindings) console.error(`    ${f}`);
       process.exit(1);
     }
-    const { text, lanes, dropped } = rewriteRegions(workflow, scoped, only, shardMap, peerMap);
-    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy
-    // "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal. THE RECEIPT STEPS COUNT AS EMITTED, and leaving them out made a sharded lane unwritable a second time. `rewriteRegions` emits them
+    const stepped = rewriteRegions(workflow, scoped, only, shardMap, peerMap);
+    const { lanes, dropped } = stepped;
+    // R2: the container regions, rewritten from the pin on every `--write` (and so judged by the freshness check below), whatever `--lane` scoped the step regions to: the region is a pure function of the pin and CONTAINER_LANES, so there is no staged cutover to protect.
+    const pin = readImagePin(read(IMAGE_PIN_FILE), WK_IMAGE_REGISTRY);
+    if ('error' in pin) {
+      console.error(`✗ ${pin.error}`);
+      process.exit(1);
+    }
+    const contained = rewriteContainerRegions(stepped.text, CONTAINER_LANES, pin.ref);
+    if (contained.findings.length > 0) {
+      console.error(`✗ ${contained.findings.length} image-container finding(s):`);
+      for (const f of contained.findings) console.error(`    ${f}`);
+      process.exit(1);
+    }
+    console.log(
+      `container lanes: ${contained.lanes.length} of ${CONTAINER_LANES.length} written (${contained.lanes.join(', ') || 'none'}) from ${pin.ref}`
+    );
+    const text = contained.text;
+    // REFUSE TO SILENTLY DELETE A STEP THE MANIFEST STILL POINTS AT. A step inside the region that no declared gate emits is either stale (fine to drop) or a gate someone hand-added in the wrong place (NOT fine -- dropping it stops that gate running in CI). The manifest is the arbiter: if it names the step, the removal is a regression and this refuses rather than reporting a tidy "rewrote N region(s)". Keyed by the JOB the gate was PLACED in, which is byLane's key -- not b.lane, which is the optional header override and is undefined for most gates. Keying on it made every emitted step look like an unexplained removal. THE RECEIPT STEPS COUNT AS EMITTED, and leaving them out made a sharded lane unwritable a second time. `rewriteRegions` emits them
     // from the same `shardMap` it conjuncts with, so on the next `--write` they are stripped and re-emitted exactly like any other region step -- but they belong to no declared gate, so the set below did not know they were coming back. The strip guard therefore refused every re-run with "2 step(s) would be REMOVED ... and re-emitted by nothing", found on the first lane ever
     // populated into `SHARD_COUNTS`: D4 built the steps, and nothing re-ran the writer over a lane that had them.
     const emitted = new Set([
@@ -2963,8 +3501,7 @@ function main(argv: string[]): void {
         .filter((lane) => (shardMap.get(lane)?.size ?? 0) > 0)
         .flatMap((lane) => RECEIPT_STEP_NAMES.map((step) => `${lane}: ${step}`)),
     ]);
-    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest
-    // entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
+    // THE STRIP GUARD (box A2). The refusal below catches a drop the MANIFEST still names, which is the loudest case. It is not the only harmful one, and the gap has a receipt: strip `DOCKERHUB_TOKEN` from `.github/workflows/ci-quality.yml:1159` in a scratch copy and run the whole battery -- NOTHING reds. A step can carry `env:`, `if:`, a `with:` block or a secret that no manifest entry mentions, and dropping it was reported as a tidy `rewrote N region(s)`.
     //
     // So `--write` now refuses on ANY drop the rewrite cannot re-emit, whatever the reason, and `--allow-drop <step>` is the single typed escape. The two refusals stay SEPARATE rather than merged: a manifest-claimed drop is a regression and says so,
     // while an unexplained drop may be legitimate cleanup that simply has to be named.
@@ -2991,17 +3528,15 @@ function main(argv: string[]): void {
       for (const c of claimed) console.error(`    ${c}`);
       console.error('');
       console.error('  Dropping them would stop those gates running in CI, and the only');
-      console.error('  symptom would be check:ci-parity one gate later. Move them BELOW');
+      console.error('  symptom would be the parity leg of gen:gates --check. Move them BELOW');
       console.error('  the `# <<< gate-bind` marker, where a hand-registered step belongs.');
       process.exit(1);
     }
     // EVERY LANE WITH GATES MUST HAVE A REGION. Emitting into a file that has none would silently drop the step and report success -- the vacuity shape again. THE REGION IS THE OPT-IN, which is what makes a STAGED cutover expressible.
     //
-    // This used to refuse outright unless EVERY lane holding a declared gate had a region. That sounds protective and is not: 46 gates across five lanes declare headers while still being hand-registered, so `--write` refused repo-wide and no lane could go first. All-or-nothing across five lanes, each with its own step-ordering constraints, is the opposite of the one-lane pilot a
-    // cutover needs.
+    // This used to refuse outright unless EVERY lane holding a declared gate had a region. That sounds protective and is not: 46 gates across five lanes declare headers while still being hand-registered, so `--write` refused repo-wide and no lane could go first. All-or-nothing across five lanes, each with its own step-ordering constraints, is the opposite of the one-lane pilot a cutover needs.
     //
-    // A lane with no region does not emit, and its gates keep running from their hand-written steps -- a state the verify path already checks per gate, since `stepInJob` demands the step exist whether a region wrote it or not. What the old refusal actually guarded, a region silently losing its steps, is caught anyway: delete a region and check:ci-parity reds on a manifest entry
-    // naming a step that is no longer in the file.
+    // A lane with no region does not emit, and its gates keep running from their hand-written steps -- a state the verify path already checks per gate, since `stepInJob` demands the step exist whether a region wrote it or not. What the old refusal actually guarded, a region silently losing its steps, is caught anyway: delete a region and check:ci-parity reds on a manifest entry naming a step that is no longer in the file.
     const notYet = [...scoped.keys()].filter((j) => !lanes.includes(j));
     if (notYet.length > 0) {
       console.log(
@@ -3035,7 +3570,7 @@ function main(argv: string[]): void {
         `  ${[...scoped.entries()].map(([l, g]) => `${l}: ${g.length}`).join(', ')} step(s) emitted.`
       );
       console.log('  Any of those whose hand-written copy still exists becomes a DUPLICATE until');
-      console.log('  that copy is deleted. Run `check:ci-gate-bind` after writing.');
+      console.log('  that copy is deleted. Run `npm run gen:gates -- --check` after writing.');
       failOnDrift(drift);
       return;
     }
@@ -3046,33 +3581,7 @@ function main(argv: string[]): void {
 
   const problems: string[] = [];
   for (const b of declared) {
-    // A SCRIPT THE LOCK RUNS DIRECTLY IS REGISTERED DIFFERENTLY, AND ITS ABSENCE FROM package.json IS THE RULE RATHER THAN THE DEFECT. `test:install-script` and `test:write-once-guard` are registered as a bare path in `run` with no package.json key, so checking them against package.json would red them for a reason that has nothing to do with their headers. The lock's `run` is what they must agree with. THE PREDICATE IS "DOES THE LOCK RUN THIS SCRIPT DIRECTLY", not an id prefix. (The bash gate-test battery that first needed this is gone; the two entries above are the remaining members.)
-    const lockEntry = lockById.get(b.id);
-    const runsScriptDirectly =
-      lockEntry !== undefined &&
-      !lockEntry.run.startsWith('npm run ') &&
-      // `.py` TOO, and for the W7 P4 reason. A gate registered as a bare path with no package.json key keeps that shape when its path is repointed at a Python port; keying on `.sh` alone meant the checks below -- run must match the header's derived run, and no package.json key may exist -- silently stopped applying to a gate the moment it was ported. Same class as the `paths:`
-      // glob that stops selecting its own gate once the leaf is a `.py`.
-      (lockEntry.run.endsWith('.sh') || lockEntry.run.endsWith('.py'));
-    if (runsScriptDirectly) {
-      if (lockEntry.run !== b.run) {
-        problems.push(
-          `${b.file}: gates.lock.json runs "${lockEntry.run}" but its header derives "${b.run}"`
-        );
-      }
-      if (pkg.scripts[b.id] !== undefined) {
-        problems.push(
-          `${b.file}: is a gate-test, so it must have NO package.json script, but ` +
-            `'${b.id}' is registered there as "${pkg.scripts[b.id]}"`
-        );
-      }
-    } else if (pkg.scripts[b.id] === undefined) {
-      problems.push(`${b.file}: declares id '${b.id}', which package.json has no script for`);
-    } else if (pkg.scripts[b.id] !== b.run) {
-      problems.push(
-        `${b.file}: package.json runs "${pkg.scripts[b.id]}" but its header derives "${b.run}"`
-      );
-    }
+    problems.push(...registrationProblems(b, lockById.get(b.id), pkg.scripts));
 
     const entry = new RegExp(`id: '${b.id.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}'`).test(
       manifest
@@ -3140,6 +3649,9 @@ function main(argv: string[]): void {
     }
   }
 
+  // R2: the hand-placed halves of every container lane (permissions, runner, node-from-image), and their absence from every other job. The region bodies themselves are the freshness check's business below.
+  problems.push(...containerLaneProblems(workflow, CONTAINER_LANES));
+
   // BELT AND BRACES, AND IT CAN NO LONGER FIRE. A malformed block now refuses above, before the write branch, so `malformed` is always empty by here. The line stays because the refusal above is the load-bearing one and this is the safety net if the two are ever reordered; it is annotated rather than deleted so nobody reads it as the check that catches malformed headers. It is not.
   problems.push(...malformed);
 
@@ -3162,8 +3674,11 @@ function main(argv: string[]): void {
       'script, its manifest entry, and a workflow step in a lane that provides its needs'
   );
   console.log(
+    `✓ container lanes: ${CONTAINER_LANES.length} (${CONTAINER_LANES.join(', ')}), each with packages: read, a VM runner and node-from-image; no other job carries either`
+  );
+  console.log(
     '  Blind spot: this checks the gates that DECLARE a header. The rest are still ' +
-      'registered by hand and are check:ci-parity’s business until the drain reaches them.'
+      'registered by hand and are the parity leg’s business until the drain reaches them.'
   );
   // FRESHNESS, which the binding check above never covered: re-run this binder as `--dry-run --fail-on-drift`, the same computation `--write` performs, so a committed shard manifest or region that no longer matches the lock fails here instead of in CI's shard-receipt aggregator (2026-09-28: quality-code's manifest and six ci-quality.yml regions were stale and this check still printed ✓).
   try {
@@ -3191,8 +3706,8 @@ function main(argv: string[]): void {
  * that imported `bind` -- the probe's own output was 40 lines of someone else's selftest,
  * and a probe that had asserted anything would have died on the exit before reporting.
  *
- * W2.1's `gates.lock.json` generator and W2.2's shadow-gate core both import from here,
- * and neither can be written while importing the module means running the CLI.
+ * W2.1's `gates.lock.json` generator imports from here (the shadow-gate core that also did was deleted in commit:bf054adcd4),
+ * and it could not be written while importing the module meant running the CLI.
  *
  * `process.argv[1]` is the entry script; comparing its resolved path to this module's own
  * answers "was I run, or was I loaded" without depending on a bundler or a Node version

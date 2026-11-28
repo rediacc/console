@@ -22,6 +22,15 @@ WIDER THAN THE ORIGINAL ASK, said out loud: shellcheck and hadolint directives w
 WHAT IS DELIBERATELY NOT A MARKER: `# pragma: no cove[r]` (a coverage exclusion, not a lint finding being silenced), `# fmt: off`/`skip` (a formatter instruction), `eslint-enable` and `biome-ignore-end` (they CLOSE a suppression rather than open one), and anything in Markdown or JSON (an example is how a rule is taught).
 
 COUNTS FOR THE HOOKS, LINES FOR THE READER. `count_markers` keys on (kind, code) with a count, never a line, because the pre-edit hooks compare a file before and after an edit, and a move is not growth. The gate's refusal names each marker by file AND line (`locate_markers`); both read one match stream (`_iter_matches`), so the two cannot disagree about what a marker is.
+
+---- gate ----
+step: Inline suppression markers
+needs: submodules
+lane: quality-code
+selftest: true
+why: inline lint and type suppressions are banned (operator 2026-10-08); the tree holds zero and
+     the gate admits no baseline, so any marker, or a file at the retired baseline path, is red
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -753,3 +762,7 @@ def main(argv: list[str], root: pathlib.Path | None = None) -> int:
         )
     print("  out of scope (no linted code surface): %s" % ", ".join(OUT_OF_SCOPE))
     return rc
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

@@ -1,6 +1,6 @@
 """`rediacc_ci.release.validate_stage_artifacts` against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. `.ci/scripts/release/validate-stage-artifacts.sh` had no call site outside its own usage header; the K=5 ledger `.ci/shadow/w7p5a-validate-stage-artifacts.observations.jsonl` holds five rows of equivalence over five distinct trees, and `goldens/validate-stage-artifacts/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each
+THE TWIN HAS BEEN DELETED. `.ci/scripts/release/validate-stage-artifacts.sh` had no call site outside its own usage header; the K=5 ledger the ledger (deleted in commit:936280cd35) holds five rows of equivalence over five distinct trees, and `goldens/validate-stage-artifacts/` holds the twin's OWN recorded bytes, captured on its last day in the tree. Each
 golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 THE `$GITHUB_STEP_SUMMARY` FILE IS RECORDED TOO, under its own marker. It is this script's real product -- the streams carry only the `::error::` lines -- so a recording that held the streams alone would freeze the complaints and drop the report.

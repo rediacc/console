@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.derive_image_tag`, driven against the bytes its bash twin printed.
 
-WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/derive-image-tag.sh` and the port over the same disposable git repository and compared exit code, stdout, stderr, the fake `git`'s call log and the bytes appended to `$GITHUB_OUTPUT` and `$GITHUB_ENV`. The K=5 ledger `.ci/shadow/w7p6-derive-image-tag.observations.jsonl` recorded that comparison over five distinct
+WHILE BOTH COPIES EXISTED this file ran `.ci/scripts/ci/derive-image-tag.sh` and the port over the same disposable git repository and compared exit code, stdout, stderr, the fake `git`'s call log and the bytes appended to `$GITHUB_OUTPUT` and `$GITHUB_ENV`. The K=5 ledger the ledger (deleted in commit:936280cd35) recorded that comparison over five distinct
 trees. The twin has now been deleted and every case that executed it compares against `goldens/derive-image-tag/`, which holds the twin's OWN recorded bytes, captured from the tracked script on its last day in the tree. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 EVERY CASE RUNS IN A DISPOSABLE GIT REPOSITORY, NEVER IN THE CHECKOUT. The auto-derive arm reads `git tag -l 'v*'`, so running it here would make the expected answer whatever the console repo happens to be tagged at that hour -- a test that passes today and fails after the next release. `scratch_repo` builds a one-commit repository with exactly the tags a case needs, and

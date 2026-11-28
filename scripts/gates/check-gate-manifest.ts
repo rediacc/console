@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * check:ci-gate-manifest -- the ci-runner manifest describes itself honestly.
+ * check-gate-manifest -- the ci-runner manifest describes itself honestly.
  *
  * Four oracles (three over `scripts/ci-runner/manifest.ts`, one over the tree), all mechanical, all
  * offline. They exist because the pre-push lane's whole value rests on the
@@ -72,22 +72,9 @@
  *    Scope: tracked text files outside `agent/` (plans, ledgers and reviews are dated records by
  *    construction) and outside `.json`/`.jsonl` data, which cannot carry a comment.
  *
- * ---- gate ----
- * step: Gate manifest self-consistency
- * emit: false
- * blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
- * needs: node
- * selftest: true
- * why: The manifest is the pre-push lane's only source of truth about which
- *      gates are cheap and which files select them, and nothing re-reads it.
- *      Three oracles, each with both directions in --selftest: a `slow` claim
- *      must agree with the measured cache BOTH ways (a cheap gate marked slow
- *      is the invisible direction -- the push stays fast while coverage
- *      shrinks); a gate declaring paths must include its own leaves, or editing
- *      the gate does not select the gate; and a declared glob must match at
- *      least one tracked file. Found eight live leaf violations and one
- *      mis-tiered gate on its first run.
- * ---- end gate ----
+ * NO `---- gate ----` HEADER: this script is a leg of check:ci-gen-gates
+ * (`npm run gen:gates -- --check`, CHECK_LEGS in scripts/gen/gen-manifest.ts), which
+ * runs its --selftest and then its check, so it registers no gate of its own.
  */
 
 import { execFileSync } from 'node:child_process';

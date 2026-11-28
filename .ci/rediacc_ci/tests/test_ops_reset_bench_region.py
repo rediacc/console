@@ -7,9 +7,12 @@ import types
 import pytest
 
 from rediacc_ci.ops import bench_preflight, bench_production, reset_bench
+from rediacc_ci.ops.reset_bench import R2Credentials as RealR2Credentials
 
 SUB = "33333333-3333-4333-8333-333333333333"
 NAMES = bench_preflight.BenchNames("account-bench-us", "id-us", "configs-bench-us", "", "b", "")
+# An armed declaration that stops neither eu nor us: an empty one refuses every wipe (fail closed).
+ARMED = [bench_production.Protected(SUB, "m", "armed for the test", "asia")]
 
 
 def _auth() -> types.SimpleNamespace:
@@ -34,9 +37,16 @@ def _world(monkeypatch, declared, asked):
 
     class Creds:
         bucket = "configs-bench-us"
+        audit_bucket = "audit-bench-us"
 
         def __init__(self, region="eu"):
+            self.region = region
             asked.append(("creds", region))
+
+        def audit(self):
+            other = Creds(self.region)
+            other.bucket = self.audit_bucket
+            return other
 
         def missing(self):
             return []
@@ -45,8 +55,29 @@ def _world(monkeypatch, declared, asked):
     monkeypatch.setattr(
         reset_bench, "_wipe_d1", lambda _a, _e, region="eu": asked.append(("wipe_d1", region))
     )
-    monkeypatch.setattr(reset_bench, "_wipe_r2", lambda _c: asked.append(("wipe_r2",)))
+    monkeypatch.setattr(reset_bench, "_wipe_r2", lambda c: asked.append(("wipe_r2", c.bucket)))
     monkeypatch.setattr(reset_bench, "_rows", lambda _a, _s, _region="eu": [])
+
+
+def test_a_wipe_empties_the_config_bucket_and_the_audit_bucket(monkeypatch):
+    asked: list[tuple] = []
+    _world(monkeypatch, ARMED, asked)
+    assert reset_bench.main(["--region", "us", "--yes"]) == 0
+    assert [step for step in asked if step[0] == "wipe_r2"] == [
+        ("wipe_r2", "configs-bench-us"),
+        ("wipe_r2", "audit-bench-us"),
+    ]
+
+
+def test_a_config_without_an_audit_binding_says_no_audit_bucket_was_wiped(monkeypatch):
+    asked: list[tuple] = []
+    _world(monkeypatch, ARMED, asked)
+    monkeypatch.setattr(reset_bench.R2Credentials, "audit_bucket", "", raising=False)
+    warned: list[str] = []
+    monkeypatch.setattr(reset_bench.log, "warn", lambda m, *_a: warned.append(m))
+    assert reset_bench.main(["--region", "us", "--yes"]) == 0
+    assert [step for step in asked if step[0] == "wipe_r2"] == [("wipe_r2", "configs-bench-us")]
+    assert any("AUDIT_BUCKET" in m and "no audit bucket was wiped" in m for m in warned)
 
 
 def test_the_confirmation_phrase_names_every_region():
@@ -57,7 +88,7 @@ def test_the_confirmation_phrase_names_every_region():
 
 def test_a_us_wipe_reads_the_us_config_and_asks_the_us_phrase(monkeypatch):
     asked: list[tuple] = []
-    _world(monkeypatch, [], asked)
+    _world(monkeypatch, ARMED, asked)
     monkeypatch.setattr("builtins.input", lambda: "wipe bench-eu")
     assert reset_bench.main(["--region", "us"]) == 1
     assert ("wipe_d1", "us") not in asked
@@ -69,7 +100,7 @@ def test_a_us_wipe_reads_the_us_config_and_asks_the_us_phrase(monkeypatch):
 
 def test_the_default_region_asks_its_own_suffixed_phrase(monkeypatch):
     asked: list[tuple] = []
-    _world(monkeypatch, [], asked)
+    _world(monkeypatch, ARMED, asked)
     monkeypatch.setattr("builtins.input", lambda: "wipe bench")
     assert reset_bench.main([]) == 1
     assert ("wipe_d1", "eu") not in asked
@@ -92,9 +123,32 @@ def test_a_us_declaration_stops_the_us_wipe_and_not_the_eu_one(monkeypatch):
 @pytest.mark.parametrize("argv", [["--region", "all"], ["--region", "mars"], ["--region"]])
 def test_an_unknown_or_missing_region_exits_2_before_anything(monkeypatch, argv):
     asked: list[tuple] = []
-    _world(monkeypatch, [], asked)
+    _world(monkeypatch, ARMED, asked)
     assert reset_bench.main([*argv, "--yes"]) == 2
     assert asked == []
+
+
+def test_a_missing_wipe_pair_refuses_before_any_wipe(monkeypatch):
+    asked: list[tuple] = []
+    _world(monkeypatch, ARMED, asked)
+    # Review 7b8d4333.2: the base is the class imported at module load (line 10), never the Creds fake `_world` just patched in, so Unbound runs the real constructor.
+    assert RealR2Credentials is not reset_bench.R2Credentials
+    assert RealR2Credentials.__module__ == reset_bench.__name__
+
+    class Unbound(RealR2Credentials):
+        def __init__(self, region: str = "eu") -> None:
+            monkeypatch.delenv("BENCH_WIPE_R2_ACCESS_KEY_ID", raising=False)
+            monkeypatch.delenv("BENCH_WIPE_R2_SECRET_ACCESS_KEY", raising=False)
+            monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://abc.r2.cloudflarestorage.com")
+            super().__init__(region)
+            self.bucket = self.bucket or "configs-bench-us"
+
+    monkeypatch.setattr(reset_bench, "R2Credentials", Unbound)
+    messages: list[str] = []
+    monkeypatch.setattr(reset_bench.log, "error", lambda m, *_a: messages.append(m))
+    assert reset_bench.main(["--region", "us", "--yes"]) == 1
+    assert not any(step[0] in ("wipe_d1", "wipe_r2") for step in asked)
+    assert any("BENCH_WIPE_R2_ACCESS_KEY_ID" in m and "nothing was wiped" in m for m in messages)
 
 
 def test_the_help_names_the_region_flag():

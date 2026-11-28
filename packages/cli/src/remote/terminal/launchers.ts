@@ -7,6 +7,11 @@ import { shellQuote } from '../../utils/shell-quote.js';
 import type { TerminalLaunchOptions, TerminalType } from '../types/index.js';
 import { getPlatform, isWSL } from '../utils/platform.js';
 import { findMSYS2Installation } from './detector.js';
+import {
+  discardCmdLaunchFile,
+  powershellEncodedCommand,
+  writeCmdLaunchFile,
+} from './windows-launch.js';
 
 /**
  * Launch result
@@ -73,32 +78,26 @@ export function windowsQuoteArg(arg: string): string {
   return `${out}${'\\'.repeat(backslashes * 2)}"`;
 }
 
-/** A Windows command line for `argv`, before any cmd.exe escaping. */
-export function windowsCommandLine(argv: string[]): string {
-  return argv.map(windowsQuoteArg).join(' ');
-}
-
-/** A command line escaped for cmd.exe: each metacharacter carries a caret, so cmd passes it on literally. */
-export function cmdEscape(commandLine: string): string {
-  return commandLine.replaceAll(/[()%!^"<>&|]/g, '^$&');
-}
-
-/** Windows Terminal splits its own command line on `;`; an escaped one passes through. */
-function wtEscape(commandLine: string): string {
-  return commandLine.replaceAll(';', '\\;');
-}
-
 /**
- * A PowerShell script that runs `argv` through the stop-parsing token, so the
- * Windows command line reaches the program verbatim on every PowerShell
- * version, and its `-EncodedCommand` form (UTF-16LE, base64), so the script
- * itself crosses powershell.exe's own command line without quoting.
+ * Spawns a Windows terminal that runs `argv` from a temp `.cmd` file: the
+ * file's second line deletes `cleanupFiles` and the file itself, and only its
+ * path crosses the terminal's own command line. `keepOpen` keeps the window
+ * (`/k`) after the command ends.
  */
-export function powershellEncodedCommand(argv: string[], keepOpen: boolean): string {
-  const [program, ...args] = argv;
-  const run = `& '${program.replaceAll("'", "''")}' --% ${windowsCommandLine(args)}`;
-  const script = keepOpen ? run : `${run}\nRead-Host -Prompt 'Press Enter to exit'`;
-  return Buffer.from(script, 'utf16le').toString('base64');
+function launchCmdScript(
+  program: string,
+  leading: string[],
+  options: TerminalLaunchOptions
+): LaunchResult {
+  const script = writeCmdLaunchFile(options.argv, options.cleanupFiles ?? []);
+  const run = ['/k', 'call', `"${script}"`];
+  if (!options.keepOpen) run[0] = '/c';
+  const result = spawnDetached(program, [...leading, ...run], options, {
+    cwd: options.workingDirectory,
+    windowsVerbatimArguments: true,
+  });
+  if (!result.success) discardCmdLaunchFile(script);
+  return result;
 }
 
 /**
@@ -249,31 +248,31 @@ const launchers: Record<TerminalType, LauncherFn> = {
     return spawnDetached('osascript', ['-e', script], options);
   },
 
-  'windows-terminal': (options) => {
-    const args: string[] = [];
-    if (options.title) {
-      args.push('--title', windowsQuoteArg(options.title));
-    }
-    args.push('cmd.exe', '/k', wtEscape(cmdEscape(windowsCommandLine(options.argv))));
-    return spawnDetached('wt.exe', args, options, {
-      cwd: options.workingDirectory,
-      windowsVerbatimArguments: true,
-    });
-  },
+  'windows-terminal': (options) =>
+    launchCmdScript(
+      'wt.exe',
+      [
+        ...(options.title
+          ? ['--title', windowsQuoteArg(options.title).replaceAll(';', '\\;')]
+          : []),
+        'cmd.exe',
+      ],
+      options
+    ),
 
   powershell: (options) =>
     spawnDetached(
       'powershell.exe',
-      ['-NoExit', '-EncodedCommand', powershellEncodedCommand(options.argv, !!options.keepOpen)],
+      [
+        '-NoExit',
+        '-EncodedCommand',
+        powershellEncodedCommand(options.argv, !!options.keepOpen, options.cleanupFiles),
+      ],
       options,
       { cwd: options.workingDirectory }
     ),
 
-  cmd: (options) =>
-    spawnDetached('cmd.exe', ['/k', cmdEscape(windowsCommandLine(options.argv))], options, {
-      cwd: options.workingDirectory,
-      windowsVerbatimArguments: true,
-    }),
+  cmd: (options) => launchCmdScript('cmd.exe', [], options),
 
   mintty: (options) => {
     const msys2Path = findMSYS2Installation();
@@ -338,7 +337,11 @@ export function launchTerminal(
   options: TerminalLaunchOptions
 ): LaunchResult {
   const launcher = launchers[terminalType];
-  return launcher(options);
+  try {
+    return launcher(options);
+  } catch (error) {
+    return { success: false, error: error instanceof Error ? error.message : String(error) };
+  }
 }
 
 /**

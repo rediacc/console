@@ -1,6 +1,6 @@
 """`rediacc_ci.quality.env_register`, the `npm run env:register` verb, against a fixture repository.
 
-Every case points the verb at a tmp git repository through `REDIACC_CI_ROOT` and hands it a RECORDING runner, so the subprocess steps (the typed `--allow-new`, gen-docs, the three gates) are asserted by their exact argv and order and never run against the real tree. The authored files are real JSON in the fixture, and each refusal case asserts their bytes are unchanged, which is the "refused and writes nothing" half of the contract.
+Every case points the verb at a tmp git repository through `REDIACC_CI_ROOT` and hands it a RECORDING runner, so the subprocess steps (the typed `--allow-new`, gen-docs, check:ci-env-registry) are asserted by their exact argv and order and never run against the real tree. The one registry document is real JSON in the fixture, and each refusal case asserts its bytes are unchanged, which is the "refused and writes nothing" half of the contract.
 """
 
 from __future__ import annotations
@@ -14,8 +14,11 @@ import sys
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.quality import env_doc
 from rediacc_ci.quality import env_manifest as em
 from rediacc_ci.quality import env_register as er
+
+DOC = env_doc.DOC_REL
 
 # Rendered, never written out: test_gate_shrink_only_composition.py reads the contiguous flag in a .py file as a baseline writer that bypasses the guard (test_gate_language_policy.py keeps the same constant for the same reason).
 DRAIN_FLAG = "--write-" + "baseline"
@@ -35,7 +38,12 @@ def _manifest():
     shards["harness"] = ["WORKLIST_OLD"]
     shards["gate-seam"] = ["OLD_SEAM"]
     shards["tombstone"] = ["DEAD_NAME"]
-    return {"_comment": ["fixture"], "shards": shards}
+    return {
+        "_comment": ["fixture"],
+        "shards": shards,
+        "python_reads": {"note": "fixture", "modules": {"src/hook.py": ["WORKLIST_OLD"]}},
+        "worklist": _registry(),
+    }
 
 
 def _registry():
@@ -53,12 +61,7 @@ def _registry():
 def repo(tmp_path, monkeypatch):
     root = tmp_path / "repo"
     files = {
-        em.MANIFEST_REL: json.dumps(_manifest(), indent=2) + "\n",
-        ".ci/policy/worklist-env-registry.json": json.dumps(_registry(), indent=2) + "\n",
-        em.PYTHON_ENV_REL: json.dumps(
-            {"note": "fixture", "modules": {"src/hook.py": ["WORKLIST_OLD"]}}, indent=2
-        )
-        + "\n",
+        DOC: env_doc.dump(_manifest()),
         "src/hook.py": HOOK_PY,
         "src/tool.py": TOOL_PY,
         "src/gate.ts": GATE_TS,
@@ -90,16 +93,16 @@ class Recorder:
 
 
 def _bank(root, module, name):
-    """Record `module:name` in the fixture's python-env baseline, so a test about ONE name is not blocked by the fixture's other pending reads."""
-    path = root / em.PYTHON_ENV_REL
+    """Record `module:name` in the fixture's `python_reads`, so a test about ONE name is not blocked by the fixture's other pending reads."""
+    path = root / DOC
     body = json.loads(path.read_text(encoding="utf-8"))
-    body["modules"][module] = sorted([*body["modules"].get(module, []), name])
-    path.write_text(json.dumps(body, indent=2) + "\n", encoding="utf-8")
+    modules = body["python_reads"]["modules"]
+    modules[module] = sorted([*modules.get(module, []), name])
+    path.write_text(env_doc.dump(body), encoding="utf-8")
 
 
 def _snapshot(root):
-    rels = (em.MANIFEST_REL, ".ci/policy/worklist-env-registry.json", em.PYTHON_ENV_REL)
-    return {rel: (root / rel).read_bytes() for rel in rels}
+    return {DOC: (root / DOC).read_bytes()}
 
 
 def _json(root, rel):
@@ -129,21 +132,18 @@ def test_a_new_worklist_flag_is_written_rendered_recorded_and_checked(repo):
         runner=rec,
     )
     assert rc == 0
-    entry = _json(repo, ".ci/policy/worklist-env-registry.json")["names"]["WORKLIST_NEW_FLAG"]
+    entry = _json(repo, DOC)["worklist"]["names"]["WORKLIST_NEW_FLAG"]
     assert entry == {"kind": "flag", "class": "gate-seam", "defaults": ["'on'"], "why": FLAG_WHY}
     shards = _json(repo, em.MANIFEST_REL)["shards"]
     assert shards["gate-seam"] == ["OLD_SEAM", "WORKLIST_NEW_FLAG"], "rendered into its class shard"
     assert shards["harness"] == ["WORKLIST_OLD"]
     # Steps 4, 5 and 6, in order, with the exact arguments.
-    assert rec.calls[0][1:] == [
-        str(repo / ".ci/scripts/quality/check_python_env_registry.py"),
-        DRAIN_FLAG,
-        "--allow-new",
-        "src/hook.py:WORKLIST_NEW_FLAG",
-    ]
+    assert rec.calls[0] == er.module_cmd(
+        er.WRITER_MODULE, DRAIN_FLAG, "--allow-new", "src/hook.py:WORKLIST_NEW_FLAG"
+    )
     assert rec.calls[1] == ["npm", "run", "-s", "gen:docs", "--", "--write"]
-    assert [pathlib.PurePosixPath(c[1]).name for c in rec.calls[2:]] == list(er.GATES)
-    assert len(rec.calls) == 5
+    assert rec.calls[2] == er.module_cmd(er.GATE_MODULE), "the one gate, check:ci-env-registry"
+    assert len(rec.calls) == 3
 
 
 def test_control_a_flag_with_no_why_is_refused_and_writes_nothing(repo):
@@ -191,7 +191,7 @@ def test_control_a_non_py_module_skips_allow_new(repo):
     assert rc == 0
     assert not any("--allow-new" in c for call in rec.calls for c in call), rec.calls
     assert rec.calls[0] == ["npm", "run", "-s", "gen:docs", "--", "--write"]
-    foreign = _json(repo, ".ci/policy/worklist-env-registry.json")["foreign_reads"]
+    foreign = _json(repo, DOC)["worklist"]["foreign_reads"]
     assert foreign == {
         "WORKLIST_TS_ONLY": {"class": "gate-seam", "reader": "src/gate.ts", "why": FLAG_WHY}
     }
@@ -363,7 +363,7 @@ def test_a_rerun_for_a_registered_recorded_name_writes_nothing(repo):
 
 def test_a_refused_allow_new_stops_before_the_docs(repo):
     _bank(repo, "src/hook.py", "WORKLIST_NEW_FLAG")
-    rec = Recorder({"check_python_env_registry.py": 1})
+    rec = Recorder({er.WRITER_MODULE: 1})
     rc = er.main(["src/tool.py", "NEW_SEAM", "--class", "gate-seam"], runner=rec)
     assert rc == 1
     assert len(rec.calls) == 1, "gen-docs and the gates do not run after a refused addition"
@@ -371,9 +371,9 @@ def test_a_refused_allow_new_stops_before_the_docs(repo):
 
 def test_a_red_gate_after_registration_is_exit_1(repo):
     _bank(repo, "src/hook.py", "WORKLIST_NEW_FLAG")
-    rec = Recorder({"check_env_manifest.py": 1})
+    rec = Recorder({er.GATE_MODULE: 1})
     assert er.main(["src/tool.py", "NEW_SEAM", "--class", "gate-seam"], runner=rec) == 1
-    assert len(rec.calls) == 5, "every gate still runs, so every verdict is printed"
+    assert len(rec.calls) == 3, "the writer, gen-docs and the gate each ran once"
 
 
 @pytest.mark.parametrize(
@@ -399,17 +399,16 @@ def test_malformed_invocations_are_refused_and_write_nothing(repo, argv):
     assert rec.calls == []
 
 
-REAL_GATE = (
-    pathlib.Path(__file__).resolve().parents[2] / "scripts/quality/check_python_env_registry.py"
-)
+CI_DIR = pathlib.Path(__file__).resolve().parents[2]
 
 
 def _real_python_env_runner(cmd, cwd):
-    """Runs the REAL python-env registry gate (against the fixture root) and fakes every other step."""
-    if not any(str(c).endswith("check_python_env_registry.py") for c in cmd):
+    """Runs the REAL `python_reads` writer (against the fixture root) and fakes every other step."""
+    cmd = [str(c) for c in cmd]
+    if er.WRITER_MODULE not in cmd:
         return 0, "", "faked"
-    cmd = [sys.executable, str(REAL_GATE), *[str(c) for c in cmd[2:]]]
-    env = dict(os.environ, PYTHONPATH=str(REAL_GATE.parents[2]))
+    cmd = [sys.executable, "-m", er.WRITER_MODULE, *cmd[cmd.index(er.WRITER_MODULE) + 1 :]]
+    env = dict(os.environ, PYTHONPATH=str(CI_DIR))
     proc = subprocess.run(cmd, cwd=str(cwd), capture_output=True, text=True, env=env, check=False)
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -426,8 +425,13 @@ def _two_new_reads(repo):
 
 
 def _gate_rc(repo):
-    rc, _, _ = _real_python_env_runner([sys.executable, "check_python_env_registry.py"], repo)
-    return rc
+    """The REAL `python_reads` check on the fixture root, in a child process."""
+    code = "from rediacc_ci.quality import python_env_registry as m; raise SystemExit(m.check())"
+    env = dict(os.environ, PYTHONPATH=str(CI_DIR))
+    proc = subprocess.run(
+        [sys.executable, "-c", code], cwd=str(repo), capture_output=True, env=env, check=False
+    )
+    return proc.returncode
 
 
 def test_two_names_in_one_call_register_both_and_the_real_registry_gate_goes_green(repo):
@@ -459,7 +463,7 @@ def test_two_names_in_one_call_register_both_and_the_real_registry_gate_goes_gre
         == 0
     )
     assert _gate_rc(repo) == 0
-    recorded = _json(repo, em.PYTHON_ENV_REL)["modules"]["src/pair.py"]
+    recorded = _json(repo, DOC)["python_reads"]["modules"]["src/pair.py"]
     assert recorded == ["PAIR_ONE", "PAIR_TWO"]
 
 
@@ -479,7 +483,7 @@ def test_the_single_name_path_is_unchanged_when_nothing_else_is_pending(repo):
     rec = Recorder()
     assert er.main(["src/pair.py", "PAIR_ONE", "--class", "gate-seam"], runner=rec) == 0
     assert rec.calls[0][-2:] == ["--allow-new", "src/pair.py:PAIR_ONE"]
-    assert len(rec.calls) == 5
+    assert len(rec.calls) == 3
 
 
 def test_several_names_refuse_worklist_only_flags_and_duplicates(repo):
@@ -488,3 +492,14 @@ def test_several_names_refuse_worklist_only_flags_and_duplicates(repo):
     assert er.main([*argv, "--kind", "path"], runner=Recorder()) == 2
     assert er.main([*argv, "PAIR_ONE"], runner=Recorder()) == 2
     assert _snapshot(repo) == before
+
+
+def test_the_printed_verdict_is_the_gates_stderr_line_not_its_stdout_table():
+    """The gate logs its verdict on stderr and prints shape tables on stdout; the verdict line is the stderr one."""
+    out = "  shards table\n  packages/cli/x.test.ts -> NAME\n"
+    err = "env registry: controls first\n✓ env registry: 3 section(s) green\n"
+    assert er._verdict(out, err) == "✓ env registry: 3 section(s) green"
+    assert er._verdict(out, "") == "packages/cli/x.test.ts -> NAME", (
+        "stdout only when stderr is empty"
+    )
+    assert er._verdict("", "") == "(no output at all)"

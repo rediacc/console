@@ -250,6 +250,38 @@ export interface RankInput {
   classes: readonly string[];
   /** T*: today's order, simulated. */
   makespanMs: number;
+  /** K2: the gates whose carry-exempt.json kind is `clock` or `network` (`reuseFloor`). Each that fits the preflight cap joins the preflight whatever the learned model says of it, ahead of the learned candidates. */
+  floor?: ReadonlySet<string>;
+  /** K3, `--resume`: the newest receipt's `failed` gates (`resumeOf`); they take the pinned slot, so they start first. */
+  failedFirst?: readonly string[];
+  /** K3: the selected gates no held receipt judged at this input hash (`resumeOf`); they outrank every other unpinned gate, so they start right after the failed ones and the preflight. */
+  neverRan?: ReadonlySet<string>;
+}
+
+/** The kinds that make a gate's verdict depend on the world rather than the tree and are cheap enough to judge first: a stale pin is a clock or a network fact, and the red costs seconds in the preflight against minutes at the tail. */
+const FLOOR_KINDS: ReadonlySet<string> = new Set(['clock', 'network']);
+
+/** K2: the preflight floor from carry-exempt.json's rows (input-hash.ts `exemptRowsOf`: id to kind). The kinds, not gate ids, name the set. */
+export function reuseFloor(rows: ReadonlyMap<string, string | null>): Set<string> {
+  const out = new Set<string>();
+  for (const [id, kind] of rows) if (kind !== null && FLOOR_KINDS.has(kind)) out.add(id);
+  return out;
+}
+
+/** The value a never-run gate gains: above any p_red / max(wall, 1 s), which is at most 1 / 1000. */
+const NEVER_RAN_BOOST = 1;
+
+/**
+ * K3, `--resume`: split what is about to run by what the newest receipt knows. `failed` is that receipt's red list (a red never carries, so every one of them is in `run`); `neverRan` is the rest of `run`: `run` is what the carry plan could not carry, so these are gates with no verdict at this input hash in any held receipt (a gate an older held receipt passed at this hash carries and is not in `run`), plus the carry-exempt gates, which never carry. A failed id outside `run` is dropped: nothing will launch it.
+ */
+export function resumeOf(
+  lastFailed: readonly string[] | undefined,
+  run: readonly string[]
+): { failedFirst: string[]; neverRan: Set<string> } {
+  const runSet = new Set(run);
+  const failedFirst = [...new Set(lastFailed ?? [])].filter((id) => runSet.has(id));
+  const red = new Set(failedFirst);
+  return { failedFirst, neverRan: new Set(run.filter((id) => !red.has(id))) };
 }
 
 /** The learned order plus what the stream reports: stage 1 and each gate's p_red. */
@@ -314,6 +346,8 @@ export function buildOrder(
     for (const r of input.mutex.get(id) ?? []) serial.set(r, (serial.get(r) ?? 0) + w0(id));
   const threshold = LONG_FRACTION * input.makespanMs;
   const pinned = new Set<string>(extraPins);
+  const gateSet = new Set(ids);
+  for (const id of input.failedFirst ?? []) if (gates.has(id) && gateSet.has(id)) pinned.add(id);
   for (const id of ids) {
     const chain = up(id) + down(id) - w0(id);
     let group = 0;
@@ -327,7 +361,10 @@ export function buildOrder(
   for (const id of ids) {
     const pr = gates.has(id) ? pRed(model, id, input.classes, prior) : 0;
     p.set(id, pr);
-    value.set(id, pr / Math.max(w0(id), MIN_VALUE_WALL_MS));
+    value.set(
+      id,
+      pr / Math.max(w0(id), MIN_VALUE_WALL_MS) + (input.neverRan?.has(id) ? NEVER_RAN_BOOST : 0)
+    );
   }
   const lifted = new Map<string, number>();
   const lift = (id: string, seen = new Set<string>()): number => {
@@ -350,17 +387,18 @@ export function buildOrder(
     for (const [id, pa] of Object.entries(model.associations[c] ?? {}))
       if (pa >= ASSOC_MIN_P) associated.add(id);
   const inGraph = new Set(ids);
-  const candidates = [...new Set([...model.clock_set, ...associated])]
-    .filter(
-      (id) =>
-        inGraph.has(id) &&
-        gates.has(id) &&
-        !pinned.has(id) &&
-        (needs.get(id) ?? []).length === 0 &&
-        wall(id) !== undefined &&
-        w0(id) <= PREFLIGHT_MAX_GATE_MS
-    )
-    .sort(byValue);
+  const floor = input.floor ?? new Set<string>();
+  const fits = (id: string): boolean =>
+    inGraph.has(id) &&
+    gates.has(id) &&
+    !pinned.has(id) &&
+    (needs.get(id) ?? []).length === 0 &&
+    wall(id) !== undefined &&
+    w0(id) <= PREFLIGHT_MAX_GATE_MS;
+  // The floor is admitted first, so the learned candidates can never crowd it out of the cap; one over PREFLIGHT_MAX_GATE_MS fails `fits` and stays stage 1.
+  const candidates = [...new Set([...floor, ...model.clock_set, ...associated])]
+    .filter(fits)
+    .sort((a, b) => Number(floor.has(b)) - Number(floor.has(a)) || byValue(a, b));
   let pinnedWidth = 0;
   for (const id of pinned) if (inGraph.has(id)) pinnedWidth += input.width(id);
   const freeCores = Math.max(1, Math.floor(input.cores - pinnedWidth));
@@ -640,6 +678,86 @@ export function rankSelftest(): { failures: string[]; assertions: number } {
   check(
     !unpinned.on && /simulated \+5s/.test(unpinned.reason),
     `CONTROL: with no pins allowed the slower order must turn ranking OFF by its simulated delta, got ${JSON.stringify(unpinned)}`
+  );
+  // K2, THE PREFLIGHT FLOOR: a clock or network gate under the cap joins the preflight whatever the model says (here p_red 0.05 and in neither clock_set nor an association); one over PREFLIGHT_MAX_GATE_MS stays out; with no floor the same gate is not preflight.
+  const floorModel: ModelV1 = {
+    ...model,
+    gates: { ...model.gates, 'fx:net-slow': gate(20, 0.0, 118_000) },
+  };
+  const floorIds = [...ids, 'fx:net-slow'];
+  const floored = buildOrder({
+    ...input,
+    model: floorModel,
+    ids: floorIds,
+    gates: new Set(floorIds),
+    floor: new Set(['fx:mid', 'fx:net-slow']),
+  });
+  check(
+    floored.preflight.includes('fx:mid'),
+    `K2: a floor gate under the cap must be preflight, got ${floored.preflight.join(',')}`
+  );
+  check(
+    !floored.preflight.includes('fx:net-slow'),
+    `K2: a floor gate over the 90 s cap must stay out of the preflight, got ${floored.preflight.join(',')}`
+  );
+  check(
+    !buildOrder({ ...input, floor: new Set() }).preflight.includes('fx:mid'),
+    'K2 CONTROL: without the floor the same gate is not preflight'
+  );
+  const crowded = buildOrder({
+    ...input,
+    model: { ...model, clock_set: ['fx:clock', 'fx:assoc', 'fx:mid'] },
+    cores: 1,
+    floor: new Set(['fx:quiet']),
+  });
+  check(
+    crowded.preflight[0] === 'fx:quiet',
+    `K2: the floor is admitted before the learned candidates, got ${crowded.preflight.join(',')}`
+  );
+  const kinds = new Map<string, string | null>([
+    ['fx:a', 'clock'],
+    ['fx:b', 'network'],
+    ['fx:c', 'history'],
+    ['fx:d', 'cache'],
+    ['fx:e', null],
+  ]);
+  check(
+    [...reuseFloor(kinds)].sort((x, y) => Number(x > y) - Number(x < y)).join() === 'fx:a,fx:b',
+    `K2: only the clock and network kinds form the floor, got ${[...reuseFloor(kinds)].join(',')}`
+  );
+
+  // K3, --resume: the newest receipt's red gate starts first (pinned), the never-run gates outrank the rest of the unpinned, and an empty failed list keeps the learned order.
+  const resume = resumeOf(['fx:quiet', 'fx:gone'], ['fx:quiet', 'fx:mid', 'fx:cheap-red']);
+  check(
+    resume.failedFirst.join() === 'fx:quiet' &&
+      !resume.neverRan.has('fx:quiet') &&
+      resume.neverRan.has('fx:mid') &&
+      resume.neverRan.has('fx:cheap-red'),
+    `K3: resumeOf must keep a failed gate that will run, drop one that will not, and call the rest never run, got ${JSON.stringify([resume.failedFirst, [...resume.neverRan]])}`
+  );
+  const resumed = buildOrder({ ...input, failedFirst: ['fx:quiet'] });
+  check(
+    resumed.pinned.has('fx:quiet') && resumed.pinned.has('fx:long'),
+    `K3: the failed gate must take the pinned slot, got ${[...resumed.pinned].join(',')}`
+  );
+  check(
+    !resumed.preflight.includes('fx:quiet') && !resumed.stage1.includes('fx:quiet'),
+    'K3: a pinned failed gate is in neither stage, it starts first'
+  );
+  check(
+    !buildOrder({ ...input, failedFirst: [] }).pinned.has('fx:quiet') &&
+      buildOrder({ ...input, failedFirst: [] }).stage1.join() === order.stage1.join(),
+    'K3 CONTROL: an empty failed list keeps the learned order'
+  );
+  const never = buildOrder({ ...input, neverRan: new Set(['fx:mid']) });
+  check(
+    never.stage1[0] === 'fx:mid' &&
+      (never.value.get('fx:mid') ?? 0) > (never.value.get('fx:cheap-red') ?? 1),
+    `K3: a never-run gate must outrank the learned leader in stage 1, got ${never.stage1.join(',')}`
+  );
+  check(
+    order.stage1[0] === 'fx:cheap-red',
+    'K3 CONTROL: with no never-run set the cheap red still leads'
   );
   return { failures, assertions };
 }

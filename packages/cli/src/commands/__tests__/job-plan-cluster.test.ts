@@ -86,7 +86,7 @@ vi.mock('../../services/cluster/kvm-provisioner.js', () => ({
 }));
 vi.mock('../../services/renet/machine-bootstrap.js', () => ({
   bootstrapMachine: provision.bootstrap,
-  scanHostKeys: () => '',
+  scanHostKeys: () => Promise.reject(new Error('host-key scan is not exercised here')),
   waitForSSH: () => Promise.resolve(),
 }));
 vi.mock('../../services/config/network-id-discovery.js', () => ({
@@ -101,7 +101,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
 }));
 vi.mock('../../services/executor/local-executor.js', () => ({ parseCapturedJson: JSON.parse }));
 vi.mock('../../utils/command-policy.js', () => ({
-  assertCommandPolicy: vi.fn().mockResolvedValue(undefined),
+  enforceResolvedTarget: vi.fn().mockResolvedValue(undefined),
   CMD: {
     DATASTORE_RESIZE: 'datastore resize',
     DATASTORE_CREATE: 'datastore create',

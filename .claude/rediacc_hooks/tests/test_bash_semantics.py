@@ -1273,40 +1273,35 @@ def test_rule_t_verdict(item, stem, cmd, want):
     )
 
 
-# A COMMENT THAT SORTS ROWS IS A CLAIM ABOUT VERDICTS (#32e75fa4, review 4aad4597.3). block_ssh_docker's EDGE_CASES once headed a run of rows "what the payload reading must not refuse" while three of them were refused, so a reader trusting the heading would take a deny for a regression. Each heading below names the verdict of every row up to the next comment line.
+# A COMMENT THAT SORTS ROWS IS A CLAIM ABOUT VERDICTS (#32e75fa4, review 4aad4597.3). block_ssh_docker's EDGE_CASES once headed a run of rows "what the payload reading must not refuse" while three of them were refused, so a reader trusting the heading would take a deny for a regression. Each heading below names the verdict of every row up to the next comment row. The table lives in tests/fixtures/guards/block_ssh_docker.json, where a heading is a `{"//": text}` row; fixtures/guards/loader.py drops those on load, so this test reads the raw list.
 _SSH_DOCKER_GROUPS = (
-    ("# ... and the argv shapes ssh_remote_commands has to parse", 2),
-    ("# What the payload reading must NOT refuse", 0),
+    ("... and the argv shapes ssh_remote_commands has to parse", 2),
+    ("What the payload reading must NOT refuse", 0),
 )
 
 
 def test_ssh_docker_edge_case_headings_match_verdicts():
-    path = HOOKS / "guards" / "block_ssh_docker.py"
-    src = path.read_text()
-    lines = src.splitlines()
-    tree = ast.parse(src)
-    rows = next(
-        node.value
-        for node in tree.body
-        if isinstance(node, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id == "EDGE_CASES" for t in node.targets)
-    )
-    assert isinstance(rows, ast.List)
+    path = HOOKS / "tests" / "fixtures" / "guards" / "block_ssh_docker.json"
+    rows = json.loads(path.read_text(encoding="utf-8"))["EDGE_CASES"]
+    assert isinstance(rows, list)
     checked = 0
     for heading, want in _SSH_DOCKER_GROUPS:
         start = next(
-            (i + 1 for i, line in enumerate(lines) if line.strip().startswith(heading)), None
+            (
+                i
+                for i, row in enumerate(rows)
+                if isinstance(row, dict) and row.get("//", "").startswith(heading)
+            ),
+            None,
         )
-        assert start is not None, "block_ssh_docker.py lost the heading %r" % heading
-        end = next(
-            (i + 1 for i, line in enumerate(lines) if i >= start and line.strip().startswith("#")),
-            len(lines) + 1,
-        )
-        group = [row for row in rows.elts if start < row.lineno < end]
+        assert start is not None, "block_ssh_docker.json lost the heading %r" % heading
+        group = []
+        for row in rows[start + 1 :]:
+            if isinstance(row, dict):
+                break
+            group.append(row)
         assert group, "no EDGE_CASES row under %r" % heading
-        for row in group:
-            assert isinstance(row, ast.Tuple)
-            name, cmd = (ast.literal_eval(e) for e in row.elts)
+        for name, cmd in group:
             rc, _out, _err = dispatch.run_one(
                 "block_ssh_docker",
                 json.dumps({"tool_input": {"command": cmd}}),

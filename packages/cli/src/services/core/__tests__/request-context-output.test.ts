@@ -7,7 +7,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   type CommandRequestContext,
+  commandOutcome,
   createOutputState,
+  currentExitCode,
   joinStdout,
   runInRequestContext,
   setExitCode,
@@ -85,5 +87,48 @@ describe('joinStdout', () => {
     expect(
       Buffer.from(joined.bytes ?? new Uint8Array()).equals(Buffer.from([0x78, 0xff, 0x0a]))
     ).toBe(true);
+  });
+});
+
+describe('currentExitCode and commandOutcome', () => {
+  const saved = process.exitCode;
+  afterEach(() => {
+    process.exitCode = saved;
+  });
+
+  it('inside a dispatch reads only the request code, never the executor process.exitCode', async () => {
+    process.exitCode = 9;
+    await runInRequestContext(context(), () => {
+      expect(currentExitCode()).toBeUndefined();
+      expect(commandOutcome(5)).toEqual({ success: true, exitCode: 0, duration: 5 });
+      return Promise.resolve();
+    });
+  });
+
+  it('outside a dispatch reads process.exitCode, and a nonzero code is a failed span', () => {
+    process.exitCode = 3;
+    expect(currentExitCode()).toBe(3);
+    expect(commandOutcome(7)).toEqual({
+      success: false,
+      exitCode: 3,
+      error: 'The command exited with code 3.',
+      duration: 7,
+    });
+  });
+
+  it('a nonzero code that is not an integer still fails, as exit 1', async () => {
+    const ctx = context();
+    ctx.exitCode = 1.5;
+    await runInRequestContext(ctx, () => {
+      expect(currentExitCode()).toBe(1);
+      expect(commandOutcome(1).success).toBe(false);
+      return Promise.resolve();
+    });
+    const nan = context();
+    nan.exitCode = Number.NaN;
+    await runInRequestContext(nan, () => {
+      expect(currentExitCode()).toBe(1);
+      return Promise.resolve();
+    });
   });
 });

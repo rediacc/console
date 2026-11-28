@@ -1,12 +1,14 @@
 """wl_worktrees: the Stop hook follows lease trees (agent/plans/PLAN-worktree-lease.md Design 7).
 
-`survey` joins three sources per store, the console's and each `<common>/modules/**` one: `git worktree list --porcelain`, the pins under `refs/worktrees/`, and the records in `<common>/rediacc-worktrees/<id>.json`. wl_checks turns the answer into `worktree-unlanded` (block, owner session only) and `worktree-orphan` (advisory, which also carries a peer's lease as one line).
+`survey` joins three sources per store, the console's and each `<common>/modules/**` one: `git worktree list --porcelain`, the pins under `refs/worktrees/`, and the records in `<common>/rediacc-worktrees/<id>.json`. wl_checks turns the answer into `worktree-unlanded` (block, the owner session only, except a landing-cut lease, which blocks its lander and never its owner) and `worktree-orphan` (advisory, which also carries a peer's lease as one line).
 
-THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (the session id or its prefix), `agent` (the id inside `agent-<id>`, or ""), `base` ({"." or `private/<name>`: sha}) and `created_at`.
+THE RECORD, read here and written by the `lease` verb: `id`, `path`, `owner` (the session id or its prefix), `agent` (the id inside `agent-<id>`, or ""), `base` ({"." or `private/<name>`: sha}), `tree` (`development` or `landing`, the `--tree` it was cut with), `cut_from` and `created_at`, and optionally `lander`.
+
+A LANDING-CUT LEASE IS ITS LANDER'S TO LAND (agent/plans/PLAN-simple-two-tree-loop.md D5, box B7). The development session cuts a lease with `--tree landing` to fix a failure the landing session handed over, and owns it; the landing session lands it once. So such a lease counts as unlanded for its lander only: the session the record's `lander` names, else any session whose own tree is the landing tree (`role` == `landing`). The owner's stop lists it as handed over and never blocks on it, so neither session's stop waits on the other's half.
 
 LIVENESS COMES FROM THE ROSTER. A subagent's shell does not live between tool calls, so an empty cwd list proves nothing. A lease is held by a live roster row (by `agent`, or by the meta's recorded tree), by a worklist `[>]` item naming it, or by a process inside it. A blind roster says nothing, and a lease is never accused on a blind reading.
 
-LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip. The live tip is the HEAD of the tree the survey stands in (`_tip_row`).
+LANDED IS NOT `wl_scratch.git_doubt`, whose `--not --remotes` reads every commit landed on the unpushed live branch as undelivered. A commit counts as landed by `git cherry` against the live tip, or by its `(cherry picked from commit <sha>)` line on a local branch or the live tip. The live tip is the HEAD of the tree the survey stands in (`_tip_row`), except for a lease whose record's `cut_from` is the landing record's branch: its commits land on that branch, so they are judged against `refs/heads/<landing branch>` in each of its repos (`landing_tips`, R20261123.7). A landing branch a repo does not hold is a doubt, never a silent fall back to the development tip.
 
 THE LANDING TREE IS NO LEASE (agent/plans/PLAN-two-track-merge-dev.md LT5). A lease is a linked tree under `<root>/.claude/worktrees/`, so the sibling landing tree, a linked tree outside it, is never surveyed, listed or accused from the development checkout. A stop in the landing tree surveys the leases under its own `.claude/worktrees/` against its own HEAD.
 
@@ -15,11 +17,13 @@ A STOP WITH NOTHING MOVED RUNS NO STATUS. Full figures are this session's leases
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
 import pathlib
 import subprocess
+import time
 from typing import Any
 
 import wl_core as C
@@ -28,6 +32,8 @@ import wl_roster
 import wl_scratch
 
 RECORD_DIR = "rediacc-worktrees"
+# The record `tree` of a lease cut with `--tree landing`, and the tree role (wl_prscope.LANDING) of a stop in the landing tree.
+LANDING_TREE = "landing"
 PIN_ROOT = "refs/worktrees/"
 # The console's key in `tips`, `pins`, a lease's repos and a record's `base`; a submodule's is its store path under `modules/`.
 CONSOLE = "."
@@ -40,6 +46,9 @@ LANDED_AS_LINE = "Lease-Landed-As: %s "
 GITLINK_MOVED = "SC.."
 # Waivers `gc --superseded-by` records, one JSON row per lease commit, beside the lease records (the `.jsonl` name keeps the `*.json` record glob off it).
 SUPERSEDED_LEDGER = "superseded.jsonl"
+# A hold, `<id>.hold` beside the records (the suffix keeps the `*.json` record glob off it): the lead parks a finished lease on purpose until a worklist item's work exists. `{"item", "reason", "held_at"}`.
+HOLD_SUFFIX = ".hold"
+HOLD_OPEN_STATES = (" ", "?", ">")
 ORPHAN_TREE = "a tree with no record"
 ORPHAN_RECORD = "a record with no tree"
 ORPHAN_PIN = "a pin with neither a record nor a tree"
@@ -59,6 +68,52 @@ def _git(cwd, *args):
     except (OSError, subprocess.SubprocessError):
         return None
     return done.stdout if done.returncode == 0 else None
+
+
+def ref_tip(tree, ref):
+    """(sha, "") for `ref` peeled to a commit in `tree`, or ("", why): a ref `rev-parse --verify --quiet` reports absent (exit 1), or a git that failed or could not run, each named with its exit code and stderr."""
+    try:
+        done = subprocess.run(
+            [
+                "git",
+                "--no-optional-locks",
+                "-C",
+                str(tree),
+                "rev-parse",
+                "--verify",
+                "--quiet",
+                ref + "^{commit}",
+            ],
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=GIT_TIMEOUT_S,
+            check=False,
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return "", "git rev-parse %s could not run in %s: %s" % (ref, tree, exc)
+    sha = done.stdout.strip()
+    if done.returncode == 0 and sha:
+        return sha, ""
+    if done.returncode == 1:
+        return "", "%s does not exist in %s" % (ref, tree)
+    return "", "git rev-parse %s in %s exited %d: %s" % (
+        ref,
+        tree,
+        done.returncode,
+        done.stderr.strip()[:200],
+    )
+
+
+def landing_tips(repos, branch):
+    """({repo: sha}, "") with each repo of one lease at `refs/heads/<branch>`, read through the lease's own tree (a linked tree shares its store's refs), or ({}, why) naming the first repo that could not say."""
+    tips = {}
+    for repo in sorted(repos):
+        sha, why = ref_tip(repos[repo]["path"], "refs/heads/%s" % branch)
+        if why:
+            return {}, "cut from the landing branch %s, but %s" % (branch, why)
+        tips[repo] = sha
+    return tips, ""
 
 
 def stores(common):
@@ -166,6 +221,118 @@ def read_records(common, base):
     return out
 
 
+def mark_finished(root, agent_id, transcript, interim, now=None):
+    """Write `<common>/rediacc-worktrees/agent-<agent_id>.finished` (`{"agent", "finished_at", "transcript"}`) when that agent has a lease record and this stop is final; rewritten atomically on every later final stop. Returns the marker path, or "" when nothing was written (an interim stop, an agent with no record, an unwritable directory). The sweep of host_temp.py reads it (agent/plans/PLAN-host-temp-disposal.md D6)."""
+    if interim or not agent_id:
+        return ""
+    dirs = C._git_dirs(pathlib.Path(root))
+    if dirs is None:
+        return ""
+    lease_id = "agent-%s" % agent_id
+    records = dirs[1] / RECORD_DIR
+    if not (records / (lease_id + ".json")).is_file():
+        return ""
+    marker = records / (lease_id + ".finished")
+    body = {
+        "agent": str(agent_id),
+        "finished_at": int(time.time() if now is None else now),
+        "transcript": str(transcript or ""),
+    }
+    tmp = records / ("%s.finished.%d.tmp" % (lease_id, os.getpid()))
+    try:
+        tmp.write_text(json.dumps(body), encoding="utf-8")
+        os.replace(tmp, marker)
+    except OSError:
+        with contextlib.suppress(OSError):
+            tmp.unlink()
+        return ""
+    return str(marker)
+
+
+def read_holds(common):
+    """{lease id: {"item", "reason", "session"}} from `<id>.hold`. A hold that cannot be read, or has no item or no reason, stays as `{"broken": True}`, which parks nothing, so a damaged hold blocks again rather than hiding a lease. `session` is the writer's id prefix, "" when the record names none (`hold_check` then refuses it)."""
+    out: dict[str, dict] = {}
+    for path in sorted((common / RECORD_DIR).glob("*" + HOLD_SUFFIX)):
+        lease_id = path.name[: -len(HOLD_SUFFIX)]
+        try:
+            hold = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            hold = None
+        if isinstance(hold, dict) and hold.get("item") and hold.get("reason"):
+            out[lease_id] = {
+                "item": str(hold["item"]),
+                "reason": str(hold["reason"]),
+                "session": str(hold.get("session") or ""),
+            }
+        else:
+            out[lease_id] = {"broken": True}
+    return out
+
+
+TAG_MIN_CHARS = 4
+
+
+def _tags_agree(owner, tag):
+    """Whether a lease's `owner` and a writer's or item's `tag` name one session: the TAG is at least TAG_MIN_CHARS long and one is a prefix of the other, so a one- or two-character tag never agrees with every owner that starts with it. The owner is the lease record's own field (the session id "or its prefix"), so a short owner still agrees with its own full tag (review c9c88f05.1); an empty one agrees with nothing."""
+    if not owner or len(tag or "") < TAG_MIN_CHARS:
+        return False
+    return owner.startswith(tag) or tag.startswith(owner)
+
+
+def resolve_open_item(items, ref):
+    """`(record, "")` for the open item (`[ ]`, `[?]`, `[>]`) `ref` names: its full id, else the one open id it is a prefix of. `(None, why)` for none or for an ambiguous prefix. Used where a hold is WRITTEN; the stop check reads the full id only (`hold_check`)."""
+    ref = str(ref).lstrip("#")
+    if not ref:
+        return None, "no item id given"
+    live = [rec for rec in items if rec.get("state") in HOLD_OPEN_STATES]
+    for rec in live:
+        if str(rec.get("id", "")) == ref:
+            return rec, ""
+    near = [rec for rec in live if str(rec.get("id", "")).startswith(ref)]
+    if len(near) > 1:
+        return None, "#%s is ambiguous: it starts %s" % (
+            ref,
+            ", ".join("#" + str(rec["id"]) for rec in near),
+        )
+    if near:
+        return near[0], ""
+    return None, "#%s is not an open worklist item" % ref
+
+
+def owner_problem(hold_session, item, lease_owner):
+    """Why a hold written by `hold_session` naming the folded item `item` is no hold of the lease `lease_owner` owns, or "". Both the writer and the item's `(<prefix>)` tag must be the lease's owner, so a session cannot park a peer's lease or hide behind a peer's item."""
+    if not _tags_agree(lease_owner, hold_session):
+        return "hold written by session %s, not the lease owner %s" % (
+            hold_session or "(none recorded)",
+            lease_owner or "(none recorded)",
+        )
+    tag = str(item.get("owner") or "")
+    if not _tags_agree(lease_owner, tag):
+        return "item #%s is %s, not the lease owner %s's" % (
+            item["id"],
+            "tagged %s" % tag if tag else "untagged",
+            lease_owner,
+        )
+    return ""
+
+
+def hold_check(hold, items, record):
+    """`(item record, "")` when the hold parks its lease. `(None, "")` for a hold whose item is closed or gone (a hold cannot outlive its reason). `(None, why)` for a hold not honoured: unreadable, an id that is no open item's FULL id, or one that `owner_problem` refuses."""
+    if hold.get("broken"):
+        return None, "its hold record could not be read"
+    ref = hold["item"]
+    found = next((rec for rec in items if str(rec.get("id", "")) == ref), None)
+    if found is None:
+        near = [rec for rec in items if str(rec.get("id", "")).startswith(ref)]
+        if any(rec.get("state") in HOLD_OPEN_STATES for rec in near):
+            return None, "its hold names #%s, which is not a full item id" % ref
+        return None, ""
+    if found.get("state") not in HOLD_OPEN_STATES:
+        return None, ""
+    why = owner_problem(hold["session"], found, str(record.get("owner") or "")[:8])
+    return (None, "its hold is not honoured: %s" % why) if why else (found, "")
+
+
 def _stray_dirs(base):
     """Direct child directories of `base`, symlinks excluded."""
     try:
@@ -182,6 +349,7 @@ def read_world(root):
         "tips": {},
         "pins": {},
         "records": {},
+        "holds": {},
         "dirs": [],
         "doubts": [],
     }
@@ -196,6 +364,7 @@ def read_world(root):
     for repo, store in stores(common):
         _read_store(world, repo, store, base, here if repo == CONSOLE else "")
     world["records"] = read_records(common, base)
+    world["holds"] = read_holds(common)
     world["dirs"] = _stray_dirs(base)
     return world
 
@@ -439,17 +608,35 @@ def _record_orphans(world, trees):
     )
 
 
-def survey(root, session_id, items, live_fn, cache):
-    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, and `cache` is what the last stop returned.
+def landing_cut(record):
+    """True for a lease cut with `--tree landing` (its record's `tree`)."""
+    return str(record.get("tree") or "") == LANDING_TREE
 
-    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `orphans` [(id, why)], `doubts` [text] and `cache`.
+
+def lands_it(record, session_id, role):
+    """Is this stop's session the one that lands `record`? A landing-cut lease: the session its `lander` names, else any stop whose own tree is the landing tree. Any other lease: its owner."""
+    if landing_cut(record):
+        lander = str(record.get("lander") or "")[:8]
+        if lander:
+            return C.owned_by_me(lander, session_id)
+        return role == LANDING_TREE
+    return C.owned_by_me(str(record.get("owner") or "")[:8] or None, session_id)
+
+
+def survey(root, session_id, items, live_fn, cache, role="", armed=None):
+    """The stop's reading. `items` are the store's folded records, `live_fn` answers `live_work` when first needed, `cache` is what the last stop returned, `role` is this stop's tree role (wl_prscope.tree_role: `landing`, `development` or ""), and `armed` maps a lease id to the armed action covering it right now ({"item", "aid", "state"}; wl_checks.armed_lease_cover, agent/plans/PLAN-armed-actions.md Design 6).
+
+    Returns `unlanded` [{"id", "path", "dirty", "commits"}], `armed` (the same rows plus "item", "aid" and "state", for leases an armed action covers, which block nothing), `held` and `unknown` (ids), `peers` [{"id", "owner", "path"}], `handed` [{"id", "lander", "path"}] (landing-cut leases this session owns and its lander lands), `parked` [{"id", "item", "reason"}] (leases this session owns that a hold keeps from blocking while its item is open), `orphans` [(id, why)], `doubts` [text] and `cache`.
     """
     world = read_world(root)
     out: dict[str, Any] = {
         "unlanded": [],
+        "armed": [],
         "held": [],
         "unknown": [],
         "peers": [],
+        "handed": [],
+        "parked": [],
         "orphans": [],
         "doubts": list(world["doubts"]),
         "cache": {},
@@ -463,8 +650,16 @@ def survey(root, session_id, items, live_fn, cache):
             out["doubts"].append("%s: its record could not be read" % lease_id)
             continue
         owner = str(record.get("owner") or "")[:8] or None
-        if C.owned_by_me(owner, session_id):
+        if lands_it(record, session_id, role):
             mine.append((lease_id, record))
+        elif landing_cut(record) and C.owned_by_me(owner, session_id):
+            out["handed"].append(
+                {
+                    "id": lease_id,
+                    "lander": str(record.get("lander") or "")[:8] or "the landing tree",
+                    "path": str(record.get("path") or ""),
+                }
+            )
         else:
             out["peers"].append(
                 {"id": lease_id, "owner": owner, "path": str(record.get("path") or "")}
@@ -474,6 +669,8 @@ def survey(root, session_id, items, live_fn, cache):
     live = live_fn()
     leases = wl_scratch.lease_texts(items)
     cwds = wl_scratch.process_cwds()
+    landing = C.landing_record(pathlib.Path(root))
+    landing_branch = landing["branch"] if landing else ""
     for lease_id, record in mine:
         if live is None:
             out["unknown"].append(lease_id)
@@ -481,15 +678,31 @@ def survey(root, session_id, items, live_fn, cache):
         if _holder(lease_id, record, live, leases, cwds):
             out["held"].append(lease_id)
             continue
+        hold = world["holds"].get(lease_id)
+        if hold:
+            found, why = hold_check(hold, items, record)
+            if found:
+                out["parked"].append(
+                    {"id": lease_id, "item": hold["item"], "reason": hold["reason"]}
+                )
+                continue
+            if why:
+                out["doubts"].append("%s: %s" % (lease_id, why))
         repos = world["leases"].get(lease_id)
         if not repos:
             out["doubts"].append("%s: a directory git lists no tree for" % lease_id)
             continue
         pins = world["pins"].get(lease_id) or {}
-        sig = signature(repos, world["tips"], pins)
+        tips = world["tips"]
+        if landing_branch and str(record.get("cut_from") or "") == landing_branch:
+            tips, why = landing_tips(repos, landing_branch)
+            if why:
+                out["doubts"].append("%s: %s" % (lease_id, why))
+                continue
+        sig = signature(repos, tips, pins)
         entry = cache.get(lease_id) if isinstance(cache, dict) else None
         if not isinstance(entry, dict) or entry.get("sig") != sig:
-            entry = figures(repos, world["tips"], pins, record.get("base") or {})
+            entry = figures(repos, tips, pins, record.get("base") or {})
             if "doubt" in entry:
                 out["doubts"].append("%s: %s" % (lease_id, entry["doubt"]))
                 continue
@@ -497,14 +710,25 @@ def survey(root, session_id, items, live_fn, cache):
         out["cache"][lease_id] = entry
         # Dirty paths alone block too: a finished lease with edits and no commit still holds work that only `worktree land` carries into the main tree.
         if entry["dirty"] or entry["commits"]:
-            out["unlanded"].append(
-                {
-                    "id": lease_id,
-                    "path": str(record.get("path") or ""),
-                    "dirty": entry["dirty"],
-                    "commits": entry["commits"],
-                }
-            )
+            row = {
+                "id": lease_id,
+                "path": str(record.get("path") or ""),
+                "dirty": entry["dirty"],
+                "commits": entry["commits"],
+            }
+            # An armed action naming this lease makes the hold legitimate while it covers (wl_armed.covers): the row is listed armed, and `armed-action-due` blocks once the trigger fires. An uncovered row (no arm, or one expired, voided or started) still blocks.
+            cover = (armed or {}).get(lease_id)
+            if cover:
+                out["armed"].append(
+                    dict(
+                        row,
+                        item=str(cover.get("item") or ""),
+                        aid=str(cover.get("aid") or ""),
+                        state=str(cover.get("state") or "armed"),
+                    )
+                )
+            else:
+                out["unlanded"].append(row)
     return out
 
 
@@ -523,12 +747,43 @@ def unlanded_lines(got):
     return "\n".join(lines)
 
 
+def armed_lines(got):
+    """One line per lease an armed action covers, naming the item and the arm that holds it."""
+    lines = []
+    for row in got.get("armed", ()):
+        commits = ", ".join(
+            "%s %s" % (repo, " ".join(sha[:SHA_SHOWN] for sha in row["commits"][repo]))
+            for repo in sorted(row["commits"])
+        )
+        lines.append(
+            "    %s (%s): %d dirty path(s); unlanded commits: %s; armed on #%s (aid %s, %s)"
+            % (
+                row["id"],
+                row["path"],
+                row["dirty"],
+                commits or "none",
+                row["item"],
+                row["aid"],
+                row["state"],
+            )
+        )
+    return "\n".join(lines)
+
+
 def report_lines(got):
     """The advisory body, one line per orphan, peer lease, doubt or unread lease; "" when nothing is owed."""
     lines = ["  orphan %s: %s" % (lease_id, why) for lease_id, why in got["orphans"]]
     lines.extend(
         "  peer lease %s (session %s): %s" % (row["id"], row["owner"], row["path"])
         for row in got["peers"]
+    )
+    lines.extend(
+        "  handed lease %s (%s lands it): %s" % (row["id"], row["lander"], row["path"])
+        for row in got.get("handed", ())
+    )
+    lines.extend(
+        "  parked lease %s, held for #%s: %s" % (row["id"], row["item"], row["reason"])
+        for row in got.get("parked", ())
     )
     lines.extend("  unreadable %s" % doubt for doubt in got["doubts"])
     lines.extend(

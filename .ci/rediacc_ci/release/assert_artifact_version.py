@@ -48,7 +48,7 @@ REWORDED, NOT BYTE-IDENTICAL, on the three missing-variable paths only: the
 twin's `${VAR:?msg}` diagnostic carries a bash line number, same reasoning as
 every other port in this package. Every `::error::` and `::notice::` line is byte-identical, because those are the lines a CD log actually shows.
 
-K=5 LEDGER: `.ci/shadow/w7p6-assert-artifact-version.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

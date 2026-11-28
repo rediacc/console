@@ -73,7 +73,7 @@
       "paths": ["scripts/lib/**"],
       "home": "scripts/lib",
       "stays": true,
-      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/gate-header.ts and scripts/lib/policy-paths.ts are single-writer files (driver contract section 3). This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob in the retired ESLint config was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
+      "why": "Shared modules imported by relative path from roughly 30 gates. scripts/lib/policy-paths.ts is a single-writer file (driver contract section 3), as is scripts/ci-runner/gate-spec.ts, which sits under the ci-runner domain rather than here. This was the destination of the scripts/utils/ merge, which COMPLETED on 2026-09-06: console.ts, crc32.ts and translation-diff.ts landed here, scripts/utils/ is gone, its 24 importers were re-pointed and the dead allowDefaultProject glob in the retired ESLint config was dropped in the same change. There is no rule for scripts/utils/** any more because no such path can exist."
     },
     {
       "id": "pins-cli",
@@ -124,6 +124,16 @@
       "why": "Node helpers that a workflow step calls, born at their final home rather than under .ci/scripts/ci, which the incoming-ci-helpers rule drains. scripts/ci/write-shard-receipt.cjs is the first.",
       "notes": [
         "scripts/ci/write-shard-receipt.cjs is named by scripts/gate-bind.ts (RECEIPT_WRITER) and by the quality-code shard receipt step in ci-quality.yml; scope-map.cjs pins it to full CI under the scripts-shard-receipt rule."
+      ]
+    },
+    {
+      "id": "census",
+      "paths": ["scripts/census/**"],
+      "home": "scripts/census",
+      "stays": true,
+      "why": "Measurement scripts that rebuild a recorded census from session transcripts, with the table they last wrote. scripts/census/guard-fires.py is the first: an operator command rather than a gate body or a shared module, so neither the gates rule nor the lib rule describes it.",
+      "notes": [
+        "scripts/gates/check-standalone-selftests.ts SELFTESTS names scripts/census/guard-fires.py by this path to run its --selftest, so a move must repoint that entry."
       ]
     },
     {
@@ -193,9 +203,9 @@
       "home": "scripts/ci",
       "stays": false,
       "owner": "W7",
-      "why": "Eight .cjs helpers W7 relocates so .ci becomes single-language: greenlight, label-guide-comment, report-nightly-status, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor. (A ninth, autopilot-guide-comment, was removed completely along with the rest of the Autopilot subsystem; see agent/plans/PLAN-remove-autopilot.md.)",
+      "why": "Seven .cjs helpers W7 relocates so .ci becomes single-language: greenlight, label-guide-comment, scope-engine, scope-map, skip-plan-reconcile, validate-pr, watchdog-monitor. (A ninth, autopilot-guide-comment, was removed completely along with the rest of the Autopilot subsystem; see agent/plans/PLAN-remove-autopilot.md.)",
       "notes": [
-        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the eight, and whoever moves it states where its rules sit.",
+        "scope-map.cjs is a single-writer file (driver contract section 3) and rule ORDER inside it is semantics. It moves last of the seven, and whoever moves it states where its rules sit.",
         "greenlight.cjs:421-423 lists 'scripts/drills', 'run.sh' and '.ci/legacy' in its own cache-key closure; relocating the file does not change those strings but relocating anything they name does."
       ]
     },

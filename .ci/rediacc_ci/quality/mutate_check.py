@@ -1,6 +1,6 @@
 """The mutation runner itself must keep working.
 
-Ported from `.ci/scripts/quality/check-mutate-check.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-mutate-check.observations.jsonl` asserted equivalence over five distinct trees. Its gate header registers it as step "Mutation runner self-test", needs none, selftest true.
+Ported from `.ci/scripts/quality/check-mutate-check.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees. Its gate header registers it as step "Mutation runner self-test", needs none, selftest true.
 
 WHAT THIS DOES AND DOES NOT PROTECT, carried whole from the twin because the distinction is the entire reason the gate is small:
 
@@ -45,10 +45,10 @@ PORT NOTES.
 THE RUNNER IS DRIVEN, NEVER REIMPLEMENTED. This gate's subject is a bash program and its four exit codes; a Python reimplementation of mutate-check.sh would be a second instrument and this gate would then certify the wrong one. Every scenario is a subprocess, and the twin's `2>&1` capture is reproduced by merging the child's two streams into one string -- which is the ONE place in
 this package where merging is correct, because the captured text is the gate's INPUT rather than its output.
 
-`ok` AND `FAIL` CARRY RAW ESCAPES, UNCONDITIONALLY, and that is the twin's behaviour rather than an oversight to fix. `printf ' \\033[0;32mok\\033[0m %s\\n'` has no tty test at all, so this gate writes colour into a pipe and into a CI log. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the escapes cost nothing there; they are carried because a port that removed them
+`ok` AND `FAIL` CARRY RAW ESCAPES, UNCONDITIONALLY, and that is the twin's behaviour rather than an oversight to fix. `printf ' \\033[0;32mok\\033[0m %s\\n'` has no tty test at all, so this gate writes colour into a pipe and into a CI log. the shadow gate (commit:bf054adcd4) strips ANSI before comparing, so the escapes cost nothing there; they are carried because a port that removed them
 would print different BYTES to a human diffing the two, and reported as a twin finding.
 
-THE FAILURE LINE IS NOT A FINDING TO THE COMPARATOR, and knowing that is what keeps this port honest. `bad()` prints ` FAIL <label>` with ONE space, while `scripts/lib/shadow-gate.ts`'s marker is `/^FAIL\\s\\s+/` (two or more) or `/^FAIL:/`. So a failing scenario's line is classified as CHATTER, and the only compared finding this gate emits is the final `✗ N mutate-check.sh
+THE FAILURE LINE IS NOT A FINDING TO THE COMPARATOR, and knowing that is what keeps this port honest. `bad()` prints ` FAIL <label>` with ONE space, while the shadow gate (commit:bf054adcd4)'s marker is `/^FAIL\\s\\s+/` (two or more) or `/^FAIL:/`. So a failing scenario's line is classified as CHATTER, and the only compared finding this gate emits is the final `✗ N mutate-check.sh
 self-test(s) failed`. That is why the differential fixtures vary the NUMBER of failing scenarios rather than which one fails: the number is the only thing the ledger can see. Stated here so nobody reads a passing differential as proof that the per-scenario labels agree.
 
 THE DETAIL BLOCK IS `sed 's/^/ /' | head -12`: seven spaces, twelve lines, on STDOUT. Reproduced exactly, including the truncation, because those lines land under a chatter header and any of them shaped like `<file>.<ext>:<line>:` is promoted to a finding by the comparator's path-line rule.
@@ -57,6 +57,13 @@ THE DETAIL BLOCK IS `sed 's/^/ /' | head -12`: seven spaces, twelve lines, on ST
 
 ONE DELIBERATE DIVERGENCE, named rather than hidden: if the runner exists but is NOT EXECUTABLE, bash reports 126 with its own "Permission denied" text captured into the scenario output, while this port raises OSError and reports 126 with an empty output. The twin's own precondition loop tests `-f`, not `-x`, so both implementations reach that state the same way. No fixture in the
 ledger exercises it, and it is written down because an undocumented divergence is the kind a later reader takes for a defect in the port.
+
+---- gate ----
+lane: quality-static
+step: Mutation runner self-test
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -124,7 +131,7 @@ def indented_result_lines(text: str) -> bool:
 class _Tally:
     """The twin's `ok` / `bad` pair and its FAILED counter, transliterated.
 
-    Not `rediacc_ci.controls.Controls`: these strings are the gate's OUTPUT CONTRACT and `scripts/lib/shadow-gate.ts` compares them against the bash twin's, so a nicer wording here is a false mismatch there. The same decision, and the same reasoning, as `rediacc_ci.quality.staging_tag_guard._GateTally`.
+    Not `rediacc_ci.controls.Controls`: these strings are the gate's OUTPUT CONTRACT and the shadow gate (commit:bf054adcd4) compares them against the bash twin's, so a nicer wording here is a false mismatch there. The same decision, and the same reasoning, as `rediacc_ci.quality.staging_tag_guard._GateTally`.
     """
 
     def __init__(self) -> None:
@@ -172,7 +179,7 @@ def run_scenario(
             # See the port notes: bash reports 126 with its own diagnostic text, this reports 126 with none. No ledger fixture reaches here.
             return 126, ""
     # `$(...)` STRIPS EVERY TRAILING NEWLINE, and the twin captures through it. Without this the detail block printed one extra blank line per failing scenario, because `<<<"$OUT"` re-adds exactly one newline and `splitlines` then sees a final empty record. Found 2026-09-06 by the byte-for-byte case in tests/test_quality_mutate_check.py; the shadow differential could NOT see it,
-    # because `bad()` prints ` FAIL <label>` with ONE space and scripts/lib/shadow-gate.ts needs two, so the whole block is chatter there.
+    # because `bad()` prints ` FAIL <label>` with ONE space and the shadow gate (commit:bf054adcd4) needs two, so the whole block is chatter there.
     return completed.returncode, (completed.stdout or "").rstrip("\n")
 
 
@@ -359,4 +366,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_mutate_check.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

@@ -27,15 +27,18 @@
  *   tsx scripts/ci-runner/path-trace.ts --gate <id> [--gate <id> ...] [--write] [--replace-declared]
  *   tsx scripts/ci-runner/path-trace.ts --all-whole-tree [--jobs N] [--write] [--skip <id> ...]
  *   tsx scripts/ci-runner/path-trace.ts --selftest
- *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem)
+ *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem), --max-log-mb <n> (kill a trace whose strace logs pass n MB, default 8192; it exits 125 and is never a pass)
  */
-import { spawn, spawnSync } from 'node:child_process';
+import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
+import { pathToFileURL } from 'node:url';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { policyPath } from '../lib/policy-paths.js';
+import { installSignalCleanup, removeTree, shared as runRoot } from '../lib/runtmp.js';
+import { spawnWatched } from './exec.js';
 import {
   CARRY_EXEMPT_REL,
   exemptRowsOf,
@@ -319,7 +322,7 @@ export function straceParser(
     if (FORKS.test(name)) {
       const flags = /flags=([A-Za-z0-9_|]+)/.exec(rest)?.[1];
       st.cloneFlags = flags;
-      if (ok && retMatch !== null) forked(st, Number(retMatch[1]), flags);
+      if (ok) forked(st, Number(retMatch[1]), flags);
       return;
     }
     if (name.startsWith('getdents')) {
@@ -454,6 +457,50 @@ export function recordCitations(
       if (cites || reaches) hit.add(rec.glob);
     }
   return [...hit].sort(byteOrder);
+}
+
+/**
+ * The declared `paths` a re-trace would DROP, each with the tracked files it matched that the new set no longer reaches (review 9a666914.1: a replacement that narrows a human's set must say what it gave up, or the narrowing is silent). A prior glob kept verbatim, or whose every tracked match is reached by a new content glob, is not dropped. `lists` and `names` hash names, not bytes, so they never count as reaching a file. The function compares globs with tracked files only and never consults what the trace read, so a dropped glob is a CANDIDATE for dropping and the printout is where a reviewer checks that the gate never opens those files.
+ */
+export function droppedDeclared(
+  prior: readonly string[],
+  next: readonly string[],
+  files: readonly string[]
+): { glob: string; unreached: string[] }[] {
+  const out: { glob: string; unreached: string[] }[] = [];
+  for (const g of prior) {
+    if (next.includes(g)) continue;
+    const unreached = files.filter(
+      (f) =>
+        matchGlob(g, f) &&
+        !next.some((n) => matchGlob(n, f)) &&
+        !GLOBAL_INPUTS.some((x) => matchGlob(x, f))
+    );
+    if (unreached.length > 0) out.push({ glob: g, unreached });
+  }
+  return out;
+}
+
+/** Does a printed note mention reads anywhere beyond its one "not reads" hedge? Any substring "read" counts (reads, unread, thread). */
+export function mentionsReadsBeyondHedge(note: string): boolean {
+  return /read/i.test(note.replace('not reads', ''));
+}
+
+/** The `--replace-declared --write` printout: one line per declared glob the replacement gives up, none unless both flags are set and the verdict is `paths`, which then must carry its paths array (a `paths` verdict without one throws). */
+export function droppedNotes(
+  replacing: boolean,
+  verdict: { kind: string; paths?: readonly string[] },
+  prior: readonly string[],
+  files: readonly string[]
+): string[] {
+  if (!replacing || verdict.kind !== 'paths') return [];
+  // A 'paths' verdict without its paths is a caller bug; treating it as an empty set would report every prior glob as dropped.
+  if (verdict.paths === undefined)
+    throw new Error("droppedNotes: a 'paths' verdict carries no paths array");
+  return droppedDeclared(prior, verdict.paths, files).map(
+    (d) =>
+      `      dropped declared ${d.glob}: ${d.unreached.length} tracked file(s) no longer reached (e.g. ${d.unreached.slice(0, 3).join(', ')}); this compares tracked files, not reads: confirm the gate never opens them`
+  );
 }
 
 export function repoView(root: string): RepoView {
@@ -1100,14 +1147,44 @@ export function attribute(access: Access, view: RepoView): Attribution {
   const alive = (g: string): boolean =>
     view.files.some((f) => matchGlob(g, f)) || view.gitlinks.some((f) => matchGlob(g, f));
   /**
-   * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic `:(...)`, a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
+   * One git pathspec, relative to the exec's directory `base` ('' the root), as the globs it reaches (F2 B3). git's `*` crosses `/`, so `*.sh` is `*.sh` plus `**\/*.sh`; a literal `p` is `p` (a tracked file or gitlink) and `p/**` (a tracked directory). A glob or literal that names nothing tracked today would be a dead glob, so it widens to a live cover instead: a one-level names glob to `lists` of its directory, anything else to the nearest tracked directory's `D/**`. A shape this fold does not model (magic other than `:(glob)`, which foldGlobMagic models; a `?` or `[` class, a `*` not leading its segment) widens the same way. `**` means the whole set: the caller decides what that costs.
    */
+  /** A `:(glob)` pathspec's pattern (magic already stripped) as the globs it reaches: `<dir>/<*suffix>` one level, `<dir>/**\/<*suffix>` one level plus deep, a literal through the git-default fold; anything else the whole set. A level that names nothing tracked today folds the way foldPathspec folds a dead glob. */
+  const foldGlobMagic = (
+    pat: string,
+    base: string,
+    ctx: 'names' | 'content'
+  ): { globs: string[]; lists: string[] } => {
+    const whole = { globs: ['**'], lists: [] };
+    if (pat.startsWith(':')) return whole;
+    if (!/[*?[]/.test(pat)) return foldPathspec(pat, base, ctx);
+    const m = /^((?:[^*?[{/]+\/)*)(\*\*\/)?(\*[^*?[{/]*)$/.exec(pat);
+    if (m === null) return whole;
+    const j = path.posix.normalize(path.posix.join(base === '' ? '.' : base, m[1] || '.'));
+    if (j === '..' || j.startsWith('../')) return whole;
+    const hdir = j === '.' ? '' : j.replace(/\/+$/, '');
+    if (hdir !== '' && hasForbidden(hdir))
+      return { globs: [cover(nearestDir(cleanDir(hdir)))], lists: [] };
+    const head = hdir === '' ? '' : `${hdir}/`;
+    const out = { globs: [] as string[], lists: [] as string[] };
+    const one = `${head}${m[3]}`;
+    if (alive(one)) out.globs.push(one);
+    else if (ctx === 'names' && (hdir === '' || isTrackedDir(hdir))) out.lists.push(hdir);
+    else out.globs.push(cover(nearestDir(hdir)));
+    if (m[2] !== undefined) {
+      const deep = `${head}**/${m[3]}`;
+      out.globs.push(alive(deep) ? deep : cover(nearestDir(hdir)));
+    }
+    return out;
+  };
   const foldPathspec = (
     spec: string,
     base: string,
     ctx: 'names' | 'content'
   ): { globs: string[]; lists: string[] } => {
     const whole = { globs: ['**'], lists: [] };
+    // `:(glob)` MAGIC ALONE IS MODELLED: under it `*` stays inside one segment and `**/` matches zero or more directories, so `h/*.x` reaches one level and `h/**/*.x` reaches one level plus every deeper one. Before this, check:ci-pipefail-grep-q's five `:(glob)<dir>/**/*.sh` pathspecs folded to `**`, and its traced entry carried `names: ['**']`, which made it a reader of every record path. Any other magic word, or a shape outside those two, still widens to the whole set.
+    if (spec.startsWith(':(glob)')) return foldGlobMagic(spec.slice(':(glob)'.length), base, ctx);
     if (spec.startsWith(':')) return whole;
     const j = path.posix
       .normalize(path.posix.join(base === '' ? '.' : base, spec))
@@ -1219,6 +1296,15 @@ export function attribute(access: Access, view: RepoView): Attribution {
     }
     if (sub === 'diff') {
       const d = diffRead(cmd.rest);
+      // An absolute path inside the checkout is the same pathspec as its relative spelling (git accepts both): placed relative to the exec's directory, `git diff --quiet /abs/root/a.json` reads a.json, as the relative form does (check:ci-subscription-schema, traced 2026-11-24). An absolute path outside the root stays as written, so it matches nothing tracked and keeps the read whole-tree.
+      if (base !== undefined) {
+        const rel = (p: string): string =>
+          path.posix.isAbsolute(p) && under(p, view.root) && !view.gitDirs.some((g) => under(p, g))
+            ? path.posix.relative(path.posix.join(view.root, base), p) || '.'
+            : p;
+        d.positionals = d.positionals.map(rel);
+        d.pathspecs = d.pathspecs.map(rel);
+      }
       // F2 B4: with no revision flag and every positional a tracked path, git reads them as pathspecs, and the comparison is the worktree against the index: the content of those paths.
       if (!d.revisionFlag && d.positionals.every(trackedPath)) {
         const specs = [...d.positionals, ...d.pathspecs];
@@ -1644,7 +1730,21 @@ export function traceRefusal(opts: { noSeccomp?: boolean } = {}): string | undef
 /** Process groups of traces still running. Each runs detached (so a timeout can kill its whole tree), which also means a stopped path-trace would orphan them; the signal handler in main kills them first. */
 const LIVE_GROUPS = new Set<number>();
 
-function killLiveGroups(): void {
+/** Registers a detached group for the signal handler's kill; the returned function unregisters it. */
+export function trackLiveGroup(pid: number | undefined): () => void {
+  if (pid === undefined) return () => undefined;
+  LIVE_GROUPS.add(pid);
+  return () => {
+    LIVE_GROUPS.delete(pid);
+  };
+}
+
+/** How many traced groups are registered right now (a selftest probe: a spawn that forgot `trackLiveGroup` reads 0 here). */
+export function liveGroupCount(): number {
+  return LIVE_GROUPS.size;
+}
+
+export function killLiveGroups(): void {
   for (const pid of LIVE_GROUPS) {
     try {
       process.kill(-pid, 'SIGKILL');
@@ -1662,6 +1762,37 @@ export interface TraceRun {
   outputTail: string;
   /** strace's OWN stderr lines (warnings, refusals), never mixed into the gate's output. */
   straceNotes: string[];
+  /** The log size limit killed the trace (exit 125): its read set is partial, so it is never a pass. */
+  capped: boolean;
+  /** Bytes the per-process logs held when the trace ended (or was capped). */
+  logBytes: number;
+}
+
+/** The default `--max-log-mb` (PLAN-host-temp-disposal D4): one traced run wrote 27 GB in an hour before the limit. */
+export const DEFAULT_MAX_LOG_MB = 8192;
+/** The strace exit status of a trace the log limit killed; 125 is timeout(1)'s own "the command could not run" slot, distinct from 124 (timeout) and 127. */
+export const CAP_EXIT = 125;
+const CAP_POLL_MS = 5000;
+
+/** Total bytes of the per-process strace logs (`t.<pid>`) in `dir`. */
+export function traceLogBytes(dir: string): number {
+  let total = 0;
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    // the log dir removed mid-run (a timer or exit callback must not throw): no logs, no bytes
+    return 0;
+  }
+  for (const f of names) {
+    if (!/^t\.\d+$/.test(f)) continue;
+    try {
+      total += fs.statSync(path.join(dir, f)).size;
+    } catch {
+      // a log removed between the listing and the stat
+    }
+  }
+  return total;
 }
 
 /**
@@ -1726,22 +1857,65 @@ export async function traceCommand(
     timeoutS?: number;
     noSeccomp?: boolean;
     straceBin?: string;
+    /** The size limit on all logs together, MB (default DEFAULT_MAX_LOG_MB). */
+    maxLogMb?: number;
+    /** How often the limit is checked, ms (default 5 s; a selftest shortens it). */
+    capPollMs?: number;
   } = {}
 ): Promise<TraceRun> {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-'));
+  // Logs a caller asked to keep live outside the run dir, which the exit hook removes.
+  const dir = opts.keepLogs
+    ? fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-kept-'))
+    : fs.mkdtempSync(path.join(runRoot('path-trace-'), 't-'));
+  try {
+    return await traceIn(dir, cmd, cwd, opts);
+  } finally {
+    // A parser that throws, or a strace that cannot start, still removes the logs.
+    if (!opts.keepLogs) removeTree(dir);
+  }
+}
+
+async function traceIn(
+  dir: string,
+  cmd: string,
+  cwd: string,
+  opts: {
+    env?: NodeJS.ProcessEnv;
+    keepLogs?: boolean;
+    label?: string;
+    timeoutS?: number;
+    noSeccomp?: boolean;
+    straceBin?: string;
+    maxLogMb?: number;
+    capPollMs?: number;
+  }
+): Promise<TraceRun> {
   const started = Date.now();
   const outFile = path.join(dir, 'output.txt');
   const outFd = fs.openSync(outFile, 'w');
   const straceErrFile = path.join(dir, 'strace-stderr.txt');
   const straceErrFd = fs.openSync(straceErrFile, 'w');
   const env = { ...(opts.env ?? process.env), UV_USE_IO_URING: '0' };
+  let capped = false;
   const exit = await new Promise<number>((resolve) => {
-    const child = spawn(
+    // Its own group (a timeout kills the whole tree) carrying the runner-death watch: a SIGKILLed path-trace runs no handler, and strace plus its tracees would otherwise outlive it.
+    const child = spawnWatched(
       opts.straceBin ?? 'strace',
       straceArgv(path.join(dir, 't'), cmd, opts.noSeccomp),
-      { cwd, env, stdio: ['ignore', outFd, straceErrFd], detached: true }
+      { cwd, env, stdio: ['ignore', outFd, straceErrFd] }
     );
     if (child.pid !== undefined) LIVE_GROUPS.add(child.pid);
+    // THE LOG LIMIT (D4): -ff writes one log per process and nothing else bounds them. Over the limit the group is killed and the run reads as exit 125, never a pass.
+    const limitBytes = (opts.maxLogMb ?? DEFAULT_MAX_LOG_MB) * 1024 * 1024;
+    const watchdog = setInterval(() => {
+      if (traceLogBytes(dir) <= limitBytes) return;
+      capped = true;
+      try {
+        if (child.pid !== undefined) process.kill(-child.pid, 'SIGKILL');
+      } catch {
+        // already gone
+      }
+    }, opts.capPollMs ?? CAP_POLL_MS);
     // A hung gate is killed with its whole process group and reported as exit 124, the timeout(1) convention.
     let timedOut = false;
     const timer =
@@ -1758,25 +1932,36 @@ export async function traceCommand(
     child.on('exit', (code, signal) => {
       if (child.pid !== undefined) LIVE_GROUPS.delete(child.pid);
       if (timer !== undefined) clearTimeout(timer);
-      resolve(timedOut ? 124 : (code ?? (signal ? 128 : 1)));
+      clearInterval(watchdog);
+      // A final look: a log written in the last tick of a fast run still counts.
+      if (!capped && traceLogBytes(dir) > limitBytes) capped = true;
+      resolve(capped ? CAP_EXIT : timedOut ? 124 : (code ?? (signal ? 128 : 1)));
     });
-    child.on('error', () => resolve(127));
+    child.on('error', () => {
+      clearInterval(watchdog);
+      resolve(127);
+    });
   });
   fs.closeSync(outFd);
   fs.closeSync(straceErrFd);
   const access = emptyAccess();
   access.startedMs = started;
-  const logCount = parseStraceDir(dir, cwd, access);
+  const logBytes = traceLogBytes(dir);
+  // A capped trace is partial and never judged, so its multi-GB logs are not parsed.
+  const logCount = capped ? 0 : parseStraceDir(dir, cwd, access);
   // strace's stderr file holds strace's own `strace:` lines, plus anything the shell printed before its `exec 2>&1` (a BASH_ENV hook), which is the gate's side and goes back with its output.
   const errLines = fs
     .readFileSync(straceErrFile, 'utf8')
     .split('\n')
     .filter((l) => l.trim() !== '');
   const straceNotes = errLines.filter((l) => l.startsWith('strace: '));
+  if (capped)
+    straceNotes.push(
+      `strace logs passed ${opts.maxLogMb ?? DEFAULT_MAX_LOG_MB} MB (${Math.round(logBytes / 1048576)} MB written); the trace was killed with exit ${CAP_EXIT}`
+    );
   const preamble = errLines.filter((l) => !l.startsWith('strace: '));
   const output = [...preamble, fs.readFileSync(outFile, 'utf8')].join('\n');
-  if (!opts.keepLogs) fs.rmSync(dir, { recursive: true, force: true });
-  else process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
+  if (opts.keepLogs) process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
   return {
     exit,
     access,
@@ -1784,6 +1969,8 @@ export async function traceCommand(
     logFiles: logCount,
     outputTail: output.split('\n').slice(-15).join('\n'),
     straceNotes,
+    capped,
+    logBytes,
   };
 }
 
@@ -2123,6 +2310,8 @@ interface Args {
   timeoutS: number;
   /** Traces without `--seccomp-bpf` (straceArgv). */
   noSeccomp: boolean;
+  /** `--max-log-mb`: the size limit on one trace's strace logs, MB (D4). */
+  maxLogMb: number;
   /** Lets `--write` and `--apply` replace a hand-declared `paths` set. */
   replaceDeclared: boolean;
 }
@@ -2140,6 +2329,7 @@ function parseArgs(argv: string[]): Args {
     selftest: false,
     timeoutS: 1800,
     noSeccomp: false,
+    maxLogMb: DEFAULT_MAX_LOG_MB,
     replaceDeclared: false,
   };
   for (let i = 0; i < argv.length; i++) {
@@ -2163,7 +2353,11 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--refold') a.refold = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = Number(val());
     else if (t === '--no-seccomp') a.noSeccomp = true;
-    else if (t === '--replace-declared') a.replaceDeclared = true;
+    else if (t === '--max-log-mb') {
+      a.maxLogMb = Number(val());
+      if (!Number.isFinite(a.maxLogMb) || a.maxLogMb <= 0)
+        throw new Error('--max-log-mb takes a positive number of MB');
+    } else if (t === '--replace-declared') a.replaceDeclared = true;
     else throw new Error(`unknown argument ${t}`);
   }
   return a;
@@ -2294,6 +2488,7 @@ export async function traceGate(
     /** Every node the gate reaches through `needs`, transitively (needsClosure): the direct edges alone would miss a producer behind another producer. */
     closure: ReadonlySet<string>;
     noSeccomp?: boolean;
+    maxLogMb?: number;
     /** The gate's carry-exempt kind (F2 B7), which fold waives alone. */
     waive?: string | null;
   }
@@ -2303,6 +2498,7 @@ export async function traceGate(
     keepLogs: opts.keepLogs,
     label: entry.id,
     noSeccomp: opts.noSeccomp,
+    maxLogMb: opts.maxLogMb,
   });
   const attr = attribute(run.access, view);
   return {
@@ -2602,6 +2798,9 @@ async function main(argv: string[]): Promise<number> {
       console.error(
         `      strace named seccomp; retry this gate without the filter: npx tsx scripts/ci-runner/path-trace.ts --gate ${r.id} --no-seccomp`
       );
+    const prior = todo.find((e) => e.id === r.id)?.paths ?? [];
+    for (const line of droppedNotes(args.write && args.replaceDeclared, v, prior, view.files))
+      console.error(line);
     if (args.write)
       writeResult(args.root, r, tree, undefined, { replaceDeclared: args.replaceDeclared });
     if (args.out !== undefined)
@@ -2634,6 +2833,7 @@ async function main(argv: string[]): Promise<number> {
             timeoutS: args.timeoutS,
             closure: needsClosure(e.id, byId),
             noSeccomp: args.noSeccomp,
+            maxLogMb: args.maxLogMb,
             waive: exempt.get(e.id),
           })
         );
@@ -2825,7 +3025,7 @@ async function selftest(): Promise<number> {
     'an exec seen before the first chdir keeps the start cwd, not the post-chdir one'
   );
   // The -ff log directory is read in NUMERIC pid order with the pid from the file name (4936a0f3.2): t.10 sorts before t.9 as text, and its relative read must still land in its parent's cwd.
-  const logDir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-logs-'));
+  const logDir = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'logs-'));
   try {
     fs.writeFileSync(
       path.join(logDir, 't.9'),
@@ -3002,7 +3202,7 @@ async function selftest(): Promise<number> {
   );
   {
     // A symlinked root: a relative --git-common-dir stays under the real root, where strace reports its reads (d1c98d2e.2).
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+    const tmp = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'link-'));
     try {
       const realDir = path.join(tmp, 'real');
       fs.mkdirSync(path.join(realDir, '.ci', 'policy'), { recursive: true });
@@ -3138,6 +3338,69 @@ async function selftest(): Promise<number> {
       !declaresInputs({ ...base, pathsOrigin: TRACED_ORIGIN } as LockEntry),
     "declaresInputs: a set with no origin or a declared one is a human's, and so is origin declared with every set empty (83f9183b.1); a traced set and no set are not"
   );
+
+  // Review 9a666914.1: a replacement that narrows a declared set names what it gave up.
+  {
+    const files = ['a/x.yml', 'a/y.yml', 'b/z.py', 'b/w.py', 'c/q.md'];
+    const dropped = droppedDeclared(
+      ['a/*.yml', 'b/**', 'c/q.md'],
+      ['a/*.yml', 'b/z.py', 'c/q.md'],
+      files
+    );
+    check(
+      dropped.length === 1 &&
+        dropped[0].glob === 'b/**' &&
+        dropped[0].unreached.join() === 'b/w.py',
+      'droppedDeclared: a declared glob only partly kept is dropped, naming the one file the new set no longer reaches (b/w.py); a verbatim-kept glob is not'
+    );
+    check(
+      droppedDeclared(['a/**'], ['a/*.yml', 'a/**/*.yml'], ['a/x.yml', 'a/d/y.yml']).length === 0 &&
+        droppedDeclared(['a/**'], [], ['a/x.yml']).length === 1,
+      'droppedDeclared: a glob whose every tracked match a new glob reaches is not dropped; CONTROL: the same glob against an empty new set is'
+    );
+    check(
+      droppedDeclared(['gone/**'], ['a/x.yml'], files).length === 0,
+      'droppedDeclared: a declared glob matching no tracked file gives up nothing, so it is not reported'
+    );
+    // Review eabd5fe0.3: the printout the runner emits under --replace-declared --write.
+    const paths = { kind: 'paths', paths: ['a/*.yml', 'b/z.py', 'c/q.md'] };
+    const prior = ['a/*.yml', 'b/**', 'c/q.md'];
+    const notes = droppedNotes(true, paths, prior, files);
+    check(
+      notes.length === 1 &&
+        notes[0].includes('dropped declared b/**') &&
+        notes[0].includes('b/w.py'),
+      'droppedNotes: with both flags and a paths verdict, one line names the dropped glob and the file it stops reaching'
+    );
+    check(
+      droppedNotes(false, paths, prior, files).length === 0 &&
+        droppedNotes(true, { kind: 'whole-tree' }, prior, files).length === 0,
+      'droppedNotes: CONTROL: without the flags, or for a whole-tree verdict, nothing is printed'
+    );
+    // Only the hedge phrase "not reads" is pinned; after removing it, any substring "read" (reads, unread, thread) is a failure, so no other mention of reads can appear (review 9a131ae5.1, 5a21bfcd.2).
+    check(
+      notes[0].includes('not reads') && !mentionsReadsBeyondHedge(notes[0]),
+      'droppedNotes: the line makes no claim about reads, which the function never sees; its one mention of reads is the "not reads" hedge (review eabd5fe0.2, 9a131ae5.1)'
+    );
+    check(
+      mentionsReadsBeyondHedge('compares tracked files, not reads: those files stay unread') &&
+        mentionsReadsBeyondHedge('not reads, and the gate reads them') &&
+        !mentionsReadsBeyondHedge(
+          'compares tracked files, not reads: confirm the gate never opens them'
+        ),
+      'mentionsReadsBeyondHedge: a second mention such as "unread" or "reads" is caught (it was missed under \\bread); CONTROL: the hedge alone passes (review 5a21bfcd.2)'
+    );
+    let threw = false;
+    try {
+      droppedNotes(true, { kind: 'paths' }, prior, files);
+    } catch {
+      threw = true;
+    }
+    check(
+      threw && droppedNotes(false, { kind: 'paths' }, prior, files).length === 0,
+      "droppedNotes: a 'paths' verdict with no paths array throws instead of reporting every prior glob as dropped; CONTROL: without the flags nothing is evaluated (review 9a131ae5.2)"
+    );
+  }
 
   // W2.3: discovery is not history, history is still history, the network is its own verdict.
   const lsAcc = parseStraceLog(
@@ -3334,7 +3597,7 @@ async function selftest(): Promise<number> {
   );
   check(
     shared.gitReaders?.has('/g/sharedindex.abc') === true &&
-      shared.gitReaders?.has('/g/notes.abc') !== true,
+      shared.gitReaders.has('/g/notes.abc') !== true,
     'a sharedindex.* file is a repository read; CONTROL: an ordinary file beside it is not'
   );
   const idx3 = mk(['a/one.txt']);
@@ -3583,14 +3846,42 @@ async function selftest(): Promise<number> {
       !formatIsNames('%(path) %(eolinfo:index)'),
     `B3: --format with only %(objectmode) and %(path) is names; CONTROL: adding %(objectname) is content (got ${shape(b3f)} | ${shape(b3fc)})`
   );
-  const b3m = pv([ex(7, ['git', 'ls-files', '-z', ':(glob)**/*.ts']), open(7, '/r/.git/index')]);
+  // `:(glob)` magic is modelled: `<dir>/**/*.x` is one level plus deep, `<dir>/*.x` one level only (the shape check:ci-pipefail-grep-q's PATHSPECS use).
+  const b3g = pv([
+    ex(7, ['git', 'ls-files', '-z', ':(glob)c/**/*.txt', ':(glob)a/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3g.kind === 'paths' &&
+      JSON.stringify(b3g.names) === '["a/*.txt","c/**/*.txt"]' &&
+      JSON.stringify(b3g.lists) === '["c"]',
+    `B3: :(glob)c/**/*.txt is the listing of c (no c/*.txt today) plus c/**/*.txt, and :(glob)a/*.txt is a/*.txt alone, never the whole name set (got ${shape(b3g)})`
+  );
+  // 3a90511b.2: a content read (`-s`) is not the names context, so a dead one-level glob widens to the tracked cover, never to a listing.
+  const b3gc = pv([
+    ex(7, ['git', 'ls-files', '-s', '--', ':(glob)c/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3gc.kind === 'paths' && b3gc.paths.join(',') === 'c/**' && (b3gc.lists ?? []).length === 0,
+    `B3: ls-files -s -- :(glob)c/*.txt (no c/*.txt today) is the content of c/**, no listing (got ${shape(b3gc)})`
+  );
+  const b3gx = pv([
+    ex(7, ['git', 'ls-files', '-z', ':(glob)a/**/x/*.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b3gx.kind === 'paths' && JSON.stringify(b3gx.names) === '["**"]',
+    `B3 CONTROL: a :(glob) shape outside the two modelled ones (a ** between literal segments) still widens to the whole name set (got ${shape(b3gx)})`
+  );
+  const b3m = pv([ex(7, ['git', 'ls-files', '-z', ':(icase)*.ts']), open(7, '/r/.git/index')]);
   const b3u = pv([
     ex(7, ['git', 'ls-files', '-s', '-t', '--', 'a/one.txt']),
     open(7, '/r/.git/index'),
   ]);
   check(
     b3m.kind === 'paths' && JSON.stringify(b3m.names) === '["**"]' && b3u.kind === 'whole-tree',
-    `B3 CONTROL: pathspec magic widens to the whole name set, and an unknown flag (-t) beside -s keeps it whole-tree content (got ${shape(b3m)} | ${shape(b3u)})`
+    `B3 CONTROL: any other pathspec magic (:(icase)) widens to the whole name set, and an unknown flag (-t) beside -s keeps it whole-tree content (got ${shape(b3m)} | ${shape(b3u)})`
   );
 
   // B4: `git diff --quiet <tracked file>` is the content of that path.
@@ -3617,6 +3908,24 @@ async function selftest(): Promise<number> {
       b4pc.kind === 'whole-tree' &&
       b4pc.reason.includes('refs/heads/main'),
     `B4: the diff's own "is a/one.txt a ref?" probes (git's lookup rules, packed-refs) are no history read; CONTROL: the same process reading another ref is (got ${shape(b4p)} | ${shape(b4pc)})`
+  );
+  // An absolute spelling of a tracked path is that path, from the root and from a subdirectory alike; CONTROL: an absolute path outside the checkout is no tracked path, and the read stays whole-tree.
+  const b4abs = pv([ex(7, ['git', 'diff', '--quiet', '/r/a/one.txt']), open(7, '/r/.git/index')]);
+  const b4absSub = pv([
+    ex(7, ['git', 'diff', '--quiet', '/r/a/one.txt'], '/r/b'),
+    open(7, '/r/.git/index'),
+  ]);
+  const b4absOut = pv([
+    ex(7, ['git', 'diff', '--quiet', '/elsewhere/a/one.txt']),
+    open(7, '/r/.git/index'),
+  ]);
+  check(
+    b4abs.kind === 'paths' &&
+      b4abs.paths.join(',') === 'a/one.txt' &&
+      b4absSub.kind === 'paths' &&
+      b4absSub.paths.join(',') === 'a/one.txt' &&
+      b4absOut.kind === 'whole-tree',
+    `B4: git diff --quiet /r/a/one.txt is the content of a/one.txt from / and from b/; CONTROL: /elsewhere/a/one.txt stays whole-tree (got ${shape(b4abs)} | ${shape(b4absSub)} | ${shape(b4absOut)})`
   );
   const b4c = pv([ex(7, ['git', 'diff', '--quiet', 'HEAD']), open(7, '/r/.git/index')]);
   const b4cached = pv([ex(7, ['git', 'diff', '--cached', '--quiet', 'a/one.txt'])]);
@@ -3948,7 +4257,7 @@ async function selftest(): Promise<number> {
     'an END marker with no BEGIN is refused'
   );
   // THE LEDGER STAMP IS THE TRACE'S START, not the apply time (35e89088.2).
-  const wroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-stamp-'));
+  const wroot = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'stamp-'));
   try {
     for (const rel of [MANIFEST_REL, LOCK_REL]) {
       fs.mkdirSync(path.dirname(path.join(wroot, rel)), { recursive: true });
@@ -3977,7 +4286,7 @@ async function selftest(): Promise<number> {
     fs.rmSync(wroot, { recursive: true, force: true });
   }
   // A RED RUN OVER A TRACED ENTRY changes nothing; the same verdict from a green run strips it (7a9a97ba.1).
-  const rroot = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-red-'));
+  const rroot = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'red-'));
   try {
     const traced = manifestWithPaths(manifest, 'g:b', ['a/one.txt']);
     const seed = (): void => {
@@ -4230,7 +4539,7 @@ async function selftest(): Promise<number> {
   );
 
   // A --root reached through a symlink is the realpath strace reports (ffa5756e.6).
-  const linkBase = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-link-'));
+  const linkBase = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'link-'));
   try {
     const here = path.resolve(import.meta.dirname, '..', '..');
     fs.symlinkSync(here, path.join(linkBase, 'link'));
@@ -4245,7 +4554,7 @@ async function selftest(): Promise<number> {
   // One real trace, when this host can trace.
   const refusal = traceRefusal();
   if (refusal === undefined) {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-self-'));
+    const dir = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'self-'));
     fs.mkdirSync(path.join(dir, 'in'));
     for (const f of ['in/a.txt', 'in/b.txt', 'in/c.txt', 'in/d.txt', 'other.txt'])
       fs.writeFileSync(path.join(dir, f), f);
@@ -4291,7 +4600,7 @@ async function selftest(): Promise<number> {
       `strace's own lines are kept apart from the gate's stdout and stderr (output ${JSON.stringify(sep.outputTail)}, notes ${JSON.stringify(sep.straceNotes)})`
     );
     // W2.5 accept fixture: `python3 -m` from the root, reading two tracked files, gives those two plus lists ['', '.ci']: the root and .ci are sys.path entries Python lists and probes, not content.
-    const py = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-py-'));
+    const py = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'py-'));
     const pyFiles: Record<string, string> = {
       '.ci/tool.py': "open('conf/x.txt').read()\n",
       '.ci/other.py': 'pass\n',
@@ -4327,7 +4636,7 @@ async function selftest(): Promise<number> {
       pyView.records?.length === 1 && pyView.records[0]?.prefix === 'agent/reviews',
       'repoView carries the root record set (review 502ce0ee.3: a dropped records field would leave every hand-built view green)'
     );
-    const noPol = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-nopol-'));
+    const noPol = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'nopol-'));
     let noPolThrew = false;
     try {
       readRecordGlobs(noPol);
@@ -4379,7 +4688,7 @@ async function selftest(): Promise<number> {
       logV.kind === 'whole-tree' && logV.reason.includes('git log -1'),
       `B5 CONTROL real: git log -1 (implicit HEAD) stays history (got ${shape(logV)})`
     );
-    const fx = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-fx-'));
+    const fx = fs.mkdtempSync(path.join(runRoot('path-trace-'), 'fx-'));
     const fxRun = await traceCommand(
       `git init -q ${fx} && git -C ${fx} read-tree --empty && git -C ${fx} ls-files -s >/dev/null && git ls-files -z >/dev/null && cat conf/x.txt >/dev/null`,
       pyView.root
@@ -4392,7 +4701,7 @@ async function selftest(): Promise<number> {
         JSON.stringify(fxV.names) === '["**"]' &&
         [...(fxRun.access.gitReaders?.keys() ?? [])].some(
           (p) =>
-            p.startsWith(fs.realpathSync(os.tmpdir())) &&
+            p.startsWith(fs.realpathSync(runRoot('path-trace-'))) &&
             p.endsWith('/index') &&
             !p.startsWith(pyView.root)
         ),
@@ -4407,7 +4716,7 @@ async function selftest(): Promise<number> {
     check(
       net.exit === 0 &&
         net.access.network?.has('192.0.2.1:9') === true &&
-        ![...(net.access.network ?? [])].some((x) => x.startsWith('127.')),
+        ![...net.access.network].some((x) => x.startsWith('127.')),
       `a real strace connect to a routable peer is network and loopback is not (got ${JSON.stringify([...(net.access.network ?? [])])})`
     );
     fs.rmSync(dir, { recursive: true, force: true });
@@ -4499,25 +4808,293 @@ async function selftest(): Promise<number> {
     'a glob reaching a probe cites the record, a sibling directory does not, and the prefix is check_record_paths.py literal_prefix'
   );
 
-  // 53bbd61a.1: the real record set must not read check:ci-python-gate-deps' bare `agent` list entry as a citation, which is what lets that gate stay paths-traced.
+  // 53bbd61a.1: a bare `agent` list entry cites only a record whose literal prefix IS `agent` (check_record_paths.py literal_prefix: `agent/*/STATE.md`, added 2026-11-23 by PLAN-stop-hook-retro-20261123 R20261123.4, cuts back to `agent`), never one below a deeper directory such as agent/reviews/** or agent/worklist/*.jsonl. Since that record landed, check:ci-python-gate-deps' `lists: ['agent']` cites it, so a re-trace leaves that gate whole-tree until the record or literal_prefix changes.
   const realRecords = readRecordGlobs(REPO_ROOT);
+  const bareAgent = recordCitations(['agent'], realRecords);
   check(
-    recordCitations(['agent'], realRecords).length === 0 &&
-      recordCitations(['agent/reviews'], realRecords).length === 1,
-    'the real record set does not cite a bare `agent` list entry, and CONTROL: agent/reviews is cited'
+    bareAgent.length > 0 &&
+      bareAgent.every((g) => recordPrefix(g) === 'agent') &&
+      !bareAgent.includes('agent/reviews/**') &&
+      recordCitations(['agent/reviews'], realRecords).includes('agent/reviews/**'),
+    `a bare \`agent\` list entry cites only records whose literal prefix is \`agent\` (got ${JSON.stringify(bareAgent)}), and CONTROL: agent/reviews is cited`
+  );
+
+  // Temp disposal: real children, a signal mid-trace and a SIGKILL.
+  await tempDisposalCases(import.meta.filename, 'path-trace-', check);
+  await logCapCases(check);
+  const before = fs.readdirSync(runRoot('path-trace-')).length;
+  let threw = false;
+  try {
+    // An env whose enumeration throws fails traceCommand after its log dir and files exist.
+    const boom = new Proxy(
+      {},
+      {
+        ownKeys: () => {
+          throw new Error('planted');
+        },
+      }
+    ) as NodeJS.ProcessEnv;
+    await traceCommand('true', process.cwd(), { env: boom });
+  } catch {
+    threw = true;
+  }
+  check(
+    threw && fs.readdirSync(runRoot('path-trace-')).length === before,
+    `temp: a throw inside traceCommand leaves no log dir (threw ${threw}, leaked ${fs.readdirSync(runRoot('path-trace-')).length - before})`
   );
 
   console.log(`path-trace selftest: ${n - bad}/${n} passed`);
   return bad === 0 ? 0 : 1;
 }
 
-if (isEntryPoint(import.meta.filename)) {
-  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
-    process.on(sig, () => {
-      killLiveGroups();
-      process.exit(130);
-    });
+// ---------------------------------------------------------------------------
+// temp disposal: the entry points' signal hook, and the real-child cases both tools' selftests run
+// ---------------------------------------------------------------------------
+
+/** What each entry point installs: SIGINT, SIGTERM and SIGHUP kill the traced groups, then exit 130, which removes this run's temp (runtmp's exit hook). */
+export function installEntrySignals(): void {
+  installSignalCleanup(killLiveGroups);
+}
+
+/** The child side of `tempDisposalCases`: makes this tool's real temp, installs the entry hook, then idles (mode `noop` only touches the run dir and exits). */
+export async function tempProbeChild(mode: string, stub: string): Promise<void> {
+  installEntrySignals();
+  if (mode === 'noop') {
+    runRoot('path-trace-');
+    return;
   }
+  // The log dir exists synchronously; the stub strace then idles, so the trace is mid-run when the signal lands.
+  void traceCommand('true', process.cwd(), { straceBin: stub });
+  console.log('ready');
+  setInterval(() => undefined, 1000);
+}
+
+/**
+ * A stand-in for the strace binary (selftests): writes `$STUB_BYTES` bytes into the per-process log `<-o prefix>.4242`, records its pid in `$STUB_PIDFILE`, then sleeps `$STUB_SLEEP` seconds (default 15).
+ */
+export function writeStraceStub(file: string): string {
+  fs.writeFileSync(
+    file,
+    [
+      '#!/bin/sh',
+      'while [ $# -gt 0 ]; do if [ "$1" = -o ]; then o=$2; break; fi; shift; done',
+      '[ -n "$STUB_PIDFILE" ] && echo $$ > "$STUB_PIDFILE"',
+      '[ -n "$STUB_BYTES" ] && yes x | head -c "$STUB_BYTES" > "$o.4242"',
+      'exec sleep "${STUB_SLEEP:-15}"',
+      '',
+    ].join('\n'),
+    { mode: 0o755 }
+  );
+  return file;
+}
+
+/** Whether `pid` is a live process: a zombie awaiting its reaper counts as gone. */
+export function pidRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return !/^\d+ \(.*\) Z/.test(fs.readFileSync(`/proc/${pid}/stat`, 'utf8'));
+  } catch {
+    return false;
+  }
+}
+
+/** Polls until `pid` is gone or `ms` pass; true when it is gone. */
+export async function waitPidGone(pid: number, ms: number): Promise<boolean> {
+  for (const end = Date.now() + ms; Date.now() < end; await new Promise((r) => setTimeout(r, 50)))
+    if (!pidRunning(pid)) return true;
+  return !pidRunning(pid);
+}
+
+/**
+ * The strace log limit (D4), through a stub that writes past a 1 MB limit: exit 125 and `capped`, never a pass; the same stub under the limit passes (the control).
+ */
+export async function logCapCases(check: (ok: boolean, label: string) => void): Promise<void> {
+  const aux = fs.mkdtempSync(path.join(fs.existsSync('/tmp') ? '/tmp' : os.tmpdir(), 'pt-cap-'));
+  try {
+    const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
+    const env = (bytes: number, sleep: number): NodeJS.ProcessEnv => ({
+      ...process.env,
+      STUB_BYTES: String(bytes),
+      STUB_SLEEP: String(sleep),
+    });
+    const over = await traceCommand('true', process.cwd(), {
+      straceBin: stub,
+      env: env(2_000_000, 30),
+      maxLogMb: 1,
+      capPollMs: 100,
+    });
+    check(
+      over.capped && over.exit === CAP_EXIT && over.logBytes > 1048576 && over.seconds < 20,
+      `log cap: a stub writing 2 MB past a 1 MB limit is killed with exit ${CAP_EXIT} and capped (exit ${over.exit}, capped ${over.capped}, ${over.logBytes} bytes, ${over.seconds}s)`
+    );
+    const under = await traceCommand('true', process.cwd(), {
+      straceBin: stub,
+      env: env(1000, 0),
+      maxLogMb: 1,
+      capPollMs: 100,
+    });
+    check(
+      !under.capped && under.exit === 0,
+      `CONTROL: the same stub writing 1000 bytes under the 1 MB limit passes (exit ${under.exit}, capped ${under.capped})`
+    );
+    // b1bcc098.3: the log dir removed mid-run reads as no bytes, not a throw inside a timer.
+    check(
+      traceLogBytes(path.join(aux, 'gone')) === 0,
+      'traceLogBytes of a removed log dir is 0, not a throw from the watchdog or exit callback'
+    );
+    fs.writeFileSync(path.join(aux, 't.1'), 'abcd');
+    fs.writeFileSync(path.join(aux, 'other.txt'), 'zzzzzzzz');
+    check(
+      traceLogBytes(aux) === 4,
+      'CONTROL: traceLogBytes counts only the t.<pid> logs of an existing dir'
+    );
+    // a7298eaa.2: --keep-logs puts the logs outside the run dir and leaves them; without it nothing is announced or left.
+    const kept = async (keepLogs: boolean): Promise<string | undefined> => {
+      const lines: string[] = [];
+      const realWrite = process.stderr.write;
+      process.stderr.write = ((chunk: string | Uint8Array): boolean => {
+        lines.push(String(chunk));
+        return true;
+      }) as typeof process.stderr.write;
+      try {
+        await traceCommand('true', process.cwd(), {
+          straceBin: stub,
+          env: env(10, 0),
+          keepLogs,
+        });
+      } finally {
+        process.stderr.write = realWrite;
+      }
+      return /logs in (\S+)/.exec(lines.join(''))?.[1];
+    };
+    const keptDir = await kept(true);
+    try {
+      check(
+        keptDir !== undefined &&
+          fs.existsSync(keptDir) &&
+          path.relative(runRoot('path-trace-'), keptDir).startsWith('..'),
+        `keepLogs: the logs stay on disk outside the run dir (${keptDir})`
+      );
+    } finally {
+      if (keptDir !== undefined) fs.rmSync(keptDir, { recursive: true, force: true });
+    }
+    check(
+      (await kept(false)) === undefined,
+      'CONTROL: without keepLogs no kept-logs line is written'
+    );
+  } finally {
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Drives `<module>.tempProbeChild` as a real child in a fresh TMPDIR: SIGTERM mid-trace leaves nothing, SIGKILL leaves exactly the one run dir (the premise), and the next run's sweep removes it. Reports one verdict per case through `check`.
+ */
+export async function tempDisposalCases(
+  moduleFile: string,
+  prefix: string,
+  check: (ok: boolean, label: string) => void,
+  /** Whether the child traces through the strace stub, which makes the death-watch case apply (trace-honest's child only builds sparse trees and has its own `runPlain` case). */
+  stubChild = true
+): Promise<void> {
+  const root = fs.existsSync('/tmp') ? '/tmp' : os.tmpdir();
+  const base = fs.mkdtempSync(path.join(root, 'pt-'));
+  const aux = fs.mkdtempSync(path.join(root, 'pt-aux-'));
+  try {
+    const stub = writeStraceStub(path.join(aux, 'strace-stub.sh'));
+    const termPid = path.join(aux, 'stub-term.pid');
+    const killPid = path.join(aux, 'stub-kill.pid');
+    const pidFile = path.join(aux, 'stub-watched.pid');
+    const script = path.join(aux, 'child.mts');
+    fs.writeFileSync(
+      script,
+      `import { tempProbeChild } from ${JSON.stringify(pathToFileURL(moduleFile).href)};\nawait tempProbeChild(process.argv[2], process.argv[3]);\n`
+    );
+    // One pid file per case: a stub the earlier SIGKILL case left behind can write its pid late, and must never be read as the death-watch case's stub.
+    const start = async (mode: string, pidPath: string): Promise<ChildProcess> => {
+      const child = spawn(process.execPath, [...process.execArgv, script, mode, stub], {
+        env: { ...process.env, TMPDIR: base, STUB_PIDFILE: pidPath },
+        stdio: ['ignore', 'pipe', 'inherit'],
+      });
+      if (mode === 'noop') return child;
+      await new Promise<void>((resolve, reject) => {
+        child.stdout?.on('data', (d: Buffer) => {
+          if (String(d).includes('ready')) resolve();
+        });
+        child.on('exit', () => reject(new Error('probe child exited before it was ready')));
+      });
+      return child;
+    };
+    const ended = (child: ChildProcess): Promise<void> =>
+      new Promise((resolve) => {
+        if (child.exitCode !== null || child.signalCode !== null) resolve();
+        else child.on('exit', () => resolve());
+      });
+    // node and tsx keep their own compile and socket caches in TMPDIR; only this tool's run dirs count.
+    const left = (): string[] => fs.readdirSync(base).filter((f) => f.startsWith(prefix));
+    const term = await start('trace', termPid);
+    const madeByTerm = left().length;
+    term.kill('SIGTERM');
+    await ended(term);
+    check(
+      madeByTerm === 1 && left().length === 0,
+      `temp: SIGTERM mid-trace leaves no ${prefix}* entry (made ${madeByTerm}, left ${left().length})`
+    );
+    const killed = await start('trace', killPid);
+    killed.kill('SIGKILL');
+    await ended(killed);
+    check(
+      left().length === 1 && left()[0].startsWith(prefix),
+      `temp: SIGKILL leaves exactly one ${prefix}* run dir (left ${left().length}), which only a later sweep can remove`
+    );
+    // D5: SIGKILL runs no handler, so only the spawn's own death watch can end the strace group; the stub must be gone within seconds.
+    const watched = stubChild ? await start('trace', pidFile) : undefined;
+    let stubPid = 0;
+    // The child prints ready before its stub has started: wait, bounded, until the stub's pid is written AND alive.
+    for (let i = 0; watched !== undefined && i < 200 && stubPid === 0; i++) {
+      const pid = fs.existsSync(pidFile) ? Number(fs.readFileSync(pidFile, 'utf8').trim()) || 0 : 0;
+      if (pid !== 0 && pidRunning(pid)) stubPid = pid;
+      else await new Promise((r) => setTimeout(r, 50));
+    }
+    if (watched !== undefined && stubPid === 0) {
+      watched.kill('SIGKILL');
+      await ended(watched);
+      check(
+        false,
+        `death watch: the strace stub never came alive within 10 s (pid file ${fs.existsSync(pidFile) ? 'written but dead' : 'absent'})`
+      );
+    }
+    if (watched !== undefined && stubPid !== 0) {
+      const killedStub = fs.existsSync(killPid)
+        ? Number(fs.readFileSync(killPid, 'utf8').trim()) || 0
+        : 0;
+      check(
+        stubPid !== killedStub,
+        `death watch: the pid read is this run's own stub, not the SIGKILL case's (${stubPid} vs ${killedStub || 'none written'})`
+      );
+      const aliveBefore = stubPid !== 0 && pidRunning(stubPid);
+      watched.kill('SIGKILL');
+      await ended(watched);
+      const goneAfter = stubPid !== 0 && (await waitPidGone(stubPid, 3000));
+      check(
+        aliveBefore && goneAfter,
+        `death watch: a SIGKILLed ${prefix}* run leaves no strace group (stub pid ${stubPid} alive before the kill ${aliveBefore}, gone within 3 s ${goneAfter})`
+      );
+    }
+    const next = await start('noop', path.join(aux, 'stub-noop.pid'));
+    await ended(next);
+    check(
+      left().length === 0,
+      `temp: the next run's sweep removes the SIGKILLed ${prefix}* run dir (left ${left().length})`
+    );
+  } finally {
+    fs.rmSync(base, { recursive: true, force: true });
+    fs.rmSync(aux, { recursive: true, force: true });
+  }
+}
+
+if (isEntryPoint(import.meta.filename)) {
+  installEntrySignals();
   main(process.argv.slice(2)).then(
     (code) => {
       process.exitCode = code;

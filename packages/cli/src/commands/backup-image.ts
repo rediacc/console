@@ -11,7 +11,7 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode, writeStdout } from '../services/core/request-context.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
-import { resolveRepoRefLocal } from '../utils/repo-target.js';
+import { resolveRepoRefLocal } from '../utils/repo-ref-local.js';
 import {
   kibps,
   parseRetries,

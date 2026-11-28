@@ -6,7 +6,8 @@ agent/plans/PLAN-stop-hook-retro-20260924.md section 8 (boxes R20260924.11 to R.
             ordinary open-items check then enforces; a tracked item leased to a worker gets a
             `dispatched` row; a ticked one gets a `saved` row with the plan's task counts.
   brief     `worklist.py --retro-brief <me> <band>`: the Plan agent's prompt, carrying `#<item>`
-            so the P2.2 auto-lease links the item to that agent.
+            so the P2.2 auto-lease links the item to that agent, and ending with the guard chain
+            and gate report of wl_hookreport (PLAN-tooling-code-reduction.md CR8).
 
 THE LEDGER HELPERS ARE NOT COPIED HERE. They live in `.claude/hooks/context/ctx_budget.py`, which the band notice already imports, and this module loads that file by path on first use. Loading it lazily keeps this module importable from a stop directory copied without its `context/` sibling (the LKG snapshot, the post-edit check's copies), where every caller already treats a missing ledger as nothing to do.
 
@@ -21,6 +22,7 @@ import json
 import pathlib
 import re
 
+import wl_hookreport
 import worklist_messages as M
 
 _CTX_PATH = pathlib.Path(__file__).resolve().parents[1] / "context" / "ctx_budget.py"
@@ -239,7 +241,7 @@ def brief(worklist, root, me8, band, item):
     admitlog = pathlib.Path(str(wl) + ".admissions-%s.jsonl" % me8)
     ticklog = wl.with_suffix(".tick-refusals-%s.jsonl" % me8)
     hintlog = pathlib.Path(root) / "agent" / "ledgers" / "hint-proposals.jsonl"
-    return M.RETRO_BRIEF % {
+    text = M.RETRO_BRIEF % {
         "me8": me8,
         "band": band,
         "date": date,
@@ -277,3 +279,8 @@ def brief(worklist, root, me8, band, item):
         ),
         "boxes": box_census(root),
     }
+    # The guard and gate report (agent/plans/PLAN-tooling-code-reduction.md CR8, D6): which guards never fire, fire unconfirmed, overlap or run slow, and which gates never fail, read from the checkout running the guard chains. Evidence for the ranking, appended after the format so the template stays one file.
+    return "%s\nEVIDENCE, the guard chain and gate report to rank against:\n%s\n" % (
+        text,
+        wl_hookreport.retro_section(),
+    )

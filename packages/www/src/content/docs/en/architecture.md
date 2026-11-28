@@ -239,6 +239,8 @@ rdc config audit verify
 
 ### Envelope v2 and server-side enforcement
 
+See the [Security Model](/en/docs/security-model) for who can see what and how keys are scoped.
+
 When the config is synced to the [encrypted config store](/en/docs/config-storage), the CLI wraps every sensitive field in a per-field HMAC commitment and carries those commitments in the plaintext envelope. The server sees only hex digests: never the values: yet can enforce knowledge-gates on every write:
 
 - **Precondition check**: on `PUT /configs/<id>`, the client submits the digests it claims to know for the paths it wants to mutate. The server compares against the stored envelope's commitments. Mismatch → `409 precondition_failed` with `mismatchedPaths`. Zero-knowledge: the server never sees plaintext.

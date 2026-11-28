@@ -2,7 +2,7 @@
 
 PLAN-cloudflare-spend-guard T7, widened for PLAN-product-domain-rename L11. Every listing is a GET, nothing is deleted or changed:
 
-  script     a Workers script named by no `workers/*/wrangler*.toml` (nor `private/account/wrangler.toml`) and not a PR preview (`pr-<n>`, which the PR-close cleanup owns)
+  script     a Workers script named by no `workers/*/wrangler*.toml` (nor `private/account/wrangler.toml`) and not a PR preview (`pr-<n>`, or the word-named `pv-<w>-<w>-<w>` and its `-signer`, which the PR-close cleanup and `cleanup_versions` Phase 5b own)
   d1         a D1 database matching `edge-*`, `*-bench` or the jurisdictional `*-bench-j` that no config binds as `database_name`
   route      a Workers route in any zone whose script is absent from the account, or that names no script
   domain     a Workers custom domain whose service is absent from the account
@@ -39,10 +39,10 @@ import urllib.parse
 
 from rediacc_ci import paths
 from rediacc_ci.core import https
+from rediacc_ci.deploy import preview_name
 from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
-PR_SCRIPT_RE = re.compile(r"^pr-[0-9]+$")
 # `*-bench-j` and `*-bench-*-j` are the bench databases created under a jurisdiction (`account-bench-j`, `control-bench-eu-j`).
 D1_PATTERNS = ("edge-*", "*-bench", "*-bench-j", "*-bench-*-j")
 CONFIG_GLOBS = ("workers/*/wrangler*.toml", "private/account/wrangler*.toml")
@@ -295,13 +295,61 @@ def referenced_by(name: str, texts: dict[str, str], kind: str = "") -> list[str]
     return [rel for rel, text in texts.items() if pat.search(text)]
 
 
-def _total_pages(body: dict) -> int | None:
-    """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`, else None."""
-    info = body.get("result_info") or {}
-    total = info.get("total_pages")
-    if total is None and info.get("total_count") and info.get("per_page"):
+_CURSOR_KEYS = frozenset({"next_page_token", "page_token", "cursor"})
+_CONTINUATION_KEYS = _CURSOR_KEYS | {"next_cursor", "next", "next_page"}
+
+
+def _is_zero(value: object) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value == 0
+
+
+def _total_pages(body: dict, path: str = "listing") -> int:
+    """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`. A body with no `result_info` is the whole listing on one page (1); a `result_info` that names no usable count raises."""
+    info = body.get("result_info")
+    if info is None:
+        return 1
+    total = info.get("total_pages") if isinstance(info, dict) else None
+    # An empty listing says so with a zero count (`total_pages: 0` or `total_count: 0`): one page, with nothing on it. A JSON `false` equals 0 in Python and is a malformed count, not an empty listing.
+    if _is_zero(total) or (
+        isinstance(info, dict) and total is None and _is_zero(info.get("total_count"))
+    ):
+        return 1
+    # An unpaginated endpoint (no per_page, no page count, no continuation field) whose every stated item count (`count`, `total_count`) equals the number of items returned is a complete list.
+    if (
+        total is None
+        and isinstance(info, dict)
+        and "per_page" not in info
+        and "page" not in info
+        and not info.keys() & _CONTINUATION_KEYS
+        and isinstance(body.get("result"), list)
+    ):
+        stated = [info[k] for k in ("count", "total_count") if info.get(k) is not None]
+        if stated and all(
+            isinstance(n, int) and not isinstance(n, bool) and n == len(body["result"])
+            for n in stated
+        ):
+            return 1
+    if (
+        total is None
+        and isinstance(info, dict)
+        and info.get("total_count")
+        and info.get("per_page")
+    ):
         total = math.ceil(info["total_count"] / info["per_page"])
+    if not isinstance(total, int) or isinstance(total, bool) or total < 1:
+        raise CfError(
+            "%s: result_info carries no usable total_pages, so the listing's end is unknown" % path
+        )
     return total
+
+
+def _is_cursor_info(info) -> bool:
+    """A `result_info` object that is cursor pagination: it carries none of the count fields (`total_pages`, `total_count`, `count`, `page`) and is either empty (the end of the list, observed live) or names a cursor key (`next_page_token`, `page_token`, `cursor`). A bare `{"per_page": 20}` is neither, so `_total_pages` refuses it."""
+    return (
+        isinstance(info, dict)
+        and not info.keys() & {"total_pages", "total_count", "count", "page"}
+        and (not info or bool(info.keys() & _CURSOR_KEYS))
+    )
 
 
 def listing_by_page(path: str, token: str, get=fetch) -> list:
@@ -311,29 +359,34 @@ def listing_by_page(path: str, token: str, get=fetch) -> list:
     page = 1
     while True:
         body = get("%s%spage=%d" % (path, sep, page), token)
-        chunk = body.get("result") or []
-        items.extend(chunk)
-        total = _total_pages(body)
-        if total is None:
-            if chunk:
-                raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
-            return items
-        if page >= total:
+        items.extend(body.get("result") or [])
+        if page >= _total_pages(body, path):
             return items
         page += 1
 
 
 def followed(path: str, token: str, get=fetch) -> list:
-    """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone."""
+    """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone. A body without `result_info` is the whole listing."""
     body = get(path, token)
     items = list(body.get("result") or [])
-    total = _total_pages(body)
-    if total is None:
-        if items:
-            raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
-        return items
     sep = "&" if "?" in path else "?"
-    for page in range(2, total + 1):
+    if _is_cursor_info(body.get("result_info")):
+        # Cursor pagination (the containers applications listing: `next_page_token` / `page_token` / `per_page`, and a bare `{}` observed live 2026-11-26): the listing ends where the response names no next token.
+        seen: set = set()
+        while True:
+            token_next = body["result_info"].get("next_page_token")
+            if not token_next:
+                return items
+            if not isinstance(token_next, str) or token_next in seen:
+                raise CfError("%s: result_info.next_page_token repeats or is malformed" % path)
+            seen.add(token_next)
+            body = get(
+                "%s%spage_token=%s" % (path, sep, urllib.parse.quote(token_next, safe="")), token
+            )
+            items.extend(body.get("result") or [])
+            if not _is_cursor_info(body.get("result_info")):
+                raise CfError("%s: a cursor page answered without cursor result_info" % path)
+    for page in range(2, _total_pages(body, path) + 1):
         items.extend(get("%s%spage=%d" % (path, sep, page), token).get("result") or [])
     return items
 
@@ -413,6 +466,11 @@ class Inventory:
         return out
 
 
+def _worker_gone(exc: CfError) -> bool:
+    """True when Cloudflare answered code 10007 ("This Worker does not exist") for a settings read."""
+    return '"code": 10007' in str(exc)
+
+
 def read_inventory(account: str, token: str, get=fetch, with_bindings: bool = True) -> Inventory:
     """Read every object class. Raises CfError when any listing cannot be read."""
     scripts = sorted(
@@ -423,11 +481,20 @@ def read_inventory(account: str, token: str, get=fetch, with_bindings: bool = Tr
         }
     )
     bindings: dict[str, list[dict]] = {}
+    gone: set[str] = set()
     if with_bindings:
         for name in scripts:
-            body = get("/accounts/%s/workers/scripts/%s/settings" % (account, name), token)
+            try:
+                body = get("/accounts/%s/workers/scripts/%s/settings" % (account, name), token)
+            except CfError as exc:
+                if _worker_gone(exc):
+                    # Deleted between the list and the read: it has no bindings to hide, and is no longer a Worker.
+                    gone.add(name)
+                    continue
+                raise
             items = (body.get("result") or {}).get("bindings") or []
             bindings[name] = [b for b in items if isinstance(b, dict)]
+    scripts = [n for n in scripts if n not in gone]
     routes: list[tuple[str, str, dict]] = []
     # Only this account's zones: a route in another account's zone may name a script that lives here and is not a leftover of this account.
     for zone in listing("/zones?account.id=%s" % account, token, get):
@@ -503,7 +570,7 @@ def find_leftovers(
             ),
         )
         for name in sorted(live_set)
-        if name not in known_scripts and not PR_SCRIPT_RE.match(name)
+        if name not in known_scripts and not preview_name.is_preview_worker(name)
     )
 
     for db in inv.d1:

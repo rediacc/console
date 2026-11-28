@@ -34,6 +34,7 @@ import sys
 from typing import Any
 
 from rediacc_ci import paths
+from rediacc_ci.quality import python_control_plants as pcp
 from rediacc_ci.tests.gates import harness
 
 GATE = paths.from_root(".ci", "scripts", "quality", "check_python_control_plants.py")
@@ -84,36 +85,20 @@ _CACHE: dict[str, Any] = {}
 
 
 def _gate_module() -> Any:
-    """The gate, imported BY PATH, purely to borrow its own `SCOPE` globs.
+    """The gate, imported from the package that holds its logic, purely to borrow its own `SCOPE` globs.
 
     The mirror has to copy exactly what the gate scans. Re-typing the two globs here would let the two drift apart in silence, and a mirror that had quietly stopped copying half the estate would still pass every case that expects a green, which is the vacuity this whole file is about. Importing under a name other than `__main__` runs no `SystemExit`.
     """
     if "subject" not in _CACHE:
-        if not GATE.is_file():
-            raise harness.GateAssertionError("subject under test is missing: %s" % GATE)
-        added = str(GATE.parent) not in sys.path
-        entry = paths.on_sys_path(GATE.parent)
-        try:
-            spec = importlib.util.spec_from_file_location("py_control_plants_subject", GATE)
-            if spec is None or spec.loader is None:
-                raise harness.GateAssertionError(
-                    "python built no import spec for %s, so this file cannot read the gate's "
-                    "own SCOPE and every mirror below would be copied from a guess" % GATE
-                )
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-        finally:
-            if added and entry in sys.path:
-                sys.path.remove(entry)
-        _CACHE["subject"] = module
+        _CACHE["subject"] = importlib.import_module("rediacc_ci.quality.python_control_plants")
     return _CACHE["subject"]
 
 
-def _run(root, *args):
+def _run(root, *args, env=None):
     return harness.run(
         [sys.executable, str(GATE), *args],
         cwd=paths.repo_root(),
-        env={ROOT_ENV: str(root)},
+        env={ROOT_ENV: str(root), **(env or {})},
     )
 
 
@@ -276,3 +261,80 @@ def test_the_selftest_runs_as_a_process_and_is_not_trivially_small(gate):
             % (passes, MIN_CONTROLS)
         )
     gate.log_pass("%d controls ran, both directions on every rule and both exemptions" % passes)
+
+
+def test_the_root_override_outside_the_temp_directory_is_ignored(gate):
+    """A plain gate run always scans the repository: the variable set to a tree OUTSIDE the temp directory (an empty one inside the checkout) changes nothing and the real estate is still counted. CONTROL: an empty tree inside the temp directory still refuses, so the seam is live where it belongs."""
+    gate.log_test("SEAM BOUND: PY_CONTROL_PLANTS_ROOT outside the temp directory is ignored")
+    outside = paths.repo_root() / ".ci" / "cache" / "py-control-plants-empty-root"
+    outside.mkdir(parents=True, exist_ok=True)
+    result = _run(outside)
+    gate.assert_exit(0, result, "the override was ignored and the real tree is green")
+    modules, sites = _counts(result.combined)
+    if modules < MIN_MODULES or sites < MIN_SITES:
+        gate.log_fail("the real tree was not scanned: %d module(s), %d site(s)" % (modules, sites))
+    gate.assert_contains(
+        result.combined, "is not a private scratch path in the temp directory", "says it ignored it"
+    )
+    with harness.temp_dir() as tmp:
+        refused = _run(pathlib.Path(tmp))
+        gate.assert_exit(1, refused, "CONTROL: an empty tree inside the temp directory refuses")
+    gate.log_pass("the seam is bounded to the temp directory")
+
+
+def test_the_root_override_under_a_tmpdir_moved_onto_the_repository_is_ignored(gate):
+    """Finding a66ada74.2: TMPDIR pointed at a directory in the checkout, the override an empty tree inside it. `tempfile.gettempdir()` calls that directory temp; the bound does not, so the repository is still scanned. CONTROL: a world-writable directory under /tmp is refused the same way, and the private mkdtemp tree beside it still reaches the gate."""
+    gate.log_test(
+        "SEAM BOUND: TMPDIR moved onto the repository does not widen PY_CONTROL_PLANTS_ROOT"
+    )
+    fake = paths.repo_root() / ".ci" / "cache" / "py-control-plants-fake-tmpdir"
+    (fake / "scan").mkdir(parents=True, exist_ok=True)
+    result = _run(fake / "scan", env={"TMPDIR": str(fake)})
+    gate.assert_exit(0, result, "the override was ignored and the real tree is green")
+    modules, sites = _counts(result.combined)
+    if modules < MIN_MODULES or sites < MIN_SITES:
+        gate.log_fail("the real tree was not scanned: %d module(s), %d site(s)" % (modules, sites))
+    gate.assert_contains(result.combined, "TMPDIR is not consulted", "names why it ignored it")
+    with harness.temp_dir() as tmp:
+        shared = pathlib.Path(tmp) / "shared"
+        shared.mkdir()
+        shared.chmod(0o777)
+        try:
+            planted = _run(shared)
+        finally:
+            shared.chmod(0o700)
+        gate.assert_exit(0, planted, "a world-writable tree under /tmp is ignored")
+        gate.assert_contains(planted.combined, "group- or other-writable", "names why")
+        gate.assert_exit(
+            1, _run(pathlib.Path(tmp)), "CONTROL: the private tree still reaches the gate"
+        )
+    gate.log_pass("TMPDIR and a shared /tmp directory leave the seam bounded")
+
+
+def test_a_module_that_cannot_be_parsed_is_a_finding_not_a_skip(tmp_path):
+    """Review d31194f4.2: an unparseable module beside parsed ones is reported by name."""
+    quality = tmp_path / ".ci" / "rediacc_ci" / "quality"
+    quality.mkdir(parents=True)
+    (quality / "good.py").write_text("x = 1\n", encoding="utf-8")
+    (quality / "broken.py").write_text("def (:\n", encoding="utf-8")
+    modules, _sites, findings = pcp.scan(tmp_path)
+    assert modules == 1
+    assert len(findings) == 1
+    assert "broken.py" in findings[0]
+    assert "cannot be scanned" in findings[0]
+
+
+def test_a_non_utf8_module_and_an_unreadable_module_are_findings_not_skips(tmp_path):
+    """60e75746.1: UnicodeDecodeError and OSError name the module like a SyntaxError does."""
+    quality = tmp_path / ".ci" / "rediacc_ci" / "quality"
+    quality.mkdir(parents=True)
+    (quality / "good.py").write_bytes(b"x = 1\n")
+    (quality / "latin.py").write_bytes(b"x = '\xe9'\n")
+    # A dangling symlink matches the glob and fails to open: OSError.
+    (quality / "dangling.py").symlink_to(tmp_path / "nowhere.py")
+    modules, _sites, findings = pcp.scan(tmp_path)
+    assert modules == 1
+    named = {f.split(":")[0].rsplit("/", 1)[-1]: f for f in findings}
+    assert set(named) == {"latin.py", "dangling.py"}, findings
+    assert "UnicodeDecodeError" in named["latin.py"]
+    assert "FileNotFoundError" in named["dangling.py"]

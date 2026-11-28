@@ -90,6 +90,9 @@ class Fake:
         self.jobs: list[FakeJob] = []
         self.authorize_paths: list[str] = []
         self.reopen_terms_at_handoff = False
+        self.magic_jars: list[str] = []
+        self.step_up = False
+        self.step_up_with_user = False
 
     def handoff_url(self):
         url = "https://bench.example/account/authorize?code=" + USER_CODE
@@ -131,9 +134,6 @@ class Fake:
         if path.endswith("/register"):
             self.user_present = True
             return 201, {"subscription": {"planCode": "COMMUNITY"}}
-        if path.endswith("/magic-link"):
-            self.last_next = _body.get("next")
-            return 200, {}
         return 200, {"user": {"email": self.email}}
 
     email = ""
@@ -145,13 +145,25 @@ class Fake:
             self.calls.append("GET authorize")
             return 200, {}
         tail = path.split("/api/v1", 1)[1]
+        if tail == "/auth/magic-link":
+            assert jar  # the request and the verify share one jar (the ml_bind cookie)
+            self.calls.append("magic-link")
+            self.last_next = body.get("next")
+            self.magic_jars.append(jar)
+            return 200, {}
         if tail == "/auth/magic-link/verify":
             assert jar
+            self.magic_jars.append(jar)
             assert body["token"]
             self.calls.append("POST verify")
             if self.reopen_terms_at_handoff:
                 self.terms_accepted = False
-            return 200, {}
+            if self.step_up:
+                answer = {"requiresStepUp": True, "method": "password", "stepUpToken": "t"}
+                if self.step_up_with_user:
+                    answer["user"] = {"email": self.email}
+                return 200, answer
+            return 200, {"user": {"email": self.email}}
         if tail == "/device-codes/%s/approve" % USER_CODE:
             assert jar
             self.calls.append("POST approve")
@@ -293,7 +305,7 @@ def test_happy_path_order_and_evidence(capsys):
         "GET /portal/subscription",
         "POST /portal/terms/accept",
         "magic-link",
-        "verify",
+        "POST verify",
         "login",
         "status",
         "register-spawn",
@@ -321,6 +333,31 @@ def test_happy_path_order_and_evidence(capsys):
         ["7", "cleanup"],
     ]
     assert all(" rc=0" in line for line in out)
+
+
+def test_the_magic_link_request_and_verify_share_one_cookie_jar():
+    fake = Fake()
+    assert go(fake) == 0
+    # step 5 and step 6b each send a request and a verify through the same jar
+    assert len(fake.magic_jars) == 4
+    assert fake.magic_jars[0] == fake.magic_jars[1]
+    assert fake.magic_jars[2] == fake.magic_jars[3]
+
+
+def test_a_verify_that_asks_for_a_step_up_fails_the_step(capsys):
+    fake = Fake()
+    fake.step_up = True
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert re.search(r"STEP 5 email rc=1 .*asked for a step-up", out)
+
+
+def test_a_step_up_answer_that_also_names_the_user_still_fails_the_step(capsys):
+    fake = Fake()
+    fake.step_up = True
+    fake.step_up_with_user = True
+    assert go(fake) == 1
+    assert re.search(r"STEP 5 email rc=1 .*asked for a step-up", capsys.readouterr().out)
 
 
 def test_address_pattern_and_throwaway_config():
@@ -440,7 +477,8 @@ def test_dry_run_touches_nothing(capsys):
 
 def test_community_limits_parse_the_shared_constants():
     assert LIMITS["maxRepositorySizeGb"] == 10
-    assert LIMITS["storageQuotaBytes"] == 10 * 1024**3
+    # COMMUNITY carries no hosted storage (PM2): the parsed constant is 0, not a quota.
+    assert LIMITS["storageQuotaBytes"] == 0
 
 
 def test_token_file_of_the_throwaway_config_is_dropped():
@@ -612,7 +650,7 @@ def test_a_magic_link_without_next_fails_the_step(capsys):
     assert go(fake) == 1
     out = capsys.readouterr().out
     assert re.search(r"STEP 6b handoff rc=1 .*magic link next=''", out)
-    assert "POST verify" not in fake.calls
+    assert fake.calls.count("POST verify") == 1  # step 5 only; the handoff never verified
 
 
 def test_a_register_process_that_fails_fails_the_step(capsys):

@@ -1,0 +1,205 @@
+{"kind":"charge","sig":"0a6339fed40a","why":"proven","at":"2026-11-23T05:12:10Z","br":"1121-1"}
+{"kind":"charge","sig":"d464f861674a","why":"proven","at":"2026-11-23T07:03:01Z","br":"1121-1"}
+{"kind":"charge","sig":"96411ac5b47f","why":"proven","at":"2026-11-23T08:27:12Z","br":"1121-1"}
+{"kind":"charge","sig":"81f4987ebb51","why":"proven","at":"2026-11-23T08:56:27Z","br":"1121-1"}
+{"kind":"charge","sig":"67b876df3caa","why":"proven","at":"2026-11-23T11:21:55Z","br":"1121-1"}
+{"kind":"charge","sig":"a8cc07942c70","why":"proven","at":"2026-11-23T11:53:28Z","br":"1121-1"}
+{"kind":"charge","sig":"48e9cd94441f","why":"proven","at":"2026-11-23T12:36:55Z","br":"1121-1"}
+{"kind":"charge","sig":"c10927759702","why":"proven","at":"2026-11-23T12:39:08Z","br":"1121-1"}
+{"kind":"charge","sig":"1d221e8af764","why":"proven","at":"2026-11-23T12:44:55Z","br":"1121-1"}
+{"kind":"charge","sig":"10ef8dcef492","why":"proven","at":"2026-11-23T14:00:16Z","br":"1121-1"}
+{"kind":"charge","sig":"d981499ed2a3","why":"proven","at":"2026-11-23T14:06:24Z","br":"1121-1"}
+{"kind":"charge","sig":"550784203be9","why":"proven","at":"2026-11-23T14:34:43Z","br":"1121-1"}
+{"kind":"charge","sig":"3a472a3959b8","why":"proven","at":"2026-11-23T18:07:53Z","br":"1121-1"}
+{"kind":"debt","sig":"f0a3c1489ab0","blind_spot":"No check compared the rollback's own failure with what the user was shown. The job-level result was the only signal, so a failed cleanup left a stale config entry with no message.","surface":"unit","artifact":"packages/cli/src/commands/__tests__/registration-cleanup.test.ts","charged":13,"at":"2026-11-23T18:16:59Z","br":"1121-1"}
+{"kind":"charge","sig":"f0a3c1489ab0","why":"capped","at":"2026-11-23T18:16:59Z","br":"1121-1"}
+{"kind":"charge","sig":"6f37f7e3683d","why":"proven","at":"2026-11-23T18:26:43Z","br":"1121-1"}
+{"kind":"charge","sig":"13d4a48bf81b","why":"proven","at":"2026-11-23T20:12:08Z","br":"1121-1"}
+{"kind":"charge","sig":"be93b9922ae8","why":"proven","at":"2026-11-23T20:37:00Z","br":"1121-1"}
+{"kind":"charge","sig":"fe0e6bcdfc34","why":"proven","at":"2026-11-23T20:39:54Z","br":"1121-1"}
+{"kind":"debt","sig":"bddbfeb48e28","blind_spot":"The existing unit test asserted the buggy reading, so it compared the preview decision against a stale expectation. No check compared a doubtful apply value against what the executor does with it, so the broken relationship was never observed.","surface":"unit","artifact":"packages/shared/src/auth/__tests__/preview-run.test.ts","charged":18,"at":"2026-11-23T20:46:17Z","br":"1121-1"}
+{"kind":"charge","sig":"bddbfeb48e28","why":"capped","at":"2026-11-23T20:46:17Z","br":"1121-1"}
+{"kind":"debt","sig":"259f37563283","blind_spot":"The account suites' fixtures encoded policy in local configs, but landings moved policy into remote configs. No check compared the fixture placement with the schema the landing set, so the mismatch was visible only when the suites ran.","surface":"none","artifact":"","charged":19,"at":"2026-11-23T20:48:34Z","br":"1121-1"}
+{"kind":"charge","sig":"259f37563283","why":"capped","at":"2026-11-23T20:48:34Z","br":"1121-1"}
+{"kind":"debt","sig":"2adddf2f4cc0","blind_spot":"The Stop hook had no check that a high-effort session runs a writers-now round at least hourly, so a session could idle through a whole hour with no round and every existing check stayed green. The relationship broken is between the effort level and the time since the last round record, which no","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_wl_writersnow.py","charged":20,"at":"2026-11-23T21:06:05Z","br":"1121-1"}
+{"kind":"charge","sig":"2adddf2f4cc0","why":"capped","at":"2026-11-23T21:06:05Z","br":"1121-1"}
+{"kind":"debt","sig":"6902d4abed1e","blind_spot":"Checks observe whether a waiter process is alive, not whether its exit condition has already become true. The defect sits in the gap between liveness and the condition, and no check compares the two.","surface":"hooks","artifact":".claude/hooks/test-hooks.sh","charged":21,"at":"2026-11-23T21:13:50Z","br":"1121-1"}
+{"kind":"charge","sig":"6902d4abed1e","why":"capped","at":"2026-11-23T21:13:50Z","br":"1121-1"}
+{"kind":"debt","sig":"5e5e13f46205","blind_spot":"The introspection path accepted a bearer as valid once it was active, and nothing compared its expiresAt to the current time. No check observed the relationship between expiry and now.","surface":"unit","artifact":"packages/cli/src/services/serve/__tests__/hardening-auth-cache.test.ts","charged":22,"at":"2026-11-23T22:02:09Z","br":"1121-1"}
+{"kind":"charge","sig":"5e5e13f46205","why":"capped","at":"2026-11-23T22:02:09Z","br":"1121-1"}
+{"kind":"debt","sig":"0b18ba962601","blind_spot":"The lease create path checked tree count but never free disk. Once the tree cap was removed, no check compared lease creation against free space, so the disk guard disappeared while every check stayed green.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_dev_worktree_lease.py","charged":23,"at":"2026-11-23T22:07:52Z","br":"1121-1"}
+{"kind":"charge","sig":"0b18ba962601","why":"capped","at":"2026-11-23T22:07:52Z","br":"1121-1"}
+{"kind":"debt","sig":"315e71b66f4b","blind_spot":"The shared audit writer and its console.reveal schema union were never checked together. Existing checks look at source rules and at each side in isolation, so no check compared a reveal event produced by the writer against the shared schema.","surface":"unit","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","charged":24,"at":"2026-11-23T23:04:33Z","br":"1121-1"}
+{"kind":"charge","sig":"315e71b66f4b","why":"capped","at":"2026-11-23T23:04:33Z","br":"1121-1"}
+{"kind":"debt","sig":"24ac37f47e10","blind_spot":"No check compares the path stamped into a scheduled unit's ExecStart with the stable path the upgrade installs and keeps current. A versioned path passes every shape check, so only a runtime upgrade exposes it.","surface":"unit","artifact":"packages/cli/src/services/backup/__tests__/backup-schedule-stable-path.test.ts","charged":25,"at":"2026-11-24T00:12:57Z","br":"1121-1"}
+{"kind":"charge","sig":"24ac37f47e10","why":"capped","at":"2026-11-24T00:12:57Z","br":"1121-1"}
+{"kind":"charge","sig":"55776523c57c","why":"proven","at":"2026-11-24T07:43:08Z","br":"1121-1"}
+{"kind":"debt","sig":"0e17c71058e2","blind_spot":"The shared console audit builder stores configId as given. No check compares the length of the caller-supplied value with the length the stored event field accepts, so an over-long id passes every existing gate.","surface":"unit","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","charged":27,"at":"2026-11-24T07:59:52Z","br":"1121-1"}
+{"kind":"charge","sig":"0e17c71058e2","why":"capped","at":"2026-11-24T07:59:52Z","br":"1121-1"}
+{"kind":"charge","sig":"e48aa2f2c0ab","why":"proven","at":"2026-11-24T08:12:41Z","br":"1121-1"}
+{"kind":"charge","sig":"f1effe21aba8","why":"proven","at":"2026-11-24T08:38:59Z","br":"1121-1"}
+{"kind":"charge","sig":"197a04590198","why":"proven","at":"2026-11-24T14:15:20Z","br":"1121-1"}
+{"kind":"debt","sig":"7bf263c35ce8","blind_spot":"pool.ts computes a load hold from timestamped readings, and no check compares the hold clock against the elapsed time between readings. A gap with no reading therefore carried the old hold forward, and the checks only read source text.","surface":"unit","artifact":"","charged":31,"at":"2026-11-24T14:58:21Z","br":"1121-1"}
+{"kind":"charge","sig":"7bf263c35ce8","why":"capped","at":"2026-11-24T14:58:21Z","br":"1121-1"}
+{"kind":"charge","sig":"fbbbc2a5c6bd","why":"proven","at":"2026-11-24T16:32:25Z","br":"1121-1"}
+{"kind":"debt","sig":"cbee33bfa25a","blind_spot":"The finding cites a call at login_bench.py:884 that only the live bench login reaches. No offline check executes that call, so a wrong argument or signature there passes every gate.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_ops_login_bench.py","charged":33,"at":"2026-11-24T16:44:04Z","br":"1121-1"}
+{"kind":"charge","sig":"cbee33bfa25a","why":"capped","at":"2026-11-24T16:44:04Z","br":"1121-1"}
+{"kind":"charge","sig":"a64eddc351f8","why":"proven","at":"2026-11-24T17:56:51Z","br":"1121-1"}
+{"kind":"charge","sig":"2f628e9e132f","why":"proven","at":"2026-11-24T21:18:01Z","br":"1121-1"}
+{"kind":"debt","sig":"6d015c0b31f2","blind_spot":"Plural checks compare which keys exist per locale. A collapsed plural leaves one key present, so key-presence checks pass while required plural forms are missing.","surface":"unit","artifact":"eslint-rules/__tests__/cross-language-consistency.spec.js","charged":36,"at":"2026-11-24T21:25:01Z","br":"1121-1"}
+{"kind":"charge","sig":"6d015c0b31f2","why":"capped","at":"2026-11-24T21:25:01Z","br":"1121-1"}
+{"kind":"debt","sig":"96a31eca7b31","blind_spot":"The shard move copies a hand-kept table list. No check compares that list against the full set of forensics tables that belong to an org, so an omitted table passes every gate.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_d1_shard_move.py","charged":37,"at":"2026-11-24T22:14:12Z","br":"1121-1"}
+{"kind":"charge","sig":"96a31eca7b31","why":"capped","at":"2026-11-24T22:14:12Z","br":"1121-1"}
+{"kind":"debt","sig":"1b172f89d003","blind_spot":"The SubagentStop path never fires on an API-error death (measured), and no check compares a dead worker's lease against the tick it should have written, so the box stays unmarked while every gate reads the store as consistent.","surface":"hooks","artifact":".claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py","charged":38,"at":"2026-11-24T22:40:06Z","br":"1121-1"}
+{"kind":"charge","sig":"1b172f89d003","why":"capped","at":"2026-11-24T22:40:06Z","br":"1121-1"}
+{"kind":"charge","sig":"90e700b53b9a","why":"proven","at":"2026-11-25T02:15:29Z","br":"1121-1"}
+{"kind":"debt","sig":"f51c2a6cf6b5","blind_spot":"The require-testid rule's exemption was broader than its own intent, so a violation that should be reported was silently exempted. No existing check compares the rule's exemption set against the component it is supposed to cover, so lint stayed green.","surface":"unit","artifact":"eslint-rules/__tests__/require-testid.spec.js","charged":40,"at":"2026-11-25T02:37:48Z","br":"1121-1"}
+{"kind":"charge","sig":"f51c2a6cf6b5","why":"capped","at":"2026-11-25T02:37:48Z","br":"1121-1"}
+{"kind":"charge","sig":"63bf4670e1b3","why":"proven","at":"2026-11-25T03:06:44Z","br":"1121-1"}
+{"kind":"debt","sig":"dc6baa57c484","blind_spot":"The fix changed the order of deploy_record against the R2 reads for bench companies. Every existing check tests lab.py in isolation or reads source text. None compares the deploy-record write sequence with the R2 read sequence on a live bench run, so the ordering broke with every unit check green.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_enterprise_lab.py","charged":42,"at":"2026-11-25T03:12:44Z","br":"1121-1"}
+{"kind":"charge","sig":"dc6baa57c484","why":"capped","at":"2026-11-25T03:12:44Z","br":"1121-1"}
+{"kind":"debt","sig":"24fd251cfb8f","blind_spot":"The settle bound was computed once from the start of the proof release and compared against the whole run, so a deploy between waits consumed the budget and the stop fired early. Checks compared the bound's value and the wait's own timeout, never the relationship between the bound and the deploys","surface":"unit","artifact":".ci/rediacc_ci/tests/test_release_rings_run.py","charged":43,"at":"2026-11-25T03:22:25Z","br":"1121-1"}
+{"kind":"charge","sig":"24fd251cfb8f","why":"capped","at":"2026-11-25T03:22:25Z","br":"1121-1"}
+{"kind":"charge","sig":"0280eb5ea509","why":"proven","at":"2026-11-25T03:32:48Z","br":"1121-1"}
+{"kind":"charge","sig":"900f6233c20e","why":"proven","at":"2026-11-25T04:25:45Z","br":"1121-1"}
+{"kind":"charge","sig":"7b1052d7981b","why":"proven","at":"2026-11-25T12:44:39Z","br":"1121-1"}
+{"kind":"debt","sig":"78fc4b05e9c8","blind_spot":"The live vm:check drill is the only thing that exercised P4 with a production stored token, and it is not in CI. The unit tests did not, as far as the message shows, feed a production-origin token into P4 and check that it is refused, so nothing compared the token's gateway with the gateway P4","surface":"unit","artifact":".ci/rediacc_ci/tests/test_drills_vm_check.py","charged":47,"at":"2026-11-25T12:48:38Z","br":"1121-1"}
+{"kind":"charge","sig":"78fc4b05e9c8","why":"capped","at":"2026-11-25T12:48:38Z","br":"1121-1"}
+{"kind":"debt","sig":"4c120dc223be","blind_spot":"The fix changes behaviour on a fresh machine: no exported renet key, no install dir, and a shell lacking the docker group. The existing checks run with the key exported and the install dir present, so they never compare a clean-HOME install against the live result. The defect is invisible by","surface":"install","artifact":".ci/scripts/test/test-rdc-native.sh","charged":48,"at":"2026-11-25T13:23:11Z","br":"1121-1"}
+{"kind":"charge","sig":"4c120dc223be","why":"capped","at":"2026-11-25T13:23:11Z","br":"1121-1"}
+{"kind":"charge","sig":"0f07cc259435","why":"proven","at":"2026-11-25T15:53:54Z","br":"1121-1"}
+{"kind":"debt","sig":"102b1efacd99","blind_spot":"The npmrc gate enumerated only the root .npmrc and private/ projects, so a standalone Worker under workers/*/ had no check comparing its lifecycle-script exception against its own .npmrc. No check compared the set of .npmrc files in the tree against the set the gate read.","surface":"gates","artifact":".ci/rediacc_ci/tests/test_quality_npmrc.py","charged":50,"at":"2026-11-25T16:07:26Z","br":"1121-1"}
+{"kind":"charge","sig":"102b1efacd99","why":"capped","at":"2026-11-25T16:07:26Z","br":"1121-1"}
+{"kind":"debt","sig":"e277faba3053","blind_spot":"These are runtime control-flow defects: a counter not reset on fallback, a throw after the pin answering a start-failure code, and an ended grant with no code when the re-auth link fails. Every check:* key compares source shape, wiring, or content, and none executes a judge, recorder, or proxy/mcp","surface":"unit","artifact":"packages/cli/src/services/ai/__tests__/judge.test.ts","charged":51,"at":"2026-11-25T17:15:23Z","br":"1121-1"}
+{"kind":"charge","sig":"e277faba3053","why":"capped","at":"2026-11-25T17:15:23Z","br":"1121-1"}
+{"kind":"debt","sig":"4fd0a63f6912","blind_spot":"No existing check exercises a delivery whose encryption-key read never settles. The suites assert entry removal for finished deliveries and source shape, but nothing asserts that the wait is bounded, so the broken relationship is between the pending chain entry and its settle or timeout path.","surface":"unit","artifact":"","charged":52,"at":"2026-11-25T17:26:28Z","br":"1121-1"}
+{"kind":"charge","sig":"4fd0a63f6912","why":"capped","at":"2026-11-25T17:26:28Z","br":"1121-1"}
+{"kind":"charge","sig":"4a4b285dded2","why":"proven","at":"2026-11-25T17:52:25Z","br":"1121-1"}
+{"kind":"charge","sig":"a78e1b3ceef2","why":"proven","at":"2026-11-25T22:16:45Z","br":"1121-1"}
+{"kind":"charge","sig":"0dab659d136c","why":"proven","at":"2026-11-26T03:47:15Z","br":"1121-1"}
+{"kind":"debt","sig":"5e074d33170e","blind_spot":"Company removal and export enumerated only the per-company objects they already knew about. No test asserted that every per-company object kind, including audit-<company> and forensics-compact-<company>, was covered, so the omission was invisible to any check that compares the code with its tests.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py","charged":56,"at":"2026-11-26T03:51:14Z","br":"1121-1"}
+{"kind":"charge","sig":"5e074d33170e","why":"capped","at":"2026-11-26T03:51:14Z","br":"1121-1"}
+{"kind":"debt","sig":"f3dda79a32d2","blind_spot":"The gate tied the detect-wasm manifest's renet_commit to the renet gitlink, a relationship that moves on every renet commit. It never compared the manifest against renet_inputs_sha256, which is the input the build actually depends on.","surface":"unit","artifact":".ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py","charged":57,"at":"2026-11-26T04:46:28Z","br":"1121-1"}
+{"kind":"charge","sig":"f3dda79a32d2","why":"capped","at":"2026-11-26T04:46:28Z","br":"1121-1"}
+{"kind":"debt","sig":"890ef66d3353","blind_spot":"gen-docs listings are compared only against the git-tracked set, so no check looks at whether the www could-affect list matches the working-tree files the docs describe. Untracked files fall outside every comparison.","surface":"unit","artifact":"","charged":58,"at":"2026-11-26T05:42:54Z","br":"1121-1"}
+{"kind":"charge","sig":"890ef66d3353","why":"capped","at":"2026-11-26T05:42:54Z","br":"1121-1"}
+{"kind":"debt","sig":"2fd00f8797e9","blind_spot":"The company removal path and the enterprise export path both trusted a per-company audit bucket key that enterprise add never minted, so no check compared a company's key presence against the removal and export code paths that depend on it.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py","charged":59,"at":"2026-11-26T06:18:46Z","br":"1121-1"}
+{"kind":"charge","sig":"2fd00f8797e9","why":"capped","at":"2026-11-26T06:18:46Z","br":"1121-1"}
+{"kind":"debt","sig":"56ebf4b35b2c","blind_spot":"Review found the resend path dropping the AI-specific audit record. The gap is a relationship between the send path and the resend path, and no existing check compares audit writes across them. I cannot name the exact property CL-AZ broke from the message alone.","surface":"unit","artifact":"private/account (the service package's __tests__ directory; exact file not verified)","charged":60,"at":"2026-11-26T07:26:48Z","br":"1121-1"}
+{"kind":"charge","sig":"56ebf4b35b2c","why":"capped","at":"2026-11-26T07:26:48Z","br":"1121-1"}
+{"kind":"debt","sig":"8945701d0379","blind_spot":"C42 classified a cd- deploy job as failing when it runs no tests. The check compared the job's test count against an expectation that assumed every job runs tests, so a deploy job with zero tests never got checked against its real role.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_ops_units.py","charged":61,"at":"2026-11-26T07:46:07Z","br":"1121-1"}
+{"kind":"charge","sig":"8945701d0379","why":"capped","at":"2026-11-26T07:46:07Z","br":"1121-1"}
+{"kind":"debt","sig":"adac6130f301","blind_spot":"Every existing check compares source shape, wiring or built output. None compares the relationship that broke: on a retried audit batch, the primary insert returns inserted=false, and the derived console.ai record must still be rewritten under the primary id with the primary timestamp. That runtime","surface":"unit","artifact":"","charged":62,"at":"2026-11-26T08:22:57Z","br":"1121-1"}
+{"kind":"charge","sig":"adac6130f301","why":"capped","at":"2026-11-26T08:22:57Z","br":"1121-1"}
+{"kind":"debt","sig":"3f7e3ca7dcdd","blind_spot":"No check compares the primary audit event's timestamp with its derived console.ai record on a retried batch. A dedup insert returning inserted=false skipped the replay path, so no existing check observed the relationship between the primary event and its -ai record under retry.","surface":"unit","artifact":"","charged":63,"at":"2026-11-26T08:36:28Z","br":"1121-1"}
+{"kind":"charge","sig":"3f7e3ca7dcdd","why":"capped","at":"2026-11-26T08:36:28Z","br":"1121-1"}
+{"kind":"debt","sig":"e22205866253","blind_spot":"The existing checks compare the executor's output against the tool contract and never test the relationship between a client's declared elicitation capability and the confirm argument it sends. The defect sat on that unchecked branch, so it passed every gate.","surface":"unit","artifact":"packages/cli/src/commands/mcp/__tests__/policy-answer.test.ts","charged":64,"at":"2026-11-26T08:41:23Z","br":"1121-1"}
+{"kind":"charge","sig":"e22205866253","why":"capped","at":"2026-11-26T08:41:23Z","br":"1121-1"}
+{"kind":"debt","sig":"ab3cdc21701c","blind_spot":"The hosted MCP path forwarded a client's confirm value to the executor unchanged. No check compared where the confirm value came from (the client's elicitation versus the user's own answer) with what reached the executor.","surface":"unit","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","charged":65,"at":"2026-11-26T08:47:25Z","br":"1121-1"}
+{"kind":"charge","sig":"ab3cdc21701c","why":"capped","at":"2026-11-26T08:47:25Z","br":"1121-1"}
+{"kind":"debt","sig":"07c68089c740","blind_spot":"The cf_retire listing check reads a single page's result_info and never compares the collected count against the API total.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py","charged":66,"at":"2026-11-26T10:16:16Z","br":"1121-1"}
+{"kind":"charge","sig":"07c68089c740","why":"capped","at":"2026-11-26T10:16:16Z","br":"1121-1"}
+{"kind":"debt","sig":"8f63360a96fb","blind_spot":"No check compared the confirm flag against the client's elicitation capability on the hosted MCP path, so a hosted call from an eliciting client could skip confirmation and every existing gate read the path as correct.","surface":"unit","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","charged":67,"at":"2026-11-26T10:29:28Z","br":"1121-1"}
+{"kind":"charge","sig":"8f63360a96fb","why":"capped","at":"2026-11-26T10:29:28Z","br":"1121-1"}
+{"kind":"charge","sig":"4771208d20b7","why":"proven","at":"2026-11-26T10:32:32Z","br":"1121-1"}
+{"kind":"charge","sig":"bef797cf0140","why":"proven","at":"2026-11-26T10:49:15Z","br":"1121-1"}
+{"kind":"charge","sig":"4d7090c57b6b","why":"proven","at":"2026-11-26T11:36:10Z","br":"1121-1"}
+{"kind":"charge","sig":"c3f37e40d38f","why":"proven","at":"2026-11-26T13:22:45Z","br":"1121-1"}
+{"kind":"charge","sig":"3218b3008d42","why":"proven","at":"2026-11-26T16:49:27Z","br":"1121-1"}
+{"kind":"charge","sig":"5c2a94ba7d18","why":"proven","at":"2026-11-26T17:47:34Z","br":"1121-1"}
+{"kind":"charge","sig":"17fb0686f572","why":"proven","at":"2026-11-26T18:32:06Z","br":"1121-1"}
+{"kind":"charge","sig":"f2c58ae537fc","why":"proven","at":"2026-11-26T18:43:05Z","br":"1121-1"}
+{"kind":"charge","sig":"3082f3bd8d20","why":"proven","at":"2026-11-26T19:11:23Z","br":"1121-1"}
+{"kind":"charge","sig":"f455b659c297","why":"proven","at":"2026-11-26T20:40:07Z","br":"1121-1"}
+{"kind":"debt","sig":"f98d1b5b7fcc","blind_spot":"Each defect is a runtime CLI behaviour: term --external passes the remote path as a local cwd, ops rejects --backend hyperv, and rsync lacks etc/fstab. Existing checks compare source text and locale keys, not what the CLI does when invoked, so none of them observes these relationships.","surface":"unit","artifact":"packages/cli/src/commands/ops/__tests__/ops-backend-hyperv.test.ts","charged":78,"at":"2026-11-26T20:53:05Z","br":"1121-1"}
+{"kind":"charge","sig":"f98d1b5b7fcc","why":"capped","at":"2026-11-26T20:53:05Z","br":"1121-1"}
+{"kind":"debt","sig":"e4eb265f8f25","blind_spot":"The renet path cache trusted the cached path string and never re-stat'ed the file behind it, so a replaced renet binary at the same path looked unchanged to every check.","surface":"unit","artifact":"packages/cli/src/services/__tests__/renet-path-cache.test.ts","charged":79,"at":"2026-11-26T20:58:58Z","br":"1121-1"}
+{"kind":"charge","sig":"e4eb265f8f25","why":"capped","at":"2026-11-26T20:58:58Z","br":"1121-1"}
+{"kind":"debt","sig":"551b7cb3445b","blind_spot":"The cache stored a miss ('not found') for the process lifetime and never re-stat'd the path, so no check compared a cached miss with the filesystem after an install. Tests looked up each path once per process, so a later install was never observed.","surface":"unit","artifact":"packages/cli/src/utils/__tests__/stat-checked-cache.test.ts","charged":80,"at":"2026-11-26T21:06:47Z","br":"1121-1"}
+{"kind":"charge","sig":"551b7cb3445b","why":"capped","at":"2026-11-26T21:06:47Z","br":"1121-1"}
+{"kind":"charge","sig":"47467a663e0b","why":"proven","at":"2026-11-26T22:20:48Z","br":"1121-1"}
+{"kind":"debt","sig":"623c7733417f","blind_spot":"The four new mesh.go strings had no catalog entry, and the only instrument that compared them was the renet pkg/i18n Go baseline test. No listed check:* key compares mesh.go literals against the renet catalog, so this was caught by that test and no other gate.","surface":"none","artifact":"","charged":82,"at":"2026-11-26T23:03:56Z","br":"1121-1"}
+{"kind":"charge","sig":"623c7733417f","why":"capped","at":"2026-11-26T23:03:56Z","br":"1121-1"}
+{"kind":"debt","sig":"0272eef26919","blind_spot":"The bake key is a hand-maintained list of input files. No check compares that list against the files the ssh shaping code actually depends on, so an omitted input leaves the key stable while the artifact changes.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_vm_bake_key.py","charged":83,"at":"2026-11-27T00:27:50Z","br":"1121-1"}
+{"kind":"charge","sig":"0272eef26919","why":"capped","at":"2026-11-27T00:27:50Z","br":"1121-1"}
+{"kind":"debt","sig":"244b24ee52ab","blind_spot":"The existing vm and i18n tests check the effective VM_RAM value and the catalog key. None asserts the relation that a floored request must be announced to the operator, so a silent override would still pass.","surface":"unit","artifact":"","charged":84,"at":"2026-11-27T01:43:06Z","br":"1121-1"}
+{"kind":"charge","sig":"244b24ee52ab","why":"capped","at":"2026-11-27T01:43:06Z","br":"1121-1"}
+{"kind":"debt","sig":"179f54811d98","blind_spot":"No check compares the Windows bake's service state or update-policy values against the plan text. The plan doc and the bake script are different files, and no gate reads one against the other.","surface":"ops","artifact":"","charged":85,"at":"2026-11-27T01:50:08Z","br":"1121-1"}
+{"kind":"charge","sig":"179f54811d98","why":"capped","at":"2026-11-27T01:50:08Z","br":"1121-1"}
+{"kind":"charge","sig":"3b7fa88d5b0c","why":"proven","at":"2026-11-27T03:34:55Z","br":"1121-1"}
+{"kind":"debt","sig":"ba43984977b6","blind_spot":"Every CI run's gh supports the flag, so the flag-set never differs from the installed gh's help output in gate runs. The failure only shows at runtime on gh 2.46.0, so no check compares the flags passed against the installed gh's help.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_core_ghx.py","charged":87,"at":"2026-11-27T03:55:29Z","br":"1121-1"}
+{"kind":"charge","sig":"ba43984977b6","why":"capped","at":"2026-11-27T03:55:29Z","br":"1121-1"}
+{"kind":"charge","sig":"568e127bfbb3","why":"proven","at":"2026-11-27T03:59:15Z","br":"1121-1"}
+{"kind":"charge","sig":"9a3bf800577e","why":"proven","at":"2026-11-27T04:26:45Z","br":"1121-1"}
+{"kind":"charge","sig":"740636082c9e","why":"proven","at":"2026-11-27T04:38:30Z","br":"1121-1"}
+{"kind":"debt","sig":"72b04e63d601","blind_spot":"No check observes the relationship between the smoke subscription id and ACCOUNT_JWT_SECRET. The id was compared only with its own recomputation, so the secret dependency was invisible by construction.","surface":"unit","artifact":".ci/rediacc_ci/tests/test_testrun_seed_smoke.py","charged":91,"at":"2026-11-27T04:44:33Z","br":"1121-1"}
+{"kind":"charge","sig":"72b04e63d601","why":"capped","at":"2026-11-27T04:44:33Z","br":"1121-1"}
+{"kind":"charge","sig":"a73d64c8dc15","why":"proven","at":"2026-11-27T05:02:01Z","br":"1121-1"}
+{"kind":"debt","sig":"fd032cb9b936","blind_spot":"The record-paths check compares each gate's agent/ glob reads against the declared readers in record-paths.json. check:ci-pin-freshness read the agent/ globs without a declared row, and its outside-list append went to a target the scanner did not resolve, so the declaration was never compared","surface":"none","artifact":"","charged":93,"at":"2026-11-27T05:30:00Z","br":"1121-1"}
+{"kind":"charge","sig":"fd032cb9b936","why":"capped","at":"2026-11-27T05:30:00Z","br":"1121-1"}
+{"kind":"materialize","sig":"f0a3c1489ab0","item":"820b39e2","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"bddbfeb48e28","item":"eaedb70d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"259f37563283","item":"00401f83","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"2adddf2f4cc0","item":"a9fe1a8e","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"6902d4abed1e","item":"e71bf07f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"5e5e13f46205","item":"3227f1e5","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"0b18ba962601","item":"c7e567fe","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"315e71b66f4b","item":"5ea99e61","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"24ac37f47e10","item":"11a0a911","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"0e17c71058e2","item":"275a3547","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"7bf263c35ce8","item":"401a2078","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"cbee33bfa25a","item":"0e6e18cd","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"6d015c0b31f2","item":"90a6e7ab","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"96a31eca7b31","item":"9c8d06e6","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"1b172f89d003","item":"0c5b4088","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"f51c2a6cf6b5","item":"94c54a8c","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"dc6baa57c484","item":"b34a638d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"24fd251cfb8f","item":"2bf9f8b0","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"78fc4b05e9c8","item":"c6b61ac9","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"4c120dc223be","item":"2c92b7e0","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"102b1efacd99","item":"69bff718","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"e277faba3053","item":"2584b2e2","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"4fd0a63f6912","item":"10adcffd","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"5e074d33170e","item":"551eeadf","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"f3dda79a32d2","item":"681c79fb","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"890ef66d3353","item":"4bb2e54d","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"2fd00f8797e9","item":"320222db","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"56ebf4b35b2c","item":"05fe6a18","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"8945701d0379","item":"7203129f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"adac6130f301","item":"95998592","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"3f7e3ca7dcdd","item":"2e840e89","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"e22205866253","item":"645b8d97","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"ab3cdc21701c","item":"8323638f","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"07c68089c740","item":"482d4e6b","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"materialize","sig":"8f63360a96fb","item":"48f0cf8a","at":"2026-11-27T07:57:56Z","br":"1121-1"}
+{"kind":"discharge","sig":"bddbfeb48e28","artifact":"packages/shared/src/auth/__tests__/preview-run.test.ts","proof":"commit-date: packages/shared/src/auth/__tests__/preview-run.test.ts last committed 2026-11-26T15:48:38+01:00, after the debt (2026-11-23T20:46:17Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"2adddf2f4cc0","artifact":".claude/rediacc_hooks/tests/test_wl_writersnow.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_writersnow.py last committed 2026-11-26T21:03:52+01:00, after the debt (2026-11-23T21:06:05Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"0b18ba962601","artifact":".ci/rediacc_ci/tests/test_dev_worktree_lease.py","proof":"commit-date: .ci/rediacc_ci/tests/test_dev_worktree_lease.py last committed 2026-11-26T19:51:38+01:00, after the debt (2026-11-23T22:07:52Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"315e71b66f4b","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","proof":"commit-date: packages/shared/src/audit/__tests__/console-events.test.ts last committed 2026-11-26T15:29:12+01:00, after the debt (2026-11-23T23:04:33Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"24ac37f47e10","artifact":"packages/cli/src/services/backup/__tests__/backup-schedule-stable-path.test.ts","proof":"commit-date: packages/cli/src/services/backup/__tests__/backup-schedule-stable-path.test.ts last committed 2026-11-24T08:34:33+01:00, after the debt (2026-11-24T00:12:57Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"0e17c71058e2","artifact":"packages/shared/src/audit/__tests__/console-events.test.ts","proof":"commit-date: packages/shared/src/audit/__tests__/console-events.test.ts last committed 2026-11-26T15:29:12+01:00, after the debt (2026-11-24T07:59:52Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"cbee33bfa25a","artifact":".ci/rediacc_ci/tests/test_ops_login_bench.py","proof":"commit-date: .ci/rediacc_ci/tests/test_ops_login_bench.py last committed 2026-11-26T19:00:39+01:00, after the debt (2026-11-24T16:44:04Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"96a31eca7b31","artifact":".ci/rediacc_ci/tests/test_d1_shard_move.py","proof":"commit-date: .ci/rediacc_ci/tests/test_d1_shard_move.py last committed 2026-11-26T19:00:39+01:00, after the debt (2026-11-24T22:14:12Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"1b172f89d003","artifact":".claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py","proof":"commit-date: .claude/rediacc_hooks/tests/test_wl_subagent_ticks_resume.py last committed 2026-11-26T19:33:55+01:00, after the debt (2026-11-24T22:40:06Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"dc6baa57c484","artifact":".ci/rediacc_ci/tests/test_enterprise_lab.py","proof":"commit-date: .ci/rediacc_ci/tests/test_enterprise_lab.py last committed 2026-11-25T19:41:00+01:00, after the debt (2026-11-25T03:12:44Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"78fc4b05e9c8","artifact":".ci/rediacc_ci/tests/test_drills_vm_check.py","proof":"commit-date: .ci/rediacc_ci/tests/test_drills_vm_check.py last committed 2026-11-26T19:34:02+01:00, after the debt (2026-11-25T12:48:38Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"e277faba3053","artifact":"packages/cli/src/services/ai/__tests__/judge.test.ts","proof":"commit-date: packages/cli/src/services/ai/__tests__/judge.test.ts last committed 2026-11-26T04:58:45+01:00, after the debt (2026-11-25T17:15:23Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"5e074d33170e","artifact":".ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py","proof":"commit-date: .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py last committed 2026-11-26T04:54:55+01:00, after the debt (2026-11-26T03:51:14Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"f3dda79a32d2","artifact":".ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py","proof":"commit-date: .ci/rediacc_ci/tests/gates/test_gate_detect_wasm.py last committed 2026-11-26T19:09:31+01:00, after the debt (2026-11-26T04:46:28Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"8945701d0379","artifact":".ci/rediacc_ci/tests/test_ops_units.py","proof":"commit-date: .ci/rediacc_ci/tests/test_ops_units.py last committed 2026-11-26T12:26:44+01:00, after the debt (2026-11-26T07:46:07Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"ab3cdc21701c","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","proof":"commit-date: packages/shared/src/mcp-host/__tests__/confirm.test.ts last committed 2026-11-26T15:29:45+01:00, after the debt (2026-11-26T08:47:25Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"07c68089c740","artifact":".ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py","proof":"commit-date: .ci/rediacc_ci/tests/test_housekeeping_cf_leftovers.py last committed 2026-11-26T18:48:45+01:00, after the debt (2026-11-26T10:16:16Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"8f63360a96fb","artifact":"packages/shared/src/mcp-host/__tests__/confirm.test.ts","proof":"commit-date: packages/shared/src/mcp-host/__tests__/confirm.test.ts last committed 2026-11-26T15:29:45+01:00, after the debt (2026-11-26T10:29:28Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"discharge","sig":"f98d1b5b7fcc","artifact":"packages/cli/src/commands/ops/__tests__/ops-backend-hyperv.test.ts","proof":"commit-date: packages/cli/src/commands/ops/__tests__/ops-backend-hyperv.test.ts last committed 2026-11-26T21:53:24+01:00, after the debt (2026-11-26T20:53:05Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T07:58:02Z","br":"1121-1"}
+{"kind":"materialize","sig":"e4eb265f8f25","item":"a7015a76","at":"2026-11-27T09:01:43Z","br":"1121-1"}
+{"kind":"materialize","sig":"551b7cb3445b","item":"db75514a","at":"2026-11-27T09:10:02Z","br":"1121-1"}
+{"kind":"charge","sig":"ff42180293ac","why":"proven","at":"2026-11-27T09:12:47Z","br":"1121-1"}
+{"kind":"discharge","sig":"551b7cb3445b","artifact":"packages/cli/src/utils/__tests__/stat-checked-cache.test.ts","proof":"commit-date: packages/cli/src/utils/__tests__/stat-checked-cache.test.ts last committed 2026-11-27T10:58:19+01:00, after the debt (2026-11-26T21:06:47Z); this shows a case was written after the debt, not that it fails on the defect","at":"2026-11-27T10:17:29Z","br":"1121-1"}
+{"kind":"charge","sig":"d85185476c03","why":"proven","at":"2026-11-27T10:37:14Z","br":"1121-1"}
+{"kind":"materialize","sig":"623c7733417f","item":"c07d2d52","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"0272eef26919","item":"c6ece6ed","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"244b24ee52ab","item":"a438d32b","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"179f54811d98","item":"16cdd56d","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"ba43984977b6","item":"63e384f6","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"72b04e63d601","item":"fb98d3fa","at":"2026-11-27T19:19:19Z","br":"1121-1"}
+{"kind":"materialize","sig":"fd032cb9b936","item":"ea2d34fd","at":"2026-11-27T19:19:19Z","br":"1121-1"}

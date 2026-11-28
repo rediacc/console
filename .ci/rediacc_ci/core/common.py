@@ -36,7 +36,7 @@ DETECT_OS AND DETECT_ARCH ARE HERE ON PURPOSE, EVEN THOUGH `core.platform` EXIST
 driver rather than reproduced." That refusal is right for a module whose job is building download URLs, and it leaves a hole: `CI_OS` and `CI_ARCH` are EXPORTED by common.sh into every one of the 208 sourcers' child processes carrying exactly that third spelling, and `sed_in_place` branches on it. So the spelling is reproduced here, in the file whose twin owns it, with the
 fail-open arm intact and named -- `platform.os_name()` RAISES where this returns the string `unknown`, and a caller comparing against `unknown` is comparing against something that reads like an answer.
 
-  * `r2_count_objects` WAS a gap here until 2026-09-24: there is still no `aws` on this machine, so it is proved the way W7P5-b proved every other function that shells out, against a STUB `aws` on PATH that logs its argv and answers from a script (`core/stubfarm.py`, driven by `core/common_stub_shadow_driver.py`). It is `r2_count_objects` below.
+  * `r2_count_objects` WAS a gap here until 2026-09-24: there is still no `aws` on this machine, so it is proved the way W7P5-b proved every other function that shells out, against a STUB `aws` on PATH that logs its argv and answers from a script (`core/stubfarm.py`, driven by the harness in `tests/test_core_common.py`). It is `r2_count_objects` below.
   * `wait_for` (common.sh:245) has NO CALLER anywhere in the tree (2026-09-24; `.ci/breakpoint/lib/breakpoint-common.sh:239` names it only to explain why it does not use it), and the 2026-09-10 table above attributed it to `rediacc_ci.proc`, which never defined it. It is ported below, `wait_for`, on the same stub technique (`sleep` scripted), so the claim the table makes is now true.
 
 --------------------------------------------------------------------------
@@ -116,7 +116,7 @@ THREE MORE DIVERGENCES THAT ARE DECISIONS RATHER THAN BUGS
 --------------------------------------------------------------------------
 WHAT IS DIFFERENTIALLY PROVED
 --------------------------------------------------------------------------
-`.ci/shadow/w7p5b-common.observations.jsonl` drives BOTH sides through a real caller shape: a script that sources `common.sh` (or imports this module) and then runs the same refuse-early sequence a quality gate runs in its opening lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`, `require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
+the ledger (deleted in commit:936280cd35) drives BOTH sides through a real caller shape: a script that sources `common.sh` (or imports this module) and then runs the same refuse-early sequence a quality gate runs in its opening lines -- `require_cmd`, `require_file`, `require_dir`, `require_var`, `require_input`, `parse_args`, `get_temp_dir`, `is_ci`. That is the sequence 208
 files actually execute, which is why the ledger is not a synthetic per-function harness.
 """
 

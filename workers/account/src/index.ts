@@ -3,10 +3,13 @@ import accountApp from '../../../private/account/src/entry/cloudflare.js';
 import { WRITES_FROZEN_QUEUE_DELAY_SECONDS } from '../../../private/account/src/errors.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
 import { BackupReplicator, replicatorStub } from './backup-replicator.js';
+import { CreditLedger, CreditLedgerGate } from './credit-ledger.js';
 import { fence, fencedEnv } from './d1-fence.js';
+import { SECURITY_HEADERS } from './security-headers.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
-export { BackupReplicator };
+// The per-org AI credit ledger (Durable Object, wrangler.*.toml binds it as CREDIT_LEDGER) and the entrypoint the proxy's CREDITS service binding names.
+export { BackupReplicator, CreditLedger, CreditLedgerGate };
 
 interface Env {
   ASSETS: Fetcher;
@@ -16,38 +19,12 @@ interface Env {
   /** Replicate mode: the queue producer and the per-rule Durable Object (wrangler.*.toml). */
   BACKUP_REPLICATE_QUEUE?: Queue;
   BACKUP_REPLICATOR?: DurableObjectNamespace<BackupReplicator>;
+  CREDIT_LEDGER?: DurableObjectNamespace<CreditLedger>;
   REGION?: string;
   /** A company's opt-in IP allowlist (comma-separated addresses or IPv4 ranges); unset means off. */
   ALLOW_IPS?: string;
   [key: string]: unknown;
 }
-
-// Mirrors packages/www/public/_headers. Applied to every response served from this worker (SPA HTML, static assets, API JSON, redirects, 404). Responses that already declare a Content-Security-Policy (the invoice PDF routes —
-// private/account/src/routes/{root,portal}-invoices.ts) keep their stricter
-// per-route policy untouched.
-const SECURITY_HEADERS: Record<string, string> = {
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  // Permissions-Policy must keep WebAuthn (passkey) open or @simplewebauthn/browser calls fail under future Cloudflare-edge tightening. Stripe redirects via window.location.assign which is a top-level navigation not gated by Permissions-Policy.
-  'Permissions-Policy':
-    'camera=(), microphone=(), geolocation=(), payment=(self), publickey-credentials-get=(self), publickey-credentials-create=(self)',
-  'Content-Security-Policy': [
-    "default-src 'self'",
-    "script-src 'self' https://challenges.cloudflare.com",
-    "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data:",
-    "font-src 'self'",
-    "connect-src 'self' https://challenges.cloudflare.com",
-    "frame-src 'self' https://challenges.cloudflare.com",
-    "form-action 'self'",
-    "base-uri 'self'",
-    "object-src 'none'",
-    "frame-ancestors 'none'",
-    'upgrade-insecure-requests',
-  ].join('; '),
-};
 
 function withSecurityHeaders(response: Response): Response {
   if (response.headers.has('content-security-policy')) {
@@ -94,7 +71,7 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
 }
 
 /**
- * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Four RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, its tier and its executor placement (`{ orgId, tier, placement }`, tier `high` for a BUSINESS or ENTERPRISE plan and `standard` otherwise), or answers `{ refused: <reason code> }` for a caller it does not accept, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), `relocate(orgId, fromPlacement)` moves the org's executor to the next placement by compare-and-set, at most once per 30 minutes (`{ ok: true, placement }`, or `{ ok: false, reason: 'stale' | 'budget' | 'unknown-org' }` with the current placement for the first two), and `probe()` reports readiness and writes nothing. The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
+ * The executor token issuer, reached ONLY through a service binding that names it (`entrypoint = "ExecutorIssuer"` in workers/proxy/wrangler.<target>.toml's ISSUER block). Five RPC methods and no `fetch`: `route(bearer)` names the org behind a caller's own proxy:exec token, its tier and its executor placement (`{ orgId, tier, placement }`, tier `high` for a BUSINESS or ENTERPRISE plan and `standard` otherwise), or answers `{ refused: <reason code> }` for a caller it does not accept, `issue(orgId)` mints that org's short-lived executor token after re-running the console entitlement check (the org id is the one `route(bearer)` returned to the bound proxy Worker, the only holder of this binding; the issuer service refuses an unknown, blocked or unentitled org and an empty or non-string id), `relocate(orgId, fromPlacement)` moves the org's executor to the next placement by compare-and-set, at most once per 30 minutes (`{ ok: true, placement }`, or `{ ok: false, reason: 'stale' | 'budget' | 'unknown-org' }` with the current placement for the first two), `probe()` reports readiness and writes nothing and `verifyInternal(credential)` says whether a credential minted for the root-only occupancy read is authentic and unexpired (PLAN-rmcp-executor-hardening.md EH8). The TTL, scopes, ip binding and issuer key are defined in private/account/src/services/executor-issuer.service.ts and not repeated here. A refused mint rejects with the reason code as the message and is audited as `executor_token.refused`.
  */
 export class ExecutorIssuer extends WorkerEntrypoint<Env> {
   route(
@@ -122,6 +99,20 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
 
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }> {
     return accountApp.probeExecutorIssuer(fencedEnv(this.env));
+  }
+
+  verifyInternal(credential: string): Promise<boolean> {
+    return accountApp.verifyInternalOccupancyCredential(fencedEnv(this.env), credential);
+  }
+}
+
+/**
+ * The agent grant resolver, the MCP Worker's `GRANTS` binding (`entrypoint = "GrantResolver"` in workers/mcp/wrangler.<target>.toml). One RPC method and no `fetch`: `resolveGrant(grantId, authTag)` answers an agent grant's state and scope, or null for an unknown grant, another region's grant or a wrong tag (PLAN-rmcp-remote-worker.md Design 4).
+ * It is its own entrypoint so the MCP Worker holds no route, issue, relocate, probe or verifyInternal: ExecutorIssuer stays bound by workers/proxy alone (tests/integration/proxy-binding-wiring.test.ts).
+ */
+export class GrantResolver extends WorkerEntrypoint<Env> {
+  resolveGrant(grantId: string, authTag: string) {
+    return accountApp.resolveAgentGrant(fencedEnv(this.env), grantId, authTag);
   }
 }
 
@@ -173,6 +164,11 @@ export default {
       return;
     }
     const fenced = fencedEnv(env);
+    // The forensics compaction queue (forensics-compact-<region>, PLAN-forensics-shipping D5) shares this handler; its messages run in the account app.
+    if (batch.queue.startsWith('forensics-compact-')) {
+      await accountApp.consumeForensicsBatch(batch, fenced);
+      return;
+    }
     await accountApp.consumeReplicationBatch(batch, fenced, (key) =>
       replicatorStub(fenced, key).kick(key)
     );

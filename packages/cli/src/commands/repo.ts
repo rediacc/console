@@ -8,7 +8,6 @@ import { parseCapturedJson } from '../services/executor/renet-output.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
-import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
@@ -24,6 +23,7 @@ import { registerRepoContainerCommands } from './repo-container.js';
 import { registerRepoCreateDeleteCommands } from './repo-create-delete.js';
 import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
+import { registerRepoFlowsCommands } from './repo-flows.js';
 import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoGpuCommands } from './repo-gpu.js';
 import { registerRepoHealthCommand } from './repo-health.js';
@@ -50,7 +50,6 @@ interface RepoUpSingleOptions {
 
 async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Promise<void> {
   const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-  await assertCommandPolicy(CMD.REPO_UP, repoKey);
 
   // `--no-start` folds the retired `repo mount`: LUKS open / PV generation without running the Rediaccfile up() steps.
   const noStart = options.start === false;
@@ -263,7 +262,6 @@ export function registerRepoCommands(program: Command): void {
               throw new ValidationError(t('commands.repo.batchRefConflict', { verb: 'down' }));
             }
             const { name, repoKey, machineName, kubeCluster } = await resolveRepoRef(ref);
-            await assertCommandPolicy(CMD.REPO_DOWN, repoKey);
 
             const params: Record<string, unknown> = {};
             if (options.unmount) params.unmount = true;
@@ -317,6 +315,7 @@ export function registerRepoCommands(program: Command): void {
   // repo status <ref>
   repo
     .command('status')
+    .summary(t('commands.repo.status.descriptionShort'))
     .description(t('commands.repo.status.description'))
     .argument('<ref>', t('options.repoRef'))
     .option('--debug', t('options.debug'))
@@ -388,6 +387,7 @@ export function registerRepoCommands(program: Command): void {
   // repo list, the whole config's repos, narrowed by where they LIVE. A datastore is the honest unit now (a repo lives in a datastore; the machine is wherever that datastore happens to be attached today), so --datastore joins --machine.
   repo
     .command('list')
+    .summary(t('commands.repo.list.descriptionShort'))
     .description(t('commands.repo.list.description'))
     .option('-m, --machine <name>', t('commands.repo.machineOption'))
     .option('--datastore <name>', t('commands.repo.list.datastoreOption'))
@@ -399,6 +399,7 @@ export function registerRepoCommands(program: Command): void {
   registerRepoCatCommand(repo);
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);
+  registerRepoFlowsCommands(repo);
   registerRepoBranchingCommands(repo);
   // The `repo admin` parent is created ONCE and handed to every registrar that hangs a leaf off it (§5.4's plumbing subtree spans two files).
   const admin = createRepoAdminCommand(repo, program);

@@ -5,9 +5,9 @@ Write the `.env` file the E2E integration harness reads: VM network base and off
 
 LIVE CALLER, NOT REPOINTED. The bash twin stays the live implementation; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
-Ledger: `.ci/shadow/w7p6-create-e2e-env.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-create-e2e-env --assert --k 5`). Differential: `.ci/rediacc_ci/tests/test_env_create_e2e_env.py`.
+Ledger: the ledger (deleted in commit:936280cd35). Differential: `.ci/rediacc_ci/tests/test_env_create_e2e_env.py`.
 
-THE PRODUCT IS THE FILE, NOT THE STREAMS. Everything this program prints goes to stderr through `common.sh`'s logger, and `shadow-gate.ts` classifies a line starting with a step or info glyph as CHATTER before any `--finding-re` sees it. So a ledger row driven off the messages alone can only ever read `VACUOUS_BOTH_EMPTY`. Both the pytest differential and the ledger therefore
+THE PRODUCT IS THE FILE, NOT THE STREAMS. Everything this program prints goes to stderr through `common.sh`'s logger, and the shadow gate (commit:bf054adcd4) classifies a line starting with a step or info glyph as CHATTER before any `--finding-re` sees it. So a ledger row driven off the messages alone can only ever read `VACUOUS_BOTH_EMPTY`. Both the pytest differential and the ledger therefore
 compare the GENERATED FILE byte for byte, and the ledger's finding lines are the file's own contents echoed with a distinctive prefix.
 
 WHAT THIS SHELLS OUT TO, AND THE ONE THING IT DOES NOT. The twin runs no network, renet or VM command: `--renet-path` defaults to a STRING built from the repository root, and nothing probes the binary or asks `command -v` for it. The only external command is `mkdir -p`, and this port keeps it as a subprocess rather than calling `os.makedirs`, because the failure text belongs to

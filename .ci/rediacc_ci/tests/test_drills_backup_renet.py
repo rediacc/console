@@ -1485,3 +1485,75 @@ def test_leg_u_ends_the_probe_leases_before_the_killed_run(make: typing.Callable
         assert events.index("release") < events.index("kill"), events
     finally:
         drill.teardown()
+
+
+class _SessionExpiryWorker:
+    """Leg t's worker: the trickled snapshot reports `duration_ms` and stores."""
+
+    def __init__(self, duration_ms: int) -> None:
+        self.duration_ms = duration_ms
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        if "backup snapshot" in command:
+            doc = {"status": "stored", "durationMs": self.duration_ms}
+            return rt.VmResult(0, json.dumps(doc))
+        return rt.VmResult(0)
+
+
+def _leg_t_rig(
+    make: typing.Callable, duration_ms: int, stored: list[int]
+) -> tuple[lib.Drill, backup_renet.RenetLegs, list[object]]:
+    drill, legs = make(Worker())
+    legs.rt.vm = _SessionExpiryWorker(duration_ms)
+    legs.src = "src-guid-0001"
+    seam: list[object] = []
+    legs.set_session_ttl = seam.append
+    legs.b.stored_bytes = lambda: stored.pop(0)
+    return drill, legs, seam
+
+
+def test_leg_t_passes_when_the_run_outlives_two_sessions_and_grows_one_cell(
+    make: typing.Callable,
+) -> None:
+    ttl = backup_renet.SESSION_TTL_DRILL_MS
+    drill, legs, seam = _leg_t_rig(make, 2 * ttl, [0, CELL])
+    try:
+        legs.leg_t()
+        assert drill.failures == 0
+        # The seam is shortened for the run and restored after it.
+        assert seam == [ttl, None]
+    finally:
+        drill.teardown()
+
+
+def test_leg_t_control_goes_red_when_the_run_was_too_short_to_cross_two_expiries(
+    make: typing.Callable,
+) -> None:
+    """CONTROL: a run shorter than two lifetimes proves no re-mint, so the same snapshot must not read green."""
+    drill, legs, _seam = _leg_t_rig(make, backup_renet.SESSION_TTL_DRILL_MS, [0, CELL])
+    try:
+        legs.leg_t()
+        assert drill.failures == 1
+    finally:
+        drill.teardown()
+
+
+def test_leg_t_restores_the_session_lifetime_when_the_snapshot_raises(
+    make: typing.Callable,
+) -> None:
+    drill, legs, seam = _leg_t_rig(make, 0, [0, CELL])
+
+    def boom(command: str, stdin_data: str | None = None) -> rt.VmResult:
+        del stdin_data
+        if "backup snapshot" in command:
+            raise OSError("worker gone")
+        return rt.VmResult(0)
+
+    legs.rt.vm = boom
+    try:
+        with pytest.raises(OSError, match="worker gone"):
+            legs.leg_t()
+        assert seam[-1] is None
+    finally:
+        drill.teardown()

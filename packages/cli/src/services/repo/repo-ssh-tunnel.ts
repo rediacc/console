@@ -99,6 +99,7 @@ export async function openRepoTunnel(spec: TunnelSpec): Promise<TunnelHandle> {
     connectionDetails.privateKey,
     connectionDetails.known_hosts,
     {
+      host: connectionDetails.host,
       port: connectionDetails.port,
       forceTTY: false,
     }

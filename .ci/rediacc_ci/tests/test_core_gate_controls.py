@@ -1,6 +1,6 @@
 """`rediacc_ci.core.gate_controls` against the bytes `gate-controls.sh` printed.
 
-THE TWIN HAS BEEN DELETED. `.ci/scripts/lib/gate-controls.sh` carried the implementation until W7 P5 retired the staging-tag-guard, release-signing-coverage and release-key-canonical bash gates that sourced it, leaving it with no sourcer at all; `.ci/shadow/w7p5b-gate-controls.observations.jsonl` holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the
+THE TWIN HAS BEEN DELETED. `.ci/scripts/lib/gate-controls.sh` carried the implementation until W7 P5 retired the staging-tag-guard, release-signing-coverage and release-key-canonical bash gates that sourced it, leaving it with no sourcer at all; the ledger (deleted in commit:936280cd35) holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the
 strength of them.
 
 `goldens/gate-controls/` holds the library's OWN recorded bytes, captured on its last day in the tree by driving it through the same `_drive` shell function this file used to run live, over the same seven cases. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them, and no byte here is a hand-written

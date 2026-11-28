@@ -49,10 +49,6 @@
       "path": "agent/plans/_done/PLAN-account-vm-check.md",
       "sha": "d32227178"
     },
-    "0deebf86ea7767b1": {
-      "path": ".ci/scripts/quality/check_plan_implementation.py",
-      "sha": "72eb06b56"
-    },
     "0f06ca181d497178": {
       "path": ".claude/hooks/stop/test-completion-evidence.py",
       "sha": "b80552370"
@@ -109,10 +105,6 @@
       "path": "agent/plans/PLAN-cli-em-dash-lint-gate.md",
       "sha": "82def0b11"
     },
-    "3fd1c239d84632b9": {
-      "path": ".claude/rediacc_hooks/guards/block_compacted_plan_edit.py",
-      "sha": "c129f44d1"
-    },
     "42aff67f91fdee8f": {
       "path": ".claude/rediacc_hooks/tests/test_wl_waiter_controls.py",
       "sha": "9b557ab0e"
@@ -133,10 +125,6 @@
       "path": "agent/plans/_done/PLAN-account-vm-check.md",
       "sha": "3d98f9d78"
     },
-    "4f1f2bdeb5b70a4e": {
-      "path": ".ci/scripts/quality/check_plan_citations.py",
-      "sha": "d1589e0bc"
-    },
     "541af1cd760bb3cc": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_dispatch_release.py",
       "sha": "056fe87b6"
@@ -148,10 +136,6 @@
     "5940569508d0563f": {
       "path": ".ci/rediacc_ci/quality/rubric_calibration.py",
       "sha": "18700a769"
-    },
-    "5c58b87fff6d9e7b": {
-      "path": ".ci/scripts/quality/check_policy_inventory.py",
-      "sha": "b80552370"
     },
     "5da144c563d45180": {
       "path": ".claude/rediacc_hooks/tests/test_pr_body_reader.py",
@@ -265,17 +249,9 @@
       "path": ".claude/rediacc_hooks/git/githooks.py",
       "sha": "84cfe4e55"
     },
-    "8fd1fcd3021350cb": {
-      "path": ".claude/rediacc_hooks/tests/test_wl_loop_next.py",
-      "sha": "d6a6e18b5"
-    },
     "94f1325b2ed1eded": {
       "path": "scripts/ci-runner/manifest.ts",
       "sha": "94934de41"
-    },
-    "952b0207c919aeaa": {
-      "path": ".ci/rediacc_ci/quality/scope_mirrors.py",
-      "sha": "8ed69711c"
     },
     "9995a73fc4089ee0": {
       "path": ".ci/rediacc_ci/tests/test_ci_publish_verdict.py",
@@ -293,14 +269,6 @@
       "path": "agent/plans/_done/PLAN-account-vm-check.md",
       "sha": "f58f21973"
     },
-    "a97a6672fb0b9342": {
-      "path": ".ci/scripts/quality/check_plan_implementation.py",
-      "sha": "99c1bb4dc"
-    },
-    "a9b33583d74bee2a": {
-      "path": ".ci/scripts/quality/check_plan_implementation.py",
-      "sha": "f8dcd7973"
-    },
     "aa6d6c0b67358d01": {
       "path": ".claude/hooks/stop/wl_liveness.py",
       "sha": "860f47b04"
@@ -313,17 +281,9 @@
       "path": ".ci/rediacc_ci/tests/gates/test_gate_scrub_sentinel_empty.py",
       "sha": "27e9a49ab"
     },
-    "abad5d77520b2589": {
-      "path": ".ci/scripts/quality/check_plan_folders.py",
-      "sha": "fedcba987"
-    },
     "abdcc18c28cb1dc0": {
       "path": ".ci/rediacc_ci/quality/probe_parity.py",
       "sha": "96355d3b5"
-    },
-    "acdf09a6a80d4096": {
-      "path": ".ci/scripts/quality/check_bws_map.py",
-      "sha": "ca8d42f5c"
     },
     "adb6aa90f042c104": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_preview_readiness.py",
@@ -349,10 +309,6 @@
       "path": ".ci/rediacc_ci/ci/publish_ci_verdict.py",
       "sha": "f92f55e63"
     },
-    "ba3085e54bb05105": {
-      "path": ".ci/scripts/quality/check_release_bump_skip.py",
-      "sha": "056fe87b6"
-    },
     "bb627e5c37798328": {
       "path": "scripts/lib/doc-providers.ts",
       "sha": "1fb9eefe7"
@@ -360,10 +316,6 @@
     "bb9be9bfc4d36b23": {
       "path": ".ci/rediacc_ci/quality/gh_retry_shell.py",
       "sha": "ec583bbda"
-    },
-    "bd2499268f619053": {
-      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-      "sha": "8ba9169be"
     },
     "c2a19de05a5cc2c5": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_language_policy.py",
@@ -384,10 +336,6 @@
     "cac0cdcf71f4f897": {
       "path": "agent/plans/_done/PLAN-vm-check.md",
       "sha": "b68d78f06"
-    },
-    "cadf1a7b5e32e413": {
-      "path": "scripts/ci-runner/manifest.ts",
-      "sha": "0327ab26b"
     },
     "cb9dc7130daa2e97": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_detect_bump_type.py",
@@ -444,10 +392,6 @@
     "e34320ef0e883ea9": {
       "path": ".claude/rediacc_hooks/tests/hookcases.py",
       "sha": "8ae5b3706"
-    },
-    "ee7b9c431dad3e39": {
-      "path": ".ci/rediacc_ci/tests/test_w7p4b_ledgers.py",
-      "sha": "4a6641bf2"
     },
     "efb6970a9a714828": {
       "path": "scripts/gates/check-external-links.ts",

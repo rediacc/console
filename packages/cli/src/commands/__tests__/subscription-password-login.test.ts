@@ -1,7 +1,7 @@
 /**
  * Headless account login (`rdc subscription login` with REDIACC_LOGIN_EMAIL + REDIACC_LOGIN_PASSWORD
- * or --password-stdin) and `rdc config remote enable --master-password-stdin`: the secrets come from the
- * environment or stdin, and no secret appears in anything printed.
+ * or --password-stdin): the secrets come from the environment or stdin, and no secret appears in anything
+ * printed.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

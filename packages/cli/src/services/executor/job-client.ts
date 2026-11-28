@@ -32,6 +32,7 @@ import { shellQuote } from '../../utils/shell-quote.js';
 import { writeStdout } from '../core/request-context.js';
 import { failedJobStderr, type JobOutputCollector } from './job-output-collector.js';
 import { type RenetEnv, type RenetLaunch, sudoRenet } from './renet-launch.js';
+import { createLineSplitter } from './stream-lines.js';
 import type { ExecuteResult, RenetEvent } from './types.js';
 
 const UNKNOWN_JOB_ID = '?';
@@ -62,9 +63,14 @@ export class InvalidJobIdError extends Error {
   }
 }
 
+/** Whether a string has the shape of a renet job id (a request id never does). */
+export function isJobId(id: string): boolean {
+  return JOB_ID_PATTERN.test(id);
+}
+
 /** Validate a job ID before it reaches a shell. Returns it for chaining. */
 export function assertJobId(jobId: string): string {
-  if (!JOB_ID_PATTERN.test(jobId)) {
+  if (!isJobId(jobId)) {
     throw new InvalidJobIdError(jobId);
   }
   return jobId;
@@ -712,32 +718,30 @@ export function buildJobGcCommand(params: {
  * A fresh reader must be created per connection attempt: the buffered partial
  * line belongs to the attempt that died, and gluing it onto the first line of a
  * resumed stream would corrupt it.
+ *
+ * Lines go through createLineSplitter: no length cap, multi-byte characters
+ * decoded whole across chunk boundaries, linear in the record size.
  */
 export function createEventLineReader(
   onEvent: (event: RenetEvent, line?: number) => void,
   startLine = 0
 ): (chunk: Buffer) => void {
-  let buffered = '';
   let lineNumber = startLine;
 
-  return (chunk: Buffer) => {
-    buffered += chunk.toString();
-    const lines = buffered.split('\n');
-    buffered = lines.pop() ?? '';
+  const splitter = createLineSplitter((line: string): void => {
+    // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
+    lineNumber += 1;
+    const trimmed = line.trim();
+    if (!trimmed) return;
 
-    for (const line of lines) {
-      // Advance for EVERY complete line, blank or not, so the ordinal tracks the same newline count JobLogCursor does. The two must stay in lockstep for a resume to dedupe against the right line.
-      lineNumber += 1;
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      try {
-        onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
-      } catch {
-        writeStdout(`${line}\n`);
-      }
+    try {
+      onEvent(JSON.parse(trimmed) as RenetEvent, lineNumber);
+    } catch {
+      writeStdout(`${line}\n`);
     }
-  };
+  });
+
+  return (chunk: Buffer) => splitter.push(chunk);
 }
 
 /**

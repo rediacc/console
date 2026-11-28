@@ -74,7 +74,7 @@ DIVERGENCES, ALL IN TEXT ONLY A HUMAN READS
  * common.sh's `echo -e` interprets backslash escapes in the message;
    `rediacc_ci.log` formats the message as data.
 
-K=5 LEDGER: `.ci/shadow/w7p6-generate-cli-manifest.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

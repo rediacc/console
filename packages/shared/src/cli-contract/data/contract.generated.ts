@@ -4,10 +4,10 @@
 
 import type { CliContract } from '../types.js';
 
-export const CLI_CONTRACT_VERSION = 'dev';
+export const CLI_CONTRACT_VERSION = '47920543720b6a36';
 
 export const CLI_CONTRACT: CliContract = {
-  "version": "dev",
+  "version": "47920543720b6a36",
   "languages": [
     "ar",
     "de",
@@ -35,6 +35,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.browse.description",
       "label": "List the files a repository contains. By default this is a local read-only walk of the repository image: no account server and no network. An encrypted repository must be mounted, or have its keyfile deployed, before it can be opened; browse says so rather than listing nothing. With --at <time|snapshot>, it lists the file listing stored with a chunk-store snapshot instead, without restoring it.",
+      "summaryKey": "commands.backup.browse.descriptionShort",
+      "summary": "List the files a repository, or a stored snapshot with --at, contains",
+      "severity": "none",
       "options": [
         {
           "flags": "--path <subdir>",
@@ -136,8 +139,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.cancel.description",
+      "descriptionKey": "commands.backup.cancel.descriptionShort",
       "label": "Cancel a running backup on a remote machine",
+      "summaryKey": "commands.backup.cancel.descriptionShort",
+      "summary": "Cancel a running backup on a remote machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -198,8 +204,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.check.description",
+      "descriptionKey": "commands.backup.check.descriptionShort",
       "label": "Prove a stored snapshot opens with the passphrase by restoring one file",
+      "summaryKey": "commands.backup.check.descriptionShort",
+      "summary": "Prove a stored snapshot opens with the passphrase by restoring one file",
+      "severity": "none",
       "options": [
         {
           "flags": "--path <file>",
@@ -241,9 +250,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "reads a listing and restores a file with the repository credential, which stays where the config lives",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Drives several renet calls from the operator side with a credential the config holds, so there is no single machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -260,6 +269,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.churn.description",
       "label": "Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.",
+      "summaryKey": "commands.backup.churn.descriptionShort",
+      "summary": "Measure repository churn and recommend a cell size",
+      "severity": "none",
       "options": [
         {
           "flags": "--samples <n>",
@@ -310,6 +322,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "a client-side loop of probes that can run for hours, and it must forget its base when it ends",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.backupChurn",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -327,6 +340,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.download.description",
       "label": "Copy repository images from a machine to a local directory or an external drive. Each run takes a fresh snapshot held only while the session lives, updates the local copy in place by rsync delta, resumes after an interruption, and verifies the result by sha256.",
+      "summaryKey": "commands.backup.download.descriptionShort",
+      "summary": "Copy repository images to a local directory or drive",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <dir>",
@@ -482,6 +498,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Copies the repository image to a local directory with a client-side rsync; a remote executor would write the image onto its own disk. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.backupDownload",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": null,
@@ -498,8 +515,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.immutability.set.description",
+      "descriptionKey": "commands.backup.immutability.set.descriptionShort",
       "label": "Set the delayed-deletion window in days (0 to 30)",
+      "summaryKey": "commands.backup.immutability.set.descriptionShort",
+      "summary": "Set the delayed-deletion window in days (0 to 30)",
+      "severity": "caution",
       "options": [],
       "positionals": [
         {
@@ -516,6 +536,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -532,8 +553,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.immutability.show.description",
+      "descriptionKey": "commands.backup.immutability.show.descriptionShort",
       "label": "Show the delayed-deletion window in force",
+      "summaryKey": "commands.backup.immutability.show.descriptionShort",
+      "summary": "Show the delayed-deletion window in force",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -542,9 +566,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -561,6 +585,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.list.description",
       "label": "List backup artifacts on a machine.",
+      "summaryKey": "commands.backup.list.descriptionShort",
+      "summary": "List backup artifacts on a machine",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -668,8 +695,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.manifests.description",
+      "descriptionKey": "commands.backup.manifests.descriptionShort",
       "label": "List backup snapshot manifests recorded on the server",
+      "summaryKey": "commands.backup.manifests.descriptionShort",
+      "summary": "List backup snapshot manifests recorded on the server",
+      "severity": "none",
       "options": [
         {
           "flags": "--limit <n>",
@@ -721,9 +751,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -740,6 +770,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.purge.description",
       "label": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
+      "summaryKey": "commands.backup.purge.descriptionShort",
+      "summary": "Delete every stored backup snapshot of a repository",
+      "severity": "destructive",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--lineage <guid>",
@@ -803,6 +840,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -818,8 +856,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.reconcile.description",
+      "descriptionKey": "commands.backup.reconcile.descriptionShort",
       "label": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+      "summaryKey": "commands.backup.reconcile.descriptionShort",
+      "summary": "Reset a repository's stored-bytes ledger to what the store actually holds (never deletes a chunk)",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -860,9 +905,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -877,8 +922,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.repair.description",
+      "descriptionKey": "commands.backup.repair.descriptionShort",
       "label": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
+      "summaryKey": "commands.backup.repair.descriptionShort",
+      "summary": "Re-upload chunks the store lost or holds wrong, from this machine's anchor",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -919,9 +971,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Deletes bad chunks on the account with the caller's backup:manage token, then re-uploads from the machine; a remote executor holds neither the token nor the caller's config. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Drives several renet calls from the operator side with a token and credential the config holds, so there is no single machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -938,6 +990,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.restore.description",
       "label": "Turn a backup artifact into a live repository. Placement is stated here.",
+      "summaryKey": "commands.backup.restore.descriptionShort",
+      "summary": "Turn a backup artifact into a live repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "--as <name>",
@@ -1189,6 +1244,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.retention.description",
       "label": "Show the snapshot retention policy the server is enforcing.",
+      "summaryKey": "commands.backup.retention.descriptionShort",
+      "summary": "Show the snapshot retention policy the server is enforcing",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -1206,9 +1264,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -1226,6 +1284,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.retention.clear.description",
       "label": "Remove the declared policy, so the plan or server default applies again.",
+      "summaryKey": "commands.backup.retention.clear.descriptionShort",
+      "summary": "Remove the declared policy, so the plan or server default applies again",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--stream <id>",
@@ -1254,6 +1315,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -1272,6 +1334,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.retention.preview.description",
       "label": "Show which snapshots the next sweep would delete and the space it would free.",
+      "summaryKey": "commands.backup.retention.preview.descriptionShort",
+      "summary": "Show which snapshots the next sweep would delete and the space it would free",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -1289,9 +1354,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -1309,6 +1374,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.retention.set.description",
       "label": "Declare how many snapshots to keep. Every knob is replaced, not merged.",
+      "summaryKey": "commands.backup.retention.set.descriptionShort",
+      "summary": "Declare how many snapshots to keep",
+      "severity": "caution",
       "options": [
         {
           "flags": "--keep-last <n>",
@@ -1414,6 +1482,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -1431,6 +1500,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.run.description",
       "label": "Run a backup now.",
+      "summaryKey": "commands.backup.run.descriptionShort",
+      "summary": "Run a backup now",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -1508,8 +1580,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.schedule.description",
+      "descriptionKey": "commands.backup.schedule.descriptionShort",
       "label": "Deploy backup schedule to a remote machine (systemd timers)",
+      "summaryKey": "commands.backup.schedule.descriptionShort",
+      "summary": "Deploy backup schedule to a remote machine (systemd timers)",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -1560,6 +1639,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Clear failed state on touched services after a successful deploy (off by default, preserves failure signal)"
         },
         {
+          "flags": "--adopt-origin",
+          "long": "adopt-origin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.schedule.optionAdoptOrigin",
+          "label": "Move the deployed units to this config's account server (without it, a push that would change the server the units are held to is refused)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -1591,8 +1681,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.snapshot.description",
+      "descriptionKey": "commands.backup.snapshot.descriptionShort",
       "label": "Upload a chunk-store snapshot: full inventory first, changed cells after",
+      "summaryKey": "commands.backup.snapshot.descriptionShort",
+      "summary": "Upload a chunk-store snapshot: full inventory first, changed cells after",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--reseed",
@@ -1741,6 +1838,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.backup.snapshots.delete.description",
       "label": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection.",
+      "summaryKey": "commands.backup.snapshots.delete.descriptionShort",
+      "summary": "Delete one stored snapshot; its exclusive data is freed by the next garbage collection",
+      "severity": "destructive",
       "options": [],
       "positionals": [
         {
@@ -1765,6 +1865,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -1780,8 +1881,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.status.description",
+      "descriptionKey": "commands.backup.status.descriptionShort",
       "label": "Show backup status and timer state on a remote machine",
+      "summaryKey": "commands.backup.status.descriptionShort",
+      "summary": "Show backup status and timer state on a remote machine",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -1843,8 +1947,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.bind.description",
+      "descriptionKey": "commands.backup.strategy.bind.descriptionShort",
       "label": "Bind a backup strategy to a machine so its schedule is deployed there",
+      "summaryKey": "commands.backup.strategy.bind.descriptionShort",
+      "summary": "Bind a backup strategy to a machine so its schedule is deployed there",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -1877,6 +1984,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": null,
@@ -1893,8 +2001,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.list.description",
+      "descriptionKey": "commands.backup.strategy.list.descriptionShort",
       "label": "List all backup strategies",
+      "summaryKey": "commands.backup.strategy.list.descriptionShort",
+      "summary": "List all backup strategies",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -1903,9 +2014,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -1921,8 +2032,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.remove.description",
+      "descriptionKey": "commands.backup.strategy.remove.descriptionShort",
       "label": "Remove a backup strategy or destination",
+      "summaryKey": "commands.backup.strategy.remove.descriptionShort",
+      "summary": "Remove a backup strategy or destination",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--destination <name>",
@@ -1962,6 +2076,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -1978,8 +2093,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.set.description",
+      "descriptionKey": "commands.backup.strategy.set.descriptionShort",
       "label": "Create or update a backup strategy",
+      "summaryKey": "commands.backup.strategy.set.descriptionShort",
+      "summary": "Create or update a backup strategy",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--destination <name>",
@@ -2228,6 +2350,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -2244,8 +2367,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.show.description",
+      "descriptionKey": "commands.backup.strategy.show.descriptionShort",
       "label": "Show backup strategy details",
+      "summaryKey": "commands.backup.strategy.show.descriptionShort",
+      "summary": "Show backup strategy details",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -2263,9 +2389,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -2281,8 +2407,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.backup.strategy.unbind.description",
+      "descriptionKey": "commands.backup.strategy.unbind.descriptionShort",
       "label": "Unbind a backup strategy from a machine",
+      "summaryKey": "commands.backup.strategy.unbind.descriptionShort",
+      "summary": "Unbind a backup strategy from a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -2315,6 +2444,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": null,
@@ -2331,8 +2461,15 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.tocKey.sync.description",
+      "descriptionKey": "commands.backup.tocKey.sync.descriptionShort",
       "label": "Install the repository's listing key on its machine, or replace a different one",
+      "summaryKey": "commands.backup.tocKey.sync.descriptionShort",
+      "summary": "Install the repository's listing key on its machine, or replace a different one",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--replace",
@@ -2368,14 +2505,14 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "derives the public key from the repository credential, which stays where the config lives",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Drives several renet calls from the operator side with a credential the config holds, so there is no single machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -2390,8 +2527,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.undelete.description",
+      "descriptionKey": "commands.backup.undelete.descriptionShort",
       "label": "Cancel a delayed snapshot delete before it takes effect",
+      "summaryKey": "commands.backup.undelete.descriptionShort",
+      "summary": "Cancel a delayed snapshot delete before it takes effect",
+      "severity": "caution",
       "options": [],
       "positionals": [
         {
@@ -2409,9 +2549,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -2428,6 +2568,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.backup.upload.description",
       "label": "Send a local repository image, made by 'rdc backup download', to a machine and register it as a new repository. The transfer resumes after an interruption, and the machine checks the sha256 and the LUKS header before the image is placed.",
+      "summaryKey": "commands.backup.upload.descriptionShort",
+      "summary": "Send a downloaded repository image to a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <machine>",
@@ -2552,6 +2695,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Sends a local image file with a client-side rsync and registers the repository in the local config; a remote executor cannot see the file. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.backupUpload",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -2567,8 +2711,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.backup.usage.description",
+      "descriptionKey": "commands.backup.usage.descriptionShort",
       "label": "Show backup storage quota, stored bytes, and per-repo usage",
+      "summaryKey": "commands.backup.usage.descriptionShort",
+      "summary": "Show backup storage quota, stored bytes, and per-repo usage",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -2577,9 +2724,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -2594,8 +2741,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.verify.description",
+      "descriptionKey": "commands.backup.verify.descriptionShort",
       "label": "Verify a repository's backup anchor against the chunk store",
+      "summaryKey": "commands.backup.verify.descriptionShort",
+      "summary": "Verify a repository's backup anchor against the chunk store",
+      "severity": "none",
       "options": [
         {
           "flags": "--deep",
@@ -2687,6 +2837,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.create.description",
       "label": "Declare and provision a cluster: machines, Ceph pools, and Kubernetes. Pass --provider and --pool to declare in one step; a bare create provisions a cluster already declared.",
+      "summaryKey": "commands.cluster.create.descriptionShort",
+      "summary": "Provision a configured cluster",
+      "severity": "caution",
       "options": [
         {
           "flags": "--provider <provider>",
@@ -2950,6 +3103,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.destroy.description",
       "label": "Tear down the provisioned members and remove the cluster and its machines from config.",
+      "summaryKey": "commands.cluster.destroy.descriptionShort",
+      "summary": "Destroy a cluster and its members",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--force",
@@ -3007,6 +3163,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.evict.description",
       "label": "Drain the node, delete its Node object, and clear its cluster membership. The cluster is derived from the machine; a machine that still mounts a datastore is refused.",
+      "summaryKey": "commands.cluster.evict.descriptionShort",
+      "summary": "Remove a node from its cluster",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--force",
@@ -3063,6 +3222,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.fork.description",
       "label": "Clone an entire cluster, including its repos' data, into a new cluster: coordinated copy-on-write of the cluster and PV images, then node-identity rewrite so the fork comes up on new addresses. The parent keeps running.",
+      "summaryKey": "commands.cluster.fork.descriptionShort",
+      "summary": "Clone a whole cluster (with data)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--tag <tag>",
@@ -3188,6 +3350,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.join.description",
       "label": "Adopt an existing registered machine as a Kubernetes agent node of a cluster, using the same CA-derived join token as anchor and rejoin.",
+      "summaryKey": "commands.cluster.join.descriptionShort",
+      "summary": "Add a machine to a cluster as an agent",
+      "severity": "caution",
       "options": [
         {
           "flags": "--cluster <name>",
@@ -3265,6 +3430,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.kubeconfig.description",
       "label": "Fetch the kubeconfig from the cluster control node over SSH and cache it locally (0600) for kubectl.",
+      "summaryKey": "commands.cluster.kubeconfig.descriptionShort",
+      "summary": "Fetch and cache a cluster kubeconfig",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -3284,6 +3452,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Caches the kubeconfig to a local 0600 file and prints that path; a remote executor would write the file onto its own disk. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.clusterKubeconfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3301,6 +3470,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.migrate.description",
       "label": "Move an entire cluster, including its repos' data, to another machine or datacenter with a short cutover (hot pre-copy, then stop-and-restart on the destination).",
+      "summaryKey": "commands.cluster.migrate.descriptionShort",
+      "summary": "Move a whole cluster to another place",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <dest-cluster>",
@@ -3360,6 +3532,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.rehearse.description",
       "label": "Rehearse a release/upgrade: fork the cluster onto a destination as an ephemeral throwaway (writes=local, secretless role=rehearsal), bring it up, gate on health, then discard it. The parent is never touched.",
+      "summaryKey": "commands.cluster.rehearse.descriptionShort",
+      "summary": "Boot an ephemeral throwaway fork, health-gate it, then discard",
+      "severity": "caution",
       "options": [
         {
           "flags": "--on <dest-cluster>",
@@ -3429,6 +3604,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.scale.description",
       "label": "Change a pool's member count (adds/removes machines and joins/drains nodes). k8s-agent pools scale in place; ceph pool growth is done via cephadm directly.",
+      "summaryKey": "commands.cluster.scale.descriptionShort",
+      "summary": "Scale a cluster pool up or down",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--pool <pool>",
@@ -3498,6 +3676,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.snapshot.create.description",
       "label": "Snapshot every rbd-backed datastore in the cluster at ONE instant. Nothing is stopped. Any local-backend datastore in the cluster is listed as outside the instant: it is not part of the snapshot. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
+      "summaryKey": "commands.cluster.snapshot.create.descriptionShort",
+      "summary": "Take a cluster-wide snapshot",
+      "severity": "caution",
       "options": [
         {
           "flags": "--snapshot <label>",
@@ -3555,6 +3736,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.cluster.snapshot.list.description",
       "label": "List the cluster's group snapshots.",
+      "summaryKey": "commands.cluster.snapshot.list.descriptionShort",
+      "summary": "List cluster snapshots",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -3602,6 +3786,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.cluster.status.description",
       "label": "List all clusters, or pass a cluster name to show that cluster's full config.",
+      "summaryKey": "commands.cluster.status.descriptionShort",
+      "summary": "Show clusters and their pools",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -3619,8 +3806,44 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "completion"
+      ],
+      "pathKey": "completion",
+      "domain": "completion",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.completion.description",
+      "label": "Print a completion script for the named shell. Command, flag and choice words come from the CLI contract and complete without starting the CLI; machine, repository and other config resource names come from the hidden __complete lookup, kept per shell session until the config file changes. Load it with eval \"$(rdc completion bash)\" or eval \"$(rdc completion zsh)\", rdc completion fish | source, or rdc completion pwsh | Out-String | Invoke-Expression.",
+      "summaryKey": "commands.completion.descriptionShort",
+      "summary": "Print a shell completion script for bash, zsh, fish or PowerShell",
+      "severity": "none",
+      "options": [],
+      "positionals": [
+        {
+          "name": "shell",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.completion.shellArgument",
+          "label": "Shell to print the script for: bash, zsh, fish or pwsh"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Prints a shell completion script for an interactive terminal; an MCP client completes nothing and reads the command list from its own tools.",
+      "interactive": false,
       "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3639,6 +3862,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.access.add.description",
       "label": "Add an access key, or update an existing one in place while keeping its machine bindings. Ranges given here apply to the key on every machine unless a binding sets its own; without ranges the config-wide ranges apply",
+      "summaryKey": "commands.config.access.add.descriptionShort",
+      "summary": "Add or update an access key",
+      "severity": "caution",
       "options": [
         {
           "flags": "--public-key <key>",
@@ -3711,6 +3937,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3727,8 +3954,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.access.list.description",
+      "descriptionKey": "commands.config.access.list.descriptionShort",
       "label": "List the config's access keys",
+      "summaryKey": "commands.config.access.list.descriptionShort",
+      "summary": "List the config's access keys",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -3737,9 +3967,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -3757,6 +3987,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.access.ranges.description",
       "label": "Set the source ranges every access key uses unless the key or its machine binding sets its own. Without options, show them",
+      "summaryKey": "commands.config.access.ranges.descriptionShort",
+      "summary": "Set the config-wide source ranges",
+      "severity": "caution",
       "options": [
         {
           "flags": "--hosted-executor",
@@ -3809,6 +4042,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3825,8 +4059,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.access.remove.description",
+      "descriptionKey": "commands.config.access.remove.descriptionShort",
       "label": "Remove an access key from the config",
+      "summaryKey": "commands.config.access.remove.descriptionShort",
+      "summary": "Remove an access key from the config",
+      "severity": "destructive",
       "options": [],
       "positionals": [
         {
@@ -3843,6 +4080,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3859,8 +4097,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.log.description",
+      "descriptionKey": "commands.config.audit.log.descriptionShort",
       "label": "Print recent audit entries as JSON",
+      "summaryKey": "commands.config.audit.log.descriptionShort",
+      "summary": "Print recent audit entries as JSON",
+      "severity": "none",
       "options": [
         {
           "flags": "--since <spec>",
@@ -3909,6 +4150,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3925,8 +4167,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.tail.description",
+      "descriptionKey": "commands.config.audit.tail.descriptionShort",
       "label": "Stream new audit entries as they are written (Ctrl+C to stop)",
+      "summaryKey": "commands.config.audit.tail.descriptionShort",
+      "summary": "Stream new audit entries as they are written (Ctrl+C to stop)",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -3934,6 +4179,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3950,8 +4196,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.audit.verify.description",
+      "descriptionKey": "commands.config.audit.verify.descriptionShort",
       "label": "Verify the integrity of the SHA-256 hash chain across all audit entries",
+      "summaryKey": "commands.config.audit.verify.descriptionShort",
+      "summary": "Verify the integrity of the SHA-256 hash chain across all audit entries",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -3962,6 +4211,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -3977,8 +4227,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.clear.description",
+      "descriptionKey": "commands.config.clear.descriptionShort",
       "label": "Clear defaults (all or specific key)",
+      "summaryKey": "commands.config.clear.descriptionShort",
+      "summary": "Clear defaults (all or specific key)",
+      "severity": "destructive",
       "options": [],
       "positionals": [
         {
@@ -3995,6 +4248,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4010,8 +4264,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.current.description",
+      "descriptionKey": "commands.config.current.descriptionShort",
       "label": "Show the active config: name, file, resolved server and channel, token state",
+      "summaryKey": "commands.config.current.descriptionShort",
+      "summary": "Show the active config: name, file, resolved server and channel, token state",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -4022,6 +4279,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4037,8 +4295,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.delete.description",
+      "descriptionKey": "commands.config.delete.descriptionShort",
       "label": "Delete a config file",
+      "summaryKey": "commands.config.delete.descriptionShort",
+      "summary": "Delete a config file",
+      "severity": "destructive",
       "options": [],
       "positionals": [
         {
@@ -4055,6 +4316,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4072,6 +4334,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.edit.description",
       "label": "Open the active config in $EDITOR as a redacted JSONC projection. Humans only; agents refused.",
+      "summaryKey": "commands.config.edit.descriptionShort",
+      "summary": "Open the active config in $EDITOR as a redacted JSONC projection",
+      "severity": "caution",
       "options": [
         {
           "flags": "--reveal",
@@ -4094,6 +4359,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.config.edit.optionDump",
           "label": "Print current config as JSONC to stdout (read-only; safe for agents when redacted)"
+        },
+        {
+          "flags": "--redacted",
+          "long": "redacted",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.edit.optionRedacted",
+          "label": "Redact sensitive values in --dump output (the default; cannot be combined with --reveal)"
         },
         {
           "flags": "--apply <file>",
@@ -4137,6 +4413,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4155,6 +4432,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.field.get.description",
       "label": "Read a single config value by JSON Pointer. Sensitive fields redact unless --reveal (humans only).",
+      "summaryKey": "commands.config.field.get.descriptionShort",
+      "summary": "Read a single config value by JSON Pointer",
+      "severity": "none",
       "options": [
         {
           "flags": "--pointer <pointer>",
@@ -4195,6 +4475,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4213,6 +4494,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.field.list.description",
       "label": "List every registered sensitivity pointer template with its kind and commit/encrypt policy.",
+      "summaryKey": "commands.config.field.list.descriptionShort",
+      "summary": "List every registered sensitivity pointer template with its kind and commit/encrypt policy",
+      "severity": "none",
       "options": [
         {
           "flags": "--sensitive",
@@ -4241,6 +4525,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4259,6 +4544,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.field.rotate.description",
       "label": "Rotate a sensitive value without --current. Interactive TTY only; loudly audited.",
+      "summaryKey": "commands.config.field.rotate.descriptionShort",
+      "summary": "Rotate a sensitive value without --current",
+      "severity": "caution",
       "options": [
         {
           "flags": "--pointer <pointer>",
@@ -4289,6 +4577,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4307,6 +4596,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.field.set.description",
       "label": "Write a config value at a JSON Pointer. Sensitive paths require --current (knowledge-gate).",
+      "summaryKey": "commands.config.field.set.descriptionShort",
+      "summary": "Write a config value at a JSON Pointer",
+      "severity": "caution",
       "options": [
         {
           "flags": "--pointer <pointer>",
@@ -4349,6 +4641,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4367,6 +4660,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.field.unset.description",
       "label": "Delete a config value at a JSON Pointer. Sensitive paths require --current.",
+      "summaryKey": "commands.config.field.unset.descriptionShort",
+      "summary": "Delete a config value at a JSON Pointer",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--pointer <pointer>",
@@ -4397,6 +4693,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4414,6 +4711,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.importMachine.description",
       "label": "Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten, except a differing backup strategy under --strategy-from-source. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.",
+      "summaryKey": "commands.config.importMachine.descriptionShort",
+      "summary": "Copy a machine and its repositories from another config",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--from <config>",
@@ -4464,6 +4768,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4479,8 +4784,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.init.description",
+      "descriptionKey": "commands.config.init.descriptionShort",
       "label": "Create a new named config file",
+      "summaryKey": "commands.config.init.descriptionShort",
+      "summary": "Create a new named config file",
+      "severity": "caution",
       "options": [
         {
           "flags": "--ssh-key <path>",
@@ -4571,6 +4879,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4586,8 +4895,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.list.description",
+      "descriptionKey": "commands.config.list.descriptionShort",
       "label": "List all config files",
+      "summaryKey": "commands.config.list.descriptionShort",
+      "summary": "List all config files",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -4607,6 +4919,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4624,6 +4937,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.config.prune.description",
       "label": "Remove dead weight from the local config file at ~/.config/rediacc/<config>.json. Three buckets are cleaned, all pure-local (no SSH/renet calls): (1) ACME cert-cache entries whose anchor GUID/repo/machine is no longer in the active config; (2) archived repositories whose grace period has expired (default 7 days, see defaults.pruneGraceDays); (3) dangling cross-references (machine→strategy, strategy→repo). Resources still in use, credentials, storage tokens, and known-hosts are never touched. Default behavior is to apply changes; pass --dry-run to preview only.",
+      "summaryKey": "commands.config.prune.descriptionShort",
+      "summary": "Sweep stale leftovers from the local config file",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -4717,14 +5037,14 @@ export const CLI_CONTRACT: CliContract = {
       ],
       "positionals": [],
       "hasSubcommands": false,
-      "destructive": false,
+      "destructive": true,
       "idempotent": true,
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -4741,6 +5061,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.config.reconcile.description",
       "label": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
+      "summaryKey": "commands.config.reconcile.descriptionShort",
+      "summary": "Rebuild runtime state from machine truth",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--machine <m...>",
@@ -4786,9 +5113,8 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "It queries every machine but writes the result into the CALLER's local state bucket; a remote executor would rebuild its own state and the caller would be none the wiser. Run it without --proxy.",
-      "detachable": false,
+      "proxyCapable": true,
+      "detachable": true,
       "machineOption": "machine",
       "repoOption": null,
       "machinePositional": null,
@@ -4803,8 +5129,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.recover.description",
+      "descriptionKey": "commands.config.recover.descriptionShort",
       "label": "Restore config from backup (.bak) file",
+      "summaryKey": "commands.config.recover.descriptionShort",
+      "summary": "Restore config from backup (.bak) file",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -4834,6 +5163,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4850,8 +5180,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.disable.description",
+      "descriptionKey": "commands.config.remote.disable.descriptionShort",
       "label": "Disconnect from remote storage and save config locally",
+      "summaryKey": "commands.config.remote.disable.descriptionShort",
+      "summary": "Disconnect from remote storage and save config locally",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--local",
@@ -4882,6 +5215,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -4898,31 +5232,22 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.enable.description",
+      "descriptionKey": "commands.config.remote.enable.descriptionShort",
       "label": "Link this config to remote encrypted storage",
+      "summaryKey": "commands.config.remote.enable.descriptionShort",
+      "summary": "Link this config to remote encrypted storage",
+      "severity": "caution",
       "options": [
         {
-          "flags": "--master-password",
-          "long": "master-password",
-          "valueTaking": false,
+          "flags": "--machine-secret <id>",
+          "long": "machine-secret",
+          "valueTaking": true,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "sensitive": true,
-          "descriptionKey": "commands.config.remote.enable.optionMasterPassword",
-          "label": "Enroll headlessly with a pre-provisioned password slot (no browser)"
-        },
-        {
-          "flags": "--master-password-stdin",
-          "long": "master-password-stdin",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.enable.optionMasterPasswordStdin",
-          "label": "Like --master-password, reading the master password from stdin"
+          "descriptionKey": "commands.config.remote.enable.optionMachineSecret",
+          "label": "Enroll headlessly with the machine secret of this id, minted in the portal (no browser); the secret itself comes from REDIACC_MACHINE_SECRET, piped stdin or a hidden terminal prompt, never the command line"
         },
         {
           "flags": "--api-url <url>",
@@ -4964,43 +5289,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
-      "detachable": false,
-      "machineOption": null,
-      "repoOption": null,
-      "machinePositional": null,
-      "repoPositional": null
-    },
-    {
-      "path": [
-        "config",
-        "remote",
-        "master-password",
-        "change"
-      ],
-      "pathKey": "config remote master-password change",
-      "domain": "config",
-      "group": "TOOLS",
-      "plane": "other",
-      "descriptionKey": "commands.config.remote.masterPassword.change.description",
-      "label": "Change the master password: re-wrap the config key from this device's enrollment under a new password slot",
-      "options": [
-        {
-          "flags": "--new-master-password-stdin",
-          "long": "new-master-password-stdin",
-          "valueTaking": false,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "commands.config.remote.masterPassword.change.optionNewMasterPasswordStdin",
-          "label": "Read the new master password from stdin (otherwise REDIACC_NEW_STORE_MASTER_PASSWORD, or a prompt on a TTY)"
-        }
-      ],
-      "positionals": [],
-      "hasSubcommands": false,
-      "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5017,14 +5306,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.refresh.description",
+      "descriptionKey": "commands.config.remote.refresh.descriptionShort",
       "label": "Force re-fetch config from remote storage",
+      "summaryKey": "commands.config.remote.refresh.descriptionShort",
+      "summary": "Force re-fetch config from remote storage",
+      "severity": "caution",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5041,8 +5334,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.restore.description",
+      "descriptionKey": "commands.config.remote.restore.descriptionShort",
       "label": "Publish an earlier version of this config as its newest version",
+      "summaryKey": "commands.config.remote.restore.descriptionShort",
+      "summary": "Publish an earlier version of this config as its newest version",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -5071,6 +5367,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5087,14 +5384,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.status.description",
+      "descriptionKey": "commands.config.remote.status.descriptionShort",
       "label": "Show remote connection status",
+      "summaryKey": "commands.config.remote.status.descriptionShort",
+      "summary": "Show remote connection status",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5111,8 +5412,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.remote.versions.description",
+      "descriptionKey": "commands.config.remote.versions.descriptionShort",
       "label": "List the earlier versions of this config kept on the server",
+      "summaryKey": "commands.config.remote.versions.descriptionShort",
+      "summary": "List the earlier versions of this config kept on the server",
+      "severity": "none",
       "options": [
         {
           "flags": "--explain",
@@ -5131,6 +5435,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5146,8 +5451,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.config.rotateCek.description",
+      "descriptionKey": "commands.config.rotateCek.descriptionShort",
       "label": "Rotate the organization config-encryption key",
+      "summaryKey": "commands.config.rotateCek.descriptionShort",
+      "summary": "Rotate the organization config-encryption key",
+      "severity": "caution",
       "options": [
         {
           "flags": "--api-url <url>",
@@ -5168,6 +5476,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5183,8 +5492,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.set.description",
+      "descriptionKey": "commands.config.set.descriptionShort",
       "label": "Set a default value (team, region, bridge)",
+      "summaryKey": "commands.config.set.descriptionShort",
+      "summary": "Set a default value (team, region, bridge)",
+      "severity": "caution",
       "options": [],
       "positionals": [
         {
@@ -5209,6 +5521,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5224,8 +5537,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.show.description",
+      "descriptionKey": "commands.config.show.descriptionShort",
       "label": "Show current config details",
+      "summaryKey": "commands.config.show.descriptionShort",
+      "summary": "Show current config details",
+      "severity": "none",
       "options": [
         {
           "flags": "--reveal",
@@ -5246,9 +5562,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -5264,14 +5580,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.remove.description",
+      "descriptionKey": "commands.config.ssh.remove.descriptionShort",
       "label": "Remove SSH key from the current config",
+      "summaryKey": "commands.config.ssh.remove.descriptionShort",
+      "summary": "Remove SSH key from the current config",
+      "severity": "destructive",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5288,8 +5608,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.set.description",
+      "descriptionKey": "commands.config.ssh.set.descriptionShort",
       "label": "Set SSH key for the current config",
+      "summaryKey": "commands.config.ssh.set.descriptionShort",
+      "summary": "Set SSH key for the current config",
+      "severity": "caution",
       "options": [
         {
           "flags": "--key <path>",
@@ -5320,6 +5643,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5336,14 +5660,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "config",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.config.ssh.show.description",
+      "descriptionKey": "commands.config.ssh.show.descriptionShort",
       "label": "Show current SSH key configuration",
+      "summaryKey": "commands.config.ssh.show.descriptionShort",
+      "summary": "Show current SSH key configuration",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -5360,6 +5688,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.credits.description",
       "label": "Print the third-party components bundled with rdc: the binaries renet embeds and conveys (CRIU, rsync), the embedded Node.js runtime, and the bundled npm dependencies. Shows versions, SPDX license identifiers, and the exact-version source archive URLs required for GPL compliance. Use --licenses to print the full THIRD_PARTY_LICENSES text bundled with release builds.",
+      "summaryKey": "commands.credits.descriptionShort",
+      "summary": "Show third-party attributions and license compliance info",
+      "severity": "none",
       "options": [
         {
           "flags": "--licenses",
@@ -5380,9 +5711,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -5399,6 +5730,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.attach.description",
       "label": "Attach a datastore to a machine. Exactly one machine holds a datastore at a time, so attaching it somewhere else moves it: the old holder gives it up first, and a failed hand-off leaves the original attachment intact. A fork must say where its writes go.",
+      "summaryKey": "commands.datastore.attach.descriptionShort",
+      "summary": "Attach a datastore to a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <machine>",
@@ -5533,6 +5867,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.create.description",
       "label": "Create an additional named datastore on a machine. A local backend is a file-backed pool on that machine and stays there. An rbd backend lives in Ceph, so it can move to any machine that reaches the same cluster. Pass --cluster to make it a kubernetes-world datastore; that backref is fixed at creation.",
+      "summaryKey": "commands.datastore.create.descriptionShort",
+      "summary": "Create a named datastore on a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -5685,6 +6022,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.delete.description",
       "label": "Destroy a datastore and everything in it. It detaches first; if it will not detach cleanly, the delete fails rather than orphaning a mounted pool.",
+      "summaryKey": "commands.datastore.delete.descriptionShort",
+      "summary": "Destroy a datastore and everything in it",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -5753,6 +6093,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.detach.description",
       "label": "Detach a datastore from its machine. Repositories inside it stop first. A fork attached with --writes local has nowhere to write its overlay back to, so detaching it throws the overlay away and needs --discard.",
+      "summaryKey": "commands.datastore.detach.descriptionShort",
+      "summary": "Detach a datastore from its machine",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--discard",
@@ -5821,6 +6164,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.fork.description",
       "label": "Fork a datastore copy-on-write. The fork is instant and its cost does not grow with the size of the pool. Needs the rbd backend: a local datastore has no block-level clone, so repositories inside it fork one at a time by reflink instead (rdc repo fork).",
+      "summaryKey": "commands.datastore.fork.descriptionShort",
+      "summary": "Fork a datastore copy-on-write",
+      "severity": "caution",
       "options": [
         {
           "flags": "--tag <tag>",
@@ -5945,6 +6291,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.list.description",
       "label": "List named datastores, where they are attached, and what they hold.",
+      "summaryKey": "commands.datastore.list.descriptionShort",
+      "summary": "List named datastores",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -6015,6 +6364,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.resize.description",
       "label": "Grow or shrink a datastore. This is an offline operation: the repositories inside it must be stopped.",
+      "summaryKey": "commands.datastore.resize.descriptionShort",
+      "summary": "Grow or shrink a datastore",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--size <size>",
@@ -6073,6 +6425,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.snapshot.create.description",
       "label": "Take a point-in-time snapshot of a datastore. Nothing stops. The instant is crash-consistent, not application-consistent: if you need a specific write to be IN the snapshot, sync it first.",
+      "summaryKey": "commands.datastore.snapshot.create.descriptionShort",
+      "summary": "Snapshot a datastore",
+      "severity": "caution",
       "options": [
         {
           "flags": "--snapshot <label>",
@@ -6130,6 +6485,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.snapshot.list.description",
       "label": "List a datastore's snapshots.",
+      "summaryKey": "commands.datastore.snapshot.list.descriptionShort",
+      "summary": "List datastore snapshots",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -6177,6 +6535,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.datastore.status.description",
       "label": "Show one datastore: its backend, attachment, usage, repositories and snapshots. A detached datastore still reports its record.",
+      "summaryKey": "commands.datastore.status.descriptionShort",
+      "summary": "Show one datastore",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -6223,6 +6584,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.doctor.description",
       "label": "Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.",
+      "summaryKey": "commands.doctor.descriptionShort",
+      "summary": "Diagnose CLI environment and renet integration",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -6236,6 +6600,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -6253,6 +6618,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.feedback.list.description",
       "label": "List the feedback reports visible to this machine: id, short fingerprint, status and dates. A fixed report reads fixed-in-v<version>. Uses the stored API token, or an installed Free License when there is none.",
+      "summaryKey": "commands.feedback.list.descriptionShort",
+      "summary": "List feedback reports and their status",
+      "severity": "none",
       "options": [
         {
           "flags": "--status <list>",
@@ -6273,9 +6641,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -6292,6 +6660,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.feedback.report.description",
       "label": "Build a report from the newest failed command (--last), a recorded command (--command <n>) or a message alone, print exactly what would be sent, and send it after confirmation. An agent without --yes gets the preview and the command to send it, never a hidden send.",
+      "summaryKey": "commands.feedback.report.descriptionShort",
+      "summary": "Preview and send a feedback report",
+      "severity": "caution",
       "options": [
         {
           "flags": "--last",
@@ -6356,9 +6727,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -6375,6 +6746,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.feedback.show.description",
       "label": "Show one feedback report by its id (or a unique prefix of it), with its status, occurrence count and dates.",
+      "summaryKey": "commands.feedback.show.descriptionShort",
+      "summary": "Show one feedback report",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -6392,9 +6766,382 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "forensics",
+        "level"
+      ],
+      "pathKey": "forensics level",
+      "domain": "forensics",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.forensics.level.description",
+      "label": "Set the forensic capture level of a repository through the forensics_level function on its machine: basic, standard or full. The collector caps the level at what the plan includes.",
+      "summaryKey": "commands.forensics.level.descriptionShort",
+      "summary": "Set a repository's forensic capture level",
+      "severity": "caution",
+      "options": [],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "name": "level",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.forensics.level.levelArgument",
+          "label": "Capture level: basic, standard or full"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Switches the forensic capture level of a repository on its machine, the containment step of an incident; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "forensics",
+        "verify"
+      ],
+      "pathKey": "forensics verify",
+      "domain": "forensics",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.forensics.verify.description",
+      "label": "Recompute the audit day-file hash chain and the signed forensics batch chains of an evidence directory, and print every gap and edit found. The directory holds the raw files under their manifest keys (audit/<org>/days/<day>.ndjson.gz and f/<subscription>/<machine>/days/<day>/...). Exits 1 when any gap or edit is found. Batch signatures verify only under keys from outside the directory: a --machine-key entry, else the key the account server pinned for the incident an rdc incident export directory names. A key written in the directory's raw-manifest.json is never trusted, and a machine with no outside key fails. With --report a signed incident report is checked instead, against the public record of its id and the published report key; it exits 1 when the content or signature does not match.",
+      "summaryKey": "commands.forensics.verify.descriptionShort",
+      "summary": "Verify audit and forensics hash chains of an evidence directory",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--dir <path>",
+          "long": "dir",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.dirOption",
+          "label": "Evidence directory to verify"
+        },
+        {
+          "flags": "--report <file>",
+          "long": "report",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.reportOption",
+          "label": "Signed incident report to verify instead (a JSON file named <report id>.json, as rdc incident export --stage writes it)"
+        },
+        {
+          "flags": "--id <report-id>",
+          "long": "id",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.idOption",
+          "label": "Report id, when the file name does not carry it"
+        },
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.sinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: the first day in the directory)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.untilOption",
+          "label": "End of the window, in the same forms (default: the last day in the directory)"
+        },
+        {
+          "flags": "--machine-key <machine=hex>",
+          "long": "machine-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.forensics.verify.machineKeyOption",
+          "label": "Machine spool public key as <machine>=<64 hex characters>, used instead of the key the account server pinned (repeatable)"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "close"
+      ],
+      "pathKey": "incident close",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.close.description",
+      "label": "Close an incident. Nothing is released at once: the eviction hold and the R2 lock rules end 30 days after the close.",
+      "summaryKey": "commands.incident.close.descriptionShort",
+      "summary": "Close an incident; its hold ends 30 days later",
+      "severity": "caution",
+      "options": [],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "declare"
+      ],
+      "pathKey": "incident declare",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.declare.description",
+      "label": "Declare an incident on a repository. The account record goes in first: the incident with its window, an eviction hold over the window and the R2 lock rules, which start the early-warning, notification and final-report clocks. Then the repository is forked as a forensic snapshot (repo fork <ref> --tag incident-<id>) and its capture level is switched to full, and each step's outcome is recorded on the incident. A failed step leaves the record and its hold in place, exits 1 and names the --resume command that runs the failed steps again.",
+      "summaryKey": "commands.incident.declare.descriptionShort",
+      "summary": "Declare an incident: record, forensic fork and full capture",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        },
+        {
+          "flags": "--aware-at <when>",
+          "long": "aware-at",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.declare.awareAtOption",
+          "label": "When the organization became aware, as an ISO 8601 instant; never later than the declaration (default: now)"
+        },
+        {
+          "flags": "--resume <id>",
+          "long": "resume",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.declare.resumeOption",
+          "label": "Run the machine steps of this declared incident again, only those whose last outcome is not ok"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Changes evidence state: needs the incident:manage scope and a step-up of an owner or admin, so an assistant does not run it; PLAN-forensics-investigation D7 keeps it out until the rmcp program rules otherwise.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "incident",
+        "export"
+      ],
+      "pathKey": "incident export",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.export.description",
+      "label": "Write the incident's window to a directory: the incident record with its clocks, the merged timeline, the bytes-out aggregates, the raw chain manifest and the raw files it lists under their manifest keys. When the manifest lists an audit day file or a forensics headers file, the audit day-file chain and the signed forensics batch chains are verified on the way under the machine keys the server pinned, and the report is written to verification.json. Exits 1 when the evidence shows a gap or an edit. The same check over the directory runs again through rdc forensics verify. With --stage the command writes one signed incident report (a PDF, JSON or STIX file) named by its report id.",
+      "summaryKey": "commands.incident.export.descriptionShort",
+      "summary": "Export and verify an incident's timeline and evidence",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--out <dir>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.outOption",
+          "label": "Directory to write (default: incident-<id>)"
+        },
+        {
+          "flags": "--stage <stage>",
+          "long": "stage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.stageOption",
+          "label": "Write a signed report instead of the evidence window: early-warning, notification or final (the final report follows a notification)"
+        },
+        {
+          "flags": "--format <format>",
+          "long": "format",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.incident.export.formatOption",
+          "label": "Report format with --stage: json (default), stix or pdf"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "incident",
+        "status"
+      ],
+      "pathKey": "incident status",
+      "domain": "incident",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.incident.status.description",
+      "label": "List the incidents of the organization, or show one with its scope, window, machine steps and the early-warning, notification and final-report deadline clocks.",
+      "summaryKey": "commands.incident.status.descriptionShort",
+      "summary": "List incidents or show one with its deadline clocks",
+      "severity": "none",
+      "options": [],
+      "positionals": [
+        {
+          "name": "id",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.incident.idArgument",
+          "label": "Incident id, or a prefix of it that no other incident shares"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -6409,8 +7156,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.cancel.description",
+      "descriptionKey": "commands.job.cancel.descriptionShort",
       "label": "Cancel a running detached job",
+      "summaryKey": "commands.job.cancel.descriptionShort",
+      "summary": "Cancel a running detached job",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6491,6 +7241,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.job.dismiss.description",
       "label": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+      "summaryKey": "commands.job.dismiss.summary",
+      "summary": "Give up on job tickets locally, with no machine call",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--stale",
@@ -6560,8 +7313,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.gc.description",
+      "descriptionKey": "commands.job.gc.descriptionShort",
       "label": "Remove finished jobs and their logs",
+      "summaryKey": "commands.job.gc.descriptionShort",
+      "summary": "Remove finished jobs and their logs",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6626,8 +7382,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.list.description",
+      "descriptionKey": "commands.job.list.descriptionShort",
       "label": "List detached jobs on a machine, newest first",
+      "summaryKey": "commands.job.list.descriptionShort",
+      "summary": "List detached jobs on a machine, newest first",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6706,8 +7465,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.logs.description",
+      "descriptionKey": "commands.job.logs.descriptionShort",
       "label": "Replay or follow a detached job's event log",
+      "summaryKey": "commands.job.logs.descriptionShort",
+      "summary": "Replay or follow a detached job's event log",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6818,8 +7580,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.status.description",
+      "descriptionKey": "commands.job.status.descriptionShort",
       "label": "Show a detached job's status",
+      "summaryKey": "commands.job.status.descriptionShort",
+      "summary": "Show a detached job's status",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6886,8 +7651,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "job",
       "group": "EXECUTION",
       "plane": "machine",
-      "descriptionKey": "commands.job.wait.description",
+      "descriptionKey": "commands.job.wait.descriptionShort",
       "label": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
+      "summaryKey": "commands.job.wait.descriptionShort",
+      "summary": "Resume following a job from its ticket, then acknowledge it and exit with the job's exit code",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -6963,6 +7731,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.legal.description",
       "label": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "summaryKey": "commands.legal.descriptionShort",
+      "summary": "Show the legal documents, the Terms version and the acceptance on record",
+      "severity": "none",
       "options": [
         {
           "flags": "--json",
@@ -6983,9 +7754,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -7003,6 +7774,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.access.push.description",
       "label": "Write the access keys bound to a machine into its authorized_keys, adopting an existing line with the same key, and remove this config's lines for keys no longer bound. Refuses a change that would lock rdc's own session out, and writes nothing when the file changed during the push",
+      "summaryKey": "commands.machine.access.push.descriptionShort",
+      "summary": "Write the machine's access keys into its authorized_keys",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -7031,6 +7809,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.machineAccessPush",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7049,6 +7828,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.machine.access.remove.description",
       "label": "Unbind an access key from a machine. The next 'machine access push' removes its line",
+      "summaryKey": "commands.machine.access.remove.descriptionShort",
+      "summary": "Unbind an access key from a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--key <key>",
@@ -7077,6 +7859,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7095,6 +7878,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.machine.access.set.description",
       "label": "Bind an access key to a machine. Ranges given here replace the key's ranges on this machine only. Apply with 'machine access push'",
+      "summaryKey": "commands.machine.access.set.descriptionShort",
+      "summary": "Bind an access key to a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--key <key>",
@@ -7156,6 +7942,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7172,8 +7959,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.access.show.description",
+      "descriptionKey": "commands.machine.access.show.descriptionShort",
       "label": "Show the access keys bound to a machine and the ranges each resolves to there",
+      "summaryKey": "commands.machine.access.show.descriptionShort",
+      "summary": "Show the access keys bound to a machine and the ranges each resolves to there",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -7191,9 +7981,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "machine",
@@ -7210,6 +8000,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.machine.add.description",
       "label": "Register an existing machine you can reach over SSH.",
+      "summaryKey": "commands.machine.add.descriptionShort",
+      "summary": "Add a machine to the current config",
+      "severity": "caution",
       "options": [
         {
           "flags": "--ip <address>",
@@ -7291,9 +8084,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -7310,6 +8103,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.converge.description",
       "label": "Restart every repository daemon still running on an older runtime layout, one repository at a time, so it moves onto the current one. The CLI runs this on its own after a renet upload; run it by hand to preview the plan, resume a failed pass, or, with --policy always, restart after any renet binary change.",
+      "summaryKey": "commands.machine.converge.descriptionShort",
+      "summary": "Move stale repository daemons onto the current runtime layout",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -7398,9 +8198,8 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
-      "detachable": false,
+      "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "name",
@@ -7415,8 +8214,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.deprovision.description",
+      "descriptionKey": "commands.machine.deprovision.descriptionShort",
       "label": "Destroy a cloud-provisioned machine and remove from config",
+      "summaryKey": "commands.machine.deprovision.descriptionShort",
+      "summary": "Destroy a cloud-provisioned machine and remove from config",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--force",
@@ -7488,6 +8290,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.gpu.list.description",
       "label": "List the GPUs detected on a machine, the CDI device names its specs define, and the repositories each device is granted to. Grant one with 'rdc repo gpu grant'.",
+      "summaryKey": "commands.machine.gpu.list.descriptionShort",
+      "summary": "List a machine's GPUs, CDI devices and grants",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -7533,8 +8338,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.health.description",
+      "descriptionKey": "commands.machine.health.descriptionShort",
       "label": "Check machine health for CI/CD pipelines",
+      "summaryKey": "commands.machine.health.descriptionShort",
+      "summary": "Check machine health for CI/CD pipelines",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -7570,8 +8378,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.cert.clear.description",
+      "descriptionKey": "commands.machine.infra.cert.clear.descriptionShort",
       "label": "Remove the certificate cache",
+      "summaryKey": "commands.machine.infra.cert.clear.descriptionShort",
+      "summary": "Remove the certificate cache",
+      "severity": "caution",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -7579,6 +8390,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7596,8 +8408,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.infra.cert.pull.description",
+      "descriptionKey": "commands.machine.infra.cert.pull.descriptionShort",
       "label": "Download and cache TLS certificates from a machine",
+      "summaryKey": "commands.machine.infra.cert.pull.descriptionShort",
+      "summary": "Download and cache TLS certificates from a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--no-prune",
@@ -7637,6 +8452,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Its effect is writing the machine's acme.json into the caller's local config; a remote executor would write it into its own. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.machineInfraCertPull",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7654,8 +8470,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.infra.cert.push.description",
+      "descriptionKey": "commands.machine.infra.cert.push.descriptionShort",
       "label": "Upload cached TLS certificates to a machine",
+      "summaryKey": "commands.machine.infra.cert.push.descriptionShort",
+      "summary": "Upload cached TLS certificates to a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -7701,8 +8520,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.cert.status.description",
+      "descriptionKey": "commands.machine.infra.cert.status.descriptionShort",
       "label": "Show cached certificate inventory",
+      "summaryKey": "commands.machine.infra.cert.status.descriptionShort",
+      "summary": "Show cached certificate inventory",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -7713,6 +8535,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7731,6 +8554,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.infra.push.description",
       "label": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'machine infra set <machine>' first",
+      "summaryKey": "commands.machine.infra.push.descriptionShort",
+      "summary": "Push infrastructure config to machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -7776,6 +8602,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.machine.infra.set.description",
       "label": "Set infrastructure configuration for a machine (machine-specific: IPs, domain, ports; shared: cert email, CF DNS token)",
+      "summaryKey": "commands.machine.infra.set.descriptionShort",
+      "summary": "Set infrastructure configuration for a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--public-ipv4 <ip>",
@@ -7874,6 +8703,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -7890,8 +8720,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.infra.show.description",
+      "descriptionKey": "commands.machine.infra.show.descriptionShort",
       "label": "Show infrastructure configuration for a machine",
+      "summaryKey": "commands.machine.infra.show.descriptionShort",
+      "summary": "Show infrastructure configuration for a machine",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -7909,9 +8742,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "machine",
@@ -7926,8 +8759,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.list.description",
+      "descriptionKey": "commands.machine.list.descriptionShort",
       "label": "List machines",
+      "summaryKey": "commands.machine.list.descriptionShort",
+      "summary": "List machines",
+      "severity": "none",
       "options": [
         {
           "flags": "--search <text>",
@@ -8010,9 +8846,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -8028,8 +8864,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.add.description",
+      "descriptionKey": "commands.machine.provider.add.descriptionShort",
       "label": "Add a cloud provider",
+      "summaryKey": "commands.machine.provider.add.descriptionShort",
+      "summary": "Add a cloud provider",
+      "severity": "caution",
       "options": [
         {
           "flags": "--provider <source>",
@@ -8239,9 +9078,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -8257,8 +9096,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.list.description",
+      "descriptionKey": "commands.machine.provider.list.descriptionShort",
       "label": "List configured cloud providers",
+      "summaryKey": "commands.machine.provider.list.descriptionShort",
+      "summary": "List configured cloud providers",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -8277,9 +9119,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "read",
       "timeoutMs": 120000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -8295,8 +9137,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "config",
-      "descriptionKey": "commands.machine.provider.remove.description",
+      "descriptionKey": "commands.machine.provider.remove.descriptionShort",
       "label": "Remove a cloud provider configuration",
+      "summaryKey": "commands.machine.provider.remove.descriptionShort",
+      "summary": "Remove a cloud provider configuration",
+      "severity": "destructive",
       "options": [],
       "positionals": [
         {
@@ -8314,9 +9159,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -8331,8 +9176,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.provision.description",
+      "descriptionKey": "commands.machine.provision.descriptionShort",
       "label": "Provision a new machine on a cloud provider using OpenTofu",
+      "summaryKey": "commands.machine.provision.descriptionShort",
+      "summary": "Provision a new machine on a cloud provider using OpenTofu",
+      "severity": "caution",
       "options": [
         {
           "flags": "--provider <name>",
@@ -8490,6 +9338,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.prune.description",
       "label": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
+      "summaryKey": "commands.machine.prune.descriptionShort",
+      "summary": "Prune orphaned resources and stale snapshots",
+      "severity": "destructive",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -8586,9 +9441,8 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "With --orphaned-repos or --prune-unknown it judges each image against every config the CALLER can read; a remote executor would judge against its own configs and delete the caller's repositories. Run it without --proxy.",
-      "detachable": false,
+      "proxyCapable": true,
+      "detachable": true,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "name",
@@ -8605,6 +9459,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.machine.remove.description",
       "label": "Remove a machine from the config. Does not touch the machine itself.",
+      "summaryKey": "commands.machine.remove.descriptionShort",
+      "summary": "Remove a machine from the config",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -8663,9 +9520,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "name",
@@ -8682,6 +9539,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.repair.description",
       "label": "Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)",
+      "summaryKey": "commands.machine.repair.descriptionShort",
+      "summary": "Run the safe fixes for a machine's health findings, then re-check",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -8770,6 +9634,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.restartServices.description",
       "label": "Roll the renet daemons that still run a replaced binary onto the installed one, one unit at a time, each confirmed active on the new binary before the next. With --include-docker the per-repo rediacc-docker-N supervisors restart too, one repo at a time, which restarts that repo's containers.",
+      "summaryKey": "commands.machine.restartServices.descriptionShort",
+      "summary": "Restart renet daemons onto the installed binary",
+      "severity": "caution",
       "options": [
         {
           "flags": "--include-docker",
@@ -8840,8 +9707,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "machine",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.machine.scanKeys.description",
+      "descriptionKey": "commands.machine.scanKeys.descriptionShort",
       "label": "Scan SSH host keys for machines in the current config",
+      "summaryKey": "commands.machine.scanKeys.descriptionShort",
+      "summary": "Scan SSH host keys for machines in the current config",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -8859,9 +9729,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeout": "write",
       "timeoutMs": 300000,
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs ssh-keyscan from the caller's network position and stores knownHosts in the caller's local config; a remote executor would scan from its own and keep the result. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs ssh-keyscan locally and writes the config, with no renet call to run as a job. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": "name",
@@ -8878,6 +9748,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.setup.description",
       "label": "Install renet and prepare a registered machine for repositories.",
+      "summaryKey": "commands.machine.setup.descriptionShort",
+      "summary": "Provision a remote machine for repositories",
+      "severity": "caution",
       "options": [
         {
           "flags": "--datastore-path <path>",
@@ -8970,6 +9843,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.machine.status.description",
       "label": "Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.",
+      "summaryKey": "commands.machine.status.descriptionShort",
+      "summary": "Show machine status",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -9194,8 +10070,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "mcp",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.mcp.serve.description",
+      "descriptionKey": "commands.mcp.serve.descriptionShort",
       "label": "Start MCP server (stdio transport)",
+      "summaryKey": "commands.mcp.serve.descriptionShort",
+      "summary": "Start MCP server (stdio transport)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--config <name>",
@@ -9226,6 +10105,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9241,14 +10121,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.check.description",
+      "descriptionKey": "commands.ops.check.descriptionShort",
       "label": "Verify virtualization prerequisites",
+      "summaryKey": "commands.ops.check.descriptionShort",
+      "summary": "Verify virtualization prerequisites",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9264,8 +10148,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.down.description",
+      "descriptionKey": "commands.ops.down.descriptionShort",
       "label": "Destroy VM cluster",
+      "summaryKey": "commands.ops.down.descriptionShort",
+      "summary": "Destroy VM cluster",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--backend <backend>",
@@ -9276,11 +10163,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--debug",
@@ -9299,6 +10187,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9314,8 +10203,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.setup.description",
+      "descriptionKey": "commands.ops.setup.descriptionShort",
       "label": "Install virtualization prerequisites",
+      "summaryKey": "commands.ops.setup.descriptionShort",
+      "summary": "Install virtualization prerequisites",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -9334,6 +10226,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9349,8 +10242,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.ssh.description",
+      "descriptionKey": "commands.ops.ssh.descriptionShort",
       "label": "SSH into a VM",
+      "summaryKey": "commands.ops.ssh.descriptionShort",
+      "summary": "SSH into a VM",
+      "severity": "caution",
       "options": [
         {
           "flags": "--vm-id <id>",
@@ -9385,11 +10281,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--user <user>",
@@ -9408,6 +10305,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9423,8 +10321,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.status.description",
+      "descriptionKey": "commands.ops.status.descriptionShort",
       "label": "Show VM cluster status",
+      "summaryKey": "commands.ops.status.descriptionShort",
+      "summary": "Show VM cluster status",
+      "severity": "none",
       "options": [
         {
           "flags": "--backend <backend>",
@@ -9435,11 +10336,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         }
       ],
       "positionals": [],
@@ -9447,6 +10349,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9462,8 +10365,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "ops",
       "group": "INFRASTRUCTURE",
       "plane": "other",
-      "descriptionKey": "commands.ops.up.description",
+      "descriptionKey": "commands.ops.up.descriptionShort",
       "label": "Provision VM cluster locally",
+      "summaryKey": "commands.ops.up.descriptionShort",
+      "summary": "Provision VM cluster locally",
+      "severity": "caution",
       "options": [
         {
           "flags": "--force",
@@ -9529,11 +10435,12 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "choices": [
             "kvm",
-            "qemu"
+            "qemu",
+            "hyperv"
           ],
           "tier": "common",
           "descriptionKey": "options.opsBackend",
-          "label": "Virtualization backend (kvm|qemu, auto-detected)"
+          "label": "Virtualization backend (kvm|qemu|hyperv, auto-detected)"
         },
         {
           "flags": "--os <name>",
@@ -9545,6 +10452,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "options.opsOS",
           "label": "VM operating system (e.g., ubuntu-24.04, debian-13)"
+        },
+        {
+          "flags": "--windows <ids>",
+          "long": "windows",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.opsWindows",
+          "label": "Windows client VM ids to provision (comma-separated, reserved range 31-39; sets VM_WINDOWS)"
         },
         {
           "flags": "--debug",
@@ -9563,6 +10481,124 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "preview",
+        "leave"
+      ],
+      "pathKey": "preview leave",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.preview.leave.description",
+      "label": "List the servers that run the preview's renet, ask, and switch exactly those back; then restore the previous rdc and re-license the repositories created on the preview from the real account. A server that cannot be reached stays listed; finish it later with --machine.",
+      "summaryKey": "commands.preview.leave.descriptionShort",
+      "summary": "Return to the published rdc and renet",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--machine <name>",
+          "long": "machine",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.preview.leave.machine",
+          "label": "Switch back only this server"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": true,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "preview",
+        "status"
+      ],
+      "pathKey": "preview status",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.preview.status.description",
+      "label": "Show the active preview, its licence end date, the servers on its renet and the way back.",
+      "summaryKey": "commands.preview.status.descriptionShort",
+      "summary": "Show the active preview",
+      "severity": "none",
+      "options": [],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "preview",
+        "use"
+      ],
+      "pathKey": "preview use",
+      "domain": "preview",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.preview.use.description",
+      "label": "Check the preview's build of the CLI against both of its origins, keep the current CLI as rdc.pre-preview, install the preview's CLI and point this config at the preview server. A server gets the preview's renet only the first time the CLI provisions it.",
+      "summaryKey": "commands.preview.use.descriptionShort",
+      "summary": "Switch to a preview",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--accept-format-change",
+          "long": "accept-format-change",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.preview.use.acceptFormatChange",
+          "label": "Accept the warning that this preview changes an on-disk format, without asking"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.preview.use.nameArgument",
+          "label": "The preview name, for example pv-amber-river-stone"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9582,6 +10618,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.admin.archive.list.description",
       "label": "List archived repository records.",
+      "summaryKey": "commands.repo.admin.archive.list.descriptionShort",
+      "summary": "List archived repository records",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -9598,6 +10637,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9617,6 +10657,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.admin.archive.purge.description",
       "label": "Permanently delete archived records.",
+      "summaryKey": "commands.repo.admin.archive.purge.descriptionShort",
+      "summary": "Permanently delete archived records",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -9645,6 +10688,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9664,6 +10708,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.admin.archive.restore.description",
       "label": "Restore an archived record into the config.",
+      "summaryKey": "commands.repo.admin.archive.restore.descriptionShort",
+      "summary": "Restore an archived record into the config",
+      "severity": "caution",
       "options": [
         {
           "flags": "--new-name <name>",
@@ -9691,6 +10738,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -9708,8 +10756,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.disable.description",
+      "descriptionKey": "commands.repo.admin.autostart.disable.descriptionShort",
       "label": "Disable autostart for a repository (omit name to disable all)",
+      "summaryKey": "commands.repo.admin.autostart.disable.descriptionShort",
+      "summary": "Disable autostart for a repository (omit name to disable all)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -9766,8 +10817,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.enable.description",
+      "descriptionKey": "commands.repo.admin.autostart.enable.descriptionShort",
       "label": "Enable autostart for a repository (omit name to enable all)",
+      "summaryKey": "commands.repo.admin.autostart.enable.descriptionShort",
+      "summary": "Enable autostart for a repository (omit name to enable all)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -9824,8 +10878,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.admin.autostart.list.description",
+      "descriptionKey": "commands.repo.admin.autostart.list.descriptionShort",
       "label": "List repositories with autostart enabled",
+      "summaryKey": "commands.repo.admin.autostart.list.descriptionShort",
+      "summary": "List repositories with autostart enabled",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -9896,6 +10953,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.fsck.description",
       "label": "Validate the CLI config refs (branches, HEAD) against the objects actually present on a machine. Reports dangling refs (a ref pointing at a missing object) and orphan commits (an immutable commit no ref reaches). Read-only.",
+      "summaryKey": "commands.repo.admin.fsck.descriptionShort",
+      "summary": "Check config refs against machine objects",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -9951,6 +11011,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.orphan.delete.description",
       "label": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
+      "summaryKey": "commands.repo.admin.orphan.delete.descriptionShort",
+      "summary": "Delete one orphan repository image by GUID",
+      "severity": "destructive",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--force-delete-mounted",
@@ -10013,6 +11080,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.repoAdminOrphanDelete",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -10032,7 +11100,21 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.orphan.list.description",
       "label": "List the repository images on a machine and whether each one is an orphan that no config names.",
+      "summaryKey": "commands.repo.admin.orphan.list.descriptionShort",
+      "summary": "List the repository images on a machine and whether each one is an orphan that no config names",
+      "severity": "none",
       "options": [
+        {
+          "flags": "--executor-events <file>",
+          "long": "executor-events",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.orphan.list.executorEventsOption",
+          "label": "Read the executor's events (JSON lines from the executor_orphans tool) and mark an orphan they name as executor-created"
+        },
         {
           "flags": "--debug",
           "long": "debug",
@@ -10073,6 +11155,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Judges each image against every config the CALLER can read; a remote executor would judge against its own configs and report the caller's repositories as orphans. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.repoAdminOrphanList",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -10091,6 +11174,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.ownership.description",
       "label": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
+      "summaryKey": "commands.repo.admin.ownership.descriptionShort",
+      "summary": "Change repository directory ownership UID",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--uid <uid>",
@@ -10194,6 +11284,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.template.apply.description",
       "label": "Apply a template to a repository. Use a built-in template name (e.g. app-postgres) or --file for a custom JSON template. Rediaccfile lifecycle: up() starts containers (pull images, generate configs here), down() stops. Minimal Rediaccfile: up() { renet compose -- pull; renet compose -- up -d; } down() { renet compose -- down; }. IMPORTANT: Rediaccfile MUST use 'renet compose': 'docker compose' is rejected. ENV VARS: two levels: (a) Rediaccfile shell: ${SVCNAME_IP} (e.g. APP_IP), ${REDIACC_WORKING_DIR}, ${REDIACC_NETWORK_ID}. (b) Inside containers: renet auto-injects SERVICE_IP and REDIACC_NETWORK_ID env vars. eBPF bind rewriting handles IP isolation transparently, so apps can bind to 0.0.0.0 and the kernel rewrites it to the correct loopback IP. Health checks can use localhost. network_mode:host is injected and ports: are ignored. STORAGE: Both ${REDIACC_WORKING_DIR}/... bind mounts and Docker named volumes are safe: Docker data-root is inside the encrypted LUKS mount. RESTART POLICY: Restart policies are safe: renet auto-strips them for CRIU compatibility and the watchdog handles recovery. Compose: do NOT add network_mode or rediacc.* labels (renet injects them). Multi-project: place each sub-project in its own subdirectory with its own Rediaccfile: renet auto-discovers and runs them in order. HTTPS routing: (A) Auto-route (fork-friendly, recommended): do NOT add traefik.enable. Renet auto-generates https://{serviceName}.{repoName}.{machineName}.{baseDomain}. Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique domain. (B) Traefik labels (custom domain, NOT fork-friendly): traefik.enable=true, traefik.http.routers.<n>.rule=Host(`domain`), traefik.http.routers.<n>.entrypoints=websecure,websecure-v6, traefik.http.routers.<n>.tls.certresolver=letsencrypt, traefik.http.services.<n>.loadbalancer.server.port=<port>. For TCP/UDP: rediacc.tcp_ports=3306 / rediacc.udp_ports=53",
+      "summaryKey": "commands.repo.admin.template.apply.descriptionShort",
+      "summary": "Apply a template to a repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "--template <name>",
@@ -10292,12 +11385,16 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.repo.admin.template.list.description",
       "label": "List all embedded deployment templates shipped with the CLI",
+      "summaryKey": "commands.repo.admin.template.list.descriptionShort",
+      "summary": "List available templates",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -10316,6 +11413,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.admin.validate.description",
       "label": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",
+      "summaryKey": "commands.repo.admin.validate.descriptionShort",
+      "summary": "Validate repository integrity",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -10372,6 +11472,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.branch.description",
       "label": "Create a named branch ref pointing at the working fork's current commit (its tip). Branch refs live in the CLI config (machine = object store, config = ref store).",
+      "summaryKey": "commands.repo.branch.descriptionShort",
+      "summary": "Create a branch ref pointing at the current commit",
+      "severity": "caution",
       "options": [
         {
           "flags": "--branch <branch>",
@@ -10401,6 +11504,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -10419,6 +11523,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.canary.create.description",
       "label": "Run a NEW image next to the stable one and send it a percentage of live traffic. The canary shares the repository's live data (no fork), so schema compatibility between the two versions is the application's responsibility. A group snapshot of the cluster's datastores is taken first, as the undo.",
+      "summaryKey": "commands.repo.canary.create.descriptionShort",
+      "summary": "Start a canary: run a new image on a share of live traffic",
+      "severity": "caution",
       "options": [
         {
           "flags": "--image <image>",
@@ -10523,6 +11630,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.canary.remove.description",
       "label": "Remove a canary's Deployment and Service (label-scoped); the stable Service serves 100% again. Release-undo snapshots are retained; prune them with the datastore snapshot commands.",
+      "summaryKey": "commands.repo.canary.remove.descriptionShort",
+      "summary": "Tear down a canary",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--debug",
@@ -10569,6 +11679,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.canary.status.description",
       "label": "Show managed canary sets: weight, images, stable service, and the latest release-undo snapshot.",
+      "summaryKey": "commands.repo.canary.status.descriptionShort",
+      "summary": "Show managed canary sets",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -10585,6 +11698,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -10603,6 +11717,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.canary.weight.description",
       "label": "Change the percent of traffic routed to a canary. Takes a fresh release-undo group snapshot first, then re-applies the overlay; the proxy picks up the new split on its refresh tick. Weight 100 sends all traffic to the new version (the blue/green flip).",
+      "summaryKey": "commands.repo.canary.weight.descriptionShort",
+      "summary": "Change a canary's traffic percentage",
+      "severity": "caution",
       "options": [
         {
           "flags": "--weight <percent>",
@@ -10660,6 +11777,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.cat.description",
       "label": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).",
+      "summaryKey": "commands.repo.cat.descriptionShort",
+      "summary": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr)",
+      "severity": "none",
       "options": [
         {
           "flags": "--remote-file <path>",
@@ -10819,6 +11939,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.checkout.description",
       "label": "Reflink-clone an immutable commit (or a branch tip) into a fresh writable working fork and point HEAD at it. Near-instant and constant-time (BTRFS reflink).",
+      "summaryKey": "commands.repo.checkout.descriptionShort",
+      "summary": "Reflink-clone a commit/branch into a writable working fork",
+      "severity": "caution",
       "options": [
         {
           "flags": "--tag <name>",
@@ -10904,6 +12027,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.commit.description",
       "label": "Freeze the current state of a mounted working fork into a new immutable commit (git-like). The commit records its message, author, timestamp, and parent in-volume (so it travels on push) and is marked read-only, so it refuses to mount. The working fork continues unchanged, like git leaving the working tree intact. Check a commit out with 'rdc repo checkout' to get a writable copy.",
+      "summaryKey": "commands.repo.commit.descriptionShort",
+      "summary": "Freeze a working fork into a new immutable commit",
+      "severity": "caution",
       "options": [
         {
           "flags": "--message <msg>",
@@ -10975,6 +12101,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.create.description",
       "label": "Create a new repository. State its home once: a machine or a datastore.",
+      "summaryKey": "commands.repo.create.descriptionShort",
+      "summary": "Create a new repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -11111,6 +12240,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.delete.description",
       "label": "Delete a repository and its data. A fork's config entry moves to deletedRepositories, which frees the name and keeps the GUID restorable via 'repo admin archive restore'; a grand repo's entry, or one pushed to other machines, is kept unless --archive-config is passed. Takes a positional <ref>; a bare name resolves to the grand line and is refused when several repos share the base name, so pass name:tag to target a fork.",
+      "summaryKey": "commands.repo.delete.descriptionShort",
+      "summary": "Delete a repository and its data",
+      "severity": "destructive",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--archive-config",
@@ -11240,6 +12376,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.diff.description",
       "label": "Git-style file-level diff between two copy-on-write forked repositories. Reports Added, Modified, Deleted, and Renamed files. Diffs the repository given by the positional <ref> (the target / new side) against its parent, resolved from local config, or against an explicit --base repository (the base / old side). Metadata-only and size-independent: it diffs the encrypted LUKS images at the block level without decrypting them, so a 1 GB repo and a 100 GB repo diff in the same milliseconds.",
+      "summaryKey": "commands.repo.diff.descriptionShort",
+      "summary": "Git-style file-level diff between two forked repositories (A/M/D/R)",
+      "severity": "none",
       "options": [
         {
           "flags": "--base <ref>",
@@ -11362,6 +12501,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.down.description",
       "label": "Stop repository Docker containers (runs Rediaccfile down via renet compose). The machine is derived from the ref placement. Does NOT unmount the encrypted volume. The repo stays mounted and can be restarted with 'repo up'. Use --unmount to also close the LUKS container after stopping (folds the retired 'repo unmount'). Use --checkpoint to save CRIU process state before stopping (next 'repo up' auto-restores). Use --all --machine <m> to stop every repository on a machine.",
+      "summaryKey": "commands.repo.down.descriptionShort",
+      "summary": "Stop repository Docker containers",
+      "severity": "destructive",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--unmount",
@@ -11541,6 +12687,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.exec.description",
       "label": "Run a command inside a repository container. The command's own exit code is passed straight through, so this works in scripts and conditionals. Docker repositories run it through the repository's Docker daemon; kubernetes repositories run it in the repository's namespace.",
+      "summaryKey": "commands.repo.exec.descriptionShort",
+      "summary": "Run a command inside a repository container",
+      "severity": "caution",
       "options": [
         {
           "flags": "-c, --container <name>",
@@ -11676,6 +12825,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.expand.description",
       "label": "Expand a mounted repository online (zero downtime, grow-only). Grows the LUKS container and filesystem while containers keep running. Cannot shrink. Use 'repo resize' for that (requires unmount)",
+      "summaryKey": "commands.repo.expand.descriptionShort",
+      "summary": "Expand a mounted repository online (zero downtime, grow-only)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--size <size>",
@@ -11737,6 +12889,68 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "repo",
+        "flows"
+      ],
+      "pathKey": "repo flows",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "other",
+      "descriptionKey": "commands.repo.flows.description",
+      "label": "List the network flows recorded for a repository in a time window: time, process, destination, bytes out and in, and the destination's ASN and country when known. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "summaryKey": "commands.repo.flows.descriptionShort",
+      "summary": "List a repository's recorded network flows",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "fork"
       ],
       "pathKey": "repo fork",
@@ -11745,6 +12959,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.fork.description",
       "label": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
+      "summaryKey": "commands.repo.fork.descriptionShort",
+      "summary": "Near-instant CoW fork of a repository (new GUID, networkId, IP range)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--tag <name>",
@@ -11887,6 +13104,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.gc.description",
       "label": "Delete immutable commit objects on a machine that no branch or HEAD reaches (reachability GC). The machine is the object store; the CLI config is the ref store. Dry-run by default: pass --apply to delete. Never touches a mounted object or a working fork.",
+      "summaryKey": "commands.repo.gc.descriptionShort",
+      "summary": "Garbage-collect unreachable immutable commits on a machine",
+      "severity": "destructive",
+      "preview": {
+        "flag": "apply",
+        "polarity": "default"
+      },
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -11952,6 +13176,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.gpu.grant.description",
       "label": "Allow the repository's containers to request a CDI device. Device names come from 'rdc machine gpu list'.",
+      "summaryKey": "commands.repo.gpu.grant.descriptionShort",
+      "summary": "Grant a CDI device to a repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "--device <cdi-name>",
@@ -12018,6 +13245,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.gpu.revoke.description",
       "label": "Withdraw a CDI device from the repository's containers. Containers that already hold it keep it until they restart.",
+      "summaryKey": "commands.repo.gpu.revoke.descriptionShort",
+      "summary": "Revoke a CDI device from a repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "--device <cdi-name>",
@@ -12070,8 +13300,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.health.description",
+      "descriptionKey": "commands.repo.health.descriptionShort",
       "label": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+      "summaryKey": "commands.repo.health.descriptionShort",
+      "summary": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -12129,8 +13362,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.list.description",
+      "descriptionKey": "commands.repo.list.descriptionShort",
       "label": "List repositories on a machine",
+      "summaryKey": "commands.repo.list.descriptionShort",
+      "summary": "List repositories on a machine",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -12246,6 +13482,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.log.description",
       "label": "Print the commit history reachable from a working fork's current commit (or a commit reference), walking the parent chain recorded by 'rdc repo commit'. Reads the out-of-volume mirror, so no commit is unlocked.",
+      "summaryKey": "commands.repo.log.descriptionShort",
+      "summary": "Walk the commit history of a fork or commit",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -12294,6 +13533,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.logs.description",
       "label": "Show application logs from a repository's containers. Docker repositories read from the repository's own Docker daemon; kubernetes repositories read the pod logs in the repository's namespace. If the repository runs more than one container, name the one you want with --container.",
+      "summaryKey": "commands.repo.logs.descriptionShort",
+      "summary": "Show a repository's container logs",
+      "severity": "none",
       "options": [
         {
           "flags": "-c, --container <name>",
@@ -12418,6 +13660,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.merge.description",
       "label": "Merge a source commit or fork into a target working fork. The live target is never mutated in place: the result is built in a reflink clone and atomically swapped in. A mounted or running target is refused unless --force, which cleanly quiesces it first. Without --resolve it is a whole-image take-theirs (the target becomes the source); with --resolve ours|theirs it is a per-file three-way merge against the common ancestor, taking each side's unique changes and resolving two-sided conflicts per the flag.",
+      "summaryKey": "commands.repo.merge.descriptionShort",
+      "summary": "Lifecycle-safe merge of a commit/fork into a working fork",
+      "severity": "caution",
       "options": [
         {
           "flags": "--from <source>",
@@ -12519,6 +13764,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.migrate.description",
       "label": "Live-migrate a repository from one machine to another with minimal downtime. Two-phase rsync: bulk transfer while running, then brief stop for delta sync. Moves the whole repository (routing is repointed at the new home) and, once the move succeeds, deletes the source images (use --keep-source to retain them). Supports CRIU checkpoint for process memory migration and auto-provisioning of target machines",
+      "summaryKey": "commands.repo.migrate.descriptionShort",
+      "summary": "Live-migrate a repository between machines",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <place>",
@@ -12689,6 +13937,68 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "repo",
+        "opens"
+      ],
+      "pathKey": "repo opens",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "other",
+      "descriptionKey": "commands.repo.opens.description",
+      "label": "List the file opens recorded for a repository in a time window: time, process and path, with sensitive paths marked. A stretch with no evidence prints as a gap row. Needs the forensics:read scope and a paid plan.",
+      "summaryKey": "commands.repo.opens.descriptionShort",
+      "summary": "List a repository's recorded file opens",
+      "severity": "none",
+      "options": [
+        {
+          "flags": "--since <when>",
+          "long": "since",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsSinceOption",
+          "label": "Start of the window: an ISO 8601 instant or a span back from now such as 90m, 24h or 7d (default: 24h)"
+        },
+        {
+          "flags": "--until <when>",
+          "long": "until",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.rowsUntilOption",
+          "label": "End of the window, in the same forms (default: now)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "permission",
         "grant"
       ],
@@ -12698,6 +14008,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.permission.grant.description",
       "label": "Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.",
+      "summaryKey": "commands.repo.permission.grant.descriptionShort",
+      "summary": "Give a repository's up() and down() more reach",
+      "severity": "caution",
       "options": [
         {
           "flags": "--root",
@@ -12765,6 +14078,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.permission.revoke.description",
       "label": "Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.",
+      "summaryKey": "commands.repo.permission.revoke.descriptionShort",
+      "summary": "Withdraw a path or root grant from a repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "--root",
@@ -12832,6 +14148,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.permission.show.description",
       "label": "Show whether the repository's up() and down() run as root, and which paths they may reach.",
+      "summaryKey": "commands.repo.permission.show.descriptionShort",
+      "summary": "Show a repository's lifecycle grant",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -12876,6 +14195,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.policy.get.description",
       "label": "Show the stored machine default, the repository override (with a ref), and the effective merged policy the maintainer acts on",
+      "summaryKey": "commands.repo.policy.get.descriptionShort",
+      "summary": "Show size policy (machine default, repo override, effective)",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -12935,6 +14257,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.policy.set.description",
       "label": "Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool",
+      "summaryKey": "commands.repo.policy.set.descriptionShort",
+      "summary": "Set size policy fields (machine default, or one repo by ref)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--auto-grow <bool>",
@@ -13169,6 +14494,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.promote.description",
       "label": "Make a validated fork the production repository under its parent name. The parent keeps its identity (GUID, networkId, domains, autostart, backup chain) and receives the fork's data; the old production data is preserved as a backup fork. Use it to test an upgrade on a fork, verify it, then promote. Pass an explicit <name>:<tag> for the fork; a bare ref resolves to the parent and is rejected with \"not a fork\". Promote never fetches bytes: use 'repo push' or 'backup restore' for that.",
+      "summaryKey": "commands.repo.promote.descriptionShort",
+      "summary": "Make a validated fork the production repository under its parent name",
+      "severity": "destructive",
       "options": [
         {
           "flags": "-y, --yes",
@@ -13262,6 +14590,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.prune.description",
       "label": "Classify a repository's Docker storage and reclaim it: unused images, build cache, stopped containers, and overlay2 directories no image or container references. A dry run unless --apply. --apply reclaims through the Docker API with the repository online; --apply --offline also stops the repository's Docker daemon for the run and quarantines the orphan directories. Without a ref, surveys every mounted repository on -m (dry run only)",
+      "summaryKey": "commands.repo.prune.descriptionShort",
+      "summary": "Report and reclaim a repository's Docker storage",
+      "severity": "destructive",
+      "preview": {
+        "flag": "apply",
+        "polarity": "default"
+      },
       "options": [
         {
           "flags": "--apply",
@@ -13378,6 +14713,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.pull.description",
       "label": "Pull repository from another machine. Storage sources are retired; use `rdc backup restore` for point-in-time restore. The source type is auto-detected from config. Use --up to deploy after pull",
+      "summaryKey": "commands.repo.pull.descriptionShort",
+      "summary": "Pull repository from another machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--from <remote>",
@@ -13555,6 +14893,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.push.description",
       "label": "Push repository to another machine. Storage destinations are retired; use `rdc backup snapshot` for point-in-time backup. For machine-to-machine transfer, the encrypted repo image is copied with the SAME GUID, so this is a backup/migration, not a fork. To create an independent fork, use 'repo fork' first, then push. A pushed copy lands as a backup ARTIFACT: boot it on the target with 'backup restore <ref> --as <name> -m <target> --up'",
+      "summaryKey": "commands.repo.push.descriptionShort",
+      "summary": "Push repository to another machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--to <remote>",
@@ -13736,6 +15077,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.repair.description",
       "label": "Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)",
+      "summaryKey": "commands.repo.repair.descriptionShort",
+      "summary": "Run a repository's allowed Rediaccfile repair() functions, then re-check its health",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--dry-run",
@@ -13825,6 +15173,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.replicate.description",
       "label": "Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.",
+      "summaryKey": "commands.repo.replicate.descriptionShort",
+      "summary": "Instant read replicas from datastore forks",
+      "severity": "caution",
       "options": [
         {
           "flags": "--replicas <n>",
@@ -13955,6 +15306,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.replicate.refresh.description",
       "label": "Roll every replica onto a fresh point-in-time snapshot, ONE at a time: bounce the replica pod, discard and re-fork its datastore under the same path, and let readiness re-admit it. N-1 replicas keep serving throughout.",
+      "summaryKey": "commands.repo.replicate.refresh.descriptionShort",
+      "summary": "Roll replicas onto a fresh snapshot",
+      "severity": "caution",
       "options": [
         {
           "flags": "--debug",
@@ -14001,6 +15355,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.replicate.remove.description",
       "label": "Remove a replica set: delete its generated k8s objects (label-scoped), discard its fork datastores, drop its snapshot, and forget the state. Infra steps are best-effort so removal converges even on a partially-gone cluster.",
+      "summaryKey": "commands.repo.replicate.remove.descriptionShort",
+      "summary": "Tear down a replica set",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--debug",
@@ -14051,6 +15408,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.replicate.status.description",
       "label": "Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.",
+      "summaryKey": "commands.repo.replicate.status.descriptionShort",
+      "summary": "Show managed replica sets",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -14069,9 +15429,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "repoArg": "ref",
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -14088,6 +15448,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.resize.description",
       "label": "Resize a repository offline (supports both grow and shrink). Repo must be unmounted first ('repo down --unmount'). For zero-downtime growth without stopping, use 'repo expand' instead",
+      "summaryKey": "commands.repo.resize.descriptionShort",
+      "summary": "Resize a repository offline (grow or shrink)",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--size <size>",
@@ -14158,6 +15521,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.secret.get.description",
       "label": "Show the SHA-256 digest of a secret. The plaintext value is never returned by design (write-only). Use --current on a subsequent set/unset to verify a value you already know, or rotate via `set --rotate-secret`.",
+      "summaryKey": "commands.repo.secret.get.descriptionShort",
+      "summary": "Show digest of a secret (value never returned)",
+      "severity": "none",
       "options": [
         {
           "flags": "--key <KEY>",
@@ -14205,9 +15571,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "repoArg": "ref",
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -14225,6 +15591,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.secret.list.description",
       "label": "List secret keys and modes (never values, never digests).",
+      "summaryKey": "commands.repo.secret.list.descriptionShort",
+      "summary": "List per-repo secret keys and modes",
+      "severity": "none",
       "options": [],
       "positionals": [
         {
@@ -14250,9 +15619,9 @@ export const CLI_CONTRACT: CliContract = {
       "timeoutMs": 120000,
       "repoArg": "ref",
       "interactive": false,
-      "proxyCapable": false,
-      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyCapable": true,
       "detachable": false,
+      "detachBlockedReason": "Runs against the config alone and reaches no machine, so there is no machine job to detach. Run it without --background.",
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
@@ -14270,6 +15639,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.secret.set.description",
       "label": "Set or overwrite a secret. Forks do not inherit; set on the fork explicitly. Under agent context, requires --current digest match (passwd-style).",
+      "summaryKey": "commands.repo.secret.set.descriptionShort",
+      "summary": "Set or overwrite a per-repo secret",
+      "severity": "caution",
       "options": [
         {
           "flags": "--key <KEY>",
@@ -14376,6 +15748,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -14394,6 +15767,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "config",
       "descriptionKey": "commands.repo.secret.unset.description",
       "label": "Delete a secret. Under agent context, requires --current digest match.",
+      "summaryKey": "commands.repo.secret.unset.descriptionShort",
+      "summary": "Delete a per-repo secret",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--key <KEY>",
@@ -14444,6 +15820,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -14459,8 +15836,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "repo",
       "group": "REPOSITORIES",
       "plane": "machine",
-      "descriptionKey": "commands.repo.status.description",
+      "descriptionKey": "commands.repo.status.descriptionShort",
       "label": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
+      "summaryKey": "commands.repo.status.descriptionShort",
+      "summary": "Get repository status (mount state, Docker daemon running, container count, disk usage)",
+      "severity": "none",
       "options": [
         {
           "flags": "--debug",
@@ -14521,6 +15901,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.sync.download.description",
       "label": "Download files from a repository via rsync over SSH (delta transfer). Use --mirror to delete extra local files, --dry-run to preview, --exclude to skip patterns",
+      "summaryKey": "commands.sync.download.descriptionShort",
+      "summary": "Download files from a repository via rsync",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--local <path>",
@@ -14657,6 +16044,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Downloads to the local filesystem with rsync/SFTP; a remote executor would write the files onto its own disk. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.repoSyncDownload",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -14675,6 +16063,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.sync.status.description",
       "label": "Dry-run comparison of local and remote files (shows what would be transferred without actually transferring)",
+      "summaryKey": "commands.sync.status.descriptionShort",
+      "summary": "Compare local and remote files (dry-run)",
+      "severity": "none",
       "options": [
         {
           "flags": "--local <path>",
@@ -14728,6 +16119,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Diffs the machine against the local filesystem with a client-side rsync; a remote executor has no copy of the local tree. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.repoSyncStatus",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -14746,6 +16138,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.sync.upload.description",
       "label": "Upload files to a repository via rsync over SSH (delta transfer). Use --mirror to delete extra remote files, --dry-run to preview, --exclude to skip patterns",
+      "summaryKey": "commands.sync.upload.descriptionShort",
+      "summary": "Upload files to a repository via rsync",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--local <paths...>",
@@ -14882,6 +16281,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Uploads from the local filesystem with rsync/SFTP; a remote executor cannot see the source paths. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.repoSyncUpload",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -14899,6 +16299,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.trim.description",
       "label": "Reclaim datastore pool space from mounted repositories (online, zero downtime). Frees blocks deleted inside repositories back to the pool via fstrim. Without a ref, trims every mounted repository on -m plus the datastore itself. fstrim is skipped for repositories under an active backup; --docker reclaim still runs",
+      "summaryKey": "commands.repo.trim.descriptionShort",
+      "summary": "Reclaim free space from repositories back to the pool",
+      "severity": "caution",
       "options": [
         {
           "flags": "--docker",
@@ -14995,6 +16398,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.tunnel.description",
       "label": "Create an SSH port-forward tunnel to a container's port on a remote machine. Auto-detects container and port when unambiguous. The tunnel stays open until you press Ctrl+C",
+      "summaryKey": "commands.repo.tunnel.descriptionShort",
+      "summary": "SSH tunnel to a container port",
+      "severity": "caution",
       "options": [
         {
           "flags": "-c, --container <name>",
@@ -15063,6 +16469,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -15080,6 +16487,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.repo.up.description",
       "label": "Deploy or update a repository (mount, run Rediaccfile up which calls renet compose). The machine is derived from the ref placement. Proxy routes take ~3s to become active after deploy. Prints the URL pattern for HTTP-exposed services (rediacc.service_port label) on completion. First deploy and forks are mounted automatically. CRIU checkpoint restore is auto-detected; use --skip-checkpoint to force fresh start. Use --all --machine <m> to deploy every repository on a machine.",
+      "summaryKey": "commands.repo.up.descriptionShort",
+      "summary": "Deploy or update a repository",
+      "severity": "caution",
+      "preview": {
+        "flag": "dry-run",
+        "polarity": "opt-in"
+      },
       "options": [
         {
           "flags": "--no-start",
@@ -15292,6 +16706,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.serve.description",
       "label": "Run this process as an executor so clients can run commands through it instead of connecting over SSH themselves",
+      "summaryKey": "commands.serve.summary",
+      "summary": "Run as an executor for remote clients",
+      "severity": "caution",
       "options": [
         {
           "flags": "-p, --port <port>",
@@ -15312,10 +16729,32 @@ export const CLI_CONTRACT: CliContract = {
           "valueTaking": true,
           "variadic": false,
           "mandatory": false,
-          "defaultValue": "0.0.0.0",
+          "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.serve.optionHost",
-          "label": "Address to bind"
+          "label": "Address to bind (default 127.0.0.1 for a daemon, 0.0.0.0 in a container)"
+        },
+        {
+          "flags": "--tls-cert <path>",
+          "long": "tls-cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.serve.optionTlsCert",
+          "label": "PEM certificate file; with --tls-key, serve HTTPS"
+        },
+        {
+          "flags": "--tls-key <path>",
+          "long": "tls-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.serve.optionTlsKey",
+          "label": "PEM private key file for --tls-cert"
         },
         {
           "flags": "--mode <mode>",
@@ -15369,6 +16808,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -15384,8 +16824,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.backup.description",
+      "descriptionKey": "commands.server.backup.descriptionShort",
       "label": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+      "summaryKey": "commands.server.backup.descriptionShort",
+      "summary": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+      "severity": "caution",
       "options": [
         {
           "flags": "--out <file>",
@@ -15454,6 +16897,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverBackup",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": "repo",
@@ -15471,6 +16915,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.server.bundle.description",
       "label": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.",
+      "summaryKey": "commands.server.bundle.summary",
+      "summary": "Build an offline install bundle",
+      "severity": "caution",
       "options": [
         {
           "flags": "--out <dir>",
@@ -15530,6 +16977,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.bundle.optionWithCli",
           "label": "Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64"
+        },
+        {
+          "flags": "--no-models",
+          "long": "no-models",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.bundle.optionNoModels",
+          "label": "Leave the detection models out of the bundle"
         }
       ],
       "positionals": [],
@@ -15538,6 +16996,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs the caller's local docker (pull and save) and writes the bundle to the caller's disk; a remote executor would write it to its own. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverBundle",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -15555,6 +17014,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.server.install.description",
       "label": "Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.",
+      "summaryKey": "commands.server.install.summary",
+      "summary": "Install the account server on a machine",
+      "severity": "caution",
       "options": [
         {
           "flags": "--ip <address>",
@@ -15744,7 +17206,7 @@ export const CLI_CONTRACT: CliContract = {
           ],
           "tier": "common",
           "descriptionKey": "commands.server.install.optionLicence",
-          "label": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier"
+          "label": "auto (the default): a delegation certificate from the logged-in registered account. free is refused: an on-premise server needs a registered account (rdc subscription login)"
         },
         {
           "flags": "--cert <file>",
@@ -15824,6 +17286,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Offline bundle directory written by 'rdc server bundle'"
         },
         {
+          "flags": "--signer <fingerprint>",
+          "long": "signer",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSigner",
+          "label": "Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key"
+        },
+        {
           "flags": "--bws-project <id>",
           "long": "bws-project",
           "valueTaking": true,
@@ -15892,7 +17365,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Install on a configured machine without any prompt."
         },
         {
-          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes",
+          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --cert licence.cert --no-dns-wait --yes",
           "values": {
             "machine": "lab",
             "domain": "lab.example.internal",
@@ -15900,12 +17373,12 @@ export const CLI_CONTRACT: CliContract = {
             "tls-cert": "host.crt",
             "tls-key": "host.key",
             "tls-ca": "ca.crt",
-            "licence": "free",
+            "cert": "licence.cert",
             "no-dns-wait": "true",
             "yes": "true"
           },
           "descriptionKey": "commands.server.install.examples.lan",
-          "label": "Install on a LAN machine with an existing certificate, on the free tier."
+          "label": "Install on a LAN machine with its own TLS certificate and a licence certificate file."
         }
       ],
       "keywords": [
@@ -15918,6 +17391,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": "repo",
@@ -15933,8 +17407,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.licence.description",
+      "descriptionKey": "commands.server.licence.descriptionShort",
       "label": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+      "summaryKey": "commands.server.licence.descriptionShort",
+      "summary": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+      "severity": "caution",
       "options": [
         {
           "flags": "--cert <file>",
@@ -15992,6 +17469,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverLicence",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": "repo",
@@ -16008,8 +17486,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.server.licence.mint.description",
+      "descriptionKey": "commands.server.licence.mint.descriptionShort",
       "label": "Mint a licence certificate for an offline box's request (run online, logged in)",
+      "summaryKey": "commands.server.licence.mint.descriptionShort",
+      "summary": "Mint a licence certificate for an offline box's request (run online, logged in)",
+      "severity": "caution",
       "options": [
         {
           "flags": "--request <file>",
@@ -16040,6 +17521,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Mints the certificate with the caller's login and writes it to the caller's file; a remote executor holds neither. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverLicenceMint",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16055,8 +17537,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "server",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.server.status.description",
+      "descriptionKey": "commands.server.status.descriptionShort",
       "label": "Show the health, tier, certificate and image of an installed server",
+      "summaryKey": "commands.server.status.descriptionShort",
+      "summary": "Show the health, tier, certificate and image of an installed server",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -16106,6 +17591,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverStatus",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": "repo",
@@ -16123,6 +17609,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.server.upgrade.description",
       "label": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+      "summaryKey": "commands.server.upgrade.descriptionShort",
+      "summary": "Upgrade an installed server, with a rollback fork",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--image <ref>",
@@ -16167,6 +17656,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.upgrade.optionBundle",
           "label": "Upgrade from an offline bundle written by 'rdc server bundle'"
+        },
+        {
+          "flags": "--signer <fingerprint>",
+          "long": "signer",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSigner",
+          "label": "Fingerprint printed by 'rdc server bundle'; the bundle must be signed by that key"
         },
         {
           "flags": "--force",
@@ -16236,6 +17736,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.serverUpgrade",
       "detachable": false,
       "machineOption": "machine",
       "repoOption": "repo",
@@ -16251,8 +17752,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.login.description",
+      "descriptionKey": "commands.subscription.login.descriptionShort",
       "label": "Authenticate via browser or API token",
+      "summaryKey": "commands.subscription.login.descriptionShort",
+      "summary": "Authenticate via browser or API token",
+      "severity": "caution",
       "options": [
         {
           "flags": "-t, --token <token>",
@@ -16296,6 +17800,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16311,14 +17816,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.logout.description",
+      "descriptionKey": "commands.subscription.logout.descriptionShort",
       "label": "Clear stored subscription token",
+      "summaryKey": "commands.subscription.logout.descriptionShort",
+      "summary": "Clear stored subscription token",
+      "severity": "destructive",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16336,6 +17845,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.subscription.notices.description",
       "label": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
+      "summaryKey": "commands.subscription.notices.descriptionShort",
+      "summary": "List the account's notices: license expiry, backup health, renewals, certificates and Terms",
+      "severity": "none",
       "options": [
         {
           "flags": "--all",
@@ -16376,6 +17888,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16391,8 +17904,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.proxyToken.description",
+      "descriptionKey": "commands.subscription.proxyToken.descriptionShort",
       "label": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
+      "summaryKey": "commands.subscription.proxyToken.descriptionShort",
+      "summary": "Mint a short-lived proxy:exec token from this device's login, for --proxy",
+      "severity": "caution",
       "options": [
         {
           "flags": "--json",
@@ -16411,6 +17927,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16428,6 +17945,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.subscription.refresh.description",
       "label": "Refresh licenses from the account server.",
+      "summaryKey": "commands.subscription.refresh.descriptionShort",
+      "summary": "Refresh licenses from the account server",
+      "severity": "caution",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -16489,8 +18009,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "subscription",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.subscription.register.description",
+      "descriptionKey": "commands.subscription.register.descriptionShort",
       "label": "Create an account in the browser (email pre-filled) and log in",
+      "summaryKey": "commands.subscription.register.descriptionShort",
+      "summary": "Create an account in the browser (email pre-filled) and log in",
+      "severity": "caution",
       "options": [
         {
           "flags": "--email <address>",
@@ -16521,6 +18044,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16538,6 +18062,13 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.subscription.retire.description",
       "label": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
+      "summaryKey": "commands.subscription.retire.descriptionShort",
+      "summary": "Retire the license of a repository that is gone, so it leaves the license counts and notices",
+      "severity": "destructive",
+      "preview": {
+        "flag": "apply",
+        "polarity": "default"
+      },
       "options": [
         {
           "flags": "--force",
@@ -16559,18 +18090,18 @@ export const CLI_CONTRACT: CliContract = {
           "defaultValue": null,
           "tier": "advanced",
           "descriptionKey": "commands.subscription.retire.optionExpired",
-          "label": "Retire every hard-expired license of a deleted repository or one not in this config"
+          "label": "List every hard-expired license of a repository that is gone: deleted, not in this config, or absent from its machine"
         },
         {
-          "flags": "--dry-run",
-          "long": "dry-run",
+          "flags": "--apply",
+          "long": "apply",
           "valueTaking": false,
           "variadic": false,
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.subscription.retire.optionDryRun",
-          "label": "With --expired: list what would be retired and change nothing"
+          "descriptionKey": "commands.subscription.retire.optionApply",
+          "label": "With --expired: retire the listed licenses (without it, --expired only lists them)"
         }
       ],
       "positionals": [
@@ -16587,6 +18118,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16604,6 +18136,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.subscription.status.description",
       "label": "Show subscription, and license state for a machine.",
+      "summaryKey": "commands.subscription.status.descriptionShort",
+      "summary": "Show subscription, and license state for a machine",
+      "severity": "none",
       "options": [
         {
           "flags": "-m, --machine <name>",
@@ -16653,6 +18188,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.term.connect.description",
       "label": "Open a shell on a machine, or inside a repository with its Docker set up.",
+      "summaryKey": "commands.term.connect.descriptionShort",
+      "summary": "Open a shell on a machine, or inside a repository with its Docker set up",
+      "severity": "caution",
       "options": [
         {
           "flags": "-c, --command <cmd>",
@@ -16738,6 +18276,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16754,7 +18293,10 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.tools.install.description",
-      "label": "Download the OpenTofu release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+      "label": "Download a tool release pinned in this CLI, verify its SHA-256 checksum, and install it into rdc's tools directory. `tofu` installs OpenTofu on any platform. `rsync` installs the MSYS2 rsync and the runtime libraries it loads, on Windows only; elsewhere rsync comes from the system package manager. A checksum mismatch deletes the download and installs nothing. Terraform is never installed; one already on PATH is used as found.",
+      "summaryKey": "commands.tools.install.descriptionShort",
+      "summary": "Install a pinned, checksum-verified tool",
+      "severity": "caution",
       "options": [
         {
           "flags": "--force",
@@ -16775,7 +18317,7 @@ export const CLI_CONTRACT: CliContract = {
           "required": true,
           "variadic": false,
           "descriptionKey": "commands.tools.install.argTool",
-          "label": "Tool to install (tofu)"
+          "label": "Tool to install (tofu, or rsync on Windows)"
         }
       ],
       "hasSubcommands": false,
@@ -16783,6 +18325,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16800,6 +18343,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.tools.list.description",
       "label": "List the provisioning engine this CLI would run (OpenTofu or Terraform) and every OpenTofu version in its tools directory, each with its version, where it came from, and its path.",
+      "summaryKey": "commands.tools.list.descriptionShort",
+      "summary": "Show installed tools, their versions and sources",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
@@ -16807,6 +18353,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16823,6 +18370,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.update.description",
       "label": "Check for new CLI versions and apply updates. Supports --check-only to check without installing, and --force to update even if already on the latest version.",
+      "summaryKey": "commands.update.descriptionShort",
+      "summary": "Check for and apply CLI updates",
+      "severity": "caution",
       "options": [
         {
           "flags": "--force",
@@ -16891,6 +18441,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16907,6 +18458,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "other",
       "descriptionKey": "commands.version.description",
       "label": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (server unreachable)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "summaryKey": "commands.version.descriptionShort",
+      "summary": "Show the CLI version, channel and active license",
+      "severity": "none",
       "options": [
         {
           "flags": "--json",
@@ -16929,6 +18483,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16944,8 +18499,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "other",
-      "descriptionKey": "commands.vscode.check.description",
+      "descriptionKey": "commands.vscode.check.descriptionShort",
       "label": "Check VS Code installation and configuration",
+      "summaryKey": "commands.vscode.check.descriptionShort",
+      "summary": "Check VS Code installation and configuration",
+      "severity": "none",
       "options": [
         {
           "flags": "--insiders",
@@ -16964,6 +18522,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localTooling",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -16979,8 +18538,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.vscode.cleanup.description",
+      "descriptionKey": "commands.vscode.cleanup.descriptionShort",
       "label": "Remove VS Code SSH configurations",
+      "summaryKey": "commands.vscode.cleanup.descriptionShort",
+      "summary": "Remove VS Code SSH configurations",
+      "severity": "destructive",
       "options": [
         {
           "flags": "--all",
@@ -17011,6 +18573,7 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -17028,6 +18591,9 @@ export const CLI_CONTRACT: CliContract = {
       "plane": "machine",
       "descriptionKey": "commands.vscode.connect.description",
       "label": "Open VS Code on a machine or inside a repository.",
+      "summaryKey": "commands.vscode.connect.descriptionShort",
+      "summary": "Open VS Code on a machine or inside a repository",
+      "severity": "caution",
       "options": [
         {
           "flags": "-f, --folder <path>",
@@ -17190,11 +18756,70 @@ export const CLI_CONTRACT: CliContract = {
       "interactive": true,
       "proxyCapable": false,
       "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.interactive",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "vscode",
+        "expose"
+      ],
+      "pathKey": "vscode expose",
+      "domain": "vscode",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.vscode.expose.description",
+      "label": "Start the repository's browser VS Code as a container on its own Docker daemon, published at vscode.<repo>.<machine>.<domain> behind the portal-token gate. Open it from the web console, which mints the token; it stops after 15 minutes without a heartbeat.",
+      "summaryKey": "commands.vscode.expose.descriptionShort",
+      "summary": "Expose a repository's VS Code at its public hostname",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
     },
     {
       "path": [
@@ -17205,14 +18830,18 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "config",
-      "descriptionKey": "commands.vscode.list.description",
+      "descriptionKey": "commands.vscode.list.descriptionShort",
       "label": "List configured VS Code SSH connections",
+      "summaryKey": "commands.vscode.list.descriptionShort",
+      "summary": "List configured VS Code SSH connections",
+      "severity": "none",
       "options": [],
       "positionals": [],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "proxyBlockedReasonKey": "commands.proxyBlocked.localConfig",
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
@@ -17229,8 +18858,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.vscode.serve.status.description",
+      "descriptionKey": "commands.vscode.serve.status.descriptionShort",
       "label": "Show whether the browser VS Code server is running",
+      "summaryKey": "commands.vscode.serve.status.descriptionShort",
+      "summary": "Show whether the browser VS Code server is running",
+      "severity": "none",
       "options": [
         {
           "flags": "--server-provider <id>",
@@ -17278,8 +18910,11 @@ export const CLI_CONTRACT: CliContract = {
       "domain": "vscode",
       "group": "TOOLS",
       "plane": "machine",
-      "descriptionKey": "commands.vscode.serve.stop.description",
+      "descriptionKey": "commands.vscode.serve.stop.descriptionShort",
       "label": "Stop the browser VS Code server",
+      "summaryKey": "commands.vscode.serve.stop.descriptionShort",
+      "summary": "Stop the browser VS Code server",
+      "severity": "caution",
       "options": [
         {
           "flags": "--server-provider <id>",
@@ -17316,6 +18951,265 @@ export const CLI_CONTRACT: CliContract = {
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
+    },
+    {
+      "path": [
+        "vscode",
+        "unexpose"
+      ],
+      "pathKey": "vscode unexpose",
+      "domain": "vscode",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.vscode.unexpose.description",
+      "label": "Stop and remove the repository's exposed VS Code container at once, closing every open editor session.",
+      "summaryKey": "commands.vscode.unexpose.descriptionShort",
+      "summary": "Stop a repository's exposed VS Code",
+      "severity": "caution",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    }
+  ],
+  "errorCodes": [
+    {
+      "code": "ACCESS_FILE_CHANGED",
+      "origin": "environment"
+    },
+    {
+      "code": "ACCESS_KEY_CONFLICT",
+      "origin": "user"
+    },
+    {
+      "code": "ACCESS_KEY_DUPLICATE_BLOB",
+      "origin": "user"
+    },
+    {
+      "code": "ACCESS_LOCKOUT",
+      "origin": "user"
+    },
+    {
+      "code": "AI_TASK_EXISTS",
+      "origin": "user"
+    },
+    {
+      "code": "AI_TASK_FAILED",
+      "origin": "environment"
+    },
+    {
+      "code": "AI_TASK_LIMIT",
+      "origin": "user"
+    },
+    {
+      "code": "AMBIGUOUS",
+      "origin": "user"
+    },
+    {
+      "code": "AUTH_REQUIRED",
+      "origin": "user"
+    },
+    {
+      "code": "BUSY",
+      "origin": "environment"
+    },
+    {
+      "code": "CONFIRMATION_REQUIRED",
+      "origin": "user"
+    },
+    {
+      "code": "DETACHED",
+      "origin": "environment"
+    },
+    {
+      "code": "EGRESS_UNREACHABLE",
+      "origin": "environment"
+    },
+    {
+      "code": "EXECUTION_ERROR",
+      "origin": "environment"
+    },
+    {
+      "code": "EXECUTOR_FAILED",
+      "origin": "environment"
+    },
+    {
+      "code": "EXECUTOR_SESSION_UNKNOWN",
+      "origin": "environment"
+    },
+    {
+      "code": "FEEDBACK_DAILY_LIMIT",
+      "origin": "user"
+    },
+    {
+      "code": "FREE_LICENSE_NO_BACKUP",
+      "origin": "user"
+    },
+    {
+      "code": "GENERAL_ERROR",
+      "origin": "environment"
+    },
+    {
+      "code": "GRAND_REPO_DENIED",
+      "origin": "user"
+    },
+    {
+      "code": "HEALTH_GATE_FAILED",
+      "origin": "environment"
+    },
+    {
+      "code": "INFRA_FAILED",
+      "origin": "environment"
+    },
+    {
+      "code": "INVALID_REQUEST",
+      "origin": "user"
+    },
+    {
+      "code": "LICENSE_REQUIRED",
+      "origin": "user"
+    },
+    {
+      "code": "LOCAL_EXECUTION_FAILED",
+      "origin": "environment"
+    },
+    {
+      "code": "NETWORK_ERROR",
+      "origin": "environment"
+    },
+    {
+      "code": "NOT_FOUND",
+      "origin": "user"
+    },
+    {
+      "code": "PERMISSION_DENIED",
+      "origin": "user"
+    },
+    {
+      "code": "PRECONDITION_MISMATCH",
+      "origin": "user"
+    },
+    {
+      "code": "RENET_BUILD_UNVERIFIED",
+      "origin": "environment"
+    },
+    {
+      "code": "RENET_DEV_ON_MACHINE",
+      "origin": "environment"
+    },
+    {
+      "code": "RENET_DOWNGRADE_REFUSED",
+      "origin": "user"
+    },
+    {
+      "code": "RENET_NOT_ON_MACHINE",
+      "origin": "environment"
+    },
+    {
+      "code": "RENET_UPLOAD_REFUSED_IN_EXECUTOR",
+      "origin": "environment"
+    },
+    {
+      "code": "REPO_LICENSE_DELEGATION_CERT_EXPIRED",
+      "origin": "user"
+    },
+    {
+      "code": "REPO_LICENSE_DELEGATION_CERT_INVALID",
+      "origin": "environment"
+    },
+    {
+      "code": "REPO_LICENSE_IDENTITY_MISMATCH",
+      "origin": "user"
+    },
+    {
+      "code": "REPO_LICENSE_INTEGRITY_ERROR",
+      "origin": "environment"
+    },
+    {
+      "code": "REPO_LICENSE_ISSUANCE_REQUIRED",
+      "origin": "user"
+    },
+    {
+      "code": "REPO_LICENSE_MACHINE_MISMATCH",
+      "origin": "user"
+    },
+    {
+      "code": "REPO_LICENSE_REFRESH_REQUIRED",
+      "origin": "user"
+    },
+    {
+      "code": "REPO_LICENSE_REPOSITORY_MISMATCH",
+      "origin": "user"
+    },
+    {
+      "code": "SERVER_ERROR",
+      "origin": "rediacc"
+    },
+    {
+      "code": "SSH_AUTH_FAILED",
+      "origin": "user"
+    },
+    {
+      "code": "SSH_HANDSHAKE_TIMEOUT",
+      "origin": "environment"
+    },
+    {
+      "code": "SSH_REFUSED",
+      "origin": "environment"
+    },
+    {
+      "code": "STATE_MISMATCH",
+      "origin": "user"
+    },
+    {
+      "code": "TIMEOUT",
+      "origin": "environment"
+    },
+    {
+      "code": "UNCAUGHT_EXCEPTION",
+      "origin": "rediacc"
+    },
+    {
+      "code": "VALIDATION_ERROR",
+      "origin": "user"
     }
   ]
 };

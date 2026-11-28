@@ -25,7 +25,7 @@ print a path that did not run. The differential masks the program token and comp
 
 EVERYTHING ELSE IS BYTE-IDENTICAL, including the step-summary block: `$*` joins with a single space (IFS's first character, unmodified here), the markdown uses backticks the twin escaped for bash, and the summary is APPENDED, never truncated, because GITHUB_STEP_SUMMARY accumulates across steps.
 
-K=5 LEDGER: `.ci/shadow/w7p6-announce-gate-skips.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

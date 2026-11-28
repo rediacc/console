@@ -240,8 +240,13 @@ resolve_pytest() {
         printf '%s' "$at_pin"
         return 0
     fi
-    if [ -x "$TOOL_BIN_DIR/pytest" ] &&
-        [ "$(toolchain_probe_version pytest "$TOOL_BIN_DIR/pytest" 2>/dev/null)" = "$PYTEST_VERSION" ]; then
+    # The cached tool is reused only when pytest AND the PyYAML installed with it sit
+    # at their pins (pytest-xdist has its own pin rung): a PyYAML bump left the old
+    # tool env behind, and a pytest-only probe kept running it (2026-11-22). An empty
+    # pin never matches, so a tool env that cannot import yaml is not reused.
+    if [ -x "$TOOL_BIN_DIR/pytest" ] && [ -n "${PYYAML_VERSION:-}" ] &&
+        [ "$(toolchain_probe_version pytest "$TOOL_BIN_DIR/pytest" 2>/dev/null)" = "$PYTEST_VERSION" ] &&
+        [ "$("$TOOL_DIR/pytest/bin/python" -c 'import yaml; print(yaml.__version__)' 2>/dev/null)" = "$PYYAML_VERSION" ]; then
         printf '%s' "$TOOL_BIN_DIR/pytest"
         return 0
     fi

@@ -18,7 +18,7 @@ EVERY SITE ENDS AS EXACTLY ONE OF:
   TREE         the entry must hold an exclusive `tree:` claim (`mutex`; `reads` is rejected, as in pool_writer_safety) AND carry `writesTree: '<reason>'`.
   UNRESOLVED   red, unless a pragma declares it.
 Pragma rules, all enforced: the reason is at least 20 characters; `safe` on a site resolved TEMP/SCRATCH is STALE and red; `safe` on a resolved TREE site is ignored and reported (a pragma cannot overrule a proven write); `tree-write: mode --flag <reason>` (or `--a|--b` for a write several flags reach) is honoured only while no registered invocation passes any flag it names (bash-scanner hits and guards the resolver does
-not recognise).
+not recognise). `tree-write: callers <file>|<file> <reason>` declares a site inside a function safe only while the listed repo-relative files are the function's only referrers outside test modules: a referrer the list omits turns the site UNRESOLVED again, and a listed file that no longer references the function is a BAD-PRAGMA.
 
 REGISTRATION IS CHECKED BOTH WAYS on every lock entry: `writesTree` without an exclusive `tree:` claim is red, and an exclusive `tree:` claim without `writesTree` is red. The rule is otherwise one-directional, as pool_writer_safety's is: a `writesTree` entry with no TREE site is listed as `declared, no site found`, never red.
 
@@ -30,14 +30,24 @@ carries both `tree:repo` and `writesTree`.
 ANTI-VACUITY REFUSALS (exit 1, each named): the lock missing or unparseable; zero entries resolved to a scannable leaf; the lint-rule-liveness closure without its `.mjs`; the TS extractor exiting non-zero or printing non-JSON (never "no sites"); total sites under the floor; zero TEMP sites; zero TREE-or-MODE-GATED sites.
 
 `--report` prints every site and exits 0; it is the measurement mode task 2.1 of the plan ran. Without it the gate enforces.
+
+---- gate ----
+step: Gates that write the real tree declare it
+needs: node
+lane: quality-code
+selftest: true
+why: A gate that writes the shared tree without an exclusive tree: claim runs beside its readers and leaves residue on a hard kill; check:ci-pool-writer-safety only sees gate tests
+---- end gate ----
 """
 
 from __future__ import annotations
 
+import ast
 import dataclasses
 import io
 import json
 import pathlib
+import posixpath
 import re
 import shutil
 import subprocess
@@ -86,9 +96,11 @@ FLOOR_PY = 855
 FLOOR_TS = 257
 
 # Every control in `run_controls`, plus the TS helper's selftest. A count under it means controls stopped executing.
-SELFTEST_FLOOR = 35
+SELFTEST_FLOOR = 38
 
-PRAGMA_RE = re.compile(r"(?:#|//)\s*tree-write:\s*(safe|mode)\b\s*(.*)$")
+PRAGMA_RE = re.compile(r"(?:#|//)\s*tree-write:\s*(safe|mode|callers)\b\s*(.*)$")
+# `tree-write: callers <file>[|<file>] <reason>`: the function holding the site is safe only while the listed repo-relative files are its ONLY referrers (test modules excepted).
+CALLERS_RE = re.compile(r"^(\S+(?:\|\S+)*)\s+(.*)$")
 # `--a|--b` names every flag that reaches the write; the pragma holds only while no registered invocation passes ANY of them.
 MODE_RE = re.compile(r"^(--?[A-Za-z0-9][\w-]*(?:\|--?[A-Za-z0-9][\w-]*)*)\s+(.*)$")
 SEVERITY = {
@@ -211,6 +223,127 @@ def exclusive_tree(entry: dict) -> bool:
     )
 
 
+# --------------------------------------------------------------------------- caller allow-lists
+
+
+def _py_files(root: pathlib.Path) -> list[str]:
+    """Every Python file of the judged tree, repo-relative: `git ls-files` when the tree is a checkout (so sibling worktrees under `.claude/worktrees/` never count), else a walk that skips `.git` and `node_modules`. An empty answer is an error, never a pass."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "-z", "--", "*.py"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=120,
+        )
+        listed = [f for f in proc.stdout.split("\0") if f] if proc.returncode == 0 else []
+    except (OSError, subprocess.TimeoutExpired):
+        listed = []
+    if not listed:
+        listed = sorted(
+            p.relative_to(root).as_posix()
+            for p in root.rglob("*.py")
+            if not {".git", "node_modules"} & set(p.relative_to(root).parts)
+        )
+    if not listed:
+        raise RuntimeError("no Python file found under %s: the caller scan would be vacuous" % root)
+    return listed
+
+
+def _enclosing_function(tree: ast.AST, line: int) -> str | None:
+    best: tuple[int, str] | None = None
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            end = node.end_lineno or node.lineno
+            if node.lineno <= line <= end and (best is None or node.lineno > best[0]):
+                best = (node.lineno, node.name)
+    return best[1] if best else None
+
+
+def _module_file(root: pathlib.Path, dotted: str, from_rel: str, level: int) -> str | None:
+    """The repo-relative `.py` a dotted import names from `from_rel`, resolved as `gate_tree_writes_py.Analyzer.resolve_module` does: `rediacc_ci.*` under `.ci/`, anything else beside the importing file."""
+    if level > 0:
+        base = posixpath.dirname(from_rel)
+        for _ in range(level - 1):
+            base = posixpath.dirname(base)
+        cand = posixpath.join(base, *dotted.split(".")) if dotted else base
+    elif dotted == "rediacc_ci" or dotted.startswith("rediacc_ci."):
+        cand = posixpath.join(".ci", *dotted.split("."))
+    elif dotted:
+        cand = posixpath.join(posixpath.dirname(from_rel), *dotted.split("."))
+    else:
+        return None
+    for c in (cand + ".py", cand + "/__init__.py"):
+        if (root / c).is_file():
+            return c
+    return None
+
+
+def referrers(root: pathlib.Path, file: str, line: int) -> tuple[list[str], str | None]:
+    """The files OTHER than `file` that reference the function holding `file:line`, and that function's name (None when the line is in no function).
+
+    A reference is any `<module>.<fn>` attribute or imported bare `<fn>` name, call or not, so passing the function as a value counts. Test modules (a path part named `tests`) are skipped: they drive the function on temp paths and are judged by check:ci-pool-writer-safety. An import resolves the way the analyzer resolves it (`_module_file`), so a same-named module in another directory is not a referrer.
+    """
+    try:
+        tree = ast.parse((root / file).read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return [], None
+    fn = _enclosing_function(tree, line)
+    if fn is None:
+        return [], None
+    out: list[str] = []
+    for rel in _py_files(root):
+        if rel == file or "tests" in pathlib.PurePosixPath(rel).parts:
+            continue
+        try:
+            other = ast.parse((root / rel).read_text(encoding="utf-8"))
+        except (OSError, SyntaxError, UnicodeDecodeError):
+            # A file this gate cannot read may still call the function: when its text names it, it counts as a referrer, so an unlisted one makes the site UNRESOLVED instead of vanishing. A file that cannot be read AT ALL (a dangling link, a permission error) cannot be judged either way, so it counts as one too (per-commit review 47fc6711.1 and .3).
+            try:
+                text = (root / rel).read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                out.append(rel)
+                continue
+            if re.search(r"\b%s\b" % re.escape(fn), text):
+                out.append(rel)
+            continue
+        mods: set[str] = set()
+        dotted: set[str] = set()
+        names: set[str] = set()
+        for node in ast.walk(other):
+            if isinstance(node, ast.ImportFrom):
+                base = node.module or ""
+                for a in node.names:
+                    sub = (base + "." if base else "") + a.name
+                    if a.name == "*":
+                        if _module_file(root, base, rel, node.level) == file:
+                            names.add(fn)
+                    elif _module_file(root, sub, rel, node.level) == file:
+                        mods.add(a.asname or a.name)
+                    elif a.name == fn and _module_file(root, base, rel, node.level) == file:
+                        names.add(a.asname or a.name)
+            elif isinstance(node, ast.Import):
+                for a in node.names:
+                    if _module_file(root, a.name, rel, 0) != file:
+                        continue
+                    if a.asname or "." not in a.name:
+                        mods.add(a.asname or a.name)
+                    else:
+                        dotted.add(a.name)
+        for node in ast.walk(other):
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr == fn
+                and (
+                    (isinstance(node.value, ast.Name) and node.value.id in mods)
+                    or ast.unparse(node.value) in dotted
+                )
+            ) or (isinstance(node, ast.Name) and node.id in names):
+                out.append(rel)
+                break
+    return sorted(out), fn
+
+
 # --------------------------------------------------------------------------- pragmas
 
 
@@ -266,6 +399,13 @@ class Pragmas:
                         return (
                             ("mode", mm.group(1), mm.group(2).strip()) if mm else ("mode", "", rest)
                         )
+                    if kind == "callers":
+                        cm = CALLERS_RE.match(rest)
+                        return (
+                            ("callers", cm.group(1), cm.group(2).strip())
+                            if cm
+                            else ("callers", "", rest)
+                        )
                     return ("safe", "", rest)
         return None
 
@@ -292,10 +432,11 @@ def classify(
     pragma: tuple[str, str, str] | None,
     *,
     needed: bool = False,
+    referrers_found: list[str] | None = None,
 ) -> tuple[str, str]:
     """One site under one entry's registered invocations, to exactly one bucket, with a note.
 
-    `needed` says the same line is NOT safe in some other calling context or entry: a `safe` pragma it carries is then doing work there and is not stale here.
+    `needed` says the same line is NOT safe in some other calling context or entry: a `safe` pragma it carries is then doing work there and is not stale here. `referrers_found` is the referrer list a `callers` pragma is checked against (see `referrers`).
     """
     gated = gating(site.guard, invocations)
     passed = set().union(*invocations) if invocations else set()
@@ -305,8 +446,11 @@ def classify(
             MIN_REASON,
         )
     if site.origin in SAFE_ORIGINS:
-        if pragma is not None and pragma[0] == "safe" and not needed:
-            return "STALE", "a `safe` pragma on a site the scanner resolves as %s" % site.origin
+        if pragma is not None and pragma[0] in ("safe", "callers") and not needed:
+            return "STALE", "a `%s` pragma on a site the scanner resolves as %s" % (
+                pragma[0],
+                site.origin,
+            )
         return "SAFE", site.origin
     if gated:
         return "MODE-GATED", "only under %s" % " / ".join("|".join(c) for c in gated)
@@ -323,6 +467,25 @@ def classify(
             "TREE",
             "a `safe` pragma cannot overrule a proven tree write" if pragma is not None else "",
         )
+    if pragma is not None and pragma[0] == "callers":
+        listed = [f for f in pragma[1].split("|") if f]
+        found = referrers_found or []
+        unlisted = [f for f in found if f not in listed]
+        if not listed:
+            return "BAD-PRAGMA", "a `callers` pragma must name at least one file before its reason"
+        if unlisted:
+            return (
+                "UNRESOLVED",
+                "referenced by %s, which the `callers` pragma does not list" % ", ".join(unlisted),
+            )
+        gone = [f for f in listed if f not in found]
+        if gone:
+            return (
+                "BAD-PRAGMA",
+                "the `callers` pragma lists %s, which no longer references this function: drop it"
+                % ", ".join(gone),
+            )
+        return "DECLARED", pragma[2]
     if pragma is not None and pragma[0] == "safe":
         return "DECLARED", pragma[2]
     return "UNRESOLVED", ""
@@ -606,11 +769,16 @@ def _judge(
         # One site may arrive in several CALLING CONTEXTS (gate_tree_writes_py.Analyzer.sites_of); the worst context is the site's verdict.
         best: dict[tuple[str, int, str, str], tuple[Site, str, str, str]] = {}
         for _k, (site, lang) in sorted(site_sets[eid].items()):
+            pragma = pragmas.at(site.file, site.line)
+            found: list[str] | None = None
+            if pragma is not None and pragma[0] == "callers":
+                found = referrers(root, site.file, site.line)[0]
             bucket, note = classify(
                 site,
                 argvs[eid],
-                pragmas.at(site.file, site.line),
+                pragma,
                 needed=(site.file, site.line) in unsafe_lines,
+                referrers_found=found,
             )
             base = (site.file, site.line, site.sink, site.target)
             prev_b = best.get(base)
@@ -638,7 +806,7 @@ def _judge(
                         site.target,
                         bucket,
                         " (%s)" % note if note else "",
-                        "Resolve it to a temp path, or declare it on the line or the line above with `# tree-write: safe <reason>` (`//` in TS/JS)."
+                        "Resolve it to a temp path, or declare it on the line or the line above with `# tree-write: safe <reason>` (`//` in TS/JS), or with `# tree-write: callers <file>|<file> <reason>` when only named files may reach it (add a file to that list only after reading its write)."
                         if bucket == "UNRESOLVED"
                         else "Fix the pragma.",
                     )
@@ -720,6 +888,9 @@ FIXTURE: dict[str, str] = {
     "c1/a/b/gate.mjs": "import fs from 'node:fs';\nimport path from 'node:path';\nconst HERE = import.meta.dirname;\nconst ROOT = path.resolve(HERE, '../../..');\nfor (const fx of [{ file: 'x.ts' }]) fs.appendFileSync(path.join(ROOT, fx.file), 'code');\nfs.writeFileSync(path.join(ROOT, 'private/account/src/__x.ts'), '');\n",
     "c1m/gate.mjs": "import fs from 'node:fs';\nimport os from 'node:os';\nimport path from 'node:path';\nconst ROOT = path.resolve(import.meta.dirname, '..');\nconst mirrorRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'biome-plugin-liveness-'));\nfor (const fx of [{ file: 'x.ts' }]) fs.writeFileSync(path.join(mirrorRoot, fx.file, ROOT), '');\n",
     "c2/gate.py": 'import pathlib\n\nfrom rediacc_ci import paths\n\nprobe = pathlib.Path(paths.repo_root()) / "enum_probe.py"\nprobe.write_text("x")\n',
+    "c2s/gate.py": 'import pathlib\nimport tempfile\n\nfrom rediacc_ci.quality import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
+    "c2u/gate.py": 'import pathlib\nimport tempfile\n\nfrom elsewhere import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.somewhere_else()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
+    "c2v/gate.py": 'import pathlib\nimport tempfile\n\nfrom elsewhere import seams\n\nwith tempfile.TemporaryDirectory(dir=seams.system_temp_base()) as tmp:\n    root = pathlib.Path(tmp)\n    (root / "x").write_text("x")\n',
     "c2m/gate.py": 'import pathlib\nimport tempfile\n\nwith tempfile.TemporaryDirectory() as tmp:\n    root = pathlib.Path(tmp)\n    (root / ".github").mkdir(parents=True)\n',
     "c3/gate.py": 'import shutil\n\nfrom rediacc_ci import paths\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(paths.repo_root())\n',
     "c3m/gate.py": 'import shutil\nimport tempfile\n\n\ndef stage(root):\n    shutil.copyfile("a", root / "x")\n\n\nstage(tempfile.mkdtemp())\n',
@@ -733,6 +904,14 @@ FIXTURE: dict[str, str] = {
     "c8/gate.py": 'import pathlib\nimport sys\n\n\ndef put(p):\n    p.write_text("x")  # tree-write: safe the caller hands a fixture path it built itself\n\n\nput(pathlib.Path(sys.argv[1]))\n',
     "c8b/gate.py": 'import pathlib\nimport tempfile\n\nroot = pathlib.Path(tempfile.mkdtemp())\n# tree-write: safe this pragma is stale because the target is a temp dir\n(root / "x").write_text("x")\n',
     "c8c/gate.py": 'from rediacc_ci import paths\n\n# tree-write: safe a pragma cannot overrule a write the scanner proved\n(paths.repo_root() / "x").write_text("x")\n',
+    # callers pragma: cw lists its only referrer (green); cwm has a second, unlisted referrer (red); cws lists a file that never references put (red).
+    "cw/lib.py": 'def put(p):\n    # tree-write: callers cw/ok.py only the listed writer may call put\n    p.write_text("x")\n',
+    "cw/ok.py": "import sys\nimport pathlib\n\nimport lib\n\nlib.put(pathlib.Path(sys.argv[1]))\n",
+    "cwm/lib.py": 'def put(p):\n    # tree-write: callers cwm/ok.py only the listed writer may call put\n    p.write_text("x")\n',
+    "cwm/ok.py": "import sys\nimport pathlib\n\nimport lib\n\nlib.put(pathlib.Path(sys.argv[1]))\n",
+    "cwm/bad.py": "import sys\nimport pathlib\n\nimport lib\n\nlib.put(pathlib.Path(sys.argv[1]))\n",
+    "cws/lib.py": 'def put(p):\n    # tree-write: callers cws/ok.py|cws/gone.py only the listed writer may call put\n    p.write_text("x")\n',
+    "cws/ok.py": "import sys\nimport pathlib\n\nimport lib\n\nlib.put(pathlib.Path(sys.argv[1]))\n",
     "c9/gate.py": 'import subprocess\n\nsubprocess.run(["git", "add", "-A"], check=True)\n',
     "c9m/gate.py": 'import subprocess\nimport tempfile\n\ntmp = tempfile.mkdtemp()\nsubprocess.run(["git", "add", "-A"], cwd=tmp, check=True)\n',
     "c9t/g.ts": "import { execSync } from 'node:child_process';\nimport path from 'node:path';\nconst ROOT = path.resolve(import.meta.dirname, '..');\nexecSync('sed -i s/a/b/ ' + path.join(ROOT, 'f'));\n",
@@ -755,11 +934,18 @@ CONTROL_LOCK: list[dict] = [
     {"id": "c1m", "run": "node c1m/gate.mjs", "gate": True},
     {"id": "c2", "run": "c2/gate.py", "gate": True},
     {"id": "c2m", "run": "c2m/gate.py", "gate": True},
+    {"id": "c2s", "run": "c2s/gate.py", "gate": True},
+    {"id": "c2u", "run": "c2u/gate.py", "gate": True},
+    {"id": "c2v", "run": "c2v/gate.py", "gate": True},
     {"id": "c3", "run": "c3/gate.py", "gate": True},
     {"id": "c3m", "run": "c3m/gate.py", "gate": True},
     {"id": "c4", "run": "c4/entry.py", "gate": True},
     {"id": "c4m", "run": "c4m/entry.py", "gate": True},
     {"id": "c5", "run": "c5/gate.py", "gate": True},
+    {"id": "cw", "run": "cw/ok.py", "gate": True},
+    {"id": "cwm", "run": "cwm/ok.py", "gate": True},
+    {"id": "cwmb", "run": "cwm/bad.py", "gate": True},
+    {"id": "cws", "run": "cws/ok.py", "gate": True},
     {"id": "c5m", "run": "c5/gate.py --reseed", "gate": True},
     {
         "id": "c6a",
@@ -855,6 +1041,21 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
         )
         _call(
             record,
+            "C2 (seams): a temp dir under `seams.system_temp_base()` is green",
+            not _red(res, "c2s") and set(_buckets(res, "c2s")) == {"SAFE"},
+        )
+        _call(
+            record,
+            "C2 (unknown base): a temp dir under a base this analyzer cannot resolve is still red",
+            bool(_red(res, "c2u")),
+        )
+        _call(
+            record,
+            "C2 (same name, other module): `seams.system_temp_base()` from an unrelated module is still red (160a24a5.2)",
+            bool(_red(res, "c2v")),
+        )
+        _call(
+            record,
             "C3: a parameter called with repo_root() is red (V3 shape)",
             bool(_red(res, "c3")),
         )
@@ -900,6 +1101,22 @@ def run_controls(repo: pathlib.Path, check: object) -> None:
             any("STALE" in f for f in _red(res, "c8b")),
         )
         _call(record, "C8: the same pragma on a TREE site is still red", bool(_red(res, "c8c")))
+        _call(
+            record,
+            "CW: a callers pragma whose only referrer is listed is green (DECLARED)",
+            not _red(res, "cw") and _buckets(res, "cw") == ["DECLARED"],
+        )
+        _call(
+            record,
+            "CW': a second, unlisted referrer of the same function is red, for the listed one too",
+            any("does not list" in f and "cwm/bad.py" in f for f in _red(res, "cwm"))
+            and bool(_red(res, "cwmb")),
+        )
+        _call(
+            record,
+            "CW'': a listed file that no longer references the function is a red BAD-PRAGMA",
+            any("BAD-PRAGMA" in f and "cws/gone.py" in f for f in _red(res, "cws")),
+        )
         _call(record, "C9: git add -A with no cwd is red", bool(_red(res, "c9")))
         _call(record, "C9: git add -A with cwd=tmp is green", not _red(res, "c9m"))
         _call(
@@ -1195,3 +1412,15 @@ def main(argv: list[str] | None = None) -> int:
         % tally.ok
     )
     return 0
+
+
+if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse(
+        "check_gate_tree_writes.py",
+        sys.argv[1:],
+        switches=("--selftest", "--report"),
+        valued=("--root", "--lock", "--pkg"),
+    )
+    raise SystemExit(main(sys.argv[1:]))

@@ -12,14 +12,17 @@ The landing tree is made with git's linked-tree verb, so block_worktree_add admi
 
 from __future__ import annotations
 
+import concurrent.futures
 import importlib.machinery
 import importlib.util
+import multiprocessing
 import os
 import pathlib
+import signal
 import subprocess
 import sys
 import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import types
@@ -39,13 +42,40 @@ MUTANTS = [
     ("merged never read", "        if how:\n", "        if False:\n"),
     (
         "an unabsorbed landing commit read as absorbed",
-        '    if marks is None or "+" in marks:',
-        "    if marks is None:",
+        '    if "+" in marks:\n        return ""',
+        '    if False:\n        return ""',
     ),
     (
         "the behind report blocks",
-        '    return _merged_text(st) if st.state == MERGED else ""',
-        '    return _merged_text(st) if st.state in (MERGED, BEHIND) else ""',
+        "    if st.state != MERGED:\n        return Verdict()",
+        "    if st.state not in (MERGED, BEHIND):\n        return Verdict()",
+    ),
+    # PLAN-stop-hook-retro-20261123 R20261123.1 and .2: each downgrade arm, broken alone.
+    (
+        "the code-complete call dropped",
+        "            plans = open_writer_boxes(root, shas)\n",
+        "            plans = []\n",
+    ),
+    (
+        "an unreadable named plan silences the block",
+        '            notes.append("Promote also refuses here: %s." % exc)',
+        "            return Verdict()",
+    ),
+    (
+        "promote's dirt never read",
+        "    dirt, dirt_problem = _promote_dirt(root, st.landing_path)",
+        '    dirt, dirt_problem = [], ""',
+    ),
+    (
+        "this session's own dirt read as a peer's",
+        "        mine = [p for p in dirt if _norm(p) in own]",
+        "        mine = []",
+    ),
+    ("a live main-checkout task ignored", "    if live_main_bg:\n", "    if False:\n"),
+    (
+        "a lease writer counted as a main-checkout task",
+        '        main_tree_agent = meta is not None and not meta.get("worktree")',
+        "        main_tree_agent = meta is not None",
     ),
     (
         "the landing tree judged as a development tree",
@@ -56,6 +86,29 @@ MUTANTS = [
         "the PR answer ignored for an empty landing branch",
         "    if pr_merged(root, landing):",
         "    if False:",
+    ),
+    # The class sweep of review e943d92e.1 (stop-gate judge 2026-11-23): each named read failure, silenced alone.
+    (
+        "a failed stack read answered silently",
+        "        return Verdict(advisory=_unread_text(exc))",
+        "        return Verdict()",
+    ),
+    ("a failed development-commit listing unnamed", "    if shas is None:\n", "    if False:\n"),
+    ("an unreadable dirty preflight unnamed", "    if dirt_problem:\n", "    if False:\n"),
+    (
+        "a failed landing cherry read as unmerged",
+        '        raise StackReadError(\n            "git could not compare',
+        '        return ""\n        raise StackReadError(\n            "git could not compare',
+    ),
+    (
+        "a defective landing record read as none",
+        "    if problem:\n        raise StackReadError(problem)",
+        "    if False:\n        raise StackReadError(problem)",
+    ),
+    (
+        "gh that cannot say read as unmerged",
+        "    if rows is None:\n        raise StackReadError(",
+        "    if False:\n        raise StackReadError(",
     ),
 ]
 
@@ -128,6 +181,23 @@ def load(text: str | None = None) -> types.ModuleType:
     return mod
 
 
+def plan_commit(cwd, rel: str, boxes: list[str]) -> None:
+    """A development commit writing the plan at `rel` with `boxes` and a Plan-Box trailer naming it."""
+    path = pathlib.Path(cwd) / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "# PLAN: fixture\nStatus: approved\n\n## Tasks\n\n%s\n" % "\n".join(boxes),
+        encoding="utf-8",
+    )
+    sh(cwd, "add", rel)
+    sh(
+        cwd,
+        "commit",
+        "-qm",
+        "feat: plan work\n\nPlan-Box: %s#aaaa1111 clauses=all" % rel.rsplit("/", 1)[-1],
+    )
+
+
 def no_pr(_root, _branch) -> bool:
     return False
 
@@ -136,7 +206,7 @@ def merged_pr(_root, _branch) -> bool:
     return True
 
 
-def controls(ws: types.ModuleType, cp) -> list[str]:
+def controls(ws: Any, cp) -> list[str]:
     fails: list[str] = []
     ran = [0]
 
@@ -235,6 +305,264 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             "the rest of promotion" in ws.stack_block(main, pr_merged=no_pr),
         )
 
+        # CODE-COMPLETE (PLAN-stop-hook-retro-20261123 R20261123.1, D1): promote refuses on an open [writer] box of a plan the development commits name, so the stop does not block on it.
+        def verdict(root=main, **kw):
+            fn = getattr(ws, "stack_verdict", None)
+            if fn is None:
+                return ("<no stack_verdict>", "")
+            return tuple(fn(root, pr_merged=no_pr, **kw))
+
+        plan_rel = "agent/plans/PLAN-fixture.md"
+        done_boxes = [
+            "- [x] W1 [writer] The first writer box, done.",
+            "- [ ] V1 [live] The live run, open for the landing tree.",
+        ]
+        plan_commit(main, plan_rel, done_boxes)
+        block, advisory = verdict()
+        control(
+            "CODE-COMPLETE INVERSE: every writer box ticked, the block stands",
+            "  %s\n" % ws.PROMOTE_COMMAND in block and advisory == "",
+            (block, advisory),
+        )
+        plan_commit(
+            main, plan_rel, [*done_boxes, "- [ ] W2 [writer] The second writer box, still open."]
+        )
+        block, advisory = verdict()
+        control("CODE-COMPLETE: an open writer box blocks nothing", block == "", block)
+        control(
+            "CODE-COMPLETE: the advisory names the plan and its first open box",
+            "PROMOTION WAITS ON CODE-COMPLETE" in advisory
+            and "`%s` has 1 open [writer] box(es)" % plan_rel in advisory
+            and "W2 [writer] The second writer box" in advisory,
+            advisory,
+        )
+        control(
+            "CODE-COMPLETE: stack_block agrees", ws.stack_block(main, pr_merged=no_pr) == "", ""
+        )
+        plan_commit(main, plan_rel, done_boxes)
+
+        # DIRTY TREE OR LIVE RUN (R20261123.2, D2): promote refuses on tracked non-record dirt; a peer's dirt or a live main-checkout run downgrades, this session's own dirt blocks and is named.
+        peer_rel = "agent/plans/PLAN-x.md"
+        peer = main / peer_rel
+        peer.write_text("# PLAN: x\n", encoding="utf-8")
+        sh(main, "add", peer_rel)
+        sh(main, "commit", "-qm", "plan x")
+        peer.write_text("# PLAN: x\nedited by a peer\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[])
+        control("DIRT: a peer's dirty path blocks nothing", block == "", block)
+        control(
+            "DIRT: the advisory names the peer's dirty path",
+            "PROMOTION WAITS ON A PEER'S DIRTY TREE" in advisory and peer_rel in advisory,
+            advisory,
+        )
+        for label, own_paths in (("relative", [peer_rel]), ("absolute", [str(peer)])):
+            block, advisory = verdict(own_paths=own_paths)
+            control(
+                "DIRT: this session's own dirty path (%s) blocks and is named" % label,
+                "  %s\n" % ws.PROMOTE_COMMAND in block
+                and "this session's own dirty tracked path(s)" in block
+                and peer_rel in block
+                and advisory == "",
+                (block, advisory),
+            )
+        block, advisory = verdict(own_paths=[peer_rel], live_main_bg=["vm:check run"])
+        control(
+            "LIVE RUN: a live main-checkout task downgrades even this session's dirt",
+            block == "" and "vm:check run" in advisory and peer_rel in advisory,
+            (block, advisory),
+        )
+        peer.write_text("# PLAN: x\n", encoding="utf-8")
+        landing_base = landing / "base.txt"
+        landing_base.write_text("peer edit in the landing tree\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[])
+        control(
+            "DIRT: a peer's dirt in the landing tree downgrades",
+            block == "" and str(landing_base) in advisory,
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[str(landing_base)])
+        control(
+            "DIRT: this session's landing-tree edit blocks",
+            str(landing_base) in block and advisory == "",
+            (block, advisory),
+        )
+        landing_base.write_text("base.txt\n", encoding="utf-8")
+        block, advisory = verdict(own_paths=[], live_main_bg=["vm:check run"])
+        control(
+            "LIVE RUN: a clean tree with a live main-checkout task downgrades",
+            block == ""
+            and "PROMOTION WAITS ON A LIVE RUN" in advisory
+            and "vm:check run" in advisory,
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[], live_main_bg=[])
+        control(
+            "LIVE RUN INVERSE: no task and a clean tree, the block stands",
+            "  %s\n" % ws.PROMOTE_COMMAND in block and advisory == "",
+            (block, advisory),
+        )
+        tasks = getattr(ws, "main_checkout_tasks", lambda *_a: ["<no main_checkout_tasks>"])
+        live = [
+            {"id": "b1", "type": "shell", "description": "npm run vm:check"},
+            {"id": "a1", "type": "subagent", "description": "main-tree runner"},
+            {"id": "a2", "type": "subagent", "description": "lease writer"},
+            {"id": "t1", "type": "teammate", "description": "a teammate"},
+        ]
+        metas = {"a1": {"worktree": ""}, "a2": {"worktree": str(td / "lease")}}
+        got = tasks(main, live, metas)
+        control(
+            "LIVE RUN: a shell and a main-tree subagent run in the main checkout, a lease writer does not",
+            got == ["npm run vm:check", "main-tree runner"],
+            got,
+        )
+        got = tasks(landing, live, metas)
+        control("LIVE RUN: a session in another tree has no main-checkout task", got == [], got)
+
+        # An unreadable named plan: promote refuses on it too, so the block stands and says so.
+        sh(
+            main,
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "feat: absent\n\nPlan-Box: PLAN-absent.md#bbbb2222 clauses=all",
+        )
+        block, advisory = verdict(own_paths=[])
+        control(
+            "CODE-COMPLETE: an unreadable named plan keeps the block and names it",
+            "PLAN-absent.md" in block and advisory == "",
+            (block, advisory),
+        )
+
+        # Any other failure of the open-box read (review e943d92e.1) keeps the block and names the failure.
+        reader_name = "open_writer_boxes"
+        real_reader = getattr(ws, reader_name)
+
+        def broken_reader(*_a, **_k):
+            raise OSError("fixture: open-box read failed")
+
+        setattr(ws, reader_name, broken_reader)
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            setattr(ws, reader_name, real_reader)
+        control(
+            "CODE-COMPLETE: an unexpected open-box read failure keeps the block and names it",
+            "fixture: open-box read failed" in block and advisory == "",
+            (block, advisory),
+        )
+
+        # THE CLASS SWEEP of that fix (stop-gate judge 2026-11-23): every other read the verdict rests on names its failure rather than reading as "no data".
+        # A failed listing of the development commits is not "no commits": whether promote refuses on an open [writer] box is unknown, so the block stands and says why.
+        real_shas = ws._dev_shas
+        ws._dev_shas = lambda *_a, **_k: None
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            ws._dev_shas = real_shas
+        control(
+            "UNREAD: a failed development-commit listing keeps the block and names it",
+            "could not list the development commits" in block and advisory == "",
+            (block, advisory),
+        )
+        # An unparseable record policy is not "no dirt": promote refuses on it by name, and the block says the preflight could not be read.
+        planted_policy = main / ".ci" / "policy" / "record-paths.json"
+        planted_policy.parent.mkdir(parents=True, exist_ok=True)
+        planted_policy.write_text("{ not json\n", encoding="utf-8")
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            planted_policy.unlink()
+        control(
+            "UNREAD: an unreadable dirty preflight keeps the block and names it",
+            "dirty preflight could not be read" in block
+            and "record-paths.json" in block
+            and advisory == "",
+            (block, advisory),
+        )
+        block, advisory = verdict(own_paths=[])
+        control(
+            "UNREAD INVERSE: with the plant gone, no read failure is named",
+            "could not" not in block and "  %s\n" % ws.PROMOTE_COMMAND in block,
+            (block, advisory),
+        )
+        # A stack read that raises is not "nothing merged": it never blocks (a git blip must not), and the advisory names it.
+        real_state = ws.stack_state
+
+        def broken_state(*_a, **_k):
+            raise OSError("fixture: stack read failed")
+
+        ws.stack_state = broken_state
+        try:
+            block, advisory = verdict(own_paths=[])
+            report = ws.stack_report(main, released=False, pr_merged=no_pr)
+        finally:
+            ws.stack_state = real_state
+        control(
+            "UNREAD: a failed stack read blocks nothing and the advisory names it",
+            block == "" and "fixture: stack read failed" in advisory,
+            (block, advisory),
+        )
+        control(
+            "UNREAD: a failed stack read is named in the report too",
+            "fixture: stack read failed" in report,
+            report,
+        )
+        # A failed `git cherry` of the landing branch is not "not merged".
+        real_cherry = ws._cherry
+        ws._cherry = lambda *_a, **_k: None
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            ws._cherry = real_cherry
+        control(
+            "UNREAD: a failed landing cherry read is named, not read as unmerged",
+            block == "" and "could not compare the landing branch" in advisory,
+            (block, advisory),
+        )
+        # A defective landing record is not "no record".
+        record_file = pathlib.Path(cp.landing_record_path(str(main)))
+        record_text = record_file.read_text(encoding="utf-8")
+        record_file.write_text("{ not json\n", encoding="utf-8")
+        try:
+            block, advisory = verdict(own_paths=[])
+        finally:
+            record_file.write_text(record_text, encoding="utf-8")
+        control(
+            "UNREAD: a defective landing record is named, not read as none",
+            block == "" and "is unreadable" in advisory,
+            (block, advisory),
+        )
+        # gh that cannot answer is not "no merged PR".
+        saved_gh = sys.modules.get("wl_gh")
+        gh_answer: list = [(None, "")]
+        fake_gh = type(sys)("wl_gh")
+        fake_gh.__dict__["call"] = lambda *_a, **_k: gh_answer[0]
+        sys.modules["wl_gh"] = fake_gh
+        try:
+            outcomes: list = []
+            for answer in ((None, "fixture: HTTP 502"), ([], ""), ([{"number": 7}], "")):
+                gh_answer[0] = answer
+                try:
+                    outcomes.append(ws.gh_pr_merged(main, LANDING))
+                except Exception as exc:
+                    outcomes.append("raised: %s" % exc)
+        finally:
+            if saved_gh is None:
+                sys.modules.pop("wl_gh", None)
+            else:
+                sys.modules["wl_gh"] = saved_gh
+        control(
+            "UNREAD: gh that cannot say is named, not read as unmerged",
+            isinstance(outcomes[0], str) and "fixture: HTTP 502" in outcomes[0],
+            outcomes,
+        )
+        control(
+            "UNREAD INVERSE: gh's empty and one-row answers read unmerged and merged",
+            outcomes[1:] == [False, True],
+            outcomes,
+        )
+
         # Promotion: the development branch moves into the landing tree, the record names it, and the next development branch is cut stacked on it.
         sh(landing, "checkout", "-q", "--detach")
         sh(main, "checkout", "-q", "-b", NEXT)
@@ -267,8 +595,75 @@ def controls(ws: types.ModuleType, cp) -> list[str]:
             merged,
         )
         control("NOTIFY: an unknown event is silent", ws.notify_line(landing, "other") == "")
-    if ran[0] < 25:
+        control(
+            "WHY: a bare exception names its type and says it carried no message",
+            ws._why(KeyError()) == "KeyError (no message)"
+            and ws._why(StopIteration()) == "StopIteration (no message)",
+            ws._why(KeyError()),
+        )
+        control("WHY: a message is kept", ws._why(ValueError("boom")) == "ValueError: boom")
+    if ran[0] < 40:
         fails.append("only %d controls ran" % ran[0])
+    return fails
+
+
+_JUDGING: dict[str, Any] = {}
+
+
+def _judge(index: int) -> tuple[str, bool, list[str]]:
+    """(label, the arm applies exactly once, the controls it turned red) for MUTANTS[index], in a forked worker."""
+    label, old, new = MUTANTS[index]
+    text = _JUDGING["text"]
+    if text.count(old) != 1:
+        return label, False, []
+    return label, True, controls(load(text.replace(old, new)), _JUDGING["cp"])
+
+
+def worker_count(jobs: int) -> int:
+    """One worker per usable core up to `jobs`. `os.sched_getaffinity` is Linux-only (f6d4c6c0.1), so a host without it falls back to `os.cpu_count`."""
+    getter = getattr(os, "sched_getaffinity", None)
+    cores = len(getter(0)) if getter is not None else (os.cpu_count() or 1)
+    return max(1, min(jobs, cores))
+
+
+def pool_map(fn, items: list, workers: int) -> list:
+    """`[fn(i) for i in items]`, in forked workers when the host has fork (not Windows, f6d4c6c0.2) and more than one worker is wanted, serially otherwise.
+
+    A worker killed mid-task (OOM) makes `ProcessPoolExecutor` raise BrokenProcessPool at once, where `multiprocessing.Pool.map` waits forever (f6d4c6c0.3); the error propagates so the run fails loudly instead of hanging."""
+    if workers <= 1 or "fork" not in multiprocessing.get_all_start_methods():
+        return [fn(i) for i in items]
+    ctx = multiprocessing.get_context("fork")
+    with concurrent.futures.ProcessPoolExecutor(max_workers=workers, mp_context=ctx) as pool:
+        return list(pool.map(fn, items, chunksize=1))
+
+
+def _square(n: int) -> int:
+    return n * n
+
+
+def _die_on_two(n: int) -> int:
+    if n == 2:
+        os._exit(9)
+    return n
+
+
+def pool_checks() -> list[str]:
+    """Controls on `pool_map` itself: the parallel branch maps like the serial one, in order, and a killed worker fails the run instead of hanging it."""
+    fails = []
+    items = list(range(8))
+    if pool_map(_square, items, 4) != [n * n for n in items]:
+        fails.append("POOL: the parallel branch does not return the serial results in order")
+    if pool_map(_square, items, 1) != [n * n for n in items]:
+        fails.append("POOL: the serial branch does not return the serial results in order")
+    try:
+        # A hang here is the defect; the alarm turns it into a failure.
+        signal.alarm(120)
+        pool_map(_die_on_two, items, 4)
+        fails.append("POOL: a killed worker did not fail the run")
+    except concurrent.futures.process.BrokenProcessPool:
+        pass
+    finally:
+        signal.alarm(0)
     return fails
 
 
@@ -280,7 +675,7 @@ def main() -> int:
             "FAIL: commit_policy has no landing record (PLAN-two-track-merge-dev LT1 not present)"
         )
         return 1
-    fails = controls(real, cp)
+    fails = controls(real, cp) + pool_checks()
     for line in fails:
         print("FAIL: " + line)
     if fails:
@@ -288,13 +683,22 @@ def main() -> int:
     print("controls: all held")
     text = SOURCE.read_text(encoding="utf-8")
     bad = 0
-    for label, old, new in MUTANTS:
-        if text.count(old) != 1:
+    _JUDGING.update(text=text, cp=cp)
+    # Each mutant is judged by a full run of the controls (about 850 repository commands, 2 s), and the runs share nothing: each builds its own repositories and loads its own mutant module. They run in forked workers, one per core up to the mutant count, and print in MUTANTS order, so the report and the verdict are what the serial loop gave.
+    judged = pool_map(_judge, list(range(len(MUTANTS))), worker_count(len(MUTANTS)))
+
+    # The real judge's parallel verdicts equal its serial ones, on the first two mutants (f6d4c6c0.4). The control messages carry temporary paths, so the comparison is the label, whether the arm applies, and how many controls turned red.
+    def shape(rows):
+        return [(label, applies, len(red)) for label, applies, red in rows]
+
+    if shape(judged[:2]) != shape(pool_map(_judge, [0, 1], 1)):
+        print("FAIL: the parallel judging of the first two mutants differs from the serial judging")
+        bad += 1
+    for label, applies, red in judged:
+        if not applies:
             print("FAIL: mutant %r no longer applies once" % label)
             bad += 1
-            continue
-        red = controls(load(text.replace(old, new)), cp)
-        if not red:
+        elif not red:
             print("FAIL: mutant %r left every control green" % label)
             bad += 1
         else:

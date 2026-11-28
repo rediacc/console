@@ -5,9 +5,12 @@
  *   images/manifest.txt                          the `<tar> <ref>` lines the template loads
  *   renet/renet-linux-<arch>                     this CLI's own renet
  *   cli/<platform>/rdc[.exe]                     with --with-cli: this CLI's release binaries
+ *   models/                                      the stable detection models with their `.sig` (unless --no-models)
  *   manifest.json, SHA256SUMS
+ *   manifest.sig, signer.pub                     the per-build signature; its fingerprint is printed
  */
 
+import { createHash } from 'node:crypto';
 import { join } from 'node:path';
 import { t } from '../../../i18n/index.js';
 import { VERSION } from '../../../version.js';
@@ -28,6 +31,8 @@ import {
   sumsText,
   templateInfo,
 } from './manifest.js';
+import { fetchModels } from './models.js';
+import { SIGNATURE_FILE, SIGNER_FILE, signBuild } from './signing.js';
 
 export interface BundleOptions {
   out: string;
@@ -37,6 +42,8 @@ export interface BundleOptions {
   image?: string;
   /** `--with-cli`: comma-separated platform names whose CLI binaries ship in the bundle. */
   withCli?: string;
+  /** `--no-models` sets false: the detection models ship unless this is false. */
+  models?: boolean;
 }
 
 async function must(
@@ -108,6 +115,8 @@ export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promi
   const renetFile = `renet/renet-linux-${arch}`;
   const renet = await deps.renetAsset(arch, join(opts.out, renetFile));
   const cli = cliPlatforms.length > 0 ? await fetchCliBinaries(deps, opts.out, cliPlatforms) : [];
+  const models = opts.models === false ? [] : await fetchModels(deps, opts.out);
+  const listText = imageListText(images);
   const manifest: BundleManifest = {
     schema: BUNDLE_SCHEMA,
     cliVersion: VERSION,
@@ -115,21 +124,27 @@ export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promi
     renet: { version: renet.version, arch, file: renetFile, sha256: renet.sha256 },
     images,
     ...(cli.length > 0 && { cli }),
+    ...(models.length > 0 && { models }),
+    imageList: createHash('sha256').update(listText).digest('hex'),
     createdAt: new Date(deps.now()).toISOString(),
   };
 
   const manifestText = `${JSON.stringify(manifest, null, 2)}\n`;
-  const listText = imageListText(images);
   await deps.writePrivate(join(opts.out, MANIFEST_FILE), manifestText);
   await deps.writePrivate(join(opts.out, IMAGE_LIST_FILE), listText);
   const sums: SumEntry[] = [
     ...images.map((i) => ({ file: i.file, sha256: i.sha256 })),
     { file: renetFile, sha256: renet.sha256 },
     ...cli.map((c) => ({ file: c.file, sha256: c.sha256 })),
+    ...models,
     { file: MANIFEST_FILE, sha256: await deps.sha256File(join(opts.out, MANIFEST_FILE)) },
     { file: IMAGE_LIST_FILE, sha256: await deps.sha256File(join(opts.out, IMAGE_LIST_FILE)) },
   ];
   await deps.writePrivate(join(opts.out, SUMS_FILE), sumsText(sums));
+  const signed = signBuild(manifestText);
+  await deps.writePrivate(join(opts.out, SIGNATURE_FILE), `${signed.signature}\n`);
+  await deps.writePrivate(join(opts.out, SIGNER_FILE), `${signed.publicKey}\n`);
   outputService.success(t('commands.server.bundle.written', { dir: opts.out, arch }));
+  outputService.info(t('commands.server.bundle.signer', { fingerprint: signed.fingerprint }));
   return manifest;
 }

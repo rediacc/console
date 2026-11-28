@@ -23,7 +23,7 @@ TWO READERS, ASKING DIFFERENT QUESTIONS, AND BOTH ARE NEEDED.
                       therefore the one that can be compared against a real
                       traced run of the bash.
 
-A gate that only ran the first would pass a port that dropped a conditional; a gate that only ran the second would pass a port that dropped a phase nobody's fixture happened to enable. `shadow_driver.py` runs both.
+A gate that only ran the first would pass a port that dropped a conditional; a gate that only ran the second would pass a port that dropped a phase nobody's fixture happened to enable. `the shadow driver` ran both (deleted by agent/plans/PLAN-tooling-code-reduction.md CR1; last at commit:aa829a19dc); `check:ci-setup-port-parity` keeps the phase-order half.
 """
 
 from __future__ import annotations

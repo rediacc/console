@@ -18,9 +18,11 @@ import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
 import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/timeline.js';
+import { rdcCommand } from '../config/config-name.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
 import { backgroundEnvelope, backgroundStartedHint } from './job-client.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
+import { ProxySessionCache } from './proxy-session-cache.js';
 import type { RenetEvent } from './types.js';
 
 /**
@@ -210,14 +212,16 @@ function targetMachine(
  * steps ticking over in the same shapes as `rdc repo up`; the only difference is
  * where the SSH happened.
  */
-function renderEvent(event: RenetEvent): void {
+export function renderEvent(event: RenetEvent): void {
+  // Under `-o json` stdout is the one envelope, so the step timeline goes to stderr.
+  const writeStep = getOutputFormat() === 'json' ? writeStderr : writeStdout;
   switch (event.type) {
     case 'step_start':
-      writeStdout(`⠋ ${getActiveLabel(event.name ?? '')}...`);
+      writeStep(`⠋ ${getActiveLabel(event.name ?? '')}...`);
       break;
     case 'step_done':
       if (!event.name || event.duration_ms === undefined) break;
-      writeStdout(
+      writeStep(
         `\r✔ ${getDoneLine(event.name, event.detail)} (${formatStepDuration(event.duration_ms)})\n`
       );
       break;
@@ -241,6 +245,8 @@ export interface ProxyRunContext {
   getCek?: () => Promise<CryptoKey>;
   /** `-b` / `--background`: ask the executor for the job's ticket at once instead of following the job. */
   background?: boolean;
+  /** Where the granted session is kept between runs. Defaults to the file cache beside the config tokens. */
+  sessionCache?: ProxySessionCache;
 }
 
 /**
@@ -259,7 +265,7 @@ async function loadEnrolledCek(): Promise<CryptoKey> {
   if (!hasRemoteConfig(config)) {
     throw new Error(
       `This executor runs in a container, and it can open your config only with the config key from config storage. ` +
-        `Config "${name}" is not in config storage yet: run "rdc config remote enable", then retry.`
+        `Config "${name}" is not in config storage yet: run "${rdcCommand('config remote enable', name)}", then retry.`
     );
   }
   const { RemoteConfigAdapter } = await import('../../adapters/remote-config-adapter.js');
@@ -302,6 +308,8 @@ export async function runCommandThroughProxy(
     contractVersion: context.contractVersion,
     ...(context.fetchImpl ? { fetchImpl: context.fetchImpl } : {}),
     getCek: cekProviderFor(context),
+    // Consecutive runs reuse the session granted by the last one (PLAN-rmcp-executor-hardening Design 7).
+    sessionCache: context.sessionCache ?? new ProxySessionCache(),
   });
 
   const params = paramsFromCommand(entry, actionCommand);

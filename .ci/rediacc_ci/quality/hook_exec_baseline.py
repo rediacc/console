@@ -48,6 +48,18 @@ registry INVOKES, and the registry invokes .ci/scripts/quality/check_hook_exec_b
 a header here derives this module's own path and the binding disagrees with
 package.json. Measured 2026-09-09: three gates landed with it in the module and
 `check:ci-gate-bind` named all three.
+
+---- gate ----
+step: Hook exec baseline
+needs: none
+lane: quality-static
+selftest: true
+why: W5's "2 processes per Bash tool call" target had no baseline in the tree at
+     all, so the cost of the hook wiring could grow without anything noticing.
+     This pins the per-tool and per-event process counts derived from
+     .claude/settings.json and refuses in both directions, so a collapse has to
+     be claimed and a regression cannot be quiet
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -61,6 +73,7 @@ import tempfile
 from rediacc_ci import log, paths
 from rediacc_ci.controls import Checker, controls_first, plant
 from rediacc_ci.policy_paths import policy_path
+from rediacc_ci.quality import seams
 
 
 class RefusalError(Exception):
@@ -79,7 +92,7 @@ SETTINGS_REL = (".claude", "settings.json")
 # THE COUNTER IS NOT COPIED HERE, deliberately. Two implementations of "how many processes does a Bash call cost" is exactly the drift this gate exists to stop, and it would be a drift the gate could not see.
 _HOOK_PKG = {
     "parent": pathlib.Path(
-        os.environ.get("HOOK_EXEC_COUNTER_DIR")
+        seams.scratch_root("HOOK_EXEC_COUNTER_DIR", os.environ.get("HOOK_EXEC_COUNTER_DIR"))
         or pathlib.Path(__file__).resolve().parents[3] / ".claude"
     )
 }
@@ -247,6 +260,47 @@ def compare(baseline, result, unmatched):
     return findings
 
 
+def _load_hookreport():
+    """`wl_hookreport` from `.claude/hooks/stop`, the budgets' one implementation (PLAN-tooling-code-reduction.md CR8), through the same instrument-anchored `.claude` as the counter."""
+    saved = list(sys.path)
+    paths.on_sys_path(str(_HOOK_PKG["parent"] / "hooks" / "stop"))
+    try:
+        import wl_hookreport
+    except ModuleNotFoundError as exc:
+        raise RefusalError(
+            "the budget reader .claude/hooks/stop/wl_hookreport.py is not importable (%s)" % exc
+        ) from exc
+    finally:
+        # The module stays in sys.modules; the hook directory does not stay on the path for later imports.
+        sys.path[:] = saved
+    return wl_hookreport
+
+
+def _leaks_path(load) -> bool:
+    """Whether calling `load()` leaves `sys.path` different from how it found it (restored afterwards, so a leak cannot reach the checks that follow)."""
+    before = list(sys.path)
+    try:
+        load()
+        return sys.path != before
+    finally:
+        sys.path[:] = before
+
+
+def budget_findings(baseline, root):
+    """The two-way budgets of `baseline["budgets"]` measured at `root`. A missing block is a refusal."""
+    budgets = baseline.get("budgets")
+    if not isinstance(budgets, dict):
+        raise RefusalError(
+            "the baseline has no `budgets` block, so lines, test seconds and chain latency per "
+            "guard would go unheld; see PLAN-tooling-code-reduction.md CR8"
+        )
+    hookreport = _load_hookreport()
+    try:
+        return hookreport.budget_findings(budgets, hookreport.measure(root, baseline))
+    except hookreport.ReportError as exc:
+        raise RefusalError(str(exc)) from exc
+
+
 def run(root=None):
     """Measure the tree at `root` and return (findings, result, baseline)."""
     execcount = _load_counter()
@@ -263,6 +317,13 @@ def run(root=None):
     return compare(baseline, result, unmatched), result, baseline
 
 
+def run_with_budgets(root=None, budgets=budget_findings):
+    """`run` plus the two-way budgets: (findings, result, baseline). `budgets` is the reader, a seam the selftest swaps."""
+    findings, result, baseline = run(root)
+    findings += budgets(baseline, root or paths.repo_root())
+    return findings, result, baseline
+
+
 def main(argv=None):
     argv = list(argv or [])
     if "--selftest" in argv:
@@ -272,7 +333,7 @@ def main(argv=None):
     if rc:
         return rc
     try:
-        findings, result, baseline = run()
+        findings, result, baseline = run_with_budgets()
     except RefusalError as exc:
         log.error("hook exec baseline: %s" % exc)
         return 1
@@ -281,7 +342,9 @@ def main(argv=None):
             log.error("  %s" % finding)
         log.error(
             "%d finding(s). The counter is `python3 .claude/rediacc_hooks/execcount.py`; "
-            "repin with its `--json` output in .ci/policy/%s." % (len(findings), BASELINE_NAME)
+            "repin with its `--json` output in .ci/policy/%s. A budget finding is read by "
+            "`python3 .claude/hooks/stop/wl_hookreport.py --check-budgets`."
+            % (len(findings), BASELINE_NAME)
         )
         return 1
     target = baseline.get("target", {})
@@ -514,7 +577,63 @@ def selftest():
         _load_counter().parse_entries is not None,
     )
 
+    try:
+        # The leak check comes BEFORE the first load, so a leak from that first call is not baked into the snapshot it is judged against.
+        leaked = _leaks_path(_load_hookreport)
+        hookreport = _load_hookreport()
+    except RefusalError as exc:
+        check("CONTROL: the budget reader is importable (%s)" % exc, False)
+        return not check.ok
+    check(
+        "ANTI-SILENCER: loading the budget reader leaves sys.path as it was, cold or warm",
+        not leaked and not _leaks_path(_load_hookreport),
+    )
+    check(
+        "PLANT: a loader that leaves a directory on sys.path is seen as leaking",
+        _leaks_path(lambda: paths.on_sys_path("/nonexistent-leak")),
+    )
+    held = {"slack": 0.2, "max": {"block_x": 100}}
+    budgets = {t: dict(held) for t in hookreport.TABLES}
+    measured = {t: {"block_x": 95} for t in hookreport.TABLES}
+    check(
+        "CONTROL: a guard inside every budget is clean",
+        hookreport.budget_findings(budgets, measured) == [],
+    )
+    measured["guardLines"] = {"block_x": 101}
+    check(
+        "PLANT: a guard's line count past its budget reds, and says GREW",
+        any("guardLines block_x GREW" in f for f in hookreport.budget_findings(budgets, measured)),
+    )
+    measured["guardLines"] = {"block_x": 70}
+    check(
+        "PLANT: a guard shrunk past the slack ALSO reds, and says SHRANK",
+        any(
+            "guardLines block_x SHRANK" in f for f in hookreport.budget_findings(budgets, measured)
+        ),
+    )
+    check(
+        "VACUITY: a baseline with no budgets block is a REFUSAL",
+        _budget_refuses({}),
+    )
+    with tempfile.TemporaryDirectory() as tmp:
+        root = _fixture(tmp, _CLEAN_SETTINGS, clean)
+        planted, _, _ = run_with_budgets(root, lambda _b, _r: ["budget PLANT"])
+        control, _, _ = run_with_budgets(root, lambda _b, _r: [])
+        check(
+            "PLANT: a budget finding reaches the findings main reports",
+            planted == ["budget PLANT"],
+        )
+        check("CONTROL: and no budget finding adds none", control == [])
+
     return not check.ok
+
+
+def _budget_refuses(baseline):
+    try:
+        budget_findings(baseline, paths.repo_root())
+    except RefusalError:
+        return True
+    return False
 
 
 def _refuses(root):
@@ -526,4 +645,7 @@ def _refuses(root):
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_hook_exec_baseline.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

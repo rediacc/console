@@ -40,11 +40,13 @@ THE THREE THINGS THIS MODULE IS CAREFUL ABOUT
    process. A guard that reached for `print()` would work today and break both.
 """
 
+import contextlib
 import io
 import json
 import os
 import pathlib
 import re
+import stat
 import subprocess
 import threading
 
@@ -128,6 +130,7 @@ class Event:
         self._env = os.environ if env is None else env
         self._cwd = cwd
         self._doc = _UNPARSED
+        self._writes = None
 
     # -- the payload ------------------------------------------------------
 
@@ -191,6 +194,22 @@ class Event:
         for path in paths:
             out.extend(_jq_collect(self.doc, path))
         return "\n".join(out)
+
+    def writes(self):
+        """`shellscan.writes` over this event's command, as `[(path, how)]`, computed once per Event (PLAN-tooling-code-reduction CR5, D5); [] for an event with no command.
+
+        PER EVENT, NOT PER COMMAND TEXT, on purpose. The walk itself is already shared across a chain: `shellscan._analyse` memoizes the parse by the command string, and every guard of a chain asks about the same string. What `writes` adds reads the disk (whether a copy's destination is a directory, a script passed by path), so a memo keyed on the text would answer a long-lived process (a test run driving many cases in-process) from a world that has since changed. A guard that asks twice pays once; a new Event reads the disk again.
+
+        The paths are placed from the payload's `cwd` when it carries one, else from the event's own directory.
+        """
+        if self._writes is None:
+            from rediacc_hooks import shellscan
+
+            # The pair view of the records the chain's other guards read: one walk per Event serves both (`shellscan.event_write_records`), each pair once, in walk order, as `shellscan.writes` lists them.
+            self._writes = list(
+                dict.fromkeys((w.path, w.how) for w in shellscan.event_write_records(self))
+            )
+        return self._writes
 
     # -- the environment --------------------------------------------------
 
@@ -583,10 +602,32 @@ def landing(path, cwd=None, root=None):
     return landed, judged, shown
 
 
+# The temp directory the differential goldens were recorded under: they quote `/tmp/rediacc-guard-*` literally, so a guard case builds its world there whatever TMPDIR says. The test conftest points TMPDIR at a private directory when the host's TMPDIR is outside /tmp, and a world built there is one no golden payload names.
+GOLDEN_TEMP_DIR = "/tmp"
+
+
+def golden_world(name):
+    """The fixed world directory `name` of a guard case, under the temp directory the goldens quote, created here (0700) and refused when it is not a real directory this user owns.
+
+    The path is predictable in a shared temp directory (0c9a169c.4), so another local user could pre-create it, or plant a symlink there, and every fixture write would follow into a place that user controls. A world that already exists is admitted only as a directory (never a symlink) owned by this uid.
+    """
+    path = os.path.join(GOLDEN_TEMP_DIR, name)
+    with contextlib.suppress(FileExistsError):
+        os.mkdir(path, 0o700)
+    st = os.lstat(path)
+    if stat.S_ISLNK(st.st_mode) or not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid():
+        msg = "guard world %s is not a directory this user (uid %d) owns; remove it and rerun" % (
+            path,
+            os.getuid(),
+        )
+        raise RuntimeError(msg)
+    return path
+
+
 def write_world_file(path, text):
     """Write a differential fixture file at a FIXED path without a torn read.
 
-    Several guards build their world at one `tempfile.gettempdir()` path, because the goldens quote that path literally. Every pytest process on the host shares it: xdist workers, and a second checkout's pre-push. `open(path, "w")` truncates first, so a guard run by one process between another's truncate and write read an empty record and admitted the edit (rc 0 against golden rc 2, block_compacted_plan_edit, 1006-2 pre-push 2026-10-06). Equal bytes are left alone; anything else lands whole through `os.replace`.
+    Several guards build their world at one fixed `golden_world` path under /tmp, because the goldens quote that path literally. Every pytest process on the host shares it: xdist workers, and a second checkout's pre-push. `open(path, "w")` truncates first, so a guard run by one process between another's truncate and write read an empty record and admitted the edit (rc 0 against golden rc 2, block_compacted_plan_edit, 1006-2 pre-push 2026-10-06). Equal bytes are left alone; anything else lands whole through `os.replace`.
     """
     path = pathlib.Path(path)
     try:

@@ -53,7 +53,7 @@ reporting wart and not a green-when-red gate, and why fixing it would change a l
 
 Exit: 0 when every spec pulled, 1 on no arguments, on a missing docker, or when any spec could not be pulled after 3 attempts.
 
-K=5 LEDGER: `.ci/shadow/w7p6-docker-prepull.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

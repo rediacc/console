@@ -9,9 +9,12 @@ from __future__ import annotations
 import json
 import os
 import pathlib
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 DISPATCH = pathlib.Path(__file__).resolve().parents[1] / "dispatch.py"
 STEM = "block_away_questions"
@@ -54,7 +57,7 @@ def _run(tmp_path, records, flag=True, sibling=None):
         },
     }
     env = dict(os.environ, WL_AWAY_STATE=str(state), HOME=str(tmp_path), TMPDIR=str(tmp_path))
-    proc = subprocess.run(
+    proc = _harness.run(
         ["python3", str(DISPATCH), STEM],
         input=json.dumps(payload),
         capture_output=True,

@@ -59,8 +59,9 @@ DRY: every piece rides the existing reminder, notice, preference and alert pipel
   Owns: none (runs only)
   Accept: one `captured_emails` row for the owner naming the cert's `validUntil`, one sales digest row naming the org, and `GET /portal/notices/unread-count` 1 for the owner; a second run captures nothing.
     (ticked) 2026-11-13T04:23:29Z by d778be9d: licence_expiry_drill rc=0 on bench 04:18Z: one owner mail naming validUntil 2026-11-20, one sales digest naming cert 6a018cc5 and the org, unread-count 1, second run captures nothing, cleanup rc=0; bench-only commit:0de7d914f5
-- [ ] LP-bench [live] A fresh bench receipt after L1, recorded and ticked through `worklist.py --live-proof`.
+- [x] LP-bench [live] A fresh bench receipt after L1, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-24T00:09:37Z by ace763dd: live-proof lp-d580dc2b0c02 VERIFIED: bench account-smoke rc=0 v=b75a3fd4-5d3b-4e9a-9209-a48c8bdb9042 after deploy_bench --region eu rc=0 (head 5d3df0fd17)
 
 ## Concurrency
 - **Wave 1:** N1, N3 and N4 start together on disjoint files.

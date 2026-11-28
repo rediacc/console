@@ -14,10 +14,10 @@ THE TWO SUBCOMMANDS ANSWER SEPARATELY, and that is not tidiness. A fake that ech
 case into a measurement of the fake. `FAKE_GH_ECHO=dispatch` logs only the
 uncaptured `gh workflow run` call, which is the mode the ledger uses; `none` logs nothing; `stderr` logs both, and exactly one case wants that, to prove the pollution is real rather than assumed.
 
-The `call:` line is also what makes a shadow-gate ledger possible for this pair. `shadow-gate.ts` classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and this script reports almost entirely through `log_info`, so no message-text regex could ever produce a finding. The ledger is recorded with `--finding-re '^(call: |decision: |DRY-RUN: )'`.
+The `call:` line is also what makes a shadow gate ledger possible for this pair. the shadow gate (commit:bf054adcd4) classifies `→ ` and `✓ ` as CHATTER before any `--finding-re` is consulted, and this script reports almost entirely through `log_info`, so no message-text regex could ever produce a finding. The ledger is recorded with `--finding-re '^(call: |decision: |DRY-RUN: )'`.
 
-The K=5 ledger is `.ci/shadow/w7p6-dispatch-release.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-release --assert --k 5`).
+The K=5 ledger is the ledger (deleted in commit:936280cd35)
+(the shadow gate (commit:bf054adcd4)).
 """
 
 from __future__ import annotations

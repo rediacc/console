@@ -28,11 +28,13 @@ import {
   getSubscriptionTokenState,
   normalizeServerUrl,
 } from '../services/account/subscription-auth.js';
+import { rdcCommand } from '../services/config/config-name.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
 import { ValidationError } from '../utils/errors.js';
 import { omitKey } from '../utils/omit-key.js';
 import { askChoice, askConfirm } from '../utils/prompt.js';
+import { nextPreEnableBackupName, writePreEnableBackup } from './config-remote-backup.js';
 import type { DeviceCredentials } from './config-remote-handoff.js';
 
 /** GET /configs/enable-requirements (api-token auth, subscription:read) for the token's own user. */
@@ -53,7 +55,10 @@ export function requireLoginToken(apiUrl: string): string {
     normalizeServerUrl(state.serverUrl) !== normalizeServerUrl(apiUrl)
   ) {
     throw new ValidationError(
-      t('commands.config.remote.enable.loginRequired', { apiUrl: normalizeServerUrl(apiUrl) })
+      t('commands.config.remote.enable.loginRequired', {
+        apiUrl: normalizeServerUrl(apiUrl),
+        cmd: rdcCommand('subscription login'),
+      })
     );
   }
   return state.token.token;
@@ -108,7 +113,9 @@ export async function checkEnablePrerequisites(apiUrl: string): Promise<EnablePr
         [
           t('commands.config.remote.enable.prereqMissing', { email: reqs.email }),
           ...missing.map((line) => `  - ${line}`),
-          t('commands.config.remote.enable.prereqRetry'),
+          t('commands.config.remote.enable.prereqRetry', {
+            cmd: rdcCommand('config remote enable'),
+          }),
         ].join('\n')
       );
     }
@@ -148,6 +155,8 @@ export async function storeHandoffCredentials(
     token: payload.token,
     wrappedCek: payload.wrappedCek,
   });
+  // Proof that this device enrolled the config: a later missing-key message tells a lost key from a config copied here. Best effort, since the enrollment itself succeeded.
+  await remoteTokenStorage.recordEnrollment(configName).catch(() => {});
 
   return {
     apiUrl: payload.apiUrl,
@@ -359,7 +368,7 @@ async function chooseAttachTarget(
 
 /**
  * The 404 of a pointer nobody chose: the list decides. Empty → seed (null). One visible config and
- * a handoff that named none → attach to it (the server's own password-enroll rule: exactly one
+ * a handoff that named none → attach to it (the server's own machine-enroll rule: exactly one
  * candidate is the target). Anything else is refused naming what is visible, never seeded beside.
  */
 async function resolveUnaddressed(
@@ -508,13 +517,18 @@ export async function finalizeEnable(
   );
 
   const counts = countResources(local);
+  const configPath = configFileStorage.getConfigPath(configName);
+  const startedAt = new Date();
   if (!seeded && !opts.force && localContentWouldBeReplaced(local, pulled.config)) {
     await confirmOverwrite(
       configName,
       counts,
-      `${configFileStorage.getConfigPath(configName)}.bak`
+      await nextPreEnableBackupName(configPath, startedAt)
     );
   }
+
+  // The generic `.bak` the save below writes is last-save-wins, so a second enable would replace the only record of the config as it stood before the first: keep a copy no later save touches.
+  const preEnableCopy = await writePreEnableBackup(configPath, startedAt);
 
   // The pointer file write IS the cache write: full server content, host-local sections (encryption mode included) preserved from the pre-enable config.
   const { mergeRemoteIntoCache } = await import('../services/config/remote-cache.js');
@@ -522,10 +536,15 @@ export async function finalizeEnable(
   // An attached config takes the store entry's identity: the local id and remote.configId name the same config.
   if (target) cached.id = target.configId;
   await configFileStorage.save(cached, configName);
+  if (preEnableCopy) {
+    outputService.info(
+      t('commands.config.remote.enable.backupKept', { backupPath: preEnableCopy })
+    );
+  }
 }
 
 /**
- * Store-and-finalize for a first enrollment, relay handoff or password slot alike. On any
+ * Store-and-finalize for a first enrollment, relay handoff or machine secret alike. On any
  * finalize failure the stored credentials are removed so a retry starts clean. Exported for the
  * seed tests.
  */

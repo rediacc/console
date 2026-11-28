@@ -3,7 +3,6 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { forwardAccountEgress } from '../egress';
 import {
   dropIssuedToken,
@@ -15,6 +14,7 @@ import {
   MAX_CACHED_ORGS,
   resetIssuedTokenCache,
 } from '../issued-token';
+import { ACCOUNT_EGRESS_HOST } from '../org-executor-support';
 
 const T0 = Date.parse('2026-10-26T12:00:00Z');
 const LIFE = 45 * 60_000;
@@ -180,7 +180,7 @@ describe('a 401 on a bearer route', () => {
     const send = (org: string) => {
       current = org;
       return forwardAccountEgress(
-        new Request('http://account.internal/account/api/v1/licenses/audit-events', {
+        new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/licenses/audit-events`, {
           method: 'POST',
           headers: { authorization: 'Bearer rediacc-executor-placeholder' },
           body: '{}',
@@ -219,7 +219,7 @@ describe('a 401 on a bearer route', () => {
     };
     const send = () =>
       forwardAccountEgress(
-        new Request('http://account.internal/account/api/v1/licenses/audit-events', {
+        new Request(`http://${ACCOUNT_EGRESS_HOST}/account/api/v1/licenses/audit-events`, {
           method: 'POST',
           headers: { authorization: 'Bearer rediacc-executor-placeholder' },
           body: '{"n":1}',

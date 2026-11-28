@@ -5,7 +5,7 @@ Sibling of `test_proxies_linux_packages.py`; see that file for why the two invoc
 ONE CASE DRIVES THE REAL `private/renet` (57 packages, ~12 s per side with a warm build cache -- was 60 before the fifth exclusion alternative). The rest use a SYNTHETIC module with no external dependencies, because the real one is 947 MB and because the interesting branches -- an empty candidate set, an exclusion that swallows everything, a package excluded on nothing but a
 `testutil.` mention -- cannot be produced by asking the real tree nicely.
 
-K=5 LEDGER: `.ci/shadow/w7p6-proxy-go-unit.observations.jsonl`, re-recorded
+K=5 LEDGER: the ledger (deleted in commit:936280cd35), re-recorded
 2026-09-10 after the fifth (`Getuid`) exclusion alternative landed -- a real gap this time, not only a documentation fix: `pkg/storage` (and the `os.Getuid()`-gated `pkg/repository`, `pkg/filesystem`) used to sit in the
 non-root subset and hard-fail under `CI=true`.
 """
@@ -38,6 +38,9 @@ FIXTURE_FILES = (
     TWIN_REL,
     ".ci/scripts/test/proxies/proxy-lib.sh",
     ".ci/rediacc_ci/__init__.py",
+    # the port's `__main__` block refuses an unknown argument through the shared parser first
+    ".ci/rediacc_ci/quality/__init__.py",
+    ".ci/rediacc_ci/quality/gate_args.py",
     ".ci/rediacc_ci/core/__init__.py",
     ".ci/rediacc_ci/core/proxyx.py",
     ".ci/rediacc_ci/proxies/__init__.py",
@@ -120,6 +123,16 @@ def build_fixture(
     return fixture
 
 
+# ONE BUILD CACHE PER SESSION (PLAN-ciquick-cpu.md W18). Each fixture used to carry its own `.gocache`, so every `go test` over a synthetic module rebuilt the standard library packages `testing` pulls in, once per side per case. The build cache is safe to share between concurrent `go` processes and holds compiled packages only: both sides run `go test -count=1`, so no
+# TEST RESULT is ever served from it, and the byte-for-byte comparison of the two sides cannot see the difference.
+_GOCACHE: dict[str, str] = {}
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _shared_gocache(tmp_path_factory: pytest.TempPathFactory) -> None:
+    _GOCACHE["dir"] = str(tmp_path_factory.mktemp("gocache"))
+
+
 def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
     home = fixture / ".home"
     home.mkdir(parents=True, exist_ok=True)
@@ -128,7 +141,7 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
         "HOME": str(home),
         "LC_ALL": "C",
         "LANG": "C",
-        "GOCACHE": str(fixture / ".gocache"),
+        "GOCACHE": _GOCACHE["dir"],
         "GOFLAGS": "-mod=mod",
         "PYTHONPATH": str(fixture / ".ci"),
         "PYTHONDONTWRITEBYTECODE": "1",

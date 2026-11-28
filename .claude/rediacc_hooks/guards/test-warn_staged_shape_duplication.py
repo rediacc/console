@@ -15,10 +15,13 @@ import json
 import os
 import pathlib
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
+
+import _hookpath
+
+from rediacc_hooks.guards import _harness
 
 HERE = pathlib.Path(__file__).resolve()
 DISPATCH = str(HERE.parents[1] / "dispatch.py")
@@ -43,7 +46,7 @@ TWIN_BLOCK = "\n".join("const shared_%02d = %d;" % (i, i) for i in range(8))
 
 
 def sh(argv, cwd=None, env=None, stdin=None):
-    return subprocess.run(
+    return _harness.run(
         argv, cwd=cwd, env=env, input=stdin, capture_output=True, text=True, check=False
     )
 
@@ -124,7 +127,7 @@ def run_guard(command, root, env_extra=None, path=None):
         env["PATH"] = path
     env.update(env_extra or {})
     started = time.monotonic()
-    proc = subprocess.run(
+    proc = _harness.run(
         [sys.executable, DISPATCH, "warn_staged_shape_duplication"],
         input=json.dumps(
             {"tool_name": "Bash", "tool_input": {"command": command}, "cwd": str(root)}

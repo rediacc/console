@@ -3,10 +3,10 @@
 THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/env/create-e2e-env.sh` and the port over the same arguments and compared four channels: the exit code, stdout, stderr and the GENERATED FILE. Every case now compares against `goldens/create-e2e-env/`, which holds the twin's OWN recorded bytes; each golden's provenance header carries the blob sha, so
 `git cat-file -p <sha>` still yields the program that produced them.
 
-THE LEDGER IS `.ci/shadow/w7p6-create-e2e-env.observations.jsonl`, FIVE rows over five distinct trees, every one EQUIVALENT. There is no `w7p4b-` file for this pair, so the w7p6 one is the only licence there is and it is cited as such.
+THE LEDGER IS the ledger (deleted in commit:936280cd35), FIVE rows over five distinct trees, every one EQUIVALENT. There is no `w7p4b-` file for this pair, so the w7p6 one is the only licence there is and it is cited as such.
 
 THE FILE IS THE SUBJECT, NOT THE MESSAGES. This program prints three lines, all progress, all on stderr; its product is the `.env` file. So the recorded shape carries a fourth section, `--- file ---`, holding what landed on disk. A recording that froze only the two streams would pass while the port wrote a completely different file, which is the exact shape of blindness
-`scripts/lib/shadow-gate.ts` was built to refuse.
+the shadow gate (commit:bf054adcd4) was built to refuse.
 
 EVERY CASE WRITES INTO `tmp_path`, NEVER INTO THE CHECKOUT, and one case makes that non-negotiable: `--output` with no value resolves to the literal string `true` and creates a file with that name in the CURRENT DIRECTORY. Driving it from the repository root leaves an untracked `true` behind, which is what happened while this port was being written, so `assert_is_scratch`
 re-derives the working directory before anything runs.

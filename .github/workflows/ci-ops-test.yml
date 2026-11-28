@@ -224,6 +224,7 @@ jobs:
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Login to GHCR
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -626,3 +627,52 @@ jobs:
           echo "$OUTPUT"
           echo "$OUTPUT" | jq -e '.platform == "windows"'
           echo "$OUTPUT" | jq -e '.backend == "hyperv"'
+
+  # ── On-premise lane (PLAN-rmcp-executor-hardening Design 17) ─
+  # The on-premise stack with a container machine, every registered scenario
+  # suite, then teardown. Needs only Docker, which the hosted runner has.
+  onprem-lane:
+    name: On-premise lane
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    # Checkout only. The stack and its image stay on the runner.
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          preset: readonly
+          repositories: console,renet,account,elite,homebrew-tap
+
+      - name: Checkout with Submodules
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: recursive
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-workspace
+        with:
+          build-packages: 'true'
+
+      - name: Build the on-premise server image
+        shell: bash
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
+
+      - name: "Test: on-premise lane"
+        shell: bash
+        run: npm run test:onprem

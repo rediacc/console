@@ -602,6 +602,12 @@ export interface ContainerUnpauseParams {
   container: string;
 }
 
+/** Set the repository's forensic capture level: basic, standard or full */
+export interface ForensicsLevelParams {
+  /** Capture level */
+  level: string;
+}
+
 /** Check whether the API server is ready */
 export interface KubeHealthParams {
   /** Repo/cluster image mount path */
@@ -1040,6 +1046,12 @@ export interface RepositoryValidateParams {
   timeout?: number;
 }
 
+/** Expose the repository's VS Code (code-server) at its public hostname behind the portal-token gate (JSON result) */
+export interface RepositoryVscodeExposeParams {}
+
+/** Stop and remove the repository's exposed VS Code container */
+export interface RepositoryVscodeUnexposeParams {}
+
 /** Install and configure renet */
 export interface SetupParams {
   /** Datastore size */
@@ -1105,6 +1117,7 @@ export const RENET_FUNCTIONS = [
   'container_stats',
   'container_stop',
   'container_unpause',
+  'forensics_level',
   'kube_health',
   'kube_kubeconfig',
   'machine_converge_runtime',
@@ -1160,10 +1173,12 @@ export const RENET_FUNCTIONS = [
   'repository_up',
   'repository_up_all',
   'repository_validate',
+  'repository_vscode_expose',
+  'repository_vscode_unexpose',
   'setup',
 ] as const;
 
-export const RENET_FUNCTIONS_VERSION = 'dev';
+export const RENET_FUNCTIONS_VERSION = 'v4.0.1-111-g4e896393';
 
 export type RenetFunctionName = (typeof RENET_FUNCTIONS)[number];
 
@@ -1264,6 +1279,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'datastore_validate',
   'datastore_volumes_close',
   'datastore_volumes_open',
+  'forensics_level',
   'kube_apply',
   'kube_delete',
   'kube_fork_dest_prep',
@@ -1358,6 +1374,8 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_up',
   'repository_up_all',
   'repository_validate',
+  'repository_vscode_expose',
+  'repository_vscode_unexpose',
   'setup',
 ] as const;
 
@@ -1412,6 +1430,7 @@ export type FunctionParamsMap = {
   container_stats: ContainerStatsParams;
   container_stop: ContainerStopParams;
   container_unpause: ContainerUnpauseParams;
+  forensics_level: ForensicsLevelParams;
   kube_health: KubeHealthParams;
   kube_kubeconfig: KubeKubeconfigParams;
   machine_converge_runtime: MachineConvergeRuntimeParams;
@@ -1467,6 +1486,8 @@ export type FunctionParamsMap = {
   repository_up: RepositoryUpParams;
   repository_up_all: RepositoryUpAllParams;
   repository_validate: RepositoryValidateParams;
+  repository_vscode_expose: RepositoryVscodeExposeParams;
+  repository_vscode_unexpose: RepositoryVscodeUnexposeParams;
   setup: SetupParams;
 };
 
@@ -1614,6 +1635,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'container_unpause': {
     requirements: { machine: true, team: true, repository: true, network_id: true },
+  },
+  'forensics_level': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'kube_health': {
     requirements: { machine: true, team: true },
@@ -1778,6 +1802,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
     requirements: { machine: true },
   },
   'repository_validate': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_vscode_expose': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_vscode_unexpose': {
     requirements: { machine: true, team: true, repository: true },
   },
   'setup': {
@@ -3228,6 +3258,21 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'forensics_level': {
+    name: 'forensics_level',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      level: {
+        type: 'string',
+        required: true,
+        help: 'Capture level',
+        placeholder: 'standard',
+        pattern: '^(basic|standard|full)$',
+      },
+    },
+  },
   'kube_health': {
     name: 'kube_health',
     category: 'kube',
@@ -4244,6 +4289,22 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       },
     },
   },
+  'repository_vscode_expose': {
+    name: 'repository_vscode_expose',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_vscode_unexpose': {
+    name: 'repository_vscode_unexpose',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
   'setup': {
     name: 'setup',
     category: 'machine',
@@ -4357,6 +4418,7 @@ export const queueFunctions: QueueFunctionsType = {
   container_stats: (params) => ({ functionName: 'container_stats', params }),
   container_stop: (params) => ({ functionName: 'container_stop', params }),
   container_unpause: (params) => ({ functionName: 'container_unpause', params }),
+  forensics_level: (params) => ({ functionName: 'forensics_level', params }),
   kube_health: (params) => ({ functionName: 'kube_health', params }),
   kube_kubeconfig: (params) => ({ functionName: 'kube_kubeconfig', params }),
   machine_converge_runtime: (params) => ({ functionName: 'machine_converge_runtime', params }),
@@ -4412,6 +4474,8 @@ export const queueFunctions: QueueFunctionsType = {
   repository_up: (params) => ({ functionName: 'repository_up', params }),
   repository_up_all: (params) => ({ functionName: 'repository_up_all', params }),
   repository_validate: (params) => ({ functionName: 'repository_validate', params }),
+  repository_vscode_expose: (params) => ({ functionName: 'repository_vscode_expose', params }),
+  repository_vscode_unexpose: (params) => ({ functionName: 'repository_vscode_unexpose', params }),
   setup: (params) => ({ functionName: 'setup', params }),
 };
 

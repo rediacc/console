@@ -40,7 +40,7 @@ import { licenceMint } from '../bundle/offline.js';
 import { ServerInstall } from '../install.js';
 import { requestFile, serverStateDir } from '../state.js';
 import type { ServerDeps } from '../types.js';
-import { BOX_KEY, certFor, type Fake, type FakeOptions, makeFake } from './fakes.js';
+import { BOX_KEY, certFor, type Fake, type FakeOptions, makeFake, signerOf } from './fakes.js';
 
 const DOMAIN = 'acme.example.com';
 const BUNDLE = '/bundles/acme';
@@ -87,7 +87,11 @@ async function offlineFake(
 }
 
 const install = (fake: Fake, opts: Record<string, unknown> = {}) =>
-  new ServerInstall({ ...BASE, ...opts }, fake.deps, NO_PROMPTS).run();
+  new ServerInstall(
+    { ...BASE, signer: signerOf(fake.files, BUNDLE), ...opts },
+    fake.deps,
+    NO_PROMPTS
+  ).run();
 
 const boxCert = () => Buffer.from(certFor(BOX_KEY), 'base64').toString('utf-8');
 
@@ -208,8 +212,10 @@ describe('what an offline install refuses', () => {
     expect(fake.calls).toEqual([]);
   };
 
-  it('--licence free', () => refused({ licence: 'free' }, /offline\.noFree/));
+  it('--licence free', () => refused({ licence: 'free' }, /errors\.licenceFreeRefused/));
   it('--offline without --bundle', () => refused({ bundle: undefined }, /offline\.needsBundle/));
+  it('--bundle without --signer', () => refused({ signer: undefined }, /offline\.needsSigner/));
+  it('a wrong --signer fingerprint', () => refused({ signer: 'c'.repeat(64) }, /signerMismatch/));
   it('a Let us Encrypt or Cloudflare TLS method', () =>
     refused({ tls: 'letsencrypt' }, /offline\.tlsByoOnly/));
   it('--cf-token', () => refused({ cfToken: 'x' }, /offline\.noCfToken/));

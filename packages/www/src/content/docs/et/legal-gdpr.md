@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: et
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Isikuandmete kaitse üldmäärus (GDPR) on Euroopa Liidu andmekaitseõigus, mis jõustus 2018. aasta mais. See reguleerib, kuidas organisatsioonid koguvad, töötlevad ja salvestavad EL-i üksikisikute isikuandmeid.
@@ -27,7 +27,7 @@ Alljärgnev tabel kaardistab konkreetsed GDPR-i artiklid Rediacc'i tehniliste v�
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Volitatud töötleja | Kolmanda osapoole andmetöötluse kohustused | Ise majutatud: Rediacc töötab teie infrastruktuuril. Andmed ei lahku teie masinast hargi, klooni ega varukoopia operatsioonide ajal. Ükski SaaS-komponent ei töötle isikuandmeid. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Töötlemistegevuste register | Pidada töötlemistegevuste arvestust | Auditlogi jälgib üle 70 sündmusetüübi: autentimine, API-žetoonid, konfiguratsioonihoidla toimingud, litsentsid ja CLI-masina toimingud (hoidla elutsükkel, varukoopia, sünkroonimine, terminal). Eksport haldusarmatuurlaua või portaali tegevuslehe kaudu (JSON-eksport saadaval). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Töötlemise turvalisus | Asjakohased tehnilised meetmed | LUKS2 AES-256 krüptimine puhkeolekus, võrgueraldus iptablesi ja eraldatud Docker-deemonite kaudu, loopback-IP-alamvõrgud (/26) hoidla kohta. Konfiguratsioonihoidla kasutab kolmekihilist krüptimist: ajapõhised SDK-võtmed, jagatud võtme CEK-tuletamine (pääsuvõti ja serveri saladus) ning organisatsiooni paroolilause krüptimine. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Rikkumisest teatamine | 72-tunnine teavitamine koos kohtuekspertiisi rajaga | Auditlogid pakuvad kõigi toimingute kohtuekspertiisi rada. Ise majutatud arhitektuur piirab kahjustuse ulatuse üksikute hoidlatega. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Rikkumisest teatamine | 72-tunnine teavitamine järelevalveasutusele | Etapiviisiline intsidendiaruanne sisaldab väljakaarti, mis seob iga aruandevälja Art. 33(3) sisuloendiga, ja intsidendikellad näitavad teadlikuks saamisest loetud 72 tundi. Võrgu voo kirjed (kus jäädvustamine on sisse lülitatud, tasulised plaanid) ja auditilogi annavad tõendeid toimunu kohta; voo kirjed näitavad mahtu ja sihtkohta, mitte sisu. Otsus, kas rikkumisest tuleb teatada ja mida esitada, jääb vastutava töötleja hinnata. Ise majutatud arhitektuur piirab kahjustuse ulatuse üksikute hoidlatega. |
 
 ## Andmete elukoht
 

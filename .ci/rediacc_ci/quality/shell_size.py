@@ -1,6 +1,6 @@
 """A SHELL FILE CAN GROW UNTIL IT KILLS THE LINTER, and nothing noticed.
 
-Ported from `.ci/scripts/quality/check-shell-size.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under `.ci/shadow/` is what retired the twin.
+Ported from `.ci/scripts/quality/check-shell-size.sh`, retired in W7 P5; see `rediacc_ci.quality.__init__`; the committed differential ledger under the ledger directory (deleted in commit:936280cd35) is what retired the twin.
 
 -----------------------------------------------------------------------------
 THE TWIN'S HEADER, CARRIED ACROSS. The measurements below are the original's.
@@ -31,13 +31,13 @@ PORT NOTES.
 
 THE COLOURS ARE UNCONDITIONAL IN THE TWIN, and that is worth stating because every other gate in this batch tests `[ -t 1 ]` first. `check-shell-size.sh`
 assigns `RED=$'\\033[0;31m'` with no tty test at all, so it writes escape bytes
-into a CI log and into a pipe. That is arguably a defect; it is NOT fixed here, because fixing it would change the bytes and the port's job is to keep the verdict. `scripts/lib/shadow-gate.ts` strips ANSI before comparing, so the two sides agree either way, and a reader diffing the raw streams sees the same file.
+into a CI log and into a pipe. That is arguably a defect; it is NOT fixed here, because fixing it would change the bytes and the port's job is to keep the verdict. the shadow gate (commit:bf054adcd4) strips ANSI before comparing, so the two sides agree either way, and a reader diffing the raw streams sees the same file.
 
 EVERYTHING GOES TO STDOUT. `fail()` in the twin is `echo "  ${RED}FAIL${NC} $*"`
 with no `>&2`, and so are the offender list, the two advice lines and the final
 verdict. This gate never writes to stderr at all. `rediacc_ci.log` would put messages on stderr, which is the house rule and the WRONG answer here, so nothing in this module uses it.
 
-`FAIL` IS FOLLOWED BY ONE SPACE, NOT TWO, and that has a consequence the next reader should not have to rediscover: `shadow-gate.ts`'s marker table carries `/^FAIL\\s\\s+/` (the `gate-controls.sh` tally shape), so these lines are NOT recognised as findings by default and the differential for this pair is recorded
+`FAIL` IS FOLLOWED BY ONE SPACE, NOT TWO, and that has a consequence the next reader should not have to rediscover: the shadow gate (commit:bf054adcd4)'s marker table carries `/^FAIL\\s\\s+/` (the `gate-controls.sh` tally shape), so these lines are NOT recognised as findings by default and the differential for this pair is recorded
 with an explicit `--finding-re`. The alternative -- widening the marker to one
 space -- would reclassify unrelated prose across the whole estate.
 
@@ -55,6 +55,15 @@ the result through `sort -u`. Under `LC_ALL=C` -- which the differential harness
 pins and CI sets -- that sort is byte order, which is what Python's own `sorted` on `str` gives for these ASCII paths.
 
 `gen_lines` IS NOT `seq`. The twin says why: "ubuntu-slim does not ship it, and check-ci-compat flags it. Same reason mapfile is avoided below." Neither constraint applies to a Python range, and both are recorded here because the next person to touch the bash will need them.
+
+---- gate ----
+step: Shell file size
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -408,4 +417,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_shell_size.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

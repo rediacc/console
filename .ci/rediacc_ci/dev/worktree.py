@@ -114,6 +114,8 @@ SUBCOMMAND_HELP = {
     "landing": landing.LANDING_HELP + "\n" + landing_promote.PROMOTE_HELP,
     "leases": worktree_lease.LEASES_HELP,
     "gc": worktree_lease.GC_HELP,
+    "hold": worktree_lease.HOLD_HELP,
+    "unhold": worktree_lease.UNHOLD_HELP,
     "lease-hook": "The WorktreeCreate hook: reads the harness JSON on stdin, prints the tree path.\n",
     "gc-hook": "The WorktreeRemove hook: reads the harness JSON on stdin, exits non-zero on a kept tree.\n",
 }
@@ -129,10 +131,12 @@ Commands:
   prune             Cleanup of worktrees with merged PRs
   lease [options]   Make one detached tree for a writer under .claude/worktrees
   pin               Move this lease tree's pin to its HEAD (the post-commit hook runs it)
-  land <id>         Print the commands that land a lease's commits, submodules first (read-only)
+  land <id>         Print the commands that land a lease's commits, submodules first; --run executes them
   landing [--promote]  Make or reuse the landing tree; --promote moves the development branch in
   leases [--json]   List every lease with owner, base, dirty count and unlanded commits (read-only)
   gc [options]      List lease trees and pins as DELETE or KEEP; --write deletes what passes
+  hold <id> --item <worklist id> --reason <text>  Park a finished lease until that open item's work exists
+  unhold <id>       Remove a lease's hold
 
 Every command accepts --help.
 
@@ -902,6 +906,8 @@ COMMANDS = {
     "landing": landing.cmd_landing,
     "leases": worktree_lease.cmd_leases,
     "gc": worktree_lease.cmd_gc,
+    "hold": worktree_lease.cmd_hold,
+    "unhold": worktree_lease.cmd_unhold,
     "lease-hook": worktree_lease.cmd_lease_hook,
     "gc-hook": worktree_lease.cmd_gc_hook,
 }

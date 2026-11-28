@@ -1,7 +1,7 @@
 """No test writes the project `CLAUDE_PROJECT_DIR` names, whatever the launching environment says (worklist #04a74a81).
 
 THE DEFECT. Claude Code exports `CLAUDE_PROJECT_DIR`, and `wl_core.project_start` takes it as the project root ahead of every other rung. `wlfix.Fixture.python` pinned its fixture root with `setdefault` on an environment that still carried the inherited value, so a suite launched from a live session sent `--queue-set`, `--hint-propose` and the retro verbs to the REAL checkout. Measured
-2026-10-09 in a scratch clone: `agent/plans/QUEUE.md`'s settings block came back as `turbo: on -- operator test` / `batch_size: 4`, two `agent/ledgers/*.jsonl` gained rows, and 201 hook tests failed. Unset, the same run was clean, which is why CI never saw it.
+2026-10-09 in a scratch clone: `agent/plans/QUEUE.md`'s settings block came back rewritten with a test fixture's switch values, two `agent/ledgers/*.jsonl` gained rows, and 201 hook tests failed. Unset, the same run was clean, which is why CI never saw it.
 
 THE CONTROL IS A NESTED RUN, because the outer run cannot be its own witness: the root conftest drops the variable before this module is imported, so in-process it is absent whether or not the scrub works. The child pytest is launched WITH the variable aimed at a sentinel tree (a git repo holding copies of the files the leak rewrote) and runs (a) tests measured writing through the leak and (b) the probe
 below, which only the child can make non-vacuous. The sentinel must come back byte-identical and the child must pass.
@@ -172,7 +172,7 @@ def _root_conftest_harness_env() -> tuple[str, ...]:
 
 
 def test_the_conftest_pop_reaches_no_reader_outside_the_hook_tree():
-    """Review finding 6351de94.4: the root conftest pops `HARNESS_ROOT_ENV` for EVERY test in the repository, `.ci` gate tests included, so no module outside `.claude/` may read it from the session environment. The python env registry (`.ci/config/python-env-registry.json`, kept complete by `check:ci-python-env-registry`) is the census of every read. Control first: a planted `.ci` reader is named."""
+    """Review finding 6351de94.4: the root conftest pops `HARNESS_ROOT_ENV` for EVERY test in the repository, `.ci` gate tests included, so no module outside `.claude/` may read it from the session environment. The `python_reads` section of `.ci/config/env-manifest.json`, kept complete by `check:ci-env-registry`, is the census of every read. Control first: a planted `.ci` reader is named."""
     planted = {
         "modules": {
             ".ci/rediacc_ci/x.py": ["CLAUDE_PROJECT_DIR"],
@@ -181,8 +181,8 @@ def test_the_conftest_pop_reaches_no_reader_outside_the_hook_tree():
     }
     assert harness_root_readers(planted) == [".ci/rediacc_ci/x.py", ".claude/hooks/y.py"]
     registry = json.loads(
-        (REAL_ROOT / ".ci" / "config" / "python-env-registry.json").read_text(encoding="utf-8")
-    )
+        (REAL_ROOT / ".ci" / "config" / "env-manifest.json").read_text(encoding="utf-8")
+    )["python_reads"]
     readers = harness_root_readers(registry)
     assert readers, (
         "CONTROL: the registry records no reader at all, so it is not the census this test reads"

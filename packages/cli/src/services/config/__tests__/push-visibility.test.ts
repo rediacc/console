@@ -22,17 +22,13 @@ function overTheWire(config: RdcConfig): RdcConfig {
 }
 
 describe('isNoopPush: empty objects (#d00f4c1e)', () => {
+  // `/access` is the whole-stored subtree these cases use; `/policy` left the pushed document (a
+  // remote config refuses it, PLAN-rmcp-policy-record Design 2), so it is no longer one.
   it('the wire carries an empty object inside a whole-stored subtree', () => {
-    const policy = { rules: [{ match: {} }] };
+    const access = { keys: { probe: { publicKey: 'ssh-ed25519 AAAA', machines: {} } } };
     expect(
-      (overTheWire(cfg({ policy })) as unknown as Record<string, unknown>).policy
-    ).toStrictEqual(policy);
-  });
-
-  it('an edit that only adds {} inside /policy is a push', () => {
-    const base = cfg({ policy: { rules: [{ effect: 'deny' }] } });
-    const merged = cfg({ policy: { rules: [{ effect: 'deny', match: {} }] } });
-    expect(isNoopPush(merged, base)).toBe(false);
+      (overTheWire(cfg({ access })) as unknown as Record<string, unknown>).access
+    ).toStrictEqual(access);
   });
 
   it('an edit that only adds {} inside /access is a push (the binding 08acee9bb routed around)', () => {
@@ -46,12 +42,12 @@ describe('isNoopPush: empty objects (#d00f4c1e)', () => {
   });
 
   it('a whole-stored subtree that becomes {} where it was absent is a push', () => {
-    expect(isNoopPush(cfg({ policy: {} }), cfg({}))).toBe(false);
+    expect(isNoopPush(cfg({ access: {} }), cfg({}))).toBe(false);
   });
 
   it('the same whole-stored value on both sides is still a no-op', () => {
-    const policy = { rules: [{ match: {} }] };
-    expect(isNoopPush(cfg({ policy }), cfg({ policy: structuredClone(policy) }))).toBe(true);
+    const access = { keys: { probe: { publicKey: 'ssh-ed25519 AAAA', machines: {} } } };
+    expect(isNoopPush(cfg({ access }), cfg({ access: structuredClone(access) }))).toBe(true);
   });
 
   it('an empty object outside any whole-stored subtree is still dropped', () => {

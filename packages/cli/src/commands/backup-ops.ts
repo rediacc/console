@@ -9,7 +9,8 @@ import {
 } from '../services/backup/backup-store-pick.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
-import { setExitCode, writeStdout } from '../services/core/request-context.js';
+import { writeProgress } from '../services/core/progress-output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { str } from '../services/jobs/steps-support.js';
@@ -356,7 +357,9 @@ async function showBackupStatus(
   }
   outputService.info(`\nRecent logs (${strategyFilter}):`);
   const lines = (journal.result.stdout ?? '').trim();
-  writeStdout(`${lines || '(no logs)'}\n`);
+  // The journal is free-form log text, not part of the status document this command returns, so under
+  // -o json|yaml|csv it stays on stderr and stdout carries only the machine-readable document.
+  writeProgress(`${lines || '(no logs)'}\n`);
 }
 
 bindStepHandler('seedStrategyRetention', async ({ machine, params }) => {
@@ -382,11 +385,13 @@ bindStepHandler('renderBackupStatus', async ({ machine, output, params }) => {
 export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('schedule')
+    .summary(t('commands.backup.schedule.descriptionShort'))
     .description(t('commands.backup.schedule.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--dry-run', t('commands.backup.schedule.optionDryRun'))
     .option('--force', t('commands.backup.schedule.optionForce'))
     .option('--reset-failed', t('commands.backup.schedule.optionResetFailed'))
+    .option('--adopt-origin', t('commands.backup.schedule.optionAdoptOrigin'))
     .option('--debug', t('options.debug'))
     .action(async (options) => {
       try {
@@ -407,6 +412,7 @@ export function registerBackupOpsCommands(backup: Command): void {
           dryRun: options.dryRun,
           force: options.force,
           resetFailed: options.resetFailed,
+          adoptOrigin: options.adoptOrigin,
           steps: options.dryRun ? [] : steps,
         });
         if (result === 'applied' || result === 'unchanged') {
@@ -426,6 +432,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('run')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.run.descriptionShort'))
     .description(t('commands.backup.run.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
@@ -440,6 +447,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('status')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.status.descriptionShort'))
     .description(t('commands.backup.status.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))
@@ -454,6 +462,7 @@ export function registerBackupOpsCommands(backup: Command): void {
   backup
     .command('cancel')
     .argument('[strategy]', t('options.strategyName'))
+    .summary(t('commands.backup.cancel.descriptionShort'))
     .description(t('commands.backup.cancel.description'))
     .requiredOption('-m, --machine <name>', t('options.machine'))
     .option('--debug', t('options.debug'))

@@ -11,6 +11,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.housekeeping import cf_leftovers as cfl
 from rediacc_ci.housekeeping import cf_retire as cr
+from rediacc_ci.well_known import PUBLIC_DATA_BUCKET
 
 ROOT = paths.repo_root()
 ASKED = "ASKED:2026-11-13T10:07Z"
@@ -116,7 +117,7 @@ class FakeCf:
         self.buckets = {
             ("rediacc-configs-eu", "eu"): ["a", "b/c"],
             ("rediacc-backups-probe", "eu"): [],
-            ("rediacc-public-data", "default"): ["big.tar"],
+            (PUBLIC_DATA_BUCKET, "default"): ["big.tar"],
             ("configs-proof-loss-eu", "eu"): [],
             ("configs-eu", "eu"): ["k"],
         }
@@ -196,16 +197,16 @@ def test_the_retired_set_reads_the_names_table_terms_prefix_form_and_l11(tree):
 
 def test_rediacc_public_data_and_proof_loss_objects_are_kept(tree):
     rs = cr.RetiredSet.load(tree)
-    assert rs.matched("rediacc-public-data"), (
+    assert rs.matched(PUBLIC_DATA_BUCKET), (
         "the fixture declares public-data, so only the keep list holds it back"
     )
-    assert rs.why("rediacc-public-data") is None
+    assert rs.why(PUBLIC_DATA_BUCKET) is None
     assert rs.why("rediacc-configs-proof-loss-eu") is None
     acts, kept = cr.build_plan(tree, "acct", FakeCf(), rs)
     names = {a.name for a in acts}
-    assert "rediacc-public-data" not in names
+    assert PUBLIC_DATA_BUCKET not in names
     assert "configs-proof-loss-eu" not in names
-    assert any("rediacc-public-data" in k for k in kept)
+    assert any(PUBLIC_DATA_BUCKET in k for k in kept)
 
 
 def test_dry_run_issues_no_mutating_call(tree, capsys):
@@ -261,8 +262,7 @@ def test_a_name_outside_the_retired_set_is_refused(tree, capsys):
     cf = FakeCf()
     assert run(tree, cf, "delete", "--write", "--no-archive", ASKED, "--only", "account-eu") == 1
     assert (
-        run(tree, cf, "delete", "--write", "--no-archive", ASKED, "--only", "rediacc-public-data")
-        == 1
+        run(tree, cf, "delete", "--write", "--no-archive", ASKED, "--only", PUBLIC_DATA_BUCKET) == 1
     )
     assert cf.deletes == []
     assert "outside the retired set" in capsys.readouterr().err
@@ -315,9 +315,7 @@ def test_order_is_unbind_workers_containers_queues_d1_r2_pages(tree):
     bucket = paths_.index("/accounts/acct/r2/buckets/rediacc-configs-eu")
     assert paths_.index("/accounts/acct/r2/buckets/rediacc-configs-eu/objects/b%2Fc") < bucket
     assert cf.buckets[("rediacc-configs-eu", "eu")] == []
-    assert not any(
-        "rediacc-public-data" in p or p.rsplit("/", 1)[-1] == "configs-eu" for p in paths_
-    )
+    assert not any(PUBLIC_DATA_BUCKET in p or p.rsplit("/", 1)[-1] == "configs-eu" for p in paths_)
     assert [p for p in paths_ if "/d1/" in p] == ["/accounts/acct/d1/database/u-eu"]
     records = list((tree / cr.RECORD_DIR).glob("*-delete.jsonl"))
     assert len(records) == 1
@@ -345,7 +343,7 @@ def test_the_live_plan_names_the_rename_objects():
         "backups-eu",
         "releases",
         "media",
-        "rediacc-public-data",
+        PUBLIC_DATA_BUCKET,
         "backups-proof-loss-eu",
         "rediacc-account-server",
         "rediacc-proxy-executor",
@@ -472,7 +470,7 @@ def test_archive_d1_is_verified_only_for_a_clean_export_holding_a_table(monkeypa
 
 class _Obj:
     def __init__(self, rel, size, etag=""):
-        self.rel, self.size, self.etag = rel, size, etag
+        self.rel, self.size, self.etag, self.modified = rel, size, etag, 0
 
 
 def _r2(monkeypatch, objs, remote: dict, tmp_path):
@@ -513,17 +511,68 @@ def test_archive_r2_dir_checks_size_etag_and_never_verifies_an_empty_bucket(monk
     assert empty["verified"] is False
 
 
-def test_archive_r2_bucket_needs_a_clean_copy_and_no_differences(monkeypatch):
+def _bucket(monkeypatch, src, dst, diffs=()):
+    copied = []
+
     class Transfers:
-        def __init__(self, *_a, **_k):
-            pass
+        def __init__(self, *_a, bucket="", **_k):
+            self.bucket = bucket
 
         def list_tree(self, _prefix):
-            return [_Obj("a", 1)]
+            return src if self.bucket == "b" else dst
+
+        def copy_all(self, pairs):
+            copied.extend(pairs)
 
     monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
     monkeypatch.setattr(cr.r2_promote, "Transfers", Transfers)
-    for rc, diffs, verified in ((0, [], True), (0, ["a"], False), (2, [], False)):
-        monkeypatch.setattr(cr.rbc, "copy", lambda *_a, rc=rc: rc)
-        monkeypatch.setattr(cr.rbc, "deep_differences", lambda *_a, diffs=diffs: diffs)
-        assert cr.archive_r2_bucket("b", None, "dst")["verified"] is verified
+    monkeypatch.setattr(cr.rbc, "deep_differences", lambda *_a: list(diffs))
+    return cr.archive_r2_bucket("b", None, "dst"), copied
+
+
+def test_archive_r2_bucket_ignores_destination_only_keys(monkeypatch):
+    both = [_Obj("a", 1, "x" * 32), _Obj("b", 2, "y" * 32)]
+    res, copied = _bucket(monkeypatch, both, [*both, _Obj("extra", 9), _Obj("more", 3)])
+    assert res["verified"] is True
+    assert res["destination_only_keys"] == 2
+    assert res["mismatches"] == []
+    assert copied == []
+
+
+def test_archive_r2_bucket_fails_on_missing_or_mismatched_source_keys(monkeypatch):
+    src = [_Obj("a", 1, "x" * 32), _Obj("b", 2, "y" * 32)]
+    res, copied = _bucket(monkeypatch, src, [_Obj("a", 1, "x" * 32)])
+    assert res["verified"] is False
+    assert res["mismatches"] == ["missing in destination: b"]
+    assert [k for k, _ in copied] == ["b"]
+    res, _ = _bucket(
+        monkeypatch, src, [_Obj("a", 1, "x" * 32), _Obj("b", 3, "y" * 32), _Obj("z", 1)]
+    )
+    assert res["verified"] is False
+    assert res["mismatches"] == ["size differs: b (source 2, destination 3)"]
+    res, _ = _bucket(monkeypatch, src, [_Obj("a", 1, "q" * 32), _Obj("b", 2, "y" * 32)])
+    assert res["verified"] is False
+    assert "etag differs: a" in res["mismatches"][0]
+    res, _ = _bucket(monkeypatch, src, src, diffs=["sha256 differs: a"])
+    assert res["verified"] is False
+    res, _ = _bucket(monkeypatch, [], [_Obj("a", 1)])
+    assert res["verified"] is False
+
+
+def test_archive_r2_bucket_refuses_the_same_bucket_as_source_and_destination(monkeypatch):
+    """d8b4646d.1: copying a bucket onto itself would verify trivially."""
+    monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
+    with pytest.raises(cr.RetireError, match="same bucket: b"):
+        cr.archive_r2_bucket("b", None, "b")
+
+
+def test_superset_problems_compares_etags_only_when_both_are_single_part():
+    """d8b4646d.3: a multipart ETag on either side skips the ETag comparison (the sha256 pass judges those keys); two single-part ETags that differ are named."""
+    src = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "abc-2")]
+    same_size = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "def-3")]
+    assert cr.superset_problems(src, same_size) == ([], 0)
+    one_sided = [_Obj("a", 1, "x" * 32), _Obj("b", 1, "y" * 32)]
+    assert cr.superset_problems(src, one_sided) == ([], 0)
+    problems, _extras = cr.superset_problems(src, [_Obj("a", 1, "q" * 32), _Obj("b", 1, "abc-2")])
+    assert len(problems) == 1
+    assert problems[0].startswith("etag differs: a")

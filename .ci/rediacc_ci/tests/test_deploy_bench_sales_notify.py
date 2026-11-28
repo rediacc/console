@@ -28,6 +28,7 @@ def _seed(monkeypatch: pytest.MonkeyPatch) -> None:
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
         "ACCOUNT_AE_READ_TOKEN",
+        "AI_GATEWAY_LOGS_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
         "ACCOUNT_BACKUP_STORE_KEK",
     ):
@@ -41,8 +42,6 @@ def _seed(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
-    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "")
-    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
 
 
 def test_the_profile_binds_sales_notify_email_and_the_document_carries_it(

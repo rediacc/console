@@ -194,6 +194,7 @@ def _loads(ctx):
     try:
         ctx.registry()
     except Exception:
+        # Safe to drop: False sends the pointer to `pointer_problem`, whose own registry call raises the same failure and returns it as the dead pointer's reason.
         return False
     return True
 
@@ -227,8 +228,12 @@ def enforcer_state(root, pointer, ctx, _trail=frozenset()):
         # The guard's own test rule, the one `guard:` is judged by: a sibling test-<stem>.py that names it, or both hook-case directions. A `file:` pointer reaches here without it, so it is asked again; a mention in some other test proves nothing.
         try:
             tested = not ctx.registry()[1].guard_liveness(stem)
-        except Exception:
-            tested = False
+        except Exception as exc:
+            return (
+                True,
+                False,
+                "guard %s test state unreadable (%s: %s)" % (stem, type(exc).__name__, exc),
+            )
         return True, tested, "guard %s %s" % (stem, "has a test" if tested else "has no test")
     if kind == "hook":
         suite = ctx.trapguard_text()
@@ -249,8 +254,12 @@ def enforcer_state(root, pointer, ctx, _trail=frozenset()):
             import wl_reggate as RG
 
             tested = bool(RG.gate_reachable(PR._package_scripts(root), token, root))
-        except Exception:
-            tested = False
+        except Exception as exc:
+            return (
+                True,
+                False,
+                "gate %s reachability unreadable (%s: %s)" % (token, type(exc).__name__, exc),
+            )
         state = "runs in npm run ci" if tested else "is not reachable from npm run ci"
         return True, tested, "gate %s %s" % (token, state)
     if kind == "test":

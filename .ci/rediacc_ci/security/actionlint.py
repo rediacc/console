@@ -3,7 +3,7 @@
 
 W7P6 wave 28. The bash twin stays the LIVE registered gate ("Workflow lint (actionlint)", lane quality-code); this module is its VERIFIED-EQUIVALENT ALTERNATIVE, proved byte-for-byte on both streams by
 `.ci/rediacc_ci/tests/test_security_actionlint.py` and by the K=5 shadow ledger
-`.ci/shadow/w7p6-actionlint.observations.jsonl`. Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
+the ledger (deleted in commit:936280cd35). Nothing is repointed at this file. Cutover is a separate, later, driver-only step.
 
 WHAT IT DOES. Acquires actionlint at the pin (a PATH binary at the exact pinned version wins; otherwise a checksum-verified release tarball is fetched into a cache directory whose rungs are NOT the ones the twin's line reads as; see `cache_dir`), enumerates every workflow file under `.github/workflows/` PLUS the vendorable templates under `.ci/*/workflow/`, refuses an empty corpus,
 and runs `actionlint -no-color` over the lot.
@@ -434,4 +434,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("actionlint.py", sys.argv[1:])
     raise SystemExit(main(sys.argv[1:]))

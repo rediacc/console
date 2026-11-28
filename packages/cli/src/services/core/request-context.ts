@@ -48,6 +48,8 @@ export interface OutputState {
   warnings: string[];
   operationDurationMs: number | null;
   timelineRendered: boolean;
+  /** The failure a command recorded with outputService.fail(): its exit code and what failed. */
+  failure: { exitCode: number; message: string } | null;
 }
 
 export function createOutputState(): OutputState {
@@ -59,6 +61,7 @@ export function createOutputState(): OutputState {
     warnings: [],
     operationDurationMs: null,
     timelineRendered: false,
+    failure: null,
   };
 }
 
@@ -112,22 +115,80 @@ export interface CommandRequestContext {
 }
 
 /**
- * A config held for one request. Writes land here, in memory, and are never
- * persisted: the container has no config file to write, and the remote store
- * is not written back through the executor.
+ * Where a request-scoped config's writes are saved: the config store the
+ * executor pulled the config from (services/serve/config-writeback.ts).
+ *
+ * `write` applies `edit` to the newest copy of the stored config, pushes the
+ * result with compare-and-swap, replays `edit` on a fresh pull after a version
+ * conflict, and resolves to the document the store now holds (its `version` the
+ * store's). It throws when the change could not be saved, so a command fails
+ * before the host job its write precedes.
+ */
+export interface ConfigWriteback {
+  write(edit: (config: RdcConfig) => RdcConfig): Promise<RdcConfig>;
+}
+
+/**
+ * A config held for one request.
+ *
+ * With a writeback (the container tier's session config), every write that
+ * changes the stored document is pushed through it: a spec write and a state
+ * write alike, since `state` syncs too and a network ID recorded only in memory
+ * would be lost with the request. A cache write (`updateCache`) stays here.
+ *
+ * Without one, a state write applies here, in memory, for the rest of the
+ * request, and a version-bumping (spec) write is refused with
+ * ConfigWriteUnavailableError (services/core/config-write-errors.ts): a change
+ * that lives only in this request would vanish with it while the host side
+ * effect it registered (a volume, a fork) stayed. The write precedes the
+ * command's host job, so the refusal ends the command before any machine is
+ * touched (agent/plans/PLAN-rmcp-writeback.md D6).
  */
 export interface RequestConfigScope {
   /** The current plaintext config. Replaced (not mutated) by each write. */
   config: RdcConfig;
   /** configService's memoized resource view for THIS config, per request. */
   resourceState?: unknown;
-  /** Version-bumping (spec) writes the command made; they die with the request. */
-  specWrites: number;
+  /** Where this config's writes are saved; absent when the config has no store to push to. */
+  writeback?: ConfigWriteback;
+  /**
+   * The error code of a config write this scope refused or failed to save
+   * (CONFIG_WRITE_UNAVAILABLE, CONFIG_CONFLICT, CONFIG_WRITE_FAILED). The command's
+   * own error handling flattens the thrown error into an exit, so the dispatch
+   * reads the code from here to put it on the served result.
+   */
+  writeFailure?: string;
+  /**
+   * A private copy of the config as last read or written, taken when the scope is
+   * built and after every write. A whole-document save is replayed as the edit
+   * between this copy and the document saved, so a caller that mutated `config`
+   * in place still has its edit seen.
+   */
+  readCopy: RdcConfig;
 }
 
-/** A fresh request-scoped config holder around `config`. */
+/**
+ * The writeback of each config a loader handed out, keyed by the very object.
+ *
+ * The container tier's loader binds the config it returns for a session to that
+ * session's writeback (bindConfigWriteback), and every request scope built
+ * around that object picks it up here: the command dispatch, the job routes and
+ * the policy check all build their scope from the loader's config, so none of
+ * them can run a write-capable command against a scope that silently drops it.
+ * A WeakMap, so a config nobody references any more releases its writeback.
+ */
+const writebacks = new WeakMap<RdcConfig, ConfigWriteback>();
+
+/** Make every request scope built around `config` save its writes through `writeback`. */
+export function bindConfigWriteback(config: RdcConfig, writeback: ConfigWriteback): void {
+  writebacks.set(config, writeback);
+}
+
+/** A fresh request-scoped config holder around `config`, with the writeback bound to it, if any. */
 export function createRequestConfigScope(config: RdcConfig): RequestConfigScope {
-  return { config, specWrites: 0 };
+  const writeback = writebacks.get(config);
+  const readCopy = structuredClone(config);
+  return writeback ? { config, writeback, readCopy } : { config, readCopy };
 }
 
 /**
@@ -266,6 +327,33 @@ export function setExitCode(code: number): void {
   const context = storage.getStore();
   if (context) context.exitCode = code;
   else process.exitCode = code;
+}
+
+/**
+ * The nonzero exit status the running command has set so far (setExitCode), or
+ * undefined while it would still exit 0. Inside a dispatch only the request's own
+ * code counts: the executor's process.exitCode belongs to no request.
+ */
+export function currentExitCode(): number | undefined {
+  const context = storage.getStore();
+  const raw = context ? context.exitCode : process.exitCode;
+  const code = Number(raw ?? 0);
+  if (code === 0) return undefined;
+  // A status that is nonzero but not an integer (fractional, NaN) is still a failure; it reports as the generic 1, never as success.
+  return Number.isInteger(code) ? code : 1;
+}
+
+/** The result a finished command's telemetry span records, following the exit status it set (currentExitCode). */
+export function commandOutcome(duration: number): {
+  success: boolean;
+  exitCode: number;
+  error?: string;
+  duration: number;
+} {
+  const exitCode = currentExitCode() ?? 0;
+  return exitCode === 0
+    ? { success: true, exitCode: 0, duration }
+    : { success: false, exitCode, error: `The command exited with code ${exitCode}.`, duration };
 }
 
 /**

@@ -5,12 +5,15 @@ import type { OpsBackend } from '../../services/executor/ops-executor.js';
 import { opsExecutorService } from '../../services/executor/ops-executor.js';
 import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
+import { OPS_BACKEND_CHOICES } from './backends.js';
 
 interface VMInfo {
   id: number;
   name: string;
   ip: string;
   status: string;
+  ssh_port?: number;
+  role?: string;
 }
 
 interface OpsStatusResponse {
@@ -20,8 +23,11 @@ interface OpsStatusResponse {
 export function registerOpsStatusCommand(ops: Command, program: Command): void {
   ops
     .command('status')
+    .summary(t('commands.ops.status.descriptionShort'))
     .description(t('commands.ops.status.description'))
-    .addOption(new Option('--backend <backend>', t('options.opsBackend')).choices(['kvm', 'qemu']))
+    .addOption(
+      new Option('--backend <backend>', t('options.opsBackend')).choices(OPS_BACKEND_CHOICES)
+    )
     .action(async (options: { backend?: string }) => {
       try {
         const backend = options.backend ? (options.backend as OpsBackend) : undefined;

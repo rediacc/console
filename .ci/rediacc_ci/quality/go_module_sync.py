@@ -59,6 +59,13 @@ THE `go mod tidy -diff` OUTPUT IS CAPTURED MERGED, `2>&1`, and that is the twin'
 `.ci/scripts/lib/emit-advisory.sh:22-52`), so this module reaches for `subprocess` directly rather than quietly weakening the shared helper.
 
 `head -20` IS A TRUNCATION, NOT A SUMMARY, and it is preserved: a module with 40 lines of diff shows 20 of them on both sides. Dropping the truncation would make the port noisier than its twin on exactly the tree where the gate fires.
+
+---- gate ----
+step: Check Go module sync against the renet worktree
+needs: none
+selftest: true
+lane: quality-go
+---- end gate ----
 """
 
 import itertools
@@ -374,4 +381,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_go_module_sync.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

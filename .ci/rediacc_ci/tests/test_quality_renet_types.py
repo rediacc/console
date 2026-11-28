@@ -10,7 +10,7 @@ The marker `_VERSION = ` is a SUBSTRING with a mandatory space on each side of
 the equals sign, not an anchor, so `A_VERSION=1` is compared and
 `  const X_VERSION = 1` is not. None of that is inferable; it is measured below.
 
-They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl`, against a minimal Go stand-in for `renet functions generate-types`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-types.sh` was retired in W7 P5; the cases here cover the
+They are NOT the whole gate: the whole gate was compared over five distinct trees by the committed shadow ledger the ledger (deleted in commit:936280cd35), against a minimal Go stand-in for `renet functions generate-types`. That ledger licensed the port at K=5 and the bash twin `.ci/scripts/quality/check-renet-types.sh` was retired in W7 P5; the cases here cover the
 seams the ledger could not isolate and still run against the real shell.
 """
 

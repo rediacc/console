@@ -3,7 +3,7 @@
 
 THIS FILE IS THE GATE. It carries `check:ci-security-audit` outright: `package.json`, the `Audit` step in `.github/workflows/ci-quality.yml` and `scripts/ci-runner/manifest.ts` all name this path, and `.ci/scripts/security/audit.sh` was deleted in the same change (W7P5-b).
 
-PORTED FROM `.ci/scripts/security/audit.sh` (541 lines). The licence for the deletion is `.ci/shadow/w7p6-audit.observations.jsonl`, a K=5 ledger reading EQUIVALENT over five distinct clean trees with five distinct finding sets, plus the differential in `.ci/rediacc_ci/tests/test_security_audit.py`, which agreed on both streams, the exit code and every external command's argv.
+PORTED FROM `.ci/scripts/security/audit.sh` (541 lines). The licence for the deletion is the ledger (deleted in commit:936280cd35), a K=5 ledger reading EQUIVALENT over five distinct clean trees with five distinct finding sets, plus the differential in `.ci/rediacc_ci/tests/test_security_audit.py`, which agreed on both streams, the exit code and every external command's argv.
 
 THE BASH LINE NUMBERS QUOTED THROUGHOUT THE COMMENTS BELOW ARE ARCHAEOLOGY. They point into the deleted twin, they are what each clause here was proved against, and they are kept so a future reader can find the same clause in git history rather than guess at it.
 
@@ -1426,4 +1426,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("audit.py", sys.argv[1:])
     sys.exit(main(sys.argv[1:]))

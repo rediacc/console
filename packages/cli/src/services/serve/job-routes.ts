@@ -17,8 +17,9 @@ import { assertJobId } from '../executor/job-client.js';
 import { cancelJob, connectForJobs, runJobCommand } from '../executor/job-remote.js';
 import { observeTerminalPoll } from '../jobs/executor-observation.js';
 import type { TicketState } from '../jobs/ticket-store.js';
+import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import type { AuthVerifier } from './auth.js';
-import type { ServeDeps } from './deps.js';
+import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import {
   buildJobPollArgv,
   createTerminalLedger,
@@ -108,10 +109,13 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
             state: polled.status.state as TicketState,
             exitCode: polled.status.exitCode,
             finishedAt: polled.status.finishedAt,
+            function: polled.status.function,
+            repoGuid: polled.repoGuid,
           });
           return polled;
         });
         await auditFirstTerminal(ledger, deps, principal, machine, jobId, checked);
+        await recordJobEnd(deps, jobId, checked.status);
         return c.json(checked.body);
       } catch (error) {
         return pollFailure(c, error);
@@ -125,48 +129,84 @@ export function registerJobRoutes(app: Hono, deps: ServeDeps, helpers: JobRouteH
     const { principal, jobId, machine, config } = admitted;
     const started = Date.now();
     const destructive = getCommand('job cancel')?.destructive ?? true;
+    const cancelEvent = (success: boolean, outcome?: 'started'): ExecutorAuditEvent => ({
+      principal,
+      commandPath: 'job cancel',
+      machineName: machine,
+      params: { id: jobId },
+      success,
+      exitCode: success ? 0 : 1,
+      durationMs: outcome ? 0 : Date.now() - started,
+      destructive,
+      ...(outcome ? { outcome } : {}),
+    });
+    // A cancel changes a machine: it is recorded before it runs, and refused when that record cannot be delivered (PLAN-rmcp-writeback.md Design 8).
+    const unrecorded = await undeliveredAudit(deps, cancelEvent(true, 'started'));
+    if (unrecorded) {
+      return c.json(
+        {
+          error: `The executor refuses "rdc job cancel": its audit record could not be delivered (${unrecorded}), and a change it cannot record is not made.`,
+          code: AUDIT_UNAVAILABLE,
+        },
+        503
+      );
+    }
     return withRouteSpan('job-cancel', principal, async () => {
-      try {
-        const status = await helpers.withRequestConfig(config, async () => {
-          const conn = await connectForJobs(machine, 'read-only');
-          try {
-            return await cancelJob(conn, jobId);
-          } finally {
-            conn.lease.release();
-          }
-        });
-        await deps.audit?.({
-          principal,
-          commandPath: 'job cancel',
-          machineName: machine,
-          params: { id: jobId },
-          success: true,
-          exitCode: 0,
-          durationMs: Date.now() - started,
-          destructive,
-        });
-        return c.json({
-          state: status.state,
-          ...(status.exit_code == null ? {} : { exitCode: status.exit_code }),
-        });
-      } catch (error) {
-        await deps.audit?.({
-          principal,
-          commandPath: 'job cancel',
-          machineName: machine,
-          params: { id: jobId },
-          success: false,
-          exitCode: 1,
-          durationMs: Date.now() - started,
-          destructive,
-        });
-        return c.json(
-          { error: error instanceof Error ? error.message : 'The cancel failed.' },
-          500
+      const outcome = await helpers
+        .withRequestConfig(config, () => cancelOnMachine(machine, jobId))
+        .then(
+          (status) => ({ status }),
+          (error: unknown) => ({ error })
         );
-      }
+      const auditFailed = await undeliveredAudit(deps, cancelEvent(!('error' in outcome)));
+      const answer = cancelAnswer(outcome, auditFailed);
+      return c.json(answer.body, answer.status);
     });
   });
+}
+
+type CancelStatus = Awaited<ReturnType<typeof cancelJob>>;
+
+/** The cancel route's answer: the job's state, or the failure; `audit_failed` when its record was not delivered. */
+function cancelAnswer(
+  outcome: { status: CancelStatus } | { error: unknown },
+  auditFailed: string | undefined
+): { body: Record<string, unknown>; status: 200 | 500 } {
+  const audit = auditFailed ? { audit_failed: auditFailed } : {};
+  if ('error' in outcome) {
+    const message = outcome.error instanceof Error ? outcome.error.message : 'The cancel failed.';
+    return { body: { error: message, ...audit }, status: 500 };
+  }
+  const { state, exit_code: exitCode } = outcome.status;
+  return { body: { state, ...(exitCode == null ? {} : { exitCode }), ...audit }, status: 200 };
+}
+
+/** `renet job cancel` on the job's machine, over a pooled connection; run inside the request's config scope. */
+export async function cancelOnMachine(machine: string, jobId: string) {
+  const conn = await connectForJobs(machine, 'read-only');
+  try {
+    return await cancelJob(conn, jobId);
+  } finally {
+    conn.lease.release();
+  }
+}
+
+/**
+ * Ship one audit event. Undefined when it was delivered, otherwise why not: the
+ * caller refuses a change whose record it could not ship before, and reports
+ * `audit_failed` for one already made.
+ */
+async function undeliveredAudit(
+  deps: ServeDeps,
+  event: ExecutorAuditEvent
+): Promise<string | undefined> {
+  try {
+    await deps.audit?.(event);
+    return undefined;
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    return error.message;
+  }
 }
 
 class BadJobRequest extends Error {}
@@ -174,8 +214,15 @@ class BadJobRequest extends Error {}
 /** The poll body, checked against the wire schema, with how long the exec took. */
 async function pollAndParse(machine: string, jobId: string, sinceLine: number, maxLines: number) {
   const started = Date.now();
-  const body = JobPollResponseSchema.parse(await pollOnce(machine, jobId, sinceLine, maxLines));
-  return { body, status: body.status, durationMs: Date.now() - started };
+  const polled = await pollOnce(machine, jobId, sinceLine, maxLines);
+  const body = JobPollResponseSchema.parse(polled);
+  // The wire body does not carry the repo GUID; it stays server side, for rebuilding a ticket the executor lost.
+  return {
+    body,
+    status: body.status,
+    repoGuid: polled.status.repoGuid,
+    durationMs: Date.now() - started,
+  };
 }
 
 /** One `renet job logs --with-status` exec, parsed into a poll body. */
@@ -200,7 +247,12 @@ function pollFailure(c: Context, error: unknown): Response {
   return c.json({ error: message }, error instanceof JobPollParseError ? 502 : 500);
 }
 
-/** Ship the terminal audit event the first time a poll sees the job finished, and never again. */
+/**
+ * Ship the terminal audit event the first time a poll sees the job finished. An
+ * event the sink could not deliver is forgotten by the ledger, so the next poll
+ * of the job tries again; the poll itself still answers, since the job's end is
+ * a fact whether or not its record arrived.
+ */
 async function auditFirstTerminal(
   ledger: ReturnType<typeof createTerminalLedger>,
   deps: ServeDeps,
@@ -210,7 +262,26 @@ async function auditFirstTerminal(
   checked: { status: JobStatusForAudit; durationMs: number }
 ): Promise<void> {
   if (!ledger.firstTerminal(jobId, checked.status.state)) return;
-  await auditTerminal(deps, principal, machine, jobId, checked.status, checked.durationMs);
+  try {
+    await auditTerminal(deps, principal, machine, jobId, checked.status, checked.durationMs);
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    ledger.forget(jobId);
+  }
+}
+
+/** A poll that sees a terminal state closes the run index row of a detached run this process remembers. */
+async function recordJobEnd(
+  deps: ServeDeps,
+  jobId: string,
+  status: { state: string; exitCode?: number }
+): Promise<void> {
+  const { state } = status;
+  if (state !== 'succeeded' && state !== 'failed' && state !== 'cancelled') return;
+  await deps.runIndex?.endJob(jobId, {
+    state,
+    ...(status.exitCode === undefined ? {} : { exitCode: status.exitCode }),
+  });
 }
 
 interface JobStatusForAudit {

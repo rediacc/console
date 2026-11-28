@@ -8,9 +8,8 @@ on:
   schedule:
     # WEEKLY, Sundays, since PLAN-health-checks-local D3: the scheduled run is
     # the full union and the 5-OS stock-image fleet, which costs too much to run
-    # daily. The cheap clock-based checks run daily in `CI - Drift`
-    # (.github/workflows/ci-drift.yml), and the stable promotion reads this run
-    # as its test evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
+    # daily. The stable promotion (a dispatch) reads this run as its test
+    # evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
     # The `report-schedule` job posts this run's verdict to the ops-health
     # ingest (source `ci-weekly`).
     #
@@ -184,6 +183,7 @@ jobs:
     outputs:
       is_bot: ${{ steps.init.outputs.is_bot }}
       next_version: ${{ steps.init.outputs.next_version }}
+      build_version: ${{ steps.preview.outputs.build_version || steps.init.outputs.next_version }}
       bump_type: ${{ steps.init.outputs.bump_type }}
       # Empty unless this commit explicitly earns NO release. Consumers must
       # test `!= 'true'`, never `== 'false'`: an absent value means the
@@ -348,7 +348,8 @@ jobs:
       # gitlink moved: on a push, between the pushed range's base and HEAD; on a pull
       # request, between the merge base with the PR base and HEAD. 'true' on a hit and
       # on anything it cannot decide (no base, unreachable base): fail open, the same
-      # direction as the scope engine. Every other event gets 'false' and the jobs follow
+      # direction as the scope engine. A push to the default branch gets 'false' (its PR CI
+      # already tested the tree; the nightly covers main). Every other event gets 'false' and the jobs follow
       # `full_suite` as before. A gitlink diff needs no submodule checkout, only the two
       # commits (fetch-depth 0).
       - name: Decide whether private/renet changed
@@ -357,19 +358,24 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.renet_changed
 
       # J6 (PLAN-backup-program): suite 26 (test-e2e-backup-browse-at) used to run only under
       # `full_suite`. rediacc_ci.ci.backup_changed decides whether a backup path moved (the
       # `backup` area of the proof tier map: its renet globs and its suite files),
       # over the same range as the step above. Fail open like it: 'true' on anything it cannot
-      # decide, 'false' on every other event.
+      # decide, 'false' on every other event and on a push to the default branch (the weekly
+      # full suite of this workflow covers main).
       - name: Decide whether a backup path changed
         id: backup-push
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.backup_changed
 
       # Run consolidated initialization script
@@ -387,6 +393,17 @@ jobs:
         run: |
           PYTHONPATH=.ci python3 -m rediacc_ci.ci.initialize --output "$GITHUB_OUTPUT"
 
+      # A pull-request build is stamped X.Y.Z-preview.<sha7> (PLAN-preview-signer D7), so it never takes the next release's renet slot. Only the CLI and renet builds read build_version; the R2 layout, the tags and the channel stay keyed by next_version.
+      - name: Stamp preview build identity
+        id: preview
+        if: github.event_name == 'pull_request'
+        env:
+          BUMP_TYPE: ${{ steps.init.outputs.bump_type }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          VERSION=$(PYTHONPATH=.ci python3 -m rediacc_ci.version.resolve_version --bump-type "$BUMP_TYPE" --preview "$HEAD_SHA")
+          echo "build_version=$VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Generate channel context
         id: staging
         run: |
@@ -395,6 +412,9 @@ jobs:
           # but every R2/GHCR upload step self-gates on channel != ''. Prior
           # design set dryrun-<sha> here and produced ~5 GB of orphan R2
           # bytes per nightly run (and per merge-queue check, since removed).
+          # A PR keeps the non-secret `pr-<n>` staging channel, never the derived preview name (PLAN-preview-signer N2):
+          # cd-stage.yml retags the rdc and server images to this channel, and ghcr.io/rediacc/rdc lists its tags to
+          # anonymous callers, so a name here would publish every preview host. The name stays masked, per job.
           if [[ "${{ github.event_name }}" == "push" ]]; then
             CHANNEL="edge"
           elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
@@ -636,13 +656,21 @@ jobs:
     # ci-quality.yml's quality-static and quality-code declare
     # pull-requests: read for the pulls endpoints they hit on github.token,
     # and quality-security declares actions: read for the CI time budget
-    # freshness step (runs, jobs and artifacts). A called workflow can never
+    # freshness step (runs, jobs and artifacts); quality-content declares it
+    # too, for its receipt writer's read of its own job step record through
+    # gh api. A called workflow can never
     # exceed its caller, so the caller must carry both or GitHub fails the run
     # at startup with no job and no log (run 37184675916, 2026-10-04).
+    # packages: read is quality-content's: that job runs inside the private
+    # ghcr.io devcontainer image (PLAN-two-track-merge-dev R2).
     permissions:
       contents: read
       pull-requests: read
       actions: read
+      packages: read
+      # quality-content-receipt alone attests the CI receipt (PLAN-two-track-merge-dev R3); every other ci-quality.yml job declares neither, which ci-receipt.ts --selftest asserts. A called workflow holds no more than its caller.
+      id-token: write
+      attestations: write
     needs: [initialize]
     if: needs.initialize.outputs.is_bot != 'true' && needs.initialize.outputs.full_suite == 'true'
     uses: ./.github/workflows/ci-quality.yml
@@ -787,114 +815,6 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
   # ============================================================================
-  # STRIPE SANDBOX: Deploy per-PR account server with sandbox Stripe keys
-  # Seeds products/prices, creates webhook endpoint, deploys Cloudflare Worker
-  # Only runs on pull_request events
-  # ============================================================================
-  stripe-sandbox:
-    name: Stripe Sandbox
-    # First checkout on GITHUB_TOKEN; the private/account submodule comes in on
-    # the readonly-preset App token.
-    permissions:
-      contents: read
-    # T2.2 (PLAN-ci-time-budget, D-W6): quality dropped from needs so this
-    # starts as soon as review-gate clears, instead of waiting on the whole
-    # Quality lane. The watchdog already force-cancels the run on a Quality
-    # failure, so the exposure is a burned runner, not a bad deploy.
-    needs: [initialize, review-gate]
-    runs-on: ubuntu-latest  # Needs Docker for account server
-    timeout-minutes: 15
-    if: >-
-      always() &&
-      github.event_name == 'pull_request' &&
-      needs.initialize.result == 'success' &&
-      needs.initialize.outputs.pointer_bump_only != 'true' &&
-      needs.review-gate.result == 'success'
-    outputs:
-      account_server_url: ${{ steps.deploy.outputs.account_server_url }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          # .ci/scripts, because the compare step below RUNS one. It used to be
-          # 18 inline lines and needed no file; extracting it to
-          # .ci/scripts/ci/shadow-compare.sh turned a cone that stops at .ci/config
-          # into "No such file or directory" three steps later (job 100795527686).
-          sparse-checkout: |
-            .github/actions
-            .ci/config
-            .ci/scripts
-
-      - name: Fetch secrets from Bitwarden
-        # LIVE: the BWS_ values below are read by this job's steps, flipped from
-        # secrets.* by the cutover. The secrets.* reads that remain are the
-        # comparator's, which must keep reading GitHub or it compares a value with
-        # itself and passes forever.
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            GITHUB_APP_ID > BWS_APP_ID
-      - uses: ./.github/actions/app-token
-        id: app-token
-        with:
-          client-id: ${{ env.BWS_APP_ID }}
-          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
-          preset: readonly
-          repositories: console,account
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-
-      - name: Initialize account submodule
-        run: git submodule update --init --depth 1 private/account
-
-      - uses: ./.github/actions/setup-node-npm
-        with:
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci && npm run install:natives
-
-      - name: Build shared packages
-        run: npm run build:packages
-
-      - name: Install account dependencies
-        run: npm install
-        working-directory: private/account
-
-      - name: Setup Stripe sandbox
-        run: npx tsx scripts/setup-sandbox.ts --pr-number ${{ github.event.pull_request.number }} --skip-webhook
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-
-      # The signing pair is minted for this run (agent/plans/PLAN-production-key-only.md
-      # D6): the production private key never reaches this job, and the sandbox server's
-      # licences verify nothing outside it.
-      - name: Start account server
-        id: deploy
-        run: |
-          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
-          eval "$pair"
-          PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
-        env:
-          ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-
-      - name: Verify account server health
-        run: curl -sf http://localhost:3000/health
-
-      - name: Cleanup
-        if: always()
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_stop
-
-
-  # ============================================================================
   # COLUMN 3: BUILD & DOCKER
   # Jobs: build-renet (unified), build-docker (parallel reusable workflows)
   # Fast path (tests): initialize -> build-renet -> build-docker-fast -> tests
@@ -919,7 +839,7 @@ jobs:
     if: always() && needs.initialize.result == 'success' && needs.initialize.outputs.pointer_bump_only != 'true'
     uses: ./.github/workflows/ci-build-renet.yml
     with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
+      next_version: ${{ needs.initialize.outputs.build_version }}
       skip_build: ${{ needs.initialize.outputs.renet_exists == 'true' }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
     secrets:
@@ -1000,7 +920,7 @@ jobs:
     if: always() && needs.initialize.result == 'success' && needs.build-renet.result == 'success'
     uses: ./.github/workflows/ci-build-cli.yml
     with:
-      next_version: ${{ needs.initialize.outputs.next_version }}
+      next_version: ${{ needs.initialize.outputs.build_version }}
 
   # ============================================================================
   # UPDATE FLOW E2E
@@ -1190,10 +1110,10 @@ jobs:
 
   # ============================================================================
   # COLUMN 3B: DEPLOY DRY-RUN
-  # Jobs: stage-artifacts (reusable workflow)
+  # Jobs: stage-artifacts-release, stage-artifacts (both call cd-stage.yml)
   # Dependencies: build-docker, build-cli, quality, review-gate, check-release-state
   # ============================================================================
-  stage-artifacts:
+  stage-artifacts-release:
     name: Stage Artifacts
     # Serialize staging per channel+version: a retried/duplicate run (e.g. a
     # watchdog auto-retry attempt 2) must not run a second upload-to-r2 for the
@@ -1204,15 +1124,21 @@ jobs:
       group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
       cancel-in-progress: false
     needs: [initialize, build-docker, build-cli, quality, review-gate, check-release-state]
+    # Every event but pull_request: the release path. Its pull-request twin is
+    # stage-artifacts below, and the split exists only so the OIDC grant is
+    # absent on a PR run (PLAN-pr-path-ephemeral-credentials D2). A reusable
+    # workflow's permissions are static per caller job, so dropping a scope by
+    # event takes a second caller; cd-stage.yml's `stage` job inherits this one.
     permissions:
       contents: read
       packages: write      # GHCR pull for validation
       id-token: write      # OIDC token for Sigstore signing
       attestations: write  # Store attestations on GitHub
-    if: always() && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
+    if: always() && github.event_name != 'pull_request' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
     uses: ./.github/workflows/cd-stage.yml
     with:
-      upload_pages: ${{ github.event_name == 'pull_request' }}
+      upload_pages: false
+      signing: release
       channel: ${{ needs.initialize.outputs.channel }}
       next_version: ${{ needs.initialize.outputs.next_version }}
       # A bump-none commit earns no tag and no GitHub release, so it must not
@@ -1220,6 +1146,39 @@ jobs:
       # untagged version breaks `rdc` auto-update and, worse, feeds
       # cd-release-stable a `ref: v<version>` that does not exist. See
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
+      skip_release: ${{ needs.initialize.outputs.skip_release }}
+      renet_tag: ${{ needs.initialize.outputs.renet_tag }}
+      web_tag: ${{ needs.initialize.outputs.web_tag }}
+      rdc_tag: ${{ needs.initialize.outputs.rdc_tag }}
+    secrets:
+      BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
+
+  # The pull-request caller of cd-stage.yml: the same needs, gate and inputs as
+  # stage-artifacts-release above, minus the two OIDC scopes, since a PR run
+  # executes PR-controlled code and the attestation steps are push-only anyway.
+  # It signs with a throwaway key (signing: ephemeral, PLAN-pr-path-ephemeral-
+  # credentials D1) and uploads the preview pages artifact deploy-preview
+  # consumes. It keeps the id `stage-artifacts` because check:ci-bws-pr-path
+  # keys its shrink-only baseline on the PR call chain, so the release-only R2
+  # fetches still open here (W5's) keep their ids. The display name is shared on
+  # purpose: the lane budget, the timeout-headroom baseline and ci-trace key on
+  # "Stage Artifacts / Stage Artifacts", and exactly one caller runs per event.
+  stage-artifacts:
+    name: Stage Artifacts
+    concurrency:
+      group: stage-artifacts-${{ needs.initialize.outputs.channel }}-v${{ needs.initialize.outputs.next_version }}
+      cancel-in-progress: false
+    needs: [initialize, build-docker, build-cli, quality, review-gate, check-release-state]
+    permissions:
+      contents: read
+      packages: write      # GHCR pull for validation, retag to the pr-N channel
+    if: always() && github.event_name == 'pull_request' && needs.initialize.outputs.is_bot != 'true' && needs.initialize.result == 'success' && needs.build-docker.result == 'success' && needs.build-cli.result == 'success' && (needs.quality.result == 'success' || needs.quality.result == 'skipped') && (needs.review-gate.result == 'success' || needs.review-gate.result == 'skipped') && (needs.check-release-state.result == 'success' || needs.check-release-state.result == 'skipped')
+    uses: ./.github/workflows/cd-stage.yml
+    with:
+      upload_pages: true
+      signing: ephemeral
+      channel: ${{ needs.initialize.outputs.channel }}
+      next_version: ${{ needs.initialize.outputs.next_version }}
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
       web_tag: ${{ needs.initialize.outputs.web_tag }}
@@ -1356,6 +1315,24 @@ jobs:
       BWS_ACCESS_TOKEN: ${{ secrets.BWS_ACCESS_TOKEN }}
 
   # ============================================================================
+  # COLUMN 4E: WINDOWS LANE
+  # Win32 unit tests, agent-guard refusal cases and a bundle smoke on windows-latest
+  # (PLAN-windows-lane D10). Needs the renet Windows binary from build-renet.
+  # ============================================================================
+  windows-lane:
+    name: Windows
+    permissions:
+      contents: read
+    needs: [initialize, build-renet]
+    if: >-
+      always() &&
+      needs.initialize.outputs.full_suite == 'true' &&
+      needs.initialize.result == 'success' &&
+      needs.initialize.outputs.pointer_bump_only != 'true' &&
+      needs.build-renet.result == 'success'
+    uses: ./.github/workflows/ci-windows.yml
+
+  # ============================================================================
   # COLUMN 4C: ELITE RUN TEST
   # Validates the elite on-premise docker-compose stack starts correctly
   # Tests the same setup customers use before changes affect them
@@ -1408,6 +1385,7 @@ jobs:
         with:
           submodules: recursive
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Set Image Tags
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.set_image_tags
@@ -1523,7 +1501,7 @@ jobs:
   # ============================================================================
   # COLUMN 5: DEPLOY PREVIEW
   # Deploys pages preview to Cloudflare Pages for PR validation
-  # Dependencies: stage-artifacts, tests (ALL must pass)
+  # Dependencies: stage-artifacts (the pull-request caller of cd-stage.yml)
   # Only runs on pull_request events
   # ============================================================================
   deploy-preview:
@@ -1537,8 +1515,8 @@ jobs:
       contents: read
     # `tests` was in `needs` and gated in the `if:`, and this job consumes
     # NOTHING from it. Its only artifact is `preview-pages-<sha>`, uploaded by
-    # cd-stage.yml:223 through the `stage-artifacts` job, which is still
-    # required below. Waiting on `tests` meant the preview URL appeared only
+    # cd-stage.yml through the `stage-artifacts` job (the pull-request caller),
+    # which is still required below. Waiting on `tests` meant the preview URL appeared only
     # after the full E2E fleet finished, roughly 44 minutes for the slowest leg.
     #
     # BEHAVIOUR CHANGE, stated rather than buried: previews are now published
@@ -1550,9 +1528,13 @@ jobs:
     needs: [initialize, stage-artifacts]
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # A fork head never gets a preview signer (PLAN-preview-signer D14), and it holds no secret to deploy
+    # with anyway: the same-repository condition skips it here instead of failing at the Bitwarden step.
+    # preview_signer refuses a fork head on its own as well.
     if: >-
       always() &&
       github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
       needs.initialize.result == 'success' &&
       needs.stage-artifacts.result == 'success'
     # NO `environment:` BLOCK, and its absence is the point.
@@ -1599,28 +1581,21 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
-            ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
-            AWS_SES_SECRET_ACCESS_KEY_EU > BWS_AWS_SES_SECRET_ACCESS_KEY_EU
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_API_TOKEN_PREVIEW > BWS_CLOUDFLARE_API_TOKEN_PREVIEW
             GITHUB_APP_ID > BWS_APP_ID
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
             ROOT_EMAIL > BWS_ROOT_EMAIL
-            AWS_SES_REGION_EU > BWS_AWS_SES_REGION_EU
-            AWS_SES_FROM > BWS_AWS_SES_FROM
-            AWS_SES_CONFIGURATION_SET > BWS_AWS_SES_CONFIGURATION_SET
+            PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
       - uses: ./.github/actions/app-token
         id: app-token
         with:
           client-id: ${{ env.BWS_APP_ID }}
           private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
           preset: readonly
-          repositories: console,account
+          # renet: its history feeds the on-disk format backstop below (PLAN-preview-signer D12).
+          repositories: console,account,renet
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -1629,6 +1604,19 @@ jobs:
 
       - name: Initialize account submodule
         run: git submodule update --init --depth 1 private/account
+
+      # PLAN-preview-signer D5: the preview's public name is `pv-<w>-<w>-<w>`, derived from the PR number with
+      # PREVIEW_NAME_KEY (rediacc_ci.deploy.preview_name), so the host cannot be guessed from the PR number. It is
+      # masked before first use and kept in this job's env only: the runner drops a job output that carries a
+      # masked string, so every job that needs the name derives it again (smoke-test-preview,
+      # ops-cleanup-preview.yml). A failed derivation fails the step; there is no pr-<n> fallback.
+      - name: Derive the preview name
+        env:
+          PREVIEW_NAME_KEY: ${{ env.BWS_PREVIEW_NAME_KEY }}
+        run: |
+          name="$(PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr "${PR_NUMBER}")"
+          echo "::add-mask::${name}"
+          echo "PREVIEW_NAME=${name}" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/setup-node-npm
         with:
@@ -1648,6 +1636,28 @@ jobs:
         run: npm install
         working-directory: workers/www
 
+      # deploy_www deploys the preview's own signer (rediacc_ci.deploy.preview_signer) from workers/signer,
+      # whose lockfile pins the wrangler that bundles it.
+      - name: Install the signer Worker's dependencies
+        run: npm ci --prefix workers/signer
+
+      # The private/renet diff between the PR base and head over the files that hold an on-disk format
+      # constant (deploy_www.FORMAT_CONSTANTS). deploy_www refuses a change to one that carries no
+      # .ci/config/preview-format-change.json (PLAN-preview-signer D12). An unchanged gitlink is an empty diff.
+      - name: Diff private/renet for the format backstop
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          git fetch --no-tags --depth=1 origin "${BASE_SHA}"
+          base="$(git rev-parse "${BASE_SHA}:private/renet")"
+          head="$(git rev-parse "HEAD:private/renet")"
+          if [ "${base}" = "${head}" ]; then : > "${RUNNER_TEMP}/renet.diff"; exit 0; fi
+          git submodule update --init --filter=blob:none --no-checkout private/renet
+          git -C private/renet fetch --no-tags --filter=blob:none origin "${base}" "${head}"
+          # Assigned on its own line so a failed import fails the step under bash -e instead of diffing the whole renet repo.
+          list="$(PYTHONPATH=.ci python3 -c 'from rediacc_ci.deploy import deploy_www as d; print(" ".join(d.FORMAT_CONSTANTS))')"
+          read -r -a files <<<"${list}" && git -C private/renet diff "${base}" "${head}" -- "${files[@]}" > "${RUNNER_TEMP}/renet.diff"
+
       - name: Download preview pages artifact
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
         with:
@@ -1655,7 +1665,7 @@ jobs:
           path: workers/www/dist/
 
       # Mint a per-PR Turnstile widget so the preview hostname
-      # `pr-N.rediacc.workers.dev` is on its own widget allowlist.
+      # `<preview name>.rediacc.workers.dev` (the derived pv- word name) is on its own widget allowlist.
       # Cloudflare Turnstile does not support wildcards or parent-domain
       # inheritance, so each PR needs its own widget.
       # See private/account/docs/infra/cloudflare.md and
@@ -1663,9 +1673,9 @@ jobs:
       - name: Create PR Turnstile widget
         id: create-widget
         working-directory: private/account
-        run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}"
+        run: npx tsx scripts/preview-turnstile.ts create "${PR_NUMBER}" "${PREVIEW_NAME}"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
       - name: Build account portal
@@ -1696,75 +1706,49 @@ jobs:
       #
       # A third copy lived in cd-deploy-worker.yml and is removed with these.
 
-      # Create Stripe webhook pointing to pr-N
-      - name: Setup Stripe webhook
-        id: stripe-webhook
-        run: npx tsx scripts/setup-sandbox.ts --pr-number "${PR_NUMBER}"
-        working-directory: private/account
-        env:
-          STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-
-      # Deploy single combined pr-N Worker (static assets + embedded account server)
+      # Deploy the single combined preview Worker (static assets + embedded account server) under its word name.
+      # For a word name deploy_www also deploys `<name>-signer` (a fresh delegated key, certified by signer-bench-eu
+      # for this preview's pv- subscriptions only) between the D1 migration and the Worker deploy, and renders
+      # PREVIEW_BUILD from the staged manifest and the format marker. The manifest is the one the preview pages
+      # artifact carries (cd-stage.yml "Copy CLI manifest to pages"): the separate cli-manifest artifact is
+      # uploaded on push runs only, and a pull_request run never has it.
       - name: Deploy preview worker
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "pr-${PR_NUMBER}"
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www --name "${PREVIEW_NAME}"
+          --manifest "${GITHUB_WORKSPACE}/workers/www/dist/cli/manifest.json"
+          --renet-diff "${RUNNER_TEMP}/renet.diff"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
-      # The preview Worker holds NO licence private key (PLAN-enterprise-isolation S3): it signs
-      # through its LICENSE_SIGNER service binding to signer-bench-eu (deploy_www.PREVIEW_TOML), which
-      # signs with the production key. Only the public half is pushed, and it is the job output the
-      # smoke test verifies against.
-      - name: Set preview worker secrets
+      # The preview Worker holds NO production secret (PLAN-pr-path-ephemeral-credentials D3). Its tunnel key,
+      # session secret and server API key are generated here for this preview and pushed through the stdin of one
+      # `wrangler secret bulk` call (rediacc_ci.deploy.preview_keys); only the tunnel PUBLIC half leaves the step.
+      # It signs through its own `<name>-signer`, never a production key (PLAN-preview-signer D1, D2). The
+      # pass-through values are the public licence key, the root address and the per-PR Turnstile secret; outbound
+      # mail is off, so no AWS_SES value is fetched or sent.
+      - name: Generate and set preview worker secrets
         id: preview-secrets
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          # ONE NAME EVERYWHERE: the left side is the name the builder READS
-          # and the key it WRITES into the Worker (private/account/src/types/
-          # env.ts). The right side keeps the GitHub secret's current name.
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
-          ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
-          ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
-          ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ steps.stripe-webhook.outputs.stripe_webhook_secret }}
           ROOT_EMAIL: ${{ env.BWS_ROOT_EMAIL }}
-          AWS_SES_ACCESS_KEY_ID: ${{ env.BWS_AWS_SES_ACCESS_KEY_ID_EU }}
-          AWS_SES_SECRET_ACCESS_KEY: ${{ env.BWS_AWS_SES_SECRET_ACCESS_KEY_EU }}
-          AWS_SES_REGION: ${{ env.BWS_AWS_SES_REGION_EU }}
           # Per-PR Turnstile secret comes from the create-widget step above,
           # paired with the per-PR sitekey baked into the Vite build.
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
-          AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
-          AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
         run: |
-          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_X25519_PRIVATE_KEY
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_keys
 
+      # The summary names no address: the run page is as public as the repository, and the word name is what
+      # keeps a preview unguessable (PLAN-preview-signer ruling 7). The operator looks the name up.
       - name: Deployment summary
         run: |
           {
             echo "## Preview Deployment"
             echo ""
-            echo "**URL:** https://pr-${PR_NUMBER}.rediacc.workers.dev"
-            echo "**Console:** https://pr-${PR_NUMBER}.rediacc.workers.dev/console/"
-            echo "**Account API:** https://pr-${PR_NUMBER}.rediacc.workers.dev/account/api/v1/health"
             echo "**PR:** #${PR_NUMBER}"
+            echo "**Address:** https://<name>.rediacc.workers.dev, where <name> is printed by \`PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr ${PR_NUMBER}\` with PREVIEW_NAME_KEY set"
           } >> "$GITHUB_STEP_SUMMARY"
 
   # ============================================================================
@@ -1817,9 +1801,22 @@ jobs:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
             ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
-            ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
-            CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
+            CLOUDFLARE_API_TOKEN_PREVIEW > BWS_CLOUDFLARE_API_TOKEN_PREVIEW
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
+            PREVIEW_NAME_KEY > BWS_PREVIEW_NAME_KEY
+
+      # Derived again here, not taken from deploy-preview: a masked value cannot travel as a job output (see
+      # "Derive the preview name" in deploy-preview).
+      - name: Derive the preview name
+        env:
+          PREVIEW_NAME_KEY: ${{ env.BWS_PREVIEW_NAME_KEY }}
+        run: |
+          name="$(PYTHONPATH=.ci python3 -m rediacc_ci.deploy.preview_name --pr "${PR_NUMBER}")"
+          echo "::add-mask::${name}"
+          {
+            echo "PREVIEW_NAME=${name}"
+            echo "PREVIEW_URL=https://${name}.rediacc.workers.dev"
+          } >> "$GITHUB_ENV"
 
       # No app-token step here on purpose: this job checks out no submodules
       # and `.npmrc` sets allow-git=none, so nothing needs authenticated git.
@@ -1838,13 +1835,22 @@ jobs:
       - name: Install the Worker's wrangler
         run: npm ci --prefix workers/www
 
+      # The smoke token is a row this job plants in the preview D1 and uses within this one job, so its seed is
+      # random here and is not the Worker's session secret, which deploy-preview generates and never exports
+      # (PLAN-pr-path-ephemeral-credentials D3).
+      - name: Draw the smoke token seed
+        run: |
+          seed="$(openssl rand -hex 32)"
+          echo "::add-mask::${seed}"
+          echo "SMOKE_SEED=${seed}" >> "$GITHUB_ENV"
+
       - name: Seed test data into preview D1
         id: seed
         run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.seed_smoke
         env:
-          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN_PREVIEW }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
-          ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
+          ACCOUNT_JWT_SECRET: ${{ env.SMOKE_SEED }}
 
       - name: Wait for preview worker
         run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.wait_for_preview_worker
@@ -1852,7 +1858,7 @@ jobs:
       - name: Run license smoke test
         run: npx tsx .ci/scripts/test/smoke-test-preview.ts
         env:
-          PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
+          # PREVIEW_URL is in the job env, written by "Derive the preview name".
           SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
           # Read in this job, not taken from a deploy-preview job output: the bws-secrets action masks the value,
           # and the runner drops a job output that carries a masked string (the step output came through empty).
@@ -1869,7 +1875,10 @@ jobs:
     permissions:
       contents: read
       packages: read
-    needs: [initialize, stage-artifacts]
+    # Either caller of cd-stage.yml: stage-artifacts-release on push, schedule
+    # and dispatch, stage-artifacts on a pull request. Exactly one runs, so the
+    # other is always `skipped`.
+    needs: [initialize, stage-artifacts-release, stage-artifacts]
     # THE CHANNEL CONDITION IS LOAD-BEARING, and its absence was a standing red.
     #
     # `run_install_methods` comes from the `scope` step, which is gated on
@@ -1893,7 +1902,7 @@ jobs:
     # `skipped`.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success' &&
+      (needs.stage-artifacts-release.result == 'success' || needs.stage-artifacts.result == 'success') &&
       needs.initialize.outputs.run_install_methods != 'false' &&
       needs.initialize.outputs.channel != '' &&
       needs.initialize.outputs.skip_release != 'true'
@@ -1913,7 +1922,8 @@ jobs:
     # Checkout, then aws s3api against R2 and the Cloudflare API. No GitHub API.
     permissions:
       contents: read
-    needs: [initialize, stage-artifacts]
+    # Either caller of cd-stage.yml; see validate-install.
+    needs: [initialize, stage-artifacts-release, stage-artifacts]
     runs-on: ubuntu-latest
     # 60, not 30, because on `main` this job has been running within MINUTES of
     # its own ceiling for weeks and has now blown through it twice. Measured
@@ -1984,7 +1994,7 @@ jobs:
     # cause -- a job assuming a channel that schedule runs deliberately lack.
     if: >-
       always() &&
-      needs.stage-artifacts.result == 'success' &&
+      (needs.stage-artifacts-release.result == 'success' || needs.stage-artifacts.result == 'success') &&
       needs.initialize.outputs.channel != '' &&
       needs.initialize.outputs.skip_release != 'true'
     env:
@@ -2083,7 +2093,7 @@ jobs:
     # `CI Complete` reports success while a release-state assertion failed on
     # main. It is soft-required, because it legitimately skips on every PR
     # (it is gated on push-to-main plus a release channel).
-    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, stripe-sandbox, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
+    needs: [duplicate-run, initialize, label-guide, run-sh-tests, quality, review-gate, build-docker, build-devcontainer, build-docker-fast, build-cli, package-tests, check-release-state, cd-preflight, stage-artifacts-release, stage-artifacts, validate-install, validate-promote, tests, elite-run-test, ops-tests, windows-lane, update-flow-test, deploy-preview, smoke-test-preview, breakpoint-lifecycle, e2e-dependency-probe]
     timeout-minutes: 5
     # Job-level permissions REPLACE the workflow defaults, so contents and
     # packages are restated. actions: read is for the shadow reconciliation
@@ -2126,16 +2136,17 @@ jobs:
           RESULT_BUILD_CLI: ${{ needs.build-cli.result }}
           RESULT_QUALITY: ${{ needs.quality.result }}
           RESULT_REVIEW_GATE: ${{ needs.review-gate.result }}
-          RESULT_STRIPE_SANDBOX: ${{ needs.stripe-sandbox.result }}
           RESULT_PACKAGE_TESTS: ${{ needs.package-tests.result }}
           RESULT_CHECK_RELEASE_STATE: ${{ needs.check-release-state.result }}
           RESULT_CD_PREFLIGHT: ${{ needs.cd-preflight.result }}
+          RESULT_STAGE_ARTIFACTS_RELEASE: ${{ needs.stage-artifacts-release.result }}
           RESULT_STAGE_ARTIFACTS: ${{ needs.stage-artifacts.result }}
           RESULT_VALIDATE_INSTALL: ${{ needs.validate-install.result }}
           RESULT_VALIDATE_PROMOTE: ${{ needs.validate-promote.result }}
           RESULT_TESTS: ${{ needs.tests.result }}
           RESULT_ELITE_RUN_TEST: ${{ needs.elite-run-test.result }}
           RESULT_OPS_TESTS: ${{ needs.ops-tests.result }}
+          RESULT_WINDOWS_LANE: ${{ needs.windows-lane.result }}
           RESULT_UPDATE_FLOW_TEST: ${{ needs.update-flow-test.result }}
           RESULT_DEPLOY_PREVIEW: ${{ needs.deploy-preview.result }}
           RESULT_SMOKE_TEST_PREVIEW: ${{ needs.smoke-test-preview.result }}

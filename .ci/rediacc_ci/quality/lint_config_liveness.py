@@ -23,6 +23,13 @@ WHAT A DIRECTORY-WIDE GLOB DOES NOT PROVE, stated rather than hidden. `.claude/h
 WHY THIS IS NOT INSIDE `python_lint.py`, where the plan placed it. That module is pinned byte for byte against its deleted bash twin's recorded output (`tests/goldens/python-lint/`) over a twelve-file specimen that carries the REAL pyproject.toml and none of `rediacc_ci/core/`. In that specimen every entry is dead and `allowlist` does not import, so a check living there would turn eight frozen recordings red for a reason unrelated to them. The entry point `.ci/scripts/quality/check_python_lint.py` runs the lint and then this module, so it is one gate, one step and one exit code, and it reuses that module's enumerator and resolver rather than carrying a second copy of either.
 
 CANNOT VERIFY IS EXIT 1, NEVER A PASS: an empty universe, a ruff run that returned no parseable report, a disagreement between the two readers of the file, or between the matcher and ruff.
+
+---- gate ----
+id: check:ci-python-lint
+step: Python lint + format (ruff)
+needs: none
+selftest: true
+---- end gate ----
 """
 
 import dataclasses
@@ -776,4 +783,7 @@ def selftest(*, quiet: bool = False) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv[1:]))
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_python_lint.py", sys.argv[1:], switches=("--selftest",))
+    raise SystemExit(chained(sys.argv[1:]))

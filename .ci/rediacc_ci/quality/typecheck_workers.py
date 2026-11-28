@@ -19,7 +19,7 @@ id: lint:unused
 run: PYTHONPATH=.ci python3 -m rediacc_ci.quality.typecheck_workers --install && knip --treat-config-hints-as-errors
 ---- end gate ----
 
-Ledger: `.ci/shadow/w7p4b-typecheck-workers.observations.jsonl` -- nine rows, nine distinct clean trees, nine distinct finding sets (`npx tsx scripts/lib/shadow-gate.ts --pair w7p4b-typecheck-workers --assert --k 5`). The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
+Ledger: the ledger (deleted in commit:936280cd35) -- nine rows, nine distinct clean trees, nine distinct finding sets. The older `w7p6-typecheck-workers` ledger is superseded and not cited: its rows reach both sides through a fixture that no longer exists.
 
 -----------------------------------------------------------------------------
 `find | sort` IS CALLED, NOT REIMPLEMENTED
@@ -56,7 +56,7 @@ recognised; ANYTHING else -- `--help`, `--isntall`, `-l`, a stray path -- falls 
     typecheck-workers: 1 worker project(s) have their deps
     rc=0
 
-`--help` prints the first transcript too. The dangerous half is `--isntall` on the `lint:unused` path: the caller means "install only", gets a full typecheck, and any tsc error in a worker surfaces as a knip-step failure. Reproduced here, not repaired.
+`--help` prints the first transcript too. The dangerous half is `--isntall` on the `lint:unused` path: the caller means "install only", gets a full typecheck, and any tsc error in a worker surfaces as a knip-step failure. REPAIRED in this port's entry: `__main__` runs `gate_args.parse` before `main`, so an unknown argument exits 2 naming it and the accepted ones, and runs nothing.
 
 -----------------------------------------------------------------------------
 DEFECT B -- A PARTIAL `find` FAILURE IS A GREEN RUN OVER A SMALLER SET
@@ -123,7 +123,7 @@ NO_WORKERS_LINES = (
 )
 
 # The three defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
-AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN = True
+AN_UNKNOWN_ARGUMENT_IS_A_FULL_RUN = False  # the twin did; this entry refuses (see DEFECT A)
 A_PARTIAL_FIND_FAILURE_IS_A_SMALLER_GREEN_RUN = True
 A_PRESENT_BUT_STALE_NODE_MODULES_IS_NEVER_REFRESHED = True
 
@@ -290,4 +290,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("typecheck_workers.py", sys.argv[1:], switches=("--list", "--install"))
     raise SystemExit(main(sys.argv[1:]))

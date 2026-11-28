@@ -1,12 +1,16 @@
 /**
  * S1 and F1: what the executor refuses before a command runs.
  *
- * S1. The CLI's grand-repo guard (utils/command-policy.ts assertCommandPolicy)
- * runs only inside the local action and only for an agent. A proxied command
- * never reaches the local action, and the executor is not an agent, so before
- * this fix an agent using `--proxy` could `repo up` / `repo down` / `repo exec`
- * any grand repo. The executor now computes grand-ness itself, from the config
- * the command will run against, and refuses a grand-repo mutation by default.
+ * S1. The executor computes grand-ness itself, from the config the command will
+ * run against, through the one repo resolver every path uses, and asks the one
+ * decision function (`decide`, PLAN-rmcp-decide.md D3). A policy that does not
+ * set `allowGrandRepos` refuses a grand-repo mutation, a ref the executor cannot
+ * identify counts as grand, `repo promote` always lands on the grand, and an
+ * ops-VM placement is exempt. With NO policy document the executor refuses a
+ * grand-repo mutation even for an owner, deviating from decide()'s
+ * null-human-owner-grand row: every console or `--proxy` caller looks human, so
+ * the executor cannot tell an agent calling its API directly from a person
+ * (security review finding b2f0bd2f.1).
  *
  * F1. The executor audits AFTER a command ran. The Phase 1 trial ran with an
  * executor token lacking `audit:write`: the event was rejected (403) and the
@@ -74,15 +78,18 @@ function executorIdentity(scopes: string[]) {
   return { ...OWNER, scopes, createdByUserId: 'user-exec', userEmail: 'exec@example.com' };
 }
 
+/** Allows every repo command, sets no `allowGrandRepos`: grand-repo mutations are refused. */
+const REPO_ONLY: PolicyDocument = { version: 1, defaults: { commands: { allow: ['repo *'] } } };
+
 /** `shop` is a grand repo (tag latest); `shop:trial` is a fork of it. */
-function fleetConfig(policy?: PolicyDocument): RdcConfig {
+function fleetConfig(policy?: PolicyDocument, machineIp = '10.1.1.1'): RdcConfig {
   const config: RdcConfig = {
     schemaVersion: 3,
     id: '00000000-0000-4000-8000-0000000000bb',
     version: 1,
     credentials: { ssh: { privateKey: 'KEY' } },
     resources: {
-      machines: { m1: { ip: '10.1.1.1', user: 'root', port: 22 } },
+      machines: { m1: { ip: machineIp, user: 'root', port: 22 } },
       repositories: {
         shop: {
           grand: 'latest',
@@ -117,6 +124,7 @@ function fakeAccount(executorScopes: string[] | 'unreachable'): typeof fetch {
 interface RunOutcome {
   status: number;
   error?: string;
+  code?: string;
   stderr?: string;
   success?: boolean;
 }
@@ -182,8 +190,8 @@ describe('executor pre-run refusals', () => {
       body: JSON.stringify({ contractVersion: CLI_CONTRACT_VERSION, pathKey, positionals }),
     });
     if (response.status !== 200) {
-      const body = (await response.json()) as { error: string };
-      return { status: response.status, error: body.error };
+      const body = (await response.json()) as { error: string; code?: string };
+      return { status: response.status, error: body.error, code: body.code };
     }
     const lines = (await response.text())
       .split('\n')
@@ -216,20 +224,21 @@ describe('executor pre-run refusals', () => {
       ['repo exec', { ref: 'shop', cmd: ['ls'] }],
       ['repo delete', { ref: 'shop' }],
     ])(
-      'refuses "%s" on a grand repo by default, even for an owner (%o)',
+      'refuses "%s" on a grand repo under a policy without allowGrandRepos, even for an owner (%o)',
       async (pathKey, positionals) => {
-        boot({});
-        const { status, error } = await run(pathKey, positionals);
+        boot({ config: fleetConfig(REPO_ONLY) });
+        const { status, error, code } = await run(pathKey, positionals);
 
         expect(status).toBe(403);
+        expect(code).toBe('GRAND_REPO_DENIED');
         expect(error).toMatch(/grand repo/);
-        expect(error).toMatch(/rdc repo fork/);
+        expect(error).toMatch(/Next step: rdc repo fork shop --tag <tag>/);
         expect(executed).toHaveLength(0);
       }
     );
 
     it('runs the same mutation on a fork', async () => {
-      boot({});
+      boot({ config: fleetConfig(REPO_ONLY) });
       const { status, success } = await run('repo up', { ref: 'shop:trial' });
 
       expect(status).toBe(200);
@@ -239,7 +248,7 @@ describe('executor pre-run refusals', () => {
     });
 
     it('still allows a read of a grand repo', async () => {
-      boot({});
+      boot({ config: fleetConfig(REPO_ONLY) });
       const { status, success } = await run('repo status', { ref: 'shop' });
 
       expect(status).toBe(200);
@@ -248,19 +257,22 @@ describe('executor pre-run refusals', () => {
     });
 
     it('fails closed on a ref it cannot identify', async () => {
-      boot({});
-      const { status } = await run('repo up', { ref: 'nosuchrepo' });
+      boot({ config: fleetConfig(REPO_ONLY) });
+      const { status, code } = await run('repo up', { ref: 'nosuchrepo' });
 
       expect(status).toBe(403);
+      expect(code).toBe('GRAND_REPO_DENIED');
       expect(executed).toHaveLength(0);
     });
 
     it('treats repo promote as a grand mutation even though its ref names a fork', async () => {
-      boot({});
-      const { status, error } = await run('repo promote', { 'fork-ref': 'shop:trial' });
+      boot({ config: fleetConfig(REPO_ONLY) });
+      const { status, error, code } = await run('repo promote', { 'fork-ref': 'shop:trial' });
 
       expect(status).toBe(403);
-      expect(error).toMatch(/grand repo/);
+      expect(code).toBe('GRAND_REPO_DENIED');
+      // The refusal names the grand the fork would replace, not the fork.
+      expect(error).toMatch(/would change shop, a grand repo/);
       expect(executed).toHaveLength(0);
     });
 
@@ -278,20 +290,57 @@ describe('executor pre-run refusals', () => {
       expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
     });
 
-    it('refuses under a policy that allows the command but not grand repos', async () => {
-      boot({ config: fleetConfig({ version: 1, defaults: { commands: { allow: ['repo *'] } } }) });
-      const { status, error } = await run('repo up', { ref: 'shop' });
+    it.each([
+      ['repo up', { ref: 'shop' }],
+      ['repo delete', { ref: 'shop' }],
+      ['repo up', { ref: 'nosuchrepo' }],
+      ['repo promote', { 'fork-ref': 'shop:trial' }],
+    ])(
+      'refuses "%s" on a grand repo for an owner of an org with no policy (%o)',
+      async (pathKey, positionals) => {
+        boot({});
+        const { status, error, code } = await run(pathKey, positionals);
 
-      expect(status).toBe(403);
-      expect(error).toMatch(/allowGrandRepos/);
-      expect(executed).toHaveLength(0);
+        expect(status).toBe(403);
+        expect(code).toBe('GRAND_REPO_DENIED');
+        expect(error).toMatch(
+          /no policy: grand-repo changes need an org policy with allowGrandRepos/
+        );
+        expect(error).toMatch(/Next step: rdc repo fork \S+ --tag <tag>/);
+        expect(executed).toHaveLength(0);
+      }
+    );
+
+    it('runs a fork mutation for an owner of an org with no policy', async () => {
+      boot({});
+      const { status, success } = await run('repo up', { ref: 'shop:trial' });
+
+      expect(status).toBe(200);
+      expect(success).toBe(true);
+      expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
+    });
+
+    it('still allows a read of a grand repo with no policy', async () => {
+      boot({});
+      const { status, success } = await run('repo status', { ref: 'shop' });
+
+      expect(status).toBe(200);
+      expect(success).toBe(true);
+    });
+
+    it('exempts a grand repo placed on an ops VM', async () => {
+      boot({ config: fleetConfig(REPO_ONLY, '192.168.111.11') });
+      const { status } = await run('repo up', { ref: 'shop' });
+
+      expect(status).toBe(200);
+      expect(executed.filter((call) => call.functionName === 'repository_up')).toHaveLength(1);
     });
 
     it('applies on a daemon too, reading its enrolled config file', async () => {
       // Never write outside the scratch dir: this save would otherwise replace a real rediacc.json.
       expect(configFileStorage.getConfigDir().startsWith(tmpdir())).toBe(true);
-      await configFileStorage.save(fleetConfig(), 'rediacc');
-      boot({ mode: 'daemon' });
+      await configFileStorage.save(fleetConfig(REPO_ONLY), 'rediacc');
+      boot({ mode: 'daemon', config: fleetConfig(REPO_ONLY) });
 
       expect((await run('repo up', { ref: 'shop' })).status).toBe(403);
       expect(executed).toHaveLength(0);
@@ -338,7 +387,9 @@ describe('executor pre-run refusals', () => {
 
       expect(status).toBe(200);
       expect(executed.length).toBeGreaterThan(0);
-      expect(audited).toHaveLength(1);
+      // A change is recorded `started` before it runs, then with its outcome (PLAN-rmcp-writeback.md Design 8).
+      expect(audited).toHaveLength(2);
+      expect(audited[0]).toMatchObject({ commandPath: 'repo up', outcome: 'started' });
       expect(stderr ?? '').not.toMatch(/audit record/);
     });
   });

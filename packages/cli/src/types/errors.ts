@@ -46,6 +46,28 @@ export const ERROR_CODES = {
   DETACHED: 'DETACHED',
 } as const satisfies Record<ErrorCode, ErrorCode>;
 
+/** The exit codes a caller may retry as is: the network, a rate limit, the API. */
+const RETRYABLE_EXIT_CODES: ReadonlySet<number> = new Set([
+  EXIT_CODES.NETWORK_ERROR,
+  EXIT_CODES.RATE_LIMITED,
+  EXIT_CODES.API_ERROR,
+]);
+
+export function isRetryableExitCode(exitCode: number): boolean {
+  return RETRYABLE_EXIT_CODES.has(exitCode);
+}
+
+/**
+ * The EXIT_CODES name of an exit code (`6` is `NETWORK_ERROR`), or `EXIT_<n>` for a
+ * code the CLI propagates without naming it (renet's 10 and 18, a remote command's own).
+ */
+export function exitCodeName(exitCode: number): string {
+  for (const [name, value] of Object.entries(EXIT_CODES)) {
+    if (value === exitCode && name !== 'SUCCESS') return name;
+  }
+  return `EXIT_${exitCode}`;
+}
+
 /**
  * Map an ERROR_CODES string to its process exit code (spec/03 §1). The sibling
  * of `httpStatusToExitCode` (types/index.ts): that one turns an HTTP status into

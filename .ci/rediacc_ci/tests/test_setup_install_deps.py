@@ -19,7 +19,7 @@ Both fakes write the SAME `sleep\\t<seconds>` line into the same call log, so th
 case would cost 30 real seconds per side; with them the schedule itself is an
 assertion (`10` then `20`, never a third).
 
-THE LEDGER LINE. `shadow-gate.ts` classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...` line on stdout is what gives the shadow ledger something to compare; see `.ci/shadow/w7p6-install-deps.observations.jsonl`.
+THE LEDGER LINE. the shadow gate (commit:bf054adcd4) classifies any line starting with `→ ` or `✓ ` as CHATTER before `--finding-re` is ever consulted, and this script reports almost entirely through `log_step`/`log_info`. The fake's `call: npm [...] ...` line on stdout is what gives the shadow ledger something to compare; see the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations
@@ -73,7 +73,7 @@ with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
     fh.write("npm\\t" + where + "\\t" + "\\t".join(argv) + "\\n")
 
 # THE LEDGER LINE, on stdout under a prefix no CHATTER rule matches. See the
-# module docstring: a `→ `/`✓ ` line can never become a shadow-gate finding.
+# module docstring: a `→ `/`✓ ` line can never become a shadow gate finding.
 sys.stdout.write(
     "call: npm [" + where + "] " + " ".join(shlex.quote(a) for a in argv) + "\\n"
 )

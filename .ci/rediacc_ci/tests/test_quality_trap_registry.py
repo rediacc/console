@@ -4,7 +4,7 @@ WHY A DIFFERENTIAL ON THE PARSER. It is a fence-tracking state machine whose who
 fail
 for the right reason.
 
-The whole gate, including F6's planted controls (the gate prints their count), is covered by `.ci/shadow/w7p2-trap-registry.observations.jsonl` over five distinct trees.
+The whole gate, including F6's planted controls (the gate prints their count), is covered by the ledger (deleted in commit:936280cd35) over five distinct trees.
 
 THE TWIN IS RETIRED (PLAN-retire-bash-oracles B3). Its awk parser's answers, its floor and its two summary lines are frozen in `goldens/twins/quality.check-trap-registry.jsonl` through `differential.twin_call`; the extraction below runs only when that golden is re-frozen from a live twin (`regolden.py --source bash`).
 """
@@ -182,6 +182,20 @@ def _probe_findings(registry: "mod.Registry") -> list[str]:
     return found
 
 
+def test_entry_run_reads_a_run_that_is_the_last_property_without_a_comma(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 53515727.2: a manifest entry whose `run` carries no trailing comma still resolves, so its gate pointer is not dangling."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    reg.manifest.write_text(
+        "export const ENTRIES = [\n  {\n    id: 'check:a',\n    run: 'echo a'\n  },\n"
+        "  {\n    id: 'check:b',\n    run: 'echo b',\n  },\n];\n",
+        encoding="utf-8",
+    )
+    assert reg.entry_run("check:a") == "echo a"
+    assert reg.entry_run("check:b") == "echo b"
+
+
 def test_a_clean_registration_passes_the_probe_assertion(tmp_path: pathlib.Path) -> None:
     reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
     assert _probe_findings(reg) == []
@@ -215,18 +229,8 @@ def test_the_controls_include_the_probe_plant_and_pass(tmp_path: pathlib.Path) -
 
 
 def _check_plan_boxes():
-    """`.ci/scripts/quality/check_plan_boxes.py`, loaded by path: the formula `box_sig` restates."""
-    scripts = paths.from_root(".ci", "scripts", "quality")
-    # The script's own `import _cipath` shim lives beside it.
-    paths.on_sys_path(scripts)
-    spec = importlib.util.spec_from_file_location(
-        "check_plan_boxes_for_trap_registry", scripts / "check_plan_boxes.py"
-    )
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    """`rediacc_ci.quality.plan_boxes`, the formula `box_sig` restates."""
+    return importlib.import_module("rediacc_ci.quality.plan_boxes")
 
 
 def test_box_sig_is_the_plan_box_gates_sig_on_every_real_box() -> None:
@@ -503,3 +507,38 @@ def test_the_real_seeds_load_and_their_pointers_are_live() -> None:
     for trap_id in loaded:
         assert mod.pointer_problem(real, "shape:%s" % trap_id) == "", trap_id
     assert real.shapes_path == mod.SHAPES_DEFAULT
+
+
+def test_a_module_outside_ci_resolves_by_its_top_level_name_only(tmp_path: pathlib.Path) -> None:
+    """747c7fe6.3: a `-m` module outside .ci is judged by its top-level name (`json`), so a missing submodule still resolves; the importability asked is the running interpreter's. CONTROL: a top-level name nothing can import does not resolve."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    assert reg.run_resolves("python3 -m json.nosuch")
+    assert not reg.run_resolves("python3 -m ctl_no_such_top_level")
+
+
+def test_a_module_with_an_empty_dotted_segment_never_resolves(tmp_path: pathlib.Path) -> None:
+    """a9f7f1b0.1: `-m a.` names no module (the interpreter refuses it), so it must not probe `.ci/a.py` through an empty segment. CONTROL: `-m a` itself resolves against the same file."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    ci_dir = reg.file_root / ".ci"
+    ci_dir.mkdir()
+    (ci_dir / "a.py").write_text("", encoding="utf-8")
+    assert reg.run_resolves("python3 -m a")
+    assert not reg.run_resolves("python3 -m a.")
+    assert not reg.run_resolves("python3 -m a..b")
+
+
+def test_importability_is_asked_of_the_running_interpreter_not_the_named_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """747c7fe6.3 (e81cd4f8.3): the run names an interpreter that does not exist, yet a module the running interpreter's `find_spec` reports resolves, and the question put to it is the top-level name. An implementation that asked the named interpreter would fail here."""
+    reg = _probe_registry(tmp_path, mod.CONTROL_LIFECYCLE, '{ "hooks": {} }\n')
+    asked: list[str] = []
+
+    def fake_find_spec(name: str) -> object | None:
+        asked.append(name)
+        return object() if name == "only_the_running_interpreter_knows" else None
+
+    monkeypatch.setattr(importlib.util, "find_spec", fake_find_spec)
+    assert reg.run_resolves("/nonexistent/python3 -m only_the_running_interpreter_knows.sub")
+    assert asked == ["only_the_running_interpreter_knows"]
+    assert not reg.run_resolves("/nonexistent/python3 -m unknown_to_both")

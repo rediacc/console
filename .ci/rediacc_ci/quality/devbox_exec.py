@@ -13,6 +13,15 @@ THE ANTI-VACUITY FLOOR counts the `*d` / `*words` splat sites: a count below MIN
 THE SCANS READ WHOLE-LINE-COMMENT-BLANKED TEXT, with line numbers preserved: the wrong shapes are explained in docstrings and comments throughout, and a scan that read them would fail on its own documentation. Docstring text is not blanked, so a docstring must not spell the wrong shape as code.
 
 WHAT THIS GATE CANNOT SEE: it reasons about core/devbox.py's own call sites. A new file elsewhere that builds a docker argv from `docker_words()` on its own is out of scope.
+
+---- gate ----
+step: Devbox exec invocation
+emit: false
+blocker: BLOCKER: runs before this lane's `- id: setup` step, so its hand-written step carries no `steps.setup.outcome` guard. Emitting it into the region would move it below that guard and skip it whenever setup fails.
+needs: none
+selftest: true
+lane: quality-code
+---- end gate ----
 """
 
 import os
@@ -262,4 +271,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_devbox_exec.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

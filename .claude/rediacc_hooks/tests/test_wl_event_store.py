@@ -596,6 +596,9 @@ DEADCODE_CONSUMERS = (
     wlfix.STOP_DIR.parents[1] / "rediacc_hooks" / "plan_gate.py",
     # `wl_review.patch_ids` is called only from the live-proof successor map, which imports it so a record's `Patch-Id:` has one spelling.
     wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "review" / "successor.py",
+    # `wl_worktrees.resolve_open_item` is called from the lease verb, and `wl_planqueue.number_notes` from the plan-folders gate.
+    wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "dev" / "worktree_lease.py",
+    wlfix.STOP_DIR.parents[2] / ".ci" / "rediacc_ci" / "quality" / "plan_folders.py",
 )
 
 
@@ -615,7 +618,7 @@ def orphan_defs(directory, refs) -> list[str]:
     for path in sorted(refs.glob("check_*.py")):
         with contextlib.suppress(OSError):
             extra.append(path.read_text(encoding="utf-8"))
-    # The hook GUARDS are the same kind of legitimate outside consumer: `guards/block_agent_cap.py` enforces the writer cap at spawn time by calling `wl_roster.live_writers_estimate`, so that it shares the Stop hook's number and reader types instead of re-deriving them. The planted-orphan control is unaffected, for the reason above.
+    # The hook GUARDS are the same kind of legitimate outside consumer: `guards/block_plan_concurrency.py` calls `wl_roster.live_estimate` and `read_only_types` at spawn time, so that it shares the Stop hook's reader types instead of re-deriving them. The planted-orphan control is unaffected, for the reason above.
     for path in sorted(DEADCODE_GUARDS.glob("block_*.py")):
         with contextlib.suppress(OSError):
             extra.append(path.read_text(encoding="utf-8"))

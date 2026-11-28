@@ -1,4 +1,4 @@
-"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding (agent/plans/PLAN-stop-hook-turbo.md boxes T1, T3, T15, T23), and the effort level that resolves into it (agent/plans/PLAN-stop-hook-effort.md box E2).
+"""The QUEUE.md settings block: reader, writer, solo marker, the `--queue-set` verb and the RQ-SETTINGS finding, the effort level that resolves into it (agent/plans/PLAN-stop-hook-effort.md box E2), and its shrink to `effort` alone (agent/plans/PLAN-simple-two-tree-loop.md B5).
 
 The parser tests drive `wl_planqueue` directly; the verb tests drive the real CLI through `wlfix`; the gate test runs `check_plan_record.py` against a fixture root. Every FIRE has an inverse that differs by one planted fact.
 """
@@ -38,19 +38,20 @@ def block(body: str) -> str:
     return HEAD + "## Settings\n\nProse.\n\n```stop-hook\n%s\n```\n\n" % body + TAIL
 
 
-ALL_KEYS = (
-    "effort",
-    "turbo",
-    "turbo_push",
-    "batch_size",
-    "plan_concurrency",
-    "writer_cap",
-    "commit_remind_min",
-    "backup_push_h",
-    "judge",
-    "cadence",
-    "agent_hint",
-    "agent_pushback",
+ALL_KEYS = ("effort", "judge", "cadence", "agent_hint", "agent_pushback")
+# The knobs agent/plans/PLAN-simple-two-tree-loop.md ruling 11 deleted or fixed in code, and the bundle switches the level alone decides: each is refused as a fence line.
+RETIRED = (
+    "turbo: on",
+    "turbo_push: batch-end",
+    "batch_size: 3",
+    "plan_concurrency: 5",
+    "commit_remind_min: 15",
+    "backup_push_h: 4",
+    "judge: core",
+    "cadence: off",
+    "agent_hint: off",
+    "agent_pushback: off",
+    "stop_hook: off",
 )
 E = wlfix.import_wl("wl_effort")
 
@@ -60,8 +61,8 @@ def test_defaults_when_there_is_no_settings_section():
     assert problems == []
     assert got == PQ.Settings()
     # The fail-safe level is `high`: every check and the full judge, as before the dial existed.
-    assert (got.effort, got.turbo, got.batch_size, got.writer_cap) == ("high", False, 1, 4)
-    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (
+    assert (got.effort, got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (
+        "high",
         True,
         True,
         True,
@@ -74,7 +75,7 @@ def test_defaults_when_there_is_no_settings_section():
 # ---- the effort level (agent/plans/PLAN-stop-hook-effort.md E2) ------------------------------------
 
 
-@pytest.mark.parametrize("level", ["quiet", "low", "smart", "high", "ultra"])
+@pytest.mark.parametrize("level", ["quiet", "low", "smart", "high"])
 def test_every_level_resolves_its_bundle(level):
     got, problems = PQ.settings(block("effort: %s" % level))
     assert problems == []
@@ -87,63 +88,52 @@ def test_every_level_resolves_its_bundle(level):
 
 
 def test_the_levels_differ_where_the_plan_says_they_do():
+    assert E.LEVELS == ("quiet", "low", "smart", "high")
     by = {lv: PQ.settings(block("effort: %s" % lv))[0] for lv in E.LEVELS}
-    assert [by[lv].judge for lv in E.LEVELS] == ["off", "off", "core", "full", "full"]
-    assert [by[lv].agent_pushback for lv in E.LEVELS] == [False, False, True, True, True]
-    # ultra is high plus the throughput bundle, and nothing else.
-    assert (by["ultra"].turbo, by["ultra"].writer_cap, by["ultra"].plan_concurrency) == (
-        True,
-        15,
-        5,
-    )
-    assert by["ultra"].batch_size == 3
-    assert (
-        dataclasses.replace(
-            by["ultra"], effort="high", turbo=False, writer_cap=4, plan_concurrency=1, batch_size=1
-        )
-        == by["high"]
-    )
+    assert [by[lv].judge for lv in E.LEVELS] == ["off", "off", "core", "full"]
+    assert [by[lv].agent_pushback for lv in E.LEVELS] == [False, False, True, True]
 
 
-def test_an_explicit_override_wins_over_the_bundle():
-    got, problems = PQ.settings(
-        block("effort: ultra\nwriter_cap: 6 -- operator cap\njudge: core\nagent_hint: off")
-    )
-    assert problems == []
-    assert (got.effort, got.turbo, got.writer_cap, got.judge, got.agent_hint) == (
-        "ultra",
-        True,
-        6,
-        "core",
-        False,
-    )
-    src = PQ.sources(block("effort: ultra\nwriter_cap: 6"))
-    assert (src["effort"], src["writer_cap"], src["turbo"]) == (
-        "QUEUE.md",
-        "QUEUE.md",
-        "effort ultra",
-    )
-    # CONTROL: without the override the bundle's value stands.
-    assert PQ.settings(block("effort: ultra"))[0].writer_cap == 15
+def test_ultra_is_refused_and_falls_back_to_high():
+    """B5: `ultra` left with the throughput knobs, so `effort: ultra` is a problem naming the levels, and the level is the fail-safe one."""
+    got, problems = PQ.settings(block("effort: ultra"))
+    assert problems == ["%s: effort: expected quiet|low|smart|high, got 'ultra'" % PQ.QUEUE_REL]
+    assert got.effort == "high"
+    with pytest.raises(ValueError, match=r"expected quiet\|low\|smart\|high, got .ultra."):
+        PQ.set_settings(block("effort: low"), {"effort": "ultra"})
+    # CONTROL: `effort: quiet` parses with no problem, and is not the fail-safe level.
+    quiet, none = PQ.settings(block("effort: quiet"))
+    assert (quiet.effort, quiet.judge, none) == ("quiet", "off", [])
 
 
-def test_stop_hook_is_gone_and_quiet_replaces_it():
-    got, problems = PQ.settings(block("stop_hook: off"))
-    assert any("unknown key 'stop_hook'" in p for p in problems), problems
-    assert got.effort == "high"  # an unknown line never quiets the hook
-    assert not hasattr(got, "stop_hook")
-    assert PQ.settings(block("effort: quiet"))[0].judge == "off"
+@pytest.mark.parametrize("line", RETIRED)
+def test_any_key_but_effort_is_refused_by_name_with_the_line_to_delete(line):
+    """B5: the fence takes `effort` alone. Any other line is a problem that names the key and the exact line to delete, and changes no value: the level still decides."""
+    key = line.split(":")[0]
+    got, problems = PQ.settings(block("effort: smart\n%s -- operator note" % line))
+    assert problems == [
+        "%s: %r is not a setting (effort is the only one); delete the line `%s -- operator note`"
+        % (PQ.QUEUE_REL, key, line)
+    ], problems
+    assert got == PQ.settings(block("effort: smart"))[0]
+    assert not hasattr(got, "turbo")
+    # CONTROL: the same block without the line is clean.
+    assert PQ.settings(block("effort: smart"))[1] == []
 
 
-def test_an_empty_value_drops_the_override_so_the_level_decides():
-    text = block("effort: smart\nturbo: on -- why\nwriter_cap: 9")
-    new = PQ.set_settings(text, {"turbo": "", "writer_cap": ""})
-    assert "turbo:" not in new
-    assert "writer_cap:" not in new
+def test_a_turbo_fence_is_refused_by_name_and_quiets_nothing():
+    got, problems = PQ.settings(block("turbo: on"))
+    assert any("'turbo' is not a setting" in p and "`turbo: on`" in p for p in problems), problems
+    assert got == PQ.Settings()  # no `effort:` line: the fail-safe level, every check
+
+
+def test_an_empty_value_drops_the_effort_line_so_high_decides():
+    text = block("effort: smart -- why")
+    new = PQ.set_settings(text, {"effort": ""})
+    assert "effort:" not in new
     got, problems = PQ.settings(new)
-    assert problems == []
-    assert (got.turbo, got.writer_cap) == (False, 4)
-    with pytest.raises(ValueError, match="unknown key"):
+    assert (got.effort, problems) == ("high", [])
+    with pytest.raises(ValueError, match="'stop_hook' is not a setting"):
         PQ.set_settings(text, {"stop_hook": ""})
 
 
@@ -151,140 +141,91 @@ def test_the_dataclass_is_frozen_with_the_contract_fields():
     names = [f.name for f in dataclasses.fields(PQ.Settings)]
     assert names == [*ALL_KEYS, "notes"]
     assert tuple(ALL_KEYS) == PQ.KNOWN_KEYS
+    assert PQ.SETTINGS_KEYS == ("effort",)
+    assert set(PQ.BUNDLE_KEYS) == set(E.BUNDLE_TYPES)
     settings: Any = PQ.Settings()
     with pytest.raises(dataclasses.FrozenInstanceError):
-        settings.turbo = True
+        settings.effort = "low"
 
 
-def test_every_key_parses_and_notes_are_kept():
-    got, problems = PQ.settings(
-        block(
-            "effort: low -- quiet for the operator\nturbo: on\nbatch_size: 7\n"
-            "writer_cap: 2 -- cap -- with a second separator\ncadence: off\n"
-            "agent_hint: off\nagent_pushback: off\njudge: off"
-        )
-    )
+def test_cadence_comes_from_the_level_and_the_env_seam_alone(monkeypatch):
+    """The fence takes no `cadence:` line (B5), so the fixtures turn the cadence off through WORKLIST_CADENCE, the twin of WORKLIST_JUDGE (wl_checks.cadence_on): `on` or `off` overrides, any other value is ignored and the level decides."""
+    checks = wlfix.import_wl("wl_checks")
+    on_level = PQ.settings(block("effort: high"))[0]
+    off_level = dataclasses.replace(on_level, cadence=False)
+    monkeypatch.delenv("WORKLIST_CADENCE", raising=False)
+    assert (checks.cadence_on(on_level), checks.cadence_on(off_level)) == (True, False)
+    monkeypatch.setenv("WORKLIST_CADENCE", "off")
+    assert checks.cadence_on(on_level) is False
+    monkeypatch.setenv("WORKLIST_CADENCE", "on")
+    assert checks.cadence_on(off_level) is True
+    # CONTROL: a misspelled value is ignored, so the level's value stands either way.
+    monkeypatch.setenv("WORKLIST_CADENCE", "Off")
+    assert (checks.cadence_on(on_level), checks.cadence_on(off_level)) == (True, False)
+
+
+def test_effort_parses_and_its_note_is_kept():
+    got, problems = PQ.settings(block("effort: low -- quiet for the operator -- with a second one"))
     assert problems == []
-    assert (got.effort, got.turbo, got.batch_size, got.writer_cap) == ("low", True, 7, 2)
-    assert (got.cadence, got.agent_hint, got.agent_pushback, got.judge) == (False,) * 3 + ("off",)
-    assert got.notes == {
-        "effort": "quiet for the operator",
-        "writer_cap": "cap -- with a second separator",
-    }
-    # CONTROL: the same block with the values flipped differs, so the test reads the values.
-    other, _ = PQ.settings(block("effort: high\nturbo: off\nbatch_size: 1\nwriter_cap: 4"))
+    assert (got.effort, got.judge, got.agent_hint) == ("low", "off", False)
+    assert got.notes == {"effort": "quiet for the operator -- with a second one"}
+    # CONTROL: another level differs, so the test reads the value.
+    other, _ = PQ.settings(block("effort: high"))
     assert other != got
 
 
-def test_an_unknown_key_is_a_problem_and_the_rest_still_parse():
-    got, problems = PQ.settings(block("turbo: on\nturbx: on\nbatch_size: 3"))
-    assert [p for p in problems if "turbx" in p], problems
-    assert (got.turbo, got.batch_size) == (True, 3)
-    # CONTROL: without the unknown key there is no problem.
-    assert PQ.settings(block("turbo: on\nbatch_size: 3"))[1] == []
-
-
-@pytest.mark.parametrize(
-    "line",
-    [
-        "turbo: onn",
-        "turbo: true",
-        "turbo:",
-        "effort: medium",
-        "effort: off",
-        "batch_size: 0",
-        "batch_size: -1",
-        "batch_size: two",
-        "batch_size: 1.5",
-        "writer_cap: 0",
-        "judge: ON",
-        "judge: on",
-        "turbo_push: batch_end",
-        "turbo_push: PR",
-        "turbo_push: on",
-        "turbo_push:",
-        "backup_push_h: -1",
-        "backup_push_h: 2.5",
-        "backup_push_h: four",
-    ],
-)
-def test_a_bad_value_falls_back_to_that_keys_default(line):
-    key = line.split(":")[0]
-    got, problems = PQ.settings(block("%s\ncadence: off" % line))
+@pytest.mark.parametrize("line", ["effort: medium", "effort: off", "effort:", "effort: HIGH"])
+def test_a_bad_effort_value_falls_back_to_high(line):
+    got, problems = PQ.settings(block(line))
     assert len(problems) == 1, problems
-    assert key in problems[0], problems
-    assert getattr(got, key) == getattr(PQ.Settings(), key)
-    assert got.cadence is False  # the rest still parses
+    assert "effort" in problems[0], problems
+    assert got == PQ.Settings()
 
 
-def test_lf7_turbo_push_and_backup_push_h_parse_render_and_default():
-    """LF7 of agent/plans/PLAN-turbo-local-first.md: the two local-first keys parse, keep their notes, render in the mode line in SETTINGS_KEYS order, and default to batch-end and 4 hours."""
-    assert (PQ.Settings().turbo_push, PQ.Settings().backup_push_h) == ("batch-end", 4)
-    for push, hours in (("pr", "0"), ("batch-end", "12")):
-        got, problems = PQ.settings(
-            block("turbo: on\nturbo_push: %s -- why\nbackup_push_h: %s" % (push, hours))
-        )
-        assert problems == []
-        assert (got.turbo_push, got.backup_push_h) == (push, int(hours))
-        assert got.notes == {"turbo_push": "why"}
-        line = PQ.mode_line(got)
-        assert "turbo on; turbo_push %s; batch_size 1;" % push in line, line
-        assert "commit_remind_min 15; backup_push_h %s; judge full; cadence on" % hours in line, (
-            line
-        )
-    # 0 is a value for backup_push_h (the advisory is off) and still a typo for every other integer key.
-    assert PQ.settings(block("backup_push_h: 0"))[1] == []
-    assert PQ.settings(block("writer_cap: 0"))[1] != []
-    # The writer accepts what the reader accepts and refuses what it refuses.
-    new = PQ.set_settings(block("turbo: on"), {"turbo_push": "pr", "backup_push_h": "0"})
-    assert (PQ.settings(new)[0].turbo_push, PQ.settings(new)[0].backup_push_h) == ("pr", 0)
-    with pytest.raises(ValueError, match="turbo_push"):
-        PQ.set_settings(block("turbo: on"), {"turbo_push": "later"})
-
-
-def test_a_duplicate_key_falls_back_to_the_default():
-    got, problems = PQ.settings(block("effort: quiet\neffort: quiet\nturbo: on"))
+def test_a_duplicate_effort_line_falls_back_to_the_default():
+    got, problems = PQ.settings(block("effort: quiet\neffort: quiet"))
     assert got.effort == "high"
-    assert got.turbo is True
     assert any("effort" in p and "2 times" in p for p in problems), problems
 
 
 def test_a_line_that_is_not_key_value_is_a_problem():
-    _got, problems = PQ.settings(block("turbo on"))
+    _got, problems = PQ.settings(block("effort quiet"))
     assert problems
-    assert "turbo on" in problems[0]
+    assert "effort quiet" in problems[0]
 
 
 def test_a_second_fence_is_ignored_and_reported():
-    text = block("turbo: on").replace("## Promoted", "```stop-hook\nturbo: off\n```\n\n## Promoted")
+    text = block("effort: low").replace(
+        "## Promoted", "```stop-hook\neffort: quiet\n```\n\n## Promoted"
+    )
     got, problems = PQ.settings(text)
-    assert got.turbo is True  # the first fence wins
+    assert got.effort == "low"  # the first fence wins
     assert any("second" in p for p in problems), problems
 
 
 def test_a_fence_outside_the_section_is_reported():
-    text = HEAD + TAIL + "\n```stop-hook\nturbo: on\n```\n"
+    text = HEAD + TAIL + "\n```stop-hook\neffort: quiet\n```\n"
     got, problems = PQ.settings(text)
-    assert got.turbo is False
+    assert got.effort == "high"
     assert any("outside" in p for p in problems), problems
 
 
 def test_the_section_below_promoted_is_reported_and_not_read():
-    text = HEAD + TAIL + "\n## Settings\n\n```stop-hook\nturbo: on\neffort: quiet\n```\n"
+    text = HEAD + TAIL + "\n## Settings\n\n```stop-hook\neffort: quiet\n```\n"
     got, problems = PQ.settings(text)
-    assert (got.turbo, got.effort) == (False, "high")  # the fail-safe direction
+    assert got.effort == "high"  # the fail-safe direction
     assert any("below" in p for p in problems), problems
 
 
 def test_an_unclosed_fence_and_a_section_without_a_fence_are_reported():
-    _g, unclosed = PQ.settings(HEAD + "## Settings\n\n```stop-hook\nturbo: on\n\n" + TAIL)
+    _g, unclosed = PQ.settings(HEAD + "## Settings\n\n```stop-hook\neffort: low\n\n" + TAIL)
     assert unclosed
     _g, empty = PQ.settings(HEAD + "## Settings\n\nProse only.\n\n" + TAIL)
     assert any("no `stop-hook` fence" in p for p in empty), empty
 
 
 def test_the_section_does_not_leak_into_the_queue_entries():
-    text = block("turbo: on")
+    text = block("effort: low")
     assert PQ.entries(text) == (
         [
             "agent/plans/PLAN-a.md",
@@ -308,18 +249,16 @@ def test_settings_for_reads_the_working_tree_and_a_rev(tmp_path):
     assert PQ.settings_for(tmp_path) == (PQ.Settings(), [])  # no file: defaults, no problem
     queue = tmp_path / PQ.QUEUE_REL
     queue.parent.mkdir(parents=True)
-    queue.write_text(block("turbo: on"), encoding="utf-8")
+    queue.write_text(block("effort: low"), encoding="utf-8")
     git(tmp_path, "init", "-q")
     git(tmp_path, "config", "user.email", "t@t")
     git(tmp_path, "config", "user.name", "t")
     git(tmp_path, "add", "-A")
     git(tmp_path, "commit", "-qm", "base")
-    queue.write_text(block("turbo: off\nbatch_size: 5"), encoding="utf-8")
-    assert PQ.settings_for(tmp_path)[0].batch_size == 5
+    queue.write_text(block("effort: smart"), encoding="utf-8")
+    assert PQ.settings_for(tmp_path)[0].effort == "smart"
     at_head, problems = PQ.settings_for(tmp_path, "HEAD")
-    assert (at_head.turbo, at_head.batch_size, problems) == (True, 1, [])
-    # CONTROL: the rev read and the working-tree read differ, so neither is the other.
-    assert PQ.settings_for(tmp_path)[0].turbo is False
+    assert (at_head.effort, problems) == ("low", [])
     bad, problems = PQ.settings_for(tmp_path, "no-such-rev")
     assert bad == PQ.Settings()
     assert problems
@@ -334,94 +273,92 @@ def fence_span(text: str) -> tuple[int, int]:
     return start, text.index("\n```\n", start) + 1
 
 
-def test_set_settings_rewrites_only_the_fence_lines():
-    text = block("effort: smart -- keep this note\nturbo: off -- old reason\nbatch_size: 1")
-    new = PQ.set_settings(text, {"turbo": "on", "writer_cap": "2"}, note="operator test")
+def test_set_settings_rewrites_only_the_effort_line():
+    text = block("effort: smart -- old reason\nturbo: off -- a retired line the lead deletes")
+    new = PQ.set_settings(text, {"effort": "low"}, note="operator test")
     lo, hi = fence_span(text)
     nlo, nhi = fence_span(new)
     assert (text[:lo], text[hi:]) == (new[:nlo], new[nhi:])  # every other byte identical
     assert new[nlo:nhi] == (
-        "effort: smart -- keep this note\nturbo: on -- operator test\nbatch_size: 1\n"
-        "writer_cap: 2 -- operator test\n"
+        "effort: low -- operator test\nturbo: off -- a retired line the lead deletes\n"
     )
-    got, problems = PQ.settings(new)
-    assert problems == []
-    assert (got.turbo, got.writer_cap, got.batch_size) == (True, 2, 1)
-    # The round trip: setting the values already there changes nothing at all.
-    assert PQ.set_settings(new, {"turbo": "on", "writer_cap": "2"}, note="operator test") == new
+    got, _problems = PQ.settings(new)
+    assert got.effort == "low"
+    # The round trip: setting the value already there changes nothing at all.
+    assert PQ.set_settings(new, {"effort": "low"}, note="operator test") == new
 
 
 def test_set_settings_note_policy():
-    text = block("turbo: off -- reason one")
-    assert "reason one" in PQ.set_settings(text, {"turbo": "off"})  # unchanged value keeps it
-    flipped = PQ.set_settings(text, {"turbo": "on"})  # a changed value drops the stale reason
+    text = block("effort: low -- reason one")
+    assert "reason one" in PQ.set_settings(text, {"effort": "low"})  # unchanged value keeps it
+    flipped = PQ.set_settings(text, {"effort": "smart"})  # a changed value drops the stale reason
     assert "reason one" not in flipped
-    assert "turbo: on\n" in flipped
+    assert "effort: smart\n" in flipped
 
 
-def test_set_settings_drops_later_duplicates_of_an_updated_key():
-    text = block("turbo: off\nturbo: off\nbatch_size: 2")
-    new = PQ.set_settings(text, {"turbo": "on"})
-    assert PQ.settings(new) == (PQ.Settings(turbo=True, batch_size=2), [])
-    assert new.count("turbo:") == 1
+def test_set_settings_drops_later_duplicates_of_the_effort_line():
+    text = block("effort: low\neffort: low")
+    new = PQ.set_settings(text, {"effort": "smart"})
+    assert PQ.settings(new) == (PQ.settings(block("effort: smart"))[0], [])
+    assert new.count("effort:") == 1
 
 
 def test_set_settings_creates_the_section_above_promoted():
     text = HEAD + TAIL
-    new = PQ.set_settings(text, {"turbo": "on", "batch_size": "3"}, note="n")
+    new = PQ.set_settings(text, {"effort": "smart"}, note="n")
     assert new.index("## Settings") < new.index("## Promoted")
     assert new.startswith(HEAD)
     assert new.endswith(TAIL)
     lo, hi = fence_span(new)
-    keys = [line.split(":")[0] for line in new[lo:hi].splitlines()]
-    assert keys == [
-        "effort",
-        "turbo",
-        "batch_size",
-    ]  # the level, then what was set, in KNOWN_KEYS order
+    assert new[lo:hi] == "effort: smart -- n\n"
     got, problems = PQ.settings(new)
     assert problems == []
-    assert (got.turbo, got.batch_size) == (True, 3)
-    assert got.notes == {"turbo": "n", "batch_size": "n"}
+    assert (got.effort, got.notes) == ("smart", {"effort": "n"})
     # With no Promoted heading the section is appended.
-    bare = PQ.set_settings("# Plan queue\n", {"turbo": "on"})
+    bare = PQ.set_settings("# Plan queue\n", {"effort": "low"})
     assert bare.startswith("# Plan queue\n")
-    assert PQ.settings(bare)[0].turbo is True
+    assert PQ.settings(bare)[0].effort == "low"
 
 
 @pytest.mark.parametrize(
     ("updates", "note"),
     [
-        ({"turbx": "on"}, None),
-        ({"turbo": "onn"}, None),
-        ({"batch_size": "0"}, None),
-        ({"turbo": "on"}, "two\nlines"),
+        ({"turbo": "on"}, None),
+        ({"plan_concurrency": "5"}, None),
+        ({"cadence": "off"}, None),
+        ({"effort": "ultra"}, None),
+        ({"effort": "low"}, "two\nlines"),
     ],
 )
 def test_set_settings_refuses_what_the_reader_would_reject(updates, note):
+    text = block("effort: high")
     with pytest.raises(ValueError, match=r"."):
-        PQ.set_settings(block("turbo: off"), updates, note)
+        PQ.set_settings(text, updates, note)
 
 
 def test_set_settings_refuses_a_structurally_broken_block():
-    below = HEAD + TAIL + "\n## Settings\n\n```stop-hook\nturbo: on\n```\n"
+    below = HEAD + TAIL + "\n## Settings\n\n```stop-hook\neffort: low\n```\n"
     with pytest.raises(ValueError, match="below"):
-        PQ.set_settings(below, {"turbo": "on"})
+        PQ.set_settings(below, {"effort": "low"})
     with pytest.raises(ValueError, match="no `stop-hook` fence"):
-        PQ.set_settings(HEAD + "## Settings\n\nProse.\n\n" + TAIL, {"turbo": "on"})
+        PQ.set_settings(HEAD + "## Settings\n\nProse.\n\n" + TAIL, {"effort": "low"})
 
 
 def test_sources_name_where_each_value_comes_from():
-    got = PQ.sources(block("turbo: on\nbatch_size: x"))
-    assert got["turbo"] == "QUEUE.md"
-    assert got["batch_size"] == "effort high"  # a bad value falls back to the level's bundle
-    assert got["judge"] == "effort high"
-    assert got["effort"] == "default"  # no `effort:` line: the fail-safe level
+    got = PQ.sources(block("effort: smart\nplan_concurrency: 9"))
+    assert got == {
+        "effort": "QUEUE.md",
+        "judge": "effort smart",
+        "cadence": "effort smart",
+        "agent_hint": "effort smart",
+        "agent_pushback": "effort smart",
+    }
+    assert PQ.sources(block("turbo: on"))["effort"] == "default"  # no `effort:` line
     assert set(got) == set(ALL_KEYS)
 
 
 def test_solo_marker():
-    text = block("turbo: on")
+    text = block("effort: low")
     assert PQ.solo_plans(text) == {
         "agent/plans/PLAN-b.md",
         "agent/plans/PLAN-e.md",
@@ -459,22 +396,22 @@ def plant(wl, body: str) -> pathlib.Path:
 
 def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):
     wl.reg_repo()
-    queue = plant(wl, block("turbo: off -- old\nbatch_size: 1"))
+    queue = plant(wl, block("effort: high -- old"))
     wl.git("add", "-A")
     wl.git("commit", "-qm", "chore: queue")
     head = wl.git("rev-parse", "HEAD").stdout
     before = queue.read_text(encoding="utf-8")
-    got = wl.cli("--queue-set", wlfix.ME, "turbo=on", "batch_size=2", "--note", "operator test")
+    got = wl.cli("--queue-set", wlfix.ME, "effort=smart", "--note", "operator test")
     assert got.rc == 0, got.err
-    assert "turbo: on (QUEUE.md)" in got.out
-    assert "batch_size: 2 (QUEUE.md)" in got.out
+    assert "effort: smart (QUEUE.md) -- operator test" in got.out
+    assert "judge: core (effort smart)" in got.out
     assert "git add agent/plans/QUEUE.md" in got.out
     after = queue.read_text(encoding="utf-8")
     assert after != before
     settings, problems = PQ.settings(after)
     assert problems == []
-    assert (settings.turbo, settings.batch_size) == (True, 2)
-    assert settings.notes["turbo"] == "operator test"
+    assert settings.effort == "smart"
+    assert settings.notes["effort"] == "operator test"
     assert wl.git("rev-parse", "HEAD").stdout == head  # no commit was made
     assert wl.git("status", "--porcelain").stdout.strip() == "M agent/plans/QUEUE.md"
     assert not list(queue.parent.glob(".planrec-*")), "an atomic-write temp file was left behind"
@@ -483,17 +420,18 @@ def test_queue_set_writes_atomically_prints_git_add_and_never_commits(wl):
 @pytest.mark.parametrize(
     "pairs",
     [
-        ["turbo=onn"],
-        ["turbo=on", "batch_size=0"],  # one good pair must not be written when another is bad
-        ["turbx=on"],
-        ["turbo"],
-        ["turbo=on", "turbo=off"],
+        ["effort=medium"],
+        ["effort=low", "turbo=on"],  # one good pair must not be written when another is refused
+        ["plan_concurrency=25"],
+        ["effort=ultra"],
+        ["effort"],
+        ["effort=low", "effort=smart"],
         ["--oops"],
-        ["turbo=on", "--note"],
+        ["effort=low", "--note"],
     ],
 )
 def test_queue_set_refuses_a_bad_call_and_leaves_the_file_untouched(wl, pairs):
-    queue = plant(wl, block("turbo: off\nbatch_size: 1"))
+    queue = plant(wl, block("effort: high"))
     before = queue.read_bytes()
     mtime = queue.stat().st_mtime_ns
     got = wl.cli("--queue-set", wlfix.ME, *pairs)
@@ -504,29 +442,29 @@ def test_queue_set_refuses_a_bad_call_and_leaves_the_file_untouched(wl, pairs):
     assert queue.read_bytes() == before
     assert queue.stat().st_mtime_ns == mtime
     # CONTROL: the same file accepts the one good pair.
-    assert wl.cli("--queue-set", wlfix.ME, "turbo=on").rc == 0
+    assert wl.cli("--queue-set", wlfix.ME, "effort=low").rc == 0
     assert queue.read_bytes() != before
 
 
 def test_queue_set_refuses_a_broken_block_and_a_missing_file(wl):
-    # setup() writes `cadence: off` into QUEUE.md; this case needs the file gone.
+    # setup() writes `effort: high` into QUEUE.md; this case needs the file gone.
     (wl.proj / PQ.QUEUE_REL).unlink(missing_ok=True)
-    missing = wl.cli("--queue-set", wlfix.ME, "turbo=on")
+    missing = wl.cli("--queue-set", wlfix.ME, "effort=low")
     assert missing.rc == 2
     assert "unreadable" in missing.err
     assert not (wl.proj / PQ.QUEUE_REL).exists()  # a refusal does not create the file
-    queue = plant(wl, HEAD + TAIL + "\n## Settings\n\n```stop-hook\nturbo: on\n```\n")
+    queue = plant(wl, HEAD + TAIL + "\n## Settings\n\n```stop-hook\neffort: low\n```\n")
     before = queue.read_bytes()
-    got = wl.cli("--queue-set", wlfix.ME, "turbo=off")
+    got = wl.cli("--queue-set", wlfix.ME, "effort=smart")
     assert got.rc == 2
     assert "below" in got.err
     assert queue.read_bytes() == before
 
 
 def test_queue_set_checks_the_identity_like_the_other_verbs(wl):
-    queue = plant(wl, block("turbo: off"))
+    queue = plant(wl, block("effort: high"))
     before = queue.read_bytes()
-    foreign = wl.cli("--queue-set", "cafe1234", "turbo=on")
+    foreign = wl.cli("--queue-set", "cafe1234", "effort=low")
     assert foreign.rc != 0, (foreign.rc, foreign.err)
     assert queue.read_bytes() == before
     usage = wl.cli("--queue-set")
@@ -535,16 +473,16 @@ def test_queue_set_checks_the_identity_like_the_other_verbs(wl):
 
 
 def test_queue_set_bare_prints_values_sources_and_problems(wl):
-    plant(wl, block("turbo: on -- operator test\nbatch_size: x\nturbx: on"))
+    plant(wl, block("turbo: on -- operator test\nplan_concurrency: 4"))
     got = wl.cli("--queue-set", wlfix.ME)
     assert got.rc == 0, got.err
     lines = got.out.splitlines()
-    assert "turbo: on (QUEUE.md) -- operator test" in lines
-    assert "batch_size: 1 (effort high)" in lines  # the bad value fell back to the bundle
     assert "judge: full (effort high)" in lines
     assert "effort: high (default)" in lines
-    assert any(line.startswith("PROBLEM") and "turbx" in line for line in lines), got.out
-    assert any(line.startswith("PROBLEM") and "batch_size" in line for line in lines), got.out
+    assert any(line.startswith("PROBLEM") and "'turbo' is not a setting" in line for line in lines)
+    assert any(line.startswith("PROBLEM") and "`plan_concurrency: 4`" in line for line in lines), (
+        got.out
+    )
     assert any(line.startswith("checks at effort high: ") for line in lines), got.out
     assert [
         ln.split(":")[0] for ln in lines if not ln.startswith(("PROBLEM", "checks at effort"))
@@ -553,7 +491,7 @@ def test_queue_set_bare_prints_values_sources_and_problems(wl):
     (wl.proj / PQ.QUEUE_REL).unlink()
     bare = wl.cli("--queue-set", wlfix.ME)
     assert bare.rc == 0
-    assert "turbo: off (effort high)" in bare.out
+    assert "cadence: on (effort high)" in bare.out
     assert "PROBLEM" not in bare.out
     assert not (wl.proj / PQ.QUEUE_REL).exists()
 
@@ -580,13 +518,16 @@ def gate_output(tmp_path, queue_text: str) -> str:
 
 
 def test_rq_settings_is_a_finding_for_a_malformed_block_and_silent_for_a_good_one(tmp_path):
-    good = "# Plan queue\n\n" + block("turbo: on").split("# Plan queue\n\n", 1)[1]
+    good = "# Plan queue\n\n" + block("effort: low").split("# Plan queue\n\n", 1)[1]
     finding = (
         "RQ-SETTINGS: agent/plans/QUEUE.md"  # the selftest's own PASS lines say RQ-SETTINGS too
     )
     assert finding not in gate_output(tmp_path / "ok", good)
-    bad = gate_output(tmp_path / "bad", good.replace("turbo: on", "turbo: onn"))
-    assert finding + ": turbo: expected on|off, got 'onn'" in bad, bad[-600:]
+    bad = gate_output(tmp_path / "bad", good.replace("effort: low", "effort: low\nturbo: on"))
+    assert (
+        finding + ": 'turbo' is not a setting (effort is the only one); delete the line `turbo: on`"
+        in bad
+    ), bad[-600:]
 
 
 # ---- the in-flight block (operator order 2026-10-06) ---------------------------------------------
@@ -618,7 +559,7 @@ def as_dict(settings) -> dict[str, str]:
 
 def rendered(inf) -> str:
     """The block as it lands in a queue file."""
-    return PQ.with_inflight(block("turbo: off"), PQ.render_inflight(inf))
+    return PQ.with_inflight(block("effort: high"), PQ.render_inflight(inf))
 
 
 def assert_mode_matches(text: str, settings) -> None:
@@ -629,46 +570,28 @@ def assert_mode_matches(text: str, settings) -> None:
     )
 
 
-def test_inflight_turbo_on_shows_the_switch_batch_and_a_turbo_claim():
-    settings = PQ.Settings(turbo=True, batch_size=3, plan_concurrency=5, writer_cap=15)
+def test_inflight_names_the_level_its_switches_and_the_live_writers_with_no_limit():
+    settings = PQ.settings(block("effort: smart"))[0]
     inf = inflight(
         settings=settings,
         pr=612,
-        plans=(
-            PQ.PlanLine(OWN, "the PR body's `Plan:` line", 2, 5),
-            PQ.PlanLine("agent/plans/PLAN-two.md", "a turbo batch claim on the `Plan:` line", 0, 3),
-        ),
+        plans=(PQ.PlanLine(OWN, "the PR body's `Plan:` line", 2, 5),),
         writers=("a1e6524bd31efbbcd",),
         next_plan="agent/plans/PLAN-three.md",
         next_why="Promoted entry 3",
-        next_when="a turbo pick joins this PR when a writer slot frees under plan_concurrency 5",
     )
     text = rendered(inf)
     assert_mode_matches(text, settings)
     body = PQ.inflight_text(text)
-    assert "turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 15" in body
-    assert (
-        "  - agent/plans/PLAN-two.md -- 0 of 3 boxes ticked, a turbo batch claim on the `Plan:` line"
-        in body
-    )
-    assert (
-        "- Writers: 1 live of writer_cap 15 (session d778be9d): worker:a1e6524bd31efbbcd." in body
-    )
-    assert "a turbo pick joins this PR when a writer slot frees" in body
+    assert "- Mode: effort smart; judge core; cadence on; agent_hint on; agent_pushback on." in body
+    assert "- Writers: 1 live (session d778be9d): worker:a1e6524bd31efbbcd." in body
 
 
-def test_inflight_focus_on_names_mode_pr_branch_and_owner():
-    focus = (PQ.FocusLine("d778be9d", "merge", "612", "1006-2", "2026-10-06T09:00:00Z"),)
-    text = rendered(inflight(pr=612, focus=focus))
-    assert_mode_matches(text, PQ.Settings())
-    assert (
-        "- Phase: merge on PR #612 (branch 1006-2, session d778be9d, since 2026-10-06T09:00:00Z)."
-        in text
-    )
-    # The inverse differs by the one planted fact.
-    assert "- Phase: build." in rendered(inflight(pr=612))
-    expired = (dataclasses.replace(focus[0], expired=True),)
-    assert "past its 24-hour limit" in rendered(inflight(pr=612, focus=expired))
+def test_inflight_carries_no_phase_line():
+    """The phase verb is gone (agent/plans/PLAN-simple-two-tree-loop.md B10), so the block names no wind-down."""
+    text = rendered(inflight(pr=612))
+    assert "- Phase:" not in text
+    assert "- Branch: 1006-2, PR #612 open." in text
 
 
 def test_inflight_no_pr_names_the_queue_head_the_first_push_binds():
@@ -744,11 +667,11 @@ def test_inflight_a_branch_with_only_planless_epics_names_them_and_no_plan():
 
 
 def test_inflight_planted_wrong_mode_render_fails_the_mode_check():
-    """CONTROL: a block that shows turbo off while it is on, or drops focus, must fail the reading every case above relies on."""
-    settings = PQ.Settings(turbo=True)
+    """CONTROL: a block that shows another level than the one in force, or drops the mode line, must fail the reading every case above relies on."""
+    settings = PQ.settings(block("effort: low"))[0]
     good = rendered(inflight(settings=settings))
     assert_mode_matches(good, settings)
-    planted = good.replace("turbo on;", "turbo off;")
+    planted = good.replace("effort low;", "effort high;")
     assert planted != good
     with pytest.raises(AssertionError, match="disagrees with the settings"):
         assert_mode_matches(planted, settings)
@@ -757,7 +680,7 @@ def test_inflight_planted_wrong_mode_render_fails_the_mode_check():
 
 
 def test_inflight_block_sits_between_settings_and_promoted_and_keeps_every_other_byte():
-    text = block("turbo: on")
+    text = block("effort: low")
     once = PQ.with_inflight(text, "- one\n")
     assert once.index("## Settings") < once.index(PQ.INFLIGHT_HEADING) < once.index("## Promoted")
     assert (
@@ -781,7 +704,7 @@ def test_inflight_block_is_never_compared_by_the_queue_gate(tmp_path):
     path.write_text(PQ.SKELETON, encoding="utf-8")
     assert PQ.problems(root, update=True) == []
     fresh = path.read_text(encoding="utf-8")
-    for body in ("- Mode: turbo on.\n", "- anything at all, 1. agent/plans/PLAN-x.md\n"):
+    for body in ("- Mode: effort low.\n", "- anything at all, 1. agent/plans/PLAN-x.md\n"):
         planted = PQ.with_inflight(fresh, body)
         path.write_text(planted, encoding="utf-8")
         assert PQ.problems(root) == [], body
@@ -795,12 +718,12 @@ def test_inflight_block_is_never_compared_by_the_queue_gate(tmp_path):
 def test_queue_set_refreshes_the_inflight_block(wl):
     path = wl.proj / PQ.QUEUE_REL
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(block("turbo: off"), encoding="utf-8")
-    got = wl.cli("--queue-set", wlfix.ME, "turbo=on", "batch_size=4")
+    path.write_text(block("effort: high"), encoding="utf-8")
+    got = wl.cli("--queue-set", wlfix.ME, "effort=smart")
     assert got.rc == 0, got.err
     text = path.read_text(encoding="utf-8")
     assert PQ.inflight_text(text) is not None, text
     assert_mode_matches(text, PQ.settings(text)[0])
-    assert PQ.inflight_mode(text)["turbo"] == "on"
-    assert wl.cli("--queue-set", wlfix.ME, "turbo=off").rc == 0
-    assert PQ.inflight_mode(path.read_text(encoding="utf-8"))["turbo"] == "off"
+    assert PQ.inflight_mode(text)["effort"] == "smart"
+    assert wl.cli("--queue-set", wlfix.ME, "effort=low").rc == 0
+    assert PQ.inflight_mode(path.read_text(encoding="utf-8"))["effort"] == "low"

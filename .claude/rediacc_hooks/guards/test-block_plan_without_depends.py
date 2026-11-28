@@ -16,7 +16,6 @@ THE LIVE-PROOF LINE (agent/plans/PLAN-tested-on-bench.md V3). A new plan whose O
 THE X FIELDS AND THE OPERATOR FREEZE (agent/plans/PLAN-plan-priority-concurrency.md section 8, T4). Every fixture plan carries a valid Priority/Concurrency/Owns triple unless a case is about its absence, and the absence cases are always refused: the X fields are mandatory (T11). The freeze cases run against an on-disk `(operator)` plan, and the escape against transcript fixtures whose operator turn (or AskUserQuestion answer) names the plan and the level. BOTH declared defects are planted: `DEFECT` (the freeze) and `VERDICT_DEFECT` (the D1-D7 verdict); each must change at least one answer.
 """
 
-import ast
 import atexit
 import importlib.util
 import json
@@ -24,9 +23,12 @@ import os
 import pathlib
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
+
+import _hookpath
+
+from rediacc_hooks.guards import _edit_suite, _harness
 
 HERE = pathlib.Path(__file__).resolve().parent
 GUARD = HERE / "block_plan_without_depends.py"
@@ -130,23 +132,7 @@ INDEX = (
 )
 
 
-def _outside_defect(src: str, *names: str) -> str:
-    """`src` with every top-level `DEFECT` (or named) assignment removed, so a needle search cannot be satisfied by the declaration that names it.
-
-    `old in src` alone stays true after the guarded line is deleted, because the declaration itself contains the text it plants (measured 2026-10-05).
-    """
-    wanted = names or ("DEFECT",)
-    cut = [
-        n
-        for n in ast.parse(src).body
-        if isinstance(n, ast.Assign)
-        and any(isinstance(t, ast.Name) and t.id in wanted for t in n.targets)
-    ]
-    return "\n".join(
-        line
-        for i, line in enumerate(src.split("\n"), 1)
-        if not any(n.lineno <= i <= (n.end_lineno or n.lineno) for n in cut)
-    )
+_outside_defect = _edit_suite.outside_defect
 
 
 def tree():
@@ -204,6 +190,8 @@ def tree():
     (BASE / "out").mkdir()
     (BASE / "out" / "l").symlink_to(BASE / "agent" / "plans" / "sub", target_is_directory=True)
     (BASE / "agent" / "plans" / "esc").symlink_to(BASE / "out", target_is_directory=True)
+    # 97a2e84b.1: a plan whose bytes are not UTF-8 (a Latin-1 e-acute in its body); `_write_rules.result_text` cannot read it, so an Edit has nothing to judge.
+    (BASE / NONUTF8).write_bytes(plan(dep="PLAN-z.md").encode("utf-8") + b"caf\xe9\n")
     return BASE
 
 
@@ -239,6 +227,7 @@ def edit(rel, old, new, replace_all=False):
 
 
 NEW = "agent/plans/PLAN-new.md"
+NONUTF8 = "agent/plans/PLAN-latin.md"
 
 # PLAN-local-first-delivery L2: an open box this edit adds that waits on GitHub (a phrase of proof-tiers.json `github_waits`) needs a `GitHub-only:` tag or a `Local-route:` correction; a box already waiting is the gate's, not the edit's.
 LP8_WAIT = "- [ ] T2 runs once the change is released\n"
@@ -373,6 +362,12 @@ CASES = [
     (
         "an Edit to a missing plan (the tool fails)",
         edit("agent/plans/PLAN-missing.md", "a", "b"),
+        False,
+    ),
+    # 97a2e84b.1: the same line deletion "an Edit deleting the line" refuses on PLAN-y (its control), against a non-UTF-8 plan: allowed with no traceback (rc 0, not a crash).
+    (
+        "97a2e84b.1: an Edit deleting the line of a non-UTF-8 plan",
+        edit(NONUTF8, "Depends-On: PLAN-z.md\n", ""),
         False,
     ),
     ("an empty payload", {}, False),
@@ -786,7 +781,7 @@ def materialize(payload):
 
 
 def run_case(payload):
-    proc = subprocess.run(
+    proc = _harness.run(
         ARGV, input=json.dumps(materialize(payload)), capture_output=True, text=True, check=False
     )
     return proc.returncode, proc.stderr

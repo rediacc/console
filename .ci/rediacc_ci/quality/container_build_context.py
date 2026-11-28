@@ -5,6 +5,15 @@ WHY. The proxy config (then `workers/proxy/wrangler.toml`, now one `wrangler.<ta
 WHAT IT CHECKS. For each `[[containers]]` entry whose `image` is a Dockerfile path, in every tracked `wrangler*.toml`: the context is `image_build_context` when set, else the Dockerfile's directory (wrangler's default). Every `COPY`/`ADD` source that is not from another stage (`--from=`) and is not a URL must exist under that context, globs included.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
+
+---- gate ----
+step: Container build context
+needs: none
+lane: quality-static
+selftest: true
+why: workers/proxy's container could never build (its Dockerfile copies packages/* from
+     the repo root while wrangler built from workers/proxy), and no CI path builds it
+---- end gate ----
 """
 
 from __future__ import annotations
@@ -149,4 +158,7 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_container_build_context.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

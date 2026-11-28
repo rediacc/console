@@ -11,9 +11,8 @@ WHAT THESE CASES ARE FOR, since `.ci/scripts/quality/check_rdc_native.py` alread
                   first is the behaviour change this port MADE and the one most likely to
                   be "helpfully" reverted; the bash ignored trailing arguments in silence.
   no side effects `--print-plan` must not touch the filesystem. A plan that created the
-                  install directory would make the "is rdc installed?" refusal
-                  unreachable, and that refusal is the only thing stopping a build from
-                  landing somewhere nothing on PATH points at.
+                  install directory would be a side effect of a read-only query; the
+                  directory is created only by the install step itself.
 """
 
 import json
@@ -21,6 +20,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import types
 
 import pytest
 
@@ -98,6 +98,8 @@ def _run(argv, home):
     env = dict(os.environ)
     env["PYTHONPATH"] = ci_dir + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     env["HOME"] = str(home)
+    # The session resource profiler (.claude/hooks/profile) records every python3 it arms under $HOME/.claude/resprofile; that is the harness, not this program, so it is switched off for the run that asserts the program writes nothing.
+    env["WORKLIST_PROFILE"] = "off"
     return subprocess.run(
         [sys.executable, "-m", "rediacc_ci.native", *argv],
         env=env,
@@ -164,6 +166,7 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
             raise StopError
 
     monkeypatch.setattr(native, "_stream", fake_stream)
+    monkeypatch.setattr(native, "_renet_account_key", lambda _root: "KEY")
     monkeypatch.setenv("PYTHONPATH", "/caller/site")
     plan = native.plan(tmp_path, tmp_path, "Linux", "x86_64")
     with pytest.raises(StopError):
@@ -172,3 +175,80 @@ def test_the_sea_build_step_runs_from_the_checkout_with_its_ci_env(monkeypatch, 
     assert "rediacc_ci.build.build_cli_executables" in argv
     assert cwd == tmp_path
     assert env["PYTHONPATH"].split(os.pathsep)[0] == str(tmp_path / ".ci")
+
+
+def _install_fixture(monkeypatch, tmp_path):
+    """Run build_and_install past the build steps into a tmp install tree; returns (plan, calls, logged steps, dest)."""
+    calls = []
+    steps: list[str] = []
+
+    def fake_stream(argv, cwd=None, env=None):
+        calls.append((argv, cwd, env))
+
+    monkeypatch.setattr(native, "_stream", fake_stream)
+    monkeypatch.setattr(native, "_renet_account_key", lambda _root: "KEY123")
+    monkeypatch.setattr(native.log, "step", steps.append)
+    built = tmp_path / "built" / "rdc"
+    built.parent.mkdir()
+    built.write_bytes(b"new")
+    dest = tmp_path / "share" / "bin" / "rdc"
+    plan = native.plan(tmp_path, tmp_path, "Linux", "x86_64")
+    plan = native.dataclasses.replace(
+        plan, built=str(built), dest=str(dest), backup=str(dest) + ".old"
+    )
+    return plan, calls, steps, dest
+
+
+def test_the_stage_linux_call_carries_the_resolved_account_key(monkeypatch, tmp_path):
+    plan, calls, _steps, _dest = _install_fixture(monkeypatch, tmp_path)
+    native.build_and_install(tmp_path, plan)
+    argv, _cwd, env = calls[0]
+    assert argv[:2] == ["./build.sh", "stage_linux"]
+    assert env["ACCOUNT_ED25519_PUBLIC_KEY"] == "KEY123"
+
+
+def test_a_missing_install_directory_is_created(monkeypatch, tmp_path):
+    plan, _calls, _steps, dest = _install_fixture(monkeypatch, tmp_path)
+    assert not dest.parent.exists()
+    native.build_and_install(tmp_path, plan)
+    assert dest.read_bytes() == b"new"
+
+
+def test_the_backup_clause_prints_only_when_a_backup_was_written(monkeypatch, tmp_path):
+    plan, _calls, steps, dest = _install_fixture(monkeypatch, tmp_path)
+    native.build_and_install(tmp_path, plan)
+    assert "(backup at" not in steps[-1]
+    assert not pathlib.Path(plan.backup).exists()
+    dest.write_bytes(b"old")
+    steps.clear()
+    native.build_and_install(tmp_path, plan)
+    assert "backup at %s" % plan.backup in steps[-1]
+    assert pathlib.Path(plan.backup).read_bytes() == b"old"
+
+
+def test_a_missing_renet_licence_key_is_a_native_error_naming_the_exit(monkeypatch, tmp_path):
+    """6b050dc6.1: `resolve_renet_account_key` raising LocalCommonError becomes a NativeError that carries its exit code."""
+
+    class LocalCommonError(Exception):
+        def __init__(self, code):
+            super().__init__(code)
+            self.code = code
+
+    def resolve(_dir, _env):
+        raise LocalCommonError(7)
+
+    fake = types.SimpleNamespace(
+        LocalCommonError=LocalCommonError, resolve_renet_account_key=resolve
+    )
+    monkeypatch.setattr(native.importlib, "import_module", lambda _name: fake)
+    with pytest.raises(native.NativeError, match=r"no renet licence key \(exit 7\)"):
+        native._renet_account_key(tmp_path)
+
+
+def test_an_install_directory_blocked_by_a_file_is_a_native_error(monkeypatch, tmp_path):
+    """6b050dc6.2: a regular file where the install directory goes raised FileExistsError as a traceback."""
+    plan, _calls, _steps, dest = _install_fixture(monkeypatch, tmp_path)
+    dest.parent.parent.mkdir(parents=True)
+    dest.parent.write_text("not a directory")
+    with pytest.raises(native.NativeError, match="cannot create the install directory"):
+        native.build_and_install(tmp_path, plan)

@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 1
 language: it
-sourceHash: "85a342068d855709"
-sourceCommit: "43aec6b89a55f69f994476d3a124e749d4d2223f"
+sourceHash: "07ffbc8e00b851a7"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Il Regolamento generale sulla protezione dei dati (GDPR) è la legge dell'Unione Europea sulla protezione dei dati, in vigore dal maggio 2018. Disciplina le modalità con cui le organizzazioni raccolgono, trattano e archiviano i dati personali degli individui nell'UE.
@@ -27,7 +27,7 @@ La tabella seguente mappa gli articoli specifici del GDPR alle capacità tecnich
 | [Art. 28](https://gdpr-info.eu/art-28-gdpr/), Responsabile del trattamento | Obblighi di trattamento dei dati da parte di terzi | Self-hosted: Rediacc gira sulla propria infrastruttura. Nessun dato lascia la macchina durante le operazioni di fork, clone o backup. Nessun componente SaaS tratta i dati personali. |
 | [Art. 30](https://gdpr-info.eu/art-30-gdpr/), Registro delle attività di trattamento | Tenere il registro delle attività di trattamento | Il log di audit traccia oltre 70 tipologie di eventi: autenticazione, token API, operazioni sul config store, licenze e operazioni CLI sulle macchine (ciclo di vita dei repository, backup, sincronizzazione, terminale). Esportazione tramite dashboard di amministrazione o pagina attività del portale (esportazione JSON disponibile). |
 | [Art. 32](https://gdpr-info.eu/art-32-gdpr/), Sicurezza del trattamento | Misure tecniche adeguate | Cifratura LUKS2 AES-256 a riposo, isolamento di rete tramite iptables e daemon Docker separati, sottoreti IP loopback (/26) per repository. Il config store utilizza la cifratura a triplo livello: chiavi SDK con finestra temporale, derivazione CEK a chiave suddivisa (passkey + segreto server) e cifratura della passphrase organizzativa. |
-| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notifica di violazione | Notifica entro 72 ore con traccia forense | I log di audit forniscono una traccia forense di tutte le operazioni. L'architettura self-hosted limita il raggio d'impatto ai singoli repository. |
+| [Art. 33](https://gdpr-info.eu/art-33-gdpr/), Notifica di violazione | Notifica entro 72 ore all'autorità di controllo | Il report di incidente a fasi include una mappa dei campi tra ogni campo del report e l'elenco dei contenuti dell'Art. 33(3), e i timer dell'incidente contano le 72 ore dal momento della consapevolezza. I record di flusso di rete (con la cattura attiva, piani a pagamento) e il log di audit forniscono evidenze su ciò che è accaduto; i record di flusso mostrano volume e destinazione, non il contenuto. Stabilire se una violazione sia notificabile e che cosa venga inviato resta una valutazione del titolare del trattamento. L'architettura self-hosted limita il raggio d'impatto ai singoli repository. |
 
 ## Residenza dei dati
 

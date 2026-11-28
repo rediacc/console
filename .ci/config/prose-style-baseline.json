@@ -15,16 +15,16 @@
   "that shrank by 29 can still hide one brand-new violation. Comparing sizes is not",
   "the same claim as diffing the sets."
  ],
- "count": 2727,
- "files": 668,
+ "count": 2558,
+ "files": 626,
  "by_rule": {
-  "R1": 1485,
-  "R11": 139,
+  "R1": 1379,
+  "R11": 135,
   "R14": 1,
-  "R18": 12,
+  "R18": 11,
   "R19": 55,
-  "R2": 602,
-  "R7": 433
+  "R2": 576,
+  "R7": 401
  },
  "findings": {
   ".ci/breakpoint/README.md": {
@@ -76,11 +76,6 @@
     "e5038611286af891"
    ]
   },
-  ".ci/config/python-env-registry.json": {
-   "R18": [
-    "7970e93bb65005b6"
-   ]
-  },
   ".ci/config/secret-supply.json": {
    "R7": [
     "b65f611b0a5546a9"
@@ -90,11 +85,6 @@
    "R1": [
     "089b9f3aafd43d39",
     "313197e1fae3ad5a"
-   ]
-  },
-  ".ci/policy/worklist-env-registry.json": {
-   "R7": [
-    "33006525c9e20d0e"
    ]
   },
   ".ci/prompts/ci-failure-classifier.md": {
@@ -314,11 +304,6 @@
   ".ci/rediacc_ci/quality/config_migrations.py": {
    "R7": [
     "9d4a9677d2a6dd38"
-   ]
-  },
-  ".ci/rediacc_ci/quality/dead_python.py": {
-   "R2": [
-    "c386daf5b08bed0b"
    ]
   },
   ".ci/rediacc_ci/quality/env_manifest.py": {
@@ -637,11 +622,6 @@
     "25191c99a86eef7b"
    ]
   },
-  ".ci/rediacc_ci/tests/gates/test_twin_parity.py": {
-   "R2": [
-    "df24ea89a2acc1c1"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_build_build_pages.py": {
    "R7": [
     "3a8ab62e3b7652fc",
@@ -702,11 +682,6 @@
   ".ci/rediacc_ci/tests/test_core_toolchain.py": {
    "R2": [
     "00dd20f7b6b2f87d"
-   ]
-  },
-  ".ci/rediacc_ci/tests/test_deploy_clone_d1.py": {
-   "R7": [
-    "891a21da008fe175"
    ]
   },
   ".ci/rediacc_ci/tests/test_infra_ci_start_elite.py": {
@@ -802,11 +777,6 @@
     "68f58ab30dcba290"
    ]
   },
-  ".ci/rediacc_ci/tests/test_quality_typecheck_workers.py": {
-   "R7": [
-    "b852d49155f5d14d"
-   ]
-  },
   ".ci/rediacc_ci/tests/test_release_reprobe_r2_sentinel.py": {
    "R7": [
     "654e3195fca00be6"
@@ -862,14 +832,6 @@
     "ad01660953cc9246"
    ]
   },
-  ".ci/scripts/ci/report-nightly-status.cjs": {
-   "R2": [
-    "c914c4baff7bf1e5"
-   ],
-   "R7": [
-    "c87e2d184cbc0509"
-   ]
-  },
   ".ci/scripts/ci/scope-engine.cjs": {
    "R7": [
     "5e409bd4c3214f57",
@@ -914,136 +876,9 @@
     "1c40036f407fea89"
    ]
   },
-  ".ci/scripts/quality/check_agent_hint_liveness.py": {
-   "R1": [
-    "2ee409dbc99e0c1d",
-    "e30a2135c7cf3acf"
-   ]
-  },
-  ".ci/scripts/quality/check_bws_map.py": {
-   "R7": [
-    "a18bb701833b8ccc",
-    "f5ec7f758c9db6af"
-   ]
-  },
-  ".ci/scripts/quality/check_ci_watch_recipe.py": {
-   "R7": [
-    "349b13db5a83f34b"
-   ]
-  },
-  ".ci/scripts/quality/check_decision_ids.py": {
-   "R7": [
-    "88377e9cc34775c7"
-   ]
-  },
-  ".ci/scripts/quality/check_docker_npm_pins.py": {
-   "R1": [
-    "86077760c515e121"
-   ]
-  },
-  ".ci/scripts/quality/check_dockerfile_mirror_resilience.py": {
-   "R2": [
-    "512b49b534be7679"
-   ]
-  },
-  ".ci/scripts/quality/check_e2e_case_blind_assertions.py": {
-   "R7": [
-    "af7ee98f6334ea7c",
-    "d86afcd6e7d87ee8"
-   ]
-  },
-  ".ci/scripts/quality/check_guard_mention_anchoring.py": {
-   "R7": [
-    "252f8e8932499d0f"
-   ]
-  },
-  ".ci/scripts/quality/check_i18n_value_types.py": {
-   "R7": [
-    "ba4885dfc31a7ca5"
-   ]
-  },
-  ".ci/scripts/quality/check_inner_timeout_reachable.py": {
-   "R7": [
-    "9771ca57b50358d9"
-   ]
-  },
-  ".ci/scripts/quality/check_plan_boxes.py": {
-   "R2": [
-    "4682c96cc0b045f9"
-   ],
-   "R7": [
-    "71f5a3ec6bf9b339"
-   ]
-  },
-  ".ci/scripts/quality/check_plan_citations.py": {
-   "R1": [
-    "76257ef1b0a4dc6f",
-    "bd8d627ced1e1a71"
-   ],
-   "R2": [
-    "0197e8593d5ad0cb",
-    "0ecebe94656aa31d"
-   ],
-   "R7": [
-    "4cd92ea5ee79ca21",
-    "c3a06638b82f9578"
-   ]
-  },
   ".ci/scripts/quality/check_plan_record.py": {
    "R1": [
     "41627431f85092f3"
-   ]
-  },
-  ".ci/scripts/quality/check_policy_inventory.py": {
-   "R7": [
-    "53a79cb1df0c059c"
-   ]
-  },
-  ".ci/scripts/quality/check_python_control_plants.py": {
-   "R1": [
-    "187c3b04345c2604"
-   ]
-  },
-  ".ci/scripts/quality/check_python_gate_deps.py": {
-   "R1": [
-    "91ce3889851d89d6"
-   ]
-  },
-  ".ci/scripts/quality/check_resprofile.py": {
-   "R2": [
-    "562504b34fefa180"
-   ],
-   "R7": [
-    "c863ee7cbc3ab377",
-    "e80829255c304d8c"
-   ]
-  },
-  ".ci/scripts/quality/check_runner_advice.py": {
-   "R7": [
-    "72007b7a553fc2fc"
-   ]
-  },
-  ".ci/scripts/quality/check_secret_reachability.py": {
-   "R1": [
-    "9b6ca8b9231e3556"
-   ],
-   "R7": [
-    "30cce58631de7d0e"
-   ]
-  },
-  ".ci/scripts/quality/check_syncpack_sources.py": {
-   "R1": [
-    "393d9c429b438777"
-   ]
-  },
-  ".ci/scripts/quality/check_test_file_orphans.py": {
-   "R1": [
-    "ce7a1458122c66e6"
-   ]
-  },
-  ".ci/scripts/quality/check_tutorial_no_skips.py": {
-   "R7": [
-    "56543cb26a02b689"
    ]
   },
   ".ci/tutorials/tutorial-topics-investigation.md": {
@@ -1119,8 +954,7 @@
     "c428974ecea9f4a0",
     "c7704e702f97d04f",
     "c7c65f0908feaf1f",
-    "c80b4c01441b97aa",
-    "d3d8829ec6e1053c"
+    "c80b4c01441b97aa"
    ],
    "R11": [
     "0e2d98377b094106"
@@ -1201,56 +1035,6 @@
     "ef1ba580099144b0"
    ]
   },
-  ".claude/agents/pr-babysitter.md": {
-   "R1": [
-    "0928fa77826c4c34",
-    "0affd2f61926bb0f",
-    "17d348f565c58f21",
-    "1c2bcb2d30d20c27",
-    "1d04460b279372d2",
-    "1d4aeb22ed36ea92",
-    "1e4bc9c5745dd3a0",
-    "2b1ccf1ed6fca539",
-    "30ca4ce38244e5bc",
-    "3ebad631f84c97fa",
-    "40d8faa18dca3eb4",
-    "42ff21c83765283a",
-    "5bab28e5911064de",
-    "6960380d5ec37038",
-    "79e354006fb12854",
-    "7cd3df0ba7591e12",
-    "7dd6467bbefb3d45",
-    "7ff15dba064801a0",
-    "84781f869f498559",
-    "8d4f735187adbc8e",
-    "8faae96d8c27f0d4",
-    "919e12e5f3827e96",
-    "93f861b6ac07a4e1",
-    "9980cca646a6ba7a",
-    "9c7b08f82343f7c9",
-    "a396dfbedbfdaf45",
-    "a8d732c4253836f9",
-    "b2d1bc11e9f86448",
-    "be9dd21e6977a7b6",
-    "c1efd3732d1e2c72",
-    "cbac3dfe38d20936",
-    "cbb12e7188885f75",
-    "ce0fd7bc356d58bd",
-    "d47a4ec3dcdb9731",
-    "dd3508002d26e5a4",
-    "e1bf4f00a58ef7fe",
-    "eabc19bcc225771b",
-    "f909c2a5fb1c7485",
-    "fcc2082cc9800793"
-   ],
-   "R11": [
-    "8bf4e2a74b372ddb"
-   ],
-   "R2": [
-    "082af21c0070e4d6",
-    "562b3557d2b95e02"
-   ]
-  },
   ".claude/agents/test-advisor.md": {
    "R1": [
     "15561d5dcabe8b9d",
@@ -1303,47 +1087,6 @@
   ".claude/commands/handoff.md": {
    "R1": [
     "bc3eb2f21c7ac194"
-   ]
-  },
-  ".claude/commands/pr-babysit.md": {
-   "R1": [
-    "12b7ac609acf5e23",
-    "33bc0e7271527723",
-    "3658916a9f2cee5f",
-    "3f2b071dfbecaa0b",
-    "5e6bda587c07e910",
-    "7aa697a5dd5b2f3d",
-    "99edc574de5348fe",
-    "a4c3f424a307fb0e",
-    "ad0ef73e0ec83f52",
-    "c265d6c277b3589a",
-    "c46a664eacc38abd",
-    "cb9b416f5f278e7f",
-    "dae8110df37c4969",
-    "e630af43a72af438",
-    "ec33029790d0ed19",
-    "ef97818e99ee649d",
-    "f85781195413ef1e"
-   ],
-   "R2": [
-    "fd2e25a671e03898"
-   ]
-  },
-  ".claude/commands/pr-merge.md": {
-   "R1": [
-    "0c724f799be1e4e6",
-    "0f64577679602af0",
-    "5c71dcb3f1a209de",
-    "abca684229274a70",
-    "afdea05da4477b19",
-    "bec23196c6afbef7"
-   ],
-   "R11": [
-    "4da2a8979712696a",
-    "f6cf16d1c49ecd9a"
-   ],
-   "R2": [
-    "4c3ecd4fae5e593d"
    ]
   },
   ".claude/commands/standing-orders.md": {
@@ -1556,7 +1299,6 @@
     "577deeb3131bee60"
    ],
    "R7": [
-    "a04177a292d63f3a",
     "ac99d9e2086d8c22"
    ]
   },
@@ -1638,7 +1380,6 @@
   },
   ".claude/hooks/stop/wl_reggate.py": {
    "R1": [
-    "829138df3fd840cf",
     "8fb40042c4a12eee",
     "a1f52b24c57b2c76",
     "cbb2bae4a401c7c1"
@@ -1696,25 +1437,8 @@
    ]
   },
   ".claude/hooks/stop/worklist.py": {
-   "R1": [
-    "1b1ee4420cbaa6c9",
-    "32801a47d45a5e48",
-    "461f15e281854ca8",
-    "f844d56173591678"
-   ],
    "R2": [
-    "2fd823313c60d152",
-    "52d85b55bbdb1ce4",
-    "85869c0d06879408",
-    "86b390a438e9aff7",
-    "879e1e762b06a8bd",
-    "8aa269394ecdecce",
     "e799bdc9b3d02ad7"
-   ],
-   "R7": [
-    "2b9f0334088aff80",
-    "9b320fdf1139283f",
-    "f27fa5d81b4d782f"
    ]
   },
   ".claude/hooks/stop/worklist_messages.py": {
@@ -1819,7 +1543,6 @@
     "ddb7d8c4bdfcf550"
    ],
    "R2": [
-    "00d171f884eb5096",
     "b8bcc1522f9c368c"
    ]
   },
@@ -1837,11 +1560,6 @@
   ".claude/rediacc_hooks/guards/block_raw_pr_body_edit.py": {
    "R2": [
     "eddf70e3284c1f98"
-   ]
-  },
-  ".claude/rediacc_hooks/guards/block_roundlog_write.py": {
-   "R7": [
-    "5ad565b8468c751a"
    ]
   },
   ".claude/rediacc_hooks/guards/block_self_matching_pgrep.py": {
@@ -1891,9 +1609,6 @@
     "34fc151617a9aad6",
     "806e7f7bc911e0cb",
     "c7b262027375f801"
-   ],
-   "R7": [
-    "045651a3b6e9611b"
    ]
   },
   ".claude/rediacc_hooks/hookio.py": {
@@ -3189,7 +2904,6 @@
     "860a7f54eb7022ae",
     "97945ea3011f9545",
     "9faeeefb0f6c42f4",
-    "a409aff3701d07d7",
     "a6b14b40fd6b28f0",
     "a7e6caf76cf418c9",
     "a89f53920eb37946",
@@ -4086,7 +3800,6 @@
   },
   "packages/cli/src/config/command-metadata.ts": {
    "R2": [
-    "020923e0505bea65",
     "4b665ed94d89ba4e",
     "860ac989dd1feb91"
    ]
@@ -4145,11 +3858,6 @@
     "570ed6b004f12a4e"
    ]
   },
-  "packages/cli/src/services/core/mutation-gate.ts": {
-   "R2": [
-    "7bc01db9543641cb"
-   ]
-  },
   "packages/cli/src/services/executor/daemon/lifecycle.ts": {
    "R7": [
     "69978b1f3e166a88"
@@ -4198,11 +3906,6 @@
   "packages/cli/src/services/renet/renet-license-contract.ts": {
    "R1": [
     "33579ed036306f9b"
-   ]
-  },
-  "packages/cli/src/services/serve/policy.ts": {
-   "R2": [
-    "c74fcc61789fe6cd"
    ]
   },
   "packages/cli/src/services/serve/sessions.ts": {
@@ -4375,30 +4078,14 @@
     "dc2be1de1b8cb030"
    ]
   },
-  "packages/shared/src/cli-contract/validation.ts": {
-   "R7": [
-    "10f65d1bd85ed450"
-   ]
-  },
   "packages/shared/src/config-crypto/__tests__/golden.test.ts": {
    "R2": [
     "f418bbd3d6cac951"
    ]
   },
-  "packages/shared/src/config-crypto/__tests__/slots.test.ts": {
-   "R2": [
-    "267407672bf22fa6"
-   ]
-  },
   "packages/shared/src/config-crypto/constants.ts": {
    "R7": [
     "1ca17a1dbe8b5c2b"
-   ]
-  },
-  "packages/shared/src/config-crypto/slots.ts": {
-   "R2": [
-    "2e47d174159f81ab",
-    "a802e543ce971a63"
    ]
   },
   "packages/shared/src/config-schema/__tests__/undefined-keys.test.ts": {
@@ -4601,7 +4288,6 @@
     "092dee82794525db",
     "095db13909a9e0a0",
     "0b3fd5e060d2b7a6",
-    "15a0a305ae5c5c09",
     "21bc01bfbb457fb7",
     "351b104b334d845c",
     "3eb6b6992d4534a6",
@@ -4611,16 +4297,13 @@
     "5e3b2a445053a551",
     "60d6ca82e0855051",
     "75fa9ab492b2dfc7",
-    "8561ac1b48bfdd4c",
     "97f568a76253b891",
     "9b627d3cd753a07e",
     "a16240ccecc3f6aa",
-    "a7a02beea39b6d08",
     "c010849cd2df5060",
     "e1dba35c669b07f2",
     "e207ddff3c80466a",
-    "e71bf39a8b6a63f7",
-    "ed741d2e64c08d48"
+    "e71bf39a8b6a63f7"
    ]
   },
   "packages/www/src/content/blog/en/nis2-supply-chain-self-hosted.md": {
@@ -4749,40 +4432,25 @@
    ]
   },
   "packages/www/src/content/docs/en/ai-agents-mcp.md": {
-   "R1": [
-    "9584e00a66c03098",
-    "d143783bfe8c4803",
-    "ea0a7f7f6a34d3fa",
-    "f3b50735032e61e8",
-    "ff43f79ca60d5260"
-   ],
    "R11": [
-    "654ddd4b81092c2e",
     "dc36079f48bce592"
    ]
   },
   "packages/www/src/content/docs/en/ai-agents-overview.md": {
    "R1": [
     "52030982a22658c6",
-    "551a870276e0a0b3",
-    "6bba2d4946abefa8"
+    "551a870276e0a0b3"
    ]
   },
   "packages/www/src/content/docs/en/ai-agents-safety.md": {
    "R1": [
-    "00e8d39fd143adac",
     "0f46f04bc104b6c4",
     "1c42ae176629d7c8",
-    "2411c4361b5423e4",
     "31d55d8e61264f67",
     "37865ff39bfd51b2",
-    "4ff2953faad404db",
     "817f45d07a2dcba1",
     "8a65c3d61aae03af",
-    "91c022e3f2ffc11c",
     "926e794d5445541e",
-    "a0f335e9a57f48a9",
-    "d037c6086462331a",
     "f5d9606b5ef63e04"
    ],
    "R2": [
@@ -4904,8 +4572,6 @@
    "R1": [
     "036f8d562a2d581c",
     "23b227d945e0b77a",
-    "26fff267b1bf6ac7",
-    "5081be969e9d6a37",
     "5c4068915cdec45b",
     "a1b19ea7afa081a2",
     "b86aedb09aaf7aac",
@@ -5401,9 +5067,6 @@
    ]
   },
   "packages/www/src/content/docs/en/siem-integration.md": {
-   "R1": [
-    "8f3384ea78b3db52"
-   ],
    "R19": [
     "178bffb56bdcd04e",
     "31ee20bef4a503de",
@@ -5425,7 +5088,6 @@
     "1493de5edfef55c8",
     "1d000a27243dcb78",
     "26d349cc8000eb4f",
-    "3fb0dbf0fcf5f17e",
     "4d2be9b0079e4cd1",
     "4dc375fc78a6217e",
     "5906d32c3721afe3",
@@ -5433,8 +5095,6 @@
     "5f7d76bdc122a417",
     "6022c951ab542c69",
     "63635f2a03d9dee3",
-    "7f4ba97a5c7611bf",
-    "88a92edee8d22d77",
     "8bae1f60894020ad",
     "92e500872c3c2d02",
     "9cd2b0fb9e28d97f",
@@ -5687,11 +5347,6 @@
     "4c57d7ad8724b1b1"
    ]
   },
-  "scripts/ci-runner/select.ts": {
-   "R2": [
-    "b2b56628e6287f10"
-   ]
-  },
   "scripts/gate-bind.ts": {
    "R1": [
     "c7cbab1b79abb331"
@@ -5855,11 +5510,6 @@
     "ab85afe872b20ebc"
    ]
   },
-  "scripts/gates/check-pricing-consistency.ts": {
-   "R7": [
-    "5c864df577cb57ca"
-   ]
-  },
   "scripts/gates/check-recovery-context.ts": {
    "R7": [
     "ad5afb11923c64fd"
@@ -5897,14 +5547,6 @@
     "22fd1d1d7f5a25d7"
    ]
   },
-  "scripts/gates/check-tutorial-noninteractive.ts": {
-   "R1": [
-    "b1ae4fb9cb05d5d9"
-   ],
-   "R7": [
-    "9f6098be1cc15d8b"
-   ]
-  },
   "scripts/gen/gen-docs.ts": {
    "R2": [
     "02e2fe6c7cd083af",
@@ -5912,11 +5554,6 @@
    ],
    "R7": [
     "79e623bc4c48ceb7"
-   ]
-  },
-  "scripts/gen/gen-manifest.ts": {
-   "R7": [
-    "fa3f1f369f8db38e"
    ]
   },
   "scripts/gen/i18n-backfill-commits.ts": {
@@ -5943,14 +5580,6 @@
   "scripts/lib/positional-cli-detector.ts": {
    "R7": [
     "d385e43d4f2b73d0"
-   ]
-  },
-  "scripts/lib/shadow-gate.ts": {
-   "R1": [
-    "100441ebf3211d95",
-    "62715206f3a26549",
-    "da19a89eb23e4033",
-    "e6dbf50539ebb3ff"
    ]
   },
   "scripts/ops/secret-rename.py": {

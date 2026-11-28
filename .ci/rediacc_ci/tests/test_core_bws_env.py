@@ -1,6 +1,6 @@
 """`rediacc_ci.core.bws_env` against the bytes `.ci/lib/bws-env.sh` printed.
 
-THE TWIN HAS BEEN DELETED. It had zero production sourcers, a fact re-measured three times and recorded in the port's own header; `.ci/shadow/w7p5b-bws-env.observations.jsonl` holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the strength of them. `goldens/bws-env/` holds the helper's OWN recorded bytes, captured on its last day in the tree by
+THE TWIN HAS BEEN DELETED. It had zero production sourcers, a fact re-measured three times and recorded in the port's own header; the ledger (deleted in commit:936280cd35) holds 5 rows of equivalence over 5 distinct trees, and the file was removed on the strength of them. `goldens/bws-env/` holds the helper's OWN recorded bytes, captured on its last day in the tree by
 driving it through the same `_drive` shell function this file used to run live, over the same ten fixtures. Each golden's provenance header carries the blob sha, so `git cat-file -p <sha>` still yields the program that printed them.
 
 NO REAL STORE WAS EVER TOUCHED, AND STILL IS NOT. `bws` is faked on PATH, exactly as `.ci/rediacc_ci/tests/gates/test_gate_bws_env.py` fakes it and for the same reason its header gives: the fake is the point, not a limitation, because an empty stored value and a missing name cannot be produced on demand against a live store. The fake also REFUSES if the caller omits `--color no`,

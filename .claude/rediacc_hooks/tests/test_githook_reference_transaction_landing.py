@@ -141,3 +141,28 @@ def test_no_record_reads_as_before(tmp_path, monkeypatch):
     monkeypatch.chdir(main)
     assert GH.cp.landing_record(str(main)) is None
     assert GH.reference_transaction(["prepared"], _created(main, DEV)) == 1
+
+
+def test_development_branch_cut_stacked_from_a_detached_head(tmp_path):
+    # The landing verb's first switch-over and promote both cut the development branch from a detached HEAD at the landing branch's tip (operator ruling ASKED:2026-11-20T18:46Z); before 2026-11-21 that cut was refused as "not cut from main".
+    main, _ = _trees(tmp_path)
+    _git(main, "switch", "-q", "--detach", PR)
+    refused, err = _cut(main, "switch", "-q", "--no-track", "-c", DEV, "refs/heads/%s" % PR)
+    assert not refused, err
+
+
+def test_control_detached_cut_off_the_landing_tip_is_refused(tmp_path):
+    main, _ = _trees(tmp_path)
+    _git(main, "switch", "-q", "--detach")
+    _git(main, "commit", "-q", "--no-gpg-sign", "--allow-empty", "-m", "off the tip")
+    refused, err = _cut(main, "switch", "-q", "-c", DEV)
+    assert refused, err
+    assert "cut from `main`" in err, err
+
+
+def test_control_stacked_cut_with_no_record_is_refused(tmp_path):
+    main, _ = _trees(tmp_path, record=False, detached=True)
+    _git(main, "branch", PR)
+    _git(main, "switch", "-q", "--detach", PR)
+    refused, err = _cut(main, "switch", "-q", "--no-track", "-c", DEV, "refs/heads/%s" % PR)
+    assert refused, err

@@ -7,8 +7,8 @@ tags:
 subcategory: regulations
 order: 8
 language: pt
-sourceHash: "9179eb8e594f2ed0"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "e1cdb4848a2124ae"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 A NIS2 e o DORA são regulamentos da UE que impõem requisitos de cibersegurança e resiliência operacional a organizações de infraestruturas críticas e do setor financeiro. Ambos entraram em vigor em 2025 e aplicam-se amplamente às indústrias da UE.
@@ -24,13 +24,13 @@ Texto integral: [Diretiva (UE) 2022/2555](https://eur-lex.europa.eu/eli/dir/2022
 | Requisito NIS2 | Capacidade da Rediacc |
 |-----------------|-------------------|
 | Medidas de gestão de risco (Art. 21) | Encriptação LUKS2 em repouso, isolamento de rede por repositório, acesso exclusivo por SSH, registo de auditoria (mais de 70 tipos de eventos incluindo operações em máquinas) |
-| Tratamento de incidentes (Art. 21(2)(b)) | Mais de 70 tipos de eventos (autenticação, tokens, configuração, licenciamento, operações em máquinas) fornecem trilha forense. O isolamento por repositório limita o raio de explosão. |
+| Tratamento de incidentes (Art. 21(2)(b)) | Os registos de fluxo de rede por repositório, a um nível que o cliente escolhe (destino, porta e protocolo; em níveis superiores processo, nome DNS e aberturas de ficheiros sensíveis), são enviados como lotes assinados e encadeados por hash para um bucket onde os administradores do cliente não podem escrever, apenas em planos pagos. Uma cronologia de investigação por repositório verifica a cadeia no navegador, e Declarar incidente inicia os relógios dos prazos. Os registos de fluxo mostram volume e destino, não conteúdo. Os planos Free e Community não registam nada. O isolamento por repositório limita o raio de explosão. Os mais de 70 tipos de eventos de auditoria (autenticação, tokens, configuração, licenciamento, operações em máquinas) registam quem fez o quê. |
 | Continuidade de negócio (Art. 21(2)(c)) | `rdc repo push/pull` com backup encriptado para múltiplos destinos. Snapshots CoW para reversão instantânea. |
 | Segurança da cadeia de fornecimento (Art. 21(2)(d)) | O self-hosted elimina o risco da cadeia de fornecimento SaaS. Nenhum fornecedor de nuvem terceiro processa os seus dados. |
 | Segurança de rede (Art. 21(2)(e)) | Daemons Docker por repositório, regras iptables, isolamento IP de loopback (sub-redes /26). |
 | Encriptação (Art. 21(2)(h)) | Encriptação obrigatória LUKS2 AES-256. Arquivo de configuração de conhecimento zero com AES-256-GCM. |
 | Controlo de acessos (Art. 21(2)(i)) | Autenticação por chave SSH, tokens de API de âmbito limitado com vinculação de IP, autenticação de dois fatores (TOTP). |
-| Notificação de incidentes, aviso prévio de 24h (Art. 23) | O registo de auditoria permite a deteção e delimitação rápidas de incidentes. |
+| Notificação de incidentes, aviso prévio de 24h (Art. 23) | Declarar incidente regista o momento do conhecimento e corre três relógios a partir dele: 24 horas para o aviso prévio, 72 horas para a notificação do incidente e um mês civil após a notificação para o relatório final (Art. 23(4)). Cada fase é preparada como um relatório assinado em PDF, JSON e STIX 2.1, com um mapa de campos que liga cada campo do relatório à Diretiva. Saber se um incidente é significativo, e o que é enviado à CSIRT ou à autoridade competente, continua a ser decisão e comunicação do cliente. |
 
 ### Risco da Cadeia de Fornecimento
 
@@ -52,7 +52,7 @@ Texto integral: [Regulamento (UE) 2022/2554](https://eur-lex.europa.eu/eli/reg/2
 |-----------------|-------------------|
 | Quadro de gestão de risco TIC (Art. 6) | A encriptação, o isolamento, o registo de auditoria e o backup formam a camada de controlos técnicos. |
 | Proteção e prevenção (Art. 9) | Encriptação LUKS2 AES-256 em repouso. O isolamento de rede impede o movimento lateral. Acesso exclusivo por SSH. |
-| Deteção (Art. 10) | Mais de 70 tipos de eventos incluindo operações em máquinas (ciclo de vida de repositórios, backup, sincronização, terminal). Painel de administração e portal com filtragem por utilizador e por equipa. As operações em máquinas também constam dos registos do sistema para defesa em profundidade. |
+| Deteção (Art. 10) | Os detetores de anomalias correm na máquina (também offline) e no servidor sobre os registos de fluxo enviados, e emitem um aviso de segurança para tráfego invulgar. Os detetores assinalam desvios de uma linha de base aprendida por repositório; não provam uma violação e cobrem apenas repositórios com captura ativa num plano pago. Os mais de 70 tipos de eventos de auditoria (ciclo de vida de repositórios, backup, sincronização, terminal) continuam disponíveis com filtragem por utilizador e por equipa no painel de administração e no portal, e nos registos do sistema para defesa em profundidade. |
 | Resposta e recuperação (Art. 11) | Snapshots CoW para reversão instantânea. `rdc repo push/pull` para recuperação com múltiplos destinos. Testes de recuperação de desastres baseados em forks. |
 | Risco de terceiros TIC (Art. 28-30) | O self-hosted elimina inteiramente a classificação de "fornecedor TIC terceiro crítico". |
 | Testes de resiliência operacional digital (Art. 24-27) | A clonagem CoW permite testes de penetração orientados por ameaças em ambientes semelhantes à produção sem exposição de dados. Clonar, testar, destruir. |

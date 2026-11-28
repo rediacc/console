@@ -1,6 +1,6 @@
 """Differential: `rediacc_ci.deploy.set_www_worker_secrets` against its twin `.ci/scripts/deploy/set-www-worker-secrets.sh`.
 
-A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. `.ci/shadow/w7p5a-status.json` records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
+A RECORDING FAKE `npx` ON A SCRATCH PATH. Nothing here reaches Cloudflare: the fake logs its exact argv AND the bytes on its stdin, and every case uses fixture values two characters long. the ledger (deleted in commit:936280cd35) records this path as blocked only for the "one real run" clause and says in as many words that the mocked parity ledger is a separate, achievable piece of work. This
 is that piece.
 
 THE DOCUMENT IS THE ONLY EVIDENCE ON THE HAPPY PATH, and that is what makes this script different from its preview sibling. The twin prints NOTHING of its own when it succeeds: there is no closing `log_info`, so stdout carries wrangler's line and stderr is empty. A port that sent an empty document, or the wrong Worker name, would produce byte-identical streams and exit 0. Every
@@ -36,7 +36,7 @@ TWIN_REL = ".ci/scripts/deploy/set-www-worker-secrets.sh"
 PORT = ROOT / ".ci" / "rediacc_ci" / "deploy" / "set_www_worker_secrets.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-# The thirteen values the twin refuses to deploy without, plus the Worker name.
+# The eleven values the twin refuses to deploy without, plus the Worker name.
 FIXTURE_ENV = {
     "WORKER_NAME": "www-edge",
     "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
@@ -50,8 +50,6 @@ FIXTURE_ENV = {
     "AWS_SES_SECRET_ACCESS_KEY": "ss",
     "AWS_SES_REGION": "eu-west-1",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",
-    "STRIPE_SECRET_KEY": "sk_fixture",
-    "STRIPE_WEBHOOK_SECRET": "whsec_fixture",
 }
 
 FAKE_NPX = """#!/usr/bin/python3
@@ -96,6 +94,17 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
+def _as_twin_result(result):
+    """The port's answer in the twin's spelling (`as_twin`), the form the goldens hold: the re-record seam (`regolden --source port`)."""
+    proc, *rest = result
+    return (
+        subprocess.CompletedProcess(
+            proc.args, proc.returncode, as_twin(proc.stdout), as_twin(proc.stderr)
+        ),
+        *rest,
+    )
+
+
 def _run(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
@@ -116,6 +125,9 @@ def _run(
         TWIN_REL,
         parts,
         lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        port=lambda: _as_twin_result(
+            _run_live(PORT, tmp_path, drop=drop, drop_env=drop_env, **extra)
+        ),
         work=(tmp_path,),
     )
 
@@ -203,8 +215,6 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
         '  "ACCOUNT_SERVER_API_KEY": "ak",\n'
         '  "ACCOUNT_JWT_SECRET": "jw",\n'
-        '  "STRIPE_SECRET_KEY": "sk_fixture",\n'
-        '  "STRIPE_WEBHOOK_SECRET": "whsec_fixture",\n'
         '  "ROOT_EMAIL": "root@example.invalid",\n'
         '  "AWS_SES_ACCESS_KEY_ID": "sk",\n'
         '  "AWS_SES_SECRET_ACCESS_KEY": "ss",\n'
@@ -262,10 +272,10 @@ def test_the_nine_seller_fields_reach_the_document(tmp_path: pathlib.Path) -> No
     _assert_agree(old, new, "seller-block", old_calls, new_calls)
 
 
-def test_every_one_of_the_thirteen_guards_fires_with_its_own_name(
+def test_every_one_of_the_eleven_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """THIRTEEN CASES, ONE PER GUARD, each driven EMPTY rather than absent:
+    """ELEVEN CASES, ONE PER GUARD, each driven EMPTY rather than absent:
     `"${NAME:-}"` collapses the two."""
     for name in port.REQUIRED_NONEMPTY:
         case = tmp_path / f"guard-{name}"
@@ -280,16 +290,6 @@ def test_every_one_of_the_thirteen_guards_fires_with_its_own_name(
         )
         assert old_calls == "", f"{name}: a refused run still called wrangler"
         _assert_agree(old, new, f"guard-{name}", old_calls, new_calls)
-
-
-def test_stripe_is_demanded_here_and_not_on_the_preview(tmp_path: pathlib.Path) -> None:
-    """THE SIBLINGS DISAGREE ON PURPOSE. edge gets the sandbox key and stable the live one, so an empty Stripe key on www is never legitimate, while on a preview it is. Pinned in both directions."""
-    old, new, old_calls, new_calls = run_both(tmp_path, STRIPE_SECRET_KEY="")
-    assert old.returncode == 1
-    assert "STRIPE_SECRET_KEY is EMPTY" in old.stderr
-    assert "STRIPE_SECRET_KEY" in port.REQUIRED_NONEMPTY
-    assert "STRIPE_SECRET_KEY" not in sibling.REQUIRED_NONEMPTY
-    _assert_agree(old, new, "stripe-demanded", old_calls, new_calls)
 
 
 def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Path) -> None:
@@ -365,13 +365,16 @@ def test_a_value_with_quotes_and_newlines_survives_intact(tmp_path: pathlib.Path
 
 def test_the_two_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. Every difference below is load bearing, and each is driven by a test above."""
-    assert len(port.KEYS) == 24
-    assert len(sibling.KEYS) == 14
-    assert len(port.REQUIRED_NONEMPTY) == 13
+    assert len(port.KEYS) == 22
+    assert len(sibling.KEYS) == 12
+    assert len(port.REQUIRED_NONEMPTY) == 11
     assert len(sibling.REQUIRED_NONEMPTY) == 10
     assert port.GUARD_EXPLANATION != sibling.GUARD_EXPLANATION
     assert not hasattr(port, "WORKER_PREFIX"), "www takes its Worker name whole"
-    assert sibling.WORKER_PREFIX == "pr-"
+    assert not hasattr(sibling, "WORKER_PREFIX"), (
+        "the preview has no WORKER_PREFIX; its Worker name comes whole from NAME_ENV"
+    )
+    assert sibling.NAME_ENV == "PREVIEW_NAME", "the preview takes its word name from the deploy job"
     # The nine SELLER_* keys are this script's alone.
     seller = [key for key, _var in port.KEYS if key.startswith("SELLER_")]
     assert len(seller) == 9

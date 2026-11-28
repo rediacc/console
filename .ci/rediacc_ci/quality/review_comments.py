@@ -1,6 +1,6 @@
 r"""Every review comment must have a SUBSTANTIVE reply, on both surfaces.
 
-Ported from `.ci/scripts/quality/check-review-comments.sh`, which W7 P5 batch G1 retired once `.ci/shadow/w7p2-review-comments.observations.jsonl` asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
+Ported from `.ci/scripts/quality/check-review-comments.sh`, which W7 P5 batch G1 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over six distinct trees and the twin's own output was recorded as goldens.
 
 WHAT IT IS, in the twin's own words:
 
@@ -122,7 +122,7 @@ THE TWO SUMMARY CONSTANTS once had to match `review_report_replies.py` ("That is
 `is_low_effort_reply` DEFAULTS TO 10 HERE AND TO 30 IN THE SIBLING. Same name, different default, on purpose: "min_chars defaults to 10, the floor a single inline thread has always used. A reply to the whole review summary answers many findings at once, so that caller passes a higher floor." A port that unified them would silently tighten one gate or loosen the other.
 
 `head -c 100` IS BYTES, and the bash slice `${SUMMARY_HEAD:0:120}` is bytes too
-under `LC_ALL=C`, which `scripts/lib/shadow-gate.ts` pins. Both are reproduced by
+under `LC_ALL=C`, which the shadow gate (commit:bf054adcd4) pins. Both are reproduced by
 slicing the UTF-8 ENCODING rather than the string, so a multi-byte character is cut the same way on both sides. Decoding back uses "replace", which is what a shell would hand to a terminal.
 
 `"$COMMENTS" == "[]"` IS A STRING COMPARISON on gh's raw stdout, not a check that

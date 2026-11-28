@@ -24,7 +24,11 @@
 
 import { describe, expect, it } from 'vitest';
 import type { z } from 'zod';
-import { WK_ACCOUNT_DEFAULT_ORIGIN } from '../../config/well-known.generated.js';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_ANTHROPIC_API_BASE,
+  WK_PREVIEW_SAMPLE_ORIGIN,
+} from '../../config/well-known.generated.js';
 import { generateAesKey, generateCek } from '../../config-crypto/index.js';
 import { fullConfigToRdcConfig } from '../../config-crypto/rotation.js';
 import {
@@ -65,11 +69,14 @@ const CARRIED_SECTIONS = [
   'credentials',
   'resources',
   'access',
+  'console',
+  'ai',
   'infra',
-  'policy',
   'state',
 ] as const;
-const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath'] as const;
+const HOST_LOCAL_SECTIONS = ['encryption', 'remote', 'renetPath', 'preview'] as const;
+/** Sections only a local-file config may carry: RdcConfigSchema refuses them beside `remote` (the policy ceiling, D24). */
+const LOCAL_FILE_ONLY_SECTIONS = ['policy'] as const;
 
 /**
  * A config populating EVERY resource family (schema-validated below, so a
@@ -93,8 +100,23 @@ function allFamiliesConfig(): RdcConfig {
       storageKeyId: 'key-1',
     },
     renetPath: '/opt/bin/renet',
+    preview: {
+      name: 'pv-amber-river-stone',
+      host: WK_PREVIEW_SAMPLE_ORIGIN,
+      enteredAt: '2026-11-22T15:30:00.000Z',
+      channel: 'pv-amber-river-stone',
+      formatChange: { formats: ['vault'], reason: 'vault schema 4' },
+      previous: { cliVersion: '0.9.4', cliSha256: 'a'.repeat(64), updateChannel: 'stable' },
+      touched: {
+        vm1: {
+          slot: '/usr/lib/rediacc/renet/0.9.4',
+          version: '0.9.4',
+          sha256: 'b'.repeat(64),
+          touchedAt: '2026-11-22T15:31:00.000Z',
+        },
+      },
+    },
     state: { datastores: { ds1: { mounted: true } } },
-    policy: { version: 1, defaults: { commands: { allow: ['repo *'] } } },
     access: {
       sourceRanges: { ipv4: ['104.28.0.0/16'], ipv6: ['2a09:bac0::/29'] },
       keys: {
@@ -104,6 +126,28 @@ function allFamiliesConfig(): RdcConfig {
           machines: { m1: true },
         },
       },
+    },
+    console: {
+      recipes: {
+        'fork-up': {
+          description: 'Fork a repo and start it',
+          body: '$repo = required "Repository"\nrdc repo fork $repo --tag t1',
+          updatedAt: '2026-11-24T18:00:00.000Z',
+        },
+      },
+    },
+    ai: {
+      providers: {
+        main: {
+          format: 'anthropic-messages',
+          baseURL: WK_ANTHROPIC_API_BASE,
+          key: 'sk-ant-fixture',
+          authScheme: 'x-api-key',
+          model: 'claude-sonnet-4-5',
+          capabilities: { tools: true, streaming: true, parallelToolCalls: true, vision: false },
+        },
+      },
+      default: 'main',
     },
     credentials: { ssh: { privateKey: 'PRIV' } },
     resources: {
@@ -195,6 +239,7 @@ async function pushPullRoundTrip(config: RdcConfig): Promise<RdcConfig> {
     sdkEpoch: 42,
     sdkDerived,
     cek,
+    cekGeneration: 1,
   });
   // Real crypto both ways — the wire shape is exactly what a pull hands back.
   const decrypted = await decryptConfigPullPayload(payload, {
@@ -229,8 +274,10 @@ describe('resource families round trip', () => {
       `fixture must populate every schema family; missing: ${missing.join(', ')}`
     ).toEqual([]);
 
+    const localFileOnly: readonly string[] = LOCAL_FILE_ONLY_SECTIONS;
     const missingSections = Object.keys(RdcConfigSchema.shape).filter(
-      (key) => (config as Record<string, unknown>)[key] === undefined
+      (key) =>
+        !localFileOnly.includes(key) && (config as Record<string, unknown>)[key] === undefined
     );
     expect(
       missingSections,
@@ -238,8 +285,13 @@ describe('resource families round trip', () => {
     ).toEqual([]);
   });
 
-  it('every top-level section is classified envelope, carried, or host-local', () => {
-    const classified = [...ENVELOPE_SECTIONS, ...CARRIED_SECTIONS, ...HOST_LOCAL_SECTIONS];
+  it('every top-level section is classified envelope, carried, host-local, or local-file only', () => {
+    const classified = [
+      ...ENVELOPE_SECTIONS,
+      ...CARRIED_SECTIONS,
+      ...HOST_LOCAL_SECTIONS,
+      ...LOCAL_FILE_ONLY_SECTIONS,
+    ];
     // If this fails, a NEW top-level section was added to RdcConfigSchema: decide whether it syncs (add to CARRIED_SECTIONS + SENSITIVE_FIELDS + both projections) or stays host-local (add to HOST_LOCAL_SECTIONS and make sure none of its leaves are committed in sensitivity.ts).
     expect(
       [...Object.keys(RdcConfigSchema.shape)].sort((a, b) => Number(a > b) - Number(a < b))
@@ -270,14 +322,16 @@ describe('resource families round trip', () => {
     expect(rebuilt.account?.accountServer).toBeUndefined();
     expect(rebuilt.defaults).toEqual(original.defaults);
     expect(rebuilt.infra).toEqual(original.infra);
-    expect(rebuilt.policy).toEqual(original.policy);
     expect(rebuilt.access).toEqual(original.access);
+    expect(rebuilt.console).toEqual(original.console);
+    expect(rebuilt.ai).toEqual(original.ai);
     // Runtime state is shared by every device of a store (T17): networkIds above all.
     expect(rebuilt.state).toEqual(original.state);
 
     // Device-local sections must NOT be resurrected from the blob: a pulled config must never overwrite this device's store pointer or at-rest settings with another device's.
     expect(rebuilt.remote).toBeUndefined();
     expect(rebuilt.renetPath).toBeUndefined();
+    expect(rebuilt.preview).toBeUndefined();
     expect(rebuilt.encryption).toEqual({ mode: 'plaintext' });
   });
 
@@ -294,7 +348,11 @@ describe('resource families round trip', () => {
     expect(before).toContain('/infra/certEmail');
     // Host-local sections contribute NO committed pointers even when present.
     const hostLocal = before.filter(
-      (p) => p.startsWith('/remote/') || p.startsWith('/state/') || p === '/renetPath'
+      (p) =>
+        p.startsWith('/remote/') ||
+        p.startsWith('/state/') ||
+        p.startsWith('/preview/') ||
+        p === '/renetPath'
     );
     expect(hostLocal).toEqual([]);
   });

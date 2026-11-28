@@ -1,6 +1,6 @@
 """`rediacc_ci.proxies.docker_prepull`, driven against the bytes its bash twin printed.
 
-THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/test/proxies/proxy-docker-prepull.sh` and the ported proxy and compared the whole `(exit, stdout, stderr)` tuple byte for byte. The ledger `.ci/shadow/w7p6-proxy-docker-prepull.observations.jsonl` holds 5 rows of that comparison.
+THE TWIN HAS BEEN DELETED. While both copies existed this file ran `.ci/scripts/test/proxies/proxy-docker-prepull.sh` and the ported proxy and compared the whole `(exit, stdout, stderr)` tuple byte for byte. The ledger the ledger (deleted in commit:936280cd35) holds 5 rows of that comparison.
 
 Both cases now compare against `goldens/proxy-docker-prepull/`, which holds the twin's OWN recorded bytes, captured on its last day in the tree, and each golden's provenance header carries the blob sha.
 

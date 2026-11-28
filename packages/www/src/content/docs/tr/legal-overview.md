@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 0
 language: tr
-sourceHash: "f3c999aa355997c6"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "22dc7913377ee413"
+sourceCommit: "5f4fc4c93d74073e5a9b8f8431444495a7f641b6"
 ---
 
 Rediacc tamamen sizin altyapınızda çalışır. Klonlama, yedekleme ve dağıtım işlemleri sırasında verileriniz makinelerinizi asla terk etmez. Hem veri denetleyicisi hem de veri işleyeni siz olmaya devam edersiniz. Hiçbir üçüncü taraf SaaS hizmeti veya dış erişim yoktur.
@@ -25,7 +25,7 @@ Rediacc'ın teknik yeteneklerini başlıca uyumluluk gereksinimlerine eşleştir
 | [CCPA](/tr/docs/legal-ccpa) | Kaliforniya tüketici gizlilik hakları | Kendi sunucunuzda barındırma (veri satışı/paylaşımı yok), sıfır bilgi şifreleme, şifreli silme, depo başına veri envanteri |
 | [ISO 27001](/tr/docs/legal-iso27001) | Bilgi güvenliği yönetimi kontrolleri | Varlık yönetimi, kriptografik kontroller, sıfır bilgi yapılandırma deposu, erişim kontrolü, operasyon güvenliği |
 | [PCI DSS](/tr/docs/legal-pci-dss) | Ödeme kartı verisi koruması | Mimari ile ağ segmentasyonu, zorunlu şifreleme, denetim günlüğü, kendi sunucunuzda barındırma ile kapsam azaltma |
-| [NIS2 ve DORA](/tr/docs/legal-nis2-dora) | AB siber güvenlik ve finansal dayanıklılık | Tedarik zinciri riskinin ortadan kaldırılması, CoW klonlama ile dayanıklılık testi, şifreleme, olay tespiti |
+| [NIS2 ve DORA](/tr/docs/legal-nis2-dora) | AB siber güvenlik ve finansal dayanıklılık | Tedarik zinciri riskinin ortadan kaldırılması, CoW klonlama ile dayanıklılık testi, şifreleme, anomali bildirimleri ve olay raporlama sayaçları (ücretli planlar) |
 | [Veri Egemenliği](/tr/docs/legal-data-sovereignty) | Küresel veri yerleşimi yasaları (PIPL, LGPD, KVKK, PIPA ve daha fazlası) | Kendi sunucunuzda barındırma = veriler yetki alanınızı asla terk etmez. Sınır ötesi transferler yok, yeterlilik değerlendirmeleri yok |
 
 ## Mimari Temeller

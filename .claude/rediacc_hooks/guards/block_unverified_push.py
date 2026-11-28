@@ -19,6 +19,8 @@ A COMMIT THAT ONLY SHRINKS .ci/config/carried-reds.json ADVANCES TOO (agent/plan
 
 A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows. The refusal says whether the missing base commits are behind or ABSORBED, copies of this branch's own commits left by a rebase-merged parent (`base_split`, the split RB1's lease reader draws).
 
+A LEASE'S PUSH IS JUDGED AGAINST THE LEASE'S BASE (PLAN-two-track-merge-dev RB3). A push typed in a lease tree, which `block_lease_boundary` and the git-level `pre-push` refuse first, is still judged here for every branch it names, of any name, against RB1's base (`lease_base`: the branch the lease record says it was cut from while origin carries it, else main), so a lease that trails its live branch is refused as behind it rather than read against main.
+
 EACH TREE IS JUDGED BY ITS OWN RECEIPT (PLAN-two-track-merge-dev LT6). A push typed in a linked tree of this repository, such as the landing tree that holds the PR branch beside this checkout, reads that tree's HEAD, branch and `.ci/cache/prepush-receipt.json` (`push_tree`); it used to return ALLOW because its toplevel was not CLAUDE_PROJECT_DIR. A push in another repository (another git common directory: a submodule, a scratch repository) is still not this guard's.
 
 =============================================================================
@@ -32,6 +34,7 @@ THE `jq` FILTERS, spelled out because their defaults are load-bearing: `.headTre
 WHAT THIS GUARD USED TO INHERIT FROM `shellscan.target_root`: the TAB-after-`-C` defect, reproduced deliberately until Rule T (PLAN-retire-bash-oracles A4) fixed it at its source. See `block_untagged_commit`'s port notes.
 """
 
+import datetime
 import hashlib
 import json
 import os
@@ -39,14 +42,39 @@ import pathlib
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
-from rediacc_hooks.guards import _backup_push
+from rediacc_hooks.guards import _backup_push, _push_receipts, tables
+from rediacc_hooks.wellknown import GH_REPO
+
+__getattr__ = tables(
+    "block_unverified_push",
+    "EDGE_CASES",
+    "ENVS",
+    "FIXTURES",
+    "DROPPED_PLAN_RECORD",
+    "FIXTURE_LOCK",
+    "V2_FX",
+    "V2_FX_INPUTS",
+    "V2_FX_SCRIPT",
+    "V2_LOCK",
+    "V2_PKG",
+    "_env",
+    "_gate_entry",
+    "_repo_v2_carried",
+    "_repo_with_forged_advance",
+    "_repo_with_receipt",
+    "_v2_body",
+    "_write_fixture_lock",
+)
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
 ORDER = 39
+# This guard's row of the push-receipt table (`_push_receipts`, box CR6): the receipt files, the admit line and the readers, `read_receipt` and ORIGIN_READERS below, are declared there.
+ROW = _push_receipts.row("ci:quick")
 
 # The confinement check is what keeps an advance from being a second way past the tree comparison: without it a step claiming "records only" over a code commit authorises that commit, which is a receipt for a tree no gate judged. The tree comparison itself is pinned by the frozen golden's push-wrong-tree rows.
 DEFECT = ("confined = not outside", "confined = True")
@@ -64,6 +92,10 @@ MUTANTS = {
     ),
     # LT7: every base commit the branch lacks reads behind, so a rebase-merged parent is no longer read absorbed.
     "absorbed-read-behind": ("    return plus, minus\n", "    return plus + minus, 0\n"),
+    # RB3: a push typed in a lease tree is judged as a live-branch push again, so a lease behind the branch it was cut from is admitted.
+    "lease-branch-dropped": ("    if lease is not None:\n", "    if False:\n"),
+    # R4: the verification arm of a CI-receipt origin is off, so an origin whose bytes no attestation covers, or one signed by another workflow, is admitted. A MUTANTS entry rather than DEFECT: DEFECT is this guard's single slot and holds the confinement plant test_guards_differential depends on.
+    "ci-verification-off": ("        why = attested(data, sha, memo)\n", '        why = ""\n'),
 }
 
 PUSH_AT_COMMAND_POS = hookio.rx(
@@ -96,502 +128,6 @@ keep working meanwhile:
 If a gate cannot RUN here (a toolchain this machine lacks), that is not a red
 you can fix by pushing: the gate's own message names the install line.
 """
-
-
-def _env():
-    return dict(
-        os.environ,
-        GIT_AUTHOR_NAME="Fixture",
-        GIT_AUTHOR_EMAIL="fixture@example.invalid",
-        GIT_COMMITTER_NAME="Fixture",
-        GIT_COMMITTER_EMAIL="fixture@example.invalid",
-        GIT_CONFIG_GLOBAL="/dev/null",
-        GIT_CONFIG_SYSTEM="/dev/null",
-    )
-
-
-# The gate set every fixture tree carries as scripts/ci-runner/gates.lock.json: one required gate, one slow one, one ciOnly one. Receipts built by _v2_body judge exactly these.
-FIXTURE_LOCK = [
-    {"id": "check:fixture-ok", "run": "npm run check:fixture-ok", "gate": True, "leaves": []},
-    {
-        "id": "check:fixture-slow",
-        "run": "npm run check:fixture-slow",
-        "gate": True,
-        "slow": True,
-        "leaves": [],
-    },
-    {
-        "id": "check:fixture-cionly",
-        "run": "npm run check:fixture-cionly",
-        "gate": True,
-        "slow": True,
-        "ciOnly": "fixture: CI runs it in its own step",
-        "leaves": [],
-    },
-]
-
-
-def _gate_entry(verdict, **over):
-    entry = {
-        "inputHash": None,
-        "defHash": None,
-        "filesHash": None,
-        "inputs": None,
-        "verdict": verdict,
-        "exitCode": 1 if verdict == "fail" else 0,
-        "findings": None,
-        "judgedTree": None,
-        "carriedFrom": None,
-    }
-    entry.update(over)
-    return entry
-
-
-def _v2_body(receipt):
-    """`receipt` as a v2 receipt: schema 2 and a `gates` map consistent with its `failed` and `blocked` lists, unless the fixture already says otherwise."""
-    body = dict(receipt)
-    body.setdefault("schema", 2)
-    body.setdefault("failed", [])
-    if "gates" not in body:
-        gates = {
-            "check:fixture-ok": _gate_entry("ok"),
-            "check:fixture-cionly": _gate_entry("ciOnly"),
-        }
-        for gid in body.get("failed") or []:
-            gates[gid] = _gate_entry("fail")
-        for gid in body.get("blocked") or []:
-            gates[gid] = _gate_entry("blocked")
-        body["gates"] = gates
-    return body
-
-
-def _write_fixture_lock(path, lock=None):
-    target = path / "scripts" / "ci-runner" / "gates.lock.json"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(json.dumps(FIXTURE_LOCK if lock is None else lock), encoding="utf-8")
-
-
-def _repo_with_receipt(path, receipt, carried=None):
-    """A checkout whose `.ci/cache/prepush-receipt.json` says what we want.
-
-    The receipt's `headTree` is filled in AFTER the commit, because the whole point of the key is that it names the tree object git actually produced. A hand-written hash would make every fixture take the "judged a different tree" branch and the other four would be unreachable.
-    """
-    path.mkdir(parents=True)
-    subprocess.run(
-        ["git", "init", "--initial-branch=main", "-q"],
-        cwd=str(path),
-        check=True,
-        capture_output=True,
-        env=_env(),
-    )
-    (path / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _write_fixture_lock(path)
-    # carried-reds.json is COMMITTED, because the guard reads it from HEAD. Committed and on disk are then the same bytes, so the bash oracle (which reads the worktree) and this port still see one file and the differential compares like with like.
-    if carried is not None:
-        config = path / ".ci" / "config"
-        config.mkdir(parents=True, exist_ok=True)
-        (config / "carried-reds.json").write_text(json.dumps(carried), encoding="utf-8")
-    subprocess.run(["git", "add", "-A"], cwd=str(path), check=True, capture_output=True, env=_env())
-    subprocess.run(
-        ["git", "commit", "-q", "-m", "seed"],
-        cwd=str(path),
-        check=True,
-        capture_output=True,
-        env=_env(),
-    )
-    if receipt is not None:
-        tree = (
-            subprocess.run(
-                ["git", "rev-parse", "HEAD^{tree}"],
-                cwd=str(path),
-                check=True,
-                capture_output=True,
-                env=_env(),
-            )
-            .stdout.decode()
-            .strip()
-        )
-        body = _v2_body(receipt)
-        body.setdefault("headTree", tree)
-        # A `droppedVerified` entry names the tree its `--only` run judged, which is only known after the commit, like `headTree` above.
-        verified = body.get("droppedVerified")
-        if isinstance(verified, dict):
-            body["droppedVerified"] = {
-                k: dict(v, headTree=tree) if v.get("headTree") == "{TREE}" else v
-                for k, v in verified.items()
-            }
-        cache = path / ".ci" / "cache"
-        cache.mkdir(parents=True)
-        (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
-    return path
-
-
-def _repo_with_forged_advance(path):
-    """A receipt for the base tree, then a CODE commit behind an advance whose `paths` and `gates` claim a record-only step. The guard must recompute the diff and refuse; with DEFECT planted it admits, which is what lets test_guards_differential prove this guard's differential can fail."""
-    path.mkdir(parents=True)
-
-    def git(*args):
-        return (
-            subprocess.run(
-                ["git", *args], cwd=str(path), check=True, capture_output=True, env=_env()
-            )
-            .stdout.decode()
-            .strip()
-        )
-
-    git("init", "--initial-branch=main", "-q")
-    policy_file = path / RECORD_POLICY_REL
-    policy_file.parent.mkdir(parents=True)
-    policy_file.write_text(
-        json.dumps(
-            {
-                "version": RECORD_POLICY_VERSION,
-                "records": [
-                    {
-                        "glob": "agent/reviews/**",
-                        "except": [],
-                        "readers": [{"id": "check:fixture-reader", "evidence": "fixture:1"}],
-                    }
-                ],
-            }
-        ),
-        encoding="utf-8",
-    )
-    (path / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _write_fixture_lock(path)
-    git("add", "-A")
-    git("commit", "-q", "-m", "seed")
-    base = git("rev-parse", "HEAD^{tree}")
-    if not base:
-        raise RuntimeError("the forged-advance fixture could not read its seed tree")
-    (path / "seed.txt").write_text("seed, and a code change no gate judged\n", encoding="utf-8")
-    git("add", "-A")
-    git("commit", "-q", "-m", "code")
-    head = git("rev-parse", "HEAD^{tree}")
-    cache = path / ".ci" / "cache"
-    cache.mkdir(parents=True)
-    (cache / "prepush-receipt.json").write_text(
-        json.dumps(
-            _v2_body(
-                {
-                    "headTree": base,
-                    "whole": True,
-                    "exitCode": 0,
-                    "droppedTouched": [],
-                    "advances": [
-                        {
-                            "from": base,
-                            "to": head,
-                            "paths": ["agent/reviews/main/clean.jsonl"],
-                            "gates": {"check:fixture-reader": 0},
-                            "finishedAt": "2026-10-05T00:00:00Z",
-                        }
-                    ],
-                }
-            )
-        ),
-        encoding="utf-8",
-    )
-    return path
-
-
-# A CARRIED GATE, as the incremental runner records it. Commit A judges check:fx (reads src/**) and archives its receipt; commit B is the pushed tree and its receipt CARRIES check:fx from A. `variant` plants what the guard must catch.
-V2_FX = "check:fx"
-V2_FX_INPUTS: dict[str, list[str]] = {"globs": ["src/**"], "files": [], "scripts": ["check:fx"]}
-V2_LOCK = [
-    *FIXTURE_LOCK,
-    {
-        "id": V2_FX,
-        "run": "npm run check:fx",
-        "gate": True,
-        "leaves": [],
-        "paths": ["src/**"],
-    },
-]
-V2_FX_SCRIPT = "echo fx"
-V2_PKG = {"name": "fixture", "scripts": {"check:fx": V2_FX_SCRIPT, "check:other": "echo other"}}
-
-
-def _repo_v2_carried(path, variant, origin_verdict="ok"):
-    """variant: `ok` (B touches only docs/), `stale-input` (B edits src/a.txt after the carry), `red-dropped` (a carried fail missing from `failed`), `verdict-flipped` (origin said fail, the carried entry says ok), `no-origin` (no archived origin receipt)."""
-    path.mkdir(parents=True)
-
-    def git(*args):
-        return (
-            subprocess.run(
-                ["git", *args], cwd=str(path), check=True, capture_output=True, env=_env()
-            )
-            .stdout.decode()
-            .strip()
-        )
-
-    git("init", "--initial-branch=main", "-q")
-    (path / "src").mkdir()
-    (path / "src" / "a.txt").write_text("a\n", encoding="utf-8")
-    (path / "docs").mkdir()
-    (path / "docs" / "n.txt").write_text("n\n", encoding="utf-8")
-    (path / "package.json").write_text(json.dumps(V2_PKG), encoding="utf-8")
-    _write_fixture_lock(path, V2_LOCK)
-    git("add", "-A")
-    git("commit", "-q", "-m", "A")
-    tree_a = git("rev-parse", "HEAD^{tree}")
-    if not tree_a:
-        raise RuntimeError("fixture: rev-parse HEAD^{tree} printed nothing")
-    lines = v2_input_lines(
-        v2_ls_tree(str(path), tree_a), V2_FX_INPUTS["globs"], V2_FX_INPUTS["files"]
-    )
-    def_hash = v2_def_hash(V2_LOCK[-1], {"check:fx": V2_FX_SCRIPT})
-    files_hash = v2_files_hash(lines)
-    input_hash = v2_sha("input\n%s\n%s\nfixture-salt\n" % (def_hash, files_hash))
-    findings = ["fx:finding-1"] if origin_verdict == "fail" else None
-    fx = _gate_entry(
-        origin_verdict,
-        inputHash=input_hash,
-        defHash=def_hash,
-        filesHash=files_hash,
-        inputs=V2_FX_INPUTS,
-        findings=findings,
-        judgedTree=tree_a,
-    )
-    origin = _v2_body(
-        {
-            "headTree": tree_a,
-            "whole": True,
-            "exitCode": 1 if origin_verdict == "fail" else 0,
-            "failed": [V2_FX] if origin_verdict == "fail" else [],
-            "droppedTouched": [],
-            "gates": {
-                "check:fixture-ok": _gate_entry("ok"),
-                "check:fixture-cionly": _gate_entry("ciOnly"),
-                V2_FX: fx,
-            },
-        }
-    )
-    cache = path / ".ci" / "cache"
-    (cache / "receipts").mkdir(parents=True)
-    if variant != "no-origin":
-        (cache / "receipts" / (tree_a + ".json")).write_text(json.dumps(origin), encoding="utf-8")
-    target = path / ("src/a.txt" if variant == "stale-input" else "docs/n.txt")
-    target.write_text("changed after A\n", encoding="utf-8")
-    git("add", "-A")
-    git("commit", "-q", "-m", "B")
-    tree_b = git("rev-parse", "HEAD^{tree}")
-    if not tree_b:
-        raise RuntimeError("fixture: rev-parse HEAD^{tree} printed nothing")
-    carried = dict(fx, carriedFrom={"headTree": tree_a, "finishedAt": "2026-10-06T00:00:00Z"})
-    failed = [V2_FX] if origin_verdict == "fail" else []
-    if variant == "red-dropped":
-        failed = []
-    if variant == "verdict-flipped":
-        carried["verdict"] = "ok"
-    body = _v2_body(
-        {
-            "headTree": tree_b,
-            "whole": True,
-            "exitCode": 1 if failed else 0,
-            "failed": failed,
-            "droppedTouched": [],
-            "gates": {
-                "check:fixture-ok": _gate_entry("ok"),
-                "check:fixture-cionly": _gate_entry("ciOnly"),
-                V2_FX: carried,
-            },
-        }
-    )
-    (cache / "prepush-receipt.json").write_text(json.dumps(body), encoding="utf-8")
-    return path
-
-
-# The 2026-10-03 drop, as the runner records it (scripts/ci-runner/run.ts `DroppedTouched`).
-DROPPED_PLAN_RECORD = {
-    "id": "check:ci-plan-record",
-    "why": "agent/INDEX.md matches its paths",
-    "reason": "it writes the shared tree (tree:repo), which the quick lane does not do",
-    "kind": "tree",
-    "run": "npx tsx scripts/ci-runner/run.ts --only check:ci-plan-record",
-}
-
-# The receipt worlds this guard distinguishes. Without them the corpus sees whatever receipt this shared worktree happens to hold at the moment the test runs, which is BOTH undiscriminating and a race: another session running `ci:quick` between the bash pass and the Python pass would rewrite the file and the difference would be reported as a port defect.
-FIXTURES = {
-    "push-no-receipt": lambda p: _repo_with_receipt(p, None),
-    # RECEIPT v2 (PLAN-fast-loop F3): a carried gate is honoured only while the hashes recomputed at the pushed tree equal the recorded ones.
-    "push-v1-receipt": lambda p: _repo_with_receipt(
-        p, {"schema": None, "whole": True, "exitCode": 0, "droppedTouched": []}
-    ),
-    "push-v2-carried-ok": lambda p: _repo_v2_carried(p, "ok"),
-    "push-v2-carried-stale-input": lambda p: _repo_v2_carried(p, "stale-input"),
-    "push-v2-carried-red": lambda p: _repo_v2_carried(p, "red-dropped", origin_verdict="fail"),
-    "push-v2-carried-red-flipped": lambda p: _repo_v2_carried(
-        p, "verdict-flipped", origin_verdict="fail"
-    ),
-    "push-v2-carried-red-honest": lambda p: _repo_v2_carried(p, "ok", origin_verdict="fail"),
-    "push-green": lambda p: _repo_with_receipt(
-        p, {"whole": True, "exitCode": 0, "droppedTouched": []}
-    ),
-    "push-narrowed": lambda p: _repo_with_receipt(p, {"whole": False, "exitCode": 0}),
-    # PF25: a forged record-only advance over a code commit. The one world the confinement DEFECT flips.
-    "push-advance-forged": _repo_with_forged_advance,
-    "push-wrong-tree": lambda p: _repo_with_receipt(
-        p, {"headTree": "0" * 40, "whole": True, "exitCode": 0}
-    ),
-    "push-red-unnamed": lambda p: _repo_with_receipt(
-        p,
-        {
-            "whole": True,
-            "exitCode": 1,
-            "failed": ["check:format", "check:ci-parity"],
-            "droppedTouched": [],
-        },
-    ),
-    # A TOUCHED SLOW GATE THE LANE DROPPED, before and after its `--only` run merged a pass into the receipt.
-    "push-dropped-unverified": lambda p: _repo_with_receipt(
-        p, {"whole": True, "exitCode": 0, "droppedTouched": [DROPPED_PLAN_RECORD]}
-    ),
-    "push-dropped-verified": lambda p: _repo_with_receipt(
-        p,
-        {
-            "whole": True,
-            "exitCode": 0,
-            "droppedTouched": [DROPPED_PLAN_RECORD],
-            "droppedVerified": {
-                "check:ci-plan-record": {
-                    "exitCode": 0,
-                    "headTree": "{TREE}",
-                    "finishedAt": "2026-10-04T00:00:00Z",
-                    "judgedRoot": "/fixture",
-                    "stable": True,
-                }
-            },
-        },
-    ),
-    # A whole-gate carry: `"*"` over a gate whose receipt entry is null (it emits no `::finding::` lines), with a reason past the stricter 160-character bar.
-    "push-red-carried": lambda p: _repo_with_receipt(
-        p,
-        {
-            "whole": True,
-            "exitCode": 1,
-            "failed": ["check:format"],
-            "findings": {"check:format": None},
-            "blocked": ["check:ci-go-vet"],
-            "droppedTouched": [],
-        },
-        carried={
-            "version": 2,
-            "carried": [
-                {
-                    "gate": "check:format",
-                    "findings": "*",
-                    "reason": (
-                        "A reason of at least one hundred and sixty characters, because a whole-gate "
-                        "carry is only for a gate that emits no finding keys yet, and the bar for "
-                        "carrying everything it will ever report is higher than for carrying one key."
-                    ),
-                }
-            ],
-        },
-    ),
-    "push-red-stale": lambda p: _repo_with_receipt(
-        p,
-        {"whole": True, "exitCode": 1, "failed": ["check:ci-parity"], "droppedTouched": []},
-        carried={
-            "version": 2,
-            "carried": [
-                {
-                    "gate": "check:format",
-                    "findings": ["fmt:packages/a.ts"],
-                    "reason": (
-                        "A reason of at least eighty characters, kept deliberately long so "
-                        "that this entry passes the substantive-reason bar and reaches the "
-                        "stale-entry arm instead of being filtered out first."
-                    ),
-                }
-            ],
-        },
-    ),
-    # FINDING LEVEL (PLAN-carried-red-finding-keys): the carried gate is failing and named, but it emitted a key the entry does not carry, so the push refuses naming it; the sibling world carries exactly the emitted keys and is allowed.
-    "push-red-finding-new": lambda p: _repo_with_receipt(
-        p,
-        {
-            "whole": True,
-            "exitCode": 1,
-            "failed": ["check:ci-plan-implementation"],
-            "findings": {
-                "check:ci-plan-implementation": [
-                    "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
-                    "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
-                ]
-            },
-            "droppedTouched": [],
-        },
-        carried={
-            "version": 2,
-            "carried": [
-                {
-                    "gate": "check:ci-plan-implementation",
-                    "findings": ["P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d"],
-                    "reason": (
-                        "A reason of at least eighty characters, so the entry clears the "
-                        "substance bar and the verdict turns on the finding keys alone."
-                    ),
-                }
-            ],
-        },
-    ),
-    "push-red-finding-carried": lambda p: _repo_with_receipt(
-        p,
-        {
-            "whole": True,
-            "exitCode": 1,
-            "failed": ["check:ci-plan-implementation"],
-            "findings": {
-                "check:ci-plan-implementation": [
-                    "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
-                    "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
-                ]
-            },
-            "droppedTouched": [],
-        },
-        carried={
-            "version": 2,
-            "carried": [
-                {
-                    "gate": "check:ci-plan-implementation",
-                    "findings": [
-                        "P-A2:no-row:agent/plans/PLAN-a.md#0a1b2c3d",
-                        "P-A2:no-row:agent/plans/PLAN-b.md#4e5f6a7b",
-                    ],
-                    "reason": (
-                        "A reason of at least eighty characters, so the entry clears the "
-                        "substance bar and the verdict turns on the finding keys alone."
-                    ),
-                }
-            ],
-        },
-    ),
-}
-
-# The last variant is this checkout's SHAPE, and it closes the second half of the race the FIXTURES comment above names. Keying on `HEAD^{tree}` survives a dirty tree by design, but it does NOT survive a commit: with one interleaved between the differential's bash pass and its Python side, this guard named two different tree hashes in the same refusal, one per side. The
-# world has a history and a branch and neither moves; since 2026-09-24 it is synthetic rather than a clone, so a golden frozen from it stays true. See `_synthetic_this_worktree` in test_guards_differential.py.
-ENVS = [(name, {"CLAUDE_PROJECT_DIR": "{FIXTURE:%s}" % name}, {}) for name in sorted(FIXTURES)] + [
-    ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {})
-]
-
-EDGE_CASES = [
-    ("a plain push", "git push origin 0831-1"),
-    # A dry run publishes nothing and buys no CI round.
-    ("a dry run", "git push --dry-run origin 0831-1"),
-    # #641e2fce: one dry run does not exempt a real push beside it.
-    ("a dry run beside a real push", "git push --dry-run origin x; git push origin 0831-1"),
-    ("a dry run behind a global option", "git -C . push --dry-run origin 0831-1"),
-    ("prose about pushing", "echo 'remember to git push once green'"),
-    ("git pull is not git push", "git pull --rebase"),
-    # SUBMODULE PUSHES ARE OUT OF SCOPE, deliberately.
-    ("cd into a submodule", "cd private/account && git push origin 0831-1"),
-    ("git -C into a submodule", "git -C private/renet push"),
-    # A TAB after `-C` is a blank like any other since the Rule T fix to shellscan.target_root (A4); /tmp is no repository but a real directory outside this checkout, so the push is another repository's and allowed either way (finding #5810a9f3).
-    ("git -C with a TAB is still a -C", "git -C\t/tmp push"),
-    ("a push in another tree", "cd /tmp && git push"),
-]
 
 
 def _jq_join(value, sep=", "):
@@ -685,29 +221,95 @@ CARRIED_VERSION = 2
 
 
 def parse_carried(doc):
-    """carried-reds.json v2 -> (`{gate: set(keys) | "*"}`, schema_error or None).
+    """carried-reds.json v2 -> (`{gate: set(keys) | "*"}`, schema_error or None): the keyed and whole-gate carry, the shape every reader outside this guard takes (wl_ci, local_gates). Pattern entries are left out of the map; `parse_carry_doc` returns them beside it.
 
-    SCHEMA ERRORS REFUSE, they are never skipped: a v1 entry (`{gate, reason}` with no `findings`), an empty `findings`, a missing `version: 2`, or `"*"` beside keyed entries for one gate. A malformed entry skipped silently is how a carry file quietly stops carrying what its author thinks it carries.
+    SCHEMA ERRORS REFUSE, they are never skipped: a v1 entry (`{gate, reason}` with no `findings`), an empty `findings`, a missing `version: 2`, `"*"` beside keyed entries for one gate, or a pattern entry with no `expires`. A malformed entry skipped silently is how a carry file quietly stops carrying what its author thinks it carries.
 
     An entry whose reason is under its bar (REASON_MIN, or STAR_REASON_MIN for `"*"`) is well-formed but carries nothing, so its gate then refuses as unnamed. Several keyed entries for one gate union their keys.
     """
+    carried, _patterns, error = parse_carry_doc(doc)
+    return carried, error
+
+
+#: The date form of a pattern entry's `expires`, read as a UTC calendar day; the entry carries through that day and blocks from the next.
+EXPIRES_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def carry_pattern_re(glob):
+    """A carried finding-key pattern as an anchored regex: `*` matches any run of characters (a key's `:` and `/` included), every other character is literal. scripts/ci-runner/run.ts `carryPatternRe` is its twin."""
+    return re.compile(
+        "^%s$" % "".join(".*" if ch == "*" else re.escape(ch) for ch in glob), re.DOTALL
+    )
+
+
+def parse_carry_doc(doc):
+    """carried-reds.json v2 -> (`{gate: set(keys) | "*"}`, `{gate: {glob: expires}}`, schema_error or None).
+
+    A PATTERN ENTRY (PLAN-ciquick-gate-contract R3) is `{"gate", "patterns": [globs], "reason", "expires": "YYYY-MM-DD"}`: it carries every finding key of that gate a glob matches (`carry_pattern_re`), for a gate whose keys flap from run to run (the pytest-slow ratchet names a different set of slow tests each run). It needs an `expires` date, so a pattern cannot become a standing hole: one without it, one beside `findings` in the same entry, or one beside a `"*"` carry for the gate is a schema error, which refuses. Past its expiry a pattern refuses the push (`carried_verdict`). The reason bar is REASON_MIN. Two entries naming one glob keep the later expiry. scripts/ci-runner/run.ts `parseCarryDoc` is the twin the runner's advance plan reads, pinned by scripts/ci-runner/advance-parity.json.
+    """
     if doc is None:
-        return {}, None
+        return {}, {}, None
     if isinstance(doc, dict) and UNPARSEABLE in doc:
-        return {}, "carried-reds.json at HEAD does not parse as JSON: %s" % doc[UNPARSEABLE]
+        return {}, {}, "carried-reds.json at HEAD does not parse as JSON: %s" % doc[UNPARSEABLE]
     if not isinstance(doc, dict) or doc.get("version") != CARRIED_VERSION:
-        return {}, 'carried-reds.json at HEAD is not `"version": %d`.' % CARRIED_VERSION
+        return {}, {}, 'carried-reds.json at HEAD is not `"version": %d`.' % CARRIED_VERSION
     entries = doc.get("carried")
     if not isinstance(entries, list):
-        return {}, "carried-reds.json at HEAD has no `carried` list."
+        return {}, {}, "carried-reds.json at HEAD has no `carried` list."
     carried: dict[str, set[str] | str] = {}
+    patterns: dict[str, dict[str, str]] = {}
     shapes: dict[str, str] = {}
     for i, entry in enumerate(entries):
         gate = entry.get("gate") if isinstance(entry, dict) else None
         if not isinstance(gate, str) or not gate:
-            return {}, "carried-reds.json entry %d names no gate." % i
+            return {}, {}, "carried-reds.json entry %d names no gate." % i
         findings = entry.get("findings")
-        if findings == "*":
+        globs = entry.get("patterns")
+        if globs is not None:
+            if findings is not None:
+                return (
+                    {},
+                    {},
+                    (
+                        "carried-reds.json entry %d (%s) has both `findings` and `patterns`; a"
+                        " pattern carry is an entry of its own." % (i, gate)
+                    ),
+                )
+            if not (
+                isinstance(globs, list) and globs and all(isinstance(g, str) and g for g in globs)
+            ):
+                return (
+                    {},
+                    {},
+                    (
+                        "carried-reds.json entry %d (%s) has an empty or non-string `patterns`."
+                        % (i, gate)
+                    ),
+                )
+            match_all = sorted(g for g in globs if set(g) == {"*"})
+            if match_all:
+                # A MATCH-ALL PATTERN IS A WHOLE-GATE CARRY (review f3d07ec8.2): it excuses every key the gate will ever print, which `"*"` findings refuse for a gate that emits keys.
+                return (
+                    {},
+                    {},
+                    (
+                        "carried-reds.json entry %d (%s) has a pattern that matches every finding key"
+                        " (%s); a pattern must name a prefix or shape of the keys it carries."
+                        % (i, gate, ", ".join(match_all))
+                    ),
+                )
+            expires = entry.get("expires")
+            if not (isinstance(expires, str) and EXPIRES_RE.match(expires)):
+                return (
+                    {},
+                    {},
+                    (
+                        "carried-reds.json entry %d (%s) carries finding patterns with no `expires`"
+                        ' date ("YYYY-MM-DD"): a pattern carry must say when it ends.' % (i, gate)
+                    ),
+                )
+            shape = "keys"
+        elif findings == "*":
             shape = "*"
         elif (
             isinstance(findings, list)
@@ -716,17 +318,31 @@ def parse_carried(doc):
         ):
             shape = "keys"
         else:
-            return {}, (
-                "carried-reds.json entry %d (%s) has no `findings`: v2 carries a non-empty list of"
-                ' finding keys, or "*" for a gate that emits none.' % (i, gate)
+            return (
+                {},
+                {},
+                (
+                    "carried-reds.json entry %d (%s) has no `findings`: v2 carries a non-empty list of"
+                    ' finding keys, or "*" for a gate that emits none.' % (i, gate)
+                ),
             )
         if shapes.setdefault(gate, shape) != shape:
-            return {}, (
-                '%s is carried both by "*" and by keys; carry a gate one way or the other.' % gate
+            return (
+                {},
+                {},
+                (
+                    '%s is carried both by "*" and by keys or patterns; carry a gate one way or the'
+                    " other." % gate
+                ),
             )
         reason = entry.get("reason")
         reason = reason if isinstance(reason, str) else ""
         if len(reason) < (STAR_REASON_MIN if shape == "*" else REASON_MIN):
+            continue
+        if globs is not None:
+            mine = patterns.setdefault(gate, {})
+            for glob in globs:
+                mine[glob] = max(mine.get(glob, ""), expires)
             continue
         if shape == "*":
             carried[gate] = "*"
@@ -735,7 +351,26 @@ def parse_carried(doc):
         if not isinstance(keys, set):
             keys = carried[gate] = set()
         keys.update(findings)
-    return carried, None
+    return carried, patterns, None
+
+
+def live_patterns(patterns, today):
+    """`{gate: [globs]}` of the patterns still inside their expiry on `today` (an ISO date string)."""
+    return {
+        gate: sorted(g for g, exp in globs.items() if exp >= today)
+        for gate, globs in patterns.items()
+        if any(exp >= today for exp in globs.values())
+    }
+
+
+def pattern_covers(key, globs):
+    """True when a glob in `globs` matches finding key `key`."""
+    return any(carry_pattern_re(g).match(key) for g in globs)
+
+
+def utc_today():
+    """Today's UTC calendar day as `YYYY-MM-DD`, the clock a pattern's `expires` is read against."""
+    return datetime.datetime.now(datetime.UTC).date().isoformat()
 
 
 def push_source(push_line):
@@ -836,8 +471,8 @@ def _push_remote(args):
     return operands[0] if operands else ""
 
 
-def live_pushes(cmd, root):
-    """`[(sha, branch)]` for every push in `cmd` that publishes an MMDD-N branch to origin.
+def live_pushes(cmd, root, any_branch=False):
+    """`[(sha, branch)]` for every push in `cmd` that publishes an MMDD-N branch to origin, or with `any_branch` every branch of any name (a lease's push, `behind_base_refusal`).
 
     A push naming no refspec (`git push`, `git push origin`) and a `HEAD` destination send the checked-out branch. A source that does not resolve is skipped: git itself refuses that push, so there is no commit to judge. The remote must be spelled `origin` (or left out); a mirror or a URL is another guard's business.
     """
@@ -856,7 +491,7 @@ def live_pushes(cmd, root):
             dests = [("HEAD", current)]
         for src, named in dests:
             dst = current if named == "HEAD" else named
-            if not commit_policy.BRANCH_SHAPE.match(dst or ""):
+            if not (dst if any_branch else commit_policy.BRANCH_SHAPE.match(dst or "")):
                 continue
             sha = hookio.git_out(
                 ["-C", root, "rev-parse", "-q", "--verify", "%s^{commit}" % (src or "HEAD")],
@@ -867,21 +502,74 @@ def live_pushes(cmd, root):
     return out
 
 
-def behind_base_refusal(ev, root, cmd):
-    """A refusal when a pushed live branch does not contain origin/main, else None.
+#: The lease verb's record directory under the main checkout's git dir, one `<id>.json` per lease (.ci/rediacc_ci/dev/worktree_lease.py RECORD_DIR, read the same way by .claude/hooks/stop/wl_worktrees.py `read_records`).
+LEASE_RECORD_DIR = "rediacc-worktrees"
 
-    WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
 
-    A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+def lease_of(root):
+    """`(lease id, record)` when `root` sits in a lease tree (`commit_policy.lease_root`), `record` None when no readable record names that tree; None when `root` is no lease."""
+    lease = commit_policy.lease_root(root)
+    if not lease:
+        return None
+    main = lease.partition(commit_policy.LEASE_HOLDER)[0]
+    for path in sorted(pathlib.Path(main, ".git", LEASE_RECORD_DIR).glob("*.json")):
+        try:
+            record = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeDecodeError, ValueError):
+            continue
+        if isinstance(record, dict) and os.path.realpath(str(record.get("path") or "")) == lease:
+            return str(record.get("id") or path.stem), record
+    return lease.rsplit("/", 1)[-1], None
 
-    BOTH TREES, ONE BASE (PLAN-two-track-merge-dev LT7, serving RB3). `root` is the tree the push was typed in (`push_tree`), so the PR branch pushed from the landing tree and the development branch pushed from this checkout are each read from their own HEAD; both are MMDD-N, so both are judged against origin/main. Once the PR branch is rebase-merged, the development branch still holds the PR's original commits while main holds their copies: `base_split` reads that ABSORBED rather than behind, and the refusal names which kind it is above CI's recipe and RB4's proof.
+
+def _rb1_base_branch():
+    """`wl_rebase.base_branch`, RB1's base rule, through a scoped insert of the stop-hook directory (the shape `_policy_rel` uses), so the rule is written down once."""
+    inserted = syspath.on_sys_path(syspath.STOP_DIR)
+    try:
+        import wl_rebase
+    finally:
+        if inserted and str(syspath.STOP_DIR) in sys.path:
+            sys.path.remove(str(syspath.STOP_DIR))
+    return wl_rebase.base_branch
+
+
+def _remote_has(root, branch):
+    """True when origin carries `branch`, False when it does not, or the reason git could not say."""
+    try:
+        got = subprocess.run(
+            ["git", "-C", root, "ls-remote", "--heads", BASE_REMOTE, "refs/heads/%s" % branch],
+            capture_output=True,
+            text=True,
+            timeout=FETCH_TIMEOUT,
+            check=False,
+            env=dict(os.environ, GIT_TERMINAL_PROMPT="0"),
+        )
+    except subprocess.TimeoutExpired:
+        return "ls-remote timed out after %ds" % FETCH_TIMEOUT
+    except OSError as exc:
+        return str(exc)
+    if got.returncode != 0:
+        return got.stderr.strip() or "ls-remote exit %d" % got.returncode
+    return bool(got.stdout.strip())
+
+
+def lease_base(root, record):
+    """`(base branch, "")` for a lease push, or `("", why)` when origin cannot be read (PLAN-two-track-merge-dev RB3).
+
+    THE BASE IS RB1's (.claude/hooks/stop/wl_rebase.py `base_branch`): the branch the lease was cut from (its record's `cut_from`) while origin still carries it, so the PR branch while its PR is open and the development branch a dev lease trails; `main` when the record names none. A `cut_from` origin no longer carries (the PR branch deleted by its rebase-merge) judges against `main`, where its commits now live.
     """
-    if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
-        return None
-    judged = live_pushes(cmd, root)
-    if not judged:
-        return None
-    base_ref = "%s/%s" % (BASE_REMOTE, BASE)
+    cut = str((record or {}).get("cut_from") or "")
+    has = _remote_has(root, cut) if cut else False
+    if not isinstance(has, bool):
+        return "", has
+    base = _rb1_base_branch()(has, cut, record)
+    if base == cut and not has:
+        base = BASE
+    return base, ""
+
+
+def _fetch_base(root, branch):
+    """ "" when origin's `branch` was fetched into its remote-tracking ref, else why not."""
     try:
         fetched = subprocess.run(
             [
@@ -890,7 +578,7 @@ def behind_base_refusal(ev, root, cmd):
                 root,
                 "fetch",
                 BASE_REMOTE,
-                "+refs/heads/%s:refs/remotes/%s" % (BASE, base_ref),
+                "+refs/heads/%s:refs/remotes/%s/%s" % (branch, BASE_REMOTE, branch),
                 "--quiet",
             ],
             capture_output=True,
@@ -899,23 +587,64 @@ def behind_base_refusal(ev, root, cmd):
             check=False,
             env=dict(os.environ, GIT_TERMINAL_PROMPT="0"),
         )
-        failure = (
-            ""
-            if fetched.returncode == 0
-            else (fetched.stderr.strip() or "exit %d" % fetched.returncode)
-        )
     except subprocess.TimeoutExpired:
-        failure = "timed out after %ds" % FETCH_TIMEOUT
+        return "timed out after %ds" % FETCH_TIMEOUT
     except OSError as exc:
-        failure = str(exc)
-    if failure:
-        ev.warn("NOTE: cannot judge whether this push is behind %s: fetching it failed" % base_ref)
-        ev.warn("  (%s)." % failure.splitlines()[-1])
-        ev.warn(
-            "  Allowed. CI's Quality / Branch step still checks it, and a red there costs a round."
-        )
+        return str(exc)
+    return (
+        ""
+        if fetched.returncode == 0
+        else (fetched.stderr.strip() or "exit %d" % fetched.returncode)
+    )
+
+
+def behind_base_refusal(ev, root, cmd):
+    """A refusal when a pushed live branch does not contain origin/main, else None.
+
+    WHY. PR #592's first CI run (run 37110619739) went red only on Quality / Branch, "Check whether the branch is behind its base": main had moved three commits after 1003-1 was cut, and the local ci:quick ran in a push clone whose origin/main was stale. The CI gate (.ci/rediacc_ci/quality/branch.py) fetches the base itself before judging, so this does too: a stale `refs/remotes/origin/main` would make the ancestry test pass vacuously.
+
+    A FAILED OR TIMED-OUT FETCH CANNOT JUDGE, and says so and allows: a base check must never become a push outage, the same fail-open-on-a-broken-environment line the receipt arm draws.
+
+    BOTH TREES, ONE BASE (PLAN-two-track-merge-dev LT7, serving RB3). `root` is the tree the push was typed in (`push_tree`), so the PR branch pushed from the landing tree and the development branch pushed from this checkout are each read from their own HEAD; both are MMDD-N, so both are judged against origin/main. Once the PR branch is rebase-merged, the development branch still holds the PR's original commits while main holds their copies: `base_split` reads that ABSORBED rather than behind, and the refusal names which kind it is above CI's recipe and RB4's proof.
+
+    LEASE BRANCHES (PLAN-two-track-merge-dev RB3). A push typed in a lease tree (`lease_of`) judges every branch it names, MMDD-N or not, against the lease's base as RB1 reads it (`lease_base`), never against main alone: a lease cut from the live branch is behind when that branch moved on origin after the cut, however current it is with main. A stacked development branch is no lease and keeps the origin/main judgement, which its stacked PR-branch commits pass by containing main. Origin unable to say whether it still carries the lease's `cut_from` cannot judge, says so and allows, like a failed fetch.
+    """
+    if hookio.git_out(["-C", root, "remote", "get-url", BASE_REMOTE], want_rc=True) is None:
         return None
-    for sha, branch in judged:
+    judged = [(sha, branch, BASE) for sha, branch in live_pushes(cmd, root)]
+    lease = lease_of(root)
+    if lease is not None:
+        lease_pushed = live_pushes(cmd, root, any_branch=True)
+        base, why = lease_base(root, lease[1]) if lease_pushed else (BASE, "")
+        if why:
+            ev.warn(
+                "NOTE: cannot judge whether lease %s's push is behind its base: origin could not"
+                " say whether it still carries `%s`" % (lease[0], (lease[1] or {}).get("cut_from"))
+            )
+            ev.warn("  (%s)." % why.splitlines()[-1])
+            ev.warn(
+                "  Allowed. The lease's landing still replays its commits onto the live branch."
+            )
+            return None
+        judged = [(sha, "%s (lease %s)" % (branch, lease[0]), base) for sha, branch in lease_pushed]
+    if not judged:
+        return None
+    fetched = {}
+    for base in sorted({b for _sha, _branch, b in judged}):
+        failure = _fetch_base(root, base)
+        if failure:
+            ev.warn(
+                "NOTE: cannot judge whether this push is behind %s/%s: fetching it failed"
+                % (BASE_REMOTE, base)
+            )
+            ev.warn("  (%s)." % failure.splitlines()[-1])
+            ev.warn(
+                "  Allowed. CI's Quality / Branch step still checks it, and a red there costs a round."
+            )
+            return None
+        fetched[base] = "%s/%s" % (BASE_REMOTE, base)
+    for sha, branch, base in judged:
+        base_ref = fetched[base]
         if (
             hookio.git_out(["-C", root, "merge-base", "--is-ancestor", base_ref, sha], want_rc=True)
             is not None
@@ -951,17 +680,21 @@ def behind_base_refusal(ev, root, cmd):
                 if split[1]
                 else "",
             )
-        return (
-            "%s"
-            "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
-            "  Recent commits on %s not in this branch:\n%s\n%s\n%s"
-            % (
-                head,
-                BASE,
-                "\n".join("    %s" % line for line in recent.splitlines()),
-                "\n".join(rebase_recipe(BASE, branch)),
-                "\n".join(REBASE_PROOF),
-            )
+        # A lease push is labelled "<branch> (lease <id>)": the label is for the message, the bare ref name is for the recipe.
+        bare = branch.split(" (lease ", 1)[0]
+        ci_line = (
+            "  The landing would replay the lease's commits onto %s, so this is judged against it (CI's Quality / Branch step judges only origin/%s).\n"
+            % (base, BASE)
+            if bare != branch
+            else "  CI's Quality / Branch step refuses exactly this, after a ~15-minute round.\n"
+        )
+        return "%s%s  Recent commits on %s not in this branch:\n%s\n%s\n%s" % (
+            head,
+            ci_line,
+            base,
+            "\n".join("    %s" % line for line in recent.splitlines()),
+            "\n".join(rebase_recipe(base, bare)),
+            "\n".join(line.replace("origin/%s" % BASE, base_ref) for line in REBASE_PROOF),
         )
     return None
 
@@ -1136,10 +869,14 @@ def keyed_carry_vouches(reader, step, judged):
         return False
     if set(recorded) != set(receipt_keys):
         return False
-    return isinstance(carried, set) and set(recorded) <= carried
+    keys = carried if isinstance(carried, set) else set()
+    globs = judged.get("patterns", {}).get(reader, [])
+    if not keys and not globs:
+        return False
+    return all(k in keys or pattern_covers(k, globs) for k in recorded)
 
 
-def carried_widening(old, new):
+def carried_widening(old, new, old_patterns=None, new_patterns=None):
     """Every way the carry map `new` excuses more than `old` (both `parse_carried` maps), one phrase each; [] when `new` carries nothing `old` did not. PURE. A test plant forces it to [] to show the addition world's refusal is this check at work.
 
     Judged on the EFFECTIVE carry, after the reason bar, so an entry whose reason is lengthened past REASON_MIN counts as added, and a reworded reason that changes nothing carried counts as nothing. A switch between `"*"` and keys is refused in both directions: it is a rewrite of what the gate is excused for, and a rewrite is when a full run should judge it.
@@ -1153,10 +890,19 @@ def carried_widening(old, new):
             out.append('switches %s between "*" and keys' % gate)
         elif isinstance(now, set) and isinstance(was, set) and now - was:
             out.append("adds key(s) to %s: %s" % (gate, ", ".join(sorted(now - was))))
+    # A pattern is a wider excuse when it is new for its gate, or its expiry moved later.
+    old_patterns = old_patterns or {}
+    for gate in sorted(new_patterns or {}):
+        was = old_patterns.get(gate, {})
+        for glob, exp in sorted(new_patterns[gate].items()):
+            if glob not in was:
+                out.append("adds pattern %s to %s" % (glob, gate))
+            elif exp > was[glob]:
+                out.append("extends pattern %s of %s to %s" % (glob, gate, exp))
     return out
 
 
-def removed_still_red(old, new, judged):
+def removed_still_red(old, new, judged, old_patterns=None, new_patterns=None):
     """Every excuse `old` holds and `new` drops that still covers a red in the receipt, one phrase each. PURE.
 
     A whole-gate removal is still red when the receipt lists the gate in `failed`. A key removal is still red when the gate is in `failed` and the receipt's findings for it hold the key, or hold no parsable list at all, which cannot show the key gone.
@@ -1183,11 +929,38 @@ def removed_still_red(old, new, judged):
         hit = sorted(dropped & {k for k in emitted if isinstance(k, str)})
         if hit:
             out.append("%s: %s" % (gate, ", ".join(hit)))
+    # A dropped pattern is still red when a key the receipt holds for its failed gate matched it and nothing left in `new` covers that key.
+    new_patterns = new_patterns or {}
+    for gate in sorted(old_patterns or {}):
+        if gate not in judged["failed"]:
+            continue
+        kept = new_patterns.get(gate, {})
+        dropped = sorted(g for g in old_patterns[gate] if g not in kept)
+        if not dropped:
+            continue
+        emitted = judged["findings"].get(gate)
+        if not isinstance(emitted, list):
+            out.append(
+                "%s (the receipt records no finding keys to show pattern(s) %s unused)"
+                % (gate, ", ".join(dropped))
+            )
+            continue
+        keys = new.get(gate) if isinstance(new.get(gate), set) else set()
+        hit = sorted(
+            k
+            for k in emitted
+            if isinstance(k, str)
+            and pattern_covers(k, dropped)
+            and k not in keys
+            and not pattern_covers(k, list(kept))
+        )
+        if hit:
+            out.append("%s: %s" % (gate, ", ".join(hit)))
     return out
 
 
-def _carried_at_tree(root, tree):
-    """(`parse_carried` map, None) for carried-reds.json as committed in `tree`, or (None, why). An absent or broken file is a why, never an empty map: a step that creates or corrupts the carry file is not a shrink."""
+def _carry_raw_at(root, tree):
+    """carried-reds.json as committed in `tree`: (text, None), or (None, why) when git cannot read it, the tree has none, or the blob is not UTF-8."""
     try:
         proc = subprocess.run(
             ["git", "-C", root, "show", "%s:%s" % (tree, CARRIED_REL)],
@@ -1200,17 +973,50 @@ def _carried_at_tree(root, tree):
         return None, "tree %s has no %s" % (tree[:12], CARRIED_REL)
     # Bytes, decoded here: a blob that is not valid UTF-8 is a why naming it, never a UnicodeDecodeError out of the guard.
     try:
-        text = proc.stdout.decode("utf-8")
+        return proc.stdout.decode("utf-8"), None
     except UnicodeDecodeError as exc:
         return None, "%s at tree %s is not valid UTF-8 (%s)" % (CARRIED_REL, tree[:12], exc)
+
+
+def carry_from_raw(text, tree):
+    """((carried, patterns), None) for carried-reds.json text, or (None, why). None text (no file) is a why, never an empty map: a step that creates or corrupts the carry file is not a shrink."""
+    if text is None:
+        return None, "tree %s has no %s" % (tree[:12], CARRIED_REL)
     try:
         doc = json.loads(text)
     except ValueError as exc:
         doc = {UNPARSEABLE: str(exc)}
-    carried, error = parse_carried(doc)
+    carried, patterns, error = parse_carry_doc(doc)
     if error is not None:
         return None, "at tree %s: %s" % (tree[:12], error)
-    return carried, None
+    return (carried, patterns), None
+
+
+def _carried_at_tree(root, tree):
+    """((`parse_carried` map, patterns), None) for carried-reds.json as committed in `tree`, or (None, why)."""
+    text, why = _carry_raw_at(root, tree)
+    if why is not None:
+        return None, why
+    return carry_from_raw(text, tree)
+
+
+def carry_step_problem(paths, old, new, judged):
+    """(kind, detail) for why a step touching carried-reds.json is not a SHRINK of it, else None. PURE: `old`/`new` are `carry_from_raw` results, so the guard's step rule and the advance plan judge one thing. Kinds: `alone` (detail: the other paths), `unjudged` (why), `widened` (phrases), `removed` (phrases)."""
+    others = sorted(p for p in paths if p != CARRIED_REL)
+    if others:
+        return "alone", others
+    (o, why) = old
+    if why is None:
+        (n, why) = new
+    if why is not None:
+        return "unjudged", why
+    widened = carried_widening(o[0], n[0], o[1], n[1])
+    if widened:
+        return "widened", widened
+    red = removed_still_red(o[0], n[0], judged, o[1], n[1])
+    if red:
+        return "removed", red
+    return None
 
 
 def carried_shrink_refusal(root, frm, to, paths, judged):
@@ -1218,32 +1024,30 @@ def carried_shrink_refusal(root, frm, to, paths, judged):
 
     The file is a record (.ci/policy/record-paths.json) only for a commit that can make the push verdict stricter and never laxer: the step touches that file and nothing else, both trees carry a well-formed file, read here from git rather than from any claim in the step, `new` excuses nothing `old` did not (`carried_widening`), and no excuse it drops still covers a red in the receipt (`removed_still_red`; carried_verdict would refuse that push anyway, and here it is named at the step). This rule holds whatever the record policy says, so a policy edit cannot turn the carry file into a plain record.
     """
-    others = sorted(p for p in paths if p != CARRIED_REL)
-    if others:
+    problem = carry_step_problem(
+        paths, _carried_at_tree(root, frm), _carried_at_tree(root, to), judged
+    )
+    if problem is None:
+        return None
+    kind, detail = problem
+    if kind == "alone":
         return (
             "it edits %s together with %d other path(s) (%s); a carry-file step must touch that file alone.\n"
             "  Commit the shrink of the carry file on its own, or re-run npm run ci:quick."
-            % (CARRIED_REL, len(others), ", ".join(others[:5]))
+            % (CARRIED_REL, len(detail), ", ".join(detail[:5]))
         )
-    old, why = _carried_at_tree(root, frm)
-    if why is None:
-        new, why = _carried_at_tree(root, to)
-    if why is not None:
-        return "it edits %s, and the edit cannot be judged a shrink: %s." % (CARRIED_REL, why)
-    widened = carried_widening(old, new)
-    if widened:
+    if kind == "unjudged":
+        return "it edits %s, and the edit cannot be judged a shrink: %s." % (CARRIED_REL, detail)
+    if kind == "widened":
         return (
             "it WIDENS %s: %s.\n"
             "  A step may only remove carries; an added or widened excuse needs a new gate run."
-            % (CARRIED_REL, "; ".join(widened))
+            % (CARRIED_REL, "; ".join(detail))
         )
-    red = removed_still_red(old, new, judged)
-    if red:
-        return (
-            "it removes excuses from %s that still cover reds in the receipt: %s.\n"
-            "  Fix the finding first, or keep its carry." % (CARRIED_REL, "; ".join(red))
-        )
-    return None
+    return (
+        "it removes excuses from %s that still cover reds in the receipt: %s.\n"
+        "  Fix the finding first, or keep its carry." % (CARRIED_REL, "; ".join(detail))
+    )
 
 
 def step_refusal(root, step, records, judged):
@@ -1335,7 +1139,8 @@ def advance_chain(root, receipt, start, end):
         judged[key] = (
             {g for g in listed if isinstance(g, str)} if isinstance(listed, list) else set()
         )
-    carried, _schema_error = parse_carried(_carried_at_head(root))
+    carried, patterns, _schema_error = parse_carry_doc(_carried_at_head(root))
+    judged["patterns"] = live_patterns(patterns, utc_today())
     judged["star"] = {g for g, keys in carried.items() if keys == "*"}
     judged["carried"] = {g: keys for g, keys in carried.items() if isinstance(keys, set)}
     rf = receipt.get("findings")
@@ -1376,6 +1181,222 @@ def advance_chain(root, receipt, start, end):
         trees.append(node)
         node = parent[node]
     return list(reversed(trees)), None
+
+
+WHOLE_LANE = "ci:quick will run the whole lane."
+RECORD_ONLY = "ci:quick will advance (record-only)."
+#: The parity corpus both halves of the record-only decision are driven against: this guard's `plan_advance` (.claude/rediacc_hooks/guards/test-block_unverified_push.py (PARITY cases)) and scripts/ci-runner/run.ts `planAdvance` (its --selftest). One case list, one expected verdict per case, so a change to either half that the other does not make fails a test.
+ADVANCE_PARITY_REL = "scripts/ci-runner/advance-parity.json"
+
+
+def _str_list(v):
+    return [x for x in v if isinstance(x, str)] if isinstance(v, list) else []
+
+
+def named_inputs_moved(inputs, frm, to, entries_at):
+    """Whether a carried entry's NAME-SHAPED inputs (`lists`, `names`, `refs`) moved across a step: run.ts `namedInputsMoved`. A `refs` input always moves (an advance is a new commit); `lists`/`names` compare the list and name lines of the two trees, and a tree that cannot be listed counts as moved."""
+    inputs = inputs if isinstance(inputs, dict) else {}
+    lists, names = _str_list(inputs.get("lists")), _str_list(inputs.get("names"))
+    if _str_list(inputs.get("refs")):
+        return True
+    if not lists and not names:
+        return False
+    before = entries_at(frm) if entries_at is not None else None
+    after = entries_at(to) if entries_at is not None else None
+    if before is None or after is None:
+        return True
+
+    def lines(entries):
+        return sorted(set(v2_list_lines(entries, lists) + v2_name_lines(entries, names)))
+
+    return lines(before) != lines(after)
+
+
+def carried_over_paths(gates, paths, frm, to, entries_at):
+    """The receipt's CARRIED entries whose recorded inputs cover a changed path or whose name-shaped inputs moved: run.ts `carriedOverPaths`. `_carried_refusal` recomputes each of these at the pushed tree and refuses it, so an advance must re-run it. Sorted."""
+    if not isinstance(gates, dict):
+        return []
+    out = []
+    for gid, e in gates.items():
+        if not isinstance(e, dict) or e.get("carriedFrom") is None:
+            continue
+        raw_inputs = e.get("inputs")
+        inputs: dict = raw_inputs if isinstance(raw_inputs, dict) else {}
+        globs, files = _str_list(inputs.get("globs")), _str_list(inputs.get("files"))
+        if any(p in files or any(v2_match_glob(g, p) for g in globs) for p in paths) or (
+            named_inputs_moved(inputs, frm, to, entries_at)
+        ):
+            out.append(gid)
+    return sorted(out)
+
+
+def plan_advance(receipt, head_tree, records, diff, known=None, entries_at=None, carried_at=None):
+    """THE RECORD-ONLY DECISION, shared with scripts/ci-runner/run.ts `planAdvance` (PLAN-ciquick-gate-contract R1). PURE over its callables.
+
+    `records` is the parsed record policy, a string saying why it cannot be used, or None when the tree has none. `diff(frm, to)` lists the changed paths (None when git cannot), `known` the manifest gate ids (None skips that check), `entries_at(tree)` a tree's ls-tree entries (for carried `lists`/`names` inputs), and `carried_at(tree)` carried-reds.json text at a tree (None when absent).
+
+    Returns `{"kind": "full", "code", "why"}` or `{"kind": "advance", "from", "to", "paths", "readers", "refresh"}`. `readers` are the gates the touched records list; `refresh` the carried verdicts whose inputs the step touched. An advance runs both sets and nothing else: a carried verdict whose inputs moved only through record paths is re-run alone, never the lane (on 2026-11-28 this guard said "advance" and the runner ran the whole lane four times over three such carried gates).
+
+    The order of refusals and every `code` is the runner's too, pinned by ADVANCE_PARITY_REL.
+    """
+
+    def full(code, why):
+        return {"kind": "full", "code": code, "why": why}
+
+    r = receipt
+    if not isinstance(r, dict) or r.get("whole") is not True:
+        return full(
+            "not-whole", "The receipt is not a whole-lane run, so there is nothing to advance."
+        )
+    if r.get("schema") != RECEIPT_SCHEMA:
+        return full(
+            "schema", "The receipt is not schema %d; a whole run writes one." % RECEIPT_SCHEMA
+        )
+    if not isinstance(r.get("headTree"), str) or r.get("headTree") == "":
+        return full("no-tree", "The receipt vouches for no tree.")
+    failed = r.get("failed")
+    # Present but not a list of ids (an explicit null included, as the runner reads it) is a damaged receipt; only an absent key reads as nothing failed.
+    if "failed" in r and not (isinstance(failed, list) and all(isinstance(g, str) for g in failed)):
+        return full("failed-damaged", "The receipt's `failed` is not a list of gate ids.")
+    failed = failed or []
+    if r.get("exitCode") != 0 and not failed:
+        return full(
+            "red-unlisted",
+            "The receipt is red and lists no failed gate to judge the records against.",
+        )
+    chain = r.get("advances") if isinstance(r.get("advances"), list) else []
+    frm = r["headTree"]
+    if chain:
+        last = chain[-1]
+        frm = last.get("to") if isinstance(last, dict) else None
+        if not isinstance(frm, str) or frm == "":
+            return full("no-tree", "The receipt's last advance names no tree.")
+    if head_tree == "":
+        return full("head-unreadable", "HEAD^{tree} is unreadable.")
+    if frm == head_tree:
+        return full("same-tree", "The receipt already names this tree.")
+    if records is None:
+        return full(
+            "policy", "The record set cannot be read: the tree has no %s." % RECORD_POLICY_REL
+        )
+    if isinstance(records, str):
+        return full("policy", "The record set cannot be read: %s." % records)
+    paths = diff(frm, head_tree)
+    if not paths:
+        return full(
+            "no-diff", "git cannot list what changed between %s and %s here." % (frm, head_tree)
+        )
+
+    def matching(path):
+        return [
+            rec
+            for rec in records
+            if record_glob_re(rec["glob"]).match(path)
+            and not any(record_glob_re(x).match(path) for x in rec["except"])
+        ]
+
+    outside = sorted(p for p in paths if not matching(p))
+    if outside:
+        return full(
+            "outside",
+            "Changed since the receipt, outside the record set (%s): %s%s."
+            % (
+                RECORD_POLICY_REL,
+                ", ".join(outside[:10]),
+                " and %d more" % (len(outside) - 10) if len(outside) > 10 else "",
+            ),
+        )
+    readers = sorted({rd for p in paths for rec in matching(p) for rd in rec["readers"]})
+    if known is not None:
+        unknown = [rd for rd in readers if rd not in known]
+        if unknown:
+            return full(
+                "unknown-reader",
+                "%s names reader(s) that are not manifest gates: %s."
+                % (RECORD_POLICY_REL, ", ".join(unknown)),
+            )
+    red = sorted(set(readers) & set(failed))
+    if red:
+        return full(
+            "red-reader",
+            "The receipt is red on %s, which read(s) the changed record path(s)." % ", ".join(red),
+        )
+    if CARRIED_REL in paths:
+        rf = r.get("findings")
+        judged = {"failed": set(failed), "findings": rf if isinstance(rf, dict) else {}}
+        fetch = carried_at or (lambda _t: None)
+        problem = carry_step_problem(
+            paths,
+            carry_from_raw(fetch(frm), frm),
+            carry_from_raw(fetch(head_tree), head_tree),
+            judged,
+        )
+        if problem is not None:
+            kind, detail = problem
+            text = {
+                "alone": "carried-reds.json changed together with other path(s): %s.",
+                "unjudged": "carried-reds.json cannot be judged a shrink: %s.",
+                "widened": "carried-reds.json widened: %s.",
+                "removed": "carried-reds.json drops excuses that still cover reds: %s.",
+            }[kind]
+            return full(
+                "carry-file", text % (detail if isinstance(detail, str) else "; ".join(detail))
+            )
+    refresh = carried_over_paths(r.get("gates"), paths, frm, head_tree, entries_at)
+    red = sorted(set(refresh) & set(failed))
+    if red:
+        return full(
+            "red-reader",
+            "The receipt is red on %s, carried over input(s) the change touched." % ", ".join(red),
+        )
+    return {
+        "kind": "advance",
+        "from": frm,
+        "to": head_tree,
+        "paths": list(paths),
+        "readers": readers,
+        "refresh": refresh,
+    }
+
+
+def no_advance_hint(root, receipt, tree):
+    """Why a receipt with no `advances` does not reach `tree`, and which run `npm run ci:quick` will do about it: indented lines ending in WHOLE_LANE or RECORD_ONLY (PLAN-stop-hook-retro-20261123 R20261123.5, D5; a wrong guess cost 27 minutes on 43201205).
+
+    The run is the runner's own decision, computed by `plan_advance`, the one predicate run.ts `planAdvance` is pinned to by ADVANCE_PARITY_REL (PLAN-ciquick-gate-contract R1): on 2026-11-28 a restated copy here said "advance" while the runner ran the whole lane over carried verdicts no record lists as a reader. Manifest membership of the readers is not judged here (`known=None`): the pushed tree's gates.lock.json is the manifest, and check:ci-record-paths refuses a policy naming a gate outside it.
+
+    THE RECORD SET IS READ, NEVER RESTATED: .ci/policy/record-paths.json as the pushed tree commits it (`_record_policy_at`, the copy the advance check and the runner read), so a glob added there (agent/*/STATE.md, R20261123.4) changes this answer with no edit here.
+    """
+    records, error = _record_policy_at(root, tree)
+    memo: dict[str, Any] = {}
+
+    def entries_at(t):
+        if t not in memo:
+            memo[t] = v2_ls_tree(root, t) if TREE_RE.match(t or "") else None
+        return memo[t]
+
+    plan = plan_advance(
+        receipt,
+        tree,
+        error if error is not None else records,
+        lambda a, b: _diff_names(root, a, b) if TREE_RE.match(a or "") else None,
+        known=None,
+        entries_at=entries_at,
+        carried_at=lambda t: _carry_raw_at(root, t)[0] if TREE_RE.match(t or "") else None,
+    )
+    if plan["kind"] == "full":
+        return "  %s\n  %s" % (plan["why"], WHOLE_LANE)
+    extra = ""
+    if plan["refresh"]:
+        extra = "\n  It re-runs %d carried verdict(s) whose inputs changed: %s." % (
+            len(plan["refresh"]),
+            ", ".join(plan["refresh"][:5]) + (", ..." if len(plan["refresh"]) > 5 else ""),
+        )
+    return "  Every path changed since the receipt is a record (%s): %d path(s).%s\n  %s" % (
+        RECORD_POLICY_REL,
+        len(plan["paths"]),
+        extra,
+        RECORD_ONLY,
+    )
 
 
 def dropped_verdict(receipt, tree, trees=None):
@@ -1440,25 +1461,45 @@ def dropped_verdict(receipt, tree, trees=None):
 NOT_RUN_VERDICTS = ("deferred", "ciOnly", "blocked")
 
 
-def carried_verdict(receipt, doc):
-    """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs.
+def carried_verdict(receipt, doc, today=None, warnings=None):
+    """(refusal or None, note parts) for a RED receipt against carried-reds.json `doc` (parsed, from HEAD; None when absent). PURE: no git, no filesystem, so the tests and the push-clone proof drive exactly the function the guard runs. `today` (`YYYY-MM-DD`, default the UTC day) is the clock pattern expiry is read against; `warnings`, when a list, receives the non-blocking findings for the caller to print.
 
-    GATE LEVEL first, as before: a failed gate nothing carries refuses (unnamed), and a carried gate that is not failing refuses (stale). Then FINDING LEVEL, from `receipt["findings"]` (`{gate: [keys] | null}`, scripts/ci-runner/findings.ts): a keyed carry needs the gate's keys, and refuses on (a) a key the gate emitted that is not carried and (b) a carried key the gate no longer emits. A `"*"` carry is refused for a gate that DOES emit keys. A receipt with no `findings` field (an older runner) reads as null for every gate, so a keyed carry fails closed.
+    PATTERNS FIRST (PLAN-ciquick-gate-contract R3): a pattern entry past its `expires` refuses, whatever the receipt says, so an expired excuse is removed rather than left to rot.
+
+    GATE LEVEL next, as before: a failed gate nothing carries refuses (unnamed), and a keyed or `"*"` carried gate that is not failing refuses (stale); a gate carried only by live patterns that is not failing is a warning. Then FINDING LEVEL, from `receipt["findings"]` (`{gate: [keys] | null}`, scripts/ci-runner/findings.ts): a keyed or pattern carry needs the gate's keys, and refuses on (a) a key the gate emitted that no carried key or live pattern covers. (b) A carried key the gate did not report THIS run is a WARNING, not a refusal: flapping findings (the pytest-slow ratchet names a different set of slow tests each run) refused push after push although nothing new was red. A `"*"` carry is refused for a gate that DOES emit keys. A receipt with no `findings` field (an older runner) reads as null for every gate, so a keyed carry fails closed.
     """
-    carried, schema_error = parse_carried(doc)
+    carried, patterns, schema_error = parse_carry_doc(doc)
     if schema_error is not None:
         return schema_error + (
             '\n  Each entry is {"gate", "findings": [keys] | "*", "reason"} under'
-            ' `"version": 2`; the keys are the gate\'s `::finding::` lines, recorded in the'
+            ' `"version": 2`, or {"gate", "patterns": [globs], "reason", "expires":'
+            ' "YYYY-MM-DD"}; the keys are the gate\'s `::finding::` lines, recorded in the'
             " receipt's `findings`."
         ), []
+    today = today or utc_today()
+    warn = warnings if isinstance(warnings, list) else []
+    expired = sorted(
+        "%s %s (expired %s)" % (gate, glob, exp)
+        for gate, globs in patterns.items()
+        for glob, exp in globs.items()
+        if exp < today
+    )
+    if expired:
+        return (
+            "these carried finding patterns in .ci/config/carried-reds.json are past their"
+            " `expires` date:\n%s\n"
+            "  A pattern carry ends on its date. Fix the findings, or remove the entry and"
+            " carry the exact keys with a reason."
+            % "".join("    %s\n" % x for x in expired).rstrip("\n")
+        ), []
+    live = live_patterns(patterns, today)
 
     failed = receipt.get("failed") if isinstance(receipt, dict) else None
     failed = [g for g in failed if isinstance(g, str)] if isinstance(failed, list) else []
     rf = receipt.get("findings") if isinstance(receipt, dict) else None
     rf = rf if isinstance(rf, dict) else {}
 
-    unnamed = "".join(" %s" % g for g in failed if g not in carried)
+    unnamed = "".join(" %s" % g for g in failed if g not in carried and g not in live)
     if unnamed:
         return (
             "the gate run went RED and these failures are neither fixed nor carried:%s.\n"
@@ -1477,6 +1518,11 @@ def carried_verdict(receipt, doc):
         if isinstance(entry, dict) and entry.get("verdict") in NOT_RUN_VERDICTS
     }
     stale = "".join(" %s" % g for g in sorted(carried) if g not in failed and g not in not_run)
+    for g in sorted(live):
+        if g not in carried and g not in failed and g not in not_run:
+            warn.append(
+                "%s is carried by pattern(s) %s but did not fail this run" % (g, ", ".join(live[g]))
+            )
     if stale:
         return (
             "these gates are carried in .ci/config/carried-reds.json but are NOT failing"
@@ -1490,7 +1536,7 @@ def carried_verdict(receipt, doc):
     for g in failed:
         emitted = rf.get(g)
         emitted = [k for k in emitted if isinstance(k, str)] if isinstance(emitted, list) else None
-        if carried[g] == "*":
+        if carried.get(g) == "*":
             if emitted is not None:
                 return (
                     "%s emits findings (%d in this receipt); carry them by key, not '*'. Copy the"
@@ -1503,7 +1549,16 @@ def carried_verdict(receipt, doc):
                 "%s reported no parsable findings (or the receipt predates finding keys); a keyed"
                 " carry cannot be verified -- re-run npm run ci:quick" % g
             ), []
-        new = sorted(set(emitted) - carried[g])
+        if not emitted:
+            # A RED WITH NO NAMED FINDING (review f3d07ec8.1): an empty list is a failure the gate did not name, so no key or pattern can be shown to cover it. Read as "every carried key unreported" it only warned and admitted the red.
+            return (
+                "%s is RED but reported no finding key this run; a keyed or pattern carry covers"
+                " only the findings it names, so this failure is not carried. Fix it, or make the"
+                " gate name its finding." % g
+            ), []
+        keys = carried[g] if isinstance(carried.get(g), set) else set()
+        globs = live.get(g, [])
+        new = sorted(k for k in set(emitted) - keys if not pattern_covers(k, globs))
         if new:
             return (
                 "%s has NEW findings that .ci/config/carried-reds.json does not carry:\n%s\n"
@@ -1511,14 +1566,18 @@ def carried_verdict(receipt, doc):
                 " have. Fix these, or carry them with a reason."
                 % (g, "".join("    %s\n" % k for k in new).rstrip("\n"))
             ), []
-        gone = sorted(carried[g] - set(emitted))
+        gone = sorted(keys - set(emitted))
         if gone:
-            return (
-                "%s no longer reports these carried findings -- remove them from"
-                " .ci/config/carried-reds.json:\n%s"
-                % (g, "".join("    %s\n" % k for k in gone).rstrip("\n"))
-            ), []
-        notes.append("%s (%d findings carried)" % (g, len(carried[g])))
+            warn.append(
+                "%s did not report %d carried finding(s) this run (flapping, or fixed: remove"
+                " them from .ci/config/carried-reds.json once they stay gone): %s"
+                % (g, len(gone), ", ".join(gone))
+            )
+        by_pattern = sum(1 for k in set(emitted) if k not in keys)
+        notes.append(
+            "%s (%d findings carried%s)"
+            % (g, len(set(emitted)), ", %d by pattern" % by_pattern if by_pattern else "")
+        )
     return None, notes
 
 
@@ -1528,7 +1587,7 @@ RECEIPT_SCHEMA = 2
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 CARRY_EXEMPT_REL = _policy_rel("carry-exempt.json")
 V2_VERDICTS = ("ok", "fail", "blocked")
-V2_REGEN = "npm run ci:quick"
+V2_REGEN = ROW.admit[0]
 
 
 def v2_canon(x):
@@ -1710,6 +1769,153 @@ def _exempt_ids(doc):
     return {i["id"] for i in items}
 
 
+# --- attested receipts: the verifier seam (PLAN-two-track-merge-dev D6, R4) ---------------------
+# A gate carried from a SIGNED CI RECEIPT names its origin `ci-<tree>` (scripts/ci-runner/ci-receipt.ts writes that prior as .ci/cache/receipts/ci-<tree>.json beside the local archive). The prior is a convenience for the runner and is never believed here: the origin check reads the content-addressed receipt bytes the prior points at, re-verifies their attestation, and compares the carried entry against the attested gate. So a receipt edited after the fetch, one signed by another workflow, or a prior that names a gate no receipt holds is refused at the push, field named. Verification is memoized per sha256 of the bytes, so several hundred gates carried from one receipt cost one `gh` call.
+# THE SEAM. `attested(data, source_digest, memo, spec)` answers '' or why, through ATTESTATION_VERIFIER (a module attribute, so a suite stands a stub in). ORIGIN_READERS maps an origin kind to the reader that returns the comparable origin entry, and it is the ci:quick row's `origins` in the push-receipt table (`_push_receipts`, PLAN-tooling-code-reduction CR6): `_push_receipts.readers("ci:quick")` returns it beside the row's tree reader under one interface, so a new receipt kind is one more entry here (and a row there when it needs its own admit line), reusing `attested` unchanged.
+
+#: Who may have signed a CI receipt. scripts/ci-runner/ci-receipt.ts `ATTESTATION_SPEC` holds the same two strings, and test-block_unverified_push.py pins them equal.
+CI_ATTESTATION_SPEC = {
+    "repo": GH_REPO,
+    "signer_workflow": GH_REPO + "/.github/workflows/ci-quality.yml",
+}
+CI_ORIGIN_RE = re.compile(r"^ci-((?:[0-9a-f]{40}|[0-9a-f]{64}))$")
+CI_RAW_RE = re.compile(r"^\.ci/cache/ci-receipts/([0-9a-f]{64})\.json$")
+CI_SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+
+
+def _gh_retry():
+    """`rediacc_ci.core.gh_retry`, so the attestation read retries a transient 5xx and fails a 4xx at once. A scoped, removed sys.path insert, the shape `_policy_rel` uses: a hook cannot import rediacc_ci at module level."""
+    cipath = str(hookio.repo_root() / ".ci")
+    inserted = syspath.on_sys_path(cipath)
+    try:
+        from rediacc_ci.core import gh_retry
+    finally:
+        if inserted and cipath in sys.path:
+            sys.path.remove(cipath)
+    return gh_retry
+
+
+def gh_attestation_verifier(data, source_digest, spec):
+    """'' when `gh attestation verify` accepts `data` as built from `source_digest` by `spec`'s signer workflow, else why. The bytes are written to a private file first, so what is verified is exactly what was read. A missing gh, a timeout or a network failure is a refusal, never a pass: an unchecked origin is not a verified one."""
+    if not CI_SHA_RE.match(source_digest or ""):
+        return "the receipt's sha is not a 40-hex commit"
+    with tempfile.TemporaryDirectory(prefix="ci-receipt-verify-") as tmp:
+        path = os.path.join(tmp, "receipt.json")
+        pathlib.Path(path).write_bytes(data)
+        argv = ["gh", "attestation", "verify", path, "--repo", spec["repo"]]
+        argv += ["--signer-workflow", spec["signer_workflow"], "--source-digest", source_digest]
+        try:
+            gh_retry = _gh_retry()
+            proc = gh_retry.retry_transient(
+                lambda: subprocess.run(
+                    [*argv, "--format", "json"],
+                    capture_output=True,
+                    text=True,
+                    timeout=120,
+                    check=False,
+                ),
+                lambda r: (r.stderr or "") if r.returncode != 0 else None,
+            )
+        except ImportError as exc:
+            return "gh_retry could not be imported, so the receipt is not verified: %s" % exc
+        except FileNotFoundError:
+            return "gh is not installed (https://cli.github.com, then gh auth login)"
+        except subprocess.TimeoutExpired:
+            return "gh attestation verify did not answer within 120 s"
+        except OSError as exc:
+            return "gh attestation verify could not start: %s" % exc
+    if proc.returncode != 0:
+        tail = " | ".join((proc.stderr or "").strip().splitlines()[-3:])
+        return "gh attestation verify exited %d: %s" % (proc.returncode, tail)
+    return ""
+
+
+#: The verifier `attested` calls: (data, source_digest, spec) -> '' or why.
+ATTESTATION_VERIFIER = gh_attestation_verifier
+
+
+def attested(data, source_digest, memo, spec=None):
+    """'' when `data` carries an attestation from `spec` (CI_ATTESTATION_SPEC by default) for `source_digest`, else why. Memoized per sha256 of the bytes, digest and signer."""
+    spec = CI_ATTESTATION_SPEC if spec is None else spec
+    key = ("attested", hashlib.sha256(data).hexdigest(), source_digest, spec["signer_workflow"])
+    if key not in memo:
+        memo[key] = ATTESTATION_VERIFIER(data, source_digest, spec)
+    return memo[key]
+
+
+def _ci_raw(root, rel, memo):
+    key = ("ci-raw", rel)
+    if key not in memo:
+        try:
+            memo[key] = pathlib.Path(root, rel).read_bytes()
+        except OSError:
+            memo[key] = None
+    return memo[key]
+
+
+def ci_origin_gate(root, tree, gid, memo):
+    """(origin entry, '') for `gid` carried from the CI prior `ci-<tree>`, or (None, why naming the field). The entry is built from the ATTESTED receipt, never from the prior: `{inputHash, verdict: 'ok', findings: []}`, since only a pass is receipted and a pass is what the runner carries as ok."""
+    prior_key = ("ci-prior", tree)
+    if prior_key not in memo:
+        memo[prior_key] = _read_json("%s/%s/ci-%s.json" % (root, RECEIPT_ARCHIVE_REL, tree))
+    prior = memo[prior_key]
+    refs = prior.get("ciReceipts") if isinstance(prior, dict) else None
+    if not isinstance(refs, list) or not refs:
+        return None, "the CI prior ci-%s is missing or names no receipt (field ciReceipts)" % tree
+    for ref in refs:
+        rel = ref.get("path") if isinstance(ref, dict) else None
+        named = CI_RAW_RE.match(rel) if isinstance(rel, str) else None
+        if named is None:
+            return (
+                None,
+                "the CI prior ci-%s names %r, not a receipt under .ci/cache/ci-receipts/<sha256>.json (field ciReceipts.path)"
+                % (tree, rel),
+            )
+        data = _ci_raw(root, rel, memo)
+        if data is None:
+            return None, "the CI receipt %s is missing (field ciReceipts.path)" % rel
+        if hashlib.sha256(data).hexdigest() != named.group(1):
+            return (
+                None,
+                "the CI receipt %s does not hash to its own name, so its bytes changed after the fetch (field sha256)"
+                % rel,
+            )
+        try:
+            doc = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            doc = None
+        if not isinstance(doc, dict):
+            return None, "the CI receipt %s is not a JSON object (field json)" % rel
+        if doc.get("repo") != CI_ATTESTATION_SPEC["repo"]:
+            return None, "the CI receipt %s names repo %r (field repo)" % (rel, doc.get("repo"))
+        if doc.get("tree") != tree:
+            return None, "the CI receipt %s judged tree %r, not %s (field tree)" % (
+                rel,
+                doc.get("tree"),
+                tree,
+            )
+        gates = doc.get("gates")
+        gate = gates.get(gid) if isinstance(gates, dict) else None
+        if not isinstance(gate, dict):
+            continue
+        sha = doc.get("sha") if isinstance(doc.get("sha"), str) else ""
+        why = attested(data, sha, memo)
+        if why:
+            return None, "the CI receipt %s is not verified: %s (field attestation)" % (rel, why)
+        if gate.get("verdict") != "pass":
+            return (
+                None,
+                "the CI receipt %s judged it %r, and only a pass carries (field verdict)"
+                % (rel, gate.get("verdict")),
+            )
+        return {"inputHash": gate.get("inputHash"), "verdict": "ok", "findings": []}, ""
+    return None, "no CI receipt of the prior ci-%s holds it (field gates)" % tree
+
+
+#: Origin kind -> reader `(root, tree, gid, memo) -> (origin entry or None, why)`. A local origin (a bare tree hash) is read from the archive inline in `_carried_refusal`.
+ORIGIN_READERS = {"ci": ci_origin_gate}
+
+
 def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=None):
     """Why one carried entry is not honoured, or ''. Names the gate and the field.
 
@@ -1763,19 +1969,25 @@ def _carried_refusal(root, tree, gid, entry, lock_entry, entries, exempt, memo=N
     if memo[key] != entry.get("filesHash"):
         return "%s: filesHash differs at the pushed tree (an input changed after the carry)" % gid
     origin = carried.get("headTree")
-    if not isinstance(origin, str) or not TREE_RE.match(origin):
-        return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
-    origin_key = ("origin", origin)
-    if origin_key not in memo:
-        memo[origin_key] = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
-    origin_doc = memo[origin_key]
-    base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
-    was = base.get(gid) if isinstance(base, dict) else None
-    if not isinstance(was, dict):
-        return "%s: the archived origin receipt for %s is missing or lacks it (carriedFrom)" % (
-            gid,
-            origin,
-        )
+    ci = CI_ORIGIN_RE.match(origin) if isinstance(origin, str) else None
+    if ci is not None:
+        was, why = ORIGIN_READERS["ci"](root, ci.group(1), gid, memo)
+        if why:
+            return "%s: %s" % (gid, why)
+    else:
+        if not isinstance(origin, str) or not TREE_RE.match(origin):
+            return "%s: carriedFrom.headTree is not a tree hash (field carriedFrom)" % gid
+        origin_key = ("origin", origin)
+        if origin_key not in memo:
+            memo[origin_key] = _read_json("%s/.ci/cache/receipts/%s.json" % (root, origin))
+        origin_doc = memo[origin_key]
+        base = (origin_doc.get("gates") if isinstance(origin_doc, dict) else None) or {}
+        was = base.get(gid) if isinstance(base, dict) else None
+        if not isinstance(was, dict):
+            return "%s: the archived origin receipt for %s is missing or lacks it (carriedFrom)" % (
+                gid,
+                origin,
+            )
     for field in ("inputHash", "verdict", "findings"):
         if was.get(field) != entry.get(field):
             return "%s: %s differs from the archived origin receipt %s" % (gid, field, origin)
@@ -1951,9 +2163,12 @@ def _receipt_front(root, tree, receipt):
         # A RECORD-ONLY COMMIT ADVANCES, it does not void (module docstring). Only this branch pays for the extra git calls, and a receipt with no `advances` keeps today's refusal byte for byte, so the frozen golden's rows do not move.
         chain, why = advance_chain(root, receipt, r_tree, tree)
         if chain is None:
+            if why:
+                return why, None
+            # NO ADVANCE AT ALL: name what voided the receipt and the run ci:quick will do about it (PLAN-stop-hook-retro-20261123 R20261123.5), after the sentence the frozen golden's rows carry.
             return (
-                why
-                or "the gate run judged a different tree (%s), not this one (%s)." % (r_tree, tree)
+                "the gate run judged a different tree (%s), not this one (%s).\n%s"
+                % (r_tree, tree, no_advance_hint(root, receipt, tree))
             ), None
 
     # A NARROWED RUN PROVES ALMOST NOTHING. `--quick --only <one-gate>` produces a receipt that is otherwise indistinguishable from all 254, so the runner records whether the lane ran WHOLE and this reads the flag rather than parsing the selection prose -- a guard that parses English fails open on a rewording.
@@ -2118,18 +2333,22 @@ def run(ev):
         # A RED RECEIPT MAY STILL AUTHORISE A PUSH, but only when every failure is named and justified in .ci/config/carried-reds.json. All-or-nothing is the shape that gets a guard routed around; naming the exception keeps the refusal informative and leaves the excuse in git where it can be reviewed.
         #
         # READ FROM THE TREE BEING PUSHED, not the worktree. The receipt is keyed on HEAD^{tree}, so the excuses that clear it must come from the same tree. Reading the worktree let another writer's uncommitted edit to this file change the verdict on a push that does not contain that edit (2026-09-24: a working copy that dropped one entry refused a push whose HEAD still carried it). An absent file at HEAD means nothing is carried.
-        refusal, notes = carried_verdict(receipt, _carried_at_head(root))
+        carry_warnings: list[str] = []
+        refusal, notes = carried_verdict(receipt, _carried_at_head(root), warnings=carry_warnings)
         if refusal is not None:
             return _refuse(ev, refusal)
+        _warn_carry(ev, carry_warnings)
         ev.warn("NOTE: pushing with CARRIED reds, each named in .ci/config/carried-reds.json:")
         ev.warn("  %s" % ", ".join(notes))
         ev.warn("  CI runs these for real and will fail on them. Carrying is a record of a")
         ev.warn("  deliberate decision, not a way to make CI green.")
     else:
         # A GREEN RECEIPT STILL MEETS RULE 2. carried_verdict's stale check ran only on a red receipt, so a carried gate that had gone green rode every green push unremarked: on 2026-10-02 the check:ci-external-links carry (fc84526ed) passed the push of b72969998 after its gate went green. With nothing failing, every carried entry is stale.
-        refusal, _notes = carried_verdict(receipt, _carried_at_head(root))
+        carry_warnings = []
+        refusal, _notes = carried_verdict(receipt, _carried_at_head(root), warnings=carry_warnings)
         if refusal is not None:
             return _refuse(ev, refusal)
+        _warn_carry(ev, carry_warnings)
 
     # A GATE THAT COULD NOT RUN WARNS, IT DOES NOT REFUSE (operator decision, 2026-08-27). Measured that day: twelve reds on a normal developer tree, ten of them ambient, several purely "this machine has no ruff / no workers-types". A missing toolchain is not evidence about the code, and refusing on it would make the receipt unobtainable -- an unobtainable receipt is a guard people route around, which costs more than the rounds it saves.
     #
@@ -2159,6 +2378,12 @@ def run(ev):
         ev.warn("  committed tree, so this is allowed -- but if you changed something a gate")
         ev.warn("  reads, re-run: npm run ci:quick")
     return hookio.ALLOW
+
+
+def _warn_carry(ev, warnings):
+    """Print `carried_verdict`'s non-blocking findings (PLAN-ciquick-gate-contract R3): a carried key the run did not report, a pattern-only gate that did not fail."""
+    for line in warnings:
+        ev.warn("WARNING: %s" % line)
 
 
 def _dirty_digest(root):

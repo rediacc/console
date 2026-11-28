@@ -45,6 +45,7 @@ import time
 from typing import Any
 
 import wl_core as C
+import wl_store as S
 
 # One index line must fit in a single atomic append. 4096 is PIPE_BUF on Linux;
 # 1024 leaves headroom for every platform's weaker guarantee and is still ~5x a typical line.
@@ -345,7 +346,7 @@ def _foreign_and_stale(entry, reader):
     age = C.stamp_age_min(entry.get("at"))
     if age is None:
         return False
-    return age >= float(os.environ.get("WORKLIST_DEAD_HOURS", "24")) * 60
+    return age >= S.dead_hours() * 60
 
 
 def _foreign_and_live(entry, reader, peer_live):
@@ -1000,6 +1001,8 @@ def capture(
             "tx": tx,
             # The shell a SILENT capture's agent ended its turn to wait on (agent/plans/PLAN-stop-hook-retro-20260924.md R.7); `unread` holds such an entry while that wait lasts. Only a silent capture carries it: a report with substance is never held.
             **({"interim": interim} if interim and silent else {}),
+            # A report WITH substance whose agent still had a shell or Monitor armed at capture is a mid-wait message ("waiting on X"), not a closing summary; wl_stuckshell reads this so it never calls such an agent finished (2026-11-23 hostinger runner false positive).
+            **({"armed": interim} if interim and not silent else {}),
             "title": title,
             "transcript": str(transcript or ""),
             "src": source,
@@ -1029,10 +1032,10 @@ def _branch_of(start):
 
 
 def handle_subagent_stop(event):
-    """A CAPTURE HOOK MUST NEVER WEDGE A SUB-AGENT'S STOP. Every failure path here exits 0 with no output: an unwritable store, a full disk or a malformed payload costs a lost report, while raising would cost the agent its exit."""
+    """A CAPTURE HOOK MUST NEVER WEDGE A SUB-AGENT'S STOP. Every failure path here exits 0 with no output: an unwritable store, a full disk or a malformed payload costs a lost report, while raising would cost the agent its exit. Returns the block reason of `subagent_resume` ("" for none)."""
     agent_id = event.get("agent_id")
     if not agent_id:
-        return  # main thread, not a subagent
+        return ""  # main thread, not a subagent
     start = C.project_start(event)
     store = store_root(start)
     transcript = event.get("agent_transcript_path") or ""
@@ -1077,6 +1080,109 @@ def handle_subagent_stop(event):
         tx=tx,
         interim=interim,
     )
+    me8 = str(event.get("session_id") or "")[:8]
+    root = C.project_root(start)
+    with contextlib.suppress(Exception):
+        # The finished marker host_temp.py sweeps after its grace (PLAN-host-temp-disposal D6); swallowed like every follow-up here.
+        import wl_worktrees
+
+        wl_worktrees.mark_finished(root, agent_id, transcript, interim)
+    queued = 0
+    tick_error = ""
+    if me8:
+        # Each follow-up is swallowed on its own, after the capture: a broken queue must not cost the report, and a broken log must not cost the queue. A queue that fails is NAMED, on stderr and in the stop-log row, so the lost TICK row is findable (review e31b42fa.2).
+        try:
+            queued = queue_report_ticks(root, me8, agent_id, final, body)
+        except Exception as exc:
+            tick_error = "%s: %s" % (type(exc).__name__, exc)
+            print(
+                "wl_report: the TICK rows of agent %s were not queued (%s)"
+                % (str(agent_id)[:64], tick_error),
+                file=sys.stderr,
+            )
+    return subagent_resume(root, me8, event, final, queued, tick_error)
+
+
+# ---- SubagentStop follow-ups: the pending-tick queue and the API-error resume ----
+
+# The text an API-error death leaves as the agent's last message, measured on 2026-11-19 (agent a7795c6bbb38b95da: `API Error: No response from API (waited 3m, then 10m on the retry)...`) and in the parent's task-notification (`Agent terminated early due to an API error: ...`). Anchored at the START: a report that merely QUOTES one of these phrases is a report, not a death.
+API_ERROR_RE = re.compile(
+    r"^\s*(?:API Error\b|Agent terminated early due to an API error|No response from API)",
+    re.IGNORECASE,
+)
+# How many times the hook itself sends one agent back to work after an API-error stop. Each block costs a turn, and an outage that kills the agent twice is an outage the lead should see rather than a loop the hook keeps feeding.
+RESUME_SELF_MAX = int(os.environ.get("WORKLIST_RESUME_SELF_MAX", "2"))
+RESUME_REASON = (
+    "Your run was cut by an API error; check your tree state, commit verified work, finish, "
+    "and send the report."
+)
+
+
+def looks_api_error(text):
+    """True when `text` is an API-error stop rather than a report (API_ERROR_RE)."""
+    return bool(API_ERROR_RE.match(str(text or "")))
+
+
+def stop_log_path(root, me8):
+    """`<root>/.claude/hooks/context/state/<me8>-subagent-stop.jsonl` (gitignored): one row per SubagentStop this session's agents fire, which is what MEASURES whether the event fires on an API-error death at all."""
+    return pathlib.Path(
+        root, ".claude", "hooks", "context", "state", "%s-subagent-stop.jsonl" % me8
+    )
+
+
+def queue_report_ticks(root, me8, agent_id, final, body):
+    """Queue the `present`/`done` TICK rows of the agent's final message (else of the assembled body, which holds its SendMessage reports) for `worklist.py --apply-ticks`. Returns how many rows were queued."""
+    import wl_planbox
+
+    rows = wl_planbox.parse_tick(final)
+    if not wl_planbox.queueable(rows):
+        rows = wl_planbox.parse_tick(body)
+    return len(wl_planbox.queue_ticks(root, me8, agent_id, rows, C.stamp_now()))
+
+
+def self_resumes(root, me8, agent_id):
+    """How many times this hook already blocked `agent_id`'s stop to resume it."""
+    n = 0
+    try:
+        text = stop_log_path(root, me8).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 0
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict) and row.get("agent") == agent_id and row.get("resumed"):
+            n += 1
+    return n
+
+
+def subagent_resume(root, me8, event, final, queued=0, tick_error=""):
+    """Log this SubagentStop, and return the block reason when the agent stopped on an API error, `stop_hook_active` is false and the hook has resumed it fewer than RESUME_SELF_MAX times; "" otherwise. Never raises."""
+    agent_id = str(event.get("agent_id") or "")
+    api = looks_api_error(final)
+    active = bool(event.get("stop_hook_active"))
+    resume = False
+    with contextlib.suppress(Exception):
+        resume = bool(
+            api and not active and me8 and self_resumes(root, me8, agent_id) < RESUME_SELF_MAX
+        )
+    if me8:
+        with contextlib.suppress(Exception):
+            _append_line(
+                stop_log_path(root, me8),
+                {
+                    "ev": "subagent-stop",
+                    "at": C.stamp_now(),
+                    "agent": agent_id[:64],
+                    "api_error": api,
+                    "active": active,
+                    "ticks": int(queued),
+                    "tick_error": str(tick_error or "")[:300],
+                    "resumed": resume,
+                },
+            )
+    return RESUME_REASON if resume else ""
 
 
 def surface_block(store, branch, hook_path, reader):
@@ -1472,9 +1578,12 @@ def main(argv):
     mode = argv[0]
 
     if mode == "--subagent-stop":
-        # Swallowed on purpose -- see handle_subagent_stop's docstring.
+        # Swallowed on purpose -- see handle_subagent_stop's docstring. The one output is the documented SubagentStop `decision: block`, which keeps an agent cut by an API error running with the reason as its next instruction (subagent_resume).
+        reason = ""
         with contextlib.suppress(Exception):
-            handle_subagent_stop(_stdin_event())
+            reason = handle_subagent_stop(_stdin_event()) or ""
+        if reason:
+            sys.stdout.write(json.dumps({"decision": "block", "reason": reason}) + "\n")
         return 0
     if mode in ("--session-start", "--post-compact"):
         hook_event = "SessionStart" if mode == "--session-start" else "PostCompact"

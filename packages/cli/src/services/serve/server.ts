@@ -16,8 +16,12 @@
  *                      a client-asserted identity)
  *   2. version check - refuse a client whose contract disagrees with ours
  *   3. authorize     - evaluate the policy document from the ENCRYPTED config
- *   4. execute       - run it, streaming renet's events back verbatim
- *   5. audit         - ship one event, awaited, before the result line lands
+ *   4. execute       - run it, streaming renet's events back verbatim; a
+ *                      mutating command first records its `started` event and
+ *                      is refused (AUDIT_UNAVAILABLE) when that cannot be
+ *                      delivered
+ *   5. audit         - ship the outcome event, awaited, before the result line
+ *                      lands
  */
 
 import { CLI_CONTRACT_VERSION, type ContractCommand } from '@rediacc/shared/cli-contract';
@@ -32,6 +36,9 @@ import type { RdcConfig } from '@rediacc/shared/config-schema';
 import { Hono } from 'hono';
 import { streamText } from 'hono/streaming';
 import { VERSION } from '../../version.js';
+import { AiApprovalLedger } from '../ai/approvals.js';
+import { AiConversationStore } from '../ai/autonomy.js';
+import { AiTranscripts } from '../ai/recorder.js';
 import { outputService } from '../core/output.js';
 import {
   createOutputState,
@@ -40,13 +47,23 @@ import {
 } from '../core/request-context.js';
 import { InvalidJobIdError } from '../executor/job-client.js';
 import { traceProxyRequest } from '../executor/proxy-trace.js';
+import { type AiChatRecording, registerAiRoutes } from './ai-routes.js';
+import { AUDIT_UNAVAILABLE, AuditUnavailableError } from './audit.js';
 import { AuthError, type AuthVerifier } from './auth.js';
+import { createBusyCounter } from './busy.js';
 import { CommandRejected, dispatchCommand, prepareCommand } from './command-dispatch.js';
-import type { ServeDeps } from './deps.js';
+import { cekGenerationOf } from './config-writeback.js';
+import type { ExecutorAuditEvent, ServeDeps } from './deps.js';
 import { createEgressReporter, EGRESS_UNREACHABLE_CODE, egressGuidance } from './egress-report.js';
 import { CekHandoffBlobSchema } from './handoff-schema.js';
-import { registerJobRoutes } from './job-routes.js';
-import { isReadOnlyCommand, PolicyDenied, resolveGrandRepoMutation } from './policy.js';
+import { type JobRouteHelpers, registerJobRoutes } from './job-routes.js';
+import { registerMcpCallRoute } from './mcp-call-route.js';
+import {
+  clusterSubjectOf,
+  isReadOnlyCommand,
+  PolicyDenied,
+  resolveExecutorTarget,
+} from './policy.js';
 import { SessionError } from './sessions.js';
 
 /**
@@ -60,6 +77,16 @@ import { SessionError } from './sessions.js';
  */
 const CONFIG_SESSION_HEADER = 'x-config-session';
 
+/** A refusal's reason followed by the step past it, when the decision names one (D21). */
+function decisionMessage(error: PolicyDenied): string {
+  const { next } = error.decision;
+  if (next?.run) return `${error.message} Next step: ${next.run}`;
+  if (next?.confirm) {
+    return `${error.message} Retry with ${next.confirm.argument}="${next.confirm.value}" to confirm.`;
+  }
+  return error.message;
+}
+
 /** Turn any thrown value into an HTTP status plus a message worth reading. */
 function statusFor(error: unknown): {
   status: 400 | 401 | 403 | 404 | 500;
@@ -67,7 +94,9 @@ function statusFor(error: unknown): {
   code?: string;
 } {
   if (error instanceof AuthError) return { status: error.status, message: error.message };
-  if (error instanceof PolicyDenied) return { status: 403, message: error.message };
+  if (error instanceof PolicyDenied) {
+    return { status: 403, message: decisionMessage(error), code: error.decision.code };
+  }
   if (error instanceof SessionError) {
     return { status: 404, message: error.message, ...(error.code ? { code: error.code } : {}) };
   }
@@ -100,8 +129,15 @@ function defaultEgressReporter(): ReturnType<typeof createEgressReporter> {
 
 export function createServeApp(deps: ServeDeps): Hono {
   const app = new Hono();
+  // Dispatches running now, which the proxy's alarm asks before it stops an idle container.
+  const busy = createBusyCounter();
 
   app.get(PROXY_ROUTES.health, (c) => c.json({ ok: true }));
+
+  // The container tier only: a daemon has no Durable Object alarm to keep awake.
+  if (deps.mode === 'container') {
+    app.get(PROXY_ROUTES.busy, (c) => c.json({ busy: busy.count() }));
+  }
 
   app.get(PROXY_ROUTES.serverInfo, (c) => {
     const info: ServerInfo = {
@@ -217,26 +253,29 @@ export function createServeApp(deps: ServeDeps): Hono {
       if (configSessionId) deps.sessions.sessionForExec(principal, configSessionId);
       const config = await deps.loadConfig(principal, configSessionId);
       requestConfig = requestScopedConfig(deps, config);
-      const repoName = targetFrom(
-        entry.repoOption,
-        entry.repoPositional,
+      const machineName = targetFrom(
+        entry.machineOption,
+        entry.machinePositional,
         request.params,
         request.positionals
       );
-      deps.authorize({
-        principal,
-        commandPath: request.pathKey,
-        config,
-        machineName: targetFrom(
-          entry.machineOption,
-          entry.machinePositional,
-          request.params,
-          request.positionals
-        ),
-        repoName,
-        // Computed here, from the config the command will run against, never taken from the client. The CLI's own grand-repo guard runs only in an agent's local process, which a proxied command never reaches.
-        isGrandRepo: await resolveGrandRepoMutation(entry, repoName, requestConfig),
-      });
+      // Resolved here, from the config the command will run against, never taken from the client: the one repo resolver every path uses decides grand, fork or unresolved (unresolved counts as grand) and the ops-VM exemption.
+      const target = await resolveExecutorTarget(
+        entry,
+        {
+          ref: targetFrom(
+            entry.repoOption,
+            entry.repoPositional,
+            request.params,
+            request.positionals
+          ),
+          machine: machineName,
+          subject: clusterSubjectOf(entry, request.positionals),
+        },
+        requestConfig
+      );
+      // The principal's team slug, resolved by the account server, picks the team tier of the policy.
+      deps.authorize({ principal, commandPath: request.pathKey, config, machineName, target });
     } catch (error) {
       const { status, message, code } = statusFor(error);
       return c.json({ error: message, ...(code ? { code } : {}) }, status);
@@ -247,7 +286,62 @@ export function createServeApp(deps: ServeDeps): Hono {
     const auditWarning = auditGate.warning;
     if (auditWarning) outputService.warn(`${auditWarning} (caller: ${principal.userEmail})`);
 
-    return streamText(c, async (stream) => {
+    const requestedMachine = targetFrom(
+      entry.machineOption,
+      entry.machinePositional,
+      request.params,
+      request.positionals
+    );
+    // A mutating command is recorded BEFORE it runs, as `started`: a change the executor cannot record is not made. Refused here, before the stream opens and before any host call (PLAN-rmcp-writeback.md Design 8). Its terminal outcome is the post-dispatch event (or a poll's, for a job that outlives the attach window).
+    const recordsIntent = !!deps.audit && !isReadOnlyCommand(entry);
+    if (recordsIntent) {
+      try {
+        await deps.audit?.({
+          principal,
+          commandPath: request.pathKey,
+          ...(request.requestId ? { requestId: request.requestId } : {}),
+          machineName: requestedMachine,
+          params: request.params,
+          success: true,
+          exitCode: 0,
+          durationMs: 0,
+          destructive: entry.destructive ?? false,
+          outcome: 'started',
+        });
+      } catch (error) {
+        if (!(error instanceof AuditUnavailableError)) throw error;
+        return c.json(
+          {
+            error: `The executor refuses "rdc ${request.pathKey}": its audit record could not be delivered (${error.message}), and a change it cannot record is not made. Retry when the account server is reachable.`,
+            code: AUDIT_UNAVAILABLE,
+          },
+          503
+        );
+      }
+    }
+
+    // The run index records the command from here: authorized, audited, about to dispatch. A run refused above never reaches it.
+    const run = deps.runIndex?.begin({
+      principal,
+      ...(request.requestId ? { runId: request.requestId } : {}),
+      pathKey: request.pathKey,
+      ...(requestedMachine ? { machine: requestedMachine } : {}),
+      ...optionalRepo(
+        targetFrom(entry.repoOption, entry.repoPositional, request.params, request.positionals)
+      ),
+      // Read at sealing time, so the recorder never holds key material.
+      cek: () => {
+        try {
+          return deps.sessions.cekBytes(deps.sessions.sessionForExec(principal, configSessionId));
+        } catch {
+          return Promise.resolve(undefined);
+        }
+      },
+    });
+
+    return streamText(c, (stream) => busy.track(() => runDispatch(stream)));
+
+    async function runDispatch(stream: Parameters<Parameters<typeof streamText>[1]>[0]) {
       const write = async (streamLine: StreamLine) => {
         await stream.write(`${JSON.stringify(streamLine)}\n`);
       };
@@ -269,6 +363,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           prepared,
           executor: deps.executor,
           ...(requestConfig ? { config: requestConfig } : {}),
+          ...(principal.tokenId ? { principalTokenId: principal.tokenId } : {}),
           caller: {
             userId: principal.userId,
             orgId: principal.orgId,
@@ -279,6 +374,7 @@ export function createServeApp(deps: ServeDeps): Hono {
           ...(request.background ? { background: true } : {}),
           // Announce the job the instant it starts, before any event, so a dropped request can be followed by polling it.
           onJobStarted: (jobId, machine, overlaps) => {
+            run?.job(jobId, machine);
             safeWrite({
               kind: 'job',
               jobId,
@@ -288,6 +384,7 @@ export function createServeApp(deps: ServeDeps): Hono {
             });
           },
           onEvent: (event, line) => {
+            if (event.type === 'step_start' && event.name) run?.step(event.name);
             safeWrite({ kind: 'event', event, ...(line == null ? {} : { line }) });
           },
         });
@@ -295,16 +392,14 @@ export function createServeApp(deps: ServeDeps): Hono {
         clearInterval(heartbeat);
         const message =
           error instanceof Error ? error.message : 'The executor failed to run this command.';
-        // A dispatch that threw still ran, or tried to run, on the caller's behalf: one event per command holds on this path too. The function it may have reached is unknown here, so it records by path.
-        await deps.audit?.({
+        // The run ends here whether or not the client is still reading.
+        const failedEnd = run?.end({ state: 'failed', exitCode: 1, stderr: message });
+        // A dispatch that threw still ran, or tried to run, on the caller's behalf: its outcome is recorded on this path too. The function it may have reached is unknown here, so it records by path.
+        const failedNotice = await auditOutcome(deps, entry, request.pathKey, {
           principal,
           commandPath: request.pathKey,
-          machineName: targetFrom(
-            entry.machineOption,
-            entry.machinePositional,
-            request.params,
-            request.positionals
-          ),
+          ...(request.requestId ? { requestId: request.requestId } : {}),
+          machineName: requestedMachine,
           params: request.params,
           success: false,
           exitCode: 1,
@@ -319,38 +414,39 @@ export function createServeApp(deps: ServeDeps): Hono {
             error: message,
             durationMs: Date.now() - started,
           },
+          ...(failedNotice ? { stderr: failedNotice } : {}),
         });
+        await failedEnd;
         return;
       }
       clearInterval(heartbeat);
-      const { functionName, machineName, stdout, stderr } = dispatched;
+      const { functionName, functionParams, machineName, stdout, stderr } = dispatched;
       let { result } = dispatched;
 
       // The audited function is the one the command actually called, observed as it went past, not one reconstructed from a table. A command that reached no machine has none, and is audited by its path alone.
-      await deps.audit?.({
-        principal,
-        commandPath: request.pathKey,
-        ...(functionName ? { functionName } : {}),
-        // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside
-        // the action body); fall back to the request for verbs that still name
-        // the machine explicitly (backup, job).
-        machineName:
-          machineName ??
-          targetFrom(
-            entry.machineOption,
-            entry.machinePositional,
-            request.params,
-            request.positionals
-          ),
-        params: request.params,
-        success: result.success,
-        exitCode: result.exitCode,
-        durationMs: result.durationMs,
-        destructive: entry.destructive ?? false,
-        // A command that ran as a job records its id, and `started` when the ticket went back to the client before the job ended: the polls then add the terminal event.
-        ...(result.jobId ? { jobId: result.jobId } : {}),
-        ...(result.state ? { outcome: result.state === 'running' ? 'started' : result.state } : {}),
-      });
+      // A job handed back running is `started`, and the polls add the terminal event; a mutating command already recorded its `started` before dispatch, so it is not recorded twice.
+      const handedBack = result.state === 'running';
+      const outcomeNotice =
+        handedBack && recordsIntent
+          ? undefined
+          : await auditOutcome(deps, entry, request.pathKey, {
+              principal,
+              commandPath: request.pathKey,
+              ...(request.requestId ? { requestId: request.requestId } : {}),
+              ...(functionName ? { functionName } : {}),
+              ...(functionParams ? { functionParams } : {}),
+              // Prefer the machine the command actually reached (the only source for a derived-machine verb, whose machine is resolved from placement inside the action body); fall back to the request for verbs that still name the machine explicitly (backup, job).
+              machineName: machineName ?? requestedMachine,
+              params: request.params,
+              success: result.success,
+              exitCode: result.exitCode,
+              durationMs: result.durationMs,
+              destructive: entry.destructive ?? false,
+              ...(result.jobId ? { jobId: result.jobId } : {}),
+              ...(result.state
+                ? { outcome: result.state === 'running' ? 'started' : result.state }
+                : {}),
+            });
 
       // An unanswered connect is reported through the account egress, the one path that works from a container whose route to the machine is dropped, and the answer decides the guidance. Only a result that names the address it never reached is reported, since the proxy probes that address before the report counts. Awaited, so the report finishes before the result line.
       const { connectTarget, ...served } = result;
@@ -369,24 +465,31 @@ export function createServeApp(deps: ServeDeps): Hono {
         result = { ...result, errorGuidance: egressGuidance(answer, connectTarget) };
       }
 
-      await write({
-        kind: 'result',
-        result,
+      // Started before the result line is written, so a client that left (a write that throws) still produces the end event.
+      const ended = run?.end({
+        state: runStateOf(result, handedBack),
+        exitCode: result.exitCode,
+        ...(result.errorCode ? { errorCode: result.errorCode } : {}),
         stdout,
-        ...(dispatched.stdoutBytes
-          ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
-          : {}),
-        stderr: withNotices(stderr, [
-          auditWarning,
-          dispatched.unpersistedConfigWrites > 0
-            ? `WARNING: "rdc ${request.pathKey}" changed its config, and the executor did not save the change: it runs against the config granted for this session and does not write it back to config storage.`
-            : undefined,
-        ]),
+        stderr,
       });
-    });
+      try {
+        await write({
+          kind: 'result',
+          result,
+          stdout,
+          ...(dispatched.stdoutBytes
+            ? { stdoutBase64: Buffer.from(dispatched.stdoutBytes).toString('base64') }
+            : {}),
+          stderr: withNotices(stderr, [auditWarning, outcomeNotice]),
+        });
+      } finally {
+        await ended;
+      }
+    }
   });
 
-  registerJobRoutes(app, deps, {
+  const routeHelpers: JobRouteHelpers = {
     authenticate: (header) => authenticate(header, deps),
     statusFor,
     requestScopedConfig: (config) => requestScopedConfig(deps, config),
@@ -395,7 +498,22 @@ export function createServeApp(deps: ServeDeps): Hono {
       const trimmed = header?.trim();
       return trimmed === '' ? undefined : trimmed;
     },
+  };
+  registerJobRoutes(app, deps, routeHelpers);
+
+  // The AI mode, approval, chat and test routes (AP7 of PLAN-console-ai-providers).
+  registerAiRoutes(app, deps, routeHelpers, {
+    modes: new AiConversationStore(),
+    approvals: new AiApprovalLedger(),
+    chat: {
+      busy,
+      ...(deps.aiConfigs ? { aiConfigs: deps.aiConfigs } : {}),
+      ...(deps.aiRecorder ? { recording: chatRecording(deps, deps.aiRecorder) } : {}),
+    },
   });
+
+  // The MCP call route under an agent grant: the split secret in the body is its credential, in both placements.
+  registerMcpCallRoute(app, deps, { busy });
 
   return app;
 }
@@ -404,10 +522,10 @@ export function createServeApp(deps: ServeDeps): Hono {
  * Whether the executor may run this command given what it can audit.
  *
  * An executor that cannot record what it runs must not change anything. This is
- * checked before the stream opens, because the audit event is only sent after
- * the command ran, which is too late to refuse. A read still runs, flagged
- * loudly, since it changes nothing a missing record would hide. With no audit
- * sink configured at all there is nothing to check.
+ * checked before the stream opens, before a mutating command's `started` event
+ * is even attempted. A read still runs, flagged loudly, since it changes nothing
+ * a missing record would hide. With no audit sink configured at all there is
+ * nothing to check.
  */
 async function checkAuditCapability(
   deps: ServeDeps,
@@ -429,6 +547,31 @@ async function checkAuditCapability(
 }
 
 /**
+ * Ship a command's post-dispatch audit event (its outcome). The command already
+ * ran, so a record the sink could not deliver after its retry does not change
+ * the result; the notice returned for the result's stderr says the record is
+ * missing: `audit_failed:` for a mutating command, a WARNING for a read
+ * (PLAN-rmcp-writeback.md Design 8). Undefined when it was delivered.
+ */
+async function auditOutcome(
+  deps: ServeDeps,
+  entry: ContractCommand,
+  pathKey: string,
+  event: ExecutorAuditEvent
+): Promise<string | undefined> {
+  if (!deps.audit) return undefined;
+  try {
+    await deps.audit(event);
+    return undefined;
+  } catch (error) {
+    if (!(error instanceof AuditUnavailableError)) throw error;
+    return isReadOnlyCommand(entry)
+      ? `WARNING: "rdc ${pathKey}" ran WITHOUT an audit record: ${error.message}.`
+      : `audit_failed: "rdc ${pathKey}" ran, but its audit record could not be delivered: ${error.message}.`;
+  }
+}
+
+/**
  * The config a command must run against in place of the disk, if any.
  *
  * The container tier's config exists only as the plaintext it decrypted for
@@ -440,7 +583,44 @@ function requestScopedConfig(deps: ServeDeps, config: RdcConfig): RdcConfig | un
   return deps.mode === 'container' ? config : undefined;
 }
 
-/** Run `fn` under a request-scoped config when there is one. */
+/**
+ * How the chat route records a turn: sealed under the session's granted key, at the CEK generation
+ * the config store wrapped the session's config under. A config the store named no generation for
+ * (the daemon's enrolled file) cannot be sealed for the store, and the turn goes unrecorded.
+ */
+export function chatRecording(deps: ServeDeps, recorder: NonNullable<ServeDeps['aiRecorder']>) {
+  const recording: AiChatRecording = {
+    transcripts: new AiTranscripts(recorder),
+    keyOf: (principal, config, configSessionId) => {
+      const cekGeneration = cekGenerationOf(config);
+      if (cekGeneration === undefined) {
+        return 'the config store named no CEK generation for this config, so its messages cannot be sealed';
+      }
+      return {
+        cekGeneration,
+        // Read at sealing time, so the recorder never holds key material.
+        cek: () => {
+          try {
+            return deps.sessions.cekBytes(deps.sessions.sessionForExec(principal, configSessionId));
+          } catch {
+            return Promise.resolve(undefined);
+          }
+        },
+      };
+    },
+    onUnrecorded: (reason, conversationId) => {
+      outputService.warn(`AI conversation ${conversationId} is not recorded: ${reason}`);
+    },
+  };
+  return recording;
+}
+
+/**
+ * Run `fn` under a request-scoped config when there is one. The scope carries
+ * the writeback bound to the loader's config (createRequestConfigScope), so a
+ * job route's settle steps (a failed create's rollback, an identity refresh)
+ * push their config writes exactly as a dispatched command does.
+ */
 function withRequestConfig<T>(config: RdcConfig | undefined, fn: () => Promise<T>): Promise<T> {
   if (!config) return fn();
   return runInRequestContext(
@@ -471,6 +651,20 @@ function withNotices(stderr: string, notices: (string | undefined)[]): string {
  * something the client asserts, so a caller cannot dodge a scoped rule by
  * renaming a field.
  */
+/** The run index state a finished dispatch ends in. */
+function runStateOf(
+  result: { state?: string; success: boolean },
+  handedBack: boolean
+): 'detached' | 'cancelled' | 'succeeded' | 'failed' {
+  if (handedBack) return 'detached';
+  if (result.state === 'cancelled') return 'cancelled';
+  return result.success ? 'succeeded' : 'failed';
+}
+
+function optionalRepo(repo: string | undefined): { repo?: string } {
+  return repo ? { repo } : {};
+}
+
 function targetFrom(
   option: string | null,
   positional: string | null,

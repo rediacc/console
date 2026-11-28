@@ -291,20 +291,27 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ### Live queue: production eu, in order, after the PR merges and CD's edge deploy is green
 
-- [ ] LP0 [live] The deploy reached production: the migration was applied by deploy_account and the route answers.
+- [x] LP0 [live] The deploy reached production: the migration was applied by deploy_account and the route answers.
   - Accept: `curl -s -o /dev/null -w '%{http_code}' -X POST https://eu.rediacc.cloud/account/api/v1/admin/root-token/session` prints 401, and `curl -s -o /dev/null -w '%{http_code}' -H 'Authorization: Bearer rdr_0' https://eu.rediacc.cloud/account/api/v1/admin/stats` prints 401.
-- [ ] OP1 [live] THE ONE OPERATOR STEP. The operator signs in at https://eu.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints one token (name `agent-root-eu`, 90 days) and pastes the value into the Bitwarden entry ROOT_API_TOKEN. No agent sees the value until it reads it from bws.
+    (ticked) 2026-11-22T15:48:54Z by ace763dd: present: private/account/src/middleware/root-auth.ts:48 readRootBearer refuses the bad bearer; curl eu root-token session POST 401 and admin stats 401 (2026-11-22)
+- [x] OP1 [live] THE ONE OPERATOR STEP. The operator signs in at https://eu.rediacc.cloud/account/admin/root-tokens, steps up with TOTP, mints one token (name `agent-root-eu`, 90 days) and pastes the value into the Bitwarden entry ROOT_API_TOKEN. No agent sees the value until it reads it from bws.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --check` rc 0.
-- [ ] LP1 [live] Stable eu: the first bind, a session and one read-only admin call.
+    (ticked) 2026-11-22T15:47:10Z by ace763dd: present: root_login --target stable --region eu --check rc 0 (root login values ok)
+- [x] LP1 [live] Stable eu: the first bind, a session and one read-only admin call.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --probe stats` rc 0, printing `ip rebound`, `root session opened (stable eu, token, ...)` and `GET /admin/stats 200`.
-- [ ] LP2 [live] The audit trail of LP1 is readable as root (U4).
+    (ticked) 2026-11-23T08:35:25Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/root_login.py:1 -- production live run 2026-11-23 with the root-login bws profile: root session opened on stable eu, admin stats returned 200, rc 0
+- [x] LP2 [live] The audit trail of LP1 is readable as root (U4).
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --probe audit` rc 0, naming `root_token.ip_bound`, `root_token.session_opened` and `root_token.call`.
-- [ ] LP3 [live] Live controls: a call with no session is refused, and login still demands the captcha.
+    (ticked) 2026-11-23T08:35:30Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/root_login.py:1 -- production live run 2026-11-23 with the root-login bws profile: audit trail shows root_token.ip_bound, session_opened and call rows, rc 0
+- [x] LP3 [live] Live controls: a call with no session is refused, and login still demands the captcha.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --control` rc 0.
-- [ ] LP4 [live] Edge: the same origin and token reached through `--target edge`, which needs a fresh session and therefore the next TOTP step.
+    (ticked) 2026-11-23T08:35:35Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/root_login.py:1 -- production live run 2026-11-23 with the root-login bws profile: controls hold: no session gives 403, no captcha gives 400
+- [x] LP4 [live] Edge: the same origin and token reached through `--target edge`, which needs a fresh session and therefore the next TOTP step.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target edge --region eu --probe stats` rc 0.
+    (ticked) 2026-11-23T08:35:41Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/root_login.py:1 -- production live run 2026-11-23 with the root-login bws profile: the same root session opens through --target edge with the TOTP derived from the bound seed, rc 0
 - [ ] LP5 [live] The refresh path for real, on the first day after the agent's egress has changed. The run needs no operator.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --probe stats` rc 0, printing `ip rebound (v4)` or `ip rebound (v6)`.
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: An external event (the agent's egress changing) cannot be produced locally; stays open.
 - [ ] F* [writer] Fix-forward boxes, opened under this plan for each claim a live box disproves, each owning only the file the claim names.
   - Accept: the failing live box's command rc 0.
 

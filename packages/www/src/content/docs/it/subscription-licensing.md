@@ -9,8 +9,8 @@ tags:
 subcategory: account
 order: 7
 language: it
-sourceHash: "53e0bdad5b3654a2"
-sourceCommit: "fd9d3476b1fdf0ac6ffaa14f486f20f9642fe2d5"
+sourceHash: "36da38e23dfb328e"
+sourceCommit: "2f630895edfbf73850a44cde4788fa69c28688c1"
 ---
 
 # Abbonamento e licenze
@@ -65,9 +65,9 @@ export REDIACC_ACCOUNT_SERVER="https://www.rediacc.com/account"
 
 ### Slot macchina (lato server)
 
-Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota di slot macchina dell'abbonamento. Ogni piano self-service (Community, Professional, Business) include uno slot macchina; i deployment multi-macchina sono una configurazione Enterprise dimensionata insieme ai nostri partner. Uno slot viene occupato per 5 ore dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Poiché uno slot viene occupato solo mentre stai eseguendo provisioning attivamente, un singolo slot può comunque coprire più macchine nel corso di un mese.
+Il tracciamento degli slot macchina è applicato lato server. Quando la CLI emette una licenza repo, il server account verifica la quota di slot macchina dell'abbonamento. Gli account registrati (gratuiti) e Professional gratuito includono uno slot macchina. Professional e Business hanno uno slot macchina per ogni licenza floating (da 1 a 5 e da 1 a 39 in self-service); i deployment più grandi sono una configurazione Enterprise dimensionata insieme ai nostri partner. Uno slot viene occupato per 5 ore dall'ultima emissione di licenza repo su quella macchina e viene rilasciato automaticamente dopo un periodo di inattività. Poiché uno slot viene occupato solo durante il provisioning attivo, un singolo slot può comunque coprire più macchine nel corso di un mese.
 
-Il tetto viene letto dal record del tuo abbonamento, non da una costante di piano scritta nel codice, quindi un numero di attivazioni concordato vale non appena viene impostato sull'abbonamento. Il livello del piano decide soltanto il valore di partenza.
+Il tetto viene letto dal record dell'abbonamento, non da una costante di piano scritta nel codice, quindi un numero di attivazioni concordato vale non appena viene impostato sull'abbonamento. Il livello del piano decide soltanto il valore di partenza.
 
 Emissione e rinnovo vengono applicati in modo diverso, e la differenza conta:
 
@@ -125,17 +125,27 @@ Dimensionare un cluster è una conversazione, non una casella da spuntare. I num
 
 La dimensione del repository dipende dal livello di diritti:
 
-- Community: fino a `10 GB`
+- Registrato (gratuito), il piano Community: fino a `10 GB`
+- Professional gratuito: fino a `100 GB`
 - piani a pagamento: limite del piano o del contratto
 
-I limiti predefiniti dei piani a pagamento sono:
+Professional e Business hanno un prezzo per licenza floating, al prezzo di listino dell'edizione corrispondente del catalogo partner: Professional `$550` all'anno, Business `$700` all'anno, Enterprise `$900` all'anno. La fatturazione mensile costa il 15% in più di quella annuale (prezzo annuale x 1,15 / 12), che arrotondato fa `$53`, `$67` e `$86` al mese. Professional vende da 1 a 5 licenze floating in self-service, Business da 1 a 39, ed Enterprise parte da 40 (il minimo di macchine del catalogo partner).
 
-| Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Validità certificato delega predefinita / massima |
-|-------|------------------|-----------------------|-------------------------------------|---------------------------------------------------|
-| Community | 1 | 10 GB | 100 | 15g / 30g |
-| Professional | 1 | 100 GB | 2.000+ | 60g / 120g |
-| Business | 1 | 500 GB | 5.000+ | 90g / 180g |
-| Enterprise | Personalizzato | 1 TB+ | 15.000+ | 120g / 365g |
+I limiti predefiniti sono:
+
+| Piano | Licenze floating | Dimensione repository | Emissioni di licenze repo al mese | Utenti | Repository | CPU per macchina | R2 ospitato | Prezzo per licenza | Validità certificato delega predefinita / massima |
+|------|-------------------|-----------------|-------------------------------|-------|--------------|------------------|-----------|-------------------|---|
+| Registrato (gratuito) | 1 | 10 GB | 100 | 1 | 5 | 16 | Nessuno | Gratis | 15d / 30d |
+| Professional gratuito | 1 | 100 GB | 500 | 10 | 25 | 16 | 25 GiB | Gratis | 60d / 120d |
+| Professional | 1-5 | 100 GB | 2,000+ | 25 | 100 per licenza | 32 | 100 GiB per licenza | $53 / $550 | 60d / 120d |
+| Business | 1-39 | 500 GB | 5,000+ | Illimitati | 250 per licenza | 64 | 500 GiB per licenza | $67 / $700 | 90d / 180d |
+| Enterprise | 40+ | 1 TB+ | 15,000+ | Illimitati | Su preventivo | Illimitati | 2,048 GiB | $86 / $900 | 120d / 365d |
+
+La colonna del prezzo riporta mensile / annuale, in dollari USA per licenza floating. Gli utenti sono i membri dell'organizzazione, attivi più inviti in sospeso. I repository contano solo gli originali; un fork non conta mai. Le colonne per licenza (repository, emissioni e R2 ospitato su Professional e Business) si moltiplicano per il numero di licenze floating dell'abbonamento, mentre i limiti di utenti e CPU no. Le CPU sono CPU logiche come le riporta il sistema operativo, inclusi hyperthread e vCPU delle VM.
+
+Gli account registrati (gratuiti) non hanno spazio di backup R2 ospitato e usano un proprio storage S3. R2 ospitato è riservato a Professional gratuito e ai piani a pagamento.
+
+L'add-on per macchine grandi alza di 8 CPU per pass il limite di CPU di una singola macchina indicata, a `$50` al mese o `$200` all'anno per pass, con al massimo 4 pass per macchina e al massimo 3 macchine con pass per abbonamento. Oltre questo si passa a Enterprise.
 
 I limiti specifici del contratto possono aumentare o ridurre questi valori per un cliente specifico. La validità del certificato di delega è anche limitata a `subscription.expiresAt + 3 giorno di grazia`, quindi gli abbonamenti con fatturazione mensile ottengono naturalmente certificati allineati al loro ciclo di fatturazione. Consulta [Catena di licenze e delega - Policy di validità](/it/docs/license-chain) per le regole complete.
 
@@ -143,7 +153,7 @@ I limiti specifici del contratto possono aumentare o ridurre questi valori per u
 
 Le nuove registrazioni iniziano con una prova gratuita di 14 giorni sul piano Professional o Business. La carta di credito viene richiesta al momento della registrazione, ma il primo addebito avviene solo alla fine del periodo di prova, quindi disdire prima di allora non comporta alcun costo. È disponibile una sola prova gratuita per cliente.
 
-Community resta il piano gratuito di base permanente. Non è più selezionabile direttamente in fase di registrazione per i nuovi account; un account passa a Community ogni volta che un abbonamento termina: disdetta durante la prova, disdetta successiva di un piano a pagamento, oppure un pagamento non riuscito. Nel piano Community di riserva mantieni una macchina con 10 GB per repository e 100 configurazioni al mese. Gli account creati prima del lancio del modello basato su prova gratuita mantengono il loro accesso a Community esistente.
+Community, mostrato come Registrato (gratuito), resta il piano gratuito di base permanente e non viene promosso come piano. Non è più selezionabile direttamente in fase di registrazione per i nuovi account; un account passa a Community ogni volta che un abbonamento termina: disdetta durante la prova, disdetta successiva di un piano a pagamento, oppure un pagamento non riuscito. Nel piano Community di riserva mantieni una macchina con 10 GB per repository e 100 configurazioni al mese, senza spazio di backup R2 ospitato. Gli account creati prima del lancio del modello basato su prova gratuita mantengono il loro accesso a Community esistente.
 
 L'applicazione resta permissiva dove conta di più: i repository in esecuzione continuano a funzionare anche dopo la fine di un abbonamento (`up`, `down`, `delete`, autostart). Oltre a questo valgono due regole diverse, ed è confonderle che fa sembrare incoerente la grazia di 60 giorni:
 

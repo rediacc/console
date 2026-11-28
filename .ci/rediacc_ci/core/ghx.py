@@ -358,6 +358,21 @@ def version(env: dict[str, str] | None = None) -> str:
     return gh(["--version"], env=env, timeout=10).lines()[0]
 
 
+ESCAPE_FLAG = "--allow-escape-sequences"
+_ESCAPE_FLAG_SUPPORT: list[bool] = []
+
+
+def api_escape_flags() -> list[str]:
+    """`["--allow-escape-sequences"]` when the installed `gh api` knows the flag, else `[]`. Newer gh refuses a response carrying terminal escapes (every job log) without it, and an older one (Ubuntu's 2.46.0, measured 2026-11-27) rejects the flag as unknown, so the answer is read once from `gh api --help` and kept for the process. A probe that cannot run counts as unsupported: the call that follows then reports gh's own error. Callers strip the escapes themselves."""
+    if not _ESCAPE_FLAG_SUPPORT:
+        try:
+            probe = gh(["api", "--help"], timeout=10)
+            _ESCAPE_FLAG_SUPPORT.append(ESCAPE_FLAG in (probe.stdout_raw + probe.stderr))
+        except OSError:
+            _ESCAPE_FLAG_SUPPORT.append(False)
+    return [ESCAPE_FLAG] if _ESCAPE_FLAG_SUPPORT[0] else []
+
+
 def auth_state(env: dict[str, str] | None = None) -> str:
     """Tri-state: authenticated, unauthenticated, or unknown.
 

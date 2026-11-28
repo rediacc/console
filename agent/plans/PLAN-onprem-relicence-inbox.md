@@ -74,6 +74,7 @@ This plan moves every cert source onto one validator and one apply service, adds
 - [ ] LP-bench [live] A fresh bench receipt for the account surface the shared delegationCertId and CLI contract strings touch.
   Owns: none (runs only)
   Accept: live-proof bench account-smoke
-- [ ] LP-hostinger [live] The live-proof record for the Live-Proof header.
+- [x] LP-hostinger [live] The live-proof record for the Live-Proof header.
   Owns: none (runs only)
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-24T00:03:06Z by ace763dd: live-proof lp-f6de2e5a8f45 VERIFIED rc=0 on hostinger at head commit d5c8422010, vm:check vmc-11232310-742652 VERIFIED (278 assertions, renet phase); PLAN-onprem-relicence-inbox.md box bb774974 proven live on hostinger

@@ -1,6 +1,6 @@
 """The renet-generated TypeScript types are up to date.
 
-Ported from `.ci/scripts/quality/check-renet-types.sh`, which W7 P5 batch A2 retired once `.ci/shadow/w7p2-renet-types.observations.jsonl` asserted equivalence over five distinct trees.
+Ported from `.ci/scripts/quality/check-renet-types.sh`, which W7 P5 batch A2 retired once the ledger (deleted in commit:936280cd35) asserted equivalence over five distinct trees.
 
 WHAT THE TWIN DOES. It builds `renet` from the `private/renet` submodule, regenerates the contract into a temporary directory, and compares each generated file against the committed copy in `packages/shared/src/renet-contract/data`, IGNORING the version line. A difference means the committed contract is stale: the CLI would then be typed against a renet that no longer exists.
 
@@ -32,6 +32,13 @@ A FILE THE GENERATOR DID NOT PRODUCE IS SKIPPED ENTIRELY. `if [[ -f "$TEMP_DIR/$
 
 `go` MISSING IS THE ONE DELIBERATE DIVERGENCE IN WORDING. Under `set -e` the twin dies with bash's own `go: command not found` and exit 127, a message the gate never wrote. The port cannot produce that string without pretending to be a shell, so it prints its own line naming the same fix and returns the same 127. The exit code is what any caller reads; the text differs and is
 stated here so nobody reports it as a regression.
+
+---- gate ----
+lane: quality-go
+step: Check renet types freshness
+needs: go, submodules
+selftest: true
+---- end gate ----
 """
 
 import os
@@ -218,7 +225,7 @@ def selftest() -> int:
     """Plant each violation, prove it reds; remove it, prove it greens.
 
     THE PURE HALF ONLY, AND THAT IS A DECISION. The end-to-end path builds a Go binary, which needs a toolchain and tens of seconds, and a selftest that silently degrades when `go` is missing would be the vacuity this package exists to refuse. The comparison logic -- the part that decides the verdict -- is pure, so it is driven directly here, and the whole gate is proven end to end
-    by the committed shadow ledger `.ci/shadow/w7p2-renet-types.observations.jsonl` over five distinct trees.
+    by the committed shadow ledger the ledger (deleted in commit:936280cd35) over five distinct trees.
     """
     ctl = Controls("renet-types", floor=18, verbose=True)
 
@@ -308,4 +315,7 @@ def selftest() -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    gate_args.parse("check_renet_types.py", sys.argv[1:], switches=("--selftest",))
     raise SystemExit(main(sys.argv[1:]))

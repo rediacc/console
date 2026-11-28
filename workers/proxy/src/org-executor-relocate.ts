@@ -93,7 +93,7 @@ export function vantageName(hint: string): string {
 }
 
 /** The target `probeFromVantage` probes, or why the call is refused: the instance must be the unpinned vantage named for a known `hint`, and the target must pass `probeTarget` again. */
-export function vantageTarget(
+function vantageTarget(
   self: ExecutorIdentity,
   hint: string,
   target: unknown
@@ -239,4 +239,18 @@ async function settled(
 function logged(verdict: ProbeVerdict, reason: string, placement: number): ProbeVerdict {
   console.warn(`proxy: org executor reachability probe ${verdict} (${reason}) at p${placement}`);
   return verdict;
+}
+
+/** The vantage instance's probe of `target` (OrgExecutor.probeFromVantage): refused without a connect when `vantageTarget` refuses this identity, hint or target, so a refusal never counts a report. */
+export function vantageProbe(
+  identity: ExecutorIdentity,
+  hint: string,
+  target: ProbeTarget
+): Promise<ProbeResult> {
+  const admitted = vantageTarget(identity, hint, target);
+  if ('refused' in admitted) {
+    console.warn(`proxy: org executor outside probe refused: ${admitted.refused}`);
+    return Promise.resolve({ verdict: 'target-unreachable', reason: 'error' });
+  }
+  return probeSshBanner(admitted);
 }

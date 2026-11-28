@@ -16,13 +16,7 @@ GATE = paths.from_root(".ci", "scripts", "quality", "check_settings_registry.py"
 
 
 def load_gate():
-    paths.on_sys_path(paths.quality_dir())
-    spec = importlib.util.spec_from_file_location("check_settings_registry", GATE)
-    assert spec is not None
-    assert spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
+    return importlib.import_module("rediacc_ci.quality.settings_registry")
 
 
 def run(*args: str) -> subprocess.CompletedProcess[str]:

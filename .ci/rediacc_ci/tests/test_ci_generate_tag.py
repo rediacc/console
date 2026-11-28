@@ -18,8 +18,8 @@ TWO NORMALISATIONS, AND ONLY TWO.
      both sides, along with the two tags being within a few seconds of each
      other. Every other mode is deterministic and compared byte for byte.
 
-The K=5 ledger is `.ci/shadow/w7p6-generate-tag.observations.jsonl`
-(`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-generate-tag --assert --k 5`). Its `--finding-re` matches the tag shapes on stdout, because the twin's whole success report is `✓ ` lines that `shadow-gate.ts` classifies as CHATTER before any regex is consulted.
+The K=5 ledger is the ledger (deleted in commit:936280cd35)
+(the shadow gate (commit:bf054adcd4)). Its `--finding-re` matches the tag shapes on stdout, because the twin's whole success report is `✓ ` lines that the shadow gate (commit:bf054adcd4) classifies as CHATTER before any regex is consulted.
 """
 
 from __future__ import annotations

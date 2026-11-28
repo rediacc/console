@@ -37,14 +37,5 @@ runs:
       shell: bash
       env:
         NAMES: ${{ inputs.names }}
-      run: |
-        set -euo pipefail
-        names=()
-        while read -r line; do
-          [[ -z "$line" ]] && continue
-          [[ "$line" =~ ^BWS_[A-Z0-9_]+$ ]] || { echo "::error::bws-scrub: malformed name '$line' (want one BWS_[A-Z0-9_]+ per line)"; exit 1; }
-          names+=("$line")
-        done <<<"$NAMES"
-        (( ${#names[@]} > 0 )) || { echo "::error::bws-scrub: no names given; a scrub that blanks nothing is a wiring mistake"; exit 1; }
-        printf '%s=\n' "${names[@]}" >>"$GITHUB_ENV"
-        echo "bws-scrub: blanked ${#names[@]} variable(s) for the rest of the job: ${names[*]}"
+        BWS_SCRUB: ${{ github.action_path }}/scrub.py
+      run: python3 "$BWS_SCRUB"

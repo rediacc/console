@@ -13,7 +13,7 @@ NOTHING ON DISK IS MUTATED. Every fixture is built under pytest's `tmp_path` fro
 
 NO NETWORK, NO AWS. The harness mocks `aws` with a bash script on `PATH`.
 
-K=5 LEDGER: `.ci/shadow/w7p6-write-once-guard.observations.jsonl`.
+K=5 LEDGER: the ledger (deleted in commit:936280cd35).
 """
 
 from __future__ import annotations

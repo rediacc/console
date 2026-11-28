@@ -26,14 +26,22 @@ export { scanHostKeys };
 export async function waitForSSH(ip: string, port: number, timeoutMs = 120_000): Promise<void> {
   const start = Date.now();
   const interval = 5_000;
+  let lastReason = 'no scan attempted';
 
   while (Date.now() - start < timeoutMs) {
-    // scanHostKeys returns '' rather than throwing on any failure, so an empty result, not an exception, is the "not up yet" signal.
-    if (scanHostKeys(ip, port)) return;
+    // A host key read means sshd is answering; a rejection is the "not up yet" signal and its reason is kept for the final error.
+    try {
+      await scanHostKeys(ip, port);
+      return;
+    } catch (error) {
+      lastReason = error instanceof Error ? error.message : String(error);
+    }
     await sleep(interval);
   }
 
-  throw new Error(`SSH not reachable at ${ip}:${port} after ${timeoutMs / 1000}s`);
+  throw new Error(
+    `SSH not reachable at ${ip}:${port} after ${timeoutMs / 1000}s (last scan: ${lastReason})`
+  );
 }
 
 /**

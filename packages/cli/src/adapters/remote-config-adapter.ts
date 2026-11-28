@@ -11,59 +11,60 @@
 import {
   blindPointer,
   type ConfigBinding,
-  ConfigEnvelopeTooNewError,
-  cekUnwrap,
   derivePointerBlindingKey,
-  deriveWrappingKey,
   ENVELOPE_VERSION,
   type EncryptedConfigPayload,
   fromBase64,
   importAesKey,
-  LEGACY_ENVELOPE_VERSION,
   selectiveDecrypt,
+  unwrapEnvelopeConfigKey,
 } from '@rediacc/shared/config-crypto';
 import { fullConfigToRdcConfig } from '@rediacc/shared/config-crypto/rotation';
 import {
   buildConfigPushPayload,
+  ConfigPolicyFieldError,
+  envelopeConfigKeyWrap,
   type PushPrior,
   pathsToCommit,
 } from '@rediacc/shared/config-schema';
+import { ORG_ROLES, type PolicyOrgRole } from '@rediacc/shared/policy';
 import { t } from '../i18n/index.js';
+import { ConfigServerError } from '../services/config/config-server-client.js';
 import {
-  ConfigServerError,
-  type ConfigServerFetchOptions,
-  configServerFetch,
-} from '../services/config/config-server-client.js';
-import {
-  loginTokenFor,
-  REFRESHABLE_AUTH_REASONS,
-  RemoteTokenRefreshError,
-  refreshDeviceToken,
-} from '../services/config/device-token-refresh.js';
+  loadEffectivePolicy,
+  type PolicyHighWater,
+  parsePolicyRecordField,
+} from '../services/config/policy-record.js';
 import { outputService } from '../services/core/output.js';
 import type { RdcConfig, RemoteConfig } from '../types/index.js';
-import type { SecureStorage } from '../utils/secure-storage.js';
+import type { SecureStorage, SyncReadableSecureStorage } from '../utils/secure-storage.js';
+import { clearSealKeyCache, readCachedSecret } from './config-seal-key.js';
 import {
-  classifyFetchError,
-  isNetworkError,
-  RemoteAuthError,
-  RemoteConfigUndecryptableError,
-  RemotePasskeySecretMissingError,
+  findUnreachable,
   RemotePreconditionError,
   RemoteRollbackError,
   RemoteStaleSlotError,
-  RemoteTeamForbiddenError,
-  RemoteTeamNotFoundError,
   RemoteTokenExpiredError,
 } from './remote-config-errors.js';
+import { LeasedConfigFetch, type RemoteAdapterTransport } from './remote-config-fetch.js';
+import {
+  buildSyncRecord,
+  classifyDecryptFailure,
+  firstLegacyEnvelopeWarning,
+  optionalFields,
+  refuseRollback,
+  unwrapDeviceCek,
+} from './remote-config-support.js';
 import type {
   PulledEnvelope,
   PullResult,
   PushOptions,
   PushResult,
   RemoteConfigEntry,
+  RemotePolicyContext,
   RemoteVersionInfo,
   SessionMaterial,
+  SessionPrincipal,
 } from './remote-config-types.js';
 import type { RemoteTokenStorage, SyncRecord, TokenLease } from './remote-token-storage.js';
 
@@ -83,36 +84,41 @@ export {
   RemoteVersionConflictError,
   RemoteWriteFailedClosedError,
 } from './remote-config-errors.js';
+export type { RemoteAdapterTransport } from './remote-config-fetch.js';
 export type {
   PullResult,
   PushOptions,
   PushResult,
   RemoteConfigEntry,
+  RemotePolicyContext,
   RemoteVersionInfo,
+  SessionPrincipal,
 } from './remote-config-types.js';
 
-/** `fields` without its undefined entries, for spreading into a request body or record. */
-function optionalFields<T extends Record<string, number | undefined>>(fields: T): Partial<T> {
-  return Object.fromEntries(
-    Object.entries(fields).filter(([, value]) => value !== undefined)
-  ) as Partial<T>;
+/**
+ * The session's `orgRole` and `userEmail` as a principal, or undefined when the role is not one of
+ * the policy's org roles (an older server, or a malformed answer). Never defaults to a role.
+ */
+export function sessionPrincipalOf(
+  orgRole: unknown,
+  userEmail: unknown
+): SessionPrincipal | undefined {
+  if (!(ORG_ROLES as readonly unknown[]).includes(orgRole)) return undefined;
+  return {
+    orgRole: orgRole as PolicyOrgRole,
+    userEmail: typeof userEmail === 'string' ? userEmail : '',
+  };
+}
+
+/** True for the storage `getSecureStorage()` hands out (the only one that also reads synchronously); false for an injected one. */
+function isProcessStorage(storage: SecureStorage): storage is SyncReadableSecureStorage {
+  return typeof (storage as Partial<SyncReadableSecureStorage>).getSync === 'function';
 }
 
 // ─── Adapter ────────────────────────────────────────────────────────────
 
-/** Test seams for the round-trip harness; production passes nothing. */
-export interface RemoteAdapterTransport
-  extends Pick<ConfigServerFetchOptions, 'fetchImpl' | 'serverKey'> {
-  /**
-   * The login token this device holds for `remote.apiUrl`. Production reads the stored
-   * `rdc subscription login` token (loginTokenFor); a harness device supplies its own.
-   */
-  loginToken?: () => string | undefined;
-}
-
 export class RemoteConfigAdapter {
-  /** Operations (by their lease) that already renewed the config token: one renewal each (T11). */
-  private readonly refreshed = new WeakSet<TokenLease>();
+  private readonly http: LeasedConfigFetch;
 
   constructor(
     private readonly remote: RemoteConfig,
@@ -120,7 +126,16 @@ export class RemoteConfigAdapter {
     private readonly tokenStorage: RemoteTokenStorage,
     private readonly secureStorage: SecureStorage,
     private readonly transport?: RemoteAdapterTransport
-  ) {}
+  ) {
+    this.http = new LeasedConfigFetch(remote, configName, transport);
+  }
+
+  /** A token lease whose writes seal the token file under this config's slot secret (D9). */
+  private leased<T>(fn: (lease: TokenLease) => Promise<T>): Promise<T> {
+    return this.tokenStorage.withLease(this.configName, fn, {
+      slotKeyId: this.remote.storageKeyId,
+    });
+  }
 
   /**
    * Pull the latest config from the remote server: ONE request, under the token lease. The pull
@@ -128,7 +143,7 @@ export class RemoteConfigAdapter {
    * spends a token use).
    */
   pull(): Promise<PullResult> {
-    return this.tokenStorage.withLease(this.configName, (lease) => this.pullLeased(lease));
+    return this.leased((lease) => this.pullLeased(lease));
   }
 
   private async pullLeased(lease: TokenLease): Promise<PullResult> {
@@ -136,42 +151,44 @@ export class RemoteConfigAdapter {
 
     const pulled = await this.fetch<PulledEnvelope>(lease, this.configPath());
     const result = await this.open(lease, pulled.data);
+    if ('policy' in pulled.data) result.policy = parsePolicyRecordField(pulled.data.policy);
     const { envelope } = pulled.data;
 
-    // The version is authentic (the AAD binds it), so it can be held against what this device saw.
     const seen = this.syncRecord(lease);
-    if (seen && envelope.version < seen.highWater) {
-      throw new RemoteRollbackError(
-        t('commands.config.remote.rollback', {
-          configId: this.remote.configId,
-          version: String(envelope.version),
-          highWater: String(seen.highWater),
-        })
-      );
-    }
-    if (
-      seen?.envelopeVersion === ENVELOPE_VERSION &&
-      envelope.envelopeVersion !== ENVELOPE_VERSION
-    ) {
-      throw new RemoteRollbackError(
-        t('commands.config.remote.envelopeDowngrade', { configId: this.remote.configId })
-      );
-    }
+    refuseRollback(this.remote.configId, this.configName, seen, envelope);
     // The blob opened under this device's CEK, so the store's generation is the one that CEK belongs to.
-    const cekGeneration = pulled.data.cekGeneration ?? seen?.cekGeneration;
-    await lease.recordSync({
-      binding: this.bindingKey(),
-      highWater: Math.max(seen?.highWater ?? 0, envelope.version),
-      envelopeVersion: envelope.envelopeVersion,
-      fckSalt: envelope.commitments.fckSalt,
-      ...(cekGeneration === undefined ? {} : { cekGeneration }),
-    });
-    if (envelope.envelopeVersion !== ENVELOPE_VERSION) {
-      outputService.warn(
-        t('commands.config.remote.legacyEnvelope', { configId: this.remote.configId })
-      );
+    await lease.recordSync(
+      buildSyncRecord(
+        this.bindingKey(),
+        envelope,
+        Math.max(seen?.highWater ?? 0, envelope.version),
+        pulled.data.cekGeneration ?? seen?.cekGeneration,
+        seen
+      )
+    );
+    if (
+      envelope.envelopeVersion !== ENVELOPE_VERSION &&
+      firstLegacyEnvelopeWarning(this.configName)
+    ) {
+      outputService.warn(t('commands.config.remote.legacyEnvelope', { config: this.configName }));
     }
     return result;
+  }
+
+  /**
+   * The generation this device's CEK belongs to: recorded when a blob opened under it, else the
+   * store's from `/session`. The content key is wrapped under it, and the server refuses the push
+   * when the store has rotated past it (409 `stale_cek_generation`, raised as RemoteStaleSlotError).
+   * Neither known is refused here, never guessed.
+   */
+  private sealedGeneration(lease: TokenLease, session: SessionMaterial): number {
+    const generation = this.syncRecord(lease)?.cekGeneration ?? session.cekGeneration;
+    if (generation === undefined) {
+      throw new Error(
+        `Config "${this.configName}" cannot be pushed: neither this device nor the server named the CEK generation its key belongs to. Pull the config, then push again.`
+      );
+    }
+    return generation;
   }
 
   /**
@@ -180,7 +197,7 @@ export class RemoteConfigAdapter {
    * refuses it nor moves; a restore republishes it as a NEW version through `push`.
    */
   pullVersion(version: number): Promise<PullResult> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const path = `/account/api/v1/configs/${this.remote.configId}/versions/${version}${
         this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
@@ -205,7 +222,7 @@ export class RemoteConfigAdapter {
    * first): the versions a restore can bring back. The current version is not among them.
    */
   listVersions(): Promise<RemoteVersionInfo[]> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const path = `/account/api/v1/configs/${this.remote.configId}/versions${
         this.remote.teamId ? `?teamId=${this.remote.teamId}` : ''
@@ -227,7 +244,7 @@ export class RemoteConfigAdapter {
    * offers to attach to. Needs no configId, so a pointer that has not chosen one can call it.
    */
   listConfigs(): Promise<RemoteConfigEntry[]> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const listed = await this.fetch<{ configs?: RemoteConfigEntry[] }>(
         lease,
@@ -235,6 +252,112 @@ export class RemoteConfigAdapter {
       );
       return listed.data.configs ?? [];
     });
+  }
+
+  /**
+   * What a local run of this config is judged with (agent/plans/PLAN-rmcp-decide.md D2), under one
+   * token lease: `/session` names the token's member (org role and email) and yields the CEK, then
+   * the effective policy (PLAN-rmcp-policy-record.md Design 5) is read through
+   * `GET /configs/:id/policy`, the config's own record and the org-level config's record when this
+   * config belongs to a team, both opened under that CEK and held against the policy high-water
+   * marks in the token file. Never reads a `policy` field of the config document.
+   *
+   * Each context opened is kept in the token file's sync record. When the server is unreachable
+   * (RemoteUnreachableError anywhere in the cause chain) the kept one is returned, so a read the
+   * offline cache serves is judged as the same member it was online; with none kept, the
+   * unreachable error propagates and the run is refused.
+   *
+   * @throws Error when the session names no valid org role: the caller is never guessed to be an owner
+   */
+  policyContext(): Promise<RemotePolicyContext> {
+    return this.leased(async (lease) => {
+      this.requireToken(lease);
+      let context: RemotePolicyContext;
+      try {
+        context = await this.openPolicyContext(lease);
+      } catch (error) {
+        const kept = findUnreachable(error) ? this.syncRecord(lease)?.policyContext : undefined;
+        if (!kept) throw error;
+        return kept;
+      }
+      const seen = this.syncRecord(lease);
+      if (seen) await lease.recordSync({ ...seen, policyContext: context });
+      return context;
+    });
+  }
+
+  /**
+   * The principal and effective policy the last opened session recorded in the token file's sync
+   * record, read with no request and no token renewal; undefined when this device never opened a
+   * session for this binding. The judge reads it for a workstation command whose session could not
+   * be opened (command-policy.ts SESSION_OPTIONAL_COMMANDS).
+   */
+  cachedPolicyContext(): Promise<RemotePolicyContext | undefined> {
+    return this.leased((lease) => Promise.resolve(this.syncRecord(lease)?.policyContext));
+  }
+
+  /** The online half of `policyContext`: the session's principal and the effective policy. */
+  private async openPolicyContext(lease: TokenLease): Promise<RemotePolicyContext> {
+    // The high-water marks live in the sync record a pull writes, so a device that never pulled pulls first.
+    if (!this.syncRecord(lease)) await this.pullLeased(lease);
+    const session = await this.fetchSession(lease);
+    if (!session.principal) {
+      throw new Error(
+        `The config server named no org role for config "${this.configName}", so its policy cannot be judged.`
+      );
+    }
+    const cek = await this.deriveCek(session.serverSecret, lease);
+    const orgConfigId = this.remote.teamId
+      ? ((
+          await this.fetch<{ configs?: RemoteConfigEntry[] }>(lease, '/account/api/v1/configs')
+        ).data.configs?.find((entry) => !entry.teamId)?.configId ?? null)
+      : this.remote.configId;
+    const policy = await loadEffectivePolicy({
+      storeId: this.remote.storeId,
+      config: { configId: this.remote.configId, teamId: this.remote.teamId ?? null },
+      orgConfigId,
+      fetchRecord: (configId, teamId) => this.fetchPolicyRecord(lease, configId, teamId),
+      key: cek,
+      highWater: this.policyHighWater(lease),
+    });
+    return { principal: session.principal, policy };
+  }
+
+  /** `GET /configs/:id/policy`: the record, or null when the server holds none for that config. */
+  private async fetchPolicyRecord(lease: TokenLease, configId: string, teamId: string | null) {
+    const path = `/account/api/v1/configs/${configId}/policy${teamId ? `?teamId=${teamId}` : ''}`;
+    try {
+      const answer = await this.fetch<Record<string, unknown>>(lease, path);
+      const { version, cekGeneration, blob } = answer.data;
+      return parsePolicyRecordField({ version, cekGeneration, blob });
+    } catch (error) {
+      if (
+        error instanceof ConfigServerError &&
+        error.status === 404 &&
+        error.code === 'policy_not_found'
+      ) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  /** The policy high-water marks of this config's token file, raised under the lease. */
+  private policyHighWater(lease: TokenLease): PolicyHighWater {
+    return {
+      get: (key) => this.syncRecord(lease)?.policyHighWater?.[key],
+      raise: async (key, version) => {
+        const seen = this.syncRecord(lease);
+        if (!seen) {
+          throw new Error(
+            `No sync record for config "${this.configName}": a policy is read only after a pull.`
+          );
+        }
+        const marks = seen.policyHighWater ?? {};
+        if (version <= (marks[key] ?? 0)) return;
+        await lease.recordSync({ ...seen, policyHighWater: { ...marks, [key]: version } });
+      },
+    };
   }
 
   /** The pull path of this config (its team in the query when it has one). */
@@ -279,6 +402,7 @@ export class RemoteConfigAdapter {
         teamId: envelope.teamId ?? undefined,
         lastModified: envelope.lastModified,
         commitments: envelope.commitments,
+        ...(envelopeConfigKeyWrap(envelope) ?? {}),
       },
       encryptedBlob: data.configData,
       hmac: data.hmac,
@@ -288,7 +412,12 @@ export class RemoteConfigAdapter {
     try {
       decrypted = await selectiveDecrypt(payload, cek, sdkDerived, this.binding());
     } catch (error) {
-      const failure = this.classifyDecryptFailure(error, this.remote.configId);
+      const failure = classifyDecryptFailure(
+        this.remote.storeId,
+        error,
+        this.remote.configId,
+        this.configName
+      );
       throw await this.staleOr(lease, failure, data.cekGeneration);
     }
 
@@ -302,19 +431,20 @@ export class RemoteConfigAdapter {
 
   /**
    * Push an updated config to the remote server: `/session` then PUT, under one token lease, the
-   * PUT sending the token `/session` rotated to. The envelope is v3 (AAD-bound to this device's
-   * pointer). What this device last saw of the server copy (the token file's sync record) supplies
-   * the stored salt for tombstones and, on a v2 store, the upgrade; see PushOptions.
+   * PUT sending the token `/session` rotated to. The envelope is v4 (sealed under the config's
+   * content key, AAD-bound to this device's pointer). What this device last saw of the server copy
+   * (the token file's sync record) supplies the stored salt for tombstones, the stored content-key
+   * wrap and, on a v3 or v2 store, the upgrade; see PushOptions.
    */
   push(config: RdcConfig, currentVersion: number, options: PushOptions = {}): Promise<PushResult> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    // Before the lease and the first request: a remote config's policy is its own record, and a push that carries one is refused without spending a token.
+    if (config.policy !== undefined) return Promise.reject(new ConfigPolicyFieldError());
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
       const cek = await this.deriveCek(session.serverSecret, lease);
       const prior = this.pushPrior(lease, currentVersion, options.base);
-      // The generation this device's CEK belongs to: the server refuses the push when the store has
-      // rotated past it (409 `stale_cek_generation`, raised as RemoteStaleSlotError).
-      const sealedGeneration = this.syncRecord(lease)?.cekGeneration;
+      const sealedGeneration = this.sealedGeneration(lease, session);
 
       // Envelope + commitments + ciphertext are composed by the shared helper, so the CLI, the web console editor, and the CEK rotation flow all emit a byte-identical payload. Diverging here would fail the server precondition.
       const encrypted = await buildConfigPushPayload(config, {
@@ -322,6 +452,7 @@ export class RemoteConfigAdapter {
         sdkEpoch: session.sdkEpoch,
         sdkDerived: session.sdkDerived,
         cek,
+        cekGeneration: sealedGeneration,
         storeId: this.remote.storeId,
         ...(this.remote.teamId ? { teamId: this.remote.teamId } : {}),
         ...(prior ? { prior } : {}),
@@ -345,24 +476,26 @@ export class RemoteConfigAdapter {
         { method: 'PUT', body }
       ).catch(async (error: unknown) => {
         if (!(error instanceof RemotePreconditionError)) throw error;
-        throw await this.namePaths(error, cek, [config, options.base]);
+        throw await this.namePaths(error, cek, encrypted.envelope, [config, options.base]);
       });
 
-      // A push that named no generation (the first one to a fresh store) learns it from the answer.
-      await lease.recordSync({
-        binding: this.bindingKey(),
-        highWater: pushed.data.version,
-        envelopeVersion: ENVELOPE_VERSION,
-        fckSalt: encrypted.envelope.commitments.fckSalt,
-        ...optionalFields({ cekGeneration: sealedGeneration ?? pushed.data.cekGeneration }),
-      });
+      await lease.recordSync(
+        buildSyncRecord(
+          this.bindingKey(),
+          encrypted.envelope,
+          pushed.data.version,
+          sealedGeneration,
+          this.syncRecord(lease)
+        )
+      );
       return { version: pushed.data.version };
     });
   }
 
   /**
    * What the server holds, as this device last saw it, when that is the version being replaced:
-   * the stored envelope version and salt, plus the document the edit came from. Any other version
+   * the stored envelope version, salt and (v4) content-key wrap, plus the document the edit came
+   * from. Any other version
    * means this device has not seen the copy it overwrites; the push then goes without one (and a
    * version conflict or a precondition refusal follows).
    */
@@ -372,30 +505,41 @@ export class RemoteConfigAdapter {
     base: RdcConfig | undefined
   ): PushPrior | undefined {
     const seen = this.syncRecord(lease);
-    if (seen?.highWater !== currentVersion) return undefined;
+    // A record kept across a re-enrollment may lack its salt until the next pull records it again.
+    if (seen?.highWater !== currentVersion || seen.fckSalt === undefined) return undefined;
     return {
       envelopeVersion: seen.envelopeVersion,
       fckSalt: seen.fckSalt,
       ...(base ? { base } : {}),
+      ...(seen.configKey ? { configKey: seen.configKey } : {}),
     };
   }
 
   /**
-   * The server names refused paths by their envelope key, which in v3 is a blinded pointer. Map
-   * each back to the pointer it blinds, among the paths this push and its base commit; a key that
-   * matches none (a value another device added) stays as the server sent it.
+   * The server names refused paths by their STORED envelope key, a blinded pointer: under the
+   * config's content key for a v4 store (the one the pushed envelope wraps), under the CEK for a v3
+   * store. Map each back to the pointer it blinds under either key, among the paths this push and
+   * its base commit; a key that matches none (a value another device added) stays as the server
+   * sent it.
    */
   private async namePaths(
     error: RemotePreconditionError,
     cek: CryptoKey,
+    pushed: EncryptedConfigPayload['envelope'],
     docs: (RdcConfig | undefined)[]
   ): Promise<RemotePreconditionError> {
-    const blinding = await derivePointerBlindingKey(cek, this.remote.configId);
+    const contentKey = await unwrapEnvelopeConfigKey(pushed, cek, this.binding());
+    const blindings = await Promise.all([
+      derivePointerBlindingKey(contentKey, this.remote.configId),
+      derivePointerBlindingKey(cek, this.remote.configId),
+    ]);
     const names = new Map<string, string>();
     for (const doc of docs) {
       if (!doc) continue;
       for (const pointer of pathsToCommit(JSON.parse(JSON.stringify(doc)))) {
-        names.set(await blindPointer(blinding, pointer), pointer);
+        for (const blinding of blindings) {
+          names.set(await blindPointer(blinding, pointer), pointer);
+        }
       }
     }
     return new RemotePreconditionError(
@@ -409,7 +553,7 @@ export class RemoteConfigAdapter {
    */
   async testConnection(): Promise<boolean> {
     try {
-      await this.tokenStorage.withLease(this.configName, async (lease) => {
+      await this.leased(async (lease) => {
         this.requireToken(lease);
         await this.fetchSession(lease);
       });
@@ -424,7 +568,7 @@ export class RemoteConfigAdapter {
    * the wizard and polls it afterwards, so the CLI learns the rotation finished from the server instead of asking.
    */
   storeGeneration(): Promise<number | undefined> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       return (await this.fetchSession(lease)).cekGeneration;
     });
@@ -438,39 +582,30 @@ export class RemoteConfigAdapter {
    * the executor can open the config for that session (ProxyClient.ensureSession).
    * Rotates the config token like any other request.
    */
-  async unwrapCek(): Promise<CryptoKey> {
-    return (await this.unlockKeyMaterial()).cek;
-  }
-
-  /**
-   * The CEK together with the store's serverSecret it was unwrapped under: the two halves a NEW
-   * key slot is wrapped from (`rdc config remote master-password change`). Both stay in this process.
-   */
-  unlockKeyMaterial(): Promise<{ cek: CryptoKey; serverSecret: Uint8Array }> {
-    return this.tokenStorage.withLease(this.configName, async (lease) => {
+  unwrapCek(): Promise<CryptoKey> {
+    return this.leased(async (lease) => {
       this.requireToken(lease);
       const session = await this.fetchSession(lease);
-      return {
-        cek: await this.deriveCek(session.serverSecret, lease),
-        serverSecret: session.serverSecret,
-      };
+      return this.deriveCek(session.serverSecret, lease);
     });
   }
 
   /** Refuse an operation whose lease holds no token, before any request. */
   private requireToken(lease: TokenLease): void {
     if (!lease.token) {
-      throw new RemoteTokenExpiredError();
+      throw new RemoteTokenExpiredError(this.configName);
     }
   }
 
-  /** Fetch session crypto material (server_secret, sdk_derived, sdkEpoch) */
+  /** Fetch session crypto material (server_secret, sdk_derived, sdkEpoch) and the token's member. */
   private async fetchSession(lease: TokenLease): Promise<SessionMaterial> {
     const resp = await this.fetch<{
       server_secret: string;
       sdk_derived: string;
       sdkEpoch: number;
       cekGeneration?: number;
+      orgRole?: unknown;
+      userEmail?: unknown;
     }>(lease, '/account/api/v1/configs/session', { method: 'POST' });
 
     return {
@@ -478,6 +613,7 @@ export class RemoteConfigAdapter {
       sdkDerived: await importAesKey(fromBase64(resp.data.sdk_derived)),
       sdkEpoch: resp.data.sdkEpoch,
       cekGeneration: resp.data.cekGeneration,
+      principal: sessionPrincipalOf(resp.data.orgRole, resp.data.userEmail),
     };
   }
 
@@ -503,176 +639,49 @@ export class RemoteConfigAdapter {
       }
     }
     return current !== undefined && current > recorded
-      ? new RemoteStaleSlotError({ cause: failure })
+      ? new RemoteStaleSlotError({ cause: failure }, this.configName)
       : failure;
   }
 
-  /** Derive CEK from passkey_secret + server_secret */
-  private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
-    const passkeySecretStr = await this.secureStorage.get(this.remote.storageKeyId);
-    if (!passkeySecretStr) {
-      throw new RemotePasskeySecretMissingError();
-    }
-
-    const passkeySecret = fromBase64(passkeySecretStr);
-    const wrappingKey = await deriveWrappingKey(passkeySecret, serverSecret);
-
-    const tokenData = lease.data;
-    if (!tokenData?.wrappedCek) {
-      throw new RemoteTokenExpiredError();
-    }
-
-    // A wrong slot secret (or a rotated CEK this device never re-wrapped for) surfaces here as an AES-GCM auth failure. Translate it into an actionable "re-enroll" message rather than leaking a raw OperationError.
+  /** Whether this device enrolled the config (the marker beside its token file); true when that cannot be read, so the key-gone wording stands (RemotePasskeySecretMissingError). */
+  private async enrolledHere(): Promise<boolean> {
     try {
-      return await cekUnwrap(tokenData.wrappedCek, wrappingKey);
+      return await this.tokenStorage.enrolledHere(this.configName);
     } catch {
-      throw new RemoteStaleSlotError();
+      return true;
     }
   }
 
   /**
-   * Turn a selectiveDecrypt failure into something the user can act on.
-   *
-   * The two failure modes carry different meanings and different recoveries, and
-   * the protocol does distinguish them: the CEK layer's tag (under the envelope
-   * v3 AAD, or the v2 blob HMAC) fails when the blob is not the one sealed for
-   * this config, version and team, or was sealed under a different CEK than the
-   * slot handed this device, while a failure PAST it means the CEK layer opened
-   * and the server-derived session layer did not.
+   * Derive CEK from passkey_secret + server_secret. The process's own secure storage (the one
+   * `getSecureStorage()` hands out, the only one that reads synchronously) is read through the
+   * per-process cache of config-seal-key.ts, which the token file's seal shares, so one operation
+   * reads the slot secret once (D9). A secret that fails to open the CEK is read again once,
+   * uncached: another step of this process may have replaced it since it was cached (an absence is
+   * never cached, so a missing secret needs no second read). An injected storage is read directly.
    */
-  private classifyDecryptFailure(error: unknown, configId: string): Error {
-    const detail = error instanceof Error ? error.message : String(error);
-
-    // The envelope-version guard already names its own problem.
-    if (detail.includes('envelope version')) return error as Error;
-
-    // An envelope newer than this rdc reads is a version gap, not a wrong slot key.
-    if (error instanceof ConfigEnvelopeTooNewError) {
-      return new RemoteConfigUndecryptableError(
-        t('commands.config.remote.envelopeTooNew', {
-          configId,
-          envelope: error.envelopeVersion,
-          legacy: LEGACY_ENVELOPE_VERSION,
-          current: ENVELOPE_VERSION,
-        })
+  private async deriveCek(serverSecret: Uint8Array, lease: TokenLease) {
+    const unwrap = (secret: string | null) =>
+      unwrapDeviceCek(secret, serverSecret, lease.data?.wrappedCek, this.configName, () =>
+        this.enrolledHere()
       );
+    if (!isProcessStorage(this.secureStorage)) {
+      return unwrap(await this.secureStorage.get(this.remote.storageKeyId));
     }
-
-    if (error instanceof Error && error.name === 'ConfigIntegrityError') {
-      return new RemoteConfigUndecryptableError(
-        t('commands.config.remote.integrityFailed', {
-          configId,
-          storeId: this.remote.storeId,
-        })
-      );
+    try {
+      return await unwrap(await readCachedSecret(this.remote.storageKeyId));
+    } catch (error) {
+      if (!(error instanceof RemoteStaleSlotError)) throw error;
+      clearSealKeyCache();
+      return unwrap(await readCachedSecret(this.remote.storageKeyId));
     }
-
-    return new RemoteConfigUndecryptableError(
-      t('commands.config.remote.undecryptableSession', { configId, detail })
-    );
   }
 
-  /**
-   * One config server request under the operation's lease. The request sends the lease's current
-   * token, and the token the server rotated to is persisted, and sent by the next request of the
-   * operation, whether the request succeeded or failed: an error body carries the rotated token
-   * too (F9), and dropping it spent one grace use of the old token per error.
-   *
-   * A 401 whose reason a new token cures (REFRESHABLE_AUTH_REASONS: expired, spent, bound to
-   * another address, unknown) renews the token with the login token, still under the lease, and
-   * sends the refused request once more (T11, D4). One renewal per operation: a second refusal
-   * after it is raised as it came.
-   */
-  private async fetch<T>(
+  private fetch<T>(
     lease: TokenLease,
     path: string,
     options?: { method?: string; body?: unknown }
   ): Promise<{ data: T }> {
-    try {
-      return await this.fetchOnce<T>(lease, path, options);
-    } catch (error) {
-      if (
-        !(error instanceof RemoteAuthError) ||
-        !REFRESHABLE_AUTH_REASONS.has(error.reason) ||
-        this.refreshed.has(lease)
-      ) {
-        throw error;
-      }
-      this.refreshed.add(lease);
-      await this.renewToken(lease, error);
-      return this.fetchOnce<T>(lease, path, options);
-    }
-  }
-
-  private async fetchOnce<T>(
-    lease: TokenLease,
-    path: string,
-    options?: { method?: string; body?: unknown }
-  ): Promise<{ data: T }> {
-    let resp: Awaited<ReturnType<typeof configServerFetch<T>>>;
-    try {
-      resp = await configServerFetch<T>(path, {
-        ...options,
-        fetchImpl: this.transport?.fetchImpl,
-        serverKey: this.transport?.serverKey,
-        configToken: lease.token ?? '',
-        serverUrl: this.remote.apiUrl,
-      });
-    } catch (error) {
-      if (error instanceof ConfigServerError && error.newServerToken) {
-        await lease.update(error.newServerToken);
-      }
-      throw classifyFetchError(error, this.remote, this.configName);
-    }
-    if (resp.newServerToken) await lease.update(resp.newServerToken);
-    return { data: resp.data };
-  }
-
-  /**
-   * Replace the lease's dead config token with one the account server mints for this device's
-   * login (POST /configs/device-token/refresh). The token file keeps its wrapped CEK and sync
-   * record; only `token` changes. Without a login token for this server, or when the renewal is
-   * refused, the operation fails with the refusal's remedy (the original 401 kept as the cause, or
-   * its message extended with both remedies when there was nothing to renew with).
-   */
-  private async renewToken(lease: TokenLease, refusal: RemoteAuthError): Promise<void> {
-    const loginToken = this.transport?.loginToken
-      ? this.transport.loginToken()
-      : loginTokenFor(this.remote.apiUrl);
-    if (!loginToken) {
-      refusal.message = `${refusal.message}\n${t('commands.config.remote.tokenRefresh.noLogin', {
-        apiUrl: this.remote.apiUrl,
-      })}`;
-      throw refusal;
-    }
-    let token: string;
-    try {
-      token = await refreshDeviceToken(this.remote, loginToken, {
-        fetchImpl: this.transport?.fetchImpl,
-        serverKey: this.transport?.serverKey,
-      });
-    } catch (error) {
-      throw this.renewalFailure(error, refusal);
-    }
-    await lease.update(token);
-  }
-
-  /** The error a failed renewal raises; see refreshDeviceToken for what it passes through. */
-  private renewalFailure(error: unknown, refusal: RemoteAuthError): unknown {
-    // A rotation revoked this device's token and left it no slot at the new generation (T10, F11).
-    if (error instanceof RemoteTokenRefreshError && error.code === 'stale_cek_generation') {
-      return new RemoteStaleSlotError({ cause: error });
-    }
-    if (error instanceof RemoteTokenRefreshError) return error;
-    const e = error as { status?: unknown; code?: unknown } | null;
-    if (e?.status === 403 && e.code === 'team_forbidden') {
-      return new RemoteTeamForbiddenError(this.configName);
-    }
-    if (e?.status === 404 && e.code === 'team_not_found') {
-      return new RemoteTeamNotFoundError(this.configName, this.remote.teamId);
-    }
-    // The server answered the config request a moment ago, so a renewal that could not reach it is reported as the refusal it was meant to cure (never as unreachable: that would let a read serve the offline cache after a 401).
-    if (isNetworkError(error)) return Object.assign(refusal, { cause: error });
-    return error;
+    return this.http.fetch<T>(lease, path, options);
   }
 }

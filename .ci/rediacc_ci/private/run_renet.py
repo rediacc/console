@@ -4,7 +4,7 @@
 A thin wrapper: check that the `private/renet` submodule is checked out, pin `GOTOOLCHAIN`, and hand one stage name to the submodule's own `private/renet/.ci/ci.sh`. It reimplements nothing that script does.
 
 THIS MODULE IS WHAT `check:ci-renet` RUNS, since W7P4-W. `package.json` spells the gate `PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality`, `scripts/ci-runner/manifest.ts` names this file as the gate's `leaf` and in its `paths`, and both `.github/workflows/ci-quality.yml` (quality) and `.github/workflows/ct-tests.yml` (test) run the module form. The licence is
-`.ci/shadow/w7p4b-run-renet.observations.jsonl`, nine clean trees at `--assert --k 5`.
+the ledger (deleted in commit:936280cd35), nine clean trees at `--assert --k 5`.
 
 THE `---- gate ----` HEADER MOVED HERE when the twin was retired, the way `rediacc_ci.quality.staging_tag_guard` carries its own. `scripts/gate-bind.ts` resolves a gate by where its header lives, so one file claims `id: check:ci-renet` and it is this one; the header's `run:` was already the module form, which is what the binder emits into the workflow.
 
@@ -63,7 +63,7 @@ step: Run renet quality
 needs: none
 id: check:ci-renet
 run: PYTHONPATH=.ci python3 -m rediacc_ci.private.run_renet quality
-lane: quality-go
+lane: quality-renet
 ---- end gate ----
 """
 
@@ -388,4 +388,20 @@ def main(argv: list[str]) -> int:
 
 
 if __name__ == "__main__":
+    from rediacc_ci.quality import gate_args
+
+    # `parse_argv` takes the stage from `$1` and reads only `--shard-manifest PATH --shard i/N` after it, dropping the rest. One bare argument, first (a flag in its place would be run as the stage), then those two flags.
+    _parsed = gate_args.parse(
+        "run_renet.py",
+        sys.argv[1:],
+        valued=("--shard-manifest", "--shard"),
+        positional="<stage>",
+    )
+    if len(_parsed.positionals) > 1 or _parsed.argv[:1] != _parsed.positionals[:1]:
+        print(
+            "run_renet.py: the stage must be the first argument and the only bare one, got %r "
+            "(accepted: <stage>, --shard-manifest <value>, --shard <value>)" % sys.argv[1:],
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
     raise SystemExit(main(sys.argv[1:]))
