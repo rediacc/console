@@ -76,6 +76,7 @@ import {
   CARRY_EXEMPT_REL,
   computeGateHashes,
   exemptIdsOf,
+  exemptRowsOf,
   type GateHash,
   inputHashSelftest,
   type LockEntry,
@@ -156,6 +157,8 @@ import {
   planRanking,
   type RankingDecision,
   rankSelftest,
+  resumeOf,
+  reuseFloor,
 } from './rank';
 import {
   type CarriedEntry,
@@ -2793,12 +2796,11 @@ async function selftest(): Promise<number> {
     narrowingFlags(parseArgs(['--quick', '--fail-fast'])).includes('--fail-fast'),
     '--fail-fast must narrow the receipt: the gates it skips are written blocked'
   );
+  // K2: a stage stop writes no receipt, and a run it did not stop judged the whole lane, so the flag must not narrow; quick-clone.ts passes =preflight on every whole-lane run.
   require_(
-    narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red'])).includes('--stop-on-stage-red') &&
-      narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red=preflight'])).includes(
-        '--stop-on-stage-red'
-      ),
-    '--stop-on-stage-red (bare and =preflight) must narrow the receipt'
+    narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red'])).length === 0 &&
+      narrowingFlags(parseArgs(['--quick', '--stop-on-stage-red=preflight'])).length === 0,
+    '--stop-on-stage-red (bare and =preflight) must not narrow the receipt: a stopped run writes none, an unstopped one ran the whole lane'
   );
   require_(
     narrowingFlags(parseArgs(['--quick', '--narrow'])).includes('--narrow'),
@@ -4497,6 +4499,113 @@ async function selftest(): Promise<number> {
         'string' && typeof parseRecordPolicy('not json') === 'string',
       'a malformed policy must be refused with a reason, never half-read'
     );
+    // K2 + K3 WIRED THROUGH decideRanking (PLAN-ciquick-gate-contract): an aged-pin gate in the preflight floor (a clock kind in carry-exempt.json, here 13 s, p_red 0.01 and in neither clock_set nor an association) is ranked into the preflight, and its red stops a --stop-on-stage-red=preflight run when the preflight settles, inside 60 s and long before the 600 s gate ends; nothing reaches the receipt (stopRun exits 3). CONTROL: with no floor the same gate is not preflight and its red stops nothing. The resume order pins the last receipt's failed gate, and only when a prior receipt was read.
+    {
+      const fxGate = (obs: number, pr: number, wall: number) => ({
+        obs,
+        p_red: pr,
+        p_red_by_class: {},
+        wall_ms: wall,
+        class: 'real',
+      });
+      const parsedModel = parseModel(
+        JSON.stringify({
+          v: 1,
+          built_at: '2026-11-28T00:00:00Z',
+          cold_start: { on: false, reason: '' },
+          runs: 20,
+          gates: {
+            'fx:pin-age': fxGate(20, 0.01, 13_000),
+            'fx:slow': fxGate(20, 0.02, 600_000),
+            'fx:other': fxGate(20, 0.05, 30_000),
+            'fx:quiet': fxGate(20, 0.0, 20_000),
+          },
+          clock_set: [],
+          clusters: [],
+          associations: {},
+          companions: [],
+        })
+      );
+      const fxGraph = ['fx:pin-age', 'fx:slow', 'fx:other', 'fx:quiet'].map(
+        (id) => ({ id, run: `true ${id}`, gate: true, leaves: [] }) as unknown as GateSpec
+      );
+      const fxDurations = new Map([
+        ['fx:pin-age', 13_000],
+        ['fx:slow', 600_000],
+        ['fx:other', 30_000],
+        ['fx:quiet', 20_000],
+      ]);
+      const rankWith = (extra: Partial<RunContext>): RankingDecision =>
+        decideRanking(
+          fxGraph,
+          { model: parsedModel, classes: [], carried: [], ...extra } as unknown as RunContext,
+          { jobs: 4, heavyLimit: 1, durations: fxDurations, sched: 'slots' }
+        );
+      const stopsAt = (decision: RankingDecision): { stop?: StageStop; atMs: number } => {
+        const st = createStream({
+          run: 'r',
+          out: () => {},
+          events: { file: undefined, emit: () => {} },
+          stages: decision.on
+            ? { preflight: decision.order.preflight, stage1: decision.order.stage1 }
+            : undefined,
+          carried: [],
+          stopAt: 'preflight',
+        });
+        const red: GateResult = {
+          id: 'fx:pin-age',
+          gate: true,
+          status: 'fail',
+          ms: 13_000,
+          exitCode: 1,
+          stdout: '::finding::pin-age:cli-tool:msys2-libzstd\n',
+          stderr: '',
+          rerun: 'npm run fx:pin-age',
+        };
+        return { stop: st.finish(red, 13_000), atMs: 13_000 };
+      };
+      const floored = rankWith({ floor: reuseFloor(new Map([['fx:pin-age', 'clock']])) });
+      const flooredStop = stopsAt(floored);
+      require_(
+        floored.on &&
+          floored.order.preflight.includes('fx:pin-age') &&
+          flooredStop.stop?.stage === 'preflight' &&
+          flooredStop.stop.reds.join() === 'fx:pin-age' &&
+          flooredStop.atMs <= 60_000,
+        `K2: an aged-pin floor gate must be preflight and its red must stop a =preflight run within 60 s, got ${JSON.stringify(floored.on ? floored.order.preflight : floored)} / ${JSON.stringify(flooredStop)}`
+      );
+      const bare = rankWith({});
+      require_(
+        bare.on && !bare.order.preflight.includes('fx:pin-age') && stopsAt(bare).stop === undefined,
+        `K2 CONTROL: with no floor the same gate is not preflight and its red stops nothing, got ${JSON.stringify(bare.on ? bare.order.preflight : bare)}`
+      );
+      const resumed = rankWith({ lastFailed: ['fx:other', 'fx:gone'] });
+      require_(
+        resumed.on && resumed.order.pinned.has('fx:other') && !resumed.order.pinned.has('fx:gone'),
+        `K3: the last receipt's failed gate must be pinned first, and one not about to run dropped, got ${JSON.stringify(resumed.on ? [...resumed.order.pinned] : resumed)}`
+      );
+      require_(
+        bare.on && !bare.order.pinned.has('fx:other'),
+        'K3 CONTROL: with no prior receipt read the same gate is not pinned'
+      );
+      require_(
+        failedOfPrior({ failed: ['a', 1, 'b'] })?.join() === 'a,b' &&
+          failedOfPrior({}) === undefined &&
+          failedOfPrior(undefined) === undefined,
+        'failedOfPrior reads the string ids of a held receipt and nothing else'
+      );
+      const warned: string[] = [];
+      require_(
+        floorOf(
+          '{"schema": 1, "exempt": [{"id": "g:a", "kind": "network"}, {"id": "g:b", "kind": "history"}]}',
+          (l) => warned.push(l)
+        )?.has('g:a') === true &&
+          floorOf('not json', (l) => warned.push(l)) === undefined &&
+          warned.length === 1 &&
+          floorOf(undefined, (l) => warned.push(l)) === undefined,
+        `floorOf: network/clock rows form the floor, an unreadable file is no floor and says so once, got ${JSON.stringify(warned)}`
+      );
+    }
     // THE PARITY CORPUS (PLAN-ciquick-gate-contract R1): every case of ADVANCE_PARITY_REL gets its expected verdict here, as block_unverified_push plan_advance gives it in test-block_unverified_push.py (PARITY cases).
     {
       const corpus = JSON.parse(
@@ -4811,9 +4920,9 @@ function narrowingFlags(opts: Options): string[] {
   if (opts.changed) flags.push('--changed');
   if (opts.slowRotation !== undefined) flags.push('--slow-rotation');
   if (opts.noDiffSlow) flags.push('--no-diff-slow');
-  // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). A stage stop and --narrow run less than the lane by design.
+  // A gate --fail-fast never launched is a `skipped` result, which receiptGates writes with verdict `blocked`, and the push guard accepts `blocked` as a verdict: a --fail-fast receipt whose only red was carried claimed a whole lane with unjudged gates (agent/plans/PLAN-gate-scheduling-learned.md, the push-guard hole, T1). --narrow runs less than the lane by design.
+  // --stop-on-stage-red IS NOT ONE (PLAN-ciquick-gate-contract K2): a run that stops writes no receipt at all (stopRun exits 3 before main reaches it), and a run that does not stop ran the whole lane, so counting the flag marked every green quick-clone run narrowed and the push guard refused its receipt.
   if (opts.failFast) flags.push('--fail-fast');
-  if (opts.stopOnStageRed !== undefined) flags.push('--stop-on-stage-red');
   if (opts.narrow) flags.push('--narrow');
   return flags;
 }
@@ -5748,6 +5857,37 @@ interface RunContext {
   classes: string[];
   carried: CarriedEntry[];
   stopAt?: 'preflight' | '1';
+  /** K2: the preflight floor, carry-exempt.json's clock and network gates (rank.ts reuseFloor); undefined when the file does not read. */
+  floor?: ReadonlySet<string>;
+  /** K3: the newest held receipt's `failed` list; undefined when this run read no prior receipt, which leaves the learned order alone. */
+  lastFailed?: readonly string[];
+}
+
+/** K3: what the resume order adds to a ranking input: the newest receipt's failed gates pinned first and every other gate about to run marked never-run (rank.ts resumeOf), or nothing when no prior receipt was read. */
+function resumeInput(
+  lastFailed: readonly string[] | undefined,
+  run: readonly string[]
+): { failedFirst?: string[]; neverRan?: Set<string> } {
+  return lastFailed === undefined ? {} : resumeOf(lastFailed, run);
+}
+
+/** The `failed` ids of a held receipt, read off the raw document (PriorReceipt does not type the field); undefined when there is no receipt or no list. */
+function failedOfPrior(prior: unknown): string[] | undefined {
+  const failed = (prior as { failed?: unknown } | null | undefined)?.failed;
+  return Array.isArray(failed)
+    ? failed.filter((x): x is string => typeof x === 'string')
+    : undefined;
+}
+
+/** K2: carry-exempt.json's text to the preflight floor; undefined, with the reason printed, when the file is absent or does not read. */
+function floorOf(text: string | undefined, warn: (line: string) => void): Set<string> | undefined {
+  if (text === undefined) return undefined;
+  try {
+    return reuseFloor(exemptRowsOf(text));
+  } catch (e) {
+    warn(`ranking: no preflight floor (${(e as Error).message})\n`);
+    return undefined;
+  }
 }
 
 /** The narrow re-run's two commands, printed by a stage stop. */
@@ -5792,6 +5932,8 @@ function decideRanking(
         width: (id) => byId.get(id)?.cores ?? 1,
         cores: plan.budget?.cores ?? plan.jobs,
         classes: ctx.classes,
+        floor: ctx.floor,
+        ...resumeInput(ctx.lastFailed, gateIds),
       },
       (order) => predictMakespan(graph, { ...plan, order }, machineCores())
     );
@@ -5892,9 +6034,9 @@ async function runGraph(
               : '')
         : `ranking: OFF for this run (${ranking.reason}); today's order runs\n`
     );
-    if (ctx.stopAt !== undefined && !ranking.on)
+    if (!ranking.on)
       humanOut(
-        `ci-runner: --stop-on-stage-red has no stage to stop at, since ranking is OFF; this run goes to the end\n`
+        `ci-runner: ranking is OFF, so neither the stage stop${ctx.stopAt !== undefined ? ` (--stop-on-stage-red=${ctx.stopAt})` : ''} nor the resume order (the last receipt's failed gates first, never-run gates next) applies; this run goes to the end in today's order\n`
       );
     ctx.events.emit({
       ev: 'run-start',
@@ -7115,8 +7257,10 @@ async function main(): Promise<number> {
   let carry = new Map<string, PriorGate>();
   let hashes = new Map<string, GateHash>();
   let salt = '';
+  let lastFailed: string[] | undefined;
   if (recording && headTreeAtStart !== '') {
     const priors = loadPriorReceipts(receiptPathFor(opts));
+    lastFailed = failedOfPrior(priors[0]) ?? (priors.length > 0 ? [] : undefined);
     // NOTHING CARRIES when quick-clone.ts says so: a clone made this run holds no build output while a carried prerequisite leaves `needs` and is not rebuilt, and `--no-carry` asks for every gate to be judged again.
     const noCarry = process.env[NO_CARRY_ENV] === '1';
     if (noCarry) humanOut('incremental: carry is off for this run, every selected gate runs\n');
@@ -7250,6 +7394,10 @@ async function main(): Promise<number> {
     classes,
     carried,
     stopAt: opts.stopOnStageRed,
+    floor: synthetic
+      ? undefined
+      : floorOf(gitTry(['show', `${headTreeAtStart || 'HEAD'}:${CARRY_EXEMPT_REL}`]), humanOut),
+    lastFailed,
   };
   abortHooks.push(() => {
     events.emit({ ev: 'run-end', run: runId, exit: null, receipt: 'none', why: 'signal' });
