@@ -3817,6 +3817,9 @@
       ".ci/rediacc_ci/tests/test_quality_submodule_branches.py": [
         "PATH"
       ],
+      ".ci/rediacc_ci/tests/test_quality_toolchain_pins.py": [
+        "SHELLCHECK_VERSION"
+      ],
       ".ci/rediacc_ci/tests/test_quality_typecheck_workers.py": [
         "HOME"
       ],
