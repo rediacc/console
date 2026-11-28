@@ -5,6 +5,9 @@ the ledger (deleted in commit:936280cd35) over five distinct trees.
 """
 
 import pathlib
+import subprocess
+import threading
+import time
 
 import pytest
 
@@ -111,3 +114,74 @@ def test_check_f_guards_the_class_not_the_instance(tmp_path: pathlib.Path) -> No
         encoding="utf-8",
     )
     assert mod.check_f(report, scoped) is True
+
+
+# Check B judges only the paths `setup` can write (PLAN-ciquick-gate-contract R4, worklist #101927ca). ci:quick 44 (2026-11-28) reddened B over packages/shared/src/mcp/tools.generated.json, rewritten by a concurrent gate and held past the settle window. The subject is a scratch git repository whose `run.sh` stands in for `setup --check`.
+ROWS = "node docker deps image devbox port block"
+
+
+def _git(root: pathlib.Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=str(root), check=True, stdout=subprocess.DEVNULL)
+
+
+def _repo(tmp_path: pathlib.Path, run_sh_extra: str = "") -> pathlib.Path:
+    root = tmp_path / "repo"
+    (root / "packages/shared/src/mcp").mkdir(parents=True)
+    (root / "private/account").mkdir(parents=True)
+    (root / "packages/shared/src/mcp/tools.generated.json").write_text("{}\n")
+    (root / "private/account/seed.txt").write_text("x\n")
+    run_sh = root / "run.sh"
+    run_sh.write_text("#!/bin/sh\n%secho '%s'\n" % (run_sh_extra, ROWS))
+    run_sh.chmod(0o755)
+    _git(root, "init", "-q")
+    _git(root, "-c", "user.name=t", "-c", "user.email=t@t", "add", "-A")
+    _git(root, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init")
+    return root
+
+
+def _run_b(root: pathlib.Path, monkeypatch: pytest.MonkeyPatch) -> bool:
+    monkeypatch.setattr(mod, "SETTLE_SECONDS", 2)
+    return mod.check_b(mod.Report(colour={"RED": "", "GREEN": "", "NC": ""}), root)
+
+
+def test_unrelated_concurrent_writer_does_not_red_b(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CONTROL 1: a neighbour edits an unrelated tracked file during B and keeps it past the settle window."""
+    root = _repo(tmp_path, "sleep 1\n")
+    target = root / "packages/shared/src/mcp/tools.generated.json"
+
+    def neighbour() -> None:
+        time.sleep(0.3)
+        target.write_text('{"changed": true}\n')
+
+    thread = threading.Thread(target=neighbour)
+    thread.start()
+    try:
+        assert _run_b(root, monkeypatch) is True
+    finally:
+        thread.join()
+    assert target.read_text() == '{"changed": true}\n'  # the change really landed and persisted
+
+
+def test_setup_check_writing_its_own_path_reds_b(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CONTROL 2: `setup --check` itself modifies a path setup can write."""
+    root = _repo(tmp_path, "echo changed > private/account/seed.txt\n")
+    assert _run_b(root, monkeypatch) is False
+
+
+def test_setup_check_creating_a_lockfile_reds_b(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _repo(tmp_path, "echo '{}' > packages/package-lock.json\n")
+    assert _run_b(root, monkeypatch) is False
+
+
+def test_setup_scope_is_narrow() -> None:
+    snap = " M packages/shared/src/mcp/tools.generated.json\n M private/account/a\n?? x/package-lock.json"
+    assert mod.setup_scope(snap).split("\n") == [
+        " M private/account/a",
+        "?? x/package-lock.json",
+    ]

@@ -142,6 +142,15 @@ _ANSI = {"RED": "\033[0;31m", "GREEN": "\033[0;32m", "NC": "\033[0m"}
 # The shape of another gate's throwaway fixture: a DOTTED, PID-SUFFIXED name. Applied to BOTH snapshots so it cannot hide a real change; see the header.
 FIXTURE_NOISE_RE = re.compile(r"(^|/)\.[a-z0-9-]+-fixture\.[0-9]+\.[a-z]+$")
 
+# THE PATHS `setup` CAN WRITE, which is the most `setup --check` could ever touch (its contract is to touch none of them). Check B judges ONLY these, so a concurrent gate rewriting an unrelated tracked file (ci:quick 44, 2026-11-28: packages/shared/src/mcp/tools.generated.json, held for 15s) cannot red it. Derived from the setup code, one entry per writer:
+#   `.gitmodules` and `private/`   submodule init (setup/phases.py: the init-submodules.sh phase) and the public-key cache `private/account/.cache/public-keys.env` (setup/machine.py PUBLIC_KEY_CACHE)
+#   `package-lock.json`            the npm install phase (setup/install_deps.py `npm ci` argv)
+#   `.tsbuildinfo`, `/dist/`       the package build phase (setup/build_packages.py DIST_DIR)
+# core.hooksPath and the backup remotes (setup/githooks.py, backup_remotes.py) live in .git/config, which `git status` never shows.
+SETUP_WRITABLE_RE = re.compile(
+    r"^(\.gitmodules$|private(/|$)|(.*/)?package-lock\.json$|.*\.tsbuildinfo$|(.*/)?dist(\.build-[0-9]+)?(/|$))"
+)
+
 # The words a `setup --check` run must actually print. A check that prints nothing is indistinguishable from a check that did not run.
 # The Python port of the retired .ci/lib/devbox.sh: the subject of checks A (devbox_up, devbox_ensure_image), E and F.
 DEVBOX_PY_REL = ".ci/rediacc_ci/core/devbox.py"
@@ -329,6 +338,16 @@ def tree_snapshot(root: pathlib.Path) -> str:
     return "\n".join(sorted(kept))
 
 
+def setup_scope(snapshot: str) -> str:
+    """The snapshot lines whose path `setup` can write (SETUP_WRITABLE_RE), sorted."""
+    kept = []
+    for line in snapshot.split("\n"):
+        fields = line.split()
+        if fields and SETUP_WRITABLE_RE.search(fields[-1].strip('"')):
+            kept.append(line)
+    return "\n".join(sorted(kept))
+
+
 def delta_paths(before: str, after: str) -> str:
     """The paths named by EITHER snapshot but not both, one per line, sorted.
 
@@ -362,14 +381,14 @@ def scoped_to(snapshot: str, wanted_paths: str) -> str:
     return "\n".join(sorted(kept))
 
 
-def check_b(report: Report, root: pathlib.Path) -> bool:
-    """B: `setup --check` reports and mutates nothing."""
-    before = tree_snapshot(root)
+def check_b(report: Report, root: pathlib.Path, command: list[str] | None = None) -> bool:
+    """B: `setup --check` reports and mutates nothing. Judged on the paths `setup` can write only (SETUP_WRITABLE_RE)."""
+    before = setup_scope(tree_snapshot(root))
     env = dict(os.environ)
     env["NO_COLOR"] = "1"
     try:
         proc = subprocess.run(
-            ["./run.sh", "setup", "--check"],
+            command or ["./run.sh", "setup", "--check"],
             cwd=str(root),
             env=env,
             stdout=subprocess.PIPE,
@@ -383,7 +402,7 @@ def check_b(report: Report, root: pathlib.Path) -> bool:
         # `./run.sh: No such file or directory` under a shell is exit 127 with the message on the captured stream. The message differs; the verdict does not, because none of the required rows appears in either text.
         out = ""
         rc = 127
-    after = tree_snapshot(root)
+    after = setup_scope(tree_snapshot(root))
 
     if before != after:
         settled = False
@@ -392,7 +411,7 @@ def check_b(report: Report, root: pathlib.Path) -> bool:
         for i in range(1, SETTLE_SECONDS + 1):
             time.sleep(1)
             seconds = i
-            if scoped_to(tree_snapshot(root), watched) == scoped_to(before, watched):
+            if scoped_to(setup_scope(tree_snapshot(root)), watched) == scoped_to(before, watched):
                 settled = True
                 break
         if settled:
