@@ -15,6 +15,7 @@
 import crypto from 'node:crypto';
 import { WK_GH_API_BASE } from '../../../../packages/shared/src/config/well-known.generated.js';
 import { githubApiHeaders } from '../../github-token.js';
+import { type FirstSeenLedger, indexedAtMs } from '../first-seen.js';
 import {
   askUpstream,
   type Failure,
@@ -62,7 +63,13 @@ async function hashOnce(url: string, who: string): Promise<{ value: string } | F
     return { value: hash.digest('hex') };
   } catch (err) {
     const what = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
-    return { what, retry: true, status: null, retryAfterS: null, unreachable: true };
+    return {
+      what,
+      retry: true,
+      status: null,
+      retryAfterS: null,
+      unreachable: true,
+    };
   }
 }
 
@@ -99,7 +106,12 @@ export function networkUpstream(): Upstream {
     lastModified: (url, who) =>
       memo(dates, url, async () => {
         try {
-          const head = await askUpstream({ url, headers: headersFor(url), who, method: 'HEAD' });
+          const head = await askUpstream({
+            url,
+            headers: headersFor(url),
+            who,
+            method: 'HEAD',
+          });
           const raw = head.headers.get('last-modified');
           const ms = raw === null ? Number.NaN : Date.parse(raw);
           return Number.isNaN(ms) ? null : ms;
@@ -254,7 +266,10 @@ export async function npmVersions(up: Upstream, pkg: string, who: string): Promi
   return byNewest(
     Object.keys(doc.versions)
       .filter((v) => /^\d+\.\d+\.\d+$/.test(v))
-      .map((v) => ({ version: v, publishedMs: doc.time?.[v] ? Date.parse(doc.time[v]) : null }))
+      .map((v) => ({
+        version: v,
+        publishedMs: doc.time?.[v] ? Date.parse(doc.time[v]) : null,
+      }))
   );
 }
 
@@ -276,18 +291,29 @@ export async function pypiVersions(up: Upstream, pkg: string, who: string): Prom
 }
 
 /**
- * MSYS2 `msys` repository: the one version of binary package `pkg` it serves now, dated by its build instant.
+ * MSYS2 `msys` repository: the one version of binary package `pkg` it serves now, dated by when this repo first saw the index serve it (the later of the build
+ * instant and the first-sight record, scripts/lib/pins/first-seen.ts: a package reaches the index days after its build).
  * The repository keeps only the current build, so the list has at most one entry; the package
  * archive publishes no digest beside it, and a `sha256:` site names its full URL so the driver
  * downloads and hashes it (the awscli path).
  */
-export async function msys2Versions(up: Upstream, pkg: string, who: string): Promise<Dated[]> {
+export async function msys2Versions(
+  up: Upstream,
+  pkg: string,
+  who: string,
+  seen: { ledger: FirstSeenLedger; nowMs: number }
+): Promise<Dated[]> {
   const doc = (await up.json(
     `https://packages.msys2.org/api/search?query=${encodeURIComponent(pkg)}&qtype=binpkg`,
     who
   )) as {
     results?: {
-      exact?: { name?: string; version?: string; build_date?: number; repos?: string[] } | null;
+      exact?: {
+        name?: string;
+        version?: string;
+        build_date?: number;
+        repos?: string[];
+      } | null;
     };
   } | null;
   const hit = doc?.results?.exact;
@@ -302,7 +328,12 @@ export async function msys2Versions(up: Upstream, pkg: string, who: string): Pro
   return [
     {
       version: hit.version,
-      publishedMs: typeof hit.build_date === 'number' ? hit.build_date * 1000 : null,
+      publishedMs: indexedAtMs(
+        seen.ledger,
+        `msys2:${pkg}@${hit.version}`,
+        typeof hit.build_date === 'number' ? hit.build_date * 1000 : null,
+        seen.nowMs
+      ),
     },
   ];
 }
@@ -329,8 +360,13 @@ export async function goModuleVersions(
     throw new UnreadableListing(`${mod}: the proxy lists no stable version`);
   const out: Dated[] = [];
   for (const c of newerThan(byNewest(versions), current).slice(0, limit)) {
-    const info = (await up.json(`${base}/${c.tag}.info`, who)) as { Time?: string } | null;
-    out.push({ version: c.version, publishedMs: info?.Time ? Date.parse(info.Time) : null });
+    const info = (await up.json(`${base}/${c.tag}.info`, who)) as {
+      Time?: string;
+    } | null;
+    out.push({
+      version: c.version,
+      publishedMs: info?.Time ? Date.parse(info.Time) : null,
+    });
   }
   return out;
 }

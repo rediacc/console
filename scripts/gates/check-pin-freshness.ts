@@ -90,6 +90,9 @@ import { createHubReader, hubReader } from '../lib/docker-hub.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
 import { hubDeps } from '../lib/pins/drivers/docker.js';
+import { stubUpstream } from '../lib/pins/drivers/toolchain-fixture.js';
+import { msys2Versions } from '../lib/pins/drivers/toolchain-upstream.js';
+import { fileLedger } from '../lib/pins/first-seen.js';
 import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
 import { lineSubject } from '../lib/pins/lines.js';
@@ -114,7 +117,7 @@ import {
 import { readTemplateFiles, scanTemplates } from '../lib/pins/templates.js';
 import { OUTSIDE_ENV, SCOPE_ENV } from '../lib/pins/txn.js';
 import { policyPath } from '../lib/policy-paths.js';
-import { getMinReleaseAgeMs } from '../lib/release-age.js';
+import { getMinReleaseAgeMs, isWithinFreshnessWindow } from '../lib/release-age.js';
 import { REPO_ROOT } from '../lib/repo-root.js';
 
 interface Selection {
@@ -261,7 +264,10 @@ function holdFindings(
     }
     for (const [key, ids] of byKey)
       if (ids.length > 1)
-        out.push({ text: `${file}: key ${key} is answered by ${ids.join(' and ')}`, ids });
+        out.push({
+          text: `${file}: key ${key} is answered by ${ids.join(' and ')}`,
+          ids,
+        });
     if (text === null) continue;
     for (const [i, line] of text.split('\n').entries()) {
       const t = line.trim();
@@ -638,7 +644,10 @@ function fixtureRoot(
     version: 1,
     submodules: { scanned: [], unscanned: [] },
     literalExclude: [],
-    entries: entries.map((e) => ({ ...e, sites: e.sites.filter((s) => s.repo === '.') })),
+    entries: entries.map((e) => ({
+      ...e,
+      sites: e.sites.filter((s) => s.repo === '.'),
+    })),
     ignores: [],
     lines: Object.fromEntries(Object.entries(real.lines).filter(([k]) => subjects.has(k))),
   };
@@ -671,7 +680,10 @@ function stubDriver(): PinDriver {
     Promise.resolve({
       current: '1.0.0',
       releases: [
-        { version: '2.1.0', publishedMs: firstMs === null ? null : firstMs + DAY_MS },
+        {
+          version: '2.1.0',
+          publishedMs: firstMs === null ? null : firstMs + DAY_MS,
+        },
         { version: '2.0.0', publishedMs: firstMs },
       ],
     });
@@ -721,7 +733,11 @@ function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
     string,
     { current: string; next: string; days: number; publishedAgoMs?: number }
   > = {
-    [LINE_AGED]: { current: 'python:3.9-slim', next: 'python:3.10-slim', days: PAST },
+    [LINE_AGED]: {
+      current: 'python:3.9-slim',
+      next: 'python:3.10-slim',
+      days: PAST,
+    },
     [LINE_YOUNG]: { current: 'alpine:3.23', next: 'alpine:3.24', days: UNDER },
     // A move inside the pinned line is a plain bump (status.ts isMajor), so it is judged by the release-age window like any stale pin: published an hour ago it is young, deferred.
     [SAME_LINE]: {
@@ -743,7 +759,10 @@ function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
       };
       // A release inside the pinned line carries no driver verdict here: the core judges it by the window, as it judges a docker patch.
       if (entry.id !== SAME_LINE)
-        next.verdict = { eligible: true, why: 'a series move, taken only with --major --reason' };
+        next.verdict = {
+          eligible: true,
+          why: 'a series move, taken only with --major --reason',
+        };
       return Promise.resolve({ current: a.current, releases: [next] });
     },
     plan() {
@@ -753,7 +772,11 @@ function lineStub(ageDays: Partial<Record<string, number>> = {}): PinDriver {
   };
 }
 
-const NO_HOLDS: Judging = { nowMs: NOW, graceMs: GRACE_DAYS * DAY_MS, holdProblems: [] };
+const NO_HOLDS: Judging = {
+  nowMs: NOW,
+  graceMs: GRACE_DAYS * DAY_MS,
+  holdProblems: [],
+};
 
 async function selftest(): Promise<number> {
   const cases: ControlCase[] = [];
@@ -765,7 +788,9 @@ async function selftest(): Promise<number> {
     `${holdKeyOf(LAZY_HOLD)}  # BLOCKER: the 2.x line changes the exit code contract the hooks read`,
     '',
   ].join('\n');
-  const majorsRoot = fixtureRoot([YOUNG, AGED, HELD, UNDATED, LAZY_HOLD], { [HOLDS]: holdLines });
+  const majorsRoot = fixtureRoot([YOUNG, AGED, HELD, UNDATED, LAZY_HOLD], {
+    [HOLDS]: holdLines,
+  });
   const roots = [root, majorsRoot];
   try {
     const sel = selectLeaves(loadRegistry(path.join(root, '.ci/config/pins.json')));
@@ -966,7 +991,10 @@ async function selftest(): Promise<number> {
         Math.abs(gateNowMs({ REDIACC_GATE_CLOCK: '  ' }) - Date.now()) < 60_000 &&
         (() => {
           try {
-            gateNowMs({ REDIACC_GATE_CLOCK: 'next tuesday', REDIACC_GATE_CLOCK_TEST: '1' });
+            gateNowMs({
+              REDIACC_GATE_CLOCK: 'next tuesday',
+              REDIACC_GATE_CLOCK_TEST: '1',
+            });
             return false;
           } catch (e) {
             return (e as Error).message.includes('not an ISO 8601');
@@ -1298,6 +1326,68 @@ async function selftest(): Promise<number> {
         !(await caseFor[m]()),
         'the case still caught the defect with its property disabled'
       );
+    // THE MSYS2 INDEX DATE (plan K5, #b4dcee99). packages.msys2.org dates a package by its BUILD; the package reaches the index days later. The window runs from first sight in the index, so a late-indexed package is deferred, never aged by its build day.
+    const msysWindow = getMinReleaseAgeMs(path.join(root, '.ci/config/release-age.json'));
+    const msysAt = (build: string, pkg: string, ledgerRoot: string, now: string) =>
+      msys2Versions(
+        stubUpstream({
+          [`https://packages.msys2.org/api/search?query=${pkg}&qtype=binpkg`]: {
+            results: {
+              exact: {
+                name: pkg,
+                version: '1.6.0-1',
+                build_date: Date.parse(build) / 1000,
+                repos: ['msys'],
+              },
+            },
+          },
+        }),
+        pkg,
+        pkg,
+        { ledger: fileLedger(ledgerRoot), nowMs: Date.parse(now) }
+      ).then((l) => l[0]?.publishedMs ?? null);
+    const NOW_MSYS = '2026-11-28T12:00:00Z';
+    const ledgerA = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
+    roots.push(ledgerA);
+    const late = await msysAt('2026-11-24T11:57:05Z', 'libzstd', ledgerA, NOW_MSYS);
+    add(
+      'msys2: a package built 2026-11-24 and first seen in the index 2026-11-28 is still inside the window (deferred, not stale)',
+      late !== null &&
+        isWithinFreshnessWindow(late, Date.parse(NOW_MSYS), msysWindow) &&
+        !isWithinFreshnessWindow(
+          Date.parse('2026-11-24T11:57:05Z'),
+          Date.parse(NOW_MSYS),
+          msysWindow
+        ),
+      `publishedMs ${late === null ? 'null' : new Date(late).toISOString()}`
+    );
+    const sameDay = await msysAt(
+      '2026-11-24T11:57:05Z',
+      'libzstd',
+      ledgerA,
+      '2026-11-30T12:00:00Z'
+    );
+    add(
+      'msys2: the first sight is recorded once and ages from that day two days on (stale past the window)',
+      sameDay === late &&
+        sameDay !== null &&
+        !isWithinFreshnessWindow(sameDay, Date.parse('2026-11-30T12:00:00Z'), msysWindow),
+      `publishedMs ${sameDay === null ? 'null' : new Date(sameDay).toISOString()}`
+    );
+    const ledgerB = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
+    roots.push(ledgerB);
+    fs.mkdirSync(path.join(ledgerB, '.ci/cache/pins'), { recursive: true });
+    fs.writeFileSync(
+      path.join(ledgerB, '.ci/cache/pins/first-seen.json'),
+      JSON.stringify({ 'msys2:libzstd@1.6.0-1': '2026-11-20T00:00:00.000Z' })
+    );
+    const old = await msysAt('2026-11-24T11:57:05Z', 'libzstd', ledgerB, NOW_MSYS);
+    add(
+      'msys2 (control): a package first seen in the index before the window and built after it ages from its build day, so it is stale',
+      old === Date.parse('2026-11-24T11:57:05Z') &&
+        !isWithinFreshnessWindow(old, Date.parse(NOW_MSYS), msysWindow),
+      `publishedMs ${old === null ? 'null' : new Date(old).toISOString()}`
+    );
     // THE DOCKER HUB READ PATH. Production docker pins read through the shared reader (scripts/lib/docker-hub.ts, whose own controls run in check:ci-docker-image-freshness). Both directions: an answer reaches the driver, and a 429 reaches it as NotCompared.
     const hubUrl = 'https://hub.test/v2/repositories/library/node/tags/26-slim';
     const fakeFetch =
