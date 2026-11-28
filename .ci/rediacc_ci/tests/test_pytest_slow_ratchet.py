@@ -458,12 +458,16 @@ def test_own_seconds_judges_cpu_when_the_entry_carries_it():
         "shared_setup_cpu": 0.0,
         "shared_teardown_cpu": 0.0,
     }
-    own, shared = ratchet.own_seconds(entry)
+    split = ratchet.own_seconds(entry)
+    assert split is not None
+    own, shared = split
     assert own == pytest.approx(3.15)
     assert shared == pytest.approx(0.0)
 
 
 def test_own_seconds_control_without_cpu_fields_stays_on_wall_time():
     """An older phase file (no CPU fields) is judged exactly as before."""
-    own, _ = ratchet.own_seconds({"setup": 0.2, "call": 14.0, "teardown": 0.1})
+    split = ratchet.own_seconds({"setup": 0.2, "call": 14.0, "teardown": 0.1})
+    assert split is not None
+    own, _ = split
     assert own == pytest.approx(14.3)
