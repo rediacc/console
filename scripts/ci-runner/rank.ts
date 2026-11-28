@@ -272,7 +272,7 @@ export function reuseFloor(rows: ReadonlyMap<string, string | null>): Set<string
 const NEVER_RAN_BOOST = 1;
 
 /**
- * K3, `--resume`: split what is about to run by what the newest receipt knows. `failed` is that receipt's red list (a red never carries, so every one of them is in `run`); `neverRan` is the rest of `run`, the gates no held receipt judged at this input hash. A failed id outside `run` is dropped: nothing will launch it.
+ * K3, `--resume`: split what is about to run by what the newest receipt knows. `failed` is that receipt's red list (a red never carries, so every one of them is in `run`); `neverRan` is the rest of `run`: `run` is what the carry plan could not carry, so these are gates with no verdict at this input hash in any held receipt (a gate an older held receipt passed at this hash carries and is not in `run`), plus the carry-exempt gates, which never carry. A failed id outside `run` is dropped: nothing will launch it.
  */
 export function resumeOf(
   lastFailed: readonly string[] | undefined,

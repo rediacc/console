@@ -841,15 +841,20 @@ function carryPatternRe(glob: string): RegExp {
 }
 
 /** carried-reds.json as the push guard's parse_carry_doc reads it, for what `carriedOnly` needs: the keyed and whole-gate entries over the reason bar (block_unverified_push REASON_MIN 80, STAR_REASON_MIN 160 for `*`; an entry under it carries nothing), the pattern entries over REASON_MIN grouped by gate with their expiry, and whether the text is usable at all. A pattern entry with no `expires` date is a schema error, which the guard refuses, so it makes the whole file unusable here too. Unparseable text is unusable. */
-function readCarry(
-  text: string | undefined
-): { entries: CarriedEntry[]; patterns: Map<string, Map<string, string>> } | undefined {
+function readCarry(text: string | undefined):
+  | {
+      entries: CarriedEntry[];
+      patterns: Map<string, Map<string, string>>;
+      carrying: Map<string, Map<string, string>>;
+    }
+  | undefined {
   if (text === undefined) return undefined;
   try {
     const doc = JSON.parse(text) as { carried?: unknown };
     if (!Array.isArray(doc.carried)) return undefined;
     const entries: CarriedEntry[] = [];
     const patterns = new Map<string, Map<string, string>>();
+    const carrying = new Map<string, Map<string, string>>();
     for (const e of doc.carried) {
       const x = e as {
         gate?: unknown;
@@ -871,11 +876,16 @@ function readCarry(
           !/^\d{4}-\d{2}-\d{2}$/.test(x.expires)
         )
           return undefined;
-        if (reason.length < 80) continue;
         const mine = patterns.get(x.gate) ?? new Map<string, string>();
+        // The expiry is read before the reason bar: an expired pattern refuses whatever its reason, and `carrying` holds only the globs whose reason clears the bar, the ones that may cover a key.
         for (const g of globs as string[]) {
           const was = mine.get(g) ?? '';
           mine.set(g, x.expires > was ? x.expires : was);
+          if (reason.length >= 80) {
+            const live = carrying.get(x.gate) ?? new Map<string, string>();
+            live.set(g, mine.get(g) ?? x.expires);
+            carrying.set(x.gate, live);
+          }
         }
         patterns.set(x.gate, mine);
         continue;
@@ -886,7 +896,7 @@ function readCarry(
         if (reason.length >= 80) entries.push({ gate: x.gate, findings: x.findings as string[] });
       } else return undefined;
     }
-    return { entries, patterns };
+    return { entries, patterns, carrying };
   } catch {
     return undefined;
   }
@@ -905,11 +915,11 @@ export function carriedOnly(
   const carry = readCarry(carriedText);
   if (carry === undefined) return false;
   const live = new Map<string, RegExp[]>();
-  for (const [gate, globs] of carry.patterns)
-    for (const [glob, expires] of globs) {
-      if (expires < today) return false;
+  for (const globs of carry.patterns.values())
+    for (const expires of globs.values()) if (expires < today) return false;
+  for (const [gate, globs] of carry.carrying)
+    for (const glob of globs.keys())
       live.set(gate, [...(live.get(gate) ?? []), carryPatternRe(glob)]);
-    }
   // A keyed or whole-gate carry of a gate that is not red is stale: the guard refuses it. A gate carried only by patterns that did not fail is a warning there.
   if (carry.entries.some((c) => !failed.includes(c.gate))) return false;
   return failed.every((id) => {
@@ -918,7 +928,8 @@ export function carriedOnly(
     const res = live.get(id) ?? [];
     if (entry === undefined && res.length === 0) return false;
     if (entry?.findings === '*') return true;
-    if (keys === null) return false;
+    // A red that names no key is not covered by a keyed or pattern carry: `every` on an empty list would pass it.
+    if (keys === null || keys.length === 0) return false;
     const set = new Set(entry?.findings ?? []);
     return keys.every((k) => set.has(k) || res.some((re) => re.test(k)));
   });
@@ -1135,7 +1146,14 @@ export const STOP_ON_PREFLIGHT = '--stop-on-stage-red=preflight';
 
 /** The runner arguments of a lane: `--quick`, the pass-through flags, and the preflight stop on a whole-lane clone run (not an advance, which runs no lane, and not under `--keep-going`). */
 export function laneOf(route: Exclude<Route, { kind: 'refused' }>, keepGoing: boolean): string[] {
-  const stop = route.kind === 'clone' && !keepGoing && route.advanceOnly !== true;
+  // Whole-lane only: every pass-through flag is one routeOf lets a clone run keep, so a gate selection (`--only`, `--skip`, `--narrow`) never gets the stop even if a caller builds such a route by hand.
+  const whole = route.pass.every(
+    (arg, i, all) =>
+      PASS_THROUGH_FLAGS.has(arg) ||
+      PASS_THROUGH_VALUE_FLAGS.has(arg) ||
+      PASS_THROUGH_VALUE_FLAGS.has(all[i - 1] ?? '')
+  );
+  const stop = route.kind === 'clone' && whole && !keepGoing && route.advanceOnly !== true;
   return ['--quick', ...route.pass, ...(stop ? [STOP_ON_PREFLIGHT] : [])];
 }
 
@@ -2477,6 +2495,40 @@ export async function quickCloneSelftest(
         '2026-11-28'
       ) && !carriedOnly(redOn(['b'], { b: ['k1', 'k9'] }), doc(keyed)),
       'R3 CONTROL: a new red no key or pattern covers is not carried'
+    );
+    // Review findings: expiry is read before the reason bar, an empty key list is no cover, and the stop is whole-lane only.
+    const shortPat = JSON.stringify({
+      version: 2,
+      carried: [{ gate: 'p', patterns: ['pytest-slow:*'], reason: 'short', expires: '2026-11-27' }],
+    });
+    check(
+      !carriedOnly(slow, shortPat, '2026-11-28') &&
+        !carriedOnly(
+          slow,
+          patDoc('2026-12-01', 'pytest-slow:*').replace('r'.repeat(80), 'short'),
+          '2026-11-28'
+        ),
+      'R3 review: an under-bar pattern past its expiry refuses, and an unexpired under-bar pattern carries nothing'
+    );
+    check(
+      !carriedOnly(redOn(['b'], { b: [] }), doc(keyed)) &&
+        !carriedOnly(
+          redOn(['p'], { p: [] }),
+          patDoc('2026-12-01', 'pytest-slow:*'),
+          '2026-11-28'
+        ) &&
+        carriedOnly(redOn(['a'], { a: [] }), doc(star)),
+      'R3 review: a red naming no key is not carried by a keyed or pattern carry, and a whole-gate carry still is'
+    );
+    check(
+      !laneOf({ kind: 'clone', pass: ['--only', 'x'], noCarry: false }, false).includes(
+        STOP_ON_PREFLIGHT
+      ) &&
+        laneOf(
+          { kind: 'clone', pass: ['--jobs', '4', '--verbose'], noCarry: false },
+          false
+        ).includes(STOP_ON_PREFLIGHT),
+      'the preflight stop is for a whole-lane run: a gate selection never gets it, the pass-through flags still do'
     );
     check(
       !carriedOnly(slow, patDoc(undefined, 'pytest-slow:*'), '2026-11-28') &&
