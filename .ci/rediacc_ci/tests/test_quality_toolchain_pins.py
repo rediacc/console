@@ -188,3 +188,26 @@ def test_a1_reports_a_coincidence_entry_that_excuses_nothing(
     fails, text = _a1(_a1_tree(tmp_path, "2.3.1", TMATE), capsys)
     assert fails == 1, text
     assert "the A1 coincidence entry for MYPY_VERSION excuses nothing" in text
+
+
+def test_a9_control_fires_with_the_pins_exported(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A CI job exports the pins before the gate; the bare source must not inherit them (Console CI run 46109550206)."""
+    root = pathlib.Path(mod.__file__).resolve().parents[3]
+    library = root / ".ci" / "scripts" / "lib" / "toolchain.sh"
+    mutant = tmp_path / "toolchain.sh"
+    mutant.write_text(
+        library.read_text(encoding="utf-8") + "\ntoolchain_load() { return 0; }\n", encoding="utf-8"
+    )
+    for line in (root / mod.PINS_REL).read_text(encoding="utf-8").splitlines():
+        if "=" in line and not line.lstrip().startswith("#"):
+            key, _, value = line.partition("=")
+            monkeypatch.setenv(
+                key.strip().removeprefix("export ").strip(), value.strip().strip("'\"")
+            )
+    assert os.environ.get("SHELLCHECK_VERSION")
+    # The control: the mutant skips the load, so with the pins exported it must still resolve nothing.
+    assert mod.pin_from_bare_source(mutant, "shellcheck") == ""
+    # And the real library still resolves under the same environment.
+    assert mod.pin_from_bare_source(library, "shellcheck") != ""

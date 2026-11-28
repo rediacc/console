@@ -425,6 +425,20 @@ def check_a6(report: Report, root: pathlib.Path) -> None:
         report.fail("A6. these trust PATH instead of acquiring at the pin: %s" % " ".join(missing))
 
 
+def bare_env() -> dict[str, str]:
+    """The environment of a BARE source: this process's, minus every key the pins file defines.
+
+    A CI job exports the pins before this gate runs (the toolchain step writes them to the job's environment), so a subshell that inherited them resolved a pin even from a library whose `toolchain_load` was a no-op: the A9 control failed in Console CI run 46109550206 ("the mutant still resolved a pin ('0.11.0')") while passing on a host with nothing exported. Removing the pinned keys makes "bare" mean bare on both.
+    """
+    pins = pathlib.Path(__file__).resolve().parents[3] / PINS_REL
+    keys = set()
+    for line in read_lines(pins) if pins.is_file() else ():
+        m = re.match(r"\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)=", line)
+        if m:
+            keys.add(m.group(1))
+    return {k: v for k, v in os.environ.items() if k not in keys}
+
+
 def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
     """`bash -c "source <lib>; toolchain_pin_for <tool>"`. Never raises.
 
@@ -437,6 +451,7 @@ def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
             stderr=subprocess.DEVNULL,
             text=True,
             check=False,
+            env=bare_env(),
         )
     except OSError:
         return ""
