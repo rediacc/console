@@ -1347,8 +1347,11 @@ async function selftest(): Promise<number> {
         { ledger: fileLedger(ledgerRoot), nowMs: Date.parse(now) }
       ).then((l) => l[0]?.publishedMs ?? null);
     const NOW_MSYS = '2026-11-28T12:00:00Z';
+    // A machine with history: the ledger file exists (empty), so a version it never saw is first seen now.
     const ledgerA = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
     roots.push(ledgerA);
+    fs.mkdirSync(path.join(ledgerA, '.ci/cache/pins'), { recursive: true });
+    fs.writeFileSync(path.join(ledgerA, '.ci/cache/pins/first-seen.json'), '{}\n');
     const late = await msysAt('2026-11-24T11:57:05Z', 'libzstd', ledgerA, NOW_MSYS);
     add(
       'msys2: a package built 2026-11-24 and first seen in the index 2026-11-28 is still inside the window (deferred, not stale)',
@@ -1373,6 +1376,16 @@ async function selftest(): Promise<number> {
         sameDay !== null &&
         !isWithinFreshnessWindow(sameDay, Date.parse('2026-11-30T12:00:00Z'), msysWindow),
       `publishedMs ${sameDay === null ? 'null' : new Date(sameDay).toISOString()}`
+    );
+    // Review 10b1d669.1: a fresh checkout (no ledger file, every CI run) has no history, so the version ages by its build date and a stale msys2 pin still fails there.
+    const ledgerFresh = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
+    roots.push(ledgerFresh);
+    const fresh = await msysAt('2026-11-24T11:57:05Z', 'libzstd', ledgerFresh, NOW_MSYS);
+    add(
+      'msys2 (control): with no ledger file (a fresh CI checkout) a version ages by its build date, so a package built past the window is stale',
+      fresh === Date.parse('2026-11-24T11:57:05Z') &&
+        !isWithinFreshnessWindow(fresh, Date.parse(NOW_MSYS), msysWindow),
+      `publishedMs ${fresh === null ? 'null' : new Date(fresh).toISOString()}`
     );
     const ledgerB = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
     roots.push(ledgerB);

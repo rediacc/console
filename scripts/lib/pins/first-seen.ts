@@ -23,6 +23,8 @@ export interface FirstSeenLedger {
   get(key: string): number | null;
   /** Record the first sight of `key`; an existing record is never moved. */
   record(key: string, ms: number): void;
+  /** True when the ledger holds history (its file exists). A fresh checkout has none, and a version it has never seen then ages by its build date (review 10b1d669.1: otherwise a CI checkout, which starts empty every run, would defer every msys2 pin forever). */
+  known(): boolean;
 }
 
 /** A ledger over the file under `root`; an unreadable or malformed file reads as empty. */
@@ -39,6 +41,9 @@ export function fileLedger(root: string): FirstSeenLedger {
     }
   };
   return {
+    known() {
+      return fs.existsSync(file);
+    },
     get(key) {
       const at = Date.parse(load()[key] ?? '');
       return Number.isNaN(at) ? null : at;
@@ -47,9 +52,14 @@ export function fileLedger(root: string): FirstSeenLedger {
       const doc = load();
       if (Date.parse(doc[key] ?? '') > 0) return;
       doc[key] = new Date(ms).toISOString();
-      fs.mkdirSync(path.dirname(file), { recursive: true });
       // tree-write: safe the ledger is under .ci/cache, the gitignored scratch, never the tracked tree
-      fs.writeFileSync(file, `${JSON.stringify(doc, null, 2)}\n`);
+      fs.mkdirSync(path.dirname(file), { recursive: true });
+      // Written beside the target and renamed over it (review 10b1d669.2), so a concurrent reader never sees half a file.
+      const tmp = `${file}.${process.pid}.tmp`;
+      // tree-write: safe the ledger is under .ci/cache, the gitignored scratch, never the tracked tree
+      fs.writeFileSync(tmp, `${JSON.stringify(doc, null, 2)}\n`);
+      // tree-write: safe the ledger is under .ci/cache, the gitignored scratch, never the tracked tree
+      fs.renameSync(tmp, file);
     },
   };
 }
@@ -68,7 +78,10 @@ export function indexedAtMs(
   if (buildMs === null) return null;
   let seen = ledger.get(key);
   if (seen === null) {
+    // No history at all (a fresh checkout, CI): age by the build date, so the gate can still fail there. With history, the version is first seen now.
+    const history = ledger.known();
     ledger.record(key, nowMs);
+    if (!history) return buildMs;
     seen = nowMs;
   }
   return Math.max(buildMs, seen);
