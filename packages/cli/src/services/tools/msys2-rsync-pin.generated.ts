@@ -16,7 +16,7 @@ export const MSYS2_RSYNC_PIN = {
     { name: 'libopenssl', version: '4.1.0-1', sha256: '71f093de4a002913f39783b79d18da33b63ce8baf825434218cc1d8bd40304fb' },
     { name: 'libunistring', version: '1.5-1', sha256: '34ef3f41d59c0ad06d65976c5b05117e061c6e1c30c860a15c884c8a3910633a' },
     { name: 'libxxhash', version: '0.8.4-1', sha256: 'ba784ad117626401cd5d3ec0cf70399f9de72a63755f96c28fa2032303f9c330' },
-    { name: 'libzstd', version: '1.5.7-1', sha256: '5e370b2e725a0a7e5ff58d84653c9a0cd5a10b9cfe930f2d949a28ad2a11c1f2' },
+    { name: 'libzstd', version: '1.6.0-1', sha256: 'a07c65034dccb9a3d6ce86910b540ce90e68c1f4d66a07258ea72b9409b520c6' },
     { name: 'popt', version: '1.19-1', sha256: 'b402bd1d03815c5e28b7ab415d8e20f487eff2460ae0271a99674eeb0d77194f' },
   ],
 } as const;
