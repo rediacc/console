@@ -1077,14 +1077,25 @@ function finishWhole(
   return exit;
 }
 
-export async function quickMain(args: readonly string[], seams: QuickSeams): Promise<number> {
+/** K2: the flag a whole-lane run in the kept clone passes the runner, so a red in the preflight (the carry-exempt clock and network gates, the learned leaders) ends the run within about a minute with exit 3 and no receipt. `--keep-going` is the escape that runs the whole lane for every red. */
+export const STOP_ON_PREFLIGHT = '--stop-on-stage-red=preflight';
+
+/** The runner arguments of a lane: `--quick`, the pass-through flags, and the preflight stop on a whole-lane clone run (not an advance, which runs no lane, and not under `--keep-going`). */
+export function laneOf(route: Exclude<Route, { kind: 'refused' }>, keepGoing: boolean): string[] {
+  const stop = route.kind === 'clone' && !keepGoing && route.advanceOnly !== true;
+  return ['--quick', ...route.pass, ...(stop ? [STOP_ON_PREFLIGHT] : [])];
+}
+
+export async function quickMain(rawArgs: readonly string[], seams: QuickSeams): Promise<number> {
   const startedAt = seams.now();
+  const keepGoing = rawArgs.includes('--keep-going');
+  const args = rawArgs.filter((arg) => arg !== '--keep-going');
   const route = routeOf(args, seams.env, seams.live);
   if (route.kind === 'refused') {
     seams.log(`ci:quick: REFUSED: ${route.why}\n`);
     return 1;
   }
-  const lane = ['--quick', ...route.pass];
+  const lane = laneOf(route, keepGoing);
   if (route.kind === 'here') {
     const whole = route.pass.length === 0;
     seams.log(`ci:quick: running in this checkout, ${seams.live} (${route.why})\n`);
@@ -2000,6 +2011,44 @@ export async function quickCloneSelftest(
       /carried \d+, ran \d+, wall \d+ s/.test(routed.log) &&
         routed.log.includes('in the kept clean clone'),
       `the summary line must give the counts and the place, got: ${routed.log}`
+    );
+    // K2: the clone lane stops on a preflight red; --keep-going is the escape; a preflight red (runner exit 3, no receipt) is the run's exit, not a follow pass.
+    check(
+      routed.calls[1].args.includes(STOP_ON_PREFLIGHT),
+      `K2: a whole-lane clone run must pass ${STOP_ON_PREFLIGHT}, got ${JSON.stringify(routed.calls[1].args)}`
+    );
+    const keptGoing = await drive({ receipt: greenAtTree, args: ['--keep-going'] });
+    check(
+      keptGoing.calls.length === 2 &&
+        !keptGoing.calls[1].args.some((arg) => arg.startsWith('--stop-on-stage-red')) &&
+        !keptGoing.calls[1].args.includes('--keep-going'),
+      `K2 CONTROL: --keep-going must run the whole lane, and the runner never sees the flag, got ${JSON.stringify(keptGoing.calls)}`
+    );
+    check(
+      !laneOf({ kind: 'clone', pass: [], noCarry: false, advanceOnly: true }, false).includes(
+        STOP_ON_PREFLIGHT
+      ) && !laneOf({ kind: 'here', why: 'x', pass: [] }, false).includes(STOP_ON_PREFLIGHT),
+      'K2 CONTROL: an advance and a shared-checkout run never take the stop'
+    );
+    const stopped = await quickMain([], {
+      live: fs.mkdtempSync(path.join(root, 'stop-')),
+      env: { HOME: root } as NodeJS.ProcessEnv,
+      log: () => undefined,
+      prepare: (input) => ({
+        clone: input.clone,
+        head: 'H',
+        tree: 'T',
+        branch: 'topic',
+        fresh: false,
+        notes: [],
+      }),
+      runner: (_cwd, runArgs) => Promise.resolve(runArgs[0] === '--selftest' ? 0 : 3),
+      acquire: () => Promise.resolve(true),
+      now: () => Date.now() - 1000,
+    });
+    check(
+      stopped === 3,
+      `K2: a preflight stop (runner exit 3, no receipt) must be the run's exit, got ${stopped}`
     );
     const fellBack = await drive({
       prepare: () => {
