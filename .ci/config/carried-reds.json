@@ -26,6 +26,7 @@
     "`*` matches any run of characters. `expires` is required (a schema error",
     "without it) and the pattern blocks from the day after it; adding a pattern or",
     "moving its date later is a widening, never a record-only shrink.",
+    "A pattern made only of `*` (match-all) is a schema error, like a whole-gate '*' beside keys.",
     "  5. a keyed gate reported no parsable keys, or a '*' gate does emit keys;",
     "  6. an entry is malformed (no version 2, no findings, an empty list, '*'",
     "     beside keys for one gate) -- a schema error, never skipped silently; a pattern entry with no `expires` or beside `findings`.",
