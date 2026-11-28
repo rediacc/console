@@ -652,6 +652,8 @@ def test_the_carried_budget_freshness_entry_names_keys_not_a_wildcard():
                     "lane-durations:no-unit-artifacts:",
                     "lane-durations:drift:",
                     "lane-durations:unpriced-unit:",
+                    "gate-costs:drift:",
+                    "gate-costs:unmeasured:",
                 )
             ), key
             assert "*" not in key, key

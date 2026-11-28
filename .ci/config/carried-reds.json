@@ -63,9 +63,12 @@
     {
       "gate": "check:ci-budget-freshness",
       "findings": [
-        "*"
+        "gate-costs:drift:cpu_s:check:ci-actionlint",
+        "gate-costs:drift:eff_cores:check:ci-proxy-rdc-update",
+        "gate-costs:drift:eff_cores:check:ci-setup-idempotency",
+        "gate-costs:unmeasured:check:ci-devcontainer-pins"
       ],
-      "reason": "BLOCKER: budget_report --check samples GitHub CI artifacts kept 3 days (.ci/config/actions-retention.json), and Console CI created no PR or push runs from 2026-11-01 to 2026-11-28 (worklist #cac16822), so no sampled run finished test-e2e-workers, test-account-e2e, test-renet-go, test-renet-integration, quality-pytest or ops-tutorials; it clears once PR #607 runs complete those jobs."
+      "reason": "BLOCKER: gate_costs --check judges .ci/config/gate-costs.json against the newest gate-costs captures, which on 2026-11-28 are PR #607 runs 46109550206 and 46120150056, both cancelled early (Console CI created no runs 2026-11-01..28, #cac16822); --refresh would rebase the baseline on those failed captures, so these four exact keys are carried until a full green PR #607 run measures them."
     }
   ]
 }
