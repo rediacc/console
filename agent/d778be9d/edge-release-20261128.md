@@ -4,7 +4,7 @@ Command: `RELEASE_ASKED=ASKED:2026-11-28T03:20Z npm run release:local -- --chann
 
 | Region | Worker | Before (rollback target) | After |
 |---|---|---|---|
-| global | www | | 1159ac52-a289-4119-8858-63bd42d0e186 |
+| global | www | 9ae4e478-36f5-44d2-9061-936317cb9f2c | 1159ac52-a289-4119-8858-63bd42d0e186 |
 | eu | signer | 5011830a-c5fd-4698-908d-81fd5ea3e504 | 6c7ec4b9-8697-45a2-be39-87c203a6f65d |
 | us | signer | bb211a8b-a407-474e-b6ae-1976cbe2bcd5 | 7ab35d30-4584-4061-a52e-d88b1545f576 |
 | asia | signer | 3c7d1806-255d-4994-82ec-5475c41122e8 | 0ae05cec-9aa1-498d-a280-6728a055c0c7 |
@@ -21,4 +21,4 @@ D1 Time Travel bookmarks taken before the migrations:
 - account-us `00000243-00000000-00005131-6e31737be96baa8b573f754f0e5304e9`
 - account-asia `00000252-00000000-00005131-29443559e59e311d544489c8e0c77d60`
 
-Rollback (operator-run; the guard refuses `wrangler rollback` from agent Bash): `cd workers/<account|proxy> && npx --no-install wrangler rollback <before id> --config wrangler.<region>.toml`; signer `--config workers/signer/.generated/wrangler.<region>.toml`; D1 `cd workers/account && npx --no-install wrangler d1 time-travel restore account-<region> --bookmark=<bookmark> --config wrangler.<region>.toml`. Console executor enabled per region after the proxy smoke (executor-enable-* rc 0); its rollback is `wrangler secret delete EXECUTOR_MODE` on the account Worker.
+Rollback (operator-run; the guard refuses `wrangler rollback` from agent Bash): `cd workers/<account|proxy> && npx --no-install wrangler rollback <before id> --config wrangler.<region>.toml`; signer `--config workers/signer/.generated/wrangler.<region>.toml`; www `cd workers/www && npx --no-install wrangler rollback 9ae4e478-36f5-44d2-9061-936317cb9f2c --config wrangler.toml` (from deploy-record-www-stable-global.json); D1 `cd workers/account && npx --no-install wrangler d1 time-travel restore account-<region> --bookmark=<bookmark> --config wrangler.<region>.toml`. Console executor enabled per region after the proxy smoke (executor-enable-* rc 0); its rollback is `wrangler secret delete EXECUTOR_MODE` on the account Worker.
