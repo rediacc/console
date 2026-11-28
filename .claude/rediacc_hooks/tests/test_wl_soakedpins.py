@@ -286,6 +286,23 @@ def test_a_failing_spawn_never_raises(tmp_path) -> None:
     assert SP.run_daily(tmp_path, "development", DAY1, spawn=boom) is None
 
 
+def test_a_failing_spawn_releases_the_day_for_a_retry(tmp_path) -> None:
+    """Review 86953e7c.2: a spawn that raises does not consume the day; the next stop is due again and the failure is recorded."""
+
+    def boom(_root):
+        raise OSError("no npm")
+
+    SP.run_daily(tmp_path, "development", DAY1, spawn=boom)
+    on_disk = json.loads(SP.stamp_path(tmp_path).read_text())
+    assert on_disk["state"] == "spawn-failed"
+    assert on_disk["failed_day"] == "2026-11-28"
+    assert "no npm" in on_disk["error"]
+    assert SP.due(tmp_path, "development", DAY1) is True
+    # And a later spawn that works claims the day as usual.
+    assert SP.run_daily(tmp_path, "development", DAY1, spawn=lambda _r: None) is not None
+    assert SP.due(tmp_path, "development", DAY1) is False
+
+
 def test_the_runner_records_its_result_under_the_claimed_day(tmp_path) -> None:
     SP.run_daily(tmp_path, "development", DAY1, spawn=lambda _r: None)
     ticks = iter([10.0, 14.5])
