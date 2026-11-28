@@ -38,13 +38,6 @@
       "gate": "check:ci-lane-budget",
       "findings": "*",
       "reason": "The Windows lane (ci-windows.yml, PLAN-windows-lane) has never run on CI, so the gate reports it UNCHECKED with no job p90, and the 2026-09-29 ruling (#5a954657) forbids seeding an unmeasured number. Only a push lets the job run once and be measured. Operator ruling ASKED:2026-11-27T15:26Z: carry it. Lift: drop this entry once windows-lane has run green and budget_report --refresh has recorded its p90."
-    },
-    {
-      "gate": "check:ci-pytest",
-      "findings": [
-        "pytest-skip:.ci.rediacc_ci.tests.test_ops_windows_image::test_go_pins_equal_recorded_inputs"
-      ],
-      "reason": "The test compares the Go ISO pins with .ci/config/windows-image.json inputs, which stay null until PLAN-windows-lane WL28 uploads the Windows ISOs to the private R2 bucket (a live step), so it skips by design. Lift: drop once WL28 records the inputs."
     }
   ]
 }
