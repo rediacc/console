@@ -57,6 +57,13 @@
         "gate-costs:unmeasured:check:ci-devcontainer-pins"
       ],
       "reason": "BLOCKER: gate_costs --check judges .ci/config/gate-costs.json against the newest gate-costs captures, which on 2026-11-28 are PR #607 runs 46109550206 and 46120150056, both cancelled early (Console CI created no runs 2026-11-01..28, #cac16822); --refresh would rebase the baseline on those failed captures, so these four exact keys are carried until a full green PR #607 run measures them."
+    },
+    {
+      "gate": "check:ci-pytest",
+      "findings": [
+        "pytest-skip:.ci.rediacc_ci.tests.test_ops_windows_image::test_go_pins_equal_recorded_inputs"
+      ],
+      "reason": "The test compares the Go ISO pins with .ci/config/windows-image.json inputs, which stay null until PLAN-windows-lane WL28 uploads the Windows ISOs; the skip reports on some runs and not others, so it is carried again (removed at cdf2f8f7 when a run showed it green); under R3 an unreported carried key only warns."
     }
   ]
 }
