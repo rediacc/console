@@ -4158,32 +4158,55 @@ CARRIED_REDS_REL = pathlib.Path(".ci") / "config" / "carried-reds.json"
 CARRIED_REASON_MIN, CARRIED_STAR_REASON_MIN = 80, 160
 
 
-def carried_only(doc, carried_doc):
-    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`) or on exactly the finding keys the receipt recorded for it, by an entry whose reason clears the guard's bar, with no stale carried gate or key. Pure (#68452957)."""
+def carried_only(doc, carried_doc, today=None):
+    """Whether receipt `doc` is red only on gates carried-reds.json (`carried_doc`, parsed) carries, the way the push guard reads it (block_unverified_push.carried_verdict) and ci:quick's follow pass does (quick-clone.ts carriedOnly): something failed and every failed gate is carried whole (`*`), or each finding key the receipt recorded for it is named by a keyed entry or matched by an unexpired pattern entry, by an entry whose reason clears the guard's bar. Since R3 (PLAN-ciquick-gate-contract) a carried key the run did not report only warns, so it does not refuse here either; a carried GATE that is not red, an expired or match-all pattern, and a red with no recorded key still refuse. Pure (#68452957)."""
+    import datetime as _dt
+    import fnmatch as _fn
+
     failed = doc.get("failed") if isinstance(doc, dict) else None
     # A gate that could not run here (`blocked`) is admitted by the guard as it is, so it does not decide this either.
     if not isinstance(failed, list) or not failed:
         return False
+    day = today or _dt.datetime.now(_dt.UTC).strftime("%Y-%m-%d")
     entries = carried_doc.get("carried") if isinstance(carried_doc, dict) else None
-    by_gate = {}
+    keyed: dict[object, set[str]] = {}
+    star: set[object] = set()
+    patterns: dict[object, list[str]] = {}
     for e in entries or []:
         if not isinstance(e, dict):
             continue
         raw_reason = e.get("reason")
         reason = raw_reason if isinstance(raw_reason, str) else ""
-        if len(reason) >= (
-            CARRIED_STAR_REASON_MIN if e.get("findings") == "*" else CARRIED_REASON_MIN
-        ):
-            by_gate[e.get("gate")] = e.get("findings")
+        gate = e.get("gate")
+        pats = e.get("patterns")
+        if isinstance(pats, list):
+            expires = e.get("expires")
+            if not isinstance(expires, str) or expires < day:
+                return False  # a pattern with no expiry, or past it, blocks at the guard
+            if any(not isinstance(p, str) or set(p) <= {"*"} for p in pats):
+                return False  # a match-all pattern is a schema error at the guard
+            if len(reason) >= CARRIED_REASON_MIN:
+                patterns.setdefault(gate, []).extend(pats)
+            continue
+        findings = e.get("findings")
+        if len(reason) < (CARRIED_STAR_REASON_MIN if findings == "*" else CARRIED_REASON_MIN):
+            continue
+        if findings == "*":
+            star.add(gate)
+        elif isinstance(findings, list):
+            keyed.setdefault(gate, set()).update(findings)
     recorded = doc.get("findings") if isinstance(doc.get("findings"), dict) else {}
-    if any(gate not in failed for gate in by_gate):
+    if any(gate not in failed for gate in set(keyed) | star):
         return False  # a carried gate that is not red is stale, and the guard refuses it
     for gate in failed:
-        carried = by_gate.get(gate)
-        if carried == "*":
+        if gate in star:
             continue
         keys = recorded.get(gate)
-        if not isinstance(carried, list) or not isinstance(keys, list) or set(keys) != set(carried):
+        if not isinstance(keys, list) or not keys:
+            return False  # a red naming no finding is not covered by a keyed or pattern carry
+        named = keyed.get(gate, set())
+        pats = patterns.get(gate, [])
+        if not all(k in named or any(_fn.fnmatchcase(k, p) for p in pats) for k in keys):
             return False
     return True
 
