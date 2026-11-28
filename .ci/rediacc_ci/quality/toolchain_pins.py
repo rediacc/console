@@ -453,7 +453,7 @@ def pin_from_bare_source(library: pathlib.Path, tool: str) -> str:
             check=False,
             env=bare_env(),
         )
-    except OSError:
+    except (OSError, ValueError):
         return ""
     return proc.stdout
 
