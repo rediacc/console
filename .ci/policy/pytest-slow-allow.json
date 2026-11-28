@@ -757,6 +757,18 @@
     {
       "test": ".ci.rediacc_ci.tests.test_core_devbox::test_every_container_carries_the_runner_image_variable_equal_to_the_pin",
       "reason": "measured 2026-11-28: 13.8 s in ci:quick 38 (re-timed serially by the ratchet, still over 10 s); drop the entry once the test runs under 10 s"
+    },
+    {
+      "test": ".ci.rediacc_ci.tests.test_proxies_go_unit::test_a_testutil_only_package_is_excluded_by_both_sides",
+      "reason": "measured 2026-11-28: 22.6 s of CPU in ci:quick 49, judged on CPU time since c7371be66c (K4), so this is the test's own work, not load; drop the entry once it runs under 10 s"
+    },
+    {
+      "test": ".ci.rediacc_ci.tests.test_security_actionlint::test_the_real_repository_passes_with_the_real_actionlint",
+      "reason": "measured 2026-11-28: 11.6 s of CPU in ci:quick 49, judged on CPU time since c7371be66c (K4), so this is the test's own work, not load; drop the entry once it runs under 10 s"
+    },
+    {
+      "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-gates-lock]",
+      "reason": "measured 2026-11-28: 10.0 s of CPU in ci:quick 49, judged on CPU time since c7371be66c (K4), so this is the test's own work, not load; drop the entry once it runs under 10 s"
     }
   ]
 }
