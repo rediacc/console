@@ -90,11 +90,11 @@ import { createHubReader, hubReader } from '../lib/docker-hub.js';
 import { isEntryPoint } from '../lib/entry-point.js';
 import { driverFor, type PinDriver, registerDrivers } from '../lib/pins/driver.js';
 import { hubDeps } from '../lib/pins/drivers/docker.js';
+import { realDrivers } from '../lib/pins/drivers/table.js';
 import { stubUpstream } from '../lib/pins/drivers/toolchain-fixture.js';
 import { msys2Versions } from '../lib/pins/drivers/toolchain-upstream.js';
-import { fileLedger } from '../lib/pins/first-seen.js';
-import { realDrivers } from '../lib/pins/drivers/table.js';
 import { FAMILY_GATES } from '../lib/pins/family-gates.js';
+import { fileLedger, indexedAtMs } from '../lib/pins/first-seen.js';
 import { lineSubject } from '../lib/pins/lines.js';
 import {
   lineRowProblems,
@@ -1386,6 +1386,28 @@ async function selftest(): Promise<number> {
       fresh === Date.parse('2026-11-24T11:57:05Z') &&
         !isWithinFreshnessWindow(fresh, Date.parse(NOW_MSYS), msysWindow),
       `publishedMs ${fresh === null ? 'null' : new Date(fresh).toISOString()}`
+    );
+    // Review 003fe02e.1: two unseen versions in ONE fresh run both age by their build date; the first record() creating the file must not hand the second a history.
+    const ledgerTwo = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
+    roots.push(ledgerTwo);
+    const shared = fileLedger(ledgerTwo);
+    const firstKey = indexedAtMs(
+      shared,
+      'msys2:a@1',
+      Date.parse('2026-11-20T00:00:00Z'),
+      Date.parse(NOW_MSYS)
+    );
+    const secondKey = indexedAtMs(
+      shared,
+      'msys2:b@1',
+      Date.parse('2026-11-21T00:00:00Z'),
+      Date.parse(NOW_MSYS)
+    );
+    add(
+      'msys2 (control): in one fresh run every unseen version ages by its build date, not only the first',
+      firstKey === Date.parse('2026-11-20T00:00:00Z') &&
+        secondKey === Date.parse('2026-11-21T00:00:00Z'),
+      `first ${firstKey}, second ${secondKey}`
     );
     const ledgerB = fs.mkdtempSync(path.join(os.tmpdir(), 'msys2-seen-'));
     roots.push(ledgerB);

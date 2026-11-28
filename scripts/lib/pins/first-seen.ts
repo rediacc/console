@@ -40,9 +40,11 @@ export function fileLedger(root: string): FirstSeenLedger {
       return {};
     }
   };
+  // History is decided ONCE, when the ledger is opened (review 003fe02e.1): the first unseen key's record() creates the file, and re-reading existence afterwards would give every later unseen key of the same fresh run a history it never had.
+  const history = fs.existsSync(file);
   return {
     known() {
-      return fs.existsSync(file);
+      return history;
     },
     get(key) {
       const at = Date.parse(load()[key] ?? '');
