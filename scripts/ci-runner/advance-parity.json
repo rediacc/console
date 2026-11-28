@@ -1,0 +1,3668 @@
+{
+  "_comment": [
+    "THE RECORD-ONLY ADVANCE PARITY CORPUS (PLAN-ciquick-gate-contract R1). One case list, one expected verdict per case,",
+    "driven against both halves of the decision: scripts/ci-runner/run.ts planAdvance (its --selftest) and",
+    ".claude/rediacc_hooks/guards/block_unverified_push.py plan_advance",
+    "(.claude/rediacc_hooks/tests/test_unverified_push_advance_parity.py). A change to either half that the other does not",
+    "make fails one of them. The token <carried-reds> stands for the carry file path (CARRIED_REL on both sides). `policy` is the record policy document (null: the tree has none), `paths` the diff",
+    "(null: git cannot list it), `known` the manifest ids, `entries` each tree's ls-tree rows [mode, type, oid, path],",
+    "`carried` each tree's carry file (a document, or raw text). `expect` is {kind: full, code} or",
+    "{kind: advance, readers, refresh}."
+  ],
+  "cases": [
+    {
+      "name": "a review-only commit advances through its reader alone",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/1121-1/a.jsonl"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "THE 2026-11-28 INCIDENT: a carried verdict whose inputs moved only through a record path is re-run alone, not the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {
+          "check:ci-i18n-ledger-growth": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "**"
+              ],
+              "files": [],
+              "scripts": []
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          },
+          "check:ci-swallowed-failures": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "agent/**"
+              ],
+              "files": [],
+              "scripts": []
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          },
+          "check:ci-i18n-locale-only": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "packages/**"
+              ],
+              "files": [],
+              "scripts": []
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          }
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/1121-1/a.jsonl"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": [
+          "check:ci-i18n-ledger-growth",
+          "check:ci-swallowed-failures"
+        ]
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "the same carried verdict listed as failed runs the lane under the red rule",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "check:ci-i18n-ledger-growth"
+        ],
+        "advances": [],
+        "gates": {
+          "check:ci-i18n-ledger-growth": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "**"
+              ],
+              "files": [],
+              "scripts": []
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          }
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/1121-1/a.jsonl"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "red-reader"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "CONTROL: one code path runs the whole lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/1121-1/a.jsonl",
+        "scripts/x.ts"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "outside"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "an except glob takes a path out of the record set",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/worklist/x.jsonl"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "outside"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "`?` in a record glob does not cross a slash",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/r/v.md"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "outside"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "`?` in a record glob matches one character",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/rev.md"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a path two records cover takes the readers of both",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/d778/STATE.md"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan",
+          "g:state"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a narrowed receipt runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": false,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "not-whole"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a receipt of another schema runs the lane",
+      "receipt": {
+        "schema": 1,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "schema"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a receipt naming no tree runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "no-tree"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "an explicit null failed list is a damaged receipt",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": null,
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "failed-damaged"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a red receipt with no failed gate runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "red-unlisted"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "an unreadable HEAD tree runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "head-unreadable"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a receipt already naming HEAD is not advanced",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T0",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "same-tree"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a tree with no record policy runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": null,
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "policy"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a diff git cannot list runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": null,
+      "expect": {
+        "kind": "full",
+        "code": "no-diff"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a policy naming a reader outside the manifest runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "unknown-reader"
+      },
+      "known": [
+        "g:tree"
+      ]
+    },
+    {
+      "name": "a red reader of a touched record runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "g:plan"
+        ],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "red-reader"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a red receipt advances past a record its red does not read",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "g:other"
+        ],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a second advance starts where the chain ends",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [
+          {
+            "from": "T0",
+            "to": "T9",
+            "paths": [],
+            "gates": {},
+            "finishedAt": ""
+          }
+        ],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a carried lists entry whose listing moved is refreshed",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {
+          "g:other": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "src/**"
+              ],
+              "files": [],
+              "scripts": [],
+              "lists": [
+                "agent/reviews"
+              ]
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          }
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/new.md"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": [
+          "g:other"
+        ]
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "entries": {
+        "T0": [
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/old.md"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "src/a.ts"
+          ]
+        ],
+        "T1": [
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/old.md"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "src/a.ts"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/new.md"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "CONTROL: a carried lists entry over an unlisted directory is not",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {
+          "g:other": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "src/**"
+              ],
+              "files": [],
+              "scripts": [],
+              "lists": [
+                "src"
+              ]
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          }
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/new.md"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "entries": {
+        "T0": [
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/old.md"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "src/a.ts"
+          ]
+        ],
+        "T1": [
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/old.md"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "src/a.ts"
+          ],
+          [
+            "100644",
+            "blob",
+            "o",
+            "agent/reviews/new.md"
+          ]
+        ]
+      }
+    },
+    {
+      "name": "a carried refs entry is refreshed on every step",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {
+          "g:other": {
+            "inputHash": "h",
+            "defHash": "d",
+            "filesHash": "f",
+            "inputs": {
+              "globs": [
+                "src/**"
+              ],
+              "files": [],
+              "scripts": [],
+              "refs": [
+                "HEAD"
+              ]
+            },
+            "verdict": "ok",
+            "exitCode": 0,
+            "findings": null,
+            "judgedTree": "TA",
+            "carriedFrom": {
+              "headTree": "TA",
+              "head": "c",
+              "finishedAt": ""
+            }
+          }
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "agent/reviews/old.md"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:plan"
+        ],
+        "refresh": [
+          "g:other"
+        ]
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ]
+    },
+    {
+      "name": "a carry-file step touching another path runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>",
+        "agent/reviews/a"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file shrink advances",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "g:other"
+        ],
+        "advances": [],
+        "gates": {},
+        "findings": {
+          "g:other": [
+            "k1"
+          ]
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:carry"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file key added runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file pattern added runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            },
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2999-12-31"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file pattern expiry moved later runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2026-12-01"
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2026-12-31"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file pattern expiry moved earlier advances",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "advance",
+        "readers": [
+          "g:carry"
+        ],
+        "refresh": []
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2026-12-31"
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2026-12-01"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file removal of a key still red runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "g:other"
+        ],
+        "advances": [],
+        "gates": {},
+        "findings": {
+          "g:other": [
+            "k1",
+            "k2"
+          ]
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry-file removal of a pattern still covering a red runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 1,
+        "failed": [
+          "g:other"
+        ],
+        "advances": [],
+        "gates": {},
+        "findings": {
+          "g:other": [
+            "k1",
+            "slow:t1"
+          ]
+        }
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            },
+            {
+              "gate": "g:other",
+              "patterns": [
+                "slow:*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file.",
+              "expires": "2999-12-31"
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry file a pattern entry without expires makes unjudgeable runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1",
+                "k2"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            },
+            {
+              "gate": "g:x",
+              "patterns": [
+                "a*"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry file absent at the receipt tree runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T1": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "a carry file that does not parse runs the lane",
+      "receipt": {
+        "schema": 2,
+        "whole": true,
+        "headTree": "T0",
+        "exitCode": 0,
+        "failed": [],
+        "advances": [],
+        "gates": {}
+      },
+      "headTree": "T1",
+      "policy": {
+        "version": 1,
+        "records": [
+          {
+            "glob": "agent/reviews/**",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/worklist/*.jsonl",
+            "except": [
+              "agent/worklist/x.jsonl"
+            ],
+            "readers": [
+              {
+                "id": "g:tree",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/r?v.md",
+            "except": [],
+            "readers": []
+          },
+          {
+            "glob": "agent/**/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:state",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "agent/d778/STATE.md",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:plan",
+                "evidence": "fixture"
+              }
+            ]
+          },
+          {
+            "glob": "<carried-reds>",
+            "except": [],
+            "readers": [
+              {
+                "id": "g:carry",
+                "evidence": "fixture"
+              }
+            ]
+          }
+        ]
+      },
+      "paths": [
+        "<carried-reds>"
+      ],
+      "expect": {
+        "kind": "full",
+        "code": "carry-file"
+      },
+      "known": [
+        "g:plan",
+        "g:tree",
+        "g:state",
+        "g:carry",
+        "g:other"
+      ],
+      "carried": {
+        "T0": {
+          "version": 2,
+          "carried": [
+            {
+              "gate": "g:other",
+              "findings": [
+                "k1"
+              ],
+              "reason": "Fixture reason, written long enough to clear the eighty character substance bar of the carry file."
+            }
+          ]
+        },
+        "T1": "{\"version\": 2, "
+      }
+    }
+  ]
+}

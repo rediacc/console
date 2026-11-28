@@ -45,6 +45,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CARRIED_REL, carryStepProblem } from './advance-carry';
 import {
   CORES_ENV,
   type ExecOutcome,
@@ -4288,9 +4289,21 @@ async function selftest(): Promise<number> {
       gates: { 'g:tree': carriedEntry(['**']) },
     };
     const unreadPlan = plan(carryingOther, ['agent/reviews/x.md']);
+    // PLAN-ciquick-gate-contract R1: a carried verdict over a touched input that no record lists as a reader is re-run ALONE beside the readers and refreshed; it never sends a record-only commit through the lane.
     require_(
-      unreadPlan.kind === 'full' && unreadPlan.why.includes('g:tree'),
-      `a carried verdict over a touched input that is no reader of it must run the lane and be named, got ${JSON.stringify(unreadPlan)}`
+      unreadPlan.kind === 'advance' &&
+        unreadPlan.readers.join() === 'g:plan' &&
+        unreadPlan.refresh.join() === 'g:tree',
+      `a carried verdict over a touched input that is no reader of it must be re-run alone and refreshed, not the lane, got ${JSON.stringify(unreadPlan)}`
+    );
+    const redUnread = plan({ ...carryingOther, exitCode: 1, failed: ['g:tree'] }, [
+      'agent/reviews/x.md',
+    ]);
+    require_(
+      redUnread.kind === 'full' &&
+        redUnread.code === 'red-reader' &&
+        redUnread.why.includes('g:tree'),
+      `CONTROL: the same carried entry listed as failed falls under the red rule and runs the lane, got ${JSON.stringify(redUnread)}`
     );
     // NAME-SHAPED CARRIED INPUTS (W2.4): a carried entry recording `lists`/`names` is stale when the step changed the listing, which no content glob of it sees; one recording `refs` is stale on every step.
     const lsEntry = (p: string): LsEntry => ({ mode: '100644', type: 'blob', oid: 'o', path: p });
@@ -4354,8 +4367,8 @@ async function selftest(): Promise<number> {
       'agent/reviews/new.md',
     ]);
     require_(
-      listNonReader.kind === 'full' && listNonReader.why.includes('g:tree'),
-      `a carried lists entry whose listing moved and that no touched record re-runs must run the lane and be named, got ${JSON.stringify(listNonReader)}`
+      listNonReader.kind === 'advance' && listNonReader.refresh.join() === 'g:tree',
+      `a carried lists entry whose listing moved and that no touched record reads must be re-run alone and refreshed, got ${JSON.stringify(listNonReader)}`
     );
     require_(
       planNamed(
@@ -4363,11 +4376,14 @@ async function selftest(): Promise<number> {
         ['agent/reviews/old.md'],
         () => undefined
       ).kind === 'advance' &&
-        planNamed(
-          { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
-          ['agent/reviews/old.md'],
-          () => undefined
-        ).kind === 'full',
+        (() => {
+          const p = planNamed(
+            { 'g:tree': namedEntry({ lists: ['agent/reviews'] }) },
+            ['agent/reviews/old.md'],
+            () => undefined
+          );
+          return p.kind === 'advance' && p.refresh.join() === 'g:tree';
+        })(),
       'a tree git cannot list counts a lists entry as moved: the re-run direction, never a carry'
     );
     const refReader = planNamed({ 'g:plan': namedEntry({ refs: ['HEAD'] }) }, [
@@ -4379,9 +4395,9 @@ async function selftest(): Promise<number> {
     require_(
       refReader.kind === 'advance' &&
         refReader.refresh.join() === 'g:plan' &&
-        refOther.kind === 'full' &&
-        refOther.why.includes('g:tree'),
-      `a carried refs entry is stale on every step (a new commit moves HEAD): a reader is refreshed, any other runs the lane, got ${JSON.stringify([refReader, refOther])}`
+        refOther.kind === 'advance' &&
+        refOther.refresh.join() === 'g:tree',
+      `a carried refs entry is stale on every step (a new commit moves HEAD): reader or not, it is re-run and refreshed, got ${JSON.stringify([refReader, refOther])}`
     );
     require_(
       planNamed({ 'g:tree': carriedEntry(['src/**']) }, ['agent/reviews/new.md']).kind ===
@@ -4481,6 +4497,61 @@ async function selftest(): Promise<number> {
         'string' && typeof parseRecordPolicy('not json') === 'string',
       'a malformed policy must be refused with a reason, never half-read'
     );
+    // THE PARITY CORPUS (PLAN-ciquick-gate-contract R1): every case of ADVANCE_PARITY_REL gets its expected verdict here, as block_unverified_push plan_advance gives it in test-block_unverified_push.py (PARITY cases).
+    {
+      const corpus = JSON.parse(
+        fs
+          .readFileSync(path.join(REPO_ROOT, ADVANCE_PARITY_REL), 'utf8')
+          // `<carried-reds>` stands for the carry file path, so the json inventory does not read the corpus as its wiring.
+          .replaceAll('<carried-reds>', CARRIED_REL)
+      ) as {
+        cases: Array<{
+          name: string;
+          receipt: unknown;
+          headTree: string;
+          policy: unknown;
+          paths: string[] | null;
+          known?: string[];
+          entries?: Record<string, [string, string, string, string][]>;
+          carried?: Record<string, unknown>;
+          expect: { kind: string; code?: string; readers?: string[]; refresh?: string[] };
+        }>;
+      };
+      const verdictOf = (c: (typeof corpus.cases)[number]) => {
+        const got = planAdvance({
+          receipt: c.receipt,
+          headTree: c.headTree,
+          policy: c.policy === null ? undefined : parseRecordPolicy(JSON.stringify(c.policy)),
+          diff: () => c.paths ?? undefined,
+          known: c.known === undefined ? undefined : new Set(c.known),
+          entriesAt: (t) =>
+            c.entries?.[t]?.map(([mode, type, oid, p]) => ({ mode, type, oid, path: p })),
+          carriedAt: (t) => {
+            const raw = c.carried?.[t];
+            return raw === undefined
+              ? undefined
+              : typeof raw === 'string'
+                ? raw
+                : JSON.stringify(raw);
+          },
+        });
+        return got.kind === 'full'
+          ? { kind: 'full', code: got.code }
+          : { kind: 'advance', readers: got.readers, refresh: got.refresh };
+      };
+      const parted = corpus.cases.filter(
+        (c) => JSON.stringify(verdictOf(c)) !== JSON.stringify(c.expect)
+      );
+      require_(
+        corpus.cases.length >= 30 && parted.length === 0,
+        `planAdvance must give every ${ADVANCE_PARITY_REL} case its expected verdict (block_unverified_push plan_advance does): ${parted
+          .map(
+            (c) =>
+              `${c.name}: got ${JSON.stringify(verdictOf(c))}, want ${JSON.stringify(c.expect)}`
+          )
+          .join('; ')}`
+      );
+    }
     require_(
       Array.isArray(policy) && policy.length === 3,
       'CONTROL: the well-formed fixture policy must parse, or every refusal above is about the parser'
@@ -6097,10 +6168,46 @@ type AdvancePlan =
       to: string;
       paths: string[];
       readers: string[];
-      /** Readers whose receipt entry is CARRIED over inputs the step touched: `runAdvance` rewrites each as judged at `to` once it passes there (`refreshCarried`). */
+      /** CARRIED receipt entries whose inputs the step touched, readers or not: `runAdvance` runs each beside the readers and rewrites it as judged at `to` once it passes there (`refreshCarried`). */
       refresh: string[];
     }
-  | { kind: 'full'; why: string };
+  | {
+      kind: 'full';
+      /** The refusal's id, the one block_unverified_push `plan_advance` returns for the same input (scripts/ci-runner/advance-parity.json). */
+      code: AdvanceRefusal;
+      why: string;
+    };
+
+/** Every refusal of the record-only decision, in the order both halves judge them. */
+type AdvanceRefusal =
+  | 'not-whole'
+  | 'schema'
+  | 'no-tree'
+  | 'failed-damaged'
+  | 'red-unlisted'
+  | 'head-unreadable'
+  | 'same-tree'
+  | 'policy'
+  | 'no-diff'
+  | 'outside'
+  | 'unknown-reader'
+  | 'red-reader'
+  | 'carry-file';
+
+/** The parity corpus (PLAN-ciquick-gate-contract R1): this planner and block_unverified_push `plan_advance` must give each case its expected verdict. */
+const ADVANCE_PARITY_REL = 'scripts/ci-runner/advance-parity.json';
+
+/** A record glob as block_unverified_push `record_glob_re` and check_record_paths read it: `**` spans directories, `*` and `?` stop at `/`. Not `globToRegExp`, whose `?` crosses `/`. */
+function recordGlobRe(glob: string): RegExp {
+  const body = glob.replace(/\*\*\/|\*\*|[*?.+^${}()|[\]\\]/g, (token) => {
+    if (token === '**/') return '(?:.*/)?';
+    if (token === '**') return '.*';
+    if (token === '*') return '[^/]*';
+    if (token === '?') return '[^/]';
+    return `\\${token}`;
+  });
+  return new RegExp(`^${body}$`);
+}
 
 /**
  * The carried receipt entries whose recorded inputs cover a changed path. block_unverified_push recomputes every carried entry's `filesHash` at the pushed tree (`_carried_refusal`), so each of these is refused there with "filesHash differs" unless the advance replaces it. Reproduced 2026-11-16: check:ci-plan-bindings is carried in 12 of the last 40 receipts and its `paths` cover agent/plans/**, so a plan-only advance over such a receipt was written by the runner and then refused at the push. Pure.
@@ -6197,90 +6304,120 @@ function advancedReceipt(
 }
 
 /**
- * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, no gate the receipt lists as failed reads a record that moved, and a carried-reds.json change is a shrink of that file alone. A CARRIED verdict whose inputs the step touched is re-run beside the readers (`refresh`), never a reason to run the lane (PLAN-ciquick-gate-contract R1: on 2026-11-28 three such carried gates sent four record-only commits through the whole lane, ~15 min each, while the push guard said "advance"). A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ *
+ * THE SAME DECISION AS block_unverified_push `plan_advance`, refusal for refusal and code for code, pinned by ADVANCE_PARITY_REL on both sides.
  */
 function planAdvance(input: {
   receipt: unknown;
   headTree: string;
   policy: RecordGlob[] | string | undefined;
   diff: (from: string, to: string) => string[] | undefined;
-  known: ReadonlySet<string>;
+  /** The manifest gate ids; undefined skips the check (the guard's call). */
+  known?: ReadonlySet<string>;
   /** The tracked entries of a tree, for carried entries that record `lists` or `names`; absent or undefined counts their inputs as moved. */
   entriesAt?: (tree: string) => readonly LsEntry[] | undefined;
+  /** carried-reds.json text at a tree, undefined when absent; read only when the step touches that file. */
+  carriedAt?: (tree: string) => string | undefined;
 }): AdvancePlan {
+  const full = (code: AdvanceRefusal, why: string): AdvancePlan => ({ kind: 'full', code, why });
   const r = input.receipt as Partial<Receipt> | null | undefined;
   if (r === null || typeof r !== 'object' || r.whole !== true)
-    return { kind: 'full', why: 'no whole-lane receipt to advance' };
+    return full('not-whole', 'no whole-lane receipt to advance');
   if (r.schema !== SCHEMA)
-    return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
+    return full('schema', `the receipt is not schema ${SCHEMA}; a whole run writes one`);
   if (typeof r.headTree !== 'string' || r.headTree === '')
-    return { kind: 'full', why: 'the receipt vouches for no tree' };
+    return full('no-tree', 'the receipt vouches for no tree');
   // A RED RECEIPT ADVANCES ONLY PAST RECORDS ITS REDS DO NOT READ (operator ruling 2026-11-16, judged below once the readers are known). A red with no `failed` list names nothing to compare the readers with, so it runs the lane.
   // A `failed` that is present but not a list of ids is a damaged receipt: reading it as an empty list would advance a receipt that may be red.
   if (
     r.failed !== undefined &&
     (!Array.isArray(r.failed) || r.failed.some((g) => typeof g !== 'string'))
   )
-    return { kind: 'full', why: "the receipt's failed list is not a list of gate ids" };
+    return full('failed-damaged', "the receipt's failed list is not a list of gate ids");
   const failed = Array.isArray(r.failed) ? r.failed : [];
   if (r.exitCode !== 0 && failed.length === 0)
-    return {
-      kind: 'full',
-      why: 'the receipt is red and lists no failed gate to judge the records against',
-    };
+    return full(
+      'red-unlisted',
+      'the receipt is red and lists no failed gate to judge the records against'
+    );
   const chain = Array.isArray(r.advances) ? r.advances : [];
-  const from = chain.length > 0 ? chain[chain.length - 1].to : r.headTree;
-  if (input.headTree === '') return { kind: 'full', why: 'HEAD^{tree} is unreadable' };
-  if (from === input.headTree) return { kind: 'full', why: 'the receipt already names this tree' };
+  let from: unknown = r.headTree;
+  if (chain.length > 0) {
+    const last = chain[chain.length - 1] as Partial<Advance> | null;
+    from = last !== null && typeof last === 'object' ? last.to : undefined;
+    if (typeof from !== 'string' || from === '')
+      return full('no-tree', "the receipt's last advance names no tree");
+  }
+  const start = from as string;
+  if (input.headTree === '') return full('head-unreadable', 'HEAD^{tree} is unreadable');
+  if (start === input.headTree) return full('same-tree', 'the receipt already names this tree');
   if (input.policy === undefined)
-    return { kind: 'full', why: 'HEAD carries no .ci/policy/record-paths.json' };
-  if (typeof input.policy === 'string') return { kind: 'full', why: input.policy };
-  const paths = input.diff(from, input.headTree);
+    return full('policy', 'HEAD carries no .ci/policy/record-paths.json');
+  if (typeof input.policy === 'string') return full('policy', input.policy);
+  const paths = input.diff(start, input.headTree);
   if (paths === undefined || paths.length === 0)
-    return {
-      kind: 'full',
-      why: `git could not list what changed between ${from.slice(0, 9)} and ${input.headTree.slice(0, 9)}`,
-    };
+    return full(
+      'no-diff',
+      `git could not list what changed between ${start.slice(0, 9)} and ${input.headTree.slice(0, 9)}`
+    );
   const policy = input.policy;
   const matching = (p: string): RecordGlob[] =>
     policy.filter(
-      (g) => globToRegExp(g.glob).test(p) && !g.except.some((e) => globToRegExp(e).test(p))
+      (g) => recordGlobRe(g.glob).test(p) && !g.except.some((e) => recordGlobRe(e).test(p))
     );
   const outside = paths.filter((p) => matching(p).length === 0);
   if (outside.length > 0)
-    return {
-      kind: 'full',
-      why: `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`,
-    };
+    return full(
+      'outside',
+      `${outside.length} changed path(s) lie outside the record set, e.g. ${outside.slice(0, 3).join(', ')}`
+    );
   const readers = [...new Set(paths.flatMap((p) => matching(p).flatMap((g) => g.readers)))].sort(
     (a, b) => Number(a > b) - Number(a < b)
   );
-  const unknown = readers.filter((id) => !input.known.has(id));
+  const unknown = input.known === undefined ? [] : readers.filter((id) => !input.known?.has(id));
   if (unknown.length > 0)
-    return {
-      kind: 'full',
-      why: `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`,
-    };
+    return full(
+      'unknown-reader',
+      `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`
+    );
   // THE RED RULE. `failed`, `findings` and `exitCode` keep describing the receipt's own tree after an advance (block_unverified_push step_refusal reads them that way). That stays true only for a red gate whose inputs the step did not touch: a failed gate that reads a touched record would be re-run here and its old verdict left standing beside the new one, so the lane runs again and judges it whole.
   const redReaders = readers.filter((id) => failed.includes(id));
   if (redReaders.length > 0)
-    return {
-      kind: 'full',
-      why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
-    };
-  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`). When the step re-runs that gate, its entry is refreshed; when no touched record lists it as a reader, nothing here re-judges it and the guard would refuse the push, so the lane runs.
-  const stale = carriedOverPaths(r.gates, paths, {
-    from,
+    return full(
+      'red-reader',
+      `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`
+    );
+  // A CARRY-FILE STEP: the push guard admits it only as a shrink of that file alone (`carried_shrink_refusal`), so an advance over anything else would be written here and refused there.
+  if (paths.includes(CARRIED_REL)) {
+    const problem = carryStepProblem(
+      paths,
+      start,
+      input.headTree,
+      input.carriedAt ?? (() => undefined),
+      {
+        failed: new Set(failed),
+        findings:
+          r.findings !== null && typeof r.findings === 'object'
+            ? (r.findings as Record<string, unknown>)
+            : {},
+      }
+    );
+    if (problem !== undefined) return full('carry-file', problem);
+  }
+  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`): the push guard recomputes it at the pushed tree, so the step re-runs it beside the readers and refreshes its entry. A carried RED over a touched input falls under the red rule.
+  const refresh = carriedOverPaths(r.gates, paths, {
+    from: start,
     to: input.headTree,
     entriesAt: input.entriesAt ?? (() => undefined),
   });
-  const unread = stale.filter((id) => !readers.includes(id));
-  if (unread.length > 0)
-    return {
-      kind: 'full',
-      why: `the receipt carries ${unread.length} verdict(s) whose inputs changed and that no touched record lists as a reader (${unread.slice(0, 3).join(', ')}${unread.length > 3 ? ', ...' : ''}); the push guard would refuse them at this tree`,
-    };
-  return { kind: 'advance', from, to: input.headTree, paths, readers, refresh: stale };
+  const redRefresh = refresh.filter((id) => failed.includes(id));
+  if (redRefresh.length > 0)
+    return full(
+      'red-reader',
+      `the receipt is red on ${redRefresh.join(', ')}, carried over input(s) the change touched; the lane must judge them again`
+    );
+  return { kind: 'advance', from: start, to: input.headTree, paths, readers, refresh };
 }
 
 /** The record-set policy as HEAD carries it (the guard reads the same copy), parsed; undefined when HEAD has none. */
@@ -6323,24 +6460,31 @@ async function runAdvance(
   humanOut: (text: string) => void
 ): Promise<number> {
   const shown = plan.paths.slice(0, 5).join(', ') + (plan.paths.length > 5 ? ', ...' : '');
+  const extra = plan.refresh.filter((id) => !plan.readers.includes(id));
+  const toRun = [...plan.readers, ...extra];
   humanOut(
     `ci-runner: --quick ADVANCE ${plan.from.slice(0, 9)} -> ${plan.to.slice(0, 9)}: ${plan.paths.length} record path(s) changed (${shown}); ` +
       (plan.readers.length > 0
-        ? `running their ${plan.readers.length} reader(s) instead of the lane: ${plan.readers.join(', ')}\n`
-        : 'no gate reads them, so nothing runs\n')
+        ? `running their ${plan.readers.length} reader(s) instead of the lane: ${plan.readers.join(', ')}`
+        : 'no gate reads them') +
+      (extra.length > 0
+        ? `; re-running ${extra.length} carried verdict(s) whose inputs changed: ${extra.join(', ')}\n`
+        : toRun.length === 0
+          ? ', so nothing runs\n'
+          : '\n')
   );
   let gates: Record<string, number> = {};
   let findings: Record<string, string[] | null> = {};
   let exitCode = 0;
-  if (plan.readers.length > 0) {
+  if (toRun.length > 0) {
     const ran = await runGraph(
-      buildGraph(specs, new Set(plan.readers)),
+      buildGraph(specs, new Set(toRun)),
       opts,
-      `--quick advance (readers of ${plan.paths.length} record path(s))`,
+      `--quick advance (${plan.readers.length} reader(s) of ${plan.paths.length} record path(s), ${extra.length} carried re-run(s))`,
       humanOut
     );
     exitCode = ran.exitCode;
-    ({ gates, findings } = advanceOutcome(plan.readers, ran.results, humanOut));
+    ({ gates, findings } = advanceOutcome(toRun, ran.results, humanOut));
   }
   if (receiptTree(plan.to, headTreeNow()) === '') {
     humanOut(
@@ -6891,6 +7035,7 @@ async function main(): Promise<number> {
       diff: (from, to) =>
         gitTry(['diff', '--name-only', '--no-renames', from, to])?.split('\n').filter(Boolean),
       known: new Set(specs.map((spec) => spec.id)),
+      carriedAt: (tree) => gitTry(['show', `${tree}:${CARRIED_REL}`]),
       entriesAt: (() => {
         const memo = new Map<string, LsEntry[] | undefined>();
         return (tree: string) => {

@@ -499,10 +499,52 @@ cases.append((True, K2 in run_err(PUSH), "1: the refusal names the new key"))
 carry(keyed(K1, K2))
 cases.append((0, run(PUSH), "1/2 CONTROL: every emitted key carried, none stale"))
 
-# 2. STALE FINDING: K2 is carried and the gate no longer emits it.
+# 2. STALE FINDING: K2 is carried and the gate did not report it this run. A WARNING, not a refusal (PLAN-ciquick-gate-contract R3): flapping keys refused push after push with nothing new red.
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
-cases.append((2, run(PUSH), "2: a carried key the gate no longer emits refuses"))
-cases.append((True, K2 in run_err(PUSH), "2: the refusal names the stale key"))
+cases.append((0, run(PUSH), "2/R3: a carried key the run did not report warns, it does not refuse"))
+_stale_err = run_err(PUSH)
+cases.append(
+    (
+        True,
+        "WARNING:" in _stale_err and K2 in _stale_err,
+        "2/R3: the warning is printed and names the unreported key",
+    )
+)
+
+# R3. FINDING PATTERNS: a keyed gate whose keys flap may carry a glob, with a reason and an `expires` date.
+K3 = "pytest-slow:.ci/rediacc_ci/tests/test_x.py::test_slow_one"
+K4 = "pytest-slow:.ci/rediacc_ci/tests/test_y.py::test_slow_two"
+KNEW = "P-A2:no-row:agent/plans/PLAN-new.md#99999999"
+
+
+def pattern(*globs, expires="2999-12-31", gate=TRAILERS, reason=GOOD_REASON):
+    """One v2 pattern entry; `expires=None` leaves the date out."""
+    entry = {"gate": gate, "patterns": list(globs), "reason": reason}
+    if expires is not None:
+        entry["expires"] = expires
+    return entry
+
+
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3, K4]})
+carry(keyed(K1), pattern("pytest-slow:*"))
+cases.append((0, run(PUSH), "R3: keys a live pattern matches are carried"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3, KNEW]})
+cases.append((2, run(PUSH), "R3: a NEW red no key or pattern covers still refuses"))
+cases.append((True, KNEW in run_err(PUSH), "R3: the refusal names the new key"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3]})
+carry(keyed(K1), pattern("pytest-slow:*", expires="2020-01-01"))
+cases.append((2, run(PUSH), "R3: a pattern past its expiry refuses"))
+cases.append(
+    (True, "past their `expires`" in run_err(PUSH), "R3: the refusal names the expired pattern")
+)
+carry(keyed(K1), pattern("pytest-slow:*", expires=None))
+cases.append((2, run(PUSH), "R3: a pattern with no expiry is refused"))
+cases.append((True, "no `expires`" in run_err(PUSH), "R3: the refusal names the missing expiry"))
+carry(keyed(K1), pattern("pytest-slow:*"))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1, K3]})
+cases.append((0, run(PUSH), "R3 CONTROL: the same pattern with a live expiry is admitted"))
+carry(keyed(K1, K2))
+put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
 
 # 3. KEYED CARRY OF A GATE THAT EMITS NOTHING: the receipt has null, so the keys cannot be checked.
 put(exitCode=1, failed=[TRAILERS], findings={TRAILERS: None})
@@ -1226,10 +1268,19 @@ w, t0, t1 = carry_world(
     carry_doc(keyed(K1)),
 )
 CARRY_WORLDS.append(("G3: a removal-only carry commit advances the receipt", 0, w))
-# Its control: the same receipt at the base tree, before the shrink, is refused as stale. Without this the admitted world could be admitted for a reason that has nothing to do with the advance.
+# Its counterpart: the same receipt at the base tree, before the shrink, is admitted with a WARNING naming the unreported K2 (PLAN-ciquick-gate-contract R3: an unreported carried key warns, it no longer refuses).
 w, t0 = adv_world("carry-remove-stale-key-base", carry_doc(keyed(K1, K2)), policy=CARRY_POLICY)
 adv_receipt(w, t0, None, exitCode=1, failed=[TRAILERS], findings={TRAILERS: [K1]})
-CARRY_WORLDS.append(("G3 CONTROL: the same receipt before the shrink is refused (stale K2)", 2, w))
+CARRY_WORLDS.append(
+    ("G3/R3: the same receipt before the shrink is admitted (stale K2 warns)", 0, w)
+)
+cases.append(
+    (
+        True,
+        "WARNING:" in drive(w, ADV_PUSH)[1] and K2 in drive(w, ADV_PUSH)[1],
+        "G3/R3: before the shrink the unreported K2 is printed as a warning",
+    )
+)
 
 # G3-2. ADMITTED: a whole entry removed for a gate that is not red in the receipt.
 w, t0, t1 = carry_world(
@@ -3477,6 +3528,81 @@ def lease_branch_cases():
 
 
 lease_branch_cases()
+
+
+# --- THE RECORD-ONLY ADVANCE PARITY (PLAN-ciquick-gate-contract R1) -------------------------------- plan_advance is driven against scripts/ci-runner/advance-parity.json, the corpus run.ts planAdvance is driven against in its --selftest, so this guard's "ci:quick will advance (record-only)" and the runner's own decision cannot part again: on 2026-11-28 the guard said advance and the runner ran the whole lane four times over three carried verdicts no record lists as a reader. Two plants show the comparison can fail.
+def parity_cases():
+    # `<carried-reds>` stands for the carry file path in the corpus, so the json inventory does not read the corpus as wiring of that file.
+    corpus = json.loads(
+        (GUARD.parents[3] / GM.ADVANCE_PARITY_REL)
+        .read_text(encoding="utf-8")
+        .replace("<carried-reds>", GM.CARRIED_REL)
+    )["cases"]
+
+    def verdict(case, plan=None):
+        policy = case["policy"]
+        records = None
+        if policy is not None:
+            parsed, error = GM.parse_record_policy(policy)
+            records = error if error is not None else parsed
+        entries = case.get("entries", {})
+        carried = case.get("carried", {})
+
+        def carried_at(tree):
+            raw = carried.get(tree)
+            return raw if raw is None or isinstance(raw, str) else json.dumps(raw)
+
+        got = (plan or GM.plan_advance)(
+            case["receipt"],
+            case["headTree"],
+            records,
+            lambda _a, _b: case["paths"],
+            known=set(case["known"]) if "known" in case else None,
+            entries_at=lambda t: [tuple(e) for e in entries[t]] if t in entries else None,
+            carried_at=carried_at,
+        )
+        if got["kind"] == "full":
+            return {"kind": "full", "code": got["code"]}
+        return {"kind": "advance", "readers": got["readers"], "refresh": got["refresh"]}
+
+    codes = {c["expect"].get("code") for c in corpus if c["expect"]["kind"] == "full"}
+    cases.append((13, len(codes - {None}), "PARITY: the corpus covers all 13 refusal codes"))
+    cases.extend((c["expect"], verdict(c), "PARITY: %s" % c["name"]) for c in corpus)
+
+    def old_rule(receipt, head_tree, records, diff, **kw):
+        got = GM.plan_advance(receipt, head_tree, records, diff, **kw)
+        if got["kind"] == "advance" and set(got["refresh"]) - set(got["readers"]):
+            return {"kind": "full", "code": "unread-carried", "why": ""}
+        return got
+
+    incident = next(c for c in corpus if c["name"].startswith("THE 2026-11-28 INCIDENT"))
+    cases.append(
+        (
+            True,
+            verdict(incident, old_rule) != incident["expect"],
+            "PARITY CONTROL: the pre-R1 lane rule (a carried non-reader runs the lane) fails the incident case",
+        )
+    )
+    real = GM.carry_step_problem
+    GM.carry_step_problem = lambda *_a, **_k: None
+    try:
+        red = {c["name"] for c in corpus if verdict(c) != c["expect"]}
+    finally:
+        GM.carry_step_problem = real
+    cases.append(
+        (
+            True,
+            {
+                "a carry-file step touching another path runs the lane",
+                "a carry-file removal of a key still red runs the lane",
+            }
+            <= red,
+            "PARITY CONTROL: dropping carry_step_problem (the pre-R1 hint) turns carry-file cases red",
+        )
+    )
+
+
+parity_cases()
 
 shutil.rmtree(d, ignore_errors=True)
 
