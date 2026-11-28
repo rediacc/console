@@ -79,12 +79,14 @@ def own_seconds(phases: object) -> tuple[float, float] | None:
         phases.get(k) is None for k in ("setup", "call", "teardown")
     ):
         return None
+    # CPU WHEN RECORDED (PLAN-ciquick-gate-contract K4). The plugin records each phase's CPU (the test process plus its waited children) beside the wall time; a test is judged on CPU when its call carries one, so a loaded machine stops reddening a different set of 10-16 s tests on every run (2026-11-28, ci:quick 37-45). An entry without CPU fields (an older phase file) is judged on wall time as before.
+    suffix = "_cpu" if phases.get("call_cpu") is not None else ""
     try:
-        setup = float(phases.get("setup") or 0.0)
-        call = float(phases.get("call") or 0.0)
-        teardown = float(phases.get("teardown") or 0.0)
-        shared = float(phases.get("shared_setup") or 0.0)
-        shared_td = float(phases.get("shared_teardown") or 0.0)
+        setup = float(phases.get("setup" + suffix) or 0.0)
+        call = float(phases.get("call" + suffix) or 0.0)
+        teardown = float(phases.get("teardown" + suffix) or 0.0)
+        shared = float(phases.get("shared_setup" + suffix) or 0.0)
+        shared_td = float(phases.get("shared_teardown" + suffix) or 0.0)
     except (TypeError, ValueError):
         return None
     shared = min(max(shared, 0.0), setup)

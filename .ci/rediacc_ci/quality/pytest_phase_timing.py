@@ -15,6 +15,7 @@ import json
 import os
 import pathlib
 import re
+import resource
 import tempfile
 import time
 import typing
@@ -28,9 +29,22 @@ VERSION = 1
 OPTION = "--phase-timing"
 SHARED_ATTR = "shared_setup_s"
 SHARED_TEARDOWN_ATTR = "shared_teardown_s"
+CPU_ATTR = "cpu_s"
+SHARED_CPU_ATTR = "shared_setup_cpu_s"
+SHARED_TEARDOWN_CPU_ATTR = "shared_teardown_cpu_s"
 _PY_SUFFIX_RE = re.compile(r"\.py$")
 # Kept equal to `pytest_slow_ratchet.GROUP_SUFFIX_RE` (a test pins the parity): the trailing xdist `@group`, never an `@` inside a `[...]` parameter id.
 GROUP_SUFFIX_RE = re.compile(r"@[^@\]]*$")
+
+
+def cpu_seconds() -> float:
+    """CPU seconds of this process plus every child it has waited for (user + system).
+
+    The slow-test ratchet judges CPU rather than wall time (PLAN-ciquick-gate-contract K4): on 2026-11-28 the wall clock reddened a different set of 10.1-16 s tests on every ci:quick run while the machine ran the rest of the lane. Most slow tests here drive git, tsx or python subprocesses, so a waited child's CPU is the test's own work and counts.
+    """
+    me = resource.getrusage(resource.RUSAGE_SELF)
+    kids = resource.getrusage(resource.RUSAGE_CHILDREN)
+    return me.ru_utime + me.ru_stime + kids.ru_utime + kids.ru_stime
 
 
 def junit_node(nodeid: str) -> str:
@@ -55,41 +69,69 @@ class PhaseTiming:
         self._shared = 0.0
         self._shared_teardown = 0.0
         self._mark = 0.0
+        self._shared_cpu = 0.0
+        self._shared_teardown_cpu = 0.0
+        self._mark_cpu = 0.0
+        self._phase_cpu: dict[str, float] = {}
+
+    def _timed_phase(self, when: str) -> Generator[None, object, object]:
+        started = cpu_seconds()
+        try:
+            return (yield)
+        finally:
+            self._phase_cpu[when] = cpu_seconds() - started
+
+    @pytest.hookimpl(wrapper=True)
+    def pytest_runtest_call(self) -> Generator[None, object, object]:
+        return (yield from self._timed_phase("call"))
 
     @pytest.hookimpl(wrapper=True)
     def pytest_runtest_teardown(self) -> Generator[None, object, object]:
         self._shared_teardown = 0.0
+        self._shared_teardown_cpu = 0.0
         self._mark = time.perf_counter()
-        return (yield)
+        self._mark_cpu = cpu_seconds()
+        return (yield from self._timed_phase("teardown"))
 
     def pytest_fixture_post_finalizer(self, fixturedef) -> None:
         # Finalizers run one after another, so the gap since the last one (or the start of teardown) is this fixture's own finish.
         now = time.perf_counter()
+        now_cpu = cpu_seconds()
         if fixturedef.scope != "function":
             self._shared_teardown += now - self._mark
+            self._shared_teardown_cpu += now_cpu - self._mark_cpu
         self._mark = now
+        self._mark_cpu = now_cpu
 
     @pytest.hookimpl(wrapper=True)
     def pytest_runtest_setup(self) -> Generator[None, object, object]:
         self._shared = 0.0
-        return (yield)
+        self._shared_cpu = 0.0
+        self._phase_cpu = {}
+        return (yield from self._timed_phase("setup"))
 
     @pytest.hookimpl(wrapper=True)
     def pytest_fixture_setup(self, fixturedef) -> Generator[None, object, object]:
         started = time.perf_counter()
+        started_cpu = cpu_seconds()
         try:
             return (yield)
         finally:
             if fixturedef.scope != "function":
                 self._shared += time.perf_counter() - started
+                self._shared_cpu += cpu_seconds() - started_cpu
 
     @pytest.hookimpl(wrapper=True)
     def pytest_runtest_makereport(self, call) -> Generator[None, object, object]:
         report = yield
+        if call.when in self._phase_cpu:
+            setattr(report, CPU_ATTR, self._phase_cpu[call.when])
         if call.when == "setup":
             setattr(report, SHARED_ATTR, self._shared)
+            setattr(report, SHARED_CPU_ATTR, self._shared_cpu)
         elif call.when == "teardown":
             setattr(report, SHARED_TEARDOWN_ATTR, self._shared_teardown)
+            setattr(report, SHARED_TEARDOWN_CPU_ATTR, self._shared_teardown_cpu)
         return report
 
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
@@ -107,12 +149,21 @@ class PhaseTiming:
             },
         )
         entry[report.when] = float(report.duration)
+        cpu = getattr(report, CPU_ATTR, None)
+        if cpu is not None:
+            entry[report.when + "_cpu"] = float(cpu)
         if report.when == "setup":
             shared = getattr(report, SHARED_ATTR, None)
             entry["shared_setup"] = float(shared) if shared is not None else None
+            shared_cpu = getattr(report, SHARED_CPU_ATTR, None)
+            if shared_cpu is not None:
+                entry["shared_setup_cpu"] = float(shared_cpu)
         elif report.when == "teardown":
             shared = getattr(report, SHARED_TEARDOWN_ATTR, None)
             entry["shared_teardown"] = float(shared) if shared is not None else None
+            shared_cpu = getattr(report, SHARED_TEARDOWN_CPU_ATTR, None)
+            if shared_cpu is not None:
+                entry["shared_teardown_cpu"] = float(shared_cpu)
 
     def pytest_sessionfinish(self) -> None:
         if self.out is None:

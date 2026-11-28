@@ -442,3 +442,28 @@ def test_a_failed_re_time_adds_no_sample_so_the_parallel_time_stands(tmp_path, c
     rc, out = _run(tmp_path, capsys, [parallel], [], "--confirm", str(failed))
     assert rc == 1
     assert "test_retimed took 33.5 s" in out.err
+
+
+def test_own_seconds_judges_cpu_when_the_entry_carries_it():
+    """PLAN-ciquick-gate-contract K4: the call's CPU decides; the wall time is ignored when CPU is present."""
+    entry = {
+        "setup": 0.2,
+        "call": 14.0,
+        "teardown": 0.1,
+        "shared_setup": 0.0,
+        "shared_teardown": 0.0,
+        "setup_cpu": 0.1,
+        "call_cpu": 3.0,
+        "teardown_cpu": 0.05,
+        "shared_setup_cpu": 0.0,
+        "shared_teardown_cpu": 0.0,
+    }
+    own, shared = ratchet.own_seconds(entry)
+    assert own == pytest.approx(3.15)
+    assert shared == pytest.approx(0.0)
+
+
+def test_own_seconds_control_without_cpu_fields_stays_on_wall_time():
+    """An older phase file (no CPU fields) is judged exactly as before."""
+    own, _ = ratchet.own_seconds({"setup": 0.2, "call": 14.0, "teardown": 0.1})
+    assert own == pytest.approx(14.3)

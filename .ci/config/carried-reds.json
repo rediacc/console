@@ -40,19 +40,6 @@
       "reason": "The Windows lane (ci-windows.yml, PLAN-windows-lane) has never run on CI, so the gate reports it UNCHECKED with no job p90, and the 2026-09-29 ruling (#5a954657) forbids seeding an unmeasured number. Only a push lets the job run once and be measured. Operator ruling ASKED:2026-11-27T15:26Z: carry it. Lift: drop this entry once windows-lane has run green and budget_report --refresh has recorded its p90."
     },
     {
-      "gate": "check:ci-pytest",
-      "findings": [
-        "pytest-slow:.ci.rediacc_ci.tests.test_core_devbox::test_the_port_matches_the_live_twin#up-create#",
-        "pytest-slow:.ci.rediacc_ci.tests.test_core_devbox::test_the_quick_clone_root_is_bound_at_the_same_path",
-        "pytest-slow:.ci.rediacc_ci.tests.test_dev_worktree_lease::test_pin_commit_in_the_main_checkout_moves_nothing",
-        "pytest-slow:.ci.rediacc_ci.tests.test_private_license_e2e::test_port_matches_the_twins_recorded_output#a-fixture-install-failing-inside-the-battery-is-ignored#",
-        "pytest-slow:.claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook#enrolled_allowed-gates-lock#",
-        "pytest-slow:.claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook#enrolled_refused-cli-contract#",
-        "pytest-slow:.claude.rediacc_hooks.tests.test_hooks_delegates::test_an_orphan_control_suite_runs_and_says_something#stop/test-review-mark.py#"
-      ],
-      "reason": "BLOCKER: wall-clock slow-test ratchet flaps at 10.1-12.4 s against the 10 s budget under machine load (ci:quick 40, 2026-11-28; two of these were dropped as stale an hour earlier at 2a2cc55d). Carried only for the production 500 fix push; PLAN-ciquick-gate-contract K4 moves the ratchet to CPU time, and this entry goes when K4 lands."
-    },
-    {
       "gate": "check:ci-budget-freshness",
       "findings": [
         "gate-costs:drift:cpu_s:check:ci-actionlint",
