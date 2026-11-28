@@ -57,7 +57,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 12 of 124 plans done, 1636 of 2132 boxes done (76%).
+Promoted: 12 of 128 plans done, 1636 of 2175 boxes done (75%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -185,6 +185,10 @@ Promoted: 12 of 124 plans done, 1636 of 2132 boxes done (76%).
 | 122 | PLAN-pricing-billing-upgrade.md | 0/8 | 8 open |
 | 123 | PLAN-pricing-coupons.md | 0/5 | 5 open |
 | 124 | PLAN-pricing-public-calculator.md | 0/7 | 7 open |
+| 125 | PLAN-account-api-health.md | 0/12 | 12 open |
+| 126 | PLAN-cloud-inventory.md | 0/7 | 7 open |
+| 127 | PLAN-preprod-simulation.md | 0/11 | 11 open |
+| 128 | PLAN-ciquick-gate-contract.md | 0/13 | 13 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue
@@ -311,6 +315,10 @@ Promoted: 12 of 124 plans done, 1636 of 2132 boxes done (76%).
 122. agent/plans/PLAN-pricing-billing-upgrade.md -- operator /ask 2026-11-27 in session e08d0be9 (plans written first, then promoted in QUEUE.md; "plans will be promoted and approved"): pricing redesign: billing profile with VIES, instant upgrade, manual invoice 14+7 days, root-token controls, 30-day R2 restore-only; Depends-On plan-model and PLAN-stripe-disable.md
 123. agent/plans/PLAN-pricing-coupons.md -- operator /ask 2026-11-27 in session e08d0be9 (plans written first, then promoted in QUEUE.md; "plans will be promoted and approved"): pricing redesign: coupon campaigns with stacking boosts, managed from admin UI and root API tokens; Depends-On plan-model and billing-upgrade
 124. agent/plans/PLAN-pricing-public-calculator.md -- operator /ask 2026-11-27 in session e08d0be9 (plans written first, then promoted in QUEUE.md; "plans will be promoted and approved"): pricing redesign: server-only estimate and non-binding quote API, partner lead routing, pricing page with Custom tier and VAT toggle; Depends-On plan-model and partner-directory
+125. agent/plans/PLAN-account-api-health.md -- operator 2026-11-28 (ASKED:2026-11-28T10:44Z and 10:49Z; order ~10:55Z: promote all four and implement in parallel) after the account API outage of the 07:13Z edge release
+126. agent/plans/PLAN-cloud-inventory.md -- pulled in as an unfinished prerequisite of PLAN-preprod-simulation.md (Depends-On), 2026-11-28
+127. agent/plans/PLAN-preprod-simulation.md -- operator 2026-11-28 (ASKED:2026-11-28T10:44Z and 10:49Z; order ~10:55Z: promote all four and implement in parallel) after the account API outage of the 07:13Z edge release
+128. agent/plans/PLAN-ciquick-gate-contract.md -- operator 2026-11-28 (ASKED:2026-11-28T10:44Z and 10:49Z; order ~10:55Z: promote all four and implement in parallel) after the account API outage of the 07:13Z edge release
 
 ## Generated
 
@@ -328,23 +336,19 @@ Promoted: 12 of 124 plans done, 1636 of 2132 boxes done (76%).
 11. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, in progress (1 of 19 boxes ticked), dep-blocked
 12. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, in progress (1 of 10 boxes ticked), dep-blocked
 13. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, in progress (1 of 9 boxes ticked), dep-blocked
-14. agent/plans/PLAN-account-api-health.md -- P0, approved, not started
-15. agent/plans/PLAN-cloud-inventory.md -- P0, approved, not started
-16. agent/plans/PLAN-preprod-simulation.md -- P0, approved, not started, dep-blocked
-17. agent/plans/PLAN-ciquick-gate-contract.md -- P1, approved, not started
-18. agent/plans/PLAN-console-private.md -- P1, proposed, not started
-19. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-20. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
-21. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-22. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
-23. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
-24. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
-25. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
-26. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-27. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-28. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-29. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-30. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
-31. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
-32. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+14. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+15. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+16. agent/plans/PLAN-stop-hook-retro-20261117.md -- P1, ready, not started
+17. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
+18. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
+19. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
+20. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+21. agent/plans/PLAN-stop-hook-retro-20261122.md -- P2, ready, not started
+22. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+23. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+24. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+25. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+26. agent/plans/PLAN-release-path-protection-2027.md -- P3, approved, not started
+27. agent/plans/PLAN-stripe-removal.md -- P3, active, not started, dep-blocked
+28. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
 <!-- queue:generated:end -->
