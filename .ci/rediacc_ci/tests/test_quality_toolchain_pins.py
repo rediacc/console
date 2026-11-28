@@ -213,10 +213,10 @@ def test_a9_control_fires_with_the_pins_exported(
     assert mod.pin_from_bare_source(library, "shellcheck") != ""
 
 
-def test_pin_from_bare_source_never_raises_on_an_undecodable_pins_file(
+def test_pin_from_bare_source_returns_empty_when_bare_env_raises_value_error(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Review f1c9b45f.1: a ValueError while building the bare env (a non-UTF-8 pins file) returns "" rather than escaping."""
+    """Review f1c9b45f.1 and d21a9ba8.1: a ValueError out of bare_env returns "" rather than escaping. The stub stands in for it because read_lines decodes with errors="replace", so a real pins file cannot raise one today; the catch guards a future reader."""
 
     def boom() -> dict[str, str]:
         raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
