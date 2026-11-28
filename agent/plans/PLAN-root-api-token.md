@@ -311,6 +311,7 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
     (ticked) 2026-11-23T08:35:41Z by ace763dd: commit:dfc082a5f3 fileline:.ci/rediacc_ci/ops/root_login.py:1 -- production live run 2026-11-23 with the root-login bws profile: the same root session opens through --target edge with the TOTP derived from the bound seed, rc 0
 - [ ] LP5 [live] The refresh path for real, on the first day after the agent's egress has changed. The run needs no operator.
   - Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable --region eu --probe stats` rc 0, printing `ip rebound (v4)` or `ip rebound (v6)`.
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: An external event (the agent's egress changing) cannot be produced locally; stays open.
 - [ ] F* [writer] Fix-forward boxes, opened under this plan for each claim a live box disproves, each owning only the file the claim names.
   - Accept: the failing live box's command rc 0.
 

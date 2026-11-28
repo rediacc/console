@@ -42,30 +42,30 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Work outside the PR's plans (8 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 1 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic 09b8bdfa, plan agent/plans/PLAN-detached-jobs.md, outside the set, 1 commit(s) on the branch, 0 open item(s): detached jobs: proxied poll follow and job kinds
-  - epic 79b7e92e, no plan, 2544 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 2556 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 5c2856d0, plan agent/plans/PLAN-rmcp-writeback.md, outside the set, 44 commit(s) on the branch, 0 open item(s): remote-mcp program: ten plans for hosted MCP, write-back, policy record, key slots, on-premise (agent/programs/remote-mcp)
   - epic 422370f4, no plan, 1 commit(s) on the branch, 0 open item(s): Java4Shell CVE-2026-114938 triage (hostinger + templates)
   - epic 29d3123a, plan agent/plans/PLAN-tooling-speed.md, outside the set, 1 commit(s) on the branch, 0 open item(s): Tooling speed: Stop hook, profiler, lifecycle, watchdog, wrangler lane
   - epic dfaac428, plan agent/plans/PLAN-tooling-code-reduction.md, outside the set, 5 commit(s) on the branch, 0 open item(s): Tooling code reduction: scaffolding, gate generator, env registry, gate tables, hook tables, fire ledger
   - epic dcc5af7a, plan agent/plans/PLAN-console-contract-semantics.md, outside the set, 8 commit(s) on the branch, 0 open item(s): Console rework program: plans and decisions (agent/programs/console-rework)
-- Writers: 0 live (session d778be9d).
-- Leased items: 1: #deaf85a1 (worker:bp54bq57j, d778be9d).
+- Writers: 1 live (session d778be9d): worker:a59fb7ea50e12dbc5.
+- Leased items: 1: #7e9b67f1 (worker:a59fb7ea50e12dbc5, d778be9d).
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; starts when this branch's PR binds it on its first push.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 11 of 124 plans done, 1624 of 2132 boxes done (76%).
+Promoted: 12 of 124 plans done, 1633 of 2132 boxes done (76%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
 | 1 | PLAN-ciquick-cpu.md | 30/38 | 8 open |
-| 2 | PLAN-backup-program.md | 189/192 | 3 open |
+| 2 | PLAN-backup-program.md | 190/192 | 2 open |
 | 3 | PLAN-cloudflare-proxy.md | 29/29 | done |
 | 4 | PLAN-sandbox-tenant-separation.md | 7/8 | 1 open |
 | 5 | PLAN-gpu-device-grants.md | 13/14 | 1 open |
-| 6 | PLAN-proxy-cd-six-targets.md | 29/31 | 2 open |
+| 6 | PLAN-proxy-cd-six-targets.md | 30/31 | 1 open |
 | 7 | PLAN-tested-on-bench.md | 16/20 | 4 open |
 | 8 | PLAN-backup-restore-path.md | 8/10 | 2 open |
 | 9 | PLAN-production-key-only.md | 15/17 | 2 open |
@@ -83,11 +83,11 @@ Promoted: 11 of 124 plans done, 1624 of 2132 boxes done (76%).
 | 21 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 22 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
 | 23 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
-| 24 | PLAN-health-checks-local.md | 66/81 | 15 open |
+| 24 | PLAN-health-checks-local.md | 67/81 | 14 open |
 | 25 | PLAN-backup-multi-target.md | 18/21 | 3 open |
-| 26 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
+| 26 | PLAN-ciquick-reds-1023-1.md | 12/12 | done |
 | 27 | PLAN-renet-executor-tiered-license-check.md | 4/4 | done |
-| 28 | PLAN-scope-bws-signing-key-to-consuming-step.md | 8/10 | 2 open |
+| 28 | PLAN-scope-bws-signing-key-to-consuming-step.md | 9/10 | 1 open |
 | 29 | PLAN-renet-docker-running-semantics.md | 14/15 | 1 open |
 | 30 | PLAN-product-domain-rename.md | 25/28 | 3 open |
 | 31 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
@@ -115,11 +115,11 @@ Promoted: 11 of 124 plans done, 1624 of 2132 boxes done (76%).
 | 53 | PLAN-account-sidebar-redesign.md | 12/15 | 3 open |
 | 54 | PLAN-email-sender-separation.md | 12/18 | 6 open |
 | 55 | PLAN-pr-loop-single-source.md | 7/9 | 2 open |
-| 56 | PLAN-two-track-merge-dev.md | 39/44 | 5 open |
+| 56 | PLAN-two-track-merge-dev.md | 41/44 | 3 open |
 | 57 | PLAN-simple-two-tree-loop.md | 10/12 | 2 open |
 | 58 | PLAN-preview-signer.md | 24/37 | 13 open |
 | 59 | PLAN-weekly-lessons.md | 6/8 | 2 open |
-| 60 | PLAN-tooling-speed.md | 6/8 | 2 open |
+| 60 | PLAN-tooling-speed.md | 7/8 | 1 open |
 | 61 | PLAN-tooling-code-reduction.md | 7/11 | 4 open |
 | 62 | PLAN-stop-hook-retro-20261123.md | 8/8 | done |
 | 63 | PLAN-silent-failure-sweep.md | 9/10 | 1 open |
@@ -164,7 +164,7 @@ Promoted: 11 of 124 plans done, 1624 of 2132 boxes done (76%).
 | 102 | PLAN-backup-schedule-origin-guard.md | 3/4 | 1 open |
 | 103 | PLAN-release-credits-compliance.md | 7/10 | 3 open |
 | 104 | PLAN-reggate-debt-collection.md | 7/11 | 4 open |
-| 105 | PLAN-retire-nightlies-and-mentions.md | 8/16 | 8 open |
+| 105 | PLAN-retire-nightlies-and-mentions.md | 9/16 | 7 open |
 | 106 | PLAN-renet-i18n-baseline-drain.md | 4/16 | 12 open |
 | 107 | PLAN-datastore-migrate-correctness.md | 7/13 | 6 open |
 | 108 | PLAN-backup-toc-exact-opt-in.md | 3/10 | 7 open |

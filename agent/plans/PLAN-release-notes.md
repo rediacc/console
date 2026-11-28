@@ -121,6 +121,7 @@ D12. Docs. `docs/agent-reference/release-process.md` states that Latest is stabl
   Owns: none -- reads the published Release and the origin.
   Depends on: RN5, RN6.
   Accept: `gh release view v<V> --json body,isLatest` shows the trailer body with `isLatest` false; `curl -fsS <releases origin>/cli/v<V>/release-notes.json` rc 0; `gh release view v4.0.1 --json body` is byte-identical to its 2026-11-24 reading.
+  (corrected ASKED:2026-11-27T19:35Z) needs main, stays open: Local proof: the first edge version cut after RN5 carries the grouped body; it needs release:local on main.
 - [ ] LP-bench [live] The www changelog page on bench: a VERIFIED www-smoke receipt for the tree carrying RN8. www-smoke is registered `deploy: unrecorded` and stays NOT_VERIFIED until a bench www Worker exists (`.ci/config/proof-tiers.json` `tiers.live.checks.www-smoke`), the registry gap agent/plans/PLAN-www-funnel-truthfulness.md also waits on.
   Accept: live-proof bench www-smoke
 

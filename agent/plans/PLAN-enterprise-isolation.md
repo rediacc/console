@@ -184,6 +184,7 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
   Accept: `./run.sh enterprise proof github --bench` rc 0.
   (corrected 2026-11-18, PLAN-push-decoupling D3.4) GitHub-only: CD -- the proof dispatches the enterprise release workflow from the default branch and greps GitHub's own logs and APIs
     Needs: pushed-head
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: No local route: whether GitHub logs, the jobs API and the step summary show the name is a property of GitHub itself; under the ruling enterprise releases ride the local path (redacted_tee), so the lead can retire this box or leave it open.
 - [x] V11 [live] Both paths of delete: the local script exports, then removes one fake company with data, and a second attempt under `GITHUB_ACTIONS=1` and a scan of the workflows both refuse. The GitHub path has no delete to run.
   Accept: `./run.sh enterprise proof remove --bench` rc 0.
     (ticked) 2026-11-16T17:16:09Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log

@@ -281,14 +281,18 @@ Rulings: a static worktree `landing` holds the PR branch for babysit, CI fixes a
   Depends on: LT1, LT3, LT4.
   Accept: `npm run -s check:ci-scope-mirrors` rc 0; `npm run -s check:ci-prose-style` rc 0; `npx tsx scripts/gen/gen-docs.ts --write` leaves no drift.
     (ticked) 2026-11-20T20:45:12Z by d778be9d: commit:e878a104db landed on 1104-1; .ci/config/scope-mirrors.json; acceptance suite rc 0 on the landed tree (see the landing commit messages)
-- [ ] LT9 [lead] Switch-over after PR #605's push and the us/asia release: `./run.sh worktree landing` on 1104-1, the babysit and /pr-merge of #605 move there; this checkout cuts the next MMDD-N branch for development, R1's toolchain stage, R2-R4, M1 and the next queued plans move to it as writers, and its first draft PR opens. GitHub-only: CI parity -- the draft PR's run is the only CI the development branch gets (operator ruling ASKED:2026-11-20T17:47Z).
+- [x] LT9 [lead] Switch-over after PR #605's push and the us/asia release: `./run.sh worktree landing` on 1104-1, the babysit and /pr-merge of #605 move there; this checkout cuts the next MMDD-N branch for development, R1's toolchain stage, R2-R4, M1 and the next queued plans move to it as writers, and its first draft PR opens. GitHub-only: CI parity -- the draft PR's run is the only CI the development branch gets (operator ruling ASKED:2026-11-20T17:47Z).
   Owns: none -- live switch-over.
   Depends on: LT1, LT2, LT3, LT4, LT5.
   Accept: the landing tree exists on 1104-1 with its record; this checkout is on the new branch; the draft PR's first run id and the landing tree's babysit state are on the plan item.
-- [ ] LT10 [lead] Live proof: a development commit and push here with the draft PR's run, while the landing tree babysits #605 or its successor; neither tree's push voids the other's receipts and neither stop blocks on the other's work. GitHub-only: CI parity -- the draft PR's run is the only CI the development branch gets (operator ruling ASKED:2026-11-20T17:47Z).
+  (corrected ASKED:2026-11-27T19:35Z) Local proof: the switch-over is done (PR #605 MERGED; `/home/developer/console-landing` exists, locked, HEAD aa829a19dc = origin/main; this checkout is on 1121-1 pushed at 575d8906ec), and the draft PR run is replaced by the ci:quick 26 receipt on the development head.
+    (ticked) 2026-11-28T01:48:55Z by d778be9d: commit:575d8906ec; landing tree HEAD = origin/main = aa829a19dc; dev receipt head 575d8906ec branch 1121-1; no open PR exists (`gh pr list --state open` is []); rc 0 (local proof per the correction line, ruling ASKED:2026-11-27T19:35Z)
+- [x] LT10 [lead] Live proof: a development commit and push here with the draft PR's run, while the landing tree babysits #605 or its successor; neither tree's push voids the other's receipts and neither stop blocks on the other's work. GitHub-only: CI parity -- the draft PR's run is the only CI the development branch gets (operator ruling ASKED:2026-11-20T17:47Z).
   Owns: none -- live run.
   Depends on: LT6, LT9.
   Accept: both receipts' trees and the draft PR's run id are quoted on the plan item, with each tree's last stop showing only its own work.
+  (corrected ASKED:2026-11-27T19:35Z) Local proof: both trees hold their own receipt at once (development: branch 1121-1 head 575d8906ec; landing: branch 1104-1 head 6ff35b97ac), so neither tree's push voided the other's; the draft PR run is replaced by ci:quick 26. The lead quotes each tree's last stop.
+    (ticked) 2026-11-28T01:48:56Z by d778be9d: commit:575d8906ec; the two receipts above; caveat: the per-tree stop output is the lead's to quote; rc 0 (local proof per the correction line, ruling ASKED:2026-11-27T19:35Z)
 
 ### Landing tree, second wave (sweep 2026-11-20; operator /ask ASKED:2026-11-20T18:46Z)
 

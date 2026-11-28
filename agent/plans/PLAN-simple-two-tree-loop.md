@@ -168,6 +168,7 @@ One verb pair, one event kind in the worklist store, addressed by tree role rath
   Owns: none -- measurement.
   Depends on: B0, B1, B2, B3, B4, B5, B6, B7, B8, B9, B10.
   Accept: a table of the rounds and the two trees' throughput is on the plan item, with the ledger rows quoted by round number.
+  (corrected ASKED:2026-11-27T19:35Z) needs main, stays open: Technically requires a real PR cycle: `agent/ledgers/landing-rounds.jsonl` does not exist yet and no PR is open, so there is no round to measure; waits for the merge.
 
 ## Risks
 

@@ -238,6 +238,7 @@ D15. The stable fix for the Windows host keys (operator decision a). The 3.0.1 b
 - [ ] WL26 [lead] The Windows host-key fix reaches stable by normal promotion per D15: the first stable version whose tag contains the ssh2 host-key read is recorded here, with no hotfix and no forced promotion. GitHub-only: CD -- only the stable promotion workflow publishes the stable channel, and no local route can promote it
     Needs: pushed-head
     Accept: `v=$(curl -fsS https://releases.rediacc.com/cli/stable/manifest.json | jq -r .version) && git fetch -q --tags origin && git log --oneline "v$v" --grep='read host keys over ssh2 instead of ssh-keyscan' | grep -q .` rc 0.
+  (corrected ASKED:2026-11-27T19:35Z) needs main, stays open: Needs a stable version: stable is 3.0.1 today and the fix is not in it; stable comes through release:local --channel stable (soak waived) from main.
 - [ ] WL27 [writer] `gotest` suite per D8 after WL6 and WL7: `GOOS=windows go test -c` binaries for `pkg/infra/sshexec`, staged and run on the VM, one `RDC-STEP` per binary.
     Owns: .ci/rediacc_ci/drills/windows/gotest.ps1, .ci/rediacc_ci/drills/win_check.py (staging of the test binaries), .ci/rediacc_ci/tests/test_drills_win_check.py
     Needs: none

@@ -75,6 +75,7 @@ This plan file is public, so it names credential CLASSES and the files that chan
 - [ ] OP3 [operator] Turn on SHA pinning for Actions: `gh api -X PUT repos/rediacc/console/actions/permissions -F enabled=true -f allowed_actions=selected -F sha_pinning_required=true`. Every action in-tree is already SHA-pinned (check:ci-actions-allowlist). The session's token can read the setting; the change is the operator's call on a repository security setting. Accept: `gh api repos/rediacc/console/actions/permissions --jq .sha_pinning_required` prints `true`.
 - [ ] V1 [live] On the PR head after W3-W6: stage-artifacts-pr, the six install validations, deploy-preview and the licence smoke pass with the throwaway credentials, and the PR channel's `apt/gpg.key` fingerprint differs from `.ci/keys/gpg-public.asc`. GitHub-only: preview -- the per-PR preview Worker, the PR package channel and the install matrix exist only on a pull_request event; no local deploy reproduces that path
   Accept: `.ci/scripts/ci/ci-trace.py --wait --until-final` reports those jobs green on the head.
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: No local route: the per-PR package channel and install matrix exist only on a pullrequest event, and a local preview deploy does not create them; box stays open.
 - [ ] LP-bench [live] Fresh bench receipt for the preview signer target and the enterprise signer proofs.
   Accept: live-proof bench enterprise-proof
 

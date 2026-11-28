@@ -40,6 +40,7 @@ C. Global key: both fallbacks (`private/account/scripts/rotation/lib/credentials
 - [ ] B6 Move `r2_lifecycle` and `backup_d1` to `resolve_scoped`, gate both `cf_auth` fallbacks on `CF_BREAK_GLASS`, rebind `ops-cf-usage-report.yml`. Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q .ci/rediacc_ci/tests -k cf_auth` rc 0.
 - [ ] B7 Delete `CF_GLOBAL_API_KEY` and `CF_EMAIL` from `ci-shared` (operator). Accept: only the `rotation` profile in `.ci/config/secret-supply.json` names them.
 - [ ] B8 (time: 30 days after B7) The operator changes the global key and stores the new value in `rotation-admin` only. Accept: a break-glass `./run.sh rotation list` rc 0.
+  (corrected ASKED:2026-11-27T19:35Z) no local route, stays open: Operator-owned credential step: the key change is the operator's; box stays open.
 
 ## Operator-only
 
