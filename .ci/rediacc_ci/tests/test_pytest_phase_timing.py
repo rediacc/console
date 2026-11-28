@@ -48,9 +48,9 @@ def test_own_teardown(slow_exit):
 
 class TestSlow:
     def test_slow_call(self):
-        # Burns CPU: the ratchet judges CPU time when recorded (PLAN-ciquick-gate-contract K4).
-        end = time.perf_counter() + 0.45
-        while time.perf_counter() < end:
+        # Burns 0.5 s of CPU, measured on the CPU clock so a loaded machine cannot shrink it (the ratchet judges CPU time, K4).
+        end = time.process_time() + 0.5
+        while time.process_time() < end:
             pass
 
 
@@ -108,7 +108,7 @@ def test_a_real_run_writes_phases_keyed_like_its_junit(tmp_path, workers):
     slow = tests["t.test_heavy.TestSlow::test_slow_call"]
     assert slow["shared_setup"] == pytest.approx(0.0, abs=0.05)
     assert slow["call"] >= 0.45
-    assert slow["call_cpu"] >= 0.3, slow
+    assert slow["call_cpu"] >= 0.45, slow
     sleepy = tests["t.test_heavy::test_sleepy_call"]
     assert sleepy["call"] >= 0.45, sleepy
     assert sleepy["call_cpu"] < 0.2, sleepy

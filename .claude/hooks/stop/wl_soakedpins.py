@@ -142,6 +142,7 @@ def run_daily(root, role, now=None, spawn=None):
                 )
             return None
         return claim
+    # swallowed-failure-ok: None means "nothing started this stop", and a Stop hook must never raise; the day stays unclaimed (or is released above), so the next stop retries the route.
     except Exception:
         return None
 
